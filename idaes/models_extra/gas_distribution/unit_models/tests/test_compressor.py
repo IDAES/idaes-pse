@@ -188,7 +188,7 @@ class TestCompressorValues(unittest.TestCase):
             n_scen,
             input_values,
             output_values=target_values,
-            to_fix=input_values,
+            to_fix=list(input_values.keys()),
         )
         with param_sweeper:
             self.assertEqual(degrees_of_freedom(m), 0)

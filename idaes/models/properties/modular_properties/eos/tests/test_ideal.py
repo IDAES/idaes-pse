@@ -332,7 +332,7 @@ def test_energy_internal_mol_phase_comp_with_h_form(m):
         # For liquid phase, delta(n) should be 4 (2*He + 2*O2)
         assert (
             str(Ideal.energy_internal_mol_phase_comp(m.props[1], "Liq", j))
-            == "42.0 -4.0*("
+            == "42.0 - 4.0*("
             + str(Ideal.gas_constant(m.props[1]))
             + ")*params.temperature_ref"
         )

@@ -30,6 +30,7 @@ from idaes.core import (
 )
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.tables import create_stream_table_dataframe
+from idaes.core.util.initialization import fix_state_vars
 
 __author__ = "Andrew Lee"
 
@@ -204,3 +205,12 @@ see property package for documentation.}""",
         return create_stream_table_dataframe(
             {"Outlet": self.outlet}, time_point=time_point
         )
+
+    def fix_initialization_states(self):
+        """
+        Fix feed state variables
+
+        Returns:
+            None
+        """
+        fix_state_vars(self.control_volume.properties_in)

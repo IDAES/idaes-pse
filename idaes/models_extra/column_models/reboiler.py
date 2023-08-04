@@ -207,7 +207,7 @@ see property package for documentation.}""",
         )
 
         # Get liquid and vapor phase objects from the property package
-        # to be used below. Avoids repition.
+        # to be used below. Avoids repetition.
         _liquid_list = []
         _vapor_list = []
         for p in self.config.property_package.phase_list:

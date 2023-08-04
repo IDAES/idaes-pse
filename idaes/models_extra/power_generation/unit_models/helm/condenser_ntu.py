@@ -82,7 +82,7 @@ This config can be given by the cold side name instead of cold_side.""",
 @declare_process_block_class("HelmNtuCondenser", doc="Simple 0D condenser model.")
 class HelmNtuCondenserData(UnitModelBlockData):
     """
-    Simple NTU condenser unit model.  This model assumes the property pacakages
+    Simple NTU condenser unit model.  This model assumes the property packages
     specified are Helmholtz EOS type.
     """
 

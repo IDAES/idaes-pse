@@ -37,6 +37,7 @@ from pyomo.environ import (
 )
 from pyomo.dae import ContinuousSet, DerivativeVar
 from pyomo.common.config import ConfigValue, In
+from pyomo.common.deprecation import deprecation_warning
 
 # Import IDAES cores
 from idaes.core import (
@@ -438,22 +439,30 @@ argument).""",
         if has_phase_equilibrium:
             # First, check that phase equilibrium makes sense
             if len(self.config.property_package.phase_list) < 2:
-                raise ConfigurationError(
+                msg = (
                     "Property package has only one phase; control volume cannot include phase "
                     "equilibrium terms. Some property packages support phase equilibrium "
-                    "implicitly in which case additional terms are not necessary."
+                    "implicitly in which case additional terms are not necessary. "
+                    "You should set has_phase_equilibrium=False."
                 )
-            # Check that state blocks are set to calculate equilibrium
-            for t in self.flowsheet().time:
-                for x in self.length_domain:
-                    if not self.properties[t, x].config.has_phase_equilibrium:
-                        raise ConfigurationError(
-                            "{} material balance was set to include phase "
-                            "equilibrium, however the associated "
-                            "StateBlock was not set to include equilibrium "
-                            "constraints (has_phase_equilibrium=False). Please"
-                            " correct your configuration arguments.".format(self.name)
-                        )
+                deprecation_warning(
+                    msg=msg, logger=_log, version="2.0.0", remove_in="3.0.0"
+                )
+                has_phase_equilibrium = False
+            else:
+                # Check that state blocks are set to calculate equilibrium
+                for t in self.flowsheet().time:
+                    for x in self.length_domain:
+                        if not self.properties[t, x].config.has_phase_equilibrium:
+                            raise ConfigurationError(
+                                "{} material balance was set to include phase "
+                                "equilibrium, however the associated "
+                                "StateBlock was not set to include equilibrium "
+                                "constraints (has_phase_equilibrium=False). Please"
+                                " correct your configuration arguments.".format(
+                                    self.name
+                                )
+                            )
 
         # Get units from property package
         units = self.config.property_package.get_metadata().get_derived_units
@@ -576,7 +585,7 @@ argument).""",
         self.material_flow_dx = DerivativeVar(
             self._flow_terms,
             wrt=self.length_domain,
-            doc="Parital derivative of material flow " "wrt to normalized length",
+            doc="Partial derivative of material flow " "wrt to normalized length",
             units=flow_units,
         )
 

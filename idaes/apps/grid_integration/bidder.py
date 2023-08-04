@@ -839,7 +839,7 @@ class SelfScheduler(StochasticProgramBidder):
 
             forecaster: an initialized LMP forecaster object
 
-            fixed_to_schedule: If True, forece market simulator to give the same schedule.
+            fixed_to_schedule: If True, force market simulator to give the same schedule.
 
         Returns:
             None

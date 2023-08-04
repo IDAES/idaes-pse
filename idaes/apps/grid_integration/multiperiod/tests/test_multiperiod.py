@@ -21,9 +21,11 @@ import pyomo.environ as pyo
 from idaes.core import FlowsheetBlock
 from idaes.apps.grid_integration.multiperiod.multiperiod import MultiPeriodModel
 from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.exceptions import InitializationError
+import idaes.logger as idaeslog
 
 
-def build_flowsheet(m=None):
+def build_flowsheet(m=None, a=None, b=None):
     """This function builds a dummy flowsheet"""
     if m is None:
         m = pyo.ConcreteModel()
@@ -424,52 +426,154 @@ def test_multi_day_year_stochastic_model(build_multi_day_year_stochastic_model):
 
 
 @pytest.mark.unit
-def test_no_initialization():
-    # Cover warning associated with unfix_dof not provided
-    m = MultiPeriodModel(
-        n_time_points=2,
-        process_model_func=build_flowsheet,
-        linking_variable_func=get_linking_variable_pairs,
-        use_stochastic_build=True,
-        initialization_func=fix_dof_and_initialize,
+def test_no_initialization(caplog):
+    # # Cover warning associated with unfix_dof not provided
+    with caplog.at_level(idaeslog.WARNING):
+        m = MultiPeriodModel(
+            n_time_points=2,
+            process_model_func=build_flowsheet,
+            linking_variable_func=get_linking_variable_pairs,
+            use_stochastic_build=True,
+            initialization_func=fix_dof_and_initialize,
+        )
+
+    assert (
+        "unfix_dof_func argument is not provided. "
+        "Returning the model without unfixing degrees of freedom." in caplog.text
     )
 
     # Cover warning associated with initialization_func not provided
-    m = MultiPeriodModel(
-        n_time_points=2,
-        process_model_func=build_flowsheet,
-        linking_variable_func=get_linking_variable_pairs,
-        use_stochastic_build=True,
+    caplog.clear()
+    with caplog.at_level(idaeslog.WARNING):
+        m = MultiPeriodModel(
+            n_time_points=2,
+            process_model_func=build_flowsheet,
+            linking_variable_func=get_linking_variable_pairs,
+            use_stochastic_build=True,
+        )
+
+    assert (
+        "initialization_func argument was not provided. Returning the multiperiod model without initialization."
+        in caplog.text
     )
 
     # Cover warning associated with linking_variable_func not provided
-    m = MultiPeriodModel(
-        n_time_points=2,
-        process_model_func=build_flowsheet,
-        linking_variable_func=None,
-        use_stochastic_build=True,
+    caplog.clear()
+    with caplog.at_level(idaeslog.WARNING):
+        m = MultiPeriodModel(
+            n_time_points=2,
+            process_model_func=build_flowsheet,
+            linking_variable_func=None,
+            use_stochastic_build=True,
+        )
+
+    assert (
+        "linking_variable_func is not provided, so variables across"
+        " time periods are not linked." in caplog.text
     )
 
     # Cover warning associated with periodic_variable_func provided
-    m = MultiPeriodModel(
-        n_time_points=2,
-        process_model_func=build_flowsheet,
-        linking_variable_func=get_linking_variable_pairs,
-        periodic_variable_func=get_linking_variable_pairs,
-        use_stochastic_build=True,
-        initialization_func=fix_dof_and_initialize,
-        unfix_dof_func=unfix_dof,
+    caplog.clear()
+    with caplog.at_level(idaeslog.WARNING):
+        m = MultiPeriodModel(
+            n_time_points=2,
+            process_model_func=build_flowsheet,
+            linking_variable_func=get_linking_variable_pairs,
+            periodic_variable_func=get_linking_variable_pairs,
+            use_stochastic_build=True,
+            initialization_func=fix_dof_and_initialize,
+            unfix_dof_func=unfix_dof,
+        )
+
+    assert (
+        "A method is provided for get_periodic_variable_pairs. "
+        "build_stochastic_multi_period method does not support periodic "
+        "constraints, so the user needs to add them manually." in caplog.text
     )
 
 
 @pytest.mark.unit
+def test_data_kwargs(caplog, n_time_points=3):
+    # Cover message associated with using model_data_kwargs
+    with caplog.at_level(idaeslog.WARNING):
+        m = MultiPeriodModel(
+            n_time_points=n_time_points,
+            process_model_func=build_flowsheet,
+            linking_variable_func=get_linking_variable_pairs,
+            initialization_func=fix_dof_and_initialize,
+            unfix_dof_func=unfix_dof,
+        )
+
+        data = {
+            0: {
+                "a": 10,
+                "b": 20,
+            },
+            1: {
+                "a": 12,
+                "b": 18,
+            },
+            2: {
+                "a": 15,
+                "b": 22,
+            },
+        }
+
+        m.build_multi_period_model(model_data_kwargs=data)
+
+        assert (
+            f"model_data_kwargs argument is provided, so the flowsheet "
+            f"options are different for different time instances. In this case, "
+            f"the multiperiod model is returned without initialization." in caplog.text
+        )
+
+
+@pytest.mark.unit
+def test_data_kwargs_fail(caplog, n_time_points=2):
+    # Cover warning associated with len(model_data_kwargs) != n_time_points
+    with caplog.at_level(idaeslog.WARNING):
+        m = MultiPeriodModel(
+            n_time_points=n_time_points,
+            process_model_func=build_flowsheet,
+            linking_variable_func=get_linking_variable_pairs,
+            initialization_func=fix_dof_and_initialize,
+            unfix_dof_func=unfix_dof,
+        )
+
+        data = {
+            0: {
+                "a": 10,
+                "b": 20,
+            },
+            1: {
+                "a": 12,
+                "b": 18,
+            },
+            2: {
+                "a": 15,
+                "b": 22,
+            },
+        }
+
+        m.build_multi_period_model(model_data_kwargs=data)
+
+        assert (
+            f"len(model_data_kwargs) != n_time_points.\n "
+            f"len(model_data_kwargs) = {len(data)}\n"
+            f"len(n_time_points) = {n_time_points}\n"
+            f"Check input data for model_data_kwargs argument." in caplog.text
+        )
+
+
+@pytest.mark.unit
 def test_initialization_fail():
+    # Cover warning associated with the flowsheet failing to converge after initialization
     with pytest.raises(
-        Exception,
+        InitializationError,
         match=(
-            f"Flowsheet did not converge to optimality after fixing the degrees of freedom. "
-            f"To create the multi-period model without initialization, do not provide "
-            f"initialization_func argument."
+            f"Flowsheet did not converge after fixing the degrees of freedom. "
+            f"To create the multi-period model without initialization, do not provide"
+            f" initialization_func argument."
         ),
     ):
         m = MultiPeriodModel(

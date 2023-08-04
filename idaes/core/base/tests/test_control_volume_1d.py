@@ -1245,7 +1245,7 @@ def test_add_material_balances_rxn_mass():
 
 
 @pytest.mark.unit
-def test_add_material_balances_single_phase_w_equilibrium():
+def test_add_material_balances_single_phase_w_equilibrium(caplog):
     from idaes.models.properties import iapws95
 
     m = ConcreteModel()
@@ -1264,16 +1264,21 @@ def test_add_material_balances_single_phase_w_equilibrium():
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
 
-    with pytest.raises(
-        ConfigurationError,
-        match="Property package has only one phase; control volume cannot include phase "
-        "equilibrium terms. Some property packages support phase equilibrium "
-        "implicitly in which case additional terms are not necessary.",
-    ):
-        m.fs.cv.add_material_balances(
-            balance_type=MaterialBalanceType.useDefault,
-            has_phase_equilibrium=True,
-        )
+    m.fs.cv.add_material_balances(
+        balance_type=MaterialBalanceType.useDefault,
+        has_phase_equilibrium=True,
+    )
+
+    msg = (
+        "DEPRECATED: Property package has only one phase; control volume cannot "
+        "include phase equilibrium terms. Some property packages support phase "
+        "equilibrium implicitly in which case additional terms are not "
+        "necessary. You should set has_phase_equilibrium=False.  (deprecated in "
+        "2.0.0, will be removed in (or after) 3.0.0)"
+    )
+    assert msg.replace(" ", "") in caplog.records[0].message.replace("\n", "").replace(
+        " ", ""
+    )
 
 
 # -----------------------------------------------------------------------------
