@@ -37,6 +37,7 @@ from pyomo.util.subsystems import (
 from pyomo.solvers.plugins.solvers.ASL import ASL
 from pyomo.common.tempfiles import TempfileManager
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
+from pyomo.common.deprecation import deprecation_warning
 
 import idaes
 import idaes.logger as idaeslog
@@ -488,6 +489,15 @@ def petsc_dae_by_time_element(
             "Both (deprecated) snes_options and initial_solver_options keyword arguments were specified. "
             "Please specify your initial solver options using only the initial_solver_options argument."
         )
+    if snes_options is not None:
+        _log = idaeslog.getLogger(__name__)
+        deprecation_warning(
+            msg="Keyword argument snes_options has been DEPRECATED in favor of initial_solver_options.",
+            logger=_log,
+            version="2.2.0",
+            remove_in="3.0.0",
+        )
+        initial_solver_options = snes_options
 
     if interpolate:
         if ts_options is None:
@@ -508,12 +518,6 @@ def petsc_dae_by_time_element(
         between.construct()
 
     solve_log = idaeslog.getSolveLogger("petsc-dae")
-    if snes_options is not None:
-        logger = idaeslog.getIdaesLogger("idaes")
-        logger.warning(
-            "Keyword argument snes_options has been DEPRECATED in favor of initial_solver_options."
-        )
-        initial_solver_options = snes_options
 
     regular_vars, time_vars = flatten_dae_components(m, time, pyo.Var, active=True)
     regular_cons, time_cons = flatten_dae_components(

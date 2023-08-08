@@ -890,12 +890,8 @@ def test_petsc_traj_previous():
 @pytest.mark.unit
 @pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
 def test_snes_options_deprecation(caplog):
-    # caplog.set_level(idaeslog.WARNING)
     m = rp_example2()
-    # log = idaeslog.getLogger("solver")
-    # idaeslog.solver_capture_on()
     caplog.set_level(idaeslog.WARNING)
-    # log.setLevel(idaeslog.DEBUG)
     petsc.petsc_dae_by_time_element(
         m,
         time=m.time,
@@ -929,24 +925,4 @@ def test_double_options_exception():
             initial_solver_options={
                 "--dummy": "",
             },
-        )
-
-
-if __name__ == "__main__":
-    m = rp_example2()
-    log = idaeslog.getLogger("solver")
-    idaeslog.solver_capture_on()
-    # caplog.set_level(idaeslog.DEBUG)
-    log.setLevel(idaeslog.DEBUG)
-    with idaeslog.solver_log(log, idaeslog.DEBUG) as slc:
-        petsc.petsc_dae_by_time_element(
-            m,
-            time=m.time,
-            timevar=m.t,
-            ts_options={
-                "--ts_dt": 1,
-                "--ts_adapt_type": "none",
-                "--ts_monitor": "",
-            },
-            snes_options={},
         )
