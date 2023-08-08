@@ -429,6 +429,7 @@ def petsc_dae_by_time_element(
     interpolate=True,
     calculate_derivatives=True,
     previous_trajectory=None,
+    snes_options=None,
 ):
     """Solve a DAE problem step by step using the PETSc DAE solver.  This
     integrates from one time point to the next.
@@ -477,10 +478,17 @@ def petsc_dae_by_time_element(
             Pyomo model.
         previous_trajectory: (PetscTrajectory) Trajectory from previous integration
             of this model. New results will be appended to this trajectory object.
+        snes_options (dict): [DEPRECATED in favor of initial_solver_options] nonlinear equation solver options
 
     Returns (PetscDAEResults):
         See PetscDAEResults documentation for more information.
     """
+    if snes_options is not None and initial_solver_options is not None:
+        raise RuntimeError(
+            "Both (deprecated) snes_options and initial_solver_options keyword arguments were specified. "
+            "Please specify your initial solver options using only the initial_solver_options argument."
+        )
+
     if interpolate:
         if ts_options is None:
             ts_options = {}
@@ -500,6 +508,13 @@ def petsc_dae_by_time_element(
         between.construct()
 
     solve_log = idaeslog.getSolveLogger("petsc-dae")
+    if snes_options is not None:
+        logger = idaeslog.getIdaesLogger("idaes")
+        logger.warning(
+            "Keyword argument snes_options has been DEPRECATED in favor of initial_solver_options."
+        )
+        initial_solver_options = snes_options
+
     regular_vars, time_vars = flatten_dae_components(m, time, pyo.Var, active=True)
     regular_cons, time_cons = flatten_dae_components(
         m, time, pyo.Constraint, active=True
