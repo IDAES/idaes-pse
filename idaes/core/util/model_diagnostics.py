@@ -204,7 +204,7 @@ class DiagnosticsToolbox:
             footer="=",
         )
 
-    def display_variables_with_bounds_violations(self, stream=stdout):
+    def display_variables_at_or_outside_bounds(self, stream=stdout):
         """
         Prints a list of variables with values that fall at or outside the bounds
         on the variable.
@@ -333,7 +333,7 @@ class DiagnosticsToolbox:
             stream=stream,
             lines_list=identify_inconsistent_units(self.config.model),
             title="The following component(s) have unit consistency issues:",
-            end_line="For more details on constraint violations, import the "
+            end_line="For more details on cunit inconsistencies, import the "
             "assert_units_consistent method\nfrom pyomo.util.check_units",
             header="=",
             footer="=",
@@ -364,13 +364,13 @@ class DiagnosticsToolbox:
     def get_dulmage_mendelsohn_partition(self):
         """
         Performs a Dulmage-Mendelsohn partitioning on the model and returns
-        the over- and under-constraint sub-problems..
+        the over- and under-constraint sub-problems.
 
         Returns:
-            list of variables in the under-constrained set
-            list of constraints in the under-constrained set
-            list of variables in the over-constrained set
-            list of constraints in the over-constrained set
+            list-of-lists variables in each independent block of the under-constrained set
+            list-of-lists constraints in each independent block of the under-constrained set
+            list-of-lists variables in each independent block of the over-constrained set
+            list-of-lists constraints in each independent block of the over-constrained set
 
         """
         igraph = IncidenceGraphInterface(self.config.model)
@@ -382,7 +382,10 @@ class DiagnosticsToolbox:
         oc_var = var_dm_partition.overconstrained
         oc_con = con_dm_partition.overconstrained + con_dm_partition.unmatched
 
-        return uc_var, uc_con, oc_var, oc_con
+        uc_vblocks, uc_cblocks = igraph.get_connected_components(uc_var, uc_con)
+        oc_vblocks, oc_cblocks = igraph.get_connected_components(oc_var, oc_con)
+
+        return uc_vblocks, uc_cblocks, oc_vblocks, oc_cblocks
 
     def display_underconstrained_set(self, stream=stdout):
         """
@@ -399,20 +402,23 @@ class DiagnosticsToolbox:
             None
 
         """
-        uc_var, uc_con, _, _ = self.get_dulmage_mendelsohn_partition()
+        uc_vblocks, uc_cblocks, _, _ = self.get_dulmage_mendelsohn_partition()
 
         stream.write("\n" + "=" * MAX_STR_LENGTH + "\n")
         stream.write("Dulmage-Mendelsohn Under-Constrained Set\n\n")
 
-        stream.write(f"{TAB}Variables:\n\n")
-        for v in uc_var:
-            stream.write(f"{2*TAB}{v.name}\n")
+        for i in range(len(uc_vblocks)):
+            stream.write(f"{TAB}Independent Block {i}:\n\n")
+            stream.write(f"{2*TAB}Variables:\n\n")
+            for v in uc_vblocks[i]:
+                stream.write(f"{3*TAB}{v.name}\n")
 
-        stream.write(f"\n{TAB}Constraints:\n\n")
-        for c in uc_con:
-            stream.write(f"{2*TAB}{c.name}\n")
+            stream.write(f"\n{2*TAB}Constraints:\n\n")
+            for c in uc_cblocks[i]:
+                stream.write(f"{3*TAB}{c.name}\n")
+            stream.write("\n")
 
-        stream.write("\n" + "=" * MAX_STR_LENGTH + "\n")
+        stream.write("=" * MAX_STR_LENGTH + "\n")
 
     def display_overconstrained_set(self, stream=stdout):
         """
@@ -429,20 +435,23 @@ class DiagnosticsToolbox:
             None
 
         """
-        _, _, oc_var, oc_con = self.get_dulmage_mendelsohn_partition()
+        _, _, oc_vblocks, oc_cblocks = self.get_dulmage_mendelsohn_partition()
 
         stream.write("\n" + "=" * MAX_STR_LENGTH + "\n")
         stream.write("Dulmage-Mendelsohn Over-Constrained Set\n\n")
 
-        stream.write(f"{TAB}Variables:\n\n")
-        for v in oc_var:
-            stream.write(f"{2*TAB}{v.name}\n")
+        for i in range(len(oc_vblocks)):
+            stream.write(f"{TAB}Independent Block {i}:\n\n")
+            stream.write(f"{2*TAB}Variables:\n\n")
+            for v in oc_vblocks[i]:
+                stream.write(f"{3*TAB}{v.name}\n")
 
-        stream.write(f"\n{TAB}Constraints:\n\n")
-        for c in oc_con:
-            stream.write(f"{2*TAB}{c.name}\n")
+            stream.write(f"\n{2*TAB}Constraints:\n\n")
+            for c in oc_cblocks[i]:
+                stream.write(f"{3*TAB}{c.name}\n")
+            stream.write("\n")
 
-        stream.write("\n" + "=" * MAX_STR_LENGTH + "\n")
+        stream.write("=" * MAX_STR_LENGTH + "\n")
 
     # TODO: Block triangularization analysis
     # Number and size of blocks, polynomial degree of 1x1 blocks, simple pivot check of moderate sized sub-blocks?
@@ -556,7 +565,7 @@ class DiagnosticsToolbox:
             warnings.append(
                 f"WARNING: {len(violated_bounds)} {cstring} with bounds violations"
             )
-            next_steps.append("display_variables_with_bounds_violations()")
+            next_steps.append("display_variables_at_or_outside_bounds()")
 
         # Poor scaling
         var_scaling = list_badly_scaled_variables(self.config.model)
@@ -652,8 +661,7 @@ class DiagnosticsToolbox:
 
         """
         # Potential evaluation errors
-        # High Index
-
+        # TODO: High Index?
         vars_in_constraints = variables_in_activated_constraints_set(self.config.model)
         fixed_vars_in_constraints = ComponentSet()
         free_vars_in_constraints = ComponentSet()
@@ -680,7 +688,7 @@ class DiagnosticsToolbox:
                     free_vars_ub.add(v)
 
         # Generate report
-        # TODO: Variables with bounds
+        # TODO: Binary and boolean vars
         stats = []
         stats.append(
             f"{TAB}Activated Blocks: {len(activated_blocks_set(self.config.model))} "
