@@ -1864,9 +1864,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             except KeyError:
                 print(
                     "KeyError: Account {} could not be found in the "
-                    "dictionary for technology {}".format(
-                        account, str(tech)
-                    )
+                    "dictionary for technology {}".format(account, str(tech))
                 )
 
         # check that all accounts use the same process parameter
