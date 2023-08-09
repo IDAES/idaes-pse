@@ -11,9 +11,7 @@
 # for full copyright and license information.
 #################################################################################
 
-__author__ = (
-    "Costing Team (B. Paul and M. Zamarripa)"
-)
+__author__ = "Costing Team (B. Paul and M. Zamarripa)"
 __version__ = "1.0.0"
 
 import pyomo.environ as pyo
@@ -51,10 +49,7 @@ assert degrees_of_freedom(m) == 0
 front_end_loader_2yd3_accounts = ["1.1"]
 
 m.fs.front_end_loader_2yd3 = UnitModelBlock()
-m.fs.front_end_loader_2yd3.n_equip = pyo.Var(
-    initialize=5,
-    units=pyunits.dimensionless
-)
+m.fs.front_end_loader_2yd3.n_equip = pyo.Var(initialize=5, units=pyunits.dimensionless)
 m.fs.front_end_loader_2yd3.n_equip.fix()
 
 m.fs.front_end_loader_2yd3.costing = UnitModelCostingBlock(
@@ -62,7 +57,7 @@ m.fs.front_end_loader_2yd3.costing = UnitModelCostingBlock(
     costing_method=QGESSCostingData.get_REE_costing,
     costing_method_arguments={
         "cost_accounts": front_end_loader_2yd3_accounts,
-        "scaled_param": m.fs.front_end_loader_2yd3.n_equip, # n_equip = 5
+        "scaled_param": m.fs.front_end_loader_2yd3.n_equip,  # n_equip = 5
         "tech": 1,
         # n_equip is the scaling parameter for constant-cost units,
         # so here "n_equip" should be entered as 1 set of loaders
@@ -75,10 +70,7 @@ m.fs.front_end_loader_2yd3.costing = UnitModelCostingBlock(
 # 1.2 is Jaw Crusher
 jaw_crusher_accounts = ["1.2"]
 m.fs.jaw_crusher = UnitModelBlock()
-m.fs.jaw_crusher.power = pyo.Var(
-    initialize=589,
-    units=pyunits.hp
-)
+m.fs.jaw_crusher.power = pyo.Var(initialize=589, units=pyunits.hp)
 m.fs.jaw_crusher.power.fix()
 m.fs.jaw_crusher.costing = UnitModelCostingBlock(
     flowsheet_costing_block=m.fs.costing,
@@ -94,8 +86,7 @@ m.fs.jaw_crusher.costing = UnitModelCostingBlock(
 )
 
 # add plant-level cost constraints
-QGESSCostingData.get_REE_plant_costs(m.fs.costing,
-                                     CE_index_year=CE_index_year)
+QGESSCostingData.get_REE_plant_costs(m.fs.costing, CE_index_year=CE_index_year)
 
 # add initialize
 QGESSCostingData.costing_initialization(m.fs.costing)

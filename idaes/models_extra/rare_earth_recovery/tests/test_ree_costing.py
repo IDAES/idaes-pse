@@ -11,9 +11,7 @@
 # for full copyright and license information.
 #################################################################################
 
-__author__ = (
-    "Costing Team (B. Paul and M. Zamarripa)"
-)
+__author__ = "Costing Team (B. Paul and M. Zamarripa)"
 __version__ = "1.0.0"
 
 import pytest
@@ -57,8 +55,7 @@ def test_REE_costing():
 
     m.fs.front_end_loader_2yd3 = UnitModelBlock()
     m.fs.front_end_loader_2yd3.n_equip = pyo.Var(
-        initialize=5,
-        units=pyunits.dimensionless
+        initialize=5, units=pyunits.dimensionless
     )
     m.fs.front_end_loader_2yd3.n_equip.fix()
 
@@ -67,7 +64,7 @@ def test_REE_costing():
         costing_method=QGESSCostingData.get_REE_costing,
         costing_method_arguments={
             "cost_accounts": front_end_loader_2yd3_accounts,
-            "scaled_param": m.fs.front_end_loader_2yd3.n_equip, # n_equip = 5
+            "scaled_param": m.fs.front_end_loader_2yd3.n_equip,  # n_equip = 5
             "tech": 1,
             # n_equip is the scaling parameter for constant-cost units,
             # so here "n_equip" should be entered as 1 set of loaders
@@ -80,10 +77,7 @@ def test_REE_costing():
     # 1.2 is Jaw Crusher
     jaw_crusher_accounts = ["1.2"]
     m.fs.jaw_crusher = UnitModelBlock()
-    m.fs.jaw_crusher.power = pyo.Var(
-        initialize=589,
-        units=pyunits.hp
-    )
+    m.fs.jaw_crusher.power = pyo.Var(initialize=589, units=pyunits.hp)
     m.fs.jaw_crusher.power.fix()
     m.fs.jaw_crusher.costing = UnitModelCostingBlock(
         flowsheet_costing_block=m.fs.costing,
@@ -99,8 +93,7 @@ def test_REE_costing():
     )
 
     # add plant-level cost constraints
-    QGESSCostingData.get_REE_plant_costs(m.fs.costing,
-                                         CE_index_year=CE_index_year)
+    QGESSCostingData.get_REE_plant_costs(m.fs.costing, CE_index_year=CE_index_year)
 
     # add initialize
     QGESSCostingData.costing_initialization(m.fs.costing)
@@ -139,61 +132,49 @@ def test_REE_costing():
         "project_management_and_construction_costs",
         "process_contingency_costs",
         "contingency_costs",
-        ]
+    ]
     for cost in m.fs.costing.installation_cost_list:
         assert hasattr(m.fs.costing, cost)
 
-    assert pytest.approx(7.8975, rel=1e-3) == pyo.value(
-        m.fs.costing.total_plant_cost
-        )
-    assert pytest.approx(2.6591, rel=1e-3) == pyo.value(
-        m.fs.costing.bare_erected_cost
-        )
+    assert pytest.approx(7.8975, rel=1e-3) == pyo.value(m.fs.costing.total_plant_cost)
+    assert pytest.approx(2.6591, rel=1e-3) == pyo.value(m.fs.costing.bare_erected_cost)
     assert pytest.approx(5.2384, rel=1e-3) == pyo.value(
         m.fs.costing.total_installation_cost
-        )
-    assert pytest.approx(1.5423, rel=1e-3) == pyo.value(
-        m.fs.costing.ancillary_costs
-        )
+    )
+    assert pytest.approx(1.5423, rel=1e-3) == pyo.value(m.fs.costing.ancillary_costs)
     assert pytest.approx(0.53182, rel=1e-3) == pyo.value(
         m.fs.costing.piping_materials_and_labor_costs
-        )
+    )
     assert pytest.approx(0.53182, rel=1e-3) == pyo.value(
         m.fs.costing.electrical_materials_and_labor_costs
-        )
+    )
     assert pytest.approx(0.21273, rel=1e-3) == pyo.value(
         m.fs.costing.instrumentation_costs
-        )
+    )
     assert pytest.approx(0.26591, rel=1e-3) == pyo.value(
         m.fs.costing.plant_services_costs
-        )
-    assert pytest.approx(1.7284, rel=1e-3) == pyo.value(
-        m.fs.costing.buildings_costs
-        )
+    )
+    assert pytest.approx(1.7284, rel=1e-3) == pyo.value(m.fs.costing.buildings_costs)
     assert pytest.approx(1.0636, rel=1e-3) == pyo.value(
         m.fs.costing.process_buildings_costs
-        )
+    )
     assert pytest.approx(0.39887, rel=1e-3) == pyo.value(
         m.fs.costing.auxiliary_buildings_costs
-        )
+    )
     assert pytest.approx(0.26591, rel=1e-3) == pyo.value(
         m.fs.costing.site_improvements_costs
-        )
-    assert pytest.approx(1.5689, rel=1e-3) == pyo.value(
-        m.fs.costing.epcm_costs
-        )
+    )
+    assert pytest.approx(1.5689, rel=1e-3) == pyo.value(m.fs.costing.epcm_costs)
     assert pytest.approx(0.45205, rel=1e-3) == pyo.value(
         m.fs.costing.equipment_installation_costs
-        )
+    )
     assert pytest.approx(0.31909, rel=1e-3) == pyo.value(
         m.fs.costing.field_expenses_costs
-        )
+    )
     assert pytest.approx(0.79773, rel=1e-3) == pyo.value(
         m.fs.costing.project_management_and_construction_costs
-        )
+    )
     assert pytest.approx(0.39887, rel=1e-3) == pyo.value(
         m.fs.costing.process_contingency_costs
-        )
-    assert pytest.approx(0.39887, rel=1e-3) == pyo.value(
-        m.fs.costing.contingency_costs
-        )
+    )
+    assert pytest.approx(0.39887, rel=1e-3) == pyo.value(m.fs.costing.contingency_costs)
