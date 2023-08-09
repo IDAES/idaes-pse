@@ -1672,7 +1672,8 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         """
         The scaled cost is computed using reference values for different
         technologies as listed below:
-            1. University of Kentucky Fire Clay Seam (Hazard No. 4) Rejects
+        1. University of Kentucky Fire Clay Seam (Hazard No. 4) Rejects
+
         Args:
             blk: A unit-level costing block where costing variables and
                 constraints can be added to
@@ -1777,7 +1778,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                                 else:  # this is not allowed
                                     raise ValueError(
                                         "Data already exists for Account {} "
-                                        "using technology {} with CCS {}. "
+                                        "using technology {}. "
                                         "Please confirm that the custom "
                                         "account dictionary is correct, or "
                                         "add the new parameters as a new "
@@ -1863,7 +1864,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             except KeyError:
                 print(
                     "KeyError: Account {} could not be found in the "
-                    "dictionary for technology {} with CCS {}".format(
+                    "dictionary for technology {}".format(
                         account, str(tech)
                     )
                 )
@@ -3008,22 +3009,22 @@ class QGESSCostingData(FlowsheetCostingBlockData):
     ):
         """
         Creates constraints for the following plant-level costs in $MM/yr:
-            1. Total ancillary
-            2. Piping materials and labor ancillary
-            2. Electrical materials and labor ancillary
-            3. Instrumentation ancillary
-            4. Plant services ancillary
-            5. Total buildings
-            6. Process buildings
-            7. Auxiliary buildings
-            8. Site improvements buildings
-            9. Total engineering procurement and construction management (EPCM)
-            10. Equipment installation EPCM
-            11. Field expenses EPCM
-            12. Project management and construction EPCM
-            13. Total contingency
-            14. Process contingency
-            (space for more costs, including contingency costs, in the future)
+        1. Total ancillary
+        2. Piping materials and labor ancillary
+        3. Electrical materials and labor ancillary
+        4. Instrumentation ancillary
+        5. Plant services ancillary
+        6. Total buildings
+        7. Process buildings
+        8. Auxiliary buildings
+        9. Site improvements buildings
+        10. Total engineering procurement and construction management (EPCM)
+        11. Equipment installation EPCM
+        12. Field expenses EPCM
+        13. Project management and construction EPCM
+        14. Total contingency
+        15. Process contingency
+        16. (space for more costs, including contingency costs, in the future)
 
         These costs apply to the project as a whole and are scaled based on the
         total TPC.
