@@ -66,6 +66,7 @@ from idaes.core import (
 from idaes.models_extra.power_generation.costing.costing_dictionaries import (
     load_BB_costing_dictionary,
     load_sCO2_costing_dictionary,
+    load_REE_costing_dictionary,
 )
 from idaes.models_extra.power_generation.costing.generic_ccs_capcost_custom_dict import (
     load_generic_ccs_costing_dictionary,
@@ -495,6 +496,62 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         if hasattr(self, "transport_cost"):
             var_dict["Total Transport Cost [$MM]"] = value(self.transport_cost)
 
+        # REE-specific results
+        if self.library == "REE":
+            if hasattr(self, "total_plant_cost"):
+                var_dict["Total Plant Cost [$MM]"] = value(self.total_plant_cost)
+
+            if hasattr(self, "bare_erected_cost"):
+                var_dict["Total Bare Erected Cost [$MM]"] = value(self.bare_erected_cost)
+
+            if hasattr(self, "total_installation_cost"):
+                var_dict["Total Installation Cost [$MM]"] = value(self.total_installation_cost)
+
+            if hasattr(self, "ancillary_costs"):
+                var_dict["Total Ancillary Installation Cost [$MM]"] = value(self.ancillary_costs)
+
+            if hasattr(self, "piping_materials_and_labor_costs"):
+                var_dict["Total Ancillary Piping, Materials and Labor Installation Cost [$MM]"] = value(self.piping_materials_and_labor_costs)
+
+            if hasattr(self, "electrical_materials_and_labor_costs"):
+                var_dict["Total Ancillary Electrical, Materials and Labor Installation Cost [$MM]"] = value(self.electrical_materials_and_labor_costs)
+
+            if hasattr(self, "instrumentation_costs"):
+                var_dict["Total Ancillary Instrumentation Installation Cost [$MM]"] = value(self.instrumentation_costs)
+
+            if hasattr(self, "plant_services_costs"):
+                var_dict["Total Ancillary Plant Services Installation Cost [$MM]"] = value(self.plant_services_costs)
+
+            if hasattr(self, "buildings_costs"):
+                var_dict["Total Buildings Installation Cost [$MM]"] = value(self.buildings_costs)
+
+            if hasattr(self, "process_buildings_costs"):
+                var_dict["Total Process Buildings Installation Cost [$MM]"] = value(self.process_buildings_costs)
+
+            if hasattr(self, "auxiliary_buildings_costs"):
+                var_dict["Total Auxiliary Buildings Installation Cost [$MM]"] = value(self.auxiliary_buildings_costs)
+
+            if hasattr(self, "site_improvements_costs"):
+                var_dict["Total Site Improvements Buildings Installation Cost [$MM]"] = value(self.site_improvements_costs)
+
+            if hasattr(self, "epcm_costs"):
+                var_dict["Total EPCM Installation Cost [$MM]"] = value(self.epcm_costs)
+
+            if hasattr(self, "equipment_installation_costs"):
+                var_dict["Total Equipment Installation EPCM Installation Cost [$MM]"] = value(self.equipment_installation_costs)
+
+            if hasattr(self, "field_expenses_costs"):
+                var_dict["Total Field Expenses EPCM Cost [$MM]"] = value(self.field_expenses_costs)
+
+            if hasattr(self, "project_management_and_construction_costs"):
+                var_dict["Total Project Management and Construction EPCM Installation Cost [$MM]"] = value(self.project_management_and_construction_costs)
+
+            if hasattr(self, "process_contingency_costs"):
+                var_dict["Total Process Contingency Installation Cost [$MM]"] = value(self.process_contingency_costs)
+
+            if hasattr(self, "contingency_costs"):
+                var_dict["Total Contingency Installation Cost [$MM]"] = value(self.contingency_costs)
+
         report_dir = {}
         report_dir["Value"] = {}
         report_dir["pos"] = {}
@@ -522,10 +579,11 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         scaled_param,
         tech,
         ccs="B",
+        n_equip=1,
+        scale_down_parallel_equip=False,
         CE_index_year="2018",
         additional_costing_params=None,
         use_additional_costing_params=False,
-        number_parallel_trains=1,
     ):
         """
         Power Plant Costing Method
@@ -595,14 +653,20 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 this is the total flow for all parallel trains of the system(s)
             tech: integer 1-7 representing the above categories
             ccs: 'A' or 'B' representing no CCS or CCS
+            n_equip: Integer number of parallel equipment trains for unit
+                operations; for example, enter '5' if a feed will be split
+                among 5 identical units and then re-mixed
+            scale_down_parallel_equip: Boolean flag whether to scale down
+                parallel equipment trains, e.g. two trains scaled down will
+                each be half the size/capacity of a single train, and two
+                trains not scaled down will each be the same size as a single
+                train (twice the capacity).
             CE_index_year: year for cost basis, e.g. "2018" to use 2018 dollars
             additional_costing_params: user-defined dictionary to append to
                 existing cost accounts dictionary
-            use_additional_costing_params: Boolean flag to use additional costing
-                parameters when account names conflict with existing accounts data
-            number_parallel_trains: Integer number of parallel trains for unit 
-                operations; for example, enter '5' if a feed will be split 
-                among 5 identical units and then re-mixed
+            use_additional_costing_params: Boolean flag to use additional
+                costing parameters when account names conflict with existing
+                accounts data
 
         The appropriate scaling parameters for various cost accounts can be
         found in the QGESS on capital cost scaling (Report
@@ -1088,10 +1152,16 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             elif ref_cost_units[0] == "M":  # millions of $
                 ref_cost_units = getattr(pyunits, "MUSD_" + ref_cost_units[1])
 
+            # determine reference parameter scaler based on train scaling
+            if scale_down_parallel_equip:
+                scaler = n_equip
+            else:
+                scaler = 1
+
             if isinstance(process_params[i], list):
                 if len(process_params[i]) > 1:
                     return costing.bare_erected_cost[i] == (
-                        number_parallel_trains * pyunits.convert(
+                        n_equip * pyunits.convert(
                             costing.ref_cost[i] * ref_cost_units, CE_index_units
                         )
                         * sum(
@@ -1099,7 +1169,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                             * (
                                 pyunits.convert(scaled_param[j],
                                                 ref_units)
-                                / (costing.ref_param[i, p] * ref_units)
+                                / (scaler * costing.ref_param[i, p] * ref_units)
                             )
                             ** costing.exp[i]
                             for j, p in enumerate(process_params[i])
@@ -1107,13 +1177,13 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                     )
             elif isinstance(process_params[i], str):
                 return costing.bare_erected_cost[i] == (
-                    number_parallel_trains * pyunits.convert(
+                    n_equip * pyunits.convert(
                         costing.ref_cost[i] * ref_cost_units, CE_index_units
                     )
                     * (
                         pyunits.convert(scaled_param,
                                         ref_units)
-                        / (costing.ref_param[i] * ref_units)
+                        / (scaler * costing.ref_param[i] * ref_units)
                     )
                     ** costing.exp[i]
                 )
@@ -1553,6 +1623,935 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         )
 
     # -----------------------------------------------------------------------------
+    # REE Recovery Costing Library
+    # -----------------------------------------------------------------------------
+    def get_REE_costing(
+        blk,
+        cost_accounts,
+        scaled_param,
+        tech,
+        Lang_factor=None,
+        n_equip=1,
+        scale_down_parallel_equip=False,
+        CE_index_year="2018",
+        additional_costing_params=None,
+        use_additional_costing_params=False,
+    ):
+        """
+        The scaled cost is computed using reference values for different
+        technologies as listed below:
+            1. University of Kentucky Fire Clay Seam (Hazard No. 4) Rejects
+        Args:
+            blk: A unit-level costing block where costing variables and
+                constraints can be added to
+            cost_accounts: A list of accounts to be included in the total cost
+            scaled_param: the process parameter for the system(s) being costed;
+                this is the total flow for all parallel trains of the system(s)
+            tech: integer representing the above categories
+            Lang_factor: optional single Lang factor value used to calculate
+                commercial-scale installation costs. If None, accounts must
+                include necessary component factors.
+            n_equip: Integer number of parallel equipment trains for unit
+                operations; for example, enter '5' if a feed will be split
+                among 5 identical units and then re-mixed
+            scale_down_parallel_equip: Boolean flag whether to scale down
+                parallel equipment trains, e.g. two trains scaled down will
+                each be half the size/capacity of a single train, and two
+                trains not scaled down will each be the same size as a single
+                train (twice the capacity).
+            CE_index_year: year for cost basis, e.g. "2018" to use 2018 dollars
+            additional_costing_params: user-defined dictionary to append to
+                existing cost accounts dictionary
+            use_additional_costing_params: Boolean flag to use additional
+                costing parameters when account names conflict with existing
+                accounts data
+            
+
+        Cost is in M$
+        """
+        # check to see if a costing block already exists
+        if (
+            blk.parent_block().name
+            in blk.config.flowsheet_costing_block._registered_unit_costing  # pylint: disable=protected-access
+        ):
+            raise AttributeError(
+                "{} already has an attribute costing. "
+                "Check that you are not calling get_costing"
+                " twice on the same model".format(blk.name)
+            )
+
+        # define costing library
+        blk.library = "REE"
+
+        try:
+            CE_index_units = getattr(pyunits, "MUSD_" + CE_index_year)
+        except AttributeError:
+            raise AttributeError(
+                "CE_index_year %s is not a valid currency base option. "
+                "Valid CE index options include CE500, CE394 and years from "
+                "1990 to 2020." % (CE_index_year)
+            )
+
+        # pull data for each account into dictionaries
+        process_params = {}
+        reference_units = {}
+        account_names = {}
+        exponents = {}
+        reference_costs = {}
+        reference_cost_units = {}
+        reference_costs_init = {}
+        reference_params = {}
+        piping_materials_and_labor_percentage = {}
+        electrical_materials_and_labor_percentage = {}
+        instrumentation_percentage = {}
+        plants_services_percentage = {}
+        process_buildings_percentage = {}
+        auxiliary_buildings_percentage = {}
+        site_improvements_percentage = {}
+        equipment_installation_percentage = {}
+        field_expenses_percentage = {}
+        project_management_and_construction_percentage = {}
+        process_contingency_percentage = {}
+
+        # load the cost dictionaries and add custom accounts
+
+        # load ree costing dictionary
+        REE_costing_params = load_REE_costing_dictionary()
+
+        # for compatibility with potential custom accounts, the loop handles
+        # new technologies, and new accounts for existing technologies
+        # Users should not be adding new entries for existing accounts
+
+        costing_params = REE_costing_params  # initialize with baseline accounts
+        if additional_costing_params is not None and additional_costing_params != {}:
+            for (
+                new_costing_params
+            ) in additional_costing_params:  # merge new dictionaries sequentially
+                # adding any provided custom params to the base dictionary
+                # need to "freeze" dict so it is hashable for merging keys
+                frozen_dict = {**costing_params}
+                for techkey, techval in new_costing_params.items():
+                    if (
+                        techkey in frozen_dict.keys()
+                    ):  # if techkey already exists, append any new accounts
+                        for accountkey, accountval in new_costing_params[
+                                techkey
+                                ].items():
+                            if (
+                                accountkey in frozen_dict[techkey].keys()
+                            ) and not use_additional_costing_params:
+                                if accountkey not in cost_accounts:
+                                    pass  # not the current account, don't fail here
+                                else:  # this is not allowed
+                                    raise ValueError(
+                                        "Data already exists for Account {} "
+                                        "using technology {} with CCS {}. "
+                                        "Please confirm that the custom "
+                                        "account dictionary is correct, or "
+                                        "add the new parameters as a new "
+                                        "account. To use the custom account "
+                                        "dictionary for all conflicts, please "
+                                        "pass the argument use_additional_costing_params "
+                                        "as True.".format(
+                                            accountkey, str(techkey)
+                                        )
+                                    )
+                            else:  # conflict is the account passed, and overwrite it
+                                frozen_dict[techkey][
+                                    accountkey
+                                ] = accountval
+                    else:
+                        frozen_dict[techkey] = techval
+                costing_params = {k: frozen_dict[k] for k in sorted(frozen_dict)}
+
+        for account in cost_accounts:
+            try:  # look for data in json file info
+                process_params[account] = costing_params[str(tech)][account][
+                    "Process Parameter"
+                ]
+                reference_units[account] = costing_params[str(tech)][
+                    cost_accounts[0]
+                ]["Units"]
+                account_names[account] = costing_params[str(tech)][account][
+                    "Account Name"
+                ]
+                exponents[account] = float(
+                    costing_params[str(tech)][account]["Exponent"]
+                )
+                reference_costs[account] = costing_params[str(tech)][account][
+                    "BEC"
+                ]
+                reference_cost_units[account] = costing_params[str(tech)][account][
+                    "BEC_units"
+                ]
+                reference_costs_init[account] = (
+                    costing_params[str(tech)][account]["BEC"] * 1e-3
+                )
+
+                if isinstance(process_params[account], list):
+                    for i, processparam in enumerate(process_params[account]):
+                        reference_params[account, processparam] = costing_params[
+                            str(tech)
+                        ][account]["RP Value"][i]
+
+                elif isinstance(process_params[account], str):
+                    reference_params[account] = costing_params[str(tech)][account][
+                        "RP Value"
+                    ]
+
+                piping_materials_and_labor_percentage[account] = costing_params[str(tech)][account][
+                    "Piping, Materials and Labor"
+                ]
+                electrical_materials_and_labor_percentage[account] = costing_params[str(tech)][account][
+                    "Electrical, Materials and Labor"
+                ]
+                instrumentation_percentage[account] = costing_params[str(tech)][account][
+                    "Instrumentation"
+                ]
+                plants_services_percentage[account] = costing_params[str(tech)][account][
+                    "Plant Services"
+                ]
+                process_buildings_percentage[account] = costing_params[str(tech)][account][
+                    "Process Buildings"
+                ]
+                auxiliary_buildings_percentage[account] = costing_params[str(tech)][account][
+                    "Auxiliary Buildings"
+                ]
+                site_improvements_percentage[account] = costing_params[str(tech)][account][
+                    "Site Improvements"
+                ]
+                equipment_installation_percentage[account] = costing_params[str(tech)][account][
+                    "Equipment Installation"
+                ]
+                field_expenses_percentage[account] = costing_params[str(tech)][account][
+                    "Field Expenses"
+                ]
+                project_management_and_construction_percentage[account] = costing_params[str(tech)][account][
+                    "Project Management and Construction"
+                ]
+                process_contingency_percentage[account] = costing_params[str(tech)][account][
+                    "Process Contingency"
+                ]
+            except KeyError:
+                print(
+                    "KeyError: Account {} could not be found in the "
+                    "dictionary for technology {} with CCS {}".format(
+                        account, str(tech)
+                    )
+                )
+
+        # check that all accounts use the same process parameter
+        param_check = None
+        for account in cost_accounts:
+            param = process_params[account]
+            if param_check is None:
+                param_check = param
+            elif param != param_check:
+                raise ValueError(
+                    "{} cost accounts selected do not use "
+                    "the same process parameter".format(blk.name)
+                )
+
+        # check that the user passed the correct units type and try to convert
+
+        for account in cost_accounts:
+            ref_units = reference_units[account]
+            if "/" in ref_units:
+                ref_units = ref_units.split("/")
+                if "**" in ref_units[0]:
+                    ref_units[0] = ref_units[0].split("**")
+                    try:
+                        ref_units = getattr(pyunits, ref_units[0][0]) ** int(
+                            ref_units[0][1]
+                        ) / getattr(pyunits, ref_units[1])
+                    except AttributeError:
+                        raise AttributeError(
+                            "Account %s uses references units of %s. Cannot "
+                            "parse reference units as Pyomo unit containers. "
+                            "Check that source uses correct syntax for Pyomo "
+                            "unit containers, for example gpm should be "
+                            "gal/min, tpd should be ton/d and MMBtu should be "
+                            "MBtu (using Pyomo prefix)."
+                            % (
+                                cost_accounts[0],
+                                ref_units[0][0]
+                                + "**"
+                                + ref_units[0][1]
+                                + "/"
+                                + ref_units[1],
+                            )
+                        )
+                elif "**" in ref_units[1]:
+                    ref_units[1] = ref_units[1].split("**")
+                    try:
+                        ref_units = getattr(pyunits, ref_units[0]) / getattr(
+                            pyunits, ref_units[1][0]
+                        ) ** int(ref_units[1][1])
+                    except AttributeError:
+                        raise AttributeError(
+                            "Account %s uses references units of %s. Cannot "
+                            "parse reference units as Pyomo unit containers. "
+                            "Check that source uses correct syntax for Pyomo "
+                            "unit containers, for example gpm should be "
+                            "gal/min, tpd should be ton/d and MMBtu should be "
+                            "MBtu (using Pyomo prefix)."
+                            % (
+                                cost_accounts[0],
+                                ref_units[0]
+                                + "/"
+                                + ref_units[1][0]
+                                + "**"
+                                + ref_units[1][1],
+                            )
+                        )
+                else:
+                    try:
+                        ref_units = getattr(pyunits, ref_units[0]) / getattr(
+                            pyunits, ref_units[1]
+                        )
+                    except AttributeError:
+                        raise AttributeError(
+                            "Account %s uses references units of %s. Cannot "
+                            "parse reference units as Pyomo unit containers. "
+                            "Check that source uses correct syntax for Pyomo "
+                            "unit containers, for example gpm should be "
+                            "gal/min, tpd should be ton/d and MMBtu should be "
+                            "MBtu (using Pyomo prefix)."
+                            % (cost_accounts[0], ref_units[0] + "/" + ref_units[1])
+                        )
+
+            else:
+                if "**" in ref_units:
+                    ref_units = ref_units.split("**")
+                    try:
+                        ref_units = getattr(pyunits, ref_units[0]) ** int(ref_units[1])
+                    except AttributeError:
+                        raise AttributeError(
+                            "Account %s uses references units of %s. Cannot "
+                            "parse reference units as Pyomo unit containers. "
+                            "Check that source uses correct syntax for Pyomo "
+                            "unit containers, for example gpm should be "
+                            "gal/min, tpd should be ton/d and MMBtu should be "
+                            "MBtu (using Pyomo prefix)."
+                            % (cost_accounts[0], ref_units[0] + "/" + ref_units[1])
+                        )
+                else:
+                    try:
+                        ref_units = getattr(pyunits, ref_units)
+                    except AttributeError:
+                        raise AttributeError(
+                            "Account %s uses references units of %s. Cannot "
+                            "parse reference units as Pyomo unit containers. "
+                            "Check that source uses correct syntax for Pyomo "
+                            "unit containers, for example gpm should be "
+                            "gal/min, tpd should be ton/d and MMBtu should be "
+                            "MBtu (using Pyomo prefix)."
+                            % (cost_accounts[0], ref_units[0] + "/" + ref_units[1])
+                        )
+
+            if isinstance(scaled_param, list):
+                for sp in scaled_param:
+                    if sp.get_units() is None:
+                        raise ValueError(
+                            "Account %s uses units of %s. "
+                            "Units of %s were passed. "
+                            "Scaled_param must have units."
+                            % (cost_accounts[0], ref_units, sp.get_units())
+                        )
+                    else:
+                        try:
+                            pyunits.convert(sp, ref_units)
+                        except InconsistentUnitsError:
+                            raise Exception(
+                                "Account %s uses units of %s. "
+                                "Units of %s were passed. "
+                                "Cannot convert unit containers."
+                                % (
+                                    cost_accounts[0],
+                                    ref_units,
+                                    sp.get_units(),
+                                )
+                            )
+            else:
+                try:
+                    if pyunits.get_units(scaled_param) is None:
+                        raise UnitsError(
+                            "Account %s uses units of %s. "
+                            "Units of %s were passed. "
+                            "Scaled_param must have units."
+                            % (
+                                cost_accounts[0],
+                                ref_units,
+                                pyunits.get_units(scaled_param),
+                            )
+                        )
+                    else:
+                        try:
+                            pyunits.convert(scaled_param, ref_units)
+                        except InconsistentUnitsError:
+                            raise UnitsError(
+                                "Account %s uses units of %s. "
+                                "Units of %s were passed. "
+                                "Cannot convert unit containers."
+                                % (
+                                    cost_accounts[0],
+                                    ref_units,
+                                    pyunits.get_units(scaled_param),
+                                )
+                            )
+                except InconsistentUnitsError:
+                    raise UnitsError(
+                        f"The expression {scaled_param.name} has inconsistent units."
+                    )
+
+        # Used by other functions for reporting results
+        blk.account_names = account_names
+
+        # define parameters
+        blk.exp = Param(
+            cost_accounts,
+            mutable=True,
+            initialize=exponents,
+            doc="exponential parameter for account",
+        )
+
+        blk.ref_cost = Param(
+            cost_accounts,
+            mutable=True,
+            initialize=reference_costs,
+            doc="reference cost for account",
+            # units not defined here, since every account could have different
+            # currency units
+        )
+
+        if isinstance(process_params[cost_accounts[0]], list):
+            if len(process_params[cost_accounts[0]]) > 1:
+                blk.ref_param = Param(
+                    cost_accounts,
+                    process_params[cost_accounts[0]],
+                    mutable=True,
+                    initialize=reference_params,
+                    doc="reference parameter for account",
+                )
+        elif isinstance(process_params[cost_accounts[0]], str):
+            blk.ref_param = Param(
+                cost_accounts,
+                mutable=True,
+                initialize=reference_params,
+                doc="reference parameter for account",
+            )
+
+        blk.piping_materials_and_labor_percentage = Param(
+            cost_accounts,
+            mutable=True,
+            initialize=piping_materials_and_labor_percentage,
+            doc="piping, materials and labor",
+        )
+
+        blk.electrical_materials_and_labor_percentage = Param(
+            cost_accounts,
+            mutable=True,
+            initialize=electrical_materials_and_labor_percentage,
+            doc="electrical, materials and labor",
+        )
+
+        blk.instrumentation_percentage = Param(
+            cost_accounts,
+            mutable=True,
+            initialize=instrumentation_percentage,
+            doc="instrumentation",
+        )
+
+        blk.plant_services_percentage = Param(
+            cost_accounts,
+            mutable=True,
+            initialize=plants_services_percentage,
+            doc="plant services",
+        )
+
+        blk.process_buildings_percentage = Param(
+            cost_accounts,
+            mutable=True,
+            initialize=process_buildings_percentage,
+            doc="process buildings",
+        )
+
+        blk.auxiliary_buildings_percentage = Param(
+            cost_accounts,
+            mutable=True,
+            initialize=auxiliary_buildings_percentage,
+            doc="auxiliary buildings",
+        )
+
+        blk.site_improvements_percentage = Param(
+            cost_accounts,
+            mutable=True,
+            initialize=site_improvements_percentage,
+            doc="site improvements",
+        )
+
+        blk.equipment_installation_percentage = Param(
+            cost_accounts,
+            mutable=True,
+            initialize=equipment_installation_percentage,
+            doc="equipment installation",
+        )
+
+        blk.field_expenses_percentage = Param(
+            cost_accounts,
+            mutable=True,
+            initialize=field_expenses_percentage,
+            doc="field expenses",
+        )
+
+        blk.project_management_and_construction_percentage = Param(
+            cost_accounts,
+            mutable=True,
+            initialize=project_management_and_construction_percentage,
+            doc="project management and construction",
+        )
+
+        blk.process_contingency_percentage = Param(
+            cost_accounts,
+            mutable=True,
+            initialize=process_contingency_percentage,
+            doc="process contingency",
+        )
+
+        # define variables
+        blk.bare_erected_cost = Var(
+            cost_accounts,
+            initialize=reference_costs_init,
+            bounds=(0, 1e4),
+            doc="scaled bare erected cost in $MM",
+            units=getattr(pyunits, "MUSD_" + CE_index_year),
+        )
+
+        if Lang_factor is None:
+            # ancillary costs
+            blk.ancillary_costs = Var(
+                cost_accounts,
+                initialize=reference_costs_init,
+                bounds=(0, 1e4),
+                doc="ancillary cost in $MM",
+                units=getattr(pyunits, "MUSD_" + CE_index_year),
+            )
+
+            blk.piping_materials_and_labor_costs = Var(
+                cost_accounts,
+                initialize=reference_costs_init,
+                bounds=(0, 1e4),
+                doc="piping, materials and labor ancillary cost in $MM",
+                units=getattr(pyunits, "MUSD_" + CE_index_year),
+            )
+
+            blk.electrical_materials_and_labor_costs = Var(
+                cost_accounts,
+                initialize=reference_costs_init,
+                bounds=(0, 1e4),
+                doc="electrical, materials and labor ancillary cost in $MM",
+                units=getattr(pyunits, "MUSD_" + CE_index_year),
+            )
+
+            blk.instrumentation_costs = Var(
+                cost_accounts,
+                initialize=reference_costs_init,
+                bounds=(0, 1e4),
+                doc="ancillary cost in $MM",
+                units=getattr(pyunits, "MUSD_" + CE_index_year),
+            )
+
+            blk.plant_services_costs = Var(
+                cost_accounts,
+                initialize=reference_costs_init,
+                bounds=(0, 1e4),
+                doc="ancillary cost in $MM",
+                units=getattr(pyunits, "MUSD_" + CE_index_year),
+            )
+
+            # buildings costs
+            blk.buildings_costs = Var(
+                cost_accounts,
+                initialize=reference_costs_init,
+                bounds=(0, 1e4),
+                doc="buildings cost in $MM",
+                units=getattr(pyunits, "MUSD_" + CE_index_year),
+            )
+
+            blk.process_buildings_costs = Var(
+                cost_accounts,
+                initialize=reference_costs_init,
+                bounds=(0, 1e4),
+                doc="process buildings cost in $MM",
+                units=getattr(pyunits, "MUSD_" + CE_index_year),
+            )
+
+            blk.auxiliary_buildings_costs = Var(
+                cost_accounts,
+                initialize=reference_costs_init,
+                bounds=(0, 1e4),
+                doc="auxiliary buildings cost in $MM",
+                units=getattr(pyunits, "MUSD_" + CE_index_year),
+            )
+
+            blk.site_improvements_costs = Var(
+                cost_accounts,
+                initialize=reference_costs_init,
+                bounds=(0, 1e4),
+                doc="site improvements buildings cost in $MM",
+                units=getattr(pyunits, "MUSD_" + CE_index_year),
+            )
+
+            # engineering, procurement and construction management costs
+            blk.epcm_costs = Var(
+                cost_accounts,
+                initialize=reference_costs_init,
+                bounds=(0, 1e4),
+                doc="epcm cost in $MM",
+                units=getattr(pyunits, "MUSD_" + CE_index_year),
+            )
+
+            blk.equipment_installation_costs = Var(
+                cost_accounts,
+                initialize=reference_costs_init,
+                bounds=(0, 1e4),
+                doc="equipment installation epcm cost in $MM",
+                units=getattr(pyunits, "MUSD_" + CE_index_year),
+            )
+
+            blk.field_expenses_costs = Var(
+                cost_accounts,
+                initialize=reference_costs_init,
+                bounds=(0, 1e4),
+                doc="field expenses epcm cost in $MM",
+                units=getattr(pyunits, "MUSD_" + CE_index_year),
+            )
+
+            blk.project_management_and_construction_costs = Var(
+                cost_accounts,
+                initialize=reference_costs_init,
+                bounds=(0, 1e4),
+                doc="project management and construction epcm cost in $MM",
+                units=getattr(pyunits, "MUSD_" + CE_index_year),
+            )
+
+            # contingency costs - generic support more contingency cost types in the future
+            blk.contingency_costs = Var(
+                cost_accounts,
+                initialize=reference_costs_init,
+                bounds=(0, 1e4),
+                doc="contingency cost in $MM",
+                units=getattr(pyunits, "MUSD_" + CE_index_year),
+            )
+
+            blk.process_contingency_costs = Var(
+                cost_accounts,
+                initialize=reference_costs_init,
+                bounds=(0, 1e4),
+                doc="contingency cost in $MM",
+                units=getattr(pyunits, "MUSD_" + CE_index_year),
+            )
+        else:
+            blk.Lang_factor = Param(
+                initialize=Lang_factor,
+                mutable=True,
+                doc="Lang factor",
+                units=pyunits.dimensionless,
+            )
+
+        # total cost variables
+        blk.total_installation_cost = Var(
+            cost_accounts,
+            initialize=reference_costs_init,
+            bounds=(0, 1e4),
+            doc="total installation cost in $MM",
+            units=getattr(pyunits, "MUSD_" + CE_index_year),
+        )
+
+        blk.total_plant_cost = Var(
+            cost_accounts,
+            initialize=reference_costs_init,
+            bounds=(0, 1e4),
+            doc="total plant cost in $MM",
+            units=getattr(pyunits, "MUSD_" + CE_index_year),
+        )
+
+        # rule for scaling BEC
+        # reference cost is in 2018 dollars, 671.1 is CE index for 2018
+        def bare_erected_cost_rule(costing, i):
+            ref_units = reference_units[i]
+            if "/" in ref_units:
+                ref_units = ref_units.split("/")
+                ref_units = getattr(pyunits, ref_units[0]) / getattr(
+                    pyunits, ref_units[1]
+                )
+            else:
+                ref_units = getattr(pyunits, ref_units)
+
+            ref_cost_units = reference_cost_units[i]
+            ref_cost_units = ref_cost_units.split("$")
+            if ref_cost_units[0] == "":  # no prefix
+                ref_cost_units = getattr(pyunits, "USD_" + ref_cost_units[1])
+            elif ref_cost_units[0] == "K":  # thousands of $
+                ref_cost_units = getattr(pyunits, "kUSD_" + ref_cost_units[1])
+            elif ref_cost_units[0] == "M":  # millions of $
+                ref_cost_units = getattr(pyunits, "MUSD_" + ref_cost_units[1])
+
+            # determine reference parameter scaler based on train scaling
+            if scale_down_parallel_equip:
+                scaler = n_equip
+            else:
+                scaler = 1
+
+            if isinstance(process_params[i], list):
+                if len(process_params[i]) > 1:
+                    return costing.bare_erected_cost[i] == (
+                        n_equip * pyunits.convert(
+                            costing.ref_cost[i] * ref_cost_units, CE_index_units
+                        )
+                        * sum(
+                            (
+                                pyunits.convert(scaled_param[j], ref_units)
+                                / (scaler * costing.ref_param[i, p] * ref_units)
+                            )
+                            ** costing.exp[i]
+                            for j, p in enumerate(process_params[i])
+                        )
+                    )
+            elif isinstance(process_params[i], str):
+                return costing.bare_erected_cost[i] == (
+                    n_equip * pyunits.convert(
+                        costing.ref_cost[i] * ref_cost_units, CE_index_units
+                    )
+                    * (
+                        pyunits.convert(scaled_param, ref_units)
+                        / (scaler * costing.ref_param[i] * ref_units)
+                    )
+                    ** costing.exp[i]
+                )
+
+        blk.bare_erected_cost_eq = Constraint(
+            cost_accounts, rule=bare_erected_cost_rule
+        )
+
+        if Lang_factor is None:
+            # rules for calculating Ancillary costs
+            def piping_materials_and_labor_cost_rule(blk, i):
+                return blk.piping_materials_and_labor_costs[i] == (
+                    blk.bare_erected_cost[i] *
+                    blk.piping_materials_and_labor_percentage[i]
+                )
+
+            blk.piping_materials_and_labor_cost_eq = Constraint(
+                cost_accounts, rule=piping_materials_and_labor_cost_rule
+            )
+
+            def electrical_materials_and_labor_cost_rule(blk, i):
+                return blk.electrical_materials_and_labor_costs[i] == (
+                    blk.bare_erected_cost[i] *
+                    blk.electrical_materials_and_labor_percentage[i]
+                )
+
+            blk.electrical_materials_and_labor_cost_eq = Constraint(
+                cost_accounts, rule=electrical_materials_and_labor_cost_rule
+            )
+
+            def instrumentation_cost_rule(blk, i):
+                return blk.instrumentation_costs[i] == (
+                    blk.bare_erected_cost[i] *
+                    blk.instrumentation_percentage[i]
+                )
+
+            blk.instrumentation_cost_eq = Constraint(
+                cost_accounts, rule=instrumentation_cost_rule
+            )
+
+            def plant_services_cost_rule(blk, i):
+                return blk.plant_services_costs[i] == (
+                    blk.bare_erected_cost[i] *
+                    blk.plant_services_percentage[i]
+                )
+
+            blk.plant_services_cost_eq = Constraint(
+                cost_accounts, rule=plant_services_cost_rule
+            )
+
+            def ancillary_cost_rule(blk, i):
+                return blk.ancillary_costs[i] == (
+                    blk.piping_materials_and_labor_costs[i] +
+                    blk.electrical_materials_and_labor_costs[i] +
+                    blk.instrumentation_costs[i] +
+                    blk.plant_services_costs[i]
+                )
+
+            blk.ancillary_cost_eq = Constraint(
+                cost_accounts, rule=ancillary_cost_rule
+            )
+    
+            # rules for calculating Buildings costs
+
+            def process_buildings_cost_rule(blk, i):
+                return blk.process_buildings_costs[i] == (
+                    blk.bare_erected_cost[i] *
+                    blk.process_buildings_percentage[i]
+                )
+
+            blk.process_buildings_cost_eq = Constraint(
+                cost_accounts, rule=process_buildings_cost_rule
+            )
+
+            def auxiliary_buildings_cost_rule(blk, i):
+                return blk.auxiliary_buildings_costs[i] == (
+                    blk.bare_erected_cost[i] *
+                    blk.auxiliary_buildings_percentage[i]
+                )
+
+            blk.auxiliary_buildings_cost_eq = Constraint(
+                cost_accounts, rule=auxiliary_buildings_cost_rule
+            )
+
+            def site_improvements_cost_rule(blk, i):
+                return blk.site_improvements_costs[i] == (
+                    blk.bare_erected_cost[i] *
+                    blk.site_improvements_percentage[i]
+                )
+
+            blk.site_improvements_cost_eq = Constraint(
+                cost_accounts, rule=site_improvements_cost_rule
+            )
+
+            def buildings_cost_rule(blk, i):
+                return blk.buildings_costs[i] == (
+                    blk.process_buildings_costs[i] +
+                    blk.auxiliary_buildings_costs[i] +
+                    blk.site_improvements_costs[i]
+                )
+
+            blk.buildings_cost_eq = Constraint(
+                cost_accounts, rule=buildings_cost_rule
+            )
+    
+            # rules for calculating Engineering, Procurement and Construction Management costs
+
+            def equipment_installation_cost_rule(blk, i):
+                return blk.equipment_installation_costs[i] == (
+                    blk.bare_erected_cost[i] *
+                    blk.equipment_installation_percentage[i]
+                )
+
+            blk.equipment_installation_cost_eq = Constraint(
+                cost_accounts, rule=equipment_installation_cost_rule
+            )
+
+            def field_expenses_cost_rule(blk, i):
+                return blk.field_expenses_costs[i] == (
+                    blk.bare_erected_cost[i] *
+                    blk.field_expenses_percentage[i]
+                )
+
+            blk.field_expenses_cost_eq = Constraint(
+                cost_accounts, rule=field_expenses_cost_rule
+            )
+
+            def project_management_and_construction_cost_rule(blk, i):
+                return blk.project_management_and_construction_costs[i] == (
+                    blk.bare_erected_cost[i] *
+                    blk.project_management_and_construction_percentage[i]
+                )
+
+            blk.project_management_and_construction_cost_eq = Constraint(
+                cost_accounts, rule=project_management_and_construction_cost_rule
+            )
+
+            def epcm_cost_rule(blk, i):
+                return blk.epcm_costs[i] == (
+                    blk.equipment_installation_costs[i] +
+                    blk.field_expenses_costs[i] +
+                    blk.project_management_and_construction_costs[i]
+                )
+
+            blk.epcm_cost_eq = Constraint(
+                cost_accounts, rule=epcm_cost_rule
+            )
+
+            # rules for calculating Contingency costs
+            def process_contingency_cost_rule(blk, i):
+                return blk.contingency_costs[i] == (
+                    blk.bare_erected_cost[i] *
+                    blk.process_contingency_percentage[i]
+                )
+
+            blk.process_contingency_cost_eq = Constraint(
+                cost_accounts, rule=process_contingency_cost_rule
+            )
+
+            def contingency_cost_rule(blk, i):
+                return blk.contingency_costs[i] == (
+                    blk.process_contingency_costs[i]
+                )
+
+            blk.contingency_cost_eq = Constraint(
+                cost_accounts, rule=contingency_cost_rule
+            )
+
+            def total_installation_cost_rule(blk, i):
+                return blk.total_installation_cost[i] == (
+                    blk.ancillary_costs[i] +
+                    blk.buildings_costs[i] +
+                    blk.epcm_costs[i] +
+                    blk.contingency_costs[i]
+                )
+
+            blk.total_installation_cost_eq = Constraint(
+                cost_accounts, rule=total_installation_cost_rule
+            )
+        else:
+            def total_installation_cost_rule(blk, i):
+                return blk.total_installation_cost[i] == blk.bare_erected_cost[i] * (
+                    blk.Lang_factor - 1
+                )
+
+            blk.total_installation_cost_eq = Constraint(
+                cost_accounts, rule=total_installation_cost_rule
+            )
+
+        # rule for calculating TPC
+        def total_plant_cost_rule(blk, i):
+            return blk.total_plant_cost[i] == (
+                blk.bare_erected_cost[i] +
+                blk.total_installation_cost[i]
+                )
+
+        blk.total_plant_cost_eq = Constraint(
+            cost_accounts, rule=total_plant_cost_rule
+        )
+
+        # rule for sum of BEC
+        def BEC_sum_rule(blk):
+            return sum(blk.bare_erected_cost[i] for i in cost_accounts)
+
+        blk.bare_erected_cost_sum = Expression(rule=BEC_sum_rule)
+
+        # rule for sum of TPC
+        def TPC_sum_rule(blk):
+            return sum(blk.total_plant_cost[i] for i in cost_accounts)
+
+        blk.total_plant_cost_sum = Expression(rule=TPC_sum_rule)
+
+        # add variable and constraint scaling
+        for i in cost_accounts:
+            iscale.set_scaling_factor(blk.bare_erected_cost[i], 1)
+            iscale.set_scaling_factor(blk.total_plant_cost[i], 1)
+            iscale.constraint_scaling_transform(
+                blk.bare_erected_cost_eq[i], 1e-3, overwrite=False
+            )
+            iscale.constraint_scaling_transform(
+                blk.total_plant_cost_eq[i], 1, overwrite=False
+            )
+
+    # -----------------------------------------------------------------------------
+
+    # -----------------------------------------------------------------------------
     # Operation & Maintenance Costing Library
     # -----------------------------------------------------------------------------
 
@@ -1989,6 +2988,239 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                     b.total_variable_cost_rule_power[i],
                 )
 
+    def get_REE_plant_costs(
+            b,
+            blocks_to_cost=None,
+            # add more arguments for detailed O&M calculations later
+            CE_index_year="2018",
+    ):
+        """
+        Creates constraints for the following plant-level costs in $MM/yr:
+            1. Total ancillary
+            2. Piping materials and labor ancillary
+            2. Electricial materials and labor ancillary
+            3. Instrumentation ancillary
+            4. Plant services ancillary
+            5. Total buildings
+            6. Process buildings
+            7. Auxiliary buildings
+            8. Site improvements buildings
+            9. Total engineering procurement and construction management (EPCM)
+            10. Equipment installation EPCM
+            11. Field expenses EPCM
+            12. Project management and construction EPCM
+            13. Total contingency
+            14. Process contingency
+            (space for more costs, including contingency costs, in the future)
+
+        These costs apply to the project as a whole and are scaled based on the
+        total TPC.
+
+        Args:
+            b: flowsheet-level costing block to add installation cost to
+            blocks_to_cost: let the user specify which blocks should contribute
+                to the plant-wide total plant cost and total installation cost.
+                Each block in the list must be a UnitModelCostingBlock(). If
+                this argument is not set, the method assumes that "b" is a
+                flowsheet-level costing block and defines the list based on the
+                registered costing blocks.
+            CE_index_year: year for cost basis, e.g. "2018" to use 2018 dollars
+
+        Returns:
+            None
+        """
+
+        try:
+            CE_index_units = getattr(pyunits, "MUSD_" + CE_index_year)
+        except AttributeError:
+            raise AttributeError(
+                "CE_index_year %s is not a valid currency base option. "
+                "Valid CE index options include CE500, CE394 and years from "
+                "1990 to 2020." % (CE_index_year)
+            )
+
+        # define costing library
+        b.library = "REE"
+
+        # make vars
+        b.total_plant_cost = Var(
+            initialize=0,
+            bounds=(0, 1e4),
+            doc="Total Plant Cost [$MM]",
+            units=CE_index_units,
+        )
+        b.bare_erected_cost = Var(
+            initialize=0,
+            bounds=(0, 1e4),
+            doc="Total Bare Erected Cost [$MM]",
+            units=CE_index_units,
+        )
+        b.total_installation_cost = Var(
+            initialize=0,
+            bounds=(0, 1e4),
+            doc="Total Installation Cost [$MM]",
+            units=CE_index_units,
+        )
+        b.ancillary_costs = Var(
+            initialize=0,
+            bounds=(0, 1e4),
+            doc="Total Ancillary Installation Cost [$MM]",
+            units=CE_index_units,
+        )
+        b.piping_materials_and_labor_costs = Var(
+            initialize=0,
+            bounds=(0, 1e4),
+            doc="Total Ancillary Piping, Materials and Labor Installation Cost [$MM]",
+            units=CE_index_units,
+        )
+        b.electrical_materials_and_labor_costs = Var(
+            initialize=0,
+            bounds=(0, 1e4),
+            doc="Total Ancillary Electrical, Materials and Labor Installation Cost [$MM]",
+            units=CE_index_units,
+        )
+        b.instrumentation_costs = Var(
+            initialize=0,
+            bounds=(0, 1e4),
+            doc="Total Ancillary Instrumentation Installation Cost [$MM]",
+            units=CE_index_units,
+        )
+        b.plant_services_costs = Var(
+            initialize=0,
+            bounds=(0, 1e4),
+            doc="Total Ancillary Plant Services Installation Cost [$MM]",
+            units=CE_index_units,
+        )
+        b.buildings_costs = Var(
+            initialize=0,
+            bounds=(0, 1e4),
+            doc="Total Buildings Installation Cost [$MM]",
+            units=CE_index_units,
+        )
+        b.process_buildings_costs = Var(
+            initialize=0,
+            bounds=(0, 1e4),
+            doc="Total Process Buildings Installation Cost [$MM]",
+            units=CE_index_units,
+        )
+        b.auxiliary_buildings_costs = Var(
+            initialize=0,
+            bounds=(0, 1e4),
+            doc="Total Auxiliary Buildings Installation Cost [$MM]",
+            units=CE_index_units,
+        )
+        b.site_improvements_costs = Var(
+            initialize=0,
+            bounds=(0, 1e4),
+            doc="Total Site Improvements Buildings Installation Cost [$MM]",
+            units=CE_index_units,
+        )
+        b.epcm_costs = Var(
+            initialize=0,
+            bounds=(0, 1e4),
+            doc="Total EPCM Installation Cost [$MM]",
+            units=CE_index_units,
+        )
+        b.equipment_installation_costs = Var(
+            initialize=0,
+            bounds=(0, 1e4),
+            doc="Total Equipment Installation EPCM Installation Cost [$MM]",
+            units=CE_index_units,
+        )
+        b.field_expenses_costs = Var(
+            initialize=0,
+            bounds=(0, 1e4),
+            doc="Total Field Expenses EPCM Installation Cost [$MM]",
+            units=CE_index_units,
+        )
+        b.project_management_and_construction_costs = Var(
+            initialize=0,
+            bounds=(0, 1e4),
+            doc="Total Project Management and Construction EPCM Installation Cost [$MM]",
+            units=CE_index_units,
+        )
+        b.process_contingency_costs = Var(
+            initialize=0,
+            bounds=(0, 1e4),
+            doc="Total Process Contingency Installation Cost [$MM]",
+            units=CE_index_units,
+        )
+        b.contingency_costs = Var(
+            initialize=0,
+            bounds=(0, 1e4),
+            doc="Total Contingency Installation Cost [$MM]",
+            units=CE_index_units,
+        )
+
+        # define list of blocks to cost
+        if blocks_to_cost is None:  # need to search for blocks to cost
+            blocks_to_cost = []
+            for o in b.parent_block().component_objects(descend_into=True):
+                # look for costing blocks
+                if o.name in [
+                    block.name for block in b._registered_unit_costing
+                ]:
+                    blocks_to_cost.append(o)
+
+        # create empty dictionary to concisely save and call block variables
+        b.installation_cost_list = [
+            "total_plant_cost",
+            "bare_erected_cost",
+            "total_installation_cost",
+            "ancillary_costs",
+            "piping_materials_and_labor_costs",
+            "electrical_materials_and_labor_costs",
+            "instrumentation_costs",
+            "plant_services_costs",
+            "buildings_costs",
+            "process_buildings_costs",
+            "auxiliary_buildings_costs",
+            "site_improvements_costs",
+            "epcm_costs",
+            "equipment_installation_costs",
+            "field_expenses_costs",
+            "project_management_and_construction_costs",
+            "process_contingency_costs",
+            "contingency_costs",
+            ]
+        plant_cost_dict = dict.fromkeys(b.installation_cost_list, [])
+        plant_cost_dict = dict((key, []) for key in b.installation_cost_list)
+
+        # retrieve and save block variables
+        for var in b.installation_cost_list:  # bulid one var row at a time
+            for block in blocks_to_cost:  # get var from each block
+                if hasattr(block, var):
+                    for key in getattr(block, var).keys():  # get all var keys
+                        plant_cost_dict[var].append(getattr(block, var)[key])
+
+        # create constraints
+        for var in b.installation_cost_list:
+            if len(plant_cost_dict[var]) > 0:  # picked up vars, sum them
+                total_var = getattr(b, var)  # aggregate variable
+                sum_var = sum(plant_cost_dict[var])  # sum of components
+                constraint = Constraint(
+                    expr=(total_var ==
+                          pyunits.convert(
+                              sum_var,
+                              to_units=CE_index_units
+                              )
+                          )
+                    )
+                setattr(b, var+"_eq", constraint)  # generate the constraint
+            elif len(plant_cost_dict[var]) == 0:  # no vars exists
+                # could occur if Lang factor set and individual
+                # installation costs do not exist - delete aggregate vars
+                b.del_component(var)
+
+    def initialize_REE_plant_costs(b):
+        # b is the flowsheet-level costing block
+        # initialization for REE plant-level costs
+        for var in b.installation_cost_list:
+            if hasattr(b, var):
+                calculate_variable_from_constraint(
+                    getattr(b, var), getattr(b, var+"_eq")
+                )
+
     # -----------------------------------------------------------------------------
     # Costing Library Utility Functions
     # -----------------------------------------------------------------------------
@@ -2024,7 +3256,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                         o.total_plant_cost, o.total_plant_cost_eq
                     )
 
-                elif o.library in ["PP", "ASU"]:
+                elif o.library in ["PP", "ASU", "REE"]:
                     for key in o.costing.bare_erected_cost.keys():
                         calculate_variable_from_constraint(
                             o.bare_erected_cost[key],
