@@ -41,11 +41,8 @@ from pyomo.environ import (
 )
 from pyomo.core.base.block import _BlockData
 from pyomo.common.collections import ComponentSet
-
-# TODO: Switch to this once the Pyomo PR is merged
-# from pyomo.util.check_units import identify_inconsistent_units
-from pyomo.util.check_units import assert_units_consistent
-from pyomo.core.base.units_container import UnitsError
+from pyomo.common.config import ConfigDict, ConfigValue, document_kwargs_from_configdict
+from pyomo.util.check_units import identify_inconsistent_units
 from pyomo.contrib.incidence_analysis import IncidenceGraphInterface
 from pyomo.core.expr.visitor import identify_variables
 from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
@@ -77,15 +74,28 @@ MAX_STR_LENGTH = 84
 TAB = " " * 4
 
 
-def _var_in_block(var, block):
-    parent = var.parent_block()
-    while parent is not None:
-        if parent is block:
-            return True
-        parent = parent.parent_block()
-    return False
+CONFIG = ConfigDict()
+CONFIG.declare("model", ConfigValue(description="Pyomo model object to be diagnosed."))
+CONFIG.declare(
+    "residual_tolerance",
+    ConfigValue(
+        default=1e-5,
+        domain=float,
+        description="Absolute tolerance to use when checking constraint residuals.",
+    ),
+)
+CONFIG.declare(
+    "zero_tolerance",
+    ConfigValue(
+        default=1e-6,
+        domain=float,
+        description="Absolute tolerance to use when comparing values to zero.",
+    ),
+)
+# TODO: Add scaling tolerance parameters
 
 
+@document_kwargs_from_configdict(CONFIG)
 class DiagnosticsToolbox:
     """
     The IDAES Model DiagnosticsToolbox.
@@ -126,51 +136,11 @@ class DiagnosticsToolbox:
 
     """
 
-    def __init__(self, model: Block):
-        if not isinstance(model, Block):
-            raise ValueError("model argument must be an instance of a Pyomo Block.")
-        self.model = model
-        # TODO: Work out how to manage and document these
-        self.residual_tolerance = 1e-5
-        self.zero_tolerance = 1e-6
-        # TODO: Add scaling tolerance parameters
+    def __init__(self, **kwargs):
+        self.config = CONFIG(kwargs)
+        if not isinstance(self.config.model, Block):
+            raise TypeError("model argument must be an instance of a Pyomo Block.")
 
-    def _vars_fixed_to_zero(self):
-        # Set of variables fixed to 0
-        zero_vars = ComponentSet()
-        for v in self.model.component_data_objects(Var, descend_into=True):
-            if v.fixed and value(v) == 0:
-                zero_vars.add(v)
-        return zero_vars
-
-    def _vars_near_zero(self):
-        # Set of variables with values close to 0
-        near_zero_vars = ComponentSet()
-        for v in self.model.component_data_objects(Var, descend_into=True):
-            if v.value is not None and abs(value(v)) <= self.zero_tolerance:
-                near_zero_vars.add(v)
-        return near_zero_vars
-
-    def _vars_violating_bounds(self):
-        violated_bounds = ComponentSet()
-        for v in self.model.component_data_objects(Var, descend_into=True):
-            if v.value is not None:
-                if v.lb is not None and v.value <= v.lb:
-                    violated_bounds.add(v)
-                elif v.ub is not None and v.value >= v.ub:
-                    violated_bounds.add(v)
-
-        return violated_bounds
-
-    def _vars_with_none_value(self):
-        none_value = ComponentSet()
-        for v in self.model.component_data_objects(Var, descend_into=True):
-            if v.value is None:
-                none_value.add(v)
-
-        return none_value
-
-    # TODO: deactivated blocks, constraints, objectives,
     def display_external_variables(self, stream=stdout):
         """
         Prints a list of variables that appear within Constraints in the model
@@ -184,14 +154,14 @@ class DiagnosticsToolbox:
 
         """
         ext_vars = []
-        for v in variables_in_activated_constraints_set(self.model):
-            if not _var_in_block(v, self.model):
+        for v in variables_in_activated_constraints_set(self.config.model):
+            if not _var_in_block(v, self.config.model):
                 ext_vars.append(v.name)
 
-        self._write_report_section(
+        _write_report_section(
             stream=stream,
             lines_list=ext_vars,
-            title=f"The following external variable(s) appear in constraints within the model:",
+            title="The following external variable(s) appear in constraints within the model:",
             header="=",
             footer="=",
         )
@@ -207,10 +177,10 @@ class DiagnosticsToolbox:
             None
 
         """
-        self._write_report_section(
+        _write_report_section(
             stream=stream,
-            lines_list=variables_not_in_activated_constraints_set(self.model),
-            title=f"The following variable(s) do not appear in any activated constraints within the model:",
+            lines_list=variables_not_in_activated_constraints_set(self.config.model),
+            title="The following variable(s) do not appear in any activated constraints within the model:",
             header="=",
             footer="=",
         )
@@ -226,10 +196,10 @@ class DiagnosticsToolbox:
             None
 
         """
-        self._write_report_section(
+        _write_report_section(
             stream=stream,
-            lines_list=self._vars_fixed_to_zero(),
-            title=f"The following variable(s) are fixed to zero:",
+            lines_list=_vars_fixed_to_zero(self.config.model),
+            title="The following variable(s) are fixed to zero:",
             header="=",
             footer="=",
         )
@@ -246,13 +216,13 @@ class DiagnosticsToolbox:
             None
 
         """
-        self._write_report_section(
+        _write_report_section(
             stream=stream,
             lines_list=[
                 f"{v.name} ({'fixed' if v.fixed else 'free'}): value={value(v)} bounds={v.bounds}"
-                for v in self._vars_violating_bounds()
+                for v in _vars_violating_bounds(self.config.model)
             ],
-            title=f"The following variable(s) have values at or outside their bounds:",
+            title="The following variable(s) have values at or outside their bounds:",
             header="=",
             footer="=",
         )
@@ -268,10 +238,10 @@ class DiagnosticsToolbox:
             None
 
         """
-        self._write_report_section(
+        _write_report_section(
             stream=stream,
-            lines_list=self._vars_with_none_value(),
-            title=f"The following variable(s) have a value of None:",
+            lines_list=_vars_with_none_value(self.config.model),
+            title="The following variable(s) have a value of None:",
             header="=",
             footer="=",
         )
@@ -289,10 +259,13 @@ class DiagnosticsToolbox:
             None
 
         """
-        self._write_report_section(
+        _write_report_section(
             stream=stream,
-            lines_list=[f"{v.name}: value={value(v)}" for v in self._vars_near_zero()],
-            title=f"The following variable(s) have a value close to zero:",
+            lines_list=[
+                f"{v.name}: value={value(v)}"
+                for v in _vars_near_zero(self.config.model, self.config.zero_tolerance)
+            ],
+            title="The following variable(s) have a value close to zero:",
             header="=",
             footer="=",
         )
@@ -310,12 +283,13 @@ class DiagnosticsToolbox:
             None
 
         """
-        self._write_report_section(
+        _write_report_section(
             stream=stream,
             lines_list=[
-                f"{i.name}: {j}" for i, j in list_badly_scaled_variables(self.model)
+                f"{i.name}: {j}"
+                for i, j in list_badly_scaled_variables(self.config.model)
             ],
-            title=f"The following variable(s) are poorly scaled:",
+            title="The following variable(s) are poorly scaled:",
             header="=",
             footer="=",
         )
@@ -332,30 +306,16 @@ class DiagnosticsToolbox:
             None
 
         """
-        self._write_report_section(
+        _write_report_section(
             stream=stream,
             lines_list=[
                 f"{v.name}: value={value(v)} bounds={v.bounds}"
-                for v in variables_near_bounds_set(self.model)
+                for v in variables_near_bounds_set(self.config.model)
             ],
-            title=f"The following variable(s) have values close to their bounds:",
+            title="The following variable(s) have values close to their bounds:",
             header="=",
             footer="=",
         )
-
-    def _check_unit_consistency(self):
-        # Check unit consistency
-        # TODO: replace once Pyomo method ready
-        # return identify_inconsistent_units(self.model)
-        inconsistent_units = ComponentSet()
-        for o in self.model.component_data_objects(
-            [Constraint, Expression, Objective], descend_into=True
-        ):
-            try:
-                assert_units_consistent(o)
-            except UnitsError:
-                inconsistent_units.add(o)
-        return inconsistent_units
 
     def display_components_with_inconsistent_units(self, stream=stdout):
         """
@@ -369,10 +329,10 @@ class DiagnosticsToolbox:
             None
 
         """
-        self._write_report_section(
+        _write_report_section(
             stream=stream,
-            lines_list=self._check_unit_consistency(),
-            title=f"The following component(s) have unit consistency issues:",
+            lines_list=identify_inconsistent_units(self.config.model),
+            title="The following component(s) have unit consistency issues:",
             end_line="For more details on constraint violations, import the "
             "assert_units_consistent method\nfrom pyomo.util.check_units",
             header="=",
@@ -391,15 +351,17 @@ class DiagnosticsToolbox:
             None
 
         """
-        self._write_report_section(
+        _write_report_section(
             stream=stream,
-            lines_list=large_residuals_set(self.model, tol=self.residual_tolerance),
-            title=f"The following constraint(s) have large residuals:",
+            lines_list=large_residuals_set(
+                self.config.model, tol=self.config.residual_tolerance
+            ),
+            title="The following constraint(s) have large residuals:",
             header="=",
             footer="=",
         )
 
-    def check_dulmage_mendelsohn_partition(self):
+    def get_dulmage_mendelsohn_partition(self):
         """
         Performs a Dulmage-Mendelsohn partitioning on the model and returns
         the over- and under-constraint sub-problems..
@@ -411,7 +373,7 @@ class DiagnosticsToolbox:
             list of constraints in the over-constrained set
 
         """
-        igraph = IncidenceGraphInterface(self.model)
+        igraph = IncidenceGraphInterface(self.config.model)
         var_dm_partition, con_dm_partition = igraph.dulmage_mendelsohn()
 
         # Collect under- and order-constrained sub-system
@@ -437,7 +399,7 @@ class DiagnosticsToolbox:
             None
 
         """
-        uc_var, uc_con, _, _ = self.check_dulmage_mendelsohn_partition()
+        uc_var, uc_con, _, _ = self.get_dulmage_mendelsohn_partition()
 
         stream.write("\n" + "=" * MAX_STR_LENGTH + "\n")
         stream.write("Dulmage-Mendelsohn Under-Constrained Set\n\n")
@@ -467,7 +429,7 @@ class DiagnosticsToolbox:
             None
 
         """
-        _, _, oc_var, oc_con = self.check_dulmage_mendelsohn_partition()
+        _, _, oc_var, oc_con = self.get_dulmage_mendelsohn_partition()
 
         stream.write("\n" + "=" * MAX_STR_LENGTH + "\n")
         stream.write("Dulmage-Mendelsohn Over-Constrained Set\n\n")
@@ -494,13 +456,13 @@ class DiagnosticsToolbox:
             next_steps - list of suggested next steps to further investigate warnings
 
         """
-        uc = self._check_unit_consistency()
-        uc_var, uc_con, oc_var, oc_con = self.check_dulmage_mendelsohn_partition()
+        uc = identify_inconsistent_units(self.config.model)
+        uc_var, uc_con, oc_var, oc_con = self.get_dulmage_mendelsohn_partition()
 
         # Collect warnings
         warnings = []
         next_steps = []
-        dof = degrees_of_freedom(self.model)
+        dof = degrees_of_freedom(self.config.model)
         if dof != 0:
             dstring = "Degrees"
             if dof == abs(1):
@@ -538,13 +500,13 @@ class DiagnosticsToolbox:
         """
         # Collect cautions
         cautions = []
-        zero_vars = self._vars_fixed_to_zero()
+        zero_vars = _vars_fixed_to_zero(self.config.model)
         if len(zero_vars) > 0:
             vstring = "variables"
             if len(zero_vars) == 1:
                 vstring = "variable"
             cautions.append(f"Caution: {len(zero_vars)} {vstring} fixed to 0")
-        unused_vars = variables_not_in_activated_constraints_set(self.model)
+        unused_vars = variables_not_in_activated_constraints_set(self.config.model)
         unused_vars_fixed = 0
         for v in unused_vars:
             if v.fixed:
@@ -573,7 +535,9 @@ class DiagnosticsToolbox:
         next_steps = []
 
         # Large residuals
-        large_residuals = large_residuals_set(self.model, tol=self.residual_tolerance)
+        large_residuals = large_residuals_set(
+            self.config.model, tol=self.config.residual_tolerance
+        )
         if len(large_residuals) > 0:
             cstring = "Constraints"
             if len(large_residuals) == 1:
@@ -584,7 +548,7 @@ class DiagnosticsToolbox:
             next_steps.append("display_constraints_with_large_residuals()")
 
         # Variables outside bounds
-        violated_bounds = self._vars_violating_bounds()
+        violated_bounds = _vars_violating_bounds(self.config.model)
         if len(violated_bounds) > 0:
             cstring = "Variables"
             if len(violated_bounds) == 1:
@@ -595,7 +559,7 @@ class DiagnosticsToolbox:
             next_steps.append("display_variables_with_bounds_violations()")
 
         # Poor scaling
-        var_scaling = list_badly_scaled_variables(self.model)
+        var_scaling = list_badly_scaled_variables(self.config.model)
         if len(var_scaling) > 0:
             cstring = "Variables"
             if len(var_scaling) == 1:
@@ -616,7 +580,7 @@ class DiagnosticsToolbox:
         cautions = []
 
         # Variables near bounds
-        near_bounds = variables_near_bounds_set(self.model)
+        near_bounds = variables_near_bounds_set(self.config.model)
         if len(near_bounds) > 0:
             cstring = "Variables"
             if len(near_bounds) == 1:
@@ -626,7 +590,7 @@ class DiagnosticsToolbox:
             )
 
         # Variables near zero
-        near_zero = self._vars_near_zero()
+        near_zero = _vars_near_zero(self.config.model, self.config.zero_tolerance)
         if len(near_zero) > 0:
             cstring = "Variables"
             if len(near_zero) == 1:
@@ -636,7 +600,7 @@ class DiagnosticsToolbox:
             )
 
         # Variables with value None
-        none_value = self._vars_with_none_value()
+        none_value = _vars_with_none_value(self.config.model)
         if len(none_value) > 0:
             cstring = "Variables"
             if len(none_value) == 1:
@@ -671,46 +635,6 @@ class DiagnosticsToolbox:
         if len(warnings) > 0:
             raise AssertionError(f"Numerical issues found ({len(warnings)}).")
 
-    def _write_report_section(
-        self,
-        stream,
-        lines_list,
-        title=None,
-        else_line=None,
-        end_line=None,
-        header="-",
-        footer=None,
-    ):
-        """
-        Writes output in standard format for report and display methods.
-
-        Args:
-            stream: stream to write to
-            lines_list: list containing lines to be written in body of report
-            title: title to be put at top of report
-            else_line: line to be written if lines_list is empty
-            end_line: line to be written at end of report
-            header: character to use to write header separation line
-            footer: character to use to write footer separation line
-
-        Returns:
-            None
-
-        """
-        stream.write(f"{header * MAX_STR_LENGTH}\n")
-        if title is not None:
-            stream.write(f"{title}\n\n")
-        if len(lines_list) > 0:
-            for i in lines_list:
-                stream.write(f"{TAB}{i}\n")
-        elif else_line is not None:
-            stream.write(f"{TAB}{else_line}\n")
-        stream.write("\n")
-        if end_line is not None:
-            stream.write(f"{end_line}\n")
-        if footer is not None:
-            stream.write(f"{footer * MAX_STR_LENGTH}\n")
-
     def report_structural_issues(self, stream=stdout):
         """
         Generates a summary report of any structural issues identified in the model provided
@@ -730,7 +654,7 @@ class DiagnosticsToolbox:
         # Potential evaluation errors
         # High Index
 
-        vars_in_constraints = variables_in_activated_constraints_set(self.model)
+        vars_in_constraints = variables_in_activated_constraints_set(self.config.model)
         fixed_vars_in_constraints = ComponentSet()
         free_vars_in_constraints = ComponentSet()
         free_vars_lb = ComponentSet()
@@ -741,11 +665,11 @@ class DiagnosticsToolbox:
         for v in vars_in_constraints:
             if v.fixed:
                 fixed_vars_in_constraints.add(v)
-                if not _var_in_block(v, self.model):
+                if not _var_in_block(v, self.config.model):
                     ext_fixed_vars_in_constraints.add(v)
             else:
                 free_vars_in_constraints.add(v)
-                if not _var_in_block(v, self.model):
+                if not _var_in_block(v, self.config.model):
                     ext_free_vars_in_constraints.add(v)
                 if v.lb is not None:
                     if v.ub is not None:
@@ -759,8 +683,8 @@ class DiagnosticsToolbox:
         # TODO: Variables with bounds
         stats = []
         stats.append(
-            f"{TAB}Activated Blocks: {len(activated_blocks_set(self.model))} "
-            f"(Deactivated: {len(deactivated_blocks_set(self.model))})"
+            f"{TAB}Activated Blocks: {len(activated_blocks_set(self.config.model))} "
+            f"(Deactivated: {len(deactivated_blocks_set(self.config.model))})"
         )
         stats.append(
             f"{TAB}Free Variables in Activated Constraints: "
@@ -768,10 +692,10 @@ class DiagnosticsToolbox:
             f"(External: {len(ext_free_vars_in_constraints)})"
         )
         stats.append(
-            f"{TAB*2}Free Variables with only lower bounds: " f"{len(free_vars_lb)} "
+            f"{TAB*2}Free Variables with only lower bounds: {len(free_vars_lb)} "
         )
         stats.append(
-            f"{TAB * 2}Free Variables with only upper bounds: " f"{len(free_vars_ub)} "
+            f"{TAB * 2}Free Variables with only upper bounds: {len(free_vars_ub)} "
         )
         stats.append(
             f"{TAB * 2}Free Variables with upper and lower bounds: "
@@ -783,41 +707,41 @@ class DiagnosticsToolbox:
             f"(External: {len(ext_fixed_vars_in_constraints)})"
         )
         stats.append(
-            f"{TAB}Activated Equality Constraints: {len(activated_equalities_set(self.model))} "
-            f"(Deactivated: {len(deactivated_equalities_set(self.model))})"
+            f"{TAB}Activated Equality Constraints: {len(activated_equalities_set(self.config.model))} "
+            f"(Deactivated: {len(deactivated_equalities_set(self.config.model))})"
         )
         stats.append(
-            f"{TAB}Activated Inequality Constraints: {len(activated_inequalities_set(self.model))} "
-            f"(Deactivated: {len(deactivated_inequalities_set(self.model))})"
+            f"{TAB}Activated Inequality Constraints: {len(activated_inequalities_set(self.config.model))} "
+            f"(Deactivated: {len(deactivated_inequalities_set(self.config.model))})"
         )
         stats.append(
-            f"{TAB}Activated Objectives: {len(activated_objectives_set(self.model))} "
-            f"(Deactivated: {len(deactivated_objectives_set(self.model))})"
+            f"{TAB}Activated Objectives: {len(activated_objectives_set(self.config.model))} "
+            f"(Deactivated: {len(deactivated_objectives_set(self.config.model))})"
         )
 
         warnings, next_steps = self._collect_structural_warnings()
         cautions = self._collect_structural_cautions()
 
-        self._write_report_section(
+        _write_report_section(
             stream=stream, lines_list=stats, title="Model Statistics", header="="
         )
-        self._write_report_section(
+        _write_report_section(
             stream=stream,
             lines_list=warnings,
             title=f"{len(warnings)} WARNINGS",
-            else_line="No warnings found!",
+            line_if_empty="No warnings found!",
         )
-        self._write_report_section(
+        _write_report_section(
             stream=stream,
             lines_list=cautions,
             title=f"{len(cautions)} Cautions",
-            else_line="No cautions found!",
+            line_if_empty="No cautions found!",
         )
-        self._write_report_section(
+        _write_report_section(
             stream=stream,
             lines_list=next_steps,
             title="Suggested next steps:",
-            else_line="Try to initialize/solve your model and then call report_numerical_issues()",
+            line_if_empty="Try to initialize/solve your model and then call report_numerical_issues()",
             footer="=",
         )
 
@@ -839,24 +763,24 @@ class DiagnosticsToolbox:
         warnings, next_steps = self._collect_numerical_warnings()
         cautions = self._collect_numerical_cautions()
 
-        self._write_report_section(
+        _write_report_section(
             stream=stream,
             lines_list=warnings,
             title=f"{len(warnings)} WARNINGS",
-            else_line="No warnings found!",
+            line_if_empty="No warnings found!",
             header="=",
         )
-        self._write_report_section(
+        _write_report_section(
             stream=stream,
             lines_list=cautions,
             title=f"{len(cautions)} Cautions",
-            else_line="No cautions found!",
+            line_if_empty="No cautions found!",
         )
-        self._write_report_section(
+        _write_report_section(
             stream=stream,
             lines_list=next_steps,
             title="Suggested next steps:",
-            else_line=f"If you still have issues converging your model consider:\n"
+            line_if_empty=f"If you still have issues converging your model consider:\n"
             f"{TAB*2}svd_analysis(TBA)\n{TAB*2}degeneracy_hunter (TBA)",
             footer="=",
         )
@@ -1425,10 +1349,10 @@ class DegeneracyHunter:
         n_sv = len(self.s)
         if n_sv < n_calc:
             raise ValueError(
-                "User wanted constraints and variables associated "
+                f"User wanted constraints and variables associated "
                 f"with the {n_calc}-th smallest singular value, "
                 f"but only {n_sv} small singular values have been "
-                "calculated. Run svd_analysis again and specify "
+                f"calculated. Run svd_analysis again and specify "
                 f"n_sv>={n_calc}."
             )
         print("Column:    Variable")
@@ -1676,3 +1600,93 @@ def ipopt_solve_halt_on_error(model, options=None):
     return solver.solve(
         model, tee=True, symbolic_solver_labels=True, export_defined_variables=False
     )
+
+
+# -------------------------------------------------------------------------------------------
+# Private module functions
+def _var_in_block(var, block):
+    parent = var.parent_block()
+    while parent is not None:
+        if parent is block:
+            return True
+        parent = parent.parent_block()
+    return False
+
+
+def _vars_fixed_to_zero(model):
+    # Set of variables fixed to 0
+    zero_vars = ComponentSet()
+    for v in model.component_data_objects(Var, descend_into=True):
+        if v.fixed and value(v) == 0:
+            zero_vars.add(v)
+    return zero_vars
+
+
+def _vars_near_zero(model, zero_tolerance):
+    # Set of variables with values close to 0
+    near_zero_vars = ComponentSet()
+    for v in model.component_data_objects(Var, descend_into=True):
+        if v.value is not None and abs(value(v)) <= zero_tolerance:
+            near_zero_vars.add(v)
+    return near_zero_vars
+
+
+def _vars_violating_bounds(model):
+    violated_bounds = ComponentSet()
+    for v in model.component_data_objects(Var, descend_into=True):
+        if v.value is not None:
+            if v.lb is not None and v.value <= v.lb:
+                violated_bounds.add(v)
+            elif v.ub is not None and v.value >= v.ub:
+                violated_bounds.add(v)
+
+    return violated_bounds
+
+
+def _vars_with_none_value(model):
+    none_value = ComponentSet()
+    for v in model.component_data_objects(Var, descend_into=True):
+        if v.value is None:
+            none_value.add(v)
+
+    return none_value
+
+
+def _write_report_section(
+    stream,
+    lines_list,
+    title=None,
+    line_if_empty=None,
+    end_line=None,
+    header="-",
+    footer=None,
+):
+    """
+    Writes output in standard format for report and display methods.
+
+    Args:
+        stream: stream to write to
+        lines_list: list containing lines to be written in body of report
+        title: title to be put at top of report
+        line_if_empty: line to be written if lines_list is empty
+        end_line: line to be written at end of report
+        header: character to use to write header separation line
+        footer: character to use to write footer separation line
+
+    Returns:
+        None
+
+    """
+    stream.write(f"{header * MAX_STR_LENGTH}\n")
+    if title is not None:
+        stream.write(f"{title}\n\n")
+    if len(lines_list) > 0:
+        for i in lines_list:
+            stream.write(f"{TAB}{i}\n")
+    elif line_if_empty is not None:
+        stream.write(f"{TAB}{line_if_empty}\n")
+    stream.write("\n")
+    if end_line is not None:
+        stream.write(f"{end_line}\n")
+    if footer is not None:
+        stream.write(f"{footer * MAX_STR_LENGTH}\n")
