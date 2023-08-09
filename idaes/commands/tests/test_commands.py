@@ -128,7 +128,7 @@ def test_get_extensions_plat(runner):
 def test_get_extensions_bad_plat(runner):
     result = runner.invoke(extensions.bin_platform, ["--distro", "johns_good_linux42"])
     assert result.exit_code == 0
-    assert result.output == "No supported binaries found.\n"
+    assert result.output == "No supported binaries found for johns_good_linux42.\n"
 
 
 @pytest.mark.integration
