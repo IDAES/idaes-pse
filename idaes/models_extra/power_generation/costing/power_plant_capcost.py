@@ -2998,7 +2998,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         Creates constraints for the following plant-level costs in $MM/yr:
             1. Total ancillary
             2. Piping materials and labor ancillary
-            2. Electricial materials and labor ancillary
+            2. Electrical materials and labor ancillary
             3. Instrumentation ancillary
             4. Plant services ancillary
             5. Total buildings
@@ -3187,7 +3187,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         plant_cost_dict = dict((key, []) for key in b.installation_cost_list)
 
         # retrieve and save block variables
-        for var in b.installation_cost_list:  # bulid one var row at a time
+        for var in b.installation_cost_list:  # build one var row at a time
             for block in blocks_to_cost:  # get var from each block
                 if hasattr(block, var):
                     for key in getattr(block, var).keys():  # get all var keys
