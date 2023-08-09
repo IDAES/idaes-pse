@@ -192,6 +192,9 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             CE_index_year: year for cost basis, e.g. "2018" to use 2018 dollars
         """
 
+        # define costing library
+        self.library = "PP"
+
         try:
             CE_index_units = getattr(
                 pyunits, "MUSD_" + CE_index_year
@@ -708,6 +711,9 @@ class QGESSCostingData(FlowsheetCostingBlockData):
 
         """
         # ------------------------ Power Plant Cost ------------------------
+
+        # define costing library
+        blk.library = "PP"
 
         try:
             CE_index_units = getattr(
