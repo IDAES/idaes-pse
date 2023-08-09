@@ -502,55 +502,87 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 var_dict["Total Plant Cost [$MM]"] = value(self.total_plant_cost)
 
             if hasattr(self, "bare_erected_cost"):
-                var_dict["Total Bare Erected Cost [$MM]"] = value(self.bare_erected_cost)
+                var_dict["Total Bare Erected Cost [$MM]"] = value(
+                    self.bare_erected_cost
+                )
 
             if hasattr(self, "total_installation_cost"):
-                var_dict["Total Installation Cost [$MM]"] = value(self.total_installation_cost)
+                var_dict["Total Installation Cost [$MM]"] = value(
+                    self.total_installation_cost
+                )
 
             if hasattr(self, "ancillary_costs"):
-                var_dict["Total Ancillary Installation Cost [$MM]"] = value(self.ancillary_costs)
+                var_dict["Total Ancillary Installation Cost [$MM]"] = value(
+                    self.ancillary_costs
+                )
 
             if hasattr(self, "piping_materials_and_labor_costs"):
-                var_dict["Total Ancillary Piping, Materials and Labor Installation Cost [$MM]"] = value(self.piping_materials_and_labor_costs)
+                var_dict[
+                    "Total Ancillary Piping, Materials and Labor Installation Cost [$MM]"
+                ] = value(self.piping_materials_and_labor_costs)
 
             if hasattr(self, "electrical_materials_and_labor_costs"):
-                var_dict["Total Ancillary Electrical, Materials and Labor Installation Cost [$MM]"] = value(self.electrical_materials_and_labor_costs)
+                var_dict[
+                    "Total Ancillary Electrical, Materials and Labor Installation Cost [$MM]"
+                ] = value(self.electrical_materials_and_labor_costs)
 
             if hasattr(self, "instrumentation_costs"):
-                var_dict["Total Ancillary Instrumentation Installation Cost [$MM]"] = value(self.instrumentation_costs)
+                var_dict[
+                    "Total Ancillary Instrumentation Installation Cost [$MM]"
+                ] = value(self.instrumentation_costs)
 
             if hasattr(self, "plant_services_costs"):
-                var_dict["Total Ancillary Plant Services Installation Cost [$MM]"] = value(self.plant_services_costs)
+                var_dict[
+                    "Total Ancillary Plant Services Installation Cost [$MM]"
+                ] = value(self.plant_services_costs)
 
             if hasattr(self, "buildings_costs"):
-                var_dict["Total Buildings Installation Cost [$MM]"] = value(self.buildings_costs)
+                var_dict["Total Buildings Installation Cost [$MM]"] = value(
+                    self.buildings_costs
+                )
 
             if hasattr(self, "process_buildings_costs"):
-                var_dict["Total Process Buildings Installation Cost [$MM]"] = value(self.process_buildings_costs)
+                var_dict["Total Process Buildings Installation Cost [$MM]"] = value(
+                    self.process_buildings_costs
+                )
 
             if hasattr(self, "auxiliary_buildings_costs"):
-                var_dict["Total Auxiliary Buildings Installation Cost [$MM]"] = value(self.auxiliary_buildings_costs)
+                var_dict["Total Auxiliary Buildings Installation Cost [$MM]"] = value(
+                    self.auxiliary_buildings_costs
+                )
 
             if hasattr(self, "site_improvements_costs"):
-                var_dict["Total Site Improvements Buildings Installation Cost [$MM]"] = value(self.site_improvements_costs)
+                var_dict[
+                    "Total Site Improvements Buildings Installation Cost [$MM]"
+                ] = value(self.site_improvements_costs)
 
             if hasattr(self, "epcm_costs"):
                 var_dict["Total EPCM Installation Cost [$MM]"] = value(self.epcm_costs)
 
             if hasattr(self, "equipment_installation_costs"):
-                var_dict["Total Equipment Installation EPCM Installation Cost [$MM]"] = value(self.equipment_installation_costs)
+                var_dict[
+                    "Total Equipment Installation EPCM Installation Cost [$MM]"
+                ] = value(self.equipment_installation_costs)
 
             if hasattr(self, "field_expenses_costs"):
-                var_dict["Total Field Expenses EPCM Cost [$MM]"] = value(self.field_expenses_costs)
+                var_dict["Total Field Expenses EPCM Cost [$MM]"] = value(
+                    self.field_expenses_costs
+                )
 
             if hasattr(self, "project_management_and_construction_costs"):
-                var_dict["Total Project Management and Construction EPCM Installation Cost [$MM]"] = value(self.project_management_and_construction_costs)
+                var_dict[
+                    "Total Project Management and Construction EPCM Installation Cost [$MM]"
+                ] = value(self.project_management_and_construction_costs)
 
             if hasattr(self, "process_contingency_costs"):
-                var_dict["Total Process Contingency Installation Cost [$MM]"] = value(self.process_contingency_costs)
+                var_dict["Total Process Contingency Installation Cost [$MM]"] = value(
+                    self.process_contingency_costs
+                )
 
             if hasattr(self, "contingency_costs"):
-                var_dict["Total Contingency Installation Cost [$MM]"] = value(self.contingency_costs)
+                var_dict["Total Contingency Installation Cost [$MM]"] = value(
+                    self.contingency_costs
+                )
 
         report_dir = {}
         report_dir["Value"] = {}
@@ -1161,14 +1193,14 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             if isinstance(process_params[i], list):
                 if len(process_params[i]) > 1:
                     return costing.bare_erected_cost[i] == (
-                        n_equip * pyunits.convert(
+                        n_equip
+                        * pyunits.convert(
                             costing.ref_cost[i] * ref_cost_units, CE_index_units
                         )
                         * sum(
                             costing.cost_scaling_fracs[i, p]
                             * (
-                                pyunits.convert(scaled_param[j],
-                                                ref_units)
+                                pyunits.convert(scaled_param[j], ref_units)
                                 / (scaler * costing.ref_param[i, p] * ref_units)
                             )
                             ** costing.exp[i]
@@ -1177,12 +1209,12 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                     )
             elif isinstance(process_params[i], str):
                 return costing.bare_erected_cost[i] == (
-                    n_equip * pyunits.convert(
+                    n_equip
+                    * pyunits.convert(
                         costing.ref_cost[i] * ref_cost_units, CE_index_units
                     )
                     * (
-                        pyunits.convert(scaled_param,
-                                        ref_units)
+                        pyunits.convert(scaled_param, ref_units)
                         / (scaler * costing.ref_param[i] * ref_units)
                     )
                     ** costing.exp[i]
@@ -1665,7 +1697,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             use_additional_costing_params: Boolean flag to use additional
                 costing parameters when account names conflict with existing
                 accounts data
-            
+
 
         Cost is in M$
         """
@@ -1735,8 +1767,8 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                         techkey in frozen_dict.keys()
                     ):  # if techkey already exists, append any new accounts
                         for accountkey, accountval in new_costing_params[
-                                techkey
-                                ].items():
+                            techkey
+                        ].items():
                             if (
                                 accountkey in frozen_dict[techkey].keys()
                             ) and not use_additional_costing_params:
@@ -1752,14 +1784,10 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                                         "account. To use the custom account "
                                         "dictionary for all conflicts, please "
                                         "pass the argument use_additional_costing_params "
-                                        "as True.".format(
-                                            accountkey, str(techkey)
-                                        )
+                                        "as True.".format(accountkey, str(techkey))
                                     )
                             else:  # conflict is the account passed, and overwrite it
-                                frozen_dict[techkey][
-                                    accountkey
-                                ] = accountval
+                                frozen_dict[techkey][accountkey] = accountval
                     else:
                         frozen_dict[techkey] = techval
                 costing_params = {k: frozen_dict[k] for k in sorted(frozen_dict)}
@@ -1769,18 +1797,16 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 process_params[account] = costing_params[str(tech)][account][
                     "Process Parameter"
                 ]
-                reference_units[account] = costing_params[str(tech)][
-                    cost_accounts[0]
-                ]["Units"]
+                reference_units[account] = costing_params[str(tech)][cost_accounts[0]][
+                    "Units"
+                ]
                 account_names[account] = costing_params[str(tech)][account][
                     "Account Name"
                 ]
                 exponents[account] = float(
                     costing_params[str(tech)][account]["Exponent"]
                 )
-                reference_costs[account] = costing_params[str(tech)][account][
-                    "BEC"
-                ]
+                reference_costs[account] = costing_params[str(tech)][account]["BEC"]
                 reference_cost_units[account] = costing_params[str(tech)][account][
                     "BEC_units"
                 ]
@@ -1799,39 +1825,41 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                         "RP Value"
                     ]
 
-                piping_materials_and_labor_percentage[account] = costing_params[str(tech)][account][
-                    "Piping, Materials and Labor"
-                ]
-                electrical_materials_and_labor_percentage[account] = costing_params[str(tech)][account][
-                    "Electrical, Materials and Labor"
-                ]
-                instrumentation_percentage[account] = costing_params[str(tech)][account][
-                    "Instrumentation"
-                ]
-                plants_services_percentage[account] = costing_params[str(tech)][account][
-                    "Plant Services"
-                ]
-                process_buildings_percentage[account] = costing_params[str(tech)][account][
-                    "Process Buildings"
-                ]
-                auxiliary_buildings_percentage[account] = costing_params[str(tech)][account][
-                    "Auxiliary Buildings"
-                ]
-                site_improvements_percentage[account] = costing_params[str(tech)][account][
-                    "Site Improvements"
-                ]
-                equipment_installation_percentage[account] = costing_params[str(tech)][account][
-                    "Equipment Installation"
-                ]
+                piping_materials_and_labor_percentage[account] = costing_params[
+                    str(tech)
+                ][account]["Piping, Materials and Labor"]
+                electrical_materials_and_labor_percentage[account] = costing_params[
+                    str(tech)
+                ][account]["Electrical, Materials and Labor"]
+                instrumentation_percentage[account] = costing_params[str(tech)][
+                    account
+                ]["Instrumentation"]
+                plants_services_percentage[account] = costing_params[str(tech)][
+                    account
+                ]["Plant Services"]
+                process_buildings_percentage[account] = costing_params[str(tech)][
+                    account
+                ]["Process Buildings"]
+                auxiliary_buildings_percentage[account] = costing_params[str(tech)][
+                    account
+                ]["Auxiliary Buildings"]
+                site_improvements_percentage[account] = costing_params[str(tech)][
+                    account
+                ]["Site Improvements"]
+                equipment_installation_percentage[account] = costing_params[str(tech)][
+                    account
+                ]["Equipment Installation"]
                 field_expenses_percentage[account] = costing_params[str(tech)][account][
                     "Field Expenses"
                 ]
-                project_management_and_construction_percentage[account] = costing_params[str(tech)][account][
+                project_management_and_construction_percentage[
+                    account
+                ] = costing_params[str(tech)][account][
                     "Project Management and Construction"
                 ]
-                process_contingency_percentage[account] = costing_params[str(tech)][account][
-                    "Process Contingency"
-                ]
+                process_contingency_percentage[account] = costing_params[str(tech)][
+                    account
+                ]["Process Contingency"]
             except KeyError:
                 print(
                     "KeyError: Account {} could not be found in the "
@@ -2306,7 +2334,8 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             if isinstance(process_params[i], list):
                 if len(process_params[i]) > 1:
                     return costing.bare_erected_cost[i] == (
-                        n_equip * pyunits.convert(
+                        n_equip
+                        * pyunits.convert(
                             costing.ref_cost[i] * ref_cost_units, CE_index_units
                         )
                         * sum(
@@ -2320,7 +2349,8 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                     )
             elif isinstance(process_params[i], str):
                 return costing.bare_erected_cost[i] == (
-                    n_equip * pyunits.convert(
+                    n_equip
+                    * pyunits.convert(
                         costing.ref_cost[i] * ref_cost_units, CE_index_units
                     )
                     * (
@@ -2338,8 +2368,8 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             # rules for calculating Ancillary costs
             def piping_materials_and_labor_cost_rule(blk, i):
                 return blk.piping_materials_and_labor_costs[i] == (
-                    blk.bare_erected_cost[i] *
-                    blk.piping_materials_and_labor_percentage[i]
+                    blk.bare_erected_cost[i]
+                    * blk.piping_materials_and_labor_percentage[i]
                 )
 
             blk.piping_materials_and_labor_cost_eq = Constraint(
@@ -2348,8 +2378,8 @@ class QGESSCostingData(FlowsheetCostingBlockData):
 
             def electrical_materials_and_labor_cost_rule(blk, i):
                 return blk.electrical_materials_and_labor_costs[i] == (
-                    blk.bare_erected_cost[i] *
-                    blk.electrical_materials_and_labor_percentage[i]
+                    blk.bare_erected_cost[i]
+                    * blk.electrical_materials_and_labor_percentage[i]
                 )
 
             blk.electrical_materials_and_labor_cost_eq = Constraint(
@@ -2358,8 +2388,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
 
             def instrumentation_cost_rule(blk, i):
                 return blk.instrumentation_costs[i] == (
-                    blk.bare_erected_cost[i] *
-                    blk.instrumentation_percentage[i]
+                    blk.bare_erected_cost[i] * blk.instrumentation_percentage[i]
                 )
 
             blk.instrumentation_cost_eq = Constraint(
@@ -2368,8 +2397,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
 
             def plant_services_cost_rule(blk, i):
                 return blk.plant_services_costs[i] == (
-                    blk.bare_erected_cost[i] *
-                    blk.plant_services_percentage[i]
+                    blk.bare_erected_cost[i] * blk.plant_services_percentage[i]
                 )
 
             blk.plant_services_cost_eq = Constraint(
@@ -2378,22 +2406,19 @@ class QGESSCostingData(FlowsheetCostingBlockData):
 
             def ancillary_cost_rule(blk, i):
                 return blk.ancillary_costs[i] == (
-                    blk.piping_materials_and_labor_costs[i] +
-                    blk.electrical_materials_and_labor_costs[i] +
-                    blk.instrumentation_costs[i] +
-                    blk.plant_services_costs[i]
+                    blk.piping_materials_and_labor_costs[i]
+                    + blk.electrical_materials_and_labor_costs[i]
+                    + blk.instrumentation_costs[i]
+                    + blk.plant_services_costs[i]
                 )
 
-            blk.ancillary_cost_eq = Constraint(
-                cost_accounts, rule=ancillary_cost_rule
-            )
-    
+            blk.ancillary_cost_eq = Constraint(cost_accounts, rule=ancillary_cost_rule)
+
             # rules for calculating Buildings costs
 
             def process_buildings_cost_rule(blk, i):
                 return blk.process_buildings_costs[i] == (
-                    blk.bare_erected_cost[i] *
-                    blk.process_buildings_percentage[i]
+                    blk.bare_erected_cost[i] * blk.process_buildings_percentage[i]
                 )
 
             blk.process_buildings_cost_eq = Constraint(
@@ -2402,8 +2427,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
 
             def auxiliary_buildings_cost_rule(blk, i):
                 return blk.auxiliary_buildings_costs[i] == (
-                    blk.bare_erected_cost[i] *
-                    blk.auxiliary_buildings_percentage[i]
+                    blk.bare_erected_cost[i] * blk.auxiliary_buildings_percentage[i]
                 )
 
             blk.auxiliary_buildings_cost_eq = Constraint(
@@ -2412,8 +2436,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
 
             def site_improvements_cost_rule(blk, i):
                 return blk.site_improvements_costs[i] == (
-                    blk.bare_erected_cost[i] *
-                    blk.site_improvements_percentage[i]
+                    blk.bare_erected_cost[i] * blk.site_improvements_percentage[i]
                 )
 
             blk.site_improvements_cost_eq = Constraint(
@@ -2422,21 +2445,18 @@ class QGESSCostingData(FlowsheetCostingBlockData):
 
             def buildings_cost_rule(blk, i):
                 return blk.buildings_costs[i] == (
-                    blk.process_buildings_costs[i] +
-                    blk.auxiliary_buildings_costs[i] +
-                    blk.site_improvements_costs[i]
+                    blk.process_buildings_costs[i]
+                    + blk.auxiliary_buildings_costs[i]
+                    + blk.site_improvements_costs[i]
                 )
 
-            blk.buildings_cost_eq = Constraint(
-                cost_accounts, rule=buildings_cost_rule
-            )
-    
+            blk.buildings_cost_eq = Constraint(cost_accounts, rule=buildings_cost_rule)
+
             # rules for calculating Engineering, Procurement and Construction Management costs
 
             def equipment_installation_cost_rule(blk, i):
                 return blk.equipment_installation_costs[i] == (
-                    blk.bare_erected_cost[i] *
-                    blk.equipment_installation_percentage[i]
+                    blk.bare_erected_cost[i] * blk.equipment_installation_percentage[i]
                 )
 
             blk.equipment_installation_cost_eq = Constraint(
@@ -2445,8 +2465,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
 
             def field_expenses_cost_rule(blk, i):
                 return blk.field_expenses_costs[i] == (
-                    blk.bare_erected_cost[i] *
-                    blk.field_expenses_percentage[i]
+                    blk.bare_erected_cost[i] * blk.field_expenses_percentage[i]
                 )
 
             blk.field_expenses_cost_eq = Constraint(
@@ -2455,8 +2474,8 @@ class QGESSCostingData(FlowsheetCostingBlockData):
 
             def project_management_and_construction_cost_rule(blk, i):
                 return blk.project_management_and_construction_costs[i] == (
-                    blk.bare_erected_cost[i] *
-                    blk.project_management_and_construction_percentage[i]
+                    blk.bare_erected_cost[i]
+                    * blk.project_management_and_construction_percentage[i]
                 )
 
             blk.project_management_and_construction_cost_eq = Constraint(
@@ -2465,20 +2484,17 @@ class QGESSCostingData(FlowsheetCostingBlockData):
 
             def epcm_cost_rule(blk, i):
                 return blk.epcm_costs[i] == (
-                    blk.equipment_installation_costs[i] +
-                    blk.field_expenses_costs[i] +
-                    blk.project_management_and_construction_costs[i]
+                    blk.equipment_installation_costs[i]
+                    + blk.field_expenses_costs[i]
+                    + blk.project_management_and_construction_costs[i]
                 )
 
-            blk.epcm_cost_eq = Constraint(
-                cost_accounts, rule=epcm_cost_rule
-            )
+            blk.epcm_cost_eq = Constraint(cost_accounts, rule=epcm_cost_rule)
 
             # rules for calculating Contingency costs
             def process_contingency_cost_rule(blk, i):
                 return blk.contingency_costs[i] == (
-                    blk.bare_erected_cost[i] *
-                    blk.process_contingency_percentage[i]
+                    blk.bare_erected_cost[i] * blk.process_contingency_percentage[i]
                 )
 
             blk.process_contingency_cost_eq = Constraint(
@@ -2486,9 +2502,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             )
 
             def contingency_cost_rule(blk, i):
-                return blk.contingency_costs[i] == (
-                    blk.process_contingency_costs[i]
-                )
+                return blk.contingency_costs[i] == (blk.process_contingency_costs[i])
 
             blk.contingency_cost_eq = Constraint(
                 cost_accounts, rule=contingency_cost_rule
@@ -2496,16 +2510,17 @@ class QGESSCostingData(FlowsheetCostingBlockData):
 
             def total_installation_cost_rule(blk, i):
                 return blk.total_installation_cost[i] == (
-                    blk.ancillary_costs[i] +
-                    blk.buildings_costs[i] +
-                    blk.epcm_costs[i] +
-                    blk.contingency_costs[i]
+                    blk.ancillary_costs[i]
+                    + blk.buildings_costs[i]
+                    + blk.epcm_costs[i]
+                    + blk.contingency_costs[i]
                 )
 
             blk.total_installation_cost_eq = Constraint(
                 cost_accounts, rule=total_installation_cost_rule
             )
         else:
+
             def total_installation_cost_rule(blk, i):
                 return blk.total_installation_cost[i] == blk.bare_erected_cost[i] * (
                     blk.Lang_factor - 1
@@ -2518,13 +2533,10 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         # rule for calculating TPC
         def total_plant_cost_rule(blk, i):
             return blk.total_plant_cost[i] == (
-                blk.bare_erected_cost[i] +
-                blk.total_installation_cost[i]
-                )
+                blk.bare_erected_cost[i] + blk.total_installation_cost[i]
+            )
 
-        blk.total_plant_cost_eq = Constraint(
-            cost_accounts, rule=total_plant_cost_rule
-        )
+        blk.total_plant_cost_eq = Constraint(cost_accounts, rule=total_plant_cost_rule)
 
         # rule for sum of BEC
         def BEC_sum_rule(blk):
@@ -2989,10 +3001,10 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 )
 
     def get_REE_plant_costs(
-            b,
-            blocks_to_cost=None,
-            # add more arguments for detailed O&M calculations later
-            CE_index_year="2018",
+        b,
+        blocks_to_cost=None,
+        # add more arguments for detailed O&M calculations later
+        CE_index_year="2018",
     ):
         """
         Creates constraints for the following plant-level costs in $MM/yr:
@@ -3157,9 +3169,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             blocks_to_cost = []
             for o in b.parent_block().component_objects(descend_into=True):
                 # look for costing blocks
-                if o.name in [
-                    block.name for block in b._registered_unit_costing
-                ]:
+                if o.name in [block.name for block in b._registered_unit_costing]:
                     blocks_to_cost.append(o)
 
         # create empty dictionary to concisely save and call block variables
@@ -3182,7 +3192,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             "project_management_and_construction_costs",
             "process_contingency_costs",
             "contingency_costs",
-            ]
+        ]
         plant_cost_dict = dict.fromkeys(b.installation_cost_list, [])
         plant_cost_dict = dict((key, []) for key in b.installation_cost_list)
 
@@ -3199,14 +3209,11 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 total_var = getattr(b, var)  # aggregate variable
                 sum_var = sum(plant_cost_dict[var])  # sum of components
                 constraint = Constraint(
-                    expr=(total_var ==
-                          pyunits.convert(
-                              sum_var,
-                              to_units=CE_index_units
-                              )
-                          )
+                    expr=(
+                        total_var == pyunits.convert(sum_var, to_units=CE_index_units)
                     )
-                setattr(b, var+"_eq", constraint)  # generate the constraint
+                )
+                setattr(b, var + "_eq", constraint)  # generate the constraint
             elif len(plant_cost_dict[var]) == 0:  # no vars exists
                 # could occur if Lang factor set and individual
                 # installation costs do not exist - delete aggregate vars
@@ -3218,7 +3225,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         for var in b.installation_cost_list:
             if hasattr(b, var):
                 calculate_variable_from_constraint(
-                    getattr(b, var), getattr(b, var+"_eq")
+                    getattr(b, var), getattr(b, var + "_eq")
                 )
 
     # -----------------------------------------------------------------------------
