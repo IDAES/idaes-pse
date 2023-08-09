@@ -41,26 +41,6 @@ CE_index_year = "2016"
 # check that the model solved properly and has 0 degrees of freedom
 assert degrees_of_freedom(m) == 0
 
-# create new account to test, this is a new entry for a type 8 REE process
-# additional_costing_params = {
-#     "8": {
-#         "A": {
-#             "1.1": {
-#                 "Account Name": "Crushing & Screening - Front End Loader",
-#                 "BEC": 737000/2.97/5,
-#                 "BEC_units": "$2019",
-#                 "Eng Fee": 1.82,
-#                 "Exponent": 0.55,
-#                 "Process Contingency": 0.15,
-#                 "Process Parameter": "Total load (TPH)",
-#                 "Project Contingency": 0,
-#                 "RP Value": 500/5,
-#                 "Units": "ton/hr"
-#                 }
-#             }
-#         }
-#     }
-
 ###########################################################################
 #  Create costing constraints                                             #
 ###########################################################################
