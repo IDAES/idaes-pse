@@ -13,7 +13,7 @@
 """
 This module contains model diagnostic utility functions for use in IDAES (Pyomo) models.
 """
-
+from io import StringIO
 import pytest
 
 from pyomo.environ import (
@@ -28,6 +28,7 @@ from pyomo.environ import (
     units,
     Var,
 )
+from pyomo.common.collections import ComponentSet
 from pyomo.contrib.pynumero.asl import AmplInterface
 import numpy as np
 import idaes.core.util.scaling as iscale
@@ -50,100 +51,189 @@ from idaes.core.util.model_diagnostics import (
     set_bounds_from_valid_range,
     list_components_with_values_outside_valid_range,
     ipopt_solve_halt_on_error,
+    _var_in_block,
+    _vars_fixed_to_zero,
+    _vars_near_zero,
+    _vars_violating_bounds,
+    _vars_with_none_value,
+    _write_report_section,
 )
 
-__author__ = "Alex Dowling, Douglas Allan"
+__author__ = "Alex Dowling, Douglas Allan, Andrew Lee"
 
 
-@pytest.mark.integration
-def test_DiagnosticsToolbox():
+@pytest.fixture
+def model():
     m = ConcreteModel()
-
-    # A var outside the model
-    m.v = Var(units=units.kg)
-
-    # Model to be tested
     m.b = Block()
 
-    m.b.v1 = Var(units=units.s)
-    m.b.v2 = Var(units=units.s)
-    m.b.v3 = Var(units=units.s)
-    m.b.v4 = Var(units=units.s)
+    m.v1 = Var()
+    m.v2 = Var()
+    m.v3 = Var()
+    m.v4 = Var()
 
-    # Unused var
-    m.b.v5 = Var(units=units.s)
-    m.b.v5.fix(0)
+    m.v1.fix(0)
+    m.v2.fix(3)
+    m.v3.set_value(0)
 
-    # Linearly dependent constraints
-    m.b.c1 = Constraint(expr=m.b.v1 + m.b.v2 == 10 * units.s)
-    m.b.c2 = Constraint(expr=2 * m.b.v1 + 2 * m.b.v2 == 20 * units.s)
-    m.b.c3 = Constraint(expr=m.b.v3 + m.b.v4 == 20 * units.s)
-
-    # An inequality
-    m.b.c4 = Constraint(expr=m.b.v1 + m.v >= 10 * units.s)
-
-    # Deactivated constraint
-    m.b.c5 = Constraint(expr=m.b.v1 == 15 * units.s)
-    m.b.c5.deactivate()
-
-    # An objective
-    m.b.o1 = Objective(expr=m.b.v2)
-    # A deactivated objective
-    m.b.o2 = Objective(expr=m.b.v2**2)
-    m.b.o2.deactivate()
-
-    # Create instance of Diagnostics Toolbox
-    dt = DiagnosticsToolbox(model=m.b)
-
-    dt.report_structural_issues()
-
-    m.b.v3.fix(1)
-
-    dt.report_structural_issues()
-
-    dt.display_external_variables()
-
-    # TODO: Current checks do not detect linearly dependent constraints
-    assert False
+    return m
 
 
-@pytest.mark.integration
-def test_DiagnosticsToolbox2():
-    m = ConcreteModel()
+@pytest.mark.unit
+def test_var_in_block(model):
+    assert _var_in_block(model.v, model)
+    assert not _var_in_block(model.v, model.b)
 
-    # A var outside the model
-    m.v = Var(initialize=10, units=units.s, bounds=(0, 1))
 
-    # Model to be tested
-    m.b = Block()
+@pytest.mark.unit
+def test_vars_fixed_to_zero(model):
+    zero_vars = _vars_fixed_to_zero(model)
+    assert isinstance(zero_vars, ComponentSet)
+    assert len(zero_vars) == 1
+    for i in zero_vars:
+        assert i is model.v1
 
-    m.b.v1 = Var(initialize=1, units=units.s)
-    m.b.v2 = Var(initialize=2, units=units.s)
-    m.b.v3 = Var(initialize=3, units=units.s, bounds=(10, 20))
-    m.b.v4 = Var(units=units.s)
-    m.b.v5 = Var(initialize=1e-8, bounds=(0, 1))
 
-    # Equality constraints
-    m.b.c1 = Constraint(expr=2 * m.b.v1 == m.b.v2)  # OK
-    m.b.c2 = Constraint(expr=m.b.v3 == m.v)  # Not Converged
+@pytest.mark.unit
+def test_vars_near_zero(model):
+    model.v3.set_value(1e-5)
 
-    # Inequality constraints
-    m.b.c3 = Constraint(expr=m.b.v2 <= 10)  # OK
-    m.b.c4 = Constraint(expr=m.b.v2 <= 0)  # Not OK
+    near_zero_vars = _vars_near_zero(model, zero_tolerance=1e-5)
+    assert isinstance(near_zero_vars, ComponentSet)
+    assert len(near_zero_vars) == 2
+    for i in near_zero_vars:
+        assert i.local_name in ["v1", "v3"]
 
-    # Create instance of Diagnostics Toolbox
-    dt = DiagnosticsToolbox(model=m.b)
+    near_zero_vars = _vars_near_zero(model, zero_tolerance=1e-6)
+    assert isinstance(near_zero_vars, ComponentSet)
+    assert len(near_zero_vars) == 1
+    for i in near_zero_vars:
+        assert i is model.v1
 
-    # dt.report_structural_issues()
 
-    dt.report_numerical_issues()
-    dt.display_constraints_with_large_residuals()
-    dt.display_variables_near_bounds()
+@pytest.mark.unit
+def test_vars_with_none_value(model):
+    none_value = _vars_with_none_value(model)
 
-    help(DiagnosticsToolbox)
+    assert isinstance(none_value, ComponentSet)
+    assert len(none_value) == 1
+    for i in none_value:
+        assert i is model.v4
 
-    # TODO: Current checks do not detect linearly dependent constraints
-    assert False
+
+@pytest.mark.unit
+def test_vars_with_bounds_issues(model):
+    model.v1.setlb(2)
+    model.v1.setub(6)
+    model.v2.setlb(0)
+    model.v2.setub(10)
+    model.v4.set_value(10)
+    model.v4.setlb(0)
+    model.v4.setub(1)
+
+    bounds_issue = _vars_violating_bounds(model)
+    assert isinstance(bounds_issue, ComponentSet)
+    assert len(bounds_issue) == 2
+    for i in bounds_issue:
+        assert i.local_name in ["v1", "v4"]
+
+
+@pytest.mark.unit
+def test_write_report_section_all():
+    stream = StringIO()
+
+    _write_report_section(
+        stream=stream,
+        lines_list=["a", "b", "c"],
+        title="foo",
+        line_if_empty="bar",
+        end_line="baz",
+        header="-",
+        footer="=",
+    )
+
+    expected = """------------------------------------------------------------------------------------
+foo
+
+    a
+    b
+    c
+
+baz
+====================================================================================
+"""
+    assert stream.getvalue() == expected
+
+
+@pytest.mark.unit
+def test_write_report_section_no_lines():
+    stream = StringIO()
+
+    _write_report_section(
+        stream=stream,
+        lines_list=[],
+        title="foo",
+        line_if_empty="bar",
+        end_line="baz",
+        header="-",
+        footer="=",
+    )
+
+    expected = """------------------------------------------------------------------------------------
+foo
+
+    bar
+
+baz
+====================================================================================
+"""
+    assert stream.getvalue() == expected
+
+
+@pytest.mark.unit
+def test_write_report_section_lines_only():
+    stream = StringIO()
+
+    _write_report_section(
+        stream=stream,
+        lines_list=["a", "b", "c"],
+    )
+
+    expected = """------------------------------------------------------------------------------------
+    a
+    b
+    c
+
+"""
+    assert stream.getvalue() == expected
+
+
+class TestDiagnosticsToolbox:
+    @pytest.fixture
+    def model(self):
+        m = ConcreteModel()
+
+        m.v1 = Var(units=units.m)
+        m.v2 = Var(units=units.m)
+        m.v3 = Var(bounds=(0, 5))
+        m.v4 = Var()
+        m.v5 = Var(bounds=(0, 1))
+        m.v6 = Var()
+        m.v7 = Var(
+            units=units.m, bounds=(0, 1)
+        )  # Poorly scaled variable with lower bound
+        m.v8 = Var()  # unused variable
+
+        m.c1 = Constraint(expr=m.v1 + m.v2 == 10)  # Unit consistency issue
+        m.c2 = Constraint(expr=m.v3 == m.v4 + m.v5)
+        m.c3 = Constraint(expr=2 * m.v3 == 3 * m.v4 + 4 * m.v5 + m.v6)
+        m.c4 = Constraint(expr=m.v7 == 1e-8 * m.v1)  # Poorly scaled constraint
+
+        m.v4.fix(2)
+        m.v5.fix(2)
+        m.v6.fix(0)
+
+        return m
 
 
 @pytest.fixture()
