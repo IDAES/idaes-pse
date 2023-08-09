@@ -64,3 +64,9 @@ def load_sCO2_costing_dictionary():
     with open(os.path.join(directory, "sCO2_costing_parameters.json"), "r") as file:
         sCO2_costing_params = json.load(file)
     return sCO2_costing_params
+
+
+def load_REE_costing_dictionary():
+    with open(os.path.join(directory, "REE_costing_parameters.json"), "r") as file:
+        REE_costing_parameters = json.load(file)
+    return REE_costing_parameters
