@@ -137,4 +137,4 @@ def print_solver_versions():
     # This does not work for cbc and clp. Not sure why
     for s in ["ipopt", "k_aug", "couenne", "bonmin", 
               "ipopt_l1", "dot_sens"]:
-        subprocess.run([s, "-v"], check=True)
+        subprocess.run([s, "-v"], check=True, capture_output=False)
