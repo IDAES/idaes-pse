@@ -25,6 +25,7 @@ import sys
 # If running on Google Colab, install Ipopt via IDAES
 if "google.colab" in sys.modules:
     !wget "https://raw.githubusercontent.com/idaes-pse/main/scripts/colab_helper.py"
+    !wget "https://raw.githubusercontent.com/adowling2/idaes-pse/colab-install-script/scripts/colab_helper.py"
     import colab_helper
     colab_helper.install_idaes()
     colab_helper.install_ipopt()
@@ -48,6 +49,7 @@ import sys
 import os.path
 import os
 import urllib
+import re
 
 import subprocess
 
@@ -118,17 +120,21 @@ def install_ipopt(try_conda_as_backup=False):
     print(" ")
     """
 
+def update_path():
+    if not re.search(re.escape(":/root/.idaes/bin/"), os.environ['PATH']):
+        os.environ['PATH'] += ":/root/.idaes/bin/"
+
 def create_solver_symbolic_links():
     """ Create symbolic links to use solvers on Colab
     """
 
     for s in ["ipopt", "k_aug", "couenne", "bonmin", "cbc", 
               "clp", "ipopt_l1", "dot_sens"]:
-        subprocess.run([sys.executable, "-m", "ln", "/root/.idaes/bin/"+s, s], check=True)
+        subprocess.run(["ln", "/root/.idaes/bin/"+s, s], check=True)
 
 def print_solver_versions():
 
     # This does not work for cbc and clp. Not sure why
     for s in ["ipopt", "k_aug", "couenne", "bonmin", 
               "ipopt_l1", "dot_sens"]:
-        subprocess.run([sys.executable, "-m", s, "-v"], check=True)
+        subprocess.run([s, "-v"], check=True)
