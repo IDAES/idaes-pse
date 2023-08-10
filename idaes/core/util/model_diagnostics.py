@@ -102,13 +102,13 @@ class DiagnosticsToolbox:
 
     To get started:
 
-      1. Create an instance of your model - this does not need to be initialized yet.
-      2. Fix variables until you have 0 degrees of freedom - many of these tools presume
+      #. Create an instance of your model - this does not need to be initialized yet.
+      #. Fix variables until you have 0 degrees of freedom - many of these tools presume
         a square model, and a square model should always be the foundation of any more
         advanced model.
-      3. Create an instance of the DiagnosticsToolbox and provide the model to debug as
+      #. Create an instance of the DiagnosticsToolbox and provide the model to debug as
         the model argument.
-      4. Call the report_structural_issues() method.
+      #. Call the report_structural_issues() method.
 
     Model diagnostics is an iterative process and you will likely need to run these
     tools multiple times to resolve all issues. After making a change to your model,
@@ -122,15 +122,15 @@ class DiagnosticsToolbox:
 
     Report methods will print a summary containing three parts:
 
-    1. Warnings - these are critical issues that should be resolved before continuing.
+    #. Warnings - these are critical issues that should be resolved before continuing.
       For each warning, a method will be suggested in the Next Steps section to get
       additional information.
-    2. Cautions - these are things that could be correct but could also be the source of
+    #. Cautions - these are things that could be correct but could also be the source of
       solver issues. Not all cautions need to be addressed, but users should investigate
       each one to ensure that the behavior is correct and that they will not be the source
       of difficulties later. Methods exist to provide more information on all cautions,
       but these will not appear in the Next Steps section.
-    3. Next Steps - these are recommended methods to call from the DiagnosticsToolbox to
+    #. Next Steps - these are recommended methods to call from the DiagnosticsToolbox to
       get further information on warnings. If no warnings are found, this will suggest
       the next report method to call.
 
