@@ -64,14 +64,6 @@ def package_available(package_name):
 
 def on_colab(): return "google.colab" in sys.modules
 
-def command_with_output(command):
-    r = subprocess.getoutput(command)
-    print(r)
-
-def _print_solver_version(solvername):
-    subprocess.run([sys.executable, "-m", solvername, "-v"], check=True)
-
-
 def install_idaes():
     ''' Installs latest version of IDAES-PSE via pip
     
@@ -84,7 +76,9 @@ def install_idaes():
         print("Installing idaes via pip...")
         subprocess.run([sys.executable, "-m", "pip", "install", "-q", "idaes_pse"], check=True)
         print("idaes was successfully installed")
-        subprocess.run(["idaes", "--version"], check=True)
+        v=subprocess.run(["idaes", "--version"], check=True, capture_output=True)
+        print(v.stdout)
+        print(v.stderr)
 
 def install_ipopt(try_conda_as_backup=False):
     ''' Install Ipopt and possibly other solvers. 
@@ -137,4 +131,6 @@ def print_solver_versions():
     # This does not work for cbc and clp. Not sure why
     for s in ["ipopt", "k_aug", "couenne", "bonmin", 
               "ipopt_l1", "dot_sens"]:
-        subprocess.run([s, "-v"], check=True, capture_output=False)
+        v=subprocess.run([s, "-v"], check=True, capture_output=True)
+        print(v.stdout)
+        print(v.stderr)
