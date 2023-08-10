@@ -84,8 +84,8 @@ def model():
 
 @pytest.mark.unit
 def test_var_in_block(model):
-    assert _var_in_block(model.v, model)
-    assert not _var_in_block(model.v, model.b)
+    assert _var_in_block(model.v1, model)
+    assert not _var_in_block(model.v1, model.b)
 
 
 @pytest.mark.unit
