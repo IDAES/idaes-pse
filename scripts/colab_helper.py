@@ -35,6 +35,8 @@ For testing purposes, you may need to use:
 
 """
 
+__version__ = "2023.08.10"
+
 import shutil
 import sys
 import os.path
@@ -66,8 +68,13 @@ def on_colab():
     return "google.colab" in sys.modules
 
 
-def install_idaes():
-    """Installs latest version of IDAES-PSE via pip"""
+def install_idaes(verbose=False):
+    """Installs latest version of IDAES-PSE via pip
+
+    Argument:
+        verbose: bool, if True, display console output from pip install
+
+    """
 
     try:
         import idaes
@@ -75,9 +82,15 @@ def install_idaes():
         print("idaes was found! No need to install.")
     except ImportError:
         print("Installing idaes via pip...")
-        subprocess.run(
-            [sys.executable, "-m", "pip", "install", "-q", "idaes_pse"], check=True
+        v = subprocess.run(
+            [sys.executable, "-m", "pip", "install", "-q", "idaes_pse"],
+            check=True,
+            capture_output=True,
+            text=True,
         )
+        if verbose:
+            print(v.stdout)
+            print(v.stderr)
         print("idaes was successfully installed")
         v = subprocess.run(
             ["idaes", "--version"], check=True, capture_output=True, text=True
@@ -86,19 +99,26 @@ def install_idaes():
         print(v.stderr)
 
 
-def install_ipopt(try_conda_as_backup=False):
+def install_ipopt(verbose=False, try_conda_as_backup=False):
     """Install Ipopt and possibly other solvers.
 
     If running on Colab, this will install Ipopt, k_aug, and other COIN-OR
     solvers via idaes get-extensions.
 
-    As an optional backup, this will install Ipopt via conda
+    Arguments:
+        verbose: bool, if True, display console output from idaes get-extensions and conda
+        try_conda_as_backup: bool, if True, install ipopt via conda if idaes get-extensions fails
     """
 
     # Check if Ipopt (solver) is available. If not, install it.
     if not package_available("ipopt"):
         print("Running idaes get-extensions to install Ipopt, k_aug, and more...")
-        subprocess.run(["idaes", "get-extensions"], check=True)
+        v = subprocess.run(
+            ["idaes", "get-extensions"], check=True, capture_output=True, text=True
+        )
+        if verbose:
+            print(v.stdout)
+            print(v.stderr)
         _update_path()
         print("Checking solver versions:")
         _print_solver_versions()
@@ -106,10 +126,15 @@ def install_ipopt(try_conda_as_backup=False):
     # Check again if Ipopt is available. If not, try conda
     if try_conda_as_backup and not package_available("ipopt"):
         print("Installing Ipopt via conda...")
-        subprocess.run(
+        v = subprocess.run(
             [sys.executable, "-m", "conda", "install", "-c", "conda-forge", "ipopt"],
             check=True,
+            capture_output=True,
+            text=True,
         )
+        if verbose:
+            print(v.stdout)
+            print(v.stderr)
         print("Checking ipopt version:")
         _print_single_solver_version("ipopt")
 
