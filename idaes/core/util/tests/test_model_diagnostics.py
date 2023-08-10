@@ -60,6 +60,7 @@ from idaes.core.util.model_diagnostics import (
     _vars_violating_bounds,
     _vars_with_none_value,
     _write_report_section,
+    _collect_model_statistics,
 )
 
 __author__ = "Alex Dowling, Douglas Allan, Andrew Lee"
@@ -209,6 +210,173 @@ def test_write_report_section_lines_only():
 
 """
     assert stream.getvalue() == expected
+
+
+@pytest.mark.unit
+class TestStatsWriter:
+    def test_blocks(self):
+        m = ConcreteModel()
+        m.b1 = Block()
+        m.b1.b2 = Block()
+        m.b3 = Block()
+        m.b3.b4 = Block()
+        m.b5 = Block()
+        m.b5.b6 = Block()
+
+        m.b3.b4.deactivate()
+        m.b5.deactivate()
+
+        stats = _collect_model_statistics(m)
+
+        assert len(stats) == 9
+        assert stats[0] == "    Activated Blocks: 4 (Deactivated: 3)"
+        assert (
+            stats[1] == "    Free Variables in Activated Constraints: 0 (External: 0)"
+        )
+        assert stats[2] == "        Free Variables with only lower bounds: 0"
+        assert stats[3] == "        Free Variables with only upper bounds: 0"
+        assert stats[4] == "        Free Variables with upper and lower bounds: 0"
+        assert (
+            stats[5] == "    Fixed Variables in Activated Constraints: 0 (External: 0)"
+        )
+        assert stats[6] == "    Activated Equality Constraints: 0 (Deactivated: 0)"
+        assert stats[7] == "    Activated Inequality Constraints: 0 (Deactivated: 0)"
+        assert stats[8] == "    Activated Objectives: 0 (Deactivated: 0)"
+
+    def test_constraints(self):
+        m = ConcreteModel()
+        m.b1 = Block()
+        m.b2 = Block()
+
+        m.b1.v1 = Var()
+        m.b1.v2 = Var()
+        m.b1.v3 = Var()
+        m.b1.v4 = Var()
+
+        m.b1.c1 = Constraint(expr=m.b1.v1 == m.b1.v2)
+        m.b1.c2 = Constraint(expr=m.b1.v1 >= m.b1.v2)
+        m.b1.c3 = Constraint(expr=m.b1.v1 == m.b1.v2)
+        m.b1.c4 = Constraint(expr=m.b1.v1 >= m.b1.v2)
+
+        m.b2.c1 = Constraint(expr=m.b1.v1 == m.b1.v2)
+        m.b2.c2 = Constraint(expr=m.b1.v1 >= m.b1.v2)
+
+        m.b2.deactivate()
+        m.b1.c3.deactivate()
+        m.b1.c4.deactivate()
+
+        stats = _collect_model_statistics(m)
+
+        assert len(stats) == 9
+        assert stats[0] == "    Activated Blocks: 2 (Deactivated: 1)"
+        assert (
+            stats[1] == "    Free Variables in Activated Constraints: 2 (External: 0)"
+        )
+        assert stats[2] == "        Free Variables with only lower bounds: 0"
+        assert stats[3] == "        Free Variables with only upper bounds: 0"
+        assert stats[4] == "        Free Variables with upper and lower bounds: 0"
+        assert (
+            stats[5] == "    Fixed Variables in Activated Constraints: 0 (External: 0)"
+        )
+        assert stats[6] == "    Activated Equality Constraints: 1 (Deactivated: 1)"
+        assert stats[7] == "    Activated Inequality Constraints: 1 (Deactivated: 1)"
+        assert stats[8] == "    Activated Objectives: 0 (Deactivated: 0)"
+
+    def test_objectives(self):
+        m = ConcreteModel()
+        m.b1 = Block()
+        m.b2 = Block()
+
+        m.b1.o1 = Objective(expr=1)
+        m.b1.o2 = Objective(expr=1)
+
+        m.b2.o1 = Objective(expr=1)
+
+        m.b2.deactivate()
+        m.b1.o2.deactivate()
+
+        stats = _collect_model_statistics(m)
+
+        assert len(stats) == 9
+        assert stats[0] == "    Activated Blocks: 2 (Deactivated: 1)"
+        assert (
+            stats[1] == "    Free Variables in Activated Constraints: 0 (External: 0)"
+        )
+        assert stats[2] == "        Free Variables with only lower bounds: 0"
+        assert stats[3] == "        Free Variables with only upper bounds: 0"
+        assert stats[4] == "        Free Variables with upper and lower bounds: 0"
+        assert (
+            stats[5] == "    Fixed Variables in Activated Constraints: 0 (External: 0)"
+        )
+        assert stats[6] == "    Activated Equality Constraints: 0 (Deactivated: 0)"
+        assert stats[7] == "    Activated Inequality Constraints: 0 (Deactivated: 0)"
+        assert stats[8] == "    Activated Objectives: 1 (Deactivated: 1)"
+
+    def test_free_variables(self):
+        m = ConcreteModel()
+        m.b1 = Block()
+
+        m.v1 = Var(bounds=(0, 1))
+
+        m.b1.v2 = Var(bounds=(0, None))
+        m.b1.v3 = Var(bounds=(None, 0))
+        m.b1.v4 = Var(bounds=(0, 1))
+        m.b1.v5 = Var()
+        m.b1.v6 = Var(bounds=(0, 1))
+
+        m.b1.c1 = Constraint(expr=0 == m.v1 + m.b1.v2 + m.b1.v3 + m.b1.v4 + m.b1.v5)
+
+        stats = _collect_model_statistics(m.b1)
+
+        assert len(stats) == 9
+        assert stats[0] == "    Activated Blocks: 1 (Deactivated: 0)"
+        assert (
+            stats[1] == "    Free Variables in Activated Constraints: 5 (External: 1)"
+        )
+        assert stats[2] == "        Free Variables with only lower bounds: 1"
+        assert stats[3] == "        Free Variables with only upper bounds: 1"
+        assert stats[4] == "        Free Variables with upper and lower bounds: 2"
+        assert (
+            stats[5] == "    Fixed Variables in Activated Constraints: 0 (External: 0)"
+        )
+        assert stats[6] == "    Activated Equality Constraints: 1 (Deactivated: 0)"
+        assert stats[7] == "    Activated Inequality Constraints: 0 (Deactivated: 0)"
+        assert stats[8] == "    Activated Objectives: 0 (Deactivated: 0)"
+
+    def test_fixed_variables(self):
+        m = ConcreteModel()
+        m.b1 = Block()
+
+        m.v1 = Var(bounds=(0, 1))
+
+        m.b1.v2 = Var(bounds=(0, None))
+        m.b1.v3 = Var(bounds=(None, 0))
+        m.b1.v4 = Var(bounds=(0, 1))
+        m.b1.v5 = Var()
+        m.b1.v6 = Var(bounds=(0, 1))
+
+        m.b1.c1 = Constraint(expr=0 == m.v1 + m.b1.v2 + m.b1.v3 + m.b1.v4 + m.b1.v5)
+
+        m.v1.fix(0.5)
+        m.b1.v2.fix(-0.5)
+        m.b1.v5.fix(-0.5)
+
+        stats = _collect_model_statistics(m.b1)
+
+        assert len(stats) == 9
+        assert stats[0] == "    Activated Blocks: 1 (Deactivated: 0)"
+        assert (
+            stats[1] == "    Free Variables in Activated Constraints: 2 (External: 0)"
+        )
+        assert stats[2] == "        Free Variables with only lower bounds: 0"
+        assert stats[3] == "        Free Variables with only upper bounds: 1"
+        assert stats[4] == "        Free Variables with upper and lower bounds: 1"
+        assert (
+            stats[5] == "    Fixed Variables in Activated Constraints: 3 (External: 1)"
+        )
+        assert stats[6] == "    Activated Equality Constraints: 1 (Deactivated: 0)"
+        assert stats[7] == "    Activated Inequality Constraints: 0 (Deactivated: 0)"
+        assert stats[8] == "    Activated Objectives: 0 (Deactivated: 0)"
 
 
 @pytest.mark.solver

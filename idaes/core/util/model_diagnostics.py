@@ -1673,15 +1673,11 @@ def _collect_model_statistics(model):
         f"{len(free_vars_in_constraints)} "
         f"(External: {len(ext_free_vars_in_constraints)})"
     )
-    stats.append(
-        f"{TAB * 2}Free Variables with only lower bounds: {len(free_vars_lb)} "
-    )
-    stats.append(
-        f"{TAB * 2}Free Variables with only upper bounds: {len(free_vars_ub)} "
-    )
+    stats.append(f"{TAB * 2}Free Variables with only lower bounds: {len(free_vars_lb)}")
+    stats.append(f"{TAB * 2}Free Variables with only upper bounds: {len(free_vars_ub)}")
     stats.append(
         f"{TAB * 2}Free Variables with upper and lower bounds: "
-        f"{len(free_vars_lbub)} "
+        f"{len(free_vars_lbub)}"
     )
     stats.append(
         f"{TAB}Fixed Variables in Activated Constraints: "
