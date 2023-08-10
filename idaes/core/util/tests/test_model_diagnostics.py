@@ -26,6 +26,8 @@ from pyomo.environ import (
     Objective,
     Set,
     SolverFactory,
+    Suffix,
+    TransformationFactory,
     units,
     Var,
 )
@@ -661,6 +663,69 @@ Dulmage-Mendelsohn Over-Constrained Set
 
         assert len(next_steps) == 1
         assert "display_overconstrained_set()" in next_steps
+
+    @pytest.mark.component
+    def test_collect_structural_cautions(self, model):
+        dt = DiagnosticsToolbox(model=model.b)
+
+        cautions = dt._collect_structural_cautions()
+
+        assert len(cautions) == 2
+        assert "Caution: 1 variable fixed to 0" in cautions
+        assert "Caution: 1 unused variable (0 fixed)" in cautions
+
+    @pytest.mark.component
+    def test_collect_numerical_warnings(self, model):
+        dt = DiagnosticsToolbox(model=model.b)
+
+        warnings, next_steps = dt._collect_numerical_warnings()
+
+        assert len(warnings) == 3
+        assert "WARNING: 1 Constraint with large residuals" in warnings
+        assert "WARNING: 2 Variables at or outside bounds" in warnings
+        assert "WARNING: 1 Variable with poor scaling" in warnings
+
+        assert len(next_steps) == 3
+        assert "display_constraints_with_large_residuals()" in next_steps
+        assert "display_variables_at_or_outside_bounds()" in next_steps
+        assert "display_poorly_scaled_variables()" in next_steps
+
+    @pytest.mark.component
+    def test_collect_numerical_warnings_corrected(self, model):
+        m = model.clone()
+
+        # Fix numerical issues
+        m.b.v3.setlb(-5)
+        m.b.v5.setub(10)
+
+        m.scaling_factor = Suffix(direction=Suffix.EXPORT)
+        m.scaling_factor[m.b.v7] = 1e8
+        m.scaling_factor[m.b.c4] = 1e-8
+
+        scaling = TransformationFactory("core.scale_model")
+        scaled_model = scaling.create_using(m, rename=False)
+
+        solver = get_solver()
+        solver.solve(scaled_model)
+
+        dt = DiagnosticsToolbox(model=scaled_model.b)
+
+        warnings, next_steps = dt._collect_numerical_warnings()
+
+        assert len(warnings) == 0
+
+        assert len(next_steps) == 0
+
+    @pytest.mark.component
+    def test_collect_numerical_cautions(self, model):
+        dt = DiagnosticsToolbox(model=model.b)
+
+        cautions = dt._collect_numerical_cautions()
+
+        assert len(cautions) == 3
+        assert "Caution: 3 Variables with value close to their bounds" in cautions
+        assert "Caution: 3 Variables with value close to zero" in cautions
+        assert "Caution: 1 Variable with None value" in cautions
 
 
 @pytest.fixture()

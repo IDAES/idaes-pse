@@ -563,7 +563,7 @@ class DiagnosticsToolbox:
             if len(violated_bounds) == 1:
                 cstring = "Variable"
             warnings.append(
-                f"WARNING: {len(violated_bounds)} {cstring} with bounds violations"
+                f"WARNING: {len(violated_bounds)} {cstring} at or outside bounds"
             )
             next_steps.append("display_variables_at_or_outside_bounds()")
 
