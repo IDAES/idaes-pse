@@ -30,7 +30,7 @@ from click.testing import CliRunner
 import pytest
 
 # package
-from idaes.commands import examples, extensions, convergence, config, env_info, base
+from idaes.commands import examples, extensions, convergence, env_info, base
 from . import create_module_scratch, rmtree_scratch
 import idaes
 
@@ -135,39 +135,6 @@ def test_get_extensions_bad_plat(runner):
 def test_extensions_license(runner):
     result = runner.invoke(extensions.extensions_license)
     assert result.exit_code == 0
-
-
-###########
-# config  #
-###########
-
-
-@pytest.mark.unit
-def test_conf_display(runner):
-    result = runner.invoke(config.config_display)
-    assert result.exit_code == 0
-
-
-@pytest.mark.unit
-def test_conf_file_paths(runner):
-    result = runner.invoke(config.config_file)
-    assert result.exit_code == 0
-    result = runner.invoke(config.config_file, ["--global"])
-    assert result.exit_code == 0
-    result = runner.invoke(config.config_file, ["--local"])
-    assert result.exit_code == 0
-
-
-@pytest.mark.unit
-def test_conf_file_paths(runner):
-    fname = os.path.join(idaes.testing_directory, "conf_test.json")
-    result = runner.invoke(config.config_write, ["--file", fname])
-    assert result.exit_code == 0
-    with open(fname, "r") as f:
-        d = json.load(f)
-        assert d["logger_capture_solver"] == True
-    if os.path.exists(fname):
-        os.remove(fname)
 
 
 ##############
