@@ -945,9 +945,9 @@ Model Statistics
 
         Activated Blocks: 1 (Deactivated: 0)
         Free Variables in Activated Constraints: 4 (External: 1)
-            Free Variables with only lower bounds: 0 
-            Free Variables with only upper bounds: 0 
-            Free Variables with upper and lower bounds: 2 
+            Free Variables with only lower bounds: 0
+            Free Variables with only upper bounds: 0
+            Free Variables with upper and lower bounds: 2
         Fixed Variables in Activated Constraints: 3 (External: 0)
         Activated Equality Constraints: 4 (Deactivated: 0)
         Activated Inequality Constraints: 0 (Deactivated: 0)
@@ -971,7 +971,7 @@ Suggested next steps:
 
 ====================================================================================
 """
-
+        print(stream.getvalue())
         assert stream.getvalue() == expected
 
     @pytest.mark.component
