@@ -45,10 +45,16 @@ import subprocess
 
 
 def _check_available(executable_name):
+    """ Utility to check in an executable is available
+    """
     return shutil.which(executable_name) or os.path.isfile(executable_name)
 
 
 def package_available(package_name):
+    """ Utility to check if a package/executable is available
+
+    This supports customization, e.g., glpk, for special package names
+    """
 
     if package_name == "glpk":
         return _check_available("gpsol")
@@ -57,6 +63,8 @@ def package_available(package_name):
 
 
 def on_colab():
+    """ Utility returns True if executed on Colab, False otherwise
+    """
     return "google.colab" in sys.modules
 
 
@@ -87,6 +95,8 @@ def install_ipopt(try_conda_as_backup=False):
     
     If running on Colab, this will install Ipopt, k_aug, and other COIN-OR
     solvers via idaes get-extensions.
+
+    As an optional backup, this will install Ipopt via conda
     """
 
     # Check if Ipopt (solver) is available. If not, install it.
@@ -109,18 +119,29 @@ def install_ipopt(try_conda_as_backup=False):
 
 
 def _update_path():
+    """ Add idaes executables to PATH
+    """
     if not re.search(re.escape(":/root/.idaes/bin/"), os.environ["PATH"]):
         os.environ["PATH"] += ":/root/.idaes/bin/"
 
 
 def _print_single_solver_version(solvername):
+    """ Print the version for a single solver
+    Arg:
+        solvername: solver executable name (string)
+    """
     v = subprocess.run([solvername, "-v"], check=True, capture_output=True, text=True)
     print(v.stdout)
     print(v.stderr)
 
 
 def _print_solver_versions():
+    """ Print versions of solvers in idaes get-extensions
 
-    # This does not work for cbc and clp. Not sure why
+    This is the primary check that solvers installed correctly and are callable
+    """
+
+    # This does not work for cbc and clp; calling --version with these solvers,
+    # enters their scripting language mode.
     for s in ["ipopt", "k_aug", "couenne", "bonmin", "ipopt_l1", "dot_sens"]:
         _print_single_solver_version(s)
