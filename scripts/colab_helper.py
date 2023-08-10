@@ -22,23 +22,12 @@ To use this script, add the following to a code block in a Jupyter notebook:
 ```
 # Ipopt installer
 import sys
-# If running on Google Colab, install Ipopt via IDAES
+# If running on Google Colab, install Pyomo and Ipopt via IDAES
 if "google.colab" in sys.modules:
     !wget "https://raw.githubusercontent.com/idaes-pse/main/scripts/colab_helper.py"
     import colab_helper
     colab_helper.install_idaes()
     colab_helper.install_ipopt()
-
-# Otherwise, attempt to load idaes which should inlcude Ipopt
-# See https://idaes-pse.readthedocs.io/en/stable/tutorials/getting_started/index.html
-# for instructions on running idaes get-extensions
-else:
-    try:
-        import idaes
-        # Provided idaes extensions are installed, importing idaes provides access to
-        print("Successfully loaded idaes.")
-    except:
-        print("IDAES is not installed!!!")
 ```
 
 For testing purposes, you may need to use:
