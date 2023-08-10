@@ -662,71 +662,7 @@ class DiagnosticsToolbox:
         """
         # Potential evaluation errors
         # TODO: High Index?
-        vars_in_constraints = variables_in_activated_constraints_set(self.config.model)
-        fixed_vars_in_constraints = ComponentSet()
-        free_vars_in_constraints = ComponentSet()
-        free_vars_lb = ComponentSet()
-        free_vars_ub = ComponentSet()
-        free_vars_lbub = ComponentSet()
-        ext_fixed_vars_in_constraints = ComponentSet()
-        ext_free_vars_in_constraints = ComponentSet()
-        for v in vars_in_constraints:
-            if v.fixed:
-                fixed_vars_in_constraints.add(v)
-                if not _var_in_block(v, self.config.model):
-                    ext_fixed_vars_in_constraints.add(v)
-            else:
-                free_vars_in_constraints.add(v)
-                if not _var_in_block(v, self.config.model):
-                    ext_free_vars_in_constraints.add(v)
-                if v.lb is not None:
-                    if v.ub is not None:
-                        free_vars_lbub.add(v)
-                    else:
-                        free_vars_lb.add(v)
-                elif v.ub is not None:
-                    free_vars_ub.add(v)
-
-        # Generate report
-        # TODO: Binary and boolean vars
-        stats = []
-        stats.append(
-            f"{TAB}Activated Blocks: {len(activated_blocks_set(self.config.model))} "
-            f"(Deactivated: {len(deactivated_blocks_set(self.config.model))})"
-        )
-        stats.append(
-            f"{TAB}Free Variables in Activated Constraints: "
-            f"{len(free_vars_in_constraints)} "
-            f"(External: {len(ext_free_vars_in_constraints)})"
-        )
-        stats.append(
-            f"{TAB*2}Free Variables with only lower bounds: {len(free_vars_lb)} "
-        )
-        stats.append(
-            f"{TAB * 2}Free Variables with only upper bounds: {len(free_vars_ub)} "
-        )
-        stats.append(
-            f"{TAB * 2}Free Variables with upper and lower bounds: "
-            f"{len(free_vars_lbub)} "
-        )
-        stats.append(
-            f"{TAB}Fixed Variables in Activated Constraints: "
-            f"{len(fixed_vars_in_constraints)} "
-            f"(External: {len(ext_fixed_vars_in_constraints)})"
-        )
-        stats.append(
-            f"{TAB}Activated Equality Constraints: {len(activated_equalities_set(self.config.model))} "
-            f"(Deactivated: {len(deactivated_equalities_set(self.config.model))})"
-        )
-        stats.append(
-            f"{TAB}Activated Inequality Constraints: {len(activated_inequalities_set(self.config.model))} "
-            f"(Deactivated: {len(deactivated_inequalities_set(self.config.model))})"
-        )
-        stats.append(
-            f"{TAB}Activated Objectives: {len(activated_objectives_set(self.config.model))} "
-            f"(Deactivated: {len(deactivated_objectives_set(self.config.model))})"
-        )
-
+        stats = _collect_model_statistics(self.config.model)
         warnings, next_steps = self._collect_structural_warnings()
         cautions = self._collect_structural_cautions()
 
@@ -1698,3 +1634,72 @@ def _write_report_section(
         stream.write(f"{end_line}\n")
     if footer is not None:
         stream.write(f"{footer * MAX_STR_LENGTH}\n")
+
+
+def _collect_model_statistics(model):
+    vars_in_constraints = variables_in_activated_constraints_set(model)
+    fixed_vars_in_constraints = ComponentSet()
+    free_vars_in_constraints = ComponentSet()
+    free_vars_lb = ComponentSet()
+    free_vars_ub = ComponentSet()
+    free_vars_lbub = ComponentSet()
+    ext_fixed_vars_in_constraints = ComponentSet()
+    ext_free_vars_in_constraints = ComponentSet()
+    for v in vars_in_constraints:
+        if v.fixed:
+            fixed_vars_in_constraints.add(v)
+            if not _var_in_block(v, model):
+                ext_fixed_vars_in_constraints.add(v)
+        else:
+            free_vars_in_constraints.add(v)
+            if not _var_in_block(v, model):
+                ext_free_vars_in_constraints.add(v)
+            if v.lb is not None:
+                if v.ub is not None:
+                    free_vars_lbub.add(v)
+                else:
+                    free_vars_lb.add(v)
+            elif v.ub is not None:
+                free_vars_ub.add(v)
+
+    # Generate report
+    # TODO: Binary and boolean vars
+    stats = []
+    stats.append(
+        f"{TAB}Activated Blocks: {len(activated_blocks_set(model))} "
+        f"(Deactivated: {len(deactivated_blocks_set(model))})"
+    )
+    stats.append(
+        f"{TAB}Free Variables in Activated Constraints: "
+        f"{len(free_vars_in_constraints)} "
+        f"(External: {len(ext_free_vars_in_constraints)})"
+    )
+    stats.append(
+        f"{TAB * 2}Free Variables with only lower bounds: {len(free_vars_lb)} "
+    )
+    stats.append(
+        f"{TAB * 2}Free Variables with only upper bounds: {len(free_vars_ub)} "
+    )
+    stats.append(
+        f"{TAB * 2}Free Variables with upper and lower bounds: "
+        f"{len(free_vars_lbub)} "
+    )
+    stats.append(
+        f"{TAB}Fixed Variables in Activated Constraints: "
+        f"{len(fixed_vars_in_constraints)} "
+        f"(External: {len(ext_fixed_vars_in_constraints)})"
+    )
+    stats.append(
+        f"{TAB}Activated Equality Constraints: {len(activated_equalities_set(model))} "
+        f"(Deactivated: {len(deactivated_equalities_set(model))})"
+    )
+    stats.append(
+        f"{TAB}Activated Inequality Constraints: {len(activated_inequalities_set(model))} "
+        f"(Deactivated: {len(deactivated_inequalities_set(model))})"
+    )
+    stats.append(
+        f"{TAB}Activated Objectives: {len(activated_objectives_set(model))} "
+        f"(Deactivated: {len(deactivated_objectives_set(model))})"
+    )
+
+    return stats

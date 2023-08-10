@@ -727,6 +727,118 @@ Dulmage-Mendelsohn Over-Constrained Set
         assert "Caution: 3 Variables with value close to zero" in cautions
         assert "Caution: 1 Variable with None value" in cautions
 
+    @pytest.mark.component
+    def test_assert_no_structural_warnings(self, model):
+        m = model.clone()
+        dt = DiagnosticsToolbox(model=m.b)
+
+        with pytest.raises(AssertionError, match="Structural issues found \(1\)."):
+            dt.assert_no_structural_warnings()
+
+        # Fix units issue
+        m.b.del_component(m.b.c1)
+        m.b.c1 = Constraint(expr=m.v1 + m.b.v2 == 10 * units.m)
+        dt.assert_no_structural_warnings()
+
+    @pytest.mark.component
+    def test_assert_no_numerical_warnings(self, model):
+        m = model.clone()
+        dt = DiagnosticsToolbox(model=m.b)
+
+        with pytest.raises(AssertionError, match="Numerical issues found \(3\)."):
+            dt.assert_no_numerical_warnings()
+
+        # Fix numerical issues
+        m.b.v3.setlb(-5)
+        m.b.v5.setub(10)
+
+        m.scaling_factor = Suffix(direction=Suffix.EXPORT)
+        m.scaling_factor[m.b.v7] = 1e8
+        m.scaling_factor[m.b.c4] = 1e-8
+
+        scaling = TransformationFactory("core.scale_model")
+        scaled_model = scaling.create_using(m, rename=False)
+
+        solver = get_solver()
+        solver.solve(scaled_model)
+
+        dt = DiagnosticsToolbox(model=scaled_model.b)
+        dt.assert_no_numerical_warnings()
+
+    @pytest.mark.component
+    def test_report_structural_issues(self, model):
+        dt = DiagnosticsToolbox(model=model.b)
+
+        stream = StringIO()
+        dt.report_structural_issues(stream)
+
+        expected = """====================================================================================
+Model Statistics
+
+        Activated Blocks: 1 (Deactivated: 0)
+        Free Variables in Activated Constraints: 4 (External: 1)
+            Free Variables with only lower bounds: 0 
+            Free Variables with only upper bounds: 0 
+            Free Variables with upper and lower bounds: 2 
+        Fixed Variables in Activated Constraints: 3 (External: 0)
+        Activated Equality Constraints: 4 (Deactivated: 0)
+        Activated Inequality Constraints: 0 (Deactivated: 0)
+        Activated Objectives: 0 (Deactivated: 0)
+
+------------------------------------------------------------------------------------
+1 WARNINGS
+
+    WARNING: 1 Component with inconsistent units
+
+------------------------------------------------------------------------------------
+2 Cautions
+
+    Caution: 1 variable fixed to 0
+    Caution: 1 unused variable (0 fixed)
+
+------------------------------------------------------------------------------------
+Suggested next steps:
+
+    display_components_with_inconsistent_units()
+
+====================================================================================
+"""
+
+        assert stream.getvalue() == expected
+
+    @pytest.mark.component
+    def test_report_numerical_issues(self, model):
+        dt = DiagnosticsToolbox(model=model.b)
+
+        stream = StringIO()
+        dt.report_numerical_issues(stream)
+
+        expected = """====================================================================================
+3 WARNINGS
+
+    WARNING: 1 Constraint with large residuals
+    WARNING: 2 Variables at or outside bounds
+    WARNING: 1 Variable with poor scaling
+
+------------------------------------------------------------------------------------
+3 Cautions
+
+    Caution: 3 Variables with value close to their bounds
+    Caution: 3 Variables with value close to zero
+    Caution: 1 Variable with None value
+
+------------------------------------------------------------------------------------
+Suggested next steps:
+
+    display_constraints_with_large_residuals()
+    display_variables_at_or_outside_bounds()
+    display_poorly_scaled_variables()
+
+====================================================================================
+"""
+
+        assert stream.getvalue() == expected
+
 
 @pytest.fixture()
 def dummy_problem():
