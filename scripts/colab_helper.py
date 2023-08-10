@@ -91,38 +91,30 @@ def install_ipopt(try_conda_as_backup=False):
     if not package_available("ipopt"):
         print("Running idaes get-extensions to install Ipopt, k_aug, and more...")
         subprocess.run(["idaes", "get-extensions"], check=True)
+        _update_path()
+        print("Checking solver versions:")
+        _print_solver_versions()
 
     # Check again if Ipopt is available. If not, try conda
     if try_conda_as_backup and not package_available("ipopt"):
         print("Installing Ipopt via conda...")
         subprocess.run([sys.executable, "-m", "conda", "install", "-c", 
                         "conda-forge","ipopt"], check=True)
-    else:
-        print("Ipopt found! No need to install.")
-        
+        print("Checking ipopt version:")
+        _print_single_solver_version("ipopt")
 
-    """
-    # Verify Ipopt is now available
-    assert package_available("ipopt"), "Ipopt is not available"
-    
-    print("ipopt was successfully installed")
-    
-    solvers = ["k_aug", "cbc", "clp", "bonmin", "couenne", "ipopt_l1"]
-    for s in solvers:
-        if package_available(s):
-            print(s,"was successfuly installed")
-    print(" ")
-    """
-
-def update_path():
+def _update_path():
     if not re.search(re.escape(":/root/.idaes/bin/"), os.environ['PATH']):
         os.environ['PATH'] += ":/root/.idaes/bin/"
 
-def print_solver_versions():
+def _print_single_solver_version(solvername):
+    v=subprocess.run([solvername, "-v"], check=True, capture_output=True,text=True)
+    print(v.stdout)
+    print(v.stderr)
+
+def _print_solver_versions():
 
     # This does not work for cbc and clp. Not sure why
     for s in ["ipopt", "k_aug", "couenne", "bonmin", 
               "ipopt_l1", "dot_sens"]:
-        v=subprocess.run([s, "-v"], check=True, capture_output=True,text=True)
-        print(v.stdout)
-        print(v.stderr)
+        _print_single_solver_version(s)
