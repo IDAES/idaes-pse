@@ -14,7 +14,8 @@
 """
 Install IDAES, Ipopt, and other solvers on Google Colab
 
-Created by Alex Dowling (adowling@nd.edu) and Jeff Kantor at the University of Notre Dame.
+Created by Alex Dowling (adowling@nd.edu) and Jeff Kantor at the University of Notre Dame
+with input from John Siirola at Sandia National Laboratories.
 
 To use this script, add the following to a code block in a Jupyter notebook:
 
@@ -65,24 +66,25 @@ def command_with_output(command):
     r = subprocess.getoutput(command)
     print(r)
 
+def _print_solver_version(solvername):
+    subprocess.run([sys.executable, "-m", solvername, "-v"], check=True)
+
 
 def install_idaes():
     ''' Installs latest version of IDAES-PSE via pip
     
     '''
 
-    # Check if idaes is available. If not, install it
-    if not package_available("idaes"):
-        # Tip: "!pip" means run the 'pip' command outside the notebook.
+    try:
+        import idaes
+        print("idaes was found! No need to install.")
+    except ImportError:
         print("Installing idaes via pip...")
-        os.system("pip install -q idaes_pse")
-        assert package_available("idaes"), "idaes was not successfully installed."
+        subprocess.run([sys.executable, "-m", "pip", "install", "-q", "idaes_pse"], check=True)
         print("idaes was successfully installed")
-        os.system('idaes --version')
-    else:
-        print("IDAES found! No need to install.")
+        subprocess.run(["idaes", "--version"], check=True)
 
-def install_ipopt():
+def install_ipopt(try_conda_as_backup=False):
     ''' Install Ipopt and possibly other solvers. 
     
     If running on Colab, this will install Ipopt, k_aug, and other COIN-OR
@@ -91,53 +93,19 @@ def install_ipopt():
 
     # Check if Ipopt (solver) is available. If not, install it.
     if not package_available("ipopt"):
-        # Check if we are running on Google Colab
-        if on_colab():
-            # Install idaes solvers
-            print("Running idaes get-extensions to install Ipopt, k_aug, and more...")
-            os.system("idaes get-extensions")
+        print("Running idaes get-extensions to install Ipopt, k_aug, and more...")
+        subprocess.run(["idaes", "get-extensions"], check=True)
 
-            # Add symbolic link for idaes solvers
-            # These are needed for Colab to find the solvers
-            os.system("ln -s /root/.idaes/bin/ipopt ipopt")
-            os.system("ln -s /root/.idaes/bin/k_aug k_aug")
-            os.system("ln -s /root/.idaes/bin/couenne couenne")
-            os.system("ln -s /root/.idaes/bin/bonmin bonmin")
-            os.system("ln -s /root/.idaes/bin/cbc cbc")
-            os.system("ln -s /root/.idaes/bin/clp clp")
-            os.system("ln -s /root/.idaes/bin/ipopt_l1 ipopt_l1")
-            os.system("ln -s /root/.idaes/bin/dot_sens dot_sens")
-            
-            command_with_output('./ipopt -v')
-            command_with_output('./k_aug -v')
-            command_with_output('./couenne -v')
-            command_with_output('./bonmin -v')
-            #command_with_output('./cbc -v')
-            #command_with_output('./clp -v')
-            command_with_output('./ipopt_l1 -v')
-            
-
-        # Check again if Ipopt is available
-        if not package_available("ipopt"):
-
-            # As a backup, try copying the executable from AMPL
-            if on_colab():
-                print("Installing Ipopt via zip file...")
-                os.system('wget -N -q "https://ampl.com/dl/open/ipopt/ipopt-linux64.zip"')
-                os.system('!unzip -o -q ipopt-linux64')
-            # Otherwise, try conda
-            else:
-                try:
-                    print("Installing Ipopt via conda...")
-                    os.system('conda install -c conda-forge ipopt')
-                except:
-                    pass
-        
-
+    # Check again if Ipopt is available. If not, try conda
+    if try_conda_as_backup and not package_available("ipopt"):
+        print("Installing Ipopt via conda...")
+        subprocess.run([sys.executable, "-m", "conda", "install", "-c", 
+                        "conda-forge","ipopt"], check=True)
     else:
         print("Ipopt found! No need to install.")
         
 
+    """
     # Verify Ipopt is now available
     assert package_available("ipopt"), "Ipopt is not available"
     
@@ -148,3 +116,19 @@ def install_ipopt():
         if package_available(s):
             print(s,"was successfuly installed")
     print(" ")
+    """
+
+def create_solver_symbolic_links():
+    """ Create symbolic links to use solvers on Colab
+    """
+
+    for s in ["ipopt", "k_aug", "couenne", "bonmin", "cbc", 
+              "clp", "ipopt_l1", "dot_sens"]:
+        subprocess.run([sys.executable, "-m", "ln", "/root/.idaes/bin/"+s, s], check=True)
+
+def print_solver_versions():
+
+    # This does not work for cbc and clp. Not sure why
+    for s in ["ipopt", "k_aug", "couenne", "bonmin", 
+              "ipopt_l1", "dot_sens"]:
+        subprocess.run([sys.executable, "-m", s, "-v"], check=True)
