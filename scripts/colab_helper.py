@@ -25,7 +25,6 @@ import sys
 # If running on Google Colab, install Ipopt via IDAES
 if "google.colab" in sys.modules:
     !wget "https://raw.githubusercontent.com/idaes-pse/main/scripts/colab_helper.py"
-    !wget "https://raw.githubusercontent.com/adowling2/idaes-pse/colab-install-script/scripts/colab_helper.py"
     import colab_helper
     colab_helper.install_idaes()
     colab_helper.install_ipopt()
@@ -42,13 +41,15 @@ else:
         print("IDAES is not installed!!!")
 ```
 
+For testing purposes, you may need to use:
+"https://raw.githubusercontent.com/adowling2/idaes-pse/colab-install-script/scripts/colab_helper.py"
+
 """
 
 import shutil
 import sys
 import os.path
 import os
-import urllib
 import re
 
 import subprocess
