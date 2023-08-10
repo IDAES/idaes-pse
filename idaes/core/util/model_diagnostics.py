@@ -102,13 +102,16 @@ class DiagnosticsToolbox:
 
     To get started:
 
-      #. Create an instance of your model - this does not need to be initialized yet.
-      #. Fix variables until you have 0 degrees of freedom - many of these tools presume
+      1. Create an instance of your model - this does not need to be initialized yet.
+
+      2. Fix variables until you have 0 degrees of freedom - many of these tools presume
         a square model, and a square model should always be the foundation of any more
         advanced model.
-      #. Create an instance of the DiagnosticsToolbox and provide the model to debug as
+
+      3. Create an instance of the DiagnosticsToolbox and provide the model to debug as
         the model argument.
-      #. Call the report_structural_issues() method.
+
+      4. Call the report_structural_issues() method.
 
     Model diagnostics is an iterative process and you will likely need to run these
     tools multiple times to resolve all issues. After making a change to your model,
@@ -122,15 +125,17 @@ class DiagnosticsToolbox:
 
     Report methods will print a summary containing three parts:
 
-    #. Warnings - these are critical issues that should be resolved before continuing.
+    1. Warnings - these are critical issues that should be resolved before continuing.
       For each warning, a method will be suggested in the Next Steps section to get
       additional information.
-    #. Cautions - these are things that could be correct but could also be the source of
+
+    2. Cautions - these are things that could be correct but could also be the source of
       solver issues. Not all cautions need to be addressed, but users should investigate
       each one to ensure that the behavior is correct and that they will not be the source
       of difficulties later. Methods exist to provide more information on all cautions,
       but these will not appear in the Next Steps section.
-    #. Next Steps - these are recommended methods to call from the DiagnosticsToolbox to
+
+    3. Next Steps - these are recommended methods to call from the DiagnosticsToolbox to
       get further information on warnings. If no warnings are found, this will suggest
       the next report method to call.
 
@@ -407,10 +412,10 @@ class DiagnosticsToolbox:
         stream.write("=" * MAX_STR_LENGTH + "\n")
         stream.write("Dulmage-Mendelsohn Under-Constrained Set\n\n")
 
-        for i in range(len(uc_vblocks)):
+        for i, uc_vblock in enumerate(uc_vblocks):
             stream.write(f"{TAB}Independent Block {i}:\n\n")
             stream.write(f"{2*TAB}Variables:\n\n")
-            for v in uc_vblocks[i]:
+            for v in uc_vblock:
                 stream.write(f"{3*TAB}{v.name}\n")
 
             stream.write(f"\n{2*TAB}Constraints:\n\n")
@@ -440,10 +445,10 @@ class DiagnosticsToolbox:
         stream.write("=" * MAX_STR_LENGTH + "\n")
         stream.write("Dulmage-Mendelsohn Over-Constrained Set\n\n")
 
-        for i in range(len(oc_vblocks)):
+        for i, oc_vblock in enumerate(oc_vblocks):
             stream.write(f"{TAB}Independent Block {i}:\n\n")
             stream.write(f"{2*TAB}Variables:\n\n")
-            for v in oc_vblocks[i]:
+            for v in oc_vblock:
                 stream.write(f"{3*TAB}{v.name}\n")
 
             stream.write(f"\n{2*TAB}Constraints:\n\n")
