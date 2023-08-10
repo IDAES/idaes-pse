@@ -116,8 +116,8 @@ def install_ipopt(try_conda_as_backup=False):
 
 def _update_path():
     """Add idaes executables to PATH"""
-    if not re.search(re.escape(":/root/.idaes/bin/"), os.environ["PATH"]):
-        os.environ["PATH"] += ":/root/.idaes/bin/"
+    if not re.search(re.escape("/root/.idaes/bin/"), os.environ["PATH"]):
+        os.environ["PATH"] = "/root/.idaes/bin/:" + os.environ["PATH"]
 
 
 def _print_single_solver_version(solvername):
