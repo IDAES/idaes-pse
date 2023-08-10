@@ -333,7 +333,7 @@ class DiagnosticsToolbox:
             stream=stream,
             lines_list=identify_inconsistent_units(self.config.model),
             title="The following component(s) have unit consistency issues:",
-            end_line="For more details on cunit inconsistencies, import the "
+            end_line="For more details on unit inconsistencies, import the "
             "assert_units_consistent method\nfrom pyomo.util.check_units",
             header="=",
             footer="=",
@@ -404,7 +404,7 @@ class DiagnosticsToolbox:
         """
         uc_vblocks, uc_cblocks, _, _ = self.get_dulmage_mendelsohn_partition()
 
-        stream.write("\n" + "=" * MAX_STR_LENGTH + "\n")
+        stream.write("=" * MAX_STR_LENGTH + "\n")
         stream.write("Dulmage-Mendelsohn Under-Constrained Set\n\n")
 
         for i in range(len(uc_vblocks)):
@@ -437,7 +437,7 @@ class DiagnosticsToolbox:
         """
         _, _, oc_vblocks, oc_cblocks = self.get_dulmage_mendelsohn_partition()
 
-        stream.write("\n" + "=" * MAX_STR_LENGTH + "\n")
+        stream.write("=" * MAX_STR_LENGTH + "\n")
         stream.write("Dulmage-Mendelsohn Over-Constrained Set\n\n")
 
         for i in range(len(oc_vblocks)):

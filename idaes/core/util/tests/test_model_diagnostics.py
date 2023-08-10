@@ -14,6 +14,7 @@
 This module contains model diagnostic utility functions for use in IDAES (Pyomo) models.
 """
 from io import StringIO
+import numpy as np
 import pytest
 
 from pyomo.environ import (
@@ -30,10 +31,10 @@ from pyomo.environ import (
 )
 from pyomo.common.collections import ComponentSet
 from pyomo.contrib.pynumero.asl import AmplInterface
-import numpy as np
+
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
-
+from idaes.core.solvers import get_solver
 from idaes.core import FlowsheetBlock
 from idaes.core.util.testing import PhysicalParameterTestBlock
 
@@ -208,32 +209,393 @@ def test_write_report_section_lines_only():
     assert stream.getvalue() == expected
 
 
+@pytest.mark.solver
 class TestDiagnosticsToolbox:
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def model(self):
         m = ConcreteModel()
+        m.b = Block()
 
-        m.v1 = Var(units=units.m)
-        m.v2 = Var(units=units.m)
-        m.v3 = Var(bounds=(0, 5))
-        m.v4 = Var()
-        m.v5 = Var(bounds=(0, 1))
-        m.v6 = Var()
-        m.v7 = Var(
+        m.v1 = Var(units=units.m)  # External variable
+        m.b.v2 = Var(units=units.m)
+        m.b.v3 = Var(bounds=(0, 5))
+        m.b.v4 = Var()
+        m.b.v5 = Var(bounds=(0, 1))
+        m.b.v6 = Var()
+        m.b.v7 = Var(
             units=units.m, bounds=(0, 1)
         )  # Poorly scaled variable with lower bound
-        m.v8 = Var()  # unused variable
+        m.b.v8 = Var()  # unused variable
 
-        m.c1 = Constraint(expr=m.v1 + m.v2 == 10)  # Unit consistency issue
-        m.c2 = Constraint(expr=m.v3 == m.v4 + m.v5)
-        m.c3 = Constraint(expr=2 * m.v3 == 3 * m.v4 + 4 * m.v5 + m.v6)
-        m.c4 = Constraint(expr=m.v7 == 1e-8 * m.v1)  # Poorly scaled constraint
+        m.b.c1 = Constraint(expr=m.v1 + m.b.v2 == 10)  # Unit consistency issue
+        m.b.c2 = Constraint(expr=m.b.v3 == m.b.v4 + m.b.v5)
+        m.b.c3 = Constraint(expr=2 * m.b.v3 == 3 * m.b.v4 + 4 * m.b.v5 + m.b.v6)
+        m.b.c4 = Constraint(expr=m.b.v7 == 1e-8 * m.v1)  # Poorly scaled constraint
 
-        m.v4.fix(2)
-        m.v5.fix(2)
-        m.v6.fix(0)
+        m.b.v2.fix(5)
+        m.b.v5.fix(2)
+        m.b.v6.fix(0)
+
+        solver = get_solver()
+        solver.solve(m)
 
         return m
+
+    @pytest.mark.component
+    def test_display_external_variables(self, model):
+        dt = DiagnosticsToolbox(model=model.b)
+
+        stream = StringIO()
+        dt.display_external_variables(stream)
+
+        expected = """====================================================================================
+The following external variable(s) appear in constraints within the model:
+
+    v1
+
+====================================================================================
+"""
+
+        assert stream.getvalue() == expected
+
+    @pytest.mark.component
+    def test_display_unused_variables(self, model):
+        dt = DiagnosticsToolbox(model=model.b)
+
+        stream = StringIO()
+        dt.display_unused_variables(stream)
+
+        expected = """====================================================================================
+The following variable(s) do not appear in any activated constraints within the model:
+
+    b.v8
+
+====================================================================================
+"""
+
+        assert stream.getvalue() == expected
+
+    @pytest.mark.component
+    def test_display_variables_fixed_to_zero(self, model):
+        dt = DiagnosticsToolbox(model=model.b)
+
+        stream = StringIO()
+        dt.display_variables_fixed_to_zero(stream)
+
+        expected = """====================================================================================
+The following variable(s) are fixed to zero:
+
+    b.v6
+
+====================================================================================
+"""
+
+        assert stream.getvalue() == expected
+
+    @pytest.mark.component
+    def test_display_variables_at_or_outside_bounds(self, model):
+        dt = DiagnosticsToolbox(model=model.b)
+
+        stream = StringIO()
+        dt.display_variables_at_or_outside_bounds(stream)
+
+        expected = """====================================================================================
+The following variable(s) have values at or outside their bounds:
+
+    b.v3 (free): value=0.0 bounds=(0, 5)
+    b.v5 (fixed): value=2 bounds=(0, 1)
+
+====================================================================================
+"""
+
+        assert stream.getvalue() == expected
+
+    @pytest.mark.component
+    def test_display_variables_with_none_value(self, model):
+        dt = DiagnosticsToolbox(model=model.b)
+
+        stream = StringIO()
+        dt.display_variables_with_none_value(stream)
+
+        expected = """====================================================================================
+The following variable(s) have a value of None:
+
+    b.v8
+
+====================================================================================
+"""
+
+        assert stream.getvalue() == expected
+
+    @pytest.mark.component
+    def test_display_variables_with_value_near_zero(self, model):
+        dt = DiagnosticsToolbox(model=model.b)
+
+        stream = StringIO()
+        dt.display_variables_with_value_near_zero(stream)
+
+        expected = """====================================================================================
+The following variable(s) have a value close to zero:
+
+    b.v3: value=0.0
+    b.v6: value=0
+    b.v7: value=5.002439135661953e-08
+
+====================================================================================
+"""
+
+        assert stream.getvalue() == expected
+
+    @pytest.mark.component
+    def test_display_poorly_scaled_variables(self, model):
+        dt = DiagnosticsToolbox(model=model.b)
+
+        stream = StringIO()
+        dt.display_poorly_scaled_variables(stream)
+
+        expected = """====================================================================================
+The following variable(s) are poorly scaled:
+
+    b.v7: 5.002439135661953e-08
+
+====================================================================================
+"""
+
+        assert stream.getvalue() == expected
+
+    @pytest.mark.component
+    def test_display_variables_near_bounds(self, model):
+        dt = DiagnosticsToolbox(model=model.b)
+
+        stream = StringIO()
+        dt.display_variables_near_bounds(stream)
+
+        expected = """====================================================================================
+The following variable(s) have values close to their bounds:
+
+    b.v3: value=0.0 bounds=(0, 5)
+    b.v5: value=2 bounds=(0, 1)
+    b.v7: value=5.002439135661953e-08 bounds=(0, 1)
+
+====================================================================================
+"""
+
+        assert stream.getvalue() == expected
+
+    @pytest.mark.component
+    def test_display_components_with_inconsistent_units(self, model):
+        dt = DiagnosticsToolbox(model=model.b)
+
+        stream = StringIO()
+        dt.display_components_with_inconsistent_units(stream)
+
+        expected = """====================================================================================
+The following component(s) have unit consistency issues:
+
+    b.c1
+
+For more details on unit inconsistencies, import the assert_units_consistent method
+from pyomo.util.check_units
+====================================================================================
+"""
+
+        assert stream.getvalue() == expected
+
+    @pytest.mark.component
+    def test_display_constraints_with_large_residuals(self, model):
+        dt = DiagnosticsToolbox(model=model.b)
+
+        stream = StringIO()
+        dt.display_constraints_with_large_residuals(stream)
+
+        expected = """====================================================================================
+The following constraint(s) have large residuals:
+
+    b.c2
+
+====================================================================================
+"""
+
+        assert stream.getvalue() == expected
+
+    @pytest.mark.component
+    def test_get_dulmage_mendelsohn_partition(self, model):
+        # Clone model so we can add some singularities
+        m = model.clone()
+
+        # Create structural singularities
+        m.b.v2.unfix()
+        m.b.v4.fix(2)
+
+        # Add a second set of structural singularities
+        m.b.b2 = Block()
+        m.b.b2.v1 = Var()
+        m.b.b2.v2 = Var()
+        m.b.b2.v3 = Var()
+        m.b.b2.v4 = Var()
+
+        m.b.b2.c1 = Constraint(expr=m.b.b2.v1 == m.b.b2.v2)
+        m.b.b2.c2 = Constraint(expr=2 * m.b.b2.v1 == 3 * m.b.b2.v2)
+        m.b.b2.c3 = Constraint(expr=m.b.b2.v3 == m.b.b2.v4)
+
+        m.b.b2.v2.fix(42)
+
+        dt = DiagnosticsToolbox(model=m.b)
+
+        (
+            uc_vblocks,
+            uc_cblocks,
+            oc_vblocks,
+            oc_cblocks,
+        ) = dt.get_dulmage_mendelsohn_partition()
+
+        assert len(uc_vblocks) == 2
+        assert len(uc_vblocks[0]) == 3
+        for i in uc_vblocks[0]:
+            assert i.name in ["v1", "b.v2", "b.v7"]
+        assert len(uc_vblocks[1]) == 2
+        for i in uc_vblocks[1]:
+            assert i.name in ["b.b2.v3", "b.b2.v4"]
+
+        assert len(uc_cblocks) == 2
+        assert len(uc_cblocks[0]) == 2
+        for i in uc_cblocks[0]:
+            assert i.name in ["b.c1", "b.c4"]
+        assert len(uc_cblocks[1]) == 1
+        for i in uc_cblocks[1]:
+            assert i.name in ["b.b2.c3"]
+
+        assert len(oc_vblocks) == 2
+        assert len(oc_vblocks[0]) == 1
+        for i in oc_vblocks[0]:
+            assert i.name in ["b.v3"]
+        assert len(oc_vblocks[1]) == 1
+        for i in oc_vblocks[1]:
+            assert i.name in ["b.b2.v1"]
+
+        assert len(oc_cblocks) == 2
+        assert len(oc_cblocks[0]) == 2
+        for i in oc_cblocks[0]:
+            assert i.name in ["b.c2", "b.c3"]
+        assert len(oc_cblocks[1]) == 2
+        for i in oc_cblocks[1]:
+            assert i.name in ["b.b2.c1", "b.b2.c2"]
+
+    @pytest.mark.component
+    def test_display_underconstrained_set(self, model):
+        # Clone model so we can add some singularities
+        m = model.clone()
+
+        # Create structural singularities
+        m.b.v2.unfix()
+        m.b.v4.fix(2)
+
+        # Add a second set of structural singularities
+        m.b.b2 = Block()
+        m.b.b2.v1 = Var()
+        m.b.b2.v2 = Var()
+        m.b.b2.v3 = Var()
+        m.b.b2.v4 = Var()
+
+        m.b.b2.c1 = Constraint(expr=m.b.b2.v1 == m.b.b2.v2)
+        m.b.b2.c2 = Constraint(expr=2 * m.b.b2.v1 == 3 * m.b.b2.v2)
+        m.b.b2.c3 = Constraint(expr=m.b.b2.v3 == m.b.b2.v4)
+
+        m.b.b2.v2.fix(42)
+
+        dt = DiagnosticsToolbox(model=m.b)
+
+        stream = StringIO()
+        dt.display_underconstrained_set(stream)
+
+        expected = """====================================================================================
+Dulmage-Mendelsohn Under-Constrained Set
+
+    Independent Block 0:
+
+        Variables:
+
+            b.v2
+            v1
+            b.v7
+
+        Constraints:
+
+            b.c1
+            b.c4
+
+    Independent Block 1:
+
+        Variables:
+
+            b.b2.v4
+            b.b2.v3
+
+        Constraints:
+
+            b.b2.c3
+
+====================================================================================
+"""
+
+        assert stream.getvalue() == expected
+
+    @pytest.mark.component
+    def test_display_overconstrained_set(self, model):
+        # Clone model so we can add some singularities
+        m = model.clone()
+
+        # Create structural singularities
+        m.b.v2.unfix()
+        m.b.v4.fix(2)
+
+        # Add a second set of structural singularities
+        m.b.b2 = Block()
+        m.b.b2.v1 = Var()
+        m.b.b2.v2 = Var()
+        m.b.b2.v3 = Var()
+        m.b.b2.v4 = Var()
+
+        m.b.b2.c1 = Constraint(expr=m.b.b2.v1 == m.b.b2.v2)
+        m.b.b2.c2 = Constraint(expr=2 * m.b.b2.v1 == 3 * m.b.b2.v2)
+        m.b.b2.c3 = Constraint(expr=m.b.b2.v3 == m.b.b2.v4)
+
+        m.b.b2.v2.fix(42)
+
+        dt = DiagnosticsToolbox(model=m.b)
+
+        stream = StringIO()
+        dt.display_overconstrained_set(stream)
+
+        expected = """====================================================================================
+Dulmage-Mendelsohn Over-Constrained Set
+
+    Independent Block 0:
+
+        Variables:
+
+            b.v3
+
+        Constraints:
+
+            b.c2
+            b.c3
+
+    Independent Block 1:
+
+        Variables:
+
+            b.b2.v1
+
+        Constraints:
+
+            b.b2.c1
+            b.b2.c2
+
+====================================================================================
+"""
+
+        assert stream.getvalue() == expected
 
 
 @pytest.fixture()
