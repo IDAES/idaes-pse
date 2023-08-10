@@ -597,6 +597,71 @@ Dulmage-Mendelsohn Over-Constrained Set
 
         assert stream.getvalue() == expected
 
+    @pytest.mark.component
+    def test_collect_structural_warnings_base_case(self, model):
+        dt = DiagnosticsToolbox(model=model.b)
+
+        warnings, next_steps = dt._collect_structural_warnings()
+
+        assert len(warnings) == 1
+        assert warnings == ["WARNING: 1 Component with inconsistent units"]
+        assert len(next_steps) == 1
+        assert next_steps == ["display_components_with_inconsistent_units()"]
+
+    @pytest.mark.component
+    def test_collect_structural_warnings_underconstrained(self, model):
+        # Clone model so we can add some singularities
+        m = model.clone()
+
+        # Create structural singularities
+        m.b.v2.unfix()
+
+        dt = DiagnosticsToolbox(model=m.b)
+
+        warnings, next_steps = dt._collect_structural_warnings()
+
+        assert len(warnings) == 3
+        assert "WARNING: 1 Component with inconsistent units" in warnings
+        assert "WARNING: 1 Degree of Freedom" in warnings
+        assert (
+            """WARNING: Structural singularity found
+        Under-Constrained Set: 1 variables, 1 constraints
+        Over-Constrained Set: 0 variables, 0 constraints"""
+            in warnings
+        )
+
+        assert len(next_steps) == 2
+        assert "display_components_with_inconsistent_units()" in next_steps
+        assert "display_underconstrained_set()" in next_steps
+
+    @pytest.mark.component
+    def test_collect_structural_warnings_overconstrained(self, model):
+        # Clone model so we can add some singularities
+        m = model.clone()
+
+        # Fix units
+        m.b.del_component(m.b.c1)
+        m.b.c1 = Constraint(expr=m.v1 + m.b.v2 == 10 * units.m)
+
+        # Create structural singularities
+        m.b.v4.fix(2)
+
+        dt = DiagnosticsToolbox(model=m.b)
+
+        warnings, next_steps = dt._collect_structural_warnings()
+
+        assert len(warnings) == 2
+        assert "WARNING: -1 Degree of Freedom" in warnings
+        assert (
+            """WARNING: Structural singularity found
+        Under-Constrained Set: 0 variables, 0 constraints
+        Over-Constrained Set: 1 variables, 1 constraints"""
+            in warnings
+        )
+
+        assert len(next_steps) == 1
+        assert "display_overconstrained_set()" in next_steps
+
 
 @pytest.fixture()
 def dummy_problem():

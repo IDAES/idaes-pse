@@ -474,7 +474,7 @@ class DiagnosticsToolbox:
         dof = degrees_of_freedom(self.config.model)
         if dof != 0:
             dstring = "Degrees"
-            if dof == abs(1):
+            if abs(dof) == 1:
                 dstring = "Degree"
             warnings.append(f"WARNING: {dof} {dstring} of Freedom")
         if len(uc) > 0:
