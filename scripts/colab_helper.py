@@ -76,7 +76,7 @@ def install_idaes():
         print("Installing idaes via pip...")
         subprocess.run([sys.executable, "-m", "pip", "install", "-q", "idaes_pse"], check=True)
         print("idaes was successfully installed")
-        v=subprocess.run(["idaes", "--version"], check=True, capture_output=True)
+        v=subprocess.run(["idaes", "--version"], check=True, capture_output=True,text=True)
         print(v.stdout)
         print(v.stderr)
 
@@ -118,19 +118,11 @@ def update_path():
     if not re.search(re.escape(":/root/.idaes/bin/"), os.environ['PATH']):
         os.environ['PATH'] += ":/root/.idaes/bin/"
 
-def create_solver_symbolic_links():
-    """ Create symbolic links to use solvers on Colab
-    """
-
-    for s in ["ipopt", "k_aug", "couenne", "bonmin", "cbc", 
-              "clp", "ipopt_l1", "dot_sens"]:
-        subprocess.run(["ln", "/root/.idaes/bin/"+s, s], check=True)
-
 def print_solver_versions():
 
     # This does not work for cbc and clp. Not sure why
     for s in ["ipopt", "k_aug", "couenne", "bonmin", 
               "ipopt_l1", "dot_sens"]:
-        v=subprocess.run([s, "-v"], check=True, capture_output=True)
+        v=subprocess.run([s, "-v"], check=True, capture_output=True,text=True)
         print(v.stdout)
         print(v.stderr)
