@@ -45,13 +45,12 @@ import subprocess
 
 
 def _check_available(executable_name):
-    """ Utility to check in an executable is available
-    """
+    """Utility to check in an executable is available"""
     return shutil.which(executable_name) or os.path.isfile(executable_name)
 
 
 def package_available(package_name):
-    """ Utility to check if a package/executable is available
+    """Utility to check if a package/executable is available
 
     This supports customization, e.g., glpk, for special package names
     """
@@ -63,15 +62,12 @@ def package_available(package_name):
 
 
 def on_colab():
-    """ Utility returns True if executed on Colab, False otherwise
-    """
+    """Utility returns True if executed on Colab, False otherwise"""
     return "google.colab" in sys.modules
 
 
 def install_idaes():
-    """ Installs latest version of IDAES-PSE via pip
-    
-    """
+    """Installs latest version of IDAES-PSE via pip"""
 
     try:
         import idaes
@@ -91,8 +87,8 @@ def install_idaes():
 
 
 def install_ipopt(try_conda_as_backup=False):
-    """ Install Ipopt and possibly other solvers. 
-    
+    """Install Ipopt and possibly other solvers.
+
     If running on Colab, this will install Ipopt, k_aug, and other COIN-OR
     solvers via idaes get-extensions.
 
@@ -119,14 +115,13 @@ def install_ipopt(try_conda_as_backup=False):
 
 
 def _update_path():
-    """ Add idaes executables to PATH
-    """
+    """Add idaes executables to PATH"""
     if not re.search(re.escape(":/root/.idaes/bin/"), os.environ["PATH"]):
         os.environ["PATH"] += ":/root/.idaes/bin/"
 
 
 def _print_single_solver_version(solvername):
-    """ Print the version for a single solver
+    """Print the version for a single solver
     Arg:
         solvername: solver executable name (string)
     """
@@ -136,7 +131,7 @@ def _print_single_solver_version(solvername):
 
 
 def _print_solver_versions():
-    """ Print versions of solvers in idaes get-extensions
+    """Print versions of solvers in idaes get-extensions
 
     This is the primary check that solvers installed correctly and are callable
     """
