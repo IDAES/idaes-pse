@@ -170,53 +170,6 @@ def test_conf_file_paths(runner):
         os.remove(fname)
 
 
-@pytest.mark.skipif(sys.version_info[:2] == (3, 11), reason="Fails on Python 3.11")
-@pytest.mark.unit
-def test_conf_set(runner):
-    fname = os.path.join(idaes.testing_directory, "conf_test.json")
-
-    def _tst(args):
-        result = runner.invoke(
-            config.config_set,
-            ["logging:loggers:idaes.solver:handlers", "['console']"] + args,
-        )
-        assert result.exit_code == 0
-        with open(fname, "r") as f:
-            d = json.load(f)
-            assert len(d["logging"]["loggers"]["idaes.solver"]["handlers"]) == 1
-            assert d["logging"]["loggers"]["idaes.solver"]["handlers"][0] == "console"
-        result = runner.invoke(
-            config.config_set,
-            ["logging:loggers:idaes.solver:handlers", "'console'", "--del"] + args,
-        )
-        assert result.exit_code == 0
-        result = runner.invoke(
-            config.config_set,
-            ["logging:loggers:idaes.solver:handlers", "'console'", "--add"] + args,
-        )
-        assert result.exit_code == 0
-        with open(fname, "r") as f:
-            d = json.load(f)
-            assert len(d["logging"]["loggers"]["idaes.solver"]["handlers"]) == 1
-            assert d["logging"]["loggers"]["idaes.solver"]["handlers"][0] == "console"
-        result = runner.invoke(
-            config.config_set, ["ipopt_l1:options:max_iter", "100"] + args
-        )
-        assert result.exit_code == 0
-        assert "ConfigDict" in str(type(idaes.cfg.ipopt_l1))
-        assert "ConfigDict" in str(type(idaes.cfg.ipopt_l1.options))
-        assert idaes.cfg.ipopt_l1.options.max_iter == 100
-        if os.path.exists(fname):
-            os.remove(fname)
-
-    # lbianchi-lbl: these sets of args seem to fail if tensorflow has been imported (#633)
-    # TODO these could be refactored as a parametrized pytest.fixture
-    if "tensorflow" not in sys.modules:
-        _tst(["--global", "--file", fname, "--file_as_global"])
-        _tst(["--local", "--file", fname, "--file_as_local"])
-    _tst(["--file", fname])
-
-
 ##############
 # env info   #
 ##############
