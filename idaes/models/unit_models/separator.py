@@ -1265,7 +1265,6 @@ objects linked the mixed state and all outlet states,
             for s in s_vars:
                 # Get local variable name of component
                 l_name = s_vars[s].local_name
-
                 if l_name == "pressure" or l_name == "temperature":
                     # Assume outlets same as mixed flow - make Reference
                     e_obj = Reference(mb[:].component(l_name))
@@ -1335,7 +1334,7 @@ objects linked the mixed state and all outlet states,
                                 )
 
                                 if mfp is None:
-                                    raise AttributeError(
+                                    raise ConfigurationError(
                                         "{} Cannot use ideal splitting with "
                                         "this property package. Package uses "
                                         "indexed port member {} which cannot "
@@ -1413,15 +1412,7 @@ objects linked the mixed state and all outlet states,
                             mfp = mb[t].component(l_name + "_comp")
 
                             if mfp is None:
-                                raise AttributeError(
-                                    "{} Cannot use ideal splitting with "
-                                    "this property package. Package uses "
-                                    "indexed port member {} which cannot "
-                                    "be partitioned. Please set "
-                                    "configuration argument "
-                                    "ideal_separation = False for this "
-                                    "property package.".format(self.name, s)
-                                )
+                                _raise_split_indexed_fail_err(self.name, s)
 
                             for j in mb.component_list:
                                 if (
@@ -1469,15 +1460,7 @@ objects linked the mixed state and all outlet states,
                             )
 
                             if mfp is None:
-                                raise AttributeError(
-                                    "{} Cannot use ideal splitting with "
-                                    "this property package. Package uses "
-                                    "indexed port member {} which cannot "
-                                    "be partitioned. Please set "
-                                    "configuration argument "
-                                    "ideal_separation = False for this "
-                                    "property package.".format(self.name, s)
-                                )
+                                _raise_split_indexed_fail_err(self.name, s)
 
                             for p in mb.phase_list:
                                 if (p, j) in pc_set:
@@ -1510,87 +1493,77 @@ objects linked the mixed state and all outlet states,
                     )
 
                 else:
-
+                    # Unindexed variable
                     def e_rule(b, t):
-                        try:
-                            if self.config.split_basis == SplittingType.phaseFlow:
-                                ivar = mb[t].component(l_name + "_phase")
-                                if ivar is not None:
-                                    for p in mb.phase_list:
-                                        if split_map[p] == o:
-                                            return ivar[p]
-                                        else:
-                                            continue
-                                else:
-                                    ivar = mb[t].component(l_name + "_phase_comp")
-                                    if ivar is not None:
-                                        for p in mb.phase_list:
-                                            if split_map[p] == o:
-                                                return sum(
-                                                    ivar[p, j]
-                                                    for j in mb.component_list
-                                                    if (p, j) in pc_set
-                                                )
-                                            else:
-                                                continue
+                        if self.config.split_basis == SplittingType.phaseFlow:
+                            ivar = mb[t].component(l_name + "_phase")
+                            if ivar is not None:
+                                for p in mb.phase_list:
+                                    if split_map[p] == o:
+                                        return ivar[p]
                                     else:
-                                        raise AttributeError
-
-                            elif self.config.split_basis == SplittingType.componentFlow:
-                                ivar = mb[t].component(l_name + "_comp")
-                                if ivar is not None:
-                                    for j in mb.component_list:
-                                        if split_map[j] == o:
-                                            return ivar[j]
-                                        else:
-                                            continue
-                                else:
-                                    ivar = mb[t].component(l_name + "_phase_comp")
-                                    if ivar is not None:
-                                        for j in mb.component_list:
-                                            if split_map[j] == o:
-                                                return sum(
-                                                    ivar[p, j]
-                                                    for p in mb.phase_list
-                                                    if (p, j) in pc_set
-                                                )
-                                            else:
-                                                continue
-                                    else:
-                                        raise AttributeError
-                            elif (
-                                self.config.split_basis
-                                == SplittingType.phaseComponentFlow
-                            ):
+                                        continue
+                            else:
                                 ivar = mb[t].component(l_name + "_phase_comp")
                                 if ivar is not None:
                                     for p in mb.phase_list:
-                                        for j in mb.component_list:
-                                            if (
-                                                split_map[p, j] == o
-                                                and (p, j) in pc_set
-                                            ):
-                                                return ivar[p, j]
-                                            else:
-                                                continue
+                                        if split_map[p] == o:
+                                            return sum(
+                                                ivar[p, j]
+                                                for j in mb.component_list
+                                                if (p, j) in pc_set
+                                            )
+                                        else:
+                                            continue
                                 else:
-                                    raise AttributeError
-                            else:
-                                # Unrecognised split tupe
-                                raise BurntToast(
-                                    "{} received unrecognised value for "
-                                    "split_basis argument. This should never "
-                                    "happen, so please contact the IDAES "
-                                    "developers with this bug.".format(self.name)
-                                )
+                                    _raise_split_unindexed_fail_err(self.name, s)
 
-                        except:
-                            # If cannot find equivalent var, raise exception
-                            raise AttributeError(
-                                "{} Cannot use ideal splitting with this "
-                                "property package. Package uses unindexed "
-                                "port member {} which does not have an "
-                                "equivalent indexed form.".format(self.name, s)
+                        elif self.config.split_basis == SplittingType.componentFlow:
+                            ivar = mb[t].component(l_name + "_comp")
+                            if ivar is not None:
+                                for j in mb.component_list:
+                                    if split_map[j] == o:
+                                        return ivar[j]
+                                    else:
+                                        continue
+                            else:
+                                ivar = mb[t].component(l_name + "_phase_comp")
+                                if ivar is not None:
+                                    for j in mb.component_list:
+                                        if split_map[j] == o:
+                                            return sum(
+                                                ivar[p, j]
+                                                for p in mb.phase_list
+                                                if (p, j) in pc_set
+                                            )
+                                        else:
+                                            continue
+                                else:
+                                    _raise_split_unindexed_fail_err(self.name, s)
+                        elif (
+                            self.config.split_basis
+                            == SplittingType.phaseComponentFlow
+                        ):
+                            ivar = mb[t].component(l_name + "_phase_comp")
+                            if ivar is not None:
+                                for p in mb.phase_list:
+                                    for j in mb.component_list:
+                                        if (
+                                            split_map[p, j] == o
+                                            and (p, j) in pc_set
+                                        ):
+                                            return ivar[p, j]
+                                        else:
+                                            continue
+                            else:
+                                _raise_split_unindexed_fail_err(self.name, s)
+                        else:
+                            # Unrecognised split tupe
+                            raise BurntToast(
+                                "{} received unrecognised value for "
+                                "split_basis argument. This should never "
+                                "happen, so please contact the IDAES "
+                                "developers with this bug.".format(self.name)
                             )
 
                     e_obj = VarLikeExpression(self.flowsheet().time, rule=e_rule)
@@ -2008,9 +1981,14 @@ objects linked the mixed state and all outlet states,
                     iscale.constraint_scaling_transform(c, s)
             elif mb_type == MaterialBalanceType.componentTotal:
                 for (t, _, j), c in self.material_splitting_eqn.items():
-                    for i, p in enumerate(mixed_state.phase_list):
-                        ft = mixed_state[t].get_material_flow_terms(p, j)
-                        if i == 0:
+                    s = None
+                    for p in mixed_state.phase_list:
+                        try:
+                            ft = mixed_state[t].get_material_flow_terms(p, j)
+                        except KeyError:
+                            # This component does not exist in this phase
+                            continue
+                        if s is None:
                             s = iscale.get_scaling_factor(ft, default=1)
                         else:
                             _s = iscale.get_scaling_factor(ft, default=1)
@@ -2078,3 +2056,22 @@ objects linked the mixed state and all outlet states,
                             stream_attributes["Units"][k + " " + kname] = quant.u
 
             return DataFrame.from_dict(stream_attributes, orient="columns")
+
+def _raise_split_indexed_fail_err(name, s):
+    raise ConfigurationError(
+        "{} Cannot use ideal splitting with "
+        "this property package. Package uses "
+        "indexed port member {} which cannot "
+        "be partitioned. Please set "
+        "configuration argument "
+        "ideal_separation = False for this "
+        "property package.".format(name, s)
+    )
+
+def _raise_split_unindexed_fail_err(name, s):
+    raise ConfigurationError(
+        "{} Cannot use ideal splitting with "
+        "this property package. Package uses "
+        "unindexed port member {} which does "
+        "not have an equivalent indexed form. ".format(name, s)
+    )
