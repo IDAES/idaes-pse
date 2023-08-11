@@ -47,7 +47,6 @@ from pyomo.core.expr.visitor import identify_variables
 from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
 from pyomo.contrib.pynumero.asl import AmplInterface
 
-import idaes.core.util.scaling as iscale
 from idaes.core.util.model_statistics import (
     activated_blocks_set,
     deactivated_blocks_set,
@@ -64,6 +63,7 @@ from idaes.core.util.model_statistics import (
     variables_near_bounds_set,
 )
 from idaes.core.util.scaling import (
+    get_jacobian,
     extreme_jacobian_columns,
     extreme_jacobian_rows,
     extreme_jacobian_entries,
@@ -925,9 +925,7 @@ class DegeneracyHunter:
             self.nlp = PyomoNLP(self.block)
 
             # Get the scaled Jacobian of equality constraints
-            self.jac_eq = iscale.get_jacobian(
-                self.block, equality_constraints_only=True
-            )[0]
+            self.jac_eq = get_jacobian(self.block, equality_constraints_only=True)[0]
 
             # Create a list of equality constraint names
             self.eq_con_list = self.nlp.get_pyomo_equality_constraints()
