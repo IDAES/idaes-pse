@@ -324,13 +324,18 @@ class PriceTakerModel(ConcreteModel):
         Adds ramping constraints of the form
         -ramp_down_limit <= var(t) - var(t-1) <= ramp_up_limit on var
         """
+
+
         pass
 
-    def add_startup_shutdown(self):
+    def add_startup_shutdown(self,UT = 1,DT =1):
         """
         Adds startup/shutdown and minimum uptime/downtime constraints on
         a given unit/process
         """
+
+        @Constraint(self)
+        def start_up(t)
         pass
 
     def build_hourly_cashflows(self):
