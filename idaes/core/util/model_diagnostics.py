@@ -46,6 +46,7 @@ from pyomo.contrib.incidence_analysis import IncidenceGraphInterface
 from pyomo.core.expr.visitor import identify_variables
 from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
 from pyomo.contrib.pynumero.asl import AmplInterface
+from pyomo.common.deprecation import deprecation_warning
 
 from idaes.core.util.model_statistics import (
     activated_blocks_set,
@@ -79,6 +80,22 @@ TAB = " " * 4
 
 CONFIG = ConfigDict()
 CONFIG.declare("model", ConfigValue(description="Pyomo model object to be diagnosed."))
+CONFIG.declare(
+    "absolute_tolerance",
+    ConfigValue(
+        default=1e-4,
+        domain=float,
+        description="Absolute tolerance to for variables close to bounds.",
+    ),
+)
+CONFIG.declare(
+    "relative_tolerance",
+    ConfigValue(
+        default=1e-4,
+        domain=float,
+        description="Relative tolerance to for variables close to bounds.",
+    ),
+)
 CONFIG.declare(
     "residual_tolerance",
     ConfigValue(
@@ -336,7 +353,11 @@ class DiagnosticsToolbox:
             stream=stream,
             lines_list=[
                 f"{v.name}: value={value(v)} bounds={v.bounds}"
-                for v in variables_near_bounds_set(self.config.model)
+                for v in variables_near_bounds_set(
+                    self.config.model,
+                    abs_tol=self.config.absolute_tolerance,
+                    rel_tol=self.config.relative_tolerance,
+                )
             ],
             title="The following variable(s) have values close to their bounds:",
             header="=",
@@ -724,7 +745,11 @@ class DiagnosticsToolbox:
         cautions = []
 
         # Variables near bounds
-        near_bounds = variables_near_bounds_set(self.config.model)
+        near_bounds = variables_near_bounds_set(
+            self.config.model,
+            abs_tol=self.config.absolute_tolerance,
+            rel_tol=self.config.relative_tolerance,
+        )
         if len(near_bounds) > 0:
             cstring = "Variables"
             if len(near_bounds) == 1:
@@ -908,6 +933,11 @@ class DegeneracyHunter:
             Passing a Jacobian to Degeneracy Hunter is current untested.
 
         """
+        msg = (
+            "DegeneracyHunter is being deprecated in favor of the new "
+            "DiagnosticsToolbox."
+        )
+        deprecation_warning(msg=msg, logger=_log, version="2.0.0", remove_in="3.0.0")
 
         block_like = False
         try:

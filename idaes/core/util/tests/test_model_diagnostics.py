@@ -1158,6 +1158,22 @@ def v_exp():
     ).T
 
 
+@pytest.mark.unit
+def test_deprecate_degeneracy_hunter(caplog):
+    m = ConcreteModel()
+    m.v = Var()
+    m.o = Objective(expr=m.v)
+    dh = DegeneracyHunter(m)
+
+    msg = (
+        "DEPRECATED: DegeneracyHunter is being deprecated in favor of the new "
+        "DiagnosticsToolbox.  (deprecated in 2.0.0, will be removed in (or after) 3.0.0)"
+    )
+    assert msg.replace(" ", "") in caplog.records[0].message.replace("\n", "").replace(
+        " ", ""
+    )
+
+
 @pytest.mark.skipif(
     not AmplInterface.available(), reason="pynumero_ASL is not available"
 )
