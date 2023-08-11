@@ -768,6 +768,90 @@ Dulmage-Mendelsohn Over-Constrained Set
         assert stream.getvalue() == expected
 
     @pytest.mark.component
+    def test_display_variables_with_extreme_jacobians(self):
+        model = ConcreteModel()
+        model.v1 = Var(initialize=1e-8)
+        model.v2 = Var()
+        model.v3 = Var()
+
+        model.c1 = Constraint(expr=model.v1 == model.v2)
+        model.c2 = Constraint(expr=model.v1 == 1e-8 * model.v3)
+        model.c3 = Constraint(expr=1e8 * model.v1 + 1e10 * model.v2 == 1e-6 * model.v3)
+
+        dt = DiagnosticsToolbox(model=model)
+
+        stream = StringIO()
+        dt.display_variables_with_extreme_jacobians(stream)
+
+        expected = """====================================================================================
+The following variables(s) are associated with extreme Jacobian values:
+
+    v1: 100000000.00000001
+    v2: 10000000000.0
+    v3: 1.0000499987500626e-06
+
+====================================================================================
+"""
+
+        assert stream.getvalue() == expected
+
+    @pytest.mark.component
+    def test_display_constraints_with_extreme_jacobians(self):
+        model = ConcreteModel()
+        model.v1 = Var(initialize=1e-8)
+        model.v2 = Var()
+        model.v3 = Var()
+
+        model.c1 = Constraint(expr=model.v1 == model.v2)
+        model.c2 = Constraint(expr=model.v1 == 1e-8 * model.v3)
+        model.c3 = Constraint(expr=1e8 * model.v1 + 1e10 * model.v2 == 1e-6 * model.v3)
+
+        dt = DiagnosticsToolbox(model=model)
+
+        stream = StringIO()
+        dt.display_constraints_with_extreme_jacobians(stream)
+
+        expected = """====================================================================================
+The following constraints(s) are associated with extreme Jacobian values:
+
+    c3: 10000499987.500626
+
+====================================================================================
+"""
+        print(stream.getvalue())
+        assert stream.getvalue() == expected
+
+    @pytest.mark.component
+    def test_display_extreme_jacobians_entries(self):
+        model = ConcreteModel()
+        model.v1 = Var(initialize=1e-8)
+        model.v2 = Var()
+        model.v3 = Var()
+
+        model.c1 = Constraint(expr=model.v1 == model.v2)
+        model.c2 = Constraint(expr=model.v1 == 1e-8 * model.v3)
+        model.c3 = Constraint(expr=1e8 * model.v1 + 1e10 * model.v2 == 1e-6 * model.v3)
+
+        dt = DiagnosticsToolbox(model=model)
+
+        stream = StringIO()
+        dt.display_extreme_jacobians_entries(stream)
+
+        expected = """====================================================================================
+The following variable(s) and constraints(s) are associated with extreme Jacobian
+values:
+
+    c2, v3: 1e-08
+    c3, v1: 100000000.0
+    c3, v2: 10000000000.0
+    c3, v3: 1e-06
+
+====================================================================================
+"""
+        print(stream.getvalue())
+        assert stream.getvalue() == expected
+
+    @pytest.mark.component
     def test_collect_structural_warnings_base_case(self, model):
         dt = DiagnosticsToolbox(model=model.b)
 
@@ -848,15 +932,13 @@ Dulmage-Mendelsohn Over-Constrained Set
 
         warnings, next_steps = dt._collect_numerical_warnings()
 
-        assert len(warnings) == 3
+        assert len(warnings) == 2
         assert "WARNING: 1 Constraint with large residuals" in warnings
         assert "WARNING: 2 Variables at or outside bounds" in warnings
-        assert "WARNING: 1 Variable with poor scaling" in warnings
 
-        assert len(next_steps) == 3
+        assert len(next_steps) == 2
         assert "display_constraints_with_large_residuals()" in next_steps
         assert "display_variables_at_or_outside_bounds()" in next_steps
-        assert "display_poorly_scaled_variables()" in next_steps
 
     @pytest.mark.component
     def test_collect_numerical_warnings_corrected(self, model):
@@ -866,17 +948,10 @@ Dulmage-Mendelsohn Over-Constrained Set
         m.b.v3.setlb(-5)
         m.b.v5.setub(10)
 
-        m.scaling_factor = Suffix(direction=Suffix.EXPORT)
-        m.scaling_factor[m.b.v7] = 1e8
-        m.scaling_factor[m.b.c4] = 1e-8
-
-        scaling = TransformationFactory("core.scale_model")
-        scaled_model = scaling.create_using(m, rename=False)
-
         solver = get_solver()
-        solver.solve(scaled_model)
+        solver.solve(m)
 
-        dt = DiagnosticsToolbox(model=scaled_model.b)
+        dt = DiagnosticsToolbox(model=m.b)
 
         warnings, next_steps = dt._collect_numerical_warnings()
 
@@ -885,15 +960,42 @@ Dulmage-Mendelsohn Over-Constrained Set
         assert len(next_steps) == 0
 
     @pytest.mark.component
+    def test_collect_numerical_warnings_jacobian(self):
+        model = ConcreteModel()
+        model.v1 = Var(initialize=1e-8)
+        model.v2 = Var(initialize=0)
+        model.v3 = Var(initialize=0)
+
+        model.c1 = Constraint(expr=model.v1 == model.v2)
+        model.c2 = Constraint(expr=model.v1 == 1e-8 * model.v3)
+        model.c3 = Constraint(expr=1e8 * model.v1 + 1e10 * model.v2 == 1e-6 * model.v3)
+
+        dt = DiagnosticsToolbox(model=model)
+
+        warnings, next_steps = dt._collect_numerical_warnings()
+
+        print(warnings)
+        assert len(warnings) == 3
+        assert "WARNING: 3 Variables with extreme Jacobian values" in warnings
+        assert "WARNING: 1 Constraint with extreme Jacobian values" in warnings
+        assert "WARNING: 1 Constraint with large residuals" in warnings
+
+        assert len(next_steps) == 3
+        assert "display_variables_with_extreme_jacobians()" in next_steps
+        assert "display_constraints_with_extreme_jacobians()" in next_steps
+        assert "display_constraints_with_large_residuals()" in next_steps
+
+    @pytest.mark.component
     def test_collect_numerical_cautions(self, model):
         dt = DiagnosticsToolbox(model=model.b)
 
         cautions = dt._collect_numerical_cautions()
 
-        assert len(cautions) == 3
+        assert len(cautions) == 4
         assert "Caution: 3 Variables with value close to their bounds" in cautions
         assert "Caution: 3 Variables with value close to zero" in cautions
         assert "Caution: 1 Variable with None value" in cautions
+        assert "Caution: 1 extreme Jacobian Entry" in cautions
 
     @pytest.mark.component
     def test_assert_no_structural_warnings(self, model):
@@ -913,24 +1015,17 @@ Dulmage-Mendelsohn Over-Constrained Set
         m = model.clone()
         dt = DiagnosticsToolbox(model=m.b)
 
-        with pytest.raises(AssertionError, match="Numerical issues found \(3\)."):
+        with pytest.raises(AssertionError, match="Numerical issues found \(2\)."):
             dt.assert_no_numerical_warnings()
 
         # Fix numerical issues
         m.b.v3.setlb(-5)
         m.b.v5.setub(10)
 
-        m.scaling_factor = Suffix(direction=Suffix.EXPORT)
-        m.scaling_factor[m.b.v7] = 1e8
-        m.scaling_factor[m.b.c4] = 1e-8
-
-        scaling = TransformationFactory("core.scale_model")
-        scaled_model = scaling.create_using(m, rename=False)
-
         solver = get_solver()
-        solver.solve(scaled_model)
+        solver.solve(m)
 
-        dt = DiagnosticsToolbox(model=scaled_model.b)
+        dt = DiagnosticsToolbox(model=m.b)
         dt.assert_no_numerical_warnings()
 
     @pytest.mark.component
@@ -982,25 +1077,24 @@ Suggested next steps:
         dt.report_numerical_issues(stream)
 
         expected = """====================================================================================
-3 WARNINGS
+2 WARNINGS
 
     WARNING: 1 Constraint with large residuals
     WARNING: 2 Variables at or outside bounds
-    WARNING: 1 Variable with poor scaling
 
 ------------------------------------------------------------------------------------
-3 Cautions
+4 Cautions
 
     Caution: 3 Variables with value close to their bounds
     Caution: 3 Variables with value close to zero
     Caution: 1 Variable with None value
+    Caution: 1 extreme Jacobian Entry
 
 ------------------------------------------------------------------------------------
 Suggested next steps:
 
     display_constraints_with_large_residuals()
     display_variables_at_or_outside_bounds()
-    display_poorly_scaled_variables()
 
 ====================================================================================
 """

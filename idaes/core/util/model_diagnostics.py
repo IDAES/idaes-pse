@@ -63,7 +63,12 @@ from idaes.core.util.model_statistics import (
     large_residuals_set,
     variables_near_bounds_set,
 )
-from idaes.core.util.scaling import list_badly_scaled_variables
+from idaes.core.util.scaling import (
+    list_badly_scaled_variables,
+    extreme_jacobian_columns,
+    extreme_jacobian_rows,
+    extreme_jacobian_entries,
+)
 import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
@@ -89,6 +94,30 @@ CONFIG.declare(
         default=1e-6,
         domain=float,
         description="Absolute tolerance to use when comparing values to zero.",
+    ),
+)
+CONFIG.declare(
+    "jacobian_large_value",
+    ConfigValue(
+        default=1e4,
+        domain=float,
+        description="Tolerance for considering a Jacobian value to be large.",
+    ),
+)
+CONFIG.declare(
+    "jacobian_small_value",
+    ConfigValue(
+        default=1e-4,
+        domain=float,
+        description="Tolerance for considering a Jacobian value to be small.",
+    ),
+)
+CONFIG.declare(
+    "jacobian_zero_value",
+    ConfigValue(
+        default=1e-10,
+        domain=float,
+        description="Tolerance for considering a Jacobian value to be equal to zero.",
     ),
 )
 # TODO: Add scaling tolerance parameters
@@ -452,6 +481,95 @@ class DiagnosticsToolbox:
 
         stream.write("=" * MAX_STR_LENGTH + "\n")
 
+    def display_variables_with_extreme_jacobians(self, stream=stdout):
+        """
+        Prints the variables associated with columns in the Jacobian with extreme
+        L2 norms. This often indicates poorly scaled variables.
+
+        Tolerances can be set via the DiagnosticsToolbox config.
+
+        Args:
+            stream: an I/O object to write the output to (default = stdout)
+
+        Returns:
+            None
+
+        """
+        _write_report_section(
+            stream=stream,
+            lines_list=[
+                f"{i[1].name}: {i[0]}"
+                for i in extreme_jacobian_columns(
+                    m=self.config.model,
+                    large=self.config.jacobian_large_value,
+                    small=self.config.jacobian_small_value,
+                )
+            ],
+            title="The following variables(s) are associated with extreme Jacobian values:",
+            header="=",
+            footer="=",
+        )
+
+    def display_constraints_with_extreme_jacobians(self, stream=stdout):
+        """
+        Prints the constraints associated with rows in the Jacobian with extreme
+        L2 norms. This often indicates poorly scaled constraints.
+
+        Tolerances can be set via the DiagnosticsToolbox config.
+
+        Args:
+            stream: an I/O object to write the output to (default = stdout)
+
+        Returns:
+            None
+
+        """
+        _write_report_section(
+            stream=stream,
+            lines_list=[
+                f"{i[1].name}: {i[0]}"
+                for i in extreme_jacobian_rows(
+                    m=self.config.model,
+                    large=self.config.jacobian_large_value,
+                    small=self.config.jacobian_small_value,
+                )
+            ],
+            title="The following constraints(s) are associated with extreme Jacobian values:",
+            header="=",
+            footer="=",
+        )
+
+    def display_extreme_jacobians_entries(self, stream=stdout):
+        """
+        Prints variables and constraints associated with entries in the Jacobian with extreme
+        values. This can be indicative of poor scaling, especially for isolated terms (e.g.
+        variables which appear only in one term of a single constraint).
+
+        Tolerances can be set via the DiagnosticsToolbox config.
+
+        Args:
+            stream: an I/O object to write the output to (default = stdout)
+
+        Returns:
+            None
+
+        """
+        _write_report_section(
+            stream=stream,
+            lines_list=[
+                f"{i[1].name}, {i[2].name}: {i[0]}"
+                for i in extreme_jacobian_entries(
+                    m=self.config.model,
+                    large=self.config.jacobian_large_value,
+                    small=self.config.jacobian_small_value,
+                    zero=self.config.jacobian_zero_value,
+                )
+            ],
+            title="The following variable(s) and constraints(s) are associated with extreme Jacobian\nvalues:",
+            header="=",
+            footer="=",
+        )
+
     # TODO: Block triangularization analysis
     # Number and size of blocks, polynomial degree of 1x1 blocks, simple pivot check of moderate sized sub-blocks?
 
@@ -566,14 +684,34 @@ class DiagnosticsToolbox:
             )
             next_steps.append("display_variables_at_or_outside_bounds()")
 
-        # Poor scaling
-        var_scaling = list_badly_scaled_variables(self.config.model)
-        if len(var_scaling) > 0:
+        # Extreme Jacobian rows and columns
+        jac_col = extreme_jacobian_columns(
+            m=self.config.model,
+            large=self.config.jacobian_large_value,
+            small=self.config.jacobian_small_value,
+        )
+        if len(jac_col) > 0:
             cstring = "Variables"
-            if len(var_scaling) == 1:
+            if len(jac_col) == 1:
                 cstring = "Variable"
-            warnings.append(f"WARNING: {len(var_scaling)} {cstring} with poor scaling")
-            next_steps.append("display_poorly_scaled_variables()")
+            warnings.append(
+                f"WARNING: {len(jac_col)} {cstring} with extreme Jacobian values"
+            )
+            next_steps.append("display_variables_with_extreme_jacobians()")
+
+        jac_row = extreme_jacobian_rows(
+            m=self.config.model,
+            large=self.config.jacobian_large_value,
+            small=self.config.jacobian_small_value,
+        )
+        if len(jac_row) > 0:
+            cstring = "Constraints"
+            if len(jac_row) == 1:
+                cstring = "Constraint"
+            warnings.append(
+                f"WARNING: {len(jac_row)} {cstring} with extreme Jacobian values"
+            )
+            next_steps.append("display_constraints_with_extreme_jacobians()")
 
         return warnings, next_steps
 
@@ -614,6 +752,19 @@ class DiagnosticsToolbox:
             if len(none_value) == 1:
                 cstring = "Variable"
             cautions.append(f"Caution: {len(none_value)} {cstring} with None value")
+
+        # Extreme Jacobian entries
+        extreme_jac = extreme_jacobian_entries(
+            m=self.config.model,
+            large=self.config.jacobian_large_value,
+            small=self.config.jacobian_small_value,
+            zero=self.config.jacobian_zero_value,
+        )
+        if len(extreme_jac) > 0:
+            cstring = "Entries"
+            if len(extreme_jac) == 1:
+                cstring = "Entry"
+            cautions.append(f"Caution: {len(extreme_jac)} extreme Jacobian {cstring}")
 
         return cautions
 
