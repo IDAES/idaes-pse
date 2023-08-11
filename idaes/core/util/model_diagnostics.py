@@ -128,7 +128,6 @@ CONFIG.declare(
         description="Absolute tolerance for considering a value to be equal to zero.",
     ),
 )
-# TODO: Add scaling tolerance parameters
 
 
 @document_kwargs_from_configdict(CONFIG)
@@ -622,10 +621,10 @@ class DiagnosticsToolbox:
         if any(len(x) > 0 for x in [uc_var, uc_con, oc_var, oc_con]):
             warnings.append(
                 f"WARNING: Structural singularity found\n"
-                f"{TAB*2}Under-Constrained Set: {len(uc_var)} "
-                f"variables, {len(uc_con)} constraints\n"
-                f"{TAB*2}Over-Constrained Set: {len(oc_var)} "
-                f"variables, {len(oc_con)} constraints"
+                f"{TAB*2}Under-Constrained Set: {len(sum(uc_var, []))} "
+                f"variables, {len(sum(uc_con, []))} constraints\n"
+                f"{TAB*2}Over-Constrained Set: {len(sum(oc_var, []))} "
+                f"variables, {len(sum(oc_con, []))} constraints"
             )
 
         if any(len(x) > 0 for x in [uc_var, uc_con]):
@@ -788,6 +787,8 @@ class DiagnosticsToolbox:
             if len(none_value) == 1:
                 cstring = "Variable"
             cautions.append(f"Caution: {len(none_value)} {cstring} with None value")
+
+        # TODO: Condition number
 
         # Extreme Jacobian entries
         extreme_jac = extreme_jacobian_entries(
