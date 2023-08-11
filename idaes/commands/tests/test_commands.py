@@ -30,7 +30,7 @@ from click.testing import CliRunner
 import pytest
 
 # package
-from idaes.commands import examples, extensions, convergence, env_info, base
+from idaes.commands import examples, extensions, convergence, config, env_info, base
 from . import create_module_scratch, rmtree_scratch
 import idaes
 
@@ -134,6 +134,36 @@ def test_get_extensions_bad_plat(runner):
 @pytest.mark.integration
 def test_extensions_license(runner):
     result = runner.invoke(extensions.extensions_license)
+    assert result.exit_code == 0
+
+
+###########
+# config  #
+###########
+
+
+@pytest.mark.unit
+def test_conf_display(runner):
+    result = runner.invoke(config.config_display)
+    assert result.exit_code == 0
+
+
+@pytest.mark.unit
+def test_conf_file_paths(runner):
+    result = runner.invoke(config.config_file)
+    assert result.exit_code == 0
+
+
+@pytest.mark.unit
+def test_conf_file_paths(runner):
+    result = runner.invoke(config.config_write)
+    assert result.exit_code == 0
+
+
+@pytest.mark.skipif(sys.version_info[:2] == (3, 11), reason="Fails on Python 3.11")
+@pytest.mark.unit
+def test_conf_set(runner):
+    result = runner.invoke(config.config_set)
     assert result.exit_code == 0
 
 
