@@ -59,6 +59,7 @@ from idaes.core.util.model_diagnostics import (
     _vars_near_zero,
     _vars_violating_bounds,
     _vars_with_none_value,
+    _vars_with_extreme_values,
     _write_report_section,
     _collect_model_statistics,
 )
@@ -140,6 +141,24 @@ def test_vars_with_bounds_issues(model):
     assert len(bounds_issue) == 2
     for i in bounds_issue:
         assert i.local_name in ["v1", "v4"]
+
+
+@pytest.mark.unit
+def test_vars_with_extreme_values():
+    m = ConcreteModel()
+    m.v1 = Var(initialize=1e-12)  # below zero
+    m.v2 = Var(initialize=1e-8)  # small
+    m.v3 = Var(initialize=1e-4)
+    m.v4 = Var(initialize=1e0)
+    m.v5 = Var(initialize=1e4)
+    m.v6 = Var(initialize=1e8)
+    m.v6 = Var(initialize=1e12)  # large
+
+    xvars = _vars_with_extreme_values(m, large=1e9, small=1e-7, zero=1e-10)
+
+    assert len(xvars) == 2
+    for i in xvars:
+        assert i.name in ["v2", "v6"]
 
 
 @pytest.mark.unit
@@ -400,7 +419,7 @@ class TestDiagnosticsToolbox:
         m.b.c1 = Constraint(expr=m.v1 + m.b.v2 == 10)  # Unit consistency issue
         m.b.c2 = Constraint(expr=m.b.v3 == m.b.v4 + m.b.v5)
         m.b.c3 = Constraint(expr=2 * m.b.v3 == 3 * m.b.v4 + 4 * m.b.v5 + m.b.v6)
-        m.b.c4 = Constraint(expr=m.b.v7 == 1e-8 * m.v1)  # Poorly scaled constraint
+        m.b.c4 = Constraint(expr=m.b.v7 == 2e-8 * m.v1)  # Poorly scaled constraint
 
         m.b.v2.fix(5)
         m.b.v5.fix(2)
@@ -509,7 +528,6 @@ The following variable(s) have a value close to zero:
 
     b.v3: value=0.0
     b.v6: value=0
-    b.v7: value=5.002439135661953e-08
 
 ====================================================================================
 """
@@ -517,16 +535,16 @@ The following variable(s) have a value close to zero:
         assert stream.getvalue() == expected
 
     @pytest.mark.component
-    def test_display_poorly_scaled_variables(self, model):
+    def test_display_variables_with_extreme_values(self, model):
         dt = DiagnosticsToolbox(model=model.b)
 
         stream = StringIO()
-        dt.display_poorly_scaled_variables(stream)
+        dt.display_variables_with_extreme_values(stream)
 
         expected = """====================================================================================
-The following variable(s) are poorly scaled:
+The following variable(s) have extreme values:
 
-    b.v7: 5.002439135661953e-08
+    b.v7: 1.0000939326524314e-07
 
 ====================================================================================
 """
@@ -545,7 +563,7 @@ The following variable(s) have values close to their bounds:
 
     b.v3: value=0.0 bounds=(0, 5)
     b.v5: value=2 bounds=(0, 1)
-    b.v7: value=5.002439135661953e-08 bounds=(0, 1)
+    b.v7: value=1.0000939326524314e-07 bounds=(0, 1)
 
 ====================================================================================
 """
@@ -818,7 +836,7 @@ The following constraints(s) are associated with extreme Jacobian values:
 
 ====================================================================================
 """
-        print(stream.getvalue())
+
         assert stream.getvalue() == expected
 
     @pytest.mark.component
@@ -841,14 +859,13 @@ The following constraints(s) are associated with extreme Jacobian values:
 The following variable(s) and constraints(s) are associated with extreme Jacobian
 values:
 
-    c2, v3: 1e-08
     c3, v1: 100000000.0
     c3, v2: 10000000000.0
     c3, v3: 1e-06
 
 ====================================================================================
 """
-        print(stream.getvalue())
+
         assert stream.getvalue() == expected
 
     @pytest.mark.component
@@ -974,7 +991,6 @@ values:
 
         warnings, next_steps = dt._collect_numerical_warnings()
 
-        print(warnings)
         assert len(warnings) == 3
         assert "WARNING: 3 Variables with extreme Jacobian values" in warnings
         assert "WARNING: 1 Constraint with extreme Jacobian values" in warnings
@@ -991,11 +1007,12 @@ values:
 
         cautions = dt._collect_numerical_cautions()
 
-        assert len(cautions) == 4
+        assert len(cautions) == 5
         assert "Caution: 3 Variables with value close to their bounds" in cautions
-        assert "Caution: 3 Variables with value close to zero" in cautions
+        assert "Caution: 2 Variables with value close to zero" in cautions
         assert "Caution: 1 Variable with None value" in cautions
         assert "Caution: 1 extreme Jacobian Entry" in cautions
+        assert "Caution: 1 Variable with extreme value" in cautions
 
     @pytest.mark.component
     def test_assert_no_structural_warnings(self, model):
@@ -1066,7 +1083,7 @@ Suggested next steps:
 
 ====================================================================================
 """
-        print(stream.getvalue())
+
         assert stream.getvalue() == expected
 
     @pytest.mark.component
@@ -1083,10 +1100,11 @@ Suggested next steps:
     WARNING: 2 Variables at or outside bounds
 
 ------------------------------------------------------------------------------------
-4 Cautions
+5 Cautions
 
     Caution: 3 Variables with value close to their bounds
-    Caution: 3 Variables with value close to zero
+    Caution: 2 Variables with value close to zero
+    Caution: 1 Variable with extreme value
     Caution: 1 Variable with None value
     Caution: 1 extreme Jacobian Entry
 

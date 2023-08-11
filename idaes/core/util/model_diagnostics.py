@@ -64,7 +64,6 @@ from idaes.core.util.model_statistics import (
     variables_near_bounds_set,
 )
 from idaes.core.util.scaling import (
-    list_badly_scaled_variables,
     extreme_jacobian_columns,
     extreme_jacobian_rows,
     extreme_jacobian_entries,
@@ -89,35 +88,27 @@ CONFIG.declare(
     ),
 )
 CONFIG.declare(
-    "zero_tolerance",
-    ConfigValue(
-        default=1e-6,
-        domain=float,
-        description="Absolute tolerance to use when comparing values to zero.",
-    ),
-)
-CONFIG.declare(
-    "jacobian_large_value",
+    "large_value_tolerance",
     ConfigValue(
         default=1e4,
         domain=float,
-        description="Tolerance for considering a Jacobian value to be large.",
+        description="Absolute tolerance for considering a value to be large.",
     ),
 )
 CONFIG.declare(
-    "jacobian_small_value",
+    "small_value_tolerance",
     ConfigValue(
         default=1e-4,
         domain=float,
-        description="Tolerance for considering a Jacobian value to be small.",
+        description="Absolute tolerance for considering a value to be small.",
     ),
 )
 CONFIG.declare(
-    "jacobian_zero_value",
+    "zero_value_tolerance",
     ConfigValue(
-        default=1e-10,
+        default=1e-8,
         domain=float,
-        description="Tolerance for considering a Jacobian value to be equal to zero.",
+        description="Absolute tolerance for considering a value to be equal to zero.",
     ),
 )
 # TODO: Add scaling tolerance parameters
@@ -291,18 +282,20 @@ class DiagnosticsToolbox:
             stream=stream,
             lines_list=[
                 f"{v.name}: value={value(v)}"
-                for v in _vars_near_zero(self.config.model, self.config.zero_tolerance)
+                for v in _vars_near_zero(
+                    self.config.model, self.config.zero_value_tolerance
+                )
             ],
             title="The following variable(s) have a value close to zero:",
             header="=",
             footer="=",
         )
 
-    def display_poorly_scaled_variables(self, stream=stdout):
+    def display_variables_with_extreme_values(self, stream=stdout):
         """
-        Prints a list of variables with poor scaling based on their current values.
-        Tolerances for determining poor scaling can be set in the class configuration
-        options.
+        Prints a list of variables with extreme values.
+
+        Tolerances can be set in the class configuration options.
 
         Args:
             stream: an I/O object to write the list to (default = stdout)
@@ -314,10 +307,15 @@ class DiagnosticsToolbox:
         _write_report_section(
             stream=stream,
             lines_list=[
-                f"{i.name}: {j}"
-                for i, j in list_badly_scaled_variables(self.config.model)
+                f"{i.name}: {value(i)}"
+                for i in _vars_with_extreme_values(
+                    model=self.config.model,
+                    large=self.config.large_value_tolerance,
+                    small=self.config.small_value_tolerance,
+                    zero=self.config.zero_value_tolerance,
+                )
             ],
-            title="The following variable(s) are poorly scaled:",
+            title="The following variable(s) have extreme values:",
             header="=",
             footer="=",
         )
@@ -501,8 +499,8 @@ class DiagnosticsToolbox:
                 f"{i[1].name}: {i[0]}"
                 for i in extreme_jacobian_columns(
                     m=self.config.model,
-                    large=self.config.jacobian_large_value,
-                    small=self.config.jacobian_small_value,
+                    large=self.config.large_value_tolerance,
+                    small=self.config.small_value_tolerance,
                 )
             ],
             title="The following variables(s) are associated with extreme Jacobian values:",
@@ -530,8 +528,8 @@ class DiagnosticsToolbox:
                 f"{i[1].name}: {i[0]}"
                 for i in extreme_jacobian_rows(
                     m=self.config.model,
-                    large=self.config.jacobian_large_value,
-                    small=self.config.jacobian_small_value,
+                    large=self.config.large_value_tolerance,
+                    small=self.config.small_value_tolerance,
                 )
             ],
             title="The following constraints(s) are associated with extreme Jacobian values:",
@@ -560,9 +558,9 @@ class DiagnosticsToolbox:
                 f"{i[1].name}, {i[2].name}: {i[0]}"
                 for i in extreme_jacobian_entries(
                     m=self.config.model,
-                    large=self.config.jacobian_large_value,
-                    small=self.config.jacobian_small_value,
-                    zero=self.config.jacobian_zero_value,
+                    large=self.config.large_value_tolerance,
+                    small=self.config.small_value_tolerance,
+                    zero=self.config.zero_value_tolerance,
                 )
             ],
             title="The following variable(s) and constraints(s) are associated with extreme Jacobian\nvalues:",
@@ -687,8 +685,8 @@ class DiagnosticsToolbox:
         # Extreme Jacobian rows and columns
         jac_col = extreme_jacobian_columns(
             m=self.config.model,
-            large=self.config.jacobian_large_value,
-            small=self.config.jacobian_small_value,
+            large=self.config.large_value_tolerance,
+            small=self.config.small_value_tolerance,
         )
         if len(jac_col) > 0:
             cstring = "Variables"
@@ -701,8 +699,8 @@ class DiagnosticsToolbox:
 
         jac_row = extreme_jacobian_rows(
             m=self.config.model,
-            large=self.config.jacobian_large_value,
-            small=self.config.jacobian_small_value,
+            large=self.config.large_value_tolerance,
+            small=self.config.small_value_tolerance,
         )
         if len(jac_row) > 0:
             cstring = "Constraints"
@@ -736,7 +734,7 @@ class DiagnosticsToolbox:
             )
 
         # Variables near zero
-        near_zero = _vars_near_zero(self.config.model, self.config.zero_tolerance)
+        near_zero = _vars_near_zero(self.config.model, self.config.zero_value_tolerance)
         if len(near_zero) > 0:
             cstring = "Variables"
             if len(near_zero) == 1:
@@ -744,6 +742,19 @@ class DiagnosticsToolbox:
             cautions.append(
                 f"Caution: {len(near_zero)} {cstring} with value close to zero"
             )
+
+        # Variables with extreme values
+        xval = _vars_with_extreme_values(
+            model=self.config.model,
+            large=self.config.large_value_tolerance,
+            small=self.config.small_value_tolerance,
+            zero=self.config.zero_value_tolerance,
+        )
+        if len(xval) > 0:
+            cstring = "Variables"
+            if len(xval) == 1:
+                cstring = "Variable"
+            cautions.append(f"Caution: {len(xval)} {cstring} with extreme value")
 
         # Variables with value None
         none_value = _vars_with_none_value(self.config.model)
@@ -756,9 +767,9 @@ class DiagnosticsToolbox:
         # Extreme Jacobian entries
         extreme_jac = extreme_jacobian_entries(
             m=self.config.model,
-            large=self.config.jacobian_large_value,
-            small=self.config.jacobian_small_value,
-            zero=self.config.jacobian_zero_value,
+            large=self.config.large_value_tolerance,
+            small=self.config.small_value_tolerance,
+            zero=self.config.zero_value_tolerance,
         )
         if len(extreme_jac) > 0:
             cstring = "Entries"
@@ -1716,11 +1727,11 @@ def _vars_fixed_to_zero(model):
     return zero_vars
 
 
-def _vars_near_zero(model, zero_tolerance):
+def _vars_near_zero(model, zero_value_tolerance):
     # Set of variables with values close to 0
     near_zero_vars = ComponentSet()
     for v in model.component_data_objects(Var, descend_into=True):
-        if v.value is not None and abs(value(v)) <= zero_tolerance:
+        if v.value is not None and abs(value(v)) <= zero_value_tolerance:
             near_zero_vars.add(v)
     return near_zero_vars
 
@@ -1744,6 +1755,19 @@ def _vars_with_none_value(model):
             none_value.add(v)
 
     return none_value
+
+
+def _vars_with_extreme_values(model, large, small, zero):
+    extreme_vars = ComponentSet()
+    for v in model.component_data_objects(Var, descend_into=True):
+        if v.value is not None:
+            mag = abs(value(v))
+            if mag > abs(large):
+                extreme_vars.add(v)
+            elif mag < abs(small) and mag > abs(zero):
+                extreme_vars.add(v)
+
+    return extreme_vars
 
 
 def _write_report_section(
