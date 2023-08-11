@@ -749,9 +749,9 @@ def variables_near_bounds_generator(
         # Calculate largest tolerance from absolute and relative
         tol = max(abs_tol, mag * rel_tol)
 
-        if v.ub is not None and not skip_lb and value(v.ub - v.value) <= tol:
+        if v.ub is not None and not skip_ub and value(v.ub - v.value) <= tol:
             yield v
-        elif v.lb is not None and not skip_ub and value(v.value - v.lb) <= tol:
+        elif v.lb is not None and not skip_lb and value(v.value - v.lb) <= tol:
             yield v
 
 
