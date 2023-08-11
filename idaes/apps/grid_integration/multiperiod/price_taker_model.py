@@ -333,9 +333,15 @@ class PriceTakerModel(ConcreteModel):
         Adds startup/shutdown and minimum uptime/downtime constraints on
         a given unit/process
         """
+        set_period = self.mp_model.set_period
+        num_time_periods = len(set_period)
 
-        @Constraint(self)
-        def start_up(t)
+        
+        set_period_list = set_period.tolist()
+        self.st_con_range = RangeSet(set_period_list[UT:])
+        self.sd_con_range = RangeSet(set_period_list[DT:])
+
+
         pass
 
     def build_hourly_cashflows(self):
