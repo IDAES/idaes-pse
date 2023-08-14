@@ -68,6 +68,7 @@ from idaes.core.util.scaling import (
     extreme_jacobian_columns,
     extreme_jacobian_rows,
     extreme_jacobian_entries,
+    jacobian_cond,
 )
 import idaes.logger as idaeslog
 
@@ -77,6 +78,7 @@ _log = idaeslog.getLogger(__name__)
 MAX_STR_LENGTH = 84
 TAB = " " * 4
 
+# TODO: Add suggested steps to cautions
 
 CONFIG = ConfigDict()
 CONFIG.declare("model", ConfigValue(description="Pyomo model object to be diagnosed."))
@@ -125,7 +127,39 @@ CONFIG.declare(
     ConfigValue(
         default=1e-8,
         domain=float,
-        description="Absolute tolerance for considering a value to be equal to zero.",
+        description="Absolute tolerance for considering a value to be near to zero.",
+    ),
+)
+CONFIG.declare(
+    "jacobian_large_value_caution",
+    ConfigValue(
+        default=1e4,
+        domain=float,
+        description="Tolerance for raising a caution for large Jacobian values.",
+    ),
+)
+CONFIG.declare(
+    "jacobian_large_value_warning",
+    ConfigValue(
+        default=1e8,
+        domain=float,
+        description="Tolerance for raising a warning for large Jacobian values.",
+    ),
+)
+CONFIG.declare(
+    "jacobian_small_value_caution",
+    ConfigValue(
+        default=1e-4,
+        domain=float,
+        description="Tolerance for raising a caution for small Jacobian values.",
+    ),
+)
+CONFIG.declare(
+    "jacobian_small_value_warning",
+    ConfigValue(
+        default=1e-8,
+        domain=float,
+        description="Tolerance for raising a warning for small Jacobian values.",
     ),
 )
 
@@ -519,8 +553,8 @@ class DiagnosticsToolbox:
                 f"{i[1].name}: {i[0]}"
                 for i in extreme_jacobian_columns(
                     m=self.config.model,
-                    large=self.config.large_value_tolerance,
-                    small=self.config.small_value_tolerance,
+                    large=self.config.jacobian_large_value_caution,
+                    small=self.config.jacobian_small_value_caution,
                 )
             ],
             title="The following variables(s) are associated with extreme Jacobian values:",
@@ -548,8 +582,8 @@ class DiagnosticsToolbox:
                 f"{i[1].name}: {i[0]}"
                 for i in extreme_jacobian_rows(
                     m=self.config.model,
-                    large=self.config.large_value_tolerance,
-                    small=self.config.small_value_tolerance,
+                    large=self.config.jacobian_large_value_caution,
+                    small=self.config.jacobian_small_value_caution,
                 )
             ],
             title="The following constraints(s) are associated with extreme Jacobian values:",
@@ -578,9 +612,9 @@ class DiagnosticsToolbox:
                 f"{i[1].name}, {i[2].name}: {i[0]}"
                 for i in extreme_jacobian_entries(
                     m=self.config.model,
-                    large=self.config.large_value_tolerance,
-                    small=self.config.small_value_tolerance,
-                    zero=self.config.zero_value_tolerance,
+                    large=self.config.jacobian_large_value_caution,
+                    small=self.config.jacobian_small_value_caution,
+                    zero=0,
                 )
             ],
             title="The following variable(s) and constraints(s) are associated with extreme Jacobian\nvalues:",
@@ -666,7 +700,7 @@ class DiagnosticsToolbox:
 
         return cautions
 
-    def _collect_numerical_warnings(self):
+    def _collect_numerical_warnings(self, jac=None, nlp=None):
         """
         Runs checks for numerical warnings and returns two lists.
 
@@ -675,6 +709,9 @@ class DiagnosticsToolbox:
             next_steps - list of suggested next steps to further investigate warnings
 
         """
+        if jac is None or nlp is None:
+            jac, nlp = get_jacobian(self.config.model, scaled=False)
+
         warnings = []
         next_steps = []
 
@@ -704,9 +741,10 @@ class DiagnosticsToolbox:
 
         # Extreme Jacobian rows and columns
         jac_col = extreme_jacobian_columns(
-            m=self.config.model,
-            large=self.config.large_value_tolerance,
-            small=self.config.small_value_tolerance,
+            jac=jac,
+            nlp=nlp,
+            large=self.config.jacobian_large_value_warning,
+            small=self.config.jacobian_small_value_warning,
         )
         if len(jac_col) > 0:
             cstring = "Variables"
@@ -718,9 +756,10 @@ class DiagnosticsToolbox:
             next_steps.append("display_variables_with_extreme_jacobians()")
 
         jac_row = extreme_jacobian_rows(
-            m=self.config.model,
-            large=self.config.large_value_tolerance,
-            small=self.config.small_value_tolerance,
+            jac=jac,
+            nlp=nlp,
+            large=self.config.jacobian_large_value_warning,
+            small=self.config.jacobian_small_value_warning,
         )
         if len(jac_row) > 0:
             cstring = "Constraints"
@@ -733,7 +772,7 @@ class DiagnosticsToolbox:
 
         return warnings, next_steps
 
-    def _collect_numerical_cautions(self):
+    def _collect_numerical_cautions(self, jac=None, nlp=None):
         """
         Runs checks for numerical cautions and returns a list.
 
@@ -741,6 +780,9 @@ class DiagnosticsToolbox:
             cautions - list of caution messages from numerical analysis
 
         """
+        if jac is None or nlp is None:
+            jac, nlp = get_jacobian(self.config.model, scaled=False)
+
         cautions = []
 
         # Variables near bounds
@@ -788,14 +830,42 @@ class DiagnosticsToolbox:
                 cstring = "Variable"
             cautions.append(f"Caution: {len(none_value)} {cstring} with None value")
 
-        # TODO: Condition number
+        # Extreme Jacobian rows and columns
+        jac_col = extreme_jacobian_columns(
+            jac=jac,
+            nlp=nlp,
+            large=self.config.jacobian_large_value_caution,
+            small=self.config.jacobian_small_value_caution,
+        )
+        if len(jac_col) > 0:
+            cstring = "Variables"
+            if len(jac_col) == 1:
+                cstring = "Variable"
+            cautions.append(
+                f"Caution: {len(jac_col)} {cstring} with extreme Jacobian values"
+            )
+
+        jac_row = extreme_jacobian_rows(
+            jac=jac,
+            nlp=nlp,
+            large=self.config.jacobian_large_value_caution,
+            small=self.config.jacobian_small_value_caution,
+        )
+        if len(jac_row) > 0:
+            cstring = "Constraints"
+            if len(jac_row) == 1:
+                cstring = "Constraint"
+            cautions.append(
+                f"Caution: {len(jac_row)} {cstring} with extreme Jacobian values"
+            )
 
         # Extreme Jacobian entries
         extreme_jac = extreme_jacobian_entries(
-            m=self.config.model,
-            large=self.config.large_value_tolerance,
-            small=self.config.small_value_tolerance,
-            zero=self.config.zero_value_tolerance,
+            jac=jac,
+            nlp=nlp,
+            large=self.config.jacobian_large_value_caution,
+            small=self.config.jacobian_small_value_caution,
+            zero=0,
         )
         if len(extreme_jac) > 0:
             cstring = "Entries"
@@ -891,15 +961,24 @@ class DiagnosticsToolbox:
             None
 
         """
-        warnings, next_steps = self._collect_numerical_warnings()
-        cautions = self._collect_numerical_cautions()
+        jac, nlp = get_jacobian(self.config.model, scaled=False)
 
+        warnings, next_steps = self._collect_numerical_warnings(jac=jac, nlp=nlp)
+        cautions = self._collect_numerical_cautions(jac=jac, nlp=nlp)
+
+        # TODO: Condition number
+        stats = []
+        stats.append(
+            f"Jacobian Condition Number: {jacobian_cond(jac=jac, scaled=False)}"
+        )
+        _write_report_section(
+            stream=stream, lines_list=stats, title="Model Statistics", header="="
+        )
         _write_report_section(
             stream=stream,
             lines_list=warnings,
             title=f"{len(warnings)} WARNINGS",
             line_if_empty="No warnings found!",
-            header="=",
         )
         _write_report_section(
             stream=stream,

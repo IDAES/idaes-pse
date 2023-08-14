@@ -859,6 +859,7 @@ The following constraints(s) are associated with extreme Jacobian values:
 The following variable(s) and constraints(s) are associated with extreme Jacobian
 values:
 
+    c2, v3: 1e-08
     c3, v1: 100000000.0
     c3, v2: 10000000000.0
     c3, v3: 1e-06
@@ -896,7 +897,7 @@ values:
         assert "WARNING: 1 Degree of Freedom" in warnings
         assert (
             """WARNING: Structural singularity found
-        Under-Constrained Set: 1 variables, 1 constraints
+        Under-Constrained Set: 3 variables, 2 constraints
         Over-Constrained Set: 0 variables, 0 constraints"""
             in warnings
         )
@@ -926,7 +927,7 @@ values:
         assert (
             """WARNING: Structural singularity found
         Under-Constrained Set: 0 variables, 0 constraints
-        Over-Constrained Set: 1 variables, 1 constraints"""
+        Over-Constrained Set: 1 variables, 2 constraints"""
             in warnings
         )
 
@@ -990,9 +991,9 @@ values:
         dt = DiagnosticsToolbox(model=model)
 
         warnings, next_steps = dt._collect_numerical_warnings()
-
+        print(warnings)
         assert len(warnings) == 3
-        assert "WARNING: 3 Variables with extreme Jacobian values" in warnings
+        assert "WARNING: 2 Variables with extreme Jacobian values" in warnings
         assert "WARNING: 1 Constraint with extreme Jacobian values" in warnings
         assert "WARNING: 1 Constraint with large residuals" in warnings
 
@@ -1006,13 +1007,34 @@ values:
         dt = DiagnosticsToolbox(model=model.b)
 
         cautions = dt._collect_numerical_cautions()
-
+        print(cautions)
         assert len(cautions) == 5
         assert "Caution: 3 Variables with value close to their bounds" in cautions
         assert "Caution: 2 Variables with value close to zero" in cautions
         assert "Caution: 1 Variable with None value" in cautions
         assert "Caution: 1 extreme Jacobian Entry" in cautions
         assert "Caution: 1 Variable with extreme value" in cautions
+
+    @pytest.mark.component
+    def test_collect_numerical_cautions_jacobian(self):
+        model = ConcreteModel()
+        model.v1 = Var(initialize=1e-8)
+        model.v2 = Var(initialize=0)
+        model.v3 = Var(initialize=0)
+
+        model.c1 = Constraint(expr=model.v1 == model.v2)
+        model.c2 = Constraint(expr=model.v1 == 1e-8 * model.v3)
+        model.c3 = Constraint(expr=1e8 * model.v1 + 1e10 * model.v2 == 1e-6 * model.v3)
+
+        dt = DiagnosticsToolbox(model=model)
+
+        cautions = dt._collect_numerical_cautions()
+        print(cautions)
+        assert len(cautions) == 4
+        assert "Caution: 3 Variables with value close to zero" in cautions
+        assert "Caution: 3 Variables with extreme Jacobian values" in cautions
+        assert "Caution: 1 Constraint with extreme Jacobian values" in cautions
+        assert "Caution: 4 extreme Jacobian Entries" in cautions
 
     @pytest.mark.component
     def test_assert_no_structural_warnings(self, model):
@@ -1094,6 +1116,11 @@ Suggested next steps:
         dt.report_numerical_issues(stream)
 
         expected = """====================================================================================
+Model Statistics
+
+    Jacobian Condition Number: 17.0
+
+------------------------------------------------------------------------------------
 2 WARNINGS
 
     WARNING: 1 Constraint with large residuals
@@ -1113,6 +1140,54 @@ Suggested next steps:
 
     display_constraints_with_large_residuals()
     display_variables_at_or_outside_bounds()
+
+====================================================================================
+"""
+
+        assert stream.getvalue() == expected
+
+    @pytest.mark.component
+    def test_report_numerical_issues_jacobian(self):
+        model = ConcreteModel()
+        model.v1 = Var(initialize=1e-8)
+        model.v2 = Var(initialize=0)
+        model.v3 = Var(initialize=0)
+
+        model.c1 = Constraint(expr=model.v1 == model.v2)
+        model.c2 = Constraint(expr=model.v1 == 1e-8 * model.v3)
+        model.c3 = Constraint(expr=1e8 * model.v1 + 1e10 * model.v2 == 1e-6 * model.v3)
+
+        dt = DiagnosticsToolbox(model=model)
+
+        stream = StringIO()
+        dt.report_numerical_issues(stream)
+
+        expected = """====================================================================================
+Model Statistics
+
+    Jacobian Condition Number: 1.4073002942618775e+18
+
+------------------------------------------------------------------------------------
+3 WARNINGS
+
+    WARNING: 1 Constraint with large residuals
+    WARNING: 2 Variables with extreme Jacobian values
+    WARNING: 1 Constraint with extreme Jacobian values
+
+------------------------------------------------------------------------------------
+4 Cautions
+
+    Caution: 3 Variables with value close to zero
+    Caution: 3 Variables with extreme Jacobian values
+    Caution: 1 Constraint with extreme Jacobian values
+    Caution: 4 extreme Jacobian Entries
+
+------------------------------------------------------------------------------------
+Suggested next steps:
+
+    display_constraints_with_large_residuals()
+    display_variables_with_extreme_jacobians()
+    display_constraints_with_extreme_jacobians()
 
 ====================================================================================
 """

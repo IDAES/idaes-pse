@@ -866,7 +866,7 @@ def jacobian_cond(m=None, scaled=True, order=None, pinv=False, jac=None):
         (float) Condition number
     """
     if jac is None:
-        jac, nlp = get_jacobian(m, scaled)  # pylint: disable=unused-variable
+        jac, _ = get_jacobian(m, scaled)
     jac = jac.tocsc()
     if jac.shape[0] != jac.shape[1] and not pinv:
         _log.warning("Nonsquare Jacobian using pseudo inverse")
