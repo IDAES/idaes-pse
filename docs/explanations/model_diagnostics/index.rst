@@ -32,7 +32,7 @@ If you are still having trouble solving your model after running the structural 
 Diagnostics Toolbox
 -------------------
 
-Whilst the workflow outlined above gives a high-level overview of the model development and diagnostics process, there is a lot of detail buried in each fo the steps. Rather than provide the user with a long series of steps and check-boxes to complete, the :ref:`IDAES Diagnostics Toolbox<reference_guides/core/util/diagnostics/diagnostics_toolbox:Diagnostics Toolbox>` instead provides a centralized interface for accessing diagnostics tools and guiding users through the diagnostics workflow. High level methods are provided for each of the model diagnosis steps (green boxes) in the workflow above which will provide a summary of any issues identified, and these will recommend additional methods and tools to use to further examine each issue identified.
+Whilst the workflow outlined above gives a high-level overview of the model development and diagnostics process, there is a lot of detail buried in each of the steps. Rather than provide the user with a long series of steps and check-boxes to complete, the :ref:`IDAES Diagnostics Toolbox<reference_guides/core/util/diagnostics/diagnostics_toolbox:Diagnostics Toolbox>` instead provides a centralized interface for accessing diagnostics tools and guiding users through the diagnostics workflow. High level methods are provided for each of the model diagnosis steps (green boxes) in the workflow above which will provide a summary of any issues identified, and these will recommend additional methods and tools to use to further examine each issue identified.
 
 Modeling Log Book
 -----------------
