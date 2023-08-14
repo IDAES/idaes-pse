@@ -78,7 +78,7 @@ _log = idaeslog.getLogger(__name__)
 MAX_STR_LENGTH = 84
 TAB = " " * 4
 
-# TODO: Add suggested steps to cautions
+# TODO: Add suggested steps to cautions - how?
 
 CONFIG = ConfigDict()
 CONFIG.declare("model", ConfigValue(description="Pyomo model object to be diagnosed."))
@@ -553,6 +553,7 @@ class DiagnosticsToolbox:
                 f"{i[1].name}: {i[0]}"
                 for i in extreme_jacobian_columns(
                     m=self.config.model,
+                    scaled=False,
                     large=self.config.jacobian_large_value_caution,
                     small=self.config.jacobian_small_value_caution,
                 )
@@ -582,6 +583,7 @@ class DiagnosticsToolbox:
                 f"{i[1].name}: {i[0]}"
                 for i in extreme_jacobian_rows(
                     m=self.config.model,
+                    scaled=False,
                     large=self.config.jacobian_large_value_caution,
                     small=self.config.jacobian_small_value_caution,
                 )
@@ -612,6 +614,7 @@ class DiagnosticsToolbox:
                 f"{i[1].name}, {i[2].name}: {i[0]}"
                 for i in extreme_jacobian_entries(
                     m=self.config.model,
+                    scaled=False,
                     large=self.config.jacobian_large_value_caution,
                     small=self.config.jacobian_small_value_caution,
                     zero=0,
@@ -966,7 +969,6 @@ class DiagnosticsToolbox:
         warnings, next_steps = self._collect_numerical_warnings(jac=jac, nlp=nlp)
         cautions = self._collect_numerical_cautions(jac=jac, nlp=nlp)
 
-        # TODO: Condition number
         stats = []
         stats.append(
             f"Jacobian Condition Number: {jacobian_cond(jac=jac, scaled=False)}"
