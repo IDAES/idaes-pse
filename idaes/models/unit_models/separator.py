@@ -16,6 +16,7 @@ General purpose separator block for IDAES models
 
 from enum import Enum
 from pandas import DataFrame
+from functools import partial
 
 from pyomo.environ import (
     Block,
@@ -1272,307 +1273,46 @@ objects linked the mixed state and all outlet states,
                 elif l_name.startswith("mole_frac") or l_name.startswith("mass_frac"):
                     # Mole and mass frac need special handling
                     if "_phase" in l_name:
-
-                        def e_rule(b, t, p, j):
-                            if (p, j) in pc_set:
-                                if self.config.split_basis == SplittingType.phaseFlow:
-                                    return s_vars[s][p, j]
-                                elif (
-                                    self.config.split_basis
-                                    == SplittingType.componentFlow
-                                ):
-                                    if split_map[j] == o:
-                                        return 1
-                                    else:
-                                        return self.eps
-                                elif (
-                                    self.config.split_basis
-                                    == SplittingType.phaseComponentFlow
-                                ):
-                                    for ps in mb.phase_list:
-                                        if split_map[ps, j] == o:
-                                            return 1
-                                    else:  # pylint: disable=W0120
-                                        return self.eps
-                            else:
-                                raise BurntToast(
-                                    "{} This should not happen. Please "
-                                    "report this bug to the IDAES "
-                                    "developers.".format(self.name)
-                                )
-
                         e_obj = VarLikeExpression(
                             self.flowsheet().time,
                             pc_set,
-                            rule=e_rule,
+                            rule=partial(_e_rule_mole_mass_frac_phase_comp, mixed_block=mb, s_vars=s_vars, s=s, outlet=o),
                         )
 
                     else:
-                        if self.config.split_basis == SplittingType.componentFlow:
-
-                            def e_rule(b, t, j):
-                                if split_map[j] == o:
-                                    return 1
-                                # else:
-                                return self.eps
-
-                        elif (
-                            self.config.split_basis == SplittingType.phaseComponentFlow
-                        ):
-
-                            def e_rule(b, t, j):
-                                if any(split_map[p, j] == o for p in mb.phase_list):
-                                    return 1
-                                # else:
-                                return self.eps
-
-                        else:
-
-                            def e_rule(b, t, j):
-                                mfp = mb[t].component(
-                                    l_name.replace("_comp", "_phase_comp")
-                                )
-
-                                if mfp is None:
-                                    raise ConfigurationError(
-                                        "{} Cannot use ideal splitting with "
-                                        "this property package. Package uses "
-                                        "indexed port member {} which cannot "
-                                        "be partitioned. Please set "
-                                        "configuration argument "
-                                        "ideal_separation = False for this "
-                                        "property package.".format(self.name, s)
-                                    )
-
-                                for p in mb.phase_list:
-                                    if (
-                                        self.config.split_basis
-                                        == SplittingType.phaseFlow
-                                    ):
-                                        s_check = split_map[p]
-                                    else:
-                                        raise BurntToast(
-                                            "{} This should not happen. Please"
-                                            " report this bug to the IDAES "
-                                            "developers.".format(self.name)
-                                        )
-
-                                    if s_check == o and (p, j) in pc_set:
-                                        return mfp[p, j]
-                                # else:
-                                return self.eps
-
                         e_obj = VarLikeExpression(
                             self.flowsheet().time,
                             mb.component_list,
-                            rule=e_rule,
+                            rule=partial(_e_rule_mole_mass_frac_comp, mixed_block=mb, s_vars=s_vars, s=s, outlet=o),
                         )
 
                 elif l_name.endswith("_phase_comp"):
-
-                    def e_rule(b, t, p, j):
-                        if self.config.split_basis == SplittingType.phaseFlow:
-                            s_check = split_map[p]
-                        elif self.config.split_basis == SplittingType.componentFlow:
-                            s_check = split_map[j]
-                        elif (
-                            self.config.split_basis == SplittingType.phaseComponentFlow
-                        ):
-                            s_check = split_map[p, j]
-                        else:
-                            raise BurntToast(
-                                "{} This should not happen. Please"
-                                " report this bug to the IDAES "
-                                "developers.".format(self.name)
-                            )
-
-                        if s_check == o:
-                            return mb[t].component(l_name)[p, j]
-                        else:
-                            return self.eps
-
                     e_obj = VarLikeExpression(
                         self.flowsheet().time,
                         pc_set,
-                        rule=e_rule,
+                        rule=partial(_e_rule_phase_comp, mixed_block=mb, s_vars=s_vars, s=s, outlet=o),
                     )
 
                 elif l_name.endswith("_phase"):
-                    if self.config.split_basis == SplittingType.phaseFlow:
-
-                        def e_rule(b, t, p):
-                            if split_map[p] == o:
-                                return mb[t].component(l_name)[p]
-                            else:
-                                return self.eps
-
-                    else:
-
-                        def e_rule(b, t, p):
-                            mfp = mb[t].component(l_name + "_comp")
-
-                            if mfp is None:
-                                _raise_split_indexed_fail_err(self.name, s)
-
-                            for j in mb.component_list:
-                                if (
-                                    self.config.split_basis
-                                    == SplittingType.componentFlow
-                                ):
-                                    s_check = split_map[j]
-                                elif (
-                                    self.config.split_basis
-                                    == SplittingType.phaseComponentFlow
-                                ):
-                                    s_check = split_map[p, j]
-                                else:
-                                    raise BurntToast(
-                                        "{} This should not happen. Please"
-                                        " report this bug to the IDAES "
-                                        "developers.".format(self.name)
-                                    )
-
-                                if s_check == o:
-                                    return mfp[p, j]
-                            # else:
-                            return self.eps
-
                     e_obj = VarLikeExpression(
                         self.flowsheet().time,
                         mb.phase_list,
-                        rule=e_rule,
+                        rule=partial(_e_rule_phase, mixed_block=mb, s_vars=s_vars, s=s, outlet=o),
                     )
 
                 elif l_name.endswith("_comp"):
-                    if self.config.split_basis == SplittingType.componentFlow:
-
-                        def e_rule(b, t, j):
-                            if split_map[j] == o:
-                                return mb[t].component(l_name)[j]
-                            else:
-                                return self.eps
-
-                    else:
-                        def e_rule_factory(l_name_alias):
-                            def e_rule(b, t, j):
-                                mfp = mb[t].component(
-                                    "{0}_phase{1}".format(l_name_alias[:-5], l_name_alias[-5:])
-                                )
-
-                                if mfp is None:
-                                    _raise_split_indexed_fail_err(self.name, s)
-
-                                for p in mb.phase_list:
-                                    if (p, j) in pc_set:
-                                        if (
-                                            self.config.split_basis
-                                            == SplittingType.phaseFlow
-                                        ):
-                                            s_check = split_map[p]
-                                        elif (
-                                            self.config.split_basis
-                                            == SplittingType.phaseComponentFlow
-                                        ):
-                                            s_check = split_map[p, j]
-                                        else:
-                                            raise BurntToast(
-                                                "{} This should not happen. Please"
-                                                " report this bug to the IDAES "
-                                                "developers.".format(self.name)
-                                            )
-
-                                        if s_check == o:
-                                            return mfp[p, j]
-                                return self.eps
-                            return e_rule
-                        e_rule = e_rule_factory(l_name)
-                            
-
                     e_obj = VarLikeExpression(
                         self.flowsheet().time,
                         mb.component_list,
-                        rule=e_rule,
+                        rule=partial(_e_rule_comp, mixed_block=mb, s_vars=s_vars, s=s, outlet=o),
                     )
 
                 else:
                     # Variable unindexed by phase or component
-                    def e_rule_factory(l_name_alias):
-                        def e_rule(b, t):
-                            if self.config.split_basis == SplittingType.phaseFlow:
-                                ivar = mb[t].component(l_name_alias + "_phase")
-                                if ivar is not None:
-                                    for p in mb.phase_list:
-                                        if split_map[p] == o:
-                                            return ivar[p]
-                                        else:
-                                            continue
-                                else:
-                                    ivar = mb[t].component(l_name_alias + "_phase_comp")
-                                    if ivar is not None:
-                                        for p in mb.phase_list:
-                                            if split_map[p] == o:
-                                                return sum(
-                                                    ivar[p, j]
-                                                    for j in mb.component_list
-                                                    if (p, j) in pc_set
-                                                )
-                                            else:
-                                                continue
-                                    else:
-                                        _raise_split_unindexed_fail_err(self.name, s)
-
-                            elif self.config.split_basis == SplittingType.componentFlow:
-                                ivar = mb[t].component(l_name_alias + "_comp")
-                                if ivar is not None:
-                                    for j in mb.component_list:
-                                        if split_map[j] == o:
-                                            return ivar[j]
-                                        else:
-                                            continue
-                                else:
-                                    ivar = mb[t].component(l_name_alias + "_phase_comp")
-                                    if ivar is not None:
-                                        for j in mb.component_list:
-                                            if split_map[j] == o:
-                                                return sum(
-                                                    ivar[p, j]
-                                                    for p in mb.phase_list
-                                                    if (p, j) in pc_set
-                                                )
-                                            else:
-                                                continue
-                                    else:
-                                        _raise_split_unindexed_fail_err(self.name, s)
-                            elif (
-                                self.config.split_basis
-                                == SplittingType.phaseComponentFlow
-                            ):
-                                ivar = mb[t].component(l_name_alias + "_phase_comp")
-                                if ivar is not None:
-                                    for p in mb.phase_list:
-                                        for j in mb.component_list:
-                                            if (
-                                                split_map[p, j] == o
-                                                and (p, j) in pc_set
-                                            ):
-                                                return ivar[p, j]
-                                            else:
-                                                continue
-                                else:
-                                    _raise_split_unindexed_fail_err(self.name, s)
-                            else:
-                                # Unrecognised split tupe
-                                raise BurntToast(
-                                    "{} received unrecognised value for "
-                                    "split_basis argument. This should never "
-                                    "happen, so please contact the IDAES "
-                                    "developers with this bug.".format(self.name)
-                                )
-                        return e_rule
-
-                    e_rule = e_rule_factory(l_name)
-
-                    e_obj = VarLikeExpression(self.flowsheet().time, rule=e_rule)
+                    e_obj = VarLikeExpression(
+                        self.flowsheet().time,
+                        rule=partial(_e_rule_other, mixed_block=mb, s_vars=s_vars, s=s, outlet=o)
+                    )
 
                 # Add Reference/Expression object to Separator model object
                 setattr(self, "_" + o + "_" + l_name + "_ref", e_obj)
@@ -2081,3 +1821,274 @@ def _raise_split_unindexed_fail_err(name, s):
         "unindexed port member {} which does "
         "not have an equivalent indexed form. ".format(name, s)
     )
+
+# Mole and mass frac need special handling
+def _e_rule_mole_mass_frac_phase_comp(b, t, p, j, mixed_block, s_vars, s, outlet):
+    pc_set = mixed_block.phase_component_set
+    l_name = s_vars[s].local_name
+    split_map = b.config.ideal_split_map
+
+    if (p, j) in pc_set:
+        if b.config.split_basis == SplittingType.phaseFlow:
+            return s_vars[s][p, j]
+        elif (
+            b.config.split_basis
+            == SplittingType.componentFlow
+        ):
+            if split_map[j] == outlet:
+                return 1
+            else:
+                return b.eps
+        elif (
+            b.config.split_basis
+            == SplittingType.phaseComponentFlow
+        ):
+            for ps in mixed_block.phase_list:
+                if split_map[ps, j] == outlet:
+                    return 1
+            else:  # pylint: disable=W0120
+                return b.eps
+    else:
+        raise BurntToast(
+            "{} This should not happen. Please "
+            "report this bug to the IDAES "
+            "developers.".format(b.name)
+        )
+            
+        
+def _e_rule_mole_mass_frac_comp(b, t, j, mixed_block, s_vars, s, outlet):
+    pc_set = mixed_block.phase_component_set
+    l_name = s_vars[s].local_name
+    split_map = b.config.ideal_split_map
+
+    if b.config.split_basis == SplittingType.componentFlow:
+        if split_map[j] == outlet:
+            return 1
+        # else:
+        return b.eps
+
+    elif (
+        b.config.split_basis == SplittingType.phaseComponentFlow
+    ):
+        if any(split_map[phase, j] == outlet for phase in mixed_block.phase_list):
+            return 1
+        # else:
+        return b.eps
+
+    else:
+        mfp = mixed_block[t].component(
+            l_name.replace("_comp", "_phase_comp")
+        )
+
+        if mfp is None:
+            raise ConfigurationError(
+                "{} Cannot use ideal splitting with "
+                "this property package. Package uses "
+                "indexed port member {} which cannot "
+                "be partitioned. Please set "
+                "configuration argument "
+                "ideal_separation = False for this "
+                "property package.".format(b.name, s)
+            )
+
+        for phase in mixed_block.phase_list:
+            if (
+                b.config.split_basis
+                == SplittingType.phaseFlow
+            ):
+                s_check = split_map[phase]
+            else:
+                raise BurntToast(
+                    "{} This should not happen. Please"
+                    " report this bug to the IDAES "
+                    "developers.".format(b.name)
+                )
+
+            if s_check == outlet and (phase, j) in pc_set:
+                return mfp[phase, j]
+        # else:
+        return b.eps
+
+def _e_rule_phase_comp(b, t, p, j, mixed_block, s_vars, s, outlet):
+    pc_set = mixed_block.phase_component_set
+    l_name = s_vars[s].local_name
+    split_map = b.config.ideal_split_map
+
+    if b.config.split_basis == SplittingType.phaseFlow:
+        s_check = split_map[p]
+    elif b.config.split_basis == SplittingType.componentFlow:
+        s_check = split_map[j]
+    elif (
+        b.config.split_basis == SplittingType.phaseComponentFlow
+    ):
+        s_check = split_map[p, j]
+    else:
+        raise BurntToast(
+            "{} This should not happen. Please"
+            " report this bug to the IDAES "
+            "developers.".format(b.name)
+        )
+
+    if s_check == outlet:
+        return mixed_block[t].component(l_name)[p, j]
+    else:
+        return b.eps
+
+
+def _e_rule_phase(b, t, p, mixed_block, s_vars, s, outlet):
+    pc_set = mixed_block.phase_component_set
+    l_name = s_vars[s].local_name
+    split_map = b.config.ideal_split_map
+
+    if b.config.split_basis == SplittingType.phaseFlow:
+        if split_map[p] == outlet:
+            return mixed_block[t].component(l_name)[p]
+        else:
+            return b.eps
+
+    else:
+        mfp = mixed_block[t].component(l_name + "_comp")
+
+        if mfp is None:
+            _raise_split_indexed_fail_err(b.name, s)
+
+        for j in mixed_block.component_list:
+            if (
+                b.config.split_basis
+                == SplittingType.componentFlow
+            ):
+                s_check = split_map[j]
+            elif (
+                b.config.split_basis
+                == SplittingType.phaseComponentFlow
+            ):
+                s_check = split_map[p, j]
+            else:
+                raise BurntToast(
+                    "{} This should not happen. Please"
+                    " report this bug to the IDAES "
+                    "developers.".format(b.name)
+                )
+
+            if s_check == outlet:
+                return mfp[p, j]
+        # else:
+        return b.eps
+
+def _e_rule_comp(b, t, j, mixed_block, s_vars, s, outlet):
+    pc_set = mixed_block.phase_component_set
+    l_name = s_vars[s].local_name
+    split_map = b.config.ideal_split_map
+
+    if b.config.split_basis == SplittingType.componentFlow:
+        if split_map[j] == outlet:
+            return mixed_block[t].component(l_name)[j]
+        else:
+            return b.eps
+
+    else:
+        mfp = mixed_block[t].component(
+            "{0}_phase{1}".format(l_name[:-5], l_name[-5:])
+        )
+
+        if mfp is None:
+            _raise_split_indexed_fail_err(b.name, s)
+
+        for p in mixed_block.phase_list:
+            if (p, j) in pc_set:
+                if (
+                    b.config.split_basis
+                    == SplittingType.phaseFlow
+                ):
+                    s_check = split_map[p]
+                elif (
+                    b.config.split_basis
+                    == SplittingType.phaseComponentFlow
+                ):
+                    s_check = split_map[p, j]
+                else:
+                    raise BurntToast(
+                        "{} This should not happen. Please"
+                        " report this bug to the IDAES "
+                        "developers.".format(b.name)
+                    )
+
+                if s_check == outlet:
+                    return mfp[p, j]
+        return b.eps
+                            
+def _e_rule_other(b, t, mixed_block, s_vars, s, outlet):
+    pc_set = mixed_block.phase_component_set
+    l_name = s_vars[s].local_name
+    split_map = b.config.ideal_split_map
+
+    if b.config.split_basis == SplittingType.phaseFlow:
+        ivar = mixed_block[t].component(l_name + "_phase")
+        if ivar is not None:
+            for p in mixed_block.phase_list:
+                if split_map[p] == outlet:
+                    return ivar[p]
+                else:
+                    continue
+        else:
+            ivar = mixed_block[t].component(l_name + "_phase_comp")
+            if ivar is not None:
+                for p in mixed_block.phase_list:
+                    if split_map[p] == outlet:
+                        return sum(
+                            ivar[p, j]
+                            for j in mixed_block.component_list
+                            if (p, j) in pc_set
+                        )
+                    else:
+                        continue
+            else:
+                _raise_split_unindexed_fail_err(b.name, s)
+
+    elif b.config.split_basis == SplittingType.componentFlow:
+        ivar = mixed_block[t].component(l_name + "_comp")
+        if ivar is not None:
+            for j in mixed_block.component_list:
+                if split_map[j] == outlet:
+                    return ivar[j]
+                else:
+                    continue
+        else:
+            ivar = mixed_block[t].component(l_name + "_phase_comp")
+            if ivar is not None:
+                for j in mixed_block.component_list:
+                    if split_map[j] == outlet:
+                        return sum(
+                            ivar[p, j]
+                            for p in mixed_block.phase_list
+                            if (p, j) in pc_set
+                        )
+                    else:
+                        continue
+            else:
+                _raise_split_unindexed_fail_err(b.name, s)
+    elif (
+        b.config.split_basis
+        == SplittingType.phaseComponentFlow
+    ):
+        ivar = mixed_block[t].component(l_name + "_phase_comp")
+        if ivar is not None:
+            for p in mixed_block.phase_list:
+                for j in mixed_block.component_list:
+                    if (
+                        split_map[p, j] == outlet
+                        and (p, j) in pc_set
+                    ):
+                        return ivar[p, j]
+                    else:
+                        continue
+        else:
+            _raise_split_unindexed_fail_err(b.name, s)
+    else:
+        # Unrecognised split tupe
+        raise BurntToast(
+            "{} received unrecognised value for "
+            "split_basis argument. This should never "
+            "happen, so please contact the IDAES "
+            "developers with this bug.".format(b.name)
+        )
