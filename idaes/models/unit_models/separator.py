@@ -1852,7 +1852,6 @@ def _raise_split_unindexed_fail_err(name, s):
 # Mole and mass frac need special handling
 def _e_rule_mole_mass_frac_phase_comp(b, t, p, j, mixed_block, s_vars, s, outlet):
     pc_set = mixed_block.phase_component_set
-    l_name = s_vars[s].local_name
     split_map = b.config.ideal_split_map
 
     if (p, j) in pc_set:
@@ -1925,7 +1924,6 @@ def _e_rule_mole_mass_frac_comp(b, t, j, mixed_block, s_vars, s, outlet):
 
 
 def _e_rule_phase_comp(b, t, p, j, mixed_block, s_vars, s, outlet):
-    pc_set = mixed_block.phase_component_set
     l_name = s_vars[s].local_name
     split_map = b.config.ideal_split_map
 
@@ -1949,7 +1947,6 @@ def _e_rule_phase_comp(b, t, p, j, mixed_block, s_vars, s, outlet):
 
 
 def _e_rule_phase(b, t, p, mixed_block, s_vars, s, outlet):
-    pc_set = mixed_block.phase_component_set
     l_name = s_vars[s].local_name
     split_map = b.config.ideal_split_map
 
