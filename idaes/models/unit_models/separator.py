@@ -15,8 +15,8 @@ General purpose separator block for IDAES models
 """
 
 from enum import Enum
-from pandas import DataFrame
 from functools import partial
+from pandas import DataFrame
 
 from pyomo.environ import (
     Block,
