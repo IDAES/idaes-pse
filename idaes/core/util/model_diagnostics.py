@@ -593,7 +593,7 @@ class DiagnosticsToolbox:
             footer="=",
         )
 
-    def display_extreme_jacobians_entries(self, stream=stdout):
+    def display_extreme_jacobian_entries(self, stream=stdout):
         """
         Prints variables and constraints associated with entries in the Jacobian with extreme
         values. This can be indicative of poor scaling, especially for isolated terms (e.g.
@@ -971,7 +971,7 @@ class DiagnosticsToolbox:
 
         stats = []
         stats.append(
-            f"Jacobian Condition Number: {jacobian_cond(jac=jac, scaled=False)}"
+            f"Jacobian Condition Number: {jacobian_cond(jac=jac, scaled=False):.3E}"
         )
         _write_report_section(
             stream=stream, lines_list=stats, title="Model Statistics", header="="
