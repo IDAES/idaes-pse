@@ -43,3 +43,6 @@ conftest.py @lbianchi-lbl
 /idaes/models_extra/power_generation/costing/ @MAZamarripa @AlexNoring
 /idaes/models_extra/power_generation/properties/ @eslickj @AlexNoring
 /idaes/models_extra/power_generation/unit_models/soc_submodels/ @eslickj @dallan-keylogic
+
+# Scripts
+/scripts/colab_helper.py @adowling2
