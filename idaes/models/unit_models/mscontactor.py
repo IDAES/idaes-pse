@@ -13,6 +13,8 @@
 """
 IDAES model for a generic multiple-stream contactor unit.
 """
+from functools import partial
+
 # Import Pyomo libraries
 from pyomo.environ import Block, Constraint, RangeSet, Reals, Set, units, Var
 from pyomo.common.config import ConfigDict, ConfigValue, Bool, In
@@ -637,25 +639,18 @@ class MSContactorData(UnitModelBlockData):
                     rate_reaction_generation,
                 )
 
-                def rate_reaction_rule(b, t, s, p, j):
-                    if (p, j) in pc_set:
-                        return rate_reaction_generation[t, s, p, j] == (
-                            sum(
-                                reaction_block[t, s].params.rate_reaction_stoichiometry[
-                                    r, p, j
-                                ]
-                                * rate_reaction_extent[t, s, r]
-                                for r in sconfig.reaction_package.rate_reaction_idx
-                            )
-                        )
-                    return Constraint.Skip
-
                 rate_reaction_constraint = Constraint(
                     self.flowsheet().time,
                     self.elements,
                     pc_set,
                     doc=f"Rate-based reaction stoichiometry for stream {stream}",
-                    rule=rate_reaction_rule,
+                    rule=partial(
+                        _rate_reaction_rule,
+                        stream=stream,
+                        rblock=reaction_block,
+                        generation=rate_reaction_generation,
+                        extent=rate_reaction_extent,
+                    ),
                 )
                 self.add_component(
                     stream + "_rate_reaction_constraint",
@@ -699,25 +694,18 @@ class MSContactorData(UnitModelBlockData):
                     equilibrium_reaction_generation,
                 )
 
-                def equilibrium_reaction_rule(b, t, s, p, j):
-                    if (p, j) in pc_set:
-                        return equilibrium_reaction_generation[t, s, p, j] == (
-                            sum(
-                                reaction_block[
-                                    t, s
-                                ].params.equilibrium_reaction_stoichiometry[r, p, j]
-                                * equilibrium_reaction_extent[t, s, r]
-                                for r in sconfig.reaction_package.equilibrium_reaction_idx
-                            )
-                        )
-                    return Constraint.Skip
-
                 equilibrium_reaction_constraint = Constraint(
                     self.flowsheet().time,
                     self.elements,
                     pc_set,
                     doc=f"Equilibrium reaction stoichiometry for stream {stream}",
-                    rule=equilibrium_reaction_rule,
+                    rule=partial(
+                        _equilibrium_reaction_rule,
+                        stream=stream,
+                        rblock=reaction_block,
+                        generation=equilibrium_reaction_generation,
+                        extent=equilibrium_reaction_extent,
+                    ),
                 )
                 self.add_component(
                     stream + "_equilibrium_reaction_constraint",
@@ -755,25 +743,17 @@ class MSContactorData(UnitModelBlockData):
                     inherent_reaction_generation,
                 )
 
-                def inherent_reaction_rule(b, t, s, p, j):
-                    if (p, j) in pc_set:
-                        return inherent_reaction_generation[t, s, p, j] == (
-                            sum(
-                                state_block[
-                                    t, s
-                                ].params.inherent_reaction_stoichiometry[r, p, j]
-                                * inherent_reaction_extent[t, s, r]
-                                for r in sconfig.property_package.inherent_reaction_idx
-                            )
-                        )
-                    return Constraint.Skip
-
                 inherent_reaction_constraint = Constraint(
                     self.flowsheet().time,
                     self.elements,
                     pc_set,
                     doc=f"Inherent reaction stoichiometry for stream {stream}",
-                    rule=inherent_reaction_rule,
+                    rule=partial(
+                        _inherent_reaction_rule,
+                        stream=stream,
+                        generation=inherent_reaction_generation,
+                        extent=inherent_reaction_extent,
+                    ),
                 )
                 self.add_component(
                     stream + "_inherent_reaction_constraint",
@@ -796,29 +776,16 @@ class MSContactorData(UnitModelBlockData):
                     heterogeneous_reactions_generation,
                 )
 
-                def heterogeneous_reaction_rule(b, t, s, p, j):
-                    if (p, j) in pc_set:
-                        return heterogeneous_reactions_generation[t, s, p, j] == (
-                            sum(
-                                self.heterogeneous_reactions[
-                                    t, s
-                                ].params.reaction_stoichiometry[r, p, j]
-                                * b.heterogeneous_reaction_extent[t, s, r]
-                                for r in self.config.heterogeneous_reactions.reaction_idx
-                                if (r, p, j)
-                                in self.heterogeneous_reactions[
-                                    t, s
-                                ].params.reaction_stoichiometry
-                            )
-                        )
-                    return Constraint.Skip
-
                 heterogeneous_reaction_constraint = Constraint(
                     self.flowsheet().time,
                     self.elements,
                     pc_set,
                     doc="Heterogeneous reaction stoichiometry constraint",
-                    rule=heterogeneous_reaction_rule,
+                    rule=partial(
+                        _heterogeneous_reaction_rule,
+                        pc_set=pc_set,
+                        generation=heterogeneous_reactions_generation,
+                    ),
                 )
                 self.add_component(
                     stream + "_heterogeneous_reaction_constraint",
@@ -826,103 +793,43 @@ class MSContactorData(UnitModelBlockData):
                 )
 
             # Material balance for stream
-            def material_balance_rule(b, t, s, j):
-                in_state, out_state, side_state = _get_state_blocks(b, t, s, stream)
-
-                if in_state is not None:
-                    rhs = sum(
-                        in_state.get_material_flow_terms(p, j)
-                        for p in phase_list
-                        if (p, j) in pc_set
-                    ) - sum(
-                        out_state.get_material_flow_terms(p, j)
-                        for p in phase_list
-                        if (p, j) in pc_set
-                    )
-                else:
-                    rhs = -sum(
-                        out_state.get_material_flow_terms(p, j)
-                        for p in phase_list
-                        if (p, j) in pc_set
-                    )
-
-                # Add side stream energy flow if required
-                if side_state is not None:
-                    rhs += sum(
-                        side_state.get_material_flow_terms(p, j)
-                        for p in phase_list
-                        if (p, j) in pc_set
-                    )
-
-                # As overall units come from the first StateBlock constructed, we
-                # cannot guarantee that any units are consistent, so convert all flow terms
-                if mb_units is not None:
-                    rhs = units.convert(rhs, mb_units)
-
-                # Add mass transfer terms
-                for k in b.stream_component_interactions:
-                    if k[0] == stream and k[2] == j:
-                        # Positive mass transfer
-                        rhs += b.material_transfer_term[t, s, k]
-                    elif k[1] == stream and k[2] == j:
-                        # Negative mass transfer
-                        rhs += -b.material_transfer_term[t, s, k]
-
-                # Add rate reactions (if required)
-                if sconfig.has_rate_reactions:
-                    rhs += sum(rate_reaction_generation[t, s, p, j] for p in phase_list)
-
-                # Add equilibrium reactions (if required)
-                if sconfig.has_equilibrium_reactions:
-                    rhs += sum(
-                        equilibrium_reaction_generation[t, s, p, j] for p in phase_list
-                    )
-
-                # Add inherent reactions (if required)
-                if state_block.include_inherent_reactions:
-                    rhs += sum(
-                        inherent_reaction_generation[t, s, p, j] for p in phase_list
-                    )
-
-                # Add heterogeneous reactions (if required)
-                if self.config.heterogeneous_reactions is not None:
-                    rhs += sum(
-                        heterogeneous_reactions_generation[t, s, p, j]
-                        for p in phase_list
-                    )
-
-                return 0 == rhs
-
             mbal = Constraint(
                 self.flowsheet().time,
                 self.elements,
                 component_list,
-                rule=material_balance_rule,
+                rule=partial(
+                    _material_balance_rule,
+                    stream=stream,
+                    mb_units=mb_units,
+                ),
             )
             self.add_component(stream + "_material_balance", mbal)
+
+    def _get_energy_transfer_term(self, uom):
+        try:
+            return self.energy_transfer_term
+        except AttributeError:
+            # Assume that if energy balances are enabled that energy transfer
+            # occurs between all interacting phases.
+            # For now, we will not distinguish different types of energy transfer.
+            # Convention is that a positive material flow term indicates flow into
+            # the first stream from the second stream.
+            self.energy_transfer_term = Var(
+                self.flowsheet().time,
+                self.elements,
+                self.stream_interactions,
+                initialize=0,
+                units=uom.POWER,
+                doc="Inter-stream energy transfer term",
+            )
+
+        return self.energy_transfer_term
 
     def _build_energy_balance_constraints(self, uom):
         # Energy Balances
 
-        # Assume that if energy balances are enabled that energy transfer
-        # occurs between all interacting phases.
-        # # For now, we will not distinguish different types of energy transfer.
-        # Convention is that a positive material flow term indicates flow into
-        # the first stream from the second stream.
-        self.energy_transfer_term = Var(
-            self.flowsheet().time,
-            self.elements,
-            self.stream_interactions,
-            initialize=0,
-            units=uom.POWER,
-            doc="Inter-stream energy transfer term",
-        )
-
         for stream, pconfig in self.config.streams.items():
             if pconfig.has_energy_balance:
-                state_block = getattr(self, stream)
-                phase_list = state_block.phase_list
-
                 if pconfig.has_heat_transfer:
                     heat = Var(
                         self.flowsheet().time,
@@ -933,80 +840,14 @@ class MSContactorData(UnitModelBlockData):
                     )
                     self.add_component(stream + "_heat", heat)
 
-                def energy_balance_rule(b, t, s):
-                    in_state, out_state, side_state = _get_state_blocks(b, t, s, stream)
-
-                    if in_state is not None:
-                        rhs = sum(
-                            in_state.get_enthalpy_flow_terms(p) for p in phase_list
-                        ) - sum(
-                            out_state.get_enthalpy_flow_terms(p) for p in phase_list
-                        )
-                    else:
-                        rhs = -sum(
-                            out_state.get_enthalpy_flow_terms(p) for p in phase_list
-                        )
-
-                    # Add side stream energy flow if required
-                    if side_state is not None:
-                        rhs += sum(
-                            side_state.get_enthalpy_flow_terms(p) for p in phase_list
-                        )
-
-                    # As overall units come from the first StateBlock constructed, we
-                    # cannot guarantee that any units are consistent, so convert all flow terms
-                    rhs = units.convert(rhs, uom.POWER)
-
-                    # Add interstream transfer terms
-                    for k in b.stream_interactions:
-                        if k[0] == stream:
-                            # Positive mass transfer
-                            rhs += b.energy_transfer_term[t, s, k]
-                        elif k[1] == stream:
-                            # Negative mass transfer
-                            rhs += -b.energy_transfer_term[t, s, k]
-
-                    # Add external heat term if required
-                    if pconfig.has_heat_transfer:
-                        rhs += heat[t, s]
-
-                    # Add heat of reaction terms if required
-                    if pconfig.has_heat_of_reaction:
-                        if not (
-                            hasattr(b, stream + "_rate_reaction_extent")
-                            or hasattr(b, stream + "_equilibrium_reaction_extent")
-                        ):
-                            raise ConfigurationError(
-                                f"Stream {stream} was set to include heats of reaction, "
-                                "but no extent of reactions terms could be found. "
-                                "Please ensure that you defined a reaction package for this "
-                                "stream and that the material balances were set to include "
-                                "reactions."
-                            )
-                        reactions = getattr(b, stream + "_reactions")
-
-                        if hasattr(b, stream + "_rate_reaction_extent"):
-                            rate_extent = getattr(b, stream + "_rate_reaction_extent")
-                            rhs += -sum(
-                                rate_extent[t, s, r] * reactions[t, s].dh_rxn[r]
-                                for r in pconfig.reaction_package.rate_reaction_idx
-                            )
-
-                        if hasattr(b, stream + "_equilibrium_reaction_extent"):
-                            equil_extent = getattr(
-                                b, stream + "_equilibrium_reaction_extent"
-                            )
-                            rhs += -sum(
-                                equil_extent[t, s, e] * reactions[t, s].dh_rxn[e]
-                                for e in pconfig.reaction_package.equilibrium_reaction_idx
-                            )
-
-                    return 0 == rhs
-
                 ebal = Constraint(
                     self.flowsheet().time,
                     self.elements,
-                    rule=energy_balance_rule,
+                    rule=partial(
+                        _energy_balance_rule,
+                        stream=stream,
+                        uom=uom,
+                    ),
                 )
                 self.add_component(stream + "_energy_balance", ebal)
 
@@ -1025,29 +866,14 @@ class MSContactorData(UnitModelBlockData):
                     )
                     self.add_component(stream + "_deltaP", deltaP)
 
-                def pressure_balance_rule(b, t, s):
-                    in_state, out_state, _ = _get_state_blocks(b, t, s, stream)
-
-                    if in_state is None:
-                        # If there is no feed, then there is no need for a pressure balance
-                        return Constraint.Skip
-
-                    rhs = in_state.pressure - out_state.pressure
-
-                    # As overall units come from the first StateBlock constructed, we
-                    # cannot guarantee that any units are consistent, so convert all flow terms
-                    rhs = units.convert(rhs, uom.PRESSURE)
-
-                    # Add deltaP term if required
-                    if pconfig.has_pressure_change:
-                        rhs += deltaP[t, s]
-
-                    return 0 == rhs
-
                 pbal = Constraint(
                     self.flowsheet().time,
                     self.elements,
-                    rule=pressure_balance_rule,
+                    rule=partial(
+                        _pressure_balance_rule,
+                        stream=stream,
+                        uom=uom,
+                    ),
                 )
                 self.add_component(stream + "_pressure_balance", pbal)
 
@@ -1143,3 +969,244 @@ def _get_state_blocks(b, t, s, stream):
             pass
 
     return in_state, out_state, side_state
+
+
+def _rate_reaction_rule(b, t, s, p, j, stream, rblock, generation, extent):
+    sconfig = b.config.streams[stream]
+    sblock = getattr(b, stream)
+    pc_set = sblock.phase_component_set
+
+    if (p, j) in pc_set:
+        return generation[t, s, p, j] == (
+            sum(
+                rblock[t, s].params.rate_reaction_stoichiometry[r, p, j]
+                * extent[t, s, r]
+                for r in sconfig.reaction_package.rate_reaction_idx
+            )
+        )
+    return Constraint.Skip
+
+
+def _equilibrium_reaction_rule(b, t, s, p, j, stream, rblock, generation, extent):
+    sconfig = b.config.streams[stream]
+    sblock = getattr(b, stream)
+    pc_set = sblock.phase_component_set
+
+    if (p, j) in pc_set:
+        return generation[t, s, p, j] == (
+            sum(
+                rblock[t, s].params.equilibrium_reaction_stoichiometry[r, p, j]
+                * extent[t, s, r]
+                for r in sconfig.reaction_package.equilibrium_reaction_idx
+            )
+        )
+    return Constraint.Skip
+
+
+def _inherent_reaction_rule(b, t, s, p, j, stream, generation, extent):
+    sconfig = b.config.streams[stream]
+    sblock = getattr(b, stream)
+    pc_set = sblock.phase_component_set
+
+    if (p, j) in pc_set:
+        return generation[t, s, p, j] == (
+            sum(
+                sblock[t, s].params.inherent_reaction_stoichiometry[r, p, j]
+                * extent[t, s, r]
+                for r in sconfig.property_package.inherent_reaction_idx
+            )
+        )
+    return Constraint.Skip
+
+
+def _heterogeneous_reaction_rule(b, t, s, p, j, pc_set, generation):
+    if (p, j) in pc_set:
+        return generation[t, s, p, j] == (
+            sum(
+                b.heterogeneous_reactions[t, s].params.reaction_stoichiometry[r, p, j]
+                * b.heterogeneous_reaction_extent[t, s, r]
+                for r in b.config.heterogeneous_reactions.reaction_idx
+                if (r, p, j)
+                in b.heterogeneous_reactions[t, s].params.reaction_stoichiometry
+            )
+        )
+    return Constraint.Skip
+
+
+def _material_balance_rule(b, t, s, j, stream, mb_units):
+    sconfig = b.config.streams[stream]
+    state_block = getattr(b, stream)
+    phase_list = state_block.phase_list
+    pc_set = state_block.phase_component_set
+
+    in_state, out_state, side_state = _get_state_blocks(b, t, s, stream)
+
+    if in_state is not None:
+        rhs = sum(
+            in_state.get_material_flow_terms(p, j)
+            for p in phase_list
+            if (p, j) in pc_set
+        ) - sum(
+            out_state.get_material_flow_terms(p, j)
+            for p in phase_list
+            if (p, j) in pc_set
+        )
+    else:
+        rhs = -sum(
+            out_state.get_material_flow_terms(p, j)
+            for p in phase_list
+            if (p, j) in pc_set
+        )
+
+    # Add side stream energy flow if required
+    if side_state is not None:
+        rhs += sum(
+            side_state.get_material_flow_terms(p, j)
+            for p in phase_list
+            if (p, j) in pc_set
+        )
+
+    # As overall units come from the first StateBlock constructed, we
+    # cannot guarantee that any units are consistent, so convert all flow terms
+    if mb_units is not None:
+        rhs = units.convert(rhs, mb_units)
+
+    # Add mass transfer terms
+    for k in b.stream_component_interactions:
+        if k[0] == stream and k[2] == j:
+            # Positive mass transfer
+            rhs += b.material_transfer_term[t, s, k]
+        elif k[1] == stream and k[2] == j:
+            # Negative mass transfer
+            rhs += -b.material_transfer_term[t, s, k]
+
+    # Add rate reactions (if required)
+    if sconfig.has_rate_reactions:
+        rhs += sum(
+            getattr(
+                b,
+                stream + "_rate_reaction_generation",
+            )[t, s, p, j]
+            for p in phase_list
+        )
+
+    # Add equilibrium reactions (if required)
+    if sconfig.has_equilibrium_reactions:
+        rhs += sum(
+            getattr(
+                b,
+                stream + "_equilibrium_reaction_generation",
+            )[t, s, p, j]
+            for p in phase_list
+        )
+
+    # Add inherent reactions (if required)
+    if state_block.include_inherent_reactions:
+        rhs += sum(
+            getattr(
+                b,
+                stream + "_inherent_reaction_generation",
+            )[t, s, p, j]
+            for p in phase_list
+        )
+
+    # Add heterogeneous reactions (if required)
+    if b.config.heterogeneous_reactions is not None:
+        rhs += sum(
+            getattr(
+                b,
+                stream + "_heterogeneous_reactions_generation",
+            )[t, s, p, j]
+            for p in phase_list
+        )
+
+    return 0 == rhs
+
+
+def _energy_balance_rule(b, t, s, stream, uom):
+    pconfig = b.config.streams[stream]
+    state_block = getattr(b, stream)
+    phase_list = state_block.phase_list
+
+    in_state, out_state, side_state = _get_state_blocks(b, t, s, stream)
+
+    if in_state is not None:
+        rhs = sum(in_state.get_enthalpy_flow_terms(p) for p in phase_list) - sum(
+            out_state.get_enthalpy_flow_terms(p) for p in phase_list
+        )
+    else:
+        rhs = -sum(out_state.get_enthalpy_flow_terms(p) for p in phase_list)
+
+    # Add side stream energy flow if required
+    if side_state is not None:
+        rhs += sum(side_state.get_enthalpy_flow_terms(p) for p in phase_list)
+
+    # As overall units come from the first StateBlock constructed, we
+    # cannot guarantee that any units are consistent, so convert all flow terms
+    rhs = units.convert(rhs, uom.POWER)
+
+    # Add interstream transfer terms
+    for k in b.stream_interactions:
+        ett = b._get_energy_transfer_term(uom)
+        if k[0] == stream:
+            # Positive mass transfer
+            rhs += ett[t, s, k]
+        elif k[1] == stream:
+            # Negative mass transfer
+            rhs += -ett[t, s, k]
+
+    # Add external heat term if required
+    if pconfig.has_heat_transfer:
+        rhs += getattr(b, stream + "_heat")[t, s]
+
+    # Add heat of reaction terms if required
+    if pconfig.has_heat_of_reaction:
+        if not (
+            hasattr(b, stream + "_rate_reaction_extent")
+            or hasattr(b, stream + "_equilibrium_reaction_extent")
+        ):
+            raise ConfigurationError(
+                f"Stream {stream} was set to include heats of reaction, "
+                "but no extent of reactions terms could be found. "
+                "Please ensure that you defined a reaction package for this "
+                "stream and that the material balances were set to include "
+                "reactions."
+            )
+        reactions = getattr(b, stream + "_reactions")
+
+        if hasattr(b, stream + "_rate_reaction_extent"):
+            rate_extent = getattr(b, stream + "_rate_reaction_extent")
+            rhs += -sum(
+                rate_extent[t, s, r] * reactions[t, s].dh_rxn[r]
+                for r in pconfig.reaction_package.rate_reaction_idx
+            )
+
+        if hasattr(b, stream + "_equilibrium_reaction_extent"):
+            equil_extent = getattr(b, stream + "_equilibrium_reaction_extent")
+            rhs += -sum(
+                equil_extent[t, s, e] * reactions[t, s].dh_rxn[e]
+                for e in pconfig.reaction_package.equilibrium_reaction_idx
+            )
+
+    return 0 == rhs
+
+
+def _pressure_balance_rule(b, t, s, stream, uom):
+    pconfig = b.config.streams[stream]
+    in_state, out_state, _ = _get_state_blocks(b, t, s, stream)
+
+    if in_state is None:
+        # If there is no feed, then there is no need for a pressure balance
+        return Constraint.Skip
+
+    rhs = in_state.pressure - out_state.pressure
+
+    # As overall units come from the first StateBlock constructed, we
+    # cannot guarantee that any units are consistent, so convert all flow terms
+    rhs = units.convert(rhs, uom.PRESSURE)
+
+    # Add deltaP term if required
+    if pconfig.has_pressure_change:
+        rhs += getattr(b, stream + "_deltaP")[t, s]
+
+    return 0 == rhs
