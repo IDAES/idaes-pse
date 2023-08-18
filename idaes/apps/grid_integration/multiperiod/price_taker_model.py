@@ -328,21 +328,43 @@ class PriceTakerModel(ConcreteModel):
 
         pass
 
-    def add_startup_shutdown(self,UT = 1,DT =1):
+    def add_startup_shutdown(self,UT = 4,DT =4):
         """
         Adds startup/shutdown and minimum uptime/downtime constraints on
         a given unit/process
         """
-        set_period = self.mp_model.set_period
-        num_time_periods = len(set_period)
 
         
-        set_period_list = set_period.tolist()
-        self.st_con_range = RangeSet(set_period_list[UT:])
-        self.sd_con_range = RangeSet(set_period_list[DT:])
+        period = self.mp_model.period
+        self.range_time_periods_SU = RangeSet(UT,len(period)-1) 
+        self.range_time_periods_SD = RangeSet(DT,len(period)-1)
+        range_time_periods = []
+        
+        for p in period:
+            range_time_periods.append(p)
+            op_mode = 0
+            startup = 0
 
+            for blk in period[p].component_data_objects(Block):
+                if isinstance(blk, OperationModelData):
+                    op_mode += blk.op_mode
+                    startup += blk.startup
+            period[p].op_mode = Expression(expr = op_mode)
+            period[p].startup = Expression(expr = startup)
+        
+        
+        def startup_con1_rule(self,t):
+            return sum(period[range_time_periods[i]].startup for i in range(t-UT+1,t)) <= period[range_time_periods[t]].op_mode
+    
+        self.mp_model.startup_con1 = Constraint(self.range_time_periods_SU, rule = startup_con1_rule)
+        
+        def stutdown_con1_rule(self,t):
+            return ( sum(period[range_time_periods[i]].startup for i in range(t - DT, t + 1)) <= 
+                     1 - period[range_time_periods[t - DT]].op_mode )
+        
+        self.mp_model.stutdown_con1 = Constraint(self.range_time_periods_SD, rule = stutdown_con1_rule)
 
-        pass
+            
 
     def build_hourly_cashflows(self):
         period = self.mp_model.period
