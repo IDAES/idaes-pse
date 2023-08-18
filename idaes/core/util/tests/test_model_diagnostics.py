@@ -840,7 +840,7 @@ The following constraints(s) are associated with extreme Jacobian values:
         assert stream.getvalue() == expected
 
     @pytest.mark.component
-    def test_display_extreme_jacobians_entries(self):
+    def test_display_extreme_jacobian_entries(self):
         model = ConcreteModel()
         model.v1 = Var(initialize=1e-8)
         model.v2 = Var()
@@ -853,7 +853,7 @@ The following constraints(s) are associated with extreme Jacobian values:
         dt = DiagnosticsToolbox(model=model)
 
         stream = StringIO()
-        dt.display_extreme_jacobians_entries(stream)
+        dt.display_extreme_jacobian_entries(stream)
 
         expected = """====================================================================================
 The following variable(s) and constraints(s) are associated with extreme Jacobian
@@ -1118,7 +1118,7 @@ Suggested next steps:
         expected = """====================================================================================
 Model Statistics
 
-    Jacobian Condition Number: 17.0
+    Jacobian Condition Number: 1.700E+01
 
 ------------------------------------------------------------------------------------
 2 WARNINGS
@@ -1143,7 +1143,7 @@ Suggested next steps:
 
 ====================================================================================
 """
-
+        print(stream.getvalue())
         assert stream.getvalue() == expected
 
     @pytest.mark.component
@@ -1165,7 +1165,7 @@ Suggested next steps:
         expected = """====================================================================================
 Model Statistics
 
-    Jacobian Condition Number: 1.4073002942618775e+18
+    Jacobian Condition Number: 1.407E+18
 
 ------------------------------------------------------------------------------------
 3 WARNINGS
@@ -1191,7 +1191,7 @@ Suggested next steps:
 
 ====================================================================================
 """
-
+        print(stream.getvalue())
         assert stream.getvalue() == expected
 
 
