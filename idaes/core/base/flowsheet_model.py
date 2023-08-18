@@ -64,8 +64,9 @@ class UI:
     """
 
     def __init__(self):
+        # pylint: disable=import-outside-toplevel
         try:
-            import idaes_ui  # pylint: disable=C0415
+            import idaes_ui
         except ImportError:
             idaes_ui = None
 
