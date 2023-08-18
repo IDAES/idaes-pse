@@ -620,7 +620,7 @@ class DiagnosticsToolbox:
                     zero=0,
                 )
             ],
-            title="The following variable(s) and constraints(s) are associated with extreme Jacobian\nvalues:",
+            title="The following constraints(s) and variable(s) are associated with extreme Jacobian\nvalues:",
             header="=",
             footer="=",
         )
