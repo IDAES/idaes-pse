@@ -201,14 +201,14 @@ class FixedBedTSA0DData(UnitModelBlockData):
         - True           : compressor included"""))
     CONFIG.declare("steam_calculation", ConfigValue(
             default=None,
-            domain=In([None, "rigurous", "simplified"]),
+            domain=In([None, "rigorous", "simplified"]),
             description="Steam calculation flag",
             doc="""Indicates whether a method to estimate the steam flow rate
         required in the desorption step should be included.
         - None (default): steam calculation method not included
         - simplified    : a surrogate model is used to estimate the mass flow
                           rate of steam.
-        - rigurous      : a heater unit model is included in the TSA system
+        - rigorous      : a heater unit model is included in the TSA system
                           assuming total saturation"""))
 
     def build(self):
@@ -1772,21 +1772,22 @@ class FixedBedTSA0DData(UnitModelBlockData):
             #  weighting function
             sigma = (
                 self.X1[i]
-                * exp(self.X2[i] * (1 / self.temperature_ref - 1 / T)))
+                * exp(self.X2[i] * (1 / self.temperature_ref - 1 / T)*units.K))
             pstep = (
                 self.Pstep_0[i]
-                * exp((-self.Hstep[i] / const.gas_constant / 1e-3) *
+                * exp((-self.Hstep[i] / const.gas_constant
+                       * 1e3*units.J/units.kJ) *
                       (1 / self.temperature_ref - 1 / T)))
 
             w = (
-                exp((log(p[i]) - log(pstep)) / sigma)
-                / (1 + exp((log(p[i]) - log(pstep)) / sigma)))**self.gamma[i]
+                exp((log(p[i]/units.bar) - log(pstep/units.bar)) / sigma)
+                / (1 + exp((log(p[i]/units.bar) - log(pstep/units.bar)) / sigma)))**self.gamma[i]
 
             loading[i] = nL * (1 - w) + nU * w  # [mol/kg]
 
         elif i == "N2":
             # no adsorption is assumed of N2 in mmen-Mg(dobpdc)
-            loading[i] = 1e-10
+            loading[i] = 1e-10*units.mol/units.kg
 
         return loading[i]
 
@@ -2232,7 +2233,7 @@ class FixedBedTSA0DData(UnitModelBlockData):
             units=units.kg/units.s,
             doc="Mass flow rate of steam [kg/s]")
 
-        if self.config.steam_calculation == "rigurous":
+        if self.config.steam_calculation == "rigorous":
 
             # add empty block for heater
             self.steam_heater = Block()
@@ -2282,7 +2283,7 @@ class FixedBedTSA0DData(UnitModelBlockData):
                      + 200.42) * units.mol/units.s
                     * 0.018015*units.kg/units.mol)
 
-            if self.config.steam_calculation == "rigurous":
+            if self.config.steam_calculation == "rigorous":
                 return (
                     self.flow_mass_steam ==
                     self.steam_heater.unit.control_volume.
@@ -2707,7 +2708,10 @@ class FixedBedTSA0DData(UnitModelBlockData):
             # if "calculate_beds" is True, there is an extra variable for
             # "velocity_in" and it needs to be fixed to initialize the
             # pressurization and adsorption step
-            blk.velocity_in.fix()
+            velocity_fixed = blk.velocity_in.fixed
+            if not velocity_fixed:
+                blk.velocity_in.fix()
+                blk.pressure_drop.unfix()
 
         # 3.2) check degrees of freedom and solve
 
@@ -2777,8 +2781,9 @@ class FixedBedTSA0DData(UnitModelBlockData):
             # "velocity_in" that was fixed previously. It is necessary to
             # unfix it, but this results in DOF=1 for the entire model,
             # to get DOF=0, the pressure drop needs to be fixed.
-            blk.velocity_in.unfix()
-            blk.pressure_drop.fix()
+            if not velocity_fixed:
+                blk.velocity_in.unfix()
+                blk.pressure_drop.fix()
         else:
             # if "calculate_beds" is False, initialize the pressure drop from
             # its equation as the initial guess is poor
@@ -2792,7 +2797,7 @@ class FixedBedTSA0DData(UnitModelBlockData):
 
         # 5.3) deactivate steam calculation constraints
         if blk.config.steam_calculation is not None:
-            if blk.config.steam_calculation == "rigurous":
+            if blk.config.steam_calculation == "rigorous":
                 blk.steam_heater.deactivate()
             blk.flow_mass_steam_eq.deactivate()
             blk.flow_mass_steam.fix()
@@ -2815,9 +2820,6 @@ class FixedBedTSA0DData(UnitModelBlockData):
                 "fixed bed TSA model. Fix/unfix appropriate number of "
                 "variables to result in zero degrees of freedom for "
                 "initialization.")
-
-        # unfix pressure drop
-        # blk.pressure_drop.unfix()
 
         # 6 - solve compressor unit
         if blk.config.compressor:
@@ -2867,9 +2869,6 @@ class FixedBedTSA0DData(UnitModelBlockData):
             blk.compressor.pressure_in_compressor_eq.deactivate()
             blk.compressor.pressure_drop_tsa_compressor_eqn.deactivate()
 
-            # fix eficiency of compressor
-            blk.compressor.unit.efficiency_isentropic.fix(0.7)
-
             # 6.2) check degrees of freedom and solve
             if degrees_of_freedom(blk.compressor) == 0:
 
@@ -2907,7 +2906,7 @@ class FixedBedTSA0DData(UnitModelBlockData):
         # 7 - solve steam calculation
         if blk.config.steam_calculation is not None:
 
-            if blk.config.steam_calculation == "rigurous":
+            if blk.config.steam_calculation == "rigorous":
 
                 # set up logger
                 init_log_heater = idaeslog.getInitLogger(
@@ -3057,7 +3056,7 @@ class FixedBedTSA0DData(UnitModelBlockData):
 
             # 8.2 unfix variables and activate constraints that were fixed
             #     and deactivated in 7
-            if blk.config.steam_calculation == "rigurous":
+            if blk.config.steam_calculation == "rigorous":
                 blk.steam_heater.unit.heat_duty_heater_eq.activate()
                 blk.steam_heater.unit.heat_duty.unfix()
 
