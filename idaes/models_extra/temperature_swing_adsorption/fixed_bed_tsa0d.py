@@ -1837,7 +1837,7 @@ class FixedBedTSA0DData(UnitModelBlockData):
 
         elif i == "N2":
             # no adsorption is assumed of N2 in this adsorbent
-            loading[i] = 1e-10
+            loading[i] = 1e-10*units.mol/units.kg
 
         return loading[i]
 
