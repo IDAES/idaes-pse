@@ -37,7 +37,7 @@ from pyomo.environ import (
 )
 from pyomo.dae import DerivativeVar
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
-from pyomo.core.expr.current import Expr_if
+from pyomo.core.expr import Expr_if
 
 # Import IDAES cores
 from idaes.core import (

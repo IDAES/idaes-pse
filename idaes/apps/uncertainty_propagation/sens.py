@@ -33,7 +33,7 @@ from pyomo.environ import (
     check_optimal_termination,
 )
 from pyomo.common.sorting import sorted_robust
-from pyomo.core.expr.current import ExpressionReplacementVisitor
+from pyomo.core.expr import ExpressionReplacementVisitor
 
 from pyomo.common.modeling import unique_component_name
 from pyomo.opt import SolverFactory, SolverStatus

@@ -420,6 +420,7 @@ def petsc_dae_by_time_element(
     initial_variables=None,
     detect_initial=True,
     skip_initial=False,
+    snes_solver="petsc_snes",
     snes_options=None,
     ts_options=None,
     keepfiles=False,
@@ -453,7 +454,9 @@ def petsc_dae_by_time_element(
             calculated. This can be useful, for example, if you read initial
             conditions from a separately solved steady state problem, or
             otherwise know the initial conditions.
-        snes_options (dict): PETSc nonlinear equation solver options
+        snes_solver (str): default=petsc_snes, the nonlinear equations solver
+            to use for the initial conditions (e.g. petsc_snes, ipopt, ...).
+        snes_options (dict): nonlinear equation solver options
         ts_options (dict): PETSc time-stepping solver options
         keepfiles (bool): pass to keepfiles arg for solvers
         symbolic_solver_labels (bool): pass to symbolic_solver_labels argument
@@ -517,7 +520,7 @@ def petsc_dae_by_time_element(
 
     if not skip_initial:
         # Nonlinear equation solver for initial conditions
-        solver_snes = pyo.SolverFactory("petsc_snes", options=snes_options)
+        solver_snes = pyo.SolverFactory(snes_solver, options=snes_options)
         # list of constraints to add to the initial condition problem
         if initial_constraints is None:
             initial_constraints = []

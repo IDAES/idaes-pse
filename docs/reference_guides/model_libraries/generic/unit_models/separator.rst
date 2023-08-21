@@ -85,11 +85,15 @@ If `energy_split_basis` is `enthalpy_split`:
 
 .. math:: sum_p{h_{in, t, p}*sf_{t, o, p}} = sum_p{h_{t, o, p}}
 
+If `energy_split_basis` is `none`, no energy balance constraint is written.
+
 If `momentum_balance_type` is `pressureTotal`:
 
 `pressure_equality_eqn(t, o)`:
 
 .. math:: P_{in, t} = P_{t, o}
+
+If `momentum_balance_type` is `none`, no momentum balance constraint is written.
 
 Separators do not support momentum balances using the `pressurePhase`, `momentumTotal` or `momentumPhase` options.
 
