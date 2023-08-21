@@ -46,7 +46,6 @@ shortcut model. Industrial & Engineering Chemistry Research, 2015, 54(11),
 
 """
 # Import Python libraries
-import matplotlib.pyplot as plt
 from pandas import DataFrame
 from sys import stdout
 import textwrap
@@ -3234,117 +3233,6 @@ class FixedBedTSA0DData(UnitModelBlockData):
         iscale.set_scaling_factor(self.temperature_in, 1e-2)
         iscale.set_scaling_factor(self.pressure_in, 1e-5)
 
-    def plots(self):
-        """
-        Plot method for common fixed bed TSA variables
-
-        Variables plotted:
-            T : Temperature [K]
-            P : Pressure [bar]
-            y : Mole fraction of CO2 in the gas phase
-
-        """
-        # heating profiles
-        time_domain = self.heating.time_domain
-        t_heating = list(time_domain)
-        t_heating = [i * value(self.heating.time) / 60 for i in t_heating]
-        y_heating = [
-            value(self.heating.mole_frac[t, "CO2"])
-            for t in time_domain]
-        T_heating = [
-            value(self.heating.temperature[t])
-            for t in time_domain]
-        P_heating = [
-            value(self.pressure_adsorption) * 1e-5
-            for i in range(len(t_heating))]
-
-        # cooling profiles
-        time_domain = self.cooling.time_domain
-        t_cooling = list(time_domain)
-        t_cooling = [
-            t_heating[-1] + i * value(self.cooling.time)
-            / 60 for i in t_cooling]
-        y_cooling = [
-            value(self.cooling.mole_frac[t, "CO2"])
-            for t in time_domain]
-        T_cooling = [
-            value(self.cooling.temperature[t])
-            for t in time_domain]
-        P_cooling = [
-            value(self.cooling.pressure[t])
-            for t in time_domain]
-        P_cooling = [i * 1e-5 for i in P_cooling]
-
-        # pressurization profiles
-        t_pressurization = [
-            t_cooling[-1] * 60 + i * (
-                (t_cooling[-1] * 60 + value(self.pressurization.time))
-                - t_cooling[-1] * 60) / (1000 - 1) for i in range(1000)]
-        t_pressurization.pop(0)
-        t_pressurization = [i / 60 for i in t_pressurization]
-        n_press = len(t_pressurization)
-        tf = self.cooling.time_domain.last()
-        y_pressurization = [
-            value(self.cooling.mole_frac[tf, "CO2"])] * n_press
-        y_pressurization[-1] = value(self.pressurization.mole_frac["CO2"])
-        T_pressurization = [
-            value(self.cooling.temperature[tf])] * n_press
-        P_pressurization = [
-            value(self.cooling.pressure[tf]) * 1e-5] * n_press
-        P_pressurization[-1] = value(self.pressure_adsorption) * 1e-5
-
-        # adsorption profiles
-        t_adsorption = [
-            t_pressurization[-1] * 60 + i * (
-                (t_pressurization[-1] * 60 + value(self.adsorption.time))
-                - t_pressurization[-1] * 60) / (1000 - 1) for i in range(1000)]
-        t_adsorption.pop(0)
-        t_adsorption = [i / 60 for i in t_adsorption]
-        n_ads = len(t_adsorption)
-        y_adsorption = [value(self.pressurization.mole_frac["CO2"])] * n_ads
-        y_adsorption[-1] = value(self.mole_frac_in["CO2"])
-        T_adsorption = [value(self.temperature_adsorption)] * n_ads
-        P_adsorption = [value(self.pressure_adsorption)*1e-5] * n_ads
-
-        # plotting profiles - whole cycle
-        t_cycle = t_heating + t_cooling + t_pressurization + t_adsorption
-        y_cycle = y_heating + y_cooling + y_pressurization + y_adsorption
-        T_cycle = T_heating + T_cooling + T_pressurization + T_adsorption
-        P_cycle = P_heating + P_cooling + P_pressurization + P_adsorption
-
-        fig, (ax1, ax2, ax3) = plt.subplots(3, figsize=(5, 8))
-        ax1.plot(t_cycle, T_cycle)
-        ax1.set_ylabel("Temperature [K]")
-        ax1.set_xlim(0, max(t_cycle)+1)
-        ax1.set_ylim(value(self.temperature_cooling),
-                     value(self.temperature_heating))
-        ax1.axvline(t_heating[-1], lw=0.7, color="r", ls="--")
-        ax1.axvline(t_cooling[-1], lw=0.7, color="r", ls="--")
-        ax1.axvline(t_pressurization[-1], lw=0.7, color="r", ls="--")
-        ax1.axvline(t_adsorption[-1], lw=0.7, color="r", ls="--")
-        ax1.grid()
-        ax2.plot(t_cycle, P_cycle)
-        ax2.set_ylabel("Pressure [bar]")
-        ax2.set_xlim(0, max(t_cycle)+1)
-        ax2.set_ylim(0, 1.05)
-        ax2.axvline(t_heating[-1], lw=0.7, color="r", ls="--")
-        ax2.axvline(t_cooling[-1], lw=0.7, color="r", ls="--")
-        ax2.axvline(t_pressurization[-1], lw=0.7, color="r", ls="--")
-        ax2.axvline(t_adsorption[-1], lw=0.7, color="r", ls="--")
-        ax2.grid()
-        ax3.plot(t_cycle, y_cycle)
-        ax3.set_ylabel(r"Mole Fraction of $\mathrm{CO_{2}}$ [-]")
-        ax3.set_xlabel("Time [min]")
-        ax3.set_xlim(0, max(t_cycle)+1)
-        ax3.set_ylim(0, 1.05)
-        ax3.axvline(t_heating[-1], lw=0.7, color="r", ls="--")
-        ax3.axvline(t_cooling[-1], lw=0.7, color="r", ls="--")
-        ax3.axvline(t_pressurization[-1], lw=0.7, color="r", ls="--")
-        ax3.axvline(t_adsorption[-1], lw=0.7, color="r", ls="--")
-        ax3.grid()
-
-        plt.show()
-
     def _var_dict(self):
 
         var_dict = {}
@@ -3406,34 +3294,6 @@ class FixedBedTSA0DData(UnitModelBlockData):
         ] = self.emissions_co2_ppm
 
         return var_dict
-
-    def summary(self, export=False):
-
-        var_dict = self._var_dict()
-
-        summary_dir = {}
-        summary_dir["Value"] = {}
-        summary_dir["pos"] = {}
-
-        count = 1
-        for k, v in var_dict.items():
-            summary_dir["Value"][k] = value(v)
-            summary_dir["pos"][k] = count
-            count += 1
-
-        df = DataFrame.from_dict(summary_dir, orient="columns")
-        del df["pos"]
-        if export:
-            df.to_csv(f"{self.local_name}_summary.csv")
-
-        print("\n" + "="*84)
-        print(f"summary {self.local_name}")
-        print("-"*84)
-        stdout.write(
-            textwrap.indent(
-                stream_table_dataframe_to_string(df),
-                " "*4))
-        print("\n" + "="*84 + "\n")
 
     def _get_performance_contents(self, time_point=0):
 
