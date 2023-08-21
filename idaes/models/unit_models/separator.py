@@ -1270,7 +1270,9 @@ objects linked the mixed state and all outlet states,
                     # Assume outlets same as mixed flow - make Reference
                     e_obj = Reference(mb[:].component(var_name_local))
 
-                elif var_name_local.startswith("mole_frac") or var_name_local.startswith("mass_frac"):
+                elif var_name_local.startswith(
+                    "mole_frac"
+                ) or var_name_local.startswith("mass_frac"):
                     # Mole and mass frac need special handling
                     if "_phase" in var_name_local:
                         e_obj = VarLikeExpression(
