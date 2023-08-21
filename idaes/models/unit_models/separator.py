@@ -179,27 +179,27 @@ class SeparatorInitializer(ModularInitializerBase):
             for t in model.flowsheet().time:
                 # Calculate values for state variables
                 s_vars = o_block[t].define_state_vars()
-                for v in s_vars:
-                    for k in s_vars[v]:
+                for var_name_port, var_obj in s_vars.items():
+                    for k in var_obj:
                         # If fixed, use current value
                         # otherwise calculate guess from mixed state and fix
-                        if not s_vars[v][k].fixed:
-                            m_var = getattr(mblock[t], s_vars[v].local_name)
-                            if "flow" in v:
+                        if not var_obj[k].fixed:
+                            m_var = getattr(mblock[t], var_obj.local_name)
+                            if "flow" in var_name_port:
                                 # If a "flow" variable, is extensive
                                 # Apply split fraction
                                 if model.config.split_basis == SplittingType.totalFlow:
                                     # All flows split by outlet
-                                    s_vars[v][k].set_value(
+                                    var_obj[k].set_value(
                                         value(m_var[k] * model.split_fraction[(t, o)])
                                     )
-                                elif "_phase_comp" in v:
+                                elif "_phase_comp" in var_name_port:
                                     # Need to match indices, but use split frac
                                     if (
                                         model.config.split_basis
                                         == SplittingType.phaseComponentFlow
                                     ):
-                                        s_vars[v][k].set_value(
+                                        var_obj[k].set_value(
                                             value(
                                                 m_var[k]
                                                 * model.split_fraction[(t, o) + (k,)]
@@ -209,7 +209,7 @@ class SeparatorInitializer(ModularInitializerBase):
                                         model.config.split_basis
                                         == SplittingType.phaseFlow
                                     ):
-                                        s_vars[v][k].set_value(
+                                        var_obj[k].set_value(
                                             value(
                                                 m_var[k]
                                                 * model.split_fraction[(t, o) + (k[0],)]
@@ -219,7 +219,7 @@ class SeparatorInitializer(ModularInitializerBase):
                                         model.config.split_basis
                                         == SplittingType.componentFlow
                                     ):
-                                        s_vars[v][k].set_value(
+                                        var_obj[k].set_value(
                                             value(
                                                 m_var[k]
                                                 * model.split_fraction[(t, o) + (k[1],)]
@@ -232,7 +232,7 @@ class SeparatorInitializer(ModularInitializerBase):
                                             "occur - please send this bug to "
                                             "the IDAES developers.".format(model.name)
                                         )
-                                elif "_phase" in v:
+                                elif "_phase" in var_name_port:
                                     if (
                                         model.config.split_basis
                                         == SplittingType.phaseComponentFlow
@@ -245,14 +245,14 @@ class SeparatorInitializer(ModularInitializerBase):
                                             )
                                             / len(mblock.component_list)
                                         )
-                                        s_vars[v][k].set_value(
+                                        var_obj[k].set_value(
                                             value(m_var[k] * avg_split)
                                         )
                                     elif (
                                         model.config.split_basis
                                         == SplittingType.phaseFlow
                                     ):
-                                        s_vars[v][k].set_value(
+                                        var_obj[k].set_value(
                                             value(
                                                 m_var[k]
                                                 * model.split_fraction[(t, o) + (k,)]
@@ -270,7 +270,7 @@ class SeparatorInitializer(ModularInitializerBase):
                                             )
                                             / len(mblock.component_list)
                                         )
-                                        s_vars[v][k].set_value(
+                                        var_obj[k].set_value(
                                             value(m_var[k] * avg_split)
                                         )
                                     else:
@@ -280,7 +280,7 @@ class SeparatorInitializer(ModularInitializerBase):
                                             "occur - please send this bug to "
                                             "the IDAES developers.".format(model.name)
                                         )
-                                elif "_comp" in v:
+                                elif "_comp" in var_name_port:
                                     if (
                                         model.config.split_basis
                                         == SplittingType.phaseComponentFlow
@@ -293,7 +293,7 @@ class SeparatorInitializer(ModularInitializerBase):
                                             )
                                             / len(mblock.phase_list)
                                         )
-                                        s_vars[v][k].set_value(
+                                        var_obj[k].set_value(
                                             value(m_var[k] * avg_split)
                                         )
                                     elif (
@@ -308,14 +308,14 @@ class SeparatorInitializer(ModularInitializerBase):
                                             )
                                             / len(mblock.phase_list)
                                         )
-                                        s_vars[v][k].set_value(
+                                        var_obj[k].set_value(
                                             value(m_var[k] * avg_split)
                                         )
                                     elif (
                                         model.config.split_basis
                                         == SplittingType.componentFlow
                                     ):
-                                        s_vars[v][k].set_value(
+                                        var_obj[k].set_value(
                                             value(
                                                 m_var[k]
                                                 * model.split_fraction[(t, o) + (k,)]
@@ -374,10 +374,10 @@ class SeparatorInitializer(ModularInitializerBase):
                                             "occur - please send this bug to "
                                             "the IDAES developers.".format(model.name)
                                         )
-                                    s_vars[v][k].set_value(value(m_var[k] * avg_split))
+                                    var_obj[k].set_value(value(m_var[k] * avg_split))
                             else:
                                 # Otherwise intensive, equate to mixed stream
-                                s_vars[v][k].set_value(m_var[k].value)
+                                var_obj[k].set_value(m_var[k].value)
 
             # Call initialization routine for outlet StateBlock
             self.get_submodel_initializer(o_block).initialize(o_block)
@@ -1263,24 +1263,23 @@ objects linked the mixed state and all outlet states,
             setattr(self, o, p_obj)
 
             # Iterate over members to create References or Expressions
-            for s in s_vars:
+            for var_name_port, var_obj in s_vars.items():
                 # Get local variable name of component
-                l_name = s_vars[s].local_name
-                if l_name == "pressure" or l_name == "temperature":
+                var_name_local = var_obj.local_name
+                if var_name_local == "pressure" or var_name_local == "temperature":
                     # Assume outlets same as mixed flow - make Reference
-                    e_obj = Reference(mb[:].component(l_name))
+                    e_obj = Reference(mb[:].component(var_name_local))
 
-                elif l_name.startswith("mole_frac") or l_name.startswith("mass_frac"):
+                elif var_name_local.startswith("mole_frac") or var_name_local.startswith("mass_frac"):
                     # Mole and mass frac need special handling
-                    if "_phase" in l_name:
+                    if "_phase" in var_name_local:
                         e_obj = VarLikeExpression(
                             self.flowsheet().time,
                             pc_set,
                             rule=partial(
                                 _e_rule_mole_mass_frac_phase_comp,
                                 mixed_block=mb,
-                                s_vars=s_vars,
-                                s=s,
+                                var_obj=var_obj,
                                 outlet=o,
                             ),
                         )
@@ -1292,40 +1291,38 @@ objects linked the mixed state and all outlet states,
                             rule=partial(
                                 _e_rule_mole_mass_frac_comp,
                                 mixed_block=mb,
-                                s_vars=s_vars,
-                                s=s,
+                                var_obj=var_obj,
                                 outlet=o,
                             ),
                         )
 
-                elif l_name.endswith("_phase_comp"):
+                elif var_name_local.endswith("_phase_comp"):
                     e_obj = VarLikeExpression(
                         self.flowsheet().time,
                         pc_set,
                         rule=partial(
                             _e_rule_phase_comp,
                             mixed_block=mb,
-                            s_vars=s_vars,
-                            s=s,
+                            var_obj=var_obj,
                             outlet=o,
                         ),
                     )
 
-                elif l_name.endswith("_phase"):
+                elif var_name_local.endswith("_phase"):
                     e_obj = VarLikeExpression(
                         self.flowsheet().time,
                         mb.phase_list,
                         rule=partial(
-                            _e_rule_phase, mixed_block=mb, s_vars=s_vars, s=s, outlet=o
+                            _e_rule_phase, mixed_block=mb, var_obj=var_obj, outlet=o
                         ),
                     )
 
-                elif l_name.endswith("_comp"):
+                elif var_name_local.endswith("_comp"):
                     e_obj = VarLikeExpression(
                         self.flowsheet().time,
                         mb.component_list,
                         rule=partial(
-                            _e_rule_comp, mixed_block=mb, s_vars=s_vars, s=s, outlet=o
+                            _e_rule_comp, mixed_block=mb, var_obj=var_obj, outlet=o
                         ),
                     )
 
@@ -1334,15 +1331,15 @@ objects linked the mixed state and all outlet states,
                     e_obj = VarLikeExpression(
                         self.flowsheet().time,
                         rule=partial(
-                            _e_rule_other, mixed_block=mb, s_vars=s_vars, s=s, outlet=o
+                            _e_rule_other, mixed_block=mb, var_obj=var_obj, outlet=o
                         ),
                     )
 
                 # Add Reference/Expression object to Separator model object
-                setattr(self, "_" + o + "_" + l_name + "_ref", e_obj)
+                setattr(self, "_" + o + "_" + var_name_local + "_ref", e_obj)
 
                 # Add member to Port object
-                p_obj.add(e_obj, s)
+                p_obj.add(e_obj, var_name_port)
 
     def model_check(blk):
         """
@@ -1850,13 +1847,13 @@ def _raise_split_unindexed_fail_err(name, s):
 
 
 # Mole and mass frac need special handling
-def _e_rule_mole_mass_frac_phase_comp(b, t, p, j, mixed_block, s_vars, s, outlet):
+def _e_rule_mole_mass_frac_phase_comp(b, t, p, j, mixed_block, var_obj, outlet):
     pc_set = mixed_block.phase_component_set
     split_map = b.config.ideal_split_map
 
     if (p, j) in pc_set:
         if b.config.split_basis == SplittingType.phaseFlow:
-            return s_vars[s][p, j]
+            return var_obj[p, j]
         elif b.config.split_basis == SplittingType.componentFlow:
             if split_map[j] == outlet:
                 return 1
@@ -1876,9 +1873,9 @@ def _e_rule_mole_mass_frac_phase_comp(b, t, p, j, mixed_block, s_vars, s, outlet
         )
 
 
-def _e_rule_mole_mass_frac_comp(b, t, j, mixed_block, s_vars, s, outlet):
+def _e_rule_mole_mass_frac_comp(b, t, j, mixed_block, var_obj, outlet):
     pc_set = mixed_block.phase_component_set
-    l_name = s_vars[s].local_name
+    l_name = var_obj.local_name
     split_map = b.config.ideal_split_map
 
     if b.config.split_basis == SplittingType.componentFlow:
@@ -1904,7 +1901,7 @@ def _e_rule_mole_mass_frac_comp(b, t, j, mixed_block, s_vars, s, outlet):
                 "be partitioned. Please set "
                 "configuration argument "
                 "ideal_separation = False for this "
-                "property package.".format(b.name, s)
+                "property package.".format(b.name, l_name)
             )
 
         for phase in mixed_block.phase_list:
@@ -1923,8 +1920,8 @@ def _e_rule_mole_mass_frac_comp(b, t, j, mixed_block, s_vars, s, outlet):
         return b.eps
 
 
-def _e_rule_phase_comp(b, t, p, j, mixed_block, s_vars, s, outlet):
-    l_name = s_vars[s].local_name
+def _e_rule_phase_comp(b, t, p, j, mixed_block, var_obj, outlet):
+    l_name = var_obj.local_name
     split_map = b.config.ideal_split_map
 
     if b.config.split_basis == SplittingType.phaseFlow:
@@ -1946,8 +1943,8 @@ def _e_rule_phase_comp(b, t, p, j, mixed_block, s_vars, s, outlet):
         return b.eps
 
 
-def _e_rule_phase(b, t, p, mixed_block, s_vars, s, outlet):
-    l_name = s_vars[s].local_name
+def _e_rule_phase(b, t, p, mixed_block, var_obj, outlet):
+    l_name = var_obj.local_name
     split_map = b.config.ideal_split_map
 
     if b.config.split_basis == SplittingType.phaseFlow:
@@ -1960,7 +1957,7 @@ def _e_rule_phase(b, t, p, mixed_block, s_vars, s, outlet):
         mfp = mixed_block[t].component(l_name + "_comp")
 
         if mfp is None:
-            _raise_split_indexed_fail_err(b.name, s)
+            _raise_split_indexed_fail_err(b.name, l_name)
 
         for j in mixed_block.component_list:
             if b.config.split_basis == SplittingType.componentFlow:
@@ -1980,9 +1977,9 @@ def _e_rule_phase(b, t, p, mixed_block, s_vars, s, outlet):
         return b.eps
 
 
-def _e_rule_comp(b, t, j, mixed_block, s_vars, s, outlet):
+def _e_rule_comp(b, t, j, mixed_block, var_obj, outlet):
     pc_set = mixed_block.phase_component_set
-    l_name = s_vars[s].local_name
+    l_name = var_obj.local_name
     split_map = b.config.ideal_split_map
 
     if b.config.split_basis == SplittingType.componentFlow:
@@ -1995,7 +1992,7 @@ def _e_rule_comp(b, t, j, mixed_block, s_vars, s, outlet):
         mfp = mixed_block[t].component("{0}_phase{1}".format(l_name[:-5], l_name[-5:]))
 
         if mfp is None:
-            _raise_split_indexed_fail_err(b.name, s)
+            _raise_split_indexed_fail_err(b.name, l_name)
 
         for p in mixed_block.phase_list:
             if (p, j) in pc_set:
@@ -2015,9 +2012,9 @@ def _e_rule_comp(b, t, j, mixed_block, s_vars, s, outlet):
         return b.eps
 
 
-def _e_rule_other(b, t, mixed_block, s_vars, s, outlet):
+def _e_rule_other(b, t, mixed_block, var_obj, outlet):
     pc_set = mixed_block.phase_component_set
-    l_name = s_vars[s].local_name
+    l_name = var_obj.local_name
     split_map = b.config.ideal_split_map
 
     if b.config.split_basis == SplittingType.phaseFlow:
@@ -2041,7 +2038,7 @@ def _e_rule_other(b, t, mixed_block, s_vars, s, outlet):
                     else:
                         continue
             else:
-                _raise_split_unindexed_fail_err(b.name, s)
+                _raise_split_unindexed_fail_err(b.name, l_name)
 
     elif b.config.split_basis == SplittingType.componentFlow:
         ivar = mixed_block[t].component(l_name + "_comp")
@@ -2064,7 +2061,7 @@ def _e_rule_other(b, t, mixed_block, s_vars, s, outlet):
                     else:
                         continue
             else:
-                _raise_split_unindexed_fail_err(b.name, s)
+                _raise_split_unindexed_fail_err(b.name, l_name)
     elif b.config.split_basis == SplittingType.phaseComponentFlow:
         ivar = mixed_block[t].component(l_name + "_phase_comp")
         if ivar is not None:
@@ -2075,7 +2072,7 @@ def _e_rule_other(b, t, mixed_block, s_vars, s, outlet):
                     else:
                         continue
         else:
-            _raise_split_unindexed_fail_err(b.name, s)
+            _raise_split_unindexed_fail_err(b.name, l_name)
     else:
         # Unrecognised split tupe
         raise BurntToast(
