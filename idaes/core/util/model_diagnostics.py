@@ -81,7 +81,6 @@ TAB = " " * 4
 # TODO: Add suggested steps to cautions - how?
 
 CONFIG = ConfigDict()
-CONFIG.declare("model", ConfigValue(description="Pyomo model object to be diagnosed."))
 CONFIG.declare(
     "variable_bounds_absolute_tolerance",
     ConfigValue(
@@ -96,6 +95,17 @@ CONFIG.declare(
         default=1e-4,
         domain=float,
         description="Relative tolerance to for variables close to bounds.",
+    ),
+)
+CONFIG.declare(
+    "variable_bounds_violation_tolerance",
+    ConfigValue(
+        default=0,
+        domain=float,
+        description="Absolute tolerance to for considering a variable to violate its bounds.",
+        doc="Absolute tolerance to for considering a variable to violate its bounds. "
+        "Some solvers relax bounds on variables thus allowing a small violation to be "
+        "considered acceptable.",
     ),
 )
 CONFIG.declare(
@@ -203,12 +213,43 @@ class DiagnosticsToolbox:
        get further information on warnings. If no warnings are found, this will suggest
        the next report method to call.
 
+    Args:
+        model - model to be diagnosed. The DiagnosticsToolbox does not support indexed Blocks.
+
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, model: _BlockData, **kwargs):
+        self.set_model(model)
         self.config = CONFIG(kwargs)
-        if not isinstance(self.config.model, Block):
-            raise TypeError("model argument must be an instance of a Pyomo Block.")
+
+    @property
+    def model(self):
+        """
+        Model currently being diagnosed.
+        """
+        return self._model
+
+    def set_model(self, model):
+        """
+        Changes the models currently being diagnosed.
+
+        Args:
+            model: new model to be diagnosed. Must be an scalar Block or an element of
+            an indexed Block.
+
+        Returns:
+            None
+
+        """
+        # TODO: In future may want to generalise this to accept indexed blocks
+        # However, for now some of the tools do not support indexed blocks
+        if not isinstance(model, _BlockData):
+            raise TypeError(
+                "model argument must be an instance of an Pyomo BlockData object "
+                "(either a scalar Block or an element of an indexed Block)."
+            )
+
+        self._model = model
 
     def display_external_variables(self, stream=stdout):
         """
@@ -223,8 +264,8 @@ class DiagnosticsToolbox:
 
         """
         ext_vars = []
-        for v in variables_in_activated_constraints_set(self.config.model):
-            if not _var_in_block(v, self.config.model):
+        for v in variables_in_activated_constraints_set(self._model):
+            if not _var_in_block(v, self._model):
                 ext_vars.append(v.name)
 
         _write_report_section(
@@ -248,7 +289,7 @@ class DiagnosticsToolbox:
         """
         _write_report_section(
             stream=stream,
-            lines_list=variables_not_in_activated_constraints_set(self.config.model),
+            lines_list=variables_not_in_activated_constraints_set(self._model),
             title="The following variable(s) do not appear in any activated constraints within the model:",
             header="=",
             footer="=",
@@ -267,7 +308,7 @@ class DiagnosticsToolbox:
         """
         _write_report_section(
             stream=stream,
-            lines_list=_vars_fixed_to_zero(self.config.model),
+            lines_list=_vars_fixed_to_zero(self._model),
             title="The following variable(s) are fixed to zero:",
             header="=",
             footer="=",
@@ -289,7 +330,10 @@ class DiagnosticsToolbox:
             stream=stream,
             lines_list=[
                 f"{v.name} ({'fixed' if v.fixed else 'free'}): value={value(v)} bounds={v.bounds}"
-                for v in _vars_violating_bounds(self.config.model)
+                for v in _vars_violating_bounds(
+                    self._model,
+                    tolerance=self.config.variable_bounds_violation_tolerance,
+                )
             ],
             title="The following variable(s) have values at or outside their bounds:",
             header="=",
@@ -309,7 +353,7 @@ class DiagnosticsToolbox:
         """
         _write_report_section(
             stream=stream,
-            lines_list=_vars_with_none_value(self.config.model),
+            lines_list=_vars_with_none_value(self._model),
             title="The following variable(s) have a value of None:",
             header="=",
             footer="=",
@@ -333,7 +377,7 @@ class DiagnosticsToolbox:
             lines_list=[
                 f"{v.name}: value={value(v)}"
                 for v in _vars_near_zero(
-                    self.config.model, self.config.variable_zero_value_tolerance
+                    self._model, self.config.variable_zero_value_tolerance
                 )
             ],
             title="The following variable(s) have a value close to zero:",
@@ -359,7 +403,7 @@ class DiagnosticsToolbox:
             lines_list=[
                 f"{i.name}: {value(i)}"
                 for i in _vars_with_extreme_values(
-                    model=self.config.model,
+                    model=self._model,
                     large=self.config.variable_large_value_tolerance,
                     small=self.config.variable_small_value_tolerance,
                     zero=self.config.variable_zero_value_tolerance,
@@ -387,7 +431,7 @@ class DiagnosticsToolbox:
             lines_list=[
                 f"{v.name}: value={value(v)} bounds={v.bounds}"
                 for v in variables_near_bounds_set(
-                    self.config.model,
+                    self._model,
                     abs_tol=self.config.variable_bounds_absolute_tolerance,
                     rel_tol=self.config.variable_bounds_relative_tolerance,
                 )
@@ -411,7 +455,7 @@ class DiagnosticsToolbox:
         """
         _write_report_section(
             stream=stream,
-            lines_list=identify_inconsistent_units(self.config.model),
+            lines_list=identify_inconsistent_units(self._model),
             title="The following component(s) have unit consistency issues:",
             end_line="For more details on unit inconsistencies, import the "
             "assert_units_consistent method\nfrom pyomo.util.check_units",
@@ -434,7 +478,7 @@ class DiagnosticsToolbox:
         _write_report_section(
             stream=stream,
             lines_list=large_residuals_set(
-                self.config.model, tol=self.config.constraint_residual_tolerance
+                self._model, tol=self.config.constraint_residual_tolerance
             ),
             title="The following constraint(s) have large residuals:",
             header="=",
@@ -453,7 +497,7 @@ class DiagnosticsToolbox:
             list-of-lists constraints in each independent block of the over-constrained set
 
         """
-        igraph = IncidenceGraphInterface(self.config.model, include_inequality=False)
+        igraph = IncidenceGraphInterface(self._model, include_inequality=False)
         var_dm_partition, con_dm_partition = igraph.dulmage_mendelsohn()
 
         # Collect under- and order-constrained sub-system
@@ -552,7 +596,7 @@ class DiagnosticsToolbox:
             lines_list=[
                 f"{i[1].name}: {i[0]}"
                 for i in extreme_jacobian_columns(
-                    m=self.config.model,
+                    m=self._model,
                     scaled=False,
                     large=self.config.jacobian_large_value_caution,
                     small=self.config.jacobian_small_value_caution,
@@ -582,7 +626,7 @@ class DiagnosticsToolbox:
             lines_list=[
                 f"{i[1].name}: {i[0]}"
                 for i in extreme_jacobian_rows(
-                    m=self.config.model,
+                    m=self._model,
                     scaled=False,
                     large=self.config.jacobian_large_value_caution,
                     small=self.config.jacobian_small_value_caution,
@@ -613,7 +657,7 @@ class DiagnosticsToolbox:
             lines_list=[
                 f"{i[1].name}, {i[2].name}: {i[0]}"
                 for i in extreme_jacobian_entries(
-                    m=self.config.model,
+                    m=self._model,
                     scaled=False,
                     large=self.config.jacobian_large_value_caution,
                     small=self.config.jacobian_small_value_caution,
@@ -637,13 +681,13 @@ class DiagnosticsToolbox:
             next_steps - list of suggested next steps to further investigate warnings
 
         """
-        uc = identify_inconsistent_units(self.config.model)
+        uc = identify_inconsistent_units(self._model)
         uc_var, uc_con, oc_var, oc_con = self.get_dulmage_mendelsohn_partition()
 
         # Collect warnings
         warnings = []
         next_steps = []
-        dof = degrees_of_freedom(self.config.model)
+        dof = degrees_of_freedom(self._model)
         if dof != 0:
             dstring = "Degrees"
             if abs(dof) == 1:
@@ -681,13 +725,13 @@ class DiagnosticsToolbox:
         """
         # Collect cautions
         cautions = []
-        zero_vars = _vars_fixed_to_zero(self.config.model)
+        zero_vars = _vars_fixed_to_zero(self._model)
         if len(zero_vars) > 0:
             vstring = "variables"
             if len(zero_vars) == 1:
                 vstring = "variable"
             cautions.append(f"Caution: {len(zero_vars)} {vstring} fixed to 0")
-        unused_vars = variables_not_in_activated_constraints_set(self.config.model)
+        unused_vars = variables_not_in_activated_constraints_set(self._model)
         unused_vars_fixed = 0
         for v in unused_vars:
             if v.fixed:
@@ -713,14 +757,14 @@ class DiagnosticsToolbox:
 
         """
         if jac is None or nlp is None:
-            jac, nlp = get_jacobian(self.config.model, scaled=False)
+            jac, nlp = get_jacobian(self._model, scaled=False)
 
         warnings = []
         next_steps = []
 
         # Large residuals
         large_residuals = large_residuals_set(
-            self.config.model, tol=self.config.constraint_residual_tolerance
+            self._model, tol=self.config.constraint_residual_tolerance
         )
         if len(large_residuals) > 0:
             cstring = "Constraints"
@@ -732,7 +776,9 @@ class DiagnosticsToolbox:
             next_steps.append("display_constraints_with_large_residuals()")
 
         # Variables outside bounds
-        violated_bounds = _vars_violating_bounds(self.config.model)
+        violated_bounds = _vars_violating_bounds(
+            self._model, tolerance=self.config.variable_bounds_violation_tolerance
+        )
         if len(violated_bounds) > 0:
             cstring = "Variables"
             if len(violated_bounds) == 1:
@@ -784,13 +830,13 @@ class DiagnosticsToolbox:
 
         """
         if jac is None or nlp is None:
-            jac, nlp = get_jacobian(self.config.model, scaled=False)
+            jac, nlp = get_jacobian(self._model, scaled=False)
 
         cautions = []
 
         # Variables near bounds
         near_bounds = variables_near_bounds_set(
-            self.config.model,
+            self._model,
             abs_tol=self.config.variable_bounds_absolute_tolerance,
             rel_tol=self.config.variable_bounds_relative_tolerance,
         )
@@ -804,7 +850,7 @@ class DiagnosticsToolbox:
 
         # Variables near zero
         near_zero = _vars_near_zero(
-            self.config.model, self.config.variable_zero_value_tolerance
+            self._model, self.config.variable_zero_value_tolerance
         )
         if len(near_zero) > 0:
             cstring = "Variables"
@@ -816,7 +862,7 @@ class DiagnosticsToolbox:
 
         # Variables with extreme values
         xval = _vars_with_extreme_values(
-            model=self.config.model,
+            model=self._model,
             large=self.config.variable_large_value_tolerance,
             small=self.config.variable_small_value_tolerance,
             zero=self.config.variable_zero_value_tolerance,
@@ -828,7 +874,7 @@ class DiagnosticsToolbox:
             cautions.append(f"Caution: {len(xval)} {cstring} with extreme value")
 
         # Variables with value None
-        none_value = _vars_with_none_value(self.config.model)
+        none_value = _vars_with_none_value(self._model)
         if len(none_value) > 0:
             cstring = "Variables"
             if len(none_value) == 1:
@@ -924,7 +970,7 @@ class DiagnosticsToolbox:
         """
         # Potential evaluation errors
         # TODO: High Index?
-        stats = _collect_model_statistics(self.config.model)
+        stats = _collect_model_statistics(self._model)
         warnings, next_steps = self._collect_structural_warnings()
         cautions = self._collect_structural_cautions()
 
@@ -966,7 +1012,7 @@ class DiagnosticsToolbox:
             None
 
         """
-        jac, nlp = get_jacobian(self.config.model, scaled=False)
+        jac, nlp = get_jacobian(self._model, scaled=False)
 
         warnings, next_steps = self._collect_numerical_warnings(jac=jac, nlp=nlp)
         cautions = self._collect_numerical_cautions(jac=jac, nlp=nlp)
@@ -1848,13 +1894,13 @@ def _vars_near_zero(model, variable_zero_value_tolerance):
     return near_zero_vars
 
 
-def _vars_violating_bounds(model):
+def _vars_violating_bounds(model, tolerance):
     violated_bounds = ComponentSet()
     for v in model.component_data_objects(Var, descend_into=True):
         if v.value is not None:
-            if v.lb is not None and v.value <= v.lb:
+            if v.lb is not None and v.value <= v.lb - tolerance:
                 violated_bounds.add(v)
-            elif v.ub is not None and v.value >= v.ub:
+            elif v.ub is not None and v.value >= v.ub + tolerance:
                 violated_bounds.add(v)
 
     return violated_bounds

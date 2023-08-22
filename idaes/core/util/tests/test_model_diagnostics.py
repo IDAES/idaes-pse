@@ -136,11 +136,18 @@ def test_vars_with_bounds_issues(model):
     model.v4.setlb(0)
     model.v4.setub(1)
 
-    bounds_issue = _vars_violating_bounds(model)
+    bounds_issue = _vars_violating_bounds(model, tolerance=0)
     assert isinstance(bounds_issue, ComponentSet)
     assert len(bounds_issue) == 2
     for i in bounds_issue:
         assert i.local_name in ["v1", "v4"]
+
+    m = ConcreteModel()
+    m.v = Var(initialize=-1e-8, bounds=(0, 1))
+
+    bounds_issue = _vars_violating_bounds(m, tolerance=1e-6)
+    assert isinstance(bounds_issue, ComponentSet)
+    assert len(bounds_issue) == 0
 
 
 @pytest.mark.unit
@@ -400,6 +407,38 @@ class TestStatsWriter:
 
 @pytest.mark.solver
 class TestDiagnosticsToolbox:
+    @pytest.mark.unit
+    def test_set_model(self):
+        m = ConcreteModel()
+        m.b = Block()
+
+        dt = DiagnosticsToolbox(model=m)
+        assert dt.model is m
+
+        dt.set_model(m.b)
+        assert dt.model is m.b
+
+    @pytest.mark.unit
+    def test_invalid_model_type(self):
+        with pytest.raises(
+            TypeError,
+            match="model argument must be an instance of an Pyomo BlockData object "
+            "\(either a scalar Block or an element of an indexed Block\).",
+        ):
+            DiagnosticsToolbox(model="foo")
+
+        # Check for indexed Blocks
+        m = ConcreteModel()
+        m.s = Set(initialize=[1, 2, 3])
+        m.b = Block(m.s)
+
+        with pytest.raises(
+            TypeError,
+            match="model argument must be an instance of an Pyomo BlockData object "
+            "\(either a scalar Block or an element of an indexed Block\).",
+        ):
+            DiagnosticsToolbox(model=m.b)
+
     @pytest.fixture(scope="class")
     def model(self):
         m = ConcreteModel()
