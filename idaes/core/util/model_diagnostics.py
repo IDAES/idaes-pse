@@ -83,7 +83,7 @@ TAB = " " * 4
 CONFIG = ConfigDict()
 CONFIG.declare("model", ConfigValue(description="Pyomo model object to be diagnosed."))
 CONFIG.declare(
-    "absolute_tolerance",
+    "variable_bounds_absolute_tolerance",
     ConfigValue(
         default=1e-4,
         domain=float,
@@ -91,7 +91,7 @@ CONFIG.declare(
     ),
 )
 CONFIG.declare(
-    "relative_tolerance",
+    "variable_bounds_relative_tolerance",
     ConfigValue(
         default=1e-4,
         domain=float,
@@ -99,7 +99,7 @@ CONFIG.declare(
     ),
 )
 CONFIG.declare(
-    "residual_tolerance",
+    "constraint_residual_tolerance",
     ConfigValue(
         default=1e-5,
         domain=float,
@@ -107,7 +107,7 @@ CONFIG.declare(
     ),
 )
 CONFIG.declare(
-    "large_value_tolerance",
+    "variable_large_value_tolerance",
     ConfigValue(
         default=1e4,
         domain=float,
@@ -115,7 +115,7 @@ CONFIG.declare(
     ),
 )
 CONFIG.declare(
-    "small_value_tolerance",
+    "variable_small_value_tolerance",
     ConfigValue(
         default=1e-4,
         domain=float,
@@ -123,7 +123,7 @@ CONFIG.declare(
     ),
 )
 CONFIG.declare(
-    "zero_value_tolerance",
+    "variable_zero_value_tolerance",
     ConfigValue(
         default=1e-8,
         domain=float,
@@ -177,7 +177,7 @@ class DiagnosticsToolbox:
          advanced model.
       3. Create an instance of the DiagnosticsToolbox and provide the model to debug as
          the model argument.
-      4. Call the report_structural_issues() method.
+      4. Call the ``report_structural_issues()`` method.
 
     Model diagnostics is an iterative process and you will likely need to run these
     tools multiple times to resolve all issues. After making a change to your model,
@@ -333,7 +333,7 @@ class DiagnosticsToolbox:
             lines_list=[
                 f"{v.name}: value={value(v)}"
                 for v in _vars_near_zero(
-                    self.config.model, self.config.zero_value_tolerance
+                    self.config.model, self.config.variable_zero_value_tolerance
                 )
             ],
             title="The following variable(s) have a value close to zero:",
@@ -360,9 +360,9 @@ class DiagnosticsToolbox:
                 f"{i.name}: {value(i)}"
                 for i in _vars_with_extreme_values(
                     model=self.config.model,
-                    large=self.config.large_value_tolerance,
-                    small=self.config.small_value_tolerance,
-                    zero=self.config.zero_value_tolerance,
+                    large=self.config.variable_large_value_tolerance,
+                    small=self.config.variable_small_value_tolerance,
+                    zero=self.config.variable_zero_value_tolerance,
                 )
             ],
             title="The following variable(s) have extreme values:",
@@ -388,8 +388,8 @@ class DiagnosticsToolbox:
                 f"{v.name}: value={value(v)} bounds={v.bounds}"
                 for v in variables_near_bounds_set(
                     self.config.model,
-                    abs_tol=self.config.absolute_tolerance,
-                    rel_tol=self.config.relative_tolerance,
+                    abs_tol=self.config.variable_bounds_absolute_tolerance,
+                    rel_tol=self.config.variable_bounds_relative_tolerance,
                 )
             ],
             title="The following variable(s) have values close to their bounds:",
@@ -434,7 +434,7 @@ class DiagnosticsToolbox:
         _write_report_section(
             stream=stream,
             lines_list=large_residuals_set(
-                self.config.model, tol=self.config.residual_tolerance
+                self.config.model, tol=self.config.constraint_residual_tolerance
             ),
             title="The following constraint(s) have large residuals:",
             header="=",
@@ -453,7 +453,7 @@ class DiagnosticsToolbox:
             list-of-lists constraints in each independent block of the over-constrained set
 
         """
-        igraph = IncidenceGraphInterface(self.config.model)
+        igraph = IncidenceGraphInterface(self.config.model, include_inequality=False)
         var_dm_partition, con_dm_partition = igraph.dulmage_mendelsohn()
 
         # Collect under- and order-constrained sub-system
@@ -720,7 +720,7 @@ class DiagnosticsToolbox:
 
         # Large residuals
         large_residuals = large_residuals_set(
-            self.config.model, tol=self.config.residual_tolerance
+            self.config.model, tol=self.config.constraint_residual_tolerance
         )
         if len(large_residuals) > 0:
             cstring = "Constraints"
@@ -791,8 +791,8 @@ class DiagnosticsToolbox:
         # Variables near bounds
         near_bounds = variables_near_bounds_set(
             self.config.model,
-            abs_tol=self.config.absolute_tolerance,
-            rel_tol=self.config.relative_tolerance,
+            abs_tol=self.config.variable_bounds_absolute_tolerance,
+            rel_tol=self.config.variable_bounds_relative_tolerance,
         )
         if len(near_bounds) > 0:
             cstring = "Variables"
@@ -803,7 +803,9 @@ class DiagnosticsToolbox:
             )
 
         # Variables near zero
-        near_zero = _vars_near_zero(self.config.model, self.config.zero_value_tolerance)
+        near_zero = _vars_near_zero(
+            self.config.model, self.config.variable_zero_value_tolerance
+        )
         if len(near_zero) > 0:
             cstring = "Variables"
             if len(near_zero) == 1:
@@ -815,9 +817,9 @@ class DiagnosticsToolbox:
         # Variables with extreme values
         xval = _vars_with_extreme_values(
             model=self.config.model,
-            large=self.config.large_value_tolerance,
-            small=self.config.small_value_tolerance,
-            zero=self.config.zero_value_tolerance,
+            large=self.config.variable_large_value_tolerance,
+            small=self.config.variable_small_value_tolerance,
+            zero=self.config.variable_zero_value_tolerance,
         )
         if len(xval) > 0:
             cstring = "Variables"
@@ -1837,11 +1839,11 @@ def _vars_fixed_to_zero(model):
     return zero_vars
 
 
-def _vars_near_zero(model, zero_value_tolerance):
+def _vars_near_zero(model, variable_zero_value_tolerance):
     # Set of variables with values close to 0
     near_zero_vars = ComponentSet()
     for v in model.component_data_objects(Var, descend_into=True):
-        if v.value is not None and abs(value(v)) <= zero_value_tolerance:
+        if v.value is not None and abs(value(v)) <= variable_zero_value_tolerance:
             near_zero_vars.add(v)
     return near_zero_vars
 

@@ -33,6 +33,7 @@ See also :doc:`IDAES concepts <explanations/concepts>` in this documentation.
          | :doc:`Concepts <explanations/concepts>`
          | :doc:`Components of IDAES <explanations/components/index>`
          | :doc:`Conventions <explanations/conventions>`
+         | :doc:`Model Diagnostics Workflow <explanations/model_diagnostics/index>`
          | :doc:`Modeling Extensions <explanations/modeling_extensions/index>`
          | :doc:`Related Packages <explanations/related_packages/index>`
          | :doc:`FAQ <explanations/faq>`

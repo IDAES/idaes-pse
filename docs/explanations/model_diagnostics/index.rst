@@ -17,15 +17,33 @@ The diagram below shows a high-level overview of the model development and diagn
 
 .. image:: diagnostics_workflow.png
 
+Chose a Model to Debug
+""""""""""""""""""""""
+
 As shown above, all model development begins with a model and the IDAES team recommends starting with the simplest possible model you can. It is always easier to debug small changes, so users should apply this workflow from the very beginning of model development starting with the simplest possible representation of their system (e.g., a single unit model or set of material balances). At each step of the process (i.e., each change or new constraint), you should check to ensure that your model is well-posed and that it solves robustly before making additional changes. In this way, it will be clear where to start looking for new issues as they arise, as they will be related in some way to the change you just made.
+
+Start with a Square Model
+"""""""""""""""""""""""""
 
 Next, you should ensure you model has zero degrees of freedom (as best you can); whilst your ultimate goal may be to some an optimization problem with degrees of freedom, you should always start from a square model first. Firstly, this is because many of the model diagnosis tools work best with square models. Secondly, all models are based on the foundation of a square model; an optimization problem is just a square model with some degrees of freedom added. If your underlying square model is not well-posed then any more advanced problem you solve based on it is fundamentally flawed (even if it solves).
 
+Check for Structural Issues
+"""""""""""""""""""""""""""
+
 Once you have a square model, the next step is to check to see if there are any issues with the structure of the model; for example structural singularities or unit consistency issues. As these issues exist in the very structure of the model, it is possible to check for these before calling a solver and in doing so make it more likely that you will be able to successfully solve the model. Any issues identified at this stage should be resolved before trying to move forwards.
+
+Try to Solve Model
+""""""""""""""""""
 
 Once you have ensured there are no structural issues with your model, the next step is to try to solve your model (or initialize it if you haven't already) using the solver of your choice (you should also experiment with different solvers if needed). Hopefully you will get some solution back from the solver, even if it is not optimal and/or feasible (in cases where you get critical solver failures, see the section later in this documentation).
 
+Check for Numerical Issues
+""""""""""""""""""""""""""
+
 Once you have at least a partial solution to your model, the next step is to check for numerical issues in your model, such as possible bounds violations and poor scaling. Due to their nature, numerical issues depend on having a solution to the model, and they can often be limited to certain model states (i.e., it is possible to have a model which behaves well at one model state only to fail badly if you change your model state). As such, numerical checks should be performed at a number of points across the full range of expected states to try to ensure that the model is well-posed across the full modeling range. Any issues that are identified here should be addressed before moving on, and remember that after any changes you should always start by checking for structural issues again.
+
+Apply Advanced Diagnostics Tools (if required)
+""""""""""""""""""""""""""""""""""""""""""""""
 
 If you are still having trouble solving your model after running the structural and numerical checks, then you will need to look to more advanced (and computationally expensive) tools to try and resolve your issues. Finally, once you are satisfied that your model is robust and well behaved, you can move on to solving more complex problems.
 

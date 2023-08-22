@@ -103,13 +103,13 @@ def test_vars_fixed_to_zero(model):
 def test_vars_near_zero(model):
     model.v3.set_value(1e-5)
 
-    near_zero_vars = _vars_near_zero(model, zero_value_tolerance=1e-5)
+    near_zero_vars = _vars_near_zero(model, variable_zero_value_tolerance=1e-5)
     assert isinstance(near_zero_vars, ComponentSet)
     assert len(near_zero_vars) == 2
     for i in near_zero_vars:
         assert i.local_name in ["v1", "v3"]
 
-    near_zero_vars = _vars_near_zero(model, zero_value_tolerance=1e-6)
+    near_zero_vars = _vars_near_zero(model, variable_zero_value_tolerance=1e-6)
     assert isinstance(near_zero_vars, ComponentSet)
     assert len(near_zero_vars) == 1
     for i in near_zero_vars:
