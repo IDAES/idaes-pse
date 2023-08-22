@@ -11,21 +11,26 @@
 # for full copyright and license information.
 #################################################################################
 """
-Utility functions for temperature swing adsorption models
+Costing models for a direct air capture (DAC) plant. The fixed-bed temperature
+swing adsorption model used to represent the DAC process should be passed as an
+argument to the costing functions.
 """
 
 __author__ = "Daison Yancy Caballero"
 
+import os
 import json
+import textwrap
 from sys import stdout
 from pandas import DataFrame
-import textwrap
 
 from pyomo.environ import (
     units,
     Var,
     value
     )
+from pyomo.common.fileutils import this_file_dir
+from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 from idaes.core import UnitModelBlock, UnitModelCostingBlock
 from idaes.core.util.exceptions import ConfigurationError
@@ -36,8 +41,10 @@ from idaes.models_extra.power_generation.costing.power_plant_capcost import (
     QGESSCostingData,
 )
 
+directory = this_file_dir()
 
-def get_tsa_costing(tsa, costing_case="electric_boiler"):
+
+def get_dac_costing(tsa, costing_case="electric_boiler"):
     if costing_case == "electric_boiler":
         _get_costing_electric_boiler(tsa)
     elif costing_case == "retrofit_ngcc":
@@ -49,7 +56,8 @@ def get_tsa_costing(tsa, costing_case="electric_boiler"):
 def _get_costing_electric_boiler(tsa):
 
     # load custom costing parameters
-    with open("costing_params_dac_electric_boiler.json", "r") as f:
+    with open(os.path.join(
+            directory, "costing_params_dac_electric_boiler.json"), "r") as f:
         costing_params = json.load(f)
 
     # get flowsheet
@@ -518,7 +526,7 @@ def _get_costing_electric_boiler(tsa):
 
     # land cost for total overnight cost
     @fs.costing.Expression(doc="Land Cost [$MM]")
-    def land_cost(b):
+    def land_cost_exp(b):
         return (
             (156000 * (tsa.number_beds / 120) ** (0.78)) *
             1e-6)  # scaled to Millions
@@ -535,7 +543,7 @@ def _get_costing_electric_boiler(tsa):
         fixed_OM=True,
         # arguments related owners costs
         variable_OM=True,
-        land_cost=fs.costing.land_cost,
+        land_cost=fs.costing.land_cost_exp,
         resources=resources,
         rates=rates,
         prices=prices,
@@ -561,11 +569,42 @@ def _get_costing_electric_boiler(tsa):
             total_auxiliary_load * 1e-3 * equi_emissions *
             1000 / 3600 / 44.01)
 
+    # initialization
+    for c in fs.costing._registered_unit_costing:
+        for key in c.bare_erected_cost.keys():
+            calculate_variable_from_constraint(
+                c.bare_erected_cost[key],
+                c.bare_erected_cost_eq[key],
+            )
+            calculate_variable_from_constraint(
+                c.total_plant_cost[key],
+                c.total_plant_cost_eq[key],
+            )
+    calculate_variable_from_constraint(
+        fs.costing.water[0],
+        fs.costing.water_eq[0]
+    )
+    calculate_variable_from_constraint(
+        fs.costing.water_chems[0],
+        fs.costing.water_chems_eq[0]
+    )
+    calculate_variable_from_constraint(
+        fs.costing.sorbent[0],
+        fs.costing.sorbent_eq[0]
+    )
+    calculate_variable_from_constraint(
+        fs.costing.aux_power[0],
+        fs.costing.aux_power_eq[0]
+    )
+    fs.costing.initialize_fixed_OM_costs()
+    fs.costing.initialize_variable_OM_costs()
+
 
 def _get_costing_retrofit_ngcc(tsa):
 
     # load custom costing parameters
-    with open("costing_params_dac_retrofit_ngcc.json", "r") as f:
+    with open(os.path.join(
+            directory, "costing_params_dac_retrofit_ngcc.json"), "r") as f:
         costing_params = json.load(f)
 
     # get flowsheet
@@ -956,7 +995,7 @@ def _get_costing_retrofit_ngcc(tsa):
 
     # land cost for total overnight cost
     @fs.costing.Expression(doc="Land Cost [$MM]")
-    def land_cost(b):
+    def land_cost_exp(b):
         return (
             (156000 * (tsa.number_beds / 120) ** (0.78)) *
             1e-6)  # scaled to Millions
@@ -973,7 +1012,7 @@ def _get_costing_retrofit_ngcc(tsa):
         fixed_OM=True,
         # arguments related owners costs
         variable_OM=True,
-        land_cost=fs.costing.land_cost,
+        land_cost=fs.costing.land_cost_exp,
         resources=resources,
         rates=rates,
         prices=prices,
@@ -982,7 +1021,7 @@ def _get_costing_retrofit_ngcc(tsa):
     )
 
 
-def print_tsa_costing(tsa):
+def print_dac_costing(tsa):
     fs = tsa.flowsheet()
 
     TPC_list = {}
@@ -1042,7 +1081,7 @@ def _var_dict_costing(tsa):
     return var_dict
 
 
-def tsa_costing_summary(tsa, export=False):
+def dac_costing_summary(tsa, export=False):
 
     fs = tsa.flowsheet()
 
@@ -1050,7 +1089,7 @@ def tsa_costing_summary(tsa, export=False):
         raise ConfigurationError(
             f"{tsa.name} does not have any costing block.")
 
-    var_dict = tsa._var_dict_costing()
+    var_dict = _var_dict_costing(tsa)
 
     summary_dir = {}
     summary_dir["Value"] = {}

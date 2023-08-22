@@ -11,17 +11,30 @@
 # for full copyright and license information.
 #################################################################################
 """
-Tests for conventional fixed bed TSA 0D model.
-Author: Alex Noring
+Tests for fixed bed TSA 0D model.
 """
+
+__author__ = "Alex Noring"
+
 import pytest
 
-from pyomo.environ import check_optimal_termination, ConcreteModel, Expression, Var, value
+from pyomo.environ import (
+    check_optimal_termination,
+    ConcreteModel,
+    Expression,
+    Var,
+    value
+)
 from pyomo.util.check_units import assert_units_consistent
 
 
 from idaes.core import FlowsheetBlock
-from idaes.models_extra.temperature_swing_adsorption.fixed_bed_tsa0d import FixedBedTSA0D
+from idaes.models_extra.temperature_swing_adsorption.fixed_bed_tsa0d import \
+    FixedBedTSA0D
+from idaes.models_extra.temperature_swing_adsorption.util import (
+    plot_tsa_profiles, tsa_summary
+)
+
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     number_variables,
@@ -32,8 +45,6 @@ from idaes.core.util.model_statistics import (
 from idaes.core.util.testing import initialization_tester
 from idaes.core.solvers import get_solver
 import idaes.core.util.scaling as iscale
-
-import idaes.logger as idaeslog
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -71,6 +82,7 @@ class TestTsaZeolite:
         m.fs.unit.bed_height.fix(8)
         return m
 
+    @pytest.mark.build
     @pytest.mark.unit
     def test_build(self, model):
         assert hasattr(model.fs.unit, "c_ref")
@@ -93,17 +105,20 @@ class TestTsaZeolite:
     def test_units(self, model):
         assert_units_consistent(model)
 
+    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize(self, model):
         initialization_tester(model)
 
+    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solve(self, model):
         results = solver.solve(model)
         assert check_optimal_termination(results)
 
+    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
@@ -137,6 +152,13 @@ class TestTsaZeolite:
         assert pytest.approx(2.44178, abs=1e-3) == value(
             model.fs.unit.velocity_in
         )
+
+    @pytest.mark.ui
+    @pytest.mark.unit
+    def test_report(self, model):
+        model.fs.unit.report()
+        tsa_summary(model.fs.unit)
+        plot_tsa_profiles(model.fs.unit)
 
 
 class TestTsaMgmof:
@@ -174,6 +196,7 @@ class TestTsaMgmof:
 
         return m
 
+    @pytest.mark.build
     @pytest.mark.unit
     def test_build(self, model):
         assert not hasattr(model.fs.unit, "c_ref")
@@ -196,17 +219,20 @@ class TestTsaMgmof:
     def test_units(self, model):
         assert_units_consistent(model)
 
+    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize(self, model):
         initialization_tester(model)
 
+    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solve(self, model):
         results = solver.solve(model)
         assert check_optimal_termination(results)
 
+    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
@@ -277,6 +303,7 @@ class TestTsaPolystyrene:
 
         return m
 
+    @pytest.mark.build
     @pytest.mark.unit
     def test_build(self, model):
         assert not hasattr(model.fs.unit, "c_ref")
@@ -295,17 +322,20 @@ class TestTsaPolystyrene:
     def test_dof(self, model):
         assert degrees_of_freedom(model) == 0
 
+    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize(self, model):
         initialization_tester(model)
 
+    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solve(self, model):
         results = solver.solve(model)
         assert check_optimal_termination(results)
 
+    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
