@@ -318,20 +318,88 @@ class PriceTakerModel(ConcreteModel):
             use_stochastic_build=True,
             **kwargs,
         )
-
-    def add_ramping_constraints(self, var, ramp_up_limit, ramp_down_limit):
+    #TODO: (1) Need to determine whether the minimum opterating power can be a parameter 
+    #      or whether it largly depends on the capacity of the plant. 
+    #      (2) Need to determine if the start up and shutdown limits can be modeled as bulk amounts vs
+    #      a percentage of capacity 
+    #      (3) How to model/code the cosntraints in without knowing what variable
+    #      these constraints will be applied to. 
+    def add_ramping_constraints(
+        self, 
+        startup_limit = 100, 
+        shutdown_limit = 100,
+        ramp_up_limit = 110, 
+        ramp_down_limit = 110,
+        minimum_opt_limit = 0,
+          ):
         """
         Adds ramping constraints of the form
         -ramp_down_limit <= var(t) - var(t-1) <= ramp_up_limit on var
+        
+
+        Arguments: 
+        startup_limit: The rate on the power when starting up (Mw/h)
+        shutdown_limit: The rate on the pwoer when shuting down (Mw/h)
+        ramp_up_limit: The ramp up rate for the system ( Mw/h)
+        ramp_down_limit = The ramp down rate for the system (Mw/h)
+        minimum_opt_limit: The minimum power the system is able to operate at at anytime t (Mw/h)
+
+        Assumptions/relationship:
+      Max_operating_power >= ramp_up_limit >= startup_limit >= minimum_opt_limit > 0
+      Max_operating_power >= ramp_down_limit >= shutdown_limit >= minimum_opt_limit > 0
         """
+        period = self.mp_model.period
+        range_time_periods = [] 
+        self.ramp_up_down_range= RangeSet(2,len(period)-1)
 
+        if period[1,1].find_component('op_mode') == None:
+            for p in period:
+                range_time_periods.append(p)
+                op_mode = 0
+                startup = 0
+    
+                for blk in period[p].component_data_objects(Block):
+                    if isinstance(blk, OperationModelData):
+                        op_mode += blk.op_mode
+                        startup += blk.startup
 
-        pass
+                period[p].op_mode = Expression(expr = op_mode)
+                period[p].startup = Expression(expr = startup) 
+               
+
+        def ramp_up_con_rule(self,t):
+            return (
+                period[range_time_periods[t]].opt_power - period[range_time_periods[t-1]].opt_power <= 
+                startup_limit * period[range_time_periods[t]].startup - minimum_opt_limit * period[range_time_periods[t-1]].startup
+                + ramp_up_limit * period[range_time_periods[t]].op_mode
+                + minimum_opt_limit*(period[range_time_periods[t]].op_mode - period[range_time_periods[t-1]].op_mode)
+            )
+        
+        self.mp_model.ramp_up_con = Constraint(self.ramp_up_down_range, rule = ramp_up_con_rule )
+        
+        def ramp_down_con_rule(self,t) :
+            return (
+              period[range_time_periods[t-1]].opt_power- period[range_time_periods[t]].opt_power <= 
+              shutdown_limit * (period[range_time_periods[t-1]].startup + 
+              period[range_time_periods[t-1]].op_mode - period[range_time_periods[t]].op_mode)
+              - minimum_opt_limit * period[range_time_periods[t]].startup 
+              + ramp_down_limit * period[range_time_periods[t]].op_mode
+            )
+
+        self.mp_model.ramp_down_con = Constraint(self.ramp_up_down_range, rule = ramp_down_con_rule )
 
     def add_startup_shutdown(self,UT = 4,DT =4):
         """
         Adds startup/shutdown and minimum uptime/downtime constraints on
         a given unit/process
+
+        
+        Arguments:
+        UT: Time required for the system to start up fully (hr)
+        DT: Time required for the system to shutdown fully (hr)
+        
+        Assumption:
+        UT >= 1 & DT >= 1
         """
 
         
