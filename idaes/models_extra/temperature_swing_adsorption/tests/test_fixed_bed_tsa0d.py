@@ -23,16 +23,18 @@ from pyomo.environ import (
     ConcreteModel,
     Expression,
     Var,
-    value
+    value,
 )
 from pyomo.util.check_units import assert_units_consistent
 
 
 from idaes.core import FlowsheetBlock
-from idaes.models_extra.temperature_swing_adsorption.fixed_bed_tsa0d import \
-    FixedBedTSA0D
+from idaes.models_extra.temperature_swing_adsorption.fixed_bed_tsa0d import (
+    FixedBedTSA0D,
+)
 from idaes.models_extra.temperature_swing_adsorption.util import (
-    plot_tsa_profiles, tsa_summary
+    plot_tsa_profiles,
+    tsa_summary,
 )
 
 from idaes.core.util.model_statistics import (
@@ -65,7 +67,8 @@ class TestTsaZeolite:
             finite_elements=20,
             collocation_points=6,
             compressor=False,
-            steam_calculation=None)
+            steam_calculation=None,
+        )
 
         m.fs.unit.inlet.flow_mol_comp[0, "H2O"].fix(0)
         m.fs.unit.inlet.flow_mol_comp[0, "CO2"].fix(40)
@@ -149,9 +152,7 @@ class TestTsaZeolite:
             model.fs.unit.n2_rich_stream.pressure[0]
         )
         # air velocity
-        assert pytest.approx(2.44178, abs=1e-3) == value(
-            model.fs.unit.velocity_in
-        )
+        assert pytest.approx(2.44178, abs=1e-3) == value(model.fs.unit.velocity_in)
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -176,11 +177,12 @@ class TestTsaMgmof:
             finite_elements=20,
             collocation_points=6,
             compressor=False,
-            steam_calculation="simplified")
+            steam_calculation="simplified",
+        )
 
         m.fs.unit.inlet.flow_mol_comp[0, "H2O"].fix(0)
-        m.fs.unit.inlet.flow_mol_comp[0, "CO2"].fix(0.00960*0.12)
-        m.fs.unit.inlet.flow_mol_comp[0, "N2"].fix(0.00960*0.88)
+        m.fs.unit.inlet.flow_mol_comp[0, "CO2"].fix(0.00960 * 0.12)
+        m.fs.unit.inlet.flow_mol_comp[0, "N2"].fix(0.00960 * 0.88)
         m.fs.unit.inlet.flow_mol_comp[0, "O2"].fix(0)
         m.fs.unit.inlet.temperature.fix(300)
         m.fs.unit.inlet.pressure.fix(1e5)
@@ -189,7 +191,7 @@ class TestTsaMgmof:
         m.fs.unit.temperature_adsorption.fix(310)
         m.fs.unit.temperature_heating.fix(440)
         m.fs.unit.temperature_cooling.fix(300)
-        m.fs.unit.bed_diameter.fix(3/100)
+        m.fs.unit.bed_diameter.fix(3 / 100)
         m.fs.unit.bed_height.fix(1.2)
         m.fs.unit.pressure_drop.fix(-4000)
         iscale.calculate_scaling_factors(m)
@@ -263,9 +265,7 @@ class TestTsaMgmof:
             model.fs.unit.n2_rich_stream.pressure[0]
         )
         # air velocity
-        assert pytest.approx(0.41747, abs=1e-4) == value(
-            model.fs.unit.velocity_in
-        )
+        assert pytest.approx(0.41747, abs=1e-4) == value(model.fs.unit.velocity_in)
 
 
 class TestTsaPolystyrene:
@@ -283,11 +283,12 @@ class TestTsaPolystyrene:
             finite_elements=20,
             collocation_points=6,
             compressor=True,
-            steam_calculation="rigorous")
+            steam_calculation="rigorous",
+        )
 
         m.fs.unit.inlet.flow_mol_comp[0, "H2O"].fix(0)
-        m.fs.unit.inlet.flow_mol_comp[0, "CO2"].fix(0.00960*0.12)
-        m.fs.unit.inlet.flow_mol_comp[0, "N2"].fix(0.00960*0.88)
+        m.fs.unit.inlet.flow_mol_comp[0, "CO2"].fix(0.00960 * 0.12)
+        m.fs.unit.inlet.flow_mol_comp[0, "N2"].fix(0.00960 * 0.88)
         m.fs.unit.inlet.flow_mol_comp[0, "O2"].fix(0)
         m.fs.unit.inlet.temperature.fix(300)
         m.fs.unit.inlet.pressure.fix(1e5)
@@ -296,7 +297,7 @@ class TestTsaPolystyrene:
         m.fs.unit.temperature_adsorption.fix(440)
         m.fs.unit.temperature_heating.fix(450)
         m.fs.unit.temperature_cooling.fix(435)
-        m.fs.unit.bed_diameter.fix(10/100)
+        m.fs.unit.bed_diameter.fix(10 / 100)
         m.fs.unit.bed_height.fix(1.2)
         m.fs.unit.compressor.unit.efficiency_isentropic.fix(0.8)
         iscale.calculate_scaling_factors(m)
@@ -366,6 +367,4 @@ class TestTsaPolystyrene:
             model.fs.unit.n2_rich_stream.pressure[0]
         )
         # air velocity
-        assert pytest.approx(0.06388, abs=1e-4) == value(
-            model.fs.unit.velocity_in
-        )
+        assert pytest.approx(0.06388, abs=1e-4) == value(model.fs.unit.velocity_in)

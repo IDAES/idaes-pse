@@ -18,19 +18,16 @@ __author__ = "Alex Noring"
 
 import pytest
 
-from pyomo.environ import (
-    check_optimal_termination,
-    ConcreteModel,
-    value
-)
+from pyomo.environ import check_optimal_termination, ConcreteModel, value
 
 from idaes.core import FlowsheetBlock
-from idaes.models_extra.temperature_swing_adsorption.fixed_bed_tsa0d import \
-    FixedBedTSA0D
+from idaes.models_extra.temperature_swing_adsorption.fixed_bed_tsa0d import (
+    FixedBedTSA0D,
+)
 from idaes.models_extra.temperature_swing_adsorption.costing.dac_costing import (
     get_dac_costing,
     print_dac_costing,
-    dac_costing_summary
+    dac_costing_summary,
 )
 
 from idaes.core.util.model_statistics import (
@@ -62,7 +59,8 @@ class TestElectricBoilerCosting:
             finite_elements=20,
             collocation_points=6,
             compressor=True,
-            steam_calculation="rigorous")
+            steam_calculation="rigorous",
+        )
 
         m.fs.unit.inlet.flow_mol_comp[0, "H2O"].fix(0)
         m.fs.unit.inlet.flow_mol_comp[0, "CO2"].fix(40)
@@ -155,7 +153,8 @@ class TestRetrofitNgccCosting:
             finite_elements=20,
             collocation_points=6,
             compressor=True,
-            steam_calculation="rigorous")
+            steam_calculation="rigorous",
+        )
 
         m.fs.unit.inlet.flow_mol_comp[0, "H2O"].fix(0)
         m.fs.unit.inlet.flow_mol_comp[0, "CO2"].fix(40)
