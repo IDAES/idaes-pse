@@ -24,7 +24,7 @@ To use this script, add the following to a code block in a Jupyter notebook:
 import sys
 # If running on Google Colab, install Pyomo and Ipopt via IDAES
 if "google.colab" in sys.modules:
-    !wget "https://raw.githubusercontent.com/idaes-pse/main/scripts/colab_helper.py"
+    !wget "https://raw.githubusercontent.com/IDAES/idaes-pse/main/scripts/colab_helper.py"
     import colab_helper
     colab_helper.install_idaes()
     colab_helper.install_ipopt()
