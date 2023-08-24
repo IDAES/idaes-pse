@@ -19,12 +19,12 @@ __author__ = "Alexander Dowling, Douglas Allan, Andrew Lee"
 
 from operator import itemgetter
 from sys import stdout
+from math import log
 
 import numpy as np
 from scipy.linalg import svd
 from scipy.sparse.linalg import svds, norm
 from scipy.sparse import issparse, find
-from math import log
 
 from pyomo.environ import (
     Binary,
