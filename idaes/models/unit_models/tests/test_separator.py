@@ -2136,7 +2136,7 @@ class TestIdealConstruction(object):
             m.fs.sep.mixed_state[0].mole_frac_phase_comp
         )
 
-        with pytest.raises(AttributeError):
+        with pytest.raises(ConfigurationError):
             m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
     @pytest.mark.unit
@@ -2444,7 +2444,7 @@ class TestIdealConstruction(object):
             m.fs.sep.mixed_state[0].flow_mol_phase_comp
         )
 
-        with pytest.raises(AttributeError):
+        with pytest.raises(ConfigurationError):
             m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
     @pytest.mark.unit
@@ -2532,7 +2532,7 @@ class TestIdealConstruction(object):
             m.fs.sep.mixed_state[0].flow_mol_phase_comp
         )
 
-        with pytest.raises(AttributeError):
+        with pytest.raises(ConfigurationError):
             m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
     @pytest.mark.unit
@@ -2606,7 +2606,7 @@ class TestIdealConstruction(object):
             m.fs.sep.mixed_state[0].flow_mol_phase_comp
         )
 
-        with pytest.raises(AttributeError):
+        with pytest.raises(ConfigurationError):
             m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
     @pytest.mark.unit
@@ -2664,7 +2664,7 @@ class TestIdealConstruction(object):
             m.fs.sep.mixed_state[0].flow_mol_phase_comp
         )
 
-        with pytest.raises(AttributeError):
+        with pytest.raises(ConfigurationError):
             m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
     @pytest.mark.unit
@@ -2810,7 +2810,7 @@ class TestIdealConstruction(object):
             m.fs.sep.mixed_state[0].test_var_phase_comp
         )
 
-        with pytest.raises(AttributeError):
+        with pytest.raises(ConfigurationError):
             m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
     @pytest.mark.unit
@@ -2896,7 +2896,7 @@ class TestIdealConstruction(object):
             m.fs.sep.mixed_state[0].test_var_phase_comp
         )
 
-        with pytest.raises(AttributeError):
+        with pytest.raises(ConfigurationError):
             m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
     @pytest.mark.unit
@@ -2963,7 +2963,7 @@ class TestIdealConstruction(object):
             m.fs.sep.mixed_state[0].test_var_phase_comp
         )
 
-        with pytest.raises(AttributeError):
+        with pytest.raises(ConfigurationError):
             m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
 
