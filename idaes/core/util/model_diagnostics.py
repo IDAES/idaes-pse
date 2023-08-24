@@ -220,28 +220,6 @@ class DiagnosticsToolbox:
     """
 
     def __init__(self, model: _BlockData, **kwargs):
-        self.set_model(model)
-        self.config = CONFIG(kwargs)
-
-    @property
-    def model(self):
-        """
-        Model currently being diagnosed.
-        """
-        return self._model
-
-    def set_model(self, model):
-        """
-        Changes the models currently being diagnosed.
-
-        Args:
-            model: new model to be diagnosed. Must be an scalar Block or an element of
-            an indexed Block.
-
-        Returns:
-            None
-
-        """
         # TODO: In future may want to generalise this to accept indexed blocks
         # However, for now some of the tools do not support indexed blocks
         if not isinstance(model, _BlockData):
@@ -251,6 +229,14 @@ class DiagnosticsToolbox:
             )
 
         self._model = model
+        self.config = CONFIG(kwargs)
+
+    @property
+    def model(self):
+        """
+        Model currently being diagnosed.
+        """
+        return self._model
 
     def display_external_variables(self, stream=stdout):
         """

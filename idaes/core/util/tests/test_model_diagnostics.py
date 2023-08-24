@@ -408,17 +408,6 @@ class TestStatsWriter:
 @pytest.mark.solver
 class TestDiagnosticsToolbox:
     @pytest.mark.unit
-    def test_set_model(self):
-        m = ConcreteModel()
-        m.b = Block()
-
-        dt = DiagnosticsToolbox(model=m)
-        assert dt.model is m
-
-        dt.set_model(m.b)
-        assert dt.model is m.b
-
-    @pytest.mark.unit
     def test_invalid_model_type(self):
         with pytest.raises(
             TypeError,
