@@ -17,15 +17,15 @@ The diagram below shows a high-level overview of the model development and diagn
 
 .. image:: diagnostics_workflow.png
 
-Chose a Model to Debug
-""""""""""""""""""""""
+Choose a Model to Debug
+"""""""""""""""""""""""
 
 As shown above, all model development begins with a model and the IDAES team recommends starting with the simplest possible model you can. It is always easier to debug small changes, so users should apply this workflow from the very beginning of model development starting with the simplest possible representation of their system (e.g., a single unit model or set of material balances). At each step of the process (i.e., each change or new constraint), you should check to ensure that your model is well-posed and that it solves robustly before making additional changes. In this way, it will be clear where to start looking for new issues as they arise, as they will be related in some way to the change you just made.
 
 Start with a Square Model
 """""""""""""""""""""""""
 
-Next, you should ensure you model has zero degrees of freedom (as best you can); whilst your ultimate goal may be to some an optimization problem with degrees of freedom, you should always start from a square model first. Firstly, this is because many of the model diagnosis tools work best with square models. Secondly, all models are based on the foundation of a square model; an optimization problem is just a square model with some degrees of freedom added. If your underlying square model is not well-posed then any more advanced problem you solve based on it is fundamentally flawed (even if it solves).
+Next, you should ensure your model has zero degrees of freedom (as best you can); whilst your ultimate goal may be to solve some optimization problem with degrees of freedom, you should always start from a square model first. Firstly, this is because many of the model diagnosis tools work best with square models. Secondly, all models are based on the foundation of a square model; an optimization problem is just a square model with some degrees of freedom added. If your underlying square model is not well-posed then any more advanced problem you solve based on it is fundamentally flawed (even if it solves).
 
 Check for Structural Issues
 """""""""""""""""""""""""""
