@@ -315,12 +315,12 @@ class TestStateBlockSymmetric(object):
         for j in model.state[1].Liq_X:
             if j in ["H2O", "C6H12"]:
                 # _X should be mole_frac_phase_comp_true
-                assert str(model.state[1].Liq_X[j]._expr) == str(
+                assert str(model.state[1].Liq_X[j].expr) == str(
                     model.state[1].mole_frac_phase_comp_true["Liq", j]
                 )
             else:
                 # _X should be mutiplied by |charge|
-                assert str(model.state[1].Liq_X[j]._expr) == str(
+                assert str(model.state[1].Liq_X[j].expr) == str(
                     model.state[1].mole_frac_phase_comp_true["Liq", j]
                     * abs(model.params.get_component(j).config.charge)
                 )
@@ -335,7 +335,7 @@ class TestStateBlockSymmetric(object):
                 )
             else:
                 # _X should be mutiplied by |charge|
-                assert str(model.state[1].Liq_X_ref[j]._expr) == str(
+                assert str(model.state[1].Liq_X_ref[j].expr) == str(
                     model.state[1].Liq_x_ref[j]
                     * abs(model.params.get_component(j).config.charge)
                 )
@@ -344,12 +344,12 @@ class TestStateBlockSymmetric(object):
         assert len(model.state[1].Liq_Y) == 4
         for j in model.state[1].Liq_Y:
             if j in ["H+", "Na+"]:
-                assert str(model.state[1].Liq_Y[j]._expr) == str(
+                assert str(model.state[1].Liq_Y[j].expr) == str(
                     model.state[1].Liq_X[j]
                     / (model.state[1].Liq_X["Na+"] + model.state[1].Liq_X["H+"])
                 )
             else:
-                assert str(model.state[1].Liq_Y[j]._expr) == str(
+                assert str(model.state[1].Liq_Y[j].expr) == str(
                     model.state[1].Liq_X[j]
                     / (model.state[1].Liq_X["Cl-"] + model.state[1].Liq_X["OH-"])
                 )
