@@ -843,9 +843,9 @@ Dulmage-Mendelsohn Over-Constrained Set
         expected = """====================================================================================
 The following variables(s) are associated with extreme Jacobian values:
 
-    v1: 100000000.00000001
-    v2: 10000000000.0
-    v3: 1.0000499987500626e-06
+    v2: 1.000E+10
+    v1: 1.000E+08
+    v3: 1.000E-06
 
 ====================================================================================
 """
@@ -871,7 +871,7 @@ The following variables(s) are associated with extreme Jacobian values:
         expected = """====================================================================================
 The following constraints(s) are associated with extreme Jacobian values:
 
-    c3: 10000499987.500626
+    c3: 1.000E+10
 
 ====================================================================================
 """
@@ -898,10 +898,10 @@ The following constraints(s) are associated with extreme Jacobian values:
 The following constraints(s) and variable(s) are associated with extreme Jacobian
 values:
 
-    c2, v3: 1e-08
-    c3, v1: 100000000.0
-    c3, v2: 10000000000.0
-    c3, v3: 1e-06
+    c3, v2: 1.000E+10
+    c2, v3: 1.000E-08
+    c3, v1: 1.000E+08
+    c3, v3: 1.000E-06
 
 ====================================================================================
 """

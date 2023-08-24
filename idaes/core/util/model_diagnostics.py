@@ -24,6 +24,7 @@ import numpy as np
 from scipy.linalg import svd
 from scipy.sparse.linalg import svds, norm
 from scipy.sparse import issparse, find
+from math import log
 
 from pyomo.environ import (
     Binary,
@@ -591,17 +592,17 @@ class DiagnosticsToolbox:
             None
 
         """
+        xjc = extreme_jacobian_columns(
+            m=self._model,
+            scaled=False,
+            large=self.config.jacobian_large_value_caution,
+            small=self.config.jacobian_small_value_caution,
+        )
+        xjc.sort(key=lambda i: abs(log(i[0])), reverse=True)
+
         _write_report_section(
             stream=stream,
-            lines_list=[
-                f"{i[1].name}: {i[0]}"
-                for i in extreme_jacobian_columns(
-                    m=self._model,
-                    scaled=False,
-                    large=self.config.jacobian_large_value_caution,
-                    small=self.config.jacobian_small_value_caution,
-                )
-            ],
+            lines_list=[f"{i[1].name}: {i[0]:.3E}" for i in xjc],
             title="The following variables(s) are associated with extreme Jacobian values:",
             header="=",
             footer="=",
@@ -621,17 +622,17 @@ class DiagnosticsToolbox:
             None
 
         """
+        xjr = extreme_jacobian_rows(
+            m=self._model,
+            scaled=False,
+            large=self.config.jacobian_large_value_caution,
+            small=self.config.jacobian_small_value_caution,
+        )
+        xjr.sort(key=lambda i: abs(log(i[0])), reverse=True)
+
         _write_report_section(
             stream=stream,
-            lines_list=[
-                f"{i[1].name}: {i[0]}"
-                for i in extreme_jacobian_rows(
-                    m=self._model,
-                    scaled=False,
-                    large=self.config.jacobian_large_value_caution,
-                    small=self.config.jacobian_small_value_caution,
-                )
-            ],
+            lines_list=[f"{i[1].name}: {i[0]:.3E}" for i in xjr],
             title="The following constraints(s) are associated with extreme Jacobian values:",
             header="=",
             footer="=",
@@ -652,18 +653,18 @@ class DiagnosticsToolbox:
             None
 
         """
+        xje = extreme_jacobian_entries(
+            m=self._model,
+            scaled=False,
+            large=self.config.jacobian_large_value_caution,
+            small=self.config.jacobian_small_value_caution,
+            zero=0,
+        )
+        xje.sort(key=lambda i: abs(log(i[0])), reverse=True)
+
         _write_report_section(
             stream=stream,
-            lines_list=[
-                f"{i[1].name}, {i[2].name}: {i[0]}"
-                for i in extreme_jacobian_entries(
-                    m=self._model,
-                    scaled=False,
-                    large=self.config.jacobian_large_value_caution,
-                    small=self.config.jacobian_small_value_caution,
-                    zero=0,
-                )
-            ],
+            lines_list=[f"{i[1].name}, {i[2].name}: {i[0]:.3E}" for i in xje],
             title="The following constraints(s) and variable(s) are associated with extreme Jacobian\nvalues:",
             header="=",
             footer="=",
