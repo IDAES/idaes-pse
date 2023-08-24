@@ -2909,6 +2909,7 @@ def test_add_total_element_balances_custom_term():
 
 @pytest.mark.unit
 def test_add_total_element_balances_lineraly_dependent(caplog):
+    caplog.set_level(idaeslog.INFO_LOW)
     m = ConcreteModel()
     m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
