@@ -8,7 +8,7 @@ Model Diagnostics Workflow
 Introduction
 ------------
 
-Writing well-posed equation-oriented models is a significant challenge, and even the most experienced developers often have to spend a lot of time diagnosing and resolving issues before a model is able to solve reliably. This documentation is intended to assist users with this process by outlining a general workflow for model development and debugging in order to more easily identify and resolve modeling issues.
+Writing well-posed equation-oriented models is a significant challenge, and even the most experienced developers often have to spend a lot of time diagnosing and resolving issues before a model is able to solve reliably. This documentation is intended to assist users with this process by outlining a general workflow for model development and debugging in order to more easily identify and resolve modeling issues. IDAES also provides a ``DiagnosticsToolbox`` to assist users with this workflow, and a detailed description of the API can be found :ref:`here<reference_guides/core/util/diagnostics/diagnostics_toolbox:Diagnostics Toolbox>`.
 
 General Workflow
 ----------------
