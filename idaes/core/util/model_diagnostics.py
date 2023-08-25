@@ -215,7 +215,8 @@ class DiagnosticsToolbox:
        the next report method to call.
 
     Args:
-        model - model to be diagnosed. The DiagnosticsToolbox does not support indexed Blocks.
+
+        model: model to be diagnosed. The DiagnosticsToolbox does not support indexed Blocks.
 
     """
 
