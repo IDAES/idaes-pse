@@ -16,7 +16,7 @@
 
 from pyomo.core.base.transformation import TransformationFactory
 from pyomo.core.plugins.transform.hierarchy import NonIsomorphicTransformation
-import pyomo.core.expr as EXPR
+from pyomo.core import expr as EXPR
 from pyomo.common.config import (
     ConfigBlock,
     ConfigValue,

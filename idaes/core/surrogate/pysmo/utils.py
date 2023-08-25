@@ -29,8 +29,7 @@
 
 __author__ = "Oluwamayowa Amusat, John Siirola"
 
-import pyomo.core.expr as EXPR
-from pyomo.core.expr import native_types
+from pyomo.core import expr as EXPR, native_types
 from pyomo.core.expr.numvalue import value
 
 _numpy_available = True
