@@ -28,8 +28,7 @@ from pyomo.core.base.expression import _ExpressionData
 from pyomo.core.base.block import _BlockData
 from pyomo.core.expr.visitor import StreamBasedExpressionVisitor
 from pyomo.core.expr.numeric_expr import ExternalFunctionExpression
-import pyomo.core.expr as EXPR
-from pyomo.core.expr import native_types
+from pyomo.core import expr as EXPR, native_types
 from pyomo.common.collections import ComponentMap
 
 

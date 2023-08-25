@@ -28,6 +28,7 @@ from idaes.core import (
     declare_process_block_class,
     useDefault,
 )
+from idaes.core.base import flowsheet_model
 from idaes.core.util.exceptions import DynamicError
 from idaes.core.util.testing import PhysicalParameterTestBlock
 
@@ -460,3 +461,19 @@ class TestVisualisation(object):
         assert df.loc["component_flow_phase ('p2', 'c2')"]["stream"] == 2.0
 
         m.fs.report()
+
+
+@pytest.mark.unit
+# with this decorator, the RuntimeWarning will be raised as an error
+@pytest.mark.filterwarnings("error::RuntimeWarning")
+def test_ui_warnings():
+    # force the UI to not seem to be installed
+    ui = flowsheet_model.UI()
+    ui.visualize = ui._visualize_null
+    ui.installed = False
+    # Call the function, which should print a warning
+    try:
+        ui.visualize(1, 2)
+        assert False  # should not get here
+    except RuntimeWarning:
+        pass  # cool

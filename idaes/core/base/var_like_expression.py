@@ -51,21 +51,21 @@ class _GeneralVarLikeExpressionData(_GeneralExpressionData):
         """
         Overload set_value method to provide meaningful error if user attempts
         to set the value of the Expression. In order to support changing the
-        expression (and setting it originally), if self._expr is None or
+        expression (and setting it originally), if self.expr is None or
         force=True, the value of the expression will be updated, otherwise a
         TypeError will be raised.
 
         Args:
-            value: value to set for _expr
-            force: force updating of _expr if True (default = False)
+            value: value to set for expr
+            force: force updating of expr if True (default = False)
 
         Returns:
             None
 
         Raises:
-            TypeError if _expr is not None and force=False
+            TypeError if expr is not None and force=False
         """
-        if self._expr is None or force:
+        if self.arg(0) is None or force:
             super().set_value(value)
         else:
             raise TypeError(
