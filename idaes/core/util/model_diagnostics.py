@@ -654,7 +654,7 @@ class DiagnosticsToolbox:
         _write_report_section(
             stream=stream,
             lines_list=[f"{i[1].name}, {i[2].name}: {i[0]:.3E}" for i in xje],
-            title="The following constraint(s) and variabl(s) are associated with extreme Jacobian\nvalues:",
+            title="The following constraint(s) and variable(s) are associated with extreme Jacobian\nvalues:",
             header="=",
             footer="=",
         )

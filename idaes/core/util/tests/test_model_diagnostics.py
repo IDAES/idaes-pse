@@ -884,7 +884,7 @@ The following constraint(s) are associated with extreme Jacobian values:
         dt.display_extreme_jacobian_entries(stream)
 
         expected = """====================================================================================
-The following constraint(s) and variabl(s) are associated with extreme Jacobian
+The following constraint(s) and variable(s) are associated with extreme Jacobian
 values:
 
     c3, v2: 1.000E+10
