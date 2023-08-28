@@ -87,7 +87,8 @@ CONFIG.declare(
     ConfigValue(
         default=1e-4,
         domain=float,
-        description="Absolute tolerance to for variables close to bounds.",
+        description="Absolute tolerance for considering a variable to be close "
+        "to its bounds.",
     ),
 )
 CONFIG.declare(
@@ -95,7 +96,8 @@ CONFIG.declare(
     ConfigValue(
         default=1e-4,
         domain=float,
-        description="Relative tolerance to for variables close to bounds.",
+        description="Relative tolerance for considering a variable to be close "
+        "to its bounds.",
     ),
 )
 CONFIG.declare(
@@ -103,8 +105,8 @@ CONFIG.declare(
     ConfigValue(
         default=0,
         domain=float,
-        description="Absolute tolerance to for considering a variable to violate its bounds.",
-        doc="Absolute tolerance to for considering a variable to violate its bounds. "
+        description="Absolute tolerance for considering a variable to violate its bounds.",
+        doc="Absolute tolerance for considering a variable to violate its bounds. "
         "Some solvers relax bounds on variables thus allowing a small violation to be "
         "considered acceptable.",
     ),
@@ -225,7 +227,7 @@ class DiagnosticsToolbox:
         # However, for now some of the tools do not support indexed blocks
         if not isinstance(model, _BlockData):
             raise TypeError(
-                "model argument must be an instance of an Pyomo BlockData object "
+                "model argument must be an instance of a Pyomo BlockData object "
                 "(either a scalar Block or an element of an indexed Block)."
             )
 
@@ -241,8 +243,8 @@ class DiagnosticsToolbox:
 
     def display_external_variables(self, stream=stdout):
         """
-        Prints a list of variables that appear within Constraints in the model
-        but are not contained within the model themselves.
+        Prints a list of variables that appear within activated Constraints in the
+        model but are not contained within the model themselves.
 
         Args:
             stream: an I/O object to write the list to (default = stdout)
@@ -476,7 +478,7 @@ class DiagnosticsToolbox:
     def get_dulmage_mendelsohn_partition(self):
         """
         Performs a Dulmage-Mendelsohn partitioning on the model and returns
-        the over- and under-constraint sub-problems.
+        the over- and under-constrained sub-problems.
 
         Returns:
             list-of-lists variables in each independent block of the under-constrained set
@@ -488,7 +490,7 @@ class DiagnosticsToolbox:
         igraph = IncidenceGraphInterface(self._model, include_inequality=False)
         var_dm_partition, con_dm_partition = igraph.dulmage_mendelsohn()
 
-        # Collect under- and order-constrained sub-system
+        # Collect under- and over-constrained sub-system
         uc_var = var_dm_partition.unmatched + var_dm_partition.underconstrained
         uc_con = con_dm_partition.underconstrained
         oc_var = var_dm_partition.overconstrained
@@ -504,7 +506,7 @@ class DiagnosticsToolbox:
         Prints the variables and constraints in the under-constrained sub-problem
         from a Dulmage-Mendelsohn partitioning.
 
-        This cane be used to identify the under-defined part of a model and thus
+        This can be used to identify the under-defined part of a model and thus
         where additional information (fixed variables or constraints) are required.
 
         Args:
@@ -537,7 +539,7 @@ class DiagnosticsToolbox:
         Prints the variables and constraints in the over-constrained sub-problem
         from a Dulmage-Mendelsohn partitioning.
 
-        This cane be used to identify the over-defined part of a model and thus
+        This can be used to identify the over-defined part of a model and thus
         where constraints must be removed or variables unfixed.
 
         Args:
@@ -590,7 +592,7 @@ class DiagnosticsToolbox:
         _write_report_section(
             stream=stream,
             lines_list=[f"{i[1].name}: {i[0]:.3E}" for i in xjc],
-            title="The following variables(s) are associated with extreme Jacobian values:",
+            title="The following variable(s) are associated with extreme Jacobian values:",
             header="=",
             footer="=",
         )
@@ -620,7 +622,7 @@ class DiagnosticsToolbox:
         _write_report_section(
             stream=stream,
             lines_list=[f"{i[1].name}: {i[0]:.3E}" for i in xjr],
-            title="The following constraints(s) are associated with extreme Jacobian values:",
+            title="The following constraint(s) are associated with extreme Jacobian values:",
             header="=",
             footer="=",
         )
@@ -652,7 +654,7 @@ class DiagnosticsToolbox:
         _write_report_section(
             stream=stream,
             lines_list=[f"{i[1].name}, {i[2].name}: {i[0]:.3E}" for i in xje],
-            title="The following constraints(s) and variable(s) are associated with extreme Jacobian\nvalues:",
+            title="The following constraint(s) and variabl(s) are associated with extreme Jacobian\nvalues:",
             header="=",
             footer="=",
         )
@@ -686,7 +688,9 @@ class DiagnosticsToolbox:
             if len(uc) == 1:
                 cstring = "Component"
             warnings.append(f"WARNING: {len(uc)} {cstring} with inconsistent units")
-            next_steps.append("display_components_with_inconsistent_units()")
+            next_steps.append(
+                self.display_components_with_inconsistent_units.__name__ + "()"
+            )
         if any(len(x) > 0 for x in [uc_var, uc_con, oc_var, oc_con]):
             warnings.append(
                 f"WARNING: Structural singularity found\n"
@@ -697,9 +701,9 @@ class DiagnosticsToolbox:
             )
 
         if any(len(x) > 0 for x in [uc_var, uc_con]):
-            next_steps.append("display_underconstrained_set()")
+            next_steps.append(self.display_underconstrained_set.__name__ + "()")
         if any(len(x) > 0 for x in [oc_var, oc_con]):
-            next_steps.append("display_overconstrained_set()")
+            next_steps.append(self.display_overconstrained_set.__name__ + "()")
 
         return warnings, next_steps
 
@@ -761,7 +765,9 @@ class DiagnosticsToolbox:
             warnings.append(
                 f"WARNING: {len(large_residuals)} {cstring} with large residuals"
             )
-            next_steps.append("display_constraints_with_large_residuals()")
+            next_steps.append(
+                self.display_constraints_with_large_residuals.__name__ + "()"
+            )
 
         # Variables outside bounds
         violated_bounds = _vars_violating_bounds(
@@ -774,7 +780,9 @@ class DiagnosticsToolbox:
             warnings.append(
                 f"WARNING: {len(violated_bounds)} {cstring} at or outside bounds"
             )
-            next_steps.append("display_variables_at_or_outside_bounds()")
+            next_steps.append(
+                self.display_variables_at_or_outside_bounds.__name__ + "()"
+            )
 
         # Extreme Jacobian rows and columns
         jac_col = extreme_jacobian_columns(
@@ -790,7 +798,9 @@ class DiagnosticsToolbox:
             warnings.append(
                 f"WARNING: {len(jac_col)} {cstring} with extreme Jacobian values"
             )
-            next_steps.append("display_variables_with_extreme_jacobians()")
+            next_steps.append(
+                self.display_variables_with_extreme_jacobians.__name__ + "()"
+            )
 
         jac_row = extreme_jacobian_rows(
             jac=jac,
@@ -805,7 +815,9 @@ class DiagnosticsToolbox:
             warnings.append(
                 f"WARNING: {len(jac_row)} {cstring} with extreme Jacobian values"
             )
-            next_steps.append("display_constraints_with_extreme_jacobians()")
+            next_steps.append(
+                self.display_constraints_with_extreme_jacobians.__name__ + "()"
+            )
 
         return warnings, next_steps
 
@@ -943,7 +955,7 @@ class DiagnosticsToolbox:
     def report_structural_issues(self, stream=stdout):
         """
         Generates a summary report of any structural issues identified in the model provided
-        and suggest next steps for debugging model.
+        and suggests next steps for debugging the model.
 
         This should be the first method called when debugging a model and after any change
         is made to the model. These checks can be run before trying to initialize and solve

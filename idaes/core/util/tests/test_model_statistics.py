@@ -318,7 +318,7 @@ def test_variables_near_bounds_tol_deprecation(m, caplog):
     msg = (
         "DEPRECATED: variables_near_bounds_generator has deprecated the tol argument. "
         "Please set abs_tol and rel_tol arguments instead.  (deprecated in "
-        "2.0.0, will be removed in (or after) 3.0.0)"
+        "2.2.0, will be removed in (or after) 3.0.0)"
     )
     assert msg.replace(" ", "") in caplog.records[0].message.replace("\n", "").replace(
         " ", ""
@@ -332,7 +332,7 @@ def test_variables_near_bounds_relative_deprecation(m, caplog):
     msg = (
         "DEPRECATED: variables_near_bounds_generator has deprecated the relative argument. "
         "Please set abs_tol and rel_tol arguments instead.  (deprecated in "
-        "2.0.0, will be removed in (or after) 3.0.0)"
+        "2.2.0, will be removed in (or after) 3.0.0)"
     )
     assert msg.replace(" ", "") in caplog.records[0].message.replace("\n", "").replace(
         " ", ""

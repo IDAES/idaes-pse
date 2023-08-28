@@ -411,7 +411,7 @@ class TestDiagnosticsToolbox:
     def test_invalid_model_type(self):
         with pytest.raises(
             TypeError,
-            match="model argument must be an instance of an Pyomo BlockData object "
+            match="model argument must be an instance of a Pyomo BlockData object "
             "\(either a scalar Block or an element of an indexed Block\).",
         ):
             DiagnosticsToolbox(model="foo")
@@ -423,7 +423,7 @@ class TestDiagnosticsToolbox:
 
         with pytest.raises(
             TypeError,
-            match="model argument must be an instance of an Pyomo BlockData object "
+            match="model argument must be an instance of a Pyomo BlockData object "
             "\(either a scalar Block or an element of an indexed Block\).",
         ):
             DiagnosticsToolbox(model=m.b)
@@ -830,7 +830,7 @@ Dulmage-Mendelsohn Over-Constrained Set
         dt.display_variables_with_extreme_jacobians(stream)
 
         expected = """====================================================================================
-The following variables(s) are associated with extreme Jacobian values:
+The following variable(s) are associated with extreme Jacobian values:
 
     v2: 1.000E+10
     v1: 1.000E+08
@@ -858,7 +858,7 @@ The following variables(s) are associated with extreme Jacobian values:
         dt.display_constraints_with_extreme_jacobians(stream)
 
         expected = """====================================================================================
-The following constraints(s) are associated with extreme Jacobian values:
+The following constraint(s) are associated with extreme Jacobian values:
 
     c3: 1.000E+10
 
@@ -884,7 +884,7 @@ The following constraints(s) are associated with extreme Jacobian values:
         dt.display_extreme_jacobian_entries(stream)
 
         expected = """====================================================================================
-The following constraints(s) and variable(s) are associated with extreme Jacobian
+The following constraint(s) and variabl(s) are associated with extreme Jacobian
 values:
 
     c3, v2: 1.000E+10
@@ -1270,7 +1270,7 @@ def test_deprecate_degeneracy_hunter(caplog):
 
     msg = (
         "DEPRECATED: DegeneracyHunter is being deprecated in favor of the new "
-        "DiagnosticsToolbox.  (deprecated in 2.0.0, will be removed in (or after) 3.0.0)"
+        "DiagnosticsToolbox.  (deprecated in 2.2.0, will be removed in (or after) 3.0.0)"
     )
     assert msg.replace(" ", "") in caplog.records[0].message.replace("\n", "").replace(
         " ", ""

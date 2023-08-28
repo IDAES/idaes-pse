@@ -715,13 +715,13 @@ def variables_near_bounds_generator(
             "variables_near_bounds_generator has deprecated the relative argument. "
             "Please set abs_tol and rel_tol arguments instead."
         )
-        deprecation_warning(msg=msg, logger=_log, version="2.0.0", remove_in="3.0.0")
+        deprecation_warning(msg=msg, logger=_log, version="2.2.0", remove_in="3.0.0")
     if tol is not None:
         msg = (
             "variables_near_bounds_generator has deprecated the tol argument. "
             "Please set abs_tol and rel_tol arguments instead."
         )
-        deprecation_warning(msg=msg, logger=_log, version="2.0.0", remove_in="3.0.0")
+        deprecation_warning(msg=msg, logger=_log, version="2.2.0", remove_in="3.0.0")
         # Set tolerances using the provided value
         abs_tol = tol
         rel_tol = tol
