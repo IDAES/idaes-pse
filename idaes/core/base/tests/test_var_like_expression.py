@@ -75,7 +75,7 @@ def test_SimpleVarLikeExpression():
         m.e.unfix()
 
     m.e.set_value(10, force=True)
-    assert m.e._expr == 10
+    assert m.e.expr == 10
 
 
 @pytest.mark.unit
@@ -160,4 +160,4 @@ def test_IndexedVarLikeExpression():
             m.e[i].unfix()
 
         m.e[i].set_value(i, force=True)
-        assert m.e[i]._expr == i
+        assert m.e[i].expr == i
