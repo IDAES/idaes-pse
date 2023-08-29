@@ -260,8 +260,9 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
             bounds=(0, None),
         )
 
+        # Nominally dimensionless, but specifically the log of the preexponential factor in amps per m**2
         self.exchange_current_log_preexponential_factor = pyo.Var(
-            initialize=1, units=(pyo.units.amp / pyo.units.m**2), bounds=(0, None)
+            initialize=1, units=pyo.units.dimensionless, bounds=(0, None)
         )
 
         self.exchange_current_activation_energy = pyo.Var(
@@ -371,8 +372,8 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
             alpha_1 = b.activation_potential_alpha1[None]
             alpha_2 = b.activation_potential_alpha2[None]
             exp_expr = Constants.faraday_constant * eta / (Constants.gas_constant * T)
-            return i == pyo.exp(log_i0 + alpha_1 * exp_expr) - pyo.exp(
-                log_i0 - alpha_2 * exp_expr
+            return i == pyo.units.A/pyo.units.m**2 * (
+                pyo.exp(log_i0 + alpha_1 * exp_expr) - pyo.exp(log_i0 - alpha_2 * exp_expr)
             )
 
         @self.Expression(tset, iznodes)

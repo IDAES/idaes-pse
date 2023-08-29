@@ -241,8 +241,8 @@ class SocConductiveSlabData(UnitModelBlockData):
                 nodes=b.znodes,
                 faces=b.zfaces,
                 phi_func=lambda izf: b.temperature[t, ix, izf] / b.length_z[None],
-                phi_bound_0=0,
-                phi_bound_1=0,
+                phi_bound_0=0 * pyo.units.K / pyo.units.m,
+                phi_bound_1=0 * pyo.units.K / pyo.units.m,
                 derivative=True,
             )
 

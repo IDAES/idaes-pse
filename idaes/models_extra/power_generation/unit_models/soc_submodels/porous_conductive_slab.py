@@ -533,6 +533,8 @@ class PorousConductiveSlabData(UnitModelBlockData):
                 derivative=True,
             )
 
+        conc_grad_units = pyo.units.mol / pyo.units.m **4
+
         @self.Expression(tset, ixnodes, izfaces, comps)
         def dcdz(b, t, ix, iz, i):
             return common._interpolate_2D(
@@ -541,8 +543,8 @@ class PorousConductiveSlabData(UnitModelBlockData):
                 nodes=b.znodes,
                 faces=b.zfaces,
                 phi_func=lambda izf: b.conc_mol_comp[t, ix, izf, i] / b.length_z[None],
-                phi_bound_0=0,  # solid wall no flux
-                phi_bound_1=0,  # solid wall no flux
+                phi_bound_0=0 * conc_grad_units,  # solid wall no flux
+                phi_bound_1=0 * conc_grad_units,  # solid wall no flux
                 derivative=True,
             )
 
@@ -569,6 +571,8 @@ class PorousConductiveSlabData(UnitModelBlockData):
                 derivative=True,
             )
 
+        temp_grad_units = pyo.units.K / pyo.units.m
+
         @self.Expression(tset, ixnodes, izfaces)
         def dTdz(b, t, ix, iz):
             return common._interpolate_2D(
@@ -577,8 +581,8 @@ class PorousConductiveSlabData(UnitModelBlockData):
                 nodes=b.znodes,
                 faces=b.zfaces,
                 phi_func=lambda izf: b.temperature[t, ix, izf] / b.length_z[None],
-                phi_bound_0=0,
-                phi_bound_1=0,
+                phi_bound_0=0 * temp_grad_units,
+                phi_bound_1=0 * temp_grad_units,
                 derivative=True,
             )
 
@@ -600,6 +604,8 @@ class PorousConductiveSlabData(UnitModelBlockData):
                 derivative=False,
             )
 
+        diff_coeff_units = pyo.units.m **2 / pyo.units.s
+
         @self.Expression(tset, ixnodes, izfaces, comps)
         def diff_eff_coeff_zfaces(b, t, ix, iz, i):
             return common._interpolate_2D(
@@ -608,8 +614,8 @@ class PorousConductiveSlabData(UnitModelBlockData):
                 nodes=b.znodes,
                 faces=b.zfaces,
                 phi_func=lambda izf: b.diff_eff_coeff[t, ix, izf, i],
-                phi_bound_0=0,  # solid wall no flux
-                phi_bound_1=0,  # solid wall no flux
+                phi_bound_0=0 * diff_coeff_units,  # solid wall no flux
+                phi_bound_1=0 * diff_coeff_units,  # solid wall no flux
                 derivative=False,
             )
 
