@@ -520,9 +520,7 @@ def petsc_dae_by_time_element(
     solve_log = idaeslog.getSolveLogger("petsc-dae")
 
     regular_vars, time_vars = flatten_dae_components(m, time, pyo.Var)
-    regular_cons, time_cons = flatten_dae_components(
-        m, time, pyo.Constraint
-    )
+    regular_cons, time_cons = flatten_dae_components(m, time, pyo.Constraint)
     tdisc = find_discretization_equations(m, time)
 
     solver_dae = pyo.SolverFactory("petsc_ts", options=ts_options)
