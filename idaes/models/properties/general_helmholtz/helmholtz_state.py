@@ -1468,7 +1468,6 @@ class HelmholtzStateBlockData(StateBlockData):
             )
 
         if surface_tension_available(cmp):
-
             self.surf_tens = pyo.Expression(
                 phlist,
                 expr=self.expression_writer.surface_tension(

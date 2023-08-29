@@ -47,13 +47,17 @@ base_platforms = (
 # Map some platform names to others for get-extensions
 binary_distro_map = {
     "macos": "darwin",
+    "el9": "ubuntu2204",
     "rhel7": "el7",
     "rhel8": "el8",
+    "rhel9": "ubuntu2204",
     "scientific7": "el7",
     "centos7": "el7",
     "centos8": "el8",
     "rocky8": "el8",
+    "rocky9": "ubuntu2204",
     "almalinux8": "el8",
+    "almalinux9": "ubuntu2204",
     "debian9": "el7",
     "debian10": "el8",
     "debian11": "ubuntu2004",
@@ -158,90 +162,6 @@ def _new_idaes_config_block():
             default=False,
             description="Convert any logged deprecation warnings to exceptions",
             doc="Convert any logged deprecation warnings to exceptions",
-        ),
-    )
-    cfg.declare(
-        "logging",
-        pyomo.common.config.ConfigBlock(
-            implicit=True,
-            description="Logging configuration dictionary",
-            doc="This stores the logging configuration. See the Python "
-            "logging.config.dictConfig() documentation for details.",
-        ),
-    )
-    cfg["logging"].declare(
-        "version", pyomo.common.config.ConfigValue(domain=int, default=1)
-    )
-    cfg["logging"].declare(
-        "disable_existing_loggers",
-        pyomo.common.config.ConfigValue(domain=bool, default=False),
-    )
-    cfg["logging"].declare("formatters", pyomo.common.config.ConfigBlock(implicit=True))
-    cfg["logging"]["formatters"].declare(
-        "default_format", pyomo.common.config.ConfigBlock(implicit=True)
-    )
-    cfg["logging"]["formatters"]["default_format"].declare(
-        "format",
-        pyomo.common.config.ConfigValue(
-            domain=str, default="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
-        ),
-    )
-    cfg["logging"]["formatters"]["default_format"].declare(
-        "datefmt",
-        pyomo.common.config.ConfigValue(domain=str, default="%Y-%m-%d %H:%M:%S"),
-    )
-    cfg["logging"]["formatters"].declare(
-        "blank_format", pyomo.common.config.ConfigBlock(implicit=True)
-    )
-    cfg["logging"]["formatters"]["blank_format"].declare(
-        "format",
-        pyomo.common.config.ConfigValue(domain=str, default="%(message)s"),
-    )
-    cfg["logging"].declare("handlers", pyomo.common.config.ConfigBlock(implicit=True))
-    cfg["logging"]["handlers"].declare(
-        "console", pyomo.common.config.ConfigBlock(implicit=True)
-    )
-    cfg["logging"]["handlers"]["console"].declare(
-        "class",
-        pyomo.common.config.ConfigValue(domain=str, default="logging.StreamHandler"),
-    )
-    cfg["logging"]["handlers"]["console"].declare(
-        "formatter",
-        pyomo.common.config.ConfigValue(domain=str, default="default_format"),
-    )
-    cfg["logging"]["handlers"]["console"].declare(
-        "stream",
-        pyomo.common.config.ConfigValue(domain=str, default="ext://sys.stdout"),
-    )
-    cfg["logging"]["handlers"].declare(
-        "console_blank", pyomo.common.config.ConfigBlock(implicit=True)
-    )
-    cfg["logging"]["handlers"]["console_blank"].declare(
-        "class",
-        pyomo.common.config.ConfigValue(domain=str, default="logging.StreamHandler"),
-    )
-    cfg["logging"]["handlers"]["console_blank"].declare(
-        "formatter",
-        pyomo.common.config.ConfigValue(domain=str, default="blank_format"),
-    )
-    cfg["logging"]["handlers"]["console_blank"].declare(
-        "stream",
-        pyomo.common.config.ConfigValue(domain=str, default="ext://sys.stdout"),
-    )
-    cfg["logging"].declare(
-        "loggers",
-        pyomo.common.config.ConfigValue(
-            domain=dict,
-            default={  # the period in the logger names is trouble for ConfigBlock
-                "idaes": {"level": "INFO", "propagate": True, "handlers": ["console"]},
-                "idaes.solve": {"propagate": False, "handlers": ["console"]},
-                "idaes.init": {"propagate": False, "handlers": ["console"]},
-                "idaes.model": {"propagate": False, "handlers": ["console"]},
-                "idaes.helmholtz_parameters": {
-                    "propagate": False,
-                    "handlers": ["console_blank"],
-                },
-            },
         ),
     )
     cfg.declare(
@@ -592,7 +512,6 @@ class _DeprecationToExceptionFilter(logging.Filter):
 
 
 def reconfig(cfg):
-    logging.config.dictConfig(cfg.logging.value())
     _log = logging.getLogger("idaes")
     if cfg.deprecation_to_exception:
         _log.addFilter(_DeprecationToExceptionFilter)

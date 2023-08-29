@@ -851,7 +851,7 @@ note that if plates = `False`, the cost of trays is not included.
 
 Base Cost of Platforms and ladders
 """"""""""""""""""""""""""""""""""
-The cost of platforms and ladders is based on the diamter and length in ft.
+The cost of platforms and ladders is based on the diameter and length in ft.
 Horizontal vessels (1: 3 < D < 12 ft):
 
 .. math:: self.base\_cost\_platforms\_ladders = 20059*D^{0.20294}

@@ -33,34 +33,38 @@ Now, in that "idaes-pse" environment, install the IDAES Toolkit using either `pi
 
 ```bash
 # install latest stable release
-pip install idaes_pse
+pip install idaes-pse
+# install latest stable release with one set of optional dependencies, e.g. `ui` for the user interface
+pip install "idaes-pse[ui]"
+# install latest stable release with multiple sets of optional dependencies
+pip install "idaes-pse[ui,dmf,omlt,grid,coolprop]"
 # install latest version from the main branch of this repository
-pip install 'idaes-pse[prerelease] @ https://github.com/IDAES/idaes-pse/archive/main.zip'
+pip install "idaes-pse @ git+https://github.com/IDAES/idaes-pse@main"
+# install from the `mybranch` branch of the fork belonging to `myuser`
+pip install "idaes-pse @ git+https://github.com/myuser/idaes-pse@mybranch"
 ```
-.
+
 You can check the version installed with the command:
 
 ```bash
 idaes --version
 ```
 
-Now install the examples and the pre-build extensions (binary solvers):
+Now install the pre-built extensions (binary solvers):
 
 ```bash
-idaes get-examples
 idaes get-extensions
 ```
 
-This will install the examples into an `examples` subdirectory which can be opened using a [Jypter](https://jupyter.org) Notebook:
+The IDAES examples can be installed by running:
 
 ```bash
-jupyter notebook examples/notebook_index.ipynb
+pip install idaes-examples
 ```
-From there you can explore the examples and tutorials.
 
-For more information on how to use Jupyter Lab, use the built-in *Help* menu and the extensive documentation on the [Jupyter website](https://jupyter.org).
+For more information, refer to the [IDAES/examples](https://github.com/IDAES/examples) repository, as well as the online static version of the examples available at <https://idaes-examples.readthedocs.org>.
 
-Finally, refer to the [complete idaes-pse documentation](https://idaes-pse.readthedocs.io/en/stable) for detailed [installation instructions](https://idaes-pse.readthedocs.io/en/stable/tutorials/getting_started/index.html), examples, guides, and reference.
+Finally, refer to the [complete idaes-pse documentation](https://idaes-pse.readthedocs.io/en/latest) for detailed [installation instructions](https://idaes-pse.readthedocs.io/en/latest/tutorials/getting_started/index.html), examples, guides, and reference.
 
 ## System requirements
 

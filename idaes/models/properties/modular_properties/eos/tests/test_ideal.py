@@ -332,7 +332,7 @@ def test_energy_internal_mol_phase_comp_with_h_form(m):
         # For liquid phase, delta(n) should be 4 (2*He + 2*O2)
         assert (
             str(Ideal.energy_internal_mol_phase_comp(m.props[1], "Liq", j))
-            == "42.0 -4.0*("
+            == "42.0 - 4.0*("
             + str(Ideal.gas_constant(m.props[1]))
             + ")*params.temperature_ref"
         )
@@ -564,7 +564,7 @@ def test_pressure_osm_phase(m):
     )
     subexpr = m.props[1].conc_mol_phase_comp["Liq", "b"]
     subexpr += m.props[1].conc_mol_phase_comp["Liq", "c"]
-    assert str(m.props[1].pressure_osm_phase["Liq"]._expr) == (
+    assert str(m.props[1].pressure_osm_phase["Liq"].expr) == (
         str(Ideal.gas_constant(m.props[1]) * m.props[1].temperature * subexpr)
     )
     assert len(m.props[1].pressure_osm_phase) == 1
@@ -619,7 +619,7 @@ def test_pressure_osm_phase_w_apparent_component():
 
     subexpr = m.props[1].conc_mol_phase_comp["Liq", "b"]
     subexpr += 2 * m.props[1].conc_mol_phase_comp["Liq", "c"]
-    assert str(m.props[1].pressure_osm_phase["Liq"]._expr) == (
+    assert str(m.props[1].pressure_osm_phase["Liq"].expr) == (
         str(Ideal.gas_constant(m.props[1]) * m.props[1].temperature * subexpr)
     )
     assert len(m.props[1].pressure_osm_phase) == 1

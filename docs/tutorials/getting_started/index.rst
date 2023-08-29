@@ -28,7 +28,6 @@ OS Specific Instructions
     windows
     mac_osx
     binaries
-    opt_dependencies
 
 .. list-table::
    :header-rows: 1

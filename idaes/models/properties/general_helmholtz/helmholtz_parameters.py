@@ -365,8 +365,8 @@ class WriteParameters(object):
             self.model.tau = self.model.T_star / T
             delta_l = pyo.value(self.model.delta_l_sat_approx)
             delta_v = pyo.value(self.model.delta_v_sat_approx)
-            rho_l = delta_l * self.model.rho_star
-            rho_v = delta_v * self.model.rho_star
+            rho_l = pyo.value(delta_l * self.model.rho_star)
+            rho_v = pyo.value(delta_v * self.model.rho_star)
             rhol_list.append(rho_l)
             rhov_list.append(rho_v)
             self.model.delta = delta_v
@@ -434,12 +434,12 @@ class WriteParameters(object):
         for s, c in smap.bySymbol.items():
             if s.startswith("v"):
                 j = int(s[1:])
-                var_map[j] = self.variables[c().name]
+                var_map[j] = self.variables[c.name]
         if expressions is not None:
             expr_map = [0] * len(expressions)
             for s, c in smap.bySymbol.items():
                 if s.startswith("o"):
-                    i = expressions[c().name]
+                    i = expressions[c.name]
                     j = int(s[1:])
                     expr_map[i] = j
             return nl_file, expr_map, var_map

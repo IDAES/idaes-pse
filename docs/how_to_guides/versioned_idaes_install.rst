@@ -37,16 +37,16 @@ Installing IDAES
 ----------------
 .. _updating_install:
 
-* To get a previous `IDAES release <https://github.com/IDAES/idaes-pse/releases>`_, for example v1.13 ::
+* To get a previous `IDAES release <https://github.com/IDAES/idaes-pse/releases>`_, for example 2.0 ::
 
-   pip install idaes-pse==1.13
+   pip install idaes-pse==2.0
 
 * To get the latest version from the GitHub main branch ::
 
-   pip install 'idaes-pse[prerelease] @ https://github.com/IDAES/idaes-pse/archive/main.zip'
+   pip install "idaes-pse @ git+https://github.com/IDAES/idaes-pse@main"
 
-* To get a specific fork or branch, for example myfork (of idaes-pse) and mybranch ::
+* To get a specific fork or branch, for example for branch ``mybranch`` of the fork belonging to ``myuser`` ::
 
-   pip install 'idaes-pse[prerelease] @ https://github.com/myfork/idaes-pse/archive/mybranch.zip'
+   pip install "idaes-pse @ git+https://github.com/myuser/idaes-pse@mybranch"
 
 * **For IDAES Contributors**: follow the :ref:`advanced user installation<tutorials/advanced_install/index:Advanced User Installation>`.
