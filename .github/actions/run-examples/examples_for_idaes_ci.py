@@ -3,6 +3,7 @@ pytest plugin for testing IDAES "through" IDAES/examples within the IDAES/idaes-
 """
 from contextlib import contextmanager
 from dataclasses import dataclass, field
+import fnmatch
 import logging
 import os
 from pathlib import Path
@@ -18,6 +19,11 @@ from idaes_examples import build
 
 matchmarker = pytest.StashKey()
 marked = pytest.StashKey()
+
+
+def _matches_pattern(item: pytest.Item, pattern: str) -> bool:
+    to_match = os.fspath(item.path)
+    return fnmatch.fnmatch(to_match, pattern)
 
 
 def pytest_configure(config: pytest.Config):
@@ -59,9 +65,8 @@ def pytest_ignore_collect(collection_path: Path, config: pytest.Config):
 
 def pytest_collection_modifyitems(config: pytest.Config, items):
     for item in items:
-        path = item.path
         for pattern, marker in config.stash[matchmarker].items():
-            if path.match(pattern):
+            if _matches_pattern(item, pattern):
                 item.add_marker(marker)
                 config.stash[marked].append((item, pattern, marker))
 
