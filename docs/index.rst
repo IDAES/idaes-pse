@@ -26,13 +26,14 @@ See also :doc:`IDAES concepts <explanations/concepts>` in this documentation.
      - How-To Guides
          | :doc:`Setting up IDAES Models <how_to_guides/workflow/index>`
          | :doc:`Developing Custom Models <how_to_guides/custom_models/general_model_development>`
-         | :doc:`Using IDAES Flowsheet Visualizer <how_to_guides/vis/index>`
+         | :doc:`Using the Data Management Framework <how_to_guides/data_management_framework/index>`
          | :doc:`Installing Specific IDAES Versions <how_to_guides/versioned_idaes_install>`
    * - Explanations
          | :doc:`Why IDAES <explanations/why_idaes>`
          | :doc:`Concepts <explanations/concepts>`
          | :doc:`Components of IDAES <explanations/components/index>`
          | :doc:`Conventions <explanations/conventions>`
+         | :doc:`Model Diagnostics Workflow <explanations/model_diagnostics/index>`
          | :doc:`Modeling Extensions <explanations/modeling_extensions/index>`
          | :doc:`Related Packages <explanations/related_packages/index>`
          | :doc:`FAQ <explanations/faq>`

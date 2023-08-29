@@ -69,8 +69,9 @@ class ExtraDependencies:
     """
 
     ui = [
-        "requests",
-        "pint",
+        # FIXME this must be changed to the PyPI distribution for the release
+        # "idaes-ui",
+        "idaes-ui @ git+https://github.com/IDAES/idaes-ui@main",
     ]
     _ipython = [
         'ipython <= 8.12; python_version == "3.8"',
@@ -126,7 +127,7 @@ kwargs = dict(
     # Put abstract (non-versioned) deps here.
     # Concrete dependencies go in requirements[-dev].txt
     install_requires=[
-        "pyomo @ https://github.com/IDAES/pyomo/archive/6.6.2.idaes.2023.07.28.zip",
+        "pyomo>=6.6.2",
         "pint",  # required to use Pyomo units
         "networkx",  # required to use Pyomo network
         "numpy",
