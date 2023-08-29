@@ -460,7 +460,9 @@ class FlowsheetCostingBlockData(ProcessBlockData):
                 agg_var = pyo.Var(units=funits, doc=f"Aggregate flow for {f}")
                 self.add_component(f"aggregate_flow_{f}", agg_var)
 
-                agg_const = pyo.Constraint(rule=partial(agg_flow_rule, f=f, funits=funits))
+                agg_const = pyo.Constraint(
+                    rule=partial(agg_flow_rule, f=f, funits=funits)
+                )
 
                 self.add_component(f"aggregate_flow_{f}_constraint", agg_const)
 
