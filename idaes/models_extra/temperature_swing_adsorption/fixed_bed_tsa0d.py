@@ -81,12 +81,14 @@ from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.model_statistics import degrees_of_freedom
 
 from idaes.core.solvers import get_solver
+from idaes.core.initialization import ModularInitializerBase, SingleControlVolumeUnitInitializer
 from idaes.models.unit_models import SkeletonUnitModel, Heater
 from idaes.models_extra.power_generation.properties import FlueGasParameterBlock
 from idaes.models.properties import iapws95
 from idaes.models.unit_models.pressure_changer import (
     PressureChanger,
     ThermodynamicAssumption,
+    IsentropicPressureChangerInitializer
 )
 
 import idaes.logger as idaeslog
@@ -95,6 +97,895 @@ __author__ = "Daison Yancy Caballero"
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
+
+
+class FixedBedTSA0DInitializer(ModularInitializerBase):
+    """
+    Initializer for 0D Fixed Bed TSA units.
+
+    """
+
+    def initialize(
+        self,
+        model: Block,
+        initial_guesses: dict = None,
+        json_file: str = None,
+        output_level=None,
+        exclude_unused_vars: bool = False,
+    ):
+        """
+        The TSA model contains unused vars. The initialize method needs to be
+        overwritten with exclude_unused_vars=True to avoid raising
+        initialization errors.
+        """
+        super(FixedBedTSA0DInitializer, self).initialize(
+            model=model,
+            initial_guesses=initial_guesses,
+            json_file=json_file,
+            output_level=output_level,
+            exclude_unused_vars=True)
+
+    def initialization_routine(
+        self,
+        blk: Block,
+    ):
+        """
+        Initialization routine for fixed bed TSA unit.
+
+        Args:
+            blk: model to be initialized
+
+        Returns:
+            None
+
+        Raises:
+            ConfigurationError: If degrees of freedom is not zero at the start
+            of each initialization step.
+
+        """
+        # set up logger for initialization and solve
+        init_log = idaeslog.getInitLogger(
+            blk.name, self.get_output_level(), tag="unit"
+        )
+        solve_log = idaeslog.getSolveLogger(
+            blk.name, self.get_output_level(), tag="unit"
+        )
+
+        # create solver
+        opt = get_solver(self.config.solver, self.config.solver_options)
+
+        # initialization of fixed bed TSA model unit
+        init_log.info("Starting fixed bed TSA initialization")
+
+        # fix states at inlet if they aren't fixed yet
+        flags = {}
+        for var in blk.inlet.vars.values():
+            for v in var.values():
+                if not v.is_fixed():
+                    v.fix()
+                    flags[v.name] = v.is_fixed()
+
+        # 1 - solve heating step
+
+        # 1.1) fix states in the fixed bed TSA inlet  ("flow_mol_in_total",
+        # "mol  e_frac_in", and "pressure_adsorption"). These are equal
+        # to those states coming from the exhaust gas stream in the CCS system
+
+        vars_lst_heating = ["flow_mol_in_total", "pressure_adsorption", "mole_frac_in"]
+
+        cons_lst_heating = ["flow_mol_in_total_eq", "pressure_in_eq", "mole_frac_in_eq"]
+
+        blk._calculate_variable_from_constraint(
+            variable_list=vars_lst_heating, constraint_list=cons_lst_heating, obj=blk
+        )
+
+        # 1.2) initial solution using false position method
+
+        # deactivate final condition constraint and fix time
+        blk.heating.fc_temperature_eq.deactivate()
+        blk.heating.time.fix(1e3)
+
+        # check degrees of freedom and solve
+        if degrees_of_freedom(blk.heating) == 0:
+            self._false_position_method(
+                blk,
+                cycle_step=blk.heating,
+                t_guess=1e3,
+            )
+        else:
+            raise ConfigurationError(
+                "Degrees of freedom is not zero during initialization of "
+                "heating step. Fix/unfix appropriate number of variables "
+                "to result in zero degrees of freedom for initialization."
+            )
+
+        # 1.3) activate final condition constraint and solve entire step
+
+        blk.heating.fc_temperature_eq.activate()
+        blk.heating.time.unfix()
+
+        # check degrees of freedom and solve
+        if degrees_of_freedom(blk.heating) == 0:
+            blk._step_initialize(
+                cycle_step=blk.heating
+            )
+        else:
+            raise ConfigurationError(
+                "Degrees of freedom is not zero during initialization of "
+                "heating step. Fix/unfix appropriate number of variables "
+                "to result in zero degrees of freedom for initialization."
+            )
+
+        # 2 - solve cooling step
+
+        # 2.1) fix mole fraction at end of heating step
+
+        vars_lst_cooling = ["mole_frac_heating_end"]
+        cons_lst_cooling = ["mole_frac_heating_end_eq"]
+
+        blk._calculate_variable_from_constraint(
+            variable_list=vars_lst_cooling, constraint_list=cons_lst_cooling
+        )
+
+        # 2.2) initial solution using false position method
+
+        # deactivate final condition constraint and fix time
+        blk.cooling.fc_temperature_eq.deactivate()
+        blk.cooling.time.fix(500)
+
+        # check degrees of freedom and solve
+        if degrees_of_freedom(blk.cooling) == 0:
+            self._false_position_method(
+                blk,
+                cycle_step=blk.cooling,
+                t_guess=500,
+            )
+        else:
+            raise ConfigurationError(
+                "Degrees of freedom is not zero during initialization of "
+                "cooling step. Fix/unfix appropriate number of variables "
+                "to result in zero degrees of freedom for initialization."
+            )
+
+        # 2.3) activate final condition constraint and solve entire model
+
+        blk.cooling.fc_temperature_eq.activate()
+        blk.cooling.time.unfix()
+
+        # check degrees of freedom and solve
+        if degrees_of_freedom(blk.cooling) == 0:
+            blk._step_initialize(
+                cycle_step=blk.cooling
+            )
+        else:
+            raise ConfigurationError(
+                "Degrees of freedom is not zero during initialization of "
+                "cooling step. Fix/unfix appropriate number of variables "
+                "to result in zero degrees of freedom for initialization."
+            )
+
+        # 3 - solve pressurization step
+
+        # 3.1) fix mole fraction, temperature, pressure and loadings at
+        # end of cooling step
+
+        vars_lst_pressurization = [
+            "mole_frac_cooling_end",
+            "pressure_cooling_end",
+            "loading_cooling_end",
+        ]
+
+        cons_lst_pressurization = [
+            "mole_frac_cooling_end_eq",
+            "pressure_cooling_end_eq",
+            "loading_cooling_end_eq",
+        ]
+
+        blk._calculate_variable_from_constraint(
+            variable_list=vars_lst_pressurization,
+            constraint_list=cons_lst_pressurization,
+        )
+
+        if blk.config.calculate_beds:
+            # if "calculate_beds" is True, there is an extra variable for
+            # "velocity_in" and it needs to be fixed to initialize the
+            # pressurization and adsorption step
+            velocity_fixed = blk.velocity_in.fixed
+            if not velocity_fixed:
+                blk.velocity_in.fix()
+                blk.pressure_drop.unfix()
+
+        # 3.2) check degrees of freedom and solve
+
+        if degrees_of_freedom(blk.pressurization) == 0:
+            blk._step_initialize(
+                cycle_step=blk.pressurization,
+            )
+        else:
+            raise ConfigurationError(
+                "Degrees of freedom is not zero during initialization of "
+                "pressurization step. Fix/unfix appropriate number of "
+                "variables to result in zero degrees of freedom for "
+                "initialization."
+            )
+
+        # 4 - solve adsorption step
+
+        # 4.1) fix mole fraction and loadings at end of pressurization step
+
+        vars_lst_adsorption = [
+            "mole_frac_pressurization_end",
+            "loading_pressurization_end",
+        ]
+
+        cons_lst_adsorption = [
+            "mole_frac_pressurization_end_eq",
+            "loading_pressurization_end_eq",
+        ]
+
+        blk._calculate_variable_from_constraint(
+            variable_list=vars_lst_adsorption, constraint_list=cons_lst_adsorption
+        )
+
+        # 4.2) check degrees of freedom and solve
+
+        if degrees_of_freedom(blk.adsorption) == 0:
+            blk._step_initialize(
+                cycle_step=blk.adsorption
+            )
+        else:
+            raise ConfigurationError(
+                "Degrees of freedom is not zero during initialization of "
+                "adsorption step. Fix/unfix appropriate number of variables "
+                "to result in zero degrees of freedom for initialization."
+            )
+
+        # 5 - solve entire fixed bed TSA model
+
+        # 5.1) unfix variables and activate constraints that were fixed and
+        # deactivated during individual steps
+
+        for v in blk.component_objects(Var, descend_into=True):
+            if (
+                v.local_name
+                in vars_lst_heating
+                + vars_lst_cooling
+                + vars_lst_pressurization
+                + vars_lst_adsorption
+            ):
+                v.unfix()
+        for c in blk.component_objects(Constraint, descend_into=True):
+            if (
+                c.local_name
+                in cons_lst_heating
+                + cons_lst_cooling
+                + cons_lst_pressurization
+                + cons_lst_adsorption
+            ):
+                c.activate()
+
+        if blk.config.calculate_beds:
+            # if "calculate_beds" is True, there is an extra variable for
+            # "velocity_in" that was fixed previously. It is necessary to
+            # unfix it, but this results in DOF=1 for the entire model,
+            # to get DOF=0, the pressure drop needs to be fixed.
+            if not velocity_fixed:
+                blk.velocity_in.unfix()
+                blk.pressure_drop.fix()
+        else:
+            # if "calculate_beds" is False, initialize the pressure drop from
+            # its equation as the initial guess is poor
+            calculate_variable_from_constraint(blk.pressure_drop, blk.pressure_drop_eq)
+
+        # 5.2) deactivate compressor
+        if blk.config.compressor:
+            blk.compressor.deactivate()
+
+        # 5.3) deactivate steam calculation constraints
+        if blk.config.steam_calculation is not None:
+            if blk.config.steam_calculation == "rigorous":
+                blk.steam_heater.deactivate()
+            blk.flow_mass_steam_eq.deactivate()
+            blk.flow_mass_steam.fix()
+
+        # 5.4) check degrees of freedom and solve
+        if degrees_of_freedom(blk) == 0:
+
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                res = opt.solve(blk, tee=slc.tee)
+
+            if check_optimal_termination(res):
+                init_log.info(
+                    "Initialization of fixed bed TSA model "
+                    "completed {}.".format(idaeslog.condition(res))
+                )
+            else:
+                _log.warning(
+                    "Initialization of fixed bed TSA model "
+                    "Failed {}.".format(blk.name)
+                )
+        else:
+            raise ConfigurationError(
+                "Degrees of freedom is not zero during initialization of "
+                "fixed bed TSA model. Fix/unfix appropriate number of "
+                "variables to result in zero degrees of freedom for "
+                "initialization."
+            )
+
+        # 6 - solve compressor unit
+        if blk.config.compressor:
+
+            # initialization of compressor
+            init_log.info("Starting initialization of compressor.")
+
+            # activate compressor model
+            blk.compressor.activate()
+
+            # 6.1) fix state at inlet of compressor to match states in
+            # exhaust gas stream in the CCS system. Fix pressure drop in
+            # compressor unit.
+            for t in blk.flowsheet().time:
+                for i in blk.compressor.property_fluegas.component_list:
+                    calculate_variable_from_constraint(
+                        blk.compressor.unit.inlet.flow_mol_comp[t, i],
+                        blk.compressor.flow_mol_in_compressor_eq[t, i],
+                    )
+                calculate_variable_from_constraint(
+                    blk.compressor.unit.inlet.temperature[t],
+                    blk.compressor.temperature_in_compressor_eq[t],
+                )
+                calculate_variable_from_constraint(
+                    blk.compressor.unit.inlet.pressure[t],
+                    blk.compressor.pressure_in_compressor_eq[t],
+                )
+                calculate_variable_from_constraint(
+                    blk.compressor.unit.deltaP[t],
+                    blk.compressor.pressure_drop_tsa_compressor_eqn[t],
+                )
+
+            blk.compressor.unit.inlet.flow_mol_comp[:, :].fix()
+            blk.compressor.unit.inlet.temperature[:].fix()
+            blk.compressor.unit.inlet.pressure[:].fix()
+            blk.compressor.unit.deltaP[:].fix()
+
+            # deactivate related constraints for fixed variables.
+            blk.compressor.flow_mol_in_compressor_eq.deactivate()
+            blk.compressor.temperature_in_compressor_eq.deactivate()
+            blk.compressor.pressure_in_compressor_eq.deactivate()
+            blk.compressor.pressure_drop_tsa_compressor_eqn.deactivate()
+
+            # 6.2) check degrees of freedom and solve
+            if degrees_of_freedom(blk.compressor) == 0:
+
+                comp_initializer = IsentropicPressureChangerInitializer()
+                comp_initializer.initialize(blk.compressor.unit)
+
+                # re-solve compressor model
+                with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                    res = opt.solve(blk.compressor, tee=slc.tee)
+
+                if check_optimal_termination(res):
+                    init_log.info(
+                        "Initialization of compressor completed {}.".format(
+                            idaeslog.condition(res)
+                        )
+                    )
+                else:
+                    _log.warning(
+                        "Initialization of compressor Failed {}.".format(
+                            blk.compressor.unit.name
+                        )
+                    )
+            else:
+                raise ConfigurationError(
+                    "Degrees of freedom is not zero during initialization of "
+                    "compressor model. Fix/unfix appropriate number of "
+                    "variables to result in zero degrees of freedom for "
+                    "initialization."
+                )
+
+        # 7 - solve steam calculation
+        if blk.config.steam_calculation is not None:
+
+            if blk.config.steam_calculation == "rigorous":
+
+                # initialization of steam heater
+                init_log.info(
+                    "Starting initialization of heater model for steam calculation."
+                )
+
+                # activate steam heater model
+                blk.steam_heater.activate()
+
+                # 7.1) deactivate constraints for total saturation condition
+                #      and heat_duty_heater_eq
+                blk.steam_heater.unit.vapor_frac_out_eq.deactivate()
+                blk.steam_heater.unit.heat_duty_heater_eq.deactivate()
+
+                # 7.2) assume a dumy inlet flow rate and heat duty and fix them
+                Fin = 100  # mol/s
+                Q = -500000  # W
+                blk.steam_heater.unit.inlet.flow_mol[0].fix(Fin)
+                blk.steam_heater.unit.heat_duty.fix(Q)
+
+                # 7.3) check degrees of freedom and solve
+                if degrees_of_freedom(blk.steam_heater) == 0:
+
+                    # initialize steam heater
+                    heater_initializer = SingleControlVolumeUnitInitializer()
+                    heater_initializer.initialize(blk.steam_heater.unit)
+
+                else:
+                    raise ConfigurationError(
+                        "Degrees of freedom is not zero during initialization "
+                        "of heater model. Fix/unfix appropriate number of "
+                        "variables to result in zero degrees of freedom for "
+                        "initialization."
+                    )
+
+                # 7.4) activate constraint for total saturation condition and
+                #      unfix heat duty
+                blk.steam_heater.unit.vapor_frac_out_eq.activate()
+                blk.steam_heater.unit.heat_duty.unfix()
+
+                # 7.5) solve model for total saturation at outlet
+                if degrees_of_freedom(blk.steam_heater) == 0:
+
+                    init_log.info_high(
+                        "Starting initialization of heater model "
+                        "for total saturation at outlet."
+                    )
+
+                    with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                        res = opt.solve(blk.steam_heater, tee=slc.tee)
+
+                    if check_optimal_termination(res):
+                        init_log.info_high(
+                            "Initialization of heater model "
+                            "for total saturation at outlet "
+                            "completed {}.".format(idaeslog.condition(res))
+                        )
+                    else:
+                        _log.warning(
+                            "Initialization of heater model for "
+                            "total saturation at outlet Failed {}.".format(
+                                blk.steam_heater.unit.name
+                            )
+                        )
+                else:
+                    raise ConfigurationError(
+                        "Degrees of freedom is not zero during initialization "
+                        "of heater model for total saturation at outlet. "
+                        "Fix/unfix appropriate number of variables to result "
+                        "in zero degrees of freedom for initialization."
+                    )
+
+                # 7.6) unfix inlet flow rate and fix heat duty
+                blk.steam_heater.unit.inlet.flow_mol[0].unfix()
+                calculate_variable_from_constraint(
+                    blk.steam_heater.unit.heat_duty[0],
+                    blk.steam_heater.unit.heat_duty_heater_eq,
+                )
+                blk.steam_heater.unit.heat_duty.fix()
+
+                # 7.7) solve model for steam flow rate
+                if degrees_of_freedom(blk.steam_heater) == 0:
+
+                    init_log.info_high(
+                        "Starting initialization of heater model "
+                        "for total steam flow rate."
+                    )
+
+                    with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                        res = opt.solve(blk.steam_heater, tee=slc.tee)
+
+                    if check_optimal_termination(res):
+                        init_log.info_high(
+                            "Initialization of heater model "
+                            "for total steam flow rate "
+                            "completed: {}.".format(idaeslog.condition(res))
+                        )
+                        init_log.info(
+                            "Initialization of heater model "
+                            "for steam calculation completed {}.".format(
+                                idaeslog.condition(res)
+                            )
+                        )
+                    else:
+                        _log.warning(
+                            "Initialization of heater model for "
+                            "total steam flow rate Failed {}.".format(
+                                blk.steam_heater.unit.name
+                            )
+                        )
+                else:
+                    raise ConfigurationError(
+                        "Degrees of freedom is not zero during initialization "
+                        "of heater model for total steam flow rate. "
+                        "Fix/unfix appropriate number of variables to result "
+                        "in zero degrees of freedom for initialization."
+                    )
+
+            calculate_variable_from_constraint(
+                blk.flow_mass_steam, blk.flow_mass_steam_eq
+            )
+
+        # 8 - solve fixed bed TSA model, steam calculation constraints and
+        #     compressor unit simultaneously
+
+        if blk.config.compressor:
+
+            # 8.1) unfix state that were fixed in 6.1
+            blk.compressor.unit.inlet.flow_mol_comp[:, :].unfix()
+            blk.compressor.unit.inlet.temperature[:].unfix()
+            blk.compressor.unit.inlet.pressure[:].unfix()
+            blk.compressor.unit.deltaP[:].unfix()
+
+            # activate constraints that were deactivated in 6.1
+            blk.compressor.flow_mol_in_compressor_eq.activate()
+            blk.compressor.temperature_in_compressor_eq.activate()
+            blk.compressor.pressure_in_compressor_eq.activate()
+            blk.compressor.pressure_drop_tsa_compressor_eqn.activate()
+
+        if blk.config.steam_calculation is not None:
+
+            # 8.2 unfix variables and activate constraints that were fixed
+            #     and deactivated in 7
+            if blk.config.steam_calculation == "rigorous":
+                blk.steam_heater.unit.heat_duty_heater_eq.activate()
+                blk.steam_heater.unit.heat_duty.unfix()
+
+            blk.flow_mass_steam_eq.activate()
+            blk.flow_mass_steam.unfix()
+
+        # 8.3) check degrees of freedom and solve
+        if blk.config.compressor or blk.config.steam_calculation is not None:
+            if degrees_of_freedom(blk) == 0:
+
+                with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                    res = opt.solve(blk, tee=slc.tee)
+                if blk.config.compressor and blk.config.steam_calculation is not None:
+                    if check_optimal_termination(res):
+                        init_log.info(
+                            "Initialization of fixed bed TSA, "
+                            "steam calculation and compressor "
+                            "models completed {}.".format(idaeslog.condition(res))
+                        )
+                    else:
+                        _log.warning(
+                            "Initialization of fixed bed TSA, "
+                            "steam calculation and compressor "
+                            "models Failed {}.".format(blk.name)
+                        )
+                if blk.config.compressor and blk.config.steam_calculation is None:
+                    if check_optimal_termination(res):
+                        init_log.info(
+                            "Initialization of fixed bed TSA "
+                            "and compressor models completed {}.".format(
+                                idaeslog.condition(res)
+                            )
+                        )
+                    else:
+                        _log.warning(
+                            "Initialization of fixed bed TSA "
+                            "and compressor models Failed {}.".format(blk.name)
+                        )
+                if (
+                    not blk.config.compressor
+                    and blk.config.steam_calculation is not None
+                ):
+                    if check_optimal_termination(res):
+                        init_log.info(
+                            "Initialization of fixed bed TSA "
+                            "and steam calculation "
+                            "models completed {}.".format(idaeslog.condition(res))
+                        )
+                    else:
+                        _log.warning(
+                            "Initialization of fixed bed TSA "
+                            "and steam calculation "
+                            "models Failed {}.".format(blk.name)
+                        )
+            else:
+                if blk.config.compressor and blk.config.steam_calculation is not None:
+                    raise ConfigurationError(
+                        "Degrees of freedom is not zero during initialization "
+                        "of fixed bed TSA, steam calculation and compressor "
+                        "models. Fix/unfix appropriate number of variables to "
+                        "result in zero degrees of freedom for "
+                        "initialization."
+                    )
+                if blk.config.compressor and blk.config.steam_calculation is None:
+                    raise ConfigurationError(
+                        "Degrees of freedom is not zero during initialization "
+                        "of fixed bed TSA and compressor "
+                        "models. Fix/unfix appropriate number of variables to "
+                        "result in zero degrees of freedom for "
+                        "initialization."
+                    )
+                if (
+                    not blk.config.compressor
+                    and blk.config.steam_calculation is not None
+                ):
+                    raise ConfigurationError(
+                        "Degrees of freedom is not zero during initialization "
+                        "of fixed bed TSA and steam calculation "
+                        "models. Fix/unfix appropriate number of variables to "
+                        "result in zero degrees of freedom for "
+                        "initialization."
+                    )
+
+        # release inlet states
+        for v in blk.component_data_objects(Var, active=True):
+            for k, i in flags.items():
+                if v.name == k and i:
+                    v.unfix()
+
+    def _step_initialize(self, cycle_step=None):
+        """
+        Initialization routine for TSA cycle steps.
+
+        Keyword Arguments:
+            outlvl    : output level of initialisation routine
+            solver    : str indicating which solver to use during
+                        initialization
+            optarg    : dictionary with solver options
+            cycle_step: block model for cycle step
+
+        """
+        # set up logger
+        init_log = idaeslog.getInitLogger(cycle_step.name, self.get_output_level(), tag="unit")
+        solve_log = idaeslog.getSolveLogger(cycle_step.name, self.get_output_level(), tag="unit")
+
+        # create solver
+        opt = get_solver(self.config.solver, self.config.solver_options)
+
+        # initialization of cycle steps
+        init_log.info(
+            "Starting initialization of " + str(cycle_step).split(".")[-1] + " step."
+        )
+
+        # solve cycle step
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(cycle_step, tee=slc.tee)
+
+        if check_optimal_termination(res):
+            init_log.info(
+                "Initialization of "
+                + str(cycle_step).split(".")[-1]
+                + " step completed {}.".format(idaeslog.condition(res))
+            )
+        else:
+            _log.warning(
+                "Initialization of "
+                + str(cycle_step).split(".")[-1]
+                + " step Failed {}.".format(cycle_step.name)
+            )
+
+    def _false_position_method(self, blk, cycle_step=None, t_guess=None):
+        """
+        False position method to provide initial solution for TSA cycle steps.
+
+        Keyword Arguments:
+            outlvl    : output level of initialisation routine
+            solver    : str indicating which solver to use during
+                        initialization
+            optarg    : dictionary with solver options
+            cycle_step: block model for cycle step
+            x0        : initial guess for time
+
+        """
+        # set up logger
+        init_log = idaeslog.getInitLogger(cycle_step.name, self.get_output_level(), tag="unit")
+        solve_log = idaeslog.getSolveLogger(cycle_step.name, self.get_output_level(), tag="unit")
+
+        # create solver
+        opt = get_solver(self.config.solver, self.config.solver_options)
+
+        # initial interval containing a root to apply false position method
+        init_log.info_high(
+            "Initialization of "
+            + str(cycle_step).split(".")[-1]
+            + " step: step 1a: finding initial interval containing a root"
+            " to apply false position method"
+        )
+
+        # fix time to initial guess
+        x0 = t_guess
+        cycle_step.time.fix(x0)
+
+        # counter
+        iter = 1
+
+        # solve model
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(cycle_step, tee=slc.tee)
+
+        if check_optimal_termination(res):
+            init_log.info_high(
+                "Initialization of "
+                + str(cycle_step).split(".")[-1]
+                + " step: step 1a - iteration {0}, completed {1}.".format(
+                    iter, idaeslog.condition(res)
+                )
+            )
+        else:
+            _log.warning(
+                "Initialization of "
+                + str(cycle_step).split(".")[-1]
+                + " step: step 1a - iteration {0}, Failed {1}.".format(
+                    iter, cycle_step.name
+                )
+            )
+
+        # save solution in initial guess, f(x0)
+        if str(cycle_step).split(".")[-1] == "heating":
+            f_x0 = value(blk.temperature_desorption - cycle_step.temperature[1])
+        else:
+            f_x0 = value(cycle_step.temperature[1] - blk.temperature_adsorption)
+
+        # iterate to find an interval with the root
+        condition = True
+        if f_x0 >= 0:
+
+            # check condition to stop
+            while condition:
+
+                # update counter and x0
+                iter += 1
+                x_new = 1.2 * x0
+
+                # fix time to x_new guess
+                cycle_step.time.fix(x_new)
+
+                # solve model
+                with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                    res = opt.solve(cycle_step, tee=slc.tee)
+
+                if check_optimal_termination(res):
+                    init_log.info_high(
+                        "Initialization of "
+                        + str(cycle_step).split(".")[-1]
+                        + " step: step 1a - iteration {0}, completed {1}.".format(
+                            iter, idaeslog.condition(res)
+                        )
+                    )
+                else:
+                    _log.warning(
+                        "Initialization of "
+                        + str(cycle_step).split(".")[-1]
+                        + " step: step 1a - iteration {0}, Failed {1}.".format(
+                            iter, cycle_step.name
+                        )
+                    )
+
+                # save solution in new initial guess, f(x_new)
+                if str(cycle_step).split(".")[-1] == "heating":
+                    f_x_new = value(
+                        blk.temperature_desorption - cycle_step.temperature[1]
+                    )
+                else:
+                    f_x_new = value(
+                        cycle_step.temperature[1] - blk.temperature_adsorption
+                    )
+
+                # set up new interval until find one containing the root
+                if f_x_new >= 0:
+                    x0 = x_new
+                    f_x0 = f_x_new
+                else:
+                    x1 = x_new
+                    f_x1 = f_x_new
+                    condition = False
+
+        else:
+
+            # check condition to stop
+            while condition:
+
+                # update counter and x0
+                iter += 1
+                x_new = x0 / 2.0
+
+                # fix time to x_new guess
+                cycle_step.time.fix(x_new)
+
+                # solve model
+                with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                    res = opt.solve(cycle_step, tee=slc.tee)
+
+                if check_optimal_termination(res):
+                    init_log.info_high(
+                        "Initialization of "
+                        + str(cycle_step).split(".")[-1]
+                        + " step: step 1a - iteration {0}, completed {1}.".format(
+                            iter, idaeslog.condition(res)
+                        )
+                    )
+                else:
+                    _log.warning(
+                        "Initialization of "
+                        + str(cycle_step).split(".")[-1]
+                        + " step: step 1a - iteration {0}, Failed {1}.".format(
+                            iter, cycle_step.name
+                        )
+                    )
+
+                # save solution in new initial guess, f(x_new)
+                if str(cycle_step).split(".")[-1] == "heating":
+                    f_x_new = value(
+                        blk.temperature_desorption - cycle_step.temperature[1]
+                    )
+                else:
+                    f_x_new = value(
+                        cycle_step.temperature[1] - blk.temperature_adsorption
+                    )
+
+                # set up new interval until find one containing the root
+                if f_x_new >= 0:
+                    x1 = x_new
+                    f_x1 = f_x_new
+                    condition = False
+                else:
+                    x0 = x_new
+                    f_x0 = f_x_new
+
+        # implementing false position method
+        init_log.info_high(
+            "Initialization of "
+            + str(cycle_step).split(".")[-1]
+            + " step: step 1b: implementing false position method"
+        )
+
+        # counter
+        iter = 1
+        condition = True
+
+        # check condition to stop
+        while condition:
+
+            # compute new approximated root as x2
+            x2 = x0 - (x1 - x0) * f_x0 / (f_x1 - f_x0)
+
+            # fix time to x_2 guess
+            cycle_step.time.fix(x2)
+
+            # solve model
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                res = opt.solve(cycle_step, tee=slc.tee)
+
+            if check_optimal_termination(res):
+                init_log.info_high(
+                    "Initialization of "
+                    + str(cycle_step).split(".")[-1]
+                    + " step: step 1b - iteration {0}, completed {1}.".format(
+                        iter, idaeslog.condition(res)
+                    )
+                )
+            else:
+                _log.warning(
+                    "Initialization of "
+                    + str(cycle_step).split(".")[-1]
+                    + " step: step 1b - iteration {0}, Failed {1}.".format(
+                        iter, cycle_step.name
+                    )
+                )
+
+            # save solution in new x_2, f(x_2)
+            if str(cycle_step).split(".")[-1] == "heating":
+                f_x2 = value(blk.temperature_desorption - cycle_step.temperature[1])
+            else:
+                f_x2 = value(cycle_step.temperature[1] - blk.temperature_adsorption)
+
+            # check if f(x_0)*f(x_2) is negative
+            if f_x0 * f_x2 < 0:
+                x1 = x2
+            else:
+                x0 = x2
+
+            # update counter and set up new condition |f(x_2)| > error
+            iter += 1
+            condition = (f_x2**2) ** 0.5 > 1
 
 
 @declare_process_block_class("FixedBedTSA0D")
@@ -2845,10 +3736,10 @@ class FixedBedTSA0DData(UnitModelBlockData):
                     v.fix()
                     flags[v.name] = v.is_fixed()
 
-        # 1 - solve heating step
+      # 1 - solve heating step
 
         # 1.1) fix states in the fixed bed TSA inlet  ("flow_mol_in_total",
-        # "mole_frac_in", and "pressure_adsorption"). These are equal
+        # "mol  e_frac_in", and "pressure_adsorption"). These are equal
         # to those states coming from the exhaust gas stream in the CCS system
 
         vars_lst_heating = ["flow_mol_in_total", "pressure_adsorption", "mole_frac_in"]
@@ -2931,7 +3822,7 @@ class FixedBedTSA0DData(UnitModelBlockData):
                 "to result in zero degrees of freedom for initialization."
             )
 
-        # 1.3) activate final condition constraint and solve entire model
+        # 2.3) activate final condition constraint and solve entire model
 
         blk.cooling.fc_temperature_eq.activate()
         blk.cooling.time.unfix()

@@ -29,13 +29,9 @@ from pyomo.util.check_units import assert_units_consistent
 
 
 from idaes.core import FlowsheetBlock
-from idaes.models_extra.temperature_swing_adsorption.fixed_bed_tsa0d import (
-    FixedBedTSA0D,
-)
-from idaes.models_extra.temperature_swing_adsorption.util import (
-    plot_tsa_profiles,
-    tsa_summary,
-)
+from idaes.core.initialization import InitializationStatus
+from idaes.core.solvers import get_solver
+from idaes.core.util.testing import initialization_tester
 
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
@@ -43,9 +39,15 @@ from idaes.core.util.model_statistics import (
     number_total_constraints,
     number_unused_variables,
 )
+from idaes.models_extra.temperature_swing_adsorption.fixed_bed_tsa0d import (
+    FixedBedTSA0D,
+    FixedBedTSA0DInitializer
+)
+from idaes.models_extra.temperature_swing_adsorption.util import (
+    plot_tsa_profiles,
+    tsa_summary,
+)
 
-from idaes.core.util.testing import initialization_tester
-from idaes.core.solvers import get_solver
 import idaes.core.util.scaling as iscale
 
 # -----------------------------------------------------------------------------
@@ -368,3 +370,58 @@ class TestTsaPolystyrene:
         )
         # air velocity
         assert pytest.approx(0.06388, abs=1e-4) == value(model.fs.unit.velocity_in)
+
+class TestTsaInitializer:
+    @pytest.fixture(scope="class")
+    def model(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.unit = FixedBedTSA0D(
+            adsorbent="Zeolite-13X",
+            calculate_beds=False,
+            number_of_beds=120,
+            transformation_method="dae.collocation",
+            transformation_scheme="LAGRANGE-RADAU",
+            finite_elements=20,
+            collocation_points=6,
+            compressor=False,
+            steam_calculation=None,
+        )
+
+        m.fs.unit.inlet.flow_mol_comp[0, "H2O"].fix(0)
+        m.fs.unit.inlet.flow_mol_comp[0, "CO2"].fix(40)
+        m.fs.unit.inlet.flow_mol_comp[0, "N2"].fix(99960)
+        m.fs.unit.inlet.flow_mol_comp[0, "O2"].fix(0)
+        m.fs.unit.inlet.temperature.fix(303.15)
+        m.fs.unit.inlet.pressure.fix(100000)
+
+        m.fs.unit.temperature_desorption.fix(470)
+        m.fs.unit.temperature_adsorption.fix(310)
+        m.fs.unit.temperature_heating.fix(500)
+        m.fs.unit.temperature_cooling.fix(300)
+        m.fs.unit.bed_diameter.fix(4)
+        m.fs.unit.bed_height.fix(8)
+        return m
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_initializer(self, model):
+        initializer = FixedBedTSA0DInitializer()
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert pytest.approx(73731.9, abs=1e-1) == value(
+            model.fs.unit.heating.time
+        )
+        assert pytest.approx(110129, abs=1e0) == value(
+            model.fs.unit.cooling.time
+        )
+        assert pytest.approx(24.0946, abs=1e-4) == value(
+            model.fs.unit.pressurization.time
+        )
+        assert pytest.approx(38470.2, abs=1e-1) == value(
+            model.fs.unit.adsorption.time
+        )
+
