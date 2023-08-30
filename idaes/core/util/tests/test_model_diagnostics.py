@@ -33,6 +33,7 @@ from pyomo.environ import (
 )
 from pyomo.common.collections import ComponentSet
 from pyomo.contrib.pynumero.asl import AmplInterface
+from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
 
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
@@ -49,6 +50,7 @@ from pyomo.dae import ContinuousSet, DerivativeVar
 # Need to update
 from idaes.core.util.model_diagnostics import (
     DiagnosticsToolbox,
+    SVDToolbox,
     DegeneracyHunter,
     get_valid_range_of_component,
     set_bounds_from_valid_range,
@@ -1219,8 +1221,395 @@ Suggested next steps:
 
 ====================================================================================
 """
-        print(stream.getvalue())
+
         assert stream.getvalue() == expected
+
+
+@pytest.mark.skipif(
+    not AmplInterface.available(), reason="pynumero_ASL is not available"
+)
+class TestSVDToolbox:
+    @pytest.mark.unit
+    def test_init(self, dummy_problem):
+        svd = SVDToolbox(dummy_problem)
+
+        assert svd._model is dummy_problem
+        assert svd.u is None
+        assert svd.s is None
+        assert svd.v is None
+
+        # Get Jacobian and NLP
+        jac = {
+            (0, 0): 100.0,
+            (1, 1): 1.0,
+            (2, 2): 10.0,
+            (3, 3): 0.1,
+            (4, 4): 5.0,
+        }
+        for i, j in jac.items():
+            assert j == svd.jacobian[i]
+
+        assert isinstance(svd.nlp, PyomoNLP)
+
+    @pytest.mark.unit
+    def test_init_small_model(self):
+        m = ConcreteModel()
+        m.v = Var()
+        m.c = Constraint(expr=m.v == 10)
+
+        with pytest.raises(
+            ValueError,
+            match="Model needs at least 2 equality constraints to perform svd_analysis.",
+        ):
+            svd = SVDToolbox(m)
+
+    @pytest.mark.unit
+    def test_run_svd_analysis(self, dummy_problem):
+        svd = SVDToolbox(dummy_problem)
+        svd.run_svd_analysis()
+
+        np.testing.assert_array_almost_equal(
+            svd.u,
+            np.array(
+                [[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [1, 0, 0, 0], [0, 0, 1, 0]]
+            ),
+        )
+        np.testing.assert_array_almost_equal(svd.s, np.array([0.1, 1, 5, 10]))
+        np.testing.assert_array_almost_equal(
+            svd.v,
+            np.array(
+                [[0, 0, 0, 1, 0], [0, 1, 0, 0, 0], [0, 0, 0, 0, 1], [0, 0, 1, 0, 0]]
+            ).T,
+        )
+
+    @pytest.mark.unit
+    def test_run_svd_analysis_sparse(self, dummy_problem):
+        svd = SVDToolbox(dummy_problem, dense_svd=False)
+        svd.run_svd_analysis()
+
+        np.testing.assert_array_almost_equal(
+            svd.u,
+            np.array(
+                [[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [1, 0, 0, 0], [0, 0, -1, 0]]
+            ),
+        )
+        np.testing.assert_array_almost_equal(svd.s, np.array([0.1, 1, 5, 10]))
+        np.testing.assert_array_almost_equal(
+            svd.v,
+            np.array(
+                [[0, 0, 0, 1, 0], [0, 1, 0, 0, 0], [0, 0, 0, 0, -1], [0, 0, 1, 0, 0]]
+            ).T,
+        )
+
+    @pytest.mark.unit
+    def test_run_svd_analysis_sparse_limit(self, dummy_problem):
+        svd = SVDToolbox(
+            dummy_problem, dense_svd=False, number_of_smallest_singular_values=2
+        )
+        svd.run_svd_analysis()
+
+        np.testing.assert_array_almost_equal(
+            svd.u, np.array([[0, 0], [0, 1], [0, 0], [-1, 0], [0, 0]])
+        )
+        np.testing.assert_array_almost_equal(svd.s, np.array([0.1, 1]))
+        np.testing.assert_array_almost_equal(
+            svd.v, np.array([[0, 0, 0, -1, 0], [0, 1, 0, 0, 0]]).T
+        )
+
+    @pytest.mark.unit
+    def test_display_rank_of_equality_constraints(self, dummy_problem):
+        svd = SVDToolbox(dummy_problem)
+
+        stream = StringIO()
+        svd.display_rank_of_equality_constraints(stream=stream)
+
+        expected = """====================================================================================
+
+Number of Singular Values less than tolerance is 0
+
+====================================================================================
+"""
+
+        assert stream.getvalue() == expected
+
+    @pytest.mark.unit
+    def test_display_rank_of_equality_constraints(self, dummy_problem):
+        svd = SVDToolbox(dummy_problem, singular_value_tolerance=1)
+
+        stream = StringIO()
+        svd.display_rank_of_equality_constraints(stream=stream)
+
+        expected = """====================================================================================
+
+Number of Singular Values less than tolerance is 1
+
+====================================================================================
+"""
+
+        assert stream.getvalue() == expected
+
+    @pytest.mark.unit
+    def test_display_underdetermined_variables_and_constraints(self, dummy_problem):
+        svd = SVDToolbox(dummy_problem)
+
+        stream = StringIO()
+        svd.display_underdetermined_variables_and_constraints(stream=stream)
+
+        expected = """====================================================================================
+Constraints and Variables associated with smallest singular values
+
+    Smallest Singular Value 1:
+
+        Variables:
+
+            x[3]
+
+        Constraints:
+
+            dummy_eqn[3]
+
+    Smallest Singular Value 2:
+
+        Variables:
+
+            x[1]
+
+        Constraints:
+
+            dummy_eqn[1]
+
+    Smallest Singular Value 3:
+
+        Variables:
+
+            x[4]
+
+        Constraints:
+
+            dummy_eqn[4]
+
+    Smallest Singular Value 4:
+
+        Variables:
+
+            x[2]
+
+        Constraints:
+
+            dummy_eqn[2]
+
+====================================================================================
+"""
+
+        assert stream.getvalue() == expected
+
+    @pytest.mark.unit
+    def test_display_underdetermined_variables_and_constraints_specific(
+        self, dummy_problem
+    ):
+        svd = SVDToolbox(dummy_problem)
+
+        stream = StringIO()
+        svd.display_underdetermined_variables_and_constraints(
+            singular_values=[1], stream=stream
+        )
+
+        expected = """====================================================================================
+Constraints and Variables associated with smallest singular values
+
+    Smallest Singular Value 1:
+
+        Variables:
+
+            x[3]
+
+        Constraints:
+
+            dummy_eqn[3]
+
+====================================================================================
+"""
+
+        assert stream.getvalue() == expected
+
+    @pytest.mark.unit
+    def test_display_underdetermined_variables_and_constraints(self, dummy_problem):
+        svd = SVDToolbox(dummy_problem, size_cutoff_in_singular_vector=1)
+
+        stream = StringIO()
+        svd.display_underdetermined_variables_and_constraints(stream=stream)
+
+        expected = """====================================================================================
+Constraints and Variables associated with smallest singular values
+
+    Smallest Singular Value 1:
+
+        Variables:
+
+
+        Constraints:
+
+
+    Smallest Singular Value 2:
+
+        Variables:
+
+
+        Constraints:
+
+
+    Smallest Singular Value 3:
+
+        Variables:
+
+
+        Constraints:
+
+
+    Smallest Singular Value 4:
+
+        Variables:
+
+
+        Constraints:
+
+
+====================================================================================
+"""
+
+        assert stream.getvalue() == expected
+
+    @pytest.mark.unit
+    def test_display_constraints_including_variable(self):
+        m = ConcreteModel()
+        m.s = Set(initialize=[1, 2, 3, 4])
+        m.v = Var(m.s)
+
+        m.c1 = Constraint(expr=m.v[1] + 2 * m.v[2] == 10)
+        m.c2 = Constraint(expr=3 * m.v[2] + 4 * m.v[3] == 20)
+        m.c3 = Constraint(expr=5 * m.v[3] + 6 * m.v[4] == 30)
+        m.c4 = Constraint(expr=7 * m.v[4] + 8 * m.v[1] == 40)
+
+        svd = SVDToolbox(m)
+
+        stream = StringIO()
+        svd.display_constraints_including_variable(variable=m.v[1], stream=stream)
+
+        expected = """====================================================================================
+The following constraints involve v[1]:
+
+    c1: 1.0
+    c4: 8.0
+
+====================================================================================
+"""
+
+        assert stream.getvalue() == expected
+
+    @pytest.mark.unit
+    def test_display_constraints_including_variable_invalid(self):
+        m = ConcreteModel()
+        m.s = Set(initialize=[1, 2, 3, 4])
+        m.v = Var(m.s)
+
+        m.c1 = Constraint(expr=m.v[1] + 2 * m.v[2] == 10)
+        m.c2 = Constraint(expr=3 * m.v[2] + 4 * m.v[3] == 20)
+        m.c3 = Constraint(expr=5 * m.v[3] + 6 * m.v[4] == 30)
+        m.c4 = Constraint(expr=7 * m.v[4] + 8 * m.v[1] == 40)
+
+        svd = SVDToolbox(m)
+
+        with pytest.raises(
+            TypeError,
+            match="variable argument must be an instance of a Pyomo _VarData "
+            "object \(got foo\).",
+        ):
+            svd.display_constraints_including_variable(variable="foo")
+
+    @pytest.mark.unit
+    def test_display_constraints_including_variable_not_in_model(self):
+        m = ConcreteModel()
+        m.s = Set(initialize=[1, 2, 3, 4])
+        m.v = Var(m.s)
+        m2 = ConcreteModel()
+        m2.y = Var()
+
+        m.c1 = Constraint(expr=m.v[1] + 2 * m.v[2] == 10)
+        m.c2 = Constraint(expr=3 * m.v[2] + 4 * m.v[3] == 20)
+        m.c3 = Constraint(expr=5 * m.v[3] + 6 * m.v[4] == 30)
+        m.c4 = Constraint(expr=7 * m.v[4] + 8 * m.v[1] == 40)
+
+        svd = SVDToolbox(m)
+
+        with pytest.raises(AttributeError, match="Could not find y in model."):
+            svd.display_constraints_including_variable(variable=m2.y)
+
+    @pytest.mark.unit
+    def test_display_variables_in_constraint(self):
+        m = ConcreteModel()
+        m.s = Set(initialize=[1, 2, 3, 4])
+        m.v = Var(m.s)
+
+        m.c1 = Constraint(expr=m.v[1] + 2 * m.v[2] == 10)
+        m.c2 = Constraint(expr=3 * m.v[2] + 4 * m.v[3] == 20)
+        m.c3 = Constraint(expr=5 * m.v[3] + 6 * m.v[4] == 30)
+        m.c4 = Constraint(expr=7 * m.v[4] + 8 * m.v[1] == 40)
+
+        svd = SVDToolbox(m)
+
+        stream = StringIO()
+        svd.display_variables_in_constraint(constraint=m.c1, stream=stream)
+
+        expected = """====================================================================================
+The following variables are involved in c1:
+
+    v[1]: 1.0
+    v[2]: 2.0
+
+====================================================================================
+"""
+
+        assert stream.getvalue() == expected
+
+    @pytest.mark.unit
+    def test_display_variables_in_constraint_invalid(self):
+        m = ConcreteModel()
+        m.s = Set(initialize=[1, 2, 3, 4])
+        m.v = Var(m.s)
+
+        m.c1 = Constraint(expr=m.v[1] + 2 * m.v[2] == 10)
+        m.c2 = Constraint(expr=3 * m.v[2] + 4 * m.v[3] == 20)
+        m.c3 = Constraint(expr=5 * m.v[3] + 6 * m.v[4] == 30)
+        m.c4 = Constraint(expr=7 * m.v[4] + 8 * m.v[1] == 40)
+
+        svd = SVDToolbox(m)
+
+        with pytest.raises(
+            TypeError,
+            match="constraint argument must be an instance of a Pyomo _ConstraintData "
+            "object \(got foo\).",
+        ):
+            svd.display_variables_in_constraint(constraint="foo")
+
+    @pytest.mark.unit
+    def test_display_variables_in_constraint_no_in_model(self):
+        m = ConcreteModel()
+        m.s = Set(initialize=[1, 2, 3, 4])
+        m.v = Var(m.s)
+
+        m.c1 = Constraint(expr=m.v[1] + 2 * m.v[2] == 10)
+        m.c2 = Constraint(expr=3 * m.v[2] + 4 * m.v[3] == 20)
+        m.c3 = Constraint(expr=5 * m.v[3] + 6 * m.v[4] == 30)
+        m.c4 = Constraint(expr=7 * m.v[4] + 8 * m.v[1] == 40)
+
+        c6 = Constraint(expr=m.v[1] == m.v[2])
+
+        svd = SVDToolbox(m)
+
+        with pytest.raises(
+            AttributeError, match="Could not find AbstractScalarConstraint in model."
+        ):
+            svd.display_variables_in_constraint(constraint=c6)
 
 
 @pytest.fixture()

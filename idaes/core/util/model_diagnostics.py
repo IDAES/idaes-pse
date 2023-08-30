@@ -40,6 +40,8 @@ from pyomo.environ import (
     Var,
 )
 from pyomo.core.base.block import _BlockData
+from pyomo.core.base.var import _VarData
+from pyomo.core.base.constraint import _ConstraintData
 from pyomo.common.collections import ComponentSet
 from pyomo.common.config import (
     ConfigDict,
@@ -53,6 +55,7 @@ from pyomo.core.expr.visitor import identify_variables
 from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
 from pyomo.contrib.pynumero.asl import AmplInterface
 from pyomo.common.deprecation import deprecation_warning
+from pyomo.common.errors import PyomoException
 
 from idaes.core.util.model_statistics import (
     activated_blocks_set,
@@ -178,6 +181,43 @@ CONFIG.declare(
         default=1e-8,
         domain=float,
         description="Tolerance for raising a warning for small Jacobian values.",
+    ),
+)
+
+
+SVDCONFIG = ConfigDict()
+SVDCONFIG.declare(
+    "number_of_smallest_singular_values",
+    ConfigValue(
+        domain=PositiveInt,
+        description="Number of smallest singular values to compute",
+    ),
+)
+SVDCONFIG.declare(
+    "dense_svd",
+    ConfigValue(
+        default=True,
+        domain=bool,
+        description="Whether to use dense svd or not",
+        doc="Whether to use dense svd to perform singular value analysis. "
+        "Dense tends to be slower but more reliable than svds",
+    ),
+)
+SVDCONFIG.declare(
+    "singular_value_tolerance",
+    ConfigValue(
+        default=1e-6,
+        domain=float,
+        description="Tolerance for defining a small singular value",
+    ),
+)
+SVDCONFIG.declare(
+    "size_cutoff_in_singular_vector",
+    ConfigValue(
+        default=0.1,
+        domain=float,
+        description="Size below which to ignore constraints and variables in "
+        "the singular vector",
     ),
 )
 
@@ -1050,46 +1090,34 @@ class DiagnosticsToolbox:
             footer="=",
         )
 
+    @document_kwargs_from_configdict(SVDCONFIG)
+    def create_svd_toolbox(self, **kwargs):
+        """
+        Create an instance of the SVDToolbox and store as self.svd_toolbox.
 
-SVDCONFIG = ConfigDict()
-SVDCONFIG.declare(
-    "number_of_smallest_singular_values",
-    ConfigValue(
-        domain=PositiveInt,
-        description="Number of smallest singular values to compute",
-    ),
-)
-SVDCONFIG.declare(
-    "dense_svd",
-    ConfigValue(
-        default=True,
-        domain=bool,
-        description="Whether to use dense svd or not",
-        doc="Whether to use dense svd to perform singular value analysis. "
-        "Dense tends to be slower but more reliable than svds",
-    ),
-)
-SVDCONFIG.declare(
-    "singular_value_tolerance",
-    ConfigValue(
-        default=1e-6,
-        domain=float,
-        description="Tolerance for defining a small singular value",
-    ),
-)
-SVDCONFIG.declare(
-    "size_cutoff_in_singular_vector",
-    ConfigValue(
-        default=0.1,
-        domain=float,
-        description="Size below which to ignore constraints and variables in "
-        "the singular vector",
-    ),
-)
+        Returns:
+
+            Instance of SVDToolbox
+
+        """
+        self.svd_toolbox = SVDToolbox(self.model, **kwargs)
+
+        return self.svd_toolbox
 
 
 @document_kwargs_from_configdict(SVDCONFIG)
-class SVDAnalysis:
+class SVDToolbox:
+    """
+    Toolbox for performing Singular Value Decomposition on the model Jacobian.
+
+    Used help() for more information on available methods.
+
+    Args:
+
+        model: model to be diagnosed. The SVDToolbox does not support indexed Blocks.
+
+    """
+
     def __init__(self, model: _BlockData, **kwargs):
         # TODO: In future may want to generalise this to accept indexed blocks
         # However, for now some of the tools do not support indexed blocks
@@ -1119,11 +1147,11 @@ class SVDAnalysis:
         Perform SVD analysis of the constraint Jacobian
 
         Args:
-            n_sv: number of smallest singular values to compute
-            dense: If True, use a dense svd to perform singular value analysis,
-                which tends to be slower but more reliable than svds
+
+            None
 
         Returns:
+
             None
 
         Actions:
@@ -1171,7 +1199,8 @@ class SVDAnalysis:
 
     def display_rank_of_equality_constraints(self, stream=stdout):
         """
-        Method to check the rank of the Jacobian of the equality constraints
+        Method to display the number of singular values that fall below
+        tolerance specified in config block.
 
         Args:
             stream: I/O object to write report to (default = stdout)
@@ -1188,12 +1217,9 @@ class SVDAnalysis:
             if e < self.config.singular_value_tolerance:
                 counter += 1
 
-        _write_report_section(
-            stream=stream,
-            title=f"The rank of the Jacobian is {counter}",
-            header="=",
-            footer="=",
-        )
+        stream.write("=" * MAX_STR_LENGTH + "\n\n")
+        stream.write(f"Number of Singular Values less than tolerance is {counter}\n\n")
+        stream.write("=" * MAX_STR_LENGTH + "\n")
 
     def display_underdetermined_variables_and_constraints(
         self, singular_values=None, stream=stdout
@@ -1205,7 +1231,7 @@ class SVDAnalysis:
 
         Args:
             singular_values: List of ints representing singular values to display,
-                as ordered from least to greatest starting from 0 (default show all)
+                as ordered from least to greatest starting from 1 (default show all)
             stream: I/O object to write report to (default = stdout)
 
         Returns:
@@ -1222,7 +1248,7 @@ class SVDAnalysis:
         var_list = self.nlp.get_pyomo_variables()
 
         if singular_values is None:
-            singular_values = self.s
+            singular_values = range(1, len(self.s) + 1)
 
         stream.write("=" * MAX_STR_LENGTH + "\n")
         stream.write(
@@ -1251,6 +1277,101 @@ class SVDAnalysis:
             stream.write("\n")
 
         stream.write("=" * MAX_STR_LENGTH + "\n")
+
+    def display_constraints_including_variable(self, variable, stream=stdout):
+        """
+        Display all constraints that include the specified variable and the
+        associated Jacobian coefficient.
+
+        Args:
+            variable: variable object to get associated constraints for
+            stream: I/O object to write report to (default = stdout)
+
+        Returns:
+            None
+
+        """
+        # Validate variable argument
+        if not isinstance(variable, _VarData):
+            raise TypeError(
+                f"variable argument must be an instance of a Pyomo _VarData "
+                f"object (got {variable})."
+            )
+
+        # Get list of equality constraint and variable names
+        eq_con_list = self.nlp.get_pyomo_equality_constraints()
+        var_list = self.nlp.get_pyomo_variables()
+
+        # Get index of variable in Jacobian
+        try:
+            var_idx = var_list.index(variable)
+        except (ValueError, PyomoException):
+            raise AttributeError(f"Could not find {variable.name} in model.")
+
+        nonzeroes = self.jacobian[:, var_idx].nonzero()
+
+        # Build a list of all constraints that include var
+        cons_w_var = []
+        for i, r in enumerate(nonzeroes[0]):
+            cons_w_var.append(
+                f"{eq_con_list[r].name}: {self.jacobian[(r, nonzeroes[1][i])]}"
+            )
+
+        # Write the output
+        _write_report_section(
+            stream=stream,
+            lines_list=cons_w_var,
+            title=f"The following constraints involve {variable.name}:",
+            header="=",
+            footer="=",
+        )
+
+    def display_variables_in_constraint(self, constraint, stream=stdout):
+        """
+        Display all variables that appear in the specified constraint and the
+        associated Jacobian coefficient.
+
+        Args:
+            constraint: constraint object to get associated variables for
+            stream: I/O object to write report to (default = stdout)
+
+        Returns:
+            None
+
+        """
+        # Validate variable argument
+        if not isinstance(constraint, _ConstraintData):
+            raise TypeError(
+                f"constraint argument must be an instance of a Pyomo _ConstraintData "
+                f"object (got {constraint})."
+            )
+
+        # Get list of equality constraint and variable names
+        eq_con_list = self.nlp.get_pyomo_equality_constraints()
+        var_list = self.nlp.get_pyomo_variables()
+
+        # Get index of variable in Jacobian
+        try:
+            con_idx = eq_con_list.index(constraint)
+        except ValueError:
+            raise AttributeError(f"Could not find {constraint.name} in model.")
+
+        nonzeroes = self.jacobian[con_idx, :].nonzero()
+
+        # Build a list of all vars in constraint
+        vars_in_cons = []
+        for i, r in enumerate(nonzeroes[0]):
+            c = nonzeroes[1][i]
+            vars_in_cons.append(f"{var_list[c].name}: {self.jacobian[(r, c)]}")
+
+        # Write the output
+        _write_report_section(
+            stream=stream,
+            lines_list=vars_in_cons,
+            title=f"The following variables are involved in {constraint.name}:",
+            header="=",
+            footer="=",
+        )
 
 
 class DegeneracyHunter:

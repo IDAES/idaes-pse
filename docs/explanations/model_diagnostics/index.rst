@@ -5,6 +5,11 @@ Model Diagnostics Workflow
     :depth: 3
     :local:
 
+.. toctree::
+    :maxdepth: 1
+    
+    svd_analysis
+
 Introduction
 ------------
 
