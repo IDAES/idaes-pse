@@ -867,9 +867,9 @@ def test_add_phase_component_balances_in_rxns_no_idx():
 
     with pytest.raises(
         PropertyNotSupportedError,
-        match="fs.cv Property package does not contain a "
-        "list of inherent reactions \(inherent_reaction_idx\), "
-        "but include_inherent_reactions is True.",
+        match=r"fs.cv Property package does not contain a "
+        r"list of inherent reactions \(inherent_reaction_idx\), "
+        r"but include_inherent_reactions is True.",
     ):
         m.fs.cv.add_phase_component_balances()
 
@@ -1451,9 +1451,9 @@ def test_add_total_component_balances_in_rxns_no_idx():
 
     with pytest.raises(
         PropertyNotSupportedError,
-        match="fs.cv Property package does not contain a "
-        "list of inherent reactions \(inherent_reaction_idx\), "
-        "but include_inherent_reactions is True.",
+        match=r"fs.cv Property package does not contain a "
+        r"list of inherent reactions \(inherent_reaction_idx\), "
+        r"but include_inherent_reactions is True.",
     ):
         m.fs.cv.add_total_component_balances()
 
@@ -1909,6 +1909,7 @@ def test_add_total_element_balances_custom_term():
 
 @pytest.mark.unit
 def test_add_total_element_balances_lineraly_dependent(caplog):
+    caplog.set_level(idaeslog.INFO_LOW)
     m = ConcreteModel()
     m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()

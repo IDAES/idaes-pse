@@ -43,6 +43,9 @@ Expressions:
 
 __author__ = "Douglas Allan"
 
+
+from functools import partial
+
 from pyomo.common.config import ConfigValue, ConfigBlock
 import pyomo.environ as pyo
 
@@ -198,14 +201,14 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
                     self,
                     f"{port_name}_temperature_eqn",
                     pyo.Constraint(
-                        tset, rule=lambda blk, t: rule_temperature(blk, t, props, port)
+                        tset, rule=partial(rule_temperature, props=props, port=port)
                     ),
                 )
                 setattr(
                     self,
                     f"{port_name}_pressure_eqn",
                     pyo.Constraint(
-                        tset, rule=lambda blk, t: rule_pressure(blk, t, props, port)
+                        tset, rule=partial(rule_pressure, props=props, port=port)
                     ),
                 )
                 setattr(
@@ -214,9 +217,7 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
                     pyo.Constraint(
                         tset,
                         side_comps,
-                        rule=lambda blk, t, j: rule_flow_mol_comp(
-                            blk, t, j, props, port
-                        ),
+                        rule=partial(rule_flow_mol_comp, props=props, port=port),
                     ),
                 )
                 if direction == "in":
@@ -225,9 +226,7 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
                         f"{port_name}_mole_frac_eqn",
                         pyo.Constraint(
                             tset,
-                            rule=lambda blk, t: rule_mole_frac(
-                                blk, t, port, side_comps
-                            ),
+                            rule=partial(rule_mole_frac, port=port, comps=side_comps),
                         ),
                     )
                 if direction == "out":
@@ -237,7 +236,7 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
                         pyo.Constraint(
                             tset,
                             absent_comp_list,
-                            rule=lambda blk, t, j: rule_absent_comp(blk, t, j, props),
+                            rule=partial(rule_absent_comp, props=props),
                         ),
                     )
                 # Add a different port at the module level
