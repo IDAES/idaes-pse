@@ -1118,6 +1118,7 @@ class SVDToolbox:
 
     """
 
+    # Original code by Doug Allan
     def __init__(self, model: _BlockData, **kwargs):
         # TODO: In future may want to generalise this to accept indexed blocks
         # However, for now some of the tools do not support indexed blocks
