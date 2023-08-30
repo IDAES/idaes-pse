@@ -517,10 +517,20 @@ def petsc_dae_by_time_element(
         between = pyo.Set(initialize=sorted(between))
         between.construct()
 
+    # TODO add checks for whether between has more than one element and whether time is discretized
+
     solve_log = idaeslog.getSolveLogger("petsc-dae")
 
-    regular_vars, time_vars = flatten_dae_components(m, time, pyo.Var, active=True)
-    regular_cons, time_cons = flatten_dae_components(m, time, pyo.Constraint, active=True)
+    # Need a reprenative time for flatten_dae_components to work, because otherwise things like
+    # sums of mole fraction constraints being deactivated at t0 (because all the mole fractions are fixed),
+    # etc., cause flatten_dae_components to miss a constraint that is active at t>t0
+    t_represenative = between.at(2) # Two because Pyomo sets start at one
+
+    # TODO document fact that if user wants to change active equations at different times, they need to
+    # call this function multiple times
+
+    regular_vars, time_vars = flatten_dae_components(m, time, pyo.Var, active=True, indices=(t_represenative,))
+    regular_cons, time_cons = flatten_dae_components(m, time, pyo.Constraint, active=True, indices=(t_represenative,))
     tdisc = find_discretization_equations(m, time)
 
     solver_dae = pyo.SolverFactory("petsc_ts", options=ts_options)
