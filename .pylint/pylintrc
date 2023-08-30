@@ -20,7 +20,6 @@ disable=no-self-argument,
     arguments-renamed,
     unused-argument,  # w have cases where a general high level method passes arguments that simpler methods do not need
     redefined-outer-name,
-    cell-var-from-loop,  # this arises due to Pyomo rules
     anomalous-backslash-in-string,
     unspecified-encoding,
     # Conventions
