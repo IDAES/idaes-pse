@@ -72,23 +72,22 @@ from pyomo.util.calc_var_value import calculate_variable_from_constraint
 # import IDAES core libraries
 from idaes.core.util.constants import Constants as const
 import idaes.core.util.scaling as iscale
-from idaes.core.util.config import is_transformation_method
-from idaes.core import (
-    declare_process_block_class,
-    UnitModelBlockData,
-)
+from idaes.core.util.config import is_transformation_method, is_physical_parameter_block
+from idaes.core import declare_process_block_class, UnitModelBlockData, useDefault
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.model_statistics import degrees_of_freedom
 
 from idaes.core.solvers import get_solver
-from idaes.core.initialization import ModularInitializerBase, SingleControlVolumeUnitInitializer
+from idaes.core.initialization import (
+    ModularInitializerBase,
+    SingleControlVolumeUnitInitializer,
+)
 from idaes.models.unit_models import SkeletonUnitModel, Heater
-from idaes.models_extra.power_generation.properties import FlueGasParameterBlock
-from idaes.models.properties import iapws95
+from idaes.models.properties.iapws95 import htpx
 from idaes.models.unit_models.pressure_changer import (
     PressureChanger,
     ThermodynamicAssumption,
-    IsentropicPressureChangerInitializer
+    IsentropicPressureChangerInitializer,
 )
 
 import idaes.logger as idaeslog
@@ -123,7 +122,8 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
             initial_guesses=initial_guesses,
             json_file=json_file,
             output_level=output_level,
-            exclude_unused_vars=True)
+            exclude_unused_vars=True,
+        )
 
     def initialization_routine(
         self,
@@ -144,9 +144,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
 
         """
         # set up logger for initialization and solve
-        init_log = idaeslog.getInitLogger(
-            blk.name, self.get_output_level(), tag="unit"
-        )
+        init_log = idaeslog.getInitLogger(blk.name, self.get_output_level(), tag="unit")
         solve_log = idaeslog.getSolveLogger(
             blk.name, self.get_output_level(), tag="unit"
         )
@@ -206,9 +204,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
 
         # check degrees of freedom and solve
         if degrees_of_freedom(blk.heating) == 0:
-            blk._step_initialize(
-                cycle_step=blk.heating
-            )
+            blk._step_initialize(cycle_step=blk.heating)
         else:
             raise ConfigurationError(
                 "Degrees of freedom is not zero during initialization of "
@@ -254,9 +250,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
 
         # check degrees of freedom and solve
         if degrees_of_freedom(blk.cooling) == 0:
-            blk._step_initialize(
-                cycle_step=blk.cooling
-            )
+            blk._step_initialize(cycle_step=blk.cooling)
         else:
             raise ConfigurationError(
                 "Degrees of freedom is not zero during initialization of "
@@ -330,9 +324,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
         # 4.2) check degrees of freedom and solve
 
         if degrees_of_freedom(blk.adsorption) == 0:
-            blk._step_initialize(
-                cycle_step=blk.adsorption
-            )
+            blk._step_initialize(cycle_step=blk.adsorption)
         else:
             raise ConfigurationError(
                 "Degrees of freedom is not zero during initialization of "
@@ -425,7 +417,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
             # exhaust gas stream in the CCS system. Fix pressure drop in
             # compressor unit.
             for t in blk.flowsheet().time:
-                for i in blk.compressor.property_fluegas.component_list:
+                for i in blk.config.compressor_properties.component_list:
                     calculate_variable_from_constraint(
                         blk.compressor.unit.inlet.flow_mol_comp[t, i],
                         blk.compressor.flow_mol_in_compressor_eq[t, i],
@@ -734,8 +726,12 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
 
         """
         # set up logger
-        init_log = idaeslog.getInitLogger(cycle_step.name, self.get_output_level(), tag="unit")
-        solve_log = idaeslog.getSolveLogger(cycle_step.name, self.get_output_level(), tag="unit")
+        init_log = idaeslog.getInitLogger(
+            cycle_step.name, self.get_output_level(), tag="unit"
+        )
+        solve_log = idaeslog.getSolveLogger(
+            cycle_step.name, self.get_output_level(), tag="unit"
+        )
 
         # create solver
         opt = get_solver(self.config.solver, self.config.solver_options)
@@ -776,8 +772,12 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
 
         """
         # set up logger
-        init_log = idaeslog.getInitLogger(cycle_step.name, self.get_output_level(), tag="unit")
-        solve_log = idaeslog.getSolveLogger(cycle_step.name, self.get_output_level(), tag="unit")
+        init_log = idaeslog.getInitLogger(
+            cycle_step.name, self.get_output_level(), tag="unit"
+        )
+        solve_log = idaeslog.getSolveLogger(
+            cycle_step.name, self.get_output_level(), tag="unit"
+        )
 
         # create solver
         opt = get_solver(self.config.solver, self.config.solver_options)
@@ -1107,6 +1107,17 @@ class FixedBedTSA0DData(UnitModelBlockData):
         ),
     )
     CONFIG.declare(
+        "compressor_properties",
+        ConfigValue(
+            default=useDefault,
+            domain=is_physical_parameter_block,
+            description="Property package for compressor",
+            doc="""The property package to be used by the compressor unit.
+        The property package must have N2 and CO2 as the only components.
+        (default=None)""",
+        ),
+    )
+    CONFIG.declare(
         "steam_calculation",
         ConfigValue(
             default=None,
@@ -1119,6 +1130,17 @@ class FixedBedTSA0DData(UnitModelBlockData):
                           rate of steam.
         - rigorous      : a heater unit model is included in the TSA system
                           assuming total saturation""",
+        ),
+    )
+    CONFIG.declare(
+        "steam_properties",
+        ConfigValue(
+            default=useDefault,
+            domain=is_physical_parameter_block,
+            description="Property package for heater unit model",
+            doc="""The property package to be used by the heater unit.
+        The property package must be iapws95.
+        (default=None)""",
         ),
     )
 
@@ -1183,6 +1205,22 @@ class FixedBedTSA0DData(UnitModelBlockData):
                 " "
                 "dae.collocation"
                 ".".format(self.name)
+            )
+
+        # consistency check for properties
+        if self.config.compressor and self.config.compressor_properties == useDefault:
+            raise ConfigurationError(
+                "Compressor flag was set to true "
+                "but no property package was provided"
+            )
+
+        if (
+            self.config.steam_calculation == "rigorous"
+            and self.config.steam_properties == useDefault
+        ):
+            raise ConfigurationError(
+                "Steam calculations are set to rigorous "
+                "but no property package was provided"
             )
 
         # add required parameters
@@ -3304,12 +3342,8 @@ class FixedBedTSA0DData(UnitModelBlockData):
 
         self.compressor = Block()
 
-        self.compressor.property_fluegas = FlueGasParameterBlock(
-            components=["N2", "CO2"]
-        )
-
         self.compressor.unit = PressureChanger(
-            property_package=self.compressor.property_fluegas,
+            property_package=self.config.compressor_properties,
             thermodynamic_assumption=ThermodynamicAssumption.isentropic,
             compressor=True,
         )
@@ -3317,7 +3351,7 @@ class FixedBedTSA0DData(UnitModelBlockData):
         # add constraints to link variables of CCS and compressor systems
         @self.compressor.Constraint(
             self.flowsheet().time,
-            self.compressor.property_fluegas.component_list,
+            self.config.compressor_properties.component_list,
             doc="Constraint for component flow rate at inlet of compressor",
         )
         def flow_mol_in_compressor_eq(b, t, i):
@@ -3369,12 +3403,9 @@ class FixedBedTSA0DData(UnitModelBlockData):
             # add empty block for heater
             self.steam_heater = Block()
 
-            # add property package for heater
-            self.steam_heater.property = iapws95.Iapws95ParameterBlock()
-
             # add heater unit model
             self.steam_heater.unit = Heater(
-                property_package=self.steam_heater.property, has_pressure_change=True
+                property_package=self.config.steam_properties, has_pressure_change=True
             )
 
             # add constraint for total saturation condition
@@ -3394,7 +3425,7 @@ class FixedBedTSA0DData(UnitModelBlockData):
             # fix inlet pressure, enthalpy and pressure drop
             Tin = 500 * units.K
             Pin = 510e3 * units.Pa
-            hin = iapws95.htpx(Tin, Pin)
+            hin = htpx(Tin, Pin)
 
             self.steam_heater.unit.inlet.enth_mol[0].fix(hin)
             self.steam_heater.unit.inlet.pressure[0].fix(Pin)
@@ -3736,7 +3767,7 @@ class FixedBedTSA0DData(UnitModelBlockData):
                     v.fix()
                     flags[v.name] = v.is_fixed()
 
-      # 1 - solve heating step
+        # 1 - solve heating step
 
         # 1.1) fix states in the fixed bed TSA inlet  ("flow_mol_in_total",
         # "mol  e_frac_in", and "pressure_adsorption"). These are equal
@@ -4011,7 +4042,7 @@ class FixedBedTSA0DData(UnitModelBlockData):
             # exhaust gas stream in the CCS system. Fix pressure drop in
             # compressor unit.
             for t in blk.flowsheet().time:
-                for i in blk.compressor.property_fluegas.component_list:
+                for i in blk.config.compressor_properties.component_list:
                     calculate_variable_from_constraint(
                         blk.compressor.unit.inlet.flow_mol_comp[t, i],
                         blk.compressor.flow_mol_in_compressor_eq[t, i],

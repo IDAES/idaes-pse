@@ -24,19 +24,19 @@ from idaes.core import FlowsheetBlock
 from idaes.models_extra.temperature_swing_adsorption.fixed_bed_tsa0d import (
     FixedBedTSA0D,
 )
+from idaes.models.properties import iapws95
+from idaes.models_extra.power_generation.properties import FlueGasParameterBlock
 from idaes.models_extra.temperature_swing_adsorption.costing.dac_costing import (
     get_dac_costing,
     print_dac_costing,
     dac_costing_summary,
 )
-
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     number_variables,
     number_total_constraints,
     number_unused_variables,
 )
-
 from idaes.core.solvers import get_solver
 import idaes.core.util.scaling as iscale
 
@@ -50,6 +50,10 @@ class TestElectricBoilerCosting:
     def model(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.compressor_props = FlueGasParameterBlock(components=["N2", "CO2"])
+        m.fs.steam_props = iapws95.Iapws95ParameterBlock()
+
         m.fs.unit = FixedBedTSA0D(
             adsorbent="Zeolite-13X",
             calculate_beds=False,
@@ -59,7 +63,9 @@ class TestElectricBoilerCosting:
             finite_elements=20,
             collocation_points=6,
             compressor=True,
+            compressor_properties=m.fs.compressor_props,
             steam_calculation="rigorous",
+            steam_properties=m.fs.steam_props,
         )
 
         m.fs.unit.inlet.flow_mol_comp[0, "H2O"].fix(0)
@@ -144,6 +150,10 @@ class TestRetrofitNgccCosting:
     def model(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.compressor_props = FlueGasParameterBlock(components=["N2", "CO2"])
+        m.fs.steam_props = iapws95.Iapws95ParameterBlock()
+
         m.fs.unit = FixedBedTSA0D(
             adsorbent="Zeolite-13X",
             calculate_beds=False,
@@ -153,7 +163,9 @@ class TestRetrofitNgccCosting:
             finite_elements=20,
             collocation_points=6,
             compressor=True,
+            compressor_properties=m.fs.compressor_props,
             steam_calculation="rigorous",
+            steam_properties=m.fs.steam_props,
         )
 
         m.fs.unit.inlet.flow_mol_comp[0, "H2O"].fix(0)

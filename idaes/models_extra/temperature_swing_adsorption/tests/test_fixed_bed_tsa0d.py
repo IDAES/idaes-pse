@@ -39,15 +39,16 @@ from idaes.core.util.model_statistics import (
     number_total_constraints,
     number_unused_variables,
 )
+from idaes.models.properties import iapws95
+from idaes.models_extra.power_generation.properties import FlueGasParameterBlock
 from idaes.models_extra.temperature_swing_adsorption.fixed_bed_tsa0d import (
     FixedBedTSA0D,
-    FixedBedTSA0DInitializer
+    FixedBedTSA0DInitializer,
 )
 from idaes.models_extra.temperature_swing_adsorption.util import (
     plot_tsa_profiles,
     tsa_summary,
 )
-
 import idaes.core.util.scaling as iscale
 
 # -----------------------------------------------------------------------------
@@ -276,6 +277,10 @@ class TestTsaPolystyrene:
     def model(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.compressor_props = FlueGasParameterBlock(components=["N2", "CO2"])
+        m.fs.steam_props = iapws95.Iapws95ParameterBlock()
+
         m.fs.unit = FixedBedTSA0D(
             adsorbent="polystyrene-amine",
             calculate_beds=False,
@@ -285,7 +290,9 @@ class TestTsaPolystyrene:
             finite_elements=20,
             collocation_points=6,
             compressor=True,
+            compressor_properties=m.fs.compressor_props,
             steam_calculation="rigorous",
+            steam_properties=m.fs.steam_props,
         )
 
         m.fs.unit.inlet.flow_mol_comp[0, "H2O"].fix(0)
@@ -371,6 +378,7 @@ class TestTsaPolystyrene:
         # air velocity
         assert pytest.approx(0.06388, abs=1e-4) == value(model.fs.unit.velocity_in)
 
+
 class TestTsaInitializer:
     @pytest.fixture(scope="class")
     def model(self):
@@ -412,16 +420,9 @@ class TestTsaInitializer:
 
         assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
 
-        assert pytest.approx(73731.9, abs=1e-1) == value(
-            model.fs.unit.heating.time
-        )
-        assert pytest.approx(110129, abs=1e0) == value(
-            model.fs.unit.cooling.time
-        )
+        assert pytest.approx(73731.9, abs=1e-1) == value(model.fs.unit.heating.time)
+        assert pytest.approx(110129, abs=1e0) == value(model.fs.unit.cooling.time)
         assert pytest.approx(24.0946, abs=1e-4) == value(
             model.fs.unit.pressurization.time
         )
-        assert pytest.approx(38470.2, abs=1e-1) == value(
-            model.fs.unit.adsorption.time
-        )
-
+        assert pytest.approx(38470.2, abs=1e-1) == value(model.fs.unit.adsorption.time)
