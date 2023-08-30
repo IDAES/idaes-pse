@@ -333,9 +333,11 @@ def test_build(model):
         is cell.electrolyte.heat_flux_x1.referent
     )
 
+
 @pytest.mark.component
 def test_units(model):
     assert_units_consistent(model)
+
 
 @pytest.mark.build
 @pytest.mark.unit
@@ -469,9 +471,11 @@ def test_build_no_contact_resistance(model_no_contact_resistance):
         is cell.electrolyte.heat_flux_x1.referent
     )
 
+
 @pytest.mark.component
 def test_units_no_contact_resistance(model_no_contact_resistance):
     assert_units_consistent(model_no_contact_resistance)
+
 
 def build_tester_interconnect(cell, nt, nz):
     soc_testing._build_test_utility(
@@ -763,9 +767,13 @@ def test_build_contact_resistance_and_interconnect(
         is cell.interconnect.heat_flux_x1.referent
     )
 
+
 @pytest.mark.component
-def test_units_contact_resistance_and_interconnect(model_contact_resistance_and_interconnect):
+def test_units_contact_resistance_and_interconnect(
+    model_contact_resistance_and_interconnect,
+):
     assert_units_consistent(model_contact_resistance_and_interconnect)
+
 
 @pytest.fixture
 def model_no_contact_resistance_but_interconnect():
@@ -962,6 +970,9 @@ def test_build_no_contact_resistance_but_interconnect(
     assert cell.oxygen_channel.heat_flux_x1 is cell.interconnect.heat_flux_x0.referent
     assert cell.fuel_channel.heat_flux_x0 is cell.interconnect.heat_flux_x1.referent
 
+
 @pytest.mark.component
-def test_units_no_contact_resistance_but_interconnect(model_no_contact_resistance_but_interconnect):
+def test_units_no_contact_resistance_but_interconnect(
+    model_no_contact_resistance_but_interconnect,
+):
     assert_units_consistent(model_no_contact_resistance_but_interconnect)

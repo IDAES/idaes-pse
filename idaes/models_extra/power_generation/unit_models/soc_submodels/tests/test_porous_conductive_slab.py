@@ -141,9 +141,11 @@ def modelNoHoldup():
     electrode.current_density.fix(0)
     return m
 
+
 @pytest.mark.component
 def test_units_model_no_holdup(modelNoHoldup):
     assert_units_consistent(modelNoHoldup)
+
 
 @pytest.fixture
 def modelHoldupNotDynamic():
@@ -277,6 +279,7 @@ def test_build_modelHoldupNotDynamic(modelHoldupNotDynamic):
     )
 
     assert degrees_of_freedom(electrode) == 0
+
 
 @pytest.mark.component
 def test_units_model_holdup_not_dynamic(modelHoldupNotDynamic):

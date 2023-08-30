@@ -122,9 +122,11 @@ def test_build(model):
     )
     assert degrees_of_freedom(model.fs.contact) == 0
 
+
 @pytest.mark.component
 def test_units(model):
     assert_units_consistent(model)
+
 
 @pytest.mark.build
 @pytest.mark.unit
@@ -158,9 +160,11 @@ def test_build2(model2):
     )
     assert degrees_of_freedom(model2.fs.contact) == 0
 
+
 @pytest.mark.component
 def test_units_2(model2):
     assert_units_consistent(model2)
+
 
 @pytest.mark.solver
 @pytest.mark.skipif(solver is None, reason="Solver not available")

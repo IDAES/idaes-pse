@@ -533,7 +533,7 @@ class PorousConductiveSlabData(UnitModelBlockData):
                 derivative=True,
             )
 
-        conc_grad_units = pyo.units.mol / pyo.units.m **4
+        conc_grad_units = pyo.units.mol / pyo.units.m**4
 
         @self.Expression(tset, ixnodes, izfaces, comps)
         def dcdz(b, t, ix, iz, i):
@@ -604,7 +604,7 @@ class PorousConductiveSlabData(UnitModelBlockData):
                 derivative=False,
             )
 
-        diff_coeff_units = pyo.units.m **2 / pyo.units.s
+        diff_coeff_units = pyo.units.m**2 / pyo.units.s
 
         @self.Expression(tset, ixnodes, izfaces, comps)
         def diff_eff_coeff_zfaces(b, t, ix, iz, i):

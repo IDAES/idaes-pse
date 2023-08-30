@@ -380,7 +380,7 @@ def test_initialization_stack(model_stack):
     m = model_stack
     stack = m.fs.stack
     cell = m.fs.stack.solid_oxide_cell
-    
+
     assert_units_consistent(m)
 
     stack.potential_cell[0].fix(1.288)

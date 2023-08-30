@@ -199,6 +199,7 @@ def test_build_fuel(modelFuel):
     )
     assert degrees_of_freedom(tpb) == 0
 
+
 @pytest.mark.component
 def test_units_model_fuel(modelFuel):
     assert_units_consistent(modelFuel)
@@ -219,9 +220,11 @@ def test_build_oxygen(modelOxygen):
 
     assert degrees_of_freedom(tpb) == 0
 
+
 @pytest.mark.component
 def test_units_model_oxygen(modelOxygen):
     assert_units_consistent(modelOxygen)
+
 
 @pytest.mark.solver
 @pytest.mark.skipif(solver is None, reason="Solver not available")

@@ -644,6 +644,7 @@ def test_model_replication(model):
             -row[1]["average_current_density"], rel=3e-2, abs=50
         )
 
+
 def model_func_voltage_drop_custom():
     m = pyo.ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False, time_set=[0], time_units=pyo.units.s)
@@ -673,11 +674,13 @@ def model_func_voltage_drop_custom():
 
     return m
 
+
 @pytest.fixture
 def model_vdc():
     # Want to be able to call model_func when calling this test directly
     # so that the reference dataset can be recreated if necessary
     return model_func_voltage_drop_custom()
+
 
 @pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.component
@@ -781,6 +784,7 @@ def test_model_replication_voltage_drop_custom(model_vdc):
         assert intr(row[1]["voltage"]) == pytest.approx(
             -row[1]["average_current_density"], rel=3e-2, abs=50
         )
+
 
 if __name__ == "__main__":
     m = model_func()

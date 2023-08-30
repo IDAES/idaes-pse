@@ -176,9 +176,11 @@ def test_build_modelNoHoldup(modelNoHoldup):
     )
     assert degrees_of_freedom(channel) == 0
 
+
 @pytest.mark.component
 def test_units_no_holdup(modelNoHoldup):
     assert_units_consistent(modelNoHoldup)
+
 
 @pytest.mark.build
 @pytest.mark.unit

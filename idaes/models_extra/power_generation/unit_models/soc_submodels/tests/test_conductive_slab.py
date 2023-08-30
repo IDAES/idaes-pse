@@ -170,6 +170,7 @@ def test_build_model_no_holdup(modelNoHoldup):
 
     assert degrees_of_freedom(slab) == 0
 
+
 @pytest.mark.component
 def test_units_no_holdup(modelNoHoldup):
     assert_units_consistent(modelNoHoldup)
@@ -204,9 +205,11 @@ def test_build_model_holdup_not_dynamic(modelHoldupNotDynamic):
 
     assert degrees_of_freedom(slab) == 0
 
+
 @pytest.mark.component
 def test_units_holdup_not_dynamic(modelHoldupNotDynamic):
     assert_units_consistent(modelHoldupNotDynamic)
+
 
 @pytest.mark.component
 def test_initialization_exception(modelNoHoldup):
@@ -217,6 +220,3 @@ def test_initialization_exception(modelNoHoldup):
         "initialized in isolation.",
     ):
         modelNoHoldup.fs.slab.initialize_build()
-
-
-

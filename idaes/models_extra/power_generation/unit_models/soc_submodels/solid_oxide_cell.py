@@ -861,8 +861,7 @@ class SolidOxideCellData(UnitModelBlockData):
         @self.Constraint(tset)
         def total_current_eqn(b, t):
             return b.total_current[t] == sum(
-                b.current_density[t, iz]
-                * b.fuel_electrode.xface_area[iz]
+                b.current_density[t, iz] * b.fuel_electrode.xface_area[iz]
                 for iz in b.iznodes
             )
 
@@ -1272,7 +1271,10 @@ class SolidOxideCellData(UnitModelBlockData):
         sdf(self.oxygen_inlet.mole_frac_comp, sy_def)
         sdf(self.length_z, 1 / self.length_z.value)
         sdf(self.length_y, 1 / self.length_y.value)
-        sdf(self.total_current, 1 / self.length_z.value * 1 / self.length_y.value * 1 / 4000)
+        sdf(
+            self.total_current,
+            1 / self.length_z.value * 1 / self.length_y.value * 1 / 4000,
+        )
 
         iscale.propagate_indexed_component_scaling_factors(self)
 
