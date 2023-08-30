@@ -51,6 +51,7 @@ Example::
 
 from pyomo.environ import units
 from pyomo.core.base.units_container import _PyomoUnit, InconsistentUnitsError
+from pyomo.common.deprecation import deprecation_warning
 
 from idaes.core.util.exceptions import PropertyPackageError
 from idaes.core.base.property_set import StandardPropertySet, PropertySetBase
@@ -519,7 +520,22 @@ class PropertyClassMetadata(object):
         for k, v in p.items():
             units = v.pop("units", None)
             try:
-                n, i = self._properties.get_name_and_index(k)
+                try:
+                    n, i = self._properties.get_name_and_index(k)
+                except ValueError:
+                    msg = (
+                        f"The property name {k} in property metadata is not a recognized "
+                        "standard property name defined in this PropertySet. Please refer "
+                        "to IDAES standard names in the IDAES documentation. You can use "
+                        "the define_custom_properties() rather than the add_properties() "
+                        "method to define metadata for this property. You can also use a "
+                        "different property set by calling the define_property_set() method."
+                    )
+                    deprecation_warning(
+                        msg=msg, logger=_log, version="2.0.0", remove_in="3.0.0"
+                    )
+                    n = k
+                    i = None
                 getattr(self._properties, n)[i].update_property(**v)
             except AttributeError:
                 # TODO: Deprecate this and make it raise an exception if an unknown property is encountered
