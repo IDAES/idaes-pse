@@ -41,7 +41,12 @@ from pyomo.environ import (
 )
 from pyomo.core.base.block import _BlockData
 from pyomo.common.collections import ComponentSet
-from pyomo.common.config import ConfigDict, ConfigValue, document_kwargs_from_configdict
+from pyomo.common.config import (
+    ConfigDict,
+    ConfigValue,
+    document_kwargs_from_configdict,
+    PositiveInt,
+)
 from pyomo.util.check_units import identify_inconsistent_units
 from pyomo.contrib.incidence_analysis import IncidenceGraphInterface
 from pyomo.core.expr.visitor import identify_variables
@@ -1044,6 +1049,208 @@ class DiagnosticsToolbox:
             f"{TAB*2}svd_analysis(TBA)\n{TAB*2}degeneracy_hunter (TBA)",
             footer="=",
         )
+
+
+SVDCONFIG = ConfigDict()
+SVDCONFIG.declare(
+    "number_of_smallest_singular_values",
+    ConfigValue(
+        domain=PositiveInt,
+        description="Number of smallest singular values to compute",
+    ),
+)
+SVDCONFIG.declare(
+    "dense_svd",
+    ConfigValue(
+        default=True,
+        domain=bool,
+        description="Whether to use dense svd or not",
+        doc="Whether to use dense svd to perform singular value analysis. "
+        "Dense tends to be slower but more reliable than svds",
+    ),
+)
+SVDCONFIG.declare(
+    "singular_value_tolerance",
+    ConfigValue(
+        default=1e-6,
+        domain=float,
+        description="Tolerance for defining a small singular value",
+    ),
+)
+SVDCONFIG.declare(
+    "size_cutoff_in_singular_vector",
+    ConfigValue(
+        default=0.1,
+        domain=float,
+        description="Size below which to ignore constraints and variables in "
+        "the singular vector",
+    ),
+)
+
+
+@document_kwargs_from_configdict(SVDCONFIG)
+class SVDAnalysis:
+    def __init__(self, model: _BlockData, **kwargs):
+        # TODO: In future may want to generalise this to accept indexed blocks
+        # However, for now some of the tools do not support indexed blocks
+        if not isinstance(model, _BlockData):
+            raise TypeError(
+                "model argument must be an instance of a Pyomo BlockData object "
+                "(either a scalar Block or an element of an indexed Block)."
+            )
+
+        self._model = model
+        self.config = SVDCONFIG(kwargs)
+
+        self.u = None
+        self.s = None
+        self.v = None
+
+        # Get Jacobian and NLP
+        self.jacobian, self.nlp = get_jacobian(self._model, scaled=False)
+
+        if self.jacobian.shape[0] < 2:
+            raise ValueError(
+                "Model needs at least 2 equality constraints to perform svd_analysis."
+            )
+
+    def run_svd_analysis(self):
+        """
+        Perform SVD analysis of the constraint Jacobian
+
+        Args:
+            n_sv: number of smallest singular values to compute
+            dense: If True, use a dense svd to perform singular value analysis,
+                which tends to be slower but more reliable than svds
+
+        Returns:
+            None
+
+        Actions:
+            Stores SVD results in object
+
+        """
+        n_eq = self.jacobian.shape[0]
+        n_var = self.jacobian.shape[1]
+
+        n_sv = self.config.number_of_smallest_singular_values
+        if n_sv is None:
+            # Determine the number of singular values to compute
+            # The "-1" is needed to avoid an error with svds
+            n_sv = min(10, min(n_eq, n_var) - 1)
+        elif n_sv >= min(n_eq, n_var):
+            raise ValueError(
+                f"For a {n_eq} by {n_var} system, svd_analysis "
+                f"can compute at most {min(n_eq, n_var) - 1} "
+                f"singular values and vectors, but {n_sv} were called for."
+            )
+
+        # Perform SVD
+        # Recall J is a n_eq x n_var matrix
+        # Thus U is a n_eq x n_eq matrix
+        # And V is a n_var x n_var
+        # (U or V may be smaller in economy mode)
+        if self.config.dense_svd:
+            u, s, vT = svd(self.jacobian.todense(), full_matrices=False)
+            # Reorder singular values and vectors so that the singular
+            # values are from least to greatest
+            u = np.flip(u[:, -n_sv:], axis=1)
+            s = np.flip(s[-n_sv:], axis=0)
+            vT = np.flip(vT[-n_sv:, :], axis=0)
+        else:
+            # svds does not guarantee the order in which it generates
+            # singular values, but typically generates them least-to-greatest.
+            # Maybe the warning is for singular values of nearly equal
+            # magnitude or a similar edge case?
+            u, s, vT = svds(self.jacobian, k=n_sv, which="SM")
+
+        # Save results
+        self.u = u
+        self.s = s
+        self.v = vT.transpose()
+
+    def display_rank_of_equality_constraints(self, stream=stdout):
+        """
+        Method to check the rank of the Jacobian of the equality constraints
+
+        Args:
+            stream: I/O object to write report to (default = stdout)
+
+        Returns:
+            None
+
+        """
+        if self.s is None:
+            self.run_svd_analysis()
+
+        counter = 0
+        for e in self.s:
+            if e < self.config.singular_value_tolerance:
+                counter += 1
+
+        _write_report_section(
+            stream=stream,
+            title=f"The rank of the Jacobian is {counter}",
+            header="=",
+            footer="=",
+        )
+
+    def display_underdetermined_variables_and_constraints(
+        self, singular_values=None, stream=stdout
+    ):
+        """
+        Determines constraints and variables associated with the smallest
+        singular values by having large components in the left and right
+        singular vectors, respectively, associated with those singular values.
+
+        Args:
+            singular_values: List of ints representing singular values to display,
+                as ordered from least to greatest starting from 0 (default show all)
+            stream: I/O object to write report to (default = stdout)
+
+        Returns:
+            None
+
+        """
+        if self.s is None:
+            self.run_svd_analysis()
+
+        tol = self.config.size_cutoff_in_singular_vector
+
+        # Get list of equality constraint and variable names
+        eq_con_list = self.nlp.get_pyomo_equality_constraints()
+        var_list = self.nlp.get_pyomo_variables()
+
+        if singular_values is None:
+            singular_values = self.s
+
+        stream.write("=" * MAX_STR_LENGTH + "\n")
+        stream.write(
+            "Constraints and Variables associated with smallest singular values\n\n"
+        )
+
+        for e in singular_values:
+            # First, make sure values are feasible
+            if e > len(self.s):
+                raise ValueError(
+                    f"Cannot display the {e}-th smallest singular value. "
+                    f"Only {len(self.s)} small singular values have been "
+                    f"calculated. You can set the number_of_smallest_singular_values "
+                    f"config argument and call run_svd_analysis again to get more "
+                    f"singular values."
+                )
+
+            stream.write(f"{TAB}Smallest Singular Value {e}:\n\n")
+            stream.write(f"{2 * TAB}Variables:\n\n")
+            for v in np.where(abs(self.v[:, e - 1]) > tol)[0]:
+                stream.write(f"{3 * TAB}{var_list[v].name}\n")
+
+            stream.write(f"\n{2 * TAB}Constraints:\n\n")
+            for c in np.where(abs(self.u[:, e - 1]) > tol)[0]:
+                stream.write(f"{3 * TAB}{eq_con_list[c].name}\n")
+            stream.write("\n")
+
+        stream.write("=" * MAX_STR_LENGTH + "\n")
 
 
 class DegeneracyHunter:
