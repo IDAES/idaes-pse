@@ -1086,7 +1086,7 @@ class DiagnosticsToolbox:
             lines_list=next_steps,
             title="Suggested next steps:",
             line_if_empty=f"If you still have issues converging your model consider:\n"
-            f"{TAB*2}svd_analysis(TBA)\n{TAB*2}degeneracy_hunter (TBA)",
+            f"{TAB*2}create_svd_toolbox\n{TAB*2}degeneracy_hunter (TBA)",
             footer="=",
         )
 
@@ -1094,6 +1094,9 @@ class DiagnosticsToolbox:
     def create_svd_toolbox(self, **kwargs):
         """
         Create an instance of the SVDToolbox and store as self.svd_toolbox.
+
+        After creating an instance of the toolbox, call
+        display_underdetermined_variables_and_constraints().
 
         Returns:
 
