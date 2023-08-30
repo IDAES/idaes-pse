@@ -63,7 +63,7 @@ _log = idaeslog.getLogger(__name__)
 )
 class ControlVolume0DBlockData(ControlVolumeBlockData):
     """
-    0-Dimensional (Non-Discretised) ControlVolume Class
+    0-Dimensional (Non-Discretized) ControlVolume Class
 
     This class forms the core of all non-discretized IDAES models. It provides
     methods to build property and reaction blocks, and add mass, energy and

@@ -127,7 +127,7 @@ class HelmNtuCondenserData(UnitModelBlockData):
         # Add variables                                                        #
         ########################################################################
         # Use hot side units as basis
-        s1_metadata = config.hot_side.property_package.get_metadata()
+        s1_metadata = self.hot_side.config.property_package.get_metadata()
 
         f_units = s1_metadata.get_derived_units("flow_mole")
         cp_units = s1_metadata.get_derived_units("heat_capacity_mole")
