@@ -17,6 +17,8 @@ import pytest
 import numpy as np
 
 import pyomo.environ as pyo
+from pyomo.util.check_units import assert_units_consistent
+
 from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.models_extra.power_generation.unit_models.soc_submodels as soc
@@ -168,6 +170,10 @@ def test_build_model_no_holdup(modelNoHoldup):
 
     assert degrees_of_freedom(slab) == 0
 
+@pytest.mark.component
+def test_units_no_holdup(modelNoHoldup):
+    assert_units_consistent(modelNoHoldup)
+
 
 @pytest.mark.build
 @pytest.mark.unit
@@ -198,6 +204,9 @@ def test_build_model_holdup_not_dynamic(modelHoldupNotDynamic):
 
     assert degrees_of_freedom(slab) == 0
 
+@pytest.mark.component
+def test_units_holdup_not_dynamic(modelHoldupNotDynamic):
+    assert_units_consistent(modelHoldupNotDynamic)
 
 @pytest.mark.component
 def test_initialization_exception(modelNoHoldup):
@@ -210,7 +219,4 @@ def test_initialization_exception(modelNoHoldup):
         modelNoHoldup.fs.slab.initialize_build()
 
 
-# @pytest.mark.component
-# def test_units(modelHoldupNotDynamic):
-#     # TODO come back to this later
-#     return
+
