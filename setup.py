@@ -131,7 +131,7 @@ kwargs = dict(
         "pint",  # required to use Pyomo units
         "networkx",  # required to use Pyomo network
         "numpy",
-        "pandas<2.1",
+        "pandas==2.1",
         "scipy",
         "sympy",  # idaes.core.util.expr_doc
         "matplotlib",
