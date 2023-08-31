@@ -52,6 +52,8 @@ from idaes.core.util.model_diagnostics import (
     DiagnosticsToolbox,
     SVDToolbox,
     DegeneracyHunter,
+    svd_dense,
+    svd_sparse,
     get_valid_range_of_component,
     set_bounds_from_valid_range,
     list_components_with_values_outside_valid_range,
@@ -1266,6 +1268,9 @@ class TestSVDToolbox:
     @pytest.mark.unit
     def test_run_svd_analysis(self, dummy_problem):
         svd = SVDToolbox(dummy_problem)
+
+        assert svd.config.svd_callback is svd_dense
+
         svd.run_svd_analysis()
 
         np.testing.assert_array_almost_equal(
@@ -1284,7 +1289,7 @@ class TestSVDToolbox:
 
     @pytest.mark.unit
     def test_run_svd_analysis_sparse(self, dummy_problem):
-        svd = SVDToolbox(dummy_problem, dense_svd=False)
+        svd = SVDToolbox(dummy_problem, svd_callback=svd_sparse)
         svd.run_svd_analysis()
 
         np.testing.assert_array_almost_equal(
@@ -1304,7 +1309,7 @@ class TestSVDToolbox:
     @pytest.mark.unit
     def test_run_svd_analysis_sparse_limit(self, dummy_problem):
         svd = SVDToolbox(
-            dummy_problem, dense_svd=False, number_of_smallest_singular_values=2
+            dummy_problem, svd_callback=svd_sparse, number_of_smallest_singular_values=2
         )
         svd.run_svd_analysis()
 

@@ -89,6 +89,24 @@ TAB = " " * 4
 
 # TODO: Add suggested steps to cautions - how?
 
+
+def svd_dense(jacobian, number_singular_values):
+    u, s, vT = svd(jacobian.todense(), full_matrices=False)
+    # Reorder singular values and vectors so that the singular
+    # values are from least to greatest
+    u = np.flip(u[:, -number_singular_values:], axis=1)
+    s = np.flip(s[-number_singular_values:], axis=0)
+    vT = np.flip(vT[-number_singular_values:, :], axis=0)
+
+    return u, s, vT.transpose()
+
+
+def svd_sparse(jacobian, number_singular_values, which="SM"):
+    u, s, vT = svds(jacobian, k=number_singular_values, which=which)
+
+    return u, s, vT.transpose()
+
+
 CONFIG = ConfigDict()
 CONFIG.declare(
     "variable_bounds_absolute_tolerance",
@@ -194,13 +212,18 @@ SVDCONFIG.declare(
     ),
 )
 SVDCONFIG.declare(
-    "dense_svd",
+    "svd_callback",
     ConfigValue(
-        default=True,
-        domain=bool,
-        description="Whether to use dense svd or not",
-        doc="Whether to use dense svd to perform singular value analysis. "
-        "Dense tends to be slower but more reliable than svds",
+        default=svd_dense,
+        description="Callback to SVD method of choice (default = svd_dense)",
+    ),
+)
+SVDCONFIG.declare(
+    "svd_callback_arguments",
+    ConfigValue(
+        default=None,
+        domain=dict,
+        description="Arguments to pass to  SVD callback (default = None)",
     ),
 )
 SVDCONFIG.declare(
@@ -1177,29 +1200,26 @@ class SVDToolbox:
                 f"singular values and vectors, but {n_sv} were called for."
             )
 
+        # Get optional arguments for SVD callback
+        svd_callback_arguments = self.config.svd_callback_arguments
+        if svd_callback_arguments is None:
+            svd_callback_arguments = {}
+
         # Perform SVD
         # Recall J is a n_eq x n_var matrix
         # Thus U is a n_eq x n_eq matrix
         # And V is a n_var x n_var
         # (U or V may be smaller in economy mode)
-        if self.config.dense_svd:
-            u, s, vT = svd(self.jacobian.todense(), full_matrices=False)
-            # Reorder singular values and vectors so that the singular
-            # values are from least to greatest
-            u = np.flip(u[:, -n_sv:], axis=1)
-            s = np.flip(s[-n_sv:], axis=0)
-            vT = np.flip(vT[-n_sv:, :], axis=0)
-        else:
-            # svds does not guarantee the order in which it generates
-            # singular values, but typically generates them least-to-greatest.
-            # Maybe the warning is for singular values of nearly equal
-            # magnitude or a similar edge case?
-            u, s, vT = svds(self.jacobian, k=n_sv, which="SM")
+        u, s, v = self.config.svd_callback(
+            self.jacobian,
+            number_singular_values=n_sv,
+            **svd_callback_arguments,
+        )
 
         # Save results
         self.u = u
         self.s = s
-        self.v = vT.transpose()
+        self.v = v
 
     def display_rank_of_equality_constraints(self, stream=stdout):
         """
