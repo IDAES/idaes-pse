@@ -518,14 +518,17 @@ def petsc_dae_by_time_element(
         between = pyo.Set(initialize=sorted(between))
         between.construct()
 
-    if len(between) < 2:
-        raise RuntimeError(
-            "Cannot use integrator with only one time point."
-        )
+    # Make sure that time is a ContinuousSet that has been discretized
+    try:
+        time.get_discretization_info()["nfe"]
+    except AttributeError:
+        raise RuntimeError("Argument time is not a Pyomo ContinuousSet")
+    except KeyError:
+        raise RuntimeError("The ContinuousSet time has not been discretized")
 
     solve_log = idaeslog.getSolveLogger("petsc-dae")
 
-    # Need a reprenative time for flatten_dae_components to work, because otherwise things like
+    # Need a representative time for flatten_dae_components to work, because otherwise things like
     # sums of mole fraction constraints being deactivated at t0 (because all the mole fractions are fixed),
     # etc., cause flatten_dae_components to miss a constraint that is active at t>t0
     if representative_time is None:

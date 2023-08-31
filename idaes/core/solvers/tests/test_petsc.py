@@ -926,3 +926,61 @@ def test_double_options_exception():
                 "--dummy": "",
             },
         )
+
+
+@pytest.mark.unit
+@pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
+def test_not_ContinuousSet():
+    m = pyo.ConcreteModel()
+
+    m.time = pyo.Set(initialize=(0.0, 10.0))
+    m.x = pyo.Var(m.time)
+    m.u = pyo.Var(m.time)
+
+    with pytest.raises(RuntimeError, match="Pyomo"):
+         petsc.petsc_dae_by_time_element(
+            m,
+            time=m.time,
+         )
+
+@pytest.mark.unit
+@pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
+def test_not_discretized():
+    m = pyo.ConcreteModel()
+
+    m.time = pyodae.ContinuousSet(initialize=(0.0, 10.0))
+    m.x = pyo.Var(m.time)
+    m.u = pyo.Var(m.time)
+    m.dxdt = pyodae.DerivativeVar(m.x, wrt=m.time)
+
+    def diff_eq_rule(m, t):
+        return m.dxdt[t] == m.x[t] ** 2 - m.u[t]
+
+    m.diff_eq = pyo.Constraint(m.time, rule=diff_eq_rule)
+
+    with pytest.raises(RuntimeError, match="discretized"):
+         petsc.petsc_dae_by_time_element(
+            m,
+            time=m.time,
+         )
+
+if __name__ == "__main__":
+    m = pyo.ConcreteModel()
+
+    m.time = pyodae.ContinuousSet(initialize=(0.0, 10.0))
+    m.x = pyo.Var(m.time)
+    m.u = pyo.Var(m.time)
+    m.dxdt = pyodae.DerivativeVar(m.x, wrt=m.time)
+
+    def diff_eq_rule(m, t):
+        return m.dxdt[t] == m.x[t] ** 2 - m.u[t]
+
+    m.diff_eq = pyo.Constraint(m.time, rule=diff_eq_rule)
+
+    discretizer = pyo.TransformationFactory("dae.finite_difference")
+    discretizer.apply_to(m, nfe=1, scheme="BACKWARD")
+
+    for t in m.time:
+        m.x[t].fix(2.0 * t)
+
+    m.u[0].fix(1.0)
