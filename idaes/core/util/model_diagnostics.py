@@ -99,7 +99,7 @@ def svd_dense(jacobian, number_singular_values):
         number_singular_values: number of singular values to compute
 
     Returns:
-        u, s and v arrays
+        u, s and v numpy arrays
 
     """
     u, s, vT = svd(jacobian.todense(), full_matrices=False)
@@ -121,7 +121,7 @@ def svd_sparse(jacobian, number_singular_values):
         number_singular_values: number of singular values to compute
 
     Returns:
-        u, s and v arrays
+        u, s and v numpy arrays
 
     """
     u, s, vT = svds(jacobian, k=number_singular_values, which="SM")

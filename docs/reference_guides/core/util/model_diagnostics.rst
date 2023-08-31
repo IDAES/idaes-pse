@@ -14,6 +14,6 @@ Other Methods
 ^^^^^^^^^^^^^
 
 .. automodule:: idaes.core.util.model_diagnostics
-    :exclude-members: DegeneracyHunter, DiagnosticsToolbox, SVDToolbox
+    :exclude-members: DegeneracyHunter, DiagnosticsToolbox, SVDToolbox, svd_dense, svd_sparse
     :members:
 
