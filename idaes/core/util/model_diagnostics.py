@@ -91,6 +91,17 @@ TAB = " " * 4
 
 
 def svd_dense(jacobian, number_singular_values):
+    """
+    Callback for performing SVD analysis using scipy.linalg.svd
+
+    Args:
+        jacobian: Jacobian to be analysed
+        number_singular_values: number of singular values to compute
+
+    Returns:
+        u, s and v arrays
+
+    """
     u, s, vT = svd(jacobian.todense(), full_matrices=False)
     # Reorder singular values and vectors so that the singular
     # values are from least to greatest
@@ -101,8 +112,19 @@ def svd_dense(jacobian, number_singular_values):
     return u, s, vT.transpose()
 
 
-def svd_sparse(jacobian, number_singular_values, which="SM"):
-    u, s, vT = svds(jacobian, k=number_singular_values, which=which)
+def svd_sparse(jacobian, number_singular_values):
+    """
+    Callback for performing SVD analysis using scipy.sparse.linalg.svds
+
+    Args:
+        jacobian: Jacobian to be analysed
+        number_singular_values: number of singular values to compute
+
+    Returns:
+        u, s and v arrays
+
+    """
+    u, s, vT = svds(jacobian, k=number_singular_values, which="SM")
 
     return u, s, vT.transpose()
 
@@ -216,6 +238,10 @@ SVDCONFIG.declare(
     ConfigValue(
         default=svd_dense,
         description="Callback to SVD method of choice (default = svd_dense)",
+        doc="Callback to SVD method of choice (default = svd_dense). "
+        "Callbacks should take the Jacobian and number of singular values "
+        "to compute as options, plus any method specific arguments, and should "
+        "return the u, s and v matrices as numpy arrays.",
     ),
 )
 SVDCONFIG.declare(
@@ -223,7 +249,7 @@ SVDCONFIG.declare(
     ConfigValue(
         default=None,
         domain=dict,
-        description="Arguments to pass to  SVD callback (default = None)",
+        description="Optional arguments to pass to  SVD callback (default = None)",
     ),
 )
 SVDCONFIG.declare(
