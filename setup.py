@@ -131,6 +131,8 @@ kwargs = dict(
         "pint",  # required to use Pyomo units
         "networkx",  # required to use Pyomo network
         "numpy",
+        # pandas constraint added on 2023-08-30 b/c Pysmo test failures with 2.1
+        # see IDAES/idaes-pse#1253
         "pandas<2.1",
         "scipy",
         "sympy",  # idaes.core.util.expr_doc
