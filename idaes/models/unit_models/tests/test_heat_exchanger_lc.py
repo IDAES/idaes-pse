@@ -59,9 +59,9 @@ from idaes.models.unit_models.heat_exchanger import HX0DInitializer
 from idaes.models.unit_models.heat_exchanger import delta_temperature_lmtd_callback
 from idaes.models.properties.general_helmholtz import helmholtz_available
 from idaes.core.initialization import (
+    BlockTriangularizationInitializer,
     InitializationStatus,
 )
-from idaes.core import useDefault
 
 # Get default solver for testing
 solver = get_solver()
@@ -298,40 +298,6 @@ class TestHXLCGeneric(object):
 
         return m
 
-    @pytest.mark.unit()
-    def test_dynamic_heat_balance_default_false(self):
-        m = ConcreteModel()
-        m.fs = FlowsheetBlock(dynamic=True, time_set=[0, 1], time_units=pyunits.s)
-        m.fs.properties = iapws95.Iapws95ParameterBlock()
-
-        m.fs.unit = HeatExchangerLumpedCapacitance(
-            hot_side_name="shell",
-            cold_side_name="tube",
-            hot_side={"property_package": m.fs.properties},
-            cold_side={"property_package": m.fs.properties},
-            dynamic=False,
-        )
-
-        assert not m.fs.unit.config.dynamic_heat_balance
-        assert m.fs.unit.config.dynamic_heat_balance is not useDefault
-
-    @pytest.mark.unit()
-    def test_dynamic_heat_balance_default_true(self):
-        m = ConcreteModel()
-        m.fs = FlowsheetBlock(dynamic=True, time_set=[0, 1], time_units=pyunits.s)
-        m.fs.properties = iapws95.Iapws95ParameterBlock()
-
-        m.fs.unit = HeatExchangerLumpedCapacitance(
-            hot_side_name="shell",
-            cold_side_name="tube",
-            hot_side={"property_package": m.fs.properties},
-            cold_side={"property_package": m.fs.properties},
-            dynamic=True,
-        )
-
-        assert m.fs.unit.config.dynamic_heat_balance
-        assert m.fs.unit.config.dynamic_heat_balance is not useDefault
-
     @pytest.mark.unit
     @pytest.mark.xfail(raises=InconsistentUnitsError)
     def test_units(self, model):
@@ -340,22 +306,11 @@ class TestHXLCGeneric(object):
         assert_units_consistent(model)
 
     @pytest.mark.unit
-    def test_units_unconstrained(self):
-        m = ConcreteModel()
-        m.fs = FlowsheetBlock(dynamic=True, time_set=[0, 1], time_units=pyunits.s)
-        m.fs.properties = iapws95.Iapws95ParameterBlock()
-
-        m.fs.unit = HeatExchangerLumpedCapacitance(
-            hot_side_name="shell",
-            cold_side_name="tube",
-            hot_side={"property_package": m.fs.properties},
-            cold_side={"property_package": m.fs.properties},
-            dynamic=True,
-        )
-
+    def test_units_unconstrained(self, unconstrained_model):
         # ...but without the discretizer, the units are fine
-        assert_units_consistent(m)
+        assert_units_consistent(unconstrained_model)
 
+        m = unconstrained_model
         assert_units_equivalent(m.fs.unit.ua_hot_side, pyunits.W / pyunits.K)
         assert_units_equivalent(m.fs.unit.ua_cold_side, pyunits.W / pyunits.K)
         assert_units_equivalent(m.fs.unit.ua_hot_side_to_wall, pyunits.W / pyunits.K)
@@ -381,45 +336,16 @@ class TestHXLCGeneric(object):
         assert isinstance(model.fs.unit.delta_temperature_out, Var)
 
     @pytest.mark.unit
-    def test_new_vars(self):
-        m = ConcreteModel()
-        m.fs = FlowsheetBlock(dynamic=True, time_set=[0, 1], time_units=pyunits.s)
-        m.fs.properties = iapws95.Iapws95ParameterBlock()
-
-        m.fs.unit = HeatExchangerLumpedCapacitance(
-            hot_side_name="shell",
-            cold_side_name="tube",
-            hot_side={"property_package": m.fs.properties},
-            cold_side={"property_package": m.fs.properties},
-            dynamic=True,
-        )
-
-        m.discretizer = TransformationFactory("dae.finite_difference")
-        m.discretizer.apply_to(m, nfe=1, wrt=m.fs.time, scheme="BACKWARD")
-
-        m.fs.unit.area.fix(1000)
-        m.fs.unit.heat_capacity = 100
-
-        m.fs.unit.shell_inlet.flow_mol[:].fix(100)
-        m.fs.unit.shell_inlet.pressure[:].fix(101325)
-        m.fs.unit.shell_inlet.enth_mol[:].fix(4000)
-
-        m.fs.unit.tube_inlet.flow_mol[:].fix(100)
-        m.fs.unit.tube_inlet.pressure[:].fix(101325)
-        m.fs.unit.tube_inlet.enth_mol[:].fix(3000)
-
-        m.fs.unit.ua_cold_side[:].fix(100)
-        m.fs.unit.ua_hot_side[:].fix(100)
-
-        assert isinstance(m.fs.unit.dT_wall_dt, DerivativeVar)
-        assert isinstance(m.fs.unit.temperature_wall, Var)
-        assert isinstance(m.fs.unit.ua_cold_side, Var)
-        assert isinstance(m.fs.unit.ua_hot_side, Var)
-        assert isinstance(m.fs.unit.ua_hot_side_to_wall, Var)
-        assert isinstance(m.fs.unit.heat_capacity_wall, Param)
-        assert isinstance(m.fs.unit.thermal_resistance_wall, Param)
-        assert isinstance(m.fs.unit.thermal_fouling_hot_side, Param)
-        assert isinstance(m.fs.unit.thermal_fouling_cold_side, Param)
+    def test_new_vars(self, model):
+        assert isinstance(model.fs.unit.dT_wall_dt, DerivativeVar)
+        assert isinstance(model.fs.unit.temperature_wall, Var)
+        assert isinstance(model.fs.unit.ua_cold_side, Var)
+        assert isinstance(model.fs.unit.ua_hot_side, Var)
+        assert isinstance(model.fs.unit.ua_hot_side_to_wall, Var)
+        assert isinstance(model.fs.unit.heat_capacity_wall, Param)
+        assert isinstance(model.fs.unit.thermal_resistance_wall, Param)
+        assert isinstance(model.fs.unit.thermal_fouling_hot_side, Param)
+        assert isinstance(model.fs.unit.thermal_fouling_cold_side, Param)
 
     @pytest.mark.unit
     def test_dof(self, model):
