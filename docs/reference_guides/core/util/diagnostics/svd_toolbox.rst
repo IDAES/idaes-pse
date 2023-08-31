@@ -9,7 +9,7 @@ The IDAES SVD Toolbox is an advanced diagnostics tool for helping to identify sc
 SVD Callbacks
 -------------
 
-The SVD Toolbox supports callbacks to select the SVD analysis tool to use. Two callbacks are provided to make use of methods avaialble in Scipy.
+The SVD Toolbox supports callbacks to select the SVD analysis tool to use. Two callbacks are provided to make use of methods avaialable in Scipy.
 
 .. automodule:: idaes.core.util.model_diagnostics
     :noindex:

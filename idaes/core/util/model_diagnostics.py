@@ -271,6 +271,37 @@ SVDCONFIG.declare(
 )
 
 
+DHCONFIG = ConfigDict()
+DHCONFIG.declare(
+    "solver",
+    ConfigValue(
+        domain="scip",
+        description="MILP solver to use for finding irreducible degenerate sets.",
+    ),
+)
+DHCONFIG.declare(
+    "solver_options",
+    ConfigValue(
+        domain=None,
+        description="Options to pass to MILP solver.",
+    ),
+)
+DHCONFIG.declare(
+    "M",
+    ConfigValue(
+        domain=1e5,
+        description="Maximum value for nu in MILP models.",
+    ),
+)
+DHCONFIG.declare(
+    "m_small",
+    ConfigValue(
+        domain=1e-5,
+        description="Smallest value for nu to be considered non-zero in MILP models.",
+    ),
+)
+
+
 @document_kwargs_from_configdict(CONFIG)
 class DiagnosticsToolbox:
     """
@@ -1164,13 +1195,14 @@ class SVDToolbox:
 
     Used help() for more information on available methods.
 
+    Original code by Doug Allan
+
     Args:
 
         model: model to be diagnosed. The SVDToolbox does not support indexed Blocks.
 
     """
 
-    # Original code by Doug Allan
     def __init__(self, model: _BlockData, **kwargs):
         # TODO: In future may want to generalise this to accept indexed blocks
         # However, for now some of the tools do not support indexed blocks
@@ -1422,6 +1454,348 @@ class SVDToolbox:
             header="=",
             footer="=",
         )
+
+
+@document_kwargs_from_configdict(DHCONFIG)
+class DegeneracyHunter2:
+    """
+    Degeneracy Hunter is a tool for identifying irreducible degenerate sets in
+    Pyomo models.
+
+    Original implementation by Alex Dowling.
+
+    Args:
+
+        model: model to be diagnosed. The SVDToolbox does not support indexed Blocks.
+
+    """
+
+    def __init__(self, model, **kwargs):
+        # TODO: In future may want to generalise this to accept indexed blocks
+        # However, for now some of the tools do not support indexed blocks
+        if not isinstance(model, _BlockData):
+            raise TypeError(
+                "model argument must be an instance of a Pyomo BlockData object "
+                "(either a scalar Block or an element of an indexed Block)."
+            )
+
+        self._model = model
+        self.config = SVDCONFIG(kwargs)
+
+        # Get Jacobian and NLP
+        self.jacobian, self.nlp = get_jacobian(self._model, scaled=False)
+
+        self.solver = SolverFactory(self.config.solver)
+
+        options = self.config.solver_options
+        if options is None:
+            options = {}
+
+        self.solver.options = options
+
+        # Create placeholders for results
+        self.degenerate_set = None  # dict
+        self.candidate_eqns = None  # list
+        self.irreducible_degenerate_sets = None  # list
+
+    def _prepare_find_candidates_milp(self):
+        """
+        Prepare MILP to find candidate equations for consider for IDS
+
+        Args:
+
+            None
+
+        Returns:
+
+            m_fc: Pyomo model to find candidates
+
+        """
+        _log.info("Building MILP model.")
+
+        # Create Pyomo model for irreducible degenerate set
+        m_dh = ConcreteModel()
+
+        # Create index for constraints
+        m_dh.C = Set(initialize=range(self.jacobian.shape[0]))
+        m_dh.V = Set(initialize=range(self.jacobian.shape[1]))
+
+        # Specify minimum size for nu to be considered non-zero
+        m_dh.M = Param(initialize=self.config.M, mutable=True)
+        m_dh.m_small = Param(initialize=self.config.m_small, mutable=True)
+
+        # Add variables
+        m_dh.nu = Var(
+            m_dh.C,
+            bounds=(-m_dh.M - m_dh.m_small, m_dh.M + m_dh.m_small),
+            initialize=1.0,
+        )
+        m_dh.y_pos = Var(m_dh.C, domain=Binary)
+        m_dh.y_neg = Var(m_dh.C, domain=Binary)
+        m_dh.abs_nu = Var(m_dh.C, bounds=(0, m_dh.M + m_dh.m_small))
+
+        m_dh.pos_xor_neg = Constraint(m_dh.C)
+
+        # Constraint to enforce set is degenerate
+        if issparse(self.jacobian):
+            J = self.jacobian.tocsc()
+
+            def eq_degenerate(m_dh, v):
+                if np.sum(np.abs(m_dh.J[:, v])) > 1e-6:
+                    # Find the columns with non-zero entries
+                    C_ = find(J[:, v])[0]
+                    return sum(J[c, v] * m_dh.nu[c] for c in C_) == 0
+                else:
+                    # This variable does not appear in any constraint
+                    return Constraint.Skip
+
+        else:
+            J = self.jacobian
+
+            def eq_degenerate(m_dh, v):
+                if np.sum(np.abs(J[:, v])) > 1e-6:
+                    return sum(J[c, v] * m_dh.nu[c] for c in m_dh.C) == 0
+                else:
+                    # This variable does not appear in any constraint
+                    return Constraint.Skip
+
+        m_dh.degenerate = Constraint(m_dh.V, rule=eq_degenerate)
+
+        # When y_pos = 1, nu >= m_small
+        # When y_pos = 0, nu >= - m_small
+        def eq_pos_lower(b, c):
+            return b.nu[c] >= -b.m_small + 2 * b.m_small * b.y_pos[c]
+
+        m_dh.pos_lower = Constraint(m_dh.C, rule=eq_pos_lower)
+
+        # When y_pos = 1, nu <= M + m_small
+        # When y_pos = 0, nu <= m_small
+        def eq_pos_upper(b, c):
+            return b.nu[c] <= b.M * b.y_pos[c] + b.m_small
+
+        m_dh.pos_upper = Constraint(m_dh.C, rule=eq_pos_upper)
+
+        # When y_neg = 1, nu <= -m_small
+        # When y_neg = 0, nu <= m_small
+        def eq_neg_upper(b, c):
+            return b.nu[c] <= b.m_small - 2 * b.m_small * b.y_neg[c]
+
+        m_dh.neg_upper = Constraint(m_dh.C, rule=eq_neg_upper)
+
+        # When y_neg = 1, nu >= -M - m_small
+        # When y_neg = 0, nu >= - m_small
+        def eq_neg_lower(b, c):
+            return b.nu[c] >= -b.M * b.y_neg[c] - b.m_small
+
+        m_dh.neg_lower = Constraint(m_dh.C, rule=eq_neg_lower)
+
+        # Absolute value
+        def eq_abs_lower(b, c):
+            return -b.abs_nu[c] <= b.nu[c]
+
+        m_dh.abs_lower = Constraint(m_dh.C, rule=eq_abs_lower)
+
+        def eq_abs_upper(b, c):
+            return b.nu[c] <= b.abs_nu[c]
+
+        m_dh.abs_upper = Constraint(m_dh.C, rule=eq_abs_upper)
+
+        # At least one constraint must be in the degenerate set
+        m_dh.degenerate_set_nonempty = Constraint(
+            expr=sum(m_dh.y_pos[c] + m_dh.y_neg[c] for c in m_dh.C) >= 1
+        )
+
+        # Minimize the L1-norm of nu
+        m_dh.obj = Objective(expr=sum(m_dh.abs_nu[c] for c in m_dh.C))
+
+        self.candidates_milp = m_dh
+
+    def _find_candidate_eqs(self, tee: bool = False):
+        """Solve MILP to generate set of candidate equations
+
+        Arguments:
+
+            tee: print solver output (default = False)
+
+        """
+        _log.info("Solving MILP model.")
+
+        eq_con_list = self.nlp.get_pyomo_equality_constraints()
+
+        results = self.solver.solve(self.candidates_milp, tee=tee)
+
+        self.degenerate_set = {}
+        self.candidate_eqns = []
+
+        if check_optimal_termination(results):
+            # We found a degenerate set
+            for i in self.candidates_milp.C:
+                # Check if constraint is included
+                if (
+                    self.candidates_milp.abs_nu[i]()
+                    > self.candidates_milp.m_small * 0.99
+                ):
+                    # If it is, save the value of nu
+                    if eq_con_list is None:
+                        name = i
+                    else:
+                        name = eq_con_list[i]
+                    self.degenerate_set[name] = self.candidates_milp.nu[i]()
+                    self.candidate_eqns.append(i)
+
+    def find_candidate_equations(self, tee: bool = False):
+        """
+        Solve MILP to find a degenerate set and candidate equations
+
+        Args:
+
+            tee: print solver output to screen (default=True)
+
+        """
+        _log.info("Searching for a Single Degenerate Set")
+        self._prepare_find_candidates_milp()
+
+        self._find_candidate_eqs(tee=tee)
+
+    def _prepare_ids_milp(self):
+        """
+        Prepare MILP to compute the irreducible degenerate set
+
+        """
+        _log.info("Building MILP model to compute irreducible degenerate set.")
+
+        n_eq = self.jacobian.shape[0]
+        n_var = self.jacobian.shape[1]
+
+        # Create Pyomo model for irreducible degenerate set
+        m_dh = ConcreteModel()
+
+        # Create index for constraints
+        m_dh.C = Set(initialize=range(n_eq))
+        m_dh.V = Set(initialize=range(n_var))
+
+        # Specify minimum size for nu to be considered non-zero
+        m_dh.M = Param(initialize=self.config.M, mutable=True)
+        m_dh.m_small = Param(initialize=self.config.m_small, mutable=True)
+
+        # Add variables
+        m_dh.nu = Var(m_dh.C, bounds=(-m_dh.M, m_dh.M), initialize=1.0)
+        m_dh.y = Var(m_dh.C, domain=Binary)
+
+        # Constraint to enforce set is degenerate
+        if issparse(self.jacobian):
+            J = self.jacobian.tocsc()
+
+            def eq_degenerate(m_dh, v):
+                # Find the columns with non-zero entries
+                C = find(J[:, v])[0]
+                return sum(J[c, v] * m_dh.nu[c] for c in C) == 0
+
+        else:
+            J = self.jacobian
+
+            def eq_degenerate(m_dh, v):
+                return sum(J[c, v] * m_dh.nu[c] for c in m_dh.C) == 0
+
+        m_dh.degenerate = Constraint(m_dh.V, rule=eq_degenerate)
+
+        def eq_lower(m_dh, c):
+            return -m_dh.M * m_dh.y[c] <= m_dh.nu[c]
+
+        m_dh.lower = Constraint(m_dh.C, rule=eq_lower)
+
+        def eq_upper(m_dh, c):
+            return m_dh.nu[c] <= m_dh.M * m_dh.y[c]
+
+        m_dh.upper = Constraint(m_dh.C, rule=eq_upper)
+
+        m_dh.obj = Objective(expr=sum(m_dh.y[c] for c in m_dh.C))
+
+        self.ids_milp = m_dh
+
+    def _check_candidate_ids(self, cons_idx: int, tee: Bool = False):
+        """Solve MILP to check if equation 'cons_idx' is a significant component
+        in an irreducible degenerate set
+
+        Args:
+
+            cons_idx: index for the constraint to consider
+            tee: Boolean, print solver output (default = False)
+
+        Returns:
+
+            ids: dictionary containing the IDS
+
+        """
+        eq_con_list = self.nlp.get_pyomo_equality_constraints()
+
+        # Fix weight on candidate equation
+        self.ids_milp.nu[cons_idx].fix(1.0)
+
+        # Solve MILP
+        results = self.solver.solve(self.ids_milp, tee=tee)
+
+        self.ids_milp.nu[cons_idx].unfix()
+
+        # Create empty dictionary
+        ids_ = {}
+
+        if check_optimal_termination(results):
+            # We found an irreducible degenerate set
+
+            for i in self.ids_milp.C:
+                # Check if constraint is included
+                if self.ids_milp.y[i]() > 0.9:
+                    # If it is, save the value of nu
+                    if eq_con_list is None:
+                        name = i
+                    else:
+                        name = eq_con_list[i]
+                    ids_[name] = self.ids_milp.nu[i]()
+
+        return ids_
+
+    def find_irreducible_degenerate_sets(self, tee=False):
+        """
+        Compute irreducible degenerate sets
+
+        Args:
+
+            tee: Print solver output to screen (default=True)
+
+        """
+
+        # If there are no candidate equations, find them!
+        if not self.candidate_eqns:
+            self.find_candidate_equations()
+
+        self.irreducible_degenerate_sets = []
+
+        # Check if it is empty or None
+        if self.candidate_eqns:
+
+            _log.info("Searching for Irreducible Degenerate Sets")
+            self._prepare_ids_milp()
+
+            # Loop over candidate equations
+            for i, c in enumerate(self.candidate_eqns):
+                _log.info_high(f"Solving MILP {i + 1} of {len(self.candidate_eqns)}.")
+
+                # Check if equation 'c' is a major element of an IDS
+                ids_ = self._check_candidate_ids(cons_idx=c, tee=tee)
+
+                if ids_ is not None:
+                    self.irreducible_degenerate_sets.append(ids_)
+
+        # TODO: This should be the display function
+        #     if verbose:
+        #         for i, s in enumerate(irreducible_degenerate_sets):
+        #             print("\nIrreducible Degenerate Set", i)
+        #             print("nu\tConstraint Name")
+        #             for k, v in s.items():
+        #                 print(v, "\t", k)
+        # else:
+        #     print("No candidate equations. The Jacobian is likely full rank.")
 
 
 class DegeneracyHunter:
