@@ -115,7 +115,7 @@ be included in the overall energy balance,
 
     def _setup_dynamics(self):
         """
-        The Lumped Capacitance Heat Exchanger model is differnt from other
+        The Lumped Capacitance Heat Exchanger model is different from other
         unit models in that it allows for part of the heat balance to be dynamic
         whilst the control volumes are steady state. Thus, we need a custom
         _setup_dynamics method.
