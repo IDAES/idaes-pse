@@ -938,10 +938,11 @@ def test_not_ContinuousSet():
     m.u = pyo.Var(m.time)
 
     with pytest.raises(RuntimeError, match="Pyomo"):
-         petsc.petsc_dae_by_time_element(
+        petsc.petsc_dae_by_time_element(
             m,
             time=m.time,
-         )
+        )
+
 
 @pytest.mark.unit
 @pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
@@ -959,10 +960,11 @@ def test_not_discretized():
     m.diff_eq = pyo.Constraint(m.time, rule=diff_eq_rule)
 
     with pytest.raises(RuntimeError, match="discretized"):
-         petsc.petsc_dae_by_time_element(
+        petsc.petsc_dae_by_time_element(
             m,
             time=m.time,
-         )
+        )
+
 
 if __name__ == "__main__":
     m = pyo.ConcreteModel()

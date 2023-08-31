@@ -466,7 +466,7 @@ def petsc_dae_by_time_element(
             for solvers. If you want to read trajectory data from the
             time-stepping solver, this should be True.
         between (list or tuple): List of time points to integrate between. If
-            None use all time points in the model. 
+            None use all time points in the model.
         interpolate (bool): if True and trajectory is read, interpolate model
             values from the trajectory
         calculate_derivatives: (bool) if True, calculate the derivative values
@@ -532,10 +532,14 @@ def petsc_dae_by_time_element(
     # sums of mole fraction constraints being deactivated at t0 (because all the mole fractions are fixed),
     # etc., cause flatten_dae_components to miss a constraint that is active at t>t0
     if representative_time is None:
-        representative_time = between.at(2) # Two because Pyomo sets start at one
+        representative_time = between.at(2)  # Two because Pyomo sets start at one
 
-    regular_vars, time_vars = flatten_dae_components(m, time, pyo.Var, active=True, indices=(representative_time,))
-    regular_cons, time_cons = flatten_dae_components(m, time, pyo.Constraint, active=True, indices=(representative_time,))
+    regular_vars, time_vars = flatten_dae_components(
+        m, time, pyo.Var, active=True, indices=(representative_time,)
+    )
+    regular_cons, time_cons = flatten_dae_components(
+        m, time, pyo.Constraint, active=True, indices=(representative_time,)
+    )
     tdisc = find_discretization_equations(m, time)
 
     solver_dae = pyo.SolverFactory("petsc_ts", options=ts_options)
