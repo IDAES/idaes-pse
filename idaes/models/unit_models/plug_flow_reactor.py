@@ -349,7 +349,7 @@ domain,
         add_object_reference(self, "area", self.control_volume.area)
 
         # Add volume variable for full reactor
-        units = self.config.property_package.get_metadata()
+        units = self.control_volume.config.property_package.get_metadata()
         self.volume = Var(
             initialize=1, doc="Reactor Volume", units=units.get_derived_units("volume")
         )

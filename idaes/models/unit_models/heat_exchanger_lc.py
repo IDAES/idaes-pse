@@ -53,7 +53,7 @@ be included in the overall energy balance,
     def _add_wall_variables(self):
 
         # Use the hot side as a reference
-        s1_metadata = self.config.hot_side.property_package.get_metadata()
+        s1_metadata = self.hot_side.config.property_package.get_metadata()
 
         # Unit system
         temp_units = s1_metadata.get_derived_units("temperature")
@@ -202,7 +202,7 @@ be included in the overall energy balance,
 
         if self.config.dynamic_heat_balance:
 
-            s1_metadata = self.config.hot_side.property_package.get_metadata()
+            s1_metadata = self.hot_side.config.property_package.get_metadata()
             temp_units = s1_metadata.get_derived_units("temperature")
             time_units = s1_metadata.get_derived_units("time")
 

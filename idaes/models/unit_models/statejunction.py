@@ -98,6 +98,9 @@ see property package for documentation.}""",
         # Call UnitModel.build to setup dynamics
         super(StateJunctionData, self).build()
 
+        # Check for default property package
+        self._get_property_package()
+
         self.properties = self.config.property_package.build_state_block(
             self.flowsheet().time,
             doc="Material properties",
