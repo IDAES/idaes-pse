@@ -717,7 +717,7 @@ class MSContactorData(UnitModelBlockData):
                 inherent_reaction_extent = Var(
                     self.flowsheet().time,
                     self.elements,
-                    sconfig.property_package.inherent_reaction_idx,
+                    state_block.params.inherent_reaction_idx,
                     domain=Reals,
                     initialize=0.0,
                     doc=f"Extent of inherent reactions in stream {stream}",
@@ -860,16 +860,10 @@ class MSContactorData(UnitModelBlockData):
                 if hasattr(self, stream + "_side_stream_state"):
                     side_set = getattr(self, stream + "_side_stream_set")
 
-                    def ss_presure_rule(b, t, s):
-                        stage_state = getattr(b, stream)[t, s]
-                        side_state = getattr(b, stream + "_side_stream_state")[t, s]
-
-                        return stage_state.pressure == side_state.pressure
-
                     side_pbal = Constraint(
                         self.flowsheet().time,
                         side_set,
-                        rule=ss_presure_rule,
+                        rule=partial(_side_stream_pressure_rule, stream=stream),
                     )
                     self.add_component(
                         stream + "_side_stream_pressure_balance", side_pbal
@@ -1210,3 +1204,10 @@ def _pressure_balance_rule(blk, t, s, stream, uom):
         rhs += getattr(blk, stream + "_deltaP")[t, s]
 
     return 0 == rhs
+
+
+def _side_stream_pressure_rule(b, t, s, stream):
+    stage_state = getattr(b, stream)[t, s]
+    side_state = getattr(b, stream + "_side_stream_state")[t, s]
+
+    return stage_state.pressure == side_state.pressure
