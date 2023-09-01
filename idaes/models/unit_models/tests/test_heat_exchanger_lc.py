@@ -35,7 +35,7 @@ from pyomo.core.base.units_container import InconsistentUnitsError
 
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.solvers import get_solver
-from idaes.core.util.exceptions import ConfigurationError, IdaesError
+from idaes.core.util.exceptions import DynamicError, ConfigurationError, IdaesError
 
 from idaes.core.util.testing import PhysicalParameterTestBlock, initialization_tester
 
@@ -59,7 +59,6 @@ from idaes.models.unit_models.heat_exchanger import HX0DInitializer
 from idaes.models.unit_models.heat_exchanger import delta_temperature_lmtd_callback
 from idaes.models.properties.general_helmholtz import helmholtz_available
 from idaes.core.initialization import (
-    BlockTriangularizationInitializer,
     InitializationStatus,
 )
 
@@ -368,12 +367,19 @@ class TestHXLCGeneric(object):
         assert check_optimal_termination(results)
 
     @pytest.mark.unit
-    def test_static_flowsheet(self, static_flowsheet_model):
-        m = static_flowsheet_model
+    def test_dynamic_heat_in_static_flowsheet(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.properties = PhysicalParameterTestBlock()
+
         with pytest.raises(
-            ConfigurationError,
-            match="dynamic heat balance cannot be used with a "
-            "steady-state flowsheet",
+            DynamicError,
+            match="trying to declare a dynamic model within "
+            "a steady-state flowsheet. This is not "
+            "supported by the IDAES framework. Try "
+            "creating a dynamic flowsheet instead, and "
+            "declaring some models as steady-state.",
         ):
             m.fs.unit = HeatExchangerLumpedCapacitance(
                 hot_side_name="shell",
@@ -382,6 +388,87 @@ class TestHXLCGeneric(object):
                 tube={"property_package": m.fs.properties},
                 dynamic=False,
                 dynamic_heat_balance=True,
+            )
+
+    @pytest.mark.unit
+    def test_dynamic_cv_wo_dynamic_heat(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.properties = PhysicalParameterTestBlock()
+
+        with pytest.raises(
+            ConfigurationError,
+            match="dynamic can only be True if dynamic_heat_balance " "is also True.",
+        ):
+            m.fs.unit = HeatExchangerLumpedCapacitance(
+                hot_side_name="shell",
+                cold_side_name="tube",
+                shell={"property_package": m.fs.properties},
+                tube={"property_package": m.fs.properties},
+                dynamic=True,
+                dynamic_heat_balance=False,
+            )
+
+    @pytest.mark.unit
+    def test_default_in_dynamic_flowsheet(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=True, time_set=[0, 1], time_units=pyunits.s)
+
+        m.fs.properties = PhysicalParameterTestBlock()
+
+        m.fs.unit = HeatExchangerLumpedCapacitance(
+            hot_side_name="shell",
+            cold_side_name="tube",
+            shell={"property_package": m.fs.properties},
+            tube={"property_package": m.fs.properties},
+        )
+
+        assert m.fs.unit.config.dynamic_heat_balance
+        assert m.fs.unit.config.dynamic
+        assert m.fs.unit.config.has_holdup
+
+    @pytest.mark.unit
+    def test_steady_state_cv_in_dynamic_flowsheet(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=True, time_set=[0, 1], time_units=pyunits.s)
+
+        m.fs.properties = PhysicalParameterTestBlock()
+
+        m.fs.unit = HeatExchangerLumpedCapacitance(
+            hot_side_name="shell",
+            cold_side_name="tube",
+            shell={"property_package": m.fs.properties},
+            tube={"property_package": m.fs.properties},
+            dynamic=False,
+            dynamic_heat_balance=True,
+        )
+
+        assert m.fs.unit.config.dynamic_heat_balance
+        assert not m.fs.unit.config.dynamic
+        assert not m.fs.unit.config.has_holdup
+
+    @pytest.mark.unit
+    def test_dynamic_wo_holdup(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=True, time_set=[0, 1], time_units=pyunits.s)
+
+        m.fs.properties = PhysicalParameterTestBlock()
+
+        with pytest.raises(
+            ConfigurationError,
+            match="invalid arguments for dynamic and has_holdup. "
+            "If dynamic = True, has_holdup must also be True "
+            "\(was False\)",
+        ):
+            m.fs.unit = HeatExchangerLumpedCapacitance(
+                hot_side_name="shell",
+                cold_side_name="tube",
+                shell={"property_package": m.fs.properties},
+                tube={"property_package": m.fs.properties},
+                dynamic=True,
+                dynamic_heat_balance=True,
+                has_holdup=False,
             )
 
     @pytest.mark.unit
