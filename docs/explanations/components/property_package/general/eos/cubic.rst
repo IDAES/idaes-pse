@@ -50,7 +50,7 @@ When using the general cubic equation of state module, users must specify the ty
 
 .. code-block:: python
 
-    from idaes.generic_models.properties.core.eos.ceos import Cubic, CubicType
+    from idaes.models.properties.modular_properties.eos.ceos import Cubic, CubicType
 
     configuration = {
         "phases": {

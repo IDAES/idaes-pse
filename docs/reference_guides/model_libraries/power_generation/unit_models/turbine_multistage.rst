@@ -2,9 +2,9 @@ Turbine (Multistage)
 ====================
 
 .. index::
-  pair: idaes.power_generation.unit_models.helm.turbine_multistage;HelmTurbineMultistage
+  pair: idaes.models_extra.power_generation.unit_models.helm.turbine_multistage;HelmTurbineMultistage
 
-.. module:: idaes.power_generation.unit_models.helm.turbine_multistage
+.. module:: idaes.models_extra.power_generation.unit_models.helm.turbine_multistage
 
 This is a composite model for a power plant turbine with high, intermediate and
 low pressure sections. This model contains an inlet stage with throttle valves
@@ -42,27 +42,28 @@ reheater.  In this example, a heater block is a stand-in for a reheater model.
 
   from idaes.core import FlowsheetBlock
   from idaes.unit_models import Heater
-  from idaes.power_generation.unit_models.helm import HelmTurbineMultistage
-  from idaes.generic_models.properties import iapws95
+  from idaes.models_extra.power_generation.unit_models.helm import HelmTurbineMultistage
+  from idaes.models.properties import iapws95
 
   solver = SolverFactory('ipopt')
   solver.options = {'tol': 1e-6}
 
   m = ConcreteModel()
-  m.fs = FlowsheetBlock(default={"dynamic": False})
+  m.fs = FlowsheetBlock(dynamic=False)
   m.fs.properties = iapws95.Iapws95ParameterBlock()
-  m.fs.turb = HelmTurbineMultistage(default={
-      "property_package": m.fs.properties,
-      "num_hp": 7,
-      "num_ip": 14,
-      "num_lp": 11,
-      "hp_split_locations": [4,7],
-      "ip_split_locations": [5, 14],
-      "lp_split_locations": [4,7,9,11],
-      "hp_disconnect": [7], # 7 is last stage in hp so disconnect hp from ip
-      "ip_split_num_outlets": {14:3}})
+  m.fs.turb = HelmTurbineMultistage(
+      property_package=m.fs.properties,
+      num_hp=7,
+      num_ip=14,
+      num_lp=11,
+      hp_split_locations=[4,7],
+      ip_split_locations=[5, 14],
+      lp_split_locations=[4,7,9,11],
+      hp_disconnect=[7], # 7 is last stage in hp so disconnect hp from ip
+      ip_split_num_outlets={14:3}
+  )
   # Add reheater (for example using a simple heater block)
-  m.fs.reheat = Heater(default={"property_package": m.fs.properties})
+  m.fs.reheat = Heater(property_package=m.fs.properties)
   # Add Arcs (streams) to connect the HP and IP sections through reheater
   m.fs.hp_to_reheat = Arc(source=m.fs.turb.hp_split[7].outlet_1,
                           destination=m.fs.reheat.inlet)
@@ -81,7 +82,7 @@ reheater.  In this example, a heater block is a stand-in for a reheater model.
   m.fs.turb.ip_stages[1].inlet.enth_mol[0].value = hin
   m.fs.turb.ip_stages[1].inlet.flow_mol[0].value = 25220.0
   m.fs.turb.ip_stages[1].inlet.pressure[0].value = p
-  # Set the efficency and pressure ratios of stages other than inlet and outlet
+  # Set the efficiency and pressure ratios of stages other than inlet and outlet
   for i, s in turb.hp_stages.items():
       s.ratioP[:] = 0.88
       s.efficiency_isentropic[:] = 0.9

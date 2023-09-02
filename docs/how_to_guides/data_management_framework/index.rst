@@ -21,7 +21,7 @@ Command-line::
 
 API call::
 
-    from idaes.dmf import create_configuration
+    from idaes.core.dmf import create_configuration
     result = create_configuration()
     # result will be the location of the configuration file, as a
     # Python pathlib.Path object.
@@ -81,7 +81,7 @@ Then to retrieve and use a given table, use `get_table()` with the name of the d
 Create and add new data
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-.. py:currentmodule:: idaes.dmf.datasets
+.. py:currentmodule:: idaes.core.dmf.datasets
 
 To create your own tables, you need to create a new directory and put two things in it:
 a configuration file called `dataset.json`, and data files in Excel or CSV format.
@@ -150,7 +150,7 @@ field from the `dataset.json` configuration file. For example, with the configur
 
 .. code-block:: python
 
-    from idaes.dmf.datasets import Publication
+    from idaes.core.dmf.datasets import Publication
 
     class ThermoStuff(Publication):
         def __init__(self, **kwargs):
@@ -164,7 +164,7 @@ Create a DMF resource
 
 .. code-block:: python
 
-    from idaes.dmf.resource import Resource
+    from idaes.core.dmf.resource import Resource
 
     r = Resource()
     r.v["version_info"]["version"] = test_version

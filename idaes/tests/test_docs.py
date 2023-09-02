@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Test doc build.
@@ -76,7 +76,7 @@ ERRLOG = "sphinx-errors.txt"
 
 @pytest.mark.unit
 def test_sphinx_build_log(docs_path):
-    """ Check the sphinx log for errors or warnings. """
+    """Check the sphinx log for errors or warnings."""
     _log.info('docs path = "{}"'.format(docs_path))
     if docs_path is None:
         _log.warning('Could not find "docs" directory')
@@ -95,13 +95,12 @@ def test_sphinx_build_log(docs_path):
     with open(log_path) as log:
         for line in log:
             err_count += 1
-            print(line, end='')
+            print(line, end="")
     assert False, f"{err_count} Errors and/or Warnings found in {log_path}"
 
 
 def _have_sphinx():
-    """Test if a working 'sphinx-build' command exists.
-    """
+    """Test if a working 'sphinx-build' command exists."""
     have_sphinx = True
     try:
         Popen(["sphinx-build", "--version"]).wait()

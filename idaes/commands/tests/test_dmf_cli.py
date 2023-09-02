@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Tests for DMF CLI
@@ -18,8 +18,6 @@ import json
 import logging
 import os
 from pathlib import Path
-import sys
-import time
 from typing import Union
 
 # third-party
@@ -27,10 +25,10 @@ from click.testing import CliRunner
 import pytest
 
 # package
-from idaes.dmf.cli import init, register, info, ls, related, rm, status
-from idaes.dmf.dmfbase import DMFConfig, DMF
-from idaes.dmf.workspace import Workspace
-from idaes.dmf import resource
+from idaes.core.dmf.cli import init, register, info, ls, related, rm, status
+from idaes.core.dmf.dmfbase import DMFConfig, DMF
+from idaes.core.dmf.workspace import Workspace
+from idaes.core.dmf import resource
 
 from . import create_module_scratch, rmtree_scratch
 
@@ -63,8 +61,7 @@ DATAFILE = "foo.txt"
 
 @pytest.fixture()
 def dmf_context():
-    """Switch DMF context to a random subdir, then switch back when done.
-    """
+    """Switch DMF context to a random subdir, then switch back when done."""
     global dmf_context_num
     os.chdir(os.path.expanduser("~"))  # make sure we start in HOME
     path = scratch_path / str(dmf_context_num)
@@ -92,7 +89,8 @@ def create_foo_workspace(runner):
     else:
         create_flag = "--create"
     result = runner.invoke(
-        init, ["ws", create_flag, "--name", "foo", "--desc", "foo workspace description"]
+        init,
+        ["ws", create_flag, "--name", "foo", "--desc", "foo workspace description"],
     )
     assert result.exit_code == 0
     return result
@@ -190,7 +188,13 @@ def test_dmf_register(dmf_context, runner):
     assert filename in result.output
     assert "version" in result.output
     # csv again / no-unique
-    result = runner.invoke(register, ["file.csv",], catch_exceptions=False)
+    result = runner.invoke(
+        register,
+        [
+            "file.csv",
+        ],
+        catch_exceptions=False,
+    )
     assert result.exit_code != 0
     result = runner.invoke(
         register, ["file.csv", "--no-unique"], catch_exceptions=False
@@ -317,25 +321,26 @@ def test_dmf_rm(dmf_context, runner):
 def test_dmf_status(dmf_context, runner):
     create_foo_workspace(runner)
     #
-    result = runner.invoke(status, ['--no-color'])
+    result = runner.invoke(status, ["--no-color"])
     assert result.exit_code == 0
     assert "settings" in result.output
     assert "name: foo" in result.output
     #
-    result = runner.invoke(status, ['--no-color', '--show', 'files'])
+    result = runner.invoke(status, ["--no-color", "--show", "files"])
     assert result.exit_code == 0
     assert "settings" in result.output
     assert "name: foo" in result.output
     assert "files:" in result.output
     #
-    result = runner.invoke(status, ['--no-color', '--show', 'files',
-        '--show', 'htmldocs'])
+    result = runner.invoke(
+        status, ["--no-color", "--show", "files", "--show", "htmldocs"]
+    )
     assert result.exit_code == 0
     assert "settings" in result.output
     assert "name: foo" in result.output
     assert "html" in result.output
     #
-    result = runner.invoke(status, ['--no-color', '-a'])
+    result = runner.invoke(status, ["--no-color", "-a"])
     assert result.exit_code == 0
     assert "settings" in result.output
     assert "name: foo" in result.output

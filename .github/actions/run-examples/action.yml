@@ -1,51 +1,78 @@
 name: Run IDAES examples
 description: Run IDAES examples
+
 inputs:
-  git-ref:
-    description: git ref to fetch for the examples
+
+  reinstall-target:
+    description: Installation variant or pip install arguments to use to install IDAES
+    required: true
+
+  examples-repository:
+    description: Full name (owner/repo) of the repository to use for the examples
+    required: false
+    default: IDAES/examples
+
+  examples-ref:
+    description: git ref to use for the examples
     required: false
     default: main
+
+  notebook-cell-exec-timeout:
+    description: Maximum time in s allowed for each individual notebook cell to execute before an error is raised
+    required: true
+
   working-dir:
     description: Working directory where the examples will be run
     required: false
     default: ${{ runner.temp }}
-  config-file-name:
-    description: >-
-      Name of the build script config file which will be copied to the working dir.
-      The source directory is assumed to be this action's directory.
+
+  pytest-extra-flags:
+    description: Extra flag to pass to pytest
     required: false
-    default: build-config-for-idaes-ci.yml 
+    default: ''
 
 runs:
   using: composite
   steps:
-    - name: Fetch examples
-      working-directory: ${{ inputs.working-dir }}
-      shell: bash
-      run: |
-        rm -rf *
-        git clone https://github.com/IDAES/examples-pse.git --branch ${{ inputs.git-ref }} .
-        git log -n 1
-    - name: Set up config file
-      shell: bash
-      # issue the cp command from the (source) dir where the config file is stored
-      # to avoid issues with path separators on Windows
-      working-directory: ${{ inputs.working-dir }}
-      env:
-        config_file_name: ${{ inputs.config-file-name }}
-      run: |
-        config_file_dst_dir="$PWD"
-        config_file_src_dir="$GITHUB_ACTION_PATH"
-        cd "$config_file_src_dir"
-        ls -la "$PWD"
-        cp "$config_file_name" "$config_file_dst_dir"
-        echo "config_file_name=$config_file_name" >> "$GITHUB_ENV"
-    - name: Run build.py script
-      working-directory: ${{ inputs.working-dir }}
+
+    - name: Install examples repository as Python package
       # -l needed to be able to run this step correctly within a Conda environment
       shell: bash -l {0}
+      env:
+        PIP_PROGRESS_BAR: 'off'
+        _pip_extras: '[jb,dev]'
+        _pip_install_url: ${{ github.server_url}}/${{ inputs.examples-repository }}@${{ inputs.examples-ref }}
       run: |
-        echo "::group::Contents of config file $config_file_name"
-        cat "$config_file_name"
-        echo "::endgroup::"
-        python build.py -v --config "$config_file_name" --test
+        echo '::group::Output of `pip install idaes_examples`'
+        pip install "idaes_examples${_pip_extras} @ git+${_pip_install_url}"
+        echo '::endgroup::'
+        # uninstall IDAES if installed through idaes_examples so that the version under test can be used
+        pip uninstall --yes idaes-pse
+
+    - name: Reinstall IDAES
+      shell: bash -l {0}
+      run: |
+        echo '::group::Output of `pip install ${{ inputs.reinstall-target }}`'
+        pip install ${{ inputs.reinstall-target }}
+        echo '::endgroup::'
+
+    - name: Run notebooks through pytest
+      working-directory: ${{ inputs.working-dir }}
+      shell: bash -l {0}
+      env:
+        PYTHONPATH: ${{ github.action_path }}
+        PYTEST_ADDOPTS: >-
+          --color=yes
+          --durations=0
+          -p no:xdist
+          --nbmake-timeout=${{ inputs.notebook-cell-exec-timeout }}
+          ${{ inputs.pytest-extra-flags }}
+      run: |
+        rm -rf *  # ensure directory is empty
+        python -m examples_for_idaes_ci
+
+    - name: Display content of working directory after run
+      shell: bash -l {0}
+      working-directory: ${{ inputs.working-dir }}
+      run: |
+        ls -Ralh

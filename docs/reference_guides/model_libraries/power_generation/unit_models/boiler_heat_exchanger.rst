@@ -2,18 +2,18 @@ BoilerHeatExchanger
 ===================
 
 .. index::
-   pair: idaes.power_generation.unit_models.boiler_heat_exchanger; BoilerHeatExchanger
+   pair: idaes.models_extra.power_generation.unit_models.boiler_heat_exchanger; BoilerHeatExchanger
 
-.. currentmodule:: idaes.power_generation.unit_models.boiler_heat_exchanger
+.. currentmodule:: idaes.models_extra.power_generation.unit_models.boiler_heat_exchanger
 
 The BoilerHeatExchanger model can be used to represent boiler heat exchangers in
 sub-critical and super critical power plant flowsheets (i.e. economizer, primary superheater, secondary superheater, finishing superheater, reheater, etc.).
 The model consists of a shell and tube crossflow heat exchanger, in which the shell is used as the gas side and the tube is used as the water or steam side.
 Rigorous heat transfer calculations (convective heat transfer for shell side, and convective heat transfer for tube side) and shell and tube pressure drop calculations have been included.
 
-The BoilerHeatExchanger model can be imported from :code:`idaes.power_generation.unit_models`,
+The BoilerHeatExchanger model can be imported from :code:`idaes.models_extra.power_generation.unit_models`,
 while additional rules and utility functions can be imported from
-``idaes.power_generation.unit_models.boiler_heat_exchanger``.
+``idaes.models_extra.power_generation.unit_models.boiler_heat_exchanger``.
 
 Example
 -------
@@ -28,11 +28,11 @@ and override the default temperature difference calculation.
     # Import IDAES core
     from idaes.core import FlowsheetBlock
     # Import Unit Model Modules
-    from idaes.generic_models.properties import iapws95
+    from idaes.models.properties import iapws95
     # import ideal flue gas prop pack
-    from idaes.power_generation.properties.IdealProp_FlueGas import FlueGasParameterBlock
+    from idaes.models_extra.power_generation.properties.IdealProp_FlueGas import FlueGasParameterBlock
     # Import Power Plant HX Unit Model
-    from idaes.power_generation.unit_models.boiler_heat_exchanger import (
+    from idaes.models_extra.power_generation.unit_models.boiler_heat_exchanger import (
         BoilerHeatExchanger,
         TubeArrangement,
         HeatExchangerFlowPattern,
@@ -40,13 +40,13 @@ and override the default temperature difference calculation.
     import pyomo.environ as pe # Pyomo environment
     from idaes.core import FlowsheetBlock, StateBlock
     from idaes.unit_models.heat_exchanger import delta_temperature_amtd_callback
-    from idaes.generic_models.properties import iapws95
+    from idaes.models.properties import iapws95
 
     # Create a Concrete Model as the top level object
     m = ConcreteModel()
 
     # Add a flowsheet object to the model
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     # Add property packages to flowsheet library
     m.fs.prop_water = iapws95.Iapws95ParameterBlock()
@@ -54,16 +54,14 @@ and override the default temperature difference calculation.
 
     # Create unit models
     m.fs.ECON = BoilerHeatExchanger(
-        default={
-            "tube: {"property_package": m.fs.prop_water},
-            "shell": {"property_package": m.fs.prop_fluegas},
-            "has_pressure_change": True,
-            "has_holdup": False,
-            "flow_pattern": HeatExchangerFlowPattern.countercurrent,
-            "tube_arrangement": TubeArrangement.inLine,
-            "side_1_water_phase": "Liq",
-            "has_radiation": False
-        }
+        tube={"property_package": m.fs.prop_water},
+        shell={"property_package": m.fs.prop_fluegas},
+        has_pressure_change=True,
+        has_holdup=False,
+        flow_pattern=HeatExchangerFlowPattern.countercurrent,
+        tube_arrangement=TubeArrangement.inLine,
+        side_1_water_phase="Liq",
+        has_radiation=False
     )
 
     # Set Inputs
@@ -145,10 +143,9 @@ If pressure drop calculation is enabled, additional degrees of freedom are requi
 Model Structure
 ---------------
 
-The ``BoilerHeatExchanger`` model contains two ``ControlVolume0DBlock`` blocks. By default the
-gas side is named ``shell`` and the water/steam side is named ``tube``. These names are configurable.
-The sign convention is that duty is positive for heat flowing from the hot side to the cold
-side.
+The ``BoilerHeatExchanger`` model contains two ``ControlVolume0DBlock`` blocks named ``hot_side`` and ``cold_side``.
+These names are configurable using the ``hot_side_name`` and ``cold_side_name`` configuration arguments.
+The sign convention is that duty is positive for heat flowing from the hot side to the cold side.
 
 The control volumes are configured the same as the ``ControlVolume0DBlock`` in the
 :ref:`Heater model <reference_guides/model_libraries/generic/unit_models/heater:Heater>`.
@@ -156,7 +153,7 @@ The ``BoilerHeatExchanger`` model contains additional constraints that calculate
 of heat transferred from the hot side to the cold side.
 
 The ``BoilerHeatExchanger`` has two inlet ports and two outlet ports. By default these are
-``shell_inlet``, ``tube_inlet``, ``shell_outlet``, and ``tube_outlet``. If the user
+``hot_side_inlet``, ``cold_side_inlet``, ``hot_side_outlet``, and ``cold_side_outlet``. If the user
 supplies different hot and cold side names the inlet and outlets are named accordingly.
 
 Variables
@@ -235,7 +232,7 @@ where:
 * :math:`\mu` : viscocity (kg/m/s)
 * tube_r_fouling : tube side fouling resistance (K m^2 / W)
 * shell_r_fouling : shell side fouling resistance (K m^2 / W)
-* fcorrection_htc: correction factor for overall heat trasnfer
+* fcorrection_htc: correction factor for overall heat transfer
 * f_arrangement: tube arrangement factor
 
 Note:
@@ -244,7 +241,7 @@ by default fcorrection_htc is set to 1, however, this variable can be used to ma
 Tube arrangement factor is a config argument with two different type of arrangements supported at the moment:
 1.- In-line tube arrangement factor (f_arrangement = 0.788), and 2.- Staggered tube arrangement factor (f_arrangement = 1). f_arrangement is a parameter that can be adjusted by the user.
 
-The ``BoilerHeatExchanger`` includes an argument to compute heat tranfer due to radiation of the flue gases. If has_radiation = True the model builds additional heat transfer calculations that will be added to the hconv_shell resistances.
+The ``BoilerHeatExchanger`` includes an argument to compute heat transfer due to radiation of the flue gases. If has_radiation = True the model builds additional heat transfer calculations that will be added to the hconv_shell resistances.
 Radiation effects are calculated based on the gas gray fraction and gas-surface radiation (between gas and shell).
 
 .. math::
@@ -273,7 +270,7 @@ Tube side:
 
 where:
 
-* :math:`k_{loss uturn}` : pressure loss coeficient of a tube u-turn
+* :math:`k_{loss uturn}` : pressure loss coefficient of a tube u-turn
 * g : is the acceleration of gravity 9.807 (m/s^2)
 
 Shell side:
@@ -301,7 +298,7 @@ Class Documentation
 
 .. Note::
   The ``hot_side_config`` and ``cold_side_config`` can also be supplied using the name of
-  the hot and cold sides (``shell`` and ``tube`` by default) as in
+  the hot and cold sides as in
   :ref:`the example <reference_guides/model_libraries/power_generation/unit_models/boiler_heat_exchanger:Example>`.
 
 .. autoclass:: BoilerHeatExchanger

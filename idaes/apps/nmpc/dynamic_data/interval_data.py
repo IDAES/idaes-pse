@@ -1,15 +1,18 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
+# TODO: Missing doc strings
+# pylint: disable=missing-module-docstring
+
 
 def assert_disjoint_intervals(intervals):
     """
@@ -30,7 +33,7 @@ def assert_disjoint_intervals(intervals):
                 "Lower endpoint of interval is higher than upper endpoint"
             )
         if i != 0:
-            prev_lo, prev_hi = intervals[i-1]
+            prev_lo, prev_hi = intervals[i - 1]
             if not prev_hi <= lo:
                 raise RuntimeError(
                     "Intervals %s and %s are not disjoint"
@@ -70,7 +73,7 @@ def load_inputs_into_model(model, time, input_data, time_tol=0):
 
         intervals = list(sorted(inputs.keys()))
         assert_disjoint_intervals(intervals)
-        for i, interval in enumerate(intervals):
+        for i, interval in enumerate(intervals):  # pylint: disable=unused-variable
             idx0 = time.find_nearest_index(interval[0], tolerance=time_tol)
             idx1 = time.find_nearest_index(interval[1], tolerance=time_tol)
             if idx0 is None or idx1 is None:
@@ -92,16 +95,9 @@ def interval_data_from_time_series(data, use_left_endpoint=False):
     its right endpoint.
 
     In:
-    (
-        [t0, ...],
-        {
-            str(cuid): [value0, ...],
-        },
-    )
+        ([t0, ...], {str(cuid): [value0, ...], },)
     Out:
-    {
-        str(cuid): {(t0, t1): value0 or value1, ...},
-    }
+        {str(cuid): {(t0, t1): value0 or value1, ...},}
 
     Arguments
     ---------
@@ -121,22 +117,18 @@ def interval_data_from_time_series(data, use_left_endpoint=False):
         over that interval
 
     """
-    time, value_dict  = data
+    time, value_dict = data
     n_t = len(time)
     if n_t == 1:
         t0 = time[0]
-        return {
-            name: {(t0, t0): values[0]}
-            for name, values in value_dict.items()
-        }
+        return {name: {(t0, t0): values[0]} for name, values in value_dict.items()}
     else:
         # This covers the case of n_t > 1 and n_t == 0
         interval_data = {}
-        intervals = [(time[i-1], time[i]) for i in range(1, n_t)]
+        intervals = [(time[i - 1], time[i]) for i in range(1, n_t)]
         for name, values in value_dict.items():
             interval_values = [
-                values[i-1] if use_left_endpoint else values[i]
-                for i in range(1, n_t)
+                values[i - 1] if use_left_endpoint else values[i] for i in range(1, n_t)
             ]
             interval_data[name] = dict(zip(intervals, interval_values))
         return interval_data

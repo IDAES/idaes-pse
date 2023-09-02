@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """The API in this module is mostly for internal use, e.g. from 'setup.py' to get the version of
 the package. But :class:`Version` has been written to be usable as a general
@@ -93,16 +93,14 @@ class Version(object):
         """
         if releaselevel not in self._specifiers:
             raise ValueError(
-                'Value "{}" for releaselevel not in ({})'.format(
-                    releaselevel, ",".join(sorted(self._specifiers.keys()))
-                )
+                f'Value "{releaselevel}" for releaselevel not in '
+                f'({",".join(sorted(self._specifiers.keys()))})'
             )
         self.major, self.minor, self.micro = major, minor, micro
         self.releaselevel, self.serial, self.label = releaselevel, serial, label
 
     def __iter__(self):
-        """Return version information as a sequence.
-        """
+        """Return version information as a sequence."""
         items = [self.major, self.minor, self.micro]
         if self.releaselevel != "final":
             items.append(self.releaselevel)
@@ -117,26 +115,21 @@ class Version(object):
             yield it
 
     def __str__(self):
-        """Return version information as a string.
-        """
-        return "{}.{}.{}{}".format(
-            self.major,
-            self.minor,
-            self.micro,
-            (
-                ""
-                if self.releaselevel == "final"
-                else "."
+        """Return version information as a string."""
+        if self.releaselevel == "final":
+            tag = ""
+        else:
+            tag = (
+                "."
                 + self._specifiers[self.releaselevel]
                 + ("" if self.serial is None else str(self.serial))
                 + ("" if self.label is None else "+" + self.label)
-            ),
-        )
+            )
+        return f"{self.major}.{self.minor}.{self.micro}{tag}"
 
 
 class HasVersion(object):
-    """Interface for a versioned class.
-    """
+    """Interface for a versioned class."""
 
     def __init__(self, *args):
         """Constructor creates a `version` attribute that is
@@ -149,8 +142,7 @@ class HasVersion(object):
 
 
 def git_hash():
-    """Get current git hash, with no dependencies on external packages.
-    """
+    """Get current git hash, with no dependencies on external packages."""
     # find git root (in grandparent dir to this file, if anywhere)
     git_root = os.path.realpath(os.path.join(__file__, "..", "..", ".git"))
     if not os.path.exists(git_root) or not os.path.isdir(git_root):
@@ -192,8 +184,7 @@ except NameError:  # eg, if invoked from setup.py
     pass
 
 #: Package's version as an object
-package_version = Version(1, 14, 0, "development", 0, gh)
+package_version = Version(2, 3, 0, "development", 0, gh)
 
 #: Package's version as a simple string
 __version__ = str(package_version)
-

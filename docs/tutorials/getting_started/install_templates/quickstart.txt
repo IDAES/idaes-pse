@@ -1,0 +1,13 @@
+# Set up & activate Conda new environment with IDAES-PSE
+conda create --yes --name my-idaes-env -c conda-forge -c IDAES-PSE python=3.10 idaes-pse
+conda activate my-idaes-env
+
+# Install IDAES Extensions
+idaes get-extensions --extra petsc
+
+# Install and browse IDAES Examples (optional)
+pip install idaes-examples
+idaesx gui   # OR: jupyter notebook $(idaesx where)
+
+# Run Tests
+pytest --pyargs idaes -W ignore

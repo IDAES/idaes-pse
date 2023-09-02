@@ -46,7 +46,7 @@ Reaction Parameter blocks have two standard configuration arguments:
 * property_package - a pointer to a PhysicalParameterBlock which will be used to construct the StateBlocks to which associated ReactionBlocks will be linked. Reaction property packages must be tied to a single Physical property package, and this is used to validate the connections made later when constructing ReactionBlocks.
 * default_arguments - this allows the user to provide a set of default values for construction arguments in associated ReactionBlocks, which will be passed to all ReactionBlocks when they are constructed.
 
-.. module:: idaes.core.reaction_base
+.. module:: idaes.core.base.reaction_base
 
 .. autoclass:: ReactionParameterBlock
     :members:
@@ -71,7 +71,7 @@ Reaction Blocks have the following construction arguments:
 Constructing Reaction Blocks
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Reaction Blocks can be constructed directly from the associated Reaction Parameter Block by calling the `build_reaction_block()` method on the Reaction Parameter Block. The `parameters` construction argument will be automatically set, and any other arguments (including indexing sets) may be provided to the `build_reaction_block` method as ususal.
+Reaction Blocks can be constructed directly from the associated Reaction Parameter Block by calling the `build_reaction_block()` method on the Reaction Parameter Block. The `parameters` construction argument will be automatically set, and any other arguments (including indexing sets) may be provided to the `build_reaction_block` method as usual.
 
 ReactionBlockDataBase Class
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^

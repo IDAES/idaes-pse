@@ -1,8 +1,8 @@
 Binary Packages
 ===============
 
-This section describes what is in the IDAES binary distribution, where it is
-installed, how to use it, and alternative installation methods.  The IDAES binary
+This section describes the IDAES binary distribution, where it is
+installed, how to use it, and alternative installation methods. The IDAES binary
 distribution contains mainly third-party solvers compiled for user convenience and
 function libraries used for some IDAES physical property packages.
 
@@ -17,9 +17,12 @@ license for HSL linear solvers that allows inclusion in IDAES's compiled version
 of Ipopt.
 
 All technical papers, sales and publicity material resulting from use of
-the HSL codes within IPOPT must contain the following acknowledgement: HSL, a
+the HSL codes within Ipopt must contain the following acknowledgement: HSL, a
 collection of Fortran codes for large-scale scientific computation. See
 http://www.hsl.rl.ac.uk.
+
+.. note:: Currently the macOS x86_64 binaries do not include HSL, so HSL linear solvers
+    in Ipopt and k_aug and dot_sens are not available on that platform. 
 
 Main Package
 ~~~~~~~~~~~~
@@ -35,9 +38,8 @@ Main Package
 - `cbc <https://projects.coin-or.org/Cbc>`_
 - `bonmin, <https://projects.coin-or.org/Bonmin>`_ (uses Ipopt with HSL)
 - `couenne <https://projects.coin-or.org/Couenne/>`_ (uses Ipopt with HSL)
-- `iapws95_external <https://github.com/IDAES/idaes-ext/tree/main/src/helmholtz>`_, function for the IAPWS95 EoS water
-- `swco2_external <https://github.com/IDAES/idaes-ext/tree/main/src/helmholtz>`_, functions for the Span-Wagner EoS for CO2
-- `cubic_roots <https://github.com/IDAES/idaes-ext/tree/main/src/cubic>`_, function for finding root of a cubic equation
+- `general_external <https://github.com/IDAES/idaes-ext/tree/main/src/general_helmholtz>`_, functions for Helmholtz equations of state
+- `cubic_roots <https://github.com/IDAES/idaes-ext/tree/main/src/cubic>`_, functions for finding roots of a cubic equation
 - `functions <https://github.com/IDAES/idaes-ext/tree/main/src/functions>`_, miscellaneous simple math functions, examples, and test code
 
 Extras
@@ -45,11 +47,73 @@ Extras
 
 - petsc, `AMPL solver library <https://ampl.com/REFS/hooking2.pdf>`_ `interface wrapper <https://github.com/IDAES/idaes-ext/tree/main/petsc>`_ for `PETSc's <https://petsc.org/release/>`_ SNES and TS solvers.
 
+Supported Systems
+-----------------
+
+Currently builds are available for Windows, ARM64 based macOS, and several Linux
+distributions.  Although the binaries are complied on a smaller number of platforms,
+one of the available builds should work on most recent Linux distributions. The table
+below shows distributions that should work automatically. If you have a distribution
+not on the list, you can try to specify a similar distribution.
+
++-----------------------------+---------------+--------------------+-------------------+
+| Distro/OS                   | ID            | Arch               | Build Distro/OS   |
++=============================+===============+====================+===================+
+| AlmaLinux 8                 | almalinux7    | x86_64, aarch6     | el8               |
++-----------------------------+---------------+--------------------+-------------------+
+| CentOS 7                    | centos7       | x86_64             | el7               |
++-----------------------------+---------------+--------------------+-------------------+
+| CentOS 8                    | centos8       | x86_64, aarch6     | el8               |
++-----------------------------+---------------+--------------------+-------------------+
+| Debian 9                    | debian9       | x86_64             | el7               |
++-----------------------------+---------------+--------------------+-------------------+
+| Debian 10                   | debian10      | x86_64, aarch6     | el8               |
++-----------------------------+---------------+--------------------+-------------------+
+| Debian 11                   | debian11      | x86_64, aarch64    | ubuntu2004        |
++-----------------------------+---------------+--------------------+-------------------+
+| Kubuntu 18.04               | kubuntu1804   | x86_64, aarch6     | ubuntu1804        |
++-----------------------------+---------------+--------------------+-------------------+
+| Kubuntu 20.04               | kubuntu2004   | x86_64, aarch64    | ubuntu2004        |
++-----------------------------+---------------+--------------------+-------------------+
+| Kubuntu 22.04               | kubuntu2204   | x86_64, aarch6     | ubuntu2204        |
++-----------------------------+---------------+--------------------+-------------------+
+| Linux Mint 20               | ubuntu2004    | x86_64, aarch64    | ubuntu2004        |
++-----------------------------+---------------+--------------------+-------------------+
+| macOS                       | darwin        | x86_64, aarch64    | darwin            |
++-----------------------------+---------------+--------------------+-------------------+
+| Red Hat Enterprise Linux 7  | rhel7         | x86_64             | el7               |
++-----------------------------+---------------+--------------------+-------------------+
+| Red Hat Enterprise Linux 8  | rhel8         | x86_64, aarch6     | el8               |
++-----------------------------+---------------+--------------------+-------------------+
+| Rocky Linux 8               | rocky8        | x86_64, aarch6     | el8               |
++-----------------------------+---------------+--------------------+-------------------+
+| Scientific Linux 7          | scientific7   | x86_64             | el7               |
++-----------------------------+---------------+--------------------+-------------------+
+| Ubuntu 18.04                | ubuntu1804    | x86_64, aarch6     | ubuntu1804        |
++-----------------------------+---------------+--------------------+-------------------+
+| Ubuntu 20.04                | ubuntu2004    | x86_64, aarch64    | ubuntu2004        |
++-----------------------------+---------------+--------------------+-------------------+
+| Ubuntu 22.04                | ubuntu2204    | x86_64, aarch6     | ubuntu2204        |
++-----------------------------+---------------+--------------------+-------------------+
+| Windows 10, 11              | windows       | x86_64             | windows           |
++-----------------------------+---------------+--------------------+-------------------+
+| Xubuntu 18.04               | xubuntu1804   | x86_64, aarch6     | ubuntu1804        |
++-----------------------------+---------------+--------------------+-------------------+
+| Xubuntu 20.04               | xubuntu2004   | x86_64, aarch64    | ubuntu2004        |
++-----------------------------+---------------+--------------------+-------------------+
+| Xubuntu 22.04               | xubuntu2204   | x86_64, aarch6     | ubuntu2204        |
++-----------------------------+---------------+--------------------+-------------------+
+
 Install Location
 ----------------
 
-The location of the binary file installation is not currently configurable and
-it can be found with the command line command ``idaes bin-directory``.
+The location of the binary file installation can be found with the command line
+command ``idaes bin-directory``.  On Windows, by default it is in
+``%LOCALAPPDATA%\idaes\bin``. On other operating systems it is in
+``$HOME/.idaes/bin`` by default.  The location of IDAES data files can be changed
+by setting the ``IDAES_DATA`` environment variable. The environment variable
+method of setting the data directory can accommodate nonstandard setups or
+multiple IDAES installations.
 
 Manual Installation
 -------------------
@@ -71,7 +135,7 @@ Using Solvers Without IDAES
 ---------------------------
 
 Generally, the environment variables are set up to use the IDAES solvers when any
-idaes module is imported in Python.  If you would like to use the solvers in
+IDAES module is imported in Python.  If you would like to use the solvers in
 Pyomo without importing IDAES, you will need to add the install location to your
 executable and dynamic library search path environment variables as appropriate
 for your operating system (e.g. add the install location to $PATH in Linux).
@@ -79,62 +143,3 @@ for your operating system (e.g. add the install location to $PATH in Linux).
 If you would like to use the IDAES binary distribution with Pyomo and have IDAES
 installed the simplest way to set the appropriate paths is just to
 ``import idaes``.
-
-Using the WSL
--------------
-
-The Linux binary builds can be run on Windows using the
-`WSL <https://docs.microsoft.com/en-us/windows/wsl/about>`_.  This is useful
-when solvers depend on POSIX standards.  Currently the optional PETSc solver is
-the only one which does not run on Windows.
-
-In the WSL environment, download and extract the desired Linux release (e.g. Ubuntu 20.04) of
-the solver (i.e. PETSc) you would like to run following the instructions under manual
-installation above. Then install required libraries for your release (see
-installation instructions `here <https://idaes-pse.readthedocs.io/en/stable/getting_started/index.html#linux>`_
-for supported distributions).
-
-In the WSL environment you can check that PETSc is installed correctly. In your
-desired Linux release navigate to the folder containing the compiled PETSc binary
-and run the command ``./petsc --version``. If setup correctly, details of the PETSc
-release will be printed on the screen.
-
-In the Windows IDAES binary directory, create a
-batch file with the format ``{solver}_wsl.bat`` for example for PETSc
-``petsc_wsl.bat``. The location of the IDAES binary directory can be found by running
-the command ``idaes bin-directory``. Assuming you have put the binary file in ``$HOME/local/bin``
-and your WSL user name is ``john``, and the distribution installed is ``Ubuntu-20.04``
-the contents of the batch file to run the PETSc solver are below:
-
-.. code-block ::
-
-  @echo off
-  idaes solver-wsl --distribution Ubuntu-20.04 --user john --executable ~/local/bin/petsc %*
-
-If you are unsure of the name of your installed distribution, navigate to your linux
-release and run the command ``wsl --list --all``. This will list all your linux
-distributions (if you have more than one) with their names.
-
-There are several options to check that your ``{solver}_wsl.bat``
-(e.g. ``petsc_wsl.bat``) file is installed correctly.
-In an Anaconda Prompt window or a Command Prompt window run the command
-``%LOCALAPPDATA%\idaes\bin\petsc_wsl.bat --version``. For users of Git Bash,
-open a Git Bash window and run the command
-``$LOCALAPPDATA/idaes/bin/petsc_wsl.bat --version``.
-While for powershell, open a powershell window and run the command
-``start-process -NoNewWindow -wait $Env:LOCALAPPDATA\idaes\bin\petsc_wsl.bat –version``.
-In all cases, the conda environment where the solver is installed has to be active (i.e. activate it with ``conda activate <env name>``).
-Details of the solver release version will be printed on the screen if the setup has been completed correctly.
-
-If you want to use user-defined AMPL functions with a WSL solver while running IDAES
-in the normal Windows environment, you will need to set the ``AMPLFUNC`` environment
-variable in the WSL environment manually. The ``AMPLFUNC`` variable is a newline-separated
-list of paths to shared libraries containing user-defined AMPL functions.  The easiest way
-to handle user-defined functions in this case is to just set ``AMPLFUNC`` in your
-``.bashrc`` file then run the WSL command in interactive mode, with the batch file
-setup below.
-
-.. code-block ::
-
-  @echo off
-  idaes solver-wsl --distribution Ubuntu-20.04 --user john --executable bash -ic '~/local/bin/petsc %*'

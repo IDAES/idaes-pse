@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 from copy import deepcopy
 from math import sqrt
@@ -29,26 +29,32 @@ class FCCLattice(UnitCellLattice):
     def __init__(self, IAD):
         RefUnitCellShape = Cube(1, BotBackLeftCorner=np.array([0, 0, 0], dtype=float))
         RefUnitCellTiling = CubicTiling(RefUnitCellShape)
-        RefFracPositions = [np.array([0.0, 0.0, 0.0]),
-                            np.array([0.5, 0.5, 0.0]),
-                            np.array([0.0, 0.5, 0.5]),
-                            np.array([0.5, 0.0, 0.5])]
+        RefFracPositions = [
+            np.array([0.0, 0.0, 0.0]),
+            np.array([0.5, 0.5, 0.0]),
+            np.array([0.0, 0.5, 0.5]),
+            np.array([0.5, 0.0, 0.5]),
+        ]
         RefUnitCell = UnitCell(RefUnitCellTiling, RefFracPositions)
         UnitCellLattice.__init__(self, RefUnitCell)
         self._IAD = FCCLattice.RefIAD  # IAD is set correctly after calling applyTransF
         self.applyTransF(ScaleFunc(IAD / FCCLattice.RefIAD))
-        self._NthNeighbors = [[np.array([0.0, -0.5, 0.5]),
-                               np.array([-0.5, -0.5, 0.0]),
-                               np.array([-0.5, 0.0, 0.5]),
-                               np.array([0.5, -0.5, 0.0]),
-                               np.array([0.0, -0.5, -0.5]),
-                               np.array([-0.5, 0.0, -0.5]),
-                               np.array([-0.5, 0.5, 0.0]),
-                               np.array([0.0, 0.5, 0.5]),
-                               np.array([0.5, 0.0, 0.5]),
-                               np.array([0.5, 0.0, -0.5]),
-                               np.array([0.0, 0.5, -0.5]),
-                               np.array([0.5, 0.5, 0.0])]]
+        self._NthNeighbors = [
+            [
+                np.array([0.0, -0.5, 0.5]),
+                np.array([-0.5, -0.5, 0.0]),
+                np.array([-0.5, 0.0, 0.5]),
+                np.array([0.5, -0.5, 0.0]),
+                np.array([0.0, -0.5, -0.5]),
+                np.array([-0.5, 0.0, -0.5]),
+                np.array([-0.5, 0.5, 0.0]),
+                np.array([0.0, 0.5, 0.5]),
+                np.array([0.5, 0.0, 0.5]),
+                np.array([0.5, 0.0, -0.5]),
+                np.array([0.0, 0.5, -0.5]),
+                np.array([0.5, 0.5, 0.0]),
+            ]
+        ]
 
     # === CONSTRUCTOR - Aligned with FCC {100}
     @classmethod
@@ -61,7 +67,7 @@ class FCCLattice(UnitCellLattice):
         result = cls(IAD)
         thetaX = -np.pi * 0.25
         thetaY = -np.arctan2(-sqrt(2), 2)
-        thetaZ = (np.pi * 0.5 if blnTrianglesAlignedWithX else 0)
+        thetaZ = np.pi * 0.5 if blnTrianglesAlignedWithX else 0
         result.applyTransF(RotateFunc.fromXYZAngles(thetaX, thetaY, thetaZ))
         return result
 
@@ -71,7 +77,7 @@ class FCCLattice(UnitCellLattice):
             if TransF.isIsometric:
                 self._IAD *= TransF.Scale[0]
             else:
-                raise ValueError('FCCLattice applyTransF: Can only scale isometrically')
+                raise ValueError("FCCLattice applyTransF: Can only scale isometrically")
         UnitCellLattice.applyTransF(self, TransF)
 
     # === PROPERTY EVALUATION METHODS

@@ -2,12 +2,12 @@ Flue Gas Property Package
 =========================
 
 .. index::
-   pair: idaes.power_generation.properties.IdealProp_FlueGas;FlueGasParameterBlock
-   pair: idaes.power_generation.properties.IdealProp_FlueGas;FlueGasParameterData
-   pair: idaes.power_generation.properties.IdealProp_FlueGas;FlueGasStateBlock
-   pair: idaes.power_generation.properties.IdealProp_FlueGas;FlueGasStateBlockData
+   pair: idaes.models_extra.power_generation.properties.IdealProp_FlueGas;FlueGasParameterBlock
+   pair: idaes.models_extra.power_generation.properties.IdealProp_FlueGas;FlueGasParameterData
+   pair: idaes.models_extra.power_generation.properties.IdealProp_FlueGas;FlueGasStateBlock
+   pair: idaes.models_extra.power_generation.properties.IdealProp_FlueGas;FlueGasStateBlockData
 
-.. currentmodule:: idaes.power_generation.properties.IdealProp_FlueGas
+.. currentmodule:: idaes.models_extra.power_generation.properties.IdealProp_FlueGas
 
 A flue gas property package has been developed to provide properties of combustion gases and air. 
 The ideal gas property package includes the main components in flue gas: O2, N2, NO, CO2, H2O, SO2

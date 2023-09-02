@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Convenience plotting functions for time-dependent variables.
@@ -19,37 +19,7 @@ __author__ = "John Eslick"
 import matplotlib.pyplot as plt
 
 import pyomo.environ as pyo
-from pyomo.common.deprecation import deprecated
 from pyomo.core.base.indexed_component_slice import IndexedComponent_slice
-
-
-@deprecated(
-    "idaes.core.util.plot.stitch_dynamic is deprecated use"
-    " idaes.core.util.plot.dynamic_value_list instead",
-    version=1.12,
-)
-def stitch_dynamic(*args):
-    """
-    Combine time-indexed Pyomo component values from different models into one
-    combined time set. This allows you to use multiple models to simulate
-    sections of the time domain, and plot them all together.
-
-    Args:
-        Positional arguments (): Multiple Pyomo components indexed by time, or
-            time sets
-
-    Returns:
-        (list) with the time indexed Pyomo component values concatenated for
-            plotting
-    """
-
-    l = []
-    for v in args:
-        if isinstance(v, pyo.Set):
-            l += [t for t in v]
-        else:
-            l += [pyo.value(v[t]) for t in v]
-    return l
 
 
 def dynamic_value_list(*args, units=None):

@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 NRTL property model for a benzene-toluene mixture.
@@ -16,35 +16,37 @@ The example model is from the IDAES tutorial,
 https://github.com/IDAES/examples-pse/blob/main/src/Tutorials/Advanced/ParamEst/
 """
 from idaes.core import FlowsheetBlock
-from idaes.generic_models.unit_models import Flash
-from idaes.generic_models.properties.activity_coeff_models.BTX_activity_coeff_VLE import BTXParameterBlock
+from idaes.models.unit_models import Flash
+from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
+    BTXParameterBlock,
+)
 import idaes.logger as idaeslog
 from pyomo.environ import *
 
+
 def NRTL_model(data):
     """This function generates an instance of the NRTL Pyomo model using 'data' as the input argument
-    
+
     Parameters
     ----------
     data: pandas DataFrame, list of dictionaries, or list of json file names
         Data that is used to build an instance of the Pyomo model
-    
+
     Returns
     -------
     m: an instance of the Pyomo model
         for estimating parameters and covariance
     """
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.properties = BTXParameterBlock(default={"valid_phase":
-                                                 ('Liq', 'Vap'),
-                                                 "activity_coeff_model":
-                                                 'NRTL'})
-    m.fs.flash = Flash(default={"property_package": m.fs.properties})
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = BTXParameterBlock(
+        valid_phase=("Liq", "Vap"), activity_coeff_model="NRTL"
+    )
+    m.fs.flash = Flash(property_package=m.fs.properties)
 
     # Initialize at a certain inlet condition
     m.fs.flash.inlet.flow_mol.fix(1)
-    m.fs.flash.inlet.temperature.fix(368) 
+    m.fs.flash.inlet.temperature.fix(368)
     m.fs.flash.inlet.pressure.fix(101325)
     m.fs.flash.inlet.mole_frac_comp[0, "benzene"].fix(0.5)
     m.fs.flash.inlet.mole_frac_comp[0, "toluene"].fix(0.5)
@@ -85,19 +87,18 @@ def NRTL_model(data):
 
 def NRTL_model_opt():
     """This function generates an instance of the NRTL Pyomo model
-    
+
     Returns
     -------
     m: an instance of the Pyomo model
         for uncertainty propagation
     """
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.properties = BTXParameterBlock(default={"valid_phase":
-                                                 ('Liq', 'Vap'),
-                                                 "activity_coeff_model":
-                                                 'NRTL'})
-    m.fs.flash = Flash(default={"property_package": m.fs.properties})
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = BTXParameterBlock(
+        valid_phase=("Liq", "Vap"), activity_coeff_model="NRTL"
+    )
+    m.fs.flash = Flash(property_package=m.fs.properties)
 
     # Initialize at a certain inlet condition
     m.fs.flash.inlet.flow_mol.fix(1)
@@ -135,31 +136,37 @@ def NRTL_model_opt():
 
     m.fs.properties.tau["toluene", "benzene"].setlb(-5)
     m.fs.properties.tau["toluene", "benzene"].setub(5)
-    
+
     # To use kaug
     # objective function required
     # need to unfix the variables
-    m.obj = Objective(expr = 0*m.fs.properties.tau["benzene","toluene"] + exp(-m.fs.properties.alpha['toluene','benzene'].value * m.fs.properties.tau['toluene','benzene']), sense=minimize)
-    m.fs.properties.tau["benzene", "toluene"].fixed = False # To use kaug
+    m.obj = Objective(
+        expr=0 * m.fs.properties.tau["benzene", "toluene"]
+        + exp(
+            -m.fs.properties.alpha["toluene", "benzene"].value
+            * m.fs.properties.tau["toluene", "benzene"]
+        ),
+        sense=minimize,
+    )
+    m.fs.properties.tau["benzene", "toluene"].fixed = False  # To use kaug
     m.fs.properties.tau["toluene", "benzene"].fixed = False
     return m
 
 
 def NRTL_model_opt_infeasible():
     """This function generates an instance of the NRTL Pyomo model
-    
+
     Returns
     -------
     m: an instance of the Pyomo model
         for uncertainty propagation
     """
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.properties = BTXParameterBlock(default={"valid_phase":
-                                                 ('Liq', 'Vap'),
-                                                 "activity_coeff_model":
-                                                 'NRTL'})
-    m.fs.flash = Flash(default={"property_package": m.fs.properties})
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = BTXParameterBlock(
+        valid_phase=("Liq", "Vap"), activity_coeff_model="NRTL"
+    )
+    m.fs.flash = Flash(property_package=m.fs.properties)
 
     # Initialize at a certain inlet condition
     m.fs.flash.inlet.flow_mol.fix(1)
@@ -195,7 +202,14 @@ def NRTL_model_opt_infeasible():
     # To use kaug
     # objective function required
     # need to unfix the variables
-    m.obj = Objective(expr = 0*m.fs.properties.tau["benzene","toluene"] + exp(-m.fs.properties.alpha['toluene','benzene'].value * m.fs.properties.tau['toluene','benzene']), sense=minimize)
+    m.obj = Objective(
+        expr=0 * m.fs.properties.tau["benzene", "toluene"]
+        + exp(
+            -m.fs.properties.alpha["toluene", "benzene"].value
+            * m.fs.properties.tau["toluene", "benzene"]
+        ),
+        sense=minimize,
+    )
     m.fs.properties.tau["benzene", "toluene"].fixed = False
     m.fs.properties.tau["toluene", "benzene"].fixed = False
     return m

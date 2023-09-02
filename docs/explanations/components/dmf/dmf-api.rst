@@ -4,13 +4,13 @@ DMF Application Programming Interface (API)
 ===========================================
 This page describes how to use the DMF when you create and save your models.
 For information on performing some DMF functions from the command-line,
-see :ref:`dmf-cli`. All the modules referenced here are in the :mod:`idaes.dmf` subpackage.
+see :ref:`dmf-cli`. All the modules referenced here are in the :mod:`idaes.core.dmf` subpackage.
 
 .. contents::
     :local:
     :depth: 1
 
-.. currentmodule:: idaes.dmf
+.. currentmodule:: idaes.core.dmf
 
 Initialization
 --------------
@@ -18,7 +18,7 @@ You can create a new :class:`dmfbase.DMF` instance quite simply:
 
 .. code-block:: python
 
-    from idaes.dmf import DMF
+    from idaes.core.dmf import DMF
     dmf = DMF()  # new DMF instance
 
 When initialized this way, the DMF will use the :ref:`configuration <dmf-config>` it finds
@@ -47,7 +47,7 @@ and described, using JSON Schema syntax. The schema is contained in the module v
 
 .. code-block:: python
 
-    from idaes.dmf.resource import Resource
+    from idaes.core.dmf.resource import Resource
 
     r = Resource()
     r.v["version_info"]["version"] = test_version
@@ -87,8 +87,8 @@ to the DMF instance (and, thus, its workspace) with the :meth:`dmfbase.DMF.add` 
 
 .. code-block:: python
 
-    from idaes.dmf import DMF
-    from idaes.dmf.resource import Resource
+    from idaes.core.dmf import DMF
+    from idaes.core.dmf.resource import Resource
 
     r = Resource()
     # ... create resource ...
@@ -100,7 +100,7 @@ method:
 
 .. code-block:: python
 
-    from idaes.dmf import DMF
+    from idaes.core.dmf import DMF
 
     dmf = DMF()
     r = dmf.new(file="/path/to/breaking_news.doc",
@@ -114,7 +114,7 @@ to do things like add a description:
 
 .. code-block:: python
 
-    from idaes.dmf import DMF
+    from idaes.core.dmf import DMF
 
     dmf = DMF()
     # create and add resource
@@ -146,9 +146,9 @@ Then you call the :meth:`dmfbase.DMF.update` function on the DMF instance to sav
 
 .. code-block:: python
 
-    from idaes.dmf import DMF
-    from idaes.dmf.resource import Triple, PR_DERIVED
-    from idaes.dmf.resource import create_relation_args
+    from idaes.core.dmf import DMF
+    from idaes.core.dmf.resource import Triple, PR_DERIVED
+    from idaes.core.dmf.resource import create_relation_args
 
     dmf = DMF()
     # create and add resources

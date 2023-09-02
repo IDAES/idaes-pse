@@ -1,24 +1,28 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
+# TODO: Missing doc strings
+# pylint: disable=missing-module-docstring
+
 from pyomo.core.base.componentuid import ComponentUID
 from pyomo.core.base.expression import Expression
 
+
 def get_tracking_cost_from_constant_setpoint(
-        variables,
-        time,
-        setpoint_data,
-        weight_data=None,
-        ):
+    variables,
+    time,
+    setpoint_data,
+    weight_data=None,
+):
     """
     This function returns a tracking cost expression for the given time-indexed
     variables and associated setpoint data.
@@ -64,8 +68,9 @@ def get_tracking_cost_from_constant_setpoint(
 
     def tracking_rule(m, t):
         return sum(
-            weight_data[name] * (var[t] - setpoint_data[name])**2
+            weight_data[name] * (var[t] - setpoint_data[name]) ** 2
             for name, var in zip(variable_names, variables)
         )
+
     tracking_expr = Expression(time, rule=tracking_rule)
     return tracking_expr

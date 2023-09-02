@@ -18,13 +18,13 @@ The example below demonstrates the basic Pump model usage:
 
   import pyomo.environ as pyo
   from idaes.core import FlowsheetBlock
-  from idaes.generic_models.unit_models import Pump
-  from idaes.generic_models.properties import iapws95
+  from idaes.models.unit_models import Pump
+  from idaes.models.properties import iapws95
 
   m = pyo.ConcreteModel()
-  m.fs = FlowsheetBlock(default={"dynamic": False})
+  m.fs = FlowsheetBlock(dynamic=False)
   m.fs.properties = iapws95.Iapws95ParameterBlock()
-  m.fs.unit = Pump(default={"property_package": m.fs.properties})
+  m.fs.unit = Pump(property_package=m.fs.properties)
 
   m.fs.unit.inlet.flow_mol[0].fix(100)
   m.fs.unit.inlet.enth_mol[0].fix(2000)

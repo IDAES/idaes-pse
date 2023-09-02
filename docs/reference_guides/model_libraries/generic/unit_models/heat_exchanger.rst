@@ -2,38 +2,44 @@ HeatExchanger (0D)
 ==================
 
 .. index::
-   pair: idaes.generic_models.unit_models.heat_exchanger;HeatExchanger
+   pair: idaes.models.unit_models.heat_exchanger;HeatExchanger
 
-.. currentmodule:: idaes.generic_models.unit_models.heat_exchanger
+.. currentmodule:: idaes.models.unit_models.heat_exchanger
 
-The HeatExchanger model can be imported from :code:`idaes.generic_models.unit_models`,
+The HeatExchanger model can be imported from :code:`idaes.models.unit_models`,
 while additional rules and utility functions can be imported from
-``idaes.generic_models.unit_models.heat_exchanger``.
+``idaes.models.unit_models.heat_exchanger``.
 
 Example
 -------
 
 The example below demonstrates how to initialize the HeatExchanger model, and
-override the default temperature difference calculation.
+override the default temperature difference calculation. This example also
+demonstrates how to assign custom names to the hot and cold sides of the heat
+exchanger.
 
 .. testcode::
 
   import pyomo.environ as pe # Pyomo environment
   from idaes.core import FlowsheetBlock, StateBlock
-  from idaes.generic_models.unit_models import HeatExchanger
-  from idaes.generic_models.unit_models.heat_exchanger import delta_temperature_amtd_callback
-  from idaes.generic_models.properties import iapws95
+  from idaes.models.unit_models import HeatExchanger
+  from idaes.models.unit_models.heat_exchanger import HX0DInitializer
+  from idaes.models.unit_models.heat_exchanger import delta_temperature_amtd_callback
+  from idaes.models.properties import iapws95
 
   # Create an empty flowsheet and steam property parameter block.
   model = pe.ConcreteModel()
-  model.fs = FlowsheetBlock(default={"dynamic": False})
+  model.fs = FlowsheetBlock(dynamic=False)
   model.fs.properties = iapws95.Iapws95ParameterBlock()
 
   # Add a Heater model to the flowsheet.
-  model.fs.heat_exchanger = HeatExchanger(default={
-          "delta_temperature_callback":delta_temperature_amtd_callback,
-          "shell":{"property_package": model.fs.properties},
-          "tube":{"property_package": model.fs.properties}})
+  model.fs.heat_exchanger = HeatExchanger(
+      delta_temperature_callback=delta_temperature_amtd_callback,
+      hot_side_name="shell",
+      cold_side_name="tube",
+      shell={"property_package": model.fs.properties},
+      tube={"property_package": model.fs.properties}
+  )
 
   model.fs.heat_exchanger.area.fix(1000)
   model.fs.heat_exchanger.overall_heat_transfer_coefficient[0].fix(100)
@@ -45,7 +51,8 @@ override the default temperature difference calculation.
   model.fs.heat_exchanger.tube_inlet.enth_mol.fix(3000)
 
   # Initialize the model
-  model.fs.heat_exchanger.initialize()
+  initializer = HX0DInitializer()
+  initializer.initialize(model.fs.heat_exchanger)
 
 Degrees of Freedom
 ------------------
@@ -60,21 +67,30 @@ frequently fixed are two of:
 
 The user may also provide constraints to calculate the heat transfer coefficient.
 
+.. note::
+    For model initialization, the in-built routine currently only supports defining two of area, heat transfer
+    coefficient and heat duty as fixed variables. Fixing of temperature differences or driving forces is not
+    currently supported. Also note that it is assumed that if a time-indexed variable (i.e. heat duty) is fixed
+    that it will be fixed at all points in time during initialization. Users wishing to solve models with alternative
+    specifications should first initialize the model using one of the supported options, or write a custom
+    initialization routine for their specification.
+
 Model Structure
 ---------------
 
-The ``HeatExchanger`` model contains two ``ControlVolume0DBlock`` blocks. By default the
-hot side is named ``shell`` and the cold side is named ``tube``. These names are configurable.
-The sign convention is that duty is positive for heat flowing from the hot side to the cold
-side.  Aside from the sign convention there is no requirement that the hot side be hotter
-than the cold side.
+The ``HeatExchanger`` model contains two ``ControlVolume0DBlock`` blocks which are named ``hot_side`` and ``cold_side``.
+These names are configurable using the ``hot_side_name`` and ``cold_side_name`` configuration arguments, in which case
+aliases are assigned to the control volumes and associated Ports using the names provided (note that ``hot_side`` and
+``cold_side`` will always work). The sign convention is that duty is positive for heat flowing from the hot side to the cold
+side.  Aside from the sign convention there is no requirement that the hot side be hotter than the cold side, however
+some formulations for the average temperature driving force may require that the hot side be hotter than the cold side.
 
 The control volumes are configured the same as the ``ControlVolume0DBlock`` in the
 :ref:`Heater model <reference_guides/model_libraries/generic/unit_models/heater:Heater>`. The ``HeatExchanger`` model contains additional
 constraints that calculate the amount of heat transferred from the hot side to the cold side.
 
 The ``HeatExchanger`` has two inlet ports and two outlet ports. By default these are
-``shell_inlet``, ``tube_inlet``, ``shell_outlet``, and ``tube_outlet``. If the user
+``hot_side_inlet``, ``cold_side_inlet``, ``hot_side_outlet``, and ``cold_side_outlet``. If the user
 supplies different hot and cold side names the inlet and outlets are named accordingly.
 
 Variables
@@ -112,12 +128,18 @@ Temperature difference is an expression:
 
 The heat transfer coefficient is a variable with no associated constraints by default.
 
+Initialization
+--------------
+
+.. autoclass:: HX0DInitializer
+   :members: initialization_routine
+
 Class Documentation
 -------------------
 
 .. Note::
-  The ``hot_side_config`` and ``cold_side_config`` can also be supplied using the name of
-  the hot and cold sides (``shell`` and ``tube`` by default) as in :ref:`the example <reference_guides/model_libraries/generic/unit_models/heat_exchanger:Example>`.
+  The ``hot_side`` and ``cold_side`` can also be supplied using the name of
+  the hot and cold sides as in :ref:`the example <reference_guides/model_libraries/generic/unit_models/heat_exchanger:Example>`.
 
 .. autoclass:: HeatExchanger
    :members:
@@ -129,7 +151,7 @@ Callbacks
 ---------
 
 A selection of functions for constructing the ``delta_temperature`` variable or
-expression are provided in the ``idaes.generic_models.unit_models.heat_exchanger`` module.
+expression are provided in the ``idaes.models.unit_models.heat_exchanger`` module.
 The user may also provide their own function. These callbacks should all take
 one argument (the HeatExchanger block). With the block argument, the function
 can add any additional variables, constraints, and expressions needed.  The only
@@ -155,3 +177,5 @@ to avoid an evaluation error in the log function.
 .. autofunction:: delta_temperature_amtd_callback
 
 .. autofunction:: delta_temperature_underwood_callback
+
+.. autofunction:: delta_temperature_lmtd_smooth_callback

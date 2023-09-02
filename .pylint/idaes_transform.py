@@ -4,6 +4,7 @@ dynamically created through the `declare_process_block_class()` decorator.
 
 See #1159 for more information.
 """
+from dataclasses import dataclass
 import sys
 import functools
 import logging
@@ -11,41 +12,75 @@ import time
 import typing
 
 import astroid
+import pylint
 from astroid.builder import extract_node, parse
 
 
-_logger = logging.getLogger('pylint.ideas_plugin')
+_logger = logging.getLogger("pylint.ideas_plugin")
 
 
 # TODO figure out a better way to integrate this with pylint logging and/or verbosity settings
 _display = _notify = lambda *a, **kw: None
 
 
-REFERENCE_PYLINT_VERSION = '2.8.3'
+def _suppress_inference_errors(max_inferred=500) -> None:
+    """
+    Increasing this number to suppress inference errors causing false-positives in e.g. pandas.read_csv().
+    The value 500 is a sufficiently high number but otherwise arbitrary.
+    See https://github.com/PyCQA/pylint/issues/4577 for more information.
+    """
+    astroid.context.InferenceContext.max_inferred = int(max_inferred)
 
 
-def _check_version_compatibility():
-
-    from pylint import __version__
-    if __version__ != REFERENCE_PYLINT_VERSION:
-        cmd_to_install = f"pip install pylint=={REFERENCE_PYLINT_VERSION}"
-        msg = (
-            f"WARNING: this plugin's reference version is {REFERENCE_PYLINT_VERSION}, "
-            f"but the currently installed pylint version is {__version__}. "
-            "This is not necessarily a problem; "
-            f"however, in case of issues, try installing the reference version using {cmd_to_install}"
-        )
-        print(msg, file=sys.stderr)
+_suppress_inference_errors()
 
 
-def has_declare_block_class_decorator(cls_node, decorator_name="declare_process_block_class"):
-    if 'idaes' not in cls_node.root().name:
+@dataclass
+class VersionCompat:
+    distr_name: str
+    expected: str
+    actual: str
+
+    @property
+    def cmd_to_install(self) -> str:
+        return f"pip install {self.distr_name}=={self.expected}"
+
+
+def _check_version_compatibility() -> None:
+    to_check = [
+        VersionCompat(
+            distr_name="pylint",
+            expected="2.12.2",
+            actual=pylint.__version__,
+        ),
+        VersionCompat(
+            distr_name="astroid",
+            expected="2.9.3",
+            actual=astroid.__version__,
+        ),
+    ]
+
+    for v in to_check:
+        if v.actual != v.expected:
+            msg = (
+                f"WARNING: this plugin's reference version for {v.distr_name} is {v.expected}, "
+                f"but the currently installed version for is {v.actual}. "
+                "This is not necessarily a problem; "
+                f"however, in case of issues, try installing the reference version using {v.cmd_to_install}"
+            )
+            print(msg, file=sys.stderr)
+
+
+def has_declare_block_class_decorator(
+    cls_node, decorator_name="declare_process_block_class"
+):
+    if "idaes" not in cls_node.root().name:
         return False
     decorators = cls_node.decorators
     if not decorators:
         return False
     for dec_subnode in decorators.nodes:
-        if hasattr(dec_subnode, 'func'):
+        if hasattr(dec_subnode, "func"):
             # this is true for decorators with arguments
             return dec_subnode.func.as_string() == decorator_name
     return False
@@ -55,8 +90,17 @@ def has_declare_block_class_decorator(cls_node, decorator_name="declare_process_
 # returning the cached result on subsequent calls
 @functools.lru_cache(maxsize=1)
 def get_base_class_node():
-    _notify('Getting base class node')
-    import_node = extract_node('from idaes.core.process_block import ProcessBlock; ProcessBlock')
+    _notify("Getting base class node")
+    pb_def = """
+        import idaes.core.base.process_block.ProcessBlock
+        class ProcessBlock(idaes.core.base.process_block.ProcessBlock):
+            # creating a stub for the __getitem__() method returning the uninferable object
+            # causes pylint to stop further checks on objects returned when calling [] on a derived class
+            # see e.g. https://github.com/PyCQA/astroid/blob/main/astroid/brain/brain_numpy_ndarray.py
+            # for another example of how this can be extended to create "uninferability stubs" for other methods
+            def __getitem__(self, *args): return uninferable
+    """
+    import_node = astroid.extract_node(pb_def)
     cls_node = next(import_node.infer())
     return cls_node
 
@@ -99,7 +143,7 @@ def create_declared_class_node(decorated_cls_node: astroid.ClassDef):
 
 def is_idaes_module(mod_node: astroid.Module):
     mod_name = mod_node.name
-    return 'idaes' in mod_name
+    return "idaes" in mod_name
 
 
 def register_process_block_class(decorated_cls_node: astroid.ClassDef):
@@ -119,13 +163,13 @@ def register_process_block_classes(mod_node: astroid.Module):
     _display(mod_node.name)
     for decorated_cls_node in iter_process_block_data_classes(mod_node):
         decl_cls_node = create_declared_class_node(decorated_cls_node)
-        _display(f'{decorated_cls_node.name} -> {decl_cls_node.name}')
+        _display(f"{decorated_cls_node.name} -> {decl_cls_node.name}")
 
 
 def is_config_block_class(node: astroid.ClassDef):
     # NOTE might be necessary to use node.qname() instead, but that's more prone to breaking
     # if the internal package structure is changed
-    return 'ConfigDict' in node.name
+    return "ConfigDict" in node.name
 
 
 def disable_attr_checks_on_slots(node: astroid.ClassDef):
@@ -141,15 +185,15 @@ def disable_attr_checks_on_slots(node: astroid.ClassDef):
     # overrides the "strict" semantics of having __slots__ defined
     # NOTE to be extra defensive, we should probably make sure that there are
     # no __slots__ defined throughout the complete class hierarchy as well
-    del node.locals['__slots__']
+    del node.locals["__slots__"]
 
 
 def has_conditional_instantiation(node: astroid.ClassDef, context=None):
-    if 'pyomo' not in node.qname():
+    if "pyomo" not in node.qname():
         return
     try:
         # check if the class defines a __new__()
-        dunder_new_node: astroid.FunctionDef = node.local_attr('__new__')[0]
+        dunder_new_node: astroid.FunctionDef = node.local_attr("__new__")[0]
     except astroid.AttributeInferenceError:
         return False
     else:
@@ -157,13 +201,16 @@ def has_conditional_instantiation(node: astroid.ClassDef, context=None):
         # find all return statements; if there's more than one, assume that instances are created conditionally,
         # and therefore the type of the instantiated object cannot be known with static analysis
         # to be more accurate, we should check for If nodes as well as maybe the presence of other __new__() calls
-        return_statements = list(dunder_new_node.nodes_of_class(astroid.node_classes.Return))
+        return_statements = list(
+            dunder_new_node.nodes_of_class(astroid.node_classes.Return)
+        )
         return len(return_statements) > 1
 
 
 def make_node_create_uninferable_instance(node: astroid.ClassDef, context=None):
     def _instantiate_uninferable(*args, **kwargs):
         return astroid.Uninferable()
+
     node.instantiate_class = _instantiate_uninferable
     return node
 
@@ -172,7 +219,9 @@ astroid.MANAGER.register_transform(
     # NOTE both these options were tried to see if there was a difference in performance,
     # but it doesn't seem to be the case at this point
     # astroid.ClassDef, register_process_block_class, has_declare_block_class_decorator
-    astroid.Module, register_process_block_classes, is_idaes_module,
+    astroid.Module,
+    register_process_block_classes,
+    is_idaes_module,
 )
 
 astroid.MANAGER.register_transform(
@@ -183,7 +232,7 @@ astroid.MANAGER.register_transform(
 astroid.MANAGER.register_transform(
     astroid.ClassDef,
     make_node_create_uninferable_instance,
-    predicate=has_conditional_instantiation
+    predicate=has_conditional_instantiation,
 )
 
 

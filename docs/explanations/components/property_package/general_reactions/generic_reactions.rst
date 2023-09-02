@@ -1,7 +1,7 @@
 Defining Reaction Packages
 ==========================
 
-.. contents:: Contents 
+.. contents:: Contents
     :depth: 2
 
 Introduction
@@ -12,7 +12,7 @@ In order to create and use a property package using the IDAES Generic Reaction P
 Units of Measurement
 --------------------
 
-As with generic thermophysical property packages, when defining a reaction package using the generic framework users must define the base units for the reaction package (see :ref:`link<explanations/components/property_package/uom:Defining Units of Measurement>`). The approach for setting the base units and units for all parameters is the same as for thermophysical property packages and depends on the approach used to define the reaction package.
+As with generic thermophysical property packages, when defining a reaction package using the generic framework users must define the base units for the reaction package (see :ref:`link<reference_guides/core/uom:Unit Sets>`). The approach for setting the base units and units for all parameters is the same as for thermophysical property packages and depends on the approach used to define the reaction package.
 
 Config Dictionary
 -----------------
@@ -27,7 +27,7 @@ The most common way to use the Generic Reaction Package Framework is to create a
 
     m.fs.thermo_properties = PhysicalParameterBlock()
 
-    m.fs.reaction_properties = GenericReactionParameterBlock(default={"property_package": m.fs.thermo_properties, config_dict})
+    m.fs.reaction_properties = GenericReactionParameterBlock(property_package=m.fs.thermo_properties, **config_dict)
 
 In the above example, the PhysicalParameterBlock object can be from any thermophysical property package suitable for the user's application.
 
@@ -90,7 +90,7 @@ Class Definition
 
 Alternatively, the IDAES Generic Reaction Package Framework supports defining classes derived from the IDAES `GenericReactionParameterData` class with methods for defining configuration options and parameters.
 
-Users can define two methods which are called automatically when an instance of the property package is created:
+Users can define two methods that are called automatically when an instance of the property package is created:
 
 1. `configure`, which defines the users selection of sub-models, and
 2. `parameters`, which defines the parameters necessary for the selected property methods.

@@ -2,9 +2,9 @@ BoilerHeatExchanger2D
 =====================
 
 .. index::
-   pair: idaes.power_generation.unit_models.boiler_heat_exchanger_2D; HeatExchangerCrossFlow2D_Header
+   pair: idaes.models_extra.power_generation.unit_models.boiler_heat_exchanger_2D; HeatExchangerCrossFlow2D_Header
 
-.. currentmodule:: idaes.power_generation.unit_models.boiler_heat_exchanger_2D
+.. currentmodule:: idaes.models_extra.power_generation.unit_models.boiler_heat_exchanger_2D
 
 The BoilerHeatExchanger2D model can be used to represent boiler heat exchangers in
 sub-critical and super critical power plant flowsheets (i.e. econmizer, primary superheater, secondary superheater, finishing superheater, reheater, etc.).
@@ -30,9 +30,9 @@ The transient tube wall temperature T_(w,r)  at each discretized radius r is cal
 
 where, T_(w,r) is the tube metal temperature, t is time, alfa is termal diffusivity of the tube metal, typically steel, and r is the radius. This partial differential equation can be discretized by Pyomo-DAE in the radius direction. The heat accumulation in the tube metal is represented by the solution of the transient temperatures along the radius direction.
 
-The HeatExchangerCrossFlow2D_Header model can be imported from :code:`idaes.power_generation.unit_models`,
+The HeatExchangerCrossFlow2D_Header model can be imported from :code:`idaes.models_extra.power_generation.unit_models`,
 while additional rules and utility functions can be imported from
-``idaes.power_generation.unit_models.boiler_heat_exchanger2D``.
+``idaes.models_extra.power_generation.unit_models.boiler_heat_exchanger2D``.
 
 
 Degrees of Freedom
@@ -158,7 +158,7 @@ where:
 * :math:`\mu` : viscocity (kg/m/s)
 * tube_r_fouling : tube side fouling resistance (K m^2 / W)
 * shell_r_fouling : shell side fouling resistance (K m^2 / W)
-* fcorrection_htc: correction factor for overall heat trasnfer
+* fcorrection_htc: correction factor for overall heat transfer
 * f_arrangement: tube arrangement factor
 
 Note:
@@ -167,7 +167,7 @@ by default fcorrection_htc is set to 1, however, this variable can be used to ma
 Tube arrangement factor is a config argument with two different type of arrangements supported at the moment:
 1.- In-line tube arrangement factor (f_arrangement = 0.788), and 2.- Staggered tube arrangement factor (f_arrangement = 1). f_arrangement is a parameter that can be adjusted by the user.
 
-The ``HeatExchangerCrossFlow2D_Header`` model includes an argument to compute heat tranfer due to radiation of the flue gases. If has_radiation = True the model builds additional heat transfer calculations that will be added to the hconv_shell resistances.
+The ``HeatExchangerCrossFlow2D_Header`` model includes an argument to compute heat transfer due to radiation of the flue gases. If has_radiation = True the model builds additional heat transfer calculations that will be added to the hconv_shell resistances.
 Radiation effects are calculated based on the gas gray fraction and gas-surface radiation (between gas and shell).
 
 .. math::
@@ -196,7 +196,7 @@ Tube side:
 
 where:
 
-* :math:`k_{loss uturn}` : pressure loss coeficient of a tube u-turn
+* :math:`k_{loss uturn}` : pressure loss coefficient of a tube u-turn
 * g : is the acceleration of gravity 9.807 (m/s^2)
 
 Shell side:

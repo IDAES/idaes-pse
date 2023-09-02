@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 import pyomo.common.unittest as unittest
 import pytest
@@ -21,14 +21,14 @@ from idaes.apps.nmpc.cost_expressions import (
     get_tracking_cost_from_constant_setpoint,
 )
 
+
 @pytest.mark.unit
 class TestTrackingCost(unittest.TestCase):
-
     def test_tracking_cost_no_weights(self):
         m = pyo.ConcreteModel()
         m.time = pyo.Set(initialize=[1, 2, 3])
-        m.v1 = pyo.Var(m.time, initialize={i: 1*i for i in m.time})
-        m.v2 = pyo.Var(m.time, initialize={i: 2*i for i in m.time})
+        m.v1 = pyo.Var(m.time, initialize={i: 1 * i for i in m.time})
+        m.v2 = pyo.Var(m.time, initialize={i: 2 * i for i in m.time})
 
         setpoint_data = {
             str(pyo.ComponentUID(m.v1)): 3.0,
@@ -42,24 +42,21 @@ class TestTrackingCost(unittest.TestCase):
         )
 
         var_sets = {
-            i: ComponentSet(identify_variables(m.tracking_expr[i]))
-            for i in m.time
+            i: ComponentSet(identify_variables(m.tracking_expr[i])) for i in m.time
         }
         for i in m.time:
             self.assertIn(m.v1[i], var_sets[i])
             self.assertIn(m.v2[i], var_sets[i])
-            pred_value = (1*i - 3)**2 + (2*i - 4)**2
+            pred_value = (1 * i - 3) ** 2 + (2 * i - 4) ** 2
             self.assertEqual(pred_value, pyo.value(m.tracking_expr[i]))
-            pred_expr = (m.v1[i] - 3)**2 + (m.v2[i] - 4)**2
-            self.assertTrue(compare_expressions(
-                pred_expr, m.tracking_expr[i].expr
-            ))
+            pred_expr = (m.v1[i] - 3) ** 2 + (m.v2[i] - 4) ** 2
+            self.assertTrue(compare_expressions(pred_expr, m.tracking_expr[i].expr))
 
     def test_tracking_cost_with_weights(self):
         m = pyo.ConcreteModel()
         m.time = pyo.Set(initialize=[1, 2, 3])
-        m.v1 = pyo.Var(m.time, initialize={i: 1*i for i in m.time})
-        m.v2 = pyo.Var(m.time, initialize={i: 2*i for i in m.time})
+        m.v1 = pyo.Var(m.time, initialize={i: 1 * i for i in m.time})
+        m.v2 = pyo.Var(m.time, initialize={i: 2 * i for i in m.time})
 
         setpoint_data = {
             str(pyo.ComponentUID(m.v1)): 3.0,
@@ -78,24 +75,21 @@ class TestTrackingCost(unittest.TestCase):
         )
 
         var_sets = {
-            i: ComponentSet(identify_variables(m.tracking_expr[i]))
-            for i in m.time
+            i: ComponentSet(identify_variables(m.tracking_expr[i])) for i in m.time
         }
         for i in m.time:
             self.assertIn(m.v1[i], var_sets[i])
             self.assertIn(m.v2[i], var_sets[i])
-            pred_value = 0.1*(1*i - 3)**2 + 0.5*(2*i - 4)**2
+            pred_value = 0.1 * (1 * i - 3) ** 2 + 0.5 * (2 * i - 4) ** 2
             self.assertAlmostEqual(pred_value, pyo.value(m.tracking_expr[i]))
-            pred_expr = 0.1*(m.v1[i] - 3)**2 + 0.5*(m.v2[i] - 4)**2
-            self.assertTrue(compare_expressions(
-                pred_expr, m.tracking_expr[i].expr
-            ))
+            pred_expr = 0.1 * (m.v1[i] - 3) ** 2 + 0.5 * (m.v2[i] - 4) ** 2
+            self.assertTrue(compare_expressions(pred_expr, m.tracking_expr[i].expr))
 
     def test_exceptions(self):
         m = pyo.ConcreteModel()
         m.time = pyo.Set(initialize=[1, 2, 3])
-        m.v1 = pyo.Var(m.time, initialize={i: 1*i for i in m.time})
-        m.v2 = pyo.Var(m.time, initialize={i: 2*i for i in m.time})
+        m.v1 = pyo.Var(m.time, initialize={i: 1 * i for i in m.time})
+        m.v2 = pyo.Var(m.time, initialize={i: 2 * i for i in m.time})
 
         setpoint_data = {
             str(pyo.ComponentUID(m.v1)): 3.0,

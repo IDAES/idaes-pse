@@ -23,7 +23,13 @@ Variables
 
 StateJunctions have no additional variables.
 
-.. module:: idaes.generic_models.unit_models.statejunction
+.. module:: idaes.models.unit_models.statejunction
+
+Initialization
+--------------
+
+.. autoclass:: StateJunctionInitializer
+   :members: initialization_routine
 
 StateJunction Class
 -------------------

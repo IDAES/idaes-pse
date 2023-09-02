@@ -8,6 +8,7 @@ import sys
 from setuptools import setup, find_namespace_packages
 from typing import List, Tuple
 
+
 def warn(s):
     sys.stderr.write("*** WARNING *** {}\n".format(s))
 
@@ -32,17 +33,13 @@ def rglob(path, glob):
     return list(map(str, p.rglob(glob)))
 
 
-DEPENDENCIES_FOR_PRERELEASE_VERSION = [
-    "pyomo @ https://github.com/IDAES/pyomo/archive/6.3.0.zip"
-]
-
 # For included DMF data
 DMF_DATA_ROOT = "data"
 
 
 def dmf_data_files(root: str = DMF_DATA_ROOT) -> List[Tuple[str, List[str]]]:
     """Generate a list of pairs (directory, [files..]), covering all the DMF data
-       files, for the `data_files` option to :func:`setup()`.
+    files, for the `data_files` option to :func:`setup()`.
     """
     file_list = [
         (
@@ -57,6 +54,71 @@ def dmf_data_files(root: str = DMF_DATA_ROOT) -> List[Tuple[str, List[str]]]:
             file_list.append((files_subdir.as_posix(), file_names))
     return file_list
 
+
+class ExtraDependencies:
+    """
+    A convenience shorthand to define and combine dependencies for ``extras_require``.
+
+    >>> extras = ExtraDependencies()
+    >>> extras["ui"]
+    ['requests', 'pint']
+    >>> list(extras)
+    ['ui', 'dmf', 'omlt', 'grid', 'coolprop', 'testing']
+    >>> dict(extras)
+    {'ui': ['requests', 'pint'], 'dmf': ['jsonschema', 'setuptools', 'traitlets', ...], ...}
+    """
+
+    ui = [
+        # FIXME this must be changed to the PyPI distribution for the release
+        # "idaes-ui",
+        "idaes-ui @ git+https://github.com/IDAES/idaes-ui@main",
+    ]
+    _ipython = [
+        'ipython <= 8.12; python_version == "3.8"',
+    ]
+    dmf = [
+        # all modules relative to idaes.core.dmf
+        "jsonschema",  # commands, resource, workspace
+        "setuptools",  # provides pkg_resources?
+        "traitlets",  # dmfbase
+        "lxml",  # help
+        "seaborn",  # model_data (optional^2)
+        "PyPDF2",  # model_data (optional^2)
+        "colorama",  # util
+        *_ipython,  # magics
+        "pyyaml",  # workspace
+        "tinydb",  # resourcedb
+        "xlrd",  # tables (implicitly by pandas.read_excel())
+        "openpyxl",  # tables (implicitly by pandas.read_excel())
+    ]
+    omlt = [
+        "omlt==1.1",  # fix the version for now as package evolves
+        "tensorflow",
+    ]
+    grid = [
+        "gridx-prescient>=2.2.1",  # idaes.tests.prescient
+    ]
+    coolprop = [
+        "coolprop",  # idaes.generic_models.properties.general.coolprop
+    ]
+    testing = [
+        "pytest",
+        "addheader",
+        "pyyaml",
+    ]
+
+    def __init__(self):
+        self._data = dict(type(self).__dict__)
+
+    def keys(self):
+        for name, attr in self._data.items():
+            if not name.startswith("_") and isinstance(attr, list):
+                yield name
+
+    def __getitem__(self, key):
+        return self._data[key]
+
+
 kwargs = dict(
     zip_safe=False,
     name=NAME,
@@ -65,37 +127,17 @@ kwargs = dict(
     # Put abstract (non-versioned) deps here.
     # Concrete dependencies go in requirements[-dev].txt
     install_requires=[
-        # idaes core / dmf
-        "backports.shutil_get_terminal_size",
-        "bunch",
-        "click>=8",
-        "colorama",
-        "flask",  # for ui/fsvis
-        "flask-cors",
-        "jupyter",
-        "lxml",
-        "matplotlib",
-        "nbconvert",
-        "nbformat",
+        "pyomo>=6.6.2",
+        "pint",  # required to use Pyomo units
+        "networkx",  # required to use Pyomo network
         "numpy",
-        "networkx",
-        "omlt==0.3.1", # fix the version for now as package evolves
-        "pandas",
-        "pint",
-        "psutil",
-        "pyomo>=6.3",
-        "pytest",
-        "pyyaml",
-        "requests",  # for ui/fsvis
-        "python-slugify",  # for ui/fsvis
+        # pandas constraint added on 2023-08-30 b/c Pysmo test failures with 2.1
+        # see IDAES/idaes-pse#1253
+        "pandas<2.1",
         "scipy",
-        "sympy",
-        "tinydb",
-        "rbfopt",
-        "xlrd",  # for DMF read of old .xls Excel files
-        "openpyxl",  # for DMF read of new .xls Excel files
-        # lbianchi-lbl: see https://github.com/IDAES/idaes-pse/issues/661
-        "ipython<8.0.0",
+        "sympy",  # idaes.core.util.expr_doc
+        "matplotlib",
+        "click>=8",
     ],
     entry_points={
         "console_scripts": [
@@ -104,14 +146,7 @@ kwargs = dict(
         ]
     },
     # Only installed if [<key>] is added to package name
-    extras_require={
-        "prerelease": DEPENDENCIES_FOR_PRERELEASE_VERSION,
-        "optional": [
-            "tensorflow",  # idaes.surrogate.keras_surrogate
-            # A Lee 11-Jan-22: no precompiled version of CoolProp available for Pyhton 3.9
-            "coolprop; python_version < '3.9'"  # idaes.generic_models.properties.general.coolprop
-        ],
-    },
+    extras_require=dict(ExtraDependencies()),
     package_data={
         # If any package contains these files, include them:
         "": [
@@ -130,8 +165,12 @@ kwargs = dict(
             "*.json.gz",
             "*.dat",
             "*.h5",
+            "*.pb",  # for Keras Surrogate folder
+            "*.data-00000-of-00001",  # for Keras Surrogate folder
+            "*.index",  # for Keras Surrogate folder
             "*.trc",
             "*.xlsx",  # idaes/dmf/tests/data_files - tabular import test files
+            "*.nl",
         ]
     },
     include_package_data=True,
@@ -156,10 +195,10 @@ kwargs = dict(
         "Operating System :: Unix",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: Implementation :: CPython",
         "Topic :: Scientific/Engineering :: Mathematics",
         "Topic :: Scientific/Engineering :: Chemistry",

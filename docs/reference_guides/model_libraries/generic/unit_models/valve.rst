@@ -2,9 +2,9 @@ Valve
 =====
 
 .. index::
-  pair: idaes.generic_models.unit_models.valve;Valve
+  pair: idaes.models.unit_models.valve;Valve
 
-.. module:: idaes.generic_models.unit_models.valve
+.. module:: idaes.models.unit_models.valve
 
 This section describes the generic adiabatic valve model. By default the model
 is based on molar flow, but the pressure-flow equation and the flow basis is
@@ -21,14 +21,14 @@ Example
   from pyomo.environ import ConcreteModel, SolverFactory, TransformationFactory
 
   from idaes.core import FlowsheetBlock
-  from idaes.generic_models.unit_models import Valve
-  from idaes.generic_models.properties import iapws95
+  from idaes.models.unit_models import Valve
+  from idaes.models.properties import iapws95
   import idaes.core.util.scaling as iscale
 
   m = ConcreteModel()
-  m.fs = FlowsheetBlock(default={"dynamic": False})
+  m.fs = FlowsheetBlock(dynamic=False)
   m.fs.properties = iapws95.Iapws95ParameterBlock()
-  m.fs.valve = Valve(default={"property_package": m.fs.properties})
+  m.fs.valve = Valve(property_package=m.fs.properties)
   fin = 900 # mol/s
   pin = 200000 # Pa
   pout = 100000 # Pa
@@ -181,11 +181,11 @@ The example callback below is the model default pressure-flow equation.
       Add the default pressure flow relation constraint.  This will be used in the
       valve model, a custom callback is provided.
       """
-      umeta = b.config.property_package.get_metadata().get_derived_units
+      umeta = b.control_volume.config.property_package.get_metadata().get_derived_units
 
       b.Cv = pyo.Var(
           initialize=0.1,
-          doc="Valve flow coefficent",
+          doc="Valve flow coefficient",
           units=umeta("amount")/umeta("time")/umeta("pressure")**0.5
       )
       b.Cv.fix()

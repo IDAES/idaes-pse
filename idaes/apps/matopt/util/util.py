@@ -1,16 +1,15 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
-import numpy as np
 
 
 def isZero(x, atol):
@@ -44,15 +43,21 @@ def myArrayEq(x, y, atol):
     """Determine if two numpy arrays of floating point numbers are equal.
 
     Args:
-    x (numpy.ndarray): a numpy array 
+    x (numpy.ndarray): a numpy array
     y (numpy.ndarray): a numpy array
     atol (float): absolute tolerance for equality
 
     Returns:
     (bool) true if the two arrays are equal
     """
-    return (x[0] - y[0] < atol) and (x[0] - y[0] > -atol) and (x[1] - y[1] < atol) and (x[1] - y[1] > -atol) and (
-            x[2] - y[2] < atol) and (x[2] - y[2] > -atol)
+    return (
+        (x[0] - y[0] < atol)
+        and (x[0] - y[0] > -atol)
+        and (x[1] - y[1] < atol)
+        and (x[1] - y[1] > -atol)
+        and (x[2] - y[2] < atol)
+        and (x[2] - y[2] > -atol)
+    )
 
 
 myPointEq = myArrayEq

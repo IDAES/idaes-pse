@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 import numpy as np
 from copy import deepcopy
@@ -25,23 +25,31 @@ class CubicLattice(UnitCellLattice):
 
     # === STANDARD CONSTRUCTOR
     def __init__(self, IAD):
-        RefUnitCellShape = Parallelepiped.fromEdgesAndAngles(CubicLattice.RefIAD,
-                                                             CubicLattice.RefIAD,
-                                                             CubicLattice.RefIAD,
-                                                             np.pi / 2, np.pi / 2, np.pi / 2,
-                                                             np.array([0, 0, 0], dtype=float))
+        RefUnitCellShape = Parallelepiped.fromEdgesAndAngles(
+            CubicLattice.RefIAD,
+            CubicLattice.RefIAD,
+            CubicLattice.RefIAD,
+            np.pi / 2,
+            np.pi / 2,
+            np.pi / 2,
+            np.array([0, 0, 0], dtype=float),
+        )
         RefUnitCellTiling = CubicTiling(RefUnitCellShape)
         RefFracPositions = [np.array([0.0, 0.0, 0.0])]
         RefUnitCell = UnitCell(RefUnitCellTiling, RefFracPositions)
         UnitCellLattice.__init__(self, RefUnitCell)
         self._IAD = CubicLattice.RefIAD
         self.applyTransF(ScaleFunc(IAD / CubicLattice.RefIAD))
-        self._NthNeighbors = [[np.array([1.0, 0.0, 0.0]),
-                               np.array([0.0, 1.0, 0.0]),
-                               np.array([0.0, 0.0, 1.0]),
-                               np.array([-1.0, 0.0, 0.0]),
-                               np.array([0.0, -1.0, 0.0]),
-                               np.array([0.0, 0.0, -1.0])]]
+        self._NthNeighbors = [
+            [
+                np.array([1.0, 0.0, 0.0]),
+                np.array([0.0, 1.0, 0.0]),
+                np.array([0.0, 0.0, 1.0]),
+                np.array([-1.0, 0.0, 0.0]),
+                np.array([0.0, -1.0, 0.0]),
+                np.array([0.0, 0.0, -1.0]),
+            ]
+        ]
 
     # === MANIPULATION METHODS
     def applyTransF(self, TransF):
@@ -49,7 +57,9 @@ class CubicLattice(UnitCellLattice):
             if TransF.isIsometric:
                 self._IAD *= TransF.Scale[0]
             else:
-                raise ValueError('CubicLattice applyTransF: Can only scale isometrically')
+                raise ValueError(
+                    "CubicLattice applyTransF: Can only scale isometrically"
+                )
         UnitCellLattice.applyTransF(self, TransF)
 
     # === PROPERTY EVALUATION METHODS

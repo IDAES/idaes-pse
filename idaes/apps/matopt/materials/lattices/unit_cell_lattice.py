@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 from abc import abstractmethod
 from copy import deepcopy
@@ -31,8 +31,7 @@ class UnitCell(object):
     def isConsistentWithDesign(self):
         for Position in self.FracPositions:
             for coord in Position:
-                if (coord < 0.0 - UnitCell.DBL_TOL or
-                        coord > 1.0 + UnitCell.DBL_TOL):
+                if coord < 0.0 - UnitCell.DBL_TOL or coord > 1.0 + UnitCell.DBL_TOL:
                     return False
         return True
 
@@ -56,10 +55,9 @@ class UnitCell(object):
         return self._FracPositions
 
     def convertToFrac(self, P, blnDiscardIntPart=True):
-        P[:] = self.Tiling.getFractionalCoords(P,
-                                               blnRelativeToCenter=False,
-                                               blnRoundInside=True,
-                                               blnPreferZero=True)
+        P[:] = self.Tiling.getFractionalCoords(
+            P, blnRelativeToCenter=False, blnRoundInside=True, blnPreferZero=True
+        )
         if blnDiscardIntPart:
             P -= P.astype(int)
 
@@ -83,10 +81,12 @@ class UnitCellLattice(Lattice):
             for n2 in range(RefScanMin[1], RefScanMax[1] + 1):
                 for n3 in range(RefScanMin[2], RefScanMax[2] + 1):
                     for FracPart in self.RefUnitCell.FracPositions:
-                        yield (n1 * self.RefUnitCell.Tiling.TileShape.Vx +
-                               n2 * self.RefUnitCell.Tiling.TileShape.Vy +
-                               n3 * self.RefUnitCell.Tiling.TileShape.Vz +
-                               FracPart)
+                        yield (
+                            n1 * self.RefUnitCell.Tiling.TileShape.Vx
+                            + n2 * self.RefUnitCell.Tiling.TileShape.Vy
+                            + n3 * self.RefUnitCell.Tiling.TileShape.Vz
+                            + FracPart
+                        )
 
     def Scan(self, argPolyhedron):
         RefScanMin = self._getConvertToReference(argPolyhedron.V[0])
@@ -106,7 +106,10 @@ class UnitCellLattice(Lattice):
 
     # === PROPERTY EVALUATION METHODS
     def isOnLattice(self, P):
-        return self.RefUnitCell.getPointType(Lattice._getConvertToReference(self, P)) is not None
+        return (
+            self.RefUnitCell.getPointType(Lattice._getConvertToReference(self, P))
+            is not None
+        )
 
     @abstractmethod
     def areNeighbors(self, P1, P2):

@@ -2,12 +2,14 @@ Span-Wager CO2
 ==============
 
 .. index::
-  pair: idaes.generic_models.properties.swco2; SWCO2StateBlock
+  pair: idaes.models.properties.swco2; SWCO2StateBlock
 
-.. module:: idaes.generic_models.properties.swco2
+.. module:: idaes.models.properties.swco2
 
-This implements the Span-Wagner equation of state for CO2   :ref:`"Span-Wagner equation of state for CO2" <span-1996>`
-Please see the :ref:`general Helmholtz documentation <reference_guides/model_libraries/generic/property_models/helmholtz:Pure Component Helmholtz EoS>`
+This implements the Span-Wagner equation of state for CO2 
+(:ref:`"Span-Wagner equation of state for CO2" <span-1996>`), and is the same as the generic Helmholtz
+equation of state with the component set to ``"co2"``. Please see the 
+:ref:`general Helmholtz documentation <reference_guides/model_libraries/generic/property_models/helmholtz:Pure Component Helmholtz EoS>`
 for more information.
 
 Example
@@ -19,15 +21,15 @@ provides a simple example for using water properties.
 
 .. testcode::
 
-  from idaes.generic_models.properties import swco2
+  from idaes.models.properties import swco2
   from pyomo.environ import ConcreteModel, units as pyunits, SolverFactory # Pyomo environment
-  from idaes.generic_models.unit_models import Compressor
+  from idaes.models.unit_models import Compressor
   from idaes.core import FlowsheetBlock
 
   model = ConcreteModel()
-  model.fs = FlowsheetBlock(default={"dynamic": False})
+  model.fs = FlowsheetBlock(dynamic=False)
   model.fs.properties = swco2.SWCO2ParameterBlock()
-  model.fs.unit = Compressor(default={"property_package": model.fs.properties})
+  model.fs.unit = Compressor(property_package=model.fs.properties)
   F = 1000
   Tin = 500
   Pin = 10000
@@ -48,26 +50,6 @@ provides a simple example for using water properties.
 For more information about how StateBlocks and PropertyParameterBlocks work see
 the :ref:`StateBlock documentation <reference_guides/core/physical_property_class:Physical Property
 Package Classes>`.
-
-Expressions
------------
-
-The Span-Wager property package contains the standard expressions described in
-the :ref:`general Helmholtz documentation <reference_guides/model_libraries/generic/property_models/helmholtz:Pure Component Helmholtz EoS>`,
-but it also defines expressions for transport properties.
-
-==================================== =====================================================
-Expression                           Description
-==================================== =====================================================
-``therm_cond_phase[phase]``          Thermal conductivity of phase (W/K/m)
-``visc_d_phase[phase]``              Viscosity of phase (Pa/s)
-``visc_k_phase[phase]``              Kinimatic viscosity of phase (m\ :superscript:`2`/s)
-==================================== =====================================================
-
-Convenience Functions
----------------------
-
-.. autofunction:: htpx
 
 SWCO2StateBlock Class
 ------------------------

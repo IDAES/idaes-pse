@@ -1,23 +1,31 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
+# TODO: Missing doc strings
+# pylint: disable=missing-module-docstring
+# pylint: disable=missing-class-docstring
+
+from collections import OrderedDict
 
 from pandas import DataFrame
-from collections import OrderedDict
+
 from pyomo.environ import value
 from pyomo.network import Arc, Port
-from pyomo.core.base.units_container import units
+from pyomo.core.base.var import _GeneralVarData, Var
+from pyomo.core.base.param import Param
+from pyomo.core.base.expression import Expression
 
 import idaes.logger as idaeslog
+from idaes.core.util.units_of_measurement import report_quantity
 
 _log = idaeslog.getLogger(__name__)
 
@@ -25,7 +33,8 @@ __author__ = "John Eslick, Andrew Lee"
 
 
 def arcs_to_stream_dict(
-    blk, additional=None, descend_into=True, sort=False, prepend=None, s=None):
+    blk, additional=None, descend_into=True, sort=False, prepend=None, s=None
+):
     """
     Creates a stream dictionary from the Arcs in a model, using the Arc names as
     keys. This can be used to automate the creation of the streams dictionary
@@ -81,6 +90,7 @@ def stream_states_dict(streams, time_point=0):
         A pandas DataFrame containing the stream table data.
     """
     stream_dict = OrderedDict()
+
     def _stream_dict_add(sb, n, i=None):
         """add a line to the stream table"""
         if i is None:
@@ -92,16 +102,16 @@ def stream_states_dict(streams, time_point=0):
     for n in streams.keys():
         if isinstance(streams[n], Arc):
             for i, a in streams[n].items():
-                try: 
+                try:
                     # if getting the StateBlock from the destination port
                     # fails for any reason try the source port. This could
-                    # happen if a port does not have an associated 
+                    # happen if a port does not have an associated
                     # StateBlock. For example a surrogate model may not
                     # use state blocks, unit models may handle physical
                     # properties without state blocks, or the port could
                     # be used to serve the purpose of a translator block.
                     sb = _get_state_from_port(a.ports[1], time_point)
-                except:
+                except:  # pylint: disable=W0702
                     sb = _get_state_from_port(a.ports[0], time_point)
                 _stream_dict_add(sb, n, i)
         elif isinstance(streams[n], Port):
@@ -122,94 +132,8 @@ def stream_states_dict(streams, time_point=0):
     return stream_dict
 
 
-def tag_state_quantities(blocks, attributes, labels, exception=False):
-    """ Take a stream states dictionary, and return a tag dictionary for stream
-    quantities.  This takes a dictionary (blk) that has state block labels as
-    keys and state blocks as values.  The attributes are a list of attributes to
-    tag.  If an element of the attribute list is list-like, the fist element is
-    the attribute and the remaining elements are indexes.  Lables provides a list
-    of attribute lables to be used to create the tag.  Tags are blk_key + label
-    for the attribute.
-
-    Args:
-        blocks (dict): Dictionary of state blocks.  The key is the block label to
-            be used in the tag, and the value is a state block.
-        attributes (list-like): A list of attriutes to tag.  It is okay if a
-            particular attribute does not exist in a state bock.  This allows
-            you to mix state blocks with differnt sets of attributes. If an
-            attribute is indexed, the attribute can be specified as a list or
-            tuple where the first element is the attribute and the remaining
-            elements are indexes.
-        labels (list-like): These are attribute lables.  The order corresponds to the
-            attribute list.  They are used to create the tags.  Tags are in the
-            form blk.key + label.
-        exception (bool): If True, raise exceptions releated to invalid or
-            missing indexes. If false missing or bad indexes are ignored and
-            None is used for the table value.  Setting this to False allows
-            tables where some state blocks have the same attributes with differnt
-            indexing. (default is True)
-
-    Return:
-        (dict): Dictionary where the keys are tags and the values are model
-            attributes, usually Pyomo component data objects.
-    """
-
-    tags={}
-    if labels is None:
-        lables = attributes
-        for a in attributes:
-            if isinstance(a, (tuple, list)):
-                if len(a) == 2:
-                    # in case there are multiple indexes and user gives tuple
-                    label = f"{a[0]}[{a[1]}]"
-                if len(a) > 2:
-                    label = f"{a[0]}[{a[1:]}]"
-                else:
-                    label = a[0]
-
-    for key, s in blocks.items():
-        for i, a in enumerate(attributes):
-            j = None
-            if isinstance(a, (list, tuple)):
-                # if a is list or tuple, the first element should be the
-                # attribute and the remaining elements should be indexes.
-                if len(a) == 2:
-                    j = a[1] # catch user supplying list-like of indexes
-                if len(a) > 2:
-                    j = a[1:]
-                #if len(a) == 1, we'll say that's fine here.  Don't know why you
-                #would put the attribute in a list-like if not indexed, but I'll
-                #allow it.
-                a = a[0]
-            v = getattr(s, a, None)
-            if j is not None and v is not None:
-                try:
-                    v = v[j]
-                except KeyError:
-                    if not exception:
-                        v = None
-                    else:
-                        _log.error(f"{j} is not a valid index of {a}")
-                        raise KeyError(f"{j} is not a valid index of {a}")
-            try:
-                value(v, exception=False)
-            except TypeError:
-                if not exception:
-                    v = None
-                else:
-                    _log.error(
-                        f"Cannot calculate value of {a} (may be subscriptable)")
-                    raise TypeError(
-                        f"Cannot calculate value of {a} (may be subscriptable)")
-            except ZeroDivisionError:
-                pass # this one is okay
-            if v is not None:
-                tags[f"{key}{labels[i]}"] = v
-    return tags
-
-
 def create_stream_table_dataframe(
-    streams, true_state=False, time_point=0, orient="columns", add_units=False
+    streams, true_state=False, time_point=0, orient="columns"
 ):
     """
     Method to create a stream table in the form of a pandas dataframe. Method
@@ -229,18 +153,16 @@ def create_stream_table_dataframe(
         orient : orientation of stream table. Accepted values are 'columns'
             (default) where streams are displayed as columns, or 'index' where
             stream are displayed as rows.
-        add_units : Add a Units column to the dataframe representing the units
-            of the stream values.
 
     Returns:
         A pandas DataFrame containing the stream table data.
     """
+
     stream_attributes = OrderedDict()
     stream_states = stream_states_dict(streams=streams, time_point=time_point)
     full_keys = []  # List of all rows in dataframe to fill in missing data
 
-    if add_units and stream_states:
-        stream_attributes['Units'] = {}
+    stream_attributes["Units"] = {}
 
     for key, sb in stream_states.items():
         stream_attributes[key] = {}
@@ -249,20 +171,98 @@ def create_stream_table_dataframe(
         else:
             disp_dict = sb.define_display_vars()
         for k in disp_dict:
-            for i in disp_dict[k]:
+            for row, i in enumerate(disp_dict[k]):
                 stream_key = k if i is None else f"{k} {i}"
-                stream_attributes[key][stream_key] = value(disp_dict[k][i])
-                if add_units:
-                    pyomo_unit = units.get_units(disp_dict[k][i])
-                    if pyomo_unit is not None:
-                        pint_unit = pyomo_unit._get_pint_unit()
-                        stream_attributes['Units'][stream_key] = {
-                            'raw': str(pyomo_unit),
-                            'html': '{:~H}'.format(pint_unit),
-                            'latex': '{:~L}'.format(pint_unit)
-                        }
+                quant = report_quantity(disp_dict[k][i])
+                stream_attributes[key][stream_key] = quant.m
+                if row == 0 or stream_key not in stream_attributes["Units"]:
+                    stream_attributes["Units"][stream_key] = quant.u
+                if stream_key not in full_keys:
+                    full_keys.append(stream_key)
+
+    # Check for missing rows in any stream, and fill with "-" if needed
+    for k, v in stream_attributes.items():
+        for r in full_keys:
+            if r not in v.keys():
+                # Missing row, fill with placeholder
+                v[r] = "-"
+
+    return DataFrame.from_dict(stream_attributes, orient=orient)
+
+
+def create_stream_table_ui(
+    streams, true_state=False, time_point=0, orient="columns", precision=5
+):
+    """
+    Method to create a stream table in the form of a pandas dataframe. Method
+    takes a dict with name keys and stream values. Use an OrderedDict to list
+    the streams in a specific order, otherwise the dataframe can be sorted
+    later. Note: This function process each stream the same way
+    `create_stream_table_dataframe` does.
+
+
+    Args:
+        streams : dict with name keys and stream values. Names will be used as
+            display names for stream table, and streams may be Arcs, Ports or
+            StateBlocks.
+        true_state : indicated whether the stream table should contain the
+            display variables define in the StateBlock (False, default) or the
+            state variables (True).
+        time_point : point in the time domain at which to generate stream table
+            (default = 0)
+        orient : orientation of stream table. Accepted values are 'columns'
+            (default) where streams are displayed as columns, or 'index' where
+            stream are displayed as rows.
+        precision: rounding the floating numbers to the give precision. Default
+            is 5 digits after the floating point.
+
+    Returns:
+        A pandas DataFrame containing the stream table data.
+    """
+
+    # Variable Types:
+    class VariableTypes:
+        UNFIXED = "unfixed"
+        FIXED = "fixed"
+        PARAMETER = "parameter"
+        EXPRESSION = "expression"
+
+    stream_attributes = OrderedDict()
+    stream_states = stream_states_dict(streams=streams, time_point=time_point)
+    full_keys = []  # List of all rows in dataframe to fill in missing data
+
+    stream_attributes["Units"] = {}
+
+    for key, sb in stream_states.items():
+        stream_attributes[key] = {}
+        if true_state:
+            disp_dict = sb.define_state_vars()
+        else:
+            disp_dict = sb.define_display_vars()
+        for k in disp_dict:
+            for row, i in enumerate(disp_dict[k]):
+                stream_key = k if i is None else f"{k} {i}"
+
+                # Identifying value's variable type
+                var_type = None
+                if isinstance(disp_dict[k][i], (_GeneralVarData, Var)):
+                    if disp_dict[k][i].fixed:
+                        var_type = VariableTypes.FIXED
                     else:
-                        stream_attributes['Units'][stream_key] = None
+                        var_type = VariableTypes.UNFIXED
+                elif isinstance(disp_dict[k][i], Param):
+                    var_type = VariableTypes.PARAMETER
+                elif isinstance(disp_dict[k][i], Expression):
+                    var_type = VariableTypes.EXPRESSION
+
+                quant = report_quantity(disp_dict[k][i])
+                stream_attributes[key][stream_key] = (
+                    round(quant.m, precision),
+                    var_type,
+                )
+                if row == 0 or stream_key not in stream_attributes["Units"]:
+                    stream_attributes["Units"][stream_key] = quant.u
+
                 if stream_key not in full_keys:
                     full_keys.append(stream_key)
 
@@ -291,7 +291,8 @@ def stream_table_dataframe_to_string(stream_table, **kwargs):
         na_rep=na_rep, justify=justify, float_format=float_format, **kwargs
     )
 
-def _get_state_from_port(port,time_point):
+
+def _get_state_from_port(port, time_point):
     """
     Attempt to find a StateBlock-like object connected to a Port. If the
     object is indexed both in space and time, assume that the time index
@@ -317,7 +318,7 @@ def _get_state_from_port(port,time_point):
         raise ValueError(
             f"No block could be retrieved from Port {port.name} "
             f"because it contains no components."
-            )
+        )
     # Check the number of indices of the parent property block. If its indexed
     # both in space and time, keep the second, spatial index and throw out the
     # first, temporal index. If that ordering is changed, this method will
@@ -326,13 +327,13 @@ def _get_state_from_port(port,time_point):
         idx = vlist[0].parent_block().index()
     except AttributeError as err:
         raise AttributeError(
-                f"No block could be retrieved from Port {port.name} "
-                f"because block {vlist[0].parent_block().name} has no index."
-                ) from err
+            f"No block could be retrieved from Port {port.name} "
+            f"because block {vlist[0].parent_block().name} has no index."
+        ) from err
     # Assuming the time index is always first and the spatial indices are all
     # the same
-    if isinstance(idx,tuple):
-        idx = (time_point,vlist[0].parent_block().index()[1:])
+    if isinstance(idx, tuple):
+        idx = (time_point, vlist[0].parent_block().index()[1:])
 
     else:
         idx = (time_point,)
@@ -343,7 +344,7 @@ def _get_state_from_port(port,time_point):
     raise RuntimeError(
         f"No block could be retrieved from Port {port.name} "
         f"because components are derived from multiple blocks."
-        )
+    )
 
 
 def generate_table(blocks, attributes, heading=None, exception=True):
@@ -360,12 +361,12 @@ def generate_table(blocks, attributes, heading=None, exception=True):
             Block, can be a Var, Param, or Expression. If an attribute doesn't
             exist or doesn't have a valid value, it will be treated as missing
             data.
-        heading (list or tuple of srings): A list of strings that will be used
+        heading (list or tuple of strings): A list of strings that will be used
             as column headings. If None the attribute names will be used.
-        exception (bool): If True, raise exceptions releated to invalid or
+        exception (bool): If True, raise exceptions related to invalid or
             missing indexes. If false missing or bad indexes are ignored and
             None is used for the table value.  Setting this to False allows
-            tables where some state blocks have the same attributes with differnt
+            tables where some state blocks have the same attributes with different
             indexing. (default is True)
     Returns:
         (DataFrame): A Pandas dataframe containing a data table
@@ -384,7 +385,8 @@ def generate_table(blocks, attributes, heading=None, exception=True):
                 except AssertionError:
                     _log.error(f"An index must be supplided for attribute {a[0]}")
                     raise AssertionError(
-                        f"An index must be supplided for attribute {a[0]}")
+                        f"An index must be supplided for attribute {a[0]}"
+                    )
                 j = a[1:]
                 a = a[0]
             v = getattr(s, a, None)
@@ -403,10 +405,10 @@ def generate_table(blocks, attributes, heading=None, exception=True):
                 if not exception:
                     v = None
                 else:
-                    _log.error(
-                        f"Cannot calculate value of {a} (may be subscriptable)")
+                    _log.error(f"Cannot calculate value of {a} (may be subscriptable)")
                     raise TypeError(
-                        f"Cannot calculate value of {a} (may be subscriptable)")
+                        f"Cannot calculate value of {a} (may be subscriptable)"
+                    )
             except ZeroDivisionError:
                 v = None
             row[i] = v

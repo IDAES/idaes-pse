@@ -2,14 +2,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 
 # stdlib
@@ -21,7 +21,7 @@ import time
 
 # package
 import idaes
-from idaes.dmf.util import ColorTerm
+from idaes.core.dmf.util import ColorTerm
 import pytest
 
 good_modname = re.compile(r"[a-zA-Z][a-zA-Z0-9_]*")
@@ -39,8 +39,7 @@ def print_path_status(path, status, msg=""):
 
 
 def importr(root: pathlib.Path, max_sec=10):
-    """Import r_ecursively from the given root path.
-    """
+    """Import r_ecursively from the given root path."""
     base, failures, total = root.parent, {}, 0
     # iterate over flattened list of all paths ending a Python source file
     for path in root.rglob("*.py"):
@@ -51,10 +50,10 @@ def importr(root: pathlib.Path, max_sec=10):
             if name == os.path.sep:
                 continue
             if (
-                name.startswith("Workshop")       # skip workshop tutorials (1)
-                or name.startswith("Module_")     # skip workshop tutorials (2)
-                or name == "tests"                # skip all tests
-                or not good_modname.match(name)   # no _bla
+                name.startswith("Workshop")  # skip workshop tutorials (1)
+                or name.startswith("Module_")  # skip workshop tutorials (2)
+                or name == "tests"  # skip all tests
+                or not good_modname.match(name)  # no _bla
             ):
                 bad = True
 

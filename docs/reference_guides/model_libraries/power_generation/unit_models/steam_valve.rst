@@ -2,9 +2,9 @@ HelmValve
 =========
 
 .. index::
-  pair: idaes.power_generation.unit_models.helm.valve_steam;HelmValve
+  pair: idaes.models_extra.power_generation.unit_models.helm.valve_steam;HelmValve
 
-.. module:: idaes.power_generation.unit_models.helm.valve_steam
+.. module:: idaes.models_extra.power_generation.unit_models.helm.valve_steam
 
 This is a steam power generation turbine model for the stages between the inlet
 and outlet.
@@ -17,17 +17,16 @@ Example
   from pyomo.environ import ConcreteModel, SolverFactory, TransformationFactory
 
   from idaes.core import FlowsheetBlock
-  from idaes.power_generation.unit_models.helm import HelmValve
-  from idaes.generic_models.properties import iapws95
-  from idaes.ui.report import degrees_of_freedom, active_equalities
+  from idaes.models_extra.power_generation.unit_models.helm import HelmValve
+  from idaes.models.properties import iapws95
 
   solver = SolverFactory('ipopt')
   solver.options = {'tol': 1e-6}
 
   m = ConcreteModel()
-  m.fs = FlowsheetBlock(default={"dynamic": False})
+  m.fs = FlowsheetBlock(dynamic=False)
   m.fs.properties = iapws95.Iapws95ParameterBlock()
-  m.fs.valve = HelmValve(default={"property_package": m.fs.properties})
+  m.fs.valve = HelmValve(property_package=m.fs.properties)
 
   hin = iapws95.htpx(T=880, P=2.4233e7)
   # set inlet

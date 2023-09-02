@@ -1,47 +1,50 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
-
-__author__ = "John Eslick"
-
 """Transformation to replace variables with other variables."""
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+
 import pyomo.environ as pyo
 from pyomo.core.base.transformation import TransformationFactory
 from pyomo.core.plugins.transform.hierarchy import NonIsomorphicTransformation
-from pyomo.core.expr import current as EXPR
+from pyomo.core import expr as EXPR
 from pyomo.contrib.fbbt.fbbt import compute_bounds_on_expr
 from pyomo.repn import generate_standard_repn
 import idaes.logger as idaeslog
+
+
+__author__ = "John Eslick"
 
 
 _log = idaeslog.getLogger(__name__)
 
 
 @TransformationFactory.register(
-    'simple_equality_eliminator',
-    doc="Eliminate simple equalities in the form a*x + b*y = c or a*x = b")
+    "simple_equality_eliminator",
+    doc="Eliminate simple equalities in the form a*x + b*y = c or a*x = b",
+)
 class SimpleEqualityEliminator(NonIsomorphicTransformation):
-
     def _get_subs(self, instance):
-        subs = {} # Substitute one var for another from a * x + b * y + c = 0
-        subs_map = {} # id -> var
-        fixes = [] # fix a variable from a * x + c = 0
-        cnstr = set() # constraints to deactivate
-        rset = set() # variables used in a sub or fixed
+        subs = {}  # Substitute one var for another from a * x + b * y + c = 0
+        subs_map = {}  # id -> var
+        fixes = []  # fix a variable from a * x + c = 0
+        cnstr = set()  # constraints to deactivate
+        rset = set()  # variables used in a sub or fixed
         for c in instance.component_data_objects(pyo.Constraint, active=True):
             if (
-                pyo.value(c.lower) is not None and
-                pyo.value(c.lower) == pyo.value(c.upper) and
-                c.body.polynomial_degree() == 1
+                pyo.value(c.lower) is not None
+                and pyo.value(c.lower) == pyo.value(c.upper)
+                and c.body.polynomial_degree() == 1
             ):
                 repn = generate_standard_repn(c.body)
                 if len(repn.nonlinear_vars) != 0 or len(repn.quadratic_vars) != 0:
@@ -57,7 +60,7 @@ class SimpleEqualityEliminator(NonIsomorphicTransformation):
                 if id(v0) in rset:
                     continue
                 elif len(repn.linear_vars) == 1:
-                    fixes.append((v0, -b0/a0))
+                    fixes.append((v0, -b0 / a0))
                     rset.add(id(v0))
                     cnstr.add(c)
                     continue
@@ -89,7 +92,6 @@ class SimpleEqualityEliminator(NonIsomorphicTransformation):
 
         return subs, cnstr, fixes, subs_map
 
-
     def _apply_to(self, instance, max_iter=5, reversible=True):
         """
         Apply the transformation.  This is called by ``apply_to`` in the
@@ -113,7 +115,7 @@ class SimpleEqualityEliminator(NonIsomorphicTransformation):
             self._original = {}
 
             # The named expressions could be changed as a side effect of the
-            # constraint expression replacements, so for maximum saftey, just
+            # constraint expression replacements, so for maximum safety, just
             # store all the expressions for Expressions
             for c in instance.component_data_objects(
                 pyo.Expression,
@@ -124,7 +126,7 @@ class SimpleEqualityEliminator(NonIsomorphicTransformation):
 
         nr_tot = 0
         # repeat elimination until no more can be eliminated or hit max_iter
-        for i in range(max_iter):
+        for i in range(max_iter):  # pylint: disable=unused-variable
             subs, cnstr, fixes, subs_map = self._get_subs(instance)
 
             if reversible:
@@ -138,9 +140,9 @@ class SimpleEqualityEliminator(NonIsomorphicTransformation):
                 break
             nr_tot += nr
 
-            for c in cnstr: # deactivate constraints that aren't needed
+            for c in cnstr:  # deactivate constraints that aren't needed
                 c.deactivate()
-            for v in fixes: # fix variables that can be fixed
+            for v in fixes:  # fix variables that can be fixed
                 v[0].fix(v[1])
 
             # Do replacements in Expressions, Constraints, and Objectives
@@ -152,14 +154,12 @@ class SimpleEqualityEliminator(NonIsomorphicTransformation):
                 remove_named_expressions=False,
             )
             for c in instance.component_data_objects(
-                (pyo.Constraint, pyo.Objective),
-                descend_into=True,
-                active=True
+                (pyo.Constraint, pyo.Objective), descend_into=True, active=True
             ):
                 if id(c) not in self._original and reversible:
                     self._original[id(c)] = c.expr
                     self._expr_map[id(c)] = c
-                c.set_value(expr=vis.dfs_postorder_stack(c.expr))
+                c.set_value(expr=vis.walk_expression(c.expr))
 
         _log.info("Eliminated {} variables and constraints".format(nr_tot))
 
@@ -174,11 +174,11 @@ class SimpleEqualityEliminator(NonIsomorphicTransformation):
 
     def revert(self):
         """Revert model to pretransformation state, using substitutions to
-        calcualte values of varaibles that were removed from the problem. This
+        calculate values of variables that were removed from the problem. This
         applies to the last reversible transformation performed with this object.
         """
         try:
-            instance = self._instance
+            instance = self._instance  # pylint: disable=unused-variable
         except AttributeError:
             _log.warning("Nothing to revert.")
 
@@ -186,9 +186,9 @@ class SimpleEqualityEliminator(NonIsomorphicTransformation):
             c.activate()
         for c in self._all_fixes:
             c[0].unfix()
-        for cid in self._original:
+        for cid, v in self._original.items():
             c = self._expr_map[cid]
-            c.set_value(expr=self._original[cid])
+            c.set_value(expr=v)
 
         # The problem should be back, now fill in values for the variables that
         # were removed
@@ -196,8 +196,8 @@ class SimpleEqualityEliminator(NonIsomorphicTransformation):
             for sid in subs:
                 self._subs_map[sid].value = pyo.value(subs[sid])
 
-        del(self._instance)
-        del(self._all_subs)
-        del(self._all_fixes)
-        del(self._all_deactivate)
-        del(self._original)
+        del self._instance
+        del self._all_subs
+        del self._all_fixes
+        del self._all_deactivate
+        del self._original

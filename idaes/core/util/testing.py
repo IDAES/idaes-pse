@@ -1,19 +1,22 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
-
 """
 This module contains utility functions for use in testing IDAES models.
 """
+# These are methods for testing, and break a few conventions
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+# pylint: disable=protected-access
 
 __author__ = "Andrew Lee"
 
@@ -21,36 +24,29 @@ __author__ = "Andrew Lee"
 from pyomo.environ import Constraint, Set, units, Var
 from pyomo.common.config import ConfigBlock
 
-from idaes.core import (declare_process_block_class,
-                        PhysicalParameterBlock,
-                        StateBlock,
-                        StateBlockData,
-                        ReactionParameterBlock,
-                        ReactionBlockBase,
-                        ReactionBlockDataBase,
-                        MaterialFlowBasis,
-                        MaterialBalanceType,
-                        EnergyBalanceType,
-                        Component,
-                        Phase)
+from idaes.core import (
+    declare_process_block_class,
+    PhysicalParameterBlock,
+    StateBlock,
+    StateBlockData,
+    ReactionParameterBlock,
+    ReactionBlockBase,
+    ReactionBlockDataBase,
+    MaterialFlowBasis,
+    MaterialBalanceType,
+    EnergyBalanceType,
+    Component,
+    Phase,
+)
 
-from idaes.core.util.model_statistics import (degrees_of_freedom,
-                                              fixed_variables_set,
-                                              activated_constraints_set)
-from idaes.core.util import get_solver as default_solver
+from idaes.core.util.model_statistics import (
+    degrees_of_freedom,
+    fixed_variables_set,
+    activated_constraints_set,
+)
 import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
-
-
-def get_default_solver():
-    """
-    Move to idaes.core.util.misc - leaving redirection method here for
-    deprecation warning
-    """
-    _log.warn("Deprecated: get_default_solver has been moved and renamed. It "
-              "can now be imported from idaes.core.util as get_solver")
-    return default_solver()
 
 
 def initialization_tester(m, dof=0, unit=None, **init_kwargs):
@@ -58,15 +54,15 @@ def initialization_tester(m, dof=0, unit=None, **init_kwargs):
     A method to test initialization methods on IDAES models. This method is
     designed to be used as part of the tests for most models.
 
-    This method checks that the initialization methods runs as expceted
-    and that the state of the model (active/deactive and fixed/unfixed)
+    This method checks that the initialization methods runs as expected
+    and that the state of the model (active/inactive and fixed/unfixed)
     remains the same.
 
-    This method also add some dummy constraitns to the model and deactivates
+    This method also add some dummy constraints to the model and deactivates
     them to make sure that the initialization does not affect their status.
 
     Args:
-        m: a Concrete mdoel which contains a flowsheet and a model named unit
+        m: a Concrete model which contains a flowsheet and a model named unit
             (i.e. m.fs.unit) which will be initialized
         dof: expected degrees of freedom during initialization, default=0
         unit: unit object to test, if None assume m.fs.unit, default='None'
@@ -87,14 +83,17 @@ def initialization_tester(m, dof=0, unit=None, **init_kwargs):
     unit.__dummy_var = Var()
     unit.__dummy_equality = Constraint(expr=unit.__dummy_var == 5)
     unit.__dummy_inequality = Constraint(expr=unit.__dummy_var <= 10)
+    unit.__dummy_set = Set(initialize=[1])
 
     def deq_idx(b, i):
         return unit.__dummy_var == 5
-    unit.__dummy_equality_idx = Constraint([1], rule=deq_idx)
+
+    unit.__dummy_equality_idx = Constraint(unit.__dummy_set, rule=deq_idx)
 
     def dieq_idx(b, i):
         return unit.__dummy_var <= 10
-    unit.__dummy_inequality_idx = Constraint([1], rule=dieq_idx)
+
+    unit.__dummy_inequality_idx = Constraint(unit.__dummy_set, rule=dieq_idx)
 
     unit.__dummy_equality.deactivate()
     unit.__dummy_inequality.deactivate()
@@ -130,6 +129,7 @@ def initialization_tester(m, dof=0, unit=None, **init_kwargs):
     unit.del_component(unit.__dummy_inequality_idx)
     unit.del_component(unit.__dummy_equality_idx)
     unit.del_component(unit.__dummy_var)
+    unit.del_component(unit.__dummy_set)
 
 
 # -----------------------------------------------------------------------------
@@ -147,23 +147,28 @@ class _PhysicalParameterBlock(PhysicalParameterBlock):
 
         self.phase_equilibrium_idx = Set(initialize=["e1", "e2"])
         self.element_list = Set(initialize=["H", "He", "Li"])
-        self.element_comp = {"c1": {"H": 1, "He": 2, "Li": 3},
-                             "c2": {"H": 4, "He": 5, "Li": 6}}
+        self.element_comp = {
+            "c1": {"H": 1, "He": 2, "Li": 3},
+            "c2": {"H": 4, "He": 5, "Li": 6},
+        }
 
-        self.phase_equilibrium_list = \
-            {"e1": ["c1", ("p1", "p2")],
-             "e2": ["c2", ("p1", "p2")]}
+        self.phase_equilibrium_list = {
+            "e1": ["c1", ("p1", "p2")],
+            "e2": ["c2", ("p1", "p2")],
+        }
 
         # Add inherent reactions for use when needed
         self.inherent_reaction_idx = Set(initialize=["i1", "i2"])
-        self.inherent_reaction_stoichiometry = {("i1", "p1", "c1"): 1,
-                                                ("i1", "p1", "c2"): 1,
-                                                ("i1", "p2", "c1"): 1,
-                                                ("i1", "p2", "c2"): 1,
-                                                ("i2", "p1", "c1"): 1,
-                                                ("i2", "p1", "c2"): 1,
-                                                ("i2", "p2", "c1"): 1,
-                                                ("i2", "p2", "c2"): 1}
+        self.inherent_reaction_stoichiometry = {
+            ("i1", "p1", "c1"): 1,
+            ("i1", "p1", "c2"): 1,
+            ("i1", "p2", "c1"): 1,
+            ("i1", "p2", "c2"): 1,
+            ("i2", "p1", "c1"): 1,
+            ("i2", "p1", "c2"): 1,
+            ("i2", "p2", "c1"): 1,
+            ("i2", "p2", "c2"): 1,
+        }
 
         # Attribute to switch flow basis for testing
         self.basis_switch = 1
@@ -190,23 +195,38 @@ class _PhysicalParameterBlock(PhysicalParameterBlock):
 
     @classmethod
     def define_metadata(cls, obj):
-        obj.add_default_units({'time': units.s,
-                               'length': units.m,
-                               'mass': units.kg,
-                               'amount': units.mol,
-                               'temperature': units.K})
+        obj.add_properties(
+            {
+                "enth_mol": {"method": None},
+            }
+        )
+        obj.add_default_units(
+            {
+                "time": units.s,
+                "length": units.m,
+                "mass": units.kg,
+                "amount": units.mol,
+                "temperature": units.K,
+            }
+        )
 
 
 class SBlockBase(StateBlock):
-    def initialize(blk, outlvl=idaeslog.NOTSET, optarg=None, solver=None,
-                   hold_state=False, state_args=None):
-        for k in blk.keys():
-            blk[k].init_test = True
-            blk[k].hold_state = hold_state
+    def initialize(
+        blk,
+        outlvl=idaeslog.NOTSET,
+        optarg=None,
+        solver=None,
+        hold_state=False,
+        state_args=None,
+    ):
+        for k in blk.values():
+            k.init_test = True
+            k.hold_state = hold_state
 
     def release_state(blk, flags=None, outlvl=idaeslog.NOTSET):
-        for k in blk.keys():
-            blk[k].hold_state = not blk[k].hold_state
+        for k in blk.values():
+            k.hold_state = not k.hold_state
 
 
 @declare_process_block_class("TestStateBlock", block_class=SBlockBase)
@@ -216,32 +236,41 @@ class StateTestBlockData(StateBlockData):
     def build(self):
         super(StateTestBlockData, self).build()
 
-        self.flow_vol = Var(initialize=20, units=units.m**3/units.s)
-        self.flow_mol_phase_comp = Var(self.params.phase_list,
-                                       self.params.component_list,
-                                       initialize=2,
-                                       units=units.mol/units.s)
+        self.flow_vol = Var(initialize=20, units=units.m**3 / units.s)
+        self.flow_mol = Var(
+            initialize=14,
+            units=units.mol / units.s,
+        )
+        self.flow_mol_phase_comp = Var(
+            self.params.phase_list,
+            self.params.component_list,
+            initialize=2,
+            units=units.mol / units.s,
+        )
         self.test_var = Var(initialize=1)
-        self.enthalpy_flow = Var(initialize=1, units=units.J/units.s)
-        self.energy_dens = Var(initialize=1, units=units.J/units.m**3)
-        self.material_flow_mol = Var(initialize=1, units=units.mol/units.s)
-        self.material_dens_mol = Var(initialize=1, units=units.mol/units.m**3)
-        self.material_flow_mass = Var(initialize=1, units=units.kg/units.s)
-        self.material_dens_mass = Var(initialize=1, units=units.kg/units.m**3)
+        self.enthalpy_flow = Var(initialize=1, units=units.J / units.s)
+        self.energy_dens = Var(initialize=1, units=units.J / units.m**3)
+        self.material_flow_mol = Var(initialize=1, units=units.mol / units.s)
+        self.material_dens_mol = Var(initialize=1, units=units.mol / units.m**3)
+        self.material_flow_mass = Var(initialize=1, units=units.kg / units.s)
+        self.material_dens_mass = Var(initialize=1, units=units.kg / units.m**3)
         self.pressure = Var(initialize=1e5, units=units.Pa)
         self.temperature = Var(initialize=300, units=units.K)
 
-        self.enth_mol = Var(initialize=10000, units=units.J/units.mol)
+        self.cp_mol = Var(initialize=100, units=units.J / units.mol / units.K)
+        self.enth_mol = Var(initialize=10000, units=units.J / units.mol)
 
-        self.gibbs_mol_phase_comp = Var(self.params.phase_list,
-                                        self.params.component_list,
-                                        initialize=50,
-                                        units=units.J/units.mol)
-        self.entr_mol = Var(initialize=1000, units=units.J/units.mol/units.K)
+        self.gibbs_mol_phase_comp = Var(
+            self.params.phase_list,
+            self.params.component_list,
+            initialize=50,
+            units=units.J / units.mol,
+        )
+        self.entr_mol = Var(initialize=1000, units=units.J / units.mol / units.K)
 
-        self.mole_frac_phase_comp = Var(self.params.phase_list,
-                                        self.params.component_list,
-                                        initialize=0.5)
+        self.mole_frac_phase_comp = Var(
+            self.params.phase_list, self.params.component_list, initialize=0.5
+        )
 
     def get_material_flow_terms(b, p, j):
         if b.config.parameters.basis_switch == 2:
@@ -285,9 +314,11 @@ class StateTestBlockData(StateBlockData):
             raise NotImplementedError
 
     def define_state_vars(self):
-        return {"component_flow_phase": self.flow_mol_phase_comp,
-                "temperature": self.temperature,
-                "pressure": self.pressure}
+        return {
+            "component_flow_phase": self.flow_mol_phase_comp,
+            "temperature": self.temperature,
+            "pressure": self.pressure,
+        }
 
 
 @declare_process_block_class("ReactionParameterTestBlock")
@@ -298,50 +329,58 @@ class _ReactionParameterBlock(ReactionParameterBlock):
         self.rate_reaction_idx = Set(initialize=["r1", "r2"])
         self.equilibrium_reaction_idx = Set(initialize=["e1", "e2"])
 
-        self.rate_reaction_stoichiometry = {("r1", "p1", "c1"): 1,
-                                            ("r1", "p1", "c2"): 1,
-                                            ("r1", "p2", "c1"): 1,
-                                            ("r1", "p2", "c2"): 1,
-                                            ("r2", "p1", "c1"): 1,
-                                            ("r2", "p1", "c2"): 1,
-                                            ("r2", "p2", "c1"): 1,
-                                            ("r2", "p2", "c2"): 1}
+        self.rate_reaction_stoichiometry = {
+            ("r1", "p1", "c1"): 1,
+            ("r1", "p1", "c2"): 1,
+            ("r1", "p2", "c1"): 1,
+            ("r1", "p2", "c2"): 1,
+            ("r2", "p1", "c1"): 1,
+            ("r2", "p1", "c2"): 1,
+            ("r2", "p2", "c1"): 1,
+            ("r2", "p2", "c2"): 1,
+        }
         self.equilibrium_reaction_stoichiometry = {
-                                            ("e1", "p1", "c1"): 1,
-                                            ("e1", "p1", "c2"): 1,
-                                            ("e1", "p2", "c1"): 1,
-                                            ("e1", "p2", "c2"): 1,
-                                            ("e2", "p1", "c1"): 1,
-                                            ("e2", "p1", "c2"): 1,
-                                            ("e2", "p2", "c1"): 1,
-                                            ("e2", "p2", "c2"): 1}
+            ("e1", "p1", "c1"): 1,
+            ("e1", "p1", "c2"): 1,
+            ("e1", "p2", "c1"): 1,
+            ("e1", "p2", "c2"): 1,
+            ("e2", "p1", "c1"): 1,
+            ("e2", "p1", "c2"): 1,
+            ("e2", "p2", "c1"): 1,
+            ("e2", "p2", "c2"): 1,
+        }
 
         self._reaction_block_class = ReactionBlock
 
         # Attribute to switch flow basis for testing
         self.basis_switch = 1
 
-        self.set_default_scaling("reaction_rate", 101, 'r1')
-        self.set_default_scaling("reaction_rate", 102, 'r2')
+        self.set_default_scaling("reaction_rate", 101, "r1")
+        self.set_default_scaling("reaction_rate", 102, "r2")
 
     @classmethod
     def define_metadata(cls, obj):
-        obj.add_default_units({'time': units.s,
-                               'length': units.m,
-                               'mass': units.kg,
-                               'amount': units.mol,
-                               'temperature': units.K})
+        obj.add_default_units(
+            {
+                "time": units.s,
+                "length": units.m,
+                "mass": units.kg,
+                "amount": units.mol,
+                "temperature": units.K,
+            }
+        )
 
     @classmethod
-    def get_required_properties(self):
+    def get_required_properties(cls):
         return {}
 
 
 class RBlockBase(ReactionBlockBase):
-    def initialize(blk, outlvl=idaeslog.NOTSET, optarg=None,
-                   solver=None, state_vars_fixed=False):
-        for k in blk.keys():
-            blk[k].init_test = True
+    def initialize(
+        blk, outlvl=idaeslog.NOTSET, optarg=None, solver=None, state_vars_fixed=False
+    ):
+        for k in blk.values():
+            k.init_test = True
 
 
 @declare_process_block_class("ReactionBlock", block_class=RBlockBase)
@@ -351,13 +390,14 @@ class ReactionBlockData(ReactionBlockDataBase):
     def build(self):
         super(ReactionBlockData, self).build()
 
-        self.reaction_rate = Var(["r1", "r2"],
-                                 units=units.mol/units.m**3/units.s)
+        self.reaction_rate = Var(["r1", "r2"], units=units.mol / units.m**3 / units.s)
 
-        self.dh_rxn = {"r1": 10*units.J/units.mol,
-                       "r2": 20*units.J/units.mol,
-                       "e1": 30*units.J/units.mol,
-                       "e2": 40*units.J/units.mol}
+        self.dh_rxn = {
+            "r1": 10 * units.J / units.mol,
+            "r2": 20 * units.J / units.mol,
+            "e1": 30 * units.J / units.mol,
+            "e2": 40 * units.J / units.mol,
+        }
 
     def model_check(self):
         self.check = True

@@ -1,7 +1,7 @@
 Subcritical Coal-Fired Power Plant Flowsheet (steady state and dynamic)
 =======================================================================
 
-.. currentmodule:: idaes.power_generation.flowsheets.subcritical_power_plant.subcritical_power_plant
+.. currentmodule:: idaes.models_extra.power_generation.flowsheets.subcritical_power_plant.subcritical_power_plant
 
 
 .. note::

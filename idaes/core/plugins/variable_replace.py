@@ -1,35 +1,44 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
-
-__author__ = "John Eslick"
-
 """Transformation to replace variables with other variables."""
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 from pyomo.core.base.transformation import TransformationFactory
 from pyomo.core.plugins.transform.hierarchy import NonIsomorphicTransformation
-from pyomo.core.expr import current as EXPR
-from pyomo.common.config import ConfigBlock, ConfigValue, add_docstring_list
+from pyomo.core import expr as EXPR
+from pyomo.common.config import (
+    ConfigBlock,
+    ConfigValue,
+    document_kwargs_from_configdict,
+)
 from pyomo.core.base.var import _GeneralVarData, Var
 from pyomo.core.base.constraint import Constraint
 from pyomo.core.base.expression import Expression
 from pyomo.core.base.objective import Objective
 
 
+__author__ = "John Eslick"
+
+
 def _is_var(v):
     return isinstance(v, (_GeneralVarData, Var))
 
+
 @TransformationFactory.register(
-    'replace_variables',
-    doc="Replace variables with other variables.")
+    "replace_variables", doc="Replace variables with other variables."
+)
+@document_kwargs_from_configdict("CONFIG")
 class ReplaceVariables(NonIsomorphicTransformation):
     """Replace variables in a model or block with other variables.
 
@@ -37,16 +46,18 @@ class ReplaceVariables(NonIsomorphicTransformation):
     method.
 
     """
-    CONFIG = ConfigBlock()
-    CONFIG.declare("substitute", ConfigValue(
-        default=[],
-        description="List-like of tuples where the first item in a tuple is a "
-                    "Pyomo variable to be replaced and the second item in the "
-                    "tuple is a Pyomo variable to replace it with. This "
-                    "transformation is not reversible."
-    ))
 
-    __doc__ = add_docstring_list(__doc__, CONFIG)
+    CONFIG = ConfigBlock()
+    CONFIG.declare(
+        "substitute",
+        ConfigValue(
+            default=[],
+            description="List-like of tuples where the first item in a tuple is a "
+            "Pyomo variable to be replaced and the second item in the "
+            "tuple is a Pyomo variable to replace it with. This "
+            "transformation is not reversible.",
+        ),
+    )
 
     @staticmethod
     def replace(instance, substitute):
@@ -73,7 +84,7 @@ class ReplaceVariables(NonIsomorphicTransformation):
                 for i in r[0]:
                     d[id(r[0][i])] = r[1][i]
             else:
-                #scalar replace
+                # scalar replace
                 d[id(r[0])] = r[1]
 
         # Replacement Visitor
@@ -85,12 +96,9 @@ class ReplaceVariables(NonIsomorphicTransformation):
 
         # Do replacements in Expressions, Constraints, and Objectives
         for c in instance.component_data_objects(
-            (Constraint, Expression, Objective),
-            descend_into=True,
-            active=True
+            (Constraint, Expression, Objective), descend_into=True, active=True
         ):
-            c.set_value(expr=vis.dfs_postorder_stack(c.expr))
-
+            c.set_value(expr=vis.walk_expression(c.expr))
 
     def _apply_to(self, instance, **kwds):
         """
@@ -101,7 +109,7 @@ class ReplaceVariables(NonIsomorphicTransformation):
         Args:
             instance: A block or model to apply the transformation to
             substitute: A list-like of two-element list-likes.  Each two element
-                list-like specifies a replacment of the first variable by the
+                list-like specifies a replacement of the first variable by the
                 second.  SimpleVar, IndexedVar, _GeneralVarData, and Reference are
                 all accepted types.
 

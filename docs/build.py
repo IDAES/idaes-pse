@@ -1,7 +1,19 @@
+###############################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES).
+#
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
+###############################################################################
 """
 Run all build steps for IDAES documentation.
 """
-# standard libary
+# standard library
 import argparse
 import glob
 import logging
@@ -71,7 +83,7 @@ def run_apidoc(clean=True, dry_run=False, **kwargs):
 def postprocess_apidoc(root):
     """Perform postprocessing on generated apidoc files"""
     # Remove :noindex: from all entries in given modules
-    remove_noindex = ["idaes.dmf"]
+    remove_noindex = ["idaes.core.dmf"]
     for module in remove_noindex:
         module_path = root / (module + ".rst")
         _log.debug(f"Looking for :noindex: in {module_path}")
@@ -100,28 +112,17 @@ def run_html(clean=True, vb=0, timeout=0, dry_run=False, nprocs=1, **kwargs):
                 shutil.rmtree(build_dir)
         if os.path.exists(output_file):
             os.unlink(output_file)
+    args = ["sphinx-build", "-M", "html", ".", build_dir, "-w", output_file]
     # run
-    if vb > 0:
-        verbosity = "-" + "v" * vb
-    else:
-        verbosity = "-q"
+    verbosity = "-q" if vb <= 0 else "-" + "v" * vb
+    args.append(verbosity)
+
     if nprocs <= 0:
-        nprocs_arg = "-j auto"
-    elif nprocs == 1:
-        nprocs_arg = ""
-    else:
-        nprocs_arg = f"-j {nprocs}"
-    args = [
-        "sphinx-build",
-        "-M",
-        "html",
-        ".",
-        build_dir,
-        "-w",
-        output_file,
-        nprocs_arg,
-        verbosity,
-    ]
+        args.append("-j auto")
+    elif nprocs > 1:
+        args.append(f"-j {nprocs}")
+    # if nprocs == 1, do not specify "-j" args and fall back to sphinx-build's default
+
     print_status(f"Run: {' '.join(args)}")
     _run("html", args, timeout, dry_run)
     if dry_run:
@@ -153,14 +154,16 @@ def _run(what, args, timeout, not_really):
         return
     _log.debug(f"command={command_line}")
     try:
-        proc = subprocess.Popen(args)
+        res = subprocess.run(args, check=True, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        raise CommandError(what, f"Timed out after {timeout} seconds")
+    except subprocess.CalledProcessError as e:
+        raise CommandError(what, f"Exited with nonzero exit code {e.returncode}")
     except Exception as err:
         exe = args[0]
         raise CommandError(what, f"Could not run '{exe}':\n{err}")
-    try:
-        proc.wait(timeout)
-    except subprocess.TimeoutExpired:
-        raise CommandError(what, f"Timed out after {timeout} seconds")
+    else:
+        print_status(f"{what} completed with exit code {res.returncode}")
 
 
 def print_header(msg: str, first: bool = False):

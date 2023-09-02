@@ -38,7 +38,7 @@ Physical Parameter blocks have one standard configuration argument:
 * default_arguments - this allows the user to provide a set of default values for construction arguments in associated StateBlocks, which will be passed to all StateBlocks when they are constructed.
 
 
-.. module:: idaes.core.property_base
+.. module:: idaes.core.base.property_base
 
 .. autoclass:: PhysicalParameterBlock
     :members:
@@ -63,7 +63,7 @@ State Blocks have the following construction arguments:
 Constructing State Blocks
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-State Blocks can be constructed directly from the associated Physical Parameter Block by calling the `build_state_block()` method on the Physical Parameter Block. The `parameters` construction argument will be automatically set, and any other arguments (including indexing sets) may be provided to the `build_state_block` method as ususal.
+State Blocks can be constructed directly from the associated Physical Parameter Block by calling the `build_state_block()` method on the Physical Parameter Block. The `parameters` construction argument will be automatically set, and any other arguments (including indexing sets) may be provided to the `build_state_block` method as usual.
 
 StateBlockData Class
 ^^^^^^^^^^^^^^^^^^^^

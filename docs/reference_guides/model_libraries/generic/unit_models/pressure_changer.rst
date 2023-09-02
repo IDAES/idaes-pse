@@ -28,12 +28,14 @@ Variable                    Name                  Notes
 =========================== ===================== ===================================================================================
 :math:`P_{ratio}`           ratioP
 :math:`V_t`                 volume                Only if has_rate_reactions = True, reference to control_volume.rate_reaction_extent
-:math:`W_{mechanical,t}`    work_mechanical       Reference to control_volume.work
+:math:`W_{mechanical,t}`    work_mechanical       Reference to control_volume.work :sup:`*`
 :math:`W_{fluid,t}`         work_fluid            Pump assumption only
 :math:`\eta_{pump,t}`       efficiency_pump       Pump assumption only
 :math:`W_{isentropic,t}`    work_isentropic       Isentropic assumption only
 :math:`\eta_{isentropic,t}` efficiency_isentropic Isentropic assumption only
 =========================== ===================== ===================================================================================
+
+:sup:`*` By default, ``control_volume.work`` is built only when the ``EnergyBalanceType`` of ``control_volume`` is `not` ``None`` and ``has_work_transfer``. However, when modeling a ``Pump`` there are cases where the mechanical work is calculated without demanding a full energy balance constraint. In these cases (when ``thermodynamic_assumption=ThermodynamicAssumption.pump`` and ``energy_balance_type=none``), a variable ``control_volume.work`` is constructed without being coupled to the usual energy balance constraint. ``work_mechanical`` is then referenced to ``control_volume.work`` and used to build constraints under the ``add_pump()`` method to simulate essential pump properties. 
 
 Isentropic Pressure Changers also have an additional Property Block named `properties_isentropic` (attached to the Unit Model).
 
@@ -92,6 +94,18 @@ If compressor is True, :math:`W_{fluid,t} = W_{mechanical,t} \times \eta_t`
 
 If compressor is False, :math:`W_{fluid,t} \times \eta_t = W_{mechanical,t}`
 
+Initialization
+--------------
+
+For simpler pressure changer models (isothermal, adiabatic and pump assumptions), the default :ref:`SingleControlVolumeInitializer <reference_guides/initialization/single_cv_initializer:Single Control Volume Initializer>` is applicable.
+
+For isentropic pressure changers, an alternate IsentropicPressureChangerInitializer is available.
+
+.. module:: idaes.models.unit_models.pressure_changer
+
+.. autoclass:: IsentropicPressureChangerInitializer
+   :members: initialization_routine
+
 Performance Curves
 ------------------
 Isentropic pressure changers support optional performance curve constraints.
@@ -131,17 +145,18 @@ curves. The first does not use a callback the second does.
 
   from pyomo.environ import ConcreteModel, SolverFactory, units, value
   from idaes.core import FlowsheetBlock
-  from idaes.generic_models.unit_models.pressure_changer import Turbine
-  from idaes.generic_models.properties import iapws95
+  from idaes.models.unit_models.pressure_changer import Turbine
+  from idaes.models.properties import iapws95
   import pytest
 
   solver = SolverFactory('ipopt')
   m = ConcreteModel()
-  m.fs = FlowsheetBlock(default={"dynamic": False})
+  m.fs = FlowsheetBlock(dynamic=False)
   m.fs.properties = iapws95.Iapws95ParameterBlock()
-  m.fs.unit = Turbine(default={
-      "property_package": m.fs.properties,
-      "support_isentropic_performance_curves":True})
+  m.fs.unit = Turbine(
+      property_package=m.fs.properties,
+      support_isentropic_performance_curves=True
+  )
 
   # Add performance curves
   @m.fs.unit.performance_curve.Constraint(m.fs.config.time)
@@ -175,13 +190,13 @@ The next example shows how to use a callback to add performance curves.
 
   from pyomo.environ import ConcreteModel, SolverFactory, units, value
   from idaes.core import FlowsheetBlock
-  from idaes.generic_models.unit_models.pressure_changer import Turbine
-  from idaes.generic_models.properties import iapws95
+  from idaes.models.unit_models.pressure_changer import Turbine, IsentropicPressureChangerInitializer
+  from idaes.models.properties import iapws95
   import pytest
 
   solver = SolverFactory('ipopt')
   m = ConcreteModel()
-  m.fs = FlowsheetBlock(default={"dynamic": False})
+  m.fs = FlowsheetBlock(dynamic=False)
   m.fs.properties = iapws95.Iapws95ParameterBlock()
 
   def perf_callback(blk):
@@ -197,10 +212,11 @@ The next example shows how to use a callback to add performance curves.
       def pc_isen_head_eqn(b, t):
           return b.head_isentropic[t]/1000 == -75530.8/1000*units.J/units.kg
 
-  m.fs.unit = Turbine(default={
-      "property_package": m.fs.properties,
-      "support_isentropic_performance_curves":True,
-      "isentropic_performance_curves": {"build_callback": perf_callback}})
+  m.fs.unit = Turbine(
+      property_package=m.fs.properties,
+      support_isentropic_performance_curves=True,
+      isentropic_performance_curves={"build_callback": perf_callback}
+  )
 
   # set inputs
   m.fs.unit.inlet.flow_mol[0].fix(1000)  # mol/s
@@ -211,7 +227,8 @@ The next example shows how to use a callback to add performance curves.
   m.fs.unit.inlet.enth_mol[0].fix(hin)
   m.fs.unit.inlet.pressure[0].fix(Pin)
 
-  m.fs.unit.initialize()
+  initializer = IsentropicPressureChangerInitializer()
+  initializer.initialize(m.fs.unit)
   solver.solve(m, tee=False)
 
   assert value(m.fs.unit.efficiency_isentropic[0]) == pytest.approx(0.9, rel=1e-3)
@@ -220,8 +237,6 @@ The next example shows how to use a callback to add performance curves.
 
 PressureChanger Class
 ----------------------
-
-.. module:: idaes.generic_models.unit_models.pressure_changer
 
 .. autoclass:: PressureChanger
   :members:

@@ -1,0 +1,98 @@
+{
+    "name": "Pitzer:1984",
+    "text": {
+        "file": "Pitzer_1984.pdf",
+        "title": "Thermodynamic Properties of Aqueous Sodium Chloride Solutions",
+        "date": "1984",
+        "authors": "Kenneth S. Pitzer, J. Christopher Peiper, and R. H. Busey",
+        "venue": "Journal of Physical and Chemical Reference Data 13, 1",
+        "doi": "https://doi.org/10.1063/1.555709"
+    },
+    "tables": [
+      {
+        "name": "Standard G",
+        "description": "Standard Gibbs energies. Debye-Huckel A_phi parameter, and virial coefficients for NaCl(aq)",
+        "datafile": "pitzer_1.csv"
+      },
+      {
+        "name": "Standard S",
+        "description":"Standard entropies, Debye-Huckel A_s parameter, and virial coefficients for the NaCl(aq) entropy",
+        "datafile": "pitzer_2.csv"
+      },
+      {
+        "name": "Standard H",
+        "description":"Standard enthalpies, Debye-Huckel A_L parameter and virial coefficients for the NaCl(aq) enthalpy",
+        "datafile": "pitzer_3.csv"
+      },
+      {
+        "name": "Standard Cp",
+        "description": "Standard heat capacities, Debye-Huckel A_J parameter, and virial coefficients for the NaCl(aq) heat capacity",
+        "datafile": "pitzer_4.csv"
+      },
+      {
+        "name": "Standard Volume",
+        "description": "Standard volumes, Debye-Huckel A_v parameter, and virial coefficients for the NaCl(aq) volume",
+        "datafile": "pitzer_5.csv"
+      },
+      {
+        "name": "Standard Expansivity",
+        "description": "Standard expansivities, Debye-Huckel A_x parameter, and virial coefficients for the NaCl(aq) expansivity",
+        "datafile": "pitzer_6.csv"
+      },
+      {
+        "name": "Standard Compressibility",
+        "description": "Standard compressibilities, Debye-Huckel A_K parameter, and virial coefficients for the NaCl(aq) compressibility",
+        "datafile": "pitzer_7.csv"
+      },
+      {
+        "name": "Activity Coefficient",
+        "description": "Activity coefficient of NaCl(aq)",
+        "datafile": "pitzer_8.csv"
+      },
+      {
+        "name": "Osmotic Coefficient",
+        "description": "Osmotic coefficient of NaCl(aq)",
+        "datafile": "pitzer_9.csv"
+      },
+      {
+        "name": "Standard Entropy of Solution",
+        "description": "Entropy of solution of NaCl(aq)",
+        "datafile": "pitzer_10.csv"
+      },
+      {
+        "name": "Standard Enthalpy of Solution",
+        "description": "Enthalpy of solution of NaCl(aq)",
+        "datafile": "pitzer_11.csv"
+      },
+      {
+        "name": "Excess Entropy",
+        "description": "Relative entropy of NaCl(aq)",
+        "datafile": "pitzer_12.csv"
+      },
+      {
+        "name": "Excess Enthalpy",
+        "description": "Relative enthalpy of NaCl(aq)",
+        "datafile": "pitzer_13.csv"
+      },
+      {
+        "name": "Excess Cp",
+        "description": "Relative heat capacity of NaCl(aq)",
+        "datafile": "pitzer_14.csv"
+      },
+      {
+        "name": "Density",
+        "description": "Density of NaCl(aq)",
+        "datafile": "pitzer_15.csv"
+      },
+      {
+        "name": "Specific Entropy",
+        "description": "Specific entropy of NaCl(aq)",
+        "datafile": "pitzer_16.csv"
+      },
+      {
+        "name": "Specific Enthalpy",
+        "description": "Specific enthalpy of NaCl(aq)",
+        "datafile": "pitzer_17.csv"
+      }
+    ]
+}
