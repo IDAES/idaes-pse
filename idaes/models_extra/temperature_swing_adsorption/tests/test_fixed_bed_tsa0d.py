@@ -41,9 +41,12 @@ from idaes.core.util.model_statistics import (
 )
 from idaes.models.properties import iapws95
 from idaes.models_extra.power_generation.properties import FlueGasParameterBlock
-from idaes.models_extra.temperature_swing_adsorption.fixed_bed_tsa0d import (
+from idaes.models_extra.temperature_swing_adsorption import (
     FixedBedTSA0D,
     FixedBedTSA0DInitializer,
+    Adsorbent,
+    SteamCalculationType,
+    TransformationScheme
 )
 from idaes.models_extra.temperature_swing_adsorption.util import (
     plot_tsa_profiles,
@@ -62,15 +65,15 @@ class TestTsaZeolite:
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
         m.fs.unit = FixedBedTSA0D(
-            adsorbent="Zeolite-13X",
+            adsorbent=Adsorbent.zeolite_13x,
             calculate_beds=False,
             number_of_beds=120,
             transformation_method="dae.collocation",
-            transformation_scheme="LAGRANGE-RADAU",
+            transformation_scheme=TransformationScheme.lagrangeRadau,
             finite_elements=20,
             collocation_points=6,
             compressor=False,
-            steam_calculation=None,
+            steam_calculation=SteamCalculationType.none,
         )
 
         m.fs.unit.inlet.flow_mol_comp[0, "H2O"].fix(0)
@@ -172,15 +175,15 @@ class TestTsaMgmof:
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
         m.fs.unit = FixedBedTSA0D(
-            adsorbent="mmen-Mg-MOF-74",
+            adsorbent=Adsorbent.mmen_mg_mof_74,
             calculate_beds=True,
             number_of_beds=1,
             transformation_method="dae.collocation",
-            transformation_scheme="LAGRANGE-RADAU",
+            transformation_scheme=TransformationScheme.lagrangeRadau,
             finite_elements=20,
             collocation_points=6,
             compressor=False,
-            steam_calculation="simplified",
+            steam_calculation=SteamCalculationType.simplified,
         )
 
         m.fs.unit.inlet.flow_mol_comp[0, "H2O"].fix(0)
@@ -282,16 +285,16 @@ class TestTsaPolystyrene:
         m.fs.steam_props = iapws95.Iapws95ParameterBlock()
 
         m.fs.unit = FixedBedTSA0D(
-            adsorbent="polystyrene-amine",
+            adsorbent=Adsorbent.polystyrene_amine,
             calculate_beds=False,
             number_of_beds=1,
             transformation_method="dae.collocation",
-            transformation_scheme="LAGRANGE-RADAU",
+            transformation_scheme=TransformationScheme.lagrangeRadau,
             finite_elements=20,
             collocation_points=6,
             compressor=True,
             compressor_properties=m.fs.compressor_props,
-            steam_calculation="rigorous",
+            steam_calculation=SteamCalculationType.rigorous,
             steam_properties=m.fs.steam_props,
         )
 
@@ -385,15 +388,15 @@ class TestTsaInitializer:
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
         m.fs.unit = FixedBedTSA0D(
-            adsorbent="Zeolite-13X",
+            adsorbent=Adsorbent.zeolite_13x,
             calculate_beds=False,
             number_of_beds=120,
             transformation_method="dae.collocation",
-            transformation_scheme="LAGRANGE-RADAU",
+            transformation_scheme=TransformationScheme.lagrangeRadau,
             finite_elements=20,
             collocation_points=6,
             compressor=False,
-            steam_calculation=None,
+            steam_calculation=SteamCalculationType.none,
         )
 
         m.fs.unit.inlet.flow_mol_comp[0, "H2O"].fix(0)

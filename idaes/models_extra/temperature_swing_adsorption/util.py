@@ -26,7 +26,7 @@ from pyomo.environ import value
 from idaes.core.util.tables import stream_table_dataframe_to_string
 
 
-def tsa_summary(tsa, export=False):
+def tsa_summary(tsa, stream=stdout, export=False):
 
     var_dict = tsa._var_dict()
 
@@ -45,11 +45,11 @@ def tsa_summary(tsa, export=False):
     if export:
         df.to_csv(f"{tsa.local_name}_summary.csv")
 
-    print("\n" + "=" * 84)
-    print(f"summary {tsa.local_name}")
-    print("-" * 84)
-    stdout.write(textwrap.indent(stream_table_dataframe_to_string(df), " " * 4))
-    print("\n" + "=" * 84 + "\n")
+    stream.write("\n" + "=" * 84)
+    stream.write("\n" + f"Summary - {tsa.local_name}")
+    stream.write("\n" + "-" * 84)
+    stream.write(textwrap.indent(stream_table_dataframe_to_string(df), " " * 4))
+    stream.write("\n" + "=" * 84 + "\n")
 
 
 def plot_tsa_profiles(tsa):

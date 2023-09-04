@@ -23,6 +23,9 @@ from pyomo.environ import check_optimal_termination, ConcreteModel, value
 from idaes.core import FlowsheetBlock
 from idaes.models_extra.temperature_swing_adsorption.fixed_bed_tsa0d import (
     FixedBedTSA0D,
+    Adsorbent,
+    TransformationScheme,
+    SteamCalculationType
 )
 from idaes.models.properties import iapws95
 from idaes.models_extra.power_generation.properties import FlueGasParameterBlock
@@ -55,16 +58,16 @@ class TestElectricBoilerCosting:
         m.fs.steam_props = iapws95.Iapws95ParameterBlock()
 
         m.fs.unit = FixedBedTSA0D(
-            adsorbent="Zeolite-13X",
+            adsorbent=Adsorbent.zeolite_13x,
             calculate_beds=False,
             number_of_beds=600,
             transformation_method="dae.collocation",
-            transformation_scheme="LAGRANGE-RADAU",
+            transformation_scheme=TransformationScheme.lagrangeRadau,
             finite_elements=20,
             collocation_points=6,
             compressor=True,
             compressor_properties=m.fs.compressor_props,
-            steam_calculation="rigorous",
+            steam_calculation=SteamCalculationType.rigorous,
             steam_properties=m.fs.steam_props,
         )
 
@@ -155,16 +158,16 @@ class TestRetrofitNgccCosting:
         m.fs.steam_props = iapws95.Iapws95ParameterBlock()
 
         m.fs.unit = FixedBedTSA0D(
-            adsorbent="Zeolite-13X",
+            adsorbent=Adsorbent.zeolite_13x,
             calculate_beds=False,
             number_of_beds=600,
             transformation_method="dae.collocation",
-            transformation_scheme="LAGRANGE-RADAU",
+            transformation_scheme=TransformationScheme.lagrangeRadau,
             finite_elements=20,
             collocation_points=6,
             compressor=True,
             compressor_properties=m.fs.compressor_props,
-            steam_calculation="rigorous",
+            steam_calculation=SteamCalculationType.rigorous,
             steam_properties=m.fs.steam_props,
         )
 
