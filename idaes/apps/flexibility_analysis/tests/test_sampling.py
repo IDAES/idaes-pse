@@ -4,6 +4,8 @@ from idaes.apps.flexibility_analysis.sampling import perform_sampling, SamplingC
 import unittest
 import numpy as np
 import pytest
+import coramin
+from pyomo.contrib import appsi
 
 
 def create_poly_model():
@@ -91,7 +93,11 @@ def create_hx_network_model():
 class TestSampling(unittest.TestCase):
     def test_poly(self):
         m, nominal_values, param_bounds = create_poly_model()
-        opt = pe.SolverFactory("scip")
+        mip_solver = appsi.solvers.Gurobi()
+        nlp_solver = appsi.solvers.Ipopt()
+        opt = coramin.algorithms.MultiTree(mip_solver=mip_solver, nlp_solver=nlp_solver)
+        opt.config.stream_solver = False
+        opt.config.convexity_effort = coramin.Effort.none
         config = SamplingConfig()
         config.solver = opt
         config.num_points = 5
