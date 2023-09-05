@@ -791,8 +791,7 @@ class FixedBedTSA0DData(UnitModelBlockData):
             self.isotherm_components,
             initialize={"CO2": -62900, "N2": 0.0},
             units=units.J / units.mol,
-            doc="Heat of adsorption - estimated with"
-            "Clausius-Clapeyron relation",
+            doc="Heat of adsorption - estimated with" "Clausius-Clapeyron relation",
         )
         self.temperature_ref = Param(
             initialize=313.15,
@@ -894,7 +893,7 @@ class FixedBedTSA0DData(UnitModelBlockData):
         self.bed_voidage = Param(
             initialize=0.4,
             units=units.dimensionless,
-            doc="Bed voidage - external or interparticle porosity"
+            doc="Bed voidage - external or interparticle porosity",
         )
         self.particle_voidage = Param(
             initialize=0.5,
@@ -917,9 +916,7 @@ class FixedBedTSA0DData(UnitModelBlockData):
             doc="Density of adsorbent",
         )
         self.particle_dia = Param(
-            initialize=2e-3,
-            units=units.m,
-            doc="Particle diameter"
+            initialize=2e-3, units=units.m, doc="Particle diameter"
         )
         # isotherm parameters
         self.dh_ads = Param(
@@ -1148,9 +1145,7 @@ class FixedBedTSA0DData(UnitModelBlockData):
             doc="Temperature at N2 rich stream",
         )
         self.pressure_n2_rich_stream = Var(
-            self.flowsheet().time,
-            units=units.Pa,
-            doc="Pressure at N2 rich stream"
+            self.flowsheet().time, units=units.Pa, doc="Pressure at N2 rich stream"
         )
 
         # create empty port
@@ -1200,14 +1195,10 @@ class FixedBedTSA0DData(UnitModelBlockData):
             doc="Component mole flow rate at H2O+O2 stream",
         )
         self.temperature_h2o_o2_stream = Var(
-            self.flowsheet().time,
-            units=units.K,
-            doc="Temperature at H2O+O2 stream"
+            self.flowsheet().time, units=units.K, doc="Temperature at H2O+O2 stream"
         )
         self.pressure_h2o_o2_stream = Var(
-            self.flowsheet().time,
-            units=units.Pa,
-            doc="Pressure at H2O+O2 stream"
+            self.flowsheet().time, units=units.Pa, doc="Pressure at H2O+O2 stream"
         )
 
         # create empty port
@@ -1261,13 +1252,10 @@ class FixedBedTSA0DData(UnitModelBlockData):
 
         # time domain and total heating time
         self.heating.time = Var(
-            initialize=1e3,
-            units=units.s,
-            doc="Time of heating step"
+            initialize=1e3, units=units.s, doc="Time of heating step"
         )
         self.heating.time_domain = ContinuousSet(
-            bounds=(0, 1),
-            doc="Normalized time domain in heating step"
+            bounds=(0, 1), doc="Normalized time domain in heating step"
         )
 
         # variables
@@ -1452,13 +1440,10 @@ class FixedBedTSA0DData(UnitModelBlockData):
 
         # time domain and total cooling time
         self.cooling.time = Var(
-            initialize=1e3,
-            units=units.s,
-            doc="Time of cooling step"
+            initialize=1e3, units=units.s, doc="Time of cooling step"
         )
         self.cooling.time_domain = ContinuousSet(
-            bounds=(0, 1),
-            doc="Normalized time domain in cooling step"
+            bounds=(0, 1), doc="Normalized time domain in cooling step"
         )
 
         # variables
@@ -1671,10 +1656,7 @@ class FixedBedTSA0DData(UnitModelBlockData):
             units=units.dimensionless,
             doc="Mole fraction in pressurization step",
         )
-        self.pressurization.time = Var(
-            units=units.s,
-            doc="Time of pressurization step"
-        )
+        self.pressurization.time = Var(units=units.s, doc="Time of pressurization step")
         self.pressurization.loading = Var(
             self.isotherm_components,
             units=units.mol / units.kg,
@@ -1689,9 +1671,7 @@ class FixedBedTSA0DData(UnitModelBlockData):
             doc="Mole fraction at end of cooling step",
         )
         self.pressurization.pressure_cooling_end = Var(
-            initialize=1e3,
-            units=units.Pa,
-            doc="Pressure at end of cooling step"
+            initialize=1e3, units=units.Pa, doc="Pressure at end of cooling step"
         )
         self.pressurization.loading_cooling_end = Var(
             self.isotherm_components,
@@ -1802,10 +1782,7 @@ class FixedBedTSA0DData(UnitModelBlockData):
         self.adsorption = SkeletonUnitModel()
 
         # variables
-        self.adsorption.time = Var(
-            units=units.s,
-            doc="Time of adsorption step"
-        )
+        self.adsorption.time = Var(units=units.s, doc="Time of adsorption step")
         self.adsorption.loading = Var(
             self.isotherm_components,
             units=units.mol / units.kg,
@@ -1911,7 +1888,7 @@ class FixedBedTSA0DData(UnitModelBlockData):
         schemes = {
             TransformationScheme.backward: "BACKWARD",
             TransformationScheme.forward: "FORWARD",
-            TransformationScheme.lagrangeRadau: "LAGRANGE-RADAU"
+            TransformationScheme.lagrangeRadau: "LAGRANGE-RADAU",
         }
 
         if self.config.transformation_method == "dae.finite_difference":
@@ -2184,9 +2161,7 @@ class FixedBedTSA0DData(UnitModelBlockData):
             units=units.kg / units.tonne / units.hr,
             doc="Productivity",
         )
-        self.cycle_time = Var(
-            initialize=1.0, units=units.hr, doc="Total cycle time"
-        )
+        self.cycle_time = Var(initialize=1.0, units=units.hr, doc="Total cycle time")
         self.thermal_energy = Var(
             initialize=1.0, units=units.MJ, doc="Thermal energy consumption"
         )
@@ -2574,8 +2549,7 @@ class FixedBedTSA0DData(UnitModelBlockData):
 
             # add heater unit model
             self.steam_heater.unit = Heater(
-                property_package=self.config.steam_properties,
-                has_pressure_change=True
+                property_package=self.config.steam_properties, has_pressure_change=True
             )
 
             # add constraint for total saturation condition
@@ -2594,7 +2568,7 @@ class FixedBedTSA0DData(UnitModelBlockData):
 
             # fix inlet pressure, enthalpy and pressure drop
             Pin = 510e3 * units.Pa
-            hin = 52465.8 * units.J/units.mol  # 500 K
+            hin = 52465.8 * units.J / units.mol  # 500 K
 
             self.steam_heater.unit.inlet.enth_mol[0].fix(hin)
             self.steam_heater.unit.inlet.pressure[0].fix(Pin)
@@ -2775,13 +2749,9 @@ class FixedBedTSA0DData(UnitModelBlockData):
 
             # save solution in new initial guess, f(x_new)
             if str(cycle_step).split(".")[-1] == "heating":
-                f_x_new = value(
-                    self.temperature_desorption - cycle_step.temperature[1]
-                )
+                f_x_new = value(self.temperature_desorption - cycle_step.temperature[1])
             else:
-                f_x_new = value(
-                    cycle_step.temperature[1] - self.temperature_adsorption
-                )
+                f_x_new = value(cycle_step.temperature[1] - self.temperature_adsorption)
 
             # set up new interval until find one containing the root
             if f_x0_start >= 0:
@@ -3251,8 +3221,7 @@ class FixedBedTSA0DData(UnitModelBlockData):
 
                 # initialization of steam heater
                 init_log_heater.info(
-                    "Starting initialization of heater model for steam "
-                    "calculation."
+                    "Starting initialization of heater model for steam " "calculation."
                 )
 
                 # activate steam heater model
@@ -3264,8 +3233,8 @@ class FixedBedTSA0DData(UnitModelBlockData):
                 blk.steam_heater.unit.heat_duty_heater_eq.deactivate()
 
                 # 7.2) assume a dumy inlet flow rate and heat duty and fix them
-                Fin = 100*units.mol/units.s
-                Q = -500000*units.W
+                Fin = 100 * units.mol / units.s
+                Q = -500000 * units.W
                 blk.steam_heater.unit.inlet.flow_mol[0].fix(Fin)
                 blk.steam_heater.unit.heat_duty.fix(Q)
 
@@ -3407,16 +3376,16 @@ class FixedBedTSA0DData(UnitModelBlockData):
 
         # 8.3) check degrees of freedom and solve
         if (
-            blk.config.compressor or
-            blk.config.steam_calculation != SteamCalculationType.none
+            blk.config.compressor
+            or blk.config.steam_calculation != SteamCalculationType.none
         ):
             if degrees_of_freedom(blk) == 0:
 
                 with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                     res = opt.solve(blk, tee=slc.tee)
                 if (
-                    blk.config.compressor and
-                    blk.config.steam_calculation != SteamCalculationType.none
+                    blk.config.compressor
+                    and blk.config.steam_calculation != SteamCalculationType.none
                 ):
                     if check_optimal_termination(res):
                         init_log.info(
@@ -3431,8 +3400,8 @@ class FixedBedTSA0DData(UnitModelBlockData):
                             "models Failed {}.".format(blk.name)
                         )
                 if (
-                    blk.config.compressor and
-                    blk.config.steam_calculation == SteamCalculationType.none
+                    blk.config.compressor
+                    and blk.config.steam_calculation == SteamCalculationType.none
                 ):
                     if check_optimal_termination(res):
                         init_log.info(
@@ -3447,8 +3416,8 @@ class FixedBedTSA0DData(UnitModelBlockData):
                             "and compressor models Failed {}.".format(blk.name)
                         )
                 if (
-                    not blk.config.compressor and
-                    blk.config.steam_calculation != SteamCalculationType.none
+                    not blk.config.compressor
+                    and blk.config.steam_calculation != SteamCalculationType.none
                 ):
                     if check_optimal_termination(res):
                         init_log.info(
@@ -3464,8 +3433,8 @@ class FixedBedTSA0DData(UnitModelBlockData):
                         )
             else:
                 if (
-                    blk.config.compressor and
-                    blk.config.steam_calculation != SteamCalculationType.none
+                    blk.config.compressor
+                    and blk.config.steam_calculation != SteamCalculationType.none
                 ):
                     raise ConfigurationError(
                         "Degrees of freedom is not zero during initialization "
@@ -3475,8 +3444,8 @@ class FixedBedTSA0DData(UnitModelBlockData):
                         "initialization."
                     )
                 if (
-                    blk.config.compressor and
-                    blk.config.steam_calculation == SteamCalculationType.none
+                    blk.config.compressor
+                    and blk.config.steam_calculation == SteamCalculationType.none
                 ):
                     raise ConfigurationError(
                         "Degrees of freedom is not zero during initialization "
@@ -3486,8 +3455,8 @@ class FixedBedTSA0DData(UnitModelBlockData):
                         "initialization."
                     )
                 if (
-                    not blk.config.compressor and
-                    blk.config.steam_calculation != SteamCalculationType.none
+                    not blk.config.compressor
+                    and blk.config.steam_calculation != SteamCalculationType.none
                 ):
                     raise ConfigurationError(
                         "Degrees of freedom is not zero during initialization "

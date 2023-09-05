@@ -16,12 +16,7 @@ Initializer for the fixed bed TSA unit model.
 """
 
 # Import Pyomo libraries
-from pyomo.environ import (
-    value,
-    check_optimal_termination,
-    Block,
-    units
-)
+from pyomo.environ import value, check_optimal_termination, Block, units
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 # import IDAES core libraries
@@ -65,7 +60,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
                 "exclude_unused_vars=False, but the FixedBedTSA0D model "
                 "contains unused Vars. exclude_unused_vars has been set "
                 "to True to avoid raising an InitializationError."
-                )
+            )
 
         super(FixedBedTSA0DInitializer, self).initialize(
             model=model,
@@ -125,7 +120,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
 
         # deactivate final condition constraint and fix time
         blk.heating.fc_temperature_eq.deactivate()
-        blk.heating.time.fix(1e3*units.s)
+        blk.heating.time.fix(1e3 * units.s)
 
         # check degrees of freedom and solve
         if degrees_of_freedom(blk.heating) == 0:
@@ -171,7 +166,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
 
         # deactivate final condition constraint and fix time
         blk.cooling.fc_temperature_eq.deactivate()
-        blk.cooling.time.fix(500*units.s)
+        blk.cooling.time.fix(500 * units.s)
 
         # check degrees of freedom and solve
         if degrees_of_freedom(blk.cooling) == 0:
@@ -262,8 +257,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
         ]
 
         blk._calculate_variable_from_constraint(
-            variable_list=vars_lst_adsorption,
-            constraint_list=cons_lst_adsorption
+            variable_list=vars_lst_adsorption, constraint_list=cons_lst_adsorption
         )
 
         # 4.2) check degrees of freedom and solve
@@ -283,9 +277,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
         # deactivated during individual steps
         from_json(blk, sd=tsa_state, wts=StoreState)
 
-        calculate_variable_from_constraint(
-            blk.pressure_drop, blk.pressure_drop_eq
-        )
+        calculate_variable_from_constraint(blk.pressure_drop, blk.pressure_drop_eq)
 
         # 5.2) deactivate compressor
         if blk.config.compressor:
@@ -367,9 +359,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
             # 6.2) check degrees of freedom and solve
             if degrees_of_freedom(blk.compressor) == 0:
 
-                comp_initializer = self.get_submodel_initializer(
-                    blk.compressor.unit
-                )
+                comp_initializer = self.get_submodel_initializer(blk.compressor.unit)
                 comp_initializer.initialize(blk.compressor.unit)
 
                 # re-solve compressor model
@@ -403,8 +393,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
 
                 # initialization of steam heater
                 init_log.info(
-                    "Starting initialization of heater model for steam "
-                    "calculation."
+                    "Starting initialization of heater model for steam " "calculation."
                 )
 
                 # activate steam heater model
@@ -416,8 +405,8 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
                 blk.steam_heater.unit.heat_duty_heater_eq.deactivate()
 
                 # 7.2) assume a dumy inlet flow rate and heat duty and fix them
-                Fin = 100*units.mol/units.s
-                Q = -500000*units.W
+                Fin = 100 * units.mol / units.s
+                Q = -500000 * units.W
                 blk.steam_heater.unit.inlet.flow_mol[0].fix(Fin)
                 blk.steam_heater.unit.heat_duty.fix(Q)
 
@@ -555,16 +544,16 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
 
         # 8.3) check degrees of freedom and solve
         if (
-            blk.config.compressor or
-            blk.config.steam_calculation != SteamCalculationType.none
+            blk.config.compressor
+            or blk.config.steam_calculation != SteamCalculationType.none
         ):
             if degrees_of_freedom(blk) == 0:
 
                 with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                     res = self.opt.solve(blk, tee=slc.tee)
                 if (
-                    blk.config.compressor and
-                    blk.config.steam_calculation != SteamCalculationType.none
+                    blk.config.compressor
+                    and blk.config.steam_calculation != SteamCalculationType.none
                 ):
                     if check_optimal_termination(res):
                         init_log.info(
@@ -579,8 +568,8 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
                             "models Failed {}.".format(blk.name)
                         )
                 if (
-                    blk.config.compressor and
-                    blk.config.steam_calculation != SteamCalculationType.none
+                    blk.config.compressor
+                    and blk.config.steam_calculation != SteamCalculationType.none
                 ):
                     if check_optimal_termination(res):
                         init_log.info(
@@ -595,8 +584,8 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
                             "and compressor models Failed {}.".format(blk.name)
                         )
                 if (
-                    not blk.config.compressor and
-                    blk.config.steam_calculation != SteamCalculationType.none
+                    not blk.config.compressor
+                    and blk.config.steam_calculation != SteamCalculationType.none
                 ):
                     if check_optimal_termination(res):
                         init_log.info(
@@ -612,8 +601,8 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
                         )
             else:
                 if (
-                    blk.config.compressor and
-                    blk.config.steam_calculation != SteamCalculationType.none
+                    blk.config.compressor
+                    and blk.config.steam_calculation != SteamCalculationType.none
                 ):
                     raise ConfigurationError(
                         "Degrees of freedom is not zero during initialization "
@@ -623,8 +612,8 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
                         "initialization."
                     )
                 if (
-                    blk.config.compressor and
-                    blk.config.steam_calculation == SteamCalculationType.none
+                    blk.config.compressor
+                    and blk.config.steam_calculation == SteamCalculationType.none
                 ):
                     raise ConfigurationError(
                         "Degrees of freedom is not zero during initialization "
@@ -634,8 +623,8 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
                         "initialization."
                     )
                 if (
-                    not blk.config.compressor and
-                    blk.config.steam_calculation != SteamCalculationType.none
+                    not blk.config.compressor
+                    and blk.config.steam_calculation != SteamCalculationType.none
                 ):
                     raise ConfigurationError(
                         "Degrees of freedom is not zero during initialization "
@@ -788,13 +777,9 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
 
             # save solution in new initial guess, f(x_new)
             if str(cycle_step).split(".")[-1] == "heating":
-                f_x_new = value(
-                    blk.temperature_desorption - cycle_step.temperature[1]
-                )
+                f_x_new = value(blk.temperature_desorption - cycle_step.temperature[1])
             else:
-                f_x_new = value(
-                    cycle_step.temperature[1] - blk.temperature_adsorption
-                )
+                f_x_new = value(cycle_step.temperature[1] - blk.temperature_adsorption)
 
             # set up new interval until find one containing the root
             if f_x0_start >= 0:

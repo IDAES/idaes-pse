@@ -46,7 +46,7 @@ from idaes.models_extra.temperature_swing_adsorption import (
     FixedBedTSA0DInitializer,
     Adsorbent,
     SteamCalculationType,
-    TransformationScheme
+    TransformationScheme,
 )
 from idaes.models_extra.temperature_swing_adsorption.util import (
     plot_tsa_profiles,

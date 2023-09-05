@@ -14,6 +14,6 @@ from .fixed_bed_tsa0d import (
     FixedBedTSA0D,
     Adsorbent,
     SteamCalculationType,
-    TransformationScheme
+    TransformationScheme,
 )
 from .initializer import FixedBedTSA0DInitializer

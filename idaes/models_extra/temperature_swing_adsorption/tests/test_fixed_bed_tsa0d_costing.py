@@ -25,7 +25,7 @@ from idaes.models_extra.temperature_swing_adsorption.fixed_bed_tsa0d import (
     FixedBedTSA0D,
     Adsorbent,
     TransformationScheme,
-    SteamCalculationType
+    SteamCalculationType,
 )
 from idaes.models.properties import iapws95
 from idaes.models_extra.power_generation.properties import FlueGasParameterBlock
