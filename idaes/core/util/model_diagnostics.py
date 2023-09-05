@@ -275,7 +275,8 @@ DHCONFIG = ConfigDict()
 DHCONFIG.declare(
     "solver",
     ConfigValue(
-        domain="scip",
+        default="scip",
+        domain=str,
         description="MILP solver to use for finding irreducible degenerate sets.",
     ),
 )
@@ -287,16 +288,18 @@ DHCONFIG.declare(
     ),
 )
 DHCONFIG.declare(
-    "M",
+    "M",  # TODO: Need better name
     ConfigValue(
-        domain=1e5,
+        default=1e5,
+        domain=float,
         description="Maximum value for nu in MILP models.",
     ),
 )
 DHCONFIG.declare(
-    "m_small",
+    "m_small",  # TODO: Need better name
     ConfigValue(
-        domain=1e-5,
+        default=1e-5,
+        domain=float,
         description="Smallest value for nu to be considered non-zero in MILP models.",
     ),
 )
@@ -1456,6 +1459,7 @@ class SVDToolbox:
         )
 
 
+# TODO: Rename and redirect once old DegeneracyHunter is removed
 @document_kwargs_from_configdict(DHCONFIG)
 class DegeneracyHunter2:
     """
@@ -1480,25 +1484,33 @@ class DegeneracyHunter2:
             )
 
         self._model = model
-        self.config = SVDCONFIG(kwargs)
+        self.config = DHCONFIG(kwargs)
 
         # Get Jacobian and NLP
-        self.jacobian, self.nlp = get_jacobian(self._model, scaled=False)
+        self.jacobian, self.nlp = get_jacobian(
+            self._model, scaled=False, equality_constraints_only=True
+        )
 
-        self.solver = SolverFactory(self.config.solver)
-
-        options = self.config.solver_options
-        if options is None:
-            options = {}
-
-        self.solver.options = options
+        # Placeholder for solver - deferring construction lets us unit test more easily
+        self.solver = None
 
         # Create placeholders for results
-        self.degenerate_set = None  # dict
-        self.candidate_eqns = None  # list
-        self.irreducible_degenerate_sets = None  # list
+        self.degenerate_set = {}
+        self.irreducible_degenerate_sets = []
 
-    def _prepare_find_candidates_milp(self):
+    def _get_solver(self):
+        if self.solver is None:
+            self.solver = SolverFactory(self.config.solver)
+
+            options = self.config.solver_options
+            if options is None:
+                options = {}
+
+            self.solver.options = options
+
+        return self.solver
+
+    def _prepare_candidates_milp(self):
         """
         Prepare MILP to find candidate equations for consider for IDS
 
@@ -1521,18 +1533,18 @@ class DegeneracyHunter2:
         m_dh.V = Set(initialize=range(self.jacobian.shape[1]))
 
         # Specify minimum size for nu to be considered non-zero
-        m_dh.M = Param(initialize=self.config.M, mutable=True)
-        m_dh.m_small = Param(initialize=self.config.m_small, mutable=True)
+        M = self.config.M
+        m_small = self.config.m_small
 
         # Add variables
         m_dh.nu = Var(
             m_dh.C,
-            bounds=(-m_dh.M - m_dh.m_small, m_dh.M + m_dh.m_small),
+            bounds=(-M - m_small, M + m_small),
             initialize=1.0,
         )
         m_dh.y_pos = Var(m_dh.C, domain=Binary)
         m_dh.y_neg = Var(m_dh.C, domain=Binary)
-        m_dh.abs_nu = Var(m_dh.C, bounds=(0, m_dh.M + m_dh.m_small))
+        m_dh.abs_nu = Var(m_dh.C, bounds=(0, M + m_small))
 
         m_dh.pos_xor_neg = Constraint(m_dh.C)
 
@@ -1541,7 +1553,7 @@ class DegeneracyHunter2:
             J = self.jacobian.tocsc()
 
             def eq_degenerate(m_dh, v):
-                if np.sum(np.abs(m_dh.J[:, v])) > 1e-6:
+                if np.sum(np.abs(J[:, v])) > 1e-6:
                     # Find the columns with non-zero entries
                     C_ = find(J[:, v])[0]
                     return sum(J[c, v] * m_dh.nu[c] for c in C_) == 0
@@ -1564,28 +1576,28 @@ class DegeneracyHunter2:
         # When y_pos = 1, nu >= m_small
         # When y_pos = 0, nu >= - m_small
         def eq_pos_lower(b, c):
-            return b.nu[c] >= -b.m_small + 2 * b.m_small * b.y_pos[c]
+            return b.nu[c] >= -m_small + 2 * m_small * b.y_pos[c]
 
         m_dh.pos_lower = Constraint(m_dh.C, rule=eq_pos_lower)
 
         # When y_pos = 1, nu <= M + m_small
         # When y_pos = 0, nu <= m_small
         def eq_pos_upper(b, c):
-            return b.nu[c] <= b.M * b.y_pos[c] + b.m_small
+            return b.nu[c] <= M * b.y_pos[c] + m_small
 
         m_dh.pos_upper = Constraint(m_dh.C, rule=eq_pos_upper)
 
         # When y_neg = 1, nu <= -m_small
         # When y_neg = 0, nu <= m_small
         def eq_neg_upper(b, c):
-            return b.nu[c] <= b.m_small - 2 * b.m_small * b.y_neg[c]
+            return b.nu[c] <= m_small - 2 * m_small * b.y_neg[c]
 
         m_dh.neg_upper = Constraint(m_dh.C, rule=eq_neg_upper)
 
         # When y_neg = 1, nu >= -M - m_small
         # When y_neg = 0, nu >= - m_small
         def eq_neg_lower(b, c):
-            return b.nu[c] >= -b.M * b.y_neg[c] - b.m_small
+            return b.nu[c] >= -M * b.y_neg[c] - m_small
 
         m_dh.neg_lower = Constraint(m_dh.C, rule=eq_neg_lower)
 
@@ -1610,7 +1622,7 @@ class DegeneracyHunter2:
 
         self.candidates_milp = m_dh
 
-    def _find_candidate_eqs(self, tee: bool = False):
+    def _solve_candidates_milp(self, tee: bool = False):
         """Solve MILP to generate set of candidate equations
 
         Arguments:
@@ -1618,44 +1630,30 @@ class DegeneracyHunter2:
             tee: print solver output (default = False)
 
         """
-        _log.info("Solving MILP model.")
+        _log.info("Solving Candidates MILP model.")
 
         eq_con_list = self.nlp.get_pyomo_equality_constraints()
 
-        results = self.solver.solve(self.candidates_milp, tee=tee)
+        results = self._get_solver().solve(self.candidates_milp, tee=tee)
 
         self.degenerate_set = {}
-        self.candidate_eqns = []
 
         if check_optimal_termination(results):
             # We found a degenerate set
             for i in self.candidates_milp.C:
                 # Check if constraint is included
-                if (
-                    self.candidates_milp.abs_nu[i]()
-                    > self.candidates_milp.m_small * 0.99
-                ):
+                if self.candidates_milp.abs_nu[i]() > self.config.m_small * 0.99:
                     # If it is, save the value of nu
                     if eq_con_list is None:
                         name = i
                     else:
                         name = eq_con_list[i]
                     self.degenerate_set[name] = self.candidates_milp.nu[i]()
-                    self.candidate_eqns.append(i)
-
-    def find_candidate_equations(self, tee: bool = False):
-        """
-        Solve MILP to find a degenerate set and candidate equations
-
-        Args:
-
-            tee: print solver output to screen (default=True)
-
-        """
-        _log.info("Searching for a Single Degenerate Set")
-        self._prepare_find_candidates_milp()
-
-        self._find_candidate_eqs(tee=tee)
+        else:
+            _log.debug(
+                "Solver did not return an optimal termination condition for "
+                "Candidates MILP. This probably indicates the system is full rank."
+            )
 
     def _prepare_ids_milp(self):
         """
@@ -1675,11 +1673,10 @@ class DegeneracyHunter2:
         m_dh.V = Set(initialize=range(n_var))
 
         # Specify minimum size for nu to be considered non-zero
-        m_dh.M = Param(initialize=self.config.M, mutable=True)
-        m_dh.m_small = Param(initialize=self.config.m_small, mutable=True)
+        M = self.config.M
 
         # Add variables
-        m_dh.nu = Var(m_dh.C, bounds=(-m_dh.M, m_dh.M), initialize=1.0)
+        m_dh.nu = Var(m_dh.C, bounds=(-M, M), initialize=1.0)
         m_dh.y = Var(m_dh.C, domain=Binary)
 
         # Constraint to enforce set is degenerate
@@ -1700,12 +1697,12 @@ class DegeneracyHunter2:
         m_dh.degenerate = Constraint(m_dh.V, rule=eq_degenerate)
 
         def eq_lower(m_dh, c):
-            return -m_dh.M * m_dh.y[c] <= m_dh.nu[c]
+            return -M * m_dh.y[c] <= m_dh.nu[c]
 
         m_dh.lower = Constraint(m_dh.C, rule=eq_lower)
 
         def eq_upper(m_dh, c):
-            return m_dh.nu[c] <= m_dh.M * m_dh.y[c]
+            return m_dh.nu[c] <= M * m_dh.y[c]
 
         m_dh.upper = Constraint(m_dh.C, rule=eq_upper)
 
@@ -1713,13 +1710,13 @@ class DegeneracyHunter2:
 
         self.ids_milp = m_dh
 
-    def _check_candidate_ids(self, cons_idx: int, tee: Bool = False):
+    def _solve_ids_milp(self, cons: Constraint, tee: bool = False):
         """Solve MILP to check if equation 'cons_idx' is a significant component
         in an irreducible degenerate set
 
         Args:
 
-            cons_idx: index for the constraint to consider
+            cons: constraint to consider
             tee: Boolean, print solver output (default = False)
 
         Returns:
@@ -1727,13 +1724,15 @@ class DegeneracyHunter2:
             ids: dictionary containing the IDS
 
         """
+        _log.info(f"Solving IDS MILP for constraint {cons.name}.")
         eq_con_list = self.nlp.get_pyomo_equality_constraints()
+        cons_idx = eq_con_list.index(cons)
 
         # Fix weight on candidate equation
         self.ids_milp.nu[cons_idx].fix(1.0)
 
         # Solve MILP
-        results = self.solver.solve(self.ids_milp, tee=tee)
+        results = self._get_solver().solve(self.ids_milp, tee=tee)
 
         self.ids_milp.nu[cons_idx].unfix()
 
@@ -1742,60 +1741,75 @@ class DegeneracyHunter2:
 
         if check_optimal_termination(results):
             # We found an irreducible degenerate set
-
             for i in self.ids_milp.C:
                 # Check if constraint is included
                 if self.ids_milp.y[i]() > 0.9:
                     # If it is, save the value of nu
-                    if eq_con_list is None:
-                        name = i
-                    else:
-                        name = eq_con_list[i]
-                    ids_[name] = self.ids_milp.nu[i]()
+                    ids_[cons] = self.ids_milp.nu[i]()
+        else:
+            raise ValueError(
+                f"Solver did not return an optimal termination condition for "
+                f"IDS MILP with constraint {cons.name}."
+            )
 
         return ids_
 
-    def find_irreducible_degenerate_sets(self, tee=False):
+    def _find_irreducible_degenerate_sets(self, tee=False):
         """
         Compute irreducible degenerate sets
 
         Args:
 
-            tee: Print solver output to screen (default=True)
+            tee: Print solver output logs to screen (default=False)
 
         """
 
-        # If there are no candidate equations, find them!
-        if not self.candidate_eqns:
-            self.find_candidate_equations()
+        # Solve to find candidate equations
+        _log.info("Searching for Candidate Equations")
+        self._prepare_candidates_milp()
+        self._solve_candidates_milp(tee=tee)
 
-        self.irreducible_degenerate_sets = []
-
-        # Check if it is empty or None
-        if self.candidate_eqns:
+        # Find irreducible degenerate sets
+        # Check if degenerate_set is not empty
+        if self.degenerate_set:
 
             _log.info("Searching for Irreducible Degenerate Sets")
             self._prepare_ids_milp()
 
             # Loop over candidate equations
-            for i, c in enumerate(self.candidate_eqns):
-                _log.info_high(f"Solving MILP {i + 1} of {len(self.candidate_eqns)}.")
+            count = 1
+            for k in self.degenerate_set.keys():
+                _log.info_high(f"Solving MILP {count} of {len(self.degenerate_set)}.")
 
-                # Check if equation 'c' is a major element of an IDS
-                ids_ = self._check_candidate_ids(cons_idx=c, tee=tee)
+                # Check if equation is a major element of an IDS
+                ids_ = self._solve_ids_milp(cons=k, tee=tee)
 
                 if ids_ is not None:
                     self.irreducible_degenerate_sets.append(ids_)
 
-        # TODO: This should be the display function
-        #     if verbose:
-        #         for i, s in enumerate(irreducible_degenerate_sets):
-        #             print("\nIrreducible Degenerate Set", i)
-        #             print("nu\tConstraint Name")
-        #             for k, v in s.items():
-        #                 print(v, "\t", k)
-        # else:
-        #     print("No candidate equations. The Jacobian is likely full rank.")
+                count += 1
+        else:
+            _log.debug("No candidate equations found")
+
+    def report_irreducible_degenerate_sets(self, stream=stdout, tee: bool = False):
+        self._find_irreducible_degenerate_sets(tee=tee)
+
+        stream.write("=" * MAX_STR_LENGTH + "\n")
+        stream.write("Irreducible Degenerate Sets\n")
+
+        if self.irreducible_degenerate_sets:
+            for i, s in enumerate(self.irreducible_degenerate_sets):
+                stream.write(f"\n{TAB}Irreducible Degenerate Set {i}")
+                stream.write(f"\n{TAB*2}nu\tConstraint Name")
+                for k, v in s.items():
+                    stream.write(f"\n{TAB*2}{v}\t{k.name}")
+                stream.write("\n")
+        else:
+            stream.write(
+                f"\n{TAB}No candidate equations. The Jacobian is likely full rank.\n"
+            )
+
+        stream.write("\n" + "=" * MAX_STR_LENGTH + "\n")
 
 
 class DegeneracyHunter:

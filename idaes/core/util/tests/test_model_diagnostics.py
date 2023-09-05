@@ -29,6 +29,7 @@ from pyomo.environ import (
     Suffix,
     TransformationFactory,
     units,
+    value,
     Var,
 )
 from pyomo.common.collections import ComponentSet
@@ -52,6 +53,7 @@ from idaes.core.util.model_diagnostics import (
     DiagnosticsToolbox,
     SVDToolbox,
     DegeneracyHunter,
+    DegeneracyHunter2,
     svd_dense,
     svd_sparse,
     get_valid_range_of_component,
@@ -69,6 +71,8 @@ from idaes.core.util.model_diagnostics import (
 )
 
 __author__ = "Alex Dowling, Douglas Allan, Andrew Lee"
+
+solver_available = SolverFactory("scip").available()
 
 
 @pytest.fixture
@@ -1615,6 +1619,150 @@ The following variables are involved in c1:
             AttributeError, match="Could not find AbstractScalarConstraint in model."
         ):
             svd.display_variables_in_constraint(constraint=c6)
+
+
+@pytest.mark.skipif(
+    not AmplInterface.available(), reason="pynumero_ASL is not available"
+)
+class TestDegeneracyHunter:
+    @pytest.fixture
+    def model(self):
+        m = ConcreteModel()
+
+        m.I = Set(initialize=[i for i in range(1, 4)])
+
+        m.x = Var(m.I, bounds=(0, 5), initialize=1.0)
+
+        m.con1 = Constraint(expr=m.x[1] + m.x[2] >= 1)
+        m.con2 = Constraint(expr=m.x[1] + m.x[2] + m.x[3] == 1)
+        m.con3 = Constraint(expr=m.x[2] - 2 * m.x[3] <= 1)
+        m.con4 = Constraint(expr=m.x[1] + m.x[3] >= 1)
+
+        m.con5 = Constraint(expr=m.x[1] + m.x[2] + m.x[3] == 1)
+
+        m.obj = Objective(expr=sum(m.x[i] for i in m.I))
+
+        return m
+
+    @pytest.mark.unit
+    def test_init(self, model):
+        dh = DegeneracyHunter2(model)
+
+        assert dh._model is model
+
+        # Get Jacobian and NLP
+        jac = {
+            (0, 0): 1.0,
+            (0, 1): 1.0,
+            (0, 2): 1.0,
+            (1, 0): 1.0,
+            (1, 1): 1.0,
+            (1, 2): 1.0,
+        }
+
+        for i, j in jac.items():
+            assert j == dh.jacobian[i]
+
+        assert isinstance(dh.nlp, PyomoNLP)
+
+        assert dh.degenerate_set == {}
+        assert dh.irreducible_degenerate_sets == []
+
+    @pytest.mark.unit
+    def test_prepare_candidates_milp(self, model):
+        dh = DegeneracyHunter2(model)
+        dh._prepare_candidates_milp()
+
+        assert isinstance(dh.candidates_milp, ConcreteModel)
+
+    @pytest.mark.solver
+    @pytest.mark.component
+    @pytest.mark.skipif(not solver_available, reason="SCIP is not available")
+    def test_solve_candidates_milp(self, model):
+        dh = DegeneracyHunter2(model)
+        dh._prepare_candidates_milp()
+        dh._solve_candidates_milp()
+
+        assert dh.degenerate_set == {
+            model.con2: -1e-05,
+            model.con5: 1e-05,
+        }
+
+    @pytest.mark.unit
+    def test_prepare_ids_milp(self, model):
+        dh = DegeneracyHunter2(model)
+        dh._prepare_ids_milp()
+
+        assert isinstance(dh.ids_milp, ConcreteModel)
+
+    @pytest.mark.solver
+    @pytest.mark.component
+    @pytest.mark.skipif(not solver_available, reason="SCIP is not available")
+    def test_solve_ids_milp(self, model):
+        dh = DegeneracyHunter2(model)
+        dh._prepare_ids_milp()
+        ids_ = dh._solve_ids_milp(cons=model.con2)
+
+        assert ids_ == {model.con2: -1}
+
+    @pytest.mark.solver
+    @pytest.mark.component
+    @pytest.mark.skipif(not solver_available, reason="SCIP is not available")
+    def test_find_irreducible_degenerate_sets(self, model):
+        dh = DegeneracyHunter2(model)
+        dh._find_irreducible_degenerate_sets()
+
+        assert dh.irreducible_degenerate_sets == [
+            {model.con2: -1},
+            {model.con5: 1},
+        ]
+
+    @pytest.mark.solver
+    @pytest.mark.component
+    @pytest.mark.skipif(not solver_available, reason="SCIP is not available")
+    def test_report_irreducible_degenerate_sets(self, model):
+        stream = StringIO()
+
+        dh = DegeneracyHunter2(model)
+        dh.report_irreducible_degenerate_sets(stream=stream)
+
+        expected = """====================================================================================
+Irreducible Degenerate Sets
+
+    Irreducible Degenerate Set 0
+        nu	Constraint Name
+        -1.0	con2
+
+    Irreducible Degenerate Set 1
+        nu	Constraint Name
+        1.0	con5
+
+====================================================================================
+"""
+
+        assert stream.getvalue() == expected
+
+    @pytest.mark.solver
+    @pytest.mark.component
+    @pytest.mark.skipif(not solver_available, reason="SCIP is not available")
+    def test_report_irreducible_degenerate_sets_none(self, model):
+        stream = StringIO()
+
+        # Delete degenerate constraint
+        model.del_component(model.con5)
+
+        dh = DegeneracyHunter2(model)
+        dh.report_irreducible_degenerate_sets(stream=stream)
+
+        expected = """====================================================================================
+Irreducible Degenerate Sets
+
+    No candidate equations. The Jacobian is likely full rank.
+
+====================================================================================
+"""
+
+        assert stream.getvalue() == expected
 
 
 @pytest.fixture()
