@@ -258,7 +258,7 @@ see property package for documentation.}""",
 
         split_map = {}
         for p in self.control_volume.properties_in.phase_list:
-            p_obj = self.config.property_package.get_phase(p)
+            p_obj = self.control_volume.properties_in.params.get_phase(p)
             if p_obj.is_vapor_phase():
                 # Vapor leaves through Vap outlet
                 split_map[p] = "Vap"
