@@ -300,6 +300,10 @@ class StateBlock(ProcessBlock):
             self._block_data_config_default["parameters"] = param
         return param
 
+    @property
+    def params(self):
+        return self._get_parameter_block()
+
     def fix_initialization_states(self):
         """
         Fixes state variables for state blocks.

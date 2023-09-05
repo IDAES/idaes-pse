@@ -771,7 +771,7 @@ objects linked to all inlet states and the mixed state,
             self.inlet_idx = RangeSet(len(inlet_blocks))
 
         # Get units metadata
-        units = self.config.property_package.get_metadata()
+        units = mixed_block.params.get_metadata()
 
         # Add variables
         self.minimum_pressure = Var(

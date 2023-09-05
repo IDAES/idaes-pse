@@ -195,6 +195,9 @@ see property package for documentation.}""",
         state_block_args["has_phase_equilibrium"] = True
         state_block_args["defined_state"] = True
 
+        # Check for default property package
+        self._get_property_package()
+
         for i in inlet_list:
             state_obj = self.config.property_package.build_state_block(
                 self.flowsheet().time,

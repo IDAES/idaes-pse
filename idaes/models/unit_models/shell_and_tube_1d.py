@@ -112,7 +112,7 @@ class ShellAndTubeInitializer(SingleControlVolumeUnitInitializer):
         # ---------------------------------------------------------------------
         # Solve hot side
         hot_side_units = (
-            model.config.hot_side.property_package.get_metadata().get_derived_units
+            model.hot_side.config.property_package.get_metadata().get_derived_units
         )
         for t in model.flowsheet().time:
             for z in model.hot_side.length_domain:
@@ -190,10 +190,10 @@ class ShellAndTube1DData(HeatExchanger1DData):
 
         # Equate hot and cold side geometries
         hot_side_units = (
-            self.config.hot_side.property_package.get_metadata().get_derived_units
+            self.hot_side.config.property_package.get_metadata().get_derived_units
         )
         cold_side_units = (
-            self.config.cold_side.property_package.get_metadata().get_derived_units
+            self.cold_side.config.property_package.get_metadata().get_derived_units
         )
 
         @self.Constraint(
@@ -259,7 +259,7 @@ class ShellAndTube1DData(HeatExchanger1DData):
 
     def _make_performance(self):
         hot_side_units = (
-            self.config.hot_side.property_package.get_metadata().get_derived_units
+            self.hot_side.config.property_package.get_metadata().get_derived_units
         )
 
         # Performance variables
@@ -376,7 +376,7 @@ class ShellAndTube1DData(HeatExchanger1DData):
         # ---------------------------------------------------------------------
         # Solve unit
         hot_side_units = (
-            self.config.hot_side.property_package.get_metadata().get_derived_units
+            self.hot_side.config.property_package.get_metadata().get_derived_units
         )
         for t in self.flowsheet().time:
             for z in self.hot_side.length_domain:

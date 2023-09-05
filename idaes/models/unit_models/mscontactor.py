@@ -717,7 +717,7 @@ class MSContactorData(UnitModelBlockData):
                 inherent_reaction_extent = Var(
                     self.flowsheet().time,
                     self.elements,
-                    sconfig.property_package.inherent_reaction_idx,
+                    state_block.params.inherent_reaction_idx,
                     domain=Reals,
                     initialize=0.0,
                     doc=f"Extent of inherent reactions in stream {stream}",
