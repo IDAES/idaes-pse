@@ -157,25 +157,18 @@ class FixedBedTSA0DData(UnitModelBlockData):
         ),
     )
     CONFIG.declare(
-        "calculate_beds",
-        ConfigValue(
-            default=False,
-            domain=Bool,
-            description="Construction flag for calculation of number of beds",
-            doc="""Construction flag for calculation of number of beds
-        - False (default): number of beds is fixed and defined by user
-        - True: number of beds is calculated for a specific
-        pressure drop in the column""",
-        ),
-    )
-    CONFIG.declare(
         "number_of_beds",
         ConfigValue(
             default=120,
             domain=int,
             description="Number of beds in fixed bed TSA system",
             doc="""Number of beds in fixed bed TSA system used to split the
-        mole flow rate at feed (default=120)""",
+        mole flow rate at feed,
+        **default** - 120.
+        **Valid values:** {
+        **Int** - number of beds is fixed and defined by user,
+        **None** - number of beds is calculated for a specific pressure drop
+        in the column}""",
         ),
     )
     CONFIG.declare(
@@ -352,6 +345,12 @@ class FixedBedTSA0DData(UnitModelBlockData):
                 "but no property package was provided"
             )
 
+        # determine if number of beds is fixed or calculated
+        if self.config.number_of_beds is None:
+            self.calculate_beds = True
+        else:
+            self.calculate_beds = False
+
         # add required parameters
         self._add_general_parameters()
 
@@ -425,7 +424,7 @@ class FixedBedTSA0DData(UnitModelBlockData):
             units=units.Pa,
             doc="Pressure drop in the column",
         )
-        if self.config.calculate_beds:
+        if self.calculate_beds:
             self.velocity_in = Var(
                 initialize=0.5,
                 bounds=(0.01, 2.0),
@@ -481,7 +480,7 @@ class FixedBedTSA0DData(UnitModelBlockData):
 
         @self.Expression(doc="Number of adsorption beds")
         def number_beds_ads(b):
-            if b.config.calculate_beds:
+            if b.calculate_beds:
                 return (
                     b.flow_mol_in_total
                     * const.gas_constant
@@ -494,7 +493,7 @@ class FixedBedTSA0DData(UnitModelBlockData):
             else:
                 return b.config.number_of_beds
 
-        if not self.config.calculate_beds:
+        if not self.calculate_beds:
 
             @self.Expression(doc="Interstitial velocity of gas at inlet [m/s]")
             def velocity_in(b):
@@ -1977,6 +1976,7 @@ class FixedBedTSA0DData(UnitModelBlockData):
         elif self.config.adsorbent == Adsorbent.polystyrene_amine:
             return self._isotherm_polystyrene_amine(i, pressure, temperature)
 
+    # TODO: develop a property package framework for adsorbents
     def _isotherm_zeolite_13x(self, i, pressure, temperature):
         """
         Method to add isotherm for components.
@@ -3019,7 +3019,7 @@ class FixedBedTSA0DData(UnitModelBlockData):
             constraint_list=cons_lst_pressurization,
         )
 
-        if blk.config.calculate_beds:
+        if blk.calculate_beds:
             # if "calculate_beds" is True, there is an extra variable for
             # "velocity_in" and it needs to be fixed to initialize the
             # pressurization and adsorption step
@@ -3100,7 +3100,7 @@ class FixedBedTSA0DData(UnitModelBlockData):
             ):
                 c.activate()
 
-        if blk.config.calculate_beds:
+        if blk.calculate_beds:
             # if "calculate_beds" is True, there is an extra variable for
             # "velocity_in" that was fixed previously. It is necessary to
             # unfix it, but this results in DOF=1 for the entire model,

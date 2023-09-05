@@ -59,7 +59,6 @@ class TestElectricBoilerCosting:
 
         m.fs.unit = FixedBedTSA0D(
             adsorbent=Adsorbent.zeolite_13x,
-            calculate_beds=False,
             number_of_beds=600,
             transformation_method="dae.collocation",
             transformation_scheme=TransformationScheme.lagrangeRadau,
@@ -159,7 +158,6 @@ class TestRetrofitNgccCosting:
 
         m.fs.unit = FixedBedTSA0D(
             adsorbent=Adsorbent.zeolite_13x,
-            calculate_beds=False,
             number_of_beds=600,
             transformation_method="dae.collocation",
             transformation_scheme=TransformationScheme.lagrangeRadau,

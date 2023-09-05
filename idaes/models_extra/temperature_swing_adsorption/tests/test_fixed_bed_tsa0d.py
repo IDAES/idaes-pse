@@ -66,7 +66,6 @@ class TestTsaZeolite:
         m.fs = FlowsheetBlock(dynamic=False)
         m.fs.unit = FixedBedTSA0D(
             adsorbent=Adsorbent.zeolite_13x,
-            calculate_beds=False,
             number_of_beds=120,
             transformation_method="dae.collocation",
             transformation_scheme=TransformationScheme.lagrangeRadau,
@@ -176,8 +175,7 @@ class TestTsaMgmof:
         m.fs = FlowsheetBlock(dynamic=False)
         m.fs.unit = FixedBedTSA0D(
             adsorbent=Adsorbent.mmen_mg_mof_74,
-            calculate_beds=True,
-            number_of_beds=1,
+            number_of_beds=None,
             transformation_method="dae.collocation",
             transformation_scheme=TransformationScheme.lagrangeRadau,
             finite_elements=20,
@@ -286,7 +284,6 @@ class TestTsaPolystyrene:
 
         m.fs.unit = FixedBedTSA0D(
             adsorbent=Adsorbent.polystyrene_amine,
-            calculate_beds=False,
             number_of_beds=1,
             transformation_method="dae.collocation",
             transformation_scheme=TransformationScheme.lagrangeRadau,
@@ -389,7 +386,6 @@ class TestTsaInitializer:
         m.fs = FlowsheetBlock(dynamic=False)
         m.fs.unit = FixedBedTSA0D(
             adsorbent=Adsorbent.zeolite_13x,
-            calculate_beds=False,
             number_of_beds=120,
             transformation_method="dae.collocation",
             transformation_scheme=TransformationScheme.lagrangeRadau,

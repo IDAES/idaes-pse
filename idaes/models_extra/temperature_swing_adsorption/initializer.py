@@ -224,7 +224,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
             constraint_list=cons_lst_pressurization,
         )
 
-        if blk.config.calculate_beds:
+        if blk.calculate_beds:
             # if "calculate_beds" is True, there is an extra variable for
             # "velocity_in" and it needs to be fixed to initialize the
             # pressurization and adsorption step
@@ -283,21 +283,9 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
         # deactivated during individual steps
         from_json(blk, sd=tsa_state, wts=StoreState)
 
-        if blk.config.calculate_beds:
-            pass
-            # if "calculate_beds" is True, there is an extra variable for
-            # "velocity_in" that was fixed previously. It is necessary to
-            # unfix it, but this results in DOF=1 for the entire model,
-            # to get DOF=0, the pressure drop needs to be fixed.
-            # if not velocity_fixed:
-            #     blk.velocity_in.unfix()
-            #     blk.pressure_drop.fix()
-        else:
-            # if "calculate_beds" is False, initialize the pressure drop from
-            # its equation as the initial guess is poor
-            calculate_variable_from_constraint(
-                blk.pressure_drop, blk.pressure_drop_eq
-            )
+        calculate_variable_from_constraint(
+            blk.pressure_drop, blk.pressure_drop_eq
+        )
 
         # 5.2) deactivate compressor
         if blk.config.compressor:
