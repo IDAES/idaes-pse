@@ -2613,7 +2613,9 @@ The property package must be iapws95.
 
         # initialization of cycle steps
         init_log.info(
-            "Starting initialization of " + str(cycle_step).split(".")[-1] + " step."
+            "Starting initialization of "
+            + str(cycle_step).rsplit(".", maxsplit=1)[-1]
+            + " step."
         )
 
         # solve cycle step
@@ -2623,13 +2625,13 @@ The property package must be iapws95.
         if check_optimal_termination(res):
             init_log.info(
                 "Initialization of "
-                + str(cycle_step).split(".")[-1]
+                + str(cycle_step).rsplit(".", maxsplit=1)[-1]
                 + " step completed {}.".format(idaeslog.condition(res))
             )
         else:
             _log.warning(
                 "Initialization of "
-                + str(cycle_step).split(".")[-1]
+                + str(cycle_step).rsplit(".", maxsplit=1)[-1]
                 + " step Failed {}.".format(cycle_step.name)
             )
 
@@ -2663,7 +2665,7 @@ The property package must be iapws95.
         # initial interval containing a root to apply false position method
         init_log.info_high(
             "Initialization of "
-            + str(cycle_step).split(".")[-1]
+            + str(cycle_step).rsplit(".", maxsplit=1)[-1]
             + " step: step 1a: finding initial interval containing a root"
             " to apply false position method"
         )
@@ -2682,7 +2684,7 @@ The property package must be iapws95.
         if check_optimal_termination(res):
             init_log.info_high(
                 "Initialization of "
-                + str(cycle_step).split(".")[-1]
+                + str(cycle_step).rsplit(".", maxsplit=1)[-1]
                 + " step: step 1a - iteration {0}, completed {1}.".format(
                     count, idaeslog.condition(res)
                 )
@@ -2690,14 +2692,14 @@ The property package must be iapws95.
         else:
             _log.warning(
                 "Initialization of "
-                + str(cycle_step).split(".")[-1]
+                + str(cycle_step).rsplit(".", maxsplit=1)[-1]
                 + " step: step 1a - iteration {0}, Failed {1}.".format(
                     count, cycle_step.name
                 )
             )
 
         # save solution in initial guess, f(x0)
-        if str(cycle_step).split(".")[-1] == "heating":
+        if str(cycle_step).rsplit(".", maxsplit=1)[-1] == "heating":
             f_x0 = value(self.temperature_desorption - cycle_step.temperature[1])
         else:
             f_x0 = value(cycle_step.temperature[1] - self.temperature_adsorption)
@@ -2724,7 +2726,7 @@ The property package must be iapws95.
             if check_optimal_termination(res):
                 init_log.info_high(
                     "Initialization of "
-                    + str(cycle_step).split(".")[-1]
+                    + str(cycle_step).rsplit(".", maxsplit=1)[-1]
                     + " step: step 1a - iteration {0}, completed {1}.".format(
                         count, idaeslog.condition(res)
                     )
@@ -2732,14 +2734,14 @@ The property package must be iapws95.
             else:
                 _log.warning(
                     "Initialization of "
-                    + str(cycle_step).split(".")[-1]
+                    + str(cycle_step).rsplit(".", maxsplit=1)[-1]
                     + " step: step 1a - iteration {0}, Failed {1}.".format(
                         count, cycle_step.name
                     )
                 )
 
             # save solution in new initial guess, f(x_new)
-            if str(cycle_step).split(".")[-1] == "heating":
+            if str(cycle_step).rsplit(".", maxsplit=1)[-1] == "heating":
                 f_x_new = value(self.temperature_desorption - cycle_step.temperature[1])
             else:
                 f_x_new = value(cycle_step.temperature[1] - self.temperature_adsorption)
@@ -2765,7 +2767,7 @@ The property package must be iapws95.
         # implementing false position method
         init_log.info_high(
             "Initialization of "
-            + str(cycle_step).split(".")[-1]
+            + str(cycle_step).rsplit(".", maxsplit=1)[-1]
             + " step: step 1b: implementing false position method"
         )
 
@@ -2789,7 +2791,7 @@ The property package must be iapws95.
             if check_optimal_termination(res):
                 init_log.info_high(
                     "Initialization of "
-                    + str(cycle_step).split(".")[-1]
+                    + str(cycle_step).rsplit(".", maxsplit=1)[-1]
                     + " step: step 1b - iteration {0}, completed {1}.".format(
                         count, idaeslog.condition(res)
                     )
@@ -2797,14 +2799,14 @@ The property package must be iapws95.
             else:
                 _log.warning(
                     "Initialization of "
-                    + str(cycle_step).split(".")[-1]
+                    + str(cycle_step).rsplit(".", maxsplit=1)[-1]
                     + " step: step 1b - iteration {0}, Failed {1}.".format(
                         count, cycle_step.name
                     )
                 )
 
             # save solution in new x_2, f(x_2)
-            if str(cycle_step).split(".")[-1] == "heating":
+            if str(cycle_step).rsplit(".", maxsplit=1)[-1] == "heating":
                 f_x2 = value(self.temperature_desorption - cycle_step.temperature[1])
             else:
                 f_x2 = value(cycle_step.temperature[1] - self.temperature_adsorption)
@@ -3555,6 +3557,10 @@ The property package must be iapws95.
         iscale.set_scaling_factor(self.pressure_in, 1e-5)
 
     def get_var_dict(self):
+        """
+        Returns a dictionary of important varaibles
+
+        """
 
         var_dict = {}
 

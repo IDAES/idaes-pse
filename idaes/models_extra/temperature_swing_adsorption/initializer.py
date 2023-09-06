@@ -664,7 +664,9 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
 
         # initialization of cycle steps
         init_log.info(
-            "Starting initialization of " + str(cycle_step).split(".")[-1] + " step."
+            "Starting initialization of "
+            + str(cycle_step).rsplit(".", maxsplit=1)[-1]
+            + " step."
         )
 
         # solve cycle step
@@ -674,13 +676,13 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
         if check_optimal_termination(res):
             init_log.info(
                 "Initialization of "
-                + str(cycle_step).split(".")[-1]
+                + str(cycle_step).rsplit(".", maxsplit=1)[-1]
                 + " step completed {}.".format(idaeslog.condition(res))
             )
         else:
             _log.warning(
                 "Initialization of "
-                + str(cycle_step).split(".")[-1]
+                + str(cycle_step).rsplit(".", maxsplit=1)[-1]
                 + " step Failed {}.".format(cycle_step.name)
             )
 
@@ -708,7 +710,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
         # initial interval containing a root to apply false position method
         init_log.info_high(
             "Initialization of "
-            + str(cycle_step).split(".")[-1]
+            + str(cycle_step).rsplit(".", maxsplit=1)[-1]
             + " step: step 1a: finding initial interval containing a root"
             " to apply false position method"
         )
@@ -727,7 +729,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
         if check_optimal_termination(res):
             init_log.info_high(
                 "Initialization of "
-                + str(cycle_step).split(".")[-1]
+                + str(cycle_step).rsplit(".", maxsplit=1)[-1]
                 + " step: step 1a - iteration {0}, completed {1}.".format(
                     count, idaeslog.condition(res)
                 )
@@ -735,14 +737,14 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
         else:
             _log.warning(
                 "Initialization of "
-                + str(cycle_step).split(".")[-1]
+                + str(cycle_step).rsplit(".", maxsplit=1)[-1]
                 + " step: step 1a - iteration {0}, Failed {1}.".format(
                     count, cycle_step.name
                 )
             )
 
         # save solution in initial guess, f(x0)
-        if str(cycle_step).split(".")[-1] == "heating":
+        if str(cycle_step).rsplit(".", maxsplit=1)[-1] == "heating":
             f_x0 = value(blk.temperature_desorption - cycle_step.temperature[1])
         else:
             f_x0 = value(cycle_step.temperature[1] - blk.temperature_adsorption)
@@ -769,7 +771,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
             if check_optimal_termination(res):
                 init_log.info_high(
                     "Initialization of "
-                    + str(cycle_step).split(".")[-1]
+                    + str(cycle_step).rsplit(".", maxsplit=1)[-1]
                     + " step: step 1a - iteration {0}, completed {1}.".format(
                         count, idaeslog.condition(res)
                     )
@@ -777,14 +779,14 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
             else:
                 _log.warning(
                     "Initialization of "
-                    + str(cycle_step).split(".")[-1]
+                    + str(cycle_step).rsplit(".", maxsplit=1)[-1]
                     + " step: step 1a - iteration {0}, Failed {1}.".format(
                         count, cycle_step.name
                     )
                 )
 
             # save solution in new initial guess, f(x_new)
-            if str(cycle_step).split(".")[-1] == "heating":
+            if str(cycle_step).rsplit(".", maxsplit=1)[-1] == "heating":
                 f_x_new = value(blk.temperature_desorption - cycle_step.temperature[1])
             else:
                 f_x_new = value(cycle_step.temperature[1] - blk.temperature_adsorption)
@@ -810,7 +812,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
         # implementing false position method
         init_log.info_high(
             "Initialization of "
-            + str(cycle_step).split(".")[-1]
+            + str(cycle_step).rsplit(".", maxsplit=1)[-1]
             + " step: step 1b: implementing false position method"
         )
 
@@ -834,7 +836,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
             if check_optimal_termination(res):
                 init_log.info_high(
                     "Initialization of "
-                    + str(cycle_step).split(".")[-1]
+                    + str(cycle_step).rsplit(".", maxsplit=1)[-1]
                     + " step: step 1b - iteration {0}, completed {1}.".format(
                         count, idaeslog.condition(res)
                     )
@@ -842,14 +844,14 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
             else:
                 _log.warning(
                     "Initialization of "
-                    + str(cycle_step).split(".")[-1]
+                    + str(cycle_step).rsplit(".", maxsplit=1)[-1]
                     + " step: step 1b - iteration {0}, Failed {1}.".format(
                         count, cycle_step.name
                     )
                 )
 
             # save solution in new x_2, f(x_2)
-            if str(cycle_step).split(".")[-1] == "heating":
+            if str(cycle_step).rsplit(".", maxsplit=1)[-1] == "heating":
                 f_x2 = value(blk.temperature_desorption - cycle_step.temperature[1])
             else:
                 f_x2 = value(cycle_step.temperature[1] - blk.temperature_adsorption)

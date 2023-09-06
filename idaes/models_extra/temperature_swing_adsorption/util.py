@@ -134,7 +134,8 @@ def plot_tsa_profiles(tsa):
     T_cycle = T_heating + T_cooling + T_pressurization + T_adsorption
     P_cycle = P_heating + P_cooling + P_pressurization + P_adsorption
 
-    fig, (ax1, ax2, ax3) = plt.subplots(3, figsize=(5, 8))
+    plots = plt.subplots(3, figsize=(5, 8))
+    (ax1, ax2, ax3) = plots[1]
     ax1.plot(t_cycle, T_cycle)
     ax1.set_ylabel("Temperature [K]")
     ax1.set_xlim(0, max(t_cycle) + 1)
