@@ -12,38 +12,37 @@
 #################################################################################
 
 """
-IDAES Fixed Bed TSA0d unit model.
+0D Fixed Bed TSA unit model.
 
 The Fixed Bed TSA0d model is implemented as a Temperature Swing Adsorption
 (TSA) cycle. The model is an 0D equilibrium-based shortcut model. The model
 assumes local adsorption equilibrium and takes into account heat transfer
 mechanisms but neglects mass transfer resistances.
 
-TSA cycle is composed of four steps: 1) Heating, 2) Cooling, 3) Pressurization,
-and 4) Adsorption. Assumptions for each step are:
-        1)	Heating step: Column is in a homogeneous state in saturation with
-            the feed. No axial gradient in composition, temperature, or
-            pressure, and no pressure drop. The column is heated with one
-            open end.
-        2)	Cooling step: Column is cooled down with no in/out flows, modeled
-            as a batch with varying pressure and temperature.
-        3)	Pressurization a step: Due to a pressure decrease in the cooing
-            step, the column is repressurized to atmospheric pressure using
-            the feed.
-        4)	Adsorption step: The regenerated column is loaded with CO2 in
-            adsorption step producing a N2 stream with high purity. The
-            adsorption step is over when the CO2 front reaches the end of
-            the column. Therefore, the adsorption time is determined by the
-            time needed for a shock wave to travel from the column inlet to
-            the column outlet.
+TSA cycle is composed of the following four steps:
+
+1. Heating step: Column is in a homogeneous state in saturation with
+   the feed. No axial gradient in composition, temperature, or
+   pressure, and no pressure drop. The column is heated with one
+   open end.
+2. Cooling step: Column is cooled down with no in/out flows, modeled
+   as a batch with varying pressure and temperature.
+3. Pressurization step: Due to a pressure decrease in the cooing
+   step, the column is repressurized to atmospheric pressure using
+   the feed.
+4. Adsorption step: The regenerated column is loaded with CO2 in
+   adsorption step producing a N2 stream with high purity. The
+   adsorption step is over when the CO2 front reaches the end of
+   the column. Therefore, the adsorption time is determined by the
+   time needed for a shock wave to travel from the column inlet to
+   the column outlet.
 
 Equations written in this model were derived from:
 
-L. Joss, M. Gazzani, M. Hefti, D. Marx, and M. Mazzotti. Temperature swing
-adsorption for the recovery of the heavy component: an equilibrium-based
+L. Joss, M. Gazzani, M. Hefti, D. Marx, and M. Mazzotti. Temperature
+swing adsorption for the recovery of the heavy component: an equilibrium-based
 shortcut model. Industrial & Engineering Chemistry Research, 2015, 54(11),
 3027-3038
-
 """
 from enum import Enum
 from pandas import DataFrame
@@ -127,18 +126,7 @@ class TransformationScheme(Enum):
 @declare_process_block_class("FixedBedTSA0D")
 class FixedBedTSA0DData(UnitModelBlockData):
     """
-    Standard FixedBedTSA0D Unit Model Class: The FixedBedTSA0D model is
-    implemented as a Temperature Swing Adsorption (TSA) cycle. The model
-    is an 0D equilibrium-based shortcut model. The model assumes local
-    adsorption equilibrium and takes into account heat transfer mechanisms
-    but neglects mass transfer resistances.
-
-    Equations written in this model were derived from:
-    L. Joss, M. Gazzani, M. Hefti, D. Marx, and M. Mazzotti. Temperature swing
-    adsorption for the recovery of the heavy component: an equilibrium-based
-    shortcut model. Industrial & Engineering Chemistry Research, 2015, 54(11),
-    3027-3038
-
+    Standard FixedBedTSA0D Unit Model Class
     """
 
     # Create Class ConfigBlock
@@ -149,11 +137,10 @@ class FixedBedTSA0DData(UnitModelBlockData):
             default=Adsorbent.zeolite_13x,
             domain=In(Adsorbent),
             description="Adsorbent flag",
-            doc="""Construction flag to add adsorbent related parameters and
-         isotherms.
-        - Adsorbent.zeolite_13x (default)
-        - Adsorbent.mmen_mg_mof_74
-        - Adsorbent.polystyrene_amine""",
+            doc="""Flag to set adsorbent related properties and isotherms.
+- Adsorbent.zeolite_13x (default)
+- Adsorbent.mmen_mg_mof_74
+- Adsorbent.polystyrene_amine""",
         ),
     )
     CONFIG.declare(
@@ -163,12 +150,12 @@ class FixedBedTSA0DData(UnitModelBlockData):
             domain=int,
             description="Number of beds in fixed bed TSA system",
             doc="""Number of beds in fixed bed TSA system used to split the
-        mole flow rate at feed,
-        **default** - 120.
-        **Valid values:** {
-        **Int** - number of beds is fixed and defined by user,
-        **None** - number of beds is calculated for a specific pressure drop
-        in the column}""",
+mole flow rate at feed,
+**default** - 120.
+**Valid values:** {
+**Int** - number of beds is fixed and defined by user,
+**None** - number of beds is calculated for a specific pressure drop
+in the column}""",
         ),
     )
     CONFIG.declare(
@@ -178,12 +165,12 @@ class FixedBedTSA0DData(UnitModelBlockData):
             domain=is_transformation_method,
             description="Method to use for DAE transformation",
             doc="""Method to use to transform domain. Must be a method recognised
-        by the Pyomo TransformationFactory,
-        **default** - "dae.collocation".
-        **Valid values:** {
-        **"dae.finite_difference"** - Use a finite difference method,
-        **"dae.collocation"** - Use orthogonal collocation method on finite
-        elements}""",
+by the Pyomo TransformationFactory,
+**default** - "dae.collocation".
+**Valid values:** {
+**"dae.finite_difference"** - Use a finite difference method,
+**"dae.collocation"** - Use orthogonal collocation method on finite
+elements}""",
         ),
     )
     CONFIG.declare(
@@ -193,19 +180,19 @@ class FixedBedTSA0DData(UnitModelBlockData):
             domain=In(TransformationScheme),
             description="Scheme to use for DAE transformation",
             doc="""Scheme to use when transforming domain. See Pyomo
-        documentation for supported schemes,
-        **default** - TransformationScheme.useDefault.
-        **Valid values:** {
-        **TransformationScheme.useDefault** - defaults to
-        TransformationScheme.backward for finite difference transformation
-        method, and to TransformationScheme.lagrangeRadau for collocation
-        transformation method,
-        **TransformationScheme.backward** - Use a finite difference
-        transformation method,
-        **TransformationScheme.forward** - use a finite difference
-        transformation method,
-        **TransformationScheme.lagrangeRadau** - use a collocation
-        transformation method}""",
+documentation for supported schemes,
+**default** - TransformationScheme.useDefault.
+**Valid values:** {
+**TransformationScheme.useDefault** - defaults to
+TransformationScheme.backward for finite difference transformation
+method, and to TransformationScheme.lagrangeRadau for collocation
+transformation method,
+**TransformationScheme.backward** - Use a finite difference
+transformation method,
+**TransformationScheme.forward** - use a finite difference
+transformation method,
+**TransformationScheme.lagrangeRadau** - use a collocation
+transformation method}""",
         ),
     )
     CONFIG.declare(
@@ -215,7 +202,7 @@ class FixedBedTSA0DData(UnitModelBlockData):
             domain=int,
             description="Number of finite elements for time domain",
             doc="""Number of finite elements to use when discretizing time
-        domain (default=20)""",
+domain (default=20)""",
         ),
     )
     CONFIG.declare(
@@ -225,7 +212,7 @@ class FixedBedTSA0DData(UnitModelBlockData):
             domain=int,
             description="Number of collocation points per finite element",
             doc="""Number of collocation points to use per finite element when
-        discretizing domain with "dae.collocation"(default=6)""",
+discretizing domain with "dae.collocation" (default=6)""",
         ),
     )
     CONFIG.declare(
@@ -235,10 +222,10 @@ class FixedBedTSA0DData(UnitModelBlockData):
             domain=Bool,
             description="Compressor flag",
             doc="""Indicates whether a compressor unit should be added to the
-        fixed bed TSA system to calculate the required energy needed to provide
-        the pressure drop in the system.
-        - False (default): compressor not included
-        - True           : compressor included""",
+fixed bed TSA system to calculate the required energy needed to provide
+the pressure drop in the system.
+- False (default): compressor not included
+- True           : compressor included""",
         ),
     )
     CONFIG.declare(
@@ -248,8 +235,8 @@ class FixedBedTSA0DData(UnitModelBlockData):
             domain=is_physical_parameter_block,
             description="Property package for compressor",
             doc="""The property package to be used by the compressor unit.
-        The property package must have N2 and CO2 as the only components.
-        (default=None)""",
+The property package must have N2 and CO2 as the only components.
+(default=None)""",
         ),
     )
     CONFIG.declare(
@@ -259,12 +246,12 @@ class FixedBedTSA0DData(UnitModelBlockData):
             domain=In(SteamCalculationType),
             description="Steam calculation flag",
             doc="""Indicates whether a method to estimate the steam flow rate
-        required in the desorption step should be included.
-        - SteamCalculationType.none (default): steam calculation method not included
-        - SteamCalculationType.simplified: a surrogate model is used to
-        estimate the mass flow rate of steam.
-        - SteamCalculationType.rigorous: a heater unit model is included in the
-        TSA system assuming total saturation""",
+required in the desorption step should be included.
+- SteamCalculationType.none (default): steam calculation method not included
+- SteamCalculationType.simplified: a surrogate model is used to
+estimate the mass flow rate of steam.
+- SteamCalculationType.rigorous: a heater unit model is included in the
+TSA system assuming total saturation""",
         ),
     )
     CONFIG.declare(
@@ -274,8 +261,8 @@ class FixedBedTSA0DData(UnitModelBlockData):
             domain=is_physical_parameter_block,
             description="Property package for heater unit model",
             doc="""The property package to be used by the heater unit.
-        The property package must be iapws95.
-        (default=None)""",
+The property package must be iapws95.
+(default=None)""",
         ),
     )
 
@@ -636,11 +623,6 @@ class FixedBedTSA0DData(UnitModelBlockData):
             initialize=["CO2", "N2"],
             within=self.component_list,
             doc="List of components: CO2 and N2",
-        )
-        self.other_components = Set(
-            initialize=["H2O", "O2"],
-            within=self.component_list,
-            doc="List of components: H2O and O2",
         )
         self.cp_wall = Param(
             initialize=4.0 * 1e6,
@@ -1012,8 +994,8 @@ class FixedBedTSA0DData(UnitModelBlockData):
             "pressure": self.pressure_in,
         }
         # populate port and map names to actual variables as defined
-        for k in inlet_dict.keys():
-            p.add(inlet_dict[k], name=k)
+        for key, item in inlet_dict.items():
+            p.add(item, name=key)
 
         # add constraints to link variables of CCS and inlet of fixed bed TSA
         tf = self.flowsheet().time.last()
@@ -1045,7 +1027,7 @@ class FixedBedTSA0DData(UnitModelBlockData):
         1) a stream that is rich in co2 - to compression (co2 captured)
         2) a stream that is rich in n2 - emissions to atmosphere
         3) a stream that contains H2O and O2 that are not accounted
-           for in the fixed bed TSA model
+            for in the fixed bed TSA model
 
         """
 
@@ -1078,8 +1060,8 @@ class FixedBedTSA0DData(UnitModelBlockData):
             "pressure": self.pressure_co2_rich_stream,
         }
         # populate port and map names to actual variables as defined
-        for k in co2_rich_stream_dict.keys():
-            p.add(co2_rich_stream_dict[k], name=k)
+        for key, item in co2_rich_stream_dict.items():
+            p.add(item, name=key)
 
         # add constraints to populate co2_rich_stream
         @self.Constraint(
@@ -1159,8 +1141,8 @@ class FixedBedTSA0DData(UnitModelBlockData):
             "pressure": self.pressure_n2_rich_stream,
         }
         # populate port and map names to actual variables as defined
-        for k in n2_rich_stream_dict.keys():
-            p.add(n2_rich_stream_dict[k], name=k)
+        for key, item in n2_rich_stream_dict.items():
+            p.add(item, name=key)
 
         # add constraints to populate n2_rich_stream
         @self.Constraint(
@@ -1190,7 +1172,7 @@ class FixedBedTSA0DData(UnitModelBlockData):
         # The fixed bed TSA assumes an internal magic dryer and remover of o2
         self.flow_mol_h2o_o2_stream = Var(
             self.flowsheet().time,
-            self.other_components,
+            self.component_list - self.isotherm_components,
             units=units.mol / units.s,
             doc="Component mole flow rate at H2O+O2 stream",
         )
@@ -1212,13 +1194,13 @@ class FixedBedTSA0DData(UnitModelBlockData):
             "pressure": self.pressure_h2o_o2_stream,
         }
         # populate port and map names to actual variables as defined
-        for k in h2o_o2_stream_dict.keys():
-            p.add(h2o_o2_stream_dict[k], name=k)
+        for key, item in h2o_o2_stream_dict.items():
+            p.add(item, name=key)
 
         # add constraints to populate h2o_o2_stream
         @self.Constraint(
             self.flowsheet().time,
-            self.other_components,
+            self.component_list - self.isotherm_components,
             doc="Constraint for mole flow rate at H2O+O2 rich stream",
         )
         def flow_mol_h2o_o2_stream_eq(b, t, i):
@@ -2003,8 +1985,8 @@ class FixedBedTSA0DData(UnitModelBlockData):
         Method to add isotherm for components.
         Isotherm equation: Weighted dual site Langmuir (w-DSL) isotherm
         Adsorbent: mmen-Mg(dobpdc): mmen-Mg-MOF-74
-                   mmen = N,N"-dimethylethylenediamine
-                   dobpdc4^- = 4,4"-dioxido-3,3"-biphenyldicarboxylate
+                    mmen = N,N"-dimethylethylenediamine
+                    dobpdc4^- = 4,4"-dioxido-3,3"-biphenyldicarboxylate
 
         NOTE: the affinity of the material towards CO2 is not reduced by
               neither N2 nor H2O. N2 adsorption is negligible in
@@ -2412,7 +2394,12 @@ class FixedBedTSA0DData(UnitModelBlockData):
             return b.mole_frac_n2_rich_stream["CO2"] * 100 * 1e4
 
     def _calculate_variable_from_constraint(
-        self, variable_list=[], constraint_list=[], obj=None, obj_var=None, obj_con=None
+        self,
+        variable_list=None,
+        constraint_list=None,
+        obj=None,
+        obj_var=None,
+        obj_con=None,
     ):
         """
         Method to calculate variables from a constraints, then fix the
@@ -2425,6 +2412,11 @@ class FixedBedTSA0DData(UnitModelBlockData):
                 used to calculate the variables in variable_list.
 
         """
+        if variable_list is None:
+            variable_list = []
+        if constraint_list is None:
+            constraint_list = []
+
         if obj is None and obj_var is None and obj_con is None:
             obj = self
 
@@ -2465,11 +2457,10 @@ class FixedBedTSA0DData(UnitModelBlockData):
             for c in obj_con.component_objects(Constraint, descend_into=True):
                 if c.local_name in constraint_list:
                     c_list.append(c)
-            pass
 
         v_c_tuple = list(zip(v_list, c_list))
 
-        for idx, k in enumerate(v_c_tuple):
+        for k in v_c_tuple:
             if k[1].dim() == 0:
                 calculate_variable_from_constraint(k[0], k[1])
             elif k[1].dim() == 1:
@@ -2682,7 +2673,7 @@ class FixedBedTSA0DData(UnitModelBlockData):
         cycle_step.time.fix(x0)
 
         # counter
-        iter = 1
+        count = 1
 
         # solve model
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
@@ -2693,7 +2684,7 @@ class FixedBedTSA0DData(UnitModelBlockData):
                 "Initialization of "
                 + str(cycle_step).split(".")[-1]
                 + " step: step 1a - iteration {0}, completed {1}.".format(
-                    iter, idaeslog.condition(res)
+                    count, idaeslog.condition(res)
                 )
             )
         else:
@@ -2701,7 +2692,7 @@ class FixedBedTSA0DData(UnitModelBlockData):
                 "Initialization of "
                 + str(cycle_step).split(".")[-1]
                 + " step: step 1a - iteration {0}, Failed {1}.".format(
-                    iter, cycle_step.name
+                    count, cycle_step.name
                 )
             )
 
@@ -2716,7 +2707,7 @@ class FixedBedTSA0DData(UnitModelBlockData):
         condition = True
         while condition:
             # update counter and x0
-            iter += 1
+            count += 1
 
             if f_x0_start >= 0:
                 x_new = 1.2 * x0
@@ -2735,7 +2726,7 @@ class FixedBedTSA0DData(UnitModelBlockData):
                     "Initialization of "
                     + str(cycle_step).split(".")[-1]
                     + " step: step 1a - iteration {0}, completed {1}.".format(
-                        iter, idaeslog.condition(res)
+                        count, idaeslog.condition(res)
                     )
                 )
             else:
@@ -2743,7 +2734,7 @@ class FixedBedTSA0DData(UnitModelBlockData):
                     "Initialization of "
                     + str(cycle_step).split(".")[-1]
                     + " step: step 1a - iteration {0}, Failed {1}.".format(
-                        iter, cycle_step.name
+                        count, cycle_step.name
                     )
                 )
 
@@ -2779,7 +2770,7 @@ class FixedBedTSA0DData(UnitModelBlockData):
         )
 
         # counter
-        iter = 1
+        count = 1
         condition = True
 
         # check condition to stop
@@ -2800,7 +2791,7 @@ class FixedBedTSA0DData(UnitModelBlockData):
                     "Initialization of "
                     + str(cycle_step).split(".")[-1]
                     + " step: step 1b - iteration {0}, completed {1}.".format(
-                        iter, idaeslog.condition(res)
+                        count, idaeslog.condition(res)
                     )
                 )
             else:
@@ -2808,7 +2799,7 @@ class FixedBedTSA0DData(UnitModelBlockData):
                     "Initialization of "
                     + str(cycle_step).split(".")[-1]
                     + " step: step 1b - iteration {0}, Failed {1}.".format(
-                        iter, cycle_step.name
+                        count, cycle_step.name
                     )
                 )
 
@@ -2825,7 +2816,7 @@ class FixedBedTSA0DData(UnitModelBlockData):
                 x0 = x2
 
             # update counter and set up new condition |f(x_2)| > error
-            iter += 1
+            count += 1
             condition = (f_x2**2) ** 0.5 > 1
 
     def initialize_build(blk, outlvl=idaeslog.NOTSET, solver=None, optarg=None):
@@ -2907,7 +2898,7 @@ class FixedBedTSA0DData(UnitModelBlockData):
 
         # check degrees of freedom and solve
         if degrees_of_freedom(blk.heating) == 0:
-            blk.heating.config.initializer = blk._step_initialize(
+            blk._step_initialize(
                 outlvl=outlvl, solver=solver, optarg=optarg, cycle_step=blk.heating
             )
         else:
@@ -2957,7 +2948,7 @@ class FixedBedTSA0DData(UnitModelBlockData):
 
         # check degrees of freedom and solve
         if degrees_of_freedom(blk.cooling) == 0:
-            blk.cooling.config.initializer = blk._step_initialize(
+            blk._step_initialize(
                 outlvl=outlvl, solver=solver, optarg=optarg, cycle_step=blk.cooling
             )
         else:
@@ -3001,7 +2992,7 @@ class FixedBedTSA0DData(UnitModelBlockData):
         # 3.2) check degrees of freedom and solve
 
         if degrees_of_freedom(blk.pressurization) == 0:
-            blk.pressurization.config.initializer = blk._step_initialize(
+            blk._step_initialize(
                 outlvl=outlvl,
                 solver=solver,
                 optarg=optarg,
@@ -3036,7 +3027,7 @@ class FixedBedTSA0DData(UnitModelBlockData):
         # 4.2) check degrees of freedom and solve
 
         if degrees_of_freedom(blk.adsorption) == 0:
-            blk.adsorption.config.initializer = blk._step_initialize(
+            blk._step_initialize(
                 outlvl=outlvl, solver=solver, optarg=optarg, cycle_step=blk.adsorption
             )
         else:
@@ -3563,7 +3554,7 @@ class FixedBedTSA0DData(UnitModelBlockData):
         iscale.set_scaling_factor(self.temperature_in, 1e-2)
         iscale.set_scaling_factor(self.pressure_in, 1e-5)
 
-    def _var_dict(self):
+    def get_var_dict(self):
 
         var_dict = {}
 
@@ -3631,7 +3622,7 @@ class FixedBedTSA0DData(UnitModelBlockData):
 
     def _get_performance_contents(self, time_point=0):
 
-        var_dict = self._var_dict()
+        var_dict = self.get_var_dict()
 
         rem_from_var_dict = []
         for key, val in var_dict.items():

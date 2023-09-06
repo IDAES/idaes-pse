@@ -17,9 +17,9 @@ Utility functions for temperature swing adsorption models
 __author__ = "Daison Yancy Caballero"
 
 from sys import stdout
+import textwrap
 from pandas import DataFrame
 import matplotlib.pyplot as plt
-import textwrap
 
 from pyomo.environ import value
 
@@ -27,8 +27,20 @@ from idaes.core.util.tables import stream_table_dataframe_to_string
 
 
 def tsa_summary(tsa, stream=stdout, export=False):
+    """
+    Prints a summary of tsa variables.
 
-    var_dict = tsa._var_dict()
+    Args:
+        tsa (FixedBedTSA0D): FixedBedTSA0D model to summarize.
+        stream (iostream, optional): Output location. Defaults to sys.stdout.
+        export (bool, optional): Flag to save as csv file. Defaults to False.
+
+    Returns:
+        None.
+
+    """
+
+    var_dict = tsa.get_var_dict()
 
     summary_dir = {}
     summary_dir["Value"] = {}

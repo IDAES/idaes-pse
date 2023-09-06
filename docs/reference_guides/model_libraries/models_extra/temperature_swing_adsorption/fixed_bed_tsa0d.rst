@@ -94,8 +94,8 @@ Figure 2 shows a schematic representation of the implementation of the fixed bed
 Model Structure
 ---------------
 
-The fixed bed TSA OD unit model consists of four-step adsorption cycle with one Inlet Port (named ``inlet``) and 
-two Outlet Ports (named ``outlet``).
+The fixed bed TSA OD unit model consists of four-step adsorption cycle with one inlet Port (``inlet``) and 
+two outlet Ports (``co2_rich_outlet`` and ``n2_rich_outlet``).
 
 Construction Arguments
 ----------------------
@@ -105,14 +105,16 @@ The fixed bed TSA unit model has the following construction arguments:
 ========================= =================
 Argument                  Default Value
 ========================= =================
-adsorbent                 Zeolite-13X
-calculate_beds            False
+adsorbent                 Adsorbent.zeolite_13x
 number_of_beds            120
 transformation_method     dae.collocation
-transformation_scheme     LAGRANGE-RADAU
+transformation_scheme     TransformationScheme.lagrangeRadau
 finite_elements           20
 collocation_points        6
 compressor                False
+compressor_properties     None
+steam_calculation         SteamCalculationType.none
+steam_properties          None
 ========================= =================
 
 Variables

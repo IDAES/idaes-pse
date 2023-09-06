@@ -384,6 +384,9 @@ class TestTsaInitializer:
     def model(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.steam_props = iapws95.Iapws95ParameterBlock()
+
         m.fs.unit = FixedBedTSA0D(
             adsorbent=Adsorbent.zeolite_13x,
             number_of_beds=120,
@@ -392,7 +395,8 @@ class TestTsaInitializer:
             finite_elements=20,
             collocation_points=6,
             compressor=False,
-            steam_calculation=SteamCalculationType.none,
+            steam_calculation=SteamCalculationType.rigorous,
+            steam_properties=m.fs.steam_props,
         )
 
         m.fs.unit.inlet.flow_mol_comp[0, "H2O"].fix(0)

@@ -16,7 +16,14 @@ Initializer for the fixed bed TSA unit model.
 """
 
 # Import Pyomo libraries
-from pyomo.environ import value, check_optimal_termination, Block, units
+from pyomo.environ import (
+    value,
+    check_optimal_termination,
+    Block,
+    units,
+    Var,
+    Constraint,
+)
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 # import IDAES core libraries
@@ -112,8 +119,8 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
 
         cons_lst_heating = ["flow_mol_in_total_eq", "pressure_in_eq", "mole_frac_in_eq"]
 
-        blk._calculate_variable_from_constraint(
-            variable_list=vars_lst_heating, constraint_list=cons_lst_heating, obj=blk
+        self._calculate_variable_from_constraint(
+            blk, variable_list=vars_lst_heating, constraint_list=cons_lst_heating
         )
 
         # 1.2) initial solution using false position method
@@ -143,7 +150,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
 
         # check degrees of freedom and solve
         if degrees_of_freedom(blk.heating) == 0:
-            blk._step_initialize(cycle_step=blk.heating)
+            self._step_initialize(cycle_step=blk.heating)
         else:
             raise ConfigurationError(
                 "Degrees of freedom is not zero during initialization of "
@@ -158,8 +165,8 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
         vars_lst_cooling = ["mole_frac_heating_end"]
         cons_lst_cooling = ["mole_frac_heating_end_eq"]
 
-        blk._calculate_variable_from_constraint(
-            variable_list=vars_lst_cooling, constraint_list=cons_lst_cooling
+        self._calculate_variable_from_constraint(
+            blk, variable_list=vars_lst_cooling, constraint_list=cons_lst_cooling
         )
 
         # 2.2) initial solution using false position method
@@ -189,7 +196,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
 
         # check degrees of freedom and solve
         if degrees_of_freedom(blk.cooling) == 0:
-            blk._step_initialize(cycle_step=blk.cooling)
+            self._step_initialize(cycle_step=blk.cooling)
         else:
             raise ConfigurationError(
                 "Degrees of freedom is not zero during initialization of "
@@ -214,7 +221,8 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
             "loading_cooling_end_eq",
         ]
 
-        blk._calculate_variable_from_constraint(
+        self._calculate_variable_from_constraint(
+            blk,
             variable_list=vars_lst_pressurization,
             constraint_list=cons_lst_pressurization,
         )
@@ -231,7 +239,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
         # 3.2) check degrees of freedom and solve
 
         if degrees_of_freedom(blk.pressurization) == 0:
-            blk._step_initialize(
+            self._step_initialize(
                 cycle_step=blk.pressurization,
             )
         else:
@@ -256,14 +264,14 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
             "loading_pressurization_end_eq",
         ]
 
-        blk._calculate_variable_from_constraint(
-            variable_list=vars_lst_adsorption, constraint_list=cons_lst_adsorption
+        self._calculate_variable_from_constraint(
+            blk, variable_list=vars_lst_adsorption, constraint_list=cons_lst_adsorption
         )
 
         # 4.2) check degrees of freedom and solve
 
         if degrees_of_freedom(blk.adsorption) == 0:
-            blk._step_initialize(cycle_step=blk.adsorption)
+            self._step_initialize(cycle_step=blk.adsorption)
         else:
             raise ConfigurationError(
                 "Degrees of freedom is not zero during initialization of "
@@ -710,7 +718,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
         cycle_step.time.fix(x0)
 
         # counter
-        iter = 1
+        count = 1
 
         # solve model
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
@@ -721,7 +729,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
                 "Initialization of "
                 + str(cycle_step).split(".")[-1]
                 + " step: step 1a - iteration {0}, completed {1}.".format(
-                    iter, idaeslog.condition(res)
+                    count, idaeslog.condition(res)
                 )
             )
         else:
@@ -729,7 +737,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
                 "Initialization of "
                 + str(cycle_step).split(".")[-1]
                 + " step: step 1a - iteration {0}, Failed {1}.".format(
-                    iter, cycle_step.name
+                    count, cycle_step.name
                 )
             )
 
@@ -744,7 +752,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
         condition = True
         while condition:
             # update counter and x0
-            iter += 1
+            count += 1
 
             if f_x0_start >= 0:
                 x_new = 1.2 * x0
@@ -763,7 +771,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
                     "Initialization of "
                     + str(cycle_step).split(".")[-1]
                     + " step: step 1a - iteration {0}, completed {1}.".format(
-                        iter, idaeslog.condition(res)
+                        count, idaeslog.condition(res)
                     )
                 )
             else:
@@ -771,7 +779,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
                     "Initialization of "
                     + str(cycle_step).split(".")[-1]
                     + " step: step 1a - iteration {0}, Failed {1}.".format(
-                        iter, cycle_step.name
+                        count, cycle_step.name
                     )
                 )
 
@@ -807,7 +815,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
         )
 
         # counter
-        iter = 1
+        count = 1
         condition = True
 
         # check condition to stop
@@ -828,7 +836,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
                     "Initialization of "
                     + str(cycle_step).split(".")[-1]
                     + " step: step 1b - iteration {0}, completed {1}.".format(
-                        iter, idaeslog.condition(res)
+                        count, idaeslog.condition(res)
                     )
                 )
             else:
@@ -836,7 +844,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
                     "Initialization of "
                     + str(cycle_step).split(".")[-1]
                     + " step: step 1b - iteration {0}, Failed {1}.".format(
-                        iter, cycle_step.name
+                        count, cycle_step.name
                     )
                 )
 
@@ -853,5 +861,49 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
                 x0 = x2
 
             # update counter and set up new condition |f(x_2)| > error
-            iter += 1
+            count += 1
             condition = (f_x2**2) ** 0.5 > 1
+
+    def _calculate_variable_from_constraint(
+        self, obj, variable_list=None, constraint_list=None
+    ):
+        """
+        Method to calculate variables from a constraints, then fix the
+        variables and deactivate the constraints.
+
+        Keyword Arguments:
+            variable_list: a list of str with names of variables to be
+                calculated.
+            constraint_list: a list of str with names of constraints
+                used to calculate the variables in variable_list.
+
+        """
+        if variable_list is None:
+            variable_list = []
+        if constraint_list is None:
+            constraint_list = []
+
+        v_list = []
+        c_list = []
+
+        for v in obj.component_objects(Var, descend_into=True):
+            if v.local_name in variable_list:
+                v_list.append(v)
+        for c in obj.component_objects(Constraint, descend_into=True):
+            if c.local_name in constraint_list:
+                c_list.append(c)
+
+        v_c_tuple = list(zip(v_list, c_list))
+
+        for k in v_c_tuple:
+            if k[1].dim() == 0:
+                calculate_variable_from_constraint(k[0], k[1])
+            elif k[1].dim() == 1:
+                for var_index in k[1].index_set():
+                    calculate_variable_from_constraint(k[0][var_index], k[1][var_index])
+
+        for v in v_list:
+            v.fix()
+
+        for c in c_list:
+            c.deactivate()
