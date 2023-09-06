@@ -3558,7 +3558,7 @@ The property package must be iapws95.
 
     def get_var_dict(self):
         """
-        Returns a dictionary of important varaibles
+        Returns a dictionary of important variables
 
         """
 
