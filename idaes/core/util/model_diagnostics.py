@@ -303,6 +303,14 @@ DHCONFIG.declare(
         description="Smallest value for nu to be considered non-zero in MILP models.",
     ),
 )
+DHCONFIG.declare(
+    "tolerance",  # TODO: Need better name
+    ConfigValue(
+        default=1e-6,
+        domain=float,
+        description="Tolerance for identifying non-zero rows in Jacobian.",
+    ),
+)
 
 
 @document_kwargs_from_configdict(CONFIG)
@@ -1169,12 +1177,12 @@ class DiagnosticsToolbox:
             lines_list=next_steps,
             title="Suggested next steps:",
             line_if_empty=f"If you still have issues converging your model consider:\n"
-            f"{TAB*2}create_svd_toolbox\n{TAB*2}degeneracy_hunter (TBA)",
+            f"{TAB*2}prepare_svd_toolbox\n{TAB*2}prepare_degeneracy_hunter",
             footer="=",
         )
 
     @document_kwargs_from_configdict(SVDCONFIG)
-    def create_svd_toolbox(self, **kwargs):
+    def prepare_svd_toolbox(self, **kwargs):
         """
         Create an instance of the SVDToolbox and store as self.svd_toolbox.
 
@@ -1189,6 +1197,23 @@ class DiagnosticsToolbox:
         self.svd_toolbox = SVDToolbox(self.model, **kwargs)
 
         return self.svd_toolbox
+
+    @document_kwargs_from_configdict(DHCONFIG)
+    def prepare_degeneracy_hunter(self, **kwargs):
+        """
+        Create an instance of the DegeneracyHunter and store as self.degeneracy_hunter.
+
+        After creating an instance of the toolbox, call
+        report_irreducible_degenerate_sets.
+
+        Returns:
+
+            Instance of DegeneracyHunter
+
+        """
+        self.degeneracy_hunter = DegeneracyHunter2(self.model, **kwargs)
+
+        return self.degeneracy_hunter
 
 
 @document_kwargs_from_configdict(SVDCONFIG)
@@ -1463,14 +1488,14 @@ class SVDToolbox:
 @document_kwargs_from_configdict(DHCONFIG)
 class DegeneracyHunter2:
     """
-    Degeneracy Hunter is a tool for identifying irreducible degenerate sets in
+    Degeneracy Hunter is a tool for identifying Irreducible Degenerate Sets (IDS) in
     Pyomo models.
 
     Original implementation by Alex Dowling.
 
     Args:
 
-        model: model to be diagnosed. The SVDToolbox does not support indexed Blocks.
+        model: model to be diagnosed. The DegeneracyHunter does not support indexed Blocks.
 
     """
 
@@ -1553,7 +1578,7 @@ class DegeneracyHunter2:
             J = self.jacobian.tocsc()
 
             def eq_degenerate(m_dh, v):
-                if np.sum(np.abs(J[:, v])) > 1e-6:
+                if np.sum(np.abs(J[:, v])) > self.config.tolerance:
                     # Find the columns with non-zero entries
                     C_ = find(J[:, v])[0]
                     return sum(J[c, v] * m_dh.nu[c] for c in C_) == 0
@@ -1565,7 +1590,7 @@ class DegeneracyHunter2:
             J = self.jacobian
 
             def eq_degenerate(m_dh, v):
-                if np.sum(np.abs(J[:, v])) > 1e-6:
+                if np.sum(np.abs(J[:, v])) > self.config.tolerance:
                     return sum(J[c, v] * m_dh.nu[c] for c in m_dh.C) == 0
                 else:
                     # This variable does not appear in any constraint
@@ -1711,16 +1736,14 @@ class DegeneracyHunter2:
         self.ids_milp = m_dh
 
     def _solve_ids_milp(self, cons: Constraint, tee: bool = False):
-        """Solve MILP to check if equation 'cons_idx' is a significant component
+        """Solve MILP to check if equation 'cons' is a significant component
         in an irreducible degenerate set
 
         Args:
-
             cons: constraint to consider
             tee: Boolean, print solver output (default = False)
 
         Returns:
-
             ids: dictionary containing the IDS
 
         """
@@ -1754,12 +1777,11 @@ class DegeneracyHunter2:
 
         return ids_
 
-    def _find_irreducible_degenerate_sets(self, tee=False):
+    def find_irreducible_degenerate_sets(self, tee=False):
         """
         Compute irreducible degenerate sets
 
         Args:
-
             tee: Print solver output logs to screen (default=False)
 
         """
@@ -1792,7 +1814,19 @@ class DegeneracyHunter2:
             _log.debug("No candidate equations found")
 
     def report_irreducible_degenerate_sets(self, stream=stdout, tee: bool = False):
-        self._find_irreducible_degenerate_sets(tee=tee)
+        """
+        Print a report of all the Irreducible Degenerate Sets (IDS) identified in
+        model.
+
+        Args:
+            stream: I/O object to write report to (default = stdout)
+            tee: whether to write solver output logs to screen
+
+        Returns:
+            None
+
+        """
+        self.find_irreducible_degenerate_sets(tee=tee)
 
         stream.write("=" * MAX_STR_LENGTH + "\n")
         stream.write("Irreducible Degenerate Sets\n")

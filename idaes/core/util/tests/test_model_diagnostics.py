@@ -1230,6 +1230,26 @@ Suggested next steps:
 
         assert stream.getvalue() == expected
 
+    @pytest.mark.skipif(
+        not AmplInterface.available(), reason="pynumero_ASL is not available"
+    )
+    @pytest.mark.integration
+    def test_prepare_svd_toolbox(self, model):
+        dt = DiagnosticsToolbox(model=model.b)
+        svd = dt.prepare_svd_toolbox()
+
+        assert isinstance(svd, SVDToolbox)
+
+    @pytest.mark.skipif(
+        not AmplInterface.available(), reason="pynumero_ASL is not available"
+    )
+    @pytest.mark.integration
+    def test_prepare_degeneracy_hunter(self, model):
+        dt = DiagnosticsToolbox(model=model.b)
+        dh = dt.prepare_degeneracy_hunter()
+
+        assert isinstance(dh, DegeneracyHunter2)
+
 
 @pytest.mark.skipif(
     not AmplInterface.available(), reason="pynumero_ASL is not available"
@@ -1710,7 +1730,7 @@ class TestDegeneracyHunter:
     @pytest.mark.skipif(not solver_available, reason="SCIP is not available")
     def test_find_irreducible_degenerate_sets(self, model):
         dh = DegeneracyHunter2(model)
-        dh._find_irreducible_degenerate_sets()
+        dh.find_irreducible_degenerate_sets()
 
         assert dh.irreducible_degenerate_sets == [
             {model.con2: -1},
