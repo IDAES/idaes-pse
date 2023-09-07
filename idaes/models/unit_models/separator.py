@@ -935,7 +935,7 @@ objects linked the mixed state and all outlet states,
         if mb_type == MaterialBalanceType.componentPhase:
             if self.config.has_phase_equilibrium is True:
                 # Get units from property package
-                units_meta = self.config.property_package.get_metadata()
+                units_meta = mixed_block.params.get_metadata()
                 flow_basis = mixed_block[
                     self.flowsheet().time.first()
                 ].get_material_flow_basis()
