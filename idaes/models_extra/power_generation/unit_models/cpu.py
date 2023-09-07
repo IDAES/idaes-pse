@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 ##############################################################################
 # The development of this flowsheet/code is funded by the ARPA-E DIFFERENTIATE
@@ -42,16 +42,17 @@ The degrees of freedom are the inlet states:
 (1) Inlet flow in mol/s
 (2) Inlet component mole fractions: CO2, H2O, N2, Ar, O2
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
+from pyomo.environ import Var, units as pyunits
+from pyomo.network import Port
 
 # Import IDAES cores
 from idaes.core import declare_process_block_class, UnitModelBlockData
 import idaes.core.util.scaling as iscale
-
-# Additional import for the unit operation
-import pyomo.environ as pyo
-from pyomo.environ import Var, Constraint, units as pyunits
-from pyomo.network import Port
 import idaes.logger as idaeslog
+from idaes.core.solvers import get_solver
 
 __author__ = "Differentiate Team (N. Susarla, A. Noring, M. Zamarripa)"
 __version__ = "1.1.0"
@@ -226,7 +227,7 @@ class CarbonProcessingUnitData(UnitModelBlockData):
         )
 
     def _add_material_balances(self):
-        # Sum of all componenet mole fractions in a stream equals 1
+        # Sum of all components mole fractions in a stream equals 1
         @self.Constraint(self.flowsheet().config.time)
         def mole_frac_comp_pureco2_eqn(b, t):
             return 0 == 1 - sum(
@@ -507,27 +508,29 @@ class CarbonProcessingUnitData(UnitModelBlockData):
         blk,
         outlvl=idaeslog.NOTSET,
         solver="ipopt",
-        optarg={"tol": 1e-6},
+        optarg=None,
         release_state=True,
     ):
         """
         CO2 pure pyomo block initialization routine
 
         Keyword Arguments:
-            outlvl : sets output level of initialisation routine
+            outlvl : sets output level of initialization routine
 
             optarg : solver options dictionary object (default={'tol': 1e-6})
-            solver : str indicating whcih solver to use during
+            solver : str indicating which solver to use during
                      initialization (default = 'ipopt')
 
         Returns:
             None
         """
+        if optarg is None:
+            optarg = {"tol": 1e-6}
+
         iscale.calculate_scaling_factors(blk)
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
-        opt = pyo.SolverFactory(solver)
-        opt.options = optarg
+        opt = get_solver(solver="ipopt", options=optarg)
 
         init_log.info_low("Starting initialization...")
 

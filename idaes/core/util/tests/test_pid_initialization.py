@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Test for element-by-element initialization on PID controller. This is important
@@ -93,7 +93,7 @@ def make_model(horizon=6, ntfe=60, ntcp=2, inlet_E=11.91, inlet_S=12.92):
         calculate_initial_integral=True,
         # ^ Why would initial integral be calculated
         # to be nonzero?
-        type=ControllerType.PID,
+        controller_type=ControllerType.PID,
     )
 
     # Time discretization
@@ -107,7 +107,7 @@ def make_model(horizon=6, ntfe=60, ntcp=2, inlet_E=11.91, inlet_S=12.92):
     m.fs.pid.mv_lb.set_value(0.5)
     m.fs.pid.mv_ub.set_value(5.0)
     m.fs.pid.mv_ref.fix(0.0)
-    m.fs.pid.derivative_of_error[m.fs.time.first()].fix(0)
+    m.fs.pid.derivative_term[m.fs.time.first()].fix(0)
 
     # Fix initial condition for volume:
     m.fs.cstr.volume.unfix()

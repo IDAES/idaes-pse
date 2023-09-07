@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Multistage steam turbine for power generation.
@@ -17,6 +17,9 @@ Liese, (2014). "Modeling of a Steam Turbine Including Partial Arc Admission
     for Use in a Process Simulation Software Environment." Journal of Engineering
     for Gas Turbines and Power. v136, November
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+
 import copy
 
 import pyomo.environ as pyo
@@ -52,7 +55,7 @@ def _define_turbine_multistage_config(config):
             domain=In([False]),
             default=False,
             description="Dynamic model flag",
-            doc="Only False, in a dynamic flowsheet this is psuedo-steady-state.",
+            doc="Only False, in a dynamic flowsheet this is pseudo-steady-state.",
         ),
     )
     config.declare(
@@ -61,7 +64,7 @@ def _define_turbine_multistage_config(config):
             default=False,
             domain=In([False]),
             description="Holdup construction flag",
-            doc="Only False, in a dynamic flowsheet this is psuedo-steady-state.",
+            doc="Only False, in a dynamic flowsheet this is pseudo-steady-state.",
         ),
     )
     config.declare(
@@ -271,7 +274,7 @@ class HelmTurbineMultistageData(UnitModelBlockData):
         # ------------------------
 
         # Splitter to inlet that splits main flow into parallel flows for
-        # paritial arc admission to the turbine
+        # partial arc admission to the turbine
         self.inlet_split = HelmSplitter(**self._split_cfg(unit_cfg, ni))
         self.throttle_valve = SteamValve(inlet_idx, **thrtl_cfg)
         self.inlet_stage = HelmTurbineInletStage(inlet_idx, **unit_cfg)
@@ -389,7 +392,7 @@ class HelmTurbineMultistageData(UnitModelBlockData):
         def _arc_rule(turbines, splitters):
             """
             This creates a rule function for arcs in a turbine section. When
-            this is used, the indexes for nonexistant stream will have already
+            this is used, the indexes for nonexistent stream will have already
             been removed, so any indexes the rule will get should have a stream
             associated.
 
@@ -456,7 +459,7 @@ class HelmTurbineMultistageData(UnitModelBlockData):
         # Connect hp section to ip section unless its a disconnect location
         last_hp = config.num_hp
         if 0 not in config.ip_disconnect and last_hp not in config.hp_disconnect:
-            # Not disconnected stage so add stream, depending on splitter existance
+            # Not disconnected stage so add stream, depending on splitter existence
             if last_hp in config.hp_split_locations:  # connect splitter to ip
                 self.hp_to_ip_stream = Arc(
                     source=self.hp_split[last_hp].outlet_1,
@@ -596,8 +599,8 @@ class HelmTurbineMultistageData(UnitModelBlockData):
         outlvl,
         solver,
         optarg,
-        copy_disconneted_flow,
-        copy_disconneted_pressure,
+        copy_disconnected_flow,
+        copy_disconnected_pressure,
     ):
         """Reuse the initializtion for HP, IP and, LP sections."""
         if 0 in splits:
@@ -608,10 +611,10 @@ class HelmTurbineMultistageData(UnitModelBlockData):
             if i - 1 not in disconnects:
                 propagate_state(stages[i].inlet, prev_port)
             else:
-                if copy_disconneted_flow:
+                if copy_disconnected_flow:
                     for t in stages[i].inlet.flow_mol:
                         stages[i].inlet.flow_mol[t] = pyo.value(prev_port.flow_mol[t])
-                if copy_disconneted_pressure:
+                if copy_disconnected_pressure:
                     for t in stages[i].inlet.pressure:
                         stages[i].inlet.pressure[t] = pyo.value(prev_port.pressure[t])
             stages[i].initialize(outlvl=outlvl, solver=solver, optarg=optarg)
@@ -639,8 +642,8 @@ class HelmTurbineMultistageData(UnitModelBlockData):
         solver=None,
         flow_iterate=2,
         optarg=None,
-        copy_disconneted_flow=True,
-        copy_disconneted_pressure=True,
+        copy_disconnected_flow=True,
+        copy_disconnected_pressure=True,
         calculate_outlet_cf=False,
         calculate_inlet_cf=False,
     ):
@@ -655,30 +658,24 @@ class HelmTurbineMultistageData(UnitModelBlockData):
                 number of times to update the flow and repeat initialization
                 (1 to 5 where 1 does not update the flow guess)
             optarg: solver arguments, default is None
-            copy_disconneted_flow: Copy the flow through the disconnected stages
+            copy_disconnected_flow: Copy the flow through the disconnected stages
                 default is True
-            copy_disconneted_pressure: Copy the pressure through the disconnected
+            copy_disconnected_pressure: Copy the pressure through the disconnected
                 stages default is True
             calculate_outlet_cf: Use the flow initial flow guess to calculate
                 the outlet stage flow coefficient, default is False,
             calculate_inlet_cf: Use the inlet stage ratioP to calculate the flow
-                coefficent for the inlet stage default is False
+                coefficient for the inlet stage default is False
 
         Returns:
             None
         """
         # Setup loggers
-        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
-        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
         # Store initial model specs, restored at the end of initializtion, so
         # the problem is not altered.  This can restore fixed/free vars,
         # active/inactive constraints, and fixed variable values.
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)
         istate = to_json(self, return_dict=True, wts=sp)
-
-        # Assume the flow into the turbine is a reasonable guess for
-        # initializtion
-        flow_guess = self.inlet_split.inlet.flow_mol[0].value
 
         for it_count in range(flow_iterate):
             self.inlet_split.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
@@ -724,8 +721,8 @@ class HelmTurbineMultistageData(UnitModelBlockData):
                 outlvl,
                 solver,
                 optarg,
-                copy_disconneted_flow=copy_disconneted_flow,
-                copy_disconneted_pressure=copy_disconneted_pressure,
+                copy_disconnected_flow=copy_disconnected_flow,
+                copy_disconnected_pressure=copy_disconnected_pressure,
             )
             if len(self.hp_stages) in self.config.hp_disconnect:
                 self.config.ip_disconnect.append(0)
@@ -737,8 +734,8 @@ class HelmTurbineMultistageData(UnitModelBlockData):
                 outlvl,
                 solver,
                 optarg,
-                copy_disconneted_flow=copy_disconneted_flow,
-                copy_disconneted_pressure=copy_disconneted_pressure,
+                copy_disconnected_flow=copy_disconnected_flow,
+                copy_disconnected_pressure=copy_disconnected_pressure,
             )
             if len(self.ip_stages) in self.config.ip_disconnect:
                 self.config.lp_disconnect.append(0)
@@ -750,8 +747,8 @@ class HelmTurbineMultistageData(UnitModelBlockData):
                 outlvl,
                 solver,
                 optarg,
-                copy_disconneted_flow=copy_disconneted_flow,
-                copy_disconneted_pressure=copy_disconneted_pressure,
+                copy_disconnected_flow=copy_disconnected_flow,
+                copy_disconnected_pressure=copy_disconnected_pressure,
             )
 
             propagate_state(self.outlet_stage.inlet, prev_port)
@@ -795,7 +792,7 @@ class HelmTurbineMultistageData(UnitModelBlockData):
                             ].value
 
         if calculate_inlet_cf:
-            # cf was probably fixed, so will have to set the value agian here
+            # cf was probably fixed, so will have to set the value again here
             # if you ask for it to be calculated.
             icf = {}
             for i in self.inlet_stage:
@@ -807,7 +804,7 @@ class HelmTurbineMultistageData(UnitModelBlockData):
         from_json(self, sd=istate, wts=sp)
 
         if calculate_inlet_cf:
-            # cf was probably fixed, so will have to set the value agian here
+            # cf was probably fixed, so will have to set the value again here
             # if you ask for it to be calculated.
             for t in self.inlet_stage[i].flow_coeff:
                 for i in self.inlet_stage:
@@ -830,3 +827,9 @@ class HelmTurbineMultistageData(UnitModelBlockData):
             )
             # Set power equation scale factor
             iscale.constraint_scaling_transform(c, power_scale, overwrite=False)
+
+    def _get_stream_table_contents(self, time_point=0):
+        raise NotImplementedError(
+            "The multi-stage turbine model has not implemented the code necessary to "
+            "construct a stream table."
+        )

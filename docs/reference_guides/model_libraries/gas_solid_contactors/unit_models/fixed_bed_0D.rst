@@ -70,15 +70,15 @@ Volume of the bed:
 
 Volume of the solid:
 
-.. math:: V_{s,t} = V_{bed} (1 - \epsilon_{s})
+.. math:: V_{s,t} = V_{bed} (1 - \varepsilon)
 
 Solid material holdup:
 
-.. math:: j_{mass,s,t,j} = V_{s} \rho_{mass,s,t} x_{mass,s,t,j}
+.. math:: J_{mass,s,t,j} = V_{s} \rho_{mass,s,t} x_{mass,s,t,j}
 
 Solid material accumulation:
 
-.. math:: {\dot{j}}_{mass,s,t,j} = V_{s} {MW}_{s,j} {\Sigma}_{r} {r_{s,t,r} \nu_{s,j,r}}
+.. math:: {\dot{J}}_{mass,s,t,j} = V_{s} {MW}_{s,j} {\Sigma}_{r} {r_{s,t,r} \nu_{s,j,r}}
 
 Total mass of solids:
 
@@ -98,6 +98,8 @@ if self.config.energy_balance_type != EnergyBalanceType.none:
 
     .. math:: {\dot{q}}_{energy,s,t} = - V_{s} {\Sigma}_{r} {r_{s,t,r} H_{rxn,s,t,r}}
 
+if self.config.energy_balance_type == EnergyBalanceType.none:
+
     Isothermal solid phase:
 
     .. math:: T_{s,t} = T_{s,t=0}
@@ -111,8 +113,8 @@ List of Variables
    ":math:`D_{bed}`", "Reactor bed diameter", "``bed_diameter``"
    ":math:`H_{mass,s,t}`", "Solid phase mass enthalpy", "``solids.enth_mass``"
    ":math:`H_{rxn,s,t,r}`", "Solid phase reaction enthalpy", "``solids.reactions.dh_rxn``"
-   ":math:`j_{mass,s,t,j}`", "Material holdup, solid phase", "``solids.solids_material_holdup``"
-   ":math:`{\dot{j}}_{mass,s,t,j}`", "Material accumulation, solid phase", "``solids.solids_material_accumulation``"
+   ":math:`J_{mass,s,t,j}`", "Material holdup, solid phase", "``solids.solids_material_holdup``"
+   ":math:`{\dot{J}}_{mass,s,t,j}`", "Material accumulation, solid phase", "``solids.solids_material_accumulation``"
    ":math:`L_{bed}`", "Reactor bed height", "``bed_height``"
    ":math:`M_{s,t}`", "Total mass of solids", "``solids.mass_solids``"
    ":math:`q_{energy,s,t}`", "Energy holdup, solid phase", "``solids.energy_material_holdup``"
@@ -131,7 +133,7 @@ List of Parameters
 .. csv-table::
    :header: "Parameter", "Description", "Reference to"
 
-   ":math:`\epsilon_{s}`", "Void fraction of the solid", "``solids._params.voidage``"
+   ":math:`\varepsilon`", "Reactor bed voidage", "``bed_voidage``"
    ":math:`{MW}_{s,j}`", "Molecular weight of solid component j", "``solids._params.mw_comp``"
    ":math:`\nu_{s,j,r}`", "Stoichiometric coefficients", "``solids.reaction_package.rate_reaction_stoichiometry``"
 
@@ -142,7 +144,7 @@ The initialization method for this model will save the current state of the mode
 commencing initialization and reloads it afterwards. The state of the model will be the same after
 initialization, only the initial guesses for unfixed variables will be changed. For the FixedBed0D
 model, the initialization method is a general purpose routine for simple unit models where a single
-control volume is initalized followed by attempting to solve the entire unit.
+control volume is initialized followed by attempting to solve the entire unit.
 
 The model allows for the passing of a dictionary of values of the state variables of the gas and
 solid phases that can be used as initial guesses for the state variables throughout the time domain

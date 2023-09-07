@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Base class for EoS modules.
@@ -16,30 +16,27 @@ Base class for EoS modules.
 Raises NotImplementedErrors for all expected methods in case developer misses
 some. EoS developers should overload all these methods.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 from pyomo.environ import units as pyunits
 from idaes.core.util.constants import Constants as const
 from idaes.models.properties.modular_properties.base.utility import (
     get_method,
     get_component_object as cobj,
 )
-from idaes.core.util.exceptions import PropertyNotSupportedError, ConfigurationError
+from idaes.core.util.exceptions import ConfigurationError
 
 
 class EoSBase:
+    """Base class for modular equation-of-state classes."""
+
     @staticmethod
     def gas_constant(b):
         # Utility method to convert gas constant to base units
         base_units = b.params.get_metadata().default_units
 
-        r_units = (
-            base_units["mass"]
-            * base_units["length"] ** 2
-            * base_units["temperature"] ** -1
-            * base_units["amount"] ** -1
-            * base_units["time"] ** -2
-        )
-
-        return pyunits.convert(const.gas_constant, to_units=r_units)
+        return pyunits.convert(const.gas_constant, to_units=base_units.GAS_CONSTANT)
 
     @staticmethod
     def common(b, pobj):
@@ -126,7 +123,7 @@ class EoSBase:
         # Method for calculating pure component ideal gas cv from cp
         # For ideal gases, cv = cp - R
         units = b.params.get_metadata().derived_units
-        R = pyunits.convert(const.gas_constant, to_units=units["heat_capacity_mole"])
+        R = pyunits.convert(const.gas_constant, to_units=units.HEAT_CAPACITY_MOLE)
         return get_method(b, "cp_mol_ig_comp", j)(b, cobj(b, j), b.temperature) - R
 
     @staticmethod
@@ -159,7 +156,7 @@ class EoSBase:
     def energy_internal_mol_ig_comp_pure(b, j):
         # Method for calculating pure component U from H for ideal gases
         units = b.params.get_metadata().derived_units
-        R = pyunits.convert(const.gas_constant, to_units=units["heat_capacity_mole"])
+        R = pyunits.convert(const.gas_constant, to_units=units.HEAT_CAPACITY_MOLE)
 
         if cobj(b, j).parent_block().config.include_enthalpy_of_formation:
             # First, need to determine correction between U_form and H_form
@@ -203,7 +200,7 @@ class EoSBase:
 
         # Method for calculating pure component U from H for liquids & solids
         units = b.params.get_metadata().derived_units
-        R = pyunits.convert(const.gas_constant, to_units=units["heat_capacity_mole"])
+        R = pyunits.convert(const.gas_constant, to_units=units.HEAT_CAPACITY_MOLE)
 
         if cobj(b, j).parent_block().config.include_enthalpy_of_formation:
             # First, need to determine correction between U_form and H_form

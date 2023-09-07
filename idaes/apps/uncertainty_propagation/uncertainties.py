@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 
 import idaes
@@ -110,7 +110,7 @@ def quantify_propagate_uncertainty(
             solution.
         - results.dsdp: scipy.sparse.csr.csr_matrix
             Ntheta by Nvar size sparse matrix. Gradient vector of the
-            (decision variables, parameters) with respect to paramerters
+            (decision variables, parameters) with respect to parameters
             (=theta_name). number of rows = len(theta_name),
             number of columns= len(col)
         - results.propagation_c: numpy.ndarray
@@ -260,7 +260,7 @@ def propagate_uncertainty(
             solution.
         - results.dsdp: scipy.sparse.csr.csr_matrix
             Ntheta by Nvar size sparse matrix. Gradient vector of the
-            (decision variables, parameters) with respect to paramerters
+            (decision variables, parameters) with respect to parameters
             (=theta_name). number of rows = len(theta_name),
             number of columns= len(col)
         - results.propagation_c: numpy.ndarray
@@ -329,7 +329,7 @@ def propagate_uncertainty(
         list(model.component_data_objects(Constraint, active=True, descend_into=True))
     )
 
-    # calculate error propagation of the objective fuction
+    # calculate error propagation of the objective function
     # = df/dp*cov_p*df/dp + (df/dx*dx/dp)*cov_p*(df/dx*dx/dp)
     # = (df/ds*ds/dp)*cov*(df/ds*ds/dp)
     # step 1. df/ds*ds/dp
@@ -366,7 +366,7 @@ def propagate_uncertainty(
         # gradient_c rearrange.
         # k_aug sparse form is [col_idx, row_idx, val] with index starts from 1
         # python sparse form is [row_idx, col_idx, val] with index starts from 0
-        # note: vairable 'row' from get_dfds_dcds includes objecive function
+        # note: variable 'row' from get_dfds_dcds includes objecive function
         # name. i.e, Ncon = len(row)-1
         """
         row_idx = gradient_c[:,1]-1
@@ -434,7 +434,7 @@ def clean_variable_name(theta_names):
         - theta_names_out: list of strings
             List of Var names after removing  all ' and spaces
         - var_dic: dict
-            Dictionary with keys converted theta_names and values origianl
+            Dictionary with keys converted theta_names and values original
             theta_names
     """
     # Variable names cannot have "'" for parmest_class.theta_est(calc_cov=True)

@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 
 __author__ = "Jinliang Ma"
@@ -31,6 +31,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.models.properties import iapws95
 from idaes.core.util.dyn_utils import copy_values_at_time, copy_non_time_indexed_values
 from idaes.core.solvers import get_solver
+from idaes.models.properties.general_helmholtz import helmholtz_available
 
 import pytest
 
@@ -70,8 +71,8 @@ def m():
     for t in m_dyn.fs.time:
         copy_values_at_time(m_dyn.fs, m_ss.fs, t, 0.0, copy_fixed=True)
     m_dyn.fs.controller.mv_ref.value = m_dyn.fs.valve.valve_opening[0].value
-    # calculate integral error assuming error is zero
-    m_dyn.fs.controller.integral_of_error[:].value = 0
+    # calculate mv integral component assuming error is zero
+    m_dyn.fs.controller.mv_integral_component[:].value = 0
 
     dof = degrees_of_freedom(m_dyn)
     assert dof == 0
@@ -107,7 +108,7 @@ def get_model(dynamic=False):
         m.fs.controller = PIDController(
             process_var=m.fs.tank.tank_level,
             manipulated_var=m.fs.valve.valve_opening,
-            type=ControllerType.PI,
+            controller_type=ControllerType.PI,
         )
 
         m.discretizer = pyo.TransformationFactory("dae.finite_difference")
@@ -183,6 +184,7 @@ def run_dynamic(m):
     return m
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.integration
 def test_pid(m):
     assert 0.5000 == pytest.approx(pyo.value(m.fs.valve.valve_opening[0.0]), abs=1e-3)

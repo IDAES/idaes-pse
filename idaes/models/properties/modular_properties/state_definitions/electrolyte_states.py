@@ -1,18 +1,24 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Methods for creating additional state variables for electrolyte systems
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
+# TODO: Look into protected access issues
+# pylint: disable=protected-access
+
 from pyomo.environ import Constraint, NonNegativeReals, Reference, units as pyunits, Var
 
 from idaes.models.properties.modular_properties.base.generic_property import StateIndex
@@ -64,7 +70,7 @@ def _apparent_species_state(b):
 
     # Get units and bounds for true species state
     units = b.params.get_metadata().derived_units
-    f_bounds, f_init = get_bounds_from_config(b, "flow_mol", units["flow_mole"])
+    f_bounds, f_init = get_bounds_from_config(b, "flow_mol", units.FLOW_MOLE)
 
     # Create true species state vars
     b.flow_mol_phase_comp_true = Var(
@@ -73,7 +79,7 @@ def _apparent_species_state(b):
         domain=NonNegativeReals,
         bounds=f_bounds,
         doc="Phase-component molar flowrates of true species",
-        units=units["flow_mole"],
+        units=units.FLOW_MOLE,
     )
 
     b.mole_frac_phase_comp_true = Var(
@@ -89,7 +95,7 @@ def _apparent_species_state(b):
         b.apparent_inherent_reaction_extent = Var(
             b.params.inherent_reaction_idx,
             initialize=0,
-            units=units["flow_mole"],
+            units=units.FLOW_MOLE,
             doc="Apparent extent of inherent reactions",
         )
 
@@ -171,7 +177,7 @@ def _true_species_state(b):
 
     # Get units and bounds for apparent species state
     units = b.params.get_metadata().derived_units
-    f_bounds, f_init = get_bounds_from_config(b, "flow_mol", units["flow_mole"])
+    f_bounds, f_init = get_bounds_from_config(b, "flow_mol", units.FLOW_MOLE)
 
     # Create apparent species state vars
     b.flow_mol_phase_comp_apparent = Var(
@@ -180,7 +186,7 @@ def _true_species_state(b):
         domain=NonNegativeReals,
         bounds=f_bounds,
         doc="Phase-component molar flowrates of apparent species",
-        units=units["flow_mole"],
+        units=units.FLOW_MOLE,
     )
 
     b.mole_frac_phase_comp_apparent = Var(

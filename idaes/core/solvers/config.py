@@ -1,15 +1,19 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
+# TODO: Missing doc strings
+# pylint: disable=missing-module-docstring
+# pylint: disable=missing-class-docstring
+
 from pyomo.environ import SolverFactory
 import idaes
 
@@ -75,7 +79,7 @@ def use_idaes_solver_configuration_defaults(b=True):
         # front you are saying I know this stuff exists and I must insist you
         # don't use it, of course you can still implicitly not use it.  You can
         # also turn it off and on, if that makes sense for you, but once you turn
-        # it on, you've still registerd the wrapper classes, and if you turn
+        # it on, you've still registered the wrapper classes, and if you turn
         # it off they just pass-through.
         for c in list(SolverFactory):
             if isinstance(SolverFactory.get_class(c), SolverWrapper):

@@ -1,24 +1,26 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Common Surrogate interface for IDAES.
 """
 from pyomo.common.config import ConfigBlock
 
-from idaes.core.surrogate.metrics import compute_fit_metrics
-
 
 class SurrogateTrainer(object):
+    """
+    Base class for IDAES Surrogate Trainers.
+    """
+
     CONFIG = ConfigBlock()
 
     def __init__(
@@ -198,6 +200,10 @@ class SurrogateTrainer(object):
 
 
 class SurrogateBase:
+    """
+    Base class for Surrogate object.
+    """
+
     def __init__(self, input_labels=None, output_labels=None, input_bounds=None):
         """
         Base class for standard IDAES Surrogate object. This class is
@@ -352,7 +358,7 @@ class SurrogateBase:
            strm: IO.TextIO
               This is the python stream like a file object or StringIO that will be used
               to serialize the surrogate object. This methods will often write a string
-              of json data to the stream, but hte format for derived classes need not be json.
+              of json data to the stream, but the format for derived classes need not be json.
         """
         raise NotImplementedError(
             '"save" should be implemented in the' " class derived from SurrogateBase"

@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 This package provides the necessary constraints for solid phase properties of
@@ -20,6 +20,8 @@ National Institute of Standards and Technology, NIST Chemistry WebBook,
 https://webbook.nist.gov/chemistry/ (accessed March 10, 2018).
 
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
 
 # Import Pyomo libraries
 from pyomo.environ import (
@@ -93,7 +95,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
         self.Al2O3 = Component()
 
         # -------------------------------------------------------------------------
-        """ Pure solid component properties"""
+        # Pure solid component properties
 
         # Mol. weights of solid components - units = kg/mol. ref: NIST webbook
         mw_comp_dict = {"Fe2O3": 0.15969, "Fe3O4": 0.231533, "Al2O3": 0.10196}
@@ -224,8 +226,8 @@ class PhysicalParameterData(PhysicalParameterBlock):
         )
 
         # -------------------------------------------------------------------------
-        """ Mixed solid properties"""
-        # These are setup as fixed vars to allow for parameter estimation
+        # Mixed solid properties
+        # These are set up as fixed vars to allow for parameter estimation
 
         # Particle size
         self.particle_dia = Var(
@@ -291,20 +293,24 @@ class PhysicalParameterData(PhysicalParameterBlock):
 
     @classmethod
     def define_metadata(cls, obj):
-        obj.add_properties(
+        obj.define_custom_properties(
             {
-                "flow_mass": {"method": None, "units": "kg/s"},
-                "particle_porosity": {"method": None, "units": None},
-                "temperature": {"method": None, "units": "K"},
-                "mass_frac_comp": {"method": None, "units": None},
+                "particle_porosity": {"method": None, "units": pyunits.dimensionless},
                 "dens_mass_skeletal": {
                     "method": "_dens_mass_skeletal",
-                    "units": "kg/m3",
+                    "units": obj.derived_units.DENSITY_MASS,
                 },
                 "dens_mass_particle": {
                     "method": "_dens_mass_particle",
-                    "units": "kg/m3",
+                    "units": obj.derived_units.DENSITY_MASS,
                 },
+            }
+        )
+        obj.add_properties(
+            {
+                "flow_mass": {"method": None, "units": "kg/s"},
+                "temperature": {"method": None, "units": "K"},
+                "mass_frac_comp": {"method": None, "units": None},
                 "cp_mol_comp": {"method": "_cp_mol_comp", "units": "J/mol.K"},
                 "cp_mass": {"method": "_cp_mass", "units": "J/kg.K"},
                 "enth_mass": {"method": "_enth_mass", "units": "J/kg"},
@@ -363,7 +369,7 @@ class _SolidPhaseStateBlock(StateBlock):
                                  initialization.
                         - False - state variables are unfixed after
                                  initialization by calling the
-                                 relase_state method
+                                 release_state method
         Returns:
             If hold_states is True, returns a dict containing flags for
             which states were fixed during initialization.
@@ -375,17 +381,17 @@ class _SolidPhaseStateBlock(StateBlock):
 
         # Deactivate the constraints specific for outlet block i.e.
         # when defined state is False
-        for k in blk.keys():
-            if blk[k].config.defined_state is False:
-                blk[k].sum_component_eqn.deactivate()
+        for k in blk.values():
+            if k.config.defined_state is False:
+                k.sum_component_eqn.deactivate()
 
         # Fix state variables if not already fixed
         if state_vars_fixed is False:
             flags = fix_state_vars(blk, state_args)
         else:
             # Check when the state vars are fixed already result in dof 0
-            for k in blk.keys():
-                if degrees_of_freedom(blk[k]) != 0:
+            for k in blk.values():
+                if degrees_of_freedom(k) != 0:
                     raise Exception(
                         "State vars fixed but degrees of freedom "
                         "for state block is not zero during "
@@ -394,38 +400,36 @@ class _SolidPhaseStateBlock(StateBlock):
 
         # ---------------------------------------------------------------------
         # Initialize values
-        for k in blk.keys():
-            if hasattr(blk[k], "density_skeletal_constraint"):
+        for k in blk.values():
+            if hasattr(k, "density_skeletal_constraint"):
                 calculate_variable_from_constraint(
-                    blk[k].dens_mass_skeletal, blk[k].density_skeletal_constraint
+                    k.dens_mass_skeletal, k.density_skeletal_constraint
                 )
 
-            if hasattr(blk[k], "mixture_heat_capacity_eqn"):
+            if hasattr(k, "mixture_heat_capacity_eqn"):
                 calculate_variable_from_constraint(
-                    blk[k].cp_mass, blk[k].mixture_heat_capacity_eqn
+                    k.cp_mass, k.mixture_heat_capacity_eqn
                 )
 
-            if hasattr(blk[k], "mixture_enthalpy_eqn"):
-                calculate_variable_from_constraint(
-                    blk[k].enth_mass, blk[k].mixture_enthalpy_eqn
-                )
+            if hasattr(k, "mixture_enthalpy_eqn"):
+                calculate_variable_from_constraint(k.enth_mass, k.mixture_enthalpy_eqn)
 
-            for j in blk[k]._params.component_list:
+            for j in k.params.component_list:
 
-                if hasattr(blk[k], "cp_shomate_eqn"):
+                if hasattr(k, "cp_shomate_eqn"):
                     calculate_variable_from_constraint(
-                        blk[k].cp_mol_comp[j], blk[k].cp_shomate_eqn[j]
+                        k.cp_mol_comp[j], k.cp_shomate_eqn[j]
                     )
 
-                if hasattr(blk[k], "enthalpy_shomate_eqn"):
+                if hasattr(k, "enthalpy_shomate_eqn"):
                     calculate_variable_from_constraint(
-                        blk[k].enth_mol_comp[j], blk[k].enthalpy_shomate_eqn[j]
+                        k.enth_mol_comp[j], k.enthalpy_shomate_eqn[j]
                     )
 
         # Solve property block if non-empty
         free_vars = 0
-        for k in blk.keys():
-            free_vars += number_unfixed_variables_in_activated_equalities(blk[k])
+        for k in blk.values():
+            free_vars += number_unfixed_variables_in_activated_equalities(k)
 
         if free_vars > 0:
             # Create solver
@@ -447,7 +451,7 @@ class _SolidPhaseStateBlock(StateBlock):
 
     def release_state(blk, flags, outlvl=idaeslog.NOTSET):
         """
-        Method to relase state variables fixed during initialization.
+        Method to release state variables fixed during initialization.
         Keyword Arguments:
             flags : dict containing information of which state variables
                     were fixed during initialization, and should now be
@@ -462,9 +466,9 @@ class _SolidPhaseStateBlock(StateBlock):
         revert_state_vars(blk, flags)
 
         # Activate state variable related constraints
-        for k in blk.keys():
-            if blk[k].config.defined_state is False:
-                blk[k].sum_component_eqn.activate()
+        for k in blk.values():
+            if k.config.defined_state is False:
+                k.sum_component_eqn.activate()
 
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
         init_log.info_high("States released.")
@@ -492,31 +496,31 @@ class SolidPhaseStateBlockData(StateBlockData):
         """List the necessary state variable objects."""
 
         # create units object to get default units from the param block
-        units_meta = self._params.get_metadata().derived_units
+        units_meta = self.params.get_metadata().derived_units
 
         self.flow_mass = Var(
             initialize=1.0,
             domain=Reals,
             doc="Component mass flowrate",
-            units=units_meta["mass"] / units_meta["time"],
+            units=units_meta.FLOW_MASS,
         )
         self.particle_porosity = Var(
             domain=Reals,
             initialize=0.27,
             doc="Porosity of oxygen carrier [-]",
-            units=units_meta["length"] ** 3 / units_meta["length"] ** 3,
+            units=pyunits.dimensionless,
         )
         self.mass_frac_comp = Var(
-            self._params.component_list,
-            initialize=1 / len(self._params.component_list),
+            self.params.component_list,
+            initialize=1 / len(self.params.component_list),
             doc="State component mass fractions [-]",
-            units=units_meta["mass"] / units_meta["mass"],
+            units=pyunits.dimensionless,
         )
         self.temperature = Var(
             initialize=298.15,
             domain=Reals,
             doc="State temperature",
-            units=units_meta["temperature"],
+            units=units_meta.TEMPERATURE,
         )
 
         # Create standard constraints
@@ -524,26 +528,26 @@ class SolidPhaseStateBlockData(StateBlockData):
         if self.config.defined_state is False:
 
             def sum_component_eqn(b):
-                return 1 == sum(b.mass_frac_comp[j] for j in b._params.component_list)
+                return 1 == sum(b.mass_frac_comp[j] for j in b.params.component_list)
 
             self.sum_component_eqn = Constraint(rule=sum_component_eqn)
 
     def _dens_mass_skeletal(self):
         # Skeletal density of OC solid particles
-        units_meta = self._params.get_metadata().derived_units
+        units_meta = self.params.get_metadata().derived_units
         self.dens_mass_skeletal = Var(
             domain=Reals,
             initialize=3251.75,
             doc="Skeletal density of OC",
-            units=units_meta["mass"] * units_meta["length"] ** -3,
+            units=units_meta.DENSITY_MASS,
         )
 
         def density_skeletal_constraint(b):
             return (
                 b.dens_mass_skeletal
                 * sum(
-                    b.mass_frac_comp[j] / b._params.dens_mass_comp_skeletal[j]
-                    for j in b._params.component_list
+                    b.mass_frac_comp[j] / b.params.dens_mass_comp_skeletal[j]
+                    for j in b.params.component_list
                 )
                 == 1
             )
@@ -561,12 +565,12 @@ class SolidPhaseStateBlockData(StateBlockData):
 
     def _dens_mass_particle(self):
         # Particle density of OC (includes the OC pores)
-        units_meta = self._params.get_metadata().derived_units
+        units_meta = self.params.get_metadata().derived_units
         self.dens_mass_particle = Var(
             domain=Reals,
             initialize=3251.75,
             doc="Particle density of oxygen carrier",
-            units=units_meta["mass"] * units_meta["length"] ** -3,
+            units=units_meta.DENSITY_MASS,
         )
 
         def density_particle_constraint(b):
@@ -587,14 +591,10 @@ class SolidPhaseStateBlockData(StateBlockData):
 
     def _cp_mol_comp(self):
         # Pure component solid heat capacities
-        units_meta = self._params.get_metadata().derived_units
-        units_cp_mol = (
-            units_meta["energy"]
-            * units_meta["amount"] ** -1
-            * units_meta["temperature"] ** -1
-        )
+        units_meta = self.params.get_metadata().derived_units
+        units_cp_mol = units_meta.HEAT_CAPACITY_MOLE
         self.cp_mol_comp = Var(
-            self._params.component_list,
+            self.params.component_list,
             domain=Reals,
             initialize=1.0,
             doc="Pure component solid heat capacities",
@@ -605,11 +605,11 @@ class SolidPhaseStateBlockData(StateBlockData):
             t = pyunits.convert(b.temperature, to_units=pyunits.kK)
             return b.cp_mol_comp[j] == pyunits.convert(
                 (
-                    b._params.cp_param_1[j]
-                    + b._params.cp_param_2[j] * t
-                    + b._params.cp_param_3[j] * t**2
-                    + b._params.cp_param_4[j] * t**3
-                    + b._params.cp_param_5[j] / (t**2)
+                    b.params.cp_param_1[j]
+                    + b.params.cp_param_2[j] * t
+                    + b.params.cp_param_3[j] * t**2
+                    + b.params.cp_param_4[j] * t**3
+                    + b.params.cp_param_5[j] / (t**2)
                 ),
                 to_units=units_cp_mol,
             )
@@ -617,7 +617,7 @@ class SolidPhaseStateBlockData(StateBlockData):
         try:
             # Try to build constraint
             self.cp_shomate_eqn = Constraint(
-                self._params.component_list, rule=pure_component_cp_mol
+                self.params.component_list, rule=pure_component_cp_mol
             )
         except AttributeError:
             # If constraint fails, clean up so that DAE can try again later
@@ -627,12 +627,8 @@ class SolidPhaseStateBlockData(StateBlockData):
 
     def _cp_mass(self):
         # Mixture heat capacities
-        units_meta = self._params.get_metadata().derived_units
-        units_cp_mass = (
-            units_meta["energy"]
-            * units_meta["mass"] ** -1
-            * units_meta["temperature"] ** -1
-        )
+        units_meta = self.params.get_metadata().derived_units
+        units_cp_mass = units_meta.HEAT_CAPACITY_MASS
         self.cp_mass = Var(
             domain=Reals,
             initialize=1.0,
@@ -642,8 +638,8 @@ class SolidPhaseStateBlockData(StateBlockData):
 
         def cp_mass(b):
             return b.cp_mass == sum(
-                b.cp_mol_comp[j] * b.mass_frac_comp[j] * (1 / b._params.mw_comp[j])
-                for j in b._params.component_list
+                b.cp_mol_comp[j] * b.mass_frac_comp[j] * (1 / b.params.mw_comp[j])
+                for j in b.params.component_list
             )
 
         try:
@@ -657,10 +653,10 @@ class SolidPhaseStateBlockData(StateBlockData):
 
     def _enth_mol_comp(self):
         # Pure component vapour enthalpies
-        units_meta = self._params.get_metadata().derived_units
-        units_enth_mol = units_meta["energy"] * units_meta["amount"] ** -1
+        units_meta = self.params.get_metadata().derived_units
+        units_enth_mol = units_meta.ENERGY_MOLE
         self.enth_mol_comp = Var(
-            self._params.component_list,
+            self.params.component_list,
             domain=Reals,
             initialize=1.0,
             doc="Pure component enthalpies",
@@ -671,23 +667,23 @@ class SolidPhaseStateBlockData(StateBlockData):
             t = pyunits.convert(b.temperature, to_units=pyunits.kK)
             return b.enth_mol_comp[j] == pyunits.convert(
                 # parameters 1-5 are defined in J
-                b._params.cp_param_1[j] * t
-                + b._params.cp_param_2[j] * (t**2) / 2
-                + b._params.cp_param_3[j] * (t**3) / 3
-                + b._params.cp_param_4[j] * (t**4) / 4
-                - b._params.cp_param_5[j] / (t),
+                b.params.cp_param_1[j] * t
+                + b.params.cp_param_2[j] * (t**2) / 2
+                + b.params.cp_param_3[j] * (t**3) / 3
+                + b.params.cp_param_4[j] * (t**4) / 4
+                - b.params.cp_param_5[j] / (t),
                 to_units=units_enth_mol,
             ) + pyunits.convert(
                 # parameters 6 and 8 are defined in kJ, and must be added
                 # after converting to the enthalpy units set
-                b._params.cp_param_6[j] - b._params.cp_param_8[j],
+                b.params.cp_param_6[j] - b.params.cp_param_8[j],
                 to_units=units_enth_mol,
             )
 
         try:
             # Try to build constraint
             self.enthalpy_shomate_eqn = Constraint(
-                self._params.component_list, rule=pure_comp_enthalpy
+                self.params.component_list, rule=pure_comp_enthalpy
             )
         except AttributeError:
             # If constraint fails, clean up so that DAE can try again later
@@ -697,8 +693,8 @@ class SolidPhaseStateBlockData(StateBlockData):
 
     def _enth_mass(self):
         # Mixture mass enthalpy
-        units_meta = self._params.get_metadata().derived_units
-        units_enth_mass = units_meta["energy"] * units_meta["mass"] ** -1
+        units_meta = self.params.get_metadata().derived_units
+        units_enth_mass = units_meta.ENERGY_MASS
         self.enth_mass = Var(
             domain=Reals,
             initialize=0.0,
@@ -713,8 +709,8 @@ class SolidPhaseStateBlockData(StateBlockData):
                     == sum(
                         self.mass_frac_comp[j]
                         * self.enth_mol_comp[j]
-                        * (1 / self._params.mw_comp[j])
-                        for j in self._params.component_list
+                        * (1 / self.params.mw_comp[j])
+                        for j in self.params.component_list
                     )
                 )
             )
@@ -733,7 +729,7 @@ class SolidPhaseStateBlockData(StateBlockData):
                     return b.flow_mass * b.mass_frac_comp[j]
 
                 self.material_flow_terms = Expression(
-                    self._params.component_list, rule=rule_material_flow_terms
+                    self.params.component_list, rule=rule_material_flow_terms
                 )
             except AttributeError:
                 self.del_component(self.material_flow_terms)
@@ -760,7 +756,7 @@ class SolidPhaseStateBlockData(StateBlockData):
                     return b.dens_mass_particle * b.mass_frac_comp[j]
 
                 self.material_density_terms = Expression(
-                    self._params.component_list, rule=rule_material_density_terms
+                    self.params.component_list, rule=rule_material_density_terms
                 )
             except AttributeError:
                 self.del_component(self.material_density_terms)

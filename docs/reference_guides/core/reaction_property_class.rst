@@ -71,7 +71,7 @@ Reaction Blocks have the following construction arguments:
 Constructing Reaction Blocks
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Reaction Blocks can be constructed directly from the associated Reaction Parameter Block by calling the `build_reaction_block()` method on the Reaction Parameter Block. The `parameters` construction argument will be automatically set, and any other arguments (including indexing sets) may be provided to the `build_reaction_block` method as ususal.
+Reaction Blocks can be constructed directly from the associated Reaction Parameter Block by calling the `build_reaction_block()` method on the Reaction Parameter Block. The `parameters` construction argument will be automatically set, and any other arguments (including indexing sets) may be provided to the `build_reaction_block` method as usual.
 
 ReactionBlockDataBase Class
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^

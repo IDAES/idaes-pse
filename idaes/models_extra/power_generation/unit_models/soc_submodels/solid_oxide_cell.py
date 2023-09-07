@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Model for nonisothermal (single) solid oxide fuel/electrolytic cell. Because
@@ -105,6 +105,13 @@ Expressions:
     - ``electrical_work[t]``: Rate of energy added to cell. Greater than zero means energy added to cell
       (electrolysis mode) and less than zero means energy removed from cell (fuel cell mode)
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+
+# TODO: Look into protected access issues
+# pylint: disable=protected-access
+
 __author__ = "John Eslick, Douglas Allan"
 
 from pyomo.common.config import ConfigValue, In, Bool, ListOf
@@ -314,7 +321,6 @@ class SolidOxideCellData(UnitModelBlockData):
         has_gas_holdup = self.config.has_gas_holdup
         dynamic = self.config.dynamic
         tset = self.flowsheet().config.time
-        t0 = tset.first()
 
         if has_gas_holdup and not has_holdup:
             raise ConfigurationError(
@@ -348,7 +354,7 @@ class SolidOxideCellData(UnitModelBlockData):
             doc="Set of all gas-phase components present on oxygen side of cell",
         )
         # Set up node and face sets and get integer indices for them
-        izfaces, iznodes = common._face_initializer(
+        izfaces, iznodes = common._face_initializer(  # pylint: disable=unused-variable
             self, self.config.control_volume_zfaces, "z"
         )
         self.current_density = pyo.Var(
@@ -957,13 +963,14 @@ class SolidOxideCellData(UnitModelBlockData):
                     ].value = pyo.value(
                         self.fuel_triple_phase_boundary.conc_mol_comp[t, iz, j] / denom
                     )
-                    self.fuel_triple_phase_boundary.log_mole_frac_comp[
-                        t, iz, j
-                    ].value = pyo.value(
-                        pyo.log(
-                            self.fuel_triple_phase_boundary.mole_frac_comp[t, iz, j]
+                    if j in self.fuel_triple_phase_boundary.reacting_gas_list:
+                        self.fuel_triple_phase_boundary.log_mole_frac_comp[
+                            t, iz, j
+                        ].value = pyo.value(
+                            pyo.log(
+                                self.fuel_triple_phase_boundary.mole_frac_comp[t, iz, j]
+                            )
                         )
-                    )
 
         common._init_solve_block(self.fuel_triple_phase_boundary, solver_obj, solve_log)
 
@@ -991,13 +998,16 @@ class SolidOxideCellData(UnitModelBlockData):
                         self.oxygen_triple_phase_boundary.conc_mol_comp[t, iz, j]
                         / denom
                     )
-                    self.oxygen_triple_phase_boundary.log_mole_frac_comp[
-                        t, iz, j
-                    ].value = pyo.value(
-                        pyo.log(
-                            self.oxygen_triple_phase_boundary.mole_frac_comp[t, iz, j]
+                    if j in self.oxygen_triple_phase_boundary.reacting_gas_list:
+                        self.oxygen_triple_phase_boundary.log_mole_frac_comp[
+                            t, iz, j
+                        ].value = pyo.value(
+                            pyo.log(
+                                self.oxygen_triple_phase_boundary.mole_frac_comp[
+                                    t, iz, j
+                                ]
+                            )
                         )
-                    )
 
         common._init_solve_block(
             self.oxygen_triple_phase_boundary, solver_obj, solve_log
@@ -1190,8 +1200,13 @@ class SolidOxideCellData(UnitModelBlockData):
 
     def recursive_scaling(self):
         gsf = iscale.get_scaling_factor
-        ssf = common._set_scaling_factor_if_none
-        cst = iscale.constraint_scaling_transform
+
+        def ssf(c, s):
+            iscale.set_scaling_factor(c, s, overwrite=False)
+
+        def cst(c, s):
+            iscale.constraint_scaling_transform(c, s, overwrite=False)
+
         sdf = common._set_default_factor
 
         submodels = [
@@ -1288,7 +1303,6 @@ class SolidOxideCellData(UnitModelBlockData):
                         cst(
                             self.no_heat_flux_fuel_interconnect_eqn[t, iz],
                             sq,
-                            overwrite=False,
                         )
                         sq = gsf(
                             self.contact_interconnect_oxygen_flow_mesh.heat_flux_x1[
@@ -1299,7 +1313,6 @@ class SolidOxideCellData(UnitModelBlockData):
                         cst(
                             self.no_heat_flux_oxygen_interconnect_eqn[t, iz],
                             sq,
-                            overwrite=False,
                         )
                     else:
                         sq = gsf(
@@ -1309,7 +1322,6 @@ class SolidOxideCellData(UnitModelBlockData):
                         cst(
                             self.no_heat_flux_fuel_interconnect_eqn[t, iz],
                             sq,
-                            overwrite=False,
                         )
                         sq = gsf(
                             self.oxygen_channel.heat_flux_x1[t, iz],
@@ -1318,10 +1330,9 @@ class SolidOxideCellData(UnitModelBlockData):
                         cst(
                             self.no_heat_flux_oxygen_interconnect_eqn[t, iz],
                             sq,
-                            overwrite=False,
                         )
-        for idx, con in self.mean_temperature_eqn.items():
-            cst(con, 1, overwrite=False)
+        for con in self.mean_temperature_eqn.values():
+            cst(con, 1)
 
         for submodel in submodels:
             submodel.recursive_scaling()

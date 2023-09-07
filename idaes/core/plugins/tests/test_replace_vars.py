@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 This module contains tests for the variable replace transformation.
@@ -33,7 +33,7 @@ def test_1():
     m.e1 = pyo.Expression(expr=m.x**m.y)
     m.o1 = pyo.Objective(expr=m.y - m.x)
 
-    assert m.c1.body() == -5  # hope constraint arrangment is deterministic
+    assert m.c1.body() == -5  # hope constraint arrangement is deterministic
     assert pyo.value(m.e1) == 8
     assert pyo.value(m.o1) == 1
     rp.apply_to(m, substitute=[(m.y, m.x)])
@@ -53,7 +53,7 @@ def test_2():
     m.c1 = pyo.Constraint(expr=m.z == m.x["a"] + m.x["b"] + m.x["c"])
     m.e1 = pyo.Expression(expr=sum(m.x[i] for i in m.x))
 
-    assert m.c1.body() == -6  # hope constraint arrangment is deterministic
+    assert m.c1.body() == -6  # hope constraint arrangement is deterministic
     assert pyo.value(m.e1) == 6
     rp.apply_to(m, substitute=[(m.x["c"], m.y)])
     assert m.c1.body() == -7
@@ -71,7 +71,7 @@ def test_3():
     m.e1 = pyo.Expression(expr=sum(m.x[i] for i in m.x))
     m.c1 = pyo.Constraint(expr=m.z == m.e1)
 
-    assert m.c1.body() == -6  # hope constraint arrangment is deterministic
+    assert m.c1.body() == -6  # hope constraint arrangement is deterministic
     rp.apply_to(m, substitute=[(m.x["c"], m.y)])
     assert m.c1.body() == -7
 

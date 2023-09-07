@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Tests for 0D heat exchanger models.
@@ -16,7 +16,6 @@ Tests for 0D heat exchanger models.
 Author: John Eslick
 """
 import pytest
-from io import StringIO
 
 from pyomo.environ import (
     check_optimal_termination,
@@ -54,7 +53,12 @@ from idaes.models.properties.modular_properties.base.generic_property import (
 )
 from idaes.core.util.testing import PhysicalParameterTestBlock, initialization_tester
 from idaes.core.solvers import get_solver
-
+from idaes.models.properties.modular_properties.eos.ceos import cubic_roots_available
+from idaes.core.initialization import (
+    BlockTriangularizationInitializer,
+    SingleControlVolumeUnitInitializer,
+    InitializationStatus,
+)
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -478,6 +482,7 @@ class TestSaponification(object):
 
 
 # -----------------------------------------------------------------------------
+@pytest.mark.skipif(not cubic_roots_available(), reason="Cubic functions not available")
 class TestBT_Generic(object):
     @pytest.fixture(scope="class")
     def btg(self):
@@ -588,3 +593,224 @@ class TestBT_Generic(object):
         perf_dict = btg.fs.unit._get_performance_contents()
 
         assert perf_dict == {"vars": {"Heat Duty": btg.fs.unit.heat_duty[0]}}
+
+
+class TestInitializersIAPWS:
+    @pytest.fixture
+    def model(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.properties = iapws95.Iapws95ParameterBlock()
+
+        m.fs.unit = Heater(property_package=m.fs.properties, has_pressure_change=True)
+        m.fs.unit.deltaP.fix(0)
+        m.fs.unit.inlet.flow_mol[0].fix(5)
+        m.fs.unit.inlet.enth_mol[0].fix(50000)
+        m.fs.unit.inlet.pressure[0].fix(101325)
+
+        m.fs.unit.heat_duty.fix(10000)
+
+        return m
+
+    @pytest.mark.integration
+    def test_general_hierarchical(self, model):
+        initializer = SingleControlVolumeUnitInitializer()
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert pytest.approx(5, abs=1e-5) == value(model.fs.unit.outlet.flow_mol[0])
+        assert pytest.approx(52000, abs=1e0) == value(model.fs.unit.outlet.enth_mol[0])
+        assert pytest.approx(101325, abs=1e2) == value(model.fs.unit.outlet.pressure[0])
+
+    @pytest.mark.integration
+    def test_block_triangularization(self, model):
+        initializer = BlockTriangularizationInitializer(constraint_tolerance=2e-5)
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert pytest.approx(5, abs=1e-5) == value(model.fs.unit.outlet.flow_mol[0])
+        assert pytest.approx(52000, abs=1e0) == value(model.fs.unit.outlet.enth_mol[0])
+        assert pytest.approx(101325, abs=1e2) == value(model.fs.unit.outlet.pressure[0])
+
+
+class TestInitializersModular:
+    @pytest.fixture
+    def model(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.properties = GenericParameterBlock(**configuration)
+
+        m.fs.unit = Heater(property_package=m.fs.properties, has_pressure_change=True)
+
+        m.fs.unit.inlet.flow_mol[0].fix(5)  # mol/s
+        m.fs.unit.inlet.temperature[0].fix(365)  # K
+        m.fs.unit.inlet.pressure[0].fix(101325)  # Pa
+        m.fs.unit.inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+        m.fs.unit.inlet.mole_frac_comp[0, "toluene"].fix(0.5)
+
+        m.fs.unit.heat_duty.fix(-5000)
+        m.fs.unit.deltaP.fix(0)
+
+        return m
+
+    @pytest.mark.integration
+    def test_general_hierarchical(self, model):
+        initializer = SingleControlVolumeUnitInitializer()
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert pytest.approx(5, abs=1e-3) == value(model.fs.unit.outlet.flow_mol[0])
+        assert pytest.approx(358.6, abs=1e-1) == value(
+            model.fs.unit.outlet.temperature[0]
+        )
+        assert pytest.approx(101325, abs=1e-3) == value(
+            model.fs.unit.outlet.pressure[0]
+        )
+
+    @pytest.mark.integration
+    def test_block_triangularization(self, model):
+        initializer = BlockTriangularizationInitializer(constraint_tolerance=1e-4)
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert pytest.approx(5, abs=1e-3) == value(model.fs.unit.outlet.flow_mol[0])
+        assert pytest.approx(358.6, abs=1e-1) == value(
+            model.fs.unit.outlet.temperature[0]
+        )
+        assert pytest.approx(101325, abs=1e-3) == value(
+            model.fs.unit.outlet.pressure[0]
+        )
+
+
+class TestInitializersCubicBTX:
+    @pytest.fixture
+    def model(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.properties = BTXParameterBlock(valid_phase="Liq")
+
+        m.fs.unit = Heater(property_package=m.fs.properties, has_pressure_change=True)
+
+        m.fs.unit.inlet.flow_mol[0].fix(5)  # mol/s
+        m.fs.unit.inlet.temperature[0].fix(365)  # K
+        m.fs.unit.inlet.pressure[0].fix(101325)  # Pa
+        m.fs.unit.inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+        m.fs.unit.inlet.mole_frac_comp[0, "toluene"].fix(0.5)
+
+        m.fs.unit.heat_duty.fix(-5000)
+        m.fs.unit.deltaP.fix(0)
+
+        return m
+
+    @pytest.mark.integration
+    def test_general_hierarchical(self, model):
+        initializer = SingleControlVolumeUnitInitializer()
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert pytest.approx(5, abs=1e-3) == value(model.fs.unit.outlet.flow_mol[0])
+        assert pytest.approx(358.9, abs=1e-1) == value(
+            model.fs.unit.outlet.temperature[0]
+        )
+        assert pytest.approx(101325, abs=1e-3) == value(
+            model.fs.unit.outlet.pressure[0]
+        )
+
+    @pytest.mark.integration
+    def test_block_triangularization(self, model):
+        initializer = BlockTriangularizationInitializer(constraint_tolerance=2e-5)
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert pytest.approx(5, abs=1e-3) == value(model.fs.unit.outlet.flow_mol[0])
+        assert pytest.approx(358.9, abs=1e-1) == value(
+            model.fs.unit.outlet.temperature[0]
+        )
+        assert pytest.approx(101325, abs=1e-3) == value(
+            model.fs.unit.outlet.pressure[0]
+        )
+
+
+class TestInitializersSapon:
+    @pytest.fixture
+    def model(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.properties = SaponificationParameterBlock()
+
+        m.fs.unit = Heater(property_package=m.fs.properties)
+
+        m.fs.unit.inlet.flow_vol[0].set_value(1e-3)
+        m.fs.unit.inlet.temperature[0].set_value(320)
+        m.fs.unit.inlet.pressure[0].set_value(101325)
+        m.fs.unit.inlet.conc_mol_comp[0, "H2O"].set_value(55388.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "NaOH"].set_value(100.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "EthylAcetate"].set_value(100.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "SodiumAcetate"].set_value(0.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "Ethanol"].set_value(0.0)
+
+        m.fs.unit.heat_duty.fix(1000)
+
+        return m
+
+    @pytest.mark.component
+    def test_general_hierarchical(self, model):
+        initializer = SingleControlVolumeUnitInitializer()
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert 55388.0 == value(model.fs.unit.inlet.conc_mol_comp[0, "H2O"])
+        assert 100.0 == value(model.fs.unit.inlet.conc_mol_comp[0, "NaOH"])
+        assert 100.0 == value(model.fs.unit.inlet.conc_mol_comp[0, "EthylAcetate"])
+        assert 0.0 == value(model.fs.unit.inlet.conc_mol_comp[0, "SodiumAcetate"])
+        assert 0.0 == value(model.fs.unit.inlet.conc_mol_comp[0, "Ethanol"])
+        assert pytest.approx(320.2, abs=1e-1) == value(
+            model.fs.unit.outlet.temperature[0]
+        )
+        assert pytest.approx(101325, abs=1e2) == value(model.fs.unit.outlet.pressure[0])
+
+        assert not model.fs.unit.inlet.flow_vol[0].fixed
+        assert not model.fs.unit.inlet.temperature[0].fixed
+        assert not model.fs.unit.inlet.pressure[0].fixed
+        assert not model.fs.unit.inlet.conc_mol_comp[0, "H2O"].fixed
+        assert not model.fs.unit.inlet.conc_mol_comp[0, "NaOH"].fixed
+        assert not model.fs.unit.inlet.conc_mol_comp[0, "EthylAcetate"].fixed
+        assert not model.fs.unit.inlet.conc_mol_comp[0, "SodiumAcetate"].fixed
+        assert not model.fs.unit.inlet.conc_mol_comp[0, "Ethanol"].fixed
+
+    @pytest.mark.component
+    def test_block_triangularization(self, model):
+        initializer = BlockTriangularizationInitializer(constraint_tolerance=2e-5)
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert 55388.0 == value(model.fs.unit.inlet.conc_mol_comp[0, "H2O"])
+        assert 100.0 == value(model.fs.unit.inlet.conc_mol_comp[0, "NaOH"])
+        assert 100.0 == value(model.fs.unit.inlet.conc_mol_comp[0, "EthylAcetate"])
+        assert 0.0 == value(model.fs.unit.inlet.conc_mol_comp[0, "SodiumAcetate"])
+        assert 0.0 == value(model.fs.unit.inlet.conc_mol_comp[0, "Ethanol"])
+        assert pytest.approx(320.2, abs=1e-1) == value(
+            model.fs.unit.outlet.temperature[0]
+        )
+        assert pytest.approx(101325, abs=1e2) == value(model.fs.unit.outlet.pressure[0])
+
+        assert not model.fs.unit.inlet.flow_vol[0].fixed
+        assert not model.fs.unit.inlet.temperature[0].fixed
+        assert not model.fs.unit.inlet.pressure[0].fixed
+        assert not model.fs.unit.inlet.conc_mol_comp[0, "H2O"].fixed
+        assert not model.fs.unit.inlet.conc_mol_comp[0, "NaOH"].fixed
+        assert not model.fs.unit.inlet.conc_mol_comp[0, "EthylAcetate"].fixed
+        assert not model.fs.unit.inlet.conc_mol_comp[0, "SodiumAcetate"].fixed
+        assert not model.fs.unit.inlet.conc_mol_comp[0, "Ethanol"].fixed

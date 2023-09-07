@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 
 """
@@ -61,6 +61,8 @@ Main Assumptions:
         - IDEAL GAS: Flue Gas side
 
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
 
 __author__ = "Miguel Zamarripa"
 
@@ -73,14 +75,6 @@ from pyomo.network import Arc
 
 # IDAES Imports
 from idaes.core.util.model_statistics import degrees_of_freedom
-
-# Callback used to construct heat exchangers with the Underwood LMTD approx.
-from idaes.models.unit_models.heat_exchanger import (
-    delta_temperature_underwood_callback,
-)
-
-# Pressure changer type (e.g. adiabatic, pump, isentropic...)
-from idaes.models.unit_models.pressure_changer import ThermodynamicAssumption
 import idaes.logger as idaeslog
 
 _log = idaeslog.getModelLogger(__name__, logging.INFO)
@@ -88,7 +82,8 @@ _log = idaeslog.getModelLogger(__name__, logging.INFO)
 
 def import_steam_cycle():
     # build concrete model
-    # import steam cycle model and initialize flowsheet
+    # import steam cycle model and initialize flowsheet (only if needed)
+    # pylint: disable-next=import-outside-toplevel
     import idaes.models_extra.power_generation.flowsheets.supercritical_steam_cycle.supercritical_steam_cycle as steam_cycle
 
     m, solver = steam_cycle.main()
@@ -107,10 +102,11 @@ def main():
     # from (boiler_subflowsheet_build.py)
     # this step appends all the boiler unit models into our model ("m")
     # model "m" has been created a few lines above
+    # pylint: disable-next=import-outside-toplevel
     import idaes.models_extra.power_generation.flowsheets.supercritical_power_plant.boiler_subflowsheet_build as blr
 
     # import the models (ECON, WW, PrSH, PlSH, FSH, Spliter, Mixer, Reheater)
-    # see boiler_subflowhseet_build.py for a beter description
+    # see boiler_subflowhseet_build.py for a better description
     blr.build_boiler(m.fs)
     # initialize boiler network models (one by one)
     blr.initialize(m)
@@ -142,7 +138,7 @@ def main():
     m.fs.turb.constraint_reheat_temp.deactivate()
     m.fs.turb.inlet_split.inlet.enth_mol.unfix()
     m.fs.turb.inlet_split.inlet.pressure.unfix()
-    # user can fix the boiler feed water pump pressure (uncomenting next line)
+    # user can fix the boiler feed water pump pressure (uncommenting next line)
     #    m.fs.bfp.outlet.pressure[:].fix(26922222.222))
 
     m.fs.FHWtoECON = Arc(

@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Tests for ControlVolumeBlockData.
@@ -58,6 +58,7 @@ from idaes.models.unit_models.mixer import (
     MixerData,
     MixingType,
     MomentumMixingType,
+    MixerInitializer,
 )
 from idaes.core.util.exceptions import (
     BurntToast,
@@ -79,6 +80,12 @@ from idaes.core.util.testing import (
 from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
 )
+from idaes.models.properties.modular_properties.eos.ceos import cubic_roots_available
+from idaes.core.initialization import (
+    BlockTriangularizationInitializer,
+    InitializationStatus,
+)
+
 
 # TODO: Should have a test for this that does not requrie models_extra
 from idaes.models_extra.power_generation.properties.natural_gas_PR import get_prop
@@ -131,6 +138,8 @@ class TestMixer(object):
             mixer_frame.fs.mix.config.material_balance_type
             == MaterialBalanceType.useDefault
         )
+
+        assert mixer_frame.fs.mix.default_initializer is MixerInitializer
 
     @pytest.mark.unit
     def test_inherited_methods(self, mixer_frame):
@@ -924,7 +933,7 @@ class TestBTX(object):
 
 
 # -----------------------------------------------------------------------------
-# Tests for Mixer in cases where proeprties do not support pressure
+# Tests for Mixer in cases where properties do not support pressure
 @declare_process_block_class("NoPressureTestBlock")
 class _NoPressureParameterBlock(PhysicalParameterBlock):
     def build(self):
@@ -946,6 +955,7 @@ class _NoPressureParameterBlock(PhysicalParameterBlock):
 
     @classmethod
     def define_metadata(cls, obj):
+        obj.add_properties({})
         obj.add_default_units(
             {
                 "time": pyunits.s,
@@ -1090,6 +1100,7 @@ class TestIAPWS(object):
 
         m.fs.unit.inlet_2.flow_mol[0].fix(100)
         m.fs.unit.inlet_2.enth_mol[0].fix(5000)
+        m.fs.unit.inlet_2.pressure[0].value = 1e5
 
         return m
 
@@ -1128,44 +1139,36 @@ class TestIAPWS(object):
         expected = pandas.DataFrame.from_dict(
             {
                 "Units": {
-                    "Molar Flow (mol/s)": getattr(pyunits.pint_registry, "mole/second"),
-                    "Mass Flow (kg/s)": getattr(pyunits.pint_registry, "kg/second"),
-                    "T (K)": getattr(pyunits.pint_registry, "K"),
-                    "P (Pa)": getattr(pyunits.pint_registry, "Pa"),
+                    "Molar Flow": getattr(pyunits.pint_registry, "mole/second"),
+                    "Mass Flow": getattr(pyunits.pint_registry, "kg/second"),
+                    "T": getattr(pyunits.pint_registry, "K"),
+                    "P": getattr(pyunits.pint_registry, "Pa"),
                     "Vapor Fraction": getattr(pyunits.pint_registry, "dimensionless"),
-                    "Molar Enthalpy (J/mol) Vap": getattr(
-                        pyunits.pint_registry, "J/mole"
-                    ),
-                    "Molar Enthalpy (J/mol) Liq": getattr(
-                        pyunits.pint_registry, "J/mole"
-                    ),
+                    "Molar Enthalpy": getattr(pyunits.pint_registry, "J/mole"),
                 },
                 "inlet_1": {
-                    "Molar Flow (mol/s)": 100,
-                    "Mass Flow (kg/s)": 1.8015,
-                    "T (K)": 346.05,
-                    "P (Pa)": 101325,
+                    "Molar Flow": 100,
+                    "Mass Flow": 1.8015,
+                    "T": 346.05,
+                    "P": 101325,
                     "Vapor Fraction": 0,
-                    "Molar Enthalpy (J/mol) Vap": 47091,
-                    "Molar Enthalpy (J/mol) Liq": 5500,
+                    "Molar Enthalpy": 5500.0,
                 },
                 "inlet_2": {
-                    "Molar Flow (mol/s)": 100,
-                    "Mass Flow (kg/s)": 1.8015,
-                    "T (K)": 339.43,
-                    "P (Pa)": 1e5,
+                    "Molar Flow": 100,
+                    "Mass Flow": 1.8015,
+                    "T": 339.43,
+                    "P": 1e5,
                     "Vapor Fraction": 0,
-                    "Molar Enthalpy (J/mol) Vap": 46704,
-                    "Molar Enthalpy (J/mol) Liq": 5000,
+                    "Molar Enthalpy": 5000,
                 },
                 "Outlet": {
-                    "Molar Flow (mol/s)": 1,
-                    "Mass Flow (kg/s)": 1.8015e-2,
-                    "T (K)": 286.34,
-                    "P (Pa)": 1e5,
+                    "Molar Flow": 1,
+                    "Mass Flow": 1.8015e-2,
+                    "T": 270.4877112932641,
+                    "P": 11032305.8275,
                     "Vapor Fraction": 0,
-                    "Molar Enthalpy (J/mol) Vap": 2168.6,
-                    "Molar Enthalpy (J/mol) Liq": 1000,
+                    "Molar Enthalpy": 0.01102138712926277,
                 },
             }
         )
@@ -1446,6 +1449,7 @@ class TestSaponification(object):
         )
 
 
+@pytest.mark.skipif(not cubic_roots_available(), reason="Cubic functions not available")
 @pytest.mark.component
 def test_construction_component_not_in_phase():
     m = ConcreteModel()
@@ -1473,3 +1477,159 @@ def test_initialization_error():
 
     with pytest.raises(InitializationError):
         m.fs.mix.initialize()
+
+
+class TestInitializersSapon:
+    @pytest.fixture
+    def model(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.properties = SaponificationParameterBlock()
+
+        m.fs.unit = Mixer(property_package=m.fs.properties)
+
+        m.fs.unit.inlet_1.flow_vol[0].set_value(1e-3)
+        m.fs.unit.inlet_1.temperature[0].set_value(320)
+        m.fs.unit.inlet_1.pressure[0].set_value(101325)
+        m.fs.unit.inlet_1.conc_mol_comp[0, "H2O"].set_value(55388.0)
+        m.fs.unit.inlet_1.conc_mol_comp[0, "NaOH"].set_value(100.0)
+        m.fs.unit.inlet_1.conc_mol_comp[0, "EthylAcetate"].set_value(100.0)
+        m.fs.unit.inlet_1.conc_mol_comp[0, "SodiumAcetate"].set_value(0.0)
+        m.fs.unit.inlet_1.conc_mol_comp[0, "Ethanol"].set_value(0.0)
+
+        m.fs.unit.inlet_2.flow_vol[0].set_value(1e-3)
+        m.fs.unit.inlet_2.temperature[0].set_value(300)
+        m.fs.unit.inlet_2.pressure[0].set_value(101325)
+        m.fs.unit.inlet_2.conc_mol_comp[0, "H2O"].set_value(55388.0)
+        m.fs.unit.inlet_2.conc_mol_comp[0, "NaOH"].set_value(100.0)
+        m.fs.unit.inlet_2.conc_mol_comp[0, "EthylAcetate"].set_value(100.0)
+        m.fs.unit.inlet_2.conc_mol_comp[0, "SodiumAcetate"].set_value(0.0)
+        m.fs.unit.inlet_2.conc_mol_comp[0, "Ethanol"].set_value(0.0)
+
+        return m
+
+    @pytest.mark.component
+    def test_mixer_init(self, model):
+        initializer = MixerInitializer()
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert pytest.approx(2e-3, abs=1e-6) == value(model.fs.unit.outlet.flow_vol[0])
+
+        assert pytest.approx(55388.0, abs=1e0) == value(
+            model.fs.unit.outlet.conc_mol_comp[0, "H2O"]
+        )
+        assert pytest.approx(100.0, abs=1e-3) == value(
+            model.fs.unit.outlet.conc_mol_comp[0, "NaOH"]
+        )
+        assert pytest.approx(100.0, abs=1e-3) == value(
+            model.fs.unit.outlet.conc_mol_comp[0, "EthylAcetate"]
+        )
+        assert pytest.approx(0.0, abs=1e-3) == value(
+            model.fs.unit.outlet.conc_mol_comp[0, "SodiumAcetate"]
+        )
+        assert pytest.approx(0.0, abs=1e-3) == value(
+            model.fs.unit.outlet.conc_mol_comp[0, "Ethanol"]
+        )
+
+        assert pytest.approx(310.0, abs=1e-1) == value(
+            model.fs.unit.outlet.temperature[0]
+        )
+
+        assert pytest.approx(101325, abs=1e2) == value(model.fs.unit.outlet.pressure[0])
+
+    @pytest.mark.component
+    def test_block_triangularization(self, model):
+        initializer = BlockTriangularizationInitializer(constraint_tolerance=2e-5)
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert pytest.approx(2e-3, abs=1e-6) == value(model.fs.unit.outlet.flow_vol[0])
+
+        assert pytest.approx(55388.0, abs=1e0) == value(
+            model.fs.unit.outlet.conc_mol_comp[0, "H2O"]
+        )
+        assert pytest.approx(100.0, abs=1e-3) == value(
+            model.fs.unit.outlet.conc_mol_comp[0, "NaOH"]
+        )
+        assert pytest.approx(100.0, abs=1e-3) == value(
+            model.fs.unit.outlet.conc_mol_comp[0, "EthylAcetate"]
+        )
+        assert pytest.approx(0.0, abs=1e-3) == value(
+            model.fs.unit.outlet.conc_mol_comp[0, "SodiumAcetate"]
+        )
+        assert pytest.approx(0.0, abs=1e-3) == value(
+            model.fs.unit.outlet.conc_mol_comp[0, "Ethanol"]
+        )
+
+        assert pytest.approx(310.0, abs=1e-1) == value(
+            model.fs.unit.outlet.temperature[0]
+        )
+
+        assert pytest.approx(101325, abs=1e2) == value(model.fs.unit.outlet.pressure[0])
+
+
+class TestInitializersIAPWSEquality:
+    @pytest.fixture
+    def model(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.properties = iapws95.Iapws95ParameterBlock()
+
+        m.fs.unit = Mixer(
+            property_package=m.fs.properties,
+            material_balance_type=MaterialBalanceType.componentTotal,
+            momentum_mixing_type=MomentumMixingType.equality,
+        )
+
+        m.fs.unit.inlet_1.flow_mol[0].set_value(100)
+        m.fs.unit.inlet_1.enth_mol[0].set_value(5500)
+        m.fs.unit.inlet_1.pressure[0].fix(101325)
+
+        m.fs.unit.inlet_2.flow_mol[0].set_value(100)
+        m.fs.unit.inlet_2.enth_mol[0].set_value(5000)
+        m.fs.unit.inlet_2.pressure[0].set_value(1e5)
+
+        return m
+
+    @pytest.mark.component
+    def test_mixer_init(self, model):
+        initializer = MixerInitializer()
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert pytest.approx(200, abs=1e-5) == value(model.fs.unit.outlet.flow_mol[0])
+        assert pytest.approx(5250, abs=1e0) == value(model.fs.unit.outlet.enth_mol[0])
+        assert pytest.approx(101325, abs=1e2) == value(model.fs.unit.outlet.pressure[0])
+
+        assert not model.fs.unit.inlet_1.flow_mol[0].fixed
+        assert not model.fs.unit.inlet_1.enth_mol[0].fixed
+        assert model.fs.unit.inlet_1.pressure[0].fixed
+
+        assert not model.fs.unit.inlet_2.flow_mol[0].fixed
+        assert not model.fs.unit.inlet_2.enth_mol[0].fixed
+        assert not model.fs.unit.inlet_2.pressure[0].fixed
+
+    @pytest.mark.component
+    def test_block_triangularization(self, model):
+        initializer = BlockTriangularizationInitializer(constraint_tolerance=2e-5)
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert pytest.approx(200, abs=1e-5) == value(model.fs.unit.outlet.flow_mol[0])
+        assert pytest.approx(5250, abs=1e0) == value(model.fs.unit.outlet.enth_mol[0])
+        assert pytest.approx(101325, abs=1e2) == value(model.fs.unit.outlet.pressure[0])
+
+        assert not model.fs.unit.inlet_1.flow_mol[0].fixed
+        assert not model.fs.unit.inlet_1.enth_mol[0].fixed
+        assert model.fs.unit.inlet_1.pressure[0].fixed
+
+        assert not model.fs.unit.inlet_2.flow_mol[0].fixed
+        assert not model.fs.unit.inlet_2.enth_mol[0].fixed
+        assert not model.fs.unit.inlet_2.pressure[0].fixed

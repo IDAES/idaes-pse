@@ -1,47 +1,32 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
-import itertools
-import math
 import pytest
 
 import pyomo.common.unittest as unittest
-from pyomo.common.collections import ComponentMap, ComponentSet
 import pyomo.environ as pyo
-import pyomo.dae as dae
-from pyomo.core.expr.visitor import identify_variables
-from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from pyomo.dae.flatten import flatten_dae_components
 from pyomo.network.arc import Arc
 
 from pyomo.contrib.incidence_analysis import (
     IncidenceGraphInterface,
-    solve_strongly_connected_components,
-)
-from pyomo.contrib.incidence_analysis.interface import (
-    _generate_variables_in_constraints,
 )
 from pyomo.util.check_units import assert_units_consistent
-from pyomo.util.subsystems import ParamSweeper
 
 import idaes.core as idaes
-from idaes.models.properties.modular_properties.base.generic_property import (
-    GenericParameterBlock,
-)
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     large_residuals_set,
 )
-from idaes.core.util.constants import Constants
 from idaes.models_extra.gas_distribution.properties.natural_gas import (
     NaturalGasParameterBlock,
 )
@@ -50,17 +35,11 @@ from idaes.models_extra.gas_distribution.unit_models.compressor import (
     IsothermalCompressor as Compressor,
 )
 
-from idaes.apps.nmpc import (
-    get_tracking_cost_from_constant_setpoint as get_tracking_cost_expression,
-)
 from idaes.apps.nmpc.dynamic_data import (
     load_inputs_into_model,
     interval_data_from_time_series,
 )
-
-
-"""
-"""
+from idaes.core.solvers import get_solver
 
 
 @pytest.mark.component
@@ -141,7 +120,7 @@ class TestSolveDynamicPipelineCompressor(unittest.TestCase):
         Inlet pressure and outlet flow rate will be fixed.
         """
         nxfe = 4
-        ipopt = pyo.SolverFactory("ipopt")
+        ipopt = get_solver("ipopt")
 
         m_steady = self.make_steady_model(nfe=nxfe)
         self.fix_model_inlets(m_steady, inlet_pressure=50.0 * pyo.units.bar)

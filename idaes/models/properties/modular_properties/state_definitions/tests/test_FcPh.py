@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Tests for FcPh state formulation
@@ -34,7 +34,6 @@ from idaes.models.properties.modular_properties.state_definitions.FcPh import (
     FcPh,
     define_state,
     set_metadata,
-    define_default_scaling_factors,
 )
 from idaes.core import (
     MaterialFlowBasis,
@@ -62,11 +61,11 @@ def test_set_metadata():
     m.props = PhysicalParameterTestBlock()
 
     # Set metadata to make sure it is overwritten
-    m.props.get_metadata().properties["enth_mol"] = {"method": "test"}
+    m.props.get_metadata().properties["enth_mol"].set_method("test")
 
     set_metadata(m.props)
 
-    assert m.props.get_metadata().properties["enth_mol"] == {"method": None}
+    assert m.props.get_metadata().properties.enth_mol._none.method is None
 
 
 class TestInvalidBounds(object):
@@ -246,7 +245,7 @@ class Test1PhaseDefinedStateFalseNoBounds(object):
         assert isinstance(frame.props[1].total_flow_balance, Constraint)
         assert len(frame.props[1].total_flow_balance) == 1
         assert str(frame.props[1].total_flow_balance.body) == str(
-            frame.props[1].flow_mol_phase[frame.params.phase_list[1]]
+            frame.props[1].flow_mol_phase[frame.params.phase_list.at(1)]
             - frame.props[1].flow_mol
         )
 
@@ -256,7 +255,7 @@ class Test1PhaseDefinedStateFalseNoBounds(object):
             assert i in frame.props[1].params.component_list
             assert str(frame.props[1].component_flow_balances[i].body) == str(
                 frame.props[1].mole_frac_comp[i]
-                - frame.props[1].mole_frac_phase_comp[frame.params.phase_list[1], i]
+                - frame.props[1].mole_frac_phase_comp[frame.params.phase_list.at(1), i]
             )
 
         assert isinstance(frame.props[1].phase_fraction_constraint, Constraint)
@@ -399,7 +398,7 @@ class Test1PhaseDefinedStateTrueWithBounds(object):
         assert isinstance(frame.props[1].total_flow_balance, Constraint)
         assert len(frame.props[1].total_flow_balance) == 1
         assert str(frame.props[1].total_flow_balance.body) == str(
-            frame.props[1].flow_mol_phase[frame.params.phase_list[1]]
+            frame.props[1].flow_mol_phase[frame.params.phase_list.at(1)]
             - frame.props[1].flow_mol
         )
 
@@ -409,7 +408,7 @@ class Test1PhaseDefinedStateTrueWithBounds(object):
             assert i in frame.props[1].params.component_list
             assert str(frame.props[1].component_flow_balances[i].body) == str(
                 frame.props[1].mole_frac_comp[i]
-                - frame.props[1].mole_frac_phase_comp[frame.params.phase_list[1], i]
+                - frame.props[1].mole_frac_phase_comp[frame.params.phase_list.at(1), i]
             )
 
         assert isinstance(frame.props[1].phase_fraction_constraint, Constraint)
@@ -570,13 +569,13 @@ class Test2PhaseDefinedStateFalseNoBounds(object):
         assert str(frame.props[1].sum_mole_frac.body) == str(
             sum(
                 frame.props[1].mole_frac_phase_comp[
-                    frame.props[1].params.phase_list[1], i
+                    frame.props[1].params.phase_list.at(1), i
                 ]
                 for i in frame.props[1].params.component_list
             )
             - sum(
                 frame.props[1].mole_frac_phase_comp[
-                    frame.props[1].params.phase_list[2], i
+                    frame.props[1].params.phase_list.at(2), i
                 ]
                 for i in frame.props[1].params.component_list
             )
@@ -758,13 +757,13 @@ class Test2PhaseDefinedStateTrueWithBounds(object):
         assert str(frame.props[1].sum_mole_frac.body) == str(
             sum(
                 frame.props[1].mole_frac_phase_comp[
-                    frame.props[1].params.phase_list[1], i
+                    frame.props[1].params.phase_list.at(1), i
                 ]
                 for i in frame.props[1].params.component_list
             )
             - sum(
                 frame.props[1].mole_frac_phase_comp[
-                    frame.props[1].params.phase_list[2], i
+                    frame.props[1].params.phase_list.at(2), i
                 ]
                 for i in frame.props[1].params.component_list
             )
@@ -1288,7 +1287,7 @@ class TestCommon(object):
     # Test General Methods
     @pytest.mark.unit
     def test_get_material_flow_terms(self, frame):
-        for (p, j) in frame.params._phase_component_set:
+        for p, j in frame.params._phase_component_set:
             assert str(frame.props[1].get_material_flow_terms(p, j)) == str(
                 frame.props[1].flow_mol_phase_comp[p, j]
             )
@@ -1305,7 +1304,7 @@ class TestCommon(object):
 
     @pytest.mark.unit
     def test_get_material_density_terms(self, frame):
-        for (p, j) in frame.params._phase_component_set:
+        for p, j in frame.params._phase_component_set:
             assert str(frame.props[1].get_material_density_terms(p, j)) == str(
                 frame.props[1]._material_density_term[p, j]
             )
@@ -1358,3 +1357,44 @@ class TestCommon(object):
             "Molar Enthalpy": frame.props[1].enth_mol,
             "Pressure": frame.props[1].pressure,
         }
+
+    @pytest.mark.unit
+    def test_cloning(self, frame):
+        """
+        This function tests modular properties are cloned correctly using pyomo's
+        clone method. In particular, it tests that all the methods point to variables
+        on the clone, and not on the original model.
+        """
+        blk = frame.clone()
+
+        # Test get_material_flow_terms method
+        for p, j in blk.params._phase_component_set:
+            assert (
+                blk.props[1].get_material_flow_terms(p, j).parent_block()
+                is blk.props[1]
+            )
+
+        # Test get_enthalpy_flow_terms method
+        for p in blk.params.phase_list:
+            assert (
+                blk.props[1].get_enthalpy_flow_terms(p).parent_block() is blk.props[1]
+            )
+
+        # Test get_material_density_terms
+        for p, j in blk.params._phase_component_set:
+            assert (
+                blk.props[1].get_material_density_terms(p, j).parent_block()
+                is blk.props[1]
+            )
+
+        # Test get_energy_Density_terms
+        for p in blk.params.phase_list:
+            assert (
+                blk.props[1].get_energy_density_terms(p).parent_block() is blk.props[1]
+            )
+
+        for i in blk.props[1].define_state_vars().values():
+            assert i.parent_block() is blk.props[1]
+
+        for i in blk.props[1].define_display_vars().values():
+            assert i.parent_block() is blk.props[1]

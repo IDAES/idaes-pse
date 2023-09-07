@@ -1,35 +1,44 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
+# TODO: Missing doc strings
+# pylint: disable=missing-module-docstring
+# pylint: disable=missing-function-docstring
 
-# Imports from the python standard library
-from __future__ import division
-
-# from builtins import int, str
 import os.path
-import pprint
-import random
 import warnings
+import pickle
 
 # Imports from third parties
 from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
-import pickle
-from pyomo.environ import *
-from pyomo.core.expr.visitor import replace_expressions
 import scipy.optimize as opt
-from scipy.special import comb as comb
-from six import string_types
+from scipy import stats
+
+from pyomo.environ import (
+    ConcreteModel,
+    Param,
+    Set,
+    Var,
+    Reals,
+    Objective,
+    minimize,
+    Expression,
+    SolverFactory,
+    ComponentMap,
+    value,
+)
+from pyomo.core.expr.visitor import replace_expressions
 
 # Imports from IDAES namespace
 from idaes.core.surrogate.pysmo.utils import NumpyEvaluator
@@ -42,7 +51,7 @@ The purpose of this file is to perform polynomial regression in Pyomo.
 This will be done in two stages. First, a sampling plan will
 be used to select samples for generating a surrogate model.
 In the second stage, the surrogate model is constructed by fitting to
-different order polynomials. Long term, an iterative adaptive sampling 
+different order polynomials. Long term, an iterative adaptive sampling
 approach will be incorporated for model improvement.
 Cross-validation is used to select the best model.
 
@@ -399,7 +408,7 @@ class PolynomialRegression:
             solution_method = "pyomo"
             self.solution_method = solution_method
             print("Default parameter estimation method is used.")
-        elif not isinstance(solution_method, string_types):
+        elif not isinstance(solution_method, str):
             raise Exception("Invalid solution method. Must be of type <str>.")
         elif (
             (solution_method.lower() == "mle")
@@ -517,7 +526,7 @@ class PolynomialRegression:
 
     @classmethod
     def polygeneration(
-        self,
+        cls,
         polynomial_order,
         multinomials,
         x_input_train_data,
@@ -696,7 +705,7 @@ class PolynomialRegression:
         Returns:
             phi: The optimal linear regression weights found
 
-         For more details about the maximum likelihood estimate methos, see to Forrester et al.
+         For more details about the maximum likelihood estimate method, see to Forrester et al.
 
         """
         moore_penrose_inverse = np.linalg.pinv(x)  # Moore Penrose inverse of vector x
@@ -763,8 +772,10 @@ class PolynomialRegression:
 
         instance = model
         opt = SolverFactory("ipopt")
-        opt.options["max_iter"] = 10000000
-        result = opt.solve(instance)  # , tee=True)
+        # TODO: This is too many iterations
+        opt.options["max_iter"] = 1000
+        # TODO: Should this be checking the for a feasible solution?
+        opt.solve(instance)
 
         # Convert theta variable into numpy array
         phi = np.zeros((len(instance.theta), 1))
@@ -1605,7 +1616,7 @@ class PolynomialRegression:
 
         """
         # Reshaping of array necessary when input variables are Pyomo scalar variables
-        vl = np.array([variable_list])
+        vl = np.array([variable_list], dtype="object")
         vl = vl.reshape(1, len(variable_list)) if vl.ndim > 2 else vl
 
         terms = PolynomialRegression.polygeneration(
@@ -1650,17 +1661,16 @@ class PolynomialRegression:
         """
         nf = x_data.shape[1]
         x_list = [i for i in range(0, nf)]
-        import pyomo.environ as aml
 
-        m = aml.ConcreteModel()
-        i = aml.Set(initialize=x_list)
-        m.xx = aml.Var(i)
-        m.o2 = aml.Objective(expr=self.generate_expression([m.xx[i] for i in x_list]))
+        m = ConcreteModel()
+        i = Set(initialize=x_list)
+        m.xx = Var(i)
+        m.o2 = Objective(expr=self.generate_expression([m.xx[i] for i in x_list]))
         y_eq = np.zeros((x_data.shape[0], 1))
         for j in range(0, x_data.shape[0]):
             for i in x_list:
                 m.xx[i] = x_data[j, i]
-            y_eq[j, 0] = aml.value(m.o2([m.xx[i] for i in x_list]))
+            y_eq[j, 0] = value(m.o2([m.xx[i] for i in x_list]))
         return y_eq
 
     def pickle_save(self, solutions):
@@ -1772,7 +1782,6 @@ class PolynomialRegression:
             confidence      : Required confidence interval level, default = 0.95 (95%)
 
         """
-        from scipy.stats import t
 
         data = self.final_training_data
         y_pred = self.predict_output(data[:, :-1])
@@ -1799,7 +1808,7 @@ class PolynomialRegression:
         ss_reg_params = np.sqrt(
             np.diag(covar)
         )  # standard error for each regression parameter
-        t_dist = t.ppf(
+        t_dist = stats.t.ppf(
             (1 + confidence) / 2, dof
         )  # alternatively, t_dist_data = st.t.interval(0.99, 8)
         # Evaluate confidence intervals, Tabulate and print results

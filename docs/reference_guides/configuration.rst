@@ -17,12 +17,6 @@ The default configuration is shown below and can be used as a template to create
 new configuration files. To get the IDAES default configuration the command
 ``idaes config-write --file idaes.conf --default`` can be used.
 
-Command Line Tools
-------------------
-
-See ``idaes --help`` for information about command line configuration tools.
-These tools help manage configuration files.
-
 Global Configuration Files
 --------------------------
 
@@ -78,29 +72,6 @@ Important Configuration Entries
 
 The ConfigBlock has several options, but they are not all important to
 end-users. This section lists the commonly used entries.
-
-logging
-~~~~~~~
-
-This section of the file configures IDAES loggers.  Once the configuration is
-read, Python's standard ``logging.config.dictConfig()`` is used to set the logger
-configuration.  See Python's logging documentation for more information.
-
-IDAES has four main loggers defined in the standard configuration, although
-additional loggers can be added if desired.  The standard loggers are:
-
-  1. idaes, this is the root logger of most IDAES logging, unless otherwise noted.
-
-  2. idaes.init, this is the root of IDAES initialization loggers.
-
-  3. idaes.solve, this is the root of IDAES solver loggers and solver information.
-
-  4. idaes.model, this is the root of model loggers.  Model loggers are
-     usually used by models written using the IDAES framework, but not
-     part of the ``idaes`` package.
-
-If changes to the logger configuration dictionary are made after importing
-``idaes`` a call to ``idaes.reconfig()`` is required for it to take effect.
 
 warning_to_exception
 ~~~~~~~~~~~~~~~~~~~~

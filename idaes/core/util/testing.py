@@ -1,19 +1,22 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
-
 """
 This module contains utility functions for use in testing IDAES models.
 """
+# These are methods for testing, and break a few conventions
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+# pylint: disable=protected-access
 
 __author__ = "Andrew Lee"
 
@@ -41,7 +44,6 @@ from idaes.core.util.model_statistics import (
     fixed_variables_set,
     activated_constraints_set,
 )
-from idaes.core.solvers import get_solver as default_solver
 import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
@@ -81,16 +83,17 @@ def initialization_tester(m, dof=0, unit=None, **init_kwargs):
     unit.__dummy_var = Var()
     unit.__dummy_equality = Constraint(expr=unit.__dummy_var == 5)
     unit.__dummy_inequality = Constraint(expr=unit.__dummy_var <= 10)
+    unit.__dummy_set = Set(initialize=[1])
 
     def deq_idx(b, i):
         return unit.__dummy_var == 5
 
-    unit.__dummy_equality_idx = Constraint([1], rule=deq_idx)
+    unit.__dummy_equality_idx = Constraint(unit.__dummy_set, rule=deq_idx)
 
     def dieq_idx(b, i):
         return unit.__dummy_var <= 10
 
-    unit.__dummy_inequality_idx = Constraint([1], rule=dieq_idx)
+    unit.__dummy_inequality_idx = Constraint(unit.__dummy_set, rule=dieq_idx)
 
     unit.__dummy_equality.deactivate()
     unit.__dummy_inequality.deactivate()
@@ -126,6 +129,7 @@ def initialization_tester(m, dof=0, unit=None, **init_kwargs):
     unit.del_component(unit.__dummy_inequality_idx)
     unit.del_component(unit.__dummy_equality_idx)
     unit.del_component(unit.__dummy_var)
+    unit.del_component(unit.__dummy_set)
 
 
 # -----------------------------------------------------------------------------
@@ -191,6 +195,11 @@ class _PhysicalParameterBlock(PhysicalParameterBlock):
 
     @classmethod
     def define_metadata(cls, obj):
+        obj.add_properties(
+            {
+                "enth_mol": {"method": None},
+            }
+        )
         obj.add_default_units(
             {
                 "time": units.s,
@@ -211,13 +220,13 @@ class SBlockBase(StateBlock):
         hold_state=False,
         state_args=None,
     ):
-        for k in blk.keys():
-            blk[k].init_test = True
-            blk[k].hold_state = hold_state
+        for k in blk.values():
+            k.init_test = True
+            k.hold_state = hold_state
 
     def release_state(blk, flags=None, outlvl=idaeslog.NOTSET):
-        for k in blk.keys():
-            blk[k].hold_state = not blk[k].hold_state
+        for k in blk.values():
+            k.hold_state = not k.hold_state
 
 
 @declare_process_block_class("TestStateBlock", block_class=SBlockBase)
@@ -362,7 +371,7 @@ class _ReactionParameterBlock(ReactionParameterBlock):
         )
 
     @classmethod
-    def get_required_properties(self):
+    def get_required_properties(cls):
         return {}
 
 
@@ -370,8 +379,8 @@ class RBlockBase(ReactionBlockBase):
     def initialize(
         blk, outlvl=idaeslog.NOTSET, optarg=None, solver=None, state_vars_fixed=False
     ):
-        for k in blk.keys():
-            blk[k].init_test = True
+        for k in blk.values():
+            k.init_test = True
 
 
 @declare_process_block_class("ReactionBlock", block_class=RBlockBase)

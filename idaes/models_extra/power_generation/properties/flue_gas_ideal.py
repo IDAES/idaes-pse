@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Basic property package for flue gas.
@@ -17,6 +17,9 @@ Main assumptions:
     - ideal gas
     - components in flue gas: O2, N2, NO, CO2, H2O, SO2
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 # Import Pyomo libraries
 from pyomo.environ import (
     Constraint,
@@ -31,7 +34,6 @@ from pyomo.environ import (
     check_optimal_termination,
     units as pyunits,
 )
-from pyomo.opt import SolverFactory
 from pyomo.common.config import ConfigValue
 
 # Import IDAES cores
@@ -58,7 +60,7 @@ from idaes.core.util.exceptions import ConfigurationError, InitializationError
 import idaes.logger as idaeslog
 
 
-# Some more inforation about this module
+# Some more information about this module
 __author__ = "Boiler Subsystem Team  J. Ma, M. Zamarripa, T. Burgard"
 __version__ = "3"
 
@@ -383,7 +385,7 @@ class FlueGasParameterData(PhysicalParameterBlock):
         self.set_default_scaling("flow_vol", 1)
 
         # For flow_mol_comp, will calculate from flow_mol and mole_frac_comp
-        # user should set a scale for both, and for each compoent of
+        # user should set a scale for both, and for each component of
         # mole_frac_comp
         self.set_default_scaling("pressure", 1e-5)
         self.set_default_scaling("temperature", 1e-1)
@@ -484,11 +486,11 @@ class _FlueGasStateBlock(StateBlock):
             hold_state: flag indicating whether the initialization routine
                 should unfix any state variables fixed during initialization
                 (default=False).
-                - True - states varaibles are not unfixed, and a dict of
+                - True - states variables are not unfixed, and a dict of
                          returned containing flags for which states were fixed
                          during initialization.
                 - False - state variables are unfixed after initialization by
-                          calling the relase_state method
+                          calling the release_state method
 
             Returns:
                 If hold_states is True, returns a dict containing flags for
@@ -500,20 +502,6 @@ class _FlueGasStateBlock(StateBlock):
         # Create solver
         opt = get_solver(solver, optarg)
 
-        if state_args is None:
-            state_args = {
-                "flow_mol_comp": {
-                    "N2": 1.0,
-                    "CO2": 1.0,
-                    "NO": 1.0,
-                    "O2": 1.0,
-                    "H2O": 1.0,
-                    "SO2": 1.0,
-                },
-                "pressure": 1e5,
-                "temperature": 495.0,
-            }
-
         if state_vars_fixed is False:
             flags = fix_state_vars(self, state_args)
         # Check when the state vars are fixed already result in dof 0
@@ -524,7 +512,7 @@ class _FlueGasStateBlock(StateBlock):
                 )
         # ---------------------------------------------------------------------
         # Solve 1st stage
-        for k, b in self.items():
+        for b in self.values():
             deactivate_list = []
             if hasattr(b, "enthalpy_correlation"):
                 deactivate_list.append(b.enthalpy_correlation)
@@ -570,7 +558,7 @@ class _FlueGasStateBlock(StateBlock):
 
     def release_state(self, flags, outlvl=idaeslog.NOTSET):
         """
-        Method to relase state variables fixed during initialisation.
+        Method to release state variables fixed during initialisation.
 
         Keyword Arguments:
             flags : dict containing information of which state variables
@@ -986,7 +974,7 @@ class FlueGasStateBlockData(StateBlockData):
         Model checks for property block
         """
         # Check temperature bounds
-        for v in self.compoent_object_data(Var, descend_into=True):
+        for v in self.component_object_data(Var, descend_into=True):
             if value(v) < v.lb:
                 _log.error(f"{v} is below lower bound in {self.name}")
             if value(v) > v.ub:
@@ -1025,7 +1013,7 @@ class FlueGasStateBlockData(StateBlockData):
                 overwrite=False,
             )
         if self.is_property_constructed("enthalpy_correlation"):
-            for p, c in self.enthalpy_correlation.items():
+            for c in self.enthalpy_correlation.values():
                 iscale.constraint_scaling_transform(
                     c,
                     iscale.get_scaling_factor(self.enth_mol)

@@ -1,19 +1,19 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Example property package for the VLE calucations for a Benzene-Toluene-o-Xylene
 system. If using the activity coefficient models (NRTL or Wilson), the user is
-expected to provide the paramters necessary for these models. Please note that
+expected to provide the parameters necessary for these models. Please note that
 these parameters are declared as variables here to allow for use in a parameter
 estimation problem if the VLE data is available.
 """
@@ -30,7 +30,7 @@ from idaes.models.properties.activity_coeff_models.activity_coeff_prop_pack impo
 )
 from idaes.logger import getIdaesLogger
 
-# Some more inforation about this module
+# Some more information about this module
 __author__ = "Jaffer Ghouse"
 __version__ = "0.0.1"
 
@@ -41,6 +41,8 @@ _log = getIdaesLogger(__name__)
 
 @declare_process_block_class("BTXParameterBlock")
 class BTXParameterData(ActivityCoeffParameterData):
+    """Property package for mixtures of benzene, toluene and (ortho-)xylene."""
+
     def build(self):
         """
         Callable method for Block construction.

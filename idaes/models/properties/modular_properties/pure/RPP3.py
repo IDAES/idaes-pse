@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Methods for calculating pure component properties from:
@@ -16,8 +16,11 @@ Methods for calculating pure component properties from:
 The Properties of Gases & Liquids, 3rd Edition
 Reid, Prausnitz and Polling, 1977, McGraw-Hill
 
-All parameter indicies based on conventions used by the source
+All parameter indices based on conventions used by the source
 """
+# TODO: Missing doc strings
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
 
 from pyomo.environ import exp, log, Var, units as pyunits
 
@@ -68,7 +71,7 @@ class RPP3(object):
             )
 
             units = b.params.get_metadata().derived_units
-            return pyunits.convert(cp, units["heat_capacity_mole"])
+            return pyunits.convert(cp, units.HEAT_CAPACITY_MOLE)
 
     class enth_mol_ig_comp:
         @staticmethod
@@ -81,7 +84,7 @@ class RPP3(object):
 
                 cobj.enth_mol_form_vap_comp_ref = Var(
                     doc="Vapor phase molar heat of formation @ Tref",
-                    units=units["energy_mole"],
+                    units=units.ENERGY_MOLE,
                 )
                 set_param_from_config(cobj, param="enth_mol_form_vap_comp_ref")
 
@@ -96,7 +99,7 @@ class RPP3(object):
             h_form = (
                 cobj.enth_mol_form_vap_comp_ref
                 if b.params.config.include_enthalpy_of_formation
-                else 0 * units["energy_mole"]
+                else 0 * units.ENERGY_MOLE
             )
 
             h = (
@@ -105,7 +108,7 @@ class RPP3(object):
                     + (cobj.cp_mol_ig_comp_coeff_C / 3) * (T**3 - Tr**3)
                     + (cobj.cp_mol_ig_comp_coeff_B / 2) * (T**2 - Tr**2)
                     + cobj.cp_mol_ig_comp_coeff_A * (T - Tr),
-                    units["energy_mole"],
+                    units.ENERGY_MOLE,
                 )
                 + h_form
             )
@@ -122,7 +125,7 @@ class RPP3(object):
 
             cobj.entr_mol_form_vap_comp_ref = Var(
                 doc="Vapor phase molar entropy of formation @ Tref",
-                units=units["entropy_mole"],
+                units=units.ENTROPY_MOLE,
             )
             set_param_from_config(cobj, param="entr_mol_form_vap_comp_ref")
 
@@ -140,7 +143,7 @@ class RPP3(object):
                     + (cobj.cp_mol_ig_comp_coeff_C / 2) * (T**2 - Tr**2)
                     + cobj.cp_mol_ig_comp_coeff_B * (T - Tr)
                     + cobj.cp_mol_ig_comp_coeff_A * log(T / Tr),
-                    units["entropy_mole"],
+                    units.ENTROPY_MOLE,
                 )
                 + cobj.entr_mol_form_vap_comp_ref
             )
@@ -186,7 +189,7 @@ class RPP3(object):
             ) * pyunits.mmHg
 
             units = b.params.get_metadata().derived_units
-            return pyunits.convert(psat, to_units=units["pressure"])
+            return pyunits.convert(psat, to_units=units.PRESSURE)
 
         @staticmethod
         def dT_expression(b, cobj, T):
@@ -202,5 +205,5 @@ class RPP3(object):
 
             units = b.params.get_metadata().derived_units
             return pyunits.convert(
-                p_sat_dT, to_units=units["pressure"] / units["temperature"]
+                p_sat_dT, to_units=units.PRESSURE / units.TEMPERATURE
             )

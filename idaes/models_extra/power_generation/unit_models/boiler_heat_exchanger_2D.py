@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 The boiler 2D heat exchanger model consist of a cross flow shell and tube
@@ -22,6 +22,9 @@ phase transitions (if user requires phase transitions, they need a general
 model)
 
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 # Import Pyomo libraries
 from pyomo.environ import (
     Var,
@@ -38,6 +41,7 @@ from pyomo.environ import (
     cos,
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
+from pyomo.dae import ContinuousSet, DerivativeVar
 
 # Import IDAES cores
 from idaes.core import (
@@ -49,13 +53,14 @@ from idaes.core import (
     FlowDirection,
     UnitModelBlockData,
 )
-from pyomo.dae import ContinuousSet, DerivativeVar
+
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.constants import Constants as const
 import idaes.core.util.scaling as iscale
 from idaes.core.solvers import get_solver
+from idaes.core.util.math import smooth_max
 import idaes.logger as idaeslog
 
 __author__ = "Jinliang Ma, Q. M. Le, M. Zamarripa "
@@ -423,7 +428,7 @@ tube side flows from 1 to 0""",
 
         if self.config.has_header and self.config.header_inner_diameter is None:
             raise ConfigurationError(
-                "If has_heder is True, user must " "provide header_inner_diameter"
+                "If has_header is True, user must " "provide header_inner_diameter"
             )
 
         if (
@@ -436,7 +441,7 @@ tube side flows from 1 to 0""",
 
         if self.config.has_header and self.config.header_wall_thickness is None:
             raise ConfigurationError(
-                "If has_heder is True, user must " "provide header_wall_thickness"
+                "If has_header is True, user must " "provide header_wall_thickness"
             )
 
         self._make_geometry()
@@ -1207,7 +1212,7 @@ tube side flows from 1 to 0""",
                     == b.gas_gray_fraction[t, x] * b.gas_emissivity[t, x]
                 )
 
-            # equivalent convective heat transfer coefficent due to radiation
+            # equivalent convective heat transfer coefficient due to radiation
             @self.Constraint(
                 self.flowsheet().time,
                 self.shell.length_domain,
@@ -1320,7 +1325,8 @@ tube side flows from 1 to 0""",
         )
         def friction_factor_tube_eqn(b, t, x):
             return (
-                b.tube_friction_factor[t, x] * b.tube_N_Re[t, x] ** 0.25
+                b.tube_friction_factor[t, x]
+                * smooth_max(b.tube_N_Re[t, x], 1, 1e-5) ** 0.25
                 == 0.3164 * b.fcorrection_dp_tube
             )
 
@@ -1395,7 +1401,9 @@ tube side flows from 1 to 0""",
         def N_Nu_tube_eqn(b, t, x):
             return (
                 b.tube_N_Nu[t, x]
-                == 0.023 * b.tube_N_Re[t, x] ** 0.8 * b.tube_N_Pr[t, x] ** 0.4
+                == 0.023
+                * smooth_max(b.tube_N_Re[t, x], 1, 1e-5) ** 0.8
+                * b.tube_N_Pr[t, x] ** 0.4
             )
 
         # Heat transfer coefficient
@@ -1505,7 +1513,8 @@ tube side flows from 1 to 0""",
             )
             def friction_factor_shell_eqn(b, t, x):
                 return (
-                    b.shell_friction_factor[t, x] * b.shell_N_Re[t, x] ** 0.15
+                    b.shell_friction_factor[t, x]
+                    * smooth_max(b.shell_N_Re[t, x], 1, 1e-5) ** 0.15
                     == (
                         0.044
                         + 0.08
@@ -1524,7 +1533,8 @@ tube side flows from 1 to 0""",
             )
             def friction_factor_shell_eqn(b, t, x):
                 return (
-                    b.shell_friction_factor[t, x] * b.shell_N_Re[t, x] ** 0.16
+                    b.shell_friction_factor[t, x]
+                    * smooth_max(b.shell_N_Re[t, x], 1, 1e-5) ** 0.16
                     == (0.25 + 0.118 / (b.pitch_y_to_do - 1.0) ** 1.08)
                     * b.fcorrection_dp_shell
                 )
@@ -1573,7 +1583,7 @@ tube side flows from 1 to 0""",
                 b.shell_N_Nu[t, x]
                 == b.f_arrangement
                 * 0.33
-                * b.shell_N_Re[t, x] ** 0.6
+                * smooth_max(b.shell_N_Re[t, x], 1, 1e-5) ** 0.6
                 * b.shell_N_Pr[t, x] ** 0.333333
             )
 
@@ -2900,7 +2910,7 @@ tube side flows from 1 to 0""",
 
         # ---------------------------------------------------------------------
         # total heat released by shell side fluid assuming even discretization.
-        # shell side always in forward direction and the first point is skiped
+        # shell side always in forward direction and the first point is skipped
 
         @self.Expression(
             self.flowsheet().time, doc="Total Heat Released from Shell Side"
@@ -2947,7 +2957,7 @@ tube side flows from 1 to 0""",
                      * 0 = no output (default)
                      * 1 = return solver state for each step in routine
                      * 2 = return solver state for each step in subroutines
-                     * 3 = include solver output infomation (tee=True)
+                     * 3 = include solver output information (tee=True)
 
             optarg : solver options dictionary object (default=None, use
                      default solver options)

@@ -1,15 +1,18 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
+# TODO: Missing doc strings
+# pylint: disable=missing-module-docstring
+
 import os
 import json
 from pyomo.common.fileutils import this_file_dir
@@ -281,7 +284,7 @@ def load_generic_ccs_costing_dictionary(path=None):
                     "Units": "lb/hr",
                 },
                 "6.1.ccs": {
-                    "BEC": 6128000 / 1e3,
+                    "BEC": 8376000 / 1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
@@ -289,7 +292,7 @@ def load_generic_ccs_costing_dictionary(path=None):
                     "Units": "m**3",
                 },
                 "6.2.ccs": {
-                    "BEC": 6040000 / 1e3,
+                    "BEC": 6117000 / 1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
@@ -297,7 +300,7 @@ def load_generic_ccs_costing_dictionary(path=None):
                     "Units": "m**3",
                 },
                 "6.3.ccs": {
-                    "BEC": 1986000 / 1e3,
+                    "BEC": 2273000 / 1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
@@ -305,7 +308,7 @@ def load_generic_ccs_costing_dictionary(path=None):
                     "Units": "m**3",
                 },
                 "6.4.ccs": {
-                    "BEC": 1438000 / 1e3,
+                    "BEC": 1464000 / 1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
@@ -313,7 +316,7 @@ def load_generic_ccs_costing_dictionary(path=None):
                     "Units": "m**3",
                 },
                 "6.5.ccs": {
-                    "BEC": 260000 / 1e3,
+                    "BEC": 305000 / 1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
@@ -321,7 +324,7 @@ def load_generic_ccs_costing_dictionary(path=None):
                     "Units": "m**2",
                 },
                 "6.6.ccs": {
-                    "BEC": 3095000 / 1e3,
+                    "BEC": 3183000 / 1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
@@ -329,7 +332,7 @@ def load_generic_ccs_costing_dictionary(path=None):
                     "Units": "m**2",
                 },
                 "6.7.ccs": {
-                    "BEC": 1151000 / 1e3,
+                    "BEC": 1502000 / 1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
@@ -337,7 +340,7 @@ def load_generic_ccs_costing_dictionary(path=None):
                     "Units": "m**2",
                 },
                 "6.8.ccs": {
-                    "BEC": 465000 / 1e3,
+                    "BEC": 522000 / 1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
@@ -345,7 +348,7 @@ def load_generic_ccs_costing_dictionary(path=None):
                     "Units": "m**2",
                 },
                 "6.9.1.ccs": {
-                    "BEC": 0.6 * 731000 / 1e3,
+                    "BEC": 0.6 * 812000 / 1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
@@ -353,7 +356,7 @@ def load_generic_ccs_costing_dictionary(path=None):
                     "Units": "lb/hr",
                 },
                 "6.9.2.ccs": {
-                    "BEC": 0.4 * 731000 / 1e3,
+                    "BEC": 0.4 * 812000 / 1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
@@ -361,7 +364,7 @@ def load_generic_ccs_costing_dictionary(path=None):
                     "Units": "m**3/hr",
                 },
                 "6.10.1.ccs": {
-                    "BEC": 0.6 * 2082000 / 1e3,
+                    "BEC": 0.6 * 2875000 / 1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
@@ -369,7 +372,7 @@ def load_generic_ccs_costing_dictionary(path=None):
                     "Units": "lb/hr",
                 },
                 "6.10.2.ccs": {
-                    "BEC": 0.4 * 2082000 / 1e3,
+                    "BEC": 0.4 * 2875000 / 1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
@@ -377,7 +380,7 @@ def load_generic_ccs_costing_dictionary(path=None):
                     "Units": "m**3/hr",
                 },
                 "6.11.1.ccs": {
-                    "BEC": 0.6 * 1855000 / 1e3,
+                    "BEC": 0.6 * 1883000 / 1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
@@ -385,7 +388,7 @@ def load_generic_ccs_costing_dictionary(path=None):
                     "Units": "lb/hr",
                 },
                 "6.11.2.ccs": {
-                    "BEC": 0.4 * 1855000 / 1e3,
+                    "BEC": 0.4 * 1883000 / 1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
@@ -393,7 +396,7 @@ def load_generic_ccs_costing_dictionary(path=None):
                     "Units": "m**3/hr",
                 },
                 "6.12.1.ccs": {
-                    "BEC": 0.6 * 89000 / 1e3,
+                    "BEC": 0.6 * 108000 / 1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
@@ -401,7 +404,7 @@ def load_generic_ccs_costing_dictionary(path=None):
                     "Units": "lb/hr",
                 },
                 "6.12.2.ccs": {
-                    "BEC": 0.4 * 89000 / 1e3,
+                    "BEC": 0.4 * 108000 / 1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
@@ -409,7 +412,7 @@ def load_generic_ccs_costing_dictionary(path=None):
                     "Units": "m**3/hr",
                 },
                 "6.13.1.ccs": {
-                    "BEC": 0.6 * 165000 / 1e3,
+                    "BEC": 0.6 * 202000 / 1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
@@ -417,7 +420,7 @@ def load_generic_ccs_costing_dictionary(path=None):
                     "Units": "lb/hr",
                 },
                 "6.13.2.ccs": {
-                    "BEC": 0.4 * 165000 / 1e3,
+                    "BEC": 0.4 * 202000 / 1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
@@ -425,7 +428,7 @@ def load_generic_ccs_costing_dictionary(path=None):
                     "Units": "m**3/hr",
                 },
                 "6.14.1.ccs": {
-                    "BEC": 0.6 * 74000 / 1e3,
+                    "BEC": 0.6 * 93000 / 1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
@@ -433,7 +436,7 @@ def load_generic_ccs_costing_dictionary(path=None):
                     "Units": "lb/hr",
                 },
                 "6.14.2.ccs": {
-                    "BEC": 0.4 * 74000 / 1e3,
+                    "BEC": 0.4 * 93000 / 1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
@@ -441,7 +444,7 @@ def load_generic_ccs_costing_dictionary(path=None):
                     "Units": "m**3/hr",
                 },
                 "6.15.1.ccs": {
-                    "BEC": 0.6 * 1992000 / 1e3,
+                    "BEC": 0.6 * 2842000 / 1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
@@ -449,7 +452,7 @@ def load_generic_ccs_costing_dictionary(path=None):
                     "Units": "lb/hr",
                 },
                 "6.15.2.ccs": {
-                    "BEC": 0.4 * 1992000 / 1e3,
+                    "BEC": 0.4 * 2842000 / 1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
@@ -457,7 +460,7 @@ def load_generic_ccs_costing_dictionary(path=None):
                     "Units": "m**3/hr",
                 },
                 "6.16.1.ccs": {
-                    "BEC": 0.6 * 2036000 / 1e3,
+                    "BEC": 0.6 * 2060000 / 1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
@@ -465,7 +468,7 @@ def load_generic_ccs_costing_dictionary(path=None):
                     "Units": "lb/hr",
                 },
                 "6.16.2.ccs": {
-                    "BEC": 0.4 * 2036000 / 1e3,
+                    "BEC": 0.4 * 2060000 / 1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
@@ -473,7 +476,7 @@ def load_generic_ccs_costing_dictionary(path=None):
                     "Units": "m**3/hr",
                 },
                 "6.17.1.ccs": {
-                    "BEC": 0.6 * 46000 / 1e3,
+                    "BEC": 0.6 * 69000 / 1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
@@ -481,7 +484,7 @@ def load_generic_ccs_costing_dictionary(path=None):
                     "Units": "lb/hr",
                 },
                 "6.17.2.ccs": {
-                    "BEC": 0.4 * 46000 / 1e3,
+                    "BEC": 0.4 * 69000 / 1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
@@ -489,7 +492,7 @@ def load_generic_ccs_costing_dictionary(path=None):
                     "Units": "m**3/hr",
                 },
                 "6.18.1.ccs": {
-                    "BEC": 0.6 * 9000 / 1e3,
+                    "BEC": 0.6 * 17000 / 1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
@@ -497,7 +500,7 @@ def load_generic_ccs_costing_dictionary(path=None):
                     "Units": "lb/hr",
                 },
                 "6.18.2.ccs": {
-                    "BEC": 0.4 * 9000 / 1e3,
+                    "BEC": 0.4 * 17000 / 1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
@@ -505,7 +508,7 @@ def load_generic_ccs_costing_dictionary(path=None):
                     "Units": "m**3/hr",
                 },
                 "6.19.1.ccs": {
-                    "BEC": 0.6 * 25000 / 1e3,
+                    "BEC": 0.6 * 35000 / 1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
@@ -513,7 +516,7 @@ def load_generic_ccs_costing_dictionary(path=None):
                     "Units": "lb/hr",
                 },
                 "6.19.2.ccs": {
-                    "BEC": 0.4 * 25000 / 1e3,
+                    "BEC": 0.4 * 35000 / 1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
@@ -521,7 +524,7 @@ def load_generic_ccs_costing_dictionary(path=None):
                     "Units": "m**3/hr",
                 },
                 "6.20.1.ccs": {
-                    "BEC": 0.6 * 34000 / 1e3,
+                    "BEC": 0.6 * 46000 / 1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
@@ -529,7 +532,7 @@ def load_generic_ccs_costing_dictionary(path=None):
                     "Units": "lb/hr",
                 },
                 "6.20.2.ccs": {
-                    "BEC": 0.4 * 34000 / 1e3,
+                    "BEC": 0.4 * 46000 / 1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
@@ -537,7 +540,7 @@ def load_generic_ccs_costing_dictionary(path=None):
                     "Units": "m**3/hr",
                 },
                 "6.21.1.ccs": {
-                    "BEC": 0.6 * 260000 / 1e3,
+                    "BEC": 0.6 * 159000 / 1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
@@ -545,7 +548,7 @@ def load_generic_ccs_costing_dictionary(path=None):
                     "Units": "lb/hr",
                 },
                 "6.21.2.ccs": {
-                    "BEC": 0.4 * 260000 / 1e3,
+                    "BEC": 0.4 * 159000 / 1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
@@ -553,7 +556,7 @@ def load_generic_ccs_costing_dictionary(path=None):
                     "Units": "m**3/hr",
                 },
                 "6.22.1.ccs": {
-                    "BEC": 0.6 * 296000 / 1e3,
+                    "BEC": 0.6 * 342000 / 1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
@@ -561,7 +564,7 @@ def load_generic_ccs_costing_dictionary(path=None):
                     "Units": "lb/hr",
                 },
                 "6.22.2.ccs": {
-                    "BEC": 0.4 * 296000 / 1e3,
+                    "BEC": 0.4 * 342000 / 1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
@@ -569,7 +572,7 @@ def load_generic_ccs_costing_dictionary(path=None):
                     "Units": "m**3/hr",
                 },
                 "6.23.1.ccs": {
-                    "BEC": 0.6 * 34000 / 1e3,
+                    "BEC": 0.6 * 46000 / 1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
@@ -577,7 +580,7 @@ def load_generic_ccs_costing_dictionary(path=None):
                     "Units": "lb/hr",
                 },
                 "6.23.2.ccs": {
-                    "BEC": 0.4 * 34000 / 1e3,
+                    "BEC": 0.4 * 46000 / 1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
@@ -585,7 +588,7 @@ def load_generic_ccs_costing_dictionary(path=None):
                     "Units": "m**3/hr",
                 },
                 "6.24.1.ccs": {
-                    "BEC": 0.6 * 144000 / 1e3,
+                    "BEC": 0.6 * 181000 / 1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
@@ -593,7 +596,7 @@ def load_generic_ccs_costing_dictionary(path=None):
                     "Units": "lb/hr",
                 },
                 "6.24.2.ccs": {
-                    "BEC": 0.4 * 144000 / 1e3,
+                    "BEC": 0.4 * 181000 / 1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
@@ -601,7 +604,7 @@ def load_generic_ccs_costing_dictionary(path=None):
                     "Units": "m**3/hr",
                 },
                 "6.25.1.ccs": {
-                    "BEC": 0.6 * 135000 / 1e3,
+                    "BEC": 0.6 * 180000 / 1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
@@ -609,7 +612,7 @@ def load_generic_ccs_costing_dictionary(path=None):
                     "Units": "lb/hr",
                 },
                 "6.25.2.ccs": {
-                    "BEC": 0.4 * 135000 / 1e3,
+                    "BEC": 0.4 * 180000 / 1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
@@ -617,7 +620,7 @@ def load_generic_ccs_costing_dictionary(path=None):
                     "Units": "m**3/hr",
                 },
                 "6.26.1.ccs": {
-                    "BEC": 0.6 * 791000 / 1e3,
+                    "BEC": 0.6 * 866000 / 1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
@@ -625,7 +628,7 @@ def load_generic_ccs_costing_dictionary(path=None):
                     "Units": "lb/hr",
                 },
                 "6.26.2.ccs": {
-                    "BEC": 0.4 * 791000 / 1e3,
+                    "BEC": 0.4 * 866000 / 1e3,
                     "Eng Fee": 0.2,
                     "Process Contingency": 0.12,
                     "Project Contingency": 0.2,
@@ -637,7 +640,7 @@ def load_generic_ccs_costing_dictionary(path=None):
     }
 
     # this is a way to "zip together" two generic_ccs_costing dictionaries in the formats above
-    # the BEC_units happen to be in thousands of 2016 USD for these accounts
+    # the BEC_units happen to be in thousands of 2013 USD for these accounts
     # for the power plant methods to work, BEC_units must be "$year", "K$year" or
     # "$Myear" for USD, thousands USD and millions USD, respectively
 
@@ -647,16 +650,22 @@ def load_generic_ccs_costing_dictionary(path=None):
 
         generic_ccs_costing_data = generic_ccs_costing_params
 
-        for tech in generic_ccs_costing_data.keys():  # do one technology at a time
+        for (
+            tech,
+            gccsd,
+        ) in generic_ccs_costing_data.items():  # do one technology at a time
             for ccs in ["A", "B"]:
-                if (
-                    ccs in generic_ccs_costing_data[tech]
-                ):  # check if CCS = A, for indexing
-                    accounts_dict = generic_ccs_costing_data[tech][ccs]  # shorter alias
+                if ccs in gccsd:  # check if CCS = A, for indexing
+                    accounts_dict = gccsd[ccs]  # shorter alias
                     for account in accounts_dict.keys():  # do one account at a time
-                        accounts_dict[account][
-                            "BEC_units"
-                        ] = "K$2016"  # add BEC units as thousands of 2016 USD
+                        if account == "5.1.a.epri":
+                            accounts_dict[account][
+                                "BEC_units"
+                            ] = "K$2018"  # add BEC units as thousands of 2018 USD
+                        else:
+                            accounts_dict[account][
+                                "BEC_units"
+                            ] = "K$2013"  # add BEC units as thousands of 2013 USD
                         for accountkey in generic_ccs_costing_exponents[tech][
                             account
                         ].keys():  # get one " exponents"account property at a time
@@ -670,7 +679,7 @@ def load_generic_ccs_costing_dictionary(path=None):
                             key: accounts_dict[account][key]
                             for key in sorted_accountkeys
                         }  # re-add the keys in alphabetical order
-                    generic_ccs_costing_data[tech][
+                    gccsd[
                         ccs
                     ] = accounts_dict  # use the alias to update the original dictionary
 

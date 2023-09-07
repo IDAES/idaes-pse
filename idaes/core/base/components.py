@@ -1,20 +1,23 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 IDAES Component objects
 
 @author: alee
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 from pyomo.environ import Set, Param, Var, units as pyunits
 from pyomo.common.config import ConfigBlock, ConfigValue, In, ListOf, Bool
 
@@ -31,6 +34,10 @@ _log = idaeslog.getLogger(__name__)
 
 @declare_process_block_class("Component")
 class ComponentData(ProcessBlockData):
+    """
+    Standard component object class.
+    """
+
     CONFIG = ConfigBlock()
 
     CONFIG.declare(
@@ -146,7 +153,20 @@ class ComponentData(ProcessBlockData):
             "phase. Must be a dict with keys being phase names."
         ),
     )
-
+    CONFIG.declare(
+        "visc_d_phase_comp",
+        ConfigValue(
+            description="Method to calculate pure component viscosities in each "
+            "phase. Must be a dict with keys being phase names."
+        ),
+    )
+    CONFIG.declare(
+        "therm_cond_phase_comp",
+        ConfigValue(
+            description="Method to calculate pure component thermal conductivities in each "
+            "phase. Must be a dict with keys being phase names."
+        ),
+    )
     CONFIG.declare(
         "has_vapor_pressure",
         ConfigValue(
@@ -204,21 +224,21 @@ class ComponentData(ProcessBlockData):
         super().build()
 
         # If the component_list does not exist, add reference to new Component
-        # The IF is mostly for backwards compatability, to allow for old-style
+        # The IF is mostly for backwards compatibility, to allow for old-style
         # property packages where the component_list already exists but we
         # need to add new Component objects
-        if not self.config._component_list_exists:
-            if not self.config._electrolyte:
+
+        # WE control the config block, ignore warnings about protected access
+        if not self.config._component_list_exists:  # pylint: disable=protected-access
+            if not self.config._electrolyte:  # pylint: disable=protected-access
                 self._add_to_component_list()
             else:
                 self._add_to_electrolyte_component_list()
 
         base_units = self.parent_block().get_metadata().default_units
-        der_units = self.parent_block().get_metadata().derived_units
-        p_units = base_units["mass"] / base_units["length"] / base_units["time"] ** 2
 
         # Create Param for molecular weight if provided
-        param_dict = {"mw": base_units["mass"] / base_units["amount"]}
+        param_dict = {"mw": base_units.MOLECULAR_WEIGHT}
         for p, u in param_dict.items():
             if p in self.config.parameter_data:
                 self.add_component(p, Param(mutable=True, units=u))
@@ -226,10 +246,10 @@ class ComponentData(ProcessBlockData):
 
         # Create Vars for common parameters
         var_dict = {
-            "dens_mol_crit": der_units["density_mole"],
+            "dens_mol_crit": base_units.DENSITY_MOLE,
             "omega": pyunits.dimensionless,
-            "pressure_crit": p_units,
-            "temperature_crit": base_units["temperature"],
+            "pressure_crit": base_units.PRESSURE,
+            "temperature_crit": base_units.TEMPERATURE,
         }
         for p, u in var_dict.items():
             if p in self.config.parameter_data:
@@ -268,7 +288,7 @@ class ComponentData(ProcessBlockData):
         New Component types should overload this method
         """
         parent = self.parent_block()
-        parent._non_aqueous_set.add(self.local_name)
+        parent._non_aqueous_set.add(self.local_name)  # pylint: disable=protected-access
 
     def _is_phase_valid(self, phase):
         # If no valid phases assigned
@@ -527,7 +547,7 @@ class CationData(IonData):
 @declare_process_block_class("Apparent", block_class=Component)
 class ApparentData(SoluteData):
     """
-    Component type for apparent species. Apparent species are those compunds
+    Component type for apparent species. Apparent species are those compounds
     that are not stable in aqueous phases and immediately dissociate, however
     they may be stable in other phases (e.g. salts).
     """
@@ -566,7 +586,7 @@ class ApparentData(SoluteData):
         New Component types should overload this method
         """
         parent = self.parent_block()
-        parent._apparent_set.add(self.local_name)
+        parent._apparent_set.add(self.local_name)  # pylint: disable=protected-access
 
 
 __all_components__ = [Component, Solute, Solvent, Ion, Anion, Cation, Apparent]

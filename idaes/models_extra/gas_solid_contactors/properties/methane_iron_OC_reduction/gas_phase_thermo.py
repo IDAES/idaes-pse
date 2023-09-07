@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 This package provides the necessary constraints for gas phase properties for
@@ -22,6 +22,8 @@ Liquids, Mcgraw-Hill, New York, 2001.
 https://webbook.nist.gov/chemistry/ (accessed March 10, 2018).
 
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
 
 # Import Pyomo libraries
 from pyomo.environ import (
@@ -97,7 +99,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
         self.H2O = Component()
 
         # -------------------------------------------------------------------------
-        """ Pure gas component properties"""
+        # Pure gas component properties
 
         # Mol. weights of gas - units = kg/mol. ref: NIST webbook
         mw_comp_dict = {"CH4": 0.016, "CO2": 0.044, "H2O": 0.018}
@@ -342,7 +344,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
         self.set_default_scaling("dens_mol_comp", 1)
         self.set_default_scaling("dens_mass", 1e2)
         self.set_default_scaling("visc_d_comp", 1e4)
-        self.set_default_scaling("diffusion_comp", 1e5)
+        self.set_default_scaling("diffus_comp", 1e5)
         self.set_default_scaling("therm_cond_comp", 1e2)
         self.set_default_scaling("visc_d", 1e5)
         self.set_default_scaling("therm_cond", 1e0)
@@ -369,7 +371,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
                 "entr_mol_phase": {"method": "_entr_mol", "units": "J/mol/K"},
                 "visc_d": {"method": "_visc_d", "units": "kg/m.s"},
                 "therm_cond": {"method": "_therm_cond", "units": "J/m.K.s"},
-                "diffusion_comp": {"method": "_diffusion_comp", "units": "cm2/s"},
+                "diffus_comp": {"method": "_diffus_comp", "units": "cm2/s"},
             }
         )
 
@@ -424,7 +426,7 @@ class _GasPhaseStateBlock(StateBlock):
                                  initialization.
                         - False - state variables are unfixed after
                                  initialization by calling the
-                                 relase_state method
+                                 release_state method
         Returns:
             If hold_states is True, returns a dict containing flags for
             which states were fixed during initialization.
@@ -436,17 +438,17 @@ class _GasPhaseStateBlock(StateBlock):
 
         # Deactivate the constraints specific for non-inlet blocks i.e.
         # when defined state is False
-        for k in blk.keys():
-            if blk[k].config.defined_state is False:
-                blk[k].sum_component_eqn.deactivate()
+        for k in blk.values():
+            if k.config.defined_state is False:
+                k.sum_component_eqn.deactivate()
 
         # Fix state variables if not already fixed
         if state_vars_fixed is False:
             flags = fix_state_vars(blk, state_args)
         else:
             # Check when the state vars are fixed already result in dof 0
-            for k in blk.keys():
-                if degrees_of_freedom(blk[k]) != 0:
+            for k in blk.values():
+                if degrees_of_freedom(k) != 0:
                     raise Exception(
                         "State vars fixed but degrees of freedom "
                         "for state block is not zero during "
@@ -455,68 +457,62 @@ class _GasPhaseStateBlock(StateBlock):
 
         # ---------------------------------------------------------------------
         # Initialize values
-        for k in blk.keys():
+        for k in blk.values():
 
-            if hasattr(blk[k], "mw_eqn"):
-                calculate_variable_from_constraint(blk[k].mw, blk[k].mw_eqn)
+            if hasattr(k, "mw_eqn"):
+                calculate_variable_from_constraint(k.mw, k.mw_eqn)
 
-            if hasattr(blk[k], "ideal_gas"):
-                calculate_variable_from_constraint(blk[k].dens_mol, blk[k].ideal_gas)
+            if hasattr(k, "ideal_gas"):
+                calculate_variable_from_constraint(k.dens_mol, k.ideal_gas)
 
-            if hasattr(blk[k], "dens_mass_basis"):
+            if hasattr(k, "dens_mass_basis"):
+                calculate_variable_from_constraint(k.dens_mass, k.dens_mass_basis)
+
+            if hasattr(k, "mixture_heat_capacity_eqn"):
                 calculate_variable_from_constraint(
-                    blk[k].dens_mass, blk[k].dens_mass_basis
+                    k.cp_mol, k.mixture_heat_capacity_eqn
                 )
 
-            if hasattr(blk[k], "mixture_heat_capacity_eqn"):
+            if hasattr(k, "cp_mass_basis"):
+                calculate_variable_from_constraint(k.cp_mass, k.cp_mass_basis)
+
+            if hasattr(k, "visc_d_constraint"):
+                calculate_variable_from_constraint(k.visc_d, k.visc_d_constraint)
+
+            if hasattr(k, "therm_cond_constraint"):
                 calculate_variable_from_constraint(
-                    blk[k].cp_mol, blk[k].mixture_heat_capacity_eqn
+                    k.therm_cond, k.therm_cond_constraint
                 )
 
-            if hasattr(blk[k], "cp_mass_basis"):
-                calculate_variable_from_constraint(blk[k].cp_mass, blk[k].cp_mass_basis)
+            if hasattr(k, "mixture_enthalpy_eqn"):
+                calculate_variable_from_constraint(k.enth_mol, k.mixture_enthalpy_eqn)
 
-            if hasattr(blk[k], "visc_d_constraint"):
-                calculate_variable_from_constraint(
-                    blk[k].visc_d, blk[k].visc_d_constraint
-                )
+            for j in k.params.component_list:
 
-            if hasattr(blk[k], "therm_cond_constraint"):
-                calculate_variable_from_constraint(
-                    blk[k].therm_cond, blk[k].therm_cond_constraint
-                )
-
-            if hasattr(blk[k], "mixture_enthalpy_eqn"):
-                calculate_variable_from_constraint(
-                    blk[k].enth_mol, blk[k].mixture_enthalpy_eqn
-                )
-
-            for j in blk[k]._params.component_list:
-
-                if hasattr(blk[k], "comp_conc_eqn"):
+                if hasattr(k, "comp_conc_eqn"):
                     calculate_variable_from_constraint(
-                        blk[k].dens_mol_comp[j], blk[k].comp_conc_eqn[j]
+                        k.dens_mol_comp[j], k.comp_conc_eqn[j]
                     )
 
-                if hasattr(blk[k], "diffusion_comp_constraint"):
+                if hasattr(k, "diffus_comp_constraint"):
                     calculate_variable_from_constraint(
-                        blk[k].diffusion_comp[j], blk[k].diffusion_comp_constraint[j]
+                        k.diffus_comp[j], k.diffus_comp_constraint[j]
                     )
 
-                if hasattr(blk[k], "cp_shomate_eqn"):
+                if hasattr(k, "cp_shomate_eqn"):
                     calculate_variable_from_constraint(
-                        blk[k].cp_mol_comp[j], blk[k].cp_shomate_eqn[j]
+                        k.cp_mol_comp[j], k.cp_shomate_eqn[j]
                     )
 
-                if hasattr(blk[k], "enthalpy_shomate_eqn"):
+                if hasattr(k, "enthalpy_shomate_eqn"):
                     calculate_variable_from_constraint(
-                        blk[k].enth_mol_comp[j], blk[k].enthalpy_shomate_eqn[j]
+                        k.enth_mol_comp[j], k.enthalpy_shomate_eqn[j]
                     )
 
         # Solve property block if non-empty
         free_vars = 0
-        for k in blk.keys():
-            free_vars += number_unfixed_variables_in_activated_equalities(blk[k])
+        for k in blk.values():
+            free_vars += number_unfixed_variables_in_activated_equalities(k)
 
         if free_vars > 0:
             # Create solver
@@ -538,7 +534,7 @@ class _GasPhaseStateBlock(StateBlock):
 
     def release_state(blk, flags, outlvl=idaeslog.NOTSET):
         """
-        Method to relase state variables fixed during initialization.
+        Method to release state variables fixed during initialization.
         Keyword Arguments:
             flags : dict containing information of which state variables
                     were fixed during initialization, and should now be
@@ -553,9 +549,9 @@ class _GasPhaseStateBlock(StateBlock):
         revert_state_vars(blk, flags)
 
         # Activate state variable related constraints
-        for k in blk.keys():
-            if blk[k].config.defined_state is False:
-                blk[k].sum_component_eqn.activate()
+        for k in blk.values():
+            if k.config.defined_state is False:
+                k.sum_component_eqn.activate()
 
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
         init_log.info_high("States released.")
@@ -573,37 +569,37 @@ class GasPhaseStateBlockData(StateBlockData):
         """
         super(GasPhaseStateBlockData, self).build()
 
-        units_meta = self._params.get_metadata().derived_units
+        units_meta = self.params.get_metadata().derived_units
 
         # Object reference for molecular weight if needed by CV1D
         # Molecular weights
         add_object_reference(self, "mw_comp", self.config.parameters.mw_comp)
 
-        """List the necessary state variable objects."""
+        # List the necessary state variable objects.
         self.flow_mol = Var(
             initialize=1.0,
             domain=Reals,
             doc="Component molar flowrate",
-            units=units_meta["amount"] / units_meta["time"],
+            units=units_meta.AMOUNT / units_meta.TIME,
         )
         self.mole_frac_comp = Var(
-            self._params.component_list,
+            self.params.component_list,
             domain=Reals,
-            initialize=1 / len(self._params.component_list),
+            initialize=1 / len(self.params.component_list),
             doc="State component mole fractions",
-            units=units_meta["amount"] / units_meta["amount"],
+            units=pyunits.dimensionless,
         )
         self.pressure = Var(
             initialize=1.01325e5,
             domain=Reals,
             doc="State pressure",
-            units=units_meta["pressure"],
+            units=units_meta.PRESSURE,
         )
         self.temperature = Var(
             initialize=298.15,
             domain=Reals,
             doc="State temperature",
-            units=units_meta["temperature"],
+            units=units_meta.TEMPERATURE,
         )
 
         # Create standard constraints
@@ -611,24 +607,24 @@ class GasPhaseStateBlockData(StateBlockData):
         if self.config.defined_state is False:
 
             def sum_component_eqn(b):
-                return 1 == sum(b.mole_frac_comp[j] for j in b._params.component_list)
+                return 1 == sum(b.mole_frac_comp[j] for j in b.params.component_list)
 
             self.sum_component_eqn = Constraint(rule=sum_component_eqn)
 
     def _mw(self):
         # Molecular weight of gas mixture
-        units_meta = self._params.get_metadata().derived_units
+        units_meta = self.params.get_metadata().derived_units
         self.mw = Var(
             domain=Reals,
             initialize=1.0,
             doc="Molecular weight of gas mixture",
-            units=units_meta["mass"] / units_meta["amount"],
+            units=units_meta.MOLECULAR_WEIGHT,
         )
 
         def mw_eqn(b):
             return b.mw == sum(
-                b.mole_frac_comp[j] * b._params.mw_comp[j]
-                for j in b._params.component_list
+                b.mole_frac_comp[j] * b.params.mw_comp[j]
+                for j in b.params.component_list
             )
 
         try:
@@ -642,12 +638,12 @@ class GasPhaseStateBlockData(StateBlockData):
 
     def _dens_mol(self):
         # Molar density
-        units_meta = self._params.get_metadata().derived_units
+        units_meta = self.params.get_metadata().derived_units
         self.dens_mol = Var(
             domain=Reals,
             initialize=1.0,
             doc="Molar density or concentration",
-            units=units_meta["amount"] * units_meta["length"] ** -3,
+            units=units_meta.DENSITY_MOLE,
         )
 
         def ideal_gas(b):
@@ -672,13 +668,13 @@ class GasPhaseStateBlockData(StateBlockData):
 
     def _dens_mol_comp(self):
         # Component molar densities
-        units_meta = self._params.get_metadata().derived_units
+        units_meta = self.params.get_metadata().derived_units
         self.dens_mol_comp = Var(
-            self._params.component_list,
+            self.params.component_list,
             domain=Reals,
             initialize=1.0,
             doc="Component molar concentration",
-            units=units_meta["amount"] * units_meta["length"] ** -3,
+            units=units_meta.DENSITY_MOLE,
         )
 
         def comp_conc_eqn(b, j):
@@ -687,7 +683,7 @@ class GasPhaseStateBlockData(StateBlockData):
         try:
             # Try to build constraint
             self.comp_conc_eqn = Constraint(
-                self._params.component_list, rule=comp_conc_eqn
+                self.params.component_list, rule=comp_conc_eqn
             )
         except AttributeError:
             # If constraint fails, clean up so that DAE can try again later
@@ -697,12 +693,12 @@ class GasPhaseStateBlockData(StateBlockData):
 
     def _dens_mass(self):
         # Mass density
-        units_meta = self._params.get_metadata().derived_units
+        units_meta = self.params.get_metadata().derived_units
         self.dens_mass = Var(
             domain=Reals,
             initialize=1.0,
             doc="Mass density",
-            units=units_meta["mass"] * units_meta["length"] ** -3,
+            units=units_meta.DENSITY_MASS,
         )
 
         def dens_mass_basis(b):
@@ -719,26 +715,24 @@ class GasPhaseStateBlockData(StateBlockData):
 
     def _visc_d(self):
         # Mixture dynamic viscosity
-        units_meta = self._params.get_metadata().derived_units
+        units_meta = self.params.get_metadata().derived_units
         self.visc_d = Var(
             domain=Reals,
             initialize=1e-5,
             doc="Mixture dynamic viscosity",
-            units=units_meta["mass"]
-            * units_meta["length"] ** -1
-            * units_meta["time"] ** -1,
+            units=units_meta.DYNAMIC_VISCOSITY,
         )
 
         def visc_d_comp(i):
-            visc_d_param_1 = self._params.visc_d_param_1[i] * pyunits.K ** (
-                -self._params.visc_d_param_2[i]
+            visc_d_param_1 = self.params.visc_d_param_1[i] * pyunits.K ** (
+                -self.params.visc_d_param_2[i]
             )
             return (
                 visc_d_param_1
-                * (self.temperature ** self._params.visc_d_param_2[i])
+                * (self.temperature ** self.params.visc_d_param_2[i])
                 / (
-                    (1 + (self._params.visc_d_param_3[i] / self.temperature))
-                    + (self._params.visc_d_param_4[i] / (self.temperature**2))
+                    (1 + (self.params.visc_d_param_3[i] / self.temperature))
+                    + (self.params.visc_d_param_4[i] / (self.temperature**2))
                 )
             )
 
@@ -749,11 +743,11 @@ class GasPhaseStateBlockData(StateBlockData):
                 / (
                     sum(
                         b.mole_frac_comp[j]
-                        * (b._params.mw_comp[j] / b._params.mw_comp[i]) ** 0.5
-                        for j in b._params.component_list
+                        * (b.params.mw_comp[j] / b.params.mw_comp[i]) ** 0.5
+                        for j in b.params.component_list
                     )
                 )
-                for i in b._params.component_list
+                for i in b.params.component_list
             )
 
         try:
@@ -765,10 +759,10 @@ class GasPhaseStateBlockData(StateBlockData):
             self.del_component(self.visc_d_constraint)
             raise
 
-    def _diffusion_comp(self):
+    def _diffus_comp(self):
         # Component diffusion in a gas mixture - units of cm2/s to help scaling
-        self.diffusion_comp = Var(
-            self._params.component_list,
+        self.diffus_comp = Var(
+            self.params.component_list,
             domain=Reals,
             initialize=1e-5,
             doc="Component diffusion in a gas mixture" "[cm2/s]",
@@ -791,23 +785,23 @@ class GasPhaseStateBlockData(StateBlockData):
                 * (
                     (
                         pyunits.convert(
-                            self._params.mw_comp[i], to_units=pyunits.kg / pyunits.kmol
+                            self.params.mw_comp[i], to_units=pyunits.kg / pyunits.kmol
                         )
                         + pyunits.convert(
-                            self._params.mw_comp[j], to_units=pyunits.kg / pyunits.kmol
+                            self.params.mw_comp[j], to_units=pyunits.kg / pyunits.kmol
                         )
                     )
                     / (
                         2
                         * (
                             pyunits.convert(
-                                self._params.mw_comp[i],
+                                self.params.mw_comp[i],
                                 to_units=pyunits.kg / pyunits.kmol,
                             )
                         )
                         * (
                             pyunits.convert(
-                                self._params.mw_comp[j],
+                                self.params.mw_comp[j],
                                 to_units=pyunits.kg / pyunits.kmol,
                             )
                         )
@@ -817,39 +811,34 @@ class GasPhaseStateBlockData(StateBlockData):
             ) / (
                 (pyunits.convert(self.pressure, to_units=pyunits.atm))
                 * (
-                    (self._params.diff_vol_param[i] ** (1 / 3))
-                    + (self._params.diff_vol_param[j] ** (1 / 3))
+                    (self.params.diff_vol_param[i] ** (1 / 3))
+                    + (self.params.diff_vol_param[j] ** (1 / 3))
                 )
                 ** 2
             )
 
-        def diffusion_comp_constraint(b, i):
-            return b.diffusion_comp[i] * sum(
+        def diffus_comp_constraint(b, i):
+            return b.diffus_comp[i] * sum(
                 b.mole_frac_comp[j] / D_bin(i, j)
-                for j in b._params.component_list
+                for j in b.params.component_list
                 if i != j
             ) == (1 - b.mole_frac_comp[i])
 
         try:
             # Try to build constraint
-            self.diffusion_comp_constraint = Constraint(
-                self._params.component_list, rule=diffusion_comp_constraint
+            self.diffus_comp_constraint = Constraint(
+                self.params.component_list, rule=diffus_comp_constraint
             )
         except AttributeError:
             # If constraint fails, clean up so that DAE can try again later
-            self.del_component(self.diffusion_comp)
-            self.del_component(self.diffusion_comp_constraint)
+            self.del_component(self.diffus_comp)
+            self.del_component(self.diffus_comp_constraint)
             raise
 
     def _therm_cond(self):
         # Thermal conductivity of gas
-        units_meta = self._params.get_metadata().derived_units
-        units_therm_cond = (
-            units_meta["energy"]
-            * units_meta["length"] ** -1
-            * units_meta["temperature"] ** -1
-            * units_meta["time"] ** -1
-        )
+        units_meta = self.params.get_metadata().derived_units
+        units_therm_cond = units_meta.THERMAL_CONDUCTIVITY
         self.therm_cond = Var(
             domain=Reals,
             initialize=1e-5,
@@ -858,15 +847,15 @@ class GasPhaseStateBlockData(StateBlockData):
         )
 
         def therm_cond_comp(i):
-            therm_cond_param_1 = self._params.therm_cond_param_1[i] * pyunits.K ** (
-                -(1 + self._params.therm_cond_param_2[i])
+            therm_cond_param_1 = self.params.therm_cond_param_1[i] * pyunits.K ** (
+                -(1 + self.params.therm_cond_param_2[i])
             )
             return (
                 therm_cond_param_1
-                * (self.temperature ** self._params.therm_cond_param_2[i])
+                * (self.temperature ** self.params.therm_cond_param_2[i])
                 / (
-                    (1 + (self._params.therm_cond_param_3[i] / self.temperature))
-                    + (self._params.therm_cond_param_4[i] / (self.temperature**2))
+                    (1 + (self.params.therm_cond_param_3[i] / self.temperature))
+                    + (self.params.therm_cond_param_4[i] / (self.temperature**2))
                 )
             )
 
@@ -874,9 +863,9 @@ class GasPhaseStateBlockData(StateBlockData):
             return (
                 1
                 + ((therm_cond_comp(j) / therm_cond_comp(i)) ** 0.5)
-                * ((self._params.mw_comp[j] / self._params.mw_comp[i]) ** 0.25)
+                * ((self.params.mw_comp[j] / self.params.mw_comp[i]) ** 0.25)
             ) ** 2 / (
-                8 * (1 + (self._params.mw_comp[j] / self._params.mw_comp[i]))
+                8 * (1 + (self.params.mw_comp[j] / self.params.mw_comp[i]))
             ) ** 0.5
 
         def therm_cond_constraint(b):
@@ -887,10 +876,10 @@ class GasPhaseStateBlockData(StateBlockData):
                     / (
                         sum(
                             b.mole_frac_comp[j] * A_bin(i, j) ** 0.5
-                            for j in b._params.component_list
+                            for j in b.params.component_list
                         )
                     )
-                    for i in b._params.component_list
+                    for i in b.params.component_list
                 ),
                 to_units=units_therm_cond,
             )
@@ -906,14 +895,10 @@ class GasPhaseStateBlockData(StateBlockData):
 
     def _cp_mol_comp(self):
         # Pure component vapour heat capacities
-        units_meta = self._params.get_metadata().derived_units
-        units_cp_mol = (
-            units_meta["energy"]
-            * units_meta["amount"] ** -1
-            * units_meta["temperature"] ** -1
-        )
+        units_meta = self.params.get_metadata().derived_units
+        units_cp_mol = units_meta.HEAT_CAPACITY_MOLE
         self.cp_mol_comp = Var(
-            self._params.component_list,
+            self.params.component_list,
             domain=Reals,
             initialize=1.0,
             doc="Pure component vapour heat capacities",
@@ -924,11 +909,11 @@ class GasPhaseStateBlockData(StateBlockData):
             t = pyunits.convert(b.temperature, to_units=pyunits.kK)
             return b.cp_mol_comp[j] == pyunits.convert(
                 (
-                    b._params.cp_param_1[j]
-                    + b._params.cp_param_2[j] * t
-                    + b._params.cp_param_3[j] * t**2
-                    + b._params.cp_param_4[j] * t**3
-                    + b._params.cp_param_5[j] / (t**2)
+                    b.params.cp_param_1[j]
+                    + b.params.cp_param_2[j] * t
+                    + b.params.cp_param_3[j] * t**2
+                    + b.params.cp_param_4[j] * t**3
+                    + b.params.cp_param_5[j] / (t**2)
                 ),
                 to_units=units_cp_mol,
             )
@@ -936,7 +921,7 @@ class GasPhaseStateBlockData(StateBlockData):
         try:
             # Try to build constraint
             self.cp_shomate_eqn = Constraint(
-                self._params.component_list, rule=pure_component_cp_mol
+                self.params.component_list, rule=pure_component_cp_mol
             )
         except AttributeError:
             # If constraint fails, clean up so that DAE can try again later
@@ -946,12 +931,8 @@ class GasPhaseStateBlockData(StateBlockData):
 
     def _cp_mol(self):
         # Mixture heat capacities
-        units_meta = self._params.get_metadata().derived_units
-        units_cp_mol = (
-            units_meta["energy"]
-            * units_meta["amount"] ** -1
-            * units_meta["temperature"] ** -1
-        )
+        units_meta = self.params.get_metadata().derived_units
+        units_cp_mol = units_meta.HEAT_CAPACITY_MOLE
         self.cp_mol = Var(
             domain=Reals,
             initialize=1.0,
@@ -961,7 +942,7 @@ class GasPhaseStateBlockData(StateBlockData):
 
         def cp_mol(b):
             return b.cp_mol == sum(
-                b.cp_mol_comp[j] * b.mole_frac_comp[j] for j in b._params.component_list
+                b.cp_mol_comp[j] * b.mole_frac_comp[j] for j in b.params.component_list
             )
 
         try:
@@ -975,12 +956,8 @@ class GasPhaseStateBlockData(StateBlockData):
 
     def _cp_mass(self):
         # Mixture heat capacities
-        units_meta = self._params.get_metadata().derived_units
-        units_cp_mass = (
-            units_meta["energy"]
-            * units_meta["mass"] ** -1
-            * units_meta["temperature"] ** -1
-        )
+        units_meta = self.params.get_metadata().derived_units
+        units_cp_mass = units_meta.HEAT_CAPACITY_MASS
         self.cp_mass = Var(
             domain=Reals,
             initialize=1.0,
@@ -1002,10 +979,10 @@ class GasPhaseStateBlockData(StateBlockData):
 
     def _enth_mol_comp(self):
         # Pure component vapour enthalpies
-        units_meta = self._params.get_metadata().derived_units
-        units_enth_mol = units_meta["energy"] * units_meta["amount"] ** -1
+        units_meta = self.params.get_metadata().derived_units
+        units_enth_mol = units_meta.ENERGY_MOLE
         self.enth_mol_comp = Var(
-            self._params.component_list,
+            self.params.component_list,
             domain=Reals,
             initialize=1.0,
             doc="Pure component enthalpies",
@@ -1016,23 +993,23 @@ class GasPhaseStateBlockData(StateBlockData):
             t = pyunits.convert(b.temperature, to_units=pyunits.kK)
             return b.enth_mol_comp[j] == pyunits.convert(
                 # parameters 1-5 are defined in J
-                b._params.cp_param_1[j] * t
-                + b._params.cp_param_2[j] * (t**2) / 2
-                + b._params.cp_param_3[j] * (t**3) / 3
-                + b._params.cp_param_4[j] * (t**4) / 4
-                - b._params.cp_param_5[j] / (t),
+                b.params.cp_param_1[j] * t
+                + b.params.cp_param_2[j] * (t**2) / 2
+                + b.params.cp_param_3[j] * (t**3) / 3
+                + b.params.cp_param_4[j] * (t**4) / 4
+                - b.params.cp_param_5[j] / (t),
                 to_units=units_enth_mol,
             ) + pyunits.convert(
                 # parameters 6 and 8 are defined in kJ, and must be added
                 # after converting to the enthalpy units set
-                b._params.cp_param_6[j] - b._params.cp_param_8[j],
+                b.params.cp_param_6[j] - b.params.cp_param_8[j],
                 to_units=units_enth_mol,
             )
 
         try:
             # Try to build constraint
             self.enthalpy_shomate_eqn = Constraint(
-                self._params.component_list, rule=pure_comp_enthalpy
+                self.params.component_list, rule=pure_comp_enthalpy
             )
         except AttributeError:
             # If constraint fails, clean up so that DAE can try again later
@@ -1042,8 +1019,8 @@ class GasPhaseStateBlockData(StateBlockData):
 
     def _enth_mol(self):
         # Mixture molar enthalpy
-        units_meta = self._params.get_metadata().derived_units
-        units_enth_mol = units_meta["energy"] * units_meta["amount"] ** -1
+        units_meta = self.params.get_metadata().derived_units
+        units_enth_mol = units_meta.ENERGY_MOLE
         self.enth_mol = Var(
             domain=Reals,
             initialize=1.0,
@@ -1057,7 +1034,7 @@ class GasPhaseStateBlockData(StateBlockData):
                     self.enth_mol
                     == sum(
                         self.mole_frac_comp[j] * self.enth_mol_comp[j]
-                        for j in self._params.component_list
+                        for j in self.params.component_list
                     )
                 )
             )
@@ -1068,12 +1045,8 @@ class GasPhaseStateBlockData(StateBlockData):
             raise
 
     def _entr_mol(self):
-        units_meta = self._params.get_metadata().derived_units
-        units_entr_mol = (
-            units_meta["energy"]
-            * units_meta["amount"] ** -1
-            * units_meta["temperature"] ** -1
-        )
+        units_meta = self.params.get_metadata().derived_units
+        units_entr_mol = units_meta.ENTROPY_MOLE
         self.entr_mol = Var(
             doc="Specific Entropy",
             initialize=1.0,
@@ -1125,7 +1098,7 @@ class GasPhaseStateBlockData(StateBlockData):
                     return b.flow_mol * b.mole_frac_comp[j]
 
                 self.material_flow_terms = Expression(
-                    self._params.component_list, rule=rule_material_flow_terms
+                    self.params.component_list, rule=rule_material_flow_terms
                 )
             except AttributeError:
                 self.del_component(self.material_flow_terms)
@@ -1152,7 +1125,7 @@ class GasPhaseStateBlockData(StateBlockData):
                     return b.dens_mol_comp[j]
 
                 self.material_density_terms = Expression(
-                    self._params.component_list, rule=rule_material_density_terms
+                    self.params.component_list, rule=rule_material_density_terms
                 )
             except AttributeError:
                 self.del_component(self.material_density_terms)
@@ -1272,11 +1245,11 @@ class GasPhaseStateBlockData(StateBlockData):
                 iscale.constraint_scaling_transform(
                     c, iscale.get_scaling_factor(self.visc_d[i]), overwrite=False
                 )
-        if self.is_property_constructed("diffusion_comp_constraint"):
-            for i, c in self.diffusion_comp_constraint.items():
+        if self.is_property_constructed("diffus_comp_constraint"):
+            for i, c in self.diffus_comp_constraint.items():
                 iscale.constraint_scaling_transform(
                     c,
-                    iscale.get_scaling_factor(self.diffusion_comp[i]),
+                    iscale.get_scaling_factor(self.diffus_comp[i]),
                     overwrite=False,
                 )
         if self.is_property_constructed("therm_cond_constraint"):

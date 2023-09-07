@@ -1,28 +1,30 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
+# TODO: Missing doc strings
+# pylint: disable=missing-module-docstring
+# pylint: disable=missing-function-docstring
 
 __author__ = "John Eslick"
 
 import sys
 import platform
-import collections
-import pkg_resources
 import json
+import pkg_resources
 
-import idaes
 import pyomo
 import pyomo.environ as pyo
 
+import idaes
 import idaes.ver as ver
 
 
@@ -111,7 +113,7 @@ class EnvironmentInfo:
         d = {
             "IDAES": {
                 # break off the +label, which is the git hash
-                "Version": self.version_string.split("+")[0],
+                "Version": self.version_string.split("+", maxsplit=1)[0],
                 "Git Hash": self.git_hash,
                 "Binary Directory": self.bin_directory,
                 "Data Directory": self.data_directory,

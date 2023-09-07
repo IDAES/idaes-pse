@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Tests for dynamic utility methods.
@@ -86,35 +86,37 @@ def test_fix_and_deactivate():
     for comp in m.fs.component_data_objects(Constraint, Block):
         assert active_dict[id(comp)] is True
 
-    deactivate_model_at(m, m.time, m.time[2])
-    assert m.fs.con1[m.time[1]].active
-    assert not m.fs.con1[m.time[2]].active
-    assert m.fs.con2[m.space[1]].active
-    assert not m.fs.b1.con[m.time[2], m.space[1]].active
-    assert not m.fs.b2[m.time[2], m.space.last()].active
-    assert m.fs.b2[m.time[2], m.space.last()].b3["a"].con["e"].active
+    deactivate_model_at(m, m.time, m.time.at(2))
+    assert m.fs.con1[m.time.at(1)].active
+    assert not m.fs.con1[m.time.at(2)].active
+    assert m.fs.con2[m.space.at(1)].active
+    assert not m.fs.b1.con[m.time.at(2), m.space.at(1)].active
+    assert not m.fs.b2[m.time.at(2), m.space.last()].active
+    assert m.fs.b2[m.time.at(2), m.space.last()].b3["a"].con["e"].active
 
-    deactivate_model_at(m, m.time, [m.time[1], m.time[3]], outlvl=idaeslog.ERROR)
+    deactivate_model_at(m, m.time, [m.time.at(1), m.time.at(3)], outlvl=idaeslog.ERROR)
     # Higher outlvl threshold as will encounter warning trying to deactivate
     # disc equations at time.first()
-    assert not m.fs.con1[m.time[1]].active
-    assert not m.fs.con1[m.time[3]].active
-    assert not m.fs.b1.con[m.time[1], m.space[1]].active
-    assert not m.fs.b1.con[m.time[3], m.space[1]].active
+    assert not m.fs.con1[m.time.at(1)].active
+    assert not m.fs.con1[m.time.at(3)].active
+    assert not m.fs.b1.con[m.time.at(1), m.space.at(1)].active
+    assert not m.fs.b1.con[m.time.at(3), m.space.at(1)].active
 
     init_derivs = get_derivatives_at(m, m.time, m.time.first())[m.time.first()]
     init_deriv_names = [var.name for var in init_derivs]
 
     assert m.fs.b1.dv[m.time.first(), m.space.first()] in init_derivs
-    assert m.fs.b1.dv[m.time[1], m.space[1]].name in init_deriv_names
+    assert m.fs.b1.dv[m.time.at(1), m.space.at(1)].name in init_deriv_names
 
     deriv_dict = get_derivatives_at(m, m.time, [m.time.first(), m.time.last()])
     deriv_name_dict = {t: [d.name for d in deriv_dict[t]] for t in deriv_dict.keys()}
     assert m.time.first() in deriv_name_dict.keys()
     assert m.time.last() in deriv_name_dict.keys()
-    assert m.fs.b1.dv[m.time.last(), m.space[1]].name in deriv_name_dict[m.time.last()]
     assert (
-        m.fs.b1.dv[m.time.last(), m.space[1]].name
+        m.fs.b1.dv[m.time.last(), m.space.at(1)].name in deriv_name_dict[m.time.last()]
+    )
+    assert (
+        m.fs.b1.dv[m.time.last(), m.space.at(1)].name
         not in deriv_name_dict[m.time.first()]
     )
 
@@ -122,54 +124,54 @@ def test_fix_and_deactivate():
     cons_unindexed = deactivate_constraints_unindexed_by(m, m.time)
 
     unindexed_vars = ComponentSet(vars_unindexed)
-    assert m.fs.v0[m.space[1]] in unindexed_vars
-    assert m.fs.b1.b2[m.time[1]].v not in unindexed_vars
-    assert m.fs.con2[m.space[2]] in cons_unindexed
-    assert m.fs.con1[m.time[1]] not in cons_unindexed
-    assert not m.fs.con2[m.space[1]].active
-    assert m.fs.v0[m.space[1]].fixed
+    assert m.fs.v0[m.space.at(1)] in unindexed_vars
+    assert m.fs.b1.b2[m.time.at(1)].v not in unindexed_vars
+    assert m.fs.con2[m.space.at(2)] in cons_unindexed
+    assert m.fs.con1[m.time.at(1)] not in cons_unindexed
+    assert not m.fs.con2[m.space.at(1)].active
+    assert m.fs.v0[m.space.at(1)].fixed
 
     path = path_from_block(
-        m.fs.b2[m.time[1], m.space[1]].b3["a"].v, m, include_comp=False
+        m.fs.b2[m.time.at(1), m.space.at(1)].b3["a"].v, m, include_comp=False
     )
-    assert path == [("fs", None), ("b2", (m.time[1], m.space[1])), ("b3", "a")]
+    assert path == [("fs", None), ("b2", (m.time.at(1), m.space.at(1))), ("b3", "a")]
     path = path_from_block(
-        m.fs.b2[m.time[1], m.space[1]].b3["a"].v, m, include_comp=True
+        m.fs.b2[m.time.at(1), m.space.at(1)].b3["a"].v, m, include_comp=True
     )
     assert path == [
         ("fs", None),
-        ("b2", (m.time[1], m.space[1])),
+        ("b2", (m.time.at(1), m.space.at(1))),
         ("b3", "a"),
         ("v", None),
     ]
     path = path_from_block(
-        m.fs.b2[m.time[1], m.space[1]].b3["a"].v["f"], m, include_comp=True
+        m.fs.b2[m.time.at(1), m.space.at(1)].b3["a"].v["f"], m, include_comp=True
     )
     assert path == [
         ("fs", None),
-        ("b2", (m.time[1], m.space[1])),
+        ("b2", (m.time.at(1), m.space.at(1))),
         ("b3", "a"),
         ("v", "f"),
     ]
     path = path_from_block(
-        m.fs.b2[m.time[1], m.space[1]].b3["a"].v["f"],
-        m.fs.b2[m.time[1], m.space[1]],
+        m.fs.b2[m.time.at(1), m.space.at(1)].b3["a"].v["f"],
+        m.fs.b2[m.time.at(1), m.space.at(1)],
         include_comp=True,
     )
     assert path == [("b3", "a"), ("v", "f")]
-    path = path_from_block(m.fs.b1.con[m.time[1], m.space[1]], m.fs)
+    path = path_from_block(m.fs.b1.con[m.time.at(1), m.space.at(1)], m.fs)
     assert path == [("b1", None)]
 
-    m.fs.b1.b2[m.time[1]].v.set_value(-1)
+    m.fs.b1.b2[m.time.at(1)].v.set_value(-1)
     for x in m.space:
-        m.fs.b1.v[m.time[1], x].set_value(-1)
-        m.fs.b1.dv[m.time[1], x].set_value(-1)
+        m.fs.b1.v[m.time.at(1), x].set_value(-1)
+        m.fs.b1.dv[m.time.at(1), x].set_value(-1)
         for c1 in m.set1:
-            m.fs.b2[m.time[1], x].v[c1].set_value(-1)
+            m.fs.b2[m.time.at(1), x].v[c1].set_value(-1)
             for c2 in m.set2:
-                m.fs.b2[m.time[1], x].b3[c1].v[c2].set_value(-1)
+                m.fs.b2[m.time.at(1), x].b3[c1].v[c2].set_value(-1)
 
-    copy_values_at_time(m, m, m.time.last(), m.time[1], copy_fixed=False)
+    copy_values_at_time(m, m, m.time.last(), m.time.at(1), copy_fixed=False)
     assert m.fs.b1.b2[m.time.last()].v.value == -1
     for x in m.space:
         if x != m.space.first():
@@ -181,7 +183,7 @@ def test_fix_and_deactivate():
         for c1 in m.set1:
             assert m.fs.b2[m.time.last(), x].v[c1].value == -1
             for c2 in m.set2:
-                assert m.fs.b2[m.time[1], x].b3[c1].v[c2].value == -1
+                assert m.fs.b2[m.time.at(1), x].b3[c1].v[c2].value == -1
 
 
 @pytest.mark.unit

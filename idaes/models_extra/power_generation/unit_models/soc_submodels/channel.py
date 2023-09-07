@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Model for channel in SolidOxideCell. If opposite_flow is false, material flows from
@@ -49,14 +49,18 @@ Instances of ``Var`` that must be fixed:
     - ``heat_transfer_coefficient[t, iz]``: Heat transfer coefficient between channel bulk and surfaces.
       Correlations to calculate this are planned, but they will add a large number of equations.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+
+# TODO: Look into protected access issues
+# pylint: disable=protected-access
 
 __author__ = "John Eslick, Douglas Allan"
 
 from pyomo.common.config import ConfigValue, In, ListOf, Bool
 from pyomo.dae import DerivativeVar
 import pyomo.environ as pyo
-from pyomo.network import Port
-
 
 from idaes.core import declare_process_block_class, UnitModelBlockData, useDefault
 from idaes.core.util.constants import Constants
@@ -611,10 +615,8 @@ class SocChannelData(UnitModelBlockData):
         # For convenience define outlet expressions
         if self.config.opposite_flow:
             izfout = self.izfout = izfaces.first()
-            iznout = self.iznout = iznodes.first()
         else:
             izfout = self.izfout = izfaces.last()
-            iznout = self.iznout = iznodes.last()
 
         @self.Expression(tset, comps)
         def flow_mol_comp_outlet(b, t, i):
@@ -672,11 +674,9 @@ class SocChannelData(UnitModelBlockData):
         # fixed at the cell level instead.
         # TODO Add ports to submodel instead?
 
-        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
         tset = self.flowsheet().config.time
-        t0 = tset.first()
 
         for t in tset:
             _set_if_unfixed(self.temperature_outlet[t], self.temperature_inlet[t])
@@ -813,9 +813,15 @@ class SocChannelData(UnitModelBlockData):
 
     def recursive_scaling(self):
         gsf = iscale.get_scaling_factor
-        ssf = common._set_scaling_factor_if_none
-        sgsf = common._set_and_get_scaling_factor
-        cst = lambda c, s: iscale.constraint_scaling_transform(c, s, overwrite=False)
+
+        def ssf(c, s):
+            iscale.set_scaling_factor(c, s, overwrite=False)
+
+        sgsf = iscale.set_and_get_scaling_factor
+
+        def cst(c, s):
+            iscale.constraint_scaling_transform(c, s, overwrite=False)
+
         sR = 1e-1  # Scaling factor for R
         # sD = 5e3 # Heuristic scaling factor for diffusion coefficient
         sD = 1e4
@@ -825,7 +831,6 @@ class SocChannelData(UnitModelBlockData):
         sH = 1e-4  # Enthalpy/int energy
         sLx = sgsf(self.length_x, 1 / self.length_x.value)
         sLy = 1 / self.length_y[None].value
-        sLz = len(self.iznodes) / self.length_z[None].value
 
         for t in self.flowsheet().time:
             sT = sgsf(self.temperature_inlet[t], 1e-2)

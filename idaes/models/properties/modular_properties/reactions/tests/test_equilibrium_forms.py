@@ -1,17 +1,17 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
-Tests for rate forms
+Tests for equilibrium forms
 """
 
 import pytest
@@ -27,7 +27,7 @@ from idaes.models.properties.modular_properties.reactions.equilibrium_forms impo
 from idaes.core import SolidPhase
 from idaes.core.util.testing import PhysicalParameterTestBlock
 from idaes.core.util.misc import add_object_reference
-from idaes.core.util.math import safe_log, smooth_max
+from idaes.core.util.math import smooth_max
 from idaes.core.util.exceptions import ConfigurationError
 
 
@@ -414,6 +414,10 @@ def test_solubility_no_order():
     # Check parameter construction
     assert isinstance(m.rparams.reaction_r1.eps, Param)
     assert value(m.rparams.reaction_r1.eps) == 1e-4
+    assert isinstance(m.rparams.reaction_r1.s_norm, Param)
+    assert value(m.rparams.reaction_r1.s_norm) == 1e-4
+    assert isinstance(m.rparams.reaction_r1.s_norm, Param)
+    assert value(m.rparams.reaction_r1.s_scale) == 1
     assert isinstance(m.rparams.reaction_r1.reaction_order, Var)
     assert len(m.rparams.reaction_r1.reaction_order) == 6
 
@@ -434,14 +438,19 @@ def test_solubility_no_order():
         m.thermo[1].flow_mol_phase_comp["sol", "c1"]
         + m.thermo[1].flow_mol_phase_comp["sol", "c2"]
     ) / (pyunits.mol / pyunits.s)
-    Q = m.rxn[1].k_eq["r1"] - (
-        m.thermo[1].mole_frac_phase_comp["p1", "c1"]
-        ** m.rparams.reaction_r1.reaction_order["p1", "c1"]
-        * m.thermo[1].mole_frac_phase_comp["p1", "c2"]
-        ** m.rparams.reaction_r1.reaction_order["p1", "c2"]
-    )
+    s = m.rparams.reaction_r1.s_scale * s / (s + m.rparams.reaction_r1.s_norm)
 
-    assert str(rform) == str(s - smooth_max(0, s - Q, m.rparams.reaction_r1.eps) == 0)
+    Q = (
+        m.rxn[1].k_eq["r1"]
+        - (
+            m.thermo[1].mole_frac_phase_comp["p1", "c1"]
+            ** m.rparams.reaction_r1.reaction_order["p1", "c1"]
+            * m.thermo[1].mole_frac_phase_comp["p1", "c2"]
+            ** m.rparams.reaction_r1.reaction_order["p1", "c2"]
+        )
+    ) / (pyunits.dimensionless)
+
+    assert str(rform) == str(Q - smooth_max(0, Q - s, m.rparams.reaction_r1.eps) == 0)
 
 
 @pytest.mark.unit
@@ -503,6 +512,10 @@ def test_solubility_product_with_order():
     # Check parameter construction
     assert isinstance(m.rparams.reaction_r1.eps, Param)
     assert value(m.rparams.reaction_r1.eps) == 1e-4
+    assert isinstance(m.rparams.reaction_r1.s_norm, Param)
+    assert value(m.rparams.reaction_r1.s_norm) == 1e-4
+    assert isinstance(m.rparams.reaction_r1.s_norm, Param)
+    assert value(m.rparams.reaction_r1.s_scale) == 1
     assert isinstance(m.rparams.reaction_r1.reaction_order, Var)
     assert len(m.rparams.reaction_r1.reaction_order) == 6
     assert m.rparams.reaction_r1.reaction_order["p1", "c1"].value == 1
@@ -521,22 +534,27 @@ def test_solubility_product_with_order():
         m.thermo[1].flow_mol_phase_comp["sol", "c1"]
         + m.thermo[1].flow_mol_phase_comp["sol", "c2"]
     ) / (pyunits.mol / pyunits.s)
-    Q = m.rxn[1].k_eq["r1"] - (
-        m.thermo[1].mole_frac_phase_comp["p1", "c1"]
-        ** m.rparams.reaction_r1.reaction_order["p1", "c1"]
-        * m.thermo[1].mole_frac_phase_comp["p1", "c2"]
-        ** m.rparams.reaction_r1.reaction_order["p1", "c2"]
-        * m.thermo[1].mole_frac_phase_comp["p2", "c1"]
-        ** m.rparams.reaction_r1.reaction_order["p2", "c1"]
-        * m.thermo[1].mole_frac_phase_comp["p2", "c2"]
-        ** m.rparams.reaction_r1.reaction_order["p2", "c2"]
-        * m.thermo[1].mole_frac_phase_comp["sol", "c1"]
-        ** m.rparams.reaction_r1.reaction_order["sol", "c1"]
-        * m.thermo[1].mole_frac_phase_comp["sol", "c2"]
-        ** m.rparams.reaction_r1.reaction_order["sol", "c2"]
-    )
+    s = m.rparams.reaction_r1.s_scale * s / (s + m.rparams.reaction_r1.s_norm)
 
-    assert str(rform) == str(s - smooth_max(0, s - Q, m.rparams.reaction_r1.eps) == 0)
+    Q = (
+        m.rxn[1].k_eq["r1"]
+        - (
+            m.thermo[1].mole_frac_phase_comp["p1", "c1"]
+            ** m.rparams.reaction_r1.reaction_order["p1", "c1"]
+            * m.thermo[1].mole_frac_phase_comp["p1", "c2"]
+            ** m.rparams.reaction_r1.reaction_order["p1", "c2"]
+            * m.thermo[1].mole_frac_phase_comp["p2", "c1"]
+            ** m.rparams.reaction_r1.reaction_order["p2", "c1"]
+            * m.thermo[1].mole_frac_phase_comp["p2", "c2"]
+            ** m.rparams.reaction_r1.reaction_order["p2", "c2"]
+            * m.thermo[1].mole_frac_phase_comp["sol", "c1"]
+            ** m.rparams.reaction_r1.reaction_order["sol", "c1"]
+            * m.thermo[1].mole_frac_phase_comp["sol", "c2"]
+            ** m.rparams.reaction_r1.reaction_order["sol", "c2"]
+        )
+    ) / (pyunits.dimensionless)
+
+    assert str(rform) == str(Q - smooth_max(0, Q - s, m.rparams.reaction_r1.eps) == 0)
 
 
 @pytest.mark.unit
@@ -643,6 +661,10 @@ def test_log_solubility_no_order():
     # Check parameter construction
     assert isinstance(m.rparams.reaction_r1.eps, Param)
     assert value(m.rparams.reaction_r1.eps) == 1e-4
+    assert isinstance(m.rparams.reaction_r1.s_norm, Param)
+    assert value(m.rparams.reaction_r1.s_norm) == 1e-4
+    assert isinstance(m.rparams.reaction_r1.s_norm, Param)
+    assert value(m.rparams.reaction_r1.s_scale) == 10
     assert isinstance(m.rparams.reaction_r1.reaction_order, Var)
     assert len(m.rparams.reaction_r1.reaction_order) == 6
 
@@ -663,6 +685,8 @@ def test_log_solubility_no_order():
         m.thermo[1].flow_mol_phase_comp["sol", "c1"]
         + m.thermo[1].flow_mol_phase_comp["sol", "c2"]
     ) / (pyunits.mol / pyunits.s)
+    s = m.rparams.reaction_r1.s_scale * s / (s + m.rparams.reaction_r1.s_norm)
+
     Q = m.rxn[1].log_k_eq["r1"] - (
         m.thermo[1].log_mole_frac_phase_comp["p1", "c1"]
         * m.rparams.reaction_r1.reaction_order["p1", "c1"]
@@ -670,7 +694,7 @@ def test_log_solubility_no_order():
         * m.rparams.reaction_r1.reaction_order["p1", "c2"]
     )
 
-    assert str(rform) == str(s - smooth_max(0, s - Q, m.rparams.reaction_r1.eps) == 0)
+    assert str(rform) == str(Q - smooth_max(0, Q - s, m.rparams.reaction_r1.eps) == 0)
 
 
 @pytest.mark.unit
@@ -735,6 +759,10 @@ def test_log_solubility_product_with_order():
     # Check parameter construction
     assert isinstance(m.rparams.reaction_r1.eps, Param)
     assert value(m.rparams.reaction_r1.eps) == 1e-4
+    assert isinstance(m.rparams.reaction_r1.s_norm, Param)
+    assert value(m.rparams.reaction_r1.s_norm) == 1e-4
+    assert isinstance(m.rparams.reaction_r1.s_norm, Param)
+    assert value(m.rparams.reaction_r1.s_scale) == 10
     assert isinstance(m.rparams.reaction_r1.reaction_order, Var)
     assert len(m.rparams.reaction_r1.reaction_order) == 6
     assert m.rparams.reaction_r1.reaction_order["p1", "c1"].value == 1
@@ -753,6 +781,8 @@ def test_log_solubility_product_with_order():
         m.thermo[1].flow_mol_phase_comp["sol", "c1"]
         + m.thermo[1].flow_mol_phase_comp["sol", "c2"]
     ) / (pyunits.mol / pyunits.s)
+    s = m.rparams.reaction_r1.s_scale * s / (s + m.rparams.reaction_r1.s_norm)
+
     Q = m.rxn[1].log_k_eq["r1"] - (
         m.thermo[1].log_mole_frac_phase_comp["p1", "c1"]
         * m.rparams.reaction_r1.reaction_order["p1", "c1"]
@@ -768,7 +798,7 @@ def test_log_solubility_product_with_order():
         * m.rparams.reaction_r1.reaction_order["sol", "c2"]
     )
 
-    assert str(rform) == str(s - smooth_max(0, s - Q, m.rparams.reaction_r1.eps) == 0)
+    assert str(rform) == str(Q - smooth_max(0, Q - s, m.rparams.reaction_r1.eps) == 0)
 
 
 @pytest.mark.unit

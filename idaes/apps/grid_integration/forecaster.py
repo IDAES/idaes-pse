@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 from abc import ABC, abstractmethod
 from numbers import Real
@@ -54,8 +54,6 @@ class AbstractPriceForecaster(ABC):
 
         """
 
-        pass
-
     @abstractmethod
     def forecast_real_time_prices(self, date, hour, bus, horizon, n_samples):
 
@@ -77,7 +75,6 @@ class AbstractPriceForecaster(ABC):
             dict: real-time price forecasts
 
         """
-        pass
 
     @abstractmethod
     def forecast_day_ahead_prices(self, date, hour, bus, horizon, n_samples):
@@ -101,8 +98,6 @@ class AbstractPriceForecaster(ABC):
 
         """
 
-        pass
-
 
 class AbstractPrescientPriceForecaster(AbstractPriceForecaster):
 
@@ -124,8 +119,6 @@ class AbstractPrescientPriceForecaster(AbstractPriceForecaster):
             None
         """
 
-        pass
-
     @abstractmethod
     def fetch_day_ahead_stats_from_prescient(self, uc_date, uc_hour, day_ahead_result):
 
@@ -143,8 +136,6 @@ class AbstractPrescientPriceForecaster(AbstractPriceForecaster):
         Returns:
             None
         """
-
-        pass
 
 
 class PlaceHolderForecaster(AbstractPrescientPriceForecaster):
@@ -336,10 +327,7 @@ class PlaceHolderForecaster(AbstractPrescientPriceForecaster):
             None
         """
 
-        forecasts_arr = np.random.normal(
-            loc=corresponding_means, scale=corresponding_stds, size=(n_samples, horizon)
-        )
-        forecasts_arr[forecasts_arr < 0] = 0
+        return
 
 
 class Backcaster(AbstractPrescientPriceForecaster):
@@ -388,7 +376,7 @@ class Backcaster(AbstractPrescientPriceForecaster):
             )
 
         if len(historical_price) == 0:
-            raise ValueError(f"Given historical price is empty.")
+            raise ValueError("Given historical price is empty.")
 
         for b, price_list in historical_price.items():
             if not isinstance(price_list, list):
@@ -680,7 +668,7 @@ class Backcaster(AbstractPrescientPriceForecaster):
                 self._historical_rt_prices[b] += self._current_day_rt_prices[b]
                 self._current_day_rt_prices[b] = []
 
-            # drop oldes historical prices if total stored data exceeded the upper bound
+            # drop oldest historical prices if total stored data exceeded the upper bound
             while len(self._historical_rt_prices[b]) // 24 > self.max_historical_days:
                 self._historical_rt_prices[b] = self._historical_rt_prices[b][24:]
 
@@ -712,7 +700,7 @@ class Backcaster(AbstractPrescientPriceForecaster):
                 for t in range(24)
             ]
 
-            # drop oldes historical prices if total stored data exceeded the upper bound
+            # drop oldest historical prices if total stored data exceeded the upper bound
             while len(self._historical_da_prices[b]) // 24 > self.max_historical_days:
                 self._historical_da_prices[b] = self._historical_da_prices[b][24:]
 

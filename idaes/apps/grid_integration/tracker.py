@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 import pandas as pd
 import pyomo.environ as pyo
@@ -210,7 +210,19 @@ class Tracker:
             self.time_set, initialize=0, within=pyo.Reals, mutable=True
         )
 
-        self.model.deviation_penalty = pyo.Param(initialize=10000, mutable=False)
+        large_penalty = 10000
+        penalty_init = {}
+        for t in self.time_set:
+            if t < self.n_tracking_hour:
+                penalty_init[t] = large_penalty
+            else:
+                penalty_init[t] = large_penalty / (
+                    self.tracking_horizon - self.n_tracking_hour
+                )
+        self.model.deviation_penalty = pyo.Param(
+            self.time_set, initialize=penalty_init, mutable=False
+        )
+
         return
 
     def _add_tracking_constraints(self):
@@ -260,9 +272,9 @@ class Tracker:
         weight = self.tracking_model_object.total_cost[1]
 
         for t in self.time_set:
-            self.model.obj.expr += weight * cost[t] + self.model.deviation_penalty * (
-                self.model.power_underdelivered[t] + self.model.power_overdelivered[t]
-            )
+            self.model.obj.expr += weight * cost[t] + self.model.deviation_penalty[
+                t
+            ] * (self.model.power_underdelivered[t] + self.model.power_overdelivered[t])
 
         return
 
@@ -300,7 +312,7 @@ class Tracker:
         self._pass_market_dispatch(market_dispatch)
 
         # solve the model
-        self.solver.solve(self.model, tee=True)
+        self.solver.solve(self.model, tee=False)
 
         self.record_results(date=date, hour=hour)
 
@@ -353,7 +365,7 @@ class Tracker:
 
             try:
                 dispatch = market_dispatch[t]
-            except IndexError as ex:
+            except IndexError:
                 self.model.tracking_dispatch_constraints[t].deactivate()
             else:
                 self.model.power_dispatch[t] = dispatch

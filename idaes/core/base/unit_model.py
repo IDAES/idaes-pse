@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Base class for unit models
@@ -16,6 +16,7 @@ Base class for unit models
 
 from pyomo.environ import check_optimal_termination
 from pyomo.common.config import ConfigValue
+from pyomo.network import Port
 
 from idaes.core.base.process_base import (
     declare_process_block_class,
@@ -35,10 +36,10 @@ from idaes.core.util.exceptions import (
     InitializationError,
 )
 from idaes.core.util.tables import create_stream_table_dataframe
-import idaes.core.util.unit_costing
 import idaes.logger as idaeslog
 from idaes.core.solvers import get_solver
 from idaes.core.util.config import DefaultBool
+from idaes.core.initialization import SingleControlVolumeUnitInitializer
 
 
 __author__ = "John Eslick, Qi Chen, Andrew Lee"
@@ -56,6 +57,9 @@ class UnitModelBlockData(ProcessBlockData):
     This is the class for process unit operations models. These are models that
     would generally appear in a process flowsheet or superstructure.
     """
+
+    # Set default initializer
+    default_initializer = SingleControlVolumeUnitInitializer
 
     # Create Class ConfigBlock
     CONFIG = ProcessBlockData.CONFIG()
@@ -158,7 +162,7 @@ Must be True if dynamic = True,
                 f"instance of a StateBlock object (does not have a build_port method)."
             )
 
-        # Add Port and References to unit moodel
+        # Add Port and References to unit model
         self.add_component(name, port)
         for ref, cname in ref_name_list:
             ref_name = block.get_port_reference_name(cname, name)
@@ -218,7 +222,7 @@ Must be True if dynamic = True,
         if doc is None:
             doc = "Inlet Port"
 
-        # Determine type of sourcce block
+        # Determine type of source block
         if isinstance(block, ControlVolumeBlockData):
             # Work out if this is a 0D or 1D block
             try:
@@ -231,8 +235,11 @@ Must be True if dynamic = True,
                     sblock = block.properties
 
                     # Need to determine correct subset of indices to add to Port
+                    # Look at private attributes on control volume
+                    # pylint: disable-next=protected-access
                     if block._flow_direction == FlowDirection.forward:
                         _idx = block.length_domain.first()
+                    # pylint: disable-next=protected-access
                     elif block._flow_direction == FlowDirection.backward:
                         _idx = block.length_domain.last()
 
@@ -251,7 +258,7 @@ Must be True if dynamic = True,
             sblock = block
             port, ref_name_list = sblock.build_port(doc)
 
-        # Add Port and References to unit moodel
+        # Add Port and References to unit model
         self.add_component(name, port)
         for ref, cname in ref_name_list:
             ref_name = sblock.get_port_reference_name(cname, name)
@@ -313,7 +320,7 @@ Must be True if dynamic = True,
         if doc is None:
             doc = "Outlet Port"
 
-        # Determine type of sourcce block
+        # Determine type of source block
         if isinstance(block, ControlVolumeBlockData):
             # Work out if this is a 0D or 1D block
             try:
@@ -326,8 +333,11 @@ Must be True if dynamic = True,
                     sblock = block.properties
 
                     # Need to determine correct subset of indices to add to Port
+                    # Look at private attribute on control volume
+                    # pylint: disable-next=protected-access
                     if block._flow_direction == FlowDirection.backward:
                         _idx = block.length_domain.first()
+                    # pylint: disable-next=protected-access
                     elif block._flow_direction == FlowDirection.forward:
                         _idx = block.length_domain.last()
 
@@ -484,7 +494,7 @@ Must be True if dynamic = True,
         except AttributeError:
             raise ConfigurationError(
                 f"Unit model {self.name} does not have the standard Port "
-                f"names (inet and outlet). Please contact the unit model "
+                f"names (inlet and outlet). Please contact the unit model "
                 f"developer to develop a unit specific stream table."
             )
 
@@ -510,7 +520,7 @@ Must be True if dynamic = True,
             costing_args - dict arguments to be passed to costing block
                            initialize method
 
-        For other arguments, see the initilize_unit method.
+        For other arguments, see the initialize_unit method.
         """
         # Get any arguments for costing if provided
         cost_args = kwargs.pop("costing_args", {})
@@ -534,12 +544,7 @@ Must be True if dynamic = True,
             c.activate()
 
             if hasattr(c, "initialize"):
-                # New type costing block
                 c.initialize(**cost_args)
-            else:
-                # TODO: Deprecate in IDAES v2.0
-                # Old style costing package
-                idaes.core.util.unit_costing.initialize(c, **cost_args)
 
         # Return any flags returned by initialize_build
         return flags
@@ -628,3 +633,18 @@ Must be True if dynamic = True,
             pass
 
         super().del_component(obj)
+
+    def fix_initialization_states(self):
+        """
+        Attempts to fix inlet states by iterating over all Ports and looking for "inlet"
+        in the name.
+
+        More complex models may need to overload this with a model-specific method.
+
+        Returns:
+            None
+        """
+        for p in self.component_objects(Port, descend_into=False):
+            if "inlet" in p.name:
+                # Assume name is correct and fix all variables inside
+                p.fix()

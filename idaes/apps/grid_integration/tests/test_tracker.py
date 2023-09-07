@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 import pytest
 import pyomo.environ as pyo
@@ -35,7 +35,6 @@ class TestMissingModel:
     attr_dict = {"power_output": "power_output", "total_cost": ("tot_cost", 1)}
 
     def __init__(self, missing_method=None, missing_attr=None):
-
         """
         Constructs a model class without the specified missing methods and/or
         missing attributes.
@@ -55,7 +54,6 @@ horizon = 4
 
 @pytest.mark.unit
 def test_model_object_missing_methods():
-
     n_tracking_hour = 1
     solver = pyo.SolverFactory("cbc")
 
@@ -83,7 +81,6 @@ def test_model_object_missing_methods():
 
 @pytest.mark.unit
 def test_model_object_missing_attr():
-
     n_tracking_hour = 1
     solver = pyo.SolverFactory("cbc")
     # By definition, the model object should contain these attributes
@@ -103,7 +100,6 @@ def test_model_object_missing_attr():
 
 @pytest.mark.unit
 def test_n_tracking_hour_checker():
-
     solver = pyo.SolverFactory("cbc")
     tracking_model_object = TestingModel(model_data=testing_model_data)
 
@@ -130,7 +126,6 @@ def test_n_tracking_hour_checker():
 
 @pytest.mark.unit
 def test_solver_checker():
-
     n_tracking_hour = 1
     tracking_model_object = TestingModel(model_data=testing_model_data)
 
@@ -148,7 +143,6 @@ def test_solver_checker():
 
 @pytest.fixture
 def tracker_object():
-
     n_tracking_hour = 1
     solver = pyo.SolverFactory("cbc")
 
@@ -164,8 +158,10 @@ def tracker_object():
 
 
 @pytest.mark.component
+@pytest.mark.skipif(
+    not pyo.SolverFactory("cbc").available(False), reason="solver not available"
+)
 def test_track_market_dispatch(tracker_object):
-
     market_dispatch = [30, 40, 50, 70]
     tracker_object.track_market_dispatch(
         market_dispatch=market_dispatch, date="2021-07-26", hour="17:00"
@@ -182,3 +178,17 @@ def test_track_market_dispatch(tracker_object):
         pytest.approx(tracker_object.get_last_delivered_power(), abs=1e-3)
         == last_delivered_power
     )
+
+
+@pytest.mark.component
+def test_track_deviation_penalty(tracker_object):
+    large_penalty = 10000
+
+    assert pytest.approx(large_penalty) == pyo.value(
+        tracker_object.model.deviation_penalty[0]
+    )
+
+    for t in range(1, horizon):
+        assert pytest.approx(
+            large_penalty / (horizon - tracker_object.n_tracking_hour)
+        ) == pyo.value(tracker_object.model.deviation_penalty[t])

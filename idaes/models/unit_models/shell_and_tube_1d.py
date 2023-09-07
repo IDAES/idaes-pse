@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 1D Single pass shell and tube HX model with 0D wall conduction model.
@@ -17,13 +17,14 @@ This model derives from the HeatExchanger1D unit model.
 """
 # Import Pyomo libraries
 from pyomo.environ import (
+    Block,
     Var,
     check_optimal_termination,
     Constraint,
     value,
     units as pyunits,
 )
-from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
+from pyomo.common.config import ConfigValue, Bool
 
 # Import IDAES cores
 from idaes.core import declare_process_block_class, UnitModelBlockData
@@ -36,7 +37,7 @@ from idaes.core.util.constants import Constants as c
 from idaes.core.util import scaling as iscale
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.solvers import get_solver
-
+from idaes.core.initialization import SingleControlVolumeUnitInitializer
 import idaes.logger as idaeslog
 
 
@@ -46,9 +47,113 @@ __author__ = "Jaffer Ghouse"
 _log = idaeslog.getLogger(__name__)
 
 
+class ShellAndTubeInitializer(SingleControlVolumeUnitInitializer):
+    """
+    Initializer for 1D Shell and Tube Heat Exchanger units.
+
+    """
+
+    def initialization_routine(
+        self,
+        model: Block,
+        plugin_initializer_args: dict = None,
+    ):
+        """
+        Common initialization routine for 1D Shell and Tube Heat Exchangers.
+
+        This routine starts by initializing the hot and cold side properties. Next, the hot side is solved with
+        the wall temperature fixed to the average of the hot and cold side temperatures and the heat
+        transfer constraints deactivated. Finally, full model is solved with the wall temperature unfixed.
+
+        Args:
+            model: Pyomo Block to be initialized
+            plugin_initializer_args: dict-of-dicts containing arguments to be passed to plug-in Initializers.
+                Keys should be submodel components.
+
+        Returns:
+            Pyomo solver results object
+        """
+        return super(SingleControlVolumeUnitInitializer, self).initialization_routine(
+            model=model,
+            plugin_initializer_args=plugin_initializer_args,
+        )
+
+    def initialize_main_model(
+        self,
+        model: Block,
+    ):
+        """
+        Initialization routine for main 1D Shell and Tube HX models.
+
+        Args:
+            model: Pyomo Block to be initialized.
+
+        Returns:
+            Pyomo solver results object.
+
+        """
+        init_log = idaeslog.getInitLogger(
+            model.name, self.get_output_level(), tag="unit"
+        )
+        solve_log = idaeslog.getSolveLogger(
+            model.name, self.get_output_level(), tag="unit"
+        )
+
+        # Create solver
+        solver = get_solver(self.config.solver, self.config.solver_options)
+
+        # ---------------------------------------------------------------------
+        # Initialize control volumes
+        self.initialize_control_volume(model.hot_side)
+        self.initialize_control_volume(model.cold_side)
+
+        init_log.info_high("Initialization Step 1 Complete.")
+
+        # ---------------------------------------------------------------------
+        # Solve hot side
+        hot_side_units = (
+            model.hot_side.config.property_package.get_metadata().get_derived_units
+        )
+        for t in model.flowsheet().time:
+            for z in model.hot_side.length_domain:
+                model.temperature_wall[t, z].fix(
+                    0.5
+                    * (
+                        model.hot_side.properties[t, 0].temperature
+                        + pyunits.convert(
+                            model.cold_side.properties[t, 0].temperature,
+                            to_units=hot_side_units("temperature"),
+                        )
+                    )
+                )
+
+        model.cold_side.deactivate()
+        model.cold_side_heat_transfer_eq.deactivate()
+        model.heat_conservation.deactivate()
+
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = solver.solve(model, tee=slc.tee)
+        init_log.info_high(f"Initialization Step 2 {idaeslog.condition(res)}.")
+
+        # ---------------------------------------------------------------------
+        # Solve full unit
+        model.cold_side.activate()
+        model.cold_side_heat_transfer_eq.activate()
+        model.heat_conservation.activate()
+        model.temperature_wall.unfix()
+
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = solver.solve(model, tee=slc.tee)
+        init_log.info_high(f"Initialization Step 3 {idaeslog.condition(res)}.")
+
+        return res
+
+
 @declare_process_block_class("ShellAndTube1D")
 class ShellAndTube1DData(HeatExchanger1DData):
     """1D Shell and Tube HX Unit Model Class."""
+
+    default_initializer = ShellAndTubeInitializer
 
     CONFIG = HeatExchanger1DData.CONFIG(implicit=True)
     CONFIG.declare(
@@ -61,19 +166,6 @@ class ShellAndTube1DData(HeatExchanger1DData):
     If True, shell side will be the hot_side, if False shell side will be cold_side.""",
         ),
     )
-
-    def build(self):
-        """
-        Begin building model (pre-DAE transformation).
-
-        Args:
-            None
-
-        Returns:
-            None
-        """
-        # Call UnitModel.build to setup dynamics
-        super().build()
 
     def _process_config(self):
         super()._process_config()
@@ -98,10 +190,10 @@ class ShellAndTube1DData(HeatExchanger1DData):
 
         # Equate hot and cold side geometries
         hot_side_units = (
-            self.config.hot_side.property_package.get_metadata().get_derived_units
+            self.hot_side.config.property_package.get_metadata().get_derived_units
         )
         cold_side_units = (
-            self.config.cold_side.property_package.get_metadata().get_derived_units
+            self.cold_side.config.property_package.get_metadata().get_derived_units
         )
 
         @self.Constraint(
@@ -167,7 +259,7 @@ class ShellAndTube1DData(HeatExchanger1DData):
 
     def _make_performance(self):
         hot_side_units = (
-            self.config.hot_side.property_package.get_metadata().get_derived_units
+            self.hot_side.config.property_package.get_metadata().get_derived_units
         )
 
         # Performance variables
@@ -284,7 +376,7 @@ class ShellAndTube1DData(HeatExchanger1DData):
         # ---------------------------------------------------------------------
         # Solve unit
         hot_side_units = (
-            self.config.hot_side.property_package.get_metadata().get_derived_units
+            self.hot_side.config.property_package.get_metadata().get_derived_units
         )
         for t in self.flowsheet().time:
             for z in self.hot_side.length_domain:
@@ -357,11 +449,6 @@ class ShellAndTube1DData(HeatExchanger1DData):
         super(UnitModelBlockData, self).calculate_scaling_factors()
 
         for i, c in self.hot_side_heat_transfer_eq.items():
-            print(
-                iscale.get_scaling_factor(
-                    self.hot_side.heat[i], default=1, warning=False
-                )
-            )
             iscale.constraint_scaling_transform(
                 c,
                 iscale.get_scaling_factor(

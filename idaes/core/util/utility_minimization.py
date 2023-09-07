@@ -2,21 +2,20 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 General purpose heat integration block for IDAES models
 """
-
-# Import Python libraries
-import logging
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
 
 # Import Plotting and Numpy libraries for composite curves
 import matplotlib.pyplot as plt
@@ -43,7 +42,7 @@ def min_utility(blk, heating, cooling, DTmin, eps=1e-6, DG_units=pyunits.Mwatt):
     Args:
         blk: flowsheet
         heating: Equipment that requires Heat
-        cooling: Equipment from wich heat is being removed
+        cooling: Equipment from which heat is being removed
         DTmin: HRAT (Heat Recovery Approximation Temperature)
         eps: Epsilon for smoothing operation
 
@@ -109,9 +108,9 @@ def min_utility(blk, heating, cooling, DTmin, eps=1e-6, DG_units=pyunits.Mwatt):
         pinch_streamsdict.keys(), rule=T_out, doc="Outlet temperature in exchangers"
     )
 
-    # Expression for cp of equimpent with heat exchange
+    # Expression for cp of equipment with heat exchange
     def Theta_(blk, i):
-        if i in heatingdict.keys():
+        if i in heatingdict:
             return Q[i] / (
                 0.5
                 * (
@@ -149,7 +148,7 @@ def min_utility(blk, heating, cooling, DTmin, eps=1e-6, DG_units=pyunits.Mwatt):
         units=pyunits.get_units(Q[str(pinch_streams[0])]),
     )
 
-    # Define a cpnstraint to calculate the varaible QAh
+    # Define a constraint to calculate the variable QAh
     def rule_heat_above_pinch(blk, p):
         return blk.QAh[p] == sum(
             blk.Theta[i]
@@ -162,7 +161,7 @@ def min_utility(blk, heating, cooling, DTmin, eps=1e-6, DG_units=pyunits.Mwatt):
                     + sqrt((blk.Tout[i] - blk.T_[p]) ** 2 + eps)
                 )
             )
-            for i in coolingdict.keys()
+            for i in coolingdict
         )
 
     blk.heat_above_pinch = Constraint(
@@ -178,7 +177,7 @@ def min_utility(blk, heating, cooling, DTmin, eps=1e-6, DG_units=pyunits.Mwatt):
         units=pyunits.get_units(Q[str(pinch_streams[0])]),
     )
 
-    # Define a constraint to calculate the varaible QAc
+    # Define a constraint to calculate the variable QAc
     def rule_heat_below_pinch(blk, p):
         return blk.QAc[p] == sum(
             blk.Theta[i]
@@ -194,7 +193,7 @@ def min_utility(blk, heating, cooling, DTmin, eps=1e-6, DG_units=pyunits.Mwatt):
                     + sqrt((blk.Tin[i] - blk.T_[p] + DTmin) ** 2 + eps)
                 )
             )
-            for i in heatingdict.keys()
+            for i in heatingdict
         )
 
     blk.heat_below_pinch = Constraint(
@@ -229,19 +228,19 @@ def min_utility(blk, heating, cooling, DTmin, eps=1e-6, DG_units=pyunits.Mwatt):
     # Define a constraint to solve for Qw
     # Where 1E-6 is added to both sides of the constraint as a scaling factor
     def rule_cooling_utility(blk):
-        return blk.Qw == -sum(Q[i] for i in exchangerdict.keys()) + blk.Qs
+        return blk.Qw == -sum(Q[i] for i in exchangerdict) + blk.Qs
 
     blk.cooling_utility = Constraint(rule=rule_cooling_utility)
 
 
 def heat_data(blk, heating, cooling, DG_units=pyunits.Mwatt):
     """
-    Function for generating necesary data for Duran-Grossmann initialization
+    Function for generating necessary data for Duran-Grossmann initialization
     Allows the calculation of reactors
     Args:
         blk: flowsheet
         heating: Equipment that requires Heat
-        cooling: Equipment from wich heat is being removed
+        cooling: Equipment from which heat is being removed
     Returns:
         Dictionary for the equipment exchanging heat containing:
             Tin
@@ -277,7 +276,7 @@ def heat_data(blk, heating, cooling, DG_units=pyunits.Mwatt):
     FCp_ = {}
 
     # Defining inlet temperature for inlet from equipment control volume
-    for i in heatingdict.keys():
+    for i in heatingdict:
         T_in[i] = value(
             pinch_streamsdict[i].control_volume.properties_in[0].temperature
         )
@@ -287,7 +286,7 @@ def heat_data(blk, heating, cooling, DG_units=pyunits.Mwatt):
         )
 
     # Defining inlet temperature for utlet from equipment control volume
-    for i in coolingdict.keys():
+    for i in coolingdict:
         T_in[i] = (
             value(pinch_streamsdict[i].control_volume.properties_in[0].temperature)
             + EpsT
@@ -297,17 +296,15 @@ def heat_data(blk, heating, cooling, DG_units=pyunits.Mwatt):
         )
 
     # Calculating FCp out of heat in control volume
-    # Obtaines Q from equipment's control volume heat
-    for i in pinch_streamsdict.keys():
-        Q[i] = value(
-            pyunits.convert(pinch_streamsdict[i].heat_duty[0], to_units=DG_units)
-        )
+    # Obtains Q from equipment's control volume heat
+    for i, v in pinch_streamsdict.items():
+        Q[i] = value(pyunits.convert(v.heat_duty[0], to_units=DG_units))
         FCp_[i] = Q[i] / (T_out[i] - T_in[i])
 
     # Generate a large dictioary containing all the data obtained
     # from the equipment
     exchangeData = {}
-    for i in pinch_streamsdict.keys():
+    for i in pinch_streamsdict:
         exchangeData[i] = {
             "T_in": T_in[i],
             "T_out": T_out[i],
@@ -324,13 +321,13 @@ def pinch_calc(heating, cooling, exchangeData, DTmin, eps):
 
     Args:
         heating: Equipment that requires Heat
-        cooling: Equipment from wich heat is being removed
+        cooling: Equipment from which heat is being removed
         exchangeData: Dictionary containing Tin, Tout, FCp and Q
         for each equipment in lists
         DTmin: HRAT (Heat Recovery Approximation Temperature)
         eps: Epsilon for smoothing operation
     Returns:
-        PD (Dictionary containint initialized values for QAh, QAc, Qs and Qw)
+        PD (Dictionary containing initialized values for QAh, QAc, Qs and Qw)
     """
     # Generate lists out of strings from Args
     exchanger_list = heating + cooling
@@ -369,7 +366,7 @@ def pinch_calc(heating, cooling, exchangeData, DTmin, eps):
 
     # Calculate pinch temperature candidate
     # Calculate QAh and QAc
-    for i in pinch_streamsdict.keys():
+    for i in pinch_streamsdict:
         T_[i] = exchangeData[i]["T_in"] + dT[i]
         initQAh[i] = sum(
             exchangeData[j]["FCp_"]
@@ -385,7 +382,7 @@ def pinch_calc(heating, cooling, exchangeData, DTmin, eps):
                     + sqrt((exchangeData[j]["T_out"] - T_[i]) ** 2 + eps)
                 )
             )
-            for j in coolingdict.keys()
+            for j in coolingdict
         )
         initQAc[i] = sum(
             exchangeData[j]["FCp_"]
@@ -401,11 +398,11 @@ def pinch_calc(heating, cooling, exchangeData, DTmin, eps):
                     + sqrt((exchangeData[j]["T_in"] - T_[i] + DTmin) ** 2 + eps)
                 )
             )
-            for j in heatingdict.keys()
+            for j in heatingdict
         )
 
     # Generate array with all possible QS
-    for i in exchangerdict.keys():
+    for i in exchangerdict:
         b.append(initQAc[i] - initQAh[i])
 
     # Define largest value of QS
@@ -413,7 +410,7 @@ def pinch_calc(heating, cooling, exchangeData, DTmin, eps):
     initQs = c
 
     # Calculate Qw from largest value of Qs
-    initQw = -sum(value(exchangeData[i]["Q"]) for i in exchangerdict.keys()) + initQs
+    initQw = -sum(value(exchangeData[i]["Q"]) for i in exchangerdict) + initQs
     initQw = max([initQw, 0.0])
 
     # Fill Class with all the data to initialioze Duran-Grossmann variables
@@ -453,7 +450,6 @@ def generate_curves(CD):
     Qw = CD.Qw
 
     plt.figure(figsize=(10, 10))
-    ax = plt.subplot(111)
 
     # Plot values for Hot streams
     # Negative sign corrects for Q < 0 for hot streams
@@ -505,17 +501,15 @@ def heat_ex_data(blk, heating, cooling):
     )
     DG_units = pyunits.get_units(blk.Qw)
 
-    for i, el in enumerate(exchanger_list):
+    for el in exchanger_list:
         pinch_streamsdict[str(el)] = el
+        exchangerdict[str(el)] = el
 
-    for i, el in enumerate(cooling):
+    for el in cooling:
         coolingdict[str(el)] = el
 
-    for i, el in enumerate(heating):
+    for el in heating:
         heatingdict[str(el)] = el
-
-    for i, el in enumerate(exchanger_list):
-        exchangerdict[str(el)] = el
 
     # Generate zero arrays from length of the cooling list
     CHX = len(coolingdict)
@@ -525,12 +519,10 @@ def heat_ex_data(blk, heating, cooling):
 
     # Convert Pyomo model values into arrays
     j = 0
-    for i in coolingdict.keys():
-        CTin[j] = value(coolingdict[i].control_volume.properties_in[0].temperature) + 1
-        CTout[j] = value(coolingdict[i].control_volume.properties_out[0].temperature)
-        CQ[j] = value(
-            pyunits.convert(coolingdict[i].control_volume.heat[0], to_units=DG_units)
-        )
+    for v in coolingdict.values():
+        CTin[j] = value(v.control_volume.properties_in[0].temperature) + 1
+        CTout[j] = value(v.control_volume.properties_out[0].temperature)
+        CQ[j] = value(pyunits.convert(v.control_volume.heat[0], to_units=DG_units))
         j += 1
 
     # Generate zero arrays from length of the heating list
@@ -541,14 +533,10 @@ def heat_ex_data(blk, heating, cooling):
 
     # Convert Pyomo model values into arrays
     j = 0
-    for i in heatingdict.keys():
-        HTin[j] = value(heatingdict[i].control_volume.properties_in[0].temperature)
-        HTout[j] = (
-            value(heatingdict[i].control_volume.properties_out[0].temperature) + 1
-        )
-        HQ[j] = value(
-            pyunits.convert(heatingdict[i].control_volume.heat[0], to_units=DG_units)
-        )
+    for v in heatingdict.values():
+        HTin[j] = value(v.control_volume.properties_in[0].temperature)
+        HTout[j] = value(v.control_volume.properties_out[0].temperature) + 1
+        HQ[j] = value(pyunits.convert(v.control_volume.heat[0], to_units=DG_units))
         j += 1
 
         # Fill class with values and arrays
@@ -568,7 +556,7 @@ def gen_curves(Tin, Tout, Q):
     Function to do add cumulative heat arrays
     Args:
         Tin: Inlet temperatures of cooling/heating equipment
-        Toout: Outlet temperatures of cooling/heating equipment
+        Tout: Outlet temperatures of cooling/heating equipment
         Q: Heat of cooling/heating equipment
     Returns:
         Tstar: Cumulative Temperature array
@@ -588,7 +576,7 @@ def gen_curves(Tin, Tout, Q):
     nTstar = len(Tstar)
     Qmat = np.zeros((nTin, nTstar))
 
-    # Generate cumulative arays for temperature and heat
+    # Generate cumulative arrays for temperature and heat
     for i in range(nTin):
         for j in range(nTstar):
             Qmat[i, j] = linear_interpolation([Tin[i], Tout[i]], [0, Q[i]], Tstar[j])
@@ -644,22 +632,20 @@ def print_HX_results(blk, exchanger_list):
     Q_ = {}
 
     # Loop over heat exchangers
-    for i in exchangerdict.keys():
-        Tin_[i] = value(exchangerdict[i].control_volume.properties_in[0].temperature)
-        Tout_[i] = value(exchangerdict[i].control_volume.properties_out[0].temperature)
-        f_[i] = value(exchangerdict[i].control_volume.properties_out[0].flow_mol)
-        Q_[i] = value(exchangerdict[i].control_volume.heat[0])
-        T_units = pyunits.get_units(
-            exchangerdict[i].control_volume.properties_in[0].temperature
-        )
-        DG_units = pyunits.get_units(exchangerdict[i].heat_duty[0])
+    for i, v in exchangerdict.items():
+        Tin_[i] = value(v.control_volume.properties_in[0].temperature)
+        Tout_[i] = value(v.control_volume.properties_out[0].temperature)
+        f_[i] = value(v.control_volume.properties_out[0].flow_mol)
+        Q_[i] = value(v.control_volume.heat[0])
+        T_units = pyunits.get_units(v.control_volume.properties_in[0].temperature)
+        DG_units = pyunits.get_units(v.heat_duty[0])
 
     # Print the header
     print("Heat Exchanger Summary: ")
 
     # Print Inlet Temperature, Outlet Temperature and Heat
-    for i in exchangerdict.keys():
-        print("Heat exchanger: ", exchangerdict[i])
+    for i, v in exchangerdict.items():
+        print("Heat exchanger: ", v)
         print(f'Inlet T: {" "*3} {Tin_[i] : 0.3f} {T_units}')
         print(f'Outlet T: {" "*2} {Tout_[i] : 0.3f} {T_units}')
         print(f'Q : {" "*9} {Q_[i]: 0.3f} {DG_units}')
@@ -732,20 +718,20 @@ class CurveData:
         self.T_unit = T_unit
         self.Q_unit = Q_unit
 
-    def Cooling_Tin(self, list):
-        Cooling_Tin = list
+    def Cooling_Tin(self, _list):
+        self.Cooling_Tin = _list
 
-    def Cooling_Tout(self, list):
-        Cooling_Tout = list
+    def Cooling_Tout(self, _list):
+        self.Cooling_Tout = _list
 
-    def Cooling_Q(self, list):
-        Cooling_Q = list
+    def Cooling_Q(self, _list):
+        self.Cooling_Q = _list
 
-    def Heating_Tin(self, list):
-        Heating_Tin = list
+    def Heating_Tin(self, _list):
+        self.Heating_Tin = _list
 
-    def Heating_Tout(self, list):
-        Heating_Tout = list
+    def Heating_Tout(self, _list):
+        self.Heating_Tout = _list
 
-    def Heating_Q(self, list):
-        Heating_Q = list
+    def Heating_Q(self, _list):
+        self.Heating_Q = _list

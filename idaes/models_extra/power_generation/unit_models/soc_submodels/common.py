@@ -1,19 +1,21 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
+# TODO: Missing doc strings
+# pylint: disable=missing-module-docstring
+# pylint: disable=missing-class-docstring
 
 __author__ = "John Eslick, Douglas Allan"
 
-import copy
 import enum
 
 from pyomo.common.config import ConfigValue, In
@@ -49,32 +51,6 @@ def _set_default_factor(c, s):
     for i in c:
         if iscale.get_scaling_factor(c[i]) is None:
             iscale.set_scaling_factor(c[i], s)
-
-
-def _set_scaling_factor_if_none(c, s):
-    """Set a component's scaling factor if no scaling factor exists
-
-    Args:
-        c: (scalar) component to be scaled
-        s: scaling factor
-    """
-    if iscale.get_scaling_factor(c) is None:
-        iscale.set_scaling_factor(c, s)
-
-
-def _set_and_get_scaling_factor(c, s):
-    """Set a component's scaling factor if no scaling factor exists, then
-    return the scaling factor assigned to it
-
-    Args:
-        c: (scalar) component to be scaled
-        s: scaling factor
-
-    Returns:
-        Scaling factor assigned to c
-    """
-    _set_scaling_factor_if_none(c, s)
-    return iscale.get_scaling_factor(c)
 
 
 def _set_if_unfixed(v, val):
@@ -173,12 +149,8 @@ def _interpolate_channel(iz, ifaces, nodes, faces, phi_func, phi_inlet, opposite
     # I don't always need these, but it doesn't take long to calculate them
     if not opposite_flow:
         izu = iz - 1  # adjacent node upstream of the face
-        izuu = iz - 2  # node upstream adacjent to node upstream adjacent to face
-        izd = iz  # downstream node adjacent to face
     else:
         izu = iz  # adjacent node upstream of the face
-        izuu = iz + 1  # node upstream adacjent to node upstream adjacent to face
-        izd = iz - 1  # downstream node adjacent to face
     if iz == ifaces.first() and not opposite_flow:
         return phi_inlet
     if iz == ifaces.last() and opposite_flow:
@@ -270,6 +242,7 @@ class _SubsetOf(object):
         values are passed to ``domain.__contains__()``, and if ``True``
         is returned, the value is accepted and returned.
     """
+
     #  TODO Need to determine what to do about repeated entries before this can become a Pyomo PR
     def __new__(cls, domain=None, cast=None):
         return super(_SubsetOf, cls).__new__(cls)
@@ -504,7 +477,7 @@ h_params = {
         "G": 0.0,
         "H": 0.0,
     },
-    "O^2-": {  # Chosen to match O2 coeffs besides enthalpy and entropy of formation
+    "O^2-": {  # Chosen to match O2 coeffs
         "A": 0.5 * 30.03235,
         "B": 0.5 * 8.772972,
         "C": 0.5 * -3.988133,

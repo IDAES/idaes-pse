@@ -1,21 +1,20 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Tests for idaes.core.dmf.datasets module
 """
 import copy
 import json
-from pathlib import Path
 import pytest
 import uuid
 from idaes.core.dmf import datasets
@@ -62,7 +61,7 @@ DS_CSV = "Column 1 [T],Column 2 [],Column3\n1,2,3\n"
 
 @pytest.fixture(scope="session")
 def dmf_publication_dataset(tmp_path_factory):
-    """Create and opulate a temporary directory with an example publication and
+    """Create and populate a temporary directory with an example publication and
        an associated table (CSV).
 
     Returns:
@@ -207,7 +206,7 @@ def test_base_load_conf(dmf_workspace_path, tmp_path):
     # missing conf in path
     with pytest.raises(datasets.FileMissingError):
         ds._load_conf(tmp_path)
-    # unparseable conf
+    # unparsable conf
     conf = tmp_path / datasets.Dataset.CONF_NAME
     conf.open("w").write("Not valid JSON\n")
     with pytest.raises(datasets.ConfigurationError):

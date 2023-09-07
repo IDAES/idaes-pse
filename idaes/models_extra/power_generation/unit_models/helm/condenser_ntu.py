@@ -1,18 +1,20 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 NTU Condenser model, for use with Helmholtz EOS property packages.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
 
 __author__ = "Jinliang Ma"
 
@@ -20,20 +22,17 @@ __author__ = "Jinliang Ma"
 import pyomo.environ as pyo
 from pyomo.environ import units as pyunits
 from pyomo.common.config import ConfigBlock, ConfigValue
-from pyomo.common.deprecation import deprecated
 
 # Import IDAES cores
 from idaes.core import declare_process_block_class, UnitModelBlockData
 from idaes.core.util import from_json, to_json, StoreSpec
 from idaes.core.solvers import get_solver
 from idaes.core.util.tables import create_stream_table_dataframe
-from idaes.core.util.misc import add_object_reference
 from idaes.models.unit_models.heater import (
     _make_heater_config_block,
     _make_heater_control_volume,
 )
 from idaes.models.unit_models.heat_exchanger import hx_process_config, add_hx_references
-import idaes.core.util.unit_costing as costing
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
@@ -83,7 +82,7 @@ This config can be given by the cold side name instead of cold_side.""",
 @declare_process_block_class("HelmNtuCondenser", doc="Simple 0D condenser model.")
 class HelmNtuCondenserData(UnitModelBlockData):
     """
-    Simple NTU condenser unit model.  This model assumes the property pacakages
+    Simple NTU condenser unit model.  This model assumes the property packages
     specified are Helmholtz EOS type.
     """
 
@@ -128,7 +127,7 @@ class HelmNtuCondenserData(UnitModelBlockData):
         # Add variables                                                        #
         ########################################################################
         # Use hot side units as basis
-        s1_metadata = config.hot_side.property_package.get_metadata()
+        s1_metadata = self.hot_side.config.property_package.get_metadata()
 
         f_units = s1_metadata.get_derived_units("flow_mole")
         cp_units = s1_metadata.get_derived_units("heat_capacity_mole")
@@ -347,25 +346,13 @@ class HelmNtuCondenserData(UnitModelBlockData):
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe(
             {
-                "Hot Inlet": self.hot_inlet,
-                "Hot Outlet": self.hot_outlet,
-                "Cold Inlet": self.cold_inlet,
-                "Cold Outlet": self.cold_outlet,
+                "Hot Inlet": self.hot_side_inlet,
+                "Hot Outlet": self.hot_side_outlet,
+                "Cold Inlet": self.cold_side_inlet,
+                "Cold Outlet": self.cold_side_outlet,
             },
             time_point=time_point,
         )
-
-    @deprecated(
-        "The get_costing method is being deprecated in favor of the new "
-        "FlowsheetCostingBlock tools.",
-        version="TBD",
-    )
-    def get_costing(self, module=costing):
-        if not hasattr(self.flowsheet(), "costing"):
-            self.flowsheet().get_costing()
-        self.costing = pyo.Block()
-
-        module.hx_costing(self.costing)
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()

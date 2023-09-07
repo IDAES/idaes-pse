@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Property package for MEA Carbon Capture System Condenser
@@ -211,7 +211,6 @@ configuration = {
         "flow_mol": (0, 10, 20, pyunits.mol / pyunits.s),
         "temperature": (273.15, 323.15, 1000, pyunits.K),
         "pressure": (5e4, 108900, 1e7, pyunits.Pa),
-        "mole_frac_comp": {"H2O": (0, 0.5, 1), "CO2": (0, 0.5, 1)},
     },
     "pressure_ref": (101325, pyunits.Pa),
     "temperature_ref": (298.15, pyunits.K),

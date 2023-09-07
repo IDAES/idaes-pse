@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Tests for the convergence testing module
@@ -20,6 +20,8 @@ import json
 import pytest
 import os
 import os.path
+from collections import OrderedDict
+
 import pyomo.environ as pe
 from pyomo.common.fileutils import this_file_dir
 from pyomo.common.unittest import assertStructuredAlmostEqual
@@ -166,7 +168,9 @@ def test_convergence_evaluation_single():
     cb.write_sample_file(
         spec, fname, ceval_fixedvar_mutableparam_str, n_points=3, seed=43
     )
-    s, c, t, i = cb.run_single_sample_from_sample_file(fname, name="Sample-1")
+    s, c, i, rest, reg, i = cb.run_single_sample_from_sample_file(
+        fname, name="Sample-1"
+    )
     assert c == True
 
 
@@ -261,8 +265,356 @@ def test_convergence_evaluation_fixedvar_mutableparam():
     #     os.remove(results_fname)
 
 
-if __name__ == "__main__":
-    # test_convergence_evaluation_specification_file_fixedvar_mutableparam()
-    # test_convergence_evaluation_specification_file_unfixedvar_mutableparam()
-    # test_convergence_evaluation_specification_file_fixedvar_immutableparam()
-    test_convergence_evaluation_fixedvar_mutableparam()
+@pytest.mark.unit
+def test_parse_ipopt_output():
+    fname = os.path.join(currdir, "ipopt_output.txt")
+    iters, restoration, regularization, time = cb._parse_ipopt_output(fname)
+
+    assert iters == 43
+    assert restoration == 39
+    assert regularization == 4
+    assert time == 0.016 + 0.035
+
+
+@pytest.mark.unit
+def test_compare_convergence_runs_all_same():
+    run1 = [
+        OrderedDict(
+            [
+                ("name", "Sample_1"),
+                ("solved", True),
+                ("iters", 11),
+                ("iters_in_restoration", 3),
+                ("iters_w_regularization", 7),
+                ("time", 21),
+            ]
+        ),
+        OrderedDict(
+            [
+                ("name", "Sample_2"),
+                ("solved", False),
+                ("iters", 12),
+                ("iters_in_restoration", 4),
+                ("iters_w_regularization", 8),
+                ("time", 22),
+            ]
+        ),
+        OrderedDict(
+            [
+                ("name", "Sample_3"),
+                ("solved", True),
+                ("iters", 13),
+                ("iters_in_restoration", 5),
+                ("iters_w_regularization", 9),
+                ("time", 23),
+            ]
+        ),
+    ]
+
+    baseline = OrderedDict(
+        [
+            (
+                "Sample_1",
+                OrderedDict(
+                    [
+                        ("solved", True),
+                        ("iters", 11),
+                        ("iters_in_restoration", 3),
+                        ("iters_w_regularization", 7),
+                        ("time", 21),
+                    ]
+                ),
+            ),
+            (
+                "Sample_2",
+                OrderedDict(
+                    [
+                        ("solved", False),
+                        ("iters", 12),
+                        ("iters_in_restoration", 4),
+                        ("iters_w_regularization", 8),
+                        ("time", 22),
+                    ]
+                ),
+            ),
+            (
+                "Sample_3",
+                OrderedDict(
+                    [
+                        ("solved", True),
+                        ("iters", 13),
+                        ("iters_in_restoration", 5),
+                        ("iters_w_regularization", 9),
+                        ("time", 23),
+                    ]
+                ),
+            ),
+        ]
+    )
+
+    diff_solves, diff_iters, diff_rest, diff_reg = cb._compare_run_to_baseline(
+        run1, baseline
+    )
+
+    assert diff_solves == []
+    assert diff_iters == []
+    assert diff_rest == []
+    assert diff_reg == []
+
+
+@pytest.mark.unit
+def test_compare_convergence_runs_invalid_sample_name():
+    run1 = [
+        OrderedDict(
+            [
+                ("name", "Sample_X"),
+                ("solved", True),
+                ("iters", 11),
+                ("iters_in_restoration", 3),
+                ("iters_w_regularization", 7),
+                ("time", 21),
+            ]
+        ),
+        OrderedDict(
+            [
+                ("name", "Sample_2"),
+                ("solved", False),
+                ("iters", 12),
+                ("iters_in_restoration", 4),
+                ("iters_w_regularization", 8),
+                ("time", 22),
+            ]
+        ),
+        OrderedDict(
+            [
+                ("name", "Sample_3"),
+                ("solved", True),
+                ("iters", 13),
+                ("iters_in_restoration", 5),
+                ("iters_w_regularization", 9),
+                ("time", 23),
+            ]
+        ),
+    ]
+
+    baseline = OrderedDict(
+        [
+            (
+                "Sample_1",
+                OrderedDict(
+                    [
+                        ("solved", True),
+                        ("iters", 11),
+                        ("iters_in_restoration", 3),
+                        ("iters_w_regularization", 7),
+                        ("time", 21),
+                    ]
+                ),
+            ),
+            (
+                "Sample_2",
+                OrderedDict(
+                    [
+                        ("solved", False),
+                        ("iters", 12),
+                        ("iters_in_restoration", 4),
+                        ("iters_w_regularization", 8),
+                        ("time", 22),
+                    ]
+                ),
+            ),
+            (
+                "Sample_3",
+                OrderedDict(
+                    [
+                        ("solved", True),
+                        ("iters", 13),
+                        ("iters_in_restoration", 5),
+                        ("iters_w_regularization", 9),
+                        ("time", 23),
+                    ]
+                ),
+            ),
+        ]
+    )
+
+    with pytest.raises(
+        KeyError,
+        match="baseline does not contain a sample with the name Sample_X. Please check that "
+        "both convergence evaluation runs used the same set of samples.",
+    ):
+        diff_solves, diff_iters, diff_rest, diff_reg = cb._compare_run_to_baseline(
+            run1, baseline
+        )
+
+
+@pytest.mark.unit
+def test_compare_convergence_runs_differences_abs():
+    run1 = [
+        OrderedDict(
+            [
+                ("name", "Sample_1"),
+                ("solved", True),  # diff
+                ("iters", 11),  # same
+                ("iters_in_restoration", 5),  # diff
+                ("iters_w_regularization", 8),  # in tol
+                ("time", 21),
+            ]
+        ),
+        OrderedDict(
+            [
+                ("name", "Sample_2"),
+                ("solved", False),  # diff
+                ("iters", 13),  # in tol
+                ("iters_in_restoration", 3),  # in tol
+                ("iters_w_regularization", 6),  # diff
+                ("time", 22),
+            ]
+        ),
+        OrderedDict(
+            [
+                ("name", "Sample_3"),
+                ("solved", True),  # same
+                ("iters", 15),  # diff
+                ("iters_in_restoration", 5),  # same
+                ("iters_w_regularization", 9),  # same
+                ("time", 23),
+            ]
+        ),
+    ]
+
+    baseline = OrderedDict(
+        [
+            (
+                "Sample_1",
+                OrderedDict(
+                    [
+                        ("solved", False),
+                        ("iters", 11),
+                        ("iters_in_restoration", 3),
+                        ("iters_w_regularization", 7),
+                        ("time", 21),
+                    ]
+                ),
+            ),
+            (
+                "Sample_2",
+                OrderedDict(
+                    [
+                        ("solved", True),
+                        ("iters", 12),
+                        ("iters_in_restoration", 4),
+                        ("iters_w_regularization", 8),
+                        ("time", 22),
+                    ]
+                ),
+            ),
+            (
+                "Sample_3",
+                OrderedDict(
+                    [
+                        ("solved", True),
+                        ("iters", 13),
+                        ("iters_in_restoration", 5),
+                        ("iters_w_regularization", 9),
+                        ("time", 23),
+                    ]
+                ),
+            ),
+        ]
+    )
+
+    diff_solves, diff_iters, diff_rest, diff_reg = cb._compare_run_to_baseline(
+        run1, baseline, rel_tol=1e-5, abs_tol=1
+    )
+
+    assert diff_solves == ["Sample_1", "Sample_2"]
+    assert diff_iters == ["Sample_3"]
+    assert diff_rest == ["Sample_1"]
+    assert diff_reg == ["Sample_2"]
+
+
+@pytest.mark.unit
+def test_compare_convergence_runs_differences_rel():
+    run1 = [
+        OrderedDict(
+            [
+                ("name", "Sample_1"),
+                ("solved", True),  # diff
+                ("iters", 11),  # same
+                ("iters_in_restoration", 5),  # diff
+                ("iters_w_regularization", 8),  # in tol
+                ("time", 21),
+            ]
+        ),
+        OrderedDict(
+            [
+                ("name", "Sample_2"),
+                ("solved", True),  # diff
+                ("iters", 13),  # in tol
+                ("iters_in_restoration", 4),  # same
+                ("iters_w_regularization", 4),  # diff
+                ("time", 22),
+            ]
+        ),
+        OrderedDict(
+            [
+                ("name", "Sample_3"),
+                ("solved", False),  # diff
+                ("iters", 20),  # diff
+                ("iters_in_restoration", 4),  # in tol
+                ("iters_w_regularization", 9),  # same
+                ("time", 23),
+            ]
+        ),
+    ]
+
+    baseline = OrderedDict(
+        [
+            (
+                "Sample_1",
+                OrderedDict(
+                    [
+                        ("solved", False),
+                        ("iters", 11),
+                        ("iters_in_restoration", 3),
+                        ("iters_w_regularization", 7),
+                        ("time", 21),
+                    ]
+                ),
+            ),
+            (
+                "Sample_2",
+                OrderedDict(
+                    [
+                        ("solved", True),
+                        ("iters", 12),
+                        ("iters_in_restoration", 4),
+                        ("iters_w_regularization", 8),
+                        ("time", 22),
+                    ]
+                ),
+            ),
+            (
+                "Sample_3",
+                OrderedDict(
+                    [
+                        ("solved", True),
+                        ("iters", 13),
+                        ("iters_in_restoration", 5),
+                        ("iters_w_regularization", 9),
+                        ("time", 23),
+                    ]
+                ),
+            ),
+        ]
+    )
+
+    diff_solves, diff_iters, diff_rest, diff_reg = cb._compare_run_to_baseline(
+        run1, baseline, rel_tol=0.25, abs_tol=0
+    )
+
+    assert diff_solves == ["Sample_1", "Sample_3"]
+    assert diff_iters == ["Sample_3"]
+    assert diff_rest == ["Sample_1"]
+    assert diff_reg == ["Sample_2"]

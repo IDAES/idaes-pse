@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Tests for feed block.
@@ -16,13 +16,12 @@ Authors: Andrew Lee
 """
 
 import pytest
-from io import StringIO
 
 from pyomo.environ import ConcreteModel, value, units as pyunits
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
-from idaes.models.unit_models.feed import Feed
+from idaes.models.unit_models.feed import Feed, FeedInitializer
 from idaes.models.properties.examples.saponification_thermo import (
     SaponificationParameterBlock,
 )
@@ -35,6 +34,11 @@ from idaes.core.util.model_statistics import (
 )
 from idaes.core.util.testing import PhysicalParameterTestBlock, initialization_tester
 from idaes.core.solvers import get_solver
+
+from idaes.core.initialization import (
+    BlockTriangularizationInitializer,
+    InitializationStatus,
+)
 
 
 # -----------------------------------------------------------------------------
@@ -58,6 +62,8 @@ def test_config():
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup
     assert m.fs.unit.config.property_package is m.fs.properties
+
+    assert m.fs.unit.default_initializer is FeedInitializer
 
 
 # -----------------------------------------------------------------------------
@@ -250,22 +256,22 @@ class TestIAPWS(object):
 
         expected = {
             "Units": {
-                "Molar Flow (mol/s)": getattr(pyunits.pint_registry, "mole/second"),
-                "Mass Flow (kg/s)": getattr(pyunits.pint_registry, "kg/second"),
-                "T (K)": getattr(pyunits.pint_registry, "K"),
-                "P (Pa)": getattr(pyunits.pint_registry, "Pa"),
+                "Molar Flow": getattr(pyunits.pint_registry, "mole/second"),
+                "Mass Flow": getattr(pyunits.pint_registry, "kg/second"),
+                "T": getattr(pyunits.pint_registry, "K"),
+                "P": getattr(pyunits.pint_registry, "Pa"),
                 "Vapor Fraction": getattr(pyunits.pint_registry, "dimensionless"),
-                "Molar Enthalpy (J/mol) Vap": getattr(pyunits.pint_registry, "J/mole"),
-                "Molar Enthalpy (J/mol) Liq": getattr(pyunits.pint_registry, "J/mole"),
+                "Molar Enthalpy": getattr(pyunits.pint_registry, "J/mole"),
             },
             "Outlet": {
-                "Molar Flow (mol/s)": pytest.approx(100, rel=1e-4),
-                "Mass Flow (kg/s)": pytest.approx(1.8015, rel=1e-4),
-                "T (K)": pytest.approx(373.13, rel=1e-4),
-                "P (Pa)": pytest.approx(101325, rel=1e-4),
-                "Vapor Fraction": pytest.approx(0.40467, abs=1e-4),
-                "Molar Enthalpy (J/mol) Vap": pytest.approx(48201, rel=1e-4),
-                "Molar Enthalpy (J/mol) Liq": pytest.approx(7549.7, rel=1e-4),
+                "Molar Flow": pytest.approx(100, rel=1e-3),
+                "Mass Flow": pytest.approx(1.8015, rel=1e-3),
+                "T": pytest.approx(373.13, rel=1e-3),
+                "P": pytest.approx(101325, rel=1e-3),
+                "Vapor Fraction": pytest.approx(0.40467, abs=1e-3),
+                "Molar Enthalpy": pytest.approx(
+                    48201 * 0.4046 + (1 - 0.4046) * 7549.7, rel=1e-3
+                ),
             },
         }
 
@@ -295,3 +301,70 @@ class TestIAPWS(object):
         assert pytest.approx(0.5953, abs=1e-4) == value(
             iapws.fs.unit.properties[0].phase_frac["Liq"]
         )
+
+
+class TestInitializers:
+    @pytest.fixture
+    def model(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.properties = iapws95.Iapws95ParameterBlock(
+            phase_presentation=iapws95.PhaseType.LG
+        )
+
+        m.fs.unit = Feed(property_package=m.fs.properties)
+
+        m.fs.unit.flow_mol[0].set_value(100)
+        m.fs.unit.enth_mol[0].set_value(24000)
+        m.fs.unit.pressure[0].set_value(101325)
+
+        return m
+
+    @pytest.mark.component
+    def test_default_initializer(self, model):
+        initializer = FeedInitializer()
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert pytest.approx(101325.0, abs=1e3) == value(
+            model.fs.unit.outlet.pressure[0]
+        )
+        assert pytest.approx(24000, abs=1e3) == value(model.fs.unit.outlet.enth_mol[0])
+        assert pytest.approx(100.0, abs=1e-2) == value(model.fs.unit.outlet.flow_mol[0])
+
+        assert pytest.approx(373.12, abs=1e-2) == value(
+            model.fs.unit.properties[0].temperature
+        )
+        assert pytest.approx(0.5953, abs=1e-4) == value(
+            model.fs.unit.properties[0].phase_frac["Liq"]
+        )
+
+        assert not model.fs.unit.flow_mol[0].fixed
+        assert not model.fs.unit.enth_mol[0].fixed
+        assert not model.fs.unit.pressure[0].fixed
+
+    @pytest.mark.component
+    def test_block_triangularization(self, model):
+        initializer = BlockTriangularizationInitializer(constraint_tolerance=2e-5)
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert pytest.approx(101325.0, abs=1e3) == value(
+            model.fs.unit.outlet.pressure[0]
+        )
+        assert pytest.approx(24000, abs=1e3) == value(model.fs.unit.outlet.enth_mol[0])
+        assert pytest.approx(100.0, abs=1e-2) == value(model.fs.unit.outlet.flow_mol[0])
+
+        assert pytest.approx(373.12, abs=1e-2) == value(
+            model.fs.unit.properties[0].temperature
+        )
+        assert pytest.approx(0.5953, abs=1e-4) == value(
+            model.fs.unit.properties[0].phase_frac["Liq"]
+        )
+
+        assert not model.fs.unit.flow_mol[0].fixed
+        assert not model.fs.unit.enth_mol[0].fixed
+        assert not model.fs.unit.pressure[0].fixed

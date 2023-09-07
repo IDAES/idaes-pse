@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 import pandas as pd
 import pyomo.environ as pyo
@@ -43,8 +43,6 @@ class AbstractBidder(ABC):
             None
         """
 
-        pass
-
     @abstractmethod
     def update_real_time_model(self, **kwargs):
 
@@ -57,8 +55,6 @@ class AbstractBidder(ABC):
         Returns:
             None
         """
-
-        pass
 
     @abstractmethod
     def compute_day_ahead_bids(self, date, hour, **kwargs):
@@ -79,8 +75,6 @@ class AbstractBidder(ABC):
             None
         """
 
-        pass
-
     @abstractmethod
     def compute_real_time_bids(self, date, hour, **kwargs):
 
@@ -100,8 +94,6 @@ class AbstractBidder(ABC):
             None
         """
 
-        pass
-
     @abstractmethod
     def write_results(self, path):
 
@@ -114,8 +106,6 @@ class AbstractBidder(ABC):
         Return:
             None
         """
-
-        pass
 
     @abstractmethod
     def formulate_DA_bidding_problem(self):
@@ -131,8 +121,6 @@ class AbstractBidder(ABC):
             None
         """
 
-        pass
-
     @abstractmethod
     def formulate_RT_bidding_problem(self):
 
@@ -146,8 +134,6 @@ class AbstractBidder(ABC):
         Returns:
             None
         """
-
-        pass
 
     @abstractmethod
     def record_bids(self, bids, model, date, hour):
@@ -169,8 +155,6 @@ class AbstractBidder(ABC):
             None
 
         """
-
-        pass
 
     @property
     @abstractmethod
@@ -256,6 +240,7 @@ class StochasticProgramBidder(AbstractBidder):
         n_scenario,
         solver,
         forecaster,
+        real_time_underbid_penalty,
     ):
 
         """
@@ -274,6 +259,8 @@ class StochasticProgramBidder(AbstractBidder):
 
             forecaster: an initialized LMP forecaster object
 
+            real_time_underbid_penalty: penalty for RT power bid that's less than DA power bid, non-negative
+
         Returns:
             None
         """
@@ -284,6 +271,7 @@ class StochasticProgramBidder(AbstractBidder):
         self.n_scenario = n_scenario
         self.solver = solver
         self.forecaster = forecaster
+        self.real_time_underbid_penalty = real_time_underbid_penalty
 
         self._check_inputs()
 
@@ -337,6 +325,10 @@ class StochasticProgramBidder(AbstractBidder):
         model = self._set_up_bidding_problem(self.day_ahead_horizon)
         self._add_DA_bidding_constraints(model)
 
+        # do not relax the DA offering UB
+        for i in model.SCENARIOS:
+            model.fs[i].real_time_underbid_power.fix(0)
+
         return model
 
     def formulate_RT_bidding_problem(self):
@@ -351,6 +343,10 @@ class StochasticProgramBidder(AbstractBidder):
 
         model = self._set_up_bidding_problem(self.real_time_horizon)
         self._add_RT_bidding_constraints(model)
+
+        # relax the DA offering UB
+        for i in model.SCENARIOS:
+            model.fs[i].real_time_underbid_power.unfix()
 
         return model
 
@@ -396,6 +392,9 @@ class StochasticProgramBidder(AbstractBidder):
             model.fs[i].real_time_energy_price = pyo.Param(
                 time_index, initialize=0, mutable=True
             )
+            model.fs[i].real_time_underbid_penalty = pyo.Param(
+                initialize=self.real_time_underbid_penalty, mutable=True
+            )
 
         return
 
@@ -411,8 +410,11 @@ class StochasticProgramBidder(AbstractBidder):
             None
         """
 
-        def day_ahead_power_ub_rule(fs, t):
-            return fs.power_output_ref[t] >= fs.day_ahead_power[t]
+        def relaxed_day_ahead_power_ub_rule(fs, t):
+            return (
+                fs.power_output_ref[t] + fs.real_time_underbid_power[t]
+                >= fs.day_ahead_power[t]
+            )
 
         for i in model.SCENARIOS:
             time_index = model.fs[i].power_output_ref.index_set()
@@ -420,8 +422,12 @@ class StochasticProgramBidder(AbstractBidder):
                 time_index, initialize=0, within=pyo.NonNegativeReals
             )
 
+            model.fs[i].real_time_underbid_power = pyo.Var(
+                time_index, initialize=0, within=pyo.NonNegativeReals
+            )
+
             model.fs[i].day_ahead_power_ub = pyo.Constraint(
-                time_index, rule=day_ahead_power_ub_rule
+                time_index, rule=relaxed_day_ahead_power_ub_rule
             )
 
         return
@@ -459,6 +465,8 @@ class StochasticProgramBidder(AbstractBidder):
                     + model.fs[k].real_time_energy_price[t]
                     * (model.fs[k].power_output_ref[t] - model.fs[k].day_ahead_power[t])
                     - weight * cost[t]
+                    - model.fs[k].real_time_underbid_penalty
+                    * model.fs[k].real_time_underbid_power[t]
                 )
 
         return
@@ -626,7 +634,7 @@ class StochasticProgramBidder(AbstractBidder):
             for t in time_index:
                 try:
                     price = realized_day_ahead_prices[t + hour]
-                except IndexError as ex:
+                except IndexError:
                     self.real_time_model.fs[s].day_ahead_energy_price[t] = forecasts[s][
                         (t + hour) - 24
                     ]
@@ -652,10 +660,14 @@ class StochasticProgramBidder(AbstractBidder):
             for t in time_index:
                 try:
                     dispatch = realized_day_ahead_dispatches[t + hour]
-                except IndexError as ex:
+                except IndexError:
                     self.real_time_model.fs[s].day_ahead_power[t].unfix()
+                    # unrelax the DA offering UB
+                    self.real_time_model.fs[s].real_time_underbid_power[t].fix(0)
                 else:
                     self.real_time_model.fs[s].day_ahead_power[t].fix(dispatch)
+                    # relax the DA offering UB
+                    self.real_time_model.fs[s].real_time_underbid_power[t].unfix()
 
     def update_day_ahead_model(self, **kwargs):
 
@@ -808,6 +820,7 @@ class SelfScheduler(StochasticProgramBidder):
         n_scenario,
         solver,
         forecaster,
+        real_time_underbid_penalty=10000,
         fixed_to_schedule=False,
     ):
         """
@@ -826,7 +839,7 @@ class SelfScheduler(StochasticProgramBidder):
 
             forecaster: an initialized LMP forecaster object
 
-            fixed_to_schedule: If True, forece market simulator to give the same schedule.
+            fixed_to_schedule: If True, force market simulator to give the same schedule.
 
         Returns:
             None
@@ -839,6 +852,7 @@ class SelfScheduler(StochasticProgramBidder):
             n_scenario,
             solver,
             forecaster,
+            real_time_underbid_penalty,
         )
         self.fixed_to_schedule = fixed_to_schedule
 
@@ -906,7 +920,9 @@ class SelfScheduler(StochasticProgramBidder):
 
         """
         This methods extract the bids out of the stochastic programming model and
-        organize them.
+        organize them into self-schedule bids.
+
+        For thermal generators, startup times and costs are set to 0. And the bid price for power outside of p_min and p_max are 0.
 
         Arguments:
             model: bidding model
@@ -922,6 +938,7 @@ class SelfScheduler(StochasticProgramBidder):
         """
 
         bids = {}
+        is_thermal = self.bidding_model_object.model_data.generator_type == "thermal"
 
         power_output_var = getattr(model.fs[0], power_var_name)
         time_index = power_output_var.index_set()
@@ -939,29 +956,34 @@ class SelfScheduler(StochasticProgramBidder):
 
             if self.fixed_to_schedule:
                 bids[t][self.generator]["p_min"] = bids[t][self.generator]["p_max"]
-                bids[t][self.generator]["min_up_time"] = 0
-                bids[t][self.generator]["min_down_time"] = 0
                 bids[t][self.generator]["fixed_commitment"] = (
                     1 if bids[t][self.generator]["p_min"] > 0 else 0
                 )
-                bids[t][self.generator]["startup_fuel"] = [
-                    (bids[t][self.generator]["min_down_time"], 0)
-                ]
-                bids[t][self.generator]["startup_cost"] = [
-                    (bids[t][self.generator]["min_down_time"], 0)
+
+                if is_thermal:
+                    bids[t][self.generator]["min_up_time"] = 0
+                    bids[t][self.generator]["min_down_time"] = 0
+
+                    bids[t][self.generator]["startup_fuel"] = [
+                        (bids[t][self.generator]["min_down_time"], 0)
+                    ]
+                    bids[t][self.generator]["startup_cost"] = [
+                        (bids[t][self.generator]["min_down_time"], 0)
+                    ]
+
+            if is_thermal:
+
+                bids[t][self.generator]["p_cost"] = [
+                    (bids[t][self.generator]["p_min"], 0),
+                    (bids[t][self.generator]["p_max"], 0),
                 ]
 
-            bids[t][self.generator]["p_cost"] = [
-                (bids[t][self.generator]["p_min"], 0),
-                (bids[t][self.generator]["p_max"], 0),
-            ]
-
-            bids[t][self.generator]["startup_capacity"] = bids[t][self.generator][
-                "p_min"
-            ]
-            bids[t][self.generator]["shutdown_capacity"] = bids[t][self.generator][
-                "p_min"
-            ]
+                bids[t][self.generator]["startup_capacity"] = bids[t][self.generator][
+                    "p_min"
+                ]
+                bids[t][self.generator]["shutdown_capacity"] = bids[t][self.generator][
+                    "p_min"
+                ]
 
         return bids
 
@@ -1023,6 +1045,7 @@ class Bidder(StochasticProgramBidder):
         n_scenario,
         solver,
         forecaster,
+        real_time_underbid_penalty=10000,
     ):
 
         """
@@ -1041,6 +1064,8 @@ class Bidder(StochasticProgramBidder):
 
             forecaster: an initialized LMP forecaster object
 
+            real_time_underbid_penalty: penalty for RT power bid that's less than DA power bid, non-negative
+
         Returns:
             None
         """
@@ -1052,6 +1077,7 @@ class Bidder(StochasticProgramBidder):
             n_scenario,
             solver,
             forecaster,
+            real_time_underbid_penalty,
         )
 
     def _add_DA_bidding_constraints(self, model):
@@ -1126,7 +1152,7 @@ class Bidder(StochasticProgramBidder):
 
         """
         This methods extract the bids out of the stochastic programming model and
-        organize them.
+        organize them into ( MWh, $ ) pairs.
 
         Arguments:
             model: bidding model
@@ -1172,8 +1198,13 @@ class Bidder(StochasticProgramBidder):
 
         for t in time_index:
 
-            # make sure the orignal points in the bids
-            for power, marginal_cost in self.bidding_model_object.model_data.p_cost:
+            # always include pmin in the cost curve, but include the other points if required
+            if self.bidding_model_object.model_data.include_default_p_cost:
+                p_cost_add = self.bidding_model_object.model_data.p_cost
+            else:
+                p_cost_add = self.bidding_model_object.model_data.p_cost[0:1]
+
+            for power, marginal_cost in p_cost_add:
                 if round(power, 2) not in bids[t][gen]:
                     bids[t][gen][power] = marginal_cost
 
@@ -1216,7 +1247,7 @@ class Bidder(StochasticProgramBidder):
                         gen_name=gen,
                         t=t,
                     )
-                except NameError as ex:
+                except NameError:
                     raise RuntimeError(
                         "'egret' must be installed to use this functionality"
                     )
@@ -1234,7 +1265,8 @@ class Bidder(StochasticProgramBidder):
                 full_bids[t][gen]["p_cost"] = bids[t_idx][gen]
                 full_bids[t][gen]["p_min"] = min([p[0] for p in bids[t_idx][gen]])
                 full_bids[t][gen]["p_max"] = max([p[0] for p in bids[t_idx][gen]])
-
+                full_bids[t][gen]["p_min_agc"] = min([p[0] for p in bids[t_idx][gen]])
+                full_bids[t][gen]["p_max_agc"] = max([p[0] for p in bids[t_idx][gen]])
                 full_bids[t][gen]["startup_capacity"] = full_bids[t][gen]["p_min"]
                 full_bids[t][gen]["shutdown_capacity"] = full_bids[t][gen]["p_min"]
 

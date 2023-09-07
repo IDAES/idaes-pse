@@ -8,8 +8,8 @@ For detailed examples on integrating IDAES surrogate visualization methods with 
 
 *idaes.core.surrogate.plotting.sm_plotter* contains four utility methods for plotting and formatting data:
 
-* *sm_plotter.surrogate_scatter2D* - generate 2D scatter plots for each predicted input/output combination overlayed with validation data
-* *sm_plotter.surrogate_scatter3D* - generate 3D scatter plots for each predicted (input1, input2)/output combination overlayed with validation data
+* *sm_plotter.surrogate_scatter2D* - generate 2D scatter plots for each predicted input/output combination overlaid with validation data
+* *sm_plotter.surrogate_scatter3D* - generate 3D scatter plots for each predicted (input1, input2)/output combination overlaid with validation data
 * *sm_plotter.surrogate_parity* - generate parity plots for each data output/predicted output
 * *sm_plotter.surrogate_residual* - generate residual (error) plots for each predicted input/output combination
 
@@ -76,7 +76,5 @@ An example of a plot that is produced:
 Available Methods
 ------------------
 
-.. automethod:: idaes.core.surrogate.plotting.sm_plotter.surrogate_scatter2D
-.. automethod:: idaes.core.surrogate.plotting.sm_plotter.surrogate_scatter3D
-.. automethod:: idaes.core.surrogate.plotting.sm_plotter.surrogate_parity
-.. automethod:: idaes.core.surrogate.plotting.sm_plotter.surrogate_residual
+.. automodule:: idaes.core.surrogate.plotting.sm_plotter
+    :members:

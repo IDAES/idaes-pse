@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 This model contains equations relating to the electrochemistry occurring at the
@@ -43,11 +43,18 @@ and related approximations for calculating activation losses in solid oxide
 fuel cell models. Journal of Power Sources, 152(1–2), 175–181.
 https://doi.org/10.1016/j.jpowsour.2005.03.174
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+
+# TODO: Look into protected access issues
+# pylint: disable=protected-access
+
 __author__ = "Douglas Allan"
 
 import copy
 
-from pyomo.common.config import ConfigBlock, ConfigValue, In, ListOf, Bool
+from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 import pyomo.environ as pyo
 
 
@@ -130,7 +137,7 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
         # Set up some sets for the space and time indexing
         tset = self.flowsheet().config.time
         # Set up node and face sets and get integer indices for them
-        izfaces, iznodes = common._face_initializer(
+        izfaces, iznodes = common._face_initializer(  # pylint: disable=unused-variable
             self, self.config.control_volume_zfaces, "z"
         )
         comps = self.component_list = pyo.Set(
@@ -215,7 +222,7 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
         self.log_mole_frac_comp = pyo.Var(
             tset,
             iznodes,
-            comps,
+            self.reacting_gas_list,
             initialize=-1,
             units=pyo.units.dimensionless,
             bounds=(None, 0),
@@ -273,7 +280,7 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
                 b.conc_mol_comp[t, iz, i] for i in comps
             )
 
-        @self.Constraint(tset, iznodes, comps)
+        @self.Constraint(tset, iznodes, self.reacting_gas_list)
         def log_mole_frac_comp_eqn(b, t, iz, j):
             return b.mole_frac_comp[t, iz, j] == pyo.exp(b.log_mole_frac_comp[t, iz, j])
 
@@ -401,7 +408,6 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
     def initialize_build(
         self, outlvl=idaeslog.NOTSET, solver=None, optarg=None, fix_x0=False
     ):
-        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
         self.temperature_deviation_x.fix()
@@ -421,9 +427,10 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
                     self.mole_frac_comp[t, iz, j].value = pyo.value(
                         self.conc_mol_comp[t, iz, j] / denom
                     )
-                    self.log_mole_frac_comp[t, iz, j].value = pyo.value(
-                        pyo.log(self.mole_frac_comp[t, iz, j])
-                    )
+                    if j in self.reacting_gas_list:
+                        self.log_mole_frac_comp[t, iz, j].value = pyo.value(
+                            pyo.log(self.mole_frac_comp[t, iz, j])
+                        )
 
         solver_obj = get_solver(solver, optarg)
         common._init_solve_block(self, solver_obj, solve_log)
@@ -441,13 +448,16 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
 
     def recursive_scaling(self):
         gsf = iscale.get_scaling_factor
-        ssf = common._set_scaling_factor_if_none
-        sgsf = common._set_and_get_scaling_factor
-        cst = lambda c, s: iscale.constraint_scaling_transform(c, s, overwrite=False)
-        sR = 1e-1  # Scaling factor for R
+
+        def ssf(c, s):
+            iscale.set_scaling_factor(c, s, overwrite=False)
+
+        sgsf = iscale.set_and_get_scaling_factor
+
+        def cst(c, s):
+            iscale.constraint_scaling_transform(c, s, overwrite=False)
+
         sy_def = 10  # Mole frac comp scaling
-        sLy = 1 / self.length_y[None].value
-        sLz = len(self.iznodes) / self.length_z[None].value
 
         for t in self.flowsheet().time:
             for iz in self.iznodes:
@@ -468,12 +478,14 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
                     sqx1 = sgsf(self.heat_flux_x1[t, iz], 1e-2)
                 sqx = min(sqx0, sqx1)
                 cst(self.heat_flux_x_eqn[t, iz], sqx)
+
                 for j in self.component_list:
                     # TODO Come back with good formulation for trace components
                     # and scale DConc and Cref
                     sy = sgsf(self.mole_frac_comp[t, iz, j], sy_def)
-                    ssf(self.log_mole_frac_comp[t, iz, j], 1)
                     cst(self.mole_frac_comp_eqn[t, iz, j], sy)
-                    cst(self.log_mole_frac_comp_eqn[t, iz, j], sy)
                     smaterial_flux_x = sgsf(self.material_flux_x[t, iz, j], 1e-2)
                     cst(self.material_flux_x_eqn[t, iz, j], smaterial_flux_x)
+                    if j in self.reacting_gas_list:
+                        ssf(self.log_mole_frac_comp[t, iz, j], 1)
+                        cst(self.log_mole_frac_comp_eqn[t, iz, j], sy)

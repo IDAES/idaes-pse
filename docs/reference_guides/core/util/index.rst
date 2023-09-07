@@ -6,12 +6,13 @@
 
     dyn_utils
     initialization
+    math
     misc
+    model_diagnostics
     model_serializer
     model_statistics
     phase_equilibria
     scaling
     tables
     tags
-    unit_costing
     utility_minimization

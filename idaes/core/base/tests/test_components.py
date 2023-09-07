@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Tests for Component objects
@@ -38,7 +38,7 @@ from idaes.core.base.phases import (
     AqueousPhase,
 )
 from idaes.core.util.exceptions import ConfigurationError, PropertyPackageError
-from idaes.core.base.property_meta import PropertyClassMetadata
+from idaes.core.base.property_meta import PropertyClassMetadata, UnitSet
 
 
 class TestComponent:
@@ -47,14 +47,12 @@ class TestComponent:
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
-        m.meta_object.add_default_units(
-            {
-                "time": pyunits.s,
-                "length": pyunits.m,
-                "mass": pyunits.kg,
-                "amount": pyunits.mol,
-                "temperature": pyunits.K,
-            }
+        m.meta_object._default_units.set_units(
+            temperature=pyunits.K,
+            mass=pyunits.kg,
+            length=pyunits.m,
+            time=pyunits.s,
+            amount=pyunits.mol,
         )
 
         def get_metadata(self):
@@ -176,11 +174,13 @@ class TestComponent:
             return m.meta_object
 
         m.get_metadata = types.MethodType(get_metadata, m)
-        m.get_metadata().default_units["amount"] = pyunits.mol
-        m.get_metadata().default_units["mass"] = pyunits.kg
-        m.get_metadata().default_units["time"] = pyunits.s
-        m.get_metadata().default_units["length"] = pyunits.m
-        m.get_metadata().default_units["temperature"] = pyunits.K
+        m.meta_object._default_units.set_units(
+            temperature=pyunits.K,
+            mass=pyunits.kg,
+            length=pyunits.m,
+            time=pyunits.s,
+            amount=pyunits.mol,
+        )
 
         m.comp = Component(
             parameter_data={
@@ -209,11 +209,13 @@ class TestComponent:
             return m.meta_object
 
         m.get_metadata = types.MethodType(get_metadata, m)
-        m.get_metadata().default_units["amount"] = pyunits.mol
-        m.get_metadata().default_units["mass"] = pyunits.kg
-        m.get_metadata().default_units["time"] = pyunits.s
-        m.get_metadata().default_units["length"] = pyunits.m
-        m.get_metadata().default_units["temperature"] = pyunits.K
+        m.meta_object._default_units.set_units(
+            temperature=pyunits.K,
+            mass=pyunits.kg,
+            length=pyunits.m,
+            time=pyunits.s,
+            amount=pyunits.mol,
+        )
 
         m.comp = Component(
             parameter_data={
@@ -239,14 +241,12 @@ class TestSolute:
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
-        m.meta_object.add_default_units(
-            {
-                "time": pyunits.s,
-                "length": pyunits.m,
-                "mass": pyunits.kg,
-                "amount": pyunits.mol,
-                "temperature": pyunits.K,
-            }
+        m.meta_object._default_units.set_units(
+            temperature=pyunits.K,
+            mass=pyunits.kg,
+            length=pyunits.m,
+            time=pyunits.s,
+            amount=pyunits.mol,
         )
 
         def get_metadata(self):
@@ -353,14 +353,12 @@ class TestSovent:
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
-        m.meta_object.add_default_units(
-            {
-                "time": pyunits.s,
-                "length": pyunits.m,
-                "mass": pyunits.kg,
-                "amount": pyunits.mol,
-                "temperature": pyunits.K,
-            }
+        m.meta_object._default_units.set_units(
+            temperature=pyunits.K,
+            mass=pyunits.kg,
+            length=pyunits.m,
+            time=pyunits.s,
+            amount=pyunits.mol,
         )
 
         def get_metadata(self):
@@ -463,7 +461,7 @@ class TestSovent:
 
 class TestIon:
     @pytest.mark.unit
-    def test_electrolye(self):
+    def test_electrolyte(self):
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
@@ -482,18 +480,16 @@ class TestIon:
             m.comp = Ion(_electrolyte=True)
 
     @pytest.mark.unit
-    def test_not_electrolye(self):
+    def test_not_electrolyte(self):
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
-        m.meta_object.add_default_units(
-            {
-                "time": pyunits.s,
-                "length": pyunits.m,
-                "mass": pyunits.kg,
-                "amount": pyunits.mol,
-                "temperature": pyunits.K,
-            }
+        m.meta_object._default_units.set_units(
+            temperature=pyunits.K,
+            mass=pyunits.kg,
+            length=pyunits.m,
+            time=pyunits.s,
+            amount=pyunits.mol,
         )
 
         def get_metadata(self):
@@ -510,18 +506,16 @@ class TestIon:
 
 class TestAnion:
     @pytest.mark.unit
-    def test_not_electrolye(self):
+    def test_not_electrolyte(self):
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
-        m.meta_object.add_default_units(
-            {
-                "time": pyunits.s,
-                "length": pyunits.m,
-                "mass": pyunits.kg,
-                "amount": pyunits.mol,
-                "temperature": pyunits.K,
-            }
+        m.meta_object._default_units.set_units(
+            temperature=pyunits.K,
+            mass=pyunits.kg,
+            length=pyunits.m,
+            time=pyunits.s,
+            amount=pyunits.mol,
         )
 
         def get_metadata(self):
@@ -540,14 +534,12 @@ class TestAnion:
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
-        m.meta_object.add_default_units(
-            {
-                "time": pyunits.s,
-                "length": pyunits.m,
-                "mass": pyunits.kg,
-                "amount": pyunits.mol,
-                "temperature": pyunits.K,
-            }
+        m.meta_object._default_units.set_units(
+            temperature=pyunits.K,
+            mass=pyunits.kg,
+            length=pyunits.m,
+            time=pyunits.s,
+            amount=pyunits.mol,
         )
 
         def get_metadata(self):
@@ -624,7 +616,7 @@ class TestAnion:
 
 class TestCation:
     @pytest.mark.unit
-    def test_not_electrolye(self):
+    def test_not_electrolyte(self):
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
@@ -645,14 +637,12 @@ class TestCation:
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
-        m.meta_object.add_default_units(
-            {
-                "time": pyunits.s,
-                "length": pyunits.m,
-                "mass": pyunits.kg,
-                "amount": pyunits.mol,
-                "temperature": pyunits.K,
-            }
+        m.meta_object._default_units.set_units(
+            temperature=pyunits.K,
+            mass=pyunits.kg,
+            length=pyunits.m,
+            time=pyunits.s,
+            amount=pyunits.mol,
         )
 
         def get_metadata(self):
@@ -733,14 +723,12 @@ class TestApparent:
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
-        m.meta_object.add_default_units(
-            {
-                "time": pyunits.s,
-                "length": pyunits.m,
-                "mass": pyunits.kg,
-                "amount": pyunits.mol,
-                "temperature": pyunits.K,
-            }
+        m.meta_object._default_units.set_units(
+            temperature=pyunits.K,
+            mass=pyunits.kg,
+            length=pyunits.m,
+            time=pyunits.s,
+            amount=pyunits.mol,
         )
 
         def get_metadata(self):
@@ -755,18 +743,16 @@ class TestApparent:
         return m
 
     @pytest.mark.unit
-    def test_not_electrolye(self):
+    def test_not_electrolyte(self):
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
-        m.meta_object.add_default_units(
-            {
-                "time": pyunits.s,
-                "length": pyunits.m,
-                "mass": pyunits.kg,
-                "amount": pyunits.mol,
-                "temperature": pyunits.K,
-            }
+        m.meta_object._default_units.set_units(
+            temperature=pyunits.K,
+            mass=pyunits.kg,
+            length=pyunits.m,
+            time=pyunits.s,
+            amount=pyunits.mol,
         )
 
         def get_metadata(self):
@@ -788,14 +774,12 @@ class TestApparent:
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
-        m.meta_object.add_default_units(
-            {
-                "time": pyunits.s,
-                "length": pyunits.m,
-                "mass": pyunits.kg,
-                "amount": pyunits.mol,
-                "temperature": pyunits.K,
-            }
+        m.meta_object._default_units.set_units(
+            temperature=pyunits.K,
+            mass=pyunits.kg,
+            length=pyunits.m,
+            time=pyunits.s,
+            amount=pyunits.mol,
         )
 
         def get_metadata(self):

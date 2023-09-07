@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Test SolidOxideCell model using parameters from the literature. Compare to both
@@ -72,8 +72,10 @@ from pyomo.common.fileutils import this_file_dir
 
 from idaes.core import FlowsheetBlock
 from idaes.models.properties import iapws95
+from idaes.models.properties.general_helmholtz import helmholtz_data_dir as hdir
 import idaes.core.util.scaling as iscale
 from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.solvers import get_solver
 
 from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
@@ -90,7 +92,7 @@ from idaes.models_extra.power_generation.unit_models.soc_submodels.common import
     _comp_enthalpy_expr,
     _comp_entropy_expr,
 )
-
+from idaes.models.properties.general_helmholtz import helmholtz_available
 from idaes.models.unit_models.heat_exchanger import HeatExchangerFlowPattern
 
 data_cache = os.sep.join([this_file_dir(), "data_cache"])
@@ -314,6 +316,7 @@ def model_stack():
     return m
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.component
 def test_initialization_cell(model):
     m = model
@@ -334,7 +337,7 @@ def test_initialization_cell(model):
 
     cell.initialize_build(
         optarg={"nlp_scaling_method": "user-scaling"},
-        current_density_guess=-2000,
+        current_density_guess=0,
         temperature_guess=1103.15,
     )
     cell.model_check()
@@ -377,7 +380,7 @@ def test_initialization_cell(model):
 
     assert degrees_of_freedom(cell) == 11
 
-    cell.initialize(current_density_guess=-1500, temperature_guess=1103.15)
+    cell.initialize(current_density_guess=0, temperature_guess=1103.15)
 
     assert degrees_of_freedom(cell) == 11
 
@@ -386,6 +389,7 @@ def test_initialization_cell(model):
     cell.oxygen_inlet.mole_frac_comp[0, "N2"].fix()
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.component
 def test_initialization_stack(model_stack):
     m = model_stack
@@ -409,7 +413,7 @@ def test_initialization_stack(model_stack):
 
     stack.initialize_build(
         optarg={"nlp_scaling_method": "user-scaling"},
-        current_density_guess=-2000,
+        current_density_guess=0,
         temperature_guess=1103.15,
     )
     cell.model_check()
@@ -454,7 +458,7 @@ def test_initialization_stack(model_stack):
 
     stack.initialize_build(
         optarg={"nlp_scaling_method": "user-scaling"},
-        current_density_guess=-1500,
+        current_density_guess=0,
         temperature_guess=1103.15,
     )
 
@@ -470,7 +474,7 @@ def kazempoor_braun_replication(model):
     cell = m.fs.cell
     case = 5
 
-    solver = pyo.SolverFactory("ipopt")
+    solver = get_solver("ipopt")
 
     N_voltage = 11
     N_case = 5
@@ -503,14 +507,15 @@ def kazempoor_braun_replication(model):
         results[key] = []
 
     for case in range(1, N_case + 1):
-
         T_in = df["T_in"][case] + 273.15
         T_dew = df["T_dew"][case] + 273.15
         N_N2 = cccm_to_mps(df["sccm_N2"][case])
         N_H2 = cccm_to_mps(df["sccm_H2"][case])
 
         # IAPWS95 returns psat in kPa
-        p_H2O = 1e3 * pyo.value(m.fs.prop_Iapws95.func_p_sat(647.096 / T_dew))
+        p_H2O = 1e3 * pyo.value(
+            m.fs.prop_Iapws95.p_sat_func("H2O", 647.096 / T_dew, hdir)
+        )
         y_H2O = p_H2O / P
         N_H2O = (N_N2 + N_H2) * y_H2O / (1 - y_H2O)
 
@@ -608,6 +613,7 @@ def kazempoor_braun_replication(model):
     return out
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.integration
 def test_model_replication(model):
     out = kazempoor_braun_replication(model)

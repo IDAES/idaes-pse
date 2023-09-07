@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Tests for generic reaction package core code
@@ -30,7 +30,9 @@ from pyomo.environ import (
     value,
     units as pyunits,
 )
+from pyomo.util.check_units import assert_units_equivalent
 
+from idaes.core.base.property_meta import UnitSet
 from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
 )
@@ -53,7 +55,6 @@ from idaes.models.properties.modular_properties.reactions.equilibrium_forms impo
     log_power_law_equil,
 )
 
-from idaes.core.util.testing import PhysicalParameterTestBlock
 from idaes.core.util.constants import Constants as constants
 
 from idaes.core.util.exceptions import ConfigurationError, PropertyPackageError
@@ -120,15 +121,15 @@ class TestGenericReactionParameterBlock(object):
 
         rxn_config = m.rxn_params.config.rate_reactions
 
-        assert m.rxn_params.get_metadata().default_units == {
-            "time": pyunits.s,
-            "length": pyunits.m,
-            "mass": pyunits.kg,
-            "amount": pyunits.mol,
-            "temperature": pyunits.K,
-            "current": None,
-            "luminous intensity": None,
-        }
+        default_units = m.rxn_params.get_metadata().default_units
+        assert isinstance(default_units, UnitSet)
+        assert_units_equivalent(default_units.TIME, pyunits.s)
+        assert_units_equivalent(default_units.LENGTH, pyunits.m)
+        assert_units_equivalent(default_units.MASS, pyunits.kg)
+        assert_units_equivalent(default_units.AMOUNT, pyunits.mol)
+        assert_units_equivalent(default_units.TEMPERATURE, pyunits.K)
+        assert_units_equivalent(default_units.CURRENT, pyunits.ampere)
+        assert_units_equivalent(default_units.LUMINOUS_INTENSITY, pyunits.candela)
 
         assert isinstance(m.rxn_params.rate_reaction_idx, Set)
         assert len(m.rxn_params.rate_reaction_idx) == 1
@@ -155,7 +156,7 @@ class TestGenericReactionParameterBlock(object):
     def test_invalid_unit(self, m):
         with pytest.raises(
             PropertyPackageError,
-            match="Unrecognized units of measurment for quantity time " "\(foo\)",
+            match="Unrecognized units of measurement for quantity TIME " "\(foo\)",
         ):
             m.rxn_params = GenericReactionParameterBlock(
                 property_package=m.params,
@@ -168,29 +169,6 @@ class TestGenericReactionParameterBlock(object):
                 },
                 base_units={
                     "time": "foo",
-                    "length": pyunits.m,
-                    "mass": pyunits.kg,
-                    "amount": pyunits.mol,
-                    "temperature": pyunits.K,
-                },
-            )
-
-    @pytest.mark.unit
-    def test_missing_required_quantity(self, m):
-        with pytest.raises(
-            PropertyPackageError,
-            match="Unrecognized units of measurment for quantity time " "\(None\)",
-        ):
-            m.rxn_params = GenericReactionParameterBlock(
-                property_package=m.params,
-                rate_reactions={
-                    "r1": {
-                        "stoichiometry": {("p1", "c1"): -1, ("p1", "c2"): 2},
-                        "heat_of_reaction": "foo",
-                        "rate_form": "foo",
-                    }
-                },
-                base_units={
                     "length": pyunits.m,
                     "mass": pyunits.kg,
                     "amount": pyunits.mol,

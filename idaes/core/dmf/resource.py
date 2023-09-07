@@ -1,18 +1,22 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
-Resource representaitons.
+Resource representations.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+
 # stdlib
 import abc
 import argparse
@@ -23,12 +27,11 @@ import hashlib
 import json
 from json import JSONDecodeError
 import logging
-import os
 from pathlib import Path
 import pprint
 import re
 import sys
-from typing import List, Union, Iterator, Optional, IO, Any
+from typing import List, Union, Iterator, Optional, IO
 import uuid
 
 # third-party
@@ -344,6 +347,7 @@ class Resource:
             empty string.
             If there are no tables, this will return an empty dict.
         """
+        # pylint: disable-next=import-outside-toplevel
         from idaes.core.dmf.tables import Table  # avoid circular import
 
         try:
@@ -675,6 +679,8 @@ class Resource:
             ValueError: if file_format is "infer" but it cannot be inferred
             IOError: if reading the data file fails
         """
+        # Avoid circular import
+        # pylint: disable-next=import-outside-toplevel
         from idaes.core.dmf.tables import Table
 
         table = Table.read_table(path, inline, file_format)
@@ -1039,7 +1045,7 @@ def identifier_str(value=None, allow_prefix=False):
         value (str): If given, validate that it is a 32-byte str
                      If not given or None, set new random value.
     Raises:
-        ValuError, if a value is given, and it is invalid.
+        ValueError, if a value is given, and it is invalid.
     """
     # regular expression for identifier: hex string len=32
     if allow_prefix:

@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Test for skeleton unit model.
@@ -28,6 +28,7 @@ from idaes.models.unit_models import SkeletonUnitModel
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.solvers import get_solver
 from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.initialization import BlockTriangularizationInitializer
 
 __author__ = "Jaffer Ghouse"
 
@@ -130,6 +131,11 @@ class TestSkeletonDefault(object):
         assert hasattr(skeleton_default.fs.skeleton, "temperature_out")
         assert hasattr(skeleton_default.fs.skeleton, "pressure_out")
 
+        assert (
+            skeleton_default.fs.skeleton.default_initializer
+            is BlockTriangularizationInitializer
+        )
+
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize_exception(self, skeleton_default):
@@ -180,6 +186,80 @@ class TestSkeletonDefault(object):
         assert value(skeleton_default.fs.skeleton.outlet.pressure[0]) == pytest.approx(
             190, abs=1e-3
         )
+
+
+@pytest.mark.component
+def test_default_initializer():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+
+    m.fs.skeleton = SkeletonUnitModel(dynamic=False)
+    m.fs.skeleton.comp_list = Set(initialize=["c1", "c2"])
+
+    # input vars for skeleton
+    m.fs.skeleton.flow_comp_in = Var(m.fs.time, m.fs.skeleton.comp_list, initialize=1.0)
+    m.fs.skeleton.temperature_in = Var(m.fs.time, initialize=298.15)
+    m.fs.skeleton.pressure_in = Var(m.fs.time, initialize=101)
+
+    # output vars for skeleton
+    m.fs.skeleton.flow_comp_out = Var(
+        m.fs.time, m.fs.skeleton.comp_list, initialize=1.0
+    )
+    m.fs.skeleton.temperature_out = Var(m.fs.time, initialize=298.15)
+    m.fs.skeleton.pressure_out = Var(m.fs.time, initialize=101)
+
+    # Surrogate model equations
+    # Flow equation
+
+    def rule_flow(m, t, i):
+        return m.flow_comp_out[t, i] == m.flow_comp_in[t, i]
+
+    m.fs.skeleton.eq_flow = Constraint(
+        m.fs.time, m.fs.skeleton.comp_list, rule=rule_flow
+    )
+
+    m.fs.skeleton.eq_temperature = Constraint(
+        expr=m.fs.skeleton.temperature_out[0] == m.fs.skeleton.temperature_in[0] + 10
+    )
+    m.fs.skeleton.eq_pressure = Constraint(
+        expr=m.fs.skeleton.pressure_out[0] == m.fs.skeleton.pressure_in[0] - 10
+    )
+
+    inlet_dict = {
+        "flow_mol_comp": m.fs.skeleton.flow_comp_in,
+        "temperature": m.fs.skeleton.temperature_in,
+        "pressure": m.fs.skeleton.pressure_in,
+    }
+    outlet_dict = {
+        "flow_mol_comp": m.fs.skeleton.flow_comp_out,
+        "temperature": m.fs.skeleton.temperature_out,
+        "pressure": m.fs.skeleton.pressure_out,
+    }
+
+    m.fs.skeleton.add_ports(name="inlet", member_dict=inlet_dict)
+    m.fs.skeleton.add_ports(name="outlet", member_dict=outlet_dict)
+
+    m.fs.skeleton.inlet.flow_mol_comp[0, "c1"].set_value(2)
+    m.fs.skeleton.inlet.flow_mol_comp[0, "c2"].set_value(2)
+    m.fs.skeleton.inlet.temperature[0].set_value(325)
+    m.fs.skeleton.inlet.pressure[0].set_value(200)
+
+    initializer = m.fs.skeleton.default_initializer()
+    initializer.initialize(m.fs.skeleton)
+
+    assert value(m.fs.skeleton.outlet.flow_mol_comp[0, "c1"]) == pytest.approx(
+        2, abs=1e-3
+    )
+    assert value(m.fs.skeleton.outlet.flow_mol_comp[0, "c2"]) == pytest.approx(
+        2, abs=1e-3
+    )
+    assert value(m.fs.skeleton.outlet.temperature[0]) == pytest.approx(335, abs=1e-3)
+    assert value(m.fs.skeleton.outlet.pressure[0]) == pytest.approx(190, abs=1e-3)
+
+    assert not m.fs.skeleton.inlet.flow_mol_comp[0, "c1"].fixed
+    assert not m.fs.skeleton.inlet.flow_mol_comp[0, "c2"].fixed
+    assert not m.fs.skeleton.inlet.temperature[0].fixed
+    assert not m.fs.skeleton.inlet.pressure[0].fixed
 
 
 class TestSkeletonCustom(object):

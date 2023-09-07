@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Ideal Vapor Phase properties for CO@ absorption via aqueous MEA.
@@ -28,6 +28,10 @@ References:
     [1] Hilliard thesis (1998)
     [2] Morgan et.al (2015)
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+
 # Import Pyomo units
 from pyomo.environ import sqrt, units as pyunits, Var
 
@@ -155,7 +159,7 @@ class Diffus:
                 if (i, j) in binary_set
             )
             + sum(
-                blk.mole_frac_comp[j] / diffus_binary(j, i)
+                blk.mole_frac_comp[j] / diffus_binary(j, i)  # pylint: disable=W1114
                 for j in blk.component_list
                 if (j, i) in binary_set
             )
@@ -313,10 +317,7 @@ class ThermalCond:
                 / ((1 + p3 / blk.temperature) + (p4 / blk.temperature**2))
             )
 
-        """
-        Thermal conductivity of vapor phase
-        Wassiljewa-Mason-Saxena mixing rule(low pressure)
-        """
+        # Thermal conductivity of vapor phase Wassiljewa-Mason-Saxena mixing rule(low pressure)
         k_vap = 0
         for i in blk.component_list:
             sumij = 0
@@ -338,7 +339,7 @@ class Viscosity:
         # Viscosity parameters are required for thermal conductivity, and
         # have likely already been built by the time this is triggered
         # for viscosity.
-        # To avoid implict replacement, check to see if parameters already
+        # To avoid implicit replacement, check to see if parameters already
         # exist
         if hasattr(pobj, "visc_d_h2o_coeff_1"):
             return None
@@ -413,7 +414,7 @@ class Viscosity:
 
         theta_ij = {}
         o = dict()
-        for (i, j) in enumerate(blk.component_list, 1):
+        for i, j in enumerate(blk.component_list, 1):
             o[i] = j
 
         for i in range(1, len(blk.component_list)):

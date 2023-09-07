@@ -23,6 +23,7 @@ exchanger.
   import pyomo.environ as pe # Pyomo environment
   from idaes.core import FlowsheetBlock, StateBlock
   from idaes.models.unit_models import HeatExchanger
+  from idaes.models.unit_models.heat_exchanger import HX0DInitializer
   from idaes.models.unit_models.heat_exchanger import delta_temperature_amtd_callback
   from idaes.models.properties import iapws95
 
@@ -50,7 +51,8 @@ exchanger.
   model.fs.heat_exchanger.tube_inlet.enth_mol.fix(3000)
 
   # Initialize the model
-  model.fs.heat_exchanger.initialize()
+  initializer = HX0DInitializer()
+  initializer.initialize(model.fs.heat_exchanger)
 
 Degrees of Freedom
 ------------------
@@ -81,7 +83,7 @@ These names are configurable using the ``hot_side_name`` and ``cold_side_name`` 
 aliases are assigned to the control volumes and associated Ports using the names provided (note that ``hot_side`` and
 ``cold_side`` will always work). The sign convention is that duty is positive for heat flowing from the hot side to the cold
 side.  Aside from the sign convention there is no requirement that the hot side be hotter than the cold side, however
-some formulations for the average temperature driving force may require that hte hot side be hotter than the cold side.
+some formulations for the average temperature driving force may require that the hot side be hotter than the cold side.
 
 The control volumes are configured the same as the ``ControlVolume0DBlock`` in the
 :ref:`Heater model <reference_guides/model_libraries/generic/unit_models/heater:Heater>`. The ``HeatExchanger`` model contains additional
@@ -126,6 +128,12 @@ Temperature difference is an expression:
 
 The heat transfer coefficient is a variable with no associated constraints by default.
 
+Initialization
+--------------
+
+.. autoclass:: HX0DInitializer
+   :members: initialization_routine
+
 Class Documentation
 -------------------
 
@@ -169,3 +177,5 @@ to avoid an evaluation error in the log function.
 .. autofunction:: delta_temperature_amtd_callback
 
 .. autofunction:: delta_temperature_underwood_callback
+
+.. autofunction:: delta_temperature_lmtd_smooth_callback

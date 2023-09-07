@@ -1,34 +1,45 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
+# TODO: Missing doc strings
+# pylint: disable=missing-module-docstring
+# pylint: disable=missing-function-docstring
 
+# pylint: disable=consider-using-enumerate
 
 # Imports from the python standard library
-from __future__ import division, print_function
-from builtins import int, str
-import itertools
 import os.path
-import pprint
-import random
 import warnings
+import pickle
 
 # Imports from third parties
 from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
-import pickle
-from pyomo.environ import *
 import scipy.optimize as opt
-from six import string_types
+
+from pyomo.environ import (
+    ConcreteModel,
+    Param,
+    Set,
+    Var,
+    Reals,
+    Objective,
+    minimize,
+    SolverFactory,
+    Constraint,
+    exp,
+    log,
+)
 
 # Imports from IDAES namespace
 from idaes.core.surrogate.pysmo.sampling import FeatureScaling as fs
@@ -303,7 +314,7 @@ class RadialBasisFunctions:
             solution_method = "algebraic"
             self.solution_method = solution_method
             print("Default parameter estimation method is used.")
-        elif not isinstance(solution_method, string_types):
+        elif not isinstance(solution_method, str):
             raise Exception("Invalid solution method. Must be of type <str>.")
         elif (
             (solution_method.lower() == "algebraic")
@@ -322,7 +333,7 @@ class RadialBasisFunctions:
             basis_function = "gaussian"
             self.basis_function = basis_function
             print("Gaussian basis function is used.")
-        elif not isinstance(basis_function, string_types):
+        elif not isinstance(basis_function, str):
             raise Exception("Invalid basis_function. Must be of type <str>.")
         elif (
             (basis_function.lower() == "linear")
@@ -694,7 +705,7 @@ class RadialBasisFunctions:
         # Find matrix inverse. Use pseudo-inverse if inverse is not available
         try:
             inverse_x = np.linalg.inv(x)
-        except np.linalg.LinAlgError as LAE:
+        except np.linalg.LinAlgError:
             inverse_x = np.linalg.pinv(x)
 
         phi = np.matmul(inverse_x, y)
@@ -766,11 +777,11 @@ class RadialBasisFunctions:
 
         instance = model
         opt = SolverFactory("ipopt")
-        opt.options["max_iter"] = 10000
+        # TODO: This is too many iterations
+        opt.options["max_iter"] = 1000
         opt.options["acceptable_tol"] = 1e-30
-        # model.pprint()
-        result = opt.solve(instance)  # , tee=True)
-        # model.display()
+        # TODO: Should this be checking for a feasible solution?
+        opt.solve(instance)
 
         # Convert theta variable into numpy array
         phi = np.zeros((len(instance.theta), 1))
@@ -1052,7 +1063,7 @@ class RadialBasisFunctions:
         radial_weights = radial_weights.reshape(radial_weights.shape[0], 1)
 
         (
-            training_ss_error,
+            training_ss_error,  # pylint: disable=unused-variable
             rmse_error,
             y_training_predictions_scaled,
         ) = self.error_calculation(
@@ -1103,7 +1114,6 @@ class RadialBasisFunctions:
         radial_weights = self.weights
         centres_matrix = self.centres
         r = self.sigma
-        lambda_reg = self.regularization_parameter
         scale = self.x_data_max - self.x_data_min
         scale[scale == 0.0] = 1.0
         x_pred_scaled = (x_data - self.x_data_min) / scale
@@ -1166,7 +1176,7 @@ class RadialBasisFunctions:
             Pyomo Expression              : Pyomo expression of the RBF model based on the variables provided in **variable_list**
 
         """
-        t1 = np.array([variable_list])
+        t1 = np.array([variable_list], dtype="object")
         # Reshaping of variable array is necessary when input variables are Pyomo scalar variables
         t1 = t1.reshape(1, len(variable_list)) if t1.ndim > 2 else t1
 

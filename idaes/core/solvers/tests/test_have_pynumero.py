@@ -1,27 +1,28 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Basic test to make sure the pynumero library is available and working
 """
 
-import idaes
 import pyomo.environ as pyo
 import pytest
 
 try:
     from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
+    from pyomo.contrib.pynumero.asl import AmplInterface
 except ImportError:
     PyomoNLP = None
+    AmplInterface = None
 
 
 @pytest.fixture
@@ -44,6 +45,7 @@ def test_import():
 @pytest.mark.unit
 def test_have_pynumero(model):
     assert PyomoNLP is not None
+    assert AmplInterface.available()
     nlp = PyomoNLP(model)
     f = nlp.evaluate_objective()
     assert f == pytest.approx(-504.0)

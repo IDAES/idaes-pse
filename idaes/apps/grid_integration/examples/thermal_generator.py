@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 import pyomo.environ as pyo
 from collections import deque
@@ -16,7 +16,7 @@ import pandas as pd
 from idaes.apps.grid_integration import Tracker
 from idaes.apps.grid_integration import Bidder
 from idaes.apps.grid_integration import PlaceHolderForecaster
-from idaes.apps.grid_integration.model_data import GeneratorModelData
+from idaes.apps.grid_integration.model_data import ThermalGeneratorModelData
 
 from pyomo.common.dependencies import attempt_import
 
@@ -138,10 +138,9 @@ class ThermalGenerator:
                 model_data["Power Segments"][l]
             ] = model_data["Marginal Costs"][l]
 
-        self._model_data = GeneratorModelData(
+        self._model_data = ThermalGeneratorModelData(
             gen_name=generator_name,
             bus=model_data["Bus Name"],
-            generator_type="thermal",
             p_min=model_data["PMin MW"],
             p_max=model_data["PMax MW"],
             min_down_time=model_data["Min Down Time Hr"],
@@ -150,6 +149,9 @@ class ThermalGenerator:
             ramp_down_60min=model_data["RD"],
             shutdown_capacity=model_data["SD"],
             startup_capacity=model_data["SU"],
+            initial_status=-1,
+            initial_p_output=0,
+            fixed_commitment=None,
             production_cost_bid_pairs=[
                 (
                     model_data["PMin MW"],
@@ -163,7 +165,6 @@ class ThermalGenerator:
             startup_cost_pairs=[
                 (model_data["Min Down Time Hr"], model_data["SU Cost"])
             ],
-            fixed_commitment=None,
         )
 
         return model_data

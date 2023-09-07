@@ -1,24 +1,26 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Test utility functions
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+
 # standard library
 import importlib
 import logging
 import os
 import shutil
-import tempfile
 import time
 from unittest.mock import MagicMock, patch
 import warnings
@@ -28,7 +30,7 @@ import pytest
 
 # local
 from idaes.core.dmf import dmfbase
-from idaes.core.dmf.util import mkdtemp, NamedTemporaryFile
+from idaes.core.dmf.util import mkdtemp
 
 __author__ = "Dan Gunter"
 
@@ -170,7 +172,9 @@ class TempDir(object):
         if self._d is not None:
             # remove files in dir
             rmdirs = []
-            for dirpath, subdirs, files in os.walk(self._d):
+            for dirpath, subdirs, files in os.walk(  # pylint: disable=unused-variable
+                self._d
+            ):
                 for f in files:
                     os.unlink(os.path.join(dirpath, f))
                 rmdirs.append(dirpath)
@@ -192,11 +196,11 @@ def tmp_dmf():
     dmf = dmfbase.DMF(path=tmpdir, create=True)
     yield dmf
     removed = False
-    for i in range(3):
+    for i in range(3):  # pylint: disable=unused-variable
         try:
             shutil.rmtree(tmpdir)
             removed = True
-        except Exception as err:
+        except Exception:  # pylint: disable=W0703
             time.sleep(1)
     if not removed:
         warnings.warn(f"failed to remove temporary directory: {tmpdir}")

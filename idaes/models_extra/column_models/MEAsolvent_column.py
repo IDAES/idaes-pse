@@ -1,35 +1,34 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Packed Solvent Column Model for MEA systems
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
+# TODO: look into protected access issues
+# pylint: disable=protected-access
 
 # Import Python libraries
 import numpy as np
 
 # Import Pyomo libraries
 from pyomo.environ import (
-    ConcreteModel,
     value,
     Var,
     NonNegativeReals,
-    Param,
-    TransformationFactory,
     Constraint,
     Expression,
-    Objective,
-    SolverStatus,
-    TerminationCondition,
     check_optimal_termination,
     exp,
     units as pyunits,
@@ -46,7 +45,6 @@ from idaes.core.util.exceptions import InitializationError
 from idaes.core.solvers.get_solver import get_solver
 import idaes.logger as idaeslog
 
-from idaes.core.solvers import use_idaes_solver_configuration_defaults
 import idaes.core.util.scaling as iscale
 
 
@@ -115,7 +113,7 @@ class MEAColumnData(PackedColumnData):
             self.flowsheet().time,
             self.vapor_phase.length_domain,
             equilibrium_comp,
-            doc="Equilibruim partial pressure at interface",
+            doc="Equilibrium partial pressure at interface",
         )
         def pressure_at_interface(blk, t, x, j):
             if x == self.vapor_phase.length_domain.first():
@@ -347,8 +345,8 @@ class MEAColumnData(PackedColumnData):
 
         self.Cv_ref = Var(
             initialize=0.357,
-            doc="""Vapor packing specific constant in Billet and Schultes 
-                      volumetric mass transfer coefficient correlation""",
+            doc="Vapor packing specific constant in Billet and Schultes "
+            "volumetric mass transfer coefficient correlation",
         )
 
         def rule_mass_transfer_coeff_vap(blk, t, x, j):
@@ -411,7 +409,7 @@ class MEAColumnData(PackedColumnData):
 
         self.Cl_ref = Var(
             initialize=0.5,
-            doc="""Liquid packing specific constant in Billet and Schultes 
+            doc="""Liquid packing specific constant in Billet and Schultes
                       volumetric mass transfer coefficient correlation""",
         )
 
@@ -521,7 +519,7 @@ class MEAColumnData(PackedColumnData):
             self.flowsheet().time,
             self.liquid_phase.length_domain,
             rule=rule_rate_constant,
-            doc="Second order rate contant [m3/(mol.s)]",
+            doc="Second order rate constant [m3/(mol.s)]",
         )
 
         def rule_hatta_number(blk, t, x):
@@ -663,7 +661,7 @@ class MEAColumnData(PackedColumnData):
             self.flowsheet().time,
             self.liquid_phase.length_domain,
             doc="""Dimensionless concentration of CO2
-                                at equilibruim with the bulk """,
+                                at equilibrium with the bulk """,
         )
         def conc_CO2_equil_bulk(blk, t, x):
             if x == blk.liquid_phase.length_domain.last():
@@ -943,21 +941,21 @@ class MEAColumnData(PackedColumnData):
                 blk.liquid_phase.properties[0, x].log_k_eq["bicarbonate"], 1
             )
 
-        for (t, x), v in blk.vapor_phase.properties.items():
+        for v in blk.vapor_phase.properties.values():
             iscale.constraint_scaling_transform(
                 v.total_flow_balance,
                 iscale.get_scaling_factor(v.flow_mol, default=1, warning=True),
             )
 
-        for (t, x), v in blk.liquid_phase.properties.items():
-            for (p, j), c in v.appr_to_true_species.items():
+        for v in blk.liquid_phase.properties.values():
+            for (p, j) in v.appr_to_true_species.keys():
                 iscale.constraint_scaling_transform(
                     v.appr_to_true_species[p, j],
                     iscale.get_scaling_factor(
                         v.flow_mol_phase_comp_true[p, j], default=1, warning=True
                     ),
                 )
-            for (p, j), c in v.true_mole_frac_constraint.items():
+            for (p, j) in v.true_mole_frac_constraint.keys():
                 iscale.constraint_scaling_transform(
                     v.true_mole_frac_constraint[p, j],
                     iscale.get_scaling_factor(
@@ -965,21 +963,18 @@ class MEAColumnData(PackedColumnData):
                     ),
                 )
 
-            for j, c in v.component_flow_balances.items():
-                iscale.constraint_scaling_transform(
-                    v.component_flow_balances["CO2"], 100
-                )
-                iscale.constraint_scaling_transform(v.component_flow_balances["H2O"], 1)
-                iscale.constraint_scaling_transform(v.component_flow_balances["MEA"], 1)
+            iscale.constraint_scaling_transform(v.component_flow_balances["CO2"], 100)
+            iscale.constraint_scaling_transform(v.component_flow_balances["H2O"], 1)
+            iscale.constraint_scaling_transform(v.component_flow_balances["MEA"], 1)
 
-        for (t, x), v in blk.liquid_phase.properties.items():
+        for v in blk.liquid_phase.properties.values():
             iscale.constraint_scaling_transform(
                 v.total_flow_balance,
                 iscale.get_scaling_factor(v.flow_mol, default=1, warning=True),
             )
 
-        for (t, x), v in blk.liquid_phase.properties.items():
-            for rxn, c in v.log_k_eq_constraint.items():
+        for v in blk.liquid_phase.properties.values():
+            for rxn in v.log_k_eq_constraint.keys():
                 iscale.constraint_scaling_transform(
                     v.log_k_eq_constraint[rxn],
                     iscale.get_scaling_factor(v.log_k_eq[rxn], default=1, warning=True),
@@ -1592,8 +1587,6 @@ class MEAColumnData(PackedColumnData):
             "enhancement_factor_eqn2",
         ]
 
-        enhancement_factor_obj = ["enhancement_factor_obj"]
-
         heat_transfer_coefficient_constraint = ["heat_transfer_coeff_base_constraint"]
 
         flooding_constraint = ["flood_fraction_constr"]
@@ -1894,7 +1887,7 @@ class MEAColumnData(PackedColumnData):
         # ---------------------------------------------------------------------
         init_log.info("Step 10: Liquid phase mass transfer coefficient constraint")
         init_log.info(
-            "Initializing mass transfer coefficent (liquid phase) - degrees_of_freedom = {}".format(
+            "Initializing mass transfer coefficient (liquid phase) - degrees_of_freedom = {}".format(
                 degrees_of_freedom(blk)
             )
         )
@@ -1969,7 +1962,7 @@ class MEAColumnData(PackedColumnData):
         # ---------------------------------------------------------------------
         init_log.info("Step 12: Heat transfer coefficient constraint")
         init_log.info(
-            "Initializing heat transfer coefficent - degrees_of_freedom = {}".format(
+            "Initializing heat transfer coefficient - degrees_of_freedom = {}".format(
                 degrees_of_freedom(blk)
             )
         )
@@ -2033,8 +2026,8 @@ class MEAColumnData(PackedColumnData):
         # Check solver status
         if not check_optimal_termination(res):
             raise InitializationError(
-                f"Model failed to initialize successfully. Please check "
-                f"the output logs for more information."
+                "Model failed to initialize successfully. Please check "
+                "the output logs for more information."
             )
         else:
             init_log.info("Initialization successful")

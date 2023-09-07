@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Author: Andrew Lee
@@ -62,6 +62,11 @@ class PerformanceBaseClass:
     Raises:
         TypeError is derived class does not inherit from unittest.TestCase.
     """
+
+    # Add flag for skipping unit consistency tests
+    # This is required for DAE models for the time being
+    # TODO: Fix this once the Pyomo bug is resolved
+    TEST_UNITS = True
 
     def __init_subclass__(cls):
         if not issubclass(cls, unittest.TestCase):
@@ -151,10 +156,11 @@ class PerformanceBaseClass:
         assert degrees_of_freedom(model) == 0
 
         # Check unit consistency and record execution time
-        gc.collect()
-        timer.tic(None)
-        assert_units_consistent(model)
-        self.recordData("unit consistency", timer.toc("unit consistency"))
+        if self.TEST_UNITS:
+            gc.collect()
+            timer.tic(None)
+            assert_units_consistent(model)
+            self.recordData("unit consistency", timer.toc("unit consistency"))
 
         # Initialize model and record execution time
         gc.collect()

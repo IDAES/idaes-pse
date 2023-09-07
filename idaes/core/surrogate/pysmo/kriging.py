@@ -1,30 +1,33 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
+# TODO: Missing doc strings
+# pylint: disable=missing-module-docstring
+# pylint: disable=missing-function-docstring
 
 __author__ = "Oluwamayowa Amusat"
 
 # Imports from the python standard library
 import os.path
-import pprint
+import pickle
 
 # Imports from third parties
 from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
-import pickle
-from pyomo.core import Param, exp
 from scipy.optimize import basinhopping
 import scipy.optimize as opt
+
+from pyomo.core import Param, exp
 
 # Imports from IDAES namespace
 from idaes.core.surrogate.pysmo.sampling import FeatureScaling as fs
@@ -33,11 +36,16 @@ from idaes.core.surrogate.pysmo.sampling import FeatureScaling as fs
 class MyBounds(object):
     """
     The Class MyBounds tests whether the reguularization parameter value is within the expected range.
-     The class is initialized with the preset valies in __init__; the __call__ function returns Booleans indicating whether the regularization parameter value is acceptable.
+     The class is initialized with the preset values in __init__; the __call__ function returns Booleans indicating whether the regularization parameter value is acceptable.
      The results of the __call__ function is fed into the Basinhopping algorithm using the accept_test parameter.
     """
 
-    def __init__(self, xmax=[1], xmin=[1e-6]):
+    def __init__(self, xmax=None, xmin=None):
+        if xmax is None:
+            xmax = [1]
+        if xmin is None:
+            xmin = [1e-6]
+
         self.xmax = np.array(xmax)
         self.xmin = np.array(xmin)
 
@@ -238,7 +246,7 @@ class KrigingModel:
         """
         try:
             inverse_x = np.linalg.inv(x)
-        except np.linalg.LinAlgError as LAE:
+        except np.linalg.LinAlgError:
             inverse_x = np.linalg.pinv(x)
         return inverse_x
 
@@ -307,7 +315,7 @@ class KrigingModel:
         The objective_function method calculates the concentrated likelihood function
 
         Args:
-            var_vector(NumPy Array)        : Numpy array containing the Kriging paramaters (Kriging weights and regularization parameter)
+            var_vector(NumPy Array)        : Numpy array containing the Kriging parameters (Kriging weights and regularization parameter)
             x(NumPy Array)                 : Scaled version of input features/variables
             y(NumPy Array)                 : Output variable y (unscaled)
             p(float)                      : Kriging model exponent (fixed to 2) to ensure model smoothness
@@ -337,31 +345,34 @@ class KrigingModel:
             # log_like = (0.5 * ns * np.log(ssd)) + (0.5 * np.log(np.abs(np.linalg.det(cov_mat))))
             log_like = (0.5 * ns * np.log(ssd)) + (0.5 * lndetcov)
             conc_log_like = log_like[0, 0]
-        except:  # When Cholesky fails - non-positive definite covariance matrix
+        except Exception:  # pylint: disable=W0703
+            # When Cholesky fails - non-positive definite covariance matrix
             conc_log_like = 1e4
         return conc_log_like
 
     def numerical_gradient(self, var_vector, x, y, p):
         """
-        The numerical_gradient method calculates numerical gradients for the Kriging hyperparameters via central differencing,
+        The numerical_gradient method calculates numerical gradients for the Kriging hyperparameters
+        via central differencing,
 
         grad(theta) = (f(theta + eps) - f(theta - eps))/(2 * eps)
 
         Args:
-            var_vector(NumPy Array)        : Numpy array containing the Kriging paramaters (Kriging weights and regularization parameter)
-            x(NumPy Array)                 : Scaled version of input features/variables
-            y(NumPy Array)                 : Output variable y (unscaled)
-            p(float)                       : Kriging model exponent (fixed to 2) to ensure model smoothness
+            var_vector(NumPy Array): Numpy array containing the Kriging parameters (Kriging weights and
+                regularization parameter)
+            x(NumPy Array): Scaled version of input features/variables
+            y(NumPy Array): Output variable y (unscaled)
+            p(float): Kriging model exponent (fixed to 2) to ensure model smoothness
 
         Returns:
-            grad_vec(NumPy Array)          : Array of the gradients of the variables in var_vector
+            grad_vec(NumPy Array): Array of the gradients of the variables in var_vector
 
         """
         eps = 1e-6
         grad_vec = np.zeros(
             len(var_vector),
         )
-        for i in range(0, len(var_vector)):
+        for i in range(0, len(var_vector)):  # pylint: disable=consider-using-enumerate
             var_vector_plus = np.copy(var_vector)
             var_vector_plus[i] = var_vector[i] + eps
             var_vector_minus = np.copy(var_vector)
@@ -390,7 +401,9 @@ class KrigingModel:
         initial_value_list = initial_value_list.tolist()
         initial_value_list.append(1e-4)
         initial_value = np.array(initial_value_list)
-        initial_value = initial_value.reshape(initial_value.shape[0], 1)
+        initial_value = initial_value.reshape(
+            initial_value.shape[0],
+        )
         # Create bounds for variables. All logthetas btw (-4, 4), reg param between (1e-9, 0.1)
         bounds = []
         for i in range(0, len(initial_value_list)):
@@ -617,7 +630,11 @@ class KrigingModel:
             optimal_ymu,
         ) = self.optimal_parameter_evaluation(bh_results.x, p)
         # Training performance
-        training_ss_error, rmse_error, y_training_predictions = self.error_calculation(
+        (
+            training_ss_error,  # pylint: disable=unused-variable
+            rmse_error,
+            y_training_predictions,
+        ) = self.error_calculation(
             optimal_theta,
             p,
             optimal_mean,
@@ -656,7 +673,7 @@ class KrigingModel:
             Pyomo Expression              : Pyomo expression of the Kriging model based on the variables provided in **variable_list**
 
         """
-        t1 = np.array([variable_list])
+        t1 = np.array([variable_list], dtype="object")
         # Reshaping of variable array is necessary when input variables are Pyomo scalar variables
         t1 = t1.reshape(1, len(variable_list)) if t1.ndim > 2 else t1
 

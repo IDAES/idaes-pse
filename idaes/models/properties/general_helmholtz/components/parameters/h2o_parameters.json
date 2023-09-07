@@ -1,0 +1,71 @@
+{
+    "nl_file": "h2o_expressions_eos.nl",
+    "expr_map": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        13,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        12,
+        11
+    ],
+    "var_map": [
+        0,
+        1,
+        1000,
+        1000
+    ],
+    "param": {
+        "R": 0.46151805,
+        "MW": 18.015268,
+        "T_star": 647.096,
+        "rho_star": 322.0,
+        "Tc": 647.096,
+        "rhoc": 322.0,
+        "Pc": 22064.000000001997,
+        "Tt": 273.16,
+        "Pt": 0.611655,
+        "rhot_l": 999.793,
+        "rhot_v": 0.00485458,
+        "P_min": 1e-09,
+        "P_max": 1100000.0,
+        "rho_max": 1250.0,
+        "T_min": 235,
+        "T_max": 1300,
+        "reference_state_offset": [
+            0.0,
+            0.0
+        ]
+    },
+    "nl_file_tcx": "h2o_expressions_tcx.nl",
+    "var_map_tcx": [
+        0,
+        1,
+        1000,
+        1000
+    ],
+    "have_tcx": true,
+    "nl_file_st": "h2o_expressions_st.nl",
+    "var_map_st": [
+        1,
+        1000,
+        1000,
+        1000
+    ],
+    "have_st": true,
+    "nl_file_visc": "h2o_expressions_visc.nl",
+    "var_map_visc": [
+        1,
+        0,
+        1000,
+        1000
+    ],
+    "have_visc": true
+}

@@ -1,21 +1,21 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 import pyomo.environ as pyo
 import pytest
-import idaes.core.plugins
 from idaes.core.solvers.features import lp, milp, nlp, minlp, nle, dae
 from idaes.core.solvers import ipopt_has_linear_solver
 from idaes.core.solvers import petsc
+from idaes.core.solvers import ipopt_l1
 
 
 @pytest.mark.unit
@@ -57,6 +57,12 @@ def test_ipopt_idaes_available():
 
 
 @pytest.mark.unit
+def test_ipopt_l1_available():
+    if not pyo.SolverFactory("ipopt_l1").available():
+        raise RuntimeError("Could not find ipopt_l1.")
+
+
+@pytest.mark.unit
 def test_cbc_available():
     if not pyo.SolverFactory("cbc").available():
         raise RuntimeError("Could not find cbc.")
@@ -69,6 +75,9 @@ def test_clp_available():
 
 
 @pytest.mark.unit
+@pytest.mark.skipif(
+    not pyo.SolverFactory("ipopt_sens").available(False), reason="solver not available"
+)
 def test_sipopt_idaes_solve():
     """
     Make sure there is no issue with the solver class or default settings that
@@ -81,6 +90,9 @@ def test_sipopt_idaes_solve():
 
 
 @pytest.mark.unit
+@pytest.mark.skipif(
+    not pyo.SolverFactory("ipopt").available(False), reason="solver not available"
+)
 def test_ipopt_idaes_solve():
     """
     Make sure there is no issue with the solver class or default settings that
@@ -88,6 +100,21 @@ def test_ipopt_idaes_solve():
     """
     m, x = nlp()
     solver = pyo.SolverFactory("ipopt")
+    solver.solve(m)
+    assert pytest.approx(x) == pyo.value(m.x)
+
+
+@pytest.mark.unit
+@pytest.mark.skipif(
+    not pyo.SolverFactory("ipopt_l1").available(False), reason="solver not available"
+)
+def test_ipopt_l1_idaes_solve():
+    """
+    Make sure there is no issue with the solver class or default settings that
+    break the solver object.  Passing a bad solver option will result in failure
+    """
+    m, x = nlp()
+    solver = pyo.SolverFactory("ipopt_l1")
     solver.solve(m)
     assert pytest.approx(x) == pyo.value(m.x)
 
@@ -173,6 +200,9 @@ def test_petsc_dae_idaes_solve():
 
 
 @pytest.mark.unit
+@pytest.mark.skipif(
+    not pyo.SolverFactory("bonmin").available(False), reason="solver not available"
+)
 def test_bonmin_idaes_solve():
     """
     Make sure there is no issue with the solver class or default settings that
@@ -186,6 +216,9 @@ def test_bonmin_idaes_solve():
 
 
 @pytest.mark.unit
+@pytest.mark.skipif(
+    not pyo.SolverFactory("couenne").available(False), reason="solver not available"
+)
 def test_couenne_idaes_solve():
     """
     Make sure there is no issue with the solver class or default settings that
@@ -199,6 +232,9 @@ def test_couenne_idaes_solve():
 
 
 @pytest.mark.unit
+@pytest.mark.skipif(
+    not pyo.SolverFactory("cbc").available(False), reason="solver not available"
+)
 def test_cbc_idaes_solve():
     """
     Make sure there is no issue with the solver class or default settings that
@@ -211,6 +247,9 @@ def test_cbc_idaes_solve():
 
 
 @pytest.mark.unit
+@pytest.mark.skipif(
+    not pyo.SolverFactory("clp").available(False), reason="solver not available"
+)
 def test_clp_idaes_solve():
     """
     Make sure there is no issue with the solver class or default settings that

@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Tray column model for distillation.
@@ -16,28 +16,30 @@ Tray column model for distillation.
 
 __author__ = "Jaffer Ghouse"
 
-import idaes.logger as idaeslog
-
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.network import Arc, Port
 from pyomo.environ import (
-    value,
     Integers,
     RangeSet,
     TransformationFactory,
     Block,
     Reference,
-    check_optimal_termination,
+    Var,
+    Constraint,
 )
 
 # Import IDAES cores
 from idaes.models_extra.column_models import Tray, Condenser, Reboiler
 from idaes.models_extra.column_models.condenser import CondenserType, TemperatureSpec
 from idaes.core import declare_process_block_class, UnitModelBlockData, useDefault
-from idaes.core.util.exceptions import ConfigurationError, InitializationError
+from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.solvers import get_solver
+
+import idaes.core.util.scaling as iscale
+import idaes.logger as idaeslog
+from idaes.core.util.initialization import propagate_state
 
 _log = idaeslog.getLogger(__name__)
 
@@ -206,7 +208,6 @@ see property package for documentation.}""",
 
     def build(self):
         """Build the model.
-
         Args:
             None
         Returns:
@@ -294,6 +295,26 @@ see property package for documentation.}""",
         self._make_reboiler_arcs()
 
         TransformationFactory("network.expand_arcs").apply_to(self)
+
+        for var in self.component_data_objects(Var, descend_into=True):
+            if "pressure" in var.name:
+                iscale.set_scaling_factor(var, 1e-5)
+            if "temperature" in var.name:
+                iscale.set_scaling_factor(var, 1e-2)
+            if "enth_mol_phase" in var.name:
+                iscale.set_scaling_factor(var, 1e-4)
+            if "heat" in var.name:
+                iscale.set_scaling_factor(var, 1e-5)
+            if "flow_mol_phase_comp" in var.name:
+                iscale.set_scaling_factor(var, 1e1)
+            if "_t1" in var.name:
+                iscale.set_scaling_factor(var, 1e-2)
+
+        for constr in self.component_data_objects(Constraint, descend_into=True):
+            if "pressure_drop_equation" in constr.name:
+                iscale.constraint_scaling_transform(constr, 1e-2, overwrite=False)
+            if "eq_P_vap" in constr.name:
+                iscale.constraint_scaling_transform(constr, 1e-2, overwrite=False)
 
     def _make_rectification_arcs(self):
         self._rectification_stream_index = RangeSet(
@@ -396,20 +417,6 @@ see property package for documentation.}""",
             destination=self.stripping_section[self.config.number_of_trays].vap_in,
         )
 
-    def propagate_stream_state(self, source=None, destination=None):
-        """
-        This method is used during initialization to propage state values
-        between any two ports.
-
-        Args:
-            source : source port
-            destination : destination port
-        """
-        for v in source.vars:
-            for i in destination.vars[v]:
-                if not destination.vars[v][i].fixed:
-                    destination.vars[v][i].value = value(source.vars[v][i])
-
     def initialize(
         self,
         state_args_feed=None,
@@ -431,27 +438,23 @@ see property package for documentation.}""",
             solver=solver, optarg=optarg, outlvl=outlvl
         )
 
-        self.propagate_stream_state(
-            source=self.feed_tray.vap_out, destination=self.condenser.inlet
-        )
+        propagate_state(destination=self.condenser.inlet, source=self.feed_tray.vap_out)
 
         self.condenser.initialize(solver=solver, optarg=optarg, outlvl=outlvl)
 
-        self.propagate_stream_state(
-            source=self.feed_tray.liq_out, destination=self.reboiler.inlet
-        )
+        propagate_state(destination=self.reboiler.inlet, source=self.feed_tray.liq_out)
 
         self.reboiler.initialize(solver=solver, optarg=optarg, outlvl=outlvl)
 
         # initialize the rectification section
         for i in self._rectification_index:
-            self.propagate_stream_state(
-                source=self.condenser.reflux,
+            propagate_state(
                 destination=self.rectification_section[i].liq_in,
+                source=self.condenser.reflux,
             )
-            self.propagate_stream_state(
-                source=self.feed_tray.vap_out,
+            propagate_state(
                 destination=self.rectification_section[i].vap_in,
+                source=self.feed_tray.vap_out,
             )
             if i == 1:
                 rect_liq_flags = self.rectification_section[i].initialize(
@@ -476,13 +479,13 @@ see property package for documentation.}""",
 
         # initialize the stripping section
         for i in self._stripping_index:
-            self.propagate_stream_state(
-                source=self.feed_tray.liq_out,
+            propagate_state(
                 destination=self.stripping_section[i].liq_in,
+                source=self.feed_tray.liq_out,
             )
-            self.propagate_stream_state(
-                source=self.reboiler.vapor_reboil,
+            propagate_state(
                 destination=self.stripping_section[i].vap_in,
+                source=self.reboiler.vapor_reboil,
             )
             if i == self.config.feed_tray_location + 1:
                 strip_liq_flags = self.stripping_section[i].initialize(

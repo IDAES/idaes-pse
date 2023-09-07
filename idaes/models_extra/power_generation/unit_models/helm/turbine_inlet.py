@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Steam turbine inlet stage model.  This model is based on:
@@ -17,9 +17,12 @@ Liese, (2014). "Modeling of a Steam Turbine Including Partial Arc Admission
     for Use in a Process Simulation Software Environment." Journal of Engineering
     for Gas Turbines and Power. v136.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+
 __Author__ = "John Eslick"
 
-from pyomo.environ import Var, sqrt, value, SolverFactory, units as pyunits
+from pyomo.environ import Var, sqrt, value, units as pyunits
 from idaes.core import declare_process_block_class
 from idaes.models_extra.power_generation.unit_models.helm.turbine import (
     HelmIsentropicTurbineData,
@@ -134,7 +137,7 @@ class HelmTurbineInletStageData(HelmIsentropicTurbineData):
         Initialize the inlet turbine stage model.  This deactivates the
         specialized constraints, then does the isentropic turbine initialization,
         then reactivates the constraints and solves. This initializtion uses a
-        flow value guess, so some reasonable flow guess should be sepecified prior
+        flow value guess, so some reasonable flow guess should be specified prior
         to initializtion.
 
         Args:
@@ -165,7 +168,7 @@ class HelmTurbineInletStageData(HelmIsentropicTurbineData):
             self.efficiency_isentropic[t] = 0.9
         super().initialize_build(outlvl=outlvl, solver=solver, optarg=optarg)
 
-        # Free eff_isen and activate sepcial constarints
+        # Free eff_isen and activate special constraint
         self.inlet_flow_constraint.activate()
         self.efficiency_correlation.activate()
 
@@ -208,7 +211,7 @@ class HelmTurbineInletStageData(HelmIsentropicTurbineData):
 
         from_json(self, sd=istate, wts=sp)
         if calculate_cf:
-            # cf was probably fixed, so will have to set the value agian here
+            # cf was probably fixed, so will have to set the value again here
             # if you ask for it to be calculated.
             for t in self.flowsheet().time:
                 self.flow_coeff[t] = cf[t]

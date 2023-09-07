@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 This file contains 0D feedwater heater models. These models are suitable for
@@ -24,9 +24,12 @@ are two models included here.
    the turbine.  The drain mixer, desuperheat, and drain cooling sections are
    optional. Only the condensing section is required.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
 
 __author__ = "John Eslick, Jinliang Ma"
-from pyomo.common.config import ConfigValue, In, ConfigBlock, Bool
+from pyomo.common.config import ConfigValue, ConfigBlock, Bool
 from pyomo.environ import TransformationFactory, Var, value, asin, cos
 from pyomo.network import Arc
 
@@ -114,7 +117,7 @@ see property package for documentation.}""",
 
 def _set_prop_pack(hxcfg, fwhcfg):
     """
-    Set the property package and property pacakge args to the values given for
+    Set the property package and property package args to the values given for
     the overall feedwater heater model if not otherwise specified.
 
     Args:
@@ -212,7 +215,7 @@ class FWHCondensing0DData(CondenserData):
         # Do condenser initialization
         self.hot_side_inlet.flow_mol.unfix()
         # fix volume and pressure drop since
-        # the condenser initialization dosen't require them
+        # the condenser initialization doesn't require them
         self.hot_side.volume.fix(10)
         self.hot_side.deltaP.fix(0)
         self.shell_volume_eqn.deactivate()
@@ -360,7 +363,7 @@ class FWH0DDynamicData(UnitModelBlockData):
         # the heat exchanger may have 3 stages and they are countercurrent.
         # For simplicity each stage in initialized with the same cooling water
         # inlet conditions then the whole feedwater heater is solved together.
-        # There are more robust aproaches which can be implimented if needed.
+        # There are more robust approaches which can be implemented if needed.
 
         # initialize desuperheat if any
         if config.has_desuperheat:

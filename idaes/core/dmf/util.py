@@ -1,22 +1,24 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Utility functions.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 # stdlib
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
 import importlib
-import inspect
 import json
 from json import JSONDecodeError
 import logging
@@ -30,8 +32,6 @@ import time
 from typing import Union
 import yaml
 
-# third-party
-import colorama
 
 __author__ = "Dan Gunter"
 
@@ -217,7 +217,7 @@ def is_resource_json(filename, max_bytes=1e6):
         return False
 
 
-def datetime_timestamp(v):
+def datetime_timestamp(v: datetime) -> float:
     """Get numeric timestamp.
     This will work under both Python 2 and 3.
 
@@ -227,13 +227,7 @@ def datetime_timestamp(v):
     Returns:
         (float): Floating point timestamp
     """
-    if hasattr(v, "timestamp"):  # Python 2/3 test
-        # Python 2
-        result = v.timestamp()
-    else:
-        # Python 3
-        result = time.mktime(v.timetuple()) + v.microsecond / 1e6
-    return result
+    return time.mktime(v.timetuple()) + v.microsecond / 1e6
 
 
 def parse_datetime(datetime_string: str) -> datetime:
@@ -252,129 +246,9 @@ def parse_datetime(datetime_string: str) -> datetime:
     """
     if not isinstance(datetime_string, str):
         raise TypeError("parse_datetime: argument must be str")
-    if hasattr(datetime, "fromisoformat"):
-        # new in 3.7, and we support back to 3.6
-        return datetime.fromisoformat(datetime_string)
-    else:
-        # The following code is from the datetime module in Python 3.8
-        dtstr = datetime_string[0:10]
-        if len(dtstr) != 10:
-            raise ValueError(f"Invalid isoformat string: '{dtstr}'")
-        year = int(dtstr[0:4])
-        if dtstr[4] != "-":
-            raise ValueError(f"Invalid date separator: '{dtstr[4]}'")
-        if len(dtstr) < 7:
-            raise ValueError(f"Invalid month: '{dtstr[5:]}'")
-        month = int(dtstr[5:7])
-        if dtstr[7] != "-":
-            raise ValueError("Invalid date separator")
-        day = int(dtstr[8:10])
-        date_components = [year, month, day]
-
-        tstr = datetime_string[11:]
-        if tstr:
-            try:
-                time_components = _parse_isoformat_time(tstr)
-            except ValueError:
-                raise ValueError(f"Invalid isoformat string: {datetime_string!r}")
-        else:
-            time_components = [0, 0, 0, 0, None]
-
-        return datetime(*(date_components + time_components))
+    return datetime.fromisoformat(datetime_string)
 
 
-#################
-#
-# The following two functions are from 3.8 Python standard library
-# They are not present in 3.6, but are present in 3.7+
-#
-
-
-def _parse_isoformat_time(tstr):
-    # Format supported is HH[:MM[:SS[.fff[fff]]]][+HH:MM[:SS[.ffffff]]]
-    len_str = len(tstr)
-    if len_str < 2:
-        raise ValueError("Isoformat time too short")
-
-    # This is equivalent to re.search('[+-]', tstr), but faster
-    tz_pos = tstr.find("-") + 1 or tstr.find("+") + 1
-    timestr = tstr[: tz_pos - 1] if tz_pos > 0 else tstr
-
-    time_comps = _parse_hh_mm_ss_ff(timestr)
-
-    tzi = None
-    if tz_pos > 0:
-        tzstr = tstr[tz_pos:]
-
-        # Valid time zone strings are:
-        # HH:MM               len: 5
-        # HH:MM:SS            len: 8
-        # HH:MM:SS.ffffff     len: 15
-
-        if len(tzstr) not in (5, 8, 15):
-            raise ValueError("Malformed time zone string")
-
-        tz_comps = _parse_hh_mm_ss_ff(tzstr)
-        if all(x == 0 for x in tz_comps):
-            tzi = timezone.utc
-        else:
-            tzsign = -1 if tstr[tz_pos - 1] == "-" else 1
-
-            td = timedelta(
-                hours=tz_comps[0],
-                minutes=tz_comps[1],
-                seconds=tz_comps[2],
-                microseconds=tz_comps[3],
-            )
-
-            tzi = timezone(tzsign * td)
-
-    time_comps.append(tzi)
-
-    return time_comps
-
-
-def _parse_hh_mm_ss_ff(tstr):
-    # Parses things of the form HH[:MM[:SS[.fff[fff]]]]
-    len_str = len(tstr)
-
-    time_comps = [0, 0, 0, 0]
-    pos = 0
-    for comp in range(0, 3):
-        if (len_str - pos) < 2:
-            raise ValueError("Incomplete time component")
-
-        time_comps[comp] = int(tstr[pos : pos + 2])
-
-        pos += 2
-        next_char = tstr[pos : pos + 1]
-
-        if not next_char or comp >= 2:
-            break
-
-        if next_char != ":":
-            raise ValueError("Invalid time separator: %c" % next_char)
-
-        pos += 1
-
-    if pos < len_str:
-        if tstr[pos] != ".":
-            raise ValueError("Invalid microsecond component")
-        else:
-            pos += 1
-
-            len_remainder = len_str - pos
-            if len_remainder not in (3, 6):
-                raise ValueError("Invalid microsecond component")
-
-            time_comps[3] = int(tstr[pos:])
-            if len_remainder == 3:
-                time_comps[3] *= 1000
-
-    return time_comps
-
-
-#
 ################
 
 
@@ -392,6 +266,8 @@ class ColorTerm:
     def __init__(self, enabled=True):
         self._width = None
         if enabled:
+            import colorama  # pylint: disable=import-outside-toplevel
+
             colorama.init(autoreset=True)
             # Colorama colors and styles
             F = self.Fore = colorama.Fore
@@ -567,7 +443,7 @@ _is_curdir = None
 
 
 def fail_if_tempdir_is_curdir():
-    global _is_curdir
+    global _is_curdir  # pylint: disable=global-statement
     if _is_curdir is None:
         td = tempfile.gettempdir()  # initializes it 1st time
         try:

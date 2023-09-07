@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Pure component properties as used by the NIST WebBook
@@ -17,8 +17,12 @@ https://webbook.nist.gov/chemistry/
 
 Retrieved: September 13th, 2019
 
-All parameter indicies and units based on conventions used by the source
+All parameter indices and units based on conventions used by the source
 """
+# TODO: Missing doc strings
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+
 from pyomo.environ import Expression, log, Var, units as pyunits
 
 from idaes.core.util.misc import set_param_from_config
@@ -96,7 +100,7 @@ class NIST(object):
             units = cobj.parent_block().get_metadata().derived_units
             cobj.enth_mol_form_vap_comp_ref = Expression(
                 expr=pyunits.convert(
-                    cobj.cp_mol_ig_comp_coeff_H, to_units=units["energy_mole"]
+                    cobj.cp_mol_ig_comp_coeff_H, to_units=units.ENERGY_MOLE
                 ),
                 doc="Vapor phase molar heat of formation @ Tref",
             )
@@ -114,7 +118,7 @@ class NIST(object):
             )
 
             units = b.params.get_metadata().derived_units
-            return pyunits.convert(cp, units["heat_capacity_mole"])
+            return pyunits.convert(cp, units.HEAT_CAPACITY_MOLE)
 
     class enth_mol_ig_comp:
         @staticmethod
@@ -145,7 +149,7 @@ class NIST(object):
             )
 
             units = b.params.get_metadata().derived_units
-            return pyunits.convert(h, units["energy_mole"])
+            return pyunits.convert(h, units.ENERGY_MOLE)
 
     class entr_mol_ig_comp:
         @staticmethod
@@ -168,7 +172,7 @@ class NIST(object):
             )
 
             units = b.params.get_metadata().derived_units
-            return pyunits.convert(s, units["entropy_mole"])
+            return pyunits.convert(s, units.ENTROPY_MOLE)
 
     # -----------------------------------------------------------------------------
     # Antoine equation for saturation pressure
@@ -209,7 +213,7 @@ class NIST(object):
             )
 
             units = b.params.get_metadata().derived_units
-            return pyunits.convert(psat, to_units=units["pressure"])
+            return pyunits.convert(psat, to_units=units.PRESSURE)
 
         @staticmethod
         def dT_expression(b, cobj, T):
@@ -225,5 +229,5 @@ class NIST(object):
             )
 
             units = b.params.get_metadata().derived_units
-            dp_units = units["pressure"] / units["temperature"]
+            dp_units = units.PRESSURE / units.TEMPERATURE
             return pyunits.convert(p_sat_dT, to_units=dp_units)

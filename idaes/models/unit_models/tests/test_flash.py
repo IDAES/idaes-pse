@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Tests for Flash unit model.
@@ -21,7 +21,6 @@ from pyomo.environ import (
     ConcreteModel,
     value,
     units,
-    Var,
     units as pyunits,
 )
 from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
@@ -46,6 +45,11 @@ from idaes.core.util.model_statistics import (
 from idaes.core.util.testing import PhysicalParameterTestBlock, initialization_tester
 from idaes.core.solvers import get_solver
 import idaes.core.util.scaling as iscale
+from idaes.core.initialization import (
+    BlockTriangularizationInitializer,
+    SingleControlVolumeUnitInitializer,
+    InitializationStatus,
+)
 
 
 # -----------------------------------------------------------------------------
@@ -354,40 +358,36 @@ class TestIAPWS(object):
 
         expected = {
             "Units": {
-                "Molar Flow (mol/s)": getattr(pyunits.pint_registry, "mole/second"),
-                "Mass Flow (kg/s)": getattr(pyunits.pint_registry, "kg/second"),
-                "T (K)": getattr(pyunits.pint_registry, "K"),
-                "P (Pa)": getattr(pyunits.pint_registry, "Pa"),
+                "Molar Flow": getattr(pyunits.pint_registry, "mole/second"),
+                "Mass Flow": getattr(pyunits.pint_registry, "kg/second"),
+                "T": getattr(pyunits.pint_registry, "K"),
+                "P": getattr(pyunits.pint_registry, "Pa"),
                 "Vapor Fraction": getattr(pyunits.pint_registry, "dimensionless"),
-                "Molar Enthalpy (J/mol) Vap": getattr(pyunits.pint_registry, "J/mole"),
-                "Molar Enthalpy (J/mol) Liq": getattr(pyunits.pint_registry, "J/mole"),
+                "Molar Enthalpy": getattr(pyunits.pint_registry, "J/mole"),
             },
             "Inlet": {
-                "Molar Flow (mol/s)": pytest.approx(100, rel=1e-4),
-                "Mass Flow (kg/s)": pytest.approx(1.8015, rel=1e-4),
-                "T (K)": pytest.approx(373.13, rel=1e-4),
-                "P (Pa)": pytest.approx(101325, rel=1e-4),
-                "Vapor Fraction": pytest.approx(0.40467, abs=1e-4),
-                "Molar Enthalpy (J/mol) Vap": pytest.approx(48201, rel=1e-4),
-                "Molar Enthalpy (J/mol) Liq": pytest.approx(7549.7, rel=1e-4),
+                "Molar Flow": pytest.approx(100, rel=1e-4),
+                "Mass Flow": pytest.approx(1.8015, rel=1e-4),
+                "T": pytest.approx(373.12429584768876, rel=1e-4),
+                "P": pytest.approx(101325.0, rel=1e-4),
+                "Vapor Fraction": pytest.approx(0.40467852502291135, abs=1e-4),
+                "Molar Enthalpy": pytest.approx(24000.0, rel=1e-4),
             },
             "Vapor Outlet": {
-                "Molar Flow (mol/s)": pytest.approx(1, rel=1e-4),
-                "Mass Flow (kg/s)": pytest.approx(1.8015e-2, rel=1e-4),
-                "T (K)": pytest.approx(286.34, rel=1e-4),
-                "P (Pa)": pytest.approx(1e5, rel=1e-4),
+                "Molar Flow": pytest.approx(1, rel=1e-4),
+                "Mass Flow": pytest.approx(1.8015e-2, rel=1e-4),
+                "T": pytest.approx(270.4877112932641, rel=1e-4),
+                "P": pytest.approx(11032305.8275, rel=1e-4),
                 "Vapor Fraction": pytest.approx(0, abs=1e-4),
-                "Molar Enthalpy (J/mol) Vap": pytest.approx(2168.6, rel=1e-4),
-                "Molar Enthalpy (J/mol) Liq": pytest.approx(1000, rel=1e-4),
+                "Molar Enthalpy": pytest.approx(0.01102138712926277, rel=1e-4),
             },
             "Liquid Outlet": {
-                "Molar Flow (mol/s)": pytest.approx(1, rel=1e-4),
-                "Mass Flow (kg/s)": pytest.approx(1.8015e-2, rel=1e-4),
-                "T (K)": pytest.approx(286.34, rel=1e-4),
-                "P (Pa)": pytest.approx(1e5, rel=1e-4),
+                "Molar Flow": pytest.approx(1, rel=1e-4),
+                "Mass Flow": pytest.approx(1.8015e-2, rel=1e-4),
+                "T": pytest.approx(270.4877112932641, rel=1e-4),
+                "P": pytest.approx(11032305.8275, rel=1e-4),
                 "Vapor Fraction": pytest.approx(0, abs=1e-4),
-                "Molar Enthalpy (J/mol) Vap": pytest.approx(2168.6, rel=1e-4),
-                "Molar Enthalpy (J/mol) Liq": pytest.approx(1000, rel=1e-4),
+                "Molar Enthalpy": pytest.approx(0.01102138712926277, rel=1e-4),
             },
         }
 
@@ -474,3 +474,209 @@ class TestIAPWS(object):
             )
             <= 1e-6
         )
+
+
+class TestInitializersIAPWS:
+    @pytest.fixture
+    def model(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.properties = iapws95.Iapws95ParameterBlock(
+            phase_presentation=iapws95.PhaseType.LG
+        )
+
+        m.fs.unit = Flash(
+            property_package=m.fs.properties,
+            ideal_separation=False,
+            energy_split_basis=EnergySplittingType.enthalpy_split,
+        )
+
+        m.fs.unit.inlet.flow_mol.fix(100)
+        m.fs.unit.inlet.enth_mol.fix(24000)
+        m.fs.unit.inlet.pressure.fix(101325)
+
+        m.fs.unit.heat_duty.fix(0)
+        m.fs.unit.deltaP.fix(0)
+
+        return m
+
+    @pytest.mark.integration
+    def test_general_hierarchical(self, model):
+        initializer = SingleControlVolumeUnitInitializer()
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        t_in = value(model.fs.unit.control_volume.properties_in[0].temperature)
+        assert pytest.approx(373.12, abs=1e-2) == t_in
+        assert pytest.approx(t_in, abs=1e-2) == value(
+            model.fs.unit.control_volume.properties_out[0].temperature
+        )
+        assert pytest.approx(t_in, abs=1e-2) == value(
+            model.fs.unit.split.Vap_state[0].temperature
+        )
+        assert pytest.approx(t_in, abs=1e-2) == value(
+            model.fs.unit.split.Liq_state[0].temperature
+        )
+
+        assert pytest.approx(101325.0, abs=1e3) == value(
+            model.fs.unit.vap_outlet.pressure[0]
+        )
+        assert pytest.approx(48200, abs=1e3) == value(
+            model.fs.unit.vap_outlet.enth_mol[0]
+        )
+        assert pytest.approx(40.467, abs=1e-3) == value(
+            model.fs.unit.vap_outlet.flow_mol[0]
+        )
+
+        assert pytest.approx(101325.0, abs=1e3) == value(
+            model.fs.unit.liq_outlet.pressure[0]
+        )
+        assert pytest.approx(7549.4, abs=1) == value(
+            model.fs.unit.liq_outlet.enth_mol[0]
+        )
+        assert pytest.approx(59.532, abs=1e-3) == value(
+            model.fs.unit.liq_outlet.flow_mol[0]
+        )
+
+    @pytest.mark.integration
+    def test_block_triangularization(self, model):
+        initializer = BlockTriangularizationInitializer(constraint_tolerance=2e-5)
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        t_in = value(model.fs.unit.control_volume.properties_in[0].temperature)
+        assert pytest.approx(373.12, abs=1e-2) == t_in
+        assert pytest.approx(t_in, abs=1e-2) == value(
+            model.fs.unit.control_volume.properties_out[0].temperature
+        )
+        assert pytest.approx(t_in, abs=1e-2) == value(
+            model.fs.unit.split.Vap_state[0].temperature
+        )
+        assert pytest.approx(t_in, abs=1e-2) == value(
+            model.fs.unit.split.Liq_state[0].temperature
+        )
+
+        assert pytest.approx(101325.0, abs=1e3) == value(
+            model.fs.unit.vap_outlet.pressure[0]
+        )
+        assert pytest.approx(48200, abs=1e3) == value(
+            model.fs.unit.vap_outlet.enth_mol[0]
+        )
+        assert pytest.approx(40.467, abs=1e-3) == value(
+            model.fs.unit.vap_outlet.flow_mol[0]
+        )
+
+        assert pytest.approx(101325.0, abs=1e3) == value(
+            model.fs.unit.liq_outlet.pressure[0]
+        )
+        assert pytest.approx(7549.4, abs=1) == value(
+            model.fs.unit.liq_outlet.enth_mol[0]
+        )
+        assert pytest.approx(59.532, abs=1e-3) == value(
+            model.fs.unit.liq_outlet.flow_mol[0]
+        )
+
+
+class TestInitializersCubicBTX:
+    @pytest.fixture
+    def model(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.properties = BTXParameterBlock(
+            valid_phase=("Liq", "Vap"), activity_coeff_model="Ideal"
+        )
+
+        m.fs.unit = Flash(property_package=m.fs.properties)
+
+        m.fs.unit.inlet.flow_mol[0].set_value(1)
+        m.fs.unit.inlet.temperature[0].set_value(368)
+        m.fs.unit.inlet.pressure[0].set_value(101325)
+        m.fs.unit.inlet.mole_frac_comp[0, "benzene"].set_value(0.5)
+        m.fs.unit.inlet.mole_frac_comp[0, "toluene"].set_value(0.5)
+
+        m.fs.unit.heat_duty.fix(0)
+        m.fs.unit.deltaP.fix(0)
+
+        return m
+
+    @pytest.mark.component
+    def test_general_hierarchical(self, model):
+        initializer = SingleControlVolumeUnitInitializer()
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert pytest.approx(0.603, abs=1e-3) == value(
+            model.fs.unit.liq_outlet.flow_mol[0]
+        )
+        assert pytest.approx(0.396, abs=1e-3) == value(
+            model.fs.unit.vap_outlet.flow_mol[0]
+        )
+        assert pytest.approx(368, abs=1e-3) == value(
+            model.fs.unit.liq_outlet.temperature[0]
+        )
+        assert pytest.approx(101325, abs=1e-3) == value(
+            model.fs.unit.liq_outlet.pressure[0]
+        )
+
+        assert pytest.approx(0.412, abs=1e-3) == value(
+            model.fs.unit.liq_outlet.mole_frac_comp[0, "benzene"]
+        )
+        assert pytest.approx(0.588, abs=1e-3) == value(
+            model.fs.unit.liq_outlet.mole_frac_comp[0, "toluene"]
+        )
+        assert pytest.approx(0.634, abs=1e-3) == value(
+            model.fs.unit.vap_outlet.mole_frac_comp[0, "benzene"]
+        )
+        assert pytest.approx(0.366, abs=1e-3) == value(
+            model.fs.unit.vap_outlet.mole_frac_comp[0, "toluene"]
+        )
+
+        assert not model.fs.unit.inlet.flow_mol[0].fixed
+        assert not model.fs.unit.inlet.temperature[0].fixed
+        assert not model.fs.unit.inlet.pressure[0].fixed
+        assert not model.fs.unit.inlet.mole_frac_comp[0, "benzene"].fixed
+        assert not model.fs.unit.inlet.mole_frac_comp[0, "toluene"].fixed
+
+    @pytest.mark.component
+    def test_block_triangularization(self, model):
+        initializer = BlockTriangularizationInitializer(constraint_tolerance=2e-5)
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert pytest.approx(0.603, abs=1e-3) == value(
+            model.fs.unit.liq_outlet.flow_mol[0]
+        )
+        assert pytest.approx(0.396, abs=1e-3) == value(
+            model.fs.unit.vap_outlet.flow_mol[0]
+        )
+        assert pytest.approx(368, abs=1e-3) == value(
+            model.fs.unit.liq_outlet.temperature[0]
+        )
+        assert pytest.approx(101325, abs=1e-3) == value(
+            model.fs.unit.liq_outlet.pressure[0]
+        )
+
+        assert pytest.approx(0.412, abs=1e-3) == value(
+            model.fs.unit.liq_outlet.mole_frac_comp[0, "benzene"]
+        )
+        assert pytest.approx(0.588, abs=1e-3) == value(
+            model.fs.unit.liq_outlet.mole_frac_comp[0, "toluene"]
+        )
+        assert pytest.approx(0.634, abs=1e-3) == value(
+            model.fs.unit.vap_outlet.mole_frac_comp[0, "benzene"]
+        )
+        assert pytest.approx(0.366, abs=1e-3) == value(
+            model.fs.unit.vap_outlet.mole_frac_comp[0, "toluene"]
+        )
+
+        assert not model.fs.unit.inlet.flow_mol[0].fixed
+        assert not model.fs.unit.inlet.temperature[0].fixed
+        assert not model.fs.unit.inlet.pressure[0].fixed
+        assert not model.fs.unit.inlet.mole_frac_comp[0, "benzene"].fixed
+        assert not model.fs.unit.inlet.mole_frac_comp[0, "toluene"].fixed

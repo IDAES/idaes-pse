@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Two-dimensional model of a slab of some conductive material. Presently it is
@@ -31,6 +31,13 @@ Instances of ``Var`` that must be fixed:
     - ``resistivity_thermal_exponent_dividend``: Parameter divided by temperature in resistivity equation, in K.
       Would be something like (reduced) activation energy, but it can be both negative and positive.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+
+# TODO: Look into protected access issues
+# pylint: disable=protected-access
+
 __author__ = "John Eslick, Douglas Allan"
 
 from pyomo.common.config import ConfigValue
@@ -41,7 +48,6 @@ import pyomo.environ as pyo
 from idaes.core import declare_process_block_class, UnitModelBlockData
 import idaes.models_extra.power_generation.unit_models.soc_submodels.common as common
 import idaes.core.util.scaling as iscale
-from idaes.core.solvers import get_solver
 
 import idaes.logger as idaeslog
 
@@ -305,14 +311,15 @@ class SocConductiveSlabData(UnitModelBlockData):
 
     def recursive_scaling(self):
         gsf = iscale.get_scaling_factor
-        ssf = common._set_scaling_factor_if_none
-        sgsf = common._set_and_get_scaling_factor
-        cst = lambda c, s: iscale.constraint_scaling_transform(c, s, overwrite=False)
-        sR = 1e-1  # Scaling factor for R
-        sD = 1e4  # Heuristic scaling factor for diffusion coefficient
-        sy_def = 10  # Mole frac comp scaling
-        sh = 1e-2  # Heat xfer coeff
-        sH = 1e-4  # Enthalpy/int energy
+
+        def ssf(c, s):
+            iscale.set_scaling_factor(c, s, overwrite=False)
+
+        sgsf = iscale.set_and_get_scaling_factor
+
+        def cst(c, s):
+            iscale.constraint_scaling_transform(c, s, overwrite=False)
+
         sk = 1  # Thermal conductivity is ~1
         sLx = sgsf(self.length_x, len(self.ixnodes) / self.length_x.value)
         # sLy = sgsf(self.length_y,1/self.length_y[None].value)
@@ -322,9 +329,6 @@ class SocConductiveSlabData(UnitModelBlockData):
 
         for t in self.flowsheet().time:
             for iz in self.iznodes:
-                if not self.temperature_z[t, iz].is_reference():
-                    sT = sgsf(self.temperature_z[t, iz], 1e-2)
-
                 if self.heat_flux_x0[t, iz].is_reference():
                     sq0 = gsf(self.heat_flux_x0[t, iz].referent, default=1e-2)
                 else:
@@ -342,7 +346,7 @@ class SocConductiveSlabData(UnitModelBlockData):
                     ssf(self.temperature_deviation_x1, sq1 * sLx / sk)
 
                 sqx = min(sq0, sq1)
-                sqz = 10 * sqx  # Heuristic
+                # sqz = 10 * sqx  # Heuristic
 
                 for ix in self.ixnodes:
                     sDT = sgsf(self.temperature_deviation_x[t, ix, iz], sqx * sLx / sk)

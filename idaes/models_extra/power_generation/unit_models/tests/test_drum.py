@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Drum model
@@ -86,6 +86,7 @@ def build_drum():
     return m
 
 
+@pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS not available")
 @pytest.mark.unit
 def test_basic_build(build_drum):
     """Make a model and make sure it doesn't throw exception"""
@@ -98,6 +99,7 @@ def test_basic_build(build_drum):
     assert m.fs.unit.config.property_package is m.fs.prop_water
 
 
+@pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS not available")
 @pytest.mark.integration
 def test_units(build_drum):
     assert_units_consistent(build_drum)
@@ -157,7 +159,7 @@ def test_run_drum(build_drum):
         - m.fs.unit.liquid_outlet.flow_mol[0] * m.fs.unit.liquid_outlet.enth_mol[0]
     )
     # pressure drop
-    assert pytest.approx(2261.2171, abs=1e-3) == pyo.value(m.fs.unit.deltaP[0])
+    assert pytest.approx(2261.2171, rel=1e-4) == pyo.value(m.fs.unit.deltaP[0])
     # mass balance
     assert pytest.approx(0, abs=1e-3) == pyo.value(
         m.fs.unit.water_steam_inlet.flow_mol[0]

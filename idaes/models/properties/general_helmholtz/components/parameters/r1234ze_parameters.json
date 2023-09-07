@@ -1,0 +1,71 @@
+{
+    "nl_file": "r1234ze_expressions_eos.nl",
+    "expr_map": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        13,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        12,
+        11
+    ],
+    "var_map": [
+        0,
+        1,
+        1000,
+        1000
+    ],
+    "param": {
+        "R": 0.07290727,
+        "MW": 114.0416,
+        "T_star": 382.513,
+        "rho_star": 489.238,
+        "Tc": 382.513,
+        "rhoc": 489.238,
+        "Pc": 3634.8623923418154,
+        "Tt": 169.0,
+        "Pt": 0.228564,
+        "rhot_l": 1510.76,
+        "rhot_v": 0.0185566,
+        "P_min": 1e-09,
+        "P_max": 500000.0,
+        "rho_max": 2500.0,
+        "T_min": 150,
+        "T_max": 1300,
+        "reference_state_offset": [
+            0.0,
+            0.0
+        ]
+    },
+    "nl_file_tcx": "r1234ze_expressions_tcx.nl",
+    "var_map_tcx": [
+        1,
+        0,
+        1000,
+        1000
+    ],
+    "have_tcx": true,
+    "nl_file_st": "r1234ze_expressions_st.nl",
+    "var_map_st": [
+        1,
+        1000,
+        1000,
+        1000
+    ],
+    "have_st": true,
+    "nl_file_visc": "r1234ze_expressions_visc.nl",
+    "var_map_visc": [
+        1,
+        0,
+        1000,
+        1000
+    ],
+    "have_visc": true
+}

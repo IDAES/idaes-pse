@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Base class for control volumes
@@ -18,6 +18,7 @@ Base class for control volumes
 from enum import Enum
 
 # Import Pyomo libraries
+from pyomo.environ import value
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 
 # Import IDAES cores
@@ -46,6 +47,10 @@ __author__ = "Andrew Lee"
 
 # Enumerate options for material balances
 class MaterialBalanceType(Enum):
+    """
+    Enum for material balance types.
+    """
+
     useDefault = -1
     none = 0
     componentPhase = 1
@@ -56,6 +61,10 @@ class MaterialBalanceType(Enum):
 
 # Enumerate options for energy balances
 class EnergyBalanceType(Enum):
+    """
+    Enum for energy balance types.
+    """
+
     useDefault = -1
     none = 0
     enthalpyPhase = 1
@@ -66,6 +75,10 @@ class EnergyBalanceType(Enum):
 
 # Enumerate options for momentum balances
 class MomentumBalanceType(Enum):
+    """
+    Enum for momentum/pressure balance types.
+    """
+
     none = 0
     pressureTotal = 1
     pressurePhase = 2
@@ -75,6 +88,10 @@ class MomentumBalanceType(Enum):
 
 # Enumerate options for flow direction
 class FlowDirection(Enum):
+    """
+    Enum indicating direction of flow.
+    """
+
     forward = 1
     backward = 2
 
@@ -257,7 +274,7 @@ CONFIG_Template.declare(
         default=False,
         domain=Bool,
         description="Enthalpy transfer term construction flag",
-        doc="""Indicates whether terms for enthalpy transfer due to mass trasnfer
+        doc="""Indicates whether terms for enthalpy transfer due to mass transfer
 should be constructed, **default** - False.
 **Valid values** {
 **True** - include enthalpy transfer terms,
@@ -440,7 +457,7 @@ have a config block which derives from CONFIG_Base,
 **default** - False.
 **Valid values:** {
 **True** - use automatic construction,
-**False** - do not use automatic construciton.}""",
+**False** - do not use automatic construction.}""",
         ),
     )
 
@@ -876,16 +893,12 @@ have a config block which derives from CONFIG_Base,
             "developer of the ControlVolume class you are using.".format(self.name)
         )
 
-    def _rxn_rate_conv(b, t, x, j, has_rate_reactions):
+    def _rxn_rate_conv(b, t, x, j):
         """
         Method to determine conversion term for reaction rate terms in material
         balance equations. This method gets the basis of the material flow
         and reaction rate terms and determines the correct conversion factor.
         """
-        # If rate reactions are not required, skip the rest and return 1
-        if not has_rate_reactions:
-            return 1
-
         if x is None:
             # 0D control volume
             flow_basis = b.properties_out[t].get_material_flow_basis()
@@ -930,7 +943,7 @@ have a config block which derives from CONFIG_Base,
                 return 1 / prop.mw_comp[j]
             else:
                 raise BurntToast(
-                    "{} encountered unrecognsied combination of bases "
+                    "{} encountered unrecognized combination of bases "
                     "for reaction rate terms. Please contact the IDAES"
                     " developers with this bug.".format(b.name)
                 )
@@ -964,3 +977,81 @@ have a config block which derives from CONFIG_Base,
                     "the IDAES developers with this bug.".format(self.name)
                 )
         return rep_blk
+
+    def _estimate_next_state(self, state1, state2, index, always_estimate=False):
+        """
+        Common method to estimate values for state variables in one state based on
+        previous state. This method will not change values of fixed variables.
+        Works for both 0D and 1D control volumes.
+
+        Args:
+            state1 - StateBlockData to use as the source for values
+            state2 - StateBlockData on which to set estimated values
+            index - index to use for states and other indexed CV level variables
+            always_estimate - bool indicating whether method should overwrite existing values
+                on unfixed variables
+
+        Returns:
+            None
+
+        """
+        state_vars = state2.define_state_vars()
+
+        for v2 in state_vars.values():
+            v1 = state1.find_component(v2.parent_component().local_name)
+            if v2.is_indexed():
+                for k in v2.keys():
+                    self._estimate_state_var(v1[k], v2[k], index, always_estimate)
+            else:
+                self._estimate_state_var(v1, v2, index, always_estimate)
+
+    def _estimate_state_var(self, v1, v2, index, always_estimate=False):
+        """
+        Method to set value of a given state variable (scalar or indexed) based
+        on value from another state variable.
+
+        This method contains some logic for incorporating control volume level
+        transfer terms into the estimates. Transfer terms supported include deltaT,
+        deltaP, heat and work. Material flow and concentration terms do not include
+        additional terms due to complexity in determining how to interpret these.
+
+        Args:
+            v1 - state variable to use as source for values
+            v2 - state variable to set estimate values on
+            index - index for getting values from control volume level terms
+            always_estimate - bool indicating whether method should overwrite existing values
+                on unfixed variables
+
+        Returns:
+            None
+
+        """
+        if v2.fixed:
+            # Do not touch fixed Vars
+            pass
+        elif v2.value is not None and not always_estimate:
+            # Var has a value and we are not always estimating - do nothing
+            pass
+        else:
+            # Estimate value for v2 from v1
+            # If no better guess, use v1
+            v2val = v1
+
+            # Check for known special cases
+            n = v2.local_name
+            # Material flows are too hard to deal with generically, as they
+            # can be defined as bilinear terms, can have various indexing and
+            # can be on different bases.
+            # Similarly, mass and mole fractions are hard to deal with.
+            # Energy terms also have problems, as they are defined on an intensive
+            # basis, so we would need to convert heat and work
+            if n.startswith("pressure"):
+                # Pressure, see if there is a fixed deltaP
+                if hasattr(self, "deltaP") and self.deltaP[index].fixed:
+                    v2val = value(v1 + self.deltaP[index])
+            elif n.startswith("temperature"):
+                # Temperature, see if there is a fixed deltaT
+                if hasattr(self, "deltaT") and self.deltaT[index].fixed:
+                    v2val = value(v1 + self.deltaT[index])
+
+            v2.set_value(v2val)

@@ -1,25 +1,28 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
+# TODO: Missing doc strings
+# pylint: disable=missing-module-docstring
+
+# Changing existing config block attributes
+# pylint: disable=protected-access
+
 import pyomo.environ as pyo
-from pyomo.common.config import ConfigValue, In
+from pyomo.common.config import In
 from idaes.core import declare_process_block_class
 from idaes.models_extra.power_generation.unit_models.balance import BalanceBlockData
 from idaes.core.util import from_json, to_json, StoreSpec
 from idaes.core.solvers import get_solver
 import idaes.models.properties.helmholtz.helmholtz as hltz
-from idaes.models.properties.helmholtz.helmholtz import (
-    HelmholtzThermoExpressions as ThermoExpr,
-)
 import idaes.core.util.scaling as iscale
 
 import idaes.logger as idaeslog
@@ -28,7 +31,7 @@ _log = idaeslog.getLogger(__name__)
 
 
 def _assert_properties(pb):
-    """Assert that the properies parameter block conforms to the requirements"""
+    """Assert that the properties parameter block conforms to the requirements"""
     try:
         assert isinstance(pb, hltz.HelmholtzParameterBlockData)
         assert pb.config.phase_presentation in {
@@ -51,11 +54,11 @@ class HelmPumpData(BalanceBlockData):
     Basic isentropic 0D turbine model.  This inherits the heater block to get
     a lot of unit model boilerplate and the mass balance, enegy balance and
     pressure equations.  This model is intended to be used only with Helmholtz
-    EOS property pacakges in mixed or single phase mode with P-H state vars.
+    EOS property packages in mixed or single phase mode with P-H state vars.
 
     Since this inherits BalanceBlockData, and only operates in steady-state or
     pseudo-steady-state (for dynamic models) the following mass, energy and
-    pressure equations are implicitly writen.
+    pressure equations are implicitly written.
 
     1) Mass Balance:
         0 = flow_mol_in[t] - flow_mol_out[t]
@@ -96,7 +99,6 @@ class HelmPumpData(BalanceBlockData):
         # including external function calls to calculate thermodynamic quantities
         # from a set of state variables.
         _assert_properties(config.property_package)
-        te = ThermoExpr(blk=self, parameters=config.property_package)
 
         eff = self.efficiency_pump = pyo.Var(
             self.flowsheet().time, initialize=0.9, doc="Pump efficiency"
@@ -109,7 +111,7 @@ class HelmPumpData(BalanceBlockData):
             doc="Ratio of outlet to inlet pressure",
         )
 
-        # Some shorter refernces to property blocks
+        # Some shorter references to property blocks
         properties_in = self.control_volume.properties_in
         properties_out = self.control_volume.properties_out
 
@@ -137,17 +139,16 @@ class HelmPumpData(BalanceBlockData):
     ):
         """
         For simplicity this initialization requires you to set values for the
-        efficency, inlet, and one of pressure ratio, pressure change or outlet
+        efficiency, inlet, and one of pressure ratio, pressure change or outlet
         pressure.
         """
-        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
         # Create solver
         slvr = get_solver(solver, optarg)
 
         # Store original specification so initialization doesn't change the model
-        # This will only resore the values of varaibles that were originally fixed
+        # This will only restore the values of variables that were originally fixed
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)
         istate = to_json(self, return_dict=True, wts=sp)
         # Check for alternate pressure specs
@@ -162,7 +163,7 @@ class HelmPumpData(BalanceBlockData):
                     / self.inlet.pressure[t]
                 )
         # Fix the variables we base the initializtion on and free the rest.
-        # This requires good values to be provided for pressure, efficency,
+        # This requires good values to be provided for pressure, efficiency,
         # and inlet conditions, but it is simple and reliable.
         self.inlet.fix()
         self.outlet.unfix()
@@ -179,7 +180,7 @@ class HelmPumpData(BalanceBlockData):
             self.outlet.flow_mol[t] = pyo.value(self.inlet.flow_mol[t])
         # Solve the model (should be already solved from above)
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = slvr.solve(self, tee=slc.tee)
+            slvr.solve(self, tee=slc.tee)
         from_json(self, sd=istate, wts=sp)
 
     def calculate_scaling_factors(self):
