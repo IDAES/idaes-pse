@@ -228,8 +228,8 @@ see property package for documentation.}""",
         # to be used below. Avoids repetition.
         _liquid_list = []
         _vapor_list = []
-        for p in self.config.property_package.phase_list:
-            pobj = self.config.property_package.get_phase(p)
+        for p in self.control_volume.config.property_package.phase_list:
+            pobj = self.control_volume.config.property_package.get_phase(p)
             if pobj.is_vapor_phase():
                 _vapor_list.append(p)
             elif pobj.is_liquid_phase():

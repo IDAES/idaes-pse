@@ -129,7 +129,7 @@ class PlateHeatExchangerData(HeatExchangerNTUData):
 
         # Units will be based on hot side properties
         units_meta = (
-            self.config.hot_side.property_package.get_metadata().get_derived_units
+            self.hot_side.config.property_package.get_metadata().get_derived_units
         )
 
         # ---------------------------------------------------------------------

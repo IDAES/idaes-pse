@@ -85,7 +85,9 @@ def pressure_flow_default_callback(valve):
     Add the default pressure flow relation constraint.  This will be used in the
     valve model, a custom callback is provided.
     """
-    umeta = valve.config.property_package.get_metadata().get_derived_units
+    umeta = (
+        valve.control_volume.config.property_package.get_metadata().get_derived_units
+    )
 
     valve.Cv = pyo.Var(
         initialize=0.1,

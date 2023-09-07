@@ -176,7 +176,7 @@ def test_constant_H():
 
     assert isinstance(m.state[0].henry, Expression)
     assert len(m.state[0].henry) == 1
-    assert m.state[0].henry["Liq", "H2O"]._expr is m.params.H2O.henry_ref_Liq
+    assert m.state[0].henry["Liq", "H2O"].expr is m.params.H2O.henry_ref_Liq
 
 
 @pytest.mark.unit
