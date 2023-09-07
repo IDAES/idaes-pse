@@ -1316,19 +1316,22 @@ class TestSVDToolbox:
         svd = SVDToolbox(dummy_problem, svd_callback=svd_sparse)
         svd.run_svd_analysis()
 
-        np.testing.assert_array_almost_equal(
-            svd.u,
-            np.array(
-                [[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [1, 0, 0, 0], [0, 0, -1, 0]]
-            ),
-        )
+        # SVD sparse is not consistent with signs - manually iterate and check abs value
+        for i in range(5):
+            for j in range(4):
+                if (i, j) in [(1, 1), (2, 3), (3, 0), (4, 2)]:
+                    assert abs(svd.u[i, j]) == pytest.approx(1, abs=1e-6, rel=1e-6)
+                else:
+                    assert svd.u[i, j] == pytest.approx(0, abs=1e-6)
+
         np.testing.assert_array_almost_equal(svd.s, np.array([0.1, 1, 5, 10]))
-        np.testing.assert_array_almost_equal(
-            svd.v,
-            np.array(
-                [[0, 0, 0, 1, 0], [0, 1, 0, 0, 0], [0, 0, 0, 0, -1], [0, 0, 1, 0, 0]]
-            ).T,
-        )
+
+        for i in range(5):
+            for j in range(4):
+                if (i, j) in [(1, 1), (2, 3), (3, 0), (4, 2)]:
+                    assert abs(svd.v[i, j]) == pytest.approx(1, abs=1e-6, rel=1e-6)
+                else:
+                    assert svd.v[i, j] == pytest.approx(0, abs=1e-6)
 
     @pytest.mark.unit
     def test_run_svd_analysis_sparse_limit(self, dummy_problem):
@@ -1337,13 +1340,22 @@ class TestSVDToolbox:
         )
         svd.run_svd_analysis()
 
-        np.testing.assert_array_almost_equal(
-            svd.u, np.array([[0, 0], [0, 1], [0, 0], [-1, 0], [0, 0]])
-        )
+        # SVD sparse is not consistent with signs - manually iterate and check abs value
+        for i in range(5):
+            for j in range(2):
+                if (i, j) in [(1, 1), (3, 0)]:
+                    assert abs(svd.u[i, j]) == pytest.approx(1, abs=1e-6, rel=1e-6)
+                else:
+                    assert svd.u[i, j] == pytest.approx(0, abs=1e-6)
+
         np.testing.assert_array_almost_equal(svd.s, np.array([0.1, 1]))
-        np.testing.assert_array_almost_equal(
-            svd.v, np.array([[0, 0, 0, -1, 0], [0, 1, 0, 0, 0]]).T
-        )
+
+        for i in range(5):
+            for j in range(2):
+                if (i, j) in [(1, 1), (3, 0)]:
+                    assert abs(svd.v[i, j]) == pytest.approx(1, abs=1e-6, rel=1e-6)
+                else:
+                    assert svd.v[i, j] == pytest.approx(0, abs=1e-6)
 
     @pytest.mark.unit
     def test_display_rank_of_equality_constraints(self, dummy_problem):
