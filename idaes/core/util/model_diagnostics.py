@@ -1800,7 +1800,7 @@ class DegeneracyHunter2:
 
             # Loop over candidate equations
             count = 1
-            for k in self.degenerate_set.keys():
+            for k in self.degenerate_set:
                 _log.info_high(f"Solving MILP {count} of {len(self.degenerate_set)}.")
 
                 # Check if equation is a major element of an IDS
