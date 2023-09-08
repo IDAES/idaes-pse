@@ -40,7 +40,6 @@ from idaes.core.util.model_statistics import (
 )
 
 
-
 def build_flowsheet():
     """Build demo flowsheet"""
     m = ConcreteModel()
@@ -76,10 +75,18 @@ def set_scaling(m):
     # iscale.set_scaling_factor(m.fs.M01.inlet_1_state[0].mole_frac_comp["toluene"], 1e5)
     iscale.set_scaling_factor(m.fs.M01.inlet_1_state[0].flow_mol_phase["Liq"], 1e6)
     iscale.set_scaling_factor(m.fs.M01.inlet_1_state[0].flow_mol_phase["Vap"], 1)
-    iscale.set_scaling_factor(m.fs.M01.inlet_1_state[0].mole_frac_phase_comp["Liq", "toluene"], 1e5)
-    iscale.set_scaling_factor(m.fs.M01.inlet_1_state[0].mole_frac_phase_comp["Vap", "toluene"], 1e6)
-    iscale.set_scaling_factor(m.fs.M01.inlet_1_state[0].pressure_sat_comp["benzene"], 1e-5)
-    iscale.set_scaling_factor(m.fs.M01.inlet_1_state[0].pressure_sat_comp["toluene"], 1e-4)
+    iscale.set_scaling_factor(
+        m.fs.M01.inlet_1_state[0].mole_frac_phase_comp["Liq", "toluene"], 1e5
+    )
+    iscale.set_scaling_factor(
+        m.fs.M01.inlet_1_state[0].mole_frac_phase_comp["Vap", "toluene"], 1e6
+    )
+    iscale.set_scaling_factor(
+        m.fs.M01.inlet_1_state[0].pressure_sat_comp["benzene"], 1e-5
+    )
+    iscale.set_scaling_factor(
+        m.fs.M01.inlet_1_state[0].pressure_sat_comp["toluene"], 1e-4
+    )
     iscale.set_scaling_factor(
         m.fs.M01.inlet_1_state[0].enth_mol_phase_comp["Liq", "benzene"], 1e-4
     )
@@ -109,11 +116,19 @@ def set_scaling(m):
     # iscale.set_scaling_factor(m.fs.M01.inlet_2_state[0].mole_frac_comp["toluene"], 1)
     iscale.set_scaling_factor(m.fs.M01.inlet_2_state[0].flow_mol_phase["Vap"], 1e1)
 
-    iscale.set_scaling_factor(m.fs.M01.inlet_2_state[0].mole_frac_phase_comp["Liq", "benzene"], 1e5)
-    iscale.set_scaling_factor(m.fs.M01.inlet_2_state[0].mole_frac_phase_comp["Vap", "benzene"], 1e5)
+    iscale.set_scaling_factor(
+        m.fs.M01.inlet_2_state[0].mole_frac_phase_comp["Liq", "benzene"], 1e5
+    )
+    iscale.set_scaling_factor(
+        m.fs.M01.inlet_2_state[0].mole_frac_phase_comp["Vap", "benzene"], 1e5
+    )
 
-    iscale.set_scaling_factor(m.fs.M01.inlet_2_state[0].pressure_sat_comp["benzene"], 1e-6)
-    iscale.set_scaling_factor(m.fs.M01.inlet_2_state[0].pressure_sat_comp["toluene"], 1e-6)
+    iscale.set_scaling_factor(
+        m.fs.M01.inlet_2_state[0].pressure_sat_comp["benzene"], 1e-6
+    )
+    iscale.set_scaling_factor(
+        m.fs.M01.inlet_2_state[0].pressure_sat_comp["toluene"], 1e-6
+    )
 
     iscale.set_scaling_factor(
         m.fs.M01.inlet_2_state[0].enth_mol_phase_comp["Liq", "benzene"], 1e-4
@@ -434,6 +449,7 @@ def set_scaling(m):
 
     iscale.calculate_scaling_factors(m)
 
+
 def set_dof(m):
     """Set degrees of freedom for demo flowsheet"""
     eps = 1e-5
@@ -463,6 +479,7 @@ def initialize_flowsheet(m):
     m.fs.H02.initialize(outlvl=idaeslog.WARNING)
     propagate_state(m.fs.s02)
     m.fs.F03.initialize(outlvl=idaeslog.WARNING)
+
 
 def solve_flowsheet(m, stee=False):
     """Solve demo flowsheet"""
