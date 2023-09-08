@@ -20,6 +20,7 @@ import pyomo.environ as pyo
 import pyomo.dae as pyodae
 from pyomo.util.subsystems import create_subsystem_block
 from idaes.core.solvers import petsc
+import idaes.logger as idaeslog
 
 
 def rp_example():
@@ -884,3 +885,44 @@ def test_petsc_traj_previous():
     for i, t in enumerate(t_vec):
         assert y2_tj[i] == pytest.approx(y2_tj0[i], abs=1e-4)
         assert y5_tj[i] == pytest.approx(y5_tj0[i], abs=1e-4)
+
+
+@pytest.mark.unit
+@pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
+def test_snes_options_deprecation(caplog):
+    m = rp_example2()
+    caplog.set_level(idaeslog.WARNING)
+    petsc.petsc_dae_by_time_element(
+        m,
+        time=m.time,
+        timevar=m.t,
+        ts_options={
+            "--ts_dt": 1,
+            "--ts_adapt_type": "none",
+            "--ts_monitor": "",
+        },
+        snes_options={},
+    )
+    s = ""
+    for record in caplog.records:
+        s += record.message
+    assert "DEPRECATED" in s
+
+
+@pytest.mark.unit
+@pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
+def test_double_options_exception():
+
+    m = rp_example2()
+    with pytest.raises(RuntimeError, match="deprecated"):
+        petsc.petsc_dae_by_time_element(
+            m,
+            time=m.time,
+            timevar=m.t,
+            snes_options={
+                "--dummy": "",
+            },
+            initial_solver_options={
+                "--dummy": "",
+            },
+        )

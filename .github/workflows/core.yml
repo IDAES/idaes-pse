@@ -200,3 +200,25 @@ jobs:
           grep_opts=( --recursive --include '*.py' --color=always --after-context=2 --line-number --initial-tab )
 
           grep "$pylint_todo_sentinel" "${grep_opts[@]}" "$pylint_target_dir" || echo "No \"$pylint_todo_sentinel\" comments found in $pylint_target_dir"
+
+  compat:
+    name: Compatibility tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Conda environment
+        uses: conda-incubator/setup-miniconda@v2.1.1
+        with:
+          activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
+          python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
+      - name: Set up idaes
+        uses: ./.github/actions/setup-idaes
+        with:
+          install-target: -r requirements-dev.txt
+      - name: Create empty pytest.ini file
+        run: |
+          echo "" > pytest.ini
+      - name: Install and run compatibility tests
+        run: |
+          pip install "git+https://github.com/IDAES/idaes-compatibility@0.23.8"
+          pytest --pyargs idaes_compatibility

@@ -69,8 +69,9 @@ class ExtraDependencies:
     """
 
     ui = [
-        "requests",
-        "pint",
+        # FIXME this must be changed to the PyPI distribution for the release
+        # "idaes-ui",
+        "idaes-ui @ git+https://github.com/IDAES/idaes-ui@main",
     ]
     _ipython = [
         'ipython <= 8.12; python_version == "3.8"',
@@ -126,11 +127,13 @@ kwargs = dict(
     # Put abstract (non-versioned) deps here.
     # Concrete dependencies go in requirements[-dev].txt
     install_requires=[
-        "pyomo>=6.6.1",
+        "pyomo>=6.6.2",
         "pint",  # required to use Pyomo units
         "networkx",  # required to use Pyomo network
         "numpy",
-        "pandas",
+        # pandas constraint added on 2023-08-30 b/c Pysmo test failures with 2.1
+        # see IDAES/idaes-pse#1253
+        "pandas<2.1",
         "scipy",
         "sympy",  # idaes.core.util.expr_doc
         "matplotlib",

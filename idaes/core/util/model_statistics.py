@@ -22,9 +22,13 @@ import sys
 
 from pyomo.environ import Block, Constraint, Expression, Objective, Var, value
 from pyomo.dae import DerivativeVar
-from pyomo.core.expr.current import identify_variables
+from pyomo.core.expr import identify_variables
 from pyomo.common.collections import ComponentSet
+from pyomo.common.deprecation import deprecation_warning
 
+import idaes.logger as idaeslog
+
+_log = idaeslog.getLogger(__name__)
 
 # -------------------------------------------------------------------------
 # Generator to handle cases where the input is an indexed Block
@@ -682,7 +686,13 @@ def number_unfixed_variables(block):
 
 
 def variables_near_bounds_generator(
-    block, tol=1e-4, relative=True, skip_lb=False, skip_ub=False
+    block,
+    tol=None,
+    relative=None,
+    skip_lb=False,
+    skip_ub=False,
+    abs_tol=1e-4,
+    rel_tol=1e-4,
 ):
     """
     Generator which returns all Var components in a model which have a value
@@ -690,8 +700,8 @@ def variables_near_bounds_generator(
 
     Args:
         block : model to be studied
-        tol : (relative) tolerance for inclusion in generator (default = 1e-4)
-        relative : Boolean, use relative tolerance (default = True)
+        abs_tol : absolute tolerance for inclusion in generator (default = 1e-4)
+        rel_tol : relative tolerance for inclusion in generator (default = 1e-4)
         skip_lb: Boolean to skip lower bound (default = False)
         skip_ub: Boolean to skip upper bound (default = False)
 
@@ -699,6 +709,23 @@ def variables_near_bounds_generator(
         A generator which returns all Var components block that are close to a
         bound
     """
+    # Check for deprecated arguments
+    if relative is not None:
+        msg = (
+            "variables_near_bounds_generator has deprecated the relative argument. "
+            "Please set abs_tol and rel_tol arguments instead."
+        )
+        deprecation_warning(msg=msg, logger=_log, version="2.2.0", remove_in="3.0.0")
+    if tol is not None:
+        msg = (
+            "variables_near_bounds_generator has deprecated the tol argument. "
+            "Please set abs_tol and rel_tol arguments instead."
+        )
+        deprecation_warning(msg=msg, logger=_log, version="2.2.0", remove_in="3.0.0")
+        # Set tolerances using the provided value
+        abs_tol = tol
+        rel_tol = tol
+
     for v in _iter_indexed_block_data_objects(
         block, ctype=Var, active=True, descend_into=True
     ):
@@ -706,39 +733,45 @@ def variables_near_bounds_generator(
         if v.value is None:
             continue
 
-        if relative:
-            # First, determine absolute tolerance to apply to bounds
-            if v.ub is not None and v.lb is not None:
-                # Both upper and lower bounds, apply tol to (upper - lower)
-                atol = value((v.ub - v.lb) * tol)
-            elif v.ub is not None:
-                # Only upper bound, apply tol to bound value
-                atol = abs(value(v.ub * tol))
-            elif v.lb is not None:
-                # Only lower bound, apply tol to bound value
-                atol = abs(value(v.lb * tol))
-            else:
-                continue
+        # First, magnitude of variable
+        if v.ub is not None and v.lb is not None:
+            # Both upper and lower bounds, apply tol to (upper - lower)
+            mag = value(v.ub - v.lb)
+        elif v.ub is not None:
+            # Only upper bound, apply tol to bound value
+            mag = abs(value(v.ub))
+        elif v.lb is not None:
+            # Only lower bound, apply tol to bound value
+            mag = abs(value(v.lb))
         else:
-            atol = tol
+            mag = 0
 
-        if v.ub is not None and not skip_lb and value(v.ub - v.value) <= atol:
+        # Calculate largest tolerance from absolute and relative
+        tol = max(abs_tol, mag * rel_tol)
+
+        if v.ub is not None and not skip_ub and value(v.ub - v.value) <= tol:
             yield v
-        elif v.lb is not None and not skip_ub and value(v.value - v.lb) <= atol:
+        elif v.lb is not None and not skip_lb and value(v.value - v.lb) <= tol:
             yield v
 
 
 def variables_near_bounds_set(
-    block, tol=1e-4, relative=True, skip_lb=False, skip_ub=False
+    block,
+    tol=None,
+    relative=None,
+    skip_lb=False,
+    skip_ub=False,
+    abs_tol=1e-4,
+    rel_tol=1e-4,
 ):
     """
     Method to return a ComponentSet of all Var components in a model which have
-    a value within tol (relative) of a bound.
+    a value within tolerance of a bound.
 
     Args:
         block : model to be studied
-        tol : relative tolerance for inclusion in generator (default = 1e-4)
-        relative : Boolean, use relative tolerance (default = True)
+        abs_tol : absolute tolerance for inclusion in generator (default = 1e-4)
+        rel_tol : relative tolerance for inclusion in generator (default = 1e-4)
         skip_lb: Boolean to skip lower bound (default = False)
         skip_ub: Boolean to skip upper bound (default = False)
 
@@ -747,23 +780,28 @@ def variables_near_bounds_set(
         bound
     """
     return ComponentSet(
-        variables_near_bounds_generator(block, tol, relative, skip_lb, skip_ub)
+        variables_near_bounds_generator(
+            block, tol, relative, skip_lb, skip_ub, abs_tol, rel_tol
+        )
     )
 
 
-def number_variables_near_bounds(block, tol=1e-4):
+def number_variables_near_bounds(block, tol=None, abs_tol=1e-4, rel_tol=1e-4):
     """
     Method to return the number of all Var components in a model which have
     a value within tol (relative) of a bound.
 
     Args:
         block : model to be studied
-        tol : relative tolerance for inclusion in generator (default = 1e-4)
+        abs_tol : absolute tolerance for inclusion in generator (default = 1e-4)
+        rel_tol : relative tolerance for inclusion in generator (default = 1e-4)
 
     Returns:
         Number of components block that are close to a bound
     """
-    return len(variables_near_bounds_set(block, tol))
+    return len(
+        variables_near_bounds_set(block, tol=tol, abs_tol=abs_tol, rel_tol=rel_tol)
+    )
 
 
 # -------------------------------------------------------------------------

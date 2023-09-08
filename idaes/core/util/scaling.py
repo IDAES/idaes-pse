@@ -46,7 +46,7 @@ from pyomo.common.collections import ComponentMap, ComponentSet
 from pyomo.dae import DerivativeVar
 from pyomo.dae.flatten import slice_component_along_sets
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
-from pyomo.core.expr import current as EXPR
+from pyomo.core import expr as EXPR
 from pyomo.core.expr.numvalue import native_types, pyomo_constant_types
 from pyomo.core.base.units_container import _PyomoUnit
 
@@ -866,7 +866,7 @@ def jacobian_cond(m=None, scaled=True, order=None, pinv=False, jac=None):
         (float) Condition number
     """
     if jac is None:
-        jac, nlp = get_jacobian(m, scaled)  # pylint: disable=unused-variable
+        jac, _ = get_jacobian(m, scaled)
     jac = jac.tocsc()
     if jac.shape[0] != jac.shape[1] and not pinv:
         _log.warning("Nonsquare Jacobian using pseudo inverse")

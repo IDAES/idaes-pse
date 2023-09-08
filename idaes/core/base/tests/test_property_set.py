@@ -89,7 +89,7 @@ class Test_PropertyMetadataIndex:
         p = DummyMeta()
 
         with pytest.raises(
-            ValueError, match="valid_range must be a tuple of length 2 \(got foo\)"
+            ValueError, match=r"valid_range must be a tuple of length 2 \(got foo\)"
         ):
             meta = _PropertyMetadataIndex(
                 parent=p,
@@ -106,7 +106,7 @@ class Test_PropertyMetadataIndex:
 
         with pytest.raises(
             ValueError,
-            match="valid_range must be a tuple of length 2 \(got \(1, 2, 3\)\)",
+            match=r"valid_range must be a tuple of length 2 \(got \(1, 2, 3\)\)",
         ):
             meta = _PropertyMetadataIndex(
                 parent=p,
@@ -123,8 +123,8 @@ class Test_PropertyMetadataIndex:
 
         with pytest.raises(
             ValueError,
-            match="valid_range must be a 2-tuple with form \(lower, upper\): first value "
-            "was greater than second value: \(1, 0\)",
+            match=r"valid_range must be a 2-tuple with form \(lower, upper\): first value "
+            r"was greater than second value: \(1, 0\)",
         ):
             meta = _PropertyMetadataIndex(
                 parent=p,
@@ -518,7 +518,7 @@ class TestPropertySetBase:
 
         pset = PropertySetBase(parent=p)
 
-        return pset.unitset is p.default_units
+        assert pset.unitset is p.default_units
 
     @pytest.mark.unit
     def test_get_name_and_index(self):
@@ -581,23 +581,12 @@ class TestPropertySetBase:
         p.default_units = "foo"
 
         pset = PropertySetBase(parent=p)
+        pset._defined_properties.append("foo")
         pset._defined_indices.append("bar")
 
         n, i = pset.get_name_and_index("foo_bar")
         assert n == "foo"
         assert i == "bar"
-
-        n, i = pset.get_name_and_index("foo_bar_phase")
-        assert n == "foo_bar"
-        assert i == "phase"
-
-        n, i = pset.get_name_and_index("foo_bar_comp")
-        assert n == "foo_bar"
-        assert i == "comp"
-
-        n, i = pset.get_name_and_index("foo_bar_phase_comp")
-        assert n == "foo_bar"
-        assert i == "phase_comp"
 
 
 class DerivedPropertySet(PropertySetBase):
@@ -702,7 +691,7 @@ class TestElectrolytePropertySet:
         p = DummyMeta()
         p.default_units = UnitSet()
 
-        pset = PropertySetBase(parent=p)
+        pset = ElectrolytePropertySet(parent=p)
         pset._defined_properties.append("foo_bar")
 
         n, i = pset.get_name_and_index("foo_bar")

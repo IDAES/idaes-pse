@@ -160,8 +160,8 @@ class TypeEData(UnitModelBlockData):
         self.class_type = "E"
 
 
-@declare_process_block_class("TestCostingPackage")
-class TestCostingPackageData(FlowsheetCostingBlockData):
+@declare_process_block_class("DummyCostingPackage")
+class DummyCostingPackageData(FlowsheetCostingBlockData):
     def build_global_params(self):
         self.base_currency = pyunits.USD_test
         self.base_period = pyunits.year
@@ -200,7 +200,7 @@ class TestFlowsheetCostingBlock:
     @pytest.mark.unit
     def test_costing_package_no_base_currency(self):
         @declare_process_block_class("TestCostingPackage2")
-        class TestCostingPackage2Data(TestCostingPackageData):
+        class TestCostingPackage2Data(DummyCostingPackageData):
             def build_global_params(self):
                 super().build_global_params()
                 self.base_currency = None
@@ -217,7 +217,7 @@ class TestFlowsheetCostingBlock:
     @pytest.fixture(scope="class")
     def costing(self):
         m = ConcreteModel()
-        m.costing = TestCostingPackage()
+        m.costing = DummyCostingPackage()
 
         return m
 
@@ -233,9 +233,9 @@ class TestFlowsheetCostingBlock:
         }
 
         assert costing.costing._costing_methods_map == {
-            TypeAData: TestCostingPackageData.method_1,
-            TypeBData: TestCostingPackageData.method_2,
-            TypeCData: TestCostingPackageData.method_3,
+            TypeAData: DummyCostingPackageData.method_1,
+            TypeBData: DummyCostingPackageData.method_2,
+            TypeCData: DummyCostingPackageData.method_3,
         }
 
         # Check that test_flow_1 was properly defined
@@ -357,24 +357,24 @@ class TestFlowsheetCostingBlock:
 
         assert (
             costing.costing._get_costing_method_for(costing.unit_a)
-            is TestCostingPackageData.method_1
+            is DummyCostingPackageData.method_1
         )
 
         assert (
             costing.costing._get_costing_method_for(costing.unit_b)
-            is TestCostingPackageData.method_2
+            is DummyCostingPackageData.method_2
         )
 
         assert (
             costing.costing._get_costing_method_for(costing.unit_c)
-            is TestCostingPackageData.method_3
+            is DummyCostingPackageData.method_3
         )
 
         # TypeD not registered with property package, but inherits from TypeA
         # Should get method_1
         assert (
             costing.costing._get_costing_method_for(costing.unit_d)
-            is TestCostingPackageData.method_1
+            is DummyCostingPackageData.method_1
         )
 
         # TypeE not registered with property package and no inheritance
@@ -418,7 +418,7 @@ class TestFlowsheetCostingBlock:
         # This should work
         costing.unit_a.costing = UnitModelCostingBlock(
             flowsheet_costing_block=costing.costing,
-            costing_method=TestCostingPackageData.method_2,
+            costing_method=DummyCostingPackageData.method_2,
         )
 
         assert costing.unit_a.costing.cost_method == 2

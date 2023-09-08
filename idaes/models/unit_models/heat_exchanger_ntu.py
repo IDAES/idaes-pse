@@ -369,7 +369,7 @@ constructed,
         # ---------------------------------------------------------------------
         # Add performance equations
         # All units of measurement will be based on hot side
-        hunits = self.config.hot_side.property_package.get_metadata().get_derived_units
+        hunits = self.hot_side.config.property_package.get_metadata().get_derived_units
 
         # Common heat exchanger variables
         self.area = Var(
