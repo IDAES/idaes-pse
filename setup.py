@@ -133,7 +133,7 @@ kwargs = dict(
         "numpy",
         # pandas constraint added on 2023-08-30 b/c bug in v2.1
         # see IDAES/idaes-pse#1253
-        "pandas!=2.1",
+        "pandas!=2.1.0",
         "scipy",
         "sympy",  # idaes.core.util.expr_doc
         "matplotlib",
