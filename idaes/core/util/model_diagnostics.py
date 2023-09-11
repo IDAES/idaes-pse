@@ -1177,7 +1177,7 @@ class DiagnosticsToolbox:
             lines_list=next_steps,
             title="Suggested next steps:",
             line_if_empty=f"If you still have issues converging your model consider:\n"
-            f"{TAB*2}prepare_svd_toolbox\n{TAB*2}prepare_degeneracy_hunter",
+            f"{TAB*2}prepare_svd_toolbox()\n{TAB*2}prepare_degeneracy_hunter()",
             footer="=",
         )
 
