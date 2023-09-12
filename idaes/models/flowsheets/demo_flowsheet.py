@@ -33,9 +33,7 @@ from idaes.models.unit_models import Mixer, Heater, Flash
 import idaes.logger as idaeslog
 from idaes.core.util.model_diagnostics import DiagnosticsToolbox
 from idaes.core.util.model_statistics import (
-    degrees_of_freedom,
     total_constraints_set,
-    large_residuals_set,
     variables_near_bounds_generator,
 )
 
