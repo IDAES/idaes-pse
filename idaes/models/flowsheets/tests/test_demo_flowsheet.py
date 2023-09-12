@@ -20,6 +20,7 @@ import pytest
 from idaes.models.flowsheets.demo_flowsheet import (
     build_flowsheet,
     set_dof,
+    set_scaling,
     initialize_flowsheet,
     solve_flowsheet,
 )
@@ -34,6 +35,7 @@ from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import
 )
 from idaes.models.unit_models import Mixer, Heater, Flash
 from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.model_diagnostics import DiagnosticsToolbox
 
 
 @pytest.fixture(scope="module")
@@ -57,6 +59,11 @@ def test_build_flowsheet(model):
     assert isinstance(model.fs.s02, Arc)
 
     assert degrees_of_freedom(model) == 13
+
+
+@pytest.mark.unit
+def test_set_scaling(model):
+    set_scaling(model)
 
 
 @pytest.mark.unit
@@ -95,7 +102,7 @@ def test_solve_flowsheet(model):
         0.5, 1e-4
     )
     assert model.fs.M01.outlet.pressure[0].value == pytest.approx(101325, 1e-4)
-    assert model.fs.M01.outlet.temperature[0].value == pytest.approx(368.2, 1e-4)
+    assert model.fs.M01.outlet.temperature[0].value == pytest.approx(368.12, 1e-4)
 
     assert model.fs.H02.outlet.flow_mol[0].value == pytest.approx(2.0, 1e-4)
     assert model.fs.H02.outlet.mole_frac_comp[0, "benzene"].value == pytest.approx(
