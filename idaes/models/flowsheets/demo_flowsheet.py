@@ -73,8 +73,16 @@ def set_scaling(m):
 
     # iscale.set_scaling_factor(m.fs.M01.inlet_1_state[0].mole_frac_comp["benzene"], 1)
     # iscale.set_scaling_factor(m.fs.M01.inlet_1_state[0].mole_frac_comp["toluene"], 1e5)
+    #
+    iscale.set_scaling_factor(m.fs.M01.inlet_1_state[0].flow_mol_phase, 1e6)
     iscale.set_scaling_factor(m.fs.M01.inlet_1_state[0].flow_mol_phase["Liq"], 1e6)
     iscale.set_scaling_factor(m.fs.M01.inlet_1_state[0].flow_mol_phase["Vap"], 1)
+    iscale.set_scaling_factor(
+        m.fs.M01.inlet_1_state[0].mole_frac_phase_comp["Liq", "benzene"], 1
+    )
+    iscale.set_scaling_factor(
+        m.fs.M01.inlet_1_state[0].mole_frac_phase_comp["Vap", "benzene"], 1
+    )
     iscale.set_scaling_factor(
         m.fs.M01.inlet_1_state[0].mole_frac_phase_comp["Liq", "toluene"], 1e5
     )
@@ -99,6 +107,7 @@ def set_scaling(m):
     iscale.set_scaling_factor(
         m.fs.M01.inlet_1_state[0].enth_mol_phase_comp["Vap", "toluene"], 1e-4
     )
+    #
     # iscale.set_scaling_factor(m.fs.M01.inlet_1_state[0].eq_total, 1)
     # iscale.set_scaling_factor(m.fs.M01.inlet_1_state[0].eq_sum_mol_frac, 1)
     # iscale.set_scaling_factor(m.fs.M01.inlet_1_state[0].eq_comp["benzene"], 1)
@@ -111,9 +120,11 @@ def set_scaling(m):
     # )
     # iscale.set_scaling_factor(m.fs.M01.inlet_1_state[0].eq_P_vap["benzene"], 1)
     # iscale.set_scaling_factor(m.fs.M01.inlet_1_state[0].eq_P_vap["toluene"], 1)
-    #
+
     # iscale.set_scaling_factor(m.fs.M01.inlet_2_state[0].mole_frac_comp["benzene"], 1e5)
     # iscale.set_scaling_factor(m.fs.M01.inlet_2_state[0].mole_frac_comp["toluene"], 1)
+    #
+    iscale.set_scaling_factor(m.fs.M01.inlet_2_state[0].flow_mol_phase, 1e1)
     iscale.set_scaling_factor(m.fs.M01.inlet_2_state[0].flow_mol_phase["Vap"], 1e1)
 
     iscale.set_scaling_factor(
@@ -121,6 +132,12 @@ def set_scaling(m):
     )
     iscale.set_scaling_factor(
         m.fs.M01.inlet_2_state[0].mole_frac_phase_comp["Vap", "benzene"], 1e5
+    )
+    iscale.set_scaling_factor(
+        m.fs.M01.inlet_2_state[0].mole_frac_phase_comp["Liq", "toluene"], 1
+    )
+    iscale.set_scaling_factor(
+        m.fs.M01.inlet_2_state[0].mole_frac_phase_comp["Vap", "toluene"], 1
     )
 
     iscale.set_scaling_factor(
@@ -142,6 +159,7 @@ def set_scaling(m):
     iscale.set_scaling_factor(
         m.fs.M01.inlet_2_state[0].enth_mol_phase_comp["Vap", "toluene"], 1e-4
     )
+    #
     # iscale.set_scaling_factor(m.fs.M01.inlet_2_state[0].eq_total, 1)
     # iscale.set_scaling_factor(m.fs.M01.inlet_2_state[0].eq_sum_mol_frac, 1)
     # iscale.set_scaling_factor(m.fs.M01.inlet_2_state[0].eq_comp["benzene"], 1)
@@ -154,6 +172,7 @@ def set_scaling(m):
     # )
     # iscale.set_scaling_factor(m.fs.M01.inlet_2_state[0].eq_P_vap["benzene"], 1)
     # iscale.set_scaling_factor(m.fs.M01.inlet_2_state[0].eq_P_vap["toluene"], 1)
+    #
 
     iscale.set_scaling_factor(
         m.fs.M01.mixed_state[0].enth_mol_phase_comp["Liq", "benzene"], 1e-4
@@ -167,6 +186,7 @@ def set_scaling(m):
     iscale.set_scaling_factor(
         m.fs.M01.mixed_state[0].enth_mol_phase_comp["Vap", "toluene"], 1e-4
     )
+    iscale.set_scaling_factor(m.fs.M01.mixed_state[0].enthalpy_flow_terms["Liq"], 1)
     iscale.set_scaling_factor(m.fs.M01.mixed_state[0].enthalpy_flow_terms["Vap"], 1)
     iscale.set_scaling_factor(m.fs.M01.mixed_state[0].eq_total, 1)
     iscale.set_scaling_factor(m.fs.M01.mixed_state[0].eq_sum_mol_frac, 1)
@@ -183,17 +203,25 @@ def set_scaling(m):
     iscale.set_scaling_factor(m.fs.M01.mixed_state[0].eq_P_vap["toluene"], 1)
 
     iscale.set_scaling_factor(m.fs.M01.mixed_state[0].pressure, 1e-5)
+    iscale.set_scaling_factor(m.fs.M01.mixed_state[0].pressure_sat_comp, 1e-5)
     iscale.set_scaling_factor(m.fs.M01.mixed_state[0].temperature, 1e-2)
     iscale.set_scaling_factor(m.fs.M01.mixed_state[0].flow_mol, 1)
+    iscale.set_scaling_factor(m.fs.M01.mixed_state[0].flow_mol_phase, 1)
     iscale.set_scaling_factor(m.fs.M01.mixed_state[0].mole_frac_comp["benzene"], 1e1)
     iscale.set_scaling_factor(m.fs.M01.mixed_state[0].mole_frac_comp["toluene"], 1e1)
 
     iscale.set_scaling_factor(m.fs.H02.control_volume.heat, 1e-5)
     iscale.set_scaling_factor(m.fs.H02.control_volume.properties_in[0].pressure, 1e-5)
     iscale.set_scaling_factor(
+        m.fs.H02.control_volume.properties_in[0].pressure_sat_comp, 1e-5
+    )
+    iscale.set_scaling_factor(
         m.fs.H02.control_volume.properties_in[0].temperature, 1e-2
     )
     iscale.set_scaling_factor(m.fs.H02.control_volume.properties_in[0].flow_mol, 1)
+    iscale.set_scaling_factor(
+        m.fs.H02.control_volume.properties_in[0].flow_mol_phase, 1
+    )
     iscale.set_scaling_factor(
         m.fs.H02.control_volume.properties_in[0].mole_frac_comp["benzene"], 1e1
     )
@@ -201,6 +229,9 @@ def set_scaling(m):
         m.fs.H02.control_volume.properties_in[0].mole_frac_comp["toluene"], 1e1
     )
     iscale.set_scaling_factor(m.fs.H02.control_volume.properties_out[0].flow_mol, 1)
+    iscale.set_scaling_factor(
+        m.fs.H02.control_volume.properties_out[0].flow_mol_phase, 1
+    )
     iscale.set_scaling_factor(
         m.fs.H02.control_volume.properties_out[0].mole_frac_comp["benzene"], 1e1
     )
@@ -211,6 +242,9 @@ def set_scaling(m):
         m.fs.H02.control_volume.properties_out[0].temperature, 1e-2
     )
     iscale.set_scaling_factor(m.fs.H02.control_volume.properties_out[0].pressure, 1e-5)
+    iscale.set_scaling_factor(
+        m.fs.H02.control_volume.properties_out[0].pressure_sat_comp, 1e-5
+    )
     iscale.set_scaling_factor(
         m.fs.H02.control_volume.properties_in[0].enth_mol_phase_comp["Liq", "benzene"],
         1e-4,
@@ -325,9 +359,23 @@ def set_scaling(m):
     iscale.set_scaling_factor(m.fs.F03.control_volume.heat, 1)
     iscale.set_scaling_factor(m.fs.F03.control_volume.properties_in[0].pressure, 1e-5)
     iscale.set_scaling_factor(
+        m.fs.F03.control_volume.properties_in[0].pressure_sat_comp, 1e-5
+    )
+    iscale.set_scaling_factor(m.fs.F03.control_volume.properties_out[0].pressure, 1e-5)
+    iscale.set_scaling_factor(
+        m.fs.F03.control_volume.properties_out[0].pressure_sat_comp, 1e-5
+    )
+    iscale.set_scaling_factor(
         m.fs.F03.control_volume.properties_in[0].temperature, 1e-2
     )
     iscale.set_scaling_factor(m.fs.F03.control_volume.properties_in[0].flow_mol, 1)
+    iscale.set_scaling_factor(
+        m.fs.F03.control_volume.properties_in[0].flow_mol_phase, 1
+    )
+    iscale.set_scaling_factor(m.fs.F03.control_volume.properties_out[0].flow_mol, 1)
+    iscale.set_scaling_factor(
+        m.fs.F03.control_volume.properties_out[0].flow_mol_phase, 1
+    )
     iscale.set_scaling_factor(
         m.fs.F03.control_volume.properties_in[0].mole_frac_comp["benzene"], 1e1
     )
@@ -467,8 +515,8 @@ def set_dof(m):
 
     m.fs.H02.outlet.temperature[0].fix(370)
 
-    m.fs.F03.heat_duty.fix(0)
-    m.fs.F03.deltaP.fix(0)
+    m.fs.F03.heat_duty.fix(1e-6)
+    m.fs.F03.deltaP.fix(1e-6)
 
 
 def initialize_flowsheet(m):
@@ -486,7 +534,32 @@ def solve_flowsheet(m, stee=False):
     solver = get_solver()
     solver.solve(m, tee=stee)
 
+
+def display_results(m):
+    """Display results for flowsheet"""
+    m.fs.M01.outlet.display()
+    m.fs.H02.outlet.display()
+    m.fs.F03.vap_outlet.display()
+    m.fs.F03.liq_outlet.display()
+
+
+if __name__ == "__main__":
+    m = build_flowsheet()
+
+    set_scaling(m)
+
+    set_dof(m)
+
     dt = DiagnosticsToolbox(model=m)
+    dt.report_structural_issues()
+
+    initialize_flowsheet(m)
+
+    dt.report_numerical_issues()
+    dt.display_constraints_with_large_residuals()
+
+    solve_flowsheet(m, stee=True)
+
     dt.report_numerical_issues()
     dt.display_constraints_with_large_residuals()
     dt.display_variables_at_or_outside_bounds()
@@ -505,25 +578,5 @@ def solve_flowsheet(m, stee=False):
         residual = abs(pyo.value(x.body) - pyo.value(x.lb))
         if residual > 1e-8:
             print(f"{x}\t{residual}")
-
-
-def display_results(m):
-    """Display results for flowsheet"""
-    m.fs.M01.outlet.display()
-    m.fs.H02.outlet.display()
-    m.fs.F03.vap_outlet.display()
-    m.fs.F03.liq_outlet.display()
-
-
-if __name__ == "__main__":
-    m = build_flowsheet()
-
-    set_scaling(m)
-
-    set_dof(m)
-
-    initialize_flowsheet(m)
-
-    solve_flowsheet(m, stee=True)
 
     display_results(m)
