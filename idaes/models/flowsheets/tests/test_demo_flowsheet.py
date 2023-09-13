@@ -35,7 +35,6 @@ from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import
 )
 from idaes.models.unit_models import Mixer, Heater, Flash
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.model_diagnostics import DiagnosticsToolbox
 
 
 @pytest.fixture(scope="module")

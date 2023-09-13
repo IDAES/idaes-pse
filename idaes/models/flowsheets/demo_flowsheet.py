@@ -16,7 +16,6 @@ Demonstration flowsheet for testing purposes.
 Constructs a basic flowsheet for a benzene-toluene system with a mixer, heater
 and flash unit.
 """
-import pyomo.environ as pyo
 from pyomo.environ import ConcreteModel, TransformationFactory
 from pyomo.network import Arc
 
@@ -31,11 +30,6 @@ from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import
 from idaes.models.unit_models import Mixer, Heater, Flash
 
 import idaes.logger as idaeslog
-from idaes.core.util.model_diagnostics import DiagnosticsToolbox
-from idaes.core.util.model_statistics import (
-    total_constraints_set,
-    variables_near_bounds_generator,
-)
 
 
 def build_flowsheet():
@@ -62,16 +56,7 @@ def build_flowsheet():
 
 def set_scaling(m):
     """Set scaling for demo flowsheet"""
-    # m.fs.BT_props.set_default_scaling(
-    #     "flow_mol_phase_comp", 1e2, index=("Liq", "benzene")
-    # )
-    # m.fs.BT_props.set_default_scaling(
-    #     "flow_mol_phase_comp", 1e2, index=("Liq", "toluene")
-    # )
 
-    # iscale.set_scaling_factor(m.fs.M01.inlet_1_state[0].mole_frac_comp["benzene"], 1)
-    # iscale.set_scaling_factor(m.fs.M01.inlet_1_state[0].mole_frac_comp["toluene"], 1e5)
-    #
     iscale.set_scaling_factor(m.fs.M01.inlet_1_state[0].flow_mol_phase, 1e6)
     iscale.set_scaling_factor(m.fs.M01.inlet_1_state[0].flow_mol_phase["Liq"], 1e6)
     iscale.set_scaling_factor(m.fs.M01.inlet_1_state[0].flow_mol_phase["Vap"], 1)
@@ -105,23 +90,7 @@ def set_scaling(m):
     iscale.set_scaling_factor(
         m.fs.M01.inlet_1_state[0].enth_mol_phase_comp["Vap", "toluene"], 1e-4
     )
-    #
-    # iscale.set_scaling_factor(m.fs.M01.inlet_1_state[0].eq_total, 1)
-    # iscale.set_scaling_factor(m.fs.M01.inlet_1_state[0].eq_sum_mol_frac, 1)
-    # iscale.set_scaling_factor(m.fs.M01.inlet_1_state[0].eq_comp["benzene"], 1)
-    # iscale.set_scaling_factor(m.fs.M01.inlet_1_state[0].eq_comp["toluene"], 1)
-    # iscale.set_scaling_factor(
-    #     m.fs.M01.inlet_1_state[0].eq_phase_equilibrium["benzene"], 1
-    # )
-    # iscale.set_scaling_factor(
-    #     m.fs.M01.inlet_1_state[0].eq_phase_equilibrium["toluene"], 1
-    # )
-    # iscale.set_scaling_factor(m.fs.M01.inlet_1_state[0].eq_P_vap["benzene"], 1)
-    # iscale.set_scaling_factor(m.fs.M01.inlet_1_state[0].eq_P_vap["toluene"], 1)
 
-    # iscale.set_scaling_factor(m.fs.M01.inlet_2_state[0].mole_frac_comp["benzene"], 1e5)
-    # iscale.set_scaling_factor(m.fs.M01.inlet_2_state[0].mole_frac_comp["toluene"], 1)
-    #
     iscale.set_scaling_factor(m.fs.M01.inlet_2_state[0].flow_mol_phase, 1e1)
     iscale.set_scaling_factor(m.fs.M01.inlet_2_state[0].flow_mol_phase["Vap"], 1e1)
 
@@ -157,20 +126,6 @@ def set_scaling(m):
     iscale.set_scaling_factor(
         m.fs.M01.inlet_2_state[0].enth_mol_phase_comp["Vap", "toluene"], 1e-4
     )
-    #
-    # iscale.set_scaling_factor(m.fs.M01.inlet_2_state[0].eq_total, 1)
-    # iscale.set_scaling_factor(m.fs.M01.inlet_2_state[0].eq_sum_mol_frac, 1)
-    # iscale.set_scaling_factor(m.fs.M01.inlet_2_state[0].eq_comp["benzene"], 1)
-    # iscale.set_scaling_factor(m.fs.M01.inlet_2_state[0].eq_comp["toluene"], 1)
-    # iscale.set_scaling_factor(
-    #     m.fs.M01.inlet_2_state[0].eq_phase_equilibrium["benzene"], 1
-    # )
-    # iscale.set_scaling_factor(
-    #     m.fs.M01.inlet_2_state[0].eq_phase_equilibrium["toluene"], 1
-    # )
-    # iscale.set_scaling_factor(m.fs.M01.inlet_2_state[0].eq_P_vap["benzene"], 1)
-    # iscale.set_scaling_factor(m.fs.M01.inlet_2_state[0].eq_P_vap["toluene"], 1)
-    #
 
     iscale.set_scaling_factor(
         m.fs.M01.mixed_state[0].enth_mol_phase_comp["Liq", "benzene"], 1e-4
@@ -548,33 +503,8 @@ if __name__ == "__main__":
 
     set_dof(m)
 
-    dt = DiagnosticsToolbox(model=m)
-    dt.report_structural_issues()
-
     initialize_flowsheet(m)
 
-    dt.report_numerical_issues()
-    dt.display_constraints_with_large_residuals()
-
     solve_flowsheet(m, stee=True)
-
-    dt.report_numerical_issues()
-    dt.display_constraints_with_large_residuals()
-    dt.display_variables_at_or_outside_bounds()
-
-    badly_scaled_var_list = iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2)
-    print("----------------   badly_scaled_var_list   ----------------")
-    for x in badly_scaled_var_list:
-        print(f"{x[0].name}\t{x[0].value}\tsf: {iscale.get_scaling_factor(x[0])}")
-    print("---------------- variables_near_bounds_list ----------------")
-    variables_near_bounds_list = variables_near_bounds_generator(m)
-    for x in variables_near_bounds_list:
-        print(f"{x.name}\t{x.value}")
-    print("---------------- total_constraints_set_list ----------------")
-    total_constraints_set_list = total_constraints_set(m)
-    for x in total_constraints_set_list:
-        residual = abs(pyo.value(x.body) - pyo.value(x.lb))
-        if residual > 1e-8:
-            print(f"{x}\t{residual}")
 
     display_results(m)
