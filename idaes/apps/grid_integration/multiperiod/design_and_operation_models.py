@@ -15,6 +15,7 @@ from pyomo.environ import (
     Var,
     Binary,
     Expression,
+    NonNegativeReals,
 )
 
 from idaes.core.base.process_base import declare_process_block_class
@@ -131,6 +132,21 @@ class OperationModelData(SkeletonUnitModelData):
                 within=Binary,
                 doc="Binary var: 1 if the shutdown is initiated, 0 otherwise",
             )
+            self.aux_startup = Var(
+                within=NonNegativeReals,
+                doc= "Auxiliary variable for the product of startup and capacity"
+            )
+            
+            self.aux_shutdown = Var(
+                within=NonNegativeReals,
+                doc= "Auxiliary variable for the product of shutdown and capacity"
+            )
+
+            self.aux_op_mode= Var(
+                within=NonNegativeReals,
+                doc="Auxiliary variable for the product of op_mode and capacity"
+            )
+            
 
         self.config.model_func(self, **self.config.model_args)
 
