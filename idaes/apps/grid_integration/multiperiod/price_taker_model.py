@@ -334,12 +334,13 @@ class PriceTakerModel(ConcreteModel):
     def add_ramping_constraints(
         self,
         op_blk,
+        design_blk,
         var,
-        var_opt_lb, 
-        startup_limit = 100, 
-        shutdown_limit = 100,
-        ramp_up_limit = 110, 
-        ramp_down_limit = 110,
+        op_range_lb_percentage = 0.2, 
+        startup_limit_percentage = 0.5, 
+        shutdown_limit_percentage = 0.5,
+        ramp_up_limit = 0.8, 
+        ramp_down_limit = 0.8,
           ):
         """
         Adds ramping constraints of the form
@@ -348,87 +349,103 @@ class PriceTakerModel(ConcreteModel):
 
         Arguments: 
         op_blk: The name of the operation model block, ex: ( "fs.op_name")
-        var: Name of the variable the ramping cosntraints will be applied to, ex: "total_power"
-        var_opt_lb: The name of the expression, or numerical value for the lower bound on the specified variable,
-                    ex: "total_power_lower_bound" or 100
-        startup_limit: The rate at which the specified variable changes as the system starts up
-                       ex: 100
-        shutdown_limit: The rate at which the specified varible changes as the system shutsdown
-                        ex: 100
-        ramp_up_limit: The rate at which the specified variable increases during operation
-                        ex: 100
-        ramp_down_limit = The rate at which the specified variable can decrease during operation
-                        ex: 100
+        design_blk: The name of the design model block, ex: ("m.design_name")
+        var: Name of the variable the ramping cosntraints will be applied to, ex: ("total_power")
+        op_range_lb_percentage: The percetage of the capacity that represents the lower operating bound (%)
+        startup_limit_percentage: The percentage of the capacity that variable var can increase at 
+                                  during startup (%)
+        shutdown_limit_percentage: The percentage of the capacity that variable var can decrease at 
+                                   during shutdown (%)
+        ramp_up_limit: The rate at which variable var can increases during operation,
+                       a percentage of the capacity (%)
+        ramp_down_limit: = The rate at which variable var can decrease during operation,
+                          a percentage of the capacity (%)
 
     
         Assumptions/relationship:
+      example:
       total_power_upper_bound >= ramp_up_limit >= startup_limit >= total_power_lower_bound > 0
       total_power_upper_bound  >= ramp_down_limit >= shutdown_limit >= total_power_lower_bound > 0
         """
-        
+        # Importing in the nessisary variables
         self.range_time_steps = RangeSet(len(self.mp_model.set_period))
         start_up = {t: deepgetattr(self.mp_model.period[t], op_blk + ".startup") for t in self.mp_model.period}
         op_mode = {t: deepgetattr(self.mp_model.period[t], op_blk + ".op_mode") for t in self.mp_model.period}
         shut_down = {t: deepgetattr(self.mp_model.period[t], op_blk + ".shutdown") for t in self.mp_model.period}
+        aux_shutdown= {t: deepgetattr(self.mp_model.period[t], op_blk + ".aux_shutdown") for t in self.mp_model.period}
+        aux_startup= {t: deepgetattr(self.mp_model.period[t], op_blk + ".aux_startup") for t in self.mp_model.period}
+        aux_op_mode = {t: deepgetattr(self.mp_model.period[t], op_blk + ".aux_op_mode") for t in self.mp_model.period}
+        capacity = deepgetattr(self,design_blk + ".capacity" )
+        capacity_ub = deepgetattr(self,design_blk + ".capacity.ub" )
         var = {t: deepgetattr(self.mp_model.period[t], op_blk + "." + var) for t in self.mp_model.period}
-        if isinstance(var_opt_lb,str):
-            var_opt_lb_ = {t: deepgetattr(self.mp_model.period[t],op_blk + "." + var_opt_lb) for t in self.mp_model.period}
-        else: 
-            var_opt_lb_ = var_opt_lb
         
+        #Creating the pyomo block
         blk_name = op_blk.split(".")[-1] + "_rampup_rampdown"
         setattr(self.mp_model, blk_name, Block())
         blk = getattr(self.mp_model,blk_name)
 
-        if isinstance(var_opt_lb,str):
-            @blk.Constraint(self.range_time_steps)
-            def ramp_up_con(b,t):
+        #Linearized constraints to conenct auxiliary vaiables to the design capacity variable
+        @blk.Constraint(self.range_time_steps)
+        def startup_mccor1(b,t):
+            return (aux_startup[self.mp_model.set_period[t]] >= capacity + start_up[self.mp_model.set_period[t]]*capacity_ub 
+                                                               - capacity_ub 
+                    )
+        
+        @blk.Constraint(self.range_time_steps)
+        def startup_mccor2(b,t):
+            return (aux_startup[self.mp_model.set_period[t]] <= start_up[self.mp_model.set_period[t]]*capacity_ub)
+        
+
+        @blk.Constraint(self.range_time_steps)
+        def shutdown_mccor1(b,t):
+            return (aux_shutdown[self.mp_model.set_period[t]] >= capacity + shut_down[self.mp_model.set_period[t]]*capacity_ub 
+                                                               - capacity_ub 
+                    )
+        
+        @blk.Constraint(self.range_time_steps)
+        def shutdown_mccor2(b,t):
+            return (aux_shutdown[self.mp_model.set_period[t]] <= shut_down[self.mp_model.set_period[t]]*capacity_ub)
+
+        
+        @blk.Constraint(self.range_time_steps)
+        def op_mode_mccor1(b,t):
+            return (aux_op_mode[self.mp_model.set_period[t]] >= capacity + op_mode[self.mp_model.set_period[t]]*capacity_ub 
+                                                               - capacity_ub 
+                    )
+        
+        @blk.Constraint(self.range_time_steps)
+        def op_mode_mccor2(b,t):
+            return (aux_op_mode[self.mp_model.set_period[t]] <= op_mode[self.mp_model.set_period[t]]*capacity_ub)
+
+        
+        # The linearized ramping constraints
+        @blk.Constraint(self.range_time_steps)
+        def ramp_up_con(b,t):
                 if t == 1:
                     return Constraint.Skip
                 return (
                 var[self.mp_model.set_period[t]] - var[self.mp_model.set_period[t-1]] <= 
-                startup_limit * start_up[self.mp_model.set_period[t]] - var_opt_lb_[self.mp_model.set_period[t]] * start_up[self.mp_model.set_period[t-1]]
-                + ramp_up_limit * op_mode[self.mp_model.set_period[t]]
-                + var_opt_lb_[self.mp_model.set_period[t]]*(op_mode[self.mp_model.set_period[t]] - op_mode[self.mp_model.set_period[t-1]])
+                startup_limit_percentage * aux_startup[self.mp_model.set_period[t]]  
+                - op_range_lb_percentage * aux_startup[self.mp_model.set_period[t-1]]
+                + (ramp_up_limit - op_range_lb_percentage)  * aux_op_mode[self.mp_model.set_period[t]]
+                - op_range_lb_percentage * aux_op_mode[self.mp_model.set_period[t-1]] 
                 )
 
-            @blk.Constraint(self.range_time_steps)
-            def ramp_down_con(b,t):
+        @blk.Constraint(self.range_time_steps)
+        def ramp_down_con(b,t):
                 if t == 1:
                    return Constraint.Skip
                 return (
               var[self.mp_model.set_period[t-1]]- var[self.mp_model.set_period[t]] <= 
-              shutdown_limit * (start_up[self.mp_model.set_period[t-1]] + 
-              op_mode[self.mp_model.set_period[t-1]] - op_mode[self.mp_model.set_period[t]])
-              - var_opt_lb_[self.mp_model.set_period[t]] * start_up[self.mp_model.set_period[t]] 
-              + ramp_down_limit * op_mode[self.mp_model.set_period[t]]
-                )
-        else:
-            @blk.Constraint(self.range_time_steps)
-            def ramp_up_con(b,t):
-                if t == 1:
-                    return Constraint.Skip
-                return (
-                var[self.mp_model.set_period[t]] - var[self.mp_model.set_period[t-1]] <= 
-                startup_limit * start_up[self.mp_model.set_period[t]] - var_opt_lb_* start_up[self.mp_model.set_period[t-1]]
-                + ramp_up_limit * op_mode[self.mp_model.set_period[t]]
-                + var_opt_lb_*(op_mode[self.mp_model.set_period[t]] - op_mode[self.mp_model.set_period[t-1]])
-                )
-
-            @blk.Constraint(self.range_time_steps)
-            def ramp_down_con(b,t):
-                if t == 1:
-                   return Constraint.Skip
-                return (
-              var[self.mp_model.set_period[t-1]]- var[self.mp_model.set_period[t]] <= 
-              shutdown_limit * (start_up[self.mp_model.set_period[t-1]] + 
-              op_mode[self.mp_model.set_period[t-1]] - op_mode[self.mp_model.set_period[t]])
-              - var_opt_lb_* start_up[self.mp_model.set_period[t]] 
-              + ramp_down_limit * op_mode[self.mp_model.set_period[t]]
+              (shutdown_limit_percentage - op_range_lb_percentage) * aux_shutdown[self.mp_model.set_period[t]]
+              - op_range_lb_percentage * aux_startup[self.mp_model.set_period[t]]
+              +  op_range_lb_percentage * aux_startup[self.mp_model.set_period[t-1]]
+              + (ramp_down_limit - op_range_lb_percentage) * aux_op_mode[self.mp_model.set_period[t]]
+              + op_range_lb_percentage * aux_op_mode[self.mp_model.set_period[t-1]]
                 )
         
 
-    def add_startup_shutdown(self, op_blk, up_time = 1, down_time =1):
+    def add_startup_shutdown(self, op_blk,design_blk, build_binary_var, up_time = 1, down_time =1):
         """
         Adds startup/shutdown and minimum uptime/downtime constraints on
         a given unit/process
@@ -447,12 +464,20 @@ class PriceTakerModel(ConcreteModel):
         
         start_up = {t: deepgetattr(self.mp_model.period[t], op_blk + ".startup") for t in self.mp_model.period}
         op_mode = {t: deepgetattr(self.mp_model.period[t], op_blk + ".op_mode") for t in self.mp_model.period}
+        shut_down = {t: deepgetattr(self.mp_model.period[t], op_blk + ".shutdown") for t in self.mp_model.period}
+        build =  deepgetattr(self,design_blk + "." + build_binary_var)
         self.range_time_steps = RangeSet(len(self.mp_model.set_period))
         number_time_steps = len(self.mp_model.set_period)
 
         blk_name = op_blk.split(".")[-1] + "_startup_shutdown"
         setattr(self.mp_model, blk_name, Block())
         blk = getattr(self.mp_model,blk_name)
+
+        @blk.Constraint(self.range_time_steps)
+        def design_op_relationship(b,t):
+            return (start_up[self.mp_model.set_period[t]] + shut_down[self.mp_model.set_period[t]] + 
+                    op_mode[self.mp_model.set_period[t]] <= build
+                   )
 
         @blk.Constraint(self.range_time_steps)
         def minimum_up_time_con(b,t):
