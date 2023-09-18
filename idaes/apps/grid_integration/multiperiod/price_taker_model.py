@@ -336,6 +336,7 @@ class PriceTakerModel(ConcreteModel):
         op_blk,
         design_blk,
         var,
+        design_variable,
         op_range_lb_percentage = 0.2, 
         startup_limit_percentage = 0.5, 
         shutdown_limit_percentage = 0.5,
@@ -375,8 +376,8 @@ class PriceTakerModel(ConcreteModel):
         aux_shutdown= {t: deepgetattr(self.mp_model.period[t], op_blk + ".aux_shutdown") for t in self.mp_model.period}
         aux_startup= {t: deepgetattr(self.mp_model.period[t], op_blk + ".aux_startup") for t in self.mp_model.period}
         aux_op_mode = {t: deepgetattr(self.mp_model.period[t], op_blk + ".aux_op_mode") for t in self.mp_model.period}
-        capacity = deepgetattr(self,design_blk + ".capacity" )
-        capacity_ub = deepgetattr(self,design_blk + ".capacity.ub" )
+        capacity = deepgetattr(self,design_blk + "." + design_variable )
+        capacity_ub = deepgetattr(self,design_blk + "." + design_variable + ".ub" )
         var = {t: deepgetattr(self.mp_model.period[t], op_blk + "." + var) for t in self.mp_model.period}
         
         #Creating the pyomo block
@@ -397,6 +398,12 @@ class PriceTakerModel(ConcreteModel):
         
 
         @blk.Constraint(self.range_time_steps)
+        def startup_mccor3(b,t):
+            return (aux_startup[self.mp_model.set_period[t]] <= capacity 
+                    )
+
+
+        @blk.Constraint(self.range_time_steps)
         def shutdown_mccor1(b,t):
             return (aux_shutdown[self.mp_model.set_period[t]] >= capacity + shut_down[self.mp_model.set_period[t]]*capacity_ub 
                                                                - capacity_ub 
@@ -406,7 +413,13 @@ class PriceTakerModel(ConcreteModel):
         def shutdown_mccor2(b,t):
             return (aux_shutdown[self.mp_model.set_period[t]] <= shut_down[self.mp_model.set_period[t]]*capacity_ub)
 
-        
+
+        @blk.Constraint(self.range_time_steps)
+        def shutdown_mccor3(b,t):
+            return (aux_shutdown[self.mp_model.set_period[t]] <= capacity 
+                    )
+
+
         @blk.Constraint(self.range_time_steps)
         def op_mode_mccor1(b,t):
             return (aux_op_mode[self.mp_model.set_period[t]] >= capacity + op_mode[self.mp_model.set_period[t]]*capacity_ub 
@@ -418,6 +431,11 @@ class PriceTakerModel(ConcreteModel):
             return (aux_op_mode[self.mp_model.set_period[t]] <= op_mode[self.mp_model.set_period[t]]*capacity_ub)
 
         
+        @blk.Constraint(self.range_time_steps)
+        def op_mode_mccor3(b,t):
+            return (aux_op_mode[self.mp_model.set_period[t]] <= capacity 
+                    )
+
         # The linearized ramping constraints
         @blk.Constraint(self.range_time_steps)
         def ramp_up_con(b,t):
