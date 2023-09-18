@@ -26,7 +26,7 @@ and roof superheater, model main equations:
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.environ import value, Var, Param, asin, cos, Reference
-from pyomo.core.expr.current import Expr_if
+from pyomo.core.expr import Expr_if
 from pyomo.dae import DerivativeVar
 
 # Import IDAES cores

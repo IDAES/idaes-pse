@@ -212,12 +212,12 @@ see property package for documentation.}""",
 
         # Add performance equations
         # Add Lagrangian multiplier variables
-        e_units = self.config.property_package.get_metadata().get_derived_units(
+        e_units = self.control_volume.config.property_package.get_metadata().get_derived_units(
             "energy_mole"
         )
         self.lagrange_mult = Var(
             self.flowsheet().time,
-            self.config.property_package.element_list,
+            self.control_volume.config.property_package.element_list,
             domain=Reals,
             initialize=100,
             doc="Lagrangian multipliers",
@@ -248,7 +248,7 @@ see property package for documentation.}""",
                     * b.control_volume.properties_out[t].config.parameters.element_comp[
                         j
                     ][e]
-                    for e in b.config.property_package.element_list
+                    for e in b.control_volume.config.property_package.element_list
                 )
             )
 
@@ -275,7 +275,7 @@ see property package for documentation.}""",
                     # Multiple phases avoid linear dependency
                     dependent = False
                 else:
-                    for e in self.config.property_package.element_list:
+                    for e in self.control_volume.config.property_package.element_list:
                         if e_comp[j][e] == 0:
                             # Element e not in component j, no effect
                             continue

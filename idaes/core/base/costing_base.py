@@ -19,6 +19,8 @@ Base classes for process costing
 # This plays with some private attributes - most are necessary
 # pylint: disable=protected-access
 
+from functools import partial
+
 import pyomo.environ as pyo
 from pyomo.common.config import ConfigBlock, ConfigValue
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
@@ -442,6 +444,13 @@ class FlowsheetCostingBlockData(ProcessBlockData):
 
         # Aggregate flows
         # Units of flows will not be consistent, need separate Vars
+        def agg_flow_rule(blk, f, funits):
+            e = 0
+            for flow in blk._registered_flows[f]:
+                e += pyo.units.convert(flow, to_units=funits)
+            agg_flow = getattr(blk, f"aggregate_flow_{f}")
+            return agg_flow == e
+
         for f in self.flow_types:
             # We will use the first costed flow as representative of the whole
             if len(self._registered_flows[f]) > 0:
@@ -451,14 +460,9 @@ class FlowsheetCostingBlockData(ProcessBlockData):
                 agg_var = pyo.Var(units=funits, doc=f"Aggregate flow for {f}")
                 self.add_component(f"aggregate_flow_{f}", agg_var)
 
-                def agg_flow_rule(blk):
-                    e = 0
-                    for flow in self._registered_flows[f]:
-                        e += pyo.units.convert(flow, to_units=funits)
-                    agg_flow = getattr(blk, f"aggregate_flow_{f}")
-                    return agg_flow == e
-
-                agg_const = pyo.Constraint(rule=agg_flow_rule)
+                agg_const = pyo.Constraint(
+                    rule=partial(agg_flow_rule, f=f, funits=funits)
+                )
 
                 self.add_component(f"aggregate_flow_{f}_constraint", agg_const)
 
@@ -626,7 +630,7 @@ class UnitModelCostingBlockData(ProcessBlockData):
         Placeholder method for initialization
         """
         # TODO: Implement an initialization method
-        # TODO: Need to have a general pupose method (block triangularisation?)
+        # TODO: Need to have a general purpose method (block triangularisation?)
         # TODO: Should also allow registering custom methods
 
         # Vars and Constraints

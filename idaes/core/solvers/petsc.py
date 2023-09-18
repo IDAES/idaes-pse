@@ -37,6 +37,7 @@ from pyomo.util.subsystems import (
 from pyomo.solvers.plugins.solvers.ASL import ASL
 from pyomo.common.tempfiles import TempfileManager
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
+from pyomo.common.deprecation import deprecation_warning
 
 import idaes
 import idaes.logger as idaeslog
@@ -420,7 +421,8 @@ def petsc_dae_by_time_element(
     initial_variables=None,
     detect_initial=True,
     skip_initial=False,
-    snes_options=None,
+    initial_solver="petsc_snes",
+    initial_solver_options=None,
     ts_options=None,
     keepfiles=False,
     symbolic_solver_labels=True,
@@ -428,6 +430,7 @@ def petsc_dae_by_time_element(
     interpolate=True,
     calculate_derivatives=True,
     previous_trajectory=None,
+    snes_options=None,
 ):
     """Solve a DAE problem step by step using the PETSc DAE solver.  This
     integrates from one time point to the next.
@@ -453,7 +456,9 @@ def petsc_dae_by_time_element(
             calculated. This can be useful, for example, if you read initial
             conditions from a separately solved steady state problem, or
             otherwise know the initial conditions.
-        snes_options (dict): PETSc nonlinear equation solver options
+        initial_solver (str): default=petsc_snes, the nonlinear equations solver
+            to use for the initial conditions (e.g. petsc_snes, ipopt, ...).
+        initial_solver_options (dict): nonlinear equation solver options
         ts_options (dict): PETSc time-stepping solver options
         keepfiles (bool): pass to keepfiles arg for solvers
         symbolic_solver_labels (bool): pass to symbolic_solver_labels argument
@@ -474,10 +479,26 @@ def petsc_dae_by_time_element(
             Pyomo model.
         previous_trajectory: (PetscTrajectory) Trajectory from previous integration
             of this model. New results will be appended to this trajectory object.
+        snes_options (dict): [DEPRECATED in favor of initial_solver_options] nonlinear equation solver options
 
     Returns (PetscDAEResults):
         See PetscDAEResults documentation for more information.
     """
+    if snes_options is not None and initial_solver_options is not None:
+        raise RuntimeError(
+            "Both (deprecated) snes_options and initial_solver_options keyword arguments were specified. "
+            "Please specify your initial solver options using only the initial_solver_options argument."
+        )
+    if snes_options is not None:
+        _log = idaeslog.getLogger(__name__)
+        deprecation_warning(
+            msg="Keyword argument snes_options has been DEPRECATED in favor of initial_solver_options.",
+            logger=_log,
+            version="2.2.0",
+            remove_in="3.0.0",
+        )
+        initial_solver_options = snes_options
+
     if interpolate:
         if ts_options is None:
             ts_options = {}
@@ -497,6 +518,7 @@ def petsc_dae_by_time_element(
         between.construct()
 
     solve_log = idaeslog.getSolveLogger("petsc-dae")
+
     regular_vars, time_vars = flatten_dae_components(m, time, pyo.Var)
     regular_cons, time_cons = flatten_dae_components(m, time, pyo.Constraint)
     tdisc = find_discretization_equations(m, time)
@@ -517,7 +539,9 @@ def petsc_dae_by_time_element(
 
     if not skip_initial:
         # Nonlinear equation solver for initial conditions
-        solver_snes = pyo.SolverFactory("petsc_snes", options=snes_options)
+        initial_solver_obj = pyo.SolverFactory(
+            initial_solver, options=initial_solver_options
+        )
         # list of constraints to add to the initial condition problem
         if initial_constraints is None:
             initial_constraints = []
@@ -544,18 +568,21 @@ def petsc_dae_by_time_element(
                 # set up the scaling factor suffix
                 _sub_problem_scaling_suffix(m, t_block)
                 with idaeslog.solver_log(solve_log, idaeslog.INFO) as slc:
-                    res = solver_snes.solve(t_block, tee=slc.tee)
+                    res = initial_solver_obj.solve(
+                        t_block,
+                        tee=slc.tee,
+                        symbolic_solver_labels=symbolic_solver_labels,
+                    )
                 res_list.append(res)
 
     tprev = t0
-    fix_derivs = []
     tj = previous_trajectory
     if tj is not None:
         variables_prev = [var[t0] for var in time_vars]
 
     with TemporarySubsystemManager(
         to_deactivate=tdisc,
-        to_fix=initial_variables + fix_derivs,
+        to_fix=initial_variables,
     ):
         # Solver time steps
         deriv_diff_map = _get_derivative_differential_data_map(m, time)

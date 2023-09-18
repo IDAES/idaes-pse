@@ -7,7 +7,7 @@ Bubble and Dew Point Methods
 Ideal Assumptions (``IdealBubbleDew``)
 --------------------------------------
 
-In the case where ideal behavior can be assumed, i.e. ideal gas assumption and Raoult's Law holds, the bubble and dew points can be calculated directly from the saturation pressure using the following equations.
+In the case where ideal behavior can be assumed, i.e., ideal gas assumption and Raoult's Law holds, the bubble and dew points can be calculated directly from the saturation pressure using the following equations. Note that these equations assume that only two phases are present, and thus this approach is not easily extended to cases where additional phases are present (a ConfigurationError will be raised if this is detected). For systems with more than two phases, the LogBubbleDew approach should be used instead.
 
 Ideal Bubble Pressure
 ^^^^^^^^^^^^^^^^^^^^^

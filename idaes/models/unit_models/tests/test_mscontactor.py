@@ -16,9 +16,11 @@ Authors: Andrew Lee
 """
 
 import pytest
+from types import MethodType
 
 from pyomo.environ import (
     assert_optimal_termination,
+    Block,
     ConcreteModel,
     Constraint,
     log,
@@ -53,8 +55,9 @@ from idaes.models.unit_models.mscontactor import (
     MSContactorInitializer,
 )
 from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.misc import add_object_reference
 from idaes.core.solvers import get_solver
-from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.exceptions import ConfigurationError, PropertyNotSupportedError
 from idaes.core.util.initialization import (
     propagate_state,
     fix_state_vars,
@@ -389,11 +392,15 @@ class TestBuild:
 
         with pytest.raises(
             ConfigurationError,
-            match="No common components found in property packages. MSContactor "
-            "model assumes mass transfer occurs between components with the "
-            "same name in different streams.",
+            match="No common components found in property packages and no heterogeneous reactions "
+            "specified. The MSContactor model assumes that mass transfer occurs between "
+            "components with the same name in different streams or due to heterogeneous reactions.",
         ):
             m.fs.unit._verify_inputs()
+
+        # Should pass if heterogeneous reaction argument provided
+        m.fs.unit.config.heterogeneous_reactions = True
+        m.fs.unit._verify_inputs()
 
     @pytest.mark.unit
     def test_verify_inputs_reactions_with_no_package(self):
@@ -699,24 +706,24 @@ class TestBuild:
         assert len(model.fs.unit.stream1_material_balance) == 8
 
         for j in ["solvent1", "solute3"]:  # no mass transfer, forward flow
-            assert str(model.fs.unit.stream1_material_balance[0, 1, j]._expr) == str(
+            assert str(model.fs.unit.stream1_material_balance[0, 1, j].expr) == str(
                 0
                 == model.fs.unit.stream1_inlet_state[0].flow_mol_phase_comp["phase1", j]
                 - model.fs.unit.stream1[0, 1].flow_mol_phase_comp["phase1", j]
             )
-            assert str(model.fs.unit.stream1_material_balance[0, 2, j]._expr) == str(
+            assert str(model.fs.unit.stream1_material_balance[0, 2, j].expr) == str(
                 0
                 == model.fs.unit.stream1[0, 1].flow_mol_phase_comp["phase1", j]
                 - model.fs.unit.stream1[0, 2].flow_mol_phase_comp["phase1", j]
             )
         for j in ["solute1", "solute2"]:  # has +ve mass transfer, forward flow
-            assert str(model.fs.unit.stream1_material_balance[0, 1, j]._expr) == str(
+            assert str(model.fs.unit.stream1_material_balance[0, 1, j].expr) == str(
                 0
                 == model.fs.unit.stream1_inlet_state[0].flow_mol_phase_comp["phase1", j]
                 - model.fs.unit.stream1[0, 1].flow_mol_phase_comp["phase1", j]
                 + model.fs.unit.material_transfer_term[0, 1, "stream1", "stream2", j]
             )
-            assert str(model.fs.unit.stream1_material_balance[0, 2, j]._expr) == str(
+            assert str(model.fs.unit.stream1_material_balance[0, 2, j].expr) == str(
                 0
                 == model.fs.unit.stream1[0, 1].flow_mol_phase_comp["phase1", j]
                 - model.fs.unit.stream1[0, 2].flow_mol_phase_comp["phase1", j]
@@ -727,24 +734,24 @@ class TestBuild:
         # 1 time point, 2 elements, 3 components
         assert len(model.fs.unit.stream2_material_balance) == 6
         for j in ["solvent2"]:  # no mass transfer, reverse flow
-            assert str(model.fs.unit.stream2_material_balance[0, 2, j]._expr) == str(
+            assert str(model.fs.unit.stream2_material_balance[0, 2, j].expr) == str(
                 0
                 == model.fs.unit.stream2_inlet_state[0].flow_mol_phase_comp["phase1", j]
                 - model.fs.unit.stream2[0, 2].flow_mol_phase_comp["phase1", j]
             )
-            assert str(model.fs.unit.stream2_material_balance[0, 1, j]._expr) == str(
+            assert str(model.fs.unit.stream2_material_balance[0, 1, j].expr) == str(
                 0
                 == model.fs.unit.stream2[0, 2].flow_mol_phase_comp["phase1", j]
                 - model.fs.unit.stream2[0, 1].flow_mol_phase_comp["phase1", j]
             )
         for j in ["solute1", "solute2"]:  # has -ve mass transfer, reverse flow
-            assert str(model.fs.unit.stream2_material_balance[0, 2, j]._expr) == str(
+            assert str(model.fs.unit.stream2_material_balance[0, 2, j].expr) == str(
                 0
                 == model.fs.unit.stream2_inlet_state[0].flow_mol_phase_comp["phase1", j]
                 - model.fs.unit.stream2[0, 2].flow_mol_phase_comp["phase1", j]
                 - model.fs.unit.material_transfer_term[0, 2, "stream1", "stream2", j]
             )
-            assert str(model.fs.unit.stream2_material_balance[0, 1, j]._expr) == str(
+            assert str(model.fs.unit.stream2_material_balance[0, 1, j].expr) == str(
                 0
                 == model.fs.unit.stream2[0, 2].flow_mol_phase_comp["phase1", j]
                 - model.fs.unit.stream2[0, 1].flow_mol_phase_comp["phase1", j]
@@ -770,24 +777,24 @@ class TestBuild:
         assert len(model.fs.unit.stream1_material_balance) == 8
 
         for j in ["solvent1", "solute3"]:  # no mass transfer, forward flow
-            assert str(model.fs.unit.stream1_material_balance[0, 1, j]._expr) == str(
+            assert str(model.fs.unit.stream1_material_balance[0, 1, j].expr) == str(
                 0
                 == model.fs.unit.stream1_inlet_state[0].flow_mol_phase_comp["phase1", j]
                 - model.fs.unit.stream1[0, 1].flow_mol_phase_comp["phase1", j]
             )
-            assert str(model.fs.unit.stream1_material_balance[0, 2, j]._expr) == str(
+            assert str(model.fs.unit.stream1_material_balance[0, 2, j].expr) == str(
                 0
                 == model.fs.unit.stream1[0, 1].flow_mol_phase_comp["phase1", j]
                 - model.fs.unit.stream1[0, 2].flow_mol_phase_comp["phase1", j]
             )
         for j in ["solute1", "solute2"]:  # has +ve mass transfer, forward flow
-            assert str(model.fs.unit.stream1_material_balance[0, 1, j]._expr) == str(
+            assert str(model.fs.unit.stream1_material_balance[0, 1, j].expr) == str(
                 0
                 == model.fs.unit.stream1_inlet_state[0].flow_mol_phase_comp["phase1", j]
                 - model.fs.unit.stream1[0, 1].flow_mol_phase_comp["phase1", j]
                 + model.fs.unit.material_transfer_term[0, 1, "stream1", "stream2", j]
             )
-            assert str(model.fs.unit.stream1_material_balance[0, 2, j]._expr) == str(
+            assert str(model.fs.unit.stream1_material_balance[0, 2, j].expr) == str(
                 0
                 == model.fs.unit.stream1[0, 1].flow_mol_phase_comp["phase1", j]
                 - model.fs.unit.stream1[0, 2].flow_mol_phase_comp["phase1", j]
@@ -798,21 +805,21 @@ class TestBuild:
         # 1 time point, 2 elements, 3 components
         assert len(model.fs.unit.stream2_material_balance) == 6
         for j in ["solvent2"]:  # no mass transfer, reverse flow
-            assert str(model.fs.unit.stream2_material_balance[0, 2, j]._expr) == str(
+            assert str(model.fs.unit.stream2_material_balance[0, 2, j].expr) == str(
                 0 == -model.fs.unit.stream2[0, 2].flow_mol_phase_comp["phase1", j]
             )
-            assert str(model.fs.unit.stream2_material_balance[0, 1, j]._expr) == str(
+            assert str(model.fs.unit.stream2_material_balance[0, 1, j].expr) == str(
                 0
                 == model.fs.unit.stream2[0, 2].flow_mol_phase_comp["phase1", j]
                 - model.fs.unit.stream2[0, 1].flow_mol_phase_comp["phase1", j]
             )
         for j in ["solute1", "solute2"]:  # has -ve mass transfer, reverse flow
-            assert str(model.fs.unit.stream2_material_balance[0, 2, j]._expr) == str(
+            assert str(model.fs.unit.stream2_material_balance[0, 2, j].expr) == str(
                 0
                 == -model.fs.unit.stream2[0, 2].flow_mol_phase_comp["phase1", j]
                 - model.fs.unit.material_transfer_term[0, 2, "stream1", "stream2", j]
             )
-            assert str(model.fs.unit.stream2_material_balance[0, 1, j]._expr) == str(
+            assert str(model.fs.unit.stream2_material_balance[0, 1, j].expr) == str(
                 0
                 == model.fs.unit.stream2[0, 2].flow_mol_phase_comp["phase1", j]
                 - model.fs.unit.stream2[0, 1].flow_mol_phase_comp["phase1", j]
@@ -838,24 +845,24 @@ class TestBuild:
         assert len(model.fs.unit.stream1_material_balance) == 8
 
         for j in ["solvent1", "solute3"]:  # no mass transfer, forward flow
-            assert str(model.fs.unit.stream1_material_balance[0, 1, j]._expr) == str(
+            assert str(model.fs.unit.stream1_material_balance[0, 1, j].expr) == str(
                 0
                 == model.fs.unit.stream1_inlet_state[0].flow_mol_phase_comp["phase1", j]
                 - model.fs.unit.stream1[0, 1].flow_mol_phase_comp["phase1", j]
             )
-            assert str(model.fs.unit.stream1_material_balance[0, 2, j]._expr) == str(
+            assert str(model.fs.unit.stream1_material_balance[0, 2, j].expr) == str(
                 0
                 == model.fs.unit.stream1[0, 1].flow_mol_phase_comp["phase1", j]
                 - model.fs.unit.stream1[0, 2].flow_mol_phase_comp["phase1", j]
             )
         for j in ["solute1", "solute2"]:  # has +ve mass transfer, forward flow
-            assert str(model.fs.unit.stream1_material_balance[0, 1, j]._expr) == str(
+            assert str(model.fs.unit.stream1_material_balance[0, 1, j].expr) == str(
                 0
                 == model.fs.unit.stream1_inlet_state[0].flow_mol_phase_comp["phase1", j]
                 - model.fs.unit.stream1[0, 1].flow_mol_phase_comp["phase1", j]
                 + model.fs.unit.material_transfer_term[0, 1, "stream1", "stream2", j]
             )
-            assert str(model.fs.unit.stream1_material_balance[0, 2, j]._expr) == str(
+            assert str(model.fs.unit.stream1_material_balance[0, 2, j].expr) == str(
                 0
                 == model.fs.unit.stream1[0, 1].flow_mol_phase_comp["phase1", j]
                 - model.fs.unit.stream1[0, 2].flow_mol_phase_comp["phase1", j]
@@ -866,12 +873,12 @@ class TestBuild:
         # 1 time point, 2 elements, 3 components
         assert len(model.fs.unit.stream2_material_balance) == 6
         for j in ["solvent2"]:  # no mass transfer, reverse flow
-            assert str(model.fs.unit.stream2_material_balance[0, 2, j]._expr) == str(
+            assert str(model.fs.unit.stream2_material_balance[0, 2, j].expr) == str(
                 0
                 == model.fs.unit.stream2_inlet_state[0].flow_mol_phase_comp["phase1", j]
                 - model.fs.unit.stream2[0, 2].flow_mol_phase_comp["phase1", j]
             )
-            assert str(model.fs.unit.stream2_material_balance[0, 1, j]._expr) == str(
+            assert str(model.fs.unit.stream2_material_balance[0, 1, j].expr) == str(
                 0
                 == model.fs.unit.stream2[0, 2].flow_mol_phase_comp["phase1", j]
                 - model.fs.unit.stream2[0, 1].flow_mol_phase_comp["phase1", j]
@@ -880,13 +887,13 @@ class TestBuild:
                 ]
             )
         for j in ["solute1", "solute2"]:  # has -ve mass transfer, reverse flow
-            assert str(model.fs.unit.stream2_material_balance[0, 2, j]._expr) == str(
+            assert str(model.fs.unit.stream2_material_balance[0, 2, j].expr) == str(
                 0
                 == model.fs.unit.stream2_inlet_state[0].flow_mol_phase_comp["phase1", j]
                 - model.fs.unit.stream2[0, 2].flow_mol_phase_comp["phase1", j]
                 - model.fs.unit.material_transfer_term[0, 2, "stream1", "stream2", j]
             )
-            assert str(model.fs.unit.stream2_material_balance[0, 1, j]._expr) == str(
+            assert str(model.fs.unit.stream2_material_balance[0, 1, j].expr) == str(
                 0
                 == model.fs.unit.stream2[0, 2].flow_mol_phase_comp["phase1", j]
                 - model.fs.unit.stream2[0, 1].flow_mol_phase_comp["phase1", j]
@@ -915,7 +922,7 @@ class TestBuild:
         # 1 time point, 2 elements
         assert len(model.fs.unit.stream1_energy_balance) == 2
 
-        assert str(model.fs.unit.stream1_energy_balance[0, 1]._expr) == str(
+        assert str(model.fs.unit.stream1_energy_balance[0, 1].expr) == str(
             0
             == units.convert(
                 model.fs.unit.stream1_inlet_state[0].enth_flow
@@ -924,7 +931,7 @@ class TestBuild:
             )
             + model.fs.unit.energy_transfer_term[0, 1, "stream1", "stream2"]
         )
-        assert str(model.fs.unit.stream1_energy_balance[0, 2]._expr) == str(
+        assert str(model.fs.unit.stream1_energy_balance[0, 2].expr) == str(
             0
             == units.convert(
                 model.fs.unit.stream1[0, 1].enth_flow
@@ -938,7 +945,7 @@ class TestBuild:
         # 1 time point, 2 elements
         assert len(model.fs.unit.stream2_energy_balance) == 2
 
-        assert str(model.fs.unit.stream2_energy_balance[0, 2]._expr) == str(
+        assert str(model.fs.unit.stream2_energy_balance[0, 2].expr) == str(
             0
             == units.convert(
                 model.fs.unit.stream2_inlet_state[0].enth_flow
@@ -947,7 +954,7 @@ class TestBuild:
             )
             - model.fs.unit.energy_transfer_term[0, 2, "stream1", "stream2"]
         )
-        assert str(model.fs.unit.stream2_energy_balance[0, 1]._expr) == str(
+        assert str(model.fs.unit.stream2_energy_balance[0, 1].expr) == str(
             0
             == units.convert(
                 model.fs.unit.stream2[0, 2].enth_flow
@@ -969,7 +976,7 @@ class TestBuild:
         # 1 time point, 2 elements
         assert len(model.fs.unit.stream1_energy_balance) == 2
 
-        assert str(model.fs.unit.stream1_energy_balance[0, 1]._expr) == str(
+        assert str(model.fs.unit.stream1_energy_balance[0, 1].expr) == str(
             0
             == units.convert(
                 model.fs.unit.stream1_inlet_state[0].enth_flow
@@ -978,7 +985,7 @@ class TestBuild:
             )
             + model.fs.unit.energy_transfer_term[0, 1, "stream1", "stream2"]
         )
-        assert str(model.fs.unit.stream1_energy_balance[0, 2]._expr) == str(
+        assert str(model.fs.unit.stream1_energy_balance[0, 2].expr) == str(
             0
             == units.convert(
                 model.fs.unit.stream1[0, 1].enth_flow
@@ -996,7 +1003,7 @@ class TestBuild:
         # 1 time point, 2 elements
         assert len(model.fs.unit.stream2_energy_balance) == 2
 
-        assert str(model.fs.unit.stream2_energy_balance[0, 2]._expr) == str(
+        assert str(model.fs.unit.stream2_energy_balance[0, 2].expr) == str(
             0
             == units.convert(
                 model.fs.unit.stream2_inlet_state[0].enth_flow
@@ -1006,7 +1013,7 @@ class TestBuild:
             - model.fs.unit.energy_transfer_term[0, 2, "stream1", "stream2"]
             + model.fs.unit.stream2_heat[0, 2]
         )
-        assert str(model.fs.unit.stream2_energy_balance[0, 1]._expr) == str(
+        assert str(model.fs.unit.stream2_energy_balance[0, 1].expr) == str(
             0
             == units.convert(
                 model.fs.unit.stream2[0, 2].enth_flow
@@ -1028,7 +1035,7 @@ class TestBuild:
         # 1 time point, 2 elements
         assert len(model.fs.unit.stream1_energy_balance) == 2
 
-        assert str(model.fs.unit.stream1_energy_balance[0, 1]._expr) == str(
+        assert str(model.fs.unit.stream1_energy_balance[0, 1].expr) == str(
             0
             == units.convert(
                 model.fs.unit.stream1_inlet_state[0].enth_flow
@@ -1037,7 +1044,7 @@ class TestBuild:
             )
             + model.fs.unit.energy_transfer_term[0, 1, "stream1", "stream2"]
         )
-        assert str(model.fs.unit.stream1_energy_balance[0, 2]._expr) == str(
+        assert str(model.fs.unit.stream1_energy_balance[0, 2].expr) == str(
             0
             == units.convert(
                 model.fs.unit.stream1[0, 1].enth_flow
@@ -1051,7 +1058,7 @@ class TestBuild:
         # 1 time point, 2 elements
         assert len(model.fs.unit.stream2_energy_balance) == 2
 
-        assert str(model.fs.unit.stream2_energy_balance[0, 2]._expr) == str(
+        assert str(model.fs.unit.stream2_energy_balance[0, 2].expr) == str(
             0
             == units.convert(
                 -model.fs.unit.stream2[0, 2].enth_flow,
@@ -1059,7 +1066,7 @@ class TestBuild:
             )
             - model.fs.unit.energy_transfer_term[0, 2, "stream1", "stream2"]
         )
-        assert str(model.fs.unit.stream2_energy_balance[0, 1]._expr) == str(
+        assert str(model.fs.unit.stream2_energy_balance[0, 1].expr) == str(
             0
             == units.convert(
                 model.fs.unit.stream2[0, 2].enth_flow
@@ -1080,7 +1087,7 @@ class TestBuild:
         # 1 time point, 2 elements
         assert len(model.fs.unit.stream1_energy_balance) == 2
 
-        assert str(model.fs.unit.stream1_energy_balance[0, 1]._expr) == str(
+        assert str(model.fs.unit.stream1_energy_balance[0, 1].expr) == str(
             0
             == units.convert(
                 model.fs.unit.stream1_inlet_state[0].enth_flow
@@ -1089,7 +1096,7 @@ class TestBuild:
             )
             + model.fs.unit.energy_transfer_term[0, 1, "stream1", "stream2"]
         )
-        assert str(model.fs.unit.stream1_energy_balance[0, 2]._expr) == str(
+        assert str(model.fs.unit.stream1_energy_balance[0, 2].expr) == str(
             0
             == units.convert(
                 model.fs.unit.stream1[0, 1].enth_flow
@@ -1112,7 +1119,7 @@ class TestBuild:
         # 1 time point, 2 elements
         assert len(model.fs.unit.stream1_energy_balance) == 2
 
-        assert str(model.fs.unit.stream1_energy_balance[0, 1]._expr) == str(
+        assert str(model.fs.unit.stream1_energy_balance[0, 1].expr) == str(
             0
             == units.convert(
                 model.fs.unit.stream1_inlet_state[0].enth_flow
@@ -1121,7 +1128,7 @@ class TestBuild:
             )
             + model.fs.unit.energy_transfer_term[0, 1, "stream1", "stream2"]
         )
-        assert str(model.fs.unit.stream1_energy_balance[0, 2]._expr) == str(
+        assert str(model.fs.unit.stream1_energy_balance[0, 2].expr) == str(
             0
             == units.convert(
                 model.fs.unit.stream1[0, 1].enth_flow
@@ -1135,7 +1142,7 @@ class TestBuild:
         # 1 time point, 2 elements
         assert len(model.fs.unit.stream2_energy_balance) == 2
 
-        assert str(model.fs.unit.stream2_energy_balance[0, 2]._expr) == str(
+        assert str(model.fs.unit.stream2_energy_balance[0, 2].expr) == str(
             0
             == units.convert(
                 model.fs.unit.stream2_inlet_state[0].enth_flow
@@ -1144,7 +1151,7 @@ class TestBuild:
             )
             - model.fs.unit.energy_transfer_term[0, 2, "stream1", "stream2"]
         )
-        assert str(model.fs.unit.stream2_energy_balance[0, 1]._expr) == str(
+        assert str(model.fs.unit.stream2_energy_balance[0, 1].expr) == str(
             0
             == units.convert(
                 model.fs.unit.stream2[0, 2].enth_flow
@@ -1165,7 +1172,7 @@ class TestBuild:
         # 1 time point, 2 elements
         assert len(model.fs.unit.stream1_pressure_balance) == 2
 
-        assert str(model.fs.unit.stream1_pressure_balance[0, 1]._expr) == str(
+        assert str(model.fs.unit.stream1_pressure_balance[0, 1].expr) == str(
             0
             == units.convert(
                 model.fs.unit.stream1_inlet_state[0].pressure
@@ -1173,7 +1180,7 @@ class TestBuild:
                 units.kg / units.m / units.s**2,
             )
         )
-        assert str(model.fs.unit.stream1_pressure_balance[0, 2]._expr) == str(
+        assert str(model.fs.unit.stream1_pressure_balance[0, 2].expr) == str(
             0
             == units.convert(
                 model.fs.unit.stream1[0, 1].pressure
@@ -1186,7 +1193,7 @@ class TestBuild:
         # 1 time point, 2 elements
         assert len(model.fs.unit.stream2_pressure_balance) == 2
 
-        assert str(model.fs.unit.stream2_pressure_balance[0, 2]._expr) == str(
+        assert str(model.fs.unit.stream2_pressure_balance[0, 2].expr) == str(
             0
             == units.convert(
                 model.fs.unit.stream2_inlet_state[0].pressure
@@ -1194,7 +1201,7 @@ class TestBuild:
                 units.kg / units.m / units.s**2,
             )
         )
-        assert str(model.fs.unit.stream2_pressure_balance[0, 1]._expr) == str(
+        assert str(model.fs.unit.stream2_pressure_balance[0, 1].expr) == str(
             0
             == units.convert(
                 model.fs.unit.stream2[0, 2].pressure
@@ -1218,7 +1225,7 @@ class TestBuild:
         # 1 time point, 2 elements
         assert len(model.fs.unit.stream1_pressure_balance) == 2
 
-        assert str(model.fs.unit.stream1_pressure_balance[0, 1]._expr) == str(
+        assert str(model.fs.unit.stream1_pressure_balance[0, 1].expr) == str(
             0
             == units.convert(
                 model.fs.unit.stream1_inlet_state[0].pressure
@@ -1226,7 +1233,7 @@ class TestBuild:
                 units.kg / units.m / units.s**2,
             )
         )
-        assert str(model.fs.unit.stream1_pressure_balance[0, 2]._expr) == str(
+        assert str(model.fs.unit.stream1_pressure_balance[0, 2].expr) == str(
             0
             == units.convert(
                 model.fs.unit.stream1[0, 1].pressure
@@ -1243,7 +1250,7 @@ class TestBuild:
         # 1 time point, 2 elements
         assert len(model.fs.unit.stream2_pressure_balance) == 2
 
-        assert str(model.fs.unit.stream2_pressure_balance[0, 2]._expr) == str(
+        assert str(model.fs.unit.stream2_pressure_balance[0, 2].expr) == str(
             0
             == units.convert(
                 model.fs.unit.stream2_inlet_state[0].pressure
@@ -1252,7 +1259,7 @@ class TestBuild:
             )
             + model.fs.unit.stream2_deltaP[0, 2]
         )
-        assert str(model.fs.unit.stream2_pressure_balance[0, 1]._expr) == str(
+        assert str(model.fs.unit.stream2_pressure_balance[0, 1].expr) == str(
             0
             == units.convert(
                 model.fs.unit.stream2[0, 2].pressure
@@ -1276,7 +1283,7 @@ class TestBuild:
         # 1 time point, 2 elements
         assert len(model.fs.unit.stream1_pressure_balance) == 2
 
-        assert str(model.fs.unit.stream1_pressure_balance[0, 1]._expr) == str(
+        assert str(model.fs.unit.stream1_pressure_balance[0, 1].expr) == str(
             0
             == units.convert(
                 model.fs.unit.stream1_inlet_state[0].pressure
@@ -1284,7 +1291,7 @@ class TestBuild:
                 units.kg / units.m / units.s**2,
             )
         )
-        assert str(model.fs.unit.stream1_pressure_balance[0, 2]._expr) == str(
+        assert str(model.fs.unit.stream1_pressure_balance[0, 2].expr) == str(
             0
             == units.convert(
                 model.fs.unit.stream1[0, 1].pressure
@@ -1297,7 +1304,7 @@ class TestBuild:
         # 1 time point, 1 elements; No balance at feed end
         assert len(model.fs.unit.stream2_pressure_balance) == 1
 
-        assert str(model.fs.unit.stream2_pressure_balance[0, 1]._expr) == str(
+        assert str(model.fs.unit.stream2_pressure_balance[0, 1].expr) == str(
             0
             == units.convert(
                 model.fs.unit.stream2[0, 2].pressure
@@ -1320,7 +1327,7 @@ class TestBuild:
         # 1 time point, 2 elements
         assert len(model.fs.unit.stream1_pressure_balance) == 2
 
-        assert str(model.fs.unit.stream1_pressure_balance[0, 1]._expr) == str(
+        assert str(model.fs.unit.stream1_pressure_balance[0, 1].expr) == str(
             0
             == units.convert(
                 model.fs.unit.stream1_inlet_state[0].pressure
@@ -1328,7 +1335,7 @@ class TestBuild:
                 units.kg / units.m / units.s**2,
             )
         )
-        assert str(model.fs.unit.stream1_pressure_balance[0, 2]._expr) == str(
+        assert str(model.fs.unit.stream1_pressure_balance[0, 2].expr) == str(
             0
             == units.convert(
                 model.fs.unit.stream1[0, 1].pressure
@@ -1353,7 +1360,7 @@ class TestBuild:
         # 1 time point, 2 elements
         assert len(model.fs.unit.stream1_pressure_balance) == 2
 
-        assert str(model.fs.unit.stream1_pressure_balance[0, 1]._expr) == str(
+        assert str(model.fs.unit.stream1_pressure_balance[0, 1].expr) == str(
             0
             == units.convert(
                 model.fs.unit.stream1_inlet_state[0].pressure
@@ -1361,7 +1368,7 @@ class TestBuild:
                 units.kg / units.m / units.s**2,
             )
         )
-        assert str(model.fs.unit.stream1_pressure_balance[0, 2]._expr) == str(
+        assert str(model.fs.unit.stream1_pressure_balance[0, 2].expr) == str(
             0
             == units.convert(
                 model.fs.unit.stream1[0, 1].pressure
@@ -1374,7 +1381,7 @@ class TestBuild:
         # 1 time point, 2 elements
         assert len(model.fs.unit.stream2_pressure_balance) == 2
 
-        assert str(model.fs.unit.stream2_pressure_balance[0, 2]._expr) == str(
+        assert str(model.fs.unit.stream2_pressure_balance[0, 2].expr) == str(
             0
             == units.convert(
                 model.fs.unit.stream2_inlet_state[0].pressure
@@ -1382,7 +1389,7 @@ class TestBuild:
                 units.kg / units.m / units.s**2,
             )
         )
-        assert str(model.fs.unit.stream2_pressure_balance[0, 1]._expr) == str(
+        assert str(model.fs.unit.stream2_pressure_balance[0, 1].expr) == str(
             0
             == units.convert(
                 model.fs.unit.stream2[0, 2].pressure
@@ -1397,7 +1404,7 @@ class TestBuild:
         )
         assert len(model.fs.unit.stream2_side_stream_pressure_balance) == 1
         assert str(
-            model.fs.unit.stream2_side_stream_pressure_balance[0, 1]._expr
+            model.fs.unit.stream2_side_stream_pressure_balance[0, 1].expr
         ) == str(
             model.fs.unit.stream2[0, 1].pressure
             == model.fs.unit.stream2_side_stream_state[0, 1].pressure
@@ -1594,7 +1601,7 @@ class TestReactions:
             "c1",
             "c2",
         ]:  # has +ve mass transfer, forward flow, inherent reactions
-            assert str(model.fs.unit.stream1_material_balance[0, 1, j]._expr) == str(
+            assert str(model.fs.unit.stream1_material_balance[0, 1, j].expr) == str(
                 0
                 == sum(
                     model.fs.unit.stream1_inlet_state[0].get_material_flow_terms(p, j)
@@ -1610,7 +1617,7 @@ class TestReactions:
                     for p in ["p1", "p2"]
                 )
             )
-            assert str(model.fs.unit.stream1_material_balance[0, 2, j]._expr) == str(
+            assert str(model.fs.unit.stream1_material_balance[0, 2, j].expr) == str(
                 0
                 == sum(
                     model.fs.unit.stream1[0, 1].get_material_flow_terms(p, j)
@@ -1666,7 +1673,7 @@ class TestReactions:
             "c1",
             "c2",
         ]:  # has -ve mass transfer, forward flow, inherent reactions
-            assert str(model.fs.unit.stream2_material_balance[0, 2, j]._expr) == str(
+            assert str(model.fs.unit.stream2_material_balance[0, 2, j].expr) == str(
                 0
                 == sum(
                     model.fs.unit.stream2_inlet_state[0].get_material_flow_terms(p, j)
@@ -1682,7 +1689,7 @@ class TestReactions:
                     for p in ["p1", "p2"]
                 )
             )
-            assert str(model.fs.unit.stream2_material_balance[0, 1, j]._expr) == str(
+            assert str(model.fs.unit.stream2_material_balance[0, 1, j].expr) == str(
                 0
                 == sum(
                     model.fs.unit.stream2[0, 2].get_material_flow_terms(p, j)
@@ -1772,7 +1779,7 @@ class TestReactions:
             "c1",
             "c2",
         ]:  # has +ve mass transfer, forward flow, no reactions
-            assert str(model.fs.unit.stream1_material_balance[0, 1, j]._expr) == str(
+            assert str(model.fs.unit.stream1_material_balance[0, 1, j].expr) == str(
                 0
                 == sum(
                     model.fs.unit.stream1_inlet_state[0].get_material_flow_terms(p, j)
@@ -1784,7 +1791,7 @@ class TestReactions:
                 )
                 + model.fs.unit.material_transfer_term[0, 1, "stream1", "stream2", j]
             )
-            assert str(model.fs.unit.stream1_material_balance[0, 2, j]._expr) == str(
+            assert str(model.fs.unit.stream1_material_balance[0, 2, j].expr) == str(
                 0
                 == sum(
                     model.fs.unit.stream1[0, 1].get_material_flow_terms(p, j)
@@ -1801,7 +1808,7 @@ class TestReactions:
             "c1",
             "c2",
         ]:  # has -ve mass transfer, forward flow, equilibrium reactions
-            assert str(model.fs.unit.stream2_material_balance[0, 2, j]._expr) == str(
+            assert str(model.fs.unit.stream2_material_balance[0, 2, j].expr) == str(
                 0
                 == sum(
                     model.fs.unit.stream2_inlet_state[0].get_material_flow_terms(p, j)
@@ -1817,7 +1824,7 @@ class TestReactions:
                     for p in ["p1", "p2"]
                 )
             )
-            assert str(model.fs.unit.stream2_material_balance[0, 1, j]._expr) == str(
+            assert str(model.fs.unit.stream2_material_balance[0, 1, j].expr) == str(
                 0
                 == sum(
                     model.fs.unit.stream2[0, 2].get_material_flow_terms(p, j)
@@ -1830,6 +1837,203 @@ class TestReactions:
                 - model.fs.unit.material_transfer_term[0, 1, "stream1", "stream2", j]
                 + sum(
                     model.fs.unit.stream2_equilibrium_reaction_generation[0, 1, p, j]
+                    for p in ["p1", "p2"]
+                )
+            )
+
+    @pytest.mark.unit
+    def test_heterogeneous_reactions_no_build_method(self, model):
+        model.fs.unit.config.heterogeneous_reactions = True
+
+        model.fs.unit._verify_inputs()
+        _, _ = model.fs.unit._build_state_blocks()
+
+        with pytest.raises(
+            ConfigurationError,
+            match="Heterogeneous reaction package has not implemented a "
+            "build_reaction_block method. Please ensure that your "
+            "reaction block conforms to the required standards.",
+        ):
+            model.fs.unit._build_heterogeneous_reaction_blocks()
+
+    @pytest.mark.unit
+    def test_heterogeneous_reactions_no_rxn_index(self, model):
+        model.hetero_dummy = Block()
+
+        def build_reaction_block(*args, **kwargs):
+            pass
+
+        model.hetero_dummy.build_reaction_block = MethodType(
+            build_reaction_block, model.hetero_dummy
+        )
+
+        model.fs.unit.config.heterogeneous_reactions = model.hetero_dummy
+
+        model.fs.unit._verify_inputs()
+        _, _ = model.fs.unit._build_state_blocks()
+
+        with pytest.raises(
+            PropertyNotSupportedError,
+            match="Heterogeneous reaction package does not contain a list of "
+            "reactions \(reaction_idx\).",
+        ):
+            model.fs.unit._build_heterogeneous_reaction_blocks()
+
+    @pytest.mark.unit
+    def test_heterogeneous_reactions(self, model):
+        model.fs.hetero_dummy = Block()
+        model.fs.hetero_dummy.reaction_idx = Set(initialize=["R1", "R2", "R3", "R4"])
+        model.fs.hetero_dummy.reaction_stoichiometry = {
+            ("R1", "p1", "c1"): 1,
+            ("R2", "p1", "c2"): 1,
+            ("R3", "p2", "c1"): 1,
+            ("R4", "p2", "c2"): 1,
+        }
+
+        model.fs.unit.config.heterogeneous_reactions = model.fs.hetero_dummy
+
+        model.fs.unit._verify_inputs()
+        flow_basis, uom = model.fs.unit._build_state_blocks()
+
+        model.fs.unit.heterogeneous_reactions = Block(
+            model.fs.time,
+            model.fs.unit.elements,
+        )
+        for e in model.fs.unit.elements:
+            add_object_reference(
+                model.fs.unit.heterogeneous_reactions[0, e],
+                "params",
+                model.fs.hetero_dummy,
+            )
+
+        model.fs.unit._build_material_balance_constraints(flow_basis, uom)
+
+        assert isinstance(model.fs.unit.heterogeneous_reaction_extent, Var)
+        for k in model.fs.unit.heterogeneous_reaction_extent.keys():
+            assert k in [
+                (0, 1, "R1"),
+                (0, 1, "R2"),
+                (0, 1, "R3"),
+                (0, 1, "R4"),
+                (0, 2, "R1"),
+                (0, 2, "R2"),
+                (0, 2, "R3"),
+                (0, 2, "R4"),
+            ]
+
+        for s in ["stream1", "stream2"]:
+            gen = getattr(model.fs.unit, s + "_heterogeneous_reactions_generation")
+            assert isinstance(gen, Var)
+            for k in gen:
+                assert k in [
+                    (0, 1, "p1", "c1"),
+                    (0, 1, "p1", "c2"),
+                    (0, 1, "p2", "c1"),
+                    (0, 1, "p2", "c2"),
+                    (0, 2, "p1", "c1"),
+                    (0, 2, "p1", "c2"),
+                    (0, 2, "p2", "c1"),
+                    (0, 2, "p2", "c2"),
+                ]
+
+            con = getattr(model.fs.unit, s + "_heterogeneous_reaction_constraint")
+            assert isinstance(con, Constraint)
+            for k, c in con.items():
+                assert k in [
+                    (0, 1, "p1", "c1"),
+                    (0, 1, "p1", "c2"),
+                    (0, 1, "p2", "c1"),
+                    (0, 1, "p2", "c2"),
+                    (0, 2, "p1", "c1"),
+                    (0, 2, "p1", "c2"),
+                    (0, 2, "p2", "c1"),
+                    (0, 2, "p2", "c2"),
+                ]
+
+                if k[2] == "p1" and k[3] == "c1":
+                    r = "R1"
+                elif k[2] == "p1" and k[3] == "c2":
+                    r = "R2"
+                elif k[2] == "p2" and k[3] == "c1":
+                    r = "R3"
+                else:
+                    r = "R4"
+
+                expr = str(
+                    gen[k] - model.fs.unit.heterogeneous_reaction_extent[0, k[1], r]
+                )
+                assert str(c.body) == expr
+
+        for j in [
+            "c1",
+            "c2",
+        ]:  # has +ve mass transfer, forward flow, heterogeneous reactions
+            assert str(model.fs.unit.stream1_material_balance[0, 1, j].expr) == str(
+                0
+                == sum(
+                    model.fs.unit.stream1_inlet_state[0].get_material_flow_terms(p, j)
+                    for p in ["p1", "p2"]
+                )
+                - sum(
+                    model.fs.unit.stream1[0, 1].get_material_flow_terms(p, j)
+                    for p in ["p1", "p2"]
+                )
+                + model.fs.unit.material_transfer_term[0, 1, "stream1", "stream2", j]
+                + sum(
+                    model.fs.unit.stream1_heterogeneous_reactions_generation[0, 1, p, j]
+                    for p in ["p1", "p2"]
+                )
+            )
+            assert str(model.fs.unit.stream1_material_balance[0, 2, j].expr) == str(
+                0
+                == sum(
+                    model.fs.unit.stream1[0, 1].get_material_flow_terms(p, j)
+                    for p in ["p1", "p2"]
+                )
+                - sum(
+                    model.fs.unit.stream1[0, 2].get_material_flow_terms(p, j)
+                    for p in ["p1", "p2"]
+                )
+                + model.fs.unit.material_transfer_term[0, 2, "stream1", "stream2", j]
+                + sum(
+                    model.fs.unit.stream1_heterogeneous_reactions_generation[0, 2, p, j]
+                    for p in ["p1", "p2"]
+                )
+            )
+
+        for j in [
+            "c1",
+            "c2",
+        ]:  # has -ve mass transfer, forward flow, heterogeneous reactions
+            assert str(model.fs.unit.stream2_material_balance[0, 2, j].expr) == str(
+                0
+                == sum(
+                    model.fs.unit.stream2_inlet_state[0].get_material_flow_terms(p, j)
+                    for p in ["p1", "p2"]
+                )
+                - sum(
+                    model.fs.unit.stream2[0, 2].get_material_flow_terms(p, j)
+                    for p in ["p1", "p2"]
+                )
+                - model.fs.unit.material_transfer_term[0, 2, "stream1", "stream2", j]
+                + sum(
+                    model.fs.unit.stream2_heterogeneous_reactions_generation[0, 2, p, j]
+                    for p in ["p1", "p2"]
+                )
+            )
+            assert str(model.fs.unit.stream2_material_balance[0, 1, j].expr) == str(
+                0
+                == sum(
+                    model.fs.unit.stream2[0, 2].get_material_flow_terms(p, j)
+                    for p in ["p1", "p2"]
+                )
+                - sum(
+                    model.fs.unit.stream2[0, 1].get_material_flow_terms(p, j)
+                    for p in ["p1", "p2"]
+                )
+                - model.fs.unit.material_transfer_term[0, 1, "stream1", "stream2", j]
+                + sum(
+                    model.fs.unit.stream2_heterogeneous_reactions_generation[0, 1, p, j]
                     for p in ["p1", "p2"]
                 )
             )
@@ -1884,7 +2088,7 @@ class TestReactions:
             "c1",
             "c2",
         ]:  # has +ve mass transfer, forward flow, no reactions
-            assert str(model.fs.unit.stream1_material_balance[0, 1, j]._expr) == str(
+            assert str(model.fs.unit.stream1_material_balance[0, 1, j].expr) == str(
                 0
                 == sum(
                     model.fs.unit.stream1_inlet_state[0].get_material_flow_terms(p, j)
@@ -1896,7 +2100,7 @@ class TestReactions:
                 )
                 + model.fs.unit.material_transfer_term[0, 1, "stream1", "stream2", j]
             )
-            assert str(model.fs.unit.stream1_material_balance[0, 2, j]._expr) == str(
+            assert str(model.fs.unit.stream1_material_balance[0, 2, j].expr) == str(
                 0
                 == sum(
                     model.fs.unit.stream1[0, 1].get_material_flow_terms(p, j)
@@ -1913,7 +2117,7 @@ class TestReactions:
             "c1",
             "c2",
         ]:  # has -ve mass transfer, forward flow, rate reactions
-            assert str(model.fs.unit.stream2_material_balance[0, 2, j]._expr) == str(
+            assert str(model.fs.unit.stream2_material_balance[0, 2, j].expr) == str(
                 0
                 == sum(
                     model.fs.unit.stream2_inlet_state[0].get_material_flow_terms(p, j)
@@ -1929,7 +2133,7 @@ class TestReactions:
                     for p in ["p1", "p2"]
                 )
             )
-            assert str(model.fs.unit.stream2_material_balance[0, 1, j]._expr) == str(
+            assert str(model.fs.unit.stream2_material_balance[0, 1, j].expr) == str(
                 0
                 == sum(
                     model.fs.unit.stream2[0, 2].get_material_flow_terms(p, j)
@@ -1957,7 +2161,7 @@ class TestReactions:
         model.fs.unit._build_material_balance_constraints(flow_basis, uom)
         model.fs.unit._build_energy_balance_constraints(uom)
 
-        assert str(model.fs.unit.stream1_energy_balance[0, 1]._expr) == str(
+        assert str(model.fs.unit.stream1_energy_balance[0, 1].expr) == str(
             0
             == units.convert(
                 sum(
@@ -1972,7 +2176,7 @@ class TestReactions:
             )
             + model.fs.unit.energy_transfer_term[0, 1, "stream1", "stream2"]
         )
-        assert str(model.fs.unit.stream1_energy_balance[0, 2]._expr) == str(
+        assert str(model.fs.unit.stream1_energy_balance[0, 2].expr) == str(
             0
             == units.convert(
                 sum(
@@ -1988,7 +2192,7 @@ class TestReactions:
             + model.fs.unit.energy_transfer_term[0, 2, "stream1", "stream2"]
         )
 
-        assert str(model.fs.unit.stream2_energy_balance[0, 2]._expr) == str(
+        assert str(model.fs.unit.stream2_energy_balance[0, 2].expr) == str(
             0
             == units.convert(
                 sum(
@@ -2008,7 +2212,7 @@ class TestReactions:
                 for r in ["r1", "r2"]
             )
         )
-        assert str(model.fs.unit.stream2_energy_balance[0, 1]._expr) == str(
+        assert str(model.fs.unit.stream2_energy_balance[0, 1].expr) == str(
             0
             == units.convert(
                 sum(
@@ -2040,7 +2244,7 @@ class TestReactions:
         model.fs.unit._build_material_balance_constraints(flow_basis, uom)
         model.fs.unit._build_energy_balance_constraints(uom)
 
-        assert str(model.fs.unit.stream1_energy_balance[0, 1]._expr) == str(
+        assert str(model.fs.unit.stream1_energy_balance[0, 1].expr) == str(
             0
             == units.convert(
                 sum(
@@ -2055,7 +2259,7 @@ class TestReactions:
             )
             + model.fs.unit.energy_transfer_term[0, 1, "stream1", "stream2"]
         )
-        assert str(model.fs.unit.stream1_energy_balance[0, 2]._expr) == str(
+        assert str(model.fs.unit.stream1_energy_balance[0, 2].expr) == str(
             0
             == units.convert(
                 sum(
@@ -2071,7 +2275,7 @@ class TestReactions:
             + model.fs.unit.energy_transfer_term[0, 2, "stream1", "stream2"]
         )
 
-        assert str(model.fs.unit.stream2_energy_balance[0, 2]._expr) == str(
+        assert str(model.fs.unit.stream2_energy_balance[0, 2].expr) == str(
             0
             == units.convert(
                 sum(
@@ -2091,7 +2295,7 @@ class TestReactions:
                 for e in ["e1", "e2"]
             )
         )
-        assert str(model.fs.unit.stream2_energy_balance[0, 1]._expr) == str(
+        assert str(model.fs.unit.stream2_energy_balance[0, 1].expr) == str(
             0
             == units.convert(
                 sum(

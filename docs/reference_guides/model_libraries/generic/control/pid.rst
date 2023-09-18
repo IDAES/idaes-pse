@@ -39,7 +39,7 @@ file "pid_steam_tank_pressure.pdf."
 
   def _valve_pressure_flow_cb(b):
       """Callback for the pressure flow relations for the valves"""
-      umeta = b.config.property_package.get_metadata().get_derived_units
+      umeta = b.control_volume.config.property_package.get_metadata().get_derived_units
       b.Cv = pyo.Var(
           initialize=0.1,
           doc="Valve flow coefficient",

@@ -22,7 +22,7 @@ import pyomo.common.config
 
 _log = logging.getLogger(__name__)
 # Default release version if no options provided for get-extensions
-default_binary_release = "3.3.0"
+default_binary_release = "3.4.0"
 # Where to download releases from get-extensions
 release_base_url = "https://github.com/IDAES/idaes-ext/releases/download"
 # Where to get release checksums
@@ -47,13 +47,17 @@ base_platforms = (
 # Map some platform names to others for get-extensions
 binary_distro_map = {
     "macos": "darwin",
+    "el9": "ubuntu2204",
     "rhel7": "el7",
     "rhel8": "el8",
+    "rhel9": "ubuntu2204",
     "scientific7": "el7",
     "centos7": "el7",
     "centos8": "el8",
     "rocky8": "el8",
+    "rocky9": "ubuntu2204",
     "almalinux8": "el8",
+    "almalinux9": "ubuntu2204",
     "debian9": "el7",
     "debian10": "el8",
     "debian11": "ubuntu2004",

@@ -195,6 +195,9 @@ see property package for documentation.}""",
         state_block_args["has_phase_equilibrium"] = True
         state_block_args["defined_state"] = True
 
+        # Check for default property package
+        self._get_property_package()
+
         for i in inlet_list:
             state_obj = self.config.property_package.build_state_block(
                 self.flowsheet().time,
@@ -220,7 +223,7 @@ see property package for documentation.}""",
         self._add_pressure_balance()
 
         # Get liquid and vapor phase objects from the property package
-        # to be used below. Avoids repition.
+        # to be used below. Avoids repetition.
         _liquid_list = []
         _vapor_list = []
         for p in self.config.property_package.phase_list:
