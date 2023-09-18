@@ -345,7 +345,7 @@ def _perform_sampling(
             for v, val in zip(controls, control_vals):
                 control_values[v].append(val)
         else:
-            res = config.solver.solve(m, tee=False)
+            res = config.solver.solve(m)
             assert_optimal_termination(res)
             obj_values.append(pe.value(obj.expr))
 

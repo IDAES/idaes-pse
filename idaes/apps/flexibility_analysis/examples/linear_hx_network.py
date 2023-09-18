@@ -3,6 +3,8 @@ from pyomo.core.base.block import _BlockData
 import idaes.apps.flexibility_analysis as flexibility
 from typing import Tuple, Mapping
 from pyomo.contrib.fbbt import interval
+import numpy as np
+import random
 
 
 def create_model() -> Tuple[_BlockData, Mapping, Mapping]:
@@ -37,7 +39,7 @@ def create_model() -> Tuple[_BlockData, Mapping, Mapping]:
 
     m.variable_temps_set = pe.Set(initialize=[2, 4, 6, 7])
     m.variable_temps = pe.Var(m.variable_temps_set, bounds=(0, 1000))
-    m.qc = pe.Var()
+    m.qc = pe.Var(initialize=0)
 
     m.balances = pe.Constraint([1, 2, 3, 4])
     m.balances[1] = 1.5 * (m.uncertain_temps[1] - m.variable_temps[2]) == 2 * (
@@ -71,28 +73,32 @@ def get_var_bounds(m):
 
 
 def main(flex_index: bool = False, method: flexibility.FlexTestMethod = flexibility.FlexTestMethod.active_constraint, plot_history=True):
+    np.random.seed(0)
+    random.seed(1)
     m, nominal_values, param_bounds = create_model()
     var_bounds = get_var_bounds(m)
     config = flexibility.FlexTestConfig()
     config.feasibility_tol = 1e-6
     config.terminate_early = False  # TODO: this does not do anything yet
     config.method = method
-    config.minlp_solver = pe.SolverFactory("gurobi_direct")  # TODO: rename minlp_solver to describe what it is solving
+    config.minlp_solver = pe.SolverFactory("gurobi_direct")
     config.sampling_config.solver = pe.SolverFactory("appsi_gurobi")
     config.sampling_config.strategy = 'lhs'
-    config.sampling_config.num_points = 200
+    config.sampling_config.num_points = 600
+    config.sampling_config.initialization_strategy = 'square'
     if method == flexibility.FlexTestMethod.linear_decision_rule:
         config.decision_rule_config = flexibility.LinearDRConfig()
         config.decision_rule_config.solver = pe.SolverFactory("appsi_gurobi")
     elif method == flexibility.FlexTestMethod.relu_decision_rule:
         config.decision_rule_config = flexibility.ReluDRConfig()
         config.decision_rule_config.n_layers = 1
-        config.decision_rule_config.n_nodes_per_layer = 10
+        config.decision_rule_config.n_nodes_per_layer = 15
         config.decision_rule_config.epochs = 3000
-        config.decision_rule_config.batch_size = 50
+        config.decision_rule_config.batch_size = 150
         config.decision_rule_config.scale_inputs = True
         config.decision_rule_config.scale_outputs = True
         config.decision_rule_config.plot_history = plot_history
+        config.decision_rule_config.tensorflow_seed = 2
     if not flex_index:
         results = flexibility.solve_flextest(m=m, uncertain_params=list(nominal_values.keys()),
                                              param_nominal_values=nominal_values, param_bounds=param_bounds,
