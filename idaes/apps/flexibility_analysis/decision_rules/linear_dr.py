@@ -5,6 +5,7 @@ from pyomo.core.base.block import _BlockData
 from pyomo.core.expr.numeric_expr import LinearExpression
 from .dr_config import DRConfig
 from pyomo.common.config import ConfigValue
+from ..check_optimal import assert_optimal_termination
 
 
 class LinearDRConfig(DRConfig):
@@ -68,7 +69,7 @@ def construct_linear_decision_rule(
             trainer.est_cons[ndx] = (expr, 0)
 
         results = config.solver.solve(trainer)
-        pe.assert_optimal_termination(results)
+        assert_optimal_termination(results)
 
         lin_coefs = [v.value for v in trainer.coefs.values()]
         lin_vars = [v for v in input_vals.keys()]

@@ -16,6 +16,7 @@ from pyomo.common.config import ConfigDict, ConfigValue, InEnum
 import coramin
 from pyomo.common.errors import ApplicationError
 from pyomo.contrib import appsi
+from .check_optimal import assert_optimal_termination
 try:
     from tqdm import tqdm
 except ImportError:
@@ -344,11 +345,8 @@ def _perform_sampling(
             for v, val in zip(controls, control_vals):
                 control_values[v].append(val)
         else:
-            res = config.solver.solve(m)
-            if isinstance(config.solver, appsi.base.Solver):
-                assert res.termination_condition == appsi.base.TerminationCondition.optimal
-            else:
-                pe.assert_optimal_termination(res)
+            res = config.solver.solve(m, tee=False)
+            assert_optimal_termination(res)
             obj_values.append(pe.value(obj.expr))
 
             for v in controls:

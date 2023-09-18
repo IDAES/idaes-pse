@@ -1,9 +1,9 @@
 import pyomo.environ as pe
-from idaes.generic_models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
+from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
     BTXParameterBlock,
 )
 from idaes.core import FlowsheetBlock
-from idaes.generic_models.unit_models.heater import Heater
+from idaes.models.unit_models.heater import Heater
 from pyomo.common.dependencies import attempt_import
 coramin, coramin_available = attempt_import('coramin', 'coramin is required for flexibility analysis')
 import logging
@@ -11,7 +11,7 @@ from pyomo.contrib.fbbt.fbbt import fbbt
 from pyomo.network import Arc
 from idaes.core.util.initialization import propagate_state
 from pyomo.util.infeasible import log_infeasible_constraints, log_infeasible_bounds
-from idaes.core.control_volume_base import ControlVolumeBlockData
+from idaes.core.base.control_volume_base import ControlVolumeBlockData
 from pyomo.core.base.block import _BlockData
 import numpy as np
 import idaes.apps.flexibility_analysis as flexibility
@@ -19,6 +19,7 @@ from idaes.apps.flexibility_analysis.var_utils import BoundsManager
 from pyomo.core.expr.numvalue import polynomial_degree
 from pyomo.core.expr.sympy_tools import sympy2pyomo_expression, sympyify_expression
 from pyomo.repn.standard_repn import generate_standard_repn
+from coramin.utils.pyomo_utils import simplify_expr
 
 
 logging.basicConfig(level=logging.INFO)
@@ -26,22 +27,20 @@ logging.basicConfig(level=logging.INFO)
 
 def create_model():
     m = pe.ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = BTXParameterBlock(
-        default={
-            "valid_phase": "Vap",
-            "activity_coeff_model": "Ideal",
-            "state_vars": "FTPz",
-        }
+        valid_phase="Vap",
+        activity_coeff_model="Ideal",
+        state_vars="FTPz",
     )
 
-    m.fs.heater1 = Heater(default={"property_package": m.fs.properties})
-    m.fs.cooler1 = Heater(default={"property_package": m.fs.properties})
-    m.fs.heater2 = Heater(default={"property_package": m.fs.properties})
-    m.fs.cooler2 = Heater(default={"property_package": m.fs.properties})
-    m.fs.heater3 = Heater(default={"property_package": m.fs.properties})
-    m.fs.cooler3 = Heater(default={"property_package": m.fs.properties})
-    m.fs.cooler4 = Heater(default={"property_package": m.fs.properties})
+    m.fs.heater1 = Heater(property_package=m.fs.properties)
+    m.fs.cooler1 = Heater(property_package=m.fs.properties)
+    m.fs.heater2 = Heater(property_package=m.fs.properties)
+    m.fs.cooler2 = Heater(property_package=m.fs.properties)
+    m.fs.heater3 = Heater(property_package=m.fs.properties)
+    m.fs.cooler3 = Heater(property_package=m.fs.properties)
+    m.fs.cooler4 = Heater(property_package=m.fs.properties)
 
     m.fs.s1 = Arc(source=m.fs.heater1.outlet, destination=m.fs.heater2.inlet)
     m.fs.s2 = Arc(source=m.fs.cooler1.outlet, destination=m.fs.cooler4.inlet)
@@ -155,14 +154,9 @@ def create_model():
         p.unfix()
 
     for c in m.component_data_objects(pe.Constraint, active=True, descend_into=True):
-        body_degree = polynomial_degree(c.body)
         lower, body, upper = c.lower, c.body, c.upper
-        if body_degree == 5:
-            om, se = sympyify_expression(body)
-            se = se.simplify()
-            body = sympy2pyomo_expression(se, om)
-            c.set_value((c.lower, body, c.upper))
-            print("simplified: ", c.body)
+        body = simplify_expr(body)
+        c.set_value((c.lower, body, c.upper))
 
     for p in nominal_values.keys():
         assert not p.is_fixed()
