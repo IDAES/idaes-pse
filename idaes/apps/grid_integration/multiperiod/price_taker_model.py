@@ -254,7 +254,7 @@ class PriceTakerModel(ConcreteModel):
 
                 for d in self.set_days:
                     for t in self.set_time:
-                        self.LMP[t, d, y] = lmp_data[d][t]
+                        self.LMP[t, d, y] = lmp_data[d][t-1]
                         self.WEIGHTS[d, y] = weights[0][d]
 
             return
@@ -282,7 +282,7 @@ class PriceTakerModel(ConcreteModel):
             self.set_years = None
             self.set_days = RangeSet(1,n_clusters)
             self._n_time_points = horizon_length if horizon_length is not None else 24
-            self.set_time = RangeSet(self._n_time_points-1)
+            self.set_time = RangeSet(self._n_time_points)
 
             self.LMP = {}
             self.WEIGHTS = {}
@@ -294,7 +294,7 @@ class PriceTakerModel(ConcreteModel):
             
             for d in self.set_days:
                 for t in self.set_time:
-                    self.LMP[t, d] = lmp_data[d][t]
+                    self.LMP[t, d] = lmp_data[d][t-1]
                     self.WEIGHTS[d] = weights[0][d]
                     
             return
@@ -492,7 +492,7 @@ class PriceTakerModel(ConcreteModel):
         blk = getattr(self.mp_model,blk_name)
 
         @blk.Constraint(self.range_time_steps)
-        def design_op_relationship(b,t):
+        def design_op_relationship_con(b,t):
             return (start_up[self.mp_model.set_period[t]] + shut_down[self.mp_model.set_period[t]] + 
                     op_mode[self.mp_model.set_period[t]] <= build
                    )
@@ -507,10 +507,16 @@ class PriceTakerModel(ConcreteModel):
         def minimum_down_time_con(b, t):
             if t < down_time or t >= number_time_steps:
                 return Constraint.Skip
-            return (sum(start_up[self.mp_model.set_period[i]] for i in range(t - down_time + 1, t + 2)) <= 
-                   1 - op_mode[self.mp_model.set_period[t - down_time+1]])
+            return (sum(shut_down[self.mp_model.set_period[i]] for i in range(t - down_time + 1, t + 2)) <= 
+                   1 - op_mode[self.mp_model.set_period[t+1]])
 
-            
+        @blk.Constraint(self.range_time_steps)
+        def Binary_relationhsip_con(b, t):
+            if t >= number_time_steps:
+                return Constraint.Skip
+            return (op_mode[self.mp_model.set_period[t+1]] - op_mode[self.mp_model.set_period[t]] == 
+                    start_up[self.mp_model.set_period[t]] - shut_down[self.mp_model.set_period[t+1]]
+                   )
 
     def build_hourly_cashflows(self):
         period = self.mp_model.period
