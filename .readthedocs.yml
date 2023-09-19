@@ -16,6 +16,5 @@ sphinx:
     fail_on_warning: false
 
 python:
-    version: "3.11"
     install:
         - requirements: requirements-dev.txt
