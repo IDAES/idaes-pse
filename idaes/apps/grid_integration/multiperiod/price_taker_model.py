@@ -499,7 +499,7 @@ class PriceTakerModel(ConcreteModel):
 
         @blk.Constraint(self.range_time_steps)
         def minimum_up_time_con(b,t):
-            if t < up_time or t >= number_time_steps:
+            if t < up_time-1 or t == 1  or t >= number_time_steps:
                 return Constraint.Skip
             return sum(start_up[self.mp_model.set_period[i]] for i in range(t-up_time+2,t+1)) <= op_mode[self.mp_model.set_period[t+1]]
         
