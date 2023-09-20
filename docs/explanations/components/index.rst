@@ -18,6 +18,7 @@ detail with a link in their description.
     flowsheet/index
     property_package/index
     unit_model/index
+    ui/index
     dmf/index
 
 .. rubric:: Flowsheet
