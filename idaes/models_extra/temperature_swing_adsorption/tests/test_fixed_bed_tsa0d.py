@@ -57,7 +57,8 @@ import idaes.core.util.scaling as iscale
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_solver()
-
+solver.options.nlp_scaling_method = "user-scaling"
+print(solver.options)
 
 class TestTsaZeolite:
     @pytest.fixture(scope="class")
@@ -93,9 +94,9 @@ class TestTsaZeolite:
     @pytest.mark.build
     @pytest.mark.unit
     def test_build(self, model):
-        assert hasattr(model.fs.unit, "c_ref")
-        assert not hasattr(model.fs.unit, "nL_inf")
-        assert not hasattr(model.fs.unit, "qm0")
+        assert hasattr(model.fs.unit, "heterogeneity_parameter_ref")
+        assert not hasattr(model.fs.unit, "lower_saturtion_capacity")
+        assert not hasattr(model.fs.unit, "toth_constant_alpha")
         assert not hasattr(model.fs.unit, "compressor")
         assert not hasattr(model.fs.unit, "flow_mass_steam")
         assert not hasattr(model.fs.unit, "steam_heater")
@@ -117,7 +118,10 @@ class TestTsaZeolite:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize(self, model):
-        initialization_tester(model)
+        initializer = FixedBedTSA0DInitializer()
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -205,9 +209,9 @@ class TestTsaMgmof:
     @pytest.mark.build
     @pytest.mark.unit
     def test_build(self, model):
-        assert not hasattr(model.fs.unit, "c_ref")
-        assert hasattr(model.fs.unit, "nL_inf")
-        assert not hasattr(model.fs.unit, "qm0")
+        assert not hasattr(model.fs.unit, "heterogeneity_parameter_ref")
+        assert hasattr(model.fs.unit, "lower_saturtion_capacity")
+        assert not hasattr(model.fs.unit, "toth_constant_alpha")
         assert not hasattr(model.fs.unit, "compressor")
         assert hasattr(model.fs.unit, "flow_mass_steam")
         assert not hasattr(model.fs.unit, "steam_heater")
@@ -229,7 +233,10 @@ class TestTsaMgmof:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize(self, model):
-        initialization_tester(model)
+        initializer = FixedBedTSA0DInitializer()
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -316,9 +323,9 @@ class TestTsaPolystyrene:
     @pytest.mark.build
     @pytest.mark.unit
     def test_build(self, model):
-        assert not hasattr(model.fs.unit, "c_ref")
-        assert not hasattr(model.fs.unit, "nL_inf")
-        assert hasattr(model.fs.unit, "qm0")
+        assert not hasattr(model.fs.unit, "heterogeneity_parameter_ref")
+        assert not hasattr(model.fs.unit, "lower_saturtion_capacity")
+        assert hasattr(model.fs.unit, "toth_constant_alpha")
         assert hasattr(model.fs.unit, "compressor")
         assert hasattr(model.fs.unit, "flow_mass_steam")
         assert hasattr(model.fs.unit, "steam_heater")
@@ -336,7 +343,10 @@ class TestTsaPolystyrene:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize(self, model):
-        initialization_tester(model)
+        initializer = FixedBedTSA0DInitializer()
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -377,55 +387,3 @@ class TestTsaPolystyrene:
         )
         # air velocity
         assert pytest.approx(0.06388, abs=1e-4) == value(model.fs.unit.velocity_in)
-
-
-class TestTsaInitializer:
-    @pytest.fixture(scope="class")
-    def model(self):
-        m = ConcreteModel()
-        m.fs = FlowsheetBlock(dynamic=False)
-
-        m.fs.steam_props = iapws95.Iapws95ParameterBlock()
-
-        m.fs.unit = FixedBedTSA0D(
-            adsorbent=Adsorbent.zeolite_13x,
-            number_of_beds=120,
-            transformation_method="dae.collocation",
-            transformation_scheme=TransformationScheme.lagrangeRadau,
-            finite_elements=20,
-            collocation_points=6,
-            compressor=False,
-            steam_calculation=SteamCalculationType.rigorous,
-            steam_properties=m.fs.steam_props,
-        )
-
-        m.fs.unit.inlet.flow_mol_comp[0, "H2O"].fix(0)
-        m.fs.unit.inlet.flow_mol_comp[0, "CO2"].fix(40)
-        m.fs.unit.inlet.flow_mol_comp[0, "N2"].fix(99960)
-        m.fs.unit.inlet.flow_mol_comp[0, "O2"].fix(0)
-        m.fs.unit.inlet.temperature.fix(303.15)
-        m.fs.unit.inlet.pressure.fix(100000)
-
-        m.fs.unit.temperature_desorption.fix(470)
-        m.fs.unit.temperature_adsorption.fix(310)
-        m.fs.unit.temperature_heating.fix(500)
-        m.fs.unit.temperature_cooling.fix(300)
-        m.fs.unit.bed_diameter.fix(4)
-        m.fs.unit.bed_height.fix(8)
-        return m
-
-    @pytest.mark.solver
-    @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.component
-    def test_initializer(self, model):
-        initializer = FixedBedTSA0DInitializer()
-        initializer.initialize(model.fs.unit)
-
-        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
-
-        assert pytest.approx(73731.9, abs=1e-1) == value(model.fs.unit.heating.time)
-        assert pytest.approx(110129, abs=1e0) == value(model.fs.unit.cooling.time)
-        assert pytest.approx(24.0946, abs=1e-4) == value(
-            model.fs.unit.pressurization.time
-        )
-        assert pytest.approx(38470.2, abs=1e-1) == value(model.fs.unit.adsorption.time)

@@ -29,7 +29,7 @@ from pyomo.util.calc_var_value import calculate_variable_from_constraint
 # import IDAES core libraries
 from idaes.core.initialization import ModularInitializerBase
 from idaes.core.initialization.initializer_base import StoreState
-from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.exceptions import InitializationError
 from idaes.core.util.model_serializer import to_json, from_json
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.solvers import get_solver
@@ -91,7 +91,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
             None
 
         Raises:
-            ConfigurationError: If degrees of freedom is not zero at the start
+            InitializationError: If degrees of freedom is not zero at the start
             of each initialization step.
 
         """
@@ -102,7 +102,11 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
         )
 
         # create solver
-        self.opt = get_solver(self.config.solver, self.config.solver_options)
+        if self.config.solver is None:
+            self.opt = get_solver(self.config.solver, self.config.solver_options)
+        else:
+            self.opt = self.config.solver
+        print(self.opt.options)
 
         # initialization of fixed bed TSA model unit
         init_log.info("Starting fixed bed TSA initialization")
@@ -119,7 +123,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
 
         cons_lst_heating = ["flow_mol_in_total_eq", "pressure_in_eq", "mole_frac_in_eq"]
 
-        self._calculate_variable_from_constraint(
+        self._calculate_and_fix_variable_from_constraint(
             blk, variable_list=vars_lst_heating, constraint_list=cons_lst_heating
         )
 
@@ -137,7 +141,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
                 t_guess=1e3,
             )
         else:
-            raise ConfigurationError(
+            raise InitializationError(
                 "Degrees of freedom is not zero during initialization of "
                 "heating step. Fix/unfix appropriate number of variables "
                 "to result in zero degrees of freedom for initialization."
@@ -152,7 +156,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
         if degrees_of_freedom(blk.heating) == 0:
             self._step_initialize(cycle_step=blk.heating)
         else:
-            raise ConfigurationError(
+            raise InitializationError(
                 "Degrees of freedom is not zero during initialization of "
                 "heating step. Fix/unfix appropriate number of variables "
                 "to result in zero degrees of freedom for initialization."
@@ -165,7 +169,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
         vars_lst_cooling = ["mole_frac_heating_end"]
         cons_lst_cooling = ["mole_frac_heating_end_eq"]
 
-        self._calculate_variable_from_constraint(
+        self._calculate_and_fix_variable_from_constraint(
             blk, variable_list=vars_lst_cooling, constraint_list=cons_lst_cooling
         )
 
@@ -183,7 +187,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
                 t_guess=500,
             )
         else:
-            raise ConfigurationError(
+            raise InitializationError(
                 "Degrees of freedom is not zero during initialization of "
                 "cooling step. Fix/unfix appropriate number of variables "
                 "to result in zero degrees of freedom for initialization."
@@ -198,7 +202,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
         if degrees_of_freedom(blk.cooling) == 0:
             self._step_initialize(cycle_step=blk.cooling)
         else:
-            raise ConfigurationError(
+            raise InitializationError(
                 "Degrees of freedom is not zero during initialization of "
                 "cooling step. Fix/unfix appropriate number of variables "
                 "to result in zero degrees of freedom for initialization."
@@ -221,7 +225,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
             "loading_cooling_end_eq",
         ]
 
-        self._calculate_variable_from_constraint(
+        self._calculate_and_fix_variable_from_constraint(
             blk,
             variable_list=vars_lst_pressurization,
             constraint_list=cons_lst_pressurization,
@@ -243,7 +247,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
                 cycle_step=blk.pressurization,
             )
         else:
-            raise ConfigurationError(
+            raise InitializationError(
                 "Degrees of freedom is not zero during initialization of "
                 "pressurization step. Fix/unfix appropriate number of "
                 "variables to result in zero degrees of freedom for "
@@ -264,7 +268,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
             "loading_pressurization_end_eq",
         ]
 
-        self._calculate_variable_from_constraint(
+        self._calculate_and_fix_variable_from_constraint(
             blk, variable_list=vars_lst_adsorption, constraint_list=cons_lst_adsorption
         )
 
@@ -273,7 +277,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
         if degrees_of_freedom(blk.adsorption) == 0:
             self._step_initialize(cycle_step=blk.adsorption)
         else:
-            raise ConfigurationError(
+            raise InitializationError(
                 "Degrees of freedom is not zero during initialization of "
                 "adsorption step. Fix/unfix appropriate number of variables "
                 "to result in zero degrees of freedom for initialization."
@@ -315,7 +319,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
                     "Failed {}.".format(blk.name)
                 )
         else:
-            raise ConfigurationError(
+            raise InitializationError(
                 "Degrees of freedom is not zero during initialization of "
                 "fixed bed TSA model. Fix/unfix appropriate number of "
                 "variables to result in zero degrees of freedom for "
@@ -387,7 +391,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
                         )
                     )
             else:
-                raise ConfigurationError(
+                raise InitializationError(
                     "Degrees of freedom is not zero during initialization of "
                     "compressor model. Fix/unfix appropriate number of "
                     "variables to result in zero degrees of freedom for "
@@ -428,7 +432,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
                     heater_initializer.initialize(blk.steam_heater.unit)
 
                 else:
-                    raise ConfigurationError(
+                    raise InitializationError(
                         "Degrees of freedom is not zero during initialization "
                         "of heater model. Fix/unfix appropriate number of "
                         "variables to result in zero degrees of freedom for "
@@ -465,7 +469,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
                             )
                         )
                 else:
-                    raise ConfigurationError(
+                    raise InitializationError(
                         "Degrees of freedom is not zero during initialization "
                         "of heater model for total saturation at outlet. "
                         "Fix/unfix appropriate number of variables to result "
@@ -511,7 +515,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
                             )
                         )
                 else:
-                    raise ConfigurationError(
+                    raise InitializationError(
                         "Degrees of freedom is not zero during initialization "
                         "of heater model for total steam flow rate. "
                         "Fix/unfix appropriate number of variables to result "
@@ -612,7 +616,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
                     blk.config.compressor
                     and blk.config.steam_calculation != SteamCalculationType.none
                 ):
-                    raise ConfigurationError(
+                    raise InitializationError(
                         "Degrees of freedom is not zero during initialization "
                         "of fixed bed TSA, steam calculation and compressor "
                         "models. Fix/unfix appropriate number of variables to "
@@ -623,7 +627,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
                     blk.config.compressor
                     and blk.config.steam_calculation == SteamCalculationType.none
                 ):
-                    raise ConfigurationError(
+                    raise InitializationError(
                         "Degrees of freedom is not zero during initialization "
                         "of fixed bed TSA and compressor "
                         "models. Fix/unfix appropriate number of variables to "
@@ -634,7 +638,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
                     not blk.config.compressor
                     and blk.config.steam_calculation != SteamCalculationType.none
                 ):
-                    raise ConfigurationError(
+                    raise InitializationError(
                         "Degrees of freedom is not zero during initialization "
                         "of fixed bed TSA and steam calculation "
                         "models. Fix/unfix appropriate number of variables to "
@@ -866,7 +870,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
             count += 1
             condition = (f_x2**2) ** 0.5 > 1
 
-    def _calculate_variable_from_constraint(
+    def _calculate_and_fix_variable_from_constraint(
         self, obj, variable_list=None, constraint_list=None
     ):
         """
