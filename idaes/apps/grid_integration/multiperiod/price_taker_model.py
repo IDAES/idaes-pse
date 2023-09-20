@@ -337,11 +337,11 @@ class PriceTakerModel(ConcreteModel):
         design_blk,
         var,
         design_variable,
-        op_range_lb_percentage = 0.2, 
-        startup_limit_percentage = 0.5, 
-        shutdown_limit_percentage = 0.5,
-        ramp_up_limit = 0.8, 
-        ramp_down_limit = 0.8,
+        op_range_lb_percentage = 0.6, 
+        startup_limit_percentage = 0.7, 
+        shutdown_limit_percentage = 0.7,
+        ramp_up_limit = 0.7, 
+        ramp_down_limit = 0.7,
           ):
         """
         Adds ramping constraints of the form
@@ -499,23 +499,24 @@ class PriceTakerModel(ConcreteModel):
 
         @blk.Constraint(self.range_time_steps)
         def minimum_up_time_con(b,t):
-            if t < up_time-1 or t == 1  or t >= number_time_steps:
+            if t == 1 or t < up_time or t > number_time_steps:
                 return Constraint.Skip
-            return sum(start_up[self.mp_model.set_period[i]] for i in range(t-up_time+2,t+1)) <= op_mode[self.mp_model.set_period[t+1]]
+            else:
+                return sum(start_up[self.mp_model.set_period[i]] for i in range(t-up_time+1,t+1)) <= op_mode[self.mp_model.set_period[t]]
         
         @blk.Constraint(self.range_time_steps)
         def minimum_down_time_con(b, t):
-            if t < down_time or t >= number_time_steps:
+            if t <= down_time or t == 1 or t > number_time_steps:
                 return Constraint.Skip
-            return (sum(shut_down[self.mp_model.set_period[i]] for i in range(t - down_time + 1, t + 2)) <= 
-                   1 - op_mode[self.mp_model.set_period[t+1]])
+            return (sum(shut_down[self.mp_model.set_period[i]] for i in range(t - down_time , t + 1)) <= 
+                   1 - op_mode[self.mp_model.set_period[t]])
 
         @blk.Constraint(self.range_time_steps)
         def Binary_relationhsip_con(b, t):
-            if t >= number_time_steps:
+            if t > number_time_steps or t == 1:
                 return Constraint.Skip
-            return (op_mode[self.mp_model.set_period[t+1]] - op_mode[self.mp_model.set_period[t]] == 
-                    start_up[self.mp_model.set_period[t]] - shut_down[self.mp_model.set_period[t+1]]
+            return (op_mode[self.mp_model.set_period[t]] - op_mode[self.mp_model.set_period[t-1]] == 
+                    start_up[self.mp_model.set_period[t-1]] - shut_down[self.mp_model.set_period[t]]
                    )
 
     def build_hourly_cashflows(self):
