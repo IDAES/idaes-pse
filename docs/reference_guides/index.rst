@@ -1,3 +1,5 @@
+.. _API Reference:
+
 Reference Guides
 =================
 
