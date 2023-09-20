@@ -480,6 +480,7 @@ def petsc_dae_by_time_element(
             after the initial condition problem is solved and these equations are reactivated. Note that the
             equations not active at this point are excluded from the DAE at future points. If no
             representative_time is specified, it is assumed to be the second element of between.
+            Must be an element of between.
         snes_options (dict): [DEPRECATED in favor of initial_solver_options] nonlinear equation solver options
 
     Returns (PetscDAEResults):
@@ -519,12 +520,13 @@ def petsc_dae_by_time_element(
         between.construct()
 
     # Make sure that time is a ContinuousSet that has been discretized
-    try:
-        time.get_discretization_info()["nfe"]
-    except AttributeError:
+    if isinstance(time, pyodae.ContinuousSet):
+        try:
+            time.get_discretization_info()["nfe"]
+        except KeyError:
+            raise RuntimeError("The ContinuousSet time has not been discretized")
+    else:
         raise RuntimeError("Argument time is not a Pyomo ContinuousSet")
-    except KeyError:
-        raise RuntimeError("The ContinuousSet time has not been discretized")
 
     solve_log = idaeslog.getSolveLogger("petsc-dae")
 
@@ -533,6 +535,8 @@ def petsc_dae_by_time_element(
     # etc., cause flatten_dae_components to miss a constraint that is active at t>t0
     if representative_time is None:
         representative_time = between.at(2)  # Two because Pyomo sets start at one
+    elif representative_time not in between:
+        raise RuntimeError("representative_time is not element of between.")
 
     regular_vars, time_vars = flatten_dae_components(
         m, time, pyo.Var, active=True, indices=(representative_time,)
