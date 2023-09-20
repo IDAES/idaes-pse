@@ -861,8 +861,7 @@ class SolidOxideCellData(UnitModelBlockData):
         @self.Constraint(tset)
         def total_current_eqn(b, t):
             return b.total_current[t] == sum(
-                b.current_density[t, iz] * b.fuel_electrode.xface_area[iz]
-                for iz in b.iznodes
+                b.current_density[t, iz] * b.xface_area[iz] for iz in b.iznodes
             )
 
         @self.Expression(tset)
