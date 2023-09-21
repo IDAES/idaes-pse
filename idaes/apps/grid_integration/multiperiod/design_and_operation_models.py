@@ -52,10 +52,23 @@ class DesignModelData(SkeletonUnitModelData):
         ),
     )
 
+    CONFIG.declare(
+        "declare_build_vars",
+        ConfigValue(
+            default=True,
+            domain=In([True, False]),
+            doc="Should build_unit be declared/defined?",
+        ),
+    )
+
     # noinspection PyAttributeOutsideInit
     def build(self):
         super().build()
-
+        if self.config.declare_op_vars:
+            self.build_unit = Var(
+                within=Binary,
+                doc="Binary var: 1 if we choose to build the unit, 0 otherwise",
+            )
         # Build the model
         self.config.model_func(self, **self.config.model_args)
 
@@ -90,6 +103,14 @@ class OperationModelData(SkeletonUnitModelData):
     )
     CONFIG.declare(
         "model_args",
+        ConfigValue(
+            default={},
+            doc="Dictionary containing arguments needed for model_func",
+        ),
+    )
+
+    CONFIG.declare(
+        "design_blk",
         ConfigValue(
             default={},
             doc="Dictionary containing arguments needed for model_func",
@@ -163,10 +184,13 @@ class OperationModelData(SkeletonUnitModelData):
             self._add_capacity_aux_vars()
 
     def _add_capacity_aux_vars(self):
-        v1 = self.config.capacity_var.name.split(".")[-1] + "_op_mode"
-        v2 = self.config.capacity_var.name.split(".")[-1] + "_startup"
-        v3 = self.config.capacity_var.name.split(".")[-1] + "_shutdown"
+        aux_op_mode = self.config.capacity_var.name.split(".")[-1] + "_op_mode"
+        aux_startup = self.config.capacity_var.name.split(".")[-1] + "_startup"
+        aux_shutdown = self.config.capacity_var.name.split(".")[-1] + "_shutdown"
 
-        setattr(self,Var(),v1)
-        setattr(self,Var(),v2)
-        setattr(self,Var(),v3)
+        setattr(self,Var(),aux_op_mode)
+        setattr(self,Var(),aux_startup)
+        setattr(self,Var(),aux_shutdown)
+        for b in self.config.model_args:
+            if isinstance(b,)
+
