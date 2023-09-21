@@ -520,13 +520,11 @@ def petsc_dae_by_time_element(
         between.construct()
 
     # Make sure that time is a ContinuousSet that has been discretized
-    if isinstance(time, pyodae.ContinuousSet):
-        try:
-            time.get_discretization_info()["nfe"]
-        except KeyError:
-            raise RuntimeError("The ContinuousSet time has not been discretized")
-    else:
+    if not isinstance(time, pyodae.ContinuousSet):
         raise RuntimeError("Argument time is not a Pyomo ContinuousSet")
+
+    if "scheme" not in time.get_discretization_info():
+        raise RuntimeError("The ContinuousSet time has not been discretized")
 
     solve_log = idaeslog.getSolveLogger("petsc-dae")
 
