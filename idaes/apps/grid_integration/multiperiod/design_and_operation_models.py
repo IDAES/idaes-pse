@@ -192,5 +192,7 @@ class OperationModelData(SkeletonUnitModelData):
         setattr(self,Var(),aux_startup)
         setattr(self,Var(),aux_shutdown)
         for b in self.config.model_args:
-            if isinstance(b,)
+            if isinstance(b,DesignModelData):
+                design_blk = b
+        
 
