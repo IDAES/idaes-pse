@@ -627,7 +627,9 @@ The property package must be iapws95.
             units=units.Pa * units.s,
             doc="Gas phase viscosity",
         )
-        self.particle_sphericity = Param(initialize=1, units=units.dimensionless)
+        self.particle_sphericity = Param(
+            initialize=1, units=units.dimensionless, doc="Particle sphericity"
+        )
         self.bed_voidage_mf = Param(
             initialize=0.5,
             units=units.dimensionless,

@@ -116,8 +116,9 @@ class TestTsaZeolite:
     @pytest.mark.component
     def test_initialize(self, model):
         initializer = FixedBedTSA0DInitializer()
-        initializer.initialize(model.fs.unit)
-
+        initializer.initialize(
+            model.fs.unit, heating_time_guess=70000, cooling_time_guess=110000
+        )
         assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
 
     @pytest.mark.solver
@@ -231,8 +232,9 @@ class TestTsaMgmof:
     @pytest.mark.component
     def test_initialize(self, model):
         initializer = FixedBedTSA0DInitializer()
-        initializer.initialize(model.fs.unit)
-
+        initializer.initialize(
+            model.fs.unit, heating_time_guess=2000, cooling_time_guess=900
+        )
         assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
 
     @pytest.mark.solver
@@ -341,8 +343,9 @@ class TestTsaPolystyrene:
     @pytest.mark.component
     def test_initialize(self, model):
         initializer = FixedBedTSA0DInitializer()
-        initializer.initialize(model.fs.unit)
-
+        initializer.initialize(
+            model.fs.unit, heating_time_guess=700, cooling_time_guess=700
+        )
         assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
 
     @pytest.mark.solver

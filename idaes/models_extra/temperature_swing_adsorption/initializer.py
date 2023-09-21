@@ -58,6 +58,8 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
         json_file: str = None,
         output_level=None,
         exclude_unused_vars: bool = True,
+        heating_time_guess=1000,
+        cooling_time_guess=500,
     ):
 
         if not exclude_unused_vars:
@@ -69,7 +71,10 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
                 "to True to avoid raising an InitializationError."
             )
 
-        super(FixedBedTSA0DInitializer, self).initialize(
+        self.heating_time_guess = heating_time_guess
+        self.cooling_time_guess = cooling_time_guess
+
+        super().initialize(
             model=model,
             initial_guesses=initial_guesses,
             json_file=json_file,
@@ -106,7 +111,6 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
             self.opt = get_solver(self.config.solver, self.config.solver_options)
         else:
             self.opt = self.config.solver
-        print(self.opt.options)
 
         # initialization of fixed bed TSA model unit
         init_log.info("Starting fixed bed TSA initialization")
@@ -131,14 +135,14 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
 
         # deactivate final condition constraint and fix time
         blk.heating.fc_temperature_eq.deactivate()
-        blk.heating.time.fix(1e3 * units.s)
+        blk.heating.time.fix(self.heating_time_guess * units.s)
 
         # check degrees of freedom and solve
         if degrees_of_freedom(blk.heating) == 0:
             self._false_position_method(
                 blk,
                 cycle_step=blk.heating,
-                t_guess=1e3,
+                t_guess=self.heating_time_guess,
             )
         else:
             raise InitializationError(
@@ -177,14 +181,14 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
 
         # deactivate final condition constraint and fix time
         blk.cooling.fc_temperature_eq.deactivate()
-        blk.cooling.time.fix(500 * units.s)
+        blk.cooling.time.fix(self.cooling_time_guess * units.s)
 
         # check degrees of freedom and solve
         if degrees_of_freedom(blk.cooling) == 0:
             self._false_position_method(
                 blk,
                 cycle_step=blk.cooling,
-                t_guess=500,
+                t_guess=self.cooling_time_guess,
             )
         else:
             raise InitializationError(
