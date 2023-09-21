@@ -166,3 +166,14 @@ class OperationModelData(SkeletonUnitModelData):
                     )
                     print(f"setting {ce} to zero in {self.name}")
                     setattr(self, ce, Expression(expr=0, doc=cost_expr_list[ce]))
+        if self.config.capacity_var is not None:
+            self._add_capacity_aux_vars()
+
+    def _add_capacity_aux_vars(self):
+        v1 = self.config.capacity_var.name.split(".")[-1] + "_op_mode"
+        v2 = self.config.capacity_var.name.split(".")[-1] + "_startup"
+        v3 = self.config.capacity_var.name.split(".")[-1] + "_shutdown"
+
+        setattr(self,Var(),v1)
+        setattr(self,Var(),v2)
+        setattr(self,Var(),v3)
