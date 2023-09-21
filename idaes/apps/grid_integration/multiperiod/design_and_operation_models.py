@@ -16,13 +16,15 @@ from pyomo.environ import (
     Binary,
     Expression,
     NonNegativeReals,
+    Constraint,
 )
-
+from functools import reduce
 from idaes.core.base.process_base import declare_process_block_class
 from idaes.models.unit_models import SkeletonUnitModelData
 from pyomo.common.config import ConfigValue, In
 
-
+def deepgetattr(obj, attr):
+    return reduce(getattr, attr.split('.'), obj)
 @declare_process_block_class("DesignModel")
 class DesignModelData(SkeletonUnitModelData):
     """
@@ -187,12 +189,21 @@ class OperationModelData(SkeletonUnitModelData):
         aux_op_mode = self.config.capacity_var.name.split(".")[-1] + "_op_mode"
         aux_startup = self.config.capacity_var.name.split(".")[-1] + "_startup"
         aux_shutdown = self.config.capacity_var.name.split(".")[-1] + "_shutdown"
-
+        
         setattr(self,Var(),aux_op_mode)
         setattr(self,Var(),aux_startup)
         setattr(self,Var(),aux_shutdown)
         for b in self.config.model_args:
             if isinstance(b,DesignModelData):
                 design_blk = b
+        
+        capacity = deepgetattr(design_blk,self.config.capacity_var.name)
+        capacity_ub = deepgetattr(design_blk,self.config.capacity_var.name + ".ub")
+        capacity_lb = deepgetattr(design_blk,self.config.capacity_var.name + ".lb")
+        
+        self.Constraint(
+            expr = (design_blk.build_unit - self.op_mode - self.startup - self.shutdown)*capacity_lb <= 
+                    capacity - aux_op_mode -  aux_startup - aux_shutdown
+        )
         
 
