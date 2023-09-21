@@ -83,7 +83,7 @@ from idaes.models.unit_models.pressure_changer import (
 
 import idaes.logger as idaeslog
 
-__author__ = "Daison Yancy Caballero"
+__author__ = "Daison Yancy Caballero, Alex Noring"
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -531,8 +531,7 @@ The property package must be iapws95.
                 / b.particle_sphericity**2
                 / b.bed_voidage_mf**3
                 * b.Reynolds_mf
-                ==
-                b.particle_dia**3
+                == b.particle_dia**3
                 * b.dens_mass_gas
                 * (b.dens_mass_sol - b.dens_mass_gas)
                 * const.acceleration_gravity
@@ -542,27 +541,24 @@ The property package must be iapws95.
         # constraint for pressure drop
         @self.Constraint(doc="Ergun equation for pressure drop")
         def pressure_drop_eq(b):
-            return (
-                b.pressure_drop
-                == (
-                    (
-                        -150
-                        * b.visc_d
-                        * (1 - b.bed_voidage) ** 2
-                        * b.velocity_in
-                        / b.bed_voidage**3
-                        / b.particle_dia**2
-                        / b.particle_sphericity**2
-                        - 1.75
-                        * (1 - b.bed_voidage)
-                        * b.velocity_in**2
-                        * b.dens_mass_gas
-                        / b.bed_voidage**3
-                        / b.particle_dia
-                        / b.particle_sphericity
-                    )
-                    * b.bed_height
+            return b.pressure_drop == (
+                (
+                    -150
+                    * b.visc_d
+                    * (1 - b.bed_voidage) ** 2
+                    * b.velocity_in
+                    / b.bed_voidage**3
+                    / b.particle_dia**2
+                    / b.particle_sphericity**2
+                    - 1.75
+                    * (1 - b.bed_voidage)
+                    * b.velocity_in**2
+                    * b.dens_mass_gas
+                    / b.bed_voidage**3
+                    / b.particle_dia
+                    / b.particle_sphericity
                 )
+                * b.bed_height
             )
 
         # add inlet port for fixed bed TSA
@@ -631,14 +627,11 @@ The property package must be iapws95.
             units=units.Pa * units.s,
             doc="Gas phase viscosity",
         )
-        self.particle_sphericity = Param(
-            initialize=1,
-            units=units.dimensionless
-        )
+        self.particle_sphericity = Param(initialize=1, units=units.dimensionless)
         self.bed_voidage_mf = Param(
             initialize=0.5,
             units=units.dimensionless,
-            doc="Minimum fluidization bed voidage"
+            doc="Minimum fluidization bed voidage",
         )
 
     def _add_parameters_zeolite_13x(self):
@@ -916,7 +909,7 @@ The property package must be iapws95.
             self.isotherm_components,
             initialize={"CO2": 1.71, "N2": 0.0},
             units=units.mol / units.kg,
-            doc="Saturation capacity at reference temeprature",
+            doc="Saturation capacity at reference temperature",
         )
         self.affinity_preexponential_factor = Param(
             self.isotherm_components,
@@ -988,9 +981,7 @@ The property package must be iapws95.
         }
         # create port
         self.inlet = Port(
-            noruleinit=True,
-            initialize=inlet_dict,
-            doc="Inlet port for fixed bed TSA"
+            noruleinit=True, initialize=inlet_dict, doc="Inlet port for fixed bed TSA"
         )
         # add constraints to link variables of CCS and inlet of fixed bed TSA
         tf = self.flowsheet().time.last()
@@ -1057,7 +1048,7 @@ The property package must be iapws95.
         self.co2_rich_stream = Port(
             noruleinit=True,
             initialize=co2_rich_stream_dict,
-            doc="Outlet port for CO2 rich stream"
+            doc="Outlet port for CO2 rich stream",
         )
 
         # add constraints to populate co2_rich_stream
@@ -1129,7 +1120,7 @@ The property package must be iapws95.
             self.flowsheet().time,
             initialize=101325,
             units=units.Pa,
-            doc="Pressure at N2 rich stream"
+            doc="Pressure at N2 rich stream",
         )
 
         # dictionary containing state of outlet n2_rich_stream
@@ -1142,7 +1133,7 @@ The property package must be iapws95.
         self.n2_rich_stream = Port(
             noruleinit=True,
             initialize=n2_rich_stream_dict,
-            doc="Outlet port for n2 rich stream"
+            doc="Outlet port for n2 rich stream",
         )
 
         # add constraints to populate n2_rich_stream
@@ -1959,41 +1950,38 @@ The property package must be iapws95.
 
             p[j] = units.convert(pressure[j], to_units=units.bar)
 
-            saturation_capacity[j] = (
-                self.saturation_capacity_ref[j] *
-                exp(
-                    self.saturation_capacity_exponential_factor[j] *
-                    (T / self.temperature_ref - 1)
+            saturation_capacity[j] = self.saturation_capacity_ref[j] * exp(
+                self.saturation_capacity_exponential_factor[j]
+                * (T / self.temperature_ref - 1)
+            )
+            affinity_parameter[j] = self.affinity_parameter_preexponential_factor[
+                j
+            ] * exp(
+                units.convert(
+                    self.affinity_parameter_characteristic_energy[j],
+                    to_units=units.J / units.mol,
                 )
+                / const.gas_constant
+                / T
             )
-            affinity_parameter[j] = (
-                self.affinity_parameter_preexponential_factor[j] *
-                exp(
-                    units.convert(
-                        self.affinity_parameter_characteristic_energy[j],
-                        to_units=units.J / units.mol
-                    )
-                    / const.gas_constant
-                    / T
-                )
-            )
-            heterogeneity_parameter[j] = (
-                self.heterogeneity_parameter_ref[j] +
-                self.heterogeneity_parameter_alpha[j] *
-                (T / self.temperature_ref - 1)
-            )
+            heterogeneity_parameter[j] = self.heterogeneity_parameter_ref[
+                j
+            ] + self.heterogeneity_parameter_alpha[j] * (T / self.temperature_ref - 1)
 
         loading = {}
 
         for j in self.isotherm_components:
 
             loading[j] = (
-                saturation_capacity[j] *
-                (affinity_parameter[j] * p[j]) ** heterogeneity_parameter[j] /
-                (1 + sum(
-                    (affinity_parameter[k] * p[k])**heterogeneity_parameter[k]
-                    for k in self.isotherm_components
-                ))
+                saturation_capacity[j]
+                * (affinity_parameter[j] * p[j]) ** heterogeneity_parameter[j]
+                / (
+                    1
+                    + sum(
+                        (affinity_parameter[k] * p[k]) ** heterogeneity_parameter[k]
+                        for k in self.isotherm_components
+                    )
+                )
             )
 
         return loading[i]
@@ -2026,70 +2014,71 @@ The property package must be iapws95.
 
         if i == "CO2":
 
-            lower_affinity_parameter = (
-                self.lower_affinity_preexponential_factor[i] *
-                exp(
-                    units.convert(
-                        self.lower_affinity_characteristic_energy[i],
-                        to_units=units.J / units.mol
-                    )
-                    / const.gas_constant
-                    / T
+            lower_affinity_parameter = self.lower_affinity_preexponential_factor[
+                i
+            ] * exp(
+                units.convert(
+                    self.lower_affinity_characteristic_energy[i],
+                    to_units=units.J / units.mol,
                 )
+                / const.gas_constant
+                / T
             )
-            upper_affinity_parameter_1 = (
-                self.upper_affinity_preexponential_factor_1[i] *
-                exp(
-                    units.convert(
-                        self.upper_affinity_characteristic_energy_1[i],
-                        to_units=units.J / units.mol
-                    )
-                    / const.gas_constant
-                    / T
+            upper_affinity_parameter_1 = self.upper_affinity_preexponential_factor_1[
+                i
+            ] * exp(
+                units.convert(
+                    self.upper_affinity_characteristic_energy_1[i],
+                    to_units=units.J / units.mol,
                 )
+                / const.gas_constant
+                / T
             )
-            upper_affinity_parameter_2 = (
-                self.upper_affinity_preexponential_factor_2[i] *
-                exp(
-                    units.convert(
-                        self.upper_affinity_characteristic_energy_2[i],
-                        to_units=units.J / units.mol)
-                    / const.gas_constant
-                    / T
+            upper_affinity_parameter_2 = self.upper_affinity_preexponential_factor_2[
+                i
+            ] * exp(
+                units.convert(
+                    self.upper_affinity_characteristic_energy_2[i],
+                    to_units=units.J / units.mol,
                 )
+                / const.gas_constant
+                / T
             )
 
             # lower portion of the isotherm
             lower_loading = (
-                self.lower_saturtion_capacity[i] *
-                lower_affinity_parameter *
-                p[i] /
-                (1 + lower_affinity_parameter * p[i])
+                self.lower_saturtion_capacity[i]
+                * lower_affinity_parameter
+                * p[i]
+                / (1 + lower_affinity_parameter * p[i])
             )
 
             # upper portion of the isotherm
             upper_loading = (
-                (self.upper_saturtion_capacity[i] *
-                 upper_affinity_parameter_1 *
-                 p[i] /
-                 (1 + upper_affinity_parameter_1 * p[i])) +
-                upper_affinity_parameter_2 * p[i]
-            )
+                self.upper_saturtion_capacity[i]
+                * upper_affinity_parameter_1
+                * p[i]
+                / (1 + upper_affinity_parameter_1 * p[i])
+            ) + upper_affinity_parameter_2 * p[i]
 
             #  weighting function
-            sigma = (
-                self.step_width_preexponential_factor[i] *
-                exp(
-                    self.step_width_exponential_factor[i] *
-                    (1 / self.temperature_ref - 1 / T) * units.K
-                )
+            sigma = self.step_width_preexponential_factor[i] * exp(
+                self.step_width_exponential_factor[i]
+                * (1 / self.temperature_ref - 1 / T)
+                * units.K
             )
 
             pstep = (
-                self.step_partial_pressure_ref[i] / units.bar *
-                exp(
-                    (-self.step_enthalpy[i]
-                     / const.gas_constant * 1e3 * units.J / units.kJ)
+                self.step_partial_pressure_ref[i]
+                / units.bar
+                * exp(
+                    (
+                        -self.step_enthalpy[i]
+                        / const.gas_constant
+                        * 1e3
+                        * units.J
+                        / units.kJ
+                    )
                     * (1 / self.temperature_ref - 1 / T)
                 )
             )
@@ -2134,33 +2123,26 @@ The property package must be iapws95.
 
         if i == "CO2":
 
-            saturation_capacity = (
-                self.saturation_capacity_ref[i]
-                * exp(
-                    self.saturation_capacity_exponential_factor[i]
-                    * (1 - T / self.temperature_ref)
-                )
+            saturation_capacity = self.saturation_capacity_ref[i] * exp(
+                self.saturation_capacity_exponential_factor[i]
+                * (1 - T / self.temperature_ref)
             )
-            affinity = (
-                self.affinity_preexponential_factor[i]
-                * exp(
-                    units.convert(
-                        self.affinity_characteristic_energy[i],
-                        to_units=units.J / units.mol
-                    )
-                    / const.gas_constant
-                    / self.temperature_ref
-                    * (self.temperature_ref / T - 1)
+            affinity = self.affinity_preexponential_factor[i] * exp(
+                units.convert(
+                    self.affinity_characteristic_energy[i], to_units=units.J / units.mol
                 )
+                / const.gas_constant
+                / self.temperature_ref
+                * (self.temperature_ref / T - 1)
             )
-            toth_constant = (
-                self.toth_constant_ref[i]
-                + self.toth_constant_alpha[i]
-                * (1 - self.temperature_ref / T)
+            toth_constant = self.toth_constant_ref[i] + self.toth_constant_alpha[i] * (
+                1 - self.temperature_ref / T
             )
 
             loading[i] = (
-                saturation_capacity * affinity * p[i]
+                saturation_capacity
+                * affinity
+                * p[i]
                 / (1 + (affinity * p[i]) ** toth_constant) ** (1 / toth_constant)
             )
 
@@ -2760,7 +2742,7 @@ The property package must be iapws95.
         iscale.set_scaling_factor(self.temperature_in, 1e-2)
         iscale.set_scaling_factor(self.pressure_in, 1e-5)
 
-        # costraint scaling
+        # constraint scaling factors
         iscale.constraint_scaling_transform(self.pressure_drop_eq, 1e-5)
         iscale.constraint_scaling_transform(self.velocity_mf_eq, 10)
 

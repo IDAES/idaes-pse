@@ -21,8 +21,9 @@ import pytest
 from pyomo.environ import check_optimal_termination, ConcreteModel, value
 
 from idaes.core import FlowsheetBlock
-from idaes.models_extra.temperature_swing_adsorption.fixed_bed_tsa0d import (
+from idaes.models_extra.temperature_swing_adsorption import (
     FixedBedTSA0D,
+    FixedBedTSA0DInitializer,
     Adsorbent,
     TransformationScheme,
     SteamCalculationType,
@@ -87,7 +88,8 @@ class TestElectricBoilerCosting:
 
         iscale.calculate_scaling_factors(m)
 
-        m.fs.unit.initialize()
+        initializer = FixedBedTSA0DInitializer()
+        initializer.initialize(m.fs.unit)
 
         get_dac_costing(m.fs.unit, "electric_boiler")
 
@@ -186,7 +188,8 @@ class TestRetrofitNgccCosting:
 
         iscale.calculate_scaling_factors(m)
 
-        m.fs.unit.initialize()
+        initializer = FixedBedTSA0DInitializer()
+        initializer.initialize(m.fs.unit)
 
         get_dac_costing(m.fs.unit, "retrofit_ngcc")
 

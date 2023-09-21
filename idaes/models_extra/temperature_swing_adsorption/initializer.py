@@ -39,7 +39,7 @@ from idaes.models_extra.temperature_swing_adsorption import SteamCalculationType
 
 import idaes.logger as idaeslog
 
-__author__ = "Daison Yancy Caballero"
+__author__ = "Daison Yancy Caballero, Alex Noring"
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -289,7 +289,10 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
         # deactivated during individual steps
         from_json(blk, sd=tsa_state, wts=StoreState)
 
-        calculate_variable_from_constraint(blk.pressure_drop, blk.pressure_drop_eq)
+        if blk.calculate_beds:
+            calculate_variable_from_constraint(blk.velocity_in, blk.pressure_drop_eq)
+        else:
+            calculate_variable_from_constraint(blk.pressure_drop, blk.pressure_drop_eq)
 
         # 5.2) deactivate compressor
         if blk.config.compressor:
@@ -371,8 +374,9 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
             # 6.2) check degrees of freedom and solve
             if degrees_of_freedom(blk.compressor) == 0:
 
-                comp_initializer = self.get_submodel_initializer(blk.compressor.unit)
-                comp_initializer.initialize(blk.compressor.unit)
+                # TODO: switch to new initialization method when implemented
+                # for FlueGasStateBlock
+                blk.compressor.unit.initialize()
 
                 # re-solve compressor model
                 with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:

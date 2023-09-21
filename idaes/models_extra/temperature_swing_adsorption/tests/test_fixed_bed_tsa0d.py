@@ -27,11 +27,9 @@ from pyomo.environ import (
 )
 from pyomo.util.check_units import assert_units_consistent
 
-
 from idaes.core import FlowsheetBlock
 from idaes.core.initialization import InitializationStatus
 from idaes.core.solvers import get_solver
-from idaes.core.util.testing import initialization_tester
 
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
@@ -57,8 +55,7 @@ import idaes.core.util.scaling as iscale
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_solver()
-solver.options.nlp_scaling_method = "user-scaling"
-print(solver.options)
+
 
 class TestTsaZeolite:
     @pytest.fixture(scope="class")
