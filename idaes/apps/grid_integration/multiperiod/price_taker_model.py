@@ -368,6 +368,17 @@ class PriceTakerModel(ConcreteModel):
       total_power_upper_bound >= ramp_up_limit >= startup_limit >= total_power_lower_bound > 0
       total_power_upper_bound  >= ramp_down_limit >= shutdown_limit >= total_power_lower_bound > 0
         """
+
+
+        # if constraint = "linear":
+      # if capacity_var is either a Parameter or ocsntant....
+         #act_startup_rate = capacity* startup_rate* startup
+    # else:
+    #     if hasattr(m,capacity_startup) == False:
+    #              op_blk._add_capacity_aux_var
+    #     else:
+    #     act_startup_rate = capacity_startup * startup_rate
+                # The linearized ramping constraints
         # Importing in the nessisary variables
         self.range_time_steps = RangeSet(len(self.mp_model.set_period))
         start_up = {t: deepgetattr(self.mp_model.period[t], op_blk + ".startup") for t in self.mp_model.period}
