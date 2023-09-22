@@ -1,18 +1,23 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Base class for control volumes
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
+# We use some private attributes here to hide these from the user
+# pylint: disable=protected-access
 
 # Import Python libraries
 import copy
@@ -32,6 +37,7 @@ from pyomo.environ import (
 )
 from pyomo.dae import ContinuousSet, DerivativeVar
 from pyomo.common.config import ConfigValue, In
+from pyomo.common.deprecation import deprecation_warning
 
 # Import IDAES cores
 from idaes.core import (
@@ -63,6 +69,10 @@ _log = idaeslog.getLogger(__name__)
 
 # Enumerate options for area
 class DistributedVars(Enum):
+    """
+    Enum indicating if a variable is constant across the spatial domain.
+    """
+
     variant = 0
     uniform = 1
 
@@ -76,7 +86,7 @@ class DistributedVars(Enum):
 
     ControlVolume1DBlock should be used for any control volume with a defined
     volume and distinct inlets and outlets where there is a single spatial
-    domain parallel to the material flow direction. This encompases unit
+    domain parallel to the material flow direction. This encompasses unit
     operations such as plug flow reactors and pipes.""",
 )
 class ControlVolume1DBlockData(ControlVolumeBlockData):
@@ -99,7 +109,7 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
             doc="""Argument defining whether area variable should be spatially
         variant or not. **default** - DistributedVars.uniform.
         **Valid values:** {
-        DistributedVars.uniform - area does not vary across spatial domian,
+        DistributedVars.uniform - area does not vary across spatial domain,
         DistributedVars.variant - area can vary over the domain and is indexed
         by time and space.}""",
         ),
@@ -252,7 +262,7 @@ argument).""",
         else:
             self._flow_direction_term = 1
 
-        # Add geomerty variables and constraints
+        # Add geometry variables and constraints
         if self.config.area_definition == DistributedVars.variant:
             self.area = Var(
                 self.flowsheet().time,
@@ -427,17 +437,32 @@ argument).""",
                         )
 
         if has_phase_equilibrium:
-            # Check that state blocks are set to calculate equilibrium
-            for t in self.flowsheet().time:
-                for x in self.length_domain:
-                    if not self.properties[t, x].config.has_phase_equilibrium:
-                        raise ConfigurationError(
-                            "{} material balance was set to include phase "
-                            "equilibrium, however the associated "
-                            "StateBlock was not set to include equilibrium "
-                            "constraints (has_phase_equilibrium=False). Please"
-                            " correct your configuration arguments.".format(self.name)
-                        )
+            # First, check that phase equilibrium makes sense
+            if len(self.config.property_package.phase_list) < 2:
+                msg = (
+                    "Property package has only one phase; control volume cannot include phase "
+                    "equilibrium terms. Some property packages support phase equilibrium "
+                    "implicitly in which case additional terms are not necessary. "
+                    "You should set has_phase_equilibrium=False."
+                )
+                deprecation_warning(
+                    msg=msg, logger=_log, version="2.0.0", remove_in="3.0.0"
+                )
+                has_phase_equilibrium = False
+            else:
+                # Check that state blocks are set to calculate equilibrium
+                for t in self.flowsheet().time:
+                    for x in self.length_domain:
+                        if not self.properties[t, x].config.has_phase_equilibrium:
+                            raise ConfigurationError(
+                                "{} material balance was set to include phase "
+                                "equilibrium, however the associated "
+                                "StateBlock was not set to include equilibrium "
+                                "constraints (has_phase_equilibrium=False). Please"
+                                " correct your configuration arguments.".format(
+                                    self.name
+                                )
+                            )
 
         # Get units from property package
         units = self.config.property_package.get_metadata().get_derived_units
@@ -560,7 +585,7 @@ argument).""",
         self.material_flow_dx = DerivativeVar(
             self._flow_terms,
             wrt=self.length_domain,
-            doc="Parital derivative of material flow " "wrt to normalized length",
+            doc="Partial derivative of material flow " "wrt to normalized length",
             units=flow_units,
         )
 
@@ -2109,7 +2134,7 @@ argument).""",
         """
         raise NotImplementedError(
             """
-                Due ot the difficultly in presenting spatially distributed data
+                Due to the difficultly in presenting spatially distributed data
                 in a clean format, ControlVolume1D does not currently support
                 the report method."""
         )

@@ -3,6 +3,7 @@ from dataclasses import dataclass
 import itertools
 import json
 from pathlib import Path
+import sys
 from typing import Iterable, Optional
 
 
@@ -35,12 +36,17 @@ class PylintRecord:
         path_url = f"{base_url}/{path}"
         line_url = f"{path_url}#L{line}"
         return cls(
+            type=d.pop("type"),
+            module=d.pop("module"),
+            obj=d.pop("obj"),
             message_id=d.pop("message-id"),
             path=path,
             line=line,
             path_url=path_url,
             line_url=line_url,
-            **d,
+            column=int(d.pop("column")),
+            symbol=d.pop("symbol"),
+            message=d.pop("message"),
         )
 
 
@@ -90,22 +96,30 @@ class MarkdownChecklistRenderer(RecordRenderer):
 
 @dataclass
 class Options:
-    pylint_output_path: Path
+    pylint_data_path: Path
     base_url: str
+    markdown_output_path: Optional[str] = None
 
     @classmethod
     def from_cli_args(cls, args: Optional[Iterable[str]] = None) -> "Options":
         parser = argparse.ArgumentParser()
-        parser.add_argument("pylint_output_path", default="./pylint.json")
+        parser.add_argument("--pylint-data-path", default="./pylint.json")
         parser.add_argument(
             "--base-url",
             default="https://github.com/IDAES/idaes-pse/tree/main",
         )
-        parsed = parser.parse_args()
+        parser.add_argument(
+            "--markdown-output-path",
+            default=None,
+        )
+        parsed = parser.parse_args(args)
 
         return cls(
-            pylint_output_path=Path(parsed.pylint_output_path),
+            pylint_data_path=Path(parsed.pylint_data_path),
             base_url=str(parsed.base_url),
+            markdown_output_path=Path(parsed.markdown_output_path)
+            if parsed.markdown_output_path
+            else None,
         )
 
 
@@ -114,7 +128,8 @@ def main(args=None):
 
     try:
         records = PylintRecord.from_pylint_output(
-            options.pylint_output_path, base_url=options.base_url
+            options.pylint_data_path,
+            base_url=options.base_url,
         )
     except Exception as e:
         raise e
@@ -122,8 +137,11 @@ def main(args=None):
     # TODO add other renderers as needed
     render = MarkdownChecklistRenderer()
 
+    file_to_print_to = sys.stdout
+    if options.markdown_output_path:
+        file_to_print_to = open(options.markdown_output_path, "a")
     for line in render(records):
-        print(line)
+        print(line, file=file_to_print_to)
 
 
 if __name__ == "__main__":

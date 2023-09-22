@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 # ______________________________________________________________________________
 #
@@ -33,7 +33,7 @@ from pyomo.environ import (
     check_optimal_termination,
 )
 from pyomo.common.sorting import sorted_robust
-from pyomo.core.expr.current import ExpressionReplacementVisitor
+from pyomo.core.expr import ExpressionReplacementVisitor
 
 from pyomo.common.modeling import unique_component_name
 from pyomo.opt import SolverFactory, SolverStatus
@@ -200,7 +200,7 @@ def sensitivity_calculation(
 
 def get_dsdp(model, theta_names, theta, var_dic={}, tee=False, solver_options=None):
     """This function calculates gradient vector of the (decision variables,
-    parameters) with respect to the paramerters (theta_names).
+    parameters) with respect to the parameters (theta_names).
 
     e.g) min f:  p1*x1+ p2*(x2^2) + p1*p2
          s.t  c1: x1 + x2 = p1
@@ -208,12 +208,12 @@ def get_dsdp(model, theta_names, theta, var_dic={}, tee=False, solver_options=No
               0 <= x1, x2, x3 <= 10
               p1 = 10
               p2 = 5
-    the function retuns dx/dp and dp/dp, and colum orders.
+    the function returns dx/dp and dp/dp, and column orders.
 
     The following terms are used to define the output dimensions:
     Ncon   = number of constraints
     Nvar   = number of variables (Nx + Ntheta)
-    Nx     = the numer of decision (primal) variables
+    Nx     = the number of decision (primal) variables
     Ntheta = number of uncertain parameters.
 
     Parameters
@@ -241,7 +241,7 @@ def get_dsdp(model, theta_names, theta, var_dic={}, tee=False, solver_options=No
     -------
     dsdp: scipy.sparse.csr.csr_matrix
         Ntheta by Nvar size sparse matrix. A Jacobian matrix of the
-        (decision variables, parameters) with respect to paramerters
+        (decision variables, parameters) with respect to parameters
         (=theta_name). number of rows = len(theta_name),
         number of columns= len(col)
     col: list
@@ -325,7 +325,7 @@ def get_dfds_dcds(model, theta_names, tee=False, solver_options=None):
     The following terms are used to define the output dimensions:
     Ncon   = number of constraints
     Nvar   = number of variables (Nx + Ntheta)
-    Nx     = the numer of decision (primal) variables
+    Nx     = the number of decision (primal) variables
     Ntheta = number of uncertain parameters.
 
     Parameters
@@ -349,7 +349,7 @@ def get_dfds_dcds(model, theta_names, tee=False, solver_options=None):
         Ncon by Nvar size sparse matrix. A Jacobian matrix of the constraints
         with respect to the (decision variables, parameters) at the optimal
         solution. Each row contains [column number, row number, and value],
-        colum order follows variable order in col and index starts from 1.
+        column order follows variable order in col and index starts from 1.
         Note that it follows k_aug. If no constraint exists, return []
     col: list
         Size Nvar. list of variable names
@@ -460,7 +460,7 @@ def line_num(file_name, target):
     Parameters
     ----------
     file_name: string
-        file name includes information of variabe order (col_row.col)
+        file name includes information of variable order (col_row.col)
     target: string
         variable name to check
     Returns
@@ -574,7 +574,7 @@ class SensitivityInterface(object):
         block._paramList = None
 
         # This will hold any constraints where we have replaced
-        # parameters with vairables.
+        # parameters with variables.
         block.constList = ConstraintList()
 
         return block

@@ -82,7 +82,7 @@ reheater.  In this example, a heater block is a stand-in for a reheater model.
   m.fs.turb.ip_stages[1].inlet.enth_mol[0].value = hin
   m.fs.turb.ip_stages[1].inlet.flow_mol[0].value = 25220.0
   m.fs.turb.ip_stages[1].inlet.pressure[0].value = p
-  # Set the efficency and pressure ratios of stages other than inlet and outlet
+  # Set the efficiency and pressure ratios of stages other than inlet and outlet
   for i, s in turb.hp_stages.items():
       s.ratioP[:] = 0.88
       s.efficiency_isentropic[:] = 0.9

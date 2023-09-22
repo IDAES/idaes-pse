@@ -1,23 +1,30 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Base class for control volumes.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
+# We use some private attributes here to hide these from the user
+# pylint: disable=protected-access
+
 __author__ = "Andrew Lee"
 
 # Import Pyomo libraries
 from pyomo.environ import Constraint, Reals, units as pyunits, Var, value
 from pyomo.dae import DerivativeVar
+from pyomo.common.deprecation import deprecation_warning
 
 # Import IDAES cores
 from idaes.core import (
@@ -51,31 +58,18 @@ _log = idaeslog.getLogger(__name__)
 
     ControlVolume0DBlock should be used for any control volume with a defined
     volume and distinct inlets and outlets which does not require spatial
-    discretization. This encompases most basic unit models used in process
+    discretization. This encompasses most basic unit models used in process
     modeling.""",
 )
 class ControlVolume0DBlockData(ControlVolumeBlockData):
     """
-    0-Dimensional (Non-Discretised) ControlVolume Class
+    0-Dimensional (Non-Discretized) ControlVolume Class
 
     This class forms the core of all non-discretized IDAES models. It provides
     methods to build property and reaction blocks, and add mass, energy and
     momentum balances. The form of the terms used in these constraints is
     specified in the chosen property package.
     """
-
-    def build(self):
-        """
-        Build method for ControlVolume0DBlock blocks.
-
-        Args:
-            None
-
-        Returns:
-            None
-        """
-        # Call build method from base class
-        super(ControlVolume0DBlockData, self).build()
 
     def add_geometry(self):
         """
@@ -233,24 +227,37 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     )
 
         if has_phase_equilibrium:
-            # Check that state blocks are set to calculate equilibrium
-            for t in self.flowsheet().time:
-                if not self.properties_out[t].config.has_phase_equilibrium:
-                    raise ConfigurationError(
-                        "{} material balance was set to include phase "
-                        "equilibrium, however the associated outlet "
-                        "StateBlock was not set to include equilibrium "
-                        "constraints (has_phase_equilibrium=False). Please"
-                        " correct your configuration arguments.".format(self.name)
-                    )
-                if not self.properties_in[t].config.has_phase_equilibrium:
-                    raise ConfigurationError(
-                        "{} material balance was set to include phase "
-                        "equilibrium, however the associated inlet "
-                        "StateBlock was not set to include equilibrium "
-                        "constraints (has_phase_equilibrium=False). Please"
-                        " correct your configuration arguments.".format(self.name)
-                    )
+            # First, check that phase equilibrium makes sense
+            if len(self.config.property_package.phase_list) < 2:
+                msg = (
+                    "Property package has only one phase; control volume cannot include phase "
+                    "equilibrium terms. Some property packages support phase equilibrium "
+                    "implicitly in which case additional terms are not necessary. "
+                    "You should set has_phase_equilibrium=False."
+                )
+                deprecation_warning(
+                    msg=msg, logger=_log, version="2.0.0", remove_in="3.0.0"
+                )
+                has_phase_equilibrium = False
+            else:
+                # Check that state blocks are set to calculate equilibrium
+                for t in self.flowsheet().time:
+                    if not self.properties_out[t].config.has_phase_equilibrium:
+                        raise ConfigurationError(
+                            "{} material balance was set to include phase "
+                            "equilibrium, however the associated outlet "
+                            "StateBlock was not set to include equilibrium "
+                            "constraints (has_phase_equilibrium=False). Please"
+                            " correct your configuration arguments.".format(self.name)
+                        )
+                    if not self.properties_in[t].config.has_phase_equilibrium:
+                        raise ConfigurationError(
+                            "{} material balance was set to include phase "
+                            "equilibrium, however the associated inlet "
+                            "StateBlock was not set to include equilibrium "
+                            "constraints (has_phase_equilibrium=False). Please"
+                            " correct your configuration arguments.".format(self.name)
+                        )
 
         # Get units from property package
         units = self.config.property_package.get_metadata().get_derived_units
@@ -1230,7 +1237,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 self.flowsheet().time,
                 domain=Reals,
                 initialize=0.0,
-                doc="Enthalpy transferred into control volume due to " "mass transfer",
+                doc="Enthalpy transferred into control volume due to mass transfer",
                 units=units("power"),
             )
 

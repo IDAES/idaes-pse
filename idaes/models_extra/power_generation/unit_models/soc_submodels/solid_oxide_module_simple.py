@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Unit model to scale SOC variables to and from cell-scale to module-scale and
@@ -35,7 +35,16 @@ Expressions:
     - ``electrical_work[t]``: Rate of energy added to module. Greater than zero means energy added to module
       (electrolysis mode) and less than zero means energy removed from module (fuel cell mode)
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+
+# TODO: Look into protected access issues
+# pylint: disable=protected-access
+
 __author__ = "Douglas Allan"
+
+
+from functools import partial
 
 from pyomo.common.config import ConfigValue, ConfigBlock
 import pyomo.environ as pyo
@@ -116,10 +125,7 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
 
     def build(self):
         super().build()
-        has_holdup = self.config.has_holdup
-        dynamic = self.config.dynamic
         tset = self.flowsheet().config.time
-        t0 = tset.first()
 
         self.number_cells = pyo.Var(
             initialize=1e5,
@@ -195,14 +201,14 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
                     self,
                     f"{port_name}_temperature_eqn",
                     pyo.Constraint(
-                        tset, rule=lambda blk, t: rule_temperature(blk, t, props, port)
+                        tset, rule=partial(rule_temperature, props=props, port=port)
                     ),
                 )
                 setattr(
                     self,
                     f"{port_name}_pressure_eqn",
                     pyo.Constraint(
-                        tset, rule=lambda blk, t: rule_pressure(blk, t, props, port)
+                        tset, rule=partial(rule_pressure, props=props, port=port)
                     ),
                 )
                 setattr(
@@ -211,9 +217,7 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
                     pyo.Constraint(
                         tset,
                         side_comps,
-                        rule=lambda blk, t, j: rule_flow_mol_comp(
-                            blk, t, j, props, port
-                        ),
+                        rule=partial(rule_flow_mol_comp, props=props, port=port),
                     ),
                 )
                 if direction == "in":
@@ -222,9 +226,7 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
                         f"{port_name}_mole_frac_eqn",
                         pyo.Constraint(
                             tset,
-                            rule=lambda blk, t: rule_mole_frac(
-                                blk, t, port, side_comps
-                            ),
+                            rule=partial(rule_mole_frac, port=port, comps=side_comps),
                         ),
                     )
                 if direction == "out":
@@ -234,7 +236,7 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
                         pyo.Constraint(
                             tset,
                             absent_comp_list,
-                            rule=lambda blk, t, j: rule_absent_comp(blk, t, j, props),
+                            rule=partial(rule_absent_comp, props=props),
                         ),
                     )
                 # Add a different port at the module level
@@ -262,11 +264,8 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
         current_density_guess=None,
         temperature_guess=None,
     ):
-        t0 = self.flowsheet().time.first()
-
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
-        tset = self.flowsheet().config.time
 
         solver_obj = get_solver(solver, optarg)
 

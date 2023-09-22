@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Tests for Component objects
@@ -461,7 +461,7 @@ class TestSovent:
 
 class TestIon:
     @pytest.mark.unit
-    def test_electrolye(self):
+    def test_electrolyte(self):
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
@@ -480,7 +480,7 @@ class TestIon:
             m.comp = Ion(_electrolyte=True)
 
     @pytest.mark.unit
-    def test_not_electrolye(self):
+    def test_not_electrolyte(self):
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
@@ -506,7 +506,7 @@ class TestIon:
 
 class TestAnion:
     @pytest.mark.unit
-    def test_not_electrolye(self):
+    def test_not_electrolyte(self):
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
@@ -616,7 +616,7 @@ class TestAnion:
 
 class TestCation:
     @pytest.mark.unit
-    def test_not_electrolye(self):
+    def test_not_electrolyte(self):
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()
@@ -743,7 +743,7 @@ class TestApparent:
         return m
 
     @pytest.mark.unit
-    def test_not_electrolye(self):
+    def test_not_electrolyte(self):
         m = ConcreteModel()
 
         m.meta_object = PropertyClassMetadata()

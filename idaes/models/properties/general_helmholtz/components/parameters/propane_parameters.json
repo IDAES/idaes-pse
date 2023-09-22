@@ -1,0 +1,71 @@
+{
+    "nl_file": "propane_expressions_eos.nl",
+    "expr_map": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        13,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        12,
+        11
+    ],
+    "var_map": [
+        0,
+        1,
+        1000,
+        1000
+    ],
+    "param": {
+        "R": 0.188555507,
+        "MW": 44.09562,
+        "T_star": 369.89,
+        "rho_star": 220.4781,
+        "Tc": 369.89,
+        "rhoc": 220.4781,
+        "Pc": 4251.164626738896,
+        "Tt": 85.525,
+        "Pt": 1.7e-07,
+        "rhot_l": 733.1337781,
+        "rhot_v": 1.06e-08,
+        "P_min": 1e-09,
+        "P_max": 1400000.0,
+        "rho_max": 1000.0,
+        "T_min": 70,
+        "T_max": 700,
+        "reference_state_offset": [
+            0.0,
+            0.0
+        ]
+    },
+    "nl_file_tcx": "propane_expressions_tcx.nl",
+    "var_map_tcx": [
+        1,
+        0,
+        1000,
+        1000
+    ],
+    "have_tcx": true,
+    "nl_file_st": "propane_expressions_st.nl",
+    "var_map_st": [
+        1,
+        1000,
+        1000,
+        1000
+    ],
+    "have_st": true,
+    "nl_file_visc": "propane_expressions_visc.nl",
+    "var_map_visc": [
+        0,
+        1,
+        1000,
+        1000
+    ],
+    "have_visc": true
+}

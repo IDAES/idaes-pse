@@ -1,15 +1,21 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
+# TODO: Missing doc strings
+# pylint: disable=missing-module-docstring
+# pylint: disable=missing-function-docstring
+
+# Model needs to access private flow terms
+# pylint: disable=protected-access
 
 import os
 import time as wall_clock
@@ -30,7 +36,6 @@ import idaes.models_extra.power_generation.flowsheets.subcritical_power_plant.su
 import idaes.models_extra.power_generation.flowsheets.subcritical_power_plant.steam_cycle_flowsheet as stc
 from idaes.core.util.dyn_utils import copy_values_at_time, copy_non_time_indexed_values
 import idaes.logger as idaeslog
-import os
 import idaes.core.util.tables as tables
 from idaes.core.util.tags import svg_tag, ModelTagGroup
 from idaes.core.solvers import get_solver
@@ -66,7 +71,7 @@ def set_scaling_factors(m):
         iscale.set_scaling_factor(ww.energy_holdup_metal, 1e-6)
         iscale.set_scaling_factor(ww.N_Re, 1e-6)
         iscale.set_scaling_factor(ww.pitch, 1e3)
-        for j, c in ww.hconv_lo_eqn.items():
+        for c in ww.hconv_lo_eqn.values():
             iscale.constraint_scaling_transform(c, 1e-2)
 
     iscale.set_scaling_factor(fs.aRoof.heat_fireside, 1e-7)
@@ -271,7 +276,7 @@ def add_overall_performance_expressions(m):
 
     # Calculate the overall efficiency of the plant.
     @m.fs_main.Expression(
-        m.fs_main.time, doc="Overall efficency based on gross power (%)"
+        m.fs_main.time, doc="Overall efficiency based on gross power (%)"
     )
     def plant_gross_efficiency(b, t):
         return -b.fs_stc.turb.power[t] / (
@@ -280,7 +285,7 @@ def add_overall_performance_expressions(m):
             * b.fs_blr.aBoiler.hhv_coal_dry
         )
 
-    # Calculate total auxillary power based on a surrogate expression
+    # Calculate total auxiliary power based on a surrogate expression
     @m.fs_main.Expression(m.fs_main.time)
     def aux_power(b, t):
         steam_f = m.fs_main.fs_stc.turb.inlet_split.mixed_state[t].flow_mass * 7.937
@@ -510,15 +515,15 @@ def main_dynamic():
     # 71 periods of 60 s each (0 to 4260 s)
     for i in range(71):
         itype_list.append(0)
-    """
-    # Followed by 20 periods of 120 s each (1860 to 4260 s)
-    for i in range(20):
-        itype_list.append(1)
-    # Followed by 30 periods of 60 s each (4260 to 6060 s)
-    for i in range(30):
-        itype_list.append(0)
-    """
-    # Total number of period for rolling time windwo simulations
+
+    # # Followed by 20 periods of 120 s each (1860 to 4260 s)
+    # for i in range(20):
+    #     itype_list.append(1)
+    # # Followed by 30 periods of 60 s each (4260 to 6060 s)
+    # for i in range(30):
+    #     itype_list.append(0)
+
+    # Total number of period for rolling time window simulations
     nperiod = len(itype_list)
     tstart = []
     model_list = []
@@ -1868,7 +1873,7 @@ def run_dynamic(m, x0, t0, pd, solver):
 
 
 def plot_results(pd):
-    # ploting responses
+    # plotting responses
     plt.figure(1)
     plt.plot(pd["time"], pd["coal_flow"])
     plt.grid()
@@ -2262,11 +2267,10 @@ def print_pfd_results(m):
 
 
 if __name__ == "__main__":
-    """
-    Main function to to run simulation
-    To run steady-state model, call main_steady()
-    to run dynamic model, call main_dyn()
-    """
+    # Main function to to run simulation
+    # To run steady-state model, call main_steady()
+    # to run dynamic model, call main_dyn()
+
     # This method builds and runs a subcritical coal-fired power plant
     # dynamic simulation. The simulation consists of 5%/min ramping down from
     # full load to 50% load, holding for 30 minutes and then ramping up

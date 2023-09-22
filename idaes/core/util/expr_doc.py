@@ -1,16 +1,20 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
+# TODO: Missing doc strings
+# pylint: disable=missing-module-docstring
+# pylint: disable=missing-function-docstring
 
+import logging
 import re
 
 from pyomo.core.expr.sympy_tools import (
@@ -18,22 +22,29 @@ from pyomo.core.expr.sympy_tools import (
     _pyomo_operator_map,
     _configure_sympy,
 )
-
-try:
-    import sympy
-
-    _configure_sympy(sympy, True)
-except:
-    pass
-
 from pyomo.environ import ExternalFunction, Var, Expression, value, units as pu
 from pyomo.core.base.constraint import _ConstraintData, Constraint
 from pyomo.core.base.expression import _ExpressionData
 from pyomo.core.base.block import _BlockData
 from pyomo.core.expr.visitor import StreamBasedExpressionVisitor
 from pyomo.core.expr.numeric_expr import ExternalFunctionExpression
-from pyomo.core.expr import current as EXPR, native_types
+from pyomo.core import expr as EXPR, native_types
 from pyomo.common.collections import ComponentMap
+
+
+_log = logging.getLogger(__name__)
+
+
+try:
+    import sympy
+
+    _configure_sympy(sympy, True)
+except ModuleNotFoundError:
+    _log.warning(
+        "Module 'sympy' (optional dependency) not found."
+        " It must be installed separately to enable this functionality."
+    )
+
 
 # TODO<jce> Look into things like sum operator and template expressions
 
@@ -118,7 +129,7 @@ class PyomoSympyBimap(object):
             i = self.i_func
             self.i_func += 1
         else:
-            raise Exception("Should be Var, Exression, or ExternalFunction")
+            raise Exception("Should be Var, Expression, or ExternalFunction")
 
         if parent_object.is_indexed() and parent_object in self.parent_symbol:
             x = self.parent_symbol[parent_object][0]
@@ -150,7 +161,7 @@ class PyomoSympyBimap(object):
 class Pyomo2SympyVisitor(StreamBasedExpressionVisitor):
     """
     This is based on the class of the same name in pyomo.core.base.symbolic, but
-    it catches ExternalFunctions and does not decend into named expressions.
+    it catches ExternalFunctions and does not descend into named expressions.
     """
 
     def __init__(self, object_map):
@@ -160,13 +171,17 @@ class Pyomo2SympyVisitor(StreamBasedExpressionVisitor):
     def exitNode(self, node, values):
         if isinstance(node, ExternalFunctionExpression):
             # catch ExternalFunction
-            _op = self.object_map.getSympySymbol(node._fcn)
+            _op = self.object_map.getSympySymbol(
+                node._fcn  # pylint: disable=protected-access
+            )
         else:
             if node.__class__ is EXPR.UnaryFunctionExpression:
-                return _functionMap[node._name](values[0])
+                return _functionMap[node._name](  # pylint: disable=protected-access
+                    values[0]
+                )
             _op = _pyomo_operator_map.get(node.__class__, None)
         if _op is None:
-            return node._apply_operation(values)
+            return node._apply_operation(values)  # pylint: disable=protected-access
         else:
             return _op(*tuple(values))
 
@@ -206,7 +221,7 @@ def sympify_expression(expr):
     try:  # If I explicitly ask for a named expression then descend into it.
         if expr.is_named_expression_type():
             is_expr = True
-    except:
+    except AttributeError:
         pass
     if not is_expr:  # and not expr.is_named_expression_type():
         return object_map, ans
@@ -226,14 +241,14 @@ def _add_docs(object_map, docs, typ, head):
     Returns:
         A new string markdown table with added doc rows.
     """
-    docked = set()  # components already documented, mainly for indexed compoents
+    docked = set()  # components already documented, mainly for indexed components
     whead = True  # write heading before adding first item
 
     if not isinstance(object_map, (list, tuple)):
         object_map = [object_map]
 
     for om in object_map:
-        for i, sc in enumerate(om.sympyVars()):
+        for i, sc in enumerate(om.sympyVars()):  # pylint: disable=unused-variable
             c = om.getPyomoSymbol(sc)
             cdat = c
             c = c.parent_component()  # Document the parent for indexed comps
@@ -310,11 +325,11 @@ def document_constraints(
         to_doc.append(d["object_map"])
         try:
             sy = comp.latex_symbol
-        except:
+        except AttributeError:
             sy = None
         try:
             d["latex_expr"] = comp.latex_nice_expr
-        except:
+        except AttributeError:
             pass
         if sy is not None:
             if doc:
@@ -331,7 +346,7 @@ def document_constraints(
         to_doc.append(d["object_map"])
         try:
             return f"$${comp.latex_nice_expr}$$"
-        except:
+        except AttributeError:
             pass
         if comp.upper != comp.lower:
             if doc:
@@ -366,7 +381,7 @@ def document_constraints(
                 cs.append(f"**Fixed Var:** {c} = {value(c)}")
                 try:
                     sy = c.latex_symbol
-                except:
+                except AttributeError:
                     sy = None
                 if sy is not None:
                     cs.append(

@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Standard IDAES Product block.
@@ -24,6 +24,10 @@ from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.logger as idaeslog
 
+# Product blocks can reuse the Feed initializer
+# For consistency and future proofing, import with new name
+from idaes.models.unit_models.feed import FeedInitializer as ProductInitializer
+
 __author__ = "Andrew Lee"
 
 
@@ -36,6 +40,9 @@ class ProductData(UnitModelBlockData):
     """
     Standard Product Block Class
     """
+
+    # Set default initializer
+    default_initializer = ProductInitializer
 
     CONFIG = ConfigBlock()
     CONFIG.declare(
@@ -97,6 +104,9 @@ see property package for documentation.}""",
         """
         # Call UnitModel.build to setup dynamics
         super(ProductData, self).build()
+
+        # Check for default property package
+        self._get_property_package()
 
         # Add State Block
         self.properties = self.config.property_package.build_state_block(

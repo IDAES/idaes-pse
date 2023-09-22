@@ -210,9 +210,16 @@ List of Parameters
    "``ds_form``", "Component standard entropies of formation (used for entropy at reference state)", "J/mol.K"
    "``antoine``", "Component Antoine coefficients (used to initialize bubble and dew point calculations)", "bar, K"
 
+Initialization
+--------------
+
+.. module:: idaes.models.properties.cubic_eos.cubic_prop_pack
+
+.. autoclass:: CubicEoSInitializer
+   :members: initialization_routine
+
 Config Block Documentation
 --------------------------
-.. module:: idaes.models.properties.cubic_eos.cubic_prop_pack
 
 .. autoclass:: CubicParameterData
    :members:

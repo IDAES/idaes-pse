@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Unit operation model for a steam heater applicable to platen superheater
@@ -20,10 +20,13 @@ and roof superheater, model main equations:
 * Consider a layer of metal and a layer of slag
 
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.environ import value, Var, Param, asin, cos, Reference
-from pyomo.core.expr.current import Expr_if
+from pyomo.core.expr import Expr_if
 from pyomo.dae import DerivativeVar
 
 # Import IDAES cores
@@ -540,7 +543,7 @@ see property package for documentation.}""",
             )
 
         # Equation to calculate tube boundary wall temperature
-        @self.Constraint(self.flowsheet().time, doc="tube bounary wall temperature")
+        @self.Constraint(self.flowsheet().time, doc="tube boundary wall temperature")
         def temperature_tube_boundary_eqn(b, t):
             return b.heat_flux_conv[
                 t
@@ -712,7 +715,7 @@ see property package for documentation.}""",
                      * 0 = no output (default)
                      * 1 = return solver state for each step in routine
                      * 2 = return solver state for each step in subroutines
-                     * 3 = include solver output infomation (tee=True)
+                     * 3 = include solver output information (tee=True)
 
             optarg : solver options dictionary object (default=None, use
                      default solver options)

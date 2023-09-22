@@ -18,12 +18,13 @@ detail with a link in their description.
     flowsheet/index
     property_package/index
     unit_model/index
+    ui/index
     dmf/index
 
 .. rubric:: Flowsheet
 
 :ref:`Flowsheet models<explanations/components/flowsheet/index:Flowsheet>`
-are the top level of the modeling heirachy. Flowsheet models represent 
+are the top level of the modeling hierarchy. Flowsheet models represent 
 traditional process flowsheets, containing a number of unit models connected together into a 
 flow network and the property packages.
 

@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 IDAES Moving Bed Model.
@@ -34,7 +34,6 @@ Property package contains temperature and pressure variables.
 Property package contains minimum fluidization velocity.
 
 """
-from __future__ import division
 
 # Import Python libraries
 import matplotlib.pyplot as plt
@@ -550,8 +549,7 @@ see reaction package for documentation.}""",
         )
 
         # =========================================================================
-        """ Build Control volume 1D for gas phase and
-            populate gas control volume"""
+        # Build Control volume 1D for gas phase and populate gas control volume
 
         self.gas_phase = ControlVolume1DBlock(
             transformation_method=self.config.transformation_method,
@@ -602,8 +600,7 @@ see reaction package for documentation.}""",
         )
 
         # =========================================================================
-        """ Build Control volume 1D for solid phase and
-            populate solid control volume"""
+        # Build Control volume 1D for solid phase and populate solid control volume
 
         # Set argument for heterogeneous reaction block
         self.solid_phase = ControlVolume1DBlock(
@@ -673,7 +670,7 @@ see reaction package for documentation.}""",
         )
 
         # =========================================================================
-        """ Add ports"""
+        # Add ports
         # Add Ports for gas side
         self.add_inlet_port(name="gas_inlet", block=self.gas_phase)
         self.add_outlet_port(name="gas_outlet", block=self.gas_phase)
@@ -683,7 +680,7 @@ see reaction package for documentation.}""",
         self.add_outlet_port(name="solid_outlet", block=self.solid_phase)
 
         # =========================================================================
-        """ Add performance equation method"""
+        # Add performance equation method
         self._apply_transformation()
         self._make_performance()
 
@@ -942,7 +939,7 @@ see reaction package for documentation.}""",
                     )
                     / (
                         pyunits.convert(
-                            b.solid_phase.properties[t, x]._params.particle_dia,
+                            b.solid_phase.properties[t, x].params.particle_dia,
                             to_units=units_meta_solid("length"),
                         )
                         ** 2
@@ -962,7 +959,7 @@ see reaction package for documentation.}""",
                     ** 2
                     / (
                         pyunits.convert(
-                            b.solid_phase.properties[t, x]._params.particle_dia,
+                            b.solid_phase.properties[t, x].params.particle_dia,
                             to_units=units_meta_solid("length"),
                         )
                         * b.bed_voidage**3
@@ -1048,7 +1045,7 @@ see reaction package for documentation.}""",
                     b.solid_phase.heat[t, x],
                     to_units=units_meta_gas("power") / units_meta_gas("length"),
                 ) * pyunits.convert(
-                    b.solid_phase.properties[t, x]._params.particle_dia,
+                    b.solid_phase.properties[t, x].params.particle_dia,
                     to_units=units_meta_gas("length"),
                 ) == 6 * b.gas_solid_htc[
                     t, x
@@ -1074,7 +1071,7 @@ see reaction package for documentation.}""",
                     b.Re_particle[t, x] * b.gas_phase.properties[t, x].visc_d
                     == b.velocity_superficial_gas[t, x]
                     * pyunits.convert(
-                        b.solid_phase.properties[t, x]._params.particle_dia,
+                        b.solid_phase.properties[t, x].params.particle_dia,
                         to_units=units_meta_gas("length"),
                     )
                     * b.gas_phase.properties[t, x].dens_mass
@@ -1116,7 +1113,7 @@ see reaction package for documentation.}""",
                 return (
                     b.gas_solid_htc[t, x]
                     * pyunits.convert(
-                        b.solid_phase.properties[t, x]._params.particle_dia,
+                        b.solid_phase.properties[t, x].params.particle_dia,
                         to_units=units_meta_gas("length"),
                     )
                     == b.Nu_particle[t, x] * b.gas_phase.properties[t, x].therm_cond
@@ -1130,7 +1127,7 @@ see reaction package for documentation.}""",
             )
             def gas_phase_heat_transfer(b, t, x):
                 return b.gas_phase.heat[t, x] * pyunits.convert(
-                    b.solid_phase.properties[t, x]._params.particle_dia,
+                    b.solid_phase.properties[t, x].params.particle_dia,
                     to_units=units_meta_gas("length"),
                 ) == -6 * b.gas_solid_htc[t, x] * (
                     b.gas_phase.properties[t, x].temperature
@@ -1626,7 +1623,7 @@ see reaction package for documentation.}""",
                         )
                         sf2 = 1 / value(
                             pyunits.convert(
-                                self.solid_phase.properties[t, x]._params.particle_dia,
+                                self.solid_phase.properties[t, x].params.particle_dia,
                                 to_units=units_meta_gas("length"),
                             )
                         )

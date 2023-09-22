@@ -1,26 +1,29 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
-
-__author__ = "John Eslick"
-
 """Transformation to replace variables with other variables."""
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+
 import pyomo.environ as pyo
 from pyomo.core.base.transformation import TransformationFactory
 from pyomo.core.plugins.transform.hierarchy import NonIsomorphicTransformation
-from pyomo.core.expr import current as EXPR
+from pyomo.core import expr as EXPR
 from pyomo.contrib.fbbt.fbbt import compute_bounds_on_expr
 from pyomo.repn import generate_standard_repn
 import idaes.logger as idaeslog
+
+
+__author__ = "John Eslick"
 
 
 _log = idaeslog.getLogger(__name__)
@@ -112,7 +115,7 @@ class SimpleEqualityEliminator(NonIsomorphicTransformation):
             self._original = {}
 
             # The named expressions could be changed as a side effect of the
-            # constraint expression replacements, so for maximum saftey, just
+            # constraint expression replacements, so for maximum safety, just
             # store all the expressions for Expressions
             for c in instance.component_data_objects(
                 pyo.Expression,
@@ -123,7 +126,7 @@ class SimpleEqualityEliminator(NonIsomorphicTransformation):
 
         nr_tot = 0
         # repeat elimination until no more can be eliminated or hit max_iter
-        for i in range(max_iter):
+        for i in range(max_iter):  # pylint: disable=unused-variable
             subs, cnstr, fixes, subs_map = self._get_subs(instance)
 
             if reversible:
@@ -171,11 +174,11 @@ class SimpleEqualityEliminator(NonIsomorphicTransformation):
 
     def revert(self):
         """Revert model to pretransformation state, using substitutions to
-        calcualte values of varaibles that were removed from the problem. This
+        calculate values of variables that were removed from the problem. This
         applies to the last reversible transformation performed with this object.
         """
         try:
-            instance = self._instance
+            instance = self._instance  # pylint: disable=unused-variable
         except AttributeError:
             _log.warning("Nothing to revert.")
 
@@ -183,9 +186,9 @@ class SimpleEqualityEliminator(NonIsomorphicTransformation):
             c.activate()
         for c in self._all_fixes:
             c[0].unfix()
-        for cid in self._original:
+        for cid, v in self._original.items():
             c = self._expr_map[cid]
-            c.set_value(expr=self._original[cid])
+            c.set_value(expr=v)
 
         # The problem should be back, now fill in values for the variables that
         # were removed

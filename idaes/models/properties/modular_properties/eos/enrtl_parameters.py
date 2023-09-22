@@ -1,20 +1,23 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Sub-methods for eNRTL activity coefficient method.
 
-Includes temperature dependance rules for alpha and tau
+Includes temperature dependence rules for alpha and tau
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 from pyomo.environ import Reals, units as pyunits, Var
 
 from idaes.core.util.exceptions import BurntToast, ConfigurationError
@@ -25,6 +28,8 @@ _log = idaeslog.getLogger(__name__)
 
 
 class ConstantAlpha(object):
+    """Class for methods assuming constant alpha"""
+
     @staticmethod
     def build_parameters(b):
         param_block = b.parent_block()
@@ -36,7 +41,7 @@ class ConstantAlpha(object):
             alpha_data = {}
 
         # Check for unused parameters in alpha_data
-        for (i, j) in alpha_data.keys():
+        for i, j in alpha_data.keys():
             if (i, j) not in b.component_pair_set_symmetric and (
                 j,
                 i,
@@ -74,7 +79,7 @@ class ConstantAlpha(object):
                 # Molecular-molecular interaction, default value is 0.3
                 v = 0.3
             else:
-                # All other intereactions have default value 0.2
+                # All other interactions have default value 0.2
                 v = 0.2
             return v
 
@@ -105,6 +110,8 @@ class ConstantAlpha(object):
 
 
 class ConstantTau(object):
+    """Class for methods assuming consant tau"""
+
     @staticmethod
     def build_parameters(b):
         param_block = b.parent_block()
@@ -116,7 +123,7 @@ class ConstantTau(object):
             tau_data = {}
 
         # Check for unused parameters in tau_data
-        for (i, j) in tau_data.keys():
+        for i, j in tau_data.keys():
             if (i, j) not in b.component_pair_set:
                 raise ConfigurationError(
                     "{} eNRTL tau parameter provided for invalid "

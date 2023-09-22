@@ -1,22 +1,28 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Base for IDAES process model objects.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
+# TODO: Look into if this is necessary
+# pylint: disable=protected-access
 
 import sys
 import logging
 import textwrap
+from enum import Enum
 
 from pandas import DataFrame
 
@@ -25,7 +31,6 @@ from pyomo.common.formatting import tabular_writer
 from pyomo.environ import Block
 from pyomo.gdp import Disjunct
 from pyomo.common.config import ConfigBlock
-from enum import Enum
 
 from idaes.core.base.process_block import declare_process_block_class
 from idaes.core.initialization import BlockTriangularizationInitializer
@@ -44,7 +49,7 @@ from idaes.core.util.model_statistics import (
 from idaes.core.util.units_of_measurement import report_quantity
 
 
-# Some more inforation about this module
+# Some more information about this module
 __author__ = "John Eslick, Qi Chen, Andrew Lee"
 
 
@@ -60,6 +65,10 @@ _log = logging.getLogger(__name__)
 
 # Enumerate options for material flow basis
 class MaterialFlowBasis(Enum):
+    """
+    Material flow basis Enum
+    """
+
     molar = 0
     mass = 1
     other = 2
@@ -189,7 +198,7 @@ class ProcessBlockData(_BlockData):
             return self._default_scaling_factors[(attribute, index)]
         except KeyError:
             try:
-                # indexed, but no specifc index?
+                # indexed, but no specific index?
                 return self._default_scaling_factors[(attribute, None)]
             except KeyError:
                 # Can't find a default scale factor for what you asked for
@@ -229,7 +238,7 @@ class ProcessBlockData(_BlockData):
         idx_map = self.parent_component()._idx_map  # index map function
         try:
             idx = self.index()
-        except:
+        except AttributeError:
             idx = None
         if idx_map is not None:
             idx = idx_map(idx)
@@ -430,7 +439,7 @@ class ProcessBlockData(_BlockData):
         """
         Return the performance contents and stream table
 
-        NOTE: There is the possiblity of a ConfigurationError because
+        NOTE: There is the possibility of a ConfigurationError because
         the names of the inlets and outlets of the unit model may not be
         standard. If this occurs then return an empty dataframe
 
@@ -579,7 +588,7 @@ class ProcessBlockData(_BlockData):
                     "no default defined by parent flowsheet(s).".format(self.name)
                 )
             elif parent.config.default_property_package is not None:
-                _log.info("{} Using default property package".format(self.name))
+                _log.info(f"{self.name} Using default property package")
                 return parent.config.default_property_package
 
             parent = parent.flowsheet()

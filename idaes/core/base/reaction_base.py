@@ -1,18 +1,20 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 This module contains classes for reaction blocks and reaction parameter blocks.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
 
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, Bool
@@ -23,8 +25,6 @@ from idaes.core.base.process_block import ProcessBlock
 from idaes.core import ProcessBlockData, MaterialFlowBasis
 from idaes.core.base import property_meta
 from idaes.core.util.exceptions import (
-    BurntToast,
-    PropertyNotSupportedError,
     PropertyPackageError,
 )
 from idaes.core.util.config import (
@@ -34,12 +34,10 @@ from idaes.core.util.config import (
 )
 from idaes.core.util.misc import add_object_reference
 from idaes.core.base.util import build_on_demand
+from idaes.core.initialization import (
+    BlockTriangularizationInitializer,
+)
 
-# WHY on Python 3.6, using the alternate syntax "import idaes.core.util.scaling as iscale"
-# fails with "AttributeError: module 'idaes' has no attribute 'core'"
-# this is likely due to a bug/limitation in how the Python import mechanism resolves circular imports
-# for more information, see https://stackoverflow.com/questions/24807434
-# and the official Python bug report: http://bugs.python.org/issue30024
 from idaes.core.util import scaling as iscale
 import idaes.logger as idaeslog
 
@@ -90,10 +88,6 @@ class ReactionParameterBlock(ProcessBlockData, property_meta.HasPropertyClassMet
         ),
     )
 
-    def __init__(self, *args, **kwargs):
-        self.__reaction_block_class = None
-        super().__init__(*args, **kwargs)
-
     def build(self):
         """
         General build method for ReactionParameterBlocks. Inheriting models
@@ -110,7 +104,7 @@ class ReactionParameterBlock(ProcessBlockData, property_meta.HasPropertyClassMet
         if not hasattr(self, "_reaction_block_class"):
             self._reaction_block_class = None
 
-        # TODO: Need way to tie reaction package to a specfic property package
+        # TODO: Need way to tie reaction package to a specific property package
         self._validate_property_parameter_units()
         self._validate_property_parameter_properties()
 
@@ -127,7 +121,7 @@ class ReactionParameterBlock(ProcessBlockData, property_meta.HasPropertyClassMet
 
     def build_reaction_block(self, *args, **kwargs):
         """
-        Methods to construct a ReactionBlock assoicated with this
+        Methods to construct a ReactionBlock associated with this
         ReactionParameterBlock. This will automatically set the parameters
         construction argument for the ReactionBlock.
 
@@ -188,6 +182,9 @@ class ReactionBlockBase(ProcessBlock):
     PropertyData objects, and contains methods that can be applied to
     multiple ReactionBlockData objects simultaneously.
     """
+
+    # Set default initializer
+    default_initializer = BlockTriangularizationInitializer
 
     def initialize(self, *args):
         """
@@ -313,7 +310,7 @@ should be constructed in this reaction block,
     def _validate_state_block(self):
         """
         Method to validate that the associated state block matches with the
-        PropertyParameterBlock assoicated with the ReactionParameterBlock.
+        PropertyParameterBlock associated with the ReactionParameterBlock.
         """
         # Add a reference to the corresponding state block data for later use
         add_object_reference(self, "state_ref", self.config.state_block[self.index()])
@@ -326,7 +323,7 @@ should be constructed in this reaction block,
             raise PropertyPackageError(
                 "{} the StateBlock associated with this "
                 "ReactionBlock does not match with the "
-                "PropertyParamterBlock associated with the "
+                "PropertyParameterBlock associated with the "
                 "ReactionParameterBlock. The modelling framework "
                 "does not support mixed associations of property "
                 "and reaction packages.".format(self.name)
@@ -343,14 +340,14 @@ should be constructed in this reaction block,
         """
         This method is used to avoid generating unnecessary property
         calculations in reaction blocks. __getattr__ is called whenever a
-        property is called for, and if a propery does not exist, it looks for
+        property is called for, and if a property does not exist, it looks for
         a method to create the required property, and any associated
         components.
 
-        Create a property calculation if needed. Return an attrbute error if
+        Create a property calculation if needed. Return an attribute error if
         attr == 'domain' or starts with a _ . The error for _ prevents a
         recursion error if trying to get a function to create a property and
-        that function doesn't exist.  Pyomo also ocasionally looks for things
+        that function doesn't exist.  Pyomo also occasionally looks for things
         that start with _ and may not exist.  Pyomo also looks for the domain
         attribute, and it may not exist.
         This works by creating a property calculation by calling the "_"+attr
@@ -364,7 +361,13 @@ should be constructed in this reaction block,
             attr: an attribute to create and return. Should be a property
                   component.
         """
-        return build_on_demand(self, attr)
+        try:
+            # try the Pyomo Block's __getattr__ method first which will return
+            # decorators for creating components on the block (e.g. Expression,
+            # Constraint, ...).
+            return super().__getattr__(attr)
+        except AttributeError:
+            return build_on_demand(self, attr)
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()

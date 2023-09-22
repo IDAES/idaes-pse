@@ -1,19 +1,22 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 This module contains the base class for constructing flowsheet models in the
 IDAES modeling framework.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+from warnings import warn
 
 import pyomo.environ as pe
 from pyomo.dae import ContinuousSet
@@ -35,7 +38,6 @@ from idaes.core.util.config import (
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import DynamicError, ConfigurationError
 from idaes.core.util.tables import create_stream_table_dataframe
-from idaes.core.ui.fsvis.fsvis import visualize
 
 import idaes.logger as idaeslog
 
@@ -47,6 +49,46 @@ __all__ = ["FlowsheetBlock", "FlowsheetBlockData"]
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
+
+
+class UI:
+    """Encapsulate checks for installed 'idaes_ui' dependency.
+
+    Functions exported by this class will run normally if 'idaes_ui' is installed and
+    just print warnings if it is not.
+
+    Functions:
+        - `visualize(model, model_name, **kwargs)`
+
+    Also has an attribute 'installed' to check directly.
+    """
+
+    def __init__(self):
+        # pylint: disable=import-outside-toplevel
+        try:
+            import idaes_ui
+        except ImportError:
+            idaes_ui = None
+
+        if idaes_ui is None:
+            self.visualize = self._visualize_null
+            self.installed = False
+        else:
+            # FIXME the explicit submodule import is needed because the idaes_ui doesn't import its fv submodule
+            # otherwise, you get "AttributeError: module 'idaes_ui' has no 'fv' attribute"
+            import idaes_ui.fv
+
+            self.visualize = idaes_ui.fv.visualize
+            self.installed = True
+
+    def _visualize_null(self, model, model_name, **kwargs):
+        self._warn("idaes_ui.fv.visualize")
+
+    @staticmethod
+    def _warn(name):
+        message = f"Call to {name}() ignored: 'idaes_ui' package is not installed"
+        # with stacklevel=3, show the caller of this function's caller
+        warn(message, category=RuntimeWarning, stacklevel=3)
 
 
 @declare_process_block_class(
@@ -227,15 +269,15 @@ within this flowsheet if not otherwise specified,
         webpage with the visualization
 
         Args:
-            model_name : The name of the model that flask will use as an argument
-                         for the webpage
+            model_name : The name of the model
+
         Keyword Args:
-            **kwargs: Additional keywords for :func:`idaes.core.ui.fsvis.visualize()`
+            **kwargs: Additional keywords for :func:`idaes.core.ui.fv.visualize()`
 
         Returns:
             None
         """
-        visualize(self, model_name, **kwargs)
+        UI().visualize(self, model_name, **kwargs)
 
     def _get_stream_table_contents(self, time_point=0):
         """
@@ -313,7 +355,7 @@ within this flowsheet if not otherwise specified,
                             # If default, set default end point to be 1.0
                             self.config.time_set = [0.0, 1.0]
                         else:
-                            # Invalid user input, raise Excpetion
+                            # Invalid user input, raise Exception
                             raise DynamicError(
                                 "Flowsheet provided with invalid "
                                 "time_set attribute - must have at "
@@ -332,4 +374,6 @@ within this flowsheet if not otherwise specified,
                 # Set time config argument to parent time
                 self.config.time = fs.time
                 add_object_reference(self, "_time", fs.time)
+                # We control time units
+                # pylint: disable-next=protected-access
                 self._time_units = fs._time_units

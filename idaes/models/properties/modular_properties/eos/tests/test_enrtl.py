@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Tests for eNRTL methods
@@ -110,7 +110,7 @@ class TestParameters(object):
 
         assert isinstance(m.params.Liq.alpha, Var)
         assert len(m.params.Liq.alpha) == 17
-        for (i, j) in m.params.Liq.alpha:
+        for i, j in m.params.Liq.alpha:
             if i != j:
                 assert (j, i) not in m.params.Liq.alpha
             if (i, j) in [("C6H12", "C6H12"), ("H2O", "H2O"), ("H2O", "C6H12")]:
@@ -122,7 +122,7 @@ class TestParameters(object):
 
         assert isinstance(m.params.Liq.tau, Var)
         assert len(m.params.Liq.tau) == 32
-        for (i, j) in m.params.Liq.tau:
+        for i, j in m.params.Liq.tau:
             assert m.params.Liq.tau[(i, j)].value == 0
             assert m.params.Liq.tau[(i, j)].fixed
 
@@ -141,7 +141,7 @@ class TestParameters(object):
 
         assert isinstance(m.params.Liq.alpha, Var)
         assert len(m.params.Liq.alpha) == 17
-        for (i, j) in m.params.Liq.alpha:
+        for i, j in m.params.Liq.alpha:
             if i != j:
                 assert (j, i) not in m.params.Liq.alpha
             if (i, j) == ("H2O", "Na+, Cl-"):
@@ -156,7 +156,7 @@ class TestParameters(object):
 
         assert isinstance(m.params.Liq.tau, Var)
         assert len(m.params.Liq.tau) == 32
-        for (i, j) in m.params.Liq.tau:
+        for i, j in m.params.Liq.tau:
             print(i, j)
             if (i, j) == ("H2O", "Na+, Cl-"):
                 assert m.params.Liq.tau[(i, j)].value == 0.1
@@ -244,7 +244,7 @@ class TestParameters(object):
 
         assert isinstance(m.params.Liq.tau, Var)
         assert len(m.params.Liq.tau) == 32
-        for (i, j) in m.params.Liq.tau:
+        for i, j in m.params.Liq.tau:
             print(i, j)
             if (i, j) == ("H2O", "Na+, Cl-"):
                 assert m.params.Liq.tau[(i, j)].value == 0.1
@@ -315,12 +315,12 @@ class TestStateBlockSymmetric(object):
         for j in model.state[1].Liq_X:
             if j in ["H2O", "C6H12"]:
                 # _X should be mole_frac_phase_comp_true
-                assert str(model.state[1].Liq_X[j]._expr) == str(
+                assert str(model.state[1].Liq_X[j].expr) == str(
                     model.state[1].mole_frac_phase_comp_true["Liq", j]
                 )
             else:
                 # _X should be mutiplied by |charge|
-                assert str(model.state[1].Liq_X[j]._expr) == str(
+                assert str(model.state[1].Liq_X[j].expr) == str(
                     model.state[1].mole_frac_phase_comp_true["Liq", j]
                     * abs(model.params.get_component(j).config.charge)
                 )
@@ -335,7 +335,7 @@ class TestStateBlockSymmetric(object):
                 )
             else:
                 # _X should be mutiplied by |charge|
-                assert str(model.state[1].Liq_X_ref[j]._expr) == str(
+                assert str(model.state[1].Liq_X_ref[j].expr) == str(
                     model.state[1].Liq_x_ref[j]
                     * abs(model.params.get_component(j).config.charge)
                 )
@@ -344,12 +344,12 @@ class TestStateBlockSymmetric(object):
         assert len(model.state[1].Liq_Y) == 4
         for j in model.state[1].Liq_Y:
             if j in ["H+", "Na+"]:
-                assert str(model.state[1].Liq_Y[j]._expr) == str(
+                assert str(model.state[1].Liq_Y[j].expr) == str(
                     model.state[1].Liq_X[j]
                     / (model.state[1].Liq_X["Na+"] + model.state[1].Liq_X["H+"])
                 )
             else:
-                assert str(model.state[1].Liq_Y[j]._expr) == str(
+                assert str(model.state[1].Liq_Y[j].expr) == str(
                     model.state[1].Liq_X[j]
                     / (model.state[1].Liq_X["Cl-"] + model.state[1].Liq_X["OH-"])
                 )

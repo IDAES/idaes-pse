@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 
 """
@@ -28,7 +28,13 @@ feedwater pump), and steam outlet to superheaters.
 For a detailed description see Jupyter Notebook
 authors: Boiler Subsystem Team (J. Ma, M. Zamarripa)
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 import os
+
+# import plotting libraries
+import matplotlib.pyplot as plt
 
 # Import Pyomo libraries
 import pyomo.environ as pyo
@@ -54,9 +60,6 @@ from idaes.models_extra.power_generation.unit_models.waterwall_section import (
 from idaes.models_extra.power_generation.properties.flue_gas_ideal import (
     FlueGasParameterBlock,
 )
-
-# import plotting libraries
-import matplotlib.pyplot as plt
 
 _log = idaeslog.getModelLogger(__name__)
 
@@ -183,14 +186,17 @@ def set_inputs(m):
 def initialize(
     m,
     outlvl=idaeslog.NOTSET,
-    optarg={
-        "tol": 1e-6,
-        "max_iter": 40,
-    },
+    optarg=None,
 ):
     """Initialize unit models"""
     init_log = idaeslog.getInitLogger(m.name, outlvl, tag="flowsheet")
     solve_log = idaeslog.getSolveLogger(m.name, outlvl, tag="flowsheet")
+
+    if optarg is None:
+        optarg = {
+            "tol": 1e-6,
+            "max_iter": 40,
+        }
 
     solver = get_solver()
     solver.options = optarg

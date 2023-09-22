@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Tests for Alampy SurrogateModelTrainer
@@ -70,6 +70,45 @@ class TestAlamoTrainer:
             input_bounds=bnds,
             training_dataframe=data,
         )
+
+    @pytest.mark.unit
+    def test_rbf_deprecation(self):
+        data = {"x1": [1, 2, 3, 4], "x2": [5, 6, 7, 8], "z1": [10, 20, 30, 40]}
+        data = pd.DataFrame(data)
+
+        input_labels = ["x1", "x2"]
+        output_labels = ["z1"]
+        bnds = {"x1": (0, 5), "x2": (0, 10)}
+
+        with pytest.raises(
+            ConfigurationError,
+            match="Support for radial basis functions in the ALAMOpy wrapper have been "
+            "deprecated due to limitations in the current implementation. "
+            "Pull requests are welcome to address this, otherwise we recommend using "
+            "Pysmo which includes support for radial basis functions.",
+        ):
+            AlamoTrainer(
+                input_labels=input_labels,
+                output_labels=output_labels,
+                input_bounds=bnds,
+                training_dataframe=data,
+                grbfcns=True,
+            )
+
+        with pytest.raises(
+            ConfigurationError,
+            match="Support for radial basis functions in the ALAMOpy wrapper have been "
+            "deprecated due to limitations in the current implementation. "
+            "Pull requests are welcome to address this, otherwise we recommend using "
+            "Pysmo which includes support for radial basis functions.",
+        ):
+            AlamoTrainer(
+                input_labels=input_labels,
+                output_labels=output_labels,
+                input_bounds=bnds,
+                training_dataframe=data,
+                rbfparam=1.0,
+            )
 
     @pytest.mark.unit
     def test_get_files(self, alamo_trainer):
@@ -486,8 +525,6 @@ class TestAlamoTrainer:
             "sinfcns 1\n"
             "cosfcns 0\n"
             "constant 1\n"
-            "grbfcns 1\n"
-            "rbfparam 7.0\n"
             "modeler 3\n"
             "builder 1\n"
             "backstepper 0\n"
@@ -913,7 +950,7 @@ class TestAlamoTrainer:
 
         with pytest.raises(
             FileNotFoundError,
-            match="Error occured when trying to read the ALAMO trace file - "
+            match="Error occurred when trying to read the ALAMO trace file - "
             "this probably indicates that a trace file was not created by "
             "the ALAMO executable. Please check the ALAMO output logs.",
         ):

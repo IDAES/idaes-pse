@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 # =============================================================================
 """
@@ -46,7 +46,14 @@ Main Assumptions:
 Created: 1/10/2020 by Boiler subsystem team (M Zamarripa)
 
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 __author__ = "Miguel Zamarripa"
+
+from collections import OrderedDict
+import os
+import logging
 
 # Import Pyomo libraries
 from pyomo.environ import (
@@ -56,6 +63,8 @@ from pyomo.environ import (
     units as pyunits,
 )
 from pyomo.network import Arc
+from pyomo.common.fileutils import this_file_dir
+
 from idaes.core.util.tags import svg_tag
 
 # Import IDAES core
@@ -79,11 +88,8 @@ from idaes.models.unit_models.separator import (
     SplittingType,
     EnergySplittingType,
 )
-from pyomo.common.fileutils import this_file_dir
-from collections import OrderedDict
-import os
+
 from idaes.core.util.model_statistics import degrees_of_freedom
-import logging
 from idaes.core.solvers import get_solver
 
 
@@ -107,7 +113,6 @@ def main():
 
 
 def build_boiler(fs):
-
     # Add property packages to flowsheet library
     fs.prop_fluegas = FlueGasParameterBlock()
 
@@ -459,7 +464,6 @@ def initialize(m):
 
 
 def unfix_inlets(m):
-
     # Use FG molar composition to set component flow rates (baseline report)
     m.fs.ECON.hot_side_inlet.flow_mol_comp[0, "H2O"].unfix()
     m.fs.ECON.hot_side_inlet.flow_mol_comp[0, "CO2"].unfix()
@@ -587,7 +591,7 @@ def pfd_result(outfile, m, df):
 
     original_svg_file = os.path.join(this_file_dir(), "Boiler_scpc_PFD.svg")
     with open(original_svg_file, "r") as f:
-        s = svg_tag(tags, f, outfile=outfile)
+        svg_tag(tags, f, outfile=outfile)
 
 
 def _stream_dict(m):
@@ -599,7 +603,8 @@ def _stream_dict(m):
     Returns:
         None
     """
-
+    # We control m
+    # pylint: disable-next=protected-access
     m._streams = OrderedDict(
         [
             ("MS", m.fs.ATMP1.mixed_state),
@@ -655,7 +660,8 @@ def print_results(m):
     )
     print("heat transfer area = ", value(m.fs.PrSH.area_heat_transfer))
     print(
-        "overal heat transfer = ", value(m.fs.PrSH.overall_heat_transfer_coefficient[0])
+        "overall heat transfer = ",
+        value(m.fs.PrSH.overall_heat_transfer_coefficient[0]),
     )
 
     print("\n\n ------------- Economizer   ---------")

@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 This module provides the base classes and methods for running convergence
@@ -57,6 +57,10 @@ ConvergenceEvaluationSpecification), to run a convergence evaluation
 However, this package can also be executed using the command-line interface.
 See the documentation in convergence.py for more information.
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+
 # stdlib
 from collections import OrderedDict
 import getpass
@@ -78,7 +82,6 @@ from pyomo.environ import check_optimal_termination
 
 # idaes
 import idaes.core.util.convergence.mpi_utils as mpiu
-from idaes.core.dmf import resource
 import idaes.logger as idaeslog
 from idaes.core.solvers import get_solver
 
@@ -115,7 +118,7 @@ class ConvergenceEvaluationSpecification(object):
         specific points that need to be run for the convergence evaluation
 
         The input will be sampled assuming a normal distribution
-        (with given mean and standard devation)
+        (with given mean and standard deviation)
         truncated to the values given by lower and upper bounds
 
         Parameters
@@ -224,7 +227,7 @@ class ConvergenceEvaluation:
 
         Args:
             filename - name of output file as a string.
-            n_points - number of sample points ot use for baseline
+            n_points - number of sample points to use for baseline
             seed - (optional) seed for random sample generator
 
         Returns:
@@ -261,7 +264,7 @@ class ConvergenceEvaluation:
             raise ValueError(f"Problem reading json file: {baseline_filename}")
 
         # Run samples from baseline
-        inputs, samples, results = run_convergence_evaluation(basedict, self)
+        _, _, results = run_convergence_evaluation(basedict, self)
 
         return _compare_run_to_baseline(
             results, basedict["results"], rel_tol=rel_tol, abs_tol=abs_tol
@@ -594,7 +597,7 @@ def run_convergence_evaluation_from_sample_file(sample_file):
     Run convergence evaluation using specified sample file.
 
     Args:
-        sample_file - name of sample file ot use
+        sample_file - name of sample file to use
 
     Returns:
         results of convergence evaluation
@@ -626,11 +629,11 @@ def run_single_sample_from_sample_file(sample_file, name):
     Run single convergence evaluation from sample in provided file.
 
     Args:
-        sample_file - name of file ot use to look up sample
+        sample_file - name of file to use to look up sample
         name - name of sample to run from sample_file
 
     Returns:
-        results of convergence evaluation for specificed sample
+        results of convergence evaluation for specified sample
     """
     # load the sample file
     try:
@@ -708,7 +711,7 @@ def run_convergence_evaluation(sample_file_dict, conv_eval):
     local_samples_list = task_mgr.global_to_local_data(samples_list)
 
     results = list()
-    for (si, ss) in enumerate(local_samples_list):
+    for si, ss in enumerate(local_samples_list):
         sample_name = ss["_name"]
         # print progress on the rank-0 process
         if task_mgr.is_root():
@@ -726,7 +729,7 @@ def run_convergence_evaluation(sample_file_dict, conv_eval):
                 _set_model_parameters_from_sample(model, inputs, ss)
                 solver = conv_eval.get_solver()
                 (
-                    status_obj,
+                    status_obj,  # pylint: disable=unused-variable
                     solved,
                     iters,
                     iters_in_restoration,
@@ -758,7 +761,7 @@ def generate_baseline_statistics(
     Generate and run samples to generate baseline convergence statistics.
 
     Args:
-        conv_eval: convergence evaluation object ot use to generate baseline
+        conv_eval: convergence evaluation object to use to generate baseline
         n_points: number of points to generate for baseline
         seed: (optional) seed for random sample generator
         display: print a summary of the baseline
@@ -775,7 +778,7 @@ def generate_baseline_statistics(
     jsondict["seed"] = seed
     jsondict["samples"] = generate_samples(eval_spec, n_points, seed)
 
-    inputs, samples, results = run_convergence_evaluation(jsondict, conv_eval)
+    _, _, results = run_convergence_evaluation(jsondict, conv_eval)
 
     jsondict["results"] = OrderedDict()
     for r in results:
@@ -818,7 +821,9 @@ def generate_baseline_statistics(
 def save_convergence_statistics(
     inputs, results, dmf=None, display=True, json_path=None, report_path=None
 ):
-    """ """
+    """
+    Save convergence statistics to json file or dmf
+    """
     s = Stats(inputs, results)
     if display:
         s.report()
@@ -928,7 +933,15 @@ class Stats(object):
     def to_json(self, fp):
         json.dump(self.to_dict(), fp, indent=4)
 
-    def to_dmf(self, dmf):
+    def to_dmf(self, dmf) -> None:
+        try:
+            # pylint: disable-next=import-outside-toplevel
+            from idaes.core.dmf import resource
+        except ImportError as err:
+            _log.error(
+                "Stats.to_dmf() failed because DMF is not available: %s", str(err)
+            )
+            return None
         # PYLINT-TODO-FIX fix error due to undefined variable "stats"
         rsrc = resource.Resource(
             value={

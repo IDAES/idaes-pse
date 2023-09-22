@@ -2,9 +2,14 @@
 Degeneracy Hunter
 ==================================
 
-Degeneracy Hunter is a collection of tools for diagnostics of mathematical programs. The core ideas behind Degeneracy Hunter are explained here: https://www.sciencedirect.com/science/article/pii/B9780444635785501304
+.. note::
 
-Degeneracy Hunter is currently included in IDAES for beta testing purposes. This page will be updated as part of the official release. If you would like to help test Degeneracy Hunter, please look at the example notebook available here: https://github.com/IDAES/examples-pse/pull/21 Please report any thoughts, questions or bugs to: adowling@nd.edu
+    v2.2: The Degeneracy Hunter tool is being deprecated in favor of the newer Diagnostics Toolbox.
+    
+    Over the next few releases the functionality of Degeneracy Hunter will be moved over to the new Diagnostics Toolbox which will also contain a number of other tools for diagnosing model issues.
 
-Full documentation of the available methods can be :ref:`found here<reference_guides/core/util/model_diagnostics:Degeneracy Hunter>`.
+Degeneracy Hunter is a collection of tools for diagnostics of mathematical programs.
 
+* `Core ideas (conference paper) <https://www.sciencedirect.com/science/article/pii/B9780444635785501304>`_
+* `Example notebook <https://idaes.github.io/examples-pse/latest/Examples/Tools/degeneracy_hunter_doc.html>`_
+* :ref:`Full documentation<reference_guides/core/util/diagnostics/degeneracy_hunter:Degeneracy Hunter>`

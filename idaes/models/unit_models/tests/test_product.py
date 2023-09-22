@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Tests for product block.
@@ -27,7 +27,7 @@ from pyomo.environ import (
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
-from idaes.models.unit_models.product import Product
+from idaes.models.unit_models.product import Product, ProductInitializer
 
 from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
     BTXParameterBlock,
@@ -45,6 +45,10 @@ from idaes.core.util.model_statistics import (
 )
 from idaes.core.util.testing import PhysicalParameterTestBlock, initialization_tester
 from idaes.core.solvers import get_solver
+from idaes.core.initialization import (
+    BlockTriangularizationInitializer,
+    InitializationStatus,
+)
 
 
 # -----------------------------------------------------------------------------
@@ -68,6 +72,8 @@ def test_config():
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup
     assert m.fs.unit.config.property_package is m.fs.properties
+
+    assert m.fs.unit.default_initializer is ProductInitializer
 
 
 # -----------------------------------------------------------------------------
@@ -379,3 +385,46 @@ class TestIAPWS(object):
         initialization_tester(iapws)
 
     # No solve as there is nothing to solve for
+
+
+class TestInitializers:
+    @pytest.fixture
+    def model(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.properties = iapws95.Iapws95ParameterBlock()
+
+        m.fs.unit = Product(property_package=m.fs.properties)
+
+        m.fs.unit.flow_mol[0].set_value(100)
+        m.fs.unit.enth_mol[0].set_value(5000)
+        m.fs.unit.pressure[0].set_value(101325)
+
+        return m
+
+    @pytest.mark.component
+    def test_product_initializer(self, model):
+        initializer = ProductInitializer()
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        # No results to check
+
+        assert not model.fs.unit.flow_mol[0].fixed
+        assert not model.fs.unit.enth_mol[0].fixed
+        assert not model.fs.unit.pressure[0].fixed
+
+    @pytest.mark.component
+    def test_block_triangularization(self, model):
+        initializer = BlockTriangularizationInitializer(constraint_tolerance=2e-5)
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        # No results to check
+
+        assert not model.fs.unit.flow_mol[0].fixed
+        assert not model.fs.unit.enth_mol[0].fixed
+        assert not model.fs.unit.pressure[0].fixed

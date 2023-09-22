@@ -47,7 +47,6 @@ class VersionCompat:
 
 
 def _check_version_compatibility() -> None:
-
     to_check = [
         VersionCompat(
             distr_name="pylint",

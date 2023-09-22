@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 from idaes.logger import getModelLogger
 
@@ -182,7 +182,7 @@ def makeMyPyomoBaseModel(C, Atoms=None, Confs=None):
             Else, only the general variables for presence/absence are
             meaningful. (Default value = None)
         Confs (list<Design>): Optional, the set of conformations to
-            potentialy use for indicator variables.
+            potentially use for indicator variables.
             (Default value = None)
 
     Returns:
@@ -344,7 +344,7 @@ def addConsForGeneralVars(m):
         None.
 
     Raises:
-        NotImplementedErorr: Several competing encodings exist and make
+        NotImplementedError: Several competing encodings exist and make
             the set of constraints not clearly defined.
 
     """
@@ -377,7 +377,7 @@ def addConsForGeneralVars(m):
             _addConsXijFromYi(m)
         else:
             raise NotImplementedError(
-                "Xij lacks a propper way to be defined. User should define MaterialDescriptor Xij explicitly using "
+                "Xij lacks a proper way to be defined. User should define MaterialDescriptor Xij explicitly using "
                 "valid DescriptorRule"
             )
             # Defining Xijkl
@@ -717,7 +717,7 @@ def setDesignFromYik(D, m, blnSetNoneOtherwise=True):
     Args:
         D (Design): Design that matches the Canvas that the model
             was constructed with.
-        m (ConcreteModel): Pyomo model with a solution avialable and an
+        m (ConcreteModel): Pyomo model with a solution available and an
             Atoms set defined.
         blnSetNoneOtherwise (bool): Flag to control whether the contents
             should be erased before assignment. (Default value = True)
@@ -743,7 +743,7 @@ def setDesignFromYi(D, m, blnSetNoneOtherwise=True):
     Args:
         D (Design): Design that matches the Canvas that the model
             was constructed with.
-        m (ConcreteModel): Pyomo model with a solution avialable and an
+        m (ConcreteModel): Pyomo model with a solution available and an
             Atoms set defined.
         blnSetNoneOtherwise (bool): Flag to control whether the contents
             should be erased before assignment. (Default value = True)
@@ -770,7 +770,7 @@ def setDesignFromModel(D, m, blnSetNoneOtherwise=True):
     Args:
         D (Design): Design that matches the Canvas that the model
             was constructed with.
-        m (ConcreteModel): Pyomo model with a solution avialable and an
+        m (ConcreteModel): Pyomo model with a solution available and an
             Atoms set defined.
         blnSetNoneOtherwise (bool): Flag to control whether the contents
             should be erased before assignment. (Default value = True)
@@ -954,7 +954,7 @@ def validModelSoln(m, D):
     is clear how to validate Designs given a model.
 
     Args:
-        m (ConcreteModel): Pyomo model with a solution avialable.
+        m (ConcreteModel): Pyomo model with a solution available.
         D (Design): Design with Contents set.
 
     Returns:

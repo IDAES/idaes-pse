@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Tests to ensure the controller behaves as expected when antiwindup is and isn't
@@ -63,7 +63,7 @@ def _valve_pressure_flow_cb(b):
 
     b.Cv = pyo.Var(
         initialize=0.1,
-        doc="Valve flow coefficent",
+        doc="Valve flow coefficient",
         units=umeta("amount") / umeta("time") / umeta("pressure"),
     )
     b.Cv.fix()
@@ -113,7 +113,7 @@ def create_model(
     Args:
         steady_state (bool): If True, create a steady state model, otherwise
             create a dynamic model
-        time_set (list): The begining and end point of the time domain
+        time_set (list): The beginning and end point of the time domain
         time_units (Pyomo Unit object): Units of time domain
         nfe (int): Number of finite elements argument for the DAE
             transformation.

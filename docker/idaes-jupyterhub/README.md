@@ -7,4 +7,4 @@ This container is used for automated test of the IDAES PSE Framework.
 Please visit the documentation site for help using and contributing to this image and others.
 
 * [IDAES PSE on ReadTheDocs](https://idaes-pse.readthedocs.io/en/stable/)
-* [Docker container build instrucion](https://github.com/IDAES/idaes-dev/wiki/Building-Docker-image) (private link)
+* [Docker container build instruction](https://github.com/IDAES/idaes-dev/wiki/Building-Docker-image) (private link)

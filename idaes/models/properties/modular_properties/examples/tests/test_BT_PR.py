@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Author: Andrew Lee
@@ -37,7 +37,6 @@ SOUT = idaeslog.INFO
 
 # Set module level pyest marker
 pytestmark = pytest.mark.cubic_root
-prop_available = cubic_roots_available()
 
 
 # -----------------------------------------------------------------------------
@@ -47,6 +46,7 @@ solver = get_solver()
 solver.options["max_iter"] = 50
 
 
+@pytest.mark.skipif(not cubic_roots_available(), reason="Cubic functions not available")
 class TestBTPR(PropertyTestHarness):
     def configure(self):
         self.prop_pack = GenericParameterBlock
@@ -57,6 +57,7 @@ class TestBTPR(PropertyTestHarness):
 
 # -----------------------------------------------------------------------------
 # Test robustness and some outputs
+@pytest.mark.skipif(not cubic_roots_available(), reason="Cubic functions not available")
 class TestBTExample(object):
     @pytest.fixture()
     def m(self):
@@ -662,7 +663,6 @@ class TestBTExample(object):
 
     @pytest.mark.unit
     def test_basic_scaling(self, m):
-
         assert len(m.fs.state[1].scaling_factor) == 23
         assert m.fs.state[1].scaling_factor[m.fs.state[1].flow_mol] == 1e-2
         assert m.fs.state[1].scaling_factor[m.fs.state[1].flow_mol_phase["Liq"]] == 1e-2

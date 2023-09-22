@@ -15,17 +15,21 @@ The following commands should be sufficient to get you started with installing a
    * `Run IDAES Tests`_
 
 .. Import quick start guide, including OS specific lines & skipping non-OS lines & comments
-.. literalinclude:: install_templates/quickstart.md
+
+.. literalinclude:: install_templates/quickstart.txt
    :language: bash
-   :linenos:
-   :start-after: modification warning
-   :lines: 1-6,10,11-
+
+.. warning:: Currently, the macOS x86_64 binaries do not include HSL linear solvers, k_aug, or dot_sens, so
+   some linear solvers in Ipopt and some uncertainty propagation features may not be available. Some tests
+   may also fail due to missing features.
 
 ------------------------------------------------
 
 Installing IDAES
 ----------------
 To get IDAES fully set up on your machine, we'll go through the steps to get idaes-pse package installed as well as setting up the IDAES extensions, which includes some extra solvers and function libraries, the IDAES example files, and the IDAES tests.
+
+.. include:: install_templates/idaes_data.txt
 
 Install Prerequisites
 ^^^^^^^^^^^^^^^^^^^^^
@@ -38,37 +42,20 @@ Install Prerequisites
 Install IDAES-PSE
 ^^^^^^^^^^^^^^^^^^
 
-.. include:: install_templates/conda_idaes_pse.md
+.. include:: install_templates/conda_idaes_pse.txt
 
 
 Install IDAES Extensions
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. include:: install_templates/extensions.md
-
-.. warning:: 
-
-   The IDAES binary extensions are not yet supported on Mac/OSX.
-
-   .. container:: collapsible
-
-      .. container:: header
-
-         **Fallback solution**
-
-      As a fallback (assuming you are using a conda env) you can install
-      the open source ipopt solver with the command ``conda install -c
-      conda-forge ipopt`` though this will not have all the features
-      of our extensions package.
-
+.. include:: install_templates/extensions.txt
 
 Install IDAES Examples
 ^^^^^^^^^^^^^^^^^^^^^^
 
-.. |os_specific_fpath| replace:: `~\/idaes/examples`
-.. include:: install_templates/examples.md
+.. include:: install_templates/examples.txt
 
 Run IDAES Tests
 ^^^^^^^^^^^^^^^
 
-.. include:: install_templates/run_tests.md
+.. include:: install_templates/run_tests.txt

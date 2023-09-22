@@ -181,11 +181,11 @@ The example callback below is the model default pressure-flow equation.
       Add the default pressure flow relation constraint.  This will be used in the
       valve model, a custom callback is provided.
       """
-      umeta = b.config.property_package.get_metadata().get_derived_units
+      umeta = b.control_volume.config.property_package.get_metadata().get_derived_units
 
       b.Cv = pyo.Var(
           initialize=0.1,
-          doc="Valve flow coefficent",
+          doc="Valve flow coefficient",
           units=umeta("amount")/umeta("time")/umeta("pressure")**0.5
       )
       b.Cv.fix()

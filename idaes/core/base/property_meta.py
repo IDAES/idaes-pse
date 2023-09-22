@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 These classes handle the metadata aspects of classes representing
@@ -46,8 +46,12 @@ Example::
         # do the work of the class.
 
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 from pyomo.environ import units
 from pyomo.core.base.units_container import _PyomoUnit, InconsistentUnitsError
+from pyomo.common.deprecation import deprecation_warning
 
 from idaes.core.util.exceptions import PropertyPackageError
 from idaes.core.base.property_set import StandardPropertySet, PropertySetBase
@@ -81,6 +85,8 @@ class HasPropertyClassMetadata(object):
             cls._metadata = pcm
 
             # Check that the metadata was actually populated
+            # Check requires looking at private attributes
+            # pylint: disable-next=protected-access
             if pcm._properties is None or pcm._default_units is None:
                 raise PropertyPackageError(
                     "Property package did not populate all expected metadata."
@@ -341,6 +347,10 @@ class UnitSet(object):
     def POWER(self):
         return self._mass * self._length**2 * self._time**-3
 
+    @property
+    def VOLTAGE(self):
+        return self._mass * self._length**2 * self._time**-3 * self._current**-1
+
     # Heat Related
     @property
     def HEAT_CAPACITY_MASS(self):
@@ -477,7 +487,7 @@ class PropertyClassMetadata(object):
             self._default_units.set_units(**u)
         except TypeError:
             raise TypeError(
-                f"Unexpected argument for base quantities found when creating UnitSet. "
+                "Unexpected argument for base quantities found when creating UnitSet. "
                 "Please ensure that units are only defined for the seven base quantities."
             )
 
@@ -510,7 +520,22 @@ class PropertyClassMetadata(object):
         for k, v in p.items():
             units = v.pop("units", None)
             try:
-                n, i = self._properties.get_name_and_index(k)
+                try:
+                    n, i = self._properties.get_name_and_index(k)
+                except ValueError:
+                    msg = (
+                        f"The property name {k} in property metadata is not a recognized "
+                        "standard property name defined in this PropertySet. Please refer "
+                        "to IDAES standard names in the IDAES documentation. You can use "
+                        "the define_custom_properties() rather than the add_properties() "
+                        "method to define metadata for this property. You can also use a "
+                        "different property set by calling the define_property_set() method."
+                    )
+                    deprecation_warning(
+                        msg=msg, logger=_log, version="2.0.0", remove_in="3.0.0"
+                    )
+                    n = k
+                    i = None
                 getattr(self._properties, n)[i].update_property(**v)
             except AttributeError:
                 # TODO: Deprecate this and make it raise an exception if an unknown property is encountered
@@ -556,7 +581,7 @@ class PropertyClassMetadata(object):
         Returns:
             None
         """
-        for k, v in p.items():
+        for k in p.keys():
             try:
                 self._properties[k].set_required(True)
             except KeyError:

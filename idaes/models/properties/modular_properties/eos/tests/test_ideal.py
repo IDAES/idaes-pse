@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Tests for ideal equation of state methods
@@ -332,7 +332,7 @@ def test_energy_internal_mol_phase_comp_with_h_form(m):
         # For liquid phase, delta(n) should be 4 (2*He + 2*O2)
         assert (
             str(Ideal.energy_internal_mol_phase_comp(m.props[1], "Liq", j))
-            == "42.0 -4.0*("
+            == "42.0 - 4.0*("
             + str(Ideal.gas_constant(m.props[1]))
             + ")*params.temperature_ref"
         )
@@ -564,7 +564,7 @@ def test_pressure_osm_phase(m):
     )
     subexpr = m.props[1].conc_mol_phase_comp["Liq", "b"]
     subexpr += m.props[1].conc_mol_phase_comp["Liq", "c"]
-    assert str(m.props[1].pressure_osm_phase["Liq"]._expr) == (
+    assert str(m.props[1].pressure_osm_phase["Liq"].expr) == (
         str(Ideal.gas_constant(m.props[1]) * m.props[1].temperature * subexpr)
     )
     assert len(m.props[1].pressure_osm_phase) == 1
@@ -619,7 +619,7 @@ def test_pressure_osm_phase_w_apparent_component():
 
     subexpr = m.props[1].conc_mol_phase_comp["Liq", "b"]
     subexpr += 2 * m.props[1].conc_mol_phase_comp["Liq", "c"]
-    assert str(m.props[1].pressure_osm_phase["Liq"]._expr) == (
+    assert str(m.props[1].pressure_osm_phase["Liq"].expr) == (
         str(Ideal.gas_constant(m.props[1]) * m.props[1].temperature * subexpr)
     )
     assert len(m.props[1].pressure_osm_phase) == 1

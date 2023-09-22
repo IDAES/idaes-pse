@@ -1,3 +1,5 @@
+.. _idaes-grid:
+
 .. grid_integration documentation master file, created by
    sphinx-quickstart on Wed Dec 15 17:14:39 2021.
    You can adapt this file completely to your liking, but it should at least

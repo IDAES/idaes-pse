@@ -1,20 +1,26 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Methods for setting up FTPx as the state variables in a generic property
 package
 """
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
 
+# TODO: Look into protected access issues
+# pylint: disable=protected-access
+
+from types import MethodType
 from pyomo.environ import (
     Constraint,
     Expression,
@@ -39,8 +45,8 @@ from idaes.models.properties.modular_properties.phase_equil.henry import (
 )
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
-from .electrolyte_states import define_electrolyte_state, calculate_electrolyte_scaling
 import idaes.core.util.scaling as iscale
+from .electrolyte_states import define_electrolyte_state, calculate_electrolyte_scaling
 
 
 # Set up logger
@@ -155,7 +161,7 @@ def define_state(b):
         units=pyunits.dimensionless,
     )
 
-    # Add electrolye state vars if required
+    # Add electrolyte state vars if required
     if b.params._electrolyte:
         define_electrolyte_state(b)
 
@@ -259,13 +265,13 @@ def define_state(b):
 
     # -------------------------------------------------------------------------
     # General Methods
-    def get_material_flow_terms_FTPx(p, j):
+    def get_material_flow_terms_FTPx(b, p, j):
         """Create material flow terms for control volume."""
         return b.flow_mol_phase_comp[p, j]
 
-    b.get_material_flow_terms = get_material_flow_terms_FTPx
+    b.get_material_flow_terms = MethodType(get_material_flow_terms_FTPx, b)
 
-    def get_enthalpy_flow_terms_FTPx(p):
+    def get_enthalpy_flow_terms_FTPx(b, p):
         """Create enthalpy flow terms."""
         # enth_mol_phase probably does not exist when this is created
         # Use try/except to build flow term if not present
@@ -279,9 +285,9 @@ def define_state(b):
             eflow = b._enthalpy_flow_term = Expression(b.phase_list, rule=rule_eflow)
         return eflow[p]
 
-    b.get_enthalpy_flow_terms = get_enthalpy_flow_terms_FTPx
+    b.get_enthalpy_flow_terms = MethodType(get_enthalpy_flow_terms_FTPx, b)
 
-    def get_material_density_terms_FTPx(p, j):
+    def get_material_density_terms_FTPx(b, p, j):
         """Create material density terms."""
         # dens_mol_phase probably does not exist when this is created
         # Use try/except to build term if not present
@@ -297,9 +303,9 @@ def define_state(b):
             )
         return mdens[p, j]
 
-    b.get_material_density_terms = get_material_density_terms_FTPx
+    b.get_material_density_terms = MethodType(get_material_density_terms_FTPx, b)
 
-    def get_energy_density_terms_FTPx(p):
+    def get_energy_density_terms_FTPx(b, p):
         """Create energy density terms."""
         # Density and energy terms probably do not exist when this is created
         # Use try/except to build term if not present
@@ -313,7 +319,7 @@ def define_state(b):
             edens = b._energy_density_term = Expression(b.phase_list, rule=rule_edens)
         return edens[p]
 
-    b.get_energy_density_terms = get_energy_density_terms_FTPx
+    b.get_energy_density_terms = MethodType(get_energy_density_terms_FTPx, b)
 
     def default_material_balance_type_FTPx():
         return MaterialBalanceType.componentTotal
@@ -330,7 +336,7 @@ def define_state(b):
 
     b.get_material_flow_basis = get_material_flow_basis_FTPx
 
-    def define_state_vars_FTPx():
+    def define_state_vars_FTPx(b):
         """Define state vars."""
         return {
             "flow_mol": b.flow_mol,
@@ -339,9 +345,9 @@ def define_state(b):
             "pressure": b.pressure,
         }
 
-    b.define_state_vars = define_state_vars_FTPx
+    b.define_state_vars = MethodType(define_state_vars_FTPx, b)
 
-    def define_display_vars_FTPx():
+    def define_display_vars_FTPx(b):
         """Define display vars."""
         return {
             "Total Molar Flowrate": b.flow_mol,
@@ -350,7 +356,7 @@ def define_state(b):
             "Pressure": b.pressure,
         }
 
-    b.define_display_vars = define_display_vars_FTPx
+    b.define_display_vars = MethodType(define_display_vars_FTPx, b)
 
 
 def state_initialization(b):
@@ -709,6 +715,8 @@ do_not_initialize = ["sum_mole_frac_out"]
 
 
 class FTPx(object):
+    """Total flow, temperature, pressure, mole fraction state."""
+
     set_metadata = set_metadata
     define_state = define_state
     state_initialization = state_initialization
@@ -768,7 +776,7 @@ def _modified_rachford_rice(b, K, vl_comps, l_only_comps, v_only_comps, eps=1e-5
             2. All mole_frac_comp[j] > 0 in block b
             3. sum(mole_frac_comp[j] for j in b.component_list) == 1
         If the harmonic mean of K[j] is greater than one, the stream is pure
-        vapor. If the arithmatic mean of K[j] is less than one, the stream is
+        vapor. If the arithmetic mean of K[j] is less than one, the stream is
         pure liquid. If neither of those conditions hold, a root exists between
         zero and one and the root-finding method will converge to it.
 
@@ -790,7 +798,7 @@ def _modified_rachford_rice(b, K, vl_comps, l_only_comps, v_only_comps, eps=1e-5
             )
             return None
 
-    # Calculate harmonic and arithmatic means of the split ratios KS
+    # Calculate harmonic and arithmetic means of the split ratios KS
     if len(l_only_comps) == 0:
         tmp = sum([value(b.mole_frac_comp[j]) / K[j] for j in vl_comps])
         if tmp < 1e-14:
@@ -812,14 +820,14 @@ def _modified_rachford_rice(b, K, vl_comps, l_only_comps, v_only_comps, eps=1e-5
         # Vapor fraction is nearly zero
         return eps
 
-    # I discovered this method is a varient on solving the
+    # I discovered this method is a variant on solving the
     # Rachford-Rice equation, which has been known to ChemEs
     # since the 50s. I'm not sure if the link between Newton's
     # method and convexity was explicitly stated, though. For good
     # reason, the classic RR equation does not appear to necessarily
     # be convex
 
-    # There are varients where the flash calculation is robust
+    # There are variants where the flash calculation is robust
     # to the calculated vapor fraction being greater than 1 or
     # less than zero. Future reader, check out
     # https://doi.org/10.1016/j.fluid.2011.12.005 and

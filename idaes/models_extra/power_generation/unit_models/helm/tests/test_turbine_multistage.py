@@ -1,14 +1,14 @@
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
-# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
-# by the software owners: The Regents of the University of California, through
-# Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Design of Advanced Energy Systems (IDAES).
 #
-# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
-# license information.
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
 #################################################################################
 """
 Tests for turbine multistage model.
@@ -30,6 +30,7 @@ from idaes.core.util.model_statistics import (
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 from idaes.core.solvers import get_solver
+from idaes.models.properties.general_helmholtz import helmholtz_available
 
 # Set up solver
 solver = get_solver(options={"max_iter": 20})
@@ -64,6 +65,7 @@ def build_turbine_for_run_test():
     return m
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.component
 def test_initialize():
     """Make a turbine model and make sure it doesn't throw exception"""
@@ -161,6 +163,7 @@ def test_initialize():
     return m
 
 
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.component
 def test_initialize_calc_cf():
     """Make a turbine model and make sure it doesn't throw exception"""
@@ -226,8 +229,8 @@ def test_initialize_calc_cf():
         outlvl=idaeslog.DEBUG,
         calculate_inlet_cf=True,
         calculate_outlet_cf=True,
-        copy_disconneted_flow=True,
-        copy_disconneted_pressure=True,
+        copy_disconnected_flow=True,
+        copy_disconnected_pressure=True,
         optarg={"max_iter": 20},
     )
     turb.ip_stages[1].inlet.unfix()
