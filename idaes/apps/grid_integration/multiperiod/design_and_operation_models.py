@@ -66,7 +66,9 @@ class DesignModelData(SkeletonUnitModelData):
     # noinspection PyAttributeOutsideInit
     def build(self):
         super().build()
-        if self.config.declare_op_vars:
+        
+        
+        if self.config.declare_build_vars:
             self.build_unit = Var(
                 within=Binary,
                 doc="Binary var: 1 if we choose to build the unit, 0 otherwise",
@@ -182,28 +184,67 @@ class OperationModelData(SkeletonUnitModelData):
                     )
                     print(f"setting {ce} to zero in {self.name}")
                     setattr(self, ce, Expression(expr=0, doc=cost_expr_list[ce]))
-        if self.config.capacity_var is not None:
-            self._add_capacity_aux_vars()
+        # if isisntance(self.config.capacity_var, str):
+        #     if isinstance(self.config.capacity_var,)
+        #     self._add_capacity_aux_vars()
 
     def _add_capacity_aux_vars(self):
-        aux_op_mode = self.config.capacity_var.name.split(".")[-1] + "_op_mode"
-        aux_startup = self.config.capacity_var.name.split(".")[-1] + "_startup"
-        aux_shutdown = self.config.capacity_var.name.split(".")[-1] + "_shutdown"
+        aux_op_mode = self.config.capacity_var.split(".")[-1] + "_op_mode"
+        aux_startup = self.config.capacity_var.split(".")[-1] + "_startup"
+        aux_shutdown = self.config.capacity_var.split(".")[-1] + "_shutdown"
         
-        setattr(self,Var(),aux_op_mode)
-        setattr(self,Var(),aux_startup)
-        setattr(self,Var(),aux_shutdown)
-        for b in self.config.model_args:
-            if isinstance(b,DesignModelData):
-                design_blk = b
+        setattr(self,aux_op_mode, Var())
+        setattr(self,aux_startup,Var())
+        setattr(self,aux_shutdown, Var())
         
-        capacity = deepgetattr(design_blk,self.config.capacity_var.name)
-        capacity_ub = deepgetattr(design_blk,self.config.capacity_var.name + ".ub")
-        capacity_lb = deepgetattr(design_blk,self.config.capacity_var.name + ".lb")
+        aux_var_op_mode = getattr(self,aux_op_mode)
+        aux_var_startup = getattr(self,aux_startup)
+        aux_var_shutdown = getattr(self,aux_shutdown)
+        for blk in self.config.model_args:
+            if isinstance(self.config.model_args[blk],DesignModelData):
+                design_blk = self.config.model_args[blk]
         
-        self.Constraint(
+        capacity = deepgetattr(design_blk,self.config.capacity_var)
+        capacity_ub = deepgetattr(design_blk,self.config.capacity_var + ".ub")
+        capacity_lb = deepgetattr(design_blk,self.config.capacity_var + ".lb")
+        
+        setattr(self, self.config.capacity_var.split(".")[-1] + "_linearization_con1",
+                Constraint(
             expr = (design_blk.build_unit - self.op_mode - self.startup - self.shutdown)*capacity_lb <= 
-                    capacity - aux_op_mode -  aux_startup - aux_shutdown
-        )
+                    capacity - aux_var_op_mode -  aux_var_startup - aux_var_shutdown
+        ))
+
+        setattr(self, self.config.capacity_var.split(".")[-1] + "_linearization_con2",
+                Constraint(
+            expr = (design_blk.build_unit - self.op_mode - self.startup - self.shutdown)*capacity_ub >= 
+                    capacity - aux_var_op_mode -  aux_var_startup - aux_var_shutdown
+        ))
+
+        setattr(self,self.config.capacity_var.split(".")[-1] + "_linearization_con3", 
+                 Constraint(
+            expr = ( self.op_mode*capacity_lb <= aux_var_op_mode  )))
+        
+        setattr(self, self.config.capacity_var.split(".")[-1] + "_linearization_con4", 
+                Constraint(
+            expr = ( self.op_mode*capacity_ub >= aux_var_op_mode   )))
+        
+        setattr(self, self.config.capacity_var.split(".")[-1] + "_linearization_con5", 
+                Constraint(
+            expr = ( self.startup*capacity_lb <= aux_var_startup   )))
+        
+        setattr(self,self.config.capacity_var.split(".")[-1] + "_linearization_con6", 
+                 Constraint(
+            expr = ( self.startup*capacity_ub >= aux_var_startup )))
+        
+        setattr(self, self.config.capacity_var.split(".")[-1] + "_linearization_con7", 
+                Constraint(
+            expr = ( self.shutdown*capacity_lb <= aux_var_shutdown)))
+        
+        setattr(self, self.config.capacity_var.split(".")[-1] + "_linearization_con8", 
+                Constraint(
+            expr = ( self.shutdown*capacity_ub >= aux_var_shutdown )))
+
+
+
         
 

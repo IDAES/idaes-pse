@@ -27,6 +27,7 @@ from pyomo.environ import (
     NonNegativeReals,
     Expression,
     maximize,
+    Param,
 )
 
 from idaes.apps.grid_integration import MultiPeriodModel
@@ -335,13 +336,15 @@ class PriceTakerModel(ConcreteModel):
         self,
         op_blk,
         design_blk,
-        var,
-        design_variable,
-        op_range_lb_percentage = 0.6, 
-        startup_limit_percentage = 0.7, 
-        shutdown_limit_percentage = 0.7,
-        ramp_up_limit = 0.7, 
-        ramp_down_limit = 0.7,
+        capacity_var,
+        ramping_var,
+        constraint_type,
+        linearization = True,
+        op_range_lb = 0.6, 
+        startup_rate = 0.7, 
+        shutdown_rate= 0.7,
+        ramp_up_rate = 0.7, 
+        ramp_down_rate = 0.7,
           ):
         """
         Adds ramping constraints of the form
@@ -368,110 +371,71 @@ class PriceTakerModel(ConcreteModel):
       total_power_upper_bound >= ramp_up_limit >= startup_limit >= total_power_lower_bound > 0
       total_power_upper_bound  >= ramp_down_limit >= shutdown_limit >= total_power_lower_bound > 0
         """
-
-
-        # if constraint = "linear":
-      # if capacity_var is either a Parameter or ocsntant....
-         #act_startup_rate = capacity* startup_rate* startup
-    # else:
-    #     if hasattr(m,capacity_startup) == False:
-    #              op_blk._add_capacity_aux_var
-    #     else:
-    #     act_startup_rate = capacity_startup * startup_rate
-                # The linearized ramping constraints
-        # Importing in the nessisary variables
-        self.range_time_steps = RangeSet(len(self.mp_model.set_period))
         start_up = {t: deepgetattr(self.mp_model.period[t], op_blk + ".startup") for t in self.mp_model.period}
         op_mode = {t: deepgetattr(self.mp_model.period[t], op_blk + ".op_mode") for t in self.mp_model.period}
         shut_down = {t: deepgetattr(self.mp_model.period[t], op_blk + ".shutdown") for t in self.mp_model.period}
-        aux_shutdown= {t: deepgetattr(self.mp_model.period[t], op_blk + ".aux_shutdown") for t in self.mp_model.period}
-        aux_startup= {t: deepgetattr(self.mp_model.period[t], op_blk + ".aux_startup") for t in self.mp_model.period}
-        aux_op_mode = {t: deepgetattr(self.mp_model.period[t], op_blk + ".aux_op_mode") for t in self.mp_model.period}
-        capacity = deepgetattr(self,design_blk + "." + design_variable )
-        capacity_ub = deepgetattr(self,design_blk + "." + design_variable + ".ub" )
-        var = {t: deepgetattr(self.mp_model.period[t], op_blk + "." + var) for t in self.mp_model.period}
+        var_ramping = {t: deepgetattr(self.mp_model.period[t], op_blk + "." + ramping_var) for t in self.mp_model.period}
+        if constraint_type == "linear":
+            if isinstance(capacity_var,str):
+                var_capacity = deepgetattr(self, design_blk + "." + capacity_var)
+                act_startup_rate = {t: var_capacity * start_up[t] for t in self.mp_model.period}
+                act_shutdown_rate = {t:var_capacity * shut_down[t] for t in self.mp_model.period}
+                act_op_mode_rate = {t:var_capacity * op_mode[t] for t in self.mp_model.period}
+            if isinstance(capacity_var, (int,float)):
+                act_startup_rate = {t: capacity_var * start_up[t] for t in self.mp_model.period}
+                act_shutdown_rate = {t:capacity_var * shut_down[t]for t in self.mp_model.period}
+                act_op_mode_rate = {t:capacity_var * op_mode[t] for t in self.mp_model.period}
+        elif constraint_type == "nonlinear":
+            if linearization == True:
+                # if hasattr(self,"capacity_startup") == False:
+                #     blk = deepgetattr(self.mp_model.period[t],op_blk)
+                #     blk._add_capacity_aux_vars()
+
+                act_startup_rate= {t: deepgetattr(self.mp_model.period[t], op_blk + "." + capacity_var + "_startup") for t in self.mp_model.period}
+                act_shutdown_rate= {t: deepgetattr(self.mp_model.period[t], op_blk + "." + capacity_var + "_shutdown") for t in self.mp_model.period}
+                act_op_mode_rate = {t: deepgetattr(self.mp_model.period[t], op_blk + "." + capacity_var + "_op_mode") for t in self.mp_model.period}
+            elif linearization == False:
+                var_capacity = deepgetattr(self, design_blk + "." + capacity_var)
+                act_startup_rate = {t: var_capacity * start_up[t] for t in self.mp_model.period}
+                act_shutdown_rate = {t:var_capacity * shut_down[t] for t in self.mp_model.period}
+                act_op_mode_rate = {t:var_capacity * op_mode[t] for t in self.mp_model.period}
+
+
+
+       
+        # Importing in the nessisary variables
+        self.range_time_steps = RangeSet(len(self.mp_model.set_period))
         
         #Creating the pyomo block
         blk_name = op_blk.split(".")[-1] + "_rampup_rampdown"
         setattr(self.mp_model, blk_name, Block())
         blk = getattr(self.mp_model,blk_name)
-
-        #Linearized constraints to conenct auxiliary vaiables to the design capacity variable
-        @blk.Constraint(self.range_time_steps)
-        def startup_mccor1(b,t):
-            return (aux_startup[self.mp_model.set_period[t]] >= capacity + start_up[self.mp_model.set_period[t]]*capacity_ub 
-                                                               - capacity_ub 
-                    )
-        
-        @blk.Constraint(self.range_time_steps)
-        def startup_mccor2(b,t):
-            return (aux_startup[self.mp_model.set_period[t]] <= start_up[self.mp_model.set_period[t]]*capacity_ub)
-        
-
-        @blk.Constraint(self.range_time_steps)
-        def startup_mccor3(b,t):
-            return (aux_startup[self.mp_model.set_period[t]] <= capacity 
-                    )
-
-
-        @blk.Constraint(self.range_time_steps)
-        def shutdown_mccor1(b,t):
-            return (aux_shutdown[self.mp_model.set_period[t]] >= capacity + shut_down[self.mp_model.set_period[t]]*capacity_ub 
-                                                               - capacity_ub 
-                    )
-        
-        @blk.Constraint(self.range_time_steps)
-        def shutdown_mccor2(b,t):
-            return (aux_shutdown[self.mp_model.set_period[t]] <= shut_down[self.mp_model.set_period[t]]*capacity_ub)
-
-
-        @blk.Constraint(self.range_time_steps)
-        def shutdown_mccor3(b,t):
-            return (aux_shutdown[self.mp_model.set_period[t]] <= capacity 
-                    )
-
-
-        @blk.Constraint(self.range_time_steps)
-        def op_mode_mccor1(b,t):
-            return (aux_op_mode[self.mp_model.set_period[t]] >= capacity + op_mode[self.mp_model.set_period[t]]*capacity_ub 
-                                                               - capacity_ub 
-                    )
-        
-        @blk.Constraint(self.range_time_steps)
-        def op_mode_mccor2(b,t):
-            return (aux_op_mode[self.mp_model.set_period[t]] <= op_mode[self.mp_model.set_period[t]]*capacity_ub)
-
-        
-        @blk.Constraint(self.range_time_steps)
-        def op_mode_mccor3(b,t):
-            return (aux_op_mode[self.mp_model.set_period[t]] <= capacity 
-                    )
-
         # The linearized ramping constraints
         @blk.Constraint(self.range_time_steps)
         def ramp_up_con(b,t):
-                if t == 1:
-                    return Constraint.Skip
-                return (
-                var[self.mp_model.set_period[t]] - var[self.mp_model.set_period[t-1]] <= 
-                startup_limit_percentage * aux_startup[self.mp_model.set_period[t]]  
-                - op_range_lb_percentage * aux_startup[self.mp_model.set_period[t-1]]
-                + (ramp_up_limit - op_range_lb_percentage)  * aux_op_mode[self.mp_model.set_period[t]]
-                - op_range_lb_percentage * aux_op_mode[self.mp_model.set_period[t-1]] 
-                )
+            if t == 1:
+                return Constraint.Skip
+            else:
+                return (var_ramping[self.mp_model.set_period[t]] - var_ramping[self.mp_model.set_period[t-1]] <= 
+                        startup_rate * act_startup_rate[self.mp_model.set_period[t]]  
+                        - op_range_lb * act_startup_rate[self.mp_model.set_period[t-1]]
+                        + (ramp_up_rate - op_range_lb)  * act_op_mode_rate[self.mp_model.set_period[t]]
+                        - op_range_lb * act_op_mode_rate[self.mp_model.set_period[t-1]]
+                        )
 
         @blk.Constraint(self.range_time_steps)
         def ramp_down_con(b,t):
-                if t == 1:
-                   return Constraint.Skip
+            if t == 1:
+                return Constraint.Skip
+            else:
                 return (
-              var[self.mp_model.set_period[t-1]]- var[self.mp_model.set_period[t]] <= 
-              (shutdown_limit_percentage - op_range_lb_percentage) * aux_shutdown[self.mp_model.set_period[t]]
-              - op_range_lb_percentage * aux_startup[self.mp_model.set_period[t]]
-              +  op_range_lb_percentage * aux_startup[self.mp_model.set_period[t-1]]
-              + (ramp_down_limit - op_range_lb_percentage) * aux_op_mode[self.mp_model.set_period[t]]
-              + op_range_lb_percentage * aux_op_mode[self.mp_model.set_period[t-1]]
-                )
+                        var_ramping[self.mp_model.set_period[t-1]]- var_ramping[self.mp_model.set_period[t]] <= 
+                       (shutdown_rate - op_range_lb) * act_shutdown_rate[self.mp_model.set_period[t]]
+                       - op_range_lb * act_startup_rate[self.mp_model.set_period[t]]
+                       +  op_range_lb * act_startup_rate[self.mp_model.set_period[t-1]]
+                       + (ramp_down_rate - op_range_lb) * act_op_mode_rate[self.mp_model.set_period[t]]
+                       + op_range_lb * act_op_mode_rate[self.mp_model.set_period[t-1]]
+                       )
         
 
     def add_startup_shutdown(self, op_blk,design_blk, build_binary_var, up_time = 1, down_time =1):
