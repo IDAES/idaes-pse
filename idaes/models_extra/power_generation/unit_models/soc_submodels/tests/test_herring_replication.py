@@ -67,7 +67,9 @@ import numpy as np
 from scipy.interpolate import interp1d
 import pytest
 import pandas as pd
+
 import pyomo.environ as pyo
+from pyomo.util.check_units import assert_units_consistent
 from pyomo.common.fileutils import this_file_dir
 
 from idaes.core import FlowsheetBlock
@@ -303,6 +305,7 @@ def model_stack():
 def test_initialization_cell(model):
     m = model
     cell = m.fs.cell
+    assert_units_consistent(m)
 
     cell.potential.fix(1.288)
     cell.fuel_inlet.temperature[0].fix(1103.15)
@@ -377,6 +380,8 @@ def test_initialization_stack(model_stack):
     m = model_stack
     stack = m.fs.stack
     cell = m.fs.stack.solid_oxide_cell
+
+    assert_units_consistent(m)
 
     stack.potential_cell[0].fix(1.288)
     stack.fuel_inlet.temperature[0].fix(1103.15)
@@ -628,7 +633,6 @@ if __name__ == "__main__":
     m = model_func()
     # out = kazempoor_braun_replication(m)
     out = test_initialization_cell(m)
-
     # Uncomment to recreate cached data
     # for i, df in enumerate(out):
     #     df.to_csv(os.sep.join([data_cache, f"case_{i+1}.csv"]))
