@@ -621,7 +621,7 @@ def create_dir(d):
     if os.path.exists(d):
         return
     else:
-        os.mkdir(d)
+        os.makedirs(d)
 
 
 def get_data_directory():
