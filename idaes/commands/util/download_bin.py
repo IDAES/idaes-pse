@@ -150,7 +150,15 @@ def _get_checksums(fd, to_path, release, nochecksum):
     return _read_checksum_file(check_to)
 
 
-def _create_download_package(platform, to_path, url, extra, extras_only, library_only):
+def _create_download_package(
+    platform,
+    to_path,
+    url,
+    extra,
+    extras_only,
+    library_only,
+    local_only=False,
+):
     pname = []
     ptar = []
     ftar = []
@@ -163,20 +171,23 @@ def _create_download_package(platform, to_path, url, extra, extras_only, library
         pname.append(name)
         furl.append("/".join([url, f]))
 
-    for e in extra:
-        if e not in extra_binaries:
-            _log.warning(f"Unknown extra package {e}, not installed.")
-            continue
-        if platform not in extra_binaries[e]:
-            _log.warning(
-                f"Extra package {e} not available for {platform}, not installed."
-            )
-            continue
-        _add_pack(e)  # you have to explicitly ask for extras so assume you want
-    if not extras_only:
-        _add_pack("lib")
-    if not library_only and not extras_only:
-        _add_pack("solvers")
+    if local_only:
+        _add_pack("local")
+    else:
+        for e in extra:
+            if e not in extra_binaries:
+                _log.warning(f"Unknown extra package {e}, not installed.")
+                continue
+            if platform not in extra_binaries[e]:
+                _log.warning(
+                    f"Extra package {e} not available for {platform}, not installed."
+                )
+                continue
+            _add_pack(e)  # you have to explicitly ask for extras so assume you want
+        if not extras_only:
+            _add_pack("lib")
+        if not library_only and not extras_only:
+            _add_pack("solvers")
 
     return pname, ptar, ftar, furl
 
@@ -400,3 +411,27 @@ def download_binaries(
         with tarfile.open(p, "r") as f:
             _verify_tar_member_targets(f, to_path, links)
             f.extractall(to_path)
+
+    # This assumes that the directory above to_path is writable.
+    # There should probably be a better way to specify the path to extract
+    # idaes-local (which contains lib and include) into. Under default conditions,
+    # this will be idaes.data_directory, which is what we want. However, it may
+    # be useful to specify this path independently for testing.
+    idaes_local_path = os.path.join(to_path, os.pardir)
+
+    # Note: overriding previous `ptar` variable
+    _, ptar, _, _, = _create_download_package(
+        platform, to_path, url, extra, False, False, local_only=True
+    )
+    # ptar[0] is to_path/idaes-local-<os>.tar.gz
+    idaes_local_tarfile = ptar[0]
+    # For some reason, we distribute idaes-local for darwin as
+    # idaes-local-darwin-arm64.tar.gz...
+    idaes_local_tarfile = os.path.join(
+        os.path.dirname(idaes_local_tarfile),
+        os.path.basename(idaes_local_tarfile).replace("aarch64", "arm64"),
+    )
+    with tarfile.open(idaes_local_tarfile, "r") as f:
+        _log.debug(f"Extracting {idaes_local_tarfile} to {idaes_local_path}")
+        _verify_tar_member_targets(f, idaes_local_path, links)
+        f.extractall(idaes_local_path)
