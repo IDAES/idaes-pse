@@ -1362,7 +1362,10 @@ class SVDToolbox:
                 counter += 1
 
         stream.write("=" * MAX_STR_LENGTH + "\n\n")
-        stream.write(f"Number of Singular Values less than tolerance is {counter}\n\n")
+        stream.write(
+            f"Number of Singular Values less than "
+            f"{self.config.singular_value_tolerance:.1E} is {counter}\n\n"
+        )
         stream.write("=" * MAX_STR_LENGTH + "\n")
 
     def display_underdetermined_variables_and_constraints(

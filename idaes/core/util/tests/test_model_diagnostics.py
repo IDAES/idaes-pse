@@ -1382,7 +1382,7 @@ class TestSVDToolbox:
 
         expected = """====================================================================================
 
-Number of Singular Values less than tolerance is 0
+Number of Singular Values less than 1.0E-6 is 0
 
 ====================================================================================
 """
@@ -1398,7 +1398,7 @@ Number of Singular Values less than tolerance is 0
 
         expected = """====================================================================================
 
-Number of Singular Values less than tolerance is 1
+Number of Singular Values less than 1.0E+00 is 1
 
 ====================================================================================
 """
