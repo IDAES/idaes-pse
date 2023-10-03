@@ -607,11 +607,19 @@ class DiagnosticsToolbox:
             None
 
         """
+        lrdict = large_residuals_set(
+            self._model,
+            tol=self.config.constraint_residual_tolerance,
+            return_residual_values=True,
+        )
+
+        lrs = []
+        for k, v in lrdict.items():
+            lrs.append(f"{k.name}: {v:.5E}")
+
         _write_report_section(
             stream=stream,
-            lines_list=large_residuals_set(
-                self._model, tol=self.config.constraint_residual_tolerance
-            ),
+            lines_list=lrs,
             title=f"The following constraint(s) have large residuals "
             f"(>{self.config.constraint_residual_tolerance:.1E}):",
             header="=",

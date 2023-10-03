@@ -634,11 +634,11 @@ from pyomo.util.check_units
         expected = """====================================================================================
 The following constraint(s) have large residuals (>1.0E-05):
 
-    b.c2
+    b.c2: 6.66667E-01
 
 ====================================================================================
 """
-
+        print(stream.getvalue())
         assert stream.getvalue() == expected
 
     @pytest.mark.component
