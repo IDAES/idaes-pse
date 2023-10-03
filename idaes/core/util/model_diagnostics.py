@@ -1768,7 +1768,7 @@ class DegeneracyHunter2:
                 # Check if constraint is included
                 if self.ids_milp.y[i]() > 0.9:
                     # If it is, save the value of nu
-                    ids_[cons] = self.ids_milp.nu[i]()
+                    ids_[eq_con_list[i]] = self.ids_milp.nu[i]()
         else:
             raise ValueError(
                 f"Solver did not return an optimal termination condition for "
@@ -1801,6 +1801,7 @@ class DegeneracyHunter2:
             # Loop over candidate equations
             count = 1
             for k in self.degenerate_set:
+                print(f"Solving MILP {count} of {len(self.degenerate_set)}.")
                 _log.info_high(f"Solving MILP {count} of {len(self.degenerate_set)}.")
 
                 # Check if equation is a major element of an IDS
@@ -1834,9 +1835,11 @@ class DegeneracyHunter2:
         if self.irreducible_degenerate_sets:
             for i, s in enumerate(self.irreducible_degenerate_sets):
                 stream.write(f"\n{TAB}Irreducible Degenerate Set {i}")
-                stream.write(f"\n{TAB*2}nu\tConstraint Name")
+                stream.write(f"\n{TAB*2}nu{TAB}Constraint Name")
                 for k, v in s.items():
-                    stream.write(f"\n{TAB*2}{v}\t{k.name}")
+                    value_string = f"{v:.1f}"
+                    sep = (2 + len(TAB) - len(value_string)) * " "
+                    stream.write(f"\n{TAB*2}{value_string}{sep}{k.name}")
                 stream.write("\n")
         else:
             stream.write(

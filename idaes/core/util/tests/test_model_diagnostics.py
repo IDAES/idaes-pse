@@ -1735,7 +1735,10 @@ class TestDegeneracyHunter:
         dh._prepare_ids_milp()
         ids_ = dh._solve_ids_milp(cons=model.con2)
 
-        assert ids_ == {model.con2: -1}
+        assert ids_ == {
+            model.con2: 1,
+            model.con5: -1,
+        }
 
     @pytest.mark.solver
     @pytest.mark.component
@@ -1745,8 +1748,8 @@ class TestDegeneracyHunter:
         dh.find_irreducible_degenerate_sets()
 
         assert dh.irreducible_degenerate_sets == [
-            {model.con2: -1},
-            {model.con5: 1},
+            {model.con2: 1, model.con5: -1},
+            {model.con5: 1, model.con2: -1},
         ]
 
     @pytest.mark.solver
@@ -1762,12 +1765,14 @@ class TestDegeneracyHunter:
 Irreducible Degenerate Sets
 
     Irreducible Degenerate Set 0
-        nu	Constraint Name
-        -1.0	con2
+        nu    Constraint Name
+        1.0   con2
+        -1.0  con5
 
     Irreducible Degenerate Set 1
-        nu	Constraint Name
-        1.0	con5
+        nu    Constraint Name
+        -1.0  con2
+        1.0   con5
 
 ====================================================================================
 """
