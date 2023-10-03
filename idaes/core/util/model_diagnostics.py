@@ -461,7 +461,8 @@ class DiagnosticsToolbox:
                     tolerance=self.config.variable_bounds_violation_tolerance,
                 )
             ],
-            title=f"The following variable(s) have values at or outside their bounds (tol={self.config.variable_bounds_violation_tolerance:.1E}):",
+            title=f"The following variable(s) have values at or outside their bounds "
+            f"(tol={self.config.variable_bounds_violation_tolerance:.1E}):",
             header="=",
             footer="=",
         )
@@ -506,7 +507,8 @@ class DiagnosticsToolbox:
                     self._model, self.config.variable_zero_value_tolerance
                 )
             ],
-            title=f"The following variable(s) have a value close to zero (tol={self.config.variable_zero_value_tolerance:.1E}):",
+            title=f"The following variable(s) have a value close to zero "
+            f"(tol={self.config.variable_zero_value_tolerance:.1E}):",
             header="=",
             footer="=",
         )
@@ -535,7 +537,9 @@ class DiagnosticsToolbox:
                     zero=self.config.variable_zero_value_tolerance,
                 )
             ],
-            title=f"The following variable(s) have extreme values (<{self.config.variable_small_value_tolerance:.1E} or > {self.config.variable_large_value_tolerance:.1E}):",
+            title=f"The following variable(s) have extreme values "
+            f"(<{self.config.variable_small_value_tolerance:.1E} or "
+            f"> {self.config.variable_large_value_tolerance:.1E}):",
             header="=",
             footer="=",
         )
@@ -562,7 +566,9 @@ class DiagnosticsToolbox:
                     rel_tol=self.config.variable_bounds_relative_tolerance,
                 )
             ],
-            title=f"The following variable(s) have values close to their bounds (abs={self.config.variable_bounds_absolute_tolerance:.1E}, rel={self.config.variable_bounds_relative_tolerance:.1E}):",
+            title=f"The following variable(s) have values close to their bounds "
+            f"(abs={self.config.variable_bounds_absolute_tolerance:.1E}, "
+            f"rel={self.config.variable_bounds_relative_tolerance:.1E}):",
             header="=",
             footer="=",
         )
@@ -606,7 +612,8 @@ class DiagnosticsToolbox:
             lines_list=large_residuals_set(
                 self._model, tol=self.config.constraint_residual_tolerance
             ),
-            title="The following constraint(s) have large residuals:",
+            title=f"The following constraint(s) have large residuals "
+            f"(>{self.config.constraint_residual_tolerance:.1E}):",
             header="=",
             footer="=",
         )
@@ -728,7 +735,9 @@ class DiagnosticsToolbox:
         _write_report_section(
             stream=stream,
             lines_list=[f"{i[1].name}: {i[0]:.3E}" for i in xjc],
-            title="The following variable(s) are associated with extreme Jacobian values:",
+            title=f"The following variable(s) are associated with extreme Jacobian values "
+            f"(<{self.config.jacobian_small_value_caution:.1E} or"
+            f">{self.config.jacobian_large_value_caution:.1E}):",
             header="=",
             footer="=",
         )
@@ -758,7 +767,9 @@ class DiagnosticsToolbox:
         _write_report_section(
             stream=stream,
             lines_list=[f"{i[1].name}: {i[0]:.3E}" for i in xjr],
-            title="The following constraint(s) are associated with extreme Jacobian values:",
+            title="The following constraint(s) are associated with extreme Jacobian values "
+            f"(<{self.config.jacobian_small_value_caution:.1E} or"
+            f">{self.config.jacobian_large_value_caution:.1E}):",
             header="=",
             footer="=",
         )
@@ -790,7 +801,9 @@ class DiagnosticsToolbox:
         _write_report_section(
             stream=stream,
             lines_list=[f"{i[1].name}, {i[2].name}: {i[0]:.3E}" for i in xje],
-            title="The following constraint(s) and variable(s) are associated with extreme Jacobian\nvalues:",
+            title="The following constraint(s) and variable(s) are associated with extreme "
+            f"Jacobian\nvalues (<{self.config.jacobian_small_value_caution:.1E} or"
+            f">{self.config.jacobian_large_value_caution:.1E}):",
             header="=",
             footer="=",
         )
@@ -899,7 +912,8 @@ class DiagnosticsToolbox:
             if len(large_residuals) == 1:
                 cstring = "Constraint"
             warnings.append(
-                f"WARNING: {len(large_residuals)} {cstring} with large residuals"
+                f"WARNING: {len(large_residuals)} {cstring} with large residuals "
+                f"(>{self.config.constraint_residual_tolerance:.1E})"
             )
             next_steps.append(
                 self.display_constraints_with_large_residuals.__name__ + "()"
@@ -914,7 +928,8 @@ class DiagnosticsToolbox:
             if len(violated_bounds) == 1:
                 cstring = "Variable"
             warnings.append(
-                f"WARNING: {len(violated_bounds)} {cstring} at or outside bounds"
+                f"WARNING: {len(violated_bounds)} {cstring} at or outside bounds "
+                f"(tol={self.config.variable_bounds_violation_tolerance:.1E})"
             )
             next_steps.append(
                 self.display_variables_at_or_outside_bounds.__name__ + "()"
@@ -932,7 +947,9 @@ class DiagnosticsToolbox:
             if len(jac_col) == 1:
                 cstring = "Variable"
             warnings.append(
-                f"WARNING: {len(jac_col)} {cstring} with extreme Jacobian values"
+                f"WARNING: {len(jac_col)} {cstring} with extreme Jacobian values "
+                f"(<{self.config.jacobian_small_value_warning:.1E} or "
+                f">{self.config.jacobian_large_value_warning:.1E})"
             )
             next_steps.append(
                 self.display_variables_with_extreme_jacobians.__name__ + "()"
@@ -949,7 +966,9 @@ class DiagnosticsToolbox:
             if len(jac_row) == 1:
                 cstring = "Constraint"
             warnings.append(
-                f"WARNING: {len(jac_row)} {cstring} with extreme Jacobian values"
+                f"WARNING: {len(jac_row)} {cstring} with extreme Jacobian values "
+                f"(<{self.config.jacobian_small_value_warning:.1E} or "
+                f">{self.config.jacobian_large_value_warning:.1E})"
             )
             next_steps.append(
                 self.display_constraints_with_extreme_jacobians.__name__ + "()"
@@ -981,7 +1000,9 @@ class DiagnosticsToolbox:
             if len(near_bounds) == 1:
                 cstring = "Variable"
             cautions.append(
-                f"Caution: {len(near_bounds)} {cstring} with value close to their bounds"
+                f"Caution: {len(near_bounds)} {cstring} with value close to their bounds "
+                f"(abs={self.config.variable_bounds_absolute_tolerance:.1E}, "
+                f"rel={self.config.variable_bounds_absolute_tolerance:.1E})"
             )
 
         # Variables near zero
@@ -993,7 +1014,8 @@ class DiagnosticsToolbox:
             if len(near_zero) == 1:
                 cstring = "Variable"
             cautions.append(
-                f"Caution: {len(near_zero)} {cstring} with value close to zero"
+                f"Caution: {len(near_zero)} {cstring} with value close to zero "
+                f"(tol={self.config.variable_zero_value_tolerance:.1E})"
             )
 
         # Variables with extreme values
@@ -1007,7 +1029,11 @@ class DiagnosticsToolbox:
             cstring = "Variables"
             if len(xval) == 1:
                 cstring = "Variable"
-            cautions.append(f"Caution: {len(xval)} {cstring} with extreme value")
+            cautions.append(
+                f"Caution: {len(xval)} {cstring} with extreme value "
+                f"(<{self.config.variable_small_value_tolerance:.1E} or "
+                f">{self.config.variable_large_value_tolerance:.1E})"
+            )
 
         # Variables with value None
         none_value = _vars_with_none_value(self._model)
@@ -1029,7 +1055,9 @@ class DiagnosticsToolbox:
             if len(jac_col) == 1:
                 cstring = "Variable"
             cautions.append(
-                f"Caution: {len(jac_col)} {cstring} with extreme Jacobian values"
+                f"Caution: {len(jac_col)} {cstring} with extreme Jacobian values "
+                f"(<{self.config.jacobian_small_value_caution:.1E} or "
+                f">{self.config.jacobian_large_value_caution:.1E})"
             )
 
         jac_row = extreme_jacobian_rows(
@@ -1043,7 +1071,9 @@ class DiagnosticsToolbox:
             if len(jac_row) == 1:
                 cstring = "Constraint"
             cautions.append(
-                f"Caution: {len(jac_row)} {cstring} with extreme Jacobian values"
+                f"Caution: {len(jac_row)} {cstring} with extreme Jacobian values "
+                f"(<{self.config.jacobian_small_value_caution:.1E} or "
+                f">{self.config.jacobian_large_value_caution:.1E})"
             )
 
         # Extreme Jacobian entries
@@ -1058,7 +1088,11 @@ class DiagnosticsToolbox:
             cstring = "Entries"
             if len(extreme_jac) == 1:
                 cstring = "Entry"
-            cautions.append(f"Caution: {len(extreme_jac)} extreme Jacobian {cstring}")
+            cautions.append(
+                f"Caution: {len(extreme_jac)} extreme Jacobian {cstring} "
+                f"(<{self.config.jacobian_small_value_caution:.1E} or "
+                f">{self.config.jacobian_large_value_caution:.1E})"
+            )
 
         return cautions
 

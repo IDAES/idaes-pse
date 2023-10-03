@@ -632,7 +632,7 @@ from pyomo.util.check_units
         dt.display_constraints_with_large_residuals(stream)
 
         expected = """====================================================================================
-The following constraint(s) have large residuals:
+The following constraint(s) have large residuals (>1.0E-05):
 
     b.c2
 
@@ -837,7 +837,7 @@ Dulmage-Mendelsohn Over-Constrained Set
         dt.display_variables_with_extreme_jacobians(stream)
 
         expected = """====================================================================================
-The following variable(s) are associated with extreme Jacobian values:
+The following variable(s) are associated with extreme Jacobian values (<1.0E-04 or>1.0E+04):
 
     v2: 1.000E+10
     v1: 1.000E+08
@@ -865,7 +865,7 @@ The following variable(s) are associated with extreme Jacobian values:
         dt.display_constraints_with_extreme_jacobians(stream)
 
         expected = """====================================================================================
-The following constraint(s) are associated with extreme Jacobian values:
+The following constraint(s) are associated with extreme Jacobian values (<1.0E-04 or>1.0E+04):
 
     c3: 1.000E+10
 
@@ -892,7 +892,7 @@ The following constraint(s) are associated with extreme Jacobian values:
 
         expected = """====================================================================================
 The following constraint(s) and variable(s) are associated with extreme Jacobian
-values:
+values (<1.0E-04 or>1.0E+04):
 
     c3, v2: 1.000E+10
     c2, v3: 1.000E-08
@@ -986,8 +986,8 @@ values:
         warnings, next_steps = dt._collect_numerical_warnings()
 
         assert len(warnings) == 2
-        assert "WARNING: 1 Constraint with large residuals" in warnings
-        assert "WARNING: 2 Variables at or outside bounds" in warnings
+        assert "WARNING: 1 Constraint with large residuals (>1.0E-05)" in warnings
+        assert "WARNING: 2 Variables at or outside bounds (tol=0.0E+00)" in warnings
 
         assert len(next_steps) == 2
         assert "display_constraints_with_large_residuals()" in next_steps
@@ -1026,11 +1026,17 @@ values:
         dt = DiagnosticsToolbox(model=model)
 
         warnings, next_steps = dt._collect_numerical_warnings()
-        print(warnings)
+
         assert len(warnings) == 3
-        assert "WARNING: 2 Variables with extreme Jacobian values" in warnings
-        assert "WARNING: 1 Constraint with extreme Jacobian values" in warnings
-        assert "WARNING: 1 Constraint with large residuals" in warnings
+        assert (
+            "WARNING: 2 Variables with extreme Jacobian values (<1.0E-08 or >1.0E+08)"
+            in warnings
+        )
+        assert (
+            "WARNING: 1 Constraint with extreme Jacobian values (<1.0E-08 or >1.0E+08)"
+            in warnings
+        )
+        assert "WARNING: 1 Constraint with large residuals (>1.0E-05)" in warnings
 
         assert len(next_steps) == 3
         assert "display_variables_with_extreme_jacobians()" in next_steps
@@ -1042,13 +1048,18 @@ values:
         dt = DiagnosticsToolbox(model=model.b)
 
         cautions = dt._collect_numerical_cautions()
-        print(cautions)
+
         assert len(cautions) == 5
-        assert "Caution: 3 Variables with value close to their bounds" in cautions
-        assert "Caution: 2 Variables with value close to zero" in cautions
+        assert (
+            "Caution: 3 Variables with value close to their bounds (abs=1.0E-04, rel=1.0E-04)"
+            in cautions
+        )
+        assert "Caution: 2 Variables with value close to zero (tol=1.0E-08)" in cautions
         assert "Caution: 1 Variable with None value" in cautions
-        assert "Caution: 1 extreme Jacobian Entry" in cautions
-        assert "Caution: 1 Variable with extreme value" in cautions
+        assert "Caution: 1 extreme Jacobian Entry (<1.0E-04 or >1.0E+04)" in cautions
+        assert (
+            "Caution: 1 Variable with extreme value (<1.0E-04 or >1.0E+04)" in cautions
+        )
 
     @pytest.mark.component
     def test_collect_numerical_cautions_jacobian(self):
@@ -1064,12 +1075,18 @@ values:
         dt = DiagnosticsToolbox(model=model)
 
         cautions = dt._collect_numerical_cautions()
-        print(cautions)
+
         assert len(cautions) == 4
-        assert "Caution: 3 Variables with value close to zero" in cautions
-        assert "Caution: 3 Variables with extreme Jacobian values" in cautions
-        assert "Caution: 1 Constraint with extreme Jacobian values" in cautions
-        assert "Caution: 4 extreme Jacobian Entries" in cautions
+        assert "Caution: 3 Variables with value close to zero (tol=1.0E-08)" in cautions
+        assert (
+            "Caution: 3 Variables with extreme Jacobian values (<1.0E-04 or >1.0E+04)"
+            in cautions
+        )
+        assert (
+            "Caution: 1 Constraint with extreme Jacobian values (<1.0E-04 or >1.0E+04)"
+            in cautions
+        )
+        assert "Caution: 4 extreme Jacobian Entries (<1.0E-04 or >1.0E+04)" in cautions
 
     @pytest.mark.component
     def test_assert_no_structural_warnings(self, model):
@@ -1158,17 +1175,17 @@ Model Statistics
 ------------------------------------------------------------------------------------
 2 WARNINGS
 
-    WARNING: 1 Constraint with large residuals
-    WARNING: 2 Variables at or outside bounds
+    WARNING: 1 Constraint with large residuals (>1.0E-05)
+    WARNING: 2 Variables at or outside bounds (tol=0.0E+00)
 
 ------------------------------------------------------------------------------------
 5 Cautions
 
-    Caution: 3 Variables with value close to their bounds
-    Caution: 2 Variables with value close to zero
-    Caution: 1 Variable with extreme value
+    Caution: 3 Variables with value close to their bounds (abs=1.0E-04, rel=1.0E-04)
+    Caution: 2 Variables with value close to zero (tol=1.0E-08)
+    Caution: 1 Variable with extreme value (<1.0E-04 or >1.0E+04)
     Caution: 1 Variable with None value
-    Caution: 1 extreme Jacobian Entry
+    Caution: 1 extreme Jacobian Entry (<1.0E-04 or >1.0E+04)
 
 ------------------------------------------------------------------------------------
 Suggested next steps:
@@ -1178,7 +1195,7 @@ Suggested next steps:
 
 ====================================================================================
 """
-        print(stream.getvalue())
+
         assert stream.getvalue() == expected
 
     @pytest.mark.component
@@ -1205,17 +1222,17 @@ Model Statistics
 ------------------------------------------------------------------------------------
 3 WARNINGS
 
-    WARNING: 1 Constraint with large residuals
-    WARNING: 2 Variables with extreme Jacobian values
-    WARNING: 1 Constraint with extreme Jacobian values
+    WARNING: 1 Constraint with large residuals (>1.0E-05)
+    WARNING: 2 Variables with extreme Jacobian values (<1.0E-08 or >1.0E+08)
+    WARNING: 1 Constraint with extreme Jacobian values (<1.0E-08 or >1.0E+08)
 
 ------------------------------------------------------------------------------------
 4 Cautions
 
-    Caution: 3 Variables with value close to zero
-    Caution: 3 Variables with extreme Jacobian values
-    Caution: 1 Constraint with extreme Jacobian values
-    Caution: 4 extreme Jacobian Entries
+    Caution: 3 Variables with value close to zero (tol=1.0E-08)
+    Caution: 3 Variables with extreme Jacobian values (<1.0E-04 or >1.0E+04)
+    Caution: 1 Constraint with extreme Jacobian values (<1.0E-04 or >1.0E+04)
+    Caution: 4 extreme Jacobian Entries (<1.0E-04 or >1.0E+04)
 
 ------------------------------------------------------------------------------------
 Suggested next steps:
