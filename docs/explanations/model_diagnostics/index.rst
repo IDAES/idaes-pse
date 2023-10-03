@@ -9,6 +9,7 @@ Model Diagnostics Workflow
     :maxdepth: 1
     
     svd_analysis
+    degeneracy_hunter
 
 Introduction
 ------------
