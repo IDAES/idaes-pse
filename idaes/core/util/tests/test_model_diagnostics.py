@@ -525,7 +525,7 @@ The following variable(s) are fixed to zero:
         dt.display_variables_at_or_outside_bounds(stream)
 
         expected = """====================================================================================
-The following variable(s) have values at or outside their bounds:
+The following variable(s) have values at or outside their bounds (tol=0.0E+00):
 
     b.v3 (free): value=0.0 bounds=(0, 5)
     b.v5 (fixed): value=2 bounds=(0, 1)
@@ -560,14 +560,13 @@ The following variable(s) have a value of None:
         dt.display_variables_with_value_near_zero(stream)
 
         expected = """====================================================================================
-The following variable(s) have a value close to zero:
+The following variable(s) have a value close to zero (tol=1.0E-08):
 
     b.v3: value=0.0
     b.v6: value=0
 
 ====================================================================================
 """
-
         assert stream.getvalue() == expected
 
     @pytest.mark.component
@@ -578,7 +577,7 @@ The following variable(s) have a value close to zero:
         dt.display_variables_with_extreme_values(stream)
 
         expected = """====================================================================================
-The following variable(s) have extreme values:
+The following variable(s) have extreme values (<1.0E-04 or > 1.0E+04):
 
     b.v7: 1.0000939326524314e-07
 
@@ -595,7 +594,7 @@ The following variable(s) have extreme values:
         dt.display_variables_near_bounds(stream)
 
         expected = """====================================================================================
-The following variable(s) have values close to their bounds:
+The following variable(s) have values close to their bounds (abs=1.0E-04, rel=1.0E-04):
 
     b.v3: value=0.0 bounds=(0, 5)
     b.v5: value=2 bounds=(0, 1)

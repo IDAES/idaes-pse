@@ -461,7 +461,7 @@ class DiagnosticsToolbox:
                     tolerance=self.config.variable_bounds_violation_tolerance,
                 )
             ],
-            title="The following variable(s) have values at or outside their bounds:",
+            title=f"The following variable(s) have values at or outside their bounds (tol={self.config.variable_bounds_violation_tolerance:.1E}):",
             header="=",
             footer="=",
         )
@@ -506,7 +506,7 @@ class DiagnosticsToolbox:
                     self._model, self.config.variable_zero_value_tolerance
                 )
             ],
-            title="The following variable(s) have a value close to zero:",
+            title=f"The following variable(s) have a value close to zero (tol={self.config.variable_zero_value_tolerance:.1E}):",
             header="=",
             footer="=",
         )
@@ -535,7 +535,7 @@ class DiagnosticsToolbox:
                     zero=self.config.variable_zero_value_tolerance,
                 )
             ],
-            title="The following variable(s) have extreme values:",
+            title=f"The following variable(s) have extreme values (<{self.config.variable_small_value_tolerance:.1E} or > {self.config.variable_large_value_tolerance:.1E}):",
             header="=",
             footer="=",
         )
@@ -562,7 +562,7 @@ class DiagnosticsToolbox:
                     rel_tol=self.config.variable_bounds_relative_tolerance,
                 )
             ],
-            title="The following variable(s) have values close to their bounds:",
+            title=f"The following variable(s) have values close to their bounds (abs={self.config.variable_bounds_absolute_tolerance:.1E}, rel={self.config.variable_bounds_relative_tolerance:.1E}):",
             header="=",
             footer="=",
         )
