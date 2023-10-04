@@ -184,9 +184,8 @@ class OperationModelData(SkeletonUnitModelData):
                     )
                     print(f"setting {ce} to zero in {self.name}")
                     setattr(self, ce, Expression(expr=0, doc=cost_expr_list[ce]))
-        # if isisntance(self.config.capacity_var, str):
-        #     if isinstance(self.config.capacity_var,)
-        #     self._add_capacity_aux_vars()
+        if isinstance(self.config.capacity_var, str):
+            self._add_capacity_aux_vars()
 
     def _add_capacity_aux_vars(self):
         aux_op_mode = self.config.capacity_var.split(".")[-1] + "_op_mode"
