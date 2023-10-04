@@ -387,9 +387,10 @@ class PriceTakerModel(ConcreteModel):
                 act_op_mode_rate = {t:capacity_var * op_mode[t] for t in self.mp_model.period}
         elif constraint_type == "nonlinear":
             if linearization == True:
-                # if hasattr(self,"capacity_startup") == False:
-                #     blk = deepgetattr(self.mp_model.period[t],op_blk)
-                #     blk._add_capacity_aux_vars()
+                if hasattr(self,"capacity_startup") == False:
+                    for t in self.mp_model.period:
+                        blk = deepgetattr(self.mp_model.period[t],op_blk)
+                        blk._add_capacity_aux_vars()
 
                 act_startup_rate= {t: deepgetattr(self.mp_model.period[t], op_blk + "." + capacity_var + "_startup") for t in self.mp_model.period}
                 act_shutdown_rate= {t: deepgetattr(self.mp_model.period[t], op_blk + "." + capacity_var + "_shutdown") for t in self.mp_model.period}
