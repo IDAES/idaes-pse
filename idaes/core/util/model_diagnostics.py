@@ -18,7 +18,8 @@ This module contains a collection of tools for diagnosing modeling issues.
 __author__ = "Alexander Dowling, Douglas Allan, Andrew Lee"
 
 from operator import itemgetter
-from sys import stdout
+import sys
+from inspect import signature
 from math import log
 
 import numpy as np
@@ -87,7 +88,29 @@ _log = idaeslog.getLogger(__name__)
 MAX_STR_LENGTH = 84
 TAB = " " * 4
 
+# Constants for Degeneracy Hunter
+YTOL = 0.9
+MMULT = 0.99
+
 # TODO: Add suggested steps to cautions - how?
+
+
+def svd_callback_validator(val):
+    """Domain validator for SVD callbacks
+
+    Args:
+        val : value to be checked
+
+    Returns:
+        TypeError if val is not a valid callback
+    """
+    if callable(val):
+        sig = signature(val)
+        if len(sig.parameters) == 2:
+            return val
+
+    _log.error(f"SVD callback {val} must be a callable which takes two arguments.")
+    raise ValueError("SVD callback must be a callable which takes two arguments.")
 
 
 def svd_dense(jacobian, number_singular_values):
@@ -237,6 +260,7 @@ SVDCONFIG.declare(
     "svd_callback",
     ConfigValue(
         default=svd_dense,
+        domain=svd_callback_validator,
         description="Callback to SVD method of choice (default = svd_dense)",
         doc="Callback to SVD method of choice (default = svd_dense). "
         "Callbacks should take the Jacobian and number of singular values "
@@ -304,7 +328,7 @@ DHCONFIG.declare(
     ),
 )
 DHCONFIG.declare(
-    "tolerance",  # TODO: Need better name
+    "trivial_constraint_tolerance",
     ConfigValue(
         default=1e-6,
         domain=float,
@@ -377,7 +401,7 @@ class DiagnosticsToolbox:
         """
         return self._model
 
-    def display_external_variables(self, stream=stdout):
+    def display_external_variables(self, stream=None):
         """
         Prints a list of variables that appear within activated Constraints in the
         model but are not contained within the model themselves.
@@ -389,6 +413,9 @@ class DiagnosticsToolbox:
             None
 
         """
+        if stream is None:
+            stream = sys.stdout
+
         ext_vars = []
         for v in variables_in_activated_constraints_set(self._model):
             if not _var_in_block(v, self._model):
@@ -402,7 +429,7 @@ class DiagnosticsToolbox:
             footer="=",
         )
 
-    def display_unused_variables(self, stream=stdout):
+    def display_unused_variables(self, stream=None):
         """
         Prints a list of variables that do not appear in any activated Constraints.
 
@@ -413,6 +440,9 @@ class DiagnosticsToolbox:
             None
 
         """
+        if stream is None:
+            stream = sys.stdout
+
         _write_report_section(
             stream=stream,
             lines_list=variables_not_in_activated_constraints_set(self._model),
@@ -421,7 +451,7 @@ class DiagnosticsToolbox:
             footer="=",
         )
 
-    def display_variables_fixed_to_zero(self, stream=stdout):
+    def display_variables_fixed_to_zero(self, stream=None):
         """
         Prints a list of variables that are fixed to an absolute value of 0.
 
@@ -432,6 +462,9 @@ class DiagnosticsToolbox:
             None
 
         """
+        if stream is None:
+            stream = sys.stdout
+
         _write_report_section(
             stream=stream,
             lines_list=_vars_fixed_to_zero(self._model),
@@ -440,7 +473,7 @@ class DiagnosticsToolbox:
             footer="=",
         )
 
-    def display_variables_at_or_outside_bounds(self, stream=stdout):
+    def display_variables_at_or_outside_bounds(self, stream=None):
         """
         Prints a list of variables with values that fall at or outside the bounds
         on the variable.
@@ -452,6 +485,9 @@ class DiagnosticsToolbox:
             None
 
         """
+        if stream is None:
+            stream = sys.stdout
+
         _write_report_section(
             stream=stream,
             lines_list=[
@@ -467,7 +503,7 @@ class DiagnosticsToolbox:
             footer="=",
         )
 
-    def display_variables_with_none_value(self, stream=stdout):
+    def display_variables_with_none_value(self, stream=None):
         """
         Prints a list of variables with a value of None.
 
@@ -478,6 +514,9 @@ class DiagnosticsToolbox:
             None
 
         """
+        if stream is None:
+            stream = sys.stdout
+
         _write_report_section(
             stream=stream,
             lines_list=_vars_with_none_value(self._model),
@@ -486,7 +525,7 @@ class DiagnosticsToolbox:
             footer="=",
         )
 
-    def display_variables_with_value_near_zero(self, stream=stdout):
+    def display_variables_with_value_near_zero(self, stream=None):
         """
         Prints a list of variables with a value close to zero. The tolerance
         for determining what is close to zero can be set in the class configuration
@@ -499,6 +538,9 @@ class DiagnosticsToolbox:
             None
 
         """
+        if stream is None:
+            stream = sys.stdout
+
         _write_report_section(
             stream=stream,
             lines_list=[
@@ -513,7 +555,7 @@ class DiagnosticsToolbox:
             footer="=",
         )
 
-    def display_variables_with_extreme_values(self, stream=stdout):
+    def display_variables_with_extreme_values(self, stream=None):
         """
         Prints a list of variables with extreme values.
 
@@ -526,6 +568,9 @@ class DiagnosticsToolbox:
             None
 
         """
+        if stream is None:
+            stream = sys.stdout
+
         _write_report_section(
             stream=stream,
             lines_list=[
@@ -544,7 +589,7 @@ class DiagnosticsToolbox:
             footer="=",
         )
 
-    def display_variables_near_bounds(self, stream=stdout):
+    def display_variables_near_bounds(self, stream=None):
         """
         Prints a list of variables with values close to their bounds. Tolerance can
         be set in the class configuration options.
@@ -556,6 +601,9 @@ class DiagnosticsToolbox:
             None
 
         """
+        if stream is None:
+            stream = sys.stdout
+
         _write_report_section(
             stream=stream,
             lines_list=[
@@ -573,7 +621,7 @@ class DiagnosticsToolbox:
             footer="=",
         )
 
-    def display_components_with_inconsistent_units(self, stream=stdout):
+    def display_components_with_inconsistent_units(self, stream=None):
         """
         Prints a list of all Constraints, Expressions and Objectives in the
         model with inconsistent units of measurement.
@@ -585,6 +633,9 @@ class DiagnosticsToolbox:
             None
 
         """
+        if stream is None:
+            stream = sys.stdout
+
         _write_report_section(
             stream=stream,
             lines_list=identify_inconsistent_units(self._model),
@@ -595,7 +646,7 @@ class DiagnosticsToolbox:
             footer="=",
         )
 
-    def display_constraints_with_large_residuals(self, stream=stdout):
+    def display_constraints_with_large_residuals(self, stream=None):
         """
         Prints a list of Constraints with residuals greater than a specified tolerance.
         Tolerance can be set in the class configuration options.
@@ -607,6 +658,9 @@ class DiagnosticsToolbox:
             None
 
         """
+        if stream is None:
+            stream = sys.stdout
+
         lrdict = large_residuals_set(
             self._model,
             tol=self.config.constraint_residual_tolerance,
@@ -652,7 +706,7 @@ class DiagnosticsToolbox:
 
         return uc_vblocks, uc_cblocks, oc_vblocks, oc_cblocks
 
-    def display_underconstrained_set(self, stream=stdout):
+    def display_underconstrained_set(self, stream=None):
         """
         Prints the variables and constraints in the under-constrained sub-problem
         from a Dulmage-Mendelsohn partitioning.
@@ -667,6 +721,9 @@ class DiagnosticsToolbox:
             None
 
         """
+        if stream is None:
+            stream = sys.stdout
+
         uc_vblocks, uc_cblocks, _, _ = self.get_dulmage_mendelsohn_partition()
 
         stream.write("=" * MAX_STR_LENGTH + "\n")
@@ -685,7 +742,7 @@ class DiagnosticsToolbox:
 
         stream.write("=" * MAX_STR_LENGTH + "\n")
 
-    def display_overconstrained_set(self, stream=stdout):
+    def display_overconstrained_set(self, stream=None):
         """
         Prints the variables and constraints in the over-constrained sub-problem
         from a Dulmage-Mendelsohn partitioning.
@@ -700,6 +757,9 @@ class DiagnosticsToolbox:
             None
 
         """
+        if stream is None:
+            stream = sys.stdout
+
         _, _, oc_vblocks, oc_cblocks = self.get_dulmage_mendelsohn_partition()
 
         stream.write("=" * MAX_STR_LENGTH + "\n")
@@ -718,7 +778,7 @@ class DiagnosticsToolbox:
 
         stream.write("=" * MAX_STR_LENGTH + "\n")
 
-    def display_variables_with_extreme_jacobians(self, stream=stdout):
+    def display_variables_with_extreme_jacobians(self, stream=None):
         """
         Prints the variables associated with columns in the Jacobian with extreme
         L2 norms. This often indicates poorly scaled variables.
@@ -732,6 +792,9 @@ class DiagnosticsToolbox:
             None
 
         """
+        if stream is None:
+            stream = sys.stdout
+
         xjc = extreme_jacobian_columns(
             m=self._model,
             scaled=False,
@@ -750,7 +813,7 @@ class DiagnosticsToolbox:
             footer="=",
         )
 
-    def display_constraints_with_extreme_jacobians(self, stream=stdout):
+    def display_constraints_with_extreme_jacobians(self, stream=None):
         """
         Prints the constraints associated with rows in the Jacobian with extreme
         L2 norms. This often indicates poorly scaled constraints.
@@ -764,6 +827,9 @@ class DiagnosticsToolbox:
             None
 
         """
+        if stream is None:
+            stream = sys.stdout
+
         xjr = extreme_jacobian_rows(
             m=self._model,
             scaled=False,
@@ -782,7 +848,7 @@ class DiagnosticsToolbox:
             footer="=",
         )
 
-    def display_extreme_jacobian_entries(self, stream=stdout):
+    def display_extreme_jacobian_entries(self, stream=None):
         """
         Prints variables and constraints associated with entries in the Jacobian with extreme
         values. This can be indicative of poor scaling, especially for isolated terms (e.g.
@@ -797,6 +863,9 @@ class DiagnosticsToolbox:
             None
 
         """
+        if stream is None:
+            stream = sys.stdout
+
         xje = extreme_jacobian_entries(
             m=self._model,
             scaled=False,
@@ -1130,7 +1199,7 @@ class DiagnosticsToolbox:
         if len(warnings) > 0:
             raise AssertionError(f"Numerical issues found ({len(warnings)}).")
 
-    def report_structural_issues(self, stream=stdout):
+    def report_structural_issues(self, stream=None):
         """
         Generates a summary report of any structural issues identified in the model provided
         and suggests next steps for debugging the model.
@@ -1146,6 +1215,9 @@ class DiagnosticsToolbox:
             None
 
         """
+        if stream is None:
+            stream = sys.stdout
+
         # Potential evaluation errors
         # TODO: High Index?
         stats = _collect_model_statistics(self._model)
@@ -1175,7 +1247,7 @@ class DiagnosticsToolbox:
             footer="=",
         )
 
-    def report_numerical_issues(self, stream=stdout):
+    def report_numerical_issues(self, stream=None):
         """
         Generates a summary report of any numerical issues identified in the model provided
         and suggest next steps for debugging model.
@@ -1190,6 +1262,9 @@ class DiagnosticsToolbox:
             None
 
         """
+        if stream is None:
+            stream = sys.stdout
+
         jac, nlp = get_jacobian(self._model, scaled=False)
 
         warnings, next_steps = self._collect_numerical_warnings(jac=jac, nlp=nlp)
@@ -1349,7 +1424,7 @@ class SVDToolbox:
         self.s = s
         self.v = v
 
-    def display_rank_of_equality_constraints(self, stream=stdout):
+    def display_rank_of_equality_constraints(self, stream=None):
         """
         Method to display the number of singular values that fall below
         tolerance specified in config block.
@@ -1361,6 +1436,9 @@ class SVDToolbox:
             None
 
         """
+        if stream is None:
+            stream = sys.stdout
+
         if self.s is None:
             self.run_svd_analysis()
 
@@ -1377,7 +1455,7 @@ class SVDToolbox:
         stream.write("=" * MAX_STR_LENGTH + "\n")
 
     def display_underdetermined_variables_and_constraints(
-        self, singular_values=None, stream=stdout
+        self, singular_values=None, stream=None
     ):
         """
         Determines constraints and variables associated with the smallest
@@ -1393,6 +1471,9 @@ class SVDToolbox:
             None
 
         """
+        if stream is None:
+            stream = sys.stdout
+
         if self.s is None:
             self.run_svd_analysis()
 
@@ -1416,9 +1497,9 @@ class SVDToolbox:
                 raise ValueError(
                     f"Cannot display the {e}-th smallest singular value. "
                     f"Only {len(self.s)} small singular values have been "
-                    f"calculated. You can set the number_of_smallest_singular_values "
-                    f"config argument and call run_svd_analysis again to get more "
-                    f"singular values."
+                    "calculated. You can set the number_of_smallest_singular_values "
+                    "config argument and call run_svd_analysis again to get more "
+                    "singular values."
                 )
 
             stream.write(f"{TAB}Smallest Singular Value {e}:\n\n")
@@ -1433,7 +1514,7 @@ class SVDToolbox:
 
         stream.write("=" * MAX_STR_LENGTH + "\n")
 
-    def display_constraints_including_variable(self, variable, stream=stdout):
+    def display_constraints_including_variable(self, variable, stream=None):
         """
         Display all constraints that include the specified variable and the
         associated Jacobian coefficient.
@@ -1446,6 +1527,9 @@ class SVDToolbox:
             None
 
         """
+        if stream is None:
+            stream = sys.stdout
+
         # Validate variable argument
         if not isinstance(variable, _VarData):
             raise TypeError(
@@ -1481,7 +1565,7 @@ class SVDToolbox:
             footer="=",
         )
 
-    def display_variables_in_constraint(self, constraint, stream=stdout):
+    def display_variables_in_constraint(self, constraint, stream=None):
         """
         Display all variables that appear in the specified constraint and the
         associated Jacobian coefficient.
@@ -1494,6 +1578,9 @@ class SVDToolbox:
             None
 
         """
+        if stream is None:
+            stream = sys.stdout
+
         # Validate variable argument
         if not isinstance(constraint, _ConstraintData):
             raise TypeError(
@@ -1623,7 +1710,7 @@ class DegeneracyHunter2:
             J = self.jacobian.tocsc()
 
             def eq_degenerate(m_dh, v):
-                if np.sum(np.abs(J[:, v])) > self.config.tolerance:
+                if np.sum(np.abs(J[:, v])) > self.config.trivial_constraint_tolerance:
                     # Find the columns with non-zero entries
                     C_ = find(J[:, v])[0]
                     return sum(J[c, v] * m_dh.nu[c] for c in C_) == 0
@@ -1635,7 +1722,7 @@ class DegeneracyHunter2:
             J = self.jacobian
 
             def eq_degenerate(m_dh, v):
-                if np.sum(np.abs(J[:, v])) > self.config.tolerance:
+                if np.sum(np.abs(J[:, v])) > self.config.trivial_constraint_tolerance:
                     return sum(J[c, v] * m_dh.nu[c] for c in m_dh.C) == 0
                 else:
                     # This variable does not appear in any constraint
@@ -1712,7 +1799,7 @@ class DegeneracyHunter2:
             # We found a degenerate set
             for i in self.candidates_milp.C:
                 # Check if constraint is included
-                if self.candidates_milp.abs_nu[i]() > self.config.m_small * 0.99:
+                if self.candidates_milp.abs_nu[i]() > self.config.m_small * MMULT:
                     # If it is, save the value of nu
                     if eq_con_list is None:
                         name = i
@@ -1811,7 +1898,7 @@ class DegeneracyHunter2:
             # We found an irreducible degenerate set
             for i in self.ids_milp.C:
                 # Check if constraint is included
-                if self.ids_milp.y[i]() > 0.9:
+                if self.ids_milp.y[i]() > YTOL:
                     # If it is, save the value of nu
                     ids_[eq_con_list[i]] = self.ids_milp.nu[i]()
         else:
@@ -1859,7 +1946,7 @@ class DegeneracyHunter2:
         else:
             _log.debug("No candidate equations found")
 
-    def report_irreducible_degenerate_sets(self, stream=stdout, tee: bool = False):
+    def report_irreducible_degenerate_sets(self, stream=None, tee: bool = False):
         """
         Print a report of all the Irreducible Degenerate Sets (IDS) identified in
         model.
@@ -1872,6 +1959,9 @@ class DegeneracyHunter2:
             None
 
         """
+        if stream is None:
+            stream = sys.stdout
+
         self.find_irreducible_degenerate_sets(tee=tee)
 
         stream.write("=" * MAX_STR_LENGTH + "\n")

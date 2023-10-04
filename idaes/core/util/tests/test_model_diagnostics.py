@@ -638,7 +638,7 @@ The following constraint(s) have large residuals (>1.0E-05):
 
 ====================================================================================
 """
-        print(stream.getvalue())
+
         assert stream.getvalue() == expected
 
     @pytest.mark.component
@@ -1267,10 +1267,35 @@ Suggested next steps:
         assert isinstance(dh, DegeneracyHunter2)
 
 
+def dummy_callback(arg1):
+    pass
+
+
+def dummy_callback2(arg1=None, arg2=None):
+    pass
+
+
 @pytest.mark.skipif(
     not AmplInterface.available(), reason="pynumero_ASL is not available"
 )
 class TestSVDToolbox:
+    @pytest.mark.unit
+    def test_svd_callback_domain(self, dummy_problem):
+        with pytest.raises(
+            ValueError,
+            match="SVD callback must be a callable which takes two arguments.",
+        ):
+            SVDToolbox(dummy_problem, svd_callback="foo")
+
+        with pytest.raises(
+            ValueError,
+            match="SVD callback must be a callable which takes two arguments.",
+        ):
+            SVDToolbox(dummy_problem, svd_callback=dummy_callback)
+
+        svd = SVDToolbox(dummy_problem, svd_callback=dummy_callback2)
+        assert svd.config.svd_callback is dummy_callback2
+
     @pytest.mark.unit
     def test_init(self, dummy_problem):
         svd = SVDToolbox(dummy_problem)
