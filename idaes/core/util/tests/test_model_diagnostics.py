@@ -1742,6 +1742,14 @@ class TestDegeneracyHunter:
         assert dh.irreducible_degenerate_sets == []
 
     @pytest.mark.unit
+    def test_get_solver(self, model):
+        dh = DegeneracyHunter2(model, solver="ipopt", solver_options={"maxiter": 50})
+
+        solver = dh._get_solver()
+
+        assert solver.options == {"maxiter": 50}
+
+    @pytest.mark.unit
     def test_prepare_candidates_milp(self, model):
         dh = DegeneracyHunter2(model)
         dh._prepare_candidates_milp()
