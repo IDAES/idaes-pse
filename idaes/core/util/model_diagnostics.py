@@ -153,6 +153,7 @@ def svd_sparse(jacobian, number_singular_values):
     """
     u, s, vT = svds(jacobian, k=number_singular_values, which="SM")
 
+    print(u, s, vT, number_singular_values)
     return u, s, vT.transpose()
 
 
@@ -1369,7 +1370,9 @@ class SVDToolbox:
         self.v = None
 
         # Get Jacobian and NLP
-        self.jacobian, self.nlp = get_jacobian(self._model, scaled=False)
+        self.jacobian, self.nlp = get_jacobian(
+            self._model, scaled=False, equality_constraints_only=True
+        )
 
         if self.jacobian.shape[0] < 2:
             raise ValueError(
@@ -1449,7 +1452,6 @@ class SVDToolbox:
         counter = 0
         for e in self.s:
             if e < self.config.singular_value_tolerance:
-                print(e)
                 counter += 1
 
         stream.write("=" * MAX_STR_LENGTH + "\n\n")

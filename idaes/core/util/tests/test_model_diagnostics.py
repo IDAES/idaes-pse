@@ -1283,13 +1283,13 @@ class TestSVDToolbox:
     def test_svd_callback_domain(self, dummy_problem):
         with pytest.raises(
             ValueError,
-            match="SVD callback must be a callable which takes two arguments.",
+            match="SVD callback must be a callable which takes at least two arguments.",
         ):
             SVDToolbox(dummy_problem, svd_callback="foo")
 
         with pytest.raises(
             ValueError,
-            match="SVD callback must be a callable which takes two arguments.",
+            match="SVD callback must be a callable which takes at least two arguments.",
         ):
             SVDToolbox(dummy_problem, svd_callback=dummy_callback)
 
