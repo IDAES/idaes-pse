@@ -106,11 +106,15 @@ def svd_callback_validator(val):
     """
     if callable(val):
         sig = signature(val)
-        if len(sig.parameters) == 2:
+        if len(sig.parameters) >= 2:
             return val
 
-    _log.error(f"SVD callback {val} must be a callable which takes two arguments.")
-    raise ValueError("SVD callback must be a callable which takes two arguments.")
+    _log.error(
+        f"SVD callback {val} must be a callable which takes at least two arguments."
+    )
+    raise ValueError(
+        "SVD callback must be a callable which takes at least two arguments."
+    )
 
 
 def svd_dense(jacobian, number_singular_values):
@@ -1445,6 +1449,7 @@ class SVDToolbox:
         counter = 0
         for e in self.s:
             if e < self.config.singular_value_tolerance:
+                print(e)
                 counter += 1
 
         stream.write("=" * MAX_STR_LENGTH + "\n\n")
