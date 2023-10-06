@@ -1779,6 +1779,19 @@ class DegeneracyHunter2:
 
         self.candidates_milp = m_dh
 
+    def _identify_candidates(self):
+        eq_con_list = self.nlp.get_pyomo_equality_constraints()
+
+        for i in self.candidates_milp.C:
+            # Check if constraint is included
+            if self.candidates_milp.abs_nu[i]() > self.config.m_small * MMULT:
+                # If it is, save the value of nu
+                if eq_con_list is None:
+                    name = i
+                else:
+                    name = eq_con_list[i]
+                self.degenerate_set[name] = self.candidates_milp.nu[i]()
+
     def _solve_candidates_milp(self, tee: bool = False):
         """Solve MILP to generate set of candidate equations
 
@@ -1789,23 +1802,13 @@ class DegeneracyHunter2:
         """
         _log.info("Solving Candidates MILP model.")
 
-        eq_con_list = self.nlp.get_pyomo_equality_constraints()
-
         results = self._get_solver().solve(self.candidates_milp, tee=tee)
 
         self.degenerate_set = {}
 
         if check_optimal_termination(results):
             # We found a degenerate set
-            for i in self.candidates_milp.C:
-                # Check if constraint is included
-                if self.candidates_milp.abs_nu[i]() > self.config.m_small * MMULT:
-                    # If it is, save the value of nu
-                    if eq_con_list is None:
-                        name = i
-                    else:
-                        name = eq_con_list[i]
-                    self.degenerate_set[name] = self.candidates_milp.nu[i]()
+            self._identify_candidates()
         else:
             _log.debug(
                 "Solver did not return an optimal termination condition for "
@@ -1867,6 +1870,20 @@ class DegeneracyHunter2:
 
         self.ids_milp = m_dh
 
+    def _get_ids(self):
+        # Create empty dictionary
+        ids_ = {}
+
+        eq_con_list = self.nlp.get_pyomo_equality_constraints()
+
+        for i in self.ids_milp.C:
+            # Check if constraint is included
+            if self.ids_milp.y[i]() > YTOL:
+                # If it is, save the value of nu
+                ids_[eq_con_list[i]] = self.ids_milp.nu[i]()
+
+        return ids_
+
     def _solve_ids_milp(self, cons: Constraint, tee: bool = False):
         """Solve MILP to check if equation 'cons' is a significant component
         in an irreducible degenerate set
@@ -1891,23 +1908,14 @@ class DegeneracyHunter2:
 
         self.ids_milp.nu[cons_idx].unfix()
 
-        # Create empty dictionary
-        ids_ = {}
-
         if check_optimal_termination(results):
             # We found an irreducible degenerate set
-            for i in self.ids_milp.C:
-                # Check if constraint is included
-                if self.ids_milp.y[i]() > YTOL:
-                    # If it is, save the value of nu
-                    ids_[eq_con_list[i]] = self.ids_milp.nu[i]()
+            return self._get_ids()
         else:
             raise ValueError(
                 f"Solver did not return an optimal termination condition for "
                 f"IDS MILP with constraint {cons.name}."
             )
-
-        return ids_
 
     def find_irreducible_degenerate_sets(self, tee=False):
         """

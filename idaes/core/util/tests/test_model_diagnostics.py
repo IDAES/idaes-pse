@@ -1756,6 +1756,30 @@ class TestDegeneracyHunter:
 
         assert isinstance(dh.candidates_milp, ConcreteModel)
 
+    @pytest.mark.unit
+    def test_identify_candidates(self, model):
+        dh = DegeneracyHunter2(model)
+        dh._prepare_candidates_milp()
+
+        dh.candidates_milp.nu[0].set_value(-1e-05)
+        dh.candidates_milp.nu[1].set_value(1e-05)
+
+        dh.candidates_milp.y_pos[0].set_value(0)
+        dh.candidates_milp.y_pos[1].set_value(1)
+
+        dh.candidates_milp.y_neg[0].set_value(-0)
+        dh.candidates_milp.y_neg[1].set_value(-0)
+
+        dh.candidates_milp.abs_nu[0].set_value(1e-05)
+        dh.candidates_milp.abs_nu[1].set_value(1e-05)
+
+        dh._identify_candidates()
+
+        assert dh.degenerate_set == {
+            model.con2: -1e-05,
+            model.con5: 1e-05,
+        }
+
     @pytest.mark.solver
     @pytest.mark.component
     @pytest.mark.skipif(not solver_available, reason="SCIP is not available")
@@ -1763,6 +1787,18 @@ class TestDegeneracyHunter:
         dh = DegeneracyHunter2(model)
         dh._prepare_candidates_milp()
         dh._solve_candidates_milp()
+
+        assert value(dh.candidates_milp.nu[0]) == pytest.approx(-1e-05, rel=1e-5)
+        assert value(dh.candidates_milp.nu[1]) == pytest.approx(1e-05, rel=1e-5)
+
+        assert value(dh.candidates_milp.y_pos[0]) == pytest.approx(0, abs=1e-5)
+        assert value(dh.candidates_milp.y_pos[1]) == pytest.approx(1, rel=1e-5)
+
+        assert value(dh.candidates_milp.y_neg[0]) == pytest.approx(-0, abs=1e-5)
+        assert value(dh.candidates_milp.y_neg[1]) == pytest.approx(-0, abs=1e-5)
+
+        assert value(dh.candidates_milp.abs_nu[0]) == pytest.approx(1e-05, rel=1e-5)
+        assert value(dh.candidates_milp.abs_nu[1]) == pytest.approx(1e-05, rel=1e-5)
 
         assert dh.degenerate_set == {
             model.con2: -1e-05,
@@ -1776,6 +1812,24 @@ class TestDegeneracyHunter:
 
         assert isinstance(dh.ids_milp, ConcreteModel)
 
+    @pytest.mark.unit
+    def test_solve_ids_milp(self, model):
+        dh = DegeneracyHunter2(model)
+        dh._prepare_ids_milp()
+
+        dh.ids_milp.nu[0].set_value(1)
+        dh.ids_milp.nu[1].set_value(-1)
+
+        dh.ids_milp.y[0].set_value(1)
+        dh.ids_milp.y[1].set_value(1)
+
+        ids_ = dh._get_ids()
+
+        assert ids_ == {
+            model.con2: 1,
+            model.con5: -1,
+        }
+
     @pytest.mark.solver
     @pytest.mark.component
     @pytest.mark.skipif(not solver_available, reason="SCIP is not available")
@@ -1788,6 +1842,12 @@ class TestDegeneracyHunter:
             model.con2: 1,
             model.con5: -1,
         }
+
+        assert value(dh.ids_milp.nu[0]) == pytest.approx(1, rel=1e-5)
+        assert value(dh.ids_milp.nu[1]) == pytest.approx(-1, rel=1e-5)
+
+        assert value(dh.ids_milp.y[0]) == pytest.approx(1, rel=1e-5)
+        assert value(dh.ids_milp.y[1]) == pytest.approx(1, rel=1e-5)
 
     @pytest.mark.solver
     @pytest.mark.component
