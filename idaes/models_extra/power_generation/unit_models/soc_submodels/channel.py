@@ -587,7 +587,9 @@ class SocChannelData(UnitModelBlockData):
                 * (b.material_flux_z_enth[t, iz] - b.material_flux_z_enth[t, iz + 1])
                 + b.xface_area[iz]
                 * sum(
-                    (b.material_flux_x0[t, iz, i] - b.material_flux_x1[t, iz, i])
+                    b.material_flux_x0[t, iz, i]
+                    * common._comp_enthalpy_expr(b.temperature_x0[t, iz], i)
+                    - b.material_flux_x1[t, iz, i]
                     * common._comp_enthalpy_expr(b.temperature_x1[t, iz], i)
                     for i in comps
                 )
