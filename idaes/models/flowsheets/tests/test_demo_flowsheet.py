@@ -20,6 +20,7 @@ import pytest
 from idaes.models.flowsheets.demo_flowsheet import (
     build_flowsheet,
     set_dof,
+    set_scaling,
     initialize_flowsheet,
     solve_flowsheet,
 )
@@ -60,6 +61,11 @@ def test_build_flowsheet(model):
 
 
 @pytest.mark.unit
+def test_set_scaling(model):
+    set_scaling(model)
+
+
+@pytest.mark.unit
 def test_set_dof(model):
     set_dof(model)
 
@@ -95,7 +101,7 @@ def test_solve_flowsheet(model):
         0.5, 1e-4
     )
     assert model.fs.M01.outlet.pressure[0].value == pytest.approx(101325, 1e-4)
-    assert model.fs.M01.outlet.temperature[0].value == pytest.approx(368.2, 1e-4)
+    assert model.fs.M01.outlet.temperature[0].value == pytest.approx(368.12, 1e-4)
 
     assert model.fs.H02.outlet.flow_mol[0].value == pytest.approx(2.0, 1e-4)
     assert model.fs.H02.outlet.mole_frac_comp[0, "benzene"].value == pytest.approx(
