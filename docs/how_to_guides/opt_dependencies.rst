@@ -1,3 +1,5 @@
+.. _optional-dependencies:
+
 Installing optional dependencies
 ================================
 
