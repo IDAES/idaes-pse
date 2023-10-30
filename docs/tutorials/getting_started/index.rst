@@ -47,6 +47,12 @@ OS Specific Instructions
             `conda environments <https://conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html>`_ 
             or `venv <https://docs.python.org/3/library/venv.html>`_.
 
+Installing optional dependencies
+--------------------------------
+
+To keep the base installation lighter and more flexible, some of the IDAES components are not installed by default, but can be installed as optional dependencies.
+For more information, refer to the :ref:`Installing optional dependencies <optional-dependencies>` page.
+
 .. _min_updating_install:
 
 Updating an existing installation

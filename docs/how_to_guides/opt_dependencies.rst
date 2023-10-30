@@ -1,3 +1,5 @@
+.. _optional-dependencies:
+
 Installing optional dependencies
 ================================
 
@@ -27,7 +29,7 @@ Available optional dependencies targets
 
 As of IDAES 2.1, the following ``extras_require`` targets are available:
 
-* ``ui``: for the `IDAES User Interface (UI) <https://github.com/IDAES/idaes-ui>`_
+* ``ui``: for the `IDAES User Interface (UI) <https://github.com/IDAES/idaes-ui>`_ (`UI documentation <https://idaes-ui.readthedocs.io/en/latest/>`_)
 * ``dmf``: for the :ref:`Data Management Framework <dmf-overview>`
 * ``grid``: for the :ref:`IDAES Grid integration <idaes-grid>`
 * ``omlt``: for the :ref:`OMLT integration <omlt>`
