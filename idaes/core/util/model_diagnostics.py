@@ -1244,6 +1244,10 @@ class DiagnosticsToolbox:
         warnings, next_steps = self._collect_structural_warnings()
         cautions = self._collect_structural_cautions()
 
+        eval_error_warnings, eval_error_cautions = self._collect_potential_eval_errors()
+        warnings.extend(eval_error_warnings)
+        cautions.extend(eval_error_cautions)
+
         _write_report_section(
             stream=stream, lines_list=stats, title="Model Statistics", header="="
         )
@@ -1343,7 +1347,7 @@ class DiagnosticsToolbox:
 
         return warnings, cautions
         
-    def report_potential_evaluation_errors(self, stream=None):
+    def display_potential_evaluation_errors(self, stream=None):
         if stream is None:
             stream = sys.stdout
 
@@ -1775,7 +1779,7 @@ def _check_eval_error_log(node: NumericExpression, warn_list: List[str], caution
     _caution_expression_argument(node, node.args, caution_list)
     lb, ub = _get_bounds_with_inf(node.args[0])
     if lb <= 0:
-        msg = f'Potential log of a negative number in {node}; Argument bounds are ({lb}, {ub})'
+        msg = f'Potential log of a non-positive number in {node}; Argument bounds are ({lb}, {ub})'
         warn_list.append(msg)
 
 
