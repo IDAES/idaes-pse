@@ -1326,27 +1326,31 @@ class DiagnosticsToolbox:
         res = list()
         warnings = list()
         cautions = list()
-        for con in self.model.component_data_objects(Constraint, active=True, descend_into=True):
+        for con in self.model.component_data_objects(
+            Constraint, active=True, descend_into=True
+        ):
             walker = _EvalErrorWalker()
             con_warnings, con_cautions = walker.walk_expression(con.body)
             for msg in con_warnings:
-                msg = f'{con.name}: ' + msg
+                msg = f"{con.name}: " + msg
                 warnings.append(msg)
             for msg in con_cautions:
-                msg = f'{con.name}: ' + msg
+                msg = f"{con.name}: " + msg
                 cautions.append(msg)
-        for obj in self.model.component_data_objects(Objective, active=True, descend_into=True):
+        for obj in self.model.component_data_objects(
+            Objective, active=True, descend_into=True
+        ):
             walker = _EvalErrorWalker()
             obj_warnings, obj_cautions = walker.walk_expression(obj.expr)
             for msg in obj_warnings:
-                msg = f'{obj.name}: ' + msg
+                msg = f"{obj.name}: " + msg
                 warnings.append(msg)
             for msg in obj_cautions:
-                msg = f'{obj.name}: ' + msg
+                msg = f"{obj.name}: " + msg
                 cautions.append(msg)
 
         return warnings, cautions
-        
+
     def display_potential_evaluation_errors(self, stream=None):
         if stream is None:
             stream = sys.stdout
@@ -1699,7 +1703,7 @@ def _get_bounds_with_inf(node: NumericExpression):
 def _caution_expression_argument(
     node: NumericExpression,
     args_to_check: Sequence[NumericExpression],
-    caution_list: List[str]
+    caution_list: List[str],
 ):
     should_caution = False
     for arg in args_to_check:
@@ -1710,21 +1714,25 @@ def _caution_expression_argument(
         should_caution = True
         break
     if should_caution:
-        msg = f'Potential evaluation error in {node}; '
-        msg += 'arguments are expressions with bounds that are not strictly '
-        msg += 'enforced;'
+        msg = f"Potential evaluation error in {node}; "
+        msg += "arguments are expressions with bounds that are not strictly "
+        msg += "enforced;"
         caution_list.append(msg)
 
 
-def _check_eval_error_division(node: NumericExpression, warn_list: List[str], caution_list: List[str]):
+def _check_eval_error_division(
+    node: NumericExpression, warn_list: List[str], caution_list: List[str]
+):
     _caution_expression_argument(node, [node.args[1]], caution_list)
     lb, ub = _get_bounds_with_inf(node.args[1])
     if lb <= 0 <= ub:
-        msg = f'Potential division by 0 in {node}; Denominator bounds are ({lb}, {ub})'
+        msg = f"Potential division by 0 in {node}; Denominator bounds are ({lb}, {ub})"
         warn_list.append(msg)
 
 
-def _check_eval_error_pow(node: NumericExpression, warn_list: List[str], caution_list: List[str]):
+def _check_eval_error_pow(
+    node: NumericExpression, warn_list: List[str], caution_list: List[str]
+):
     arg1, arg2 = node.args
     lb1, ub1 = _get_bounds_with_inf(arg1)
     lb2, ub2 = _get_bounds_with_inf(arg2)
@@ -1742,13 +1750,13 @@ def _check_eval_error_pow(node: NumericExpression, warn_list: List[str], caution
         integer_exponent = True
     repn = generate_standard_repn(arg2, quadratic=True)
     if (
-            repn.nonlinear_expr is None
-            and repn.constant == round(repn.constant)
-            and all(i.domain in integer_domains for i in repn.linear_vars)
-            and all(i[0].domain in integer_domains for i in repn.quadratic_vars)
-            and all(i[1].domain in integer_domains for i in repn.quadratic_vars)
-            and all(i == round(i) for i in repn.linear_coefs)
-            and all(i == round(i) for i in repn.quadratic_coefs)
+        repn.nonlinear_expr is None
+        and repn.constant == round(repn.constant)
+        and all(i.domain in integer_domains for i in repn.linear_vars)
+        and all(i[0].domain in integer_domains for i in repn.quadratic_vars)
+        and all(i[1].domain in integer_domains for i in repn.quadratic_vars)
+        and all(i == round(i) for i in repn.linear_coefs)
+        and all(i == round(i) for i in repn.quadratic_coefs)
     ):
         # The exponent is a linear or quadratic expression containing
         # only integer variables with integer coefficients
@@ -1769,62 +1777,74 @@ def _check_eval_error_pow(node: NumericExpression, warn_list: List[str], caution
         _caution_expression_argument(node, node.args, caution_list)
         return None
 
-    msg = f'Potential evaluation error in {node}; '
-    msg += f'base bounds are ({lb1}, {ub1}); '
-    msg += f'exponent bounds are ({lb2}, {ub2})'
+    msg = f"Potential evaluation error in {node}; "
+    msg += f"base bounds are ({lb1}, {ub1}); "
+    msg += f"exponent bounds are ({lb2}, {ub2})"
     warn_list.append(msg)
 
 
-def _check_eval_error_log(node: NumericExpression, warn_list: List[str], caution_list: List[str]):
+def _check_eval_error_log(
+    node: NumericExpression, warn_list: List[str], caution_list: List[str]
+):
     _caution_expression_argument(node, node.args, caution_list)
     lb, ub = _get_bounds_with_inf(node.args[0])
     if lb <= 0:
-        msg = f'Potential log of a non-positive number in {node}; Argument bounds are ({lb}, {ub})'
+        msg = f"Potential log of a non-positive number in {node}; Argument bounds are ({lb}, {ub})"
         warn_list.append(msg)
 
 
-def _check_eval_error_tan(node: NumericExpression, warn_list: List[str], caution_list: List[str]):
+def _check_eval_error_tan(
+    node: NumericExpression, warn_list: List[str], caution_list: List[str]
+):
     _caution_expression_argument(node, node.args, caution_list)
     lb, ub = _get_bounds_with_inf(node)
     if not (math.isfinite(lb) and math.isfinite(ub)):
-        msg = f'{node} may evaluate to -inf or inf; Argument bounds are {_get_bounds_with_inf(node.args[0])}'
+        msg = f"{node} may evaluate to -inf or inf; Argument bounds are {_get_bounds_with_inf(node.args[0])}"
         warn_list.append(msg)
 
 
-def _check_eval_error_asin(node: NumericExpression, warn_list: List[str], caution_list: List[str]):
+def _check_eval_error_asin(
+    node: NumericExpression, warn_list: List[str], caution_list: List[str]
+):
     _caution_expression_argument(node, node.args, caution_list)
     lb, ub = _get_bounds_with_inf(node.args[0])
     if lb < -1 or ub > 1:
-        msg = f'Potential evaluation of asin outside [-1, 1] in {node}; Argument bounds are ({lb}, {ub})'
+        msg = f"Potential evaluation of asin outside [-1, 1] in {node}; Argument bounds are ({lb}, {ub})"
         warn_list.append(msg)
 
 
-def _check_eval_error_acos(node: NumericExpression, warn_list: List[str], caution_list: List[str]):
+def _check_eval_error_acos(
+    node: NumericExpression, warn_list: List[str], caution_list: List[str]
+):
     _caution_expression_argument(node, node.args, caution_list)
     lb, ub = _get_bounds_with_inf(node.args[0])
     if lb < -1 or ub > 1:
-        msg = f'Potential evaluation of acos outside [-1, 1] in {node}; Argument bounds are ({lb}, {ub})'
+        msg = f"Potential evaluation of acos outside [-1, 1] in {node}; Argument bounds are ({lb}, {ub})"
         warn_list.append(msg)
 
 
-def _check_eval_error_sqrt(node: NumericExpression, warn_list: List[str], caution_list: List[str]):
+def _check_eval_error_sqrt(
+    node: NumericExpression, warn_list: List[str], caution_list: List[str]
+):
     _caution_expression_argument(node, node.args, caution_list)
     lb, ub = _get_bounds_with_inf(node.args[0])
     if lb < 0:
-        msg = f'Potential square root of a negative number in {node}; Argument bounds are ({lb}, {ub})'
+        msg = f"Potential square root of a negative number in {node}; Argument bounds are ({lb}, {ub})"
         warn_list.append(msg)
 
 
 _unary_eval_err_handler = dict()
-_unary_eval_err_handler['log'] = _check_eval_error_log
-_unary_eval_err_handler['log10'] = _check_eval_error_log
-_unary_eval_err_handler['tan'] = _check_eval_error_tan
-_unary_eval_err_handler['asin'] = _check_eval_error_asin
-_unary_eval_err_handler['acos'] = _check_eval_error_acos
-_unary_eval_err_handler['sqrt'] = _check_eval_error_sqrt
+_unary_eval_err_handler["log"] = _check_eval_error_log
+_unary_eval_err_handler["log10"] = _check_eval_error_log
+_unary_eval_err_handler["tan"] = _check_eval_error_tan
+_unary_eval_err_handler["asin"] = _check_eval_error_asin
+_unary_eval_err_handler["acos"] = _check_eval_error_acos
+_unary_eval_err_handler["sqrt"] = _check_eval_error_sqrt
 
 
-def _check_eval_error_unary(node: NumericExpression, warn_list: List[str], caution_list: List[str]):
+def _check_eval_error_unary(
+    node: NumericExpression, warn_list: List[str], caution_list: List[str]
+):
     if node.getname() in _unary_eval_err_handler:
         _unary_eval_err_handler[node.getname()](node, warn_list, caution_list)
 
@@ -1843,7 +1863,7 @@ class _EvalErrorWalker(StreamBasedExpressionVisitor):
         super().__init__()
         self._warn_list = list()
         self._caution_list = list()
-        
+
     def exitNode(self, node, data):
         if type(node) in _eval_err_handler:
             _eval_err_handler[type(node)](node, self._warn_list, self._caution_list)
