@@ -1723,11 +1723,12 @@ def _caution_expression_argument(
 def _check_eval_error_division(
     node: NumericExpression, warn_list: List[str], caution_list: List[str]
 ):
-    _caution_expression_argument(node, [node.args[1]], caution_list)
     lb, ub = _get_bounds_with_inf(node.args[1])
     if lb <= 0 <= ub:
         msg = f"Potential division by 0 in {node}; Denominator bounds are ({lb}, {ub})"
         warn_list.append(msg)
+    else:
+        _caution_expression_argument(node, [node.args[1]], caution_list)
 
 
 def _check_eval_error_pow(
@@ -1786,51 +1787,56 @@ def _check_eval_error_pow(
 def _check_eval_error_log(
     node: NumericExpression, warn_list: List[str], caution_list: List[str]
 ):
-    _caution_expression_argument(node, node.args, caution_list)
     lb, ub = _get_bounds_with_inf(node.args[0])
     if lb <= 0:
         msg = f"Potential log of a non-positive number in {node}; Argument bounds are ({lb}, {ub})"
         warn_list.append(msg)
+    else:
+        _caution_expression_argument(node, node.args, caution_list)
 
 
 def _check_eval_error_tan(
     node: NumericExpression, warn_list: List[str], caution_list: List[str]
 ):
-    _caution_expression_argument(node, node.args, caution_list)
     lb, ub = _get_bounds_with_inf(node)
     if not (math.isfinite(lb) and math.isfinite(ub)):
         msg = f"{node} may evaluate to -inf or inf; Argument bounds are {_get_bounds_with_inf(node.args[0])}"
         warn_list.append(msg)
+    else:
+        _caution_expression_argument(node, node.args, caution_list)
 
 
 def _check_eval_error_asin(
     node: NumericExpression, warn_list: List[str], caution_list: List[str]
 ):
-    _caution_expression_argument(node, node.args, caution_list)
     lb, ub = _get_bounds_with_inf(node.args[0])
     if lb < -1 or ub > 1:
         msg = f"Potential evaluation of asin outside [-1, 1] in {node}; Argument bounds are ({lb}, {ub})"
         warn_list.append(msg)
+    else:
+        _caution_expression_argument(node, node.args, caution_list)
 
 
 def _check_eval_error_acos(
     node: NumericExpression, warn_list: List[str], caution_list: List[str]
 ):
-    _caution_expression_argument(node, node.args, caution_list)
     lb, ub = _get_bounds_with_inf(node.args[0])
     if lb < -1 or ub > 1:
         msg = f"Potential evaluation of acos outside [-1, 1] in {node}; Argument bounds are ({lb}, {ub})"
         warn_list.append(msg)
+    else:
+        _caution_expression_argument(node, node.args, caution_list)
 
 
 def _check_eval_error_sqrt(
     node: NumericExpression, warn_list: List[str], caution_list: List[str]
 ):
-    _caution_expression_argument(node, node.args, caution_list)
     lb, ub = _get_bounds_with_inf(node.args[0])
     if lb < 0:
         msg = f"Potential square root of a negative number in {node}; Argument bounds are ({lb}, {ub})"
         warn_list.append(msg)
+    else:
+        _caution_expression_argument(node, node.args, caution_list)
 
 
 _unary_eval_err_handler = dict()
