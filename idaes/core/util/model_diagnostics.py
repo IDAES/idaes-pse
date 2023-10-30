@@ -1318,6 +1318,51 @@ class DiagnosticsToolbox:
             footer="=",
         )
 
+    def _collect_potential_eval_errors(self):
+        res = list()
+        warnings = list()
+        cautions = list()
+        for con in self.model.component_data_objects(Constraint, active=True, descend_into=True):
+            walker = _EvalErrorWalker()
+            con_warnings, con_cautions = walker.walk_expression(con.body)
+            for msg in con_warnings:
+                msg = f'{con.name}: ' + msg
+                warnings.append(msg)
+            for msg in con_cautions:
+                msg = f'{con.name}: ' + msg
+                cautions.append(msg)
+        for obj in self.model.component_data_objects(Objective, active=True, descend_into=True):
+            walker = _EvalErrorWalker()
+            obj_warnings, obj_cautions = walker.walk_expression(obj.expr)
+            for msg in obj_warnings:
+                msg = f'{obj.name}: ' + msg
+                warnings.append(msg)
+            for msg in obj_cautions:
+                msg = f'{obj.name}: ' + msg
+                cautions.append(msg)
+
+        return warnings, cautions
+        
+    def report_potential_evaluation_errors(self, stream=None):
+        if stream is None:
+            stream = sys.stdout
+
+        warnings, cautions = self._collect_potential_eval_errors()
+        _write_report_section(
+            stream=stream,
+            lines_list=warnings,
+            title=f"{len(warnings)} WARNINGS",
+            line_if_empty="No warnings found!",
+            header="=",
+        )
+        _write_report_section(
+            stream=stream,
+            lines_list=cautions,
+            title=f"{len(cautions)} Cautions",
+            line_if_empty="No cautions found!",
+            footer="=",
+        )
+
     @document_kwargs_from_configdict(SVDCONFIG)
     def prepare_svd_toolbox(self, **kwargs):
         """
@@ -1637,48 +1682,6 @@ class SVDToolbox:
             footer="=",
         )
 
-    def _collect_potential_eval_errors(self):
-        res = list()
-        warnings = list()
-        cautions = list()
-        for con in self.model.component_data_objects(Constraint, active=True, descend_into=True):
-            walker = _EvalErrorWalker()
-            con_warnings, con_cautions = walker.walk_expression(con.body)
-            for msg in con_warnings:
-                msg = f'{con.name}: ' + msg
-                warnings.append(msg)
-            for msg in con_cautions:
-                msg = f'{con.name}: ' + msg
-                cautions.append(msg)
-        for obj in self.model.component_data_objects(Objective, active=True, descend_into=True):
-            walker = _EvalErrorWalker()
-            obj_warnings, obj_cautions = walker.walk_expression(obj.expr)
-            for msg in obj_warnings:
-                msg = f'{obj.name}: ' + msg
-                warnings.append(msg)
-            for msg in obj_cautions:
-                msg = f'{obj.name}: ' + msg
-                cautions.append(msg)
-
-        return warnings, cautions
-        
-    def report_potential_evaluation_errors(self, stream=stdout):
-        warnings, cautions = self._collect_potential_eval_errors()
-        _write_report_section(
-            stream=stream,
-            lines_list=warnings,
-            title=f"{len(warnings)} WARNINGS",
-            line_if_empty="No warnings found!",
-            header="=",
-        )
-        _write_report_section(
-            stream=stream,
-            lines_list=cautions,
-            title=f"{len(cautions)} Cautions",
-            line_if_empty="No cautions found!",
-            footer="=",
-        )
-
 
 def _get_bounds_with_inf(node: NumericExpression):
     lb, ub = compute_bounds_on_expr(node)
@@ -1705,7 +1708,7 @@ def _caution_expression_argument(
     if should_caution:
         msg = f'Potential evaluation error in {node}; '
         msg += 'arguments are expressions with bounds that are not strictly '
-        msg += 'enforced; try making the argument a variable'
+        msg += 'enforced;'
         caution_list.append(msg)
 
 
@@ -1719,17 +1722,20 @@ def _check_eval_error_division(node: NumericExpression, warn_list: List[str], ca
 
 def _check_eval_error_pow(node: NumericExpression, warn_list: List[str], caution_list: List[str]):
     arg1, arg2 = node.args
+    lb1, ub1 = _get_bounds_with_inf(arg1)
+    lb2, ub2 = _get_bounds_with_inf(arg2)
 
     integer_domains = ComponentSet([Binary, Integers])
 
+    integer_exponent = False
     # if the exponent is an integer, there should not be any evaluation errors
     if isinstance(arg2, _GeneralVarData) and arg2.domain in integer_domains:
-        # life is good. The exponent is an integer variable
-        return None
-    lb2, ub2 = _get_bounds_with_inf(arg2)
+        # The exponent is an integer variable
+        # check if the base can be zero
+        integer_exponent = True
     if lb2 == ub2 and lb2 == round(lb2):
-        # life is good. The exponent is fixed to an integer
-        return None
+        # The exponent is fixed to an integer
+        integer_exponent = True
     repn = generate_standard_repn(arg2, quadratic=True)
     if (
             repn.nonlinear_expr is None
@@ -1740,17 +1746,23 @@ def _check_eval_error_pow(node: NumericExpression, warn_list: List[str], caution
             and all(i == round(i) for i in repn.linear_coefs)
             and all(i == round(i) for i in repn.quadratic_coefs)
     ):
-        # Life is good. The exponent is a linear or quadratic expression containing
+        # The exponent is a linear or quadratic expression containing
         # only integer variables with integer coefficients
-        return None
+        integer_exponent = True
 
-    _caution_expression_argument(node, node.args, caution_list)
+    if integer_exponent and (lb1 > 0 or ub1 < 0):
+        # life is good; the exponent is an integer and the base is nonzero
+        return None
+    elif integer_exponent and lb2 >= 0:
+        # life is good; the exponent is a nonnegative integer
+        return None
 
     # if the base is positive, there should not be any evaluation errors
-    lb1, ub1 = _get_bounds_with_inf(arg1)
     if lb1 > 0:
+        _caution_expression_argument(node, node.args, caution_list)
         return None
     if lb1 >= 0 and lb2 >= 0:
+        _caution_expression_argument(node, node.args, caution_list)
         return None
 
     msg = f'Potential evaluation error in {node}; '
