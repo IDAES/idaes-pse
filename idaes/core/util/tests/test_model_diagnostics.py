@@ -2579,3 +2579,15 @@ def test_ipopt_solve_halt_on_error(capsys):
 
     captured = capsys.readouterr()
     assert "c: can't evaluate log(-5)." in captured.out
+
+
+@pytest.mark.unit
+def test_eval_error_detection_div():
+    m = ConcreteModel()
+    m.x = Var(bounds=(1, None))
+    m.y = Var()
+    m.c = Constraint(expr=m.y == 1/m.x)
+    dtb = DiagnosticsToolbox(m)
+    warnings, cautions = dtb._collect_potential_eval_errors()
+    assert len(warnings) == 0
+    assert len(cautions) == 0
