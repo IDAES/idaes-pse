@@ -2597,14 +2597,12 @@ class TestEvalErrorDetection(TestCase):
         m.y = Var()
         m.c = Constraint(expr=m.y == 1 / m.x)
         dtb = DiagnosticsToolbox(m)
-        warnings, cautions = dtb._collect_potential_eval_errors()
+        warnings = dtb._collect_potential_eval_errors()
         self.assertEqual(len(warnings), 0)
-        self.assertEqual(len(cautions), 0)
 
         m.x.setlb(-1)
-        warnings, cautions = dtb._collect_potential_eval_errors()
+        warnings = dtb._collect_potential_eval_errors()
         self.assertEqual(len(warnings), 1)
-        self.assertEqual(len(cautions), 0)
         w = warnings[0]
         self.assertEqual(
             w, "c: Potential division by 0 in 1/x; Denominator bounds are (-1, inf)"
@@ -2618,14 +2616,12 @@ class TestEvalErrorDetection(TestCase):
         m.p = Param(initialize=2, mutable=True)
         m.c = Constraint(expr=m.y == m.x**m.p)
         dtb = DiagnosticsToolbox(m)
-        warnings, cautions = dtb._collect_potential_eval_errors()
+        warnings = dtb._collect_potential_eval_errors()
         self.assertEqual(len(warnings), 0)
-        self.assertEqual(len(cautions), 0)
 
         m.p.value = 2.5
-        warnings, cautions = dtb._collect_potential_eval_errors()
+        warnings = dtb._collect_potential_eval_errors()
         self.assertEqual(len(warnings), 1)
-        self.assertEqual(len(cautions), 0)
         w = warnings[0]
         self.assertEqual(
             w,
@@ -2633,9 +2629,8 @@ class TestEvalErrorDetection(TestCase):
         )
 
         m.x.setlb(1)
-        warnings, cautions = dtb._collect_potential_eval_errors()
+        warnings = dtb._collect_potential_eval_errors()
         self.assertEqual(len(warnings), 0)
-        self.assertEqual(len(cautions), 0)
 
     @pytest.mark.unit
     def test_pow2(self):
@@ -2645,14 +2640,12 @@ class TestEvalErrorDetection(TestCase):
         m.p = Var(domain=Integers)
         m.c = Constraint(expr=m.y == m.x**m.p)
         dtb = DiagnosticsToolbox(m)
-        warnings, cautions = dtb._collect_potential_eval_errors()
+        warnings = dtb._collect_potential_eval_errors()
         self.assertEqual(len(warnings), 0)
-        self.assertEqual(len(cautions), 0)
 
         m.x.setlb(None)
-        warnings, cautions = dtb._collect_potential_eval_errors()
+        warnings = dtb._collect_potential_eval_errors()
         self.assertEqual(len(warnings), 1)
-        self.assertEqual(len(cautions), 0)
         w = warnings[0]
         self.assertEqual(
             w,
@@ -2667,9 +2660,8 @@ class TestEvalErrorDetection(TestCase):
         m.p = Var(bounds=(0, None))
         m.c = Constraint(expr=m.y == m.x**m.p)
         dtb = DiagnosticsToolbox(m)
-        warnings, cautions = dtb._collect_potential_eval_errors()
+        warnings = dtb._collect_potential_eval_errors()
         self.assertEqual(len(warnings), 0)
-        self.assertEqual(len(cautions), 0)
 
     @pytest.mark.unit
     def test_log(self):
@@ -2678,14 +2670,12 @@ class TestEvalErrorDetection(TestCase):
         m.y = Var()
         m.c = Constraint(expr=m.y == log(m.x))
         dtb = DiagnosticsToolbox(m)
-        warnings, cautions = dtb._collect_potential_eval_errors()
+        warnings = dtb._collect_potential_eval_errors()
         self.assertEqual(len(warnings), 0)
-        self.assertEqual(len(cautions), 0)
 
         m.x.setlb(-1)
-        warnings, cautions = dtb._collect_potential_eval_errors()
+        warnings = dtb._collect_potential_eval_errors()
         self.assertEqual(len(warnings), 1)
-        self.assertEqual(len(cautions), 0)
         w = warnings[0]
         self.assertEqual(
             w,
@@ -2699,14 +2689,12 @@ class TestEvalErrorDetection(TestCase):
         m.y = Var()
         m.c = Constraint(expr=m.y == tan(m.x))
         dtb = DiagnosticsToolbox(m)
-        warnings, cautions = dtb._collect_potential_eval_errors()
+        warnings = dtb._collect_potential_eval_errors()
         self.assertEqual(len(warnings), 0)
-        self.assertEqual(len(cautions), 0)
 
         m.x.setlb(-math.pi)
-        warnings, cautions = dtb._collect_potential_eval_errors()
+        warnings = dtb._collect_potential_eval_errors()
         self.assertEqual(len(warnings), 1)
-        self.assertEqual(len(cautions), 0)
         w = warnings[0]
         self.assertEqual(
             w,
@@ -2720,14 +2708,12 @@ class TestEvalErrorDetection(TestCase):
         m.y = Var()
         m.c = Constraint(expr=m.y == asin(m.x))
         dtb = DiagnosticsToolbox(m)
-        warnings, cautions = dtb._collect_potential_eval_errors()
+        warnings = dtb._collect_potential_eval_errors()
         self.assertEqual(len(warnings), 0)
-        self.assertEqual(len(cautions), 0)
 
         m.x.setlb(None)
-        warnings, cautions = dtb._collect_potential_eval_errors()
+        warnings = dtb._collect_potential_eval_errors()
         self.assertEqual(len(warnings), 1)
-        self.assertEqual(len(cautions), 0)
         w = warnings[0]
         self.assertEqual(
             w,
@@ -2736,9 +2722,8 @@ class TestEvalErrorDetection(TestCase):
 
         m.x.setlb(-0.5)
         m.x.setub(None)
-        warnings, cautions = dtb._collect_potential_eval_errors()
+        warnings = dtb._collect_potential_eval_errors()
         self.assertEqual(len(warnings), 1)
-        self.assertEqual(len(cautions), 0)
         w = warnings[0]
         self.assertEqual(
             w,
@@ -2752,14 +2737,12 @@ class TestEvalErrorDetection(TestCase):
         m.y = Var()
         m.c = Constraint(expr=m.y == acos(m.x))
         dtb = DiagnosticsToolbox(m)
-        warnings, cautions = dtb._collect_potential_eval_errors()
+        warnings = dtb._collect_potential_eval_errors()
         self.assertEqual(len(warnings), 0)
-        self.assertEqual(len(cautions), 0)
 
         m.x.setlb(None)
-        warnings, cautions = dtb._collect_potential_eval_errors()
+        warnings = dtb._collect_potential_eval_errors()
         self.assertEqual(len(warnings), 1)
-        self.assertEqual(len(cautions), 0)
         w = warnings[0]
         self.assertEqual(
             w,
@@ -2768,9 +2751,8 @@ class TestEvalErrorDetection(TestCase):
 
         m.x.setlb(-0.5)
         m.x.setub(None)
-        warnings, cautions = dtb._collect_potential_eval_errors()
+        warnings = dtb._collect_potential_eval_errors()
         self.assertEqual(len(warnings), 1)
-        self.assertEqual(len(cautions), 0)
         w = warnings[0]
         self.assertEqual(
             w,
@@ -2784,46 +2766,16 @@ class TestEvalErrorDetection(TestCase):
         m.y = Var()
         m.c = Constraint(expr=m.y == sqrt(m.x))
         dtb = DiagnosticsToolbox(m)
-        warnings, cautions = dtb._collect_potential_eval_errors()
+        warnings = dtb._collect_potential_eval_errors()
         self.assertEqual(len(warnings), 0)
-        self.assertEqual(len(cautions), 0)
 
         m.x.setlb(-1)
-        warnings, cautions = dtb._collect_potential_eval_errors()
+        warnings = dtb._collect_potential_eval_errors()
         self.assertEqual(len(warnings), 1)
-        self.assertEqual(len(cautions), 0)
         w = warnings[0]
-        print(w)
         self.assertEqual(
             w,
             "c: Potential square root of a negative number in sqrt(x); Argument bounds are (-1, inf)",
-        )
-
-    @pytest.mark.unit
-    def test_expression(self):
-        m = ConcreteModel()
-        m.x = Var(bounds=(3, None))
-        m.y = Var()
-        m.c = Constraint(expr=m.y == log(m.x - 1))
-        dtb = DiagnosticsToolbox(m)
-        warnings, cautions = dtb._collect_potential_eval_errors()
-        self.assertEqual(len(warnings), 0)
-        self.assertEqual(len(cautions), 1)
-        w = cautions[0]
-        self.assertEqual(
-            w,
-            "c: Potential evaluation error in log(x - 1); arguments are expressions with bounds that are not strictly enforced;",
-        )
-
-        m.x.setlb(1)
-        warnings, cautions = dtb._collect_potential_eval_errors()
-        self.assertEqual(len(warnings), 1)
-        self.assertEqual(len(cautions), 0)
-        w = warnings[0]
-        print(w)
-        self.assertEqual(
-            w,
-            "c: Potential log of a non-positive number in log(x - 1); Argument bounds are (0, inf)",
         )
 
     @pytest.mark.unit
@@ -2838,12 +2790,10 @@ class TestEvalErrorDetection(TestCase):
         m.c3 = Constraint(expr=m.x - 1 >= 0)
         dtb = DiagnosticsToolbox(m)
         dtb.display_potential_evaluation_errors(stream=stream)
-        expected = "====================================================================================\n3 WARNINGS\n\n    c1: Potential log of a non-positive number in log(x); Argument bounds are (-inf, inf)\n    c2: Potential evaluation error in (x - 1)**2.5; base bounds are (-inf, inf); exponent bounds are (2.5, 2.5)\n    obj: Potential evaluation error in y**2.5; base bounds are (-inf, inf); exponent bounds are (2.5, 2.5)\n\n------------------------------------------------------------------------------------\n0 Cautions\n\n    No cautions found!\n\n====================================================================================\n"
+        expected = "====================================================================================\n3 WARNINGS\n\n    c1: Potential log of a non-positive number in log(x); Argument bounds are (-inf, inf)\n    c2: Potential evaluation error in (x - 1)**2.5; base bounds are (-inf, inf); exponent bounds are (2.5, 2.5)\n    obj: Potential evaluation error in y**2.5; base bounds are (-inf, inf); exponent bounds are (2.5, 2.5)\n\n====================================================================================\n"
         got = stream.getvalue()
         exp_list = expected.split("\n")
         got_list = got.split("\n")
-        print(exp_list)
-        print(got_list)
         self.assertEqual(len(exp_list), len(got_list))
         for _exp, _got in zip(exp_list, got_list):
             self.assertEqual(_exp, _got)

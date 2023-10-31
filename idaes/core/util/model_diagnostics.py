@@ -951,6 +951,13 @@ class DiagnosticsToolbox:
         if any(len(x) > 0 for x in [oc_var, oc_con]):
             next_steps.append(self.display_overconstrained_set.__name__ + "()")
 
+        eval_warnings = self._collect_potential_eval_errors()
+        if len(eval_warnings) > 0:
+            warnings.append(
+                f"WARNING: Found {len(eval_warnings)} potential evaluation errors."
+            )
+            next_steps.append(self.display_potential_evaluation_errors.__name__ + "()")
+
         return warnings, next_steps
 
     def _collect_structural_cautions(self):
@@ -1244,10 +1251,6 @@ class DiagnosticsToolbox:
         warnings, next_steps = self._collect_structural_warnings()
         cautions = self._collect_structural_cautions()
 
-        eval_error_warnings, eval_error_cautions = self._collect_potential_eval_errors()
-        warnings.extend(eval_error_warnings)
-        cautions.extend(eval_error_cautions)
-
         _write_report_section(
             stream=stream, lines_list=stats, title="Model Statistics", header="="
         )
@@ -1322,52 +1325,39 @@ class DiagnosticsToolbox:
             footer="=",
         )
 
-    def _collect_potential_eval_errors(self):
+    def _collect_potential_eval_errors(self) -> List[str]:
         res = list()
         warnings = list()
-        cautions = list()
         for con in self.model.component_data_objects(
             Constraint, active=True, descend_into=True
         ):
             walker = _EvalErrorWalker()
-            con_warnings, con_cautions = walker.walk_expression(con.body)
+            con_warnings = walker.walk_expression(con.body)
             for msg in con_warnings:
                 msg = f"{con.name}: " + msg
                 warnings.append(msg)
-            for msg in con_cautions:
-                msg = f"{con.name}: " + msg
-                cautions.append(msg)
         for obj in self.model.component_data_objects(
             Objective, active=True, descend_into=True
         ):
             walker = _EvalErrorWalker()
-            obj_warnings, obj_cautions = walker.walk_expression(obj.expr)
+            obj_warnings = walker.walk_expression(obj.expr)
             for msg in obj_warnings:
                 msg = f"{obj.name}: " + msg
                 warnings.append(msg)
-            for msg in obj_cautions:
-                msg = f"{obj.name}: " + msg
-                cautions.append(msg)
 
-        return warnings, cautions
+        return warnings
 
     def display_potential_evaluation_errors(self, stream=None):
         if stream is None:
             stream = sys.stdout
 
-        warnings, cautions = self._collect_potential_eval_errors()
+        warnings = self._collect_potential_eval_errors()
         _write_report_section(
             stream=stream,
             lines_list=warnings,
             title=f"{len(warnings)} WARNINGS",
             line_if_empty="No warnings found!",
             header="=",
-        )
-        _write_report_section(
-            stream=stream,
-            lines_list=cautions,
-            title=f"{len(cautions)} Cautions",
-            line_if_empty="No cautions found!",
             footer="=",
         )
 
@@ -1700,40 +1690,14 @@ def _get_bounds_with_inf(node: NumericExpression):
     return lb, ub
 
 
-def _caution_expression_argument(
-    node: NumericExpression,
-    args_to_check: Sequence[NumericExpression],
-    caution_list: List[str],
-):
-    should_caution = False
-    for arg in args_to_check:
-        if is_fixed(arg):
-            continue
-        if isinstance(arg, _GeneralVarData):
-            continue
-        should_caution = True
-        break
-    if should_caution:
-        msg = f"Potential evaluation error in {node}; "
-        msg += "arguments are expressions with bounds that are not strictly "
-        msg += "enforced;"
-        caution_list.append(msg)
-
-
-def _check_eval_error_division(
-    node: NumericExpression, warn_list: List[str], caution_list: List[str]
-):
+def _check_eval_error_division(node: NumericExpression, warn_list: List[str]):
     lb, ub = _get_bounds_with_inf(node.args[1])
     if lb <= 0 <= ub:
         msg = f"Potential division by 0 in {node}; Denominator bounds are ({lb}, {ub})"
         warn_list.append(msg)
-    else:
-        _caution_expression_argument(node, [node.args[1]], caution_list)
 
 
-def _check_eval_error_pow(
-    node: NumericExpression, warn_list: List[str], caution_list: List[str]
-):
+def _check_eval_error_pow(node: NumericExpression, warn_list: List[str]):
     arg1, arg2 = node.args
     lb1, ub1 = _get_bounds_with_inf(arg1)
     lb2, ub2 = _get_bounds_with_inf(arg2)
@@ -1772,10 +1736,8 @@ def _check_eval_error_pow(
 
     # if the base is positive, there should not be any evaluation errors
     if lb1 > 0:
-        _caution_expression_argument(node, node.args, caution_list)
         return None
     if lb1 >= 0 and lb2 >= 0:
-        _caution_expression_argument(node, node.args, caution_list)
         return None
 
     msg = f"Potential evaluation error in {node}; "
@@ -1784,59 +1746,39 @@ def _check_eval_error_pow(
     warn_list.append(msg)
 
 
-def _check_eval_error_log(
-    node: NumericExpression, warn_list: List[str], caution_list: List[str]
-):
+def _check_eval_error_log(node: NumericExpression, warn_list: List[str]):
     lb, ub = _get_bounds_with_inf(node.args[0])
     if lb <= 0:
         msg = f"Potential log of a non-positive number in {node}; Argument bounds are ({lb}, {ub})"
         warn_list.append(msg)
-    else:
-        _caution_expression_argument(node, node.args, caution_list)
 
 
-def _check_eval_error_tan(
-    node: NumericExpression, warn_list: List[str], caution_list: List[str]
-):
+def _check_eval_error_tan(node: NumericExpression, warn_list: List[str]):
     lb, ub = _get_bounds_with_inf(node)
     if not (math.isfinite(lb) and math.isfinite(ub)):
         msg = f"{node} may evaluate to -inf or inf; Argument bounds are {_get_bounds_with_inf(node.args[0])}"
         warn_list.append(msg)
-    else:
-        _caution_expression_argument(node, node.args, caution_list)
 
 
-def _check_eval_error_asin(
-    node: NumericExpression, warn_list: List[str], caution_list: List[str]
-):
+def _check_eval_error_asin(node: NumericExpression, warn_list: List[str]):
     lb, ub = _get_bounds_with_inf(node.args[0])
     if lb < -1 or ub > 1:
         msg = f"Potential evaluation of asin outside [-1, 1] in {node}; Argument bounds are ({lb}, {ub})"
         warn_list.append(msg)
-    else:
-        _caution_expression_argument(node, node.args, caution_list)
 
 
-def _check_eval_error_acos(
-    node: NumericExpression, warn_list: List[str], caution_list: List[str]
-):
+def _check_eval_error_acos(node: NumericExpression, warn_list: List[str]):
     lb, ub = _get_bounds_with_inf(node.args[0])
     if lb < -1 or ub > 1:
         msg = f"Potential evaluation of acos outside [-1, 1] in {node}; Argument bounds are ({lb}, {ub})"
         warn_list.append(msg)
-    else:
-        _caution_expression_argument(node, node.args, caution_list)
 
 
-def _check_eval_error_sqrt(
-    node: NumericExpression, warn_list: List[str], caution_list: List[str]
-):
+def _check_eval_error_sqrt(node: NumericExpression, warn_list: List[str]):
     lb, ub = _get_bounds_with_inf(node.args[0])
     if lb < 0:
         msg = f"Potential square root of a negative number in {node}; Argument bounds are ({lb}, {ub})"
         warn_list.append(msg)
-    else:
-        _caution_expression_argument(node, node.args, caution_list)
 
 
 _unary_eval_err_handler = dict()
@@ -1848,11 +1790,9 @@ _unary_eval_err_handler["acos"] = _check_eval_error_acos
 _unary_eval_err_handler["sqrt"] = _check_eval_error_sqrt
 
 
-def _check_eval_error_unary(
-    node: NumericExpression, warn_list: List[str], caution_list: List[str]
-):
+def _check_eval_error_unary(node: NumericExpression, warn_list: List[str]):
     if node.getname() in _unary_eval_err_handler:
-        _unary_eval_err_handler[node.getname()](node, warn_list, caution_list)
+        _unary_eval_err_handler[node.getname()](node, warn_list)
 
 
 _eval_err_handler = dict()
@@ -1868,12 +1808,11 @@ class _EvalErrorWalker(StreamBasedExpressionVisitor):
     def __init__(self):
         super().__init__()
         self._warn_list = list()
-        self._caution_list = list()
 
     def exitNode(self, node, data):
         if type(node) in _eval_err_handler:
-            _eval_err_handler[type(node)](node, self._warn_list, self._caution_list)
-        return self._warn_list, self._caution_list
+            _eval_err_handler[type(node)](node, self._warn_list)
+        return self._warn_list
 
 
 # TODO: Rename and redirect once old DegeneracyHunter is removed
