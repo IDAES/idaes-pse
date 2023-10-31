@@ -2600,6 +2600,18 @@ class TestEvalErrorDetection(TestCase):
         warnings = dtb._collect_potential_eval_errors()
         self.assertEqual(len(warnings), 0)
 
+        m.x.setlb(0)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 1)
+        w = warnings[0]
+        self.assertEqual(
+            w, "c: Potential division by 0 in 1/x; Denominator bounds are (0, inf)"
+        )
+
+        dtb.config.strict_evaluation_error_detection = False
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 0)
+
         m.x.setlb(-1)
         warnings = dtb._collect_potential_eval_errors()
         self.assertEqual(len(warnings), 1)
@@ -2664,12 +2676,81 @@ class TestEvalErrorDetection(TestCase):
         self.assertEqual(len(warnings), 0)
 
     @pytest.mark.unit
+    def test_pow4(self):
+        m = ConcreteModel()
+        m.x = Var(bounds=(0, None))
+        m.y = Var()
+        m.c = Constraint(expr=m.y == m.x ** (-2))
+        dtb = DiagnosticsToolbox(m)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 1)
+        w = warnings[0]
+        self.assertEqual(
+            w,
+            "c: Potential evaluation error in x**-2; base bounds are (0, inf); exponent bounds are (-2, -2)",
+        )
+
+        dtb.config.strict_evaluation_error_detection = False
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 0)
+
+        m.x.setlb(-1)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 1)
+        w = warnings[0]
+        self.assertEqual(
+            w,
+            "c: Potential evaluation error in x**-2; base bounds are (-1, inf); exponent bounds are (-2, -2)",
+        )
+
+    @pytest.mark.unit
+    def test_pow5(self):
+        m = ConcreteModel()
+        m.x = Var(bounds=(0, None))
+        m.y = Var()
+        m.c = Constraint(expr=m.y == m.x ** (-2.5))
+        dtb = DiagnosticsToolbox(m)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 1)
+        w = warnings[0]
+        self.assertEqual(
+            w,
+            "c: Potential evaluation error in x**-2.5; base bounds are (0, inf); exponent bounds are (-2.5, -2.5)",
+        )
+
+        dtb.config.strict_evaluation_error_detection = False
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 0)
+
+        m.x.setlb(-1)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 1)
+        w = warnings[0]
+        self.assertEqual(
+            w,
+            "c: Potential evaluation error in x**-2.5; base bounds are (-1, inf); exponent bounds are (-2.5, -2.5)",
+        )
+
+    @pytest.mark.unit
     def test_log(self):
         m = ConcreteModel()
         m.x = Var(bounds=(1, None))
         m.y = Var()
         m.c = Constraint(expr=m.y == log(m.x))
         dtb = DiagnosticsToolbox(m)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 0)
+
+        m.x.setlb(0)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 1)
+        w = warnings[0]
+        self.assertEqual(
+            w,
+            "c: Potential log of a non-positive number in log(x); Argument bounds are (0, inf)",
+        )
+
+        dtb.config.strict_evaluation_error_detection = False
         warnings = dtb._collect_potential_eval_errors()
         self.assertEqual(len(warnings), 0)
 
