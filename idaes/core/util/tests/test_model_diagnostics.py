@@ -77,10 +77,24 @@ from idaes.core.util.model_diagnostics import (
     _write_report_section,
     _collect_model_statistics,
 )
+from idaes.core.util.testing import _enable_scip_solver_for_testing
+
 
 __author__ = "Alex Dowling, Douglas Allan, Andrew Lee"
 
-solver_available = SolverFactory("scip").available()
+
+@pytest.fixture(scope="module")
+def scip_solver():
+    solver = SolverFactory("scip")
+    undo_changes = None
+
+    if not solver.available():
+        undo_changes = _enable_scip_solver_for_testing()
+    if not solver.available():
+        pytest.skip(reason="SCIP solver not available")
+    yield solver
+    if undo_changes is not None:
+        undo_changes()
 
 
 @pytest.fixture
@@ -1790,8 +1804,7 @@ class TestDegeneracyHunter:
 
     @pytest.mark.solver
     @pytest.mark.component
-    @pytest.mark.skipif(not solver_available, reason="SCIP is not available")
-    def test_solve_candidates_milp(self, model):
+    def test_solve_candidates_milp(self, model, scip_solver):
         dh = DegeneracyHunter2(model)
         dh._prepare_candidates_milp()
         dh._solve_candidates_milp()
@@ -1840,8 +1853,7 @@ class TestDegeneracyHunter:
 
     @pytest.mark.solver
     @pytest.mark.component
-    @pytest.mark.skipif(not solver_available, reason="SCIP is not available")
-    def test_solve_ids_milp(self, model):
+    def test_solve_ids_milp(self, model, scip_solver):
         dh = DegeneracyHunter2(model)
         dh._prepare_ids_milp()
         ids_ = dh._solve_ids_milp(cons=model.con2)
@@ -1859,8 +1871,7 @@ class TestDegeneracyHunter:
 
     @pytest.mark.solver
     @pytest.mark.component
-    @pytest.mark.skipif(not solver_available, reason="SCIP is not available")
-    def test_find_irreducible_degenerate_sets(self, model):
+    def test_find_irreducible_degenerate_sets(self, model, scip_solver):
         dh = DegeneracyHunter2(model)
         dh.find_irreducible_degenerate_sets()
 
@@ -1871,8 +1882,7 @@ class TestDegeneracyHunter:
 
     @pytest.mark.solver
     @pytest.mark.component
-    @pytest.mark.skipif(not solver_available, reason="SCIP is not available")
-    def test_report_irreducible_degenerate_sets(self, model):
+    def test_report_irreducible_degenerate_sets(self, model, scip_solver):
         stream = StringIO()
 
         dh = DegeneracyHunter2(model)
@@ -1898,8 +1908,7 @@ Irreducible Degenerate Sets
 
     @pytest.mark.solver
     @pytest.mark.component
-    @pytest.mark.skipif(not solver_available, reason="SCIP is not available")
-    def test_report_irreducible_degenerate_sets_none(self, model):
+    def test_report_irreducible_degenerate_sets_none(self, model, scip_solver):
         stream = StringIO()
 
         # Delete degenerate constraint
