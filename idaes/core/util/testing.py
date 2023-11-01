@@ -434,11 +434,16 @@ def _enable_scip_solver_for_testing(
     os.environ["PATH"] = os.pathsep.join([new_path_entry, os.environ["PATH"]])
     Executable.rehash()
 
-    def undo_changes():
-        try:
-            os.environ["PATH"].remove(new_path_entry)
-            Executable.rehash()
-        except ValueError:
-            pass
+    def remove_from_path():
+        path_as_list = os.environ["PATH"].split(os.pathsep)
 
-    return undo_changes
+        try:
+            path_as_list.remove(new_path_entry)
+        except ValueError:
+            # not in PATH
+            pass
+        else:
+            os.environ["PATH"] = os.pathsep.join(path_as_list)
+            Executable.rehash()
+
+    return remove_from_path
