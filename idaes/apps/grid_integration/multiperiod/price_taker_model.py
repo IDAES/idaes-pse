@@ -14,6 +14,7 @@ import pandas as pd
 import numpy as np
 from functools import reduce
 from operator import attrgetter
+import os.path
 
 from importlib import resources
 from pathlib import Path
@@ -231,10 +232,17 @@ class PriceTakerModel(ConcreteModel):
         n_clusters=None,
         horizon_length=None,
     ):
-        with resources.path(file_path, file_name) as p:
-            path_to_file = Path(p).resolve()
-        
-        full_data = pd.read_excel( path_to_file, sheet_name=[sheet])[sheet]
+        # with resources.path(file_path, file_name) as p:
+        #     path_to_file = Path(p).resolve()
+        if os.path.exists(file_path):
+            path_to_file = file_path
+        else:
+            raise ValueError()
+
+        if '.xls' in path_to_file[-5:]:
+            full_data = pd.read_excel( path_to_file, sheet_name=[sheet])[sheet]
+        elif '.csv' in path_to_file[-5:]:
+            full_data = pd.read_csv(path_to_file, )
         # editing the data
         if isinstance(column_name, list) and n_clusters is not None:
             # Multiple years and representative days
@@ -304,10 +312,11 @@ class PriceTakerModel(ConcreteModel):
             # Single price signal, use full year's price signal
             self.set_years = None
             self.set_days = None
-            self._n_time_points = len(full_data)
+            # self._n_time_points = len(full_data)
+            self._n_time_points = 48
             self.set_time = RangeSet(self._n_time_points)
 
-            price_data = full_data[column_name].to_list()
+            price_data = full_data[column_name].to_list()[:48]
             self.LMP = {t: price_data[t - 1] for t in self.set_time}
 
             return
@@ -459,7 +468,10 @@ class PriceTakerModel(ConcreteModel):
         start_up = {t: deepgetattr(self.mp_model.period[t], op_blk + ".startup") for t in self.mp_model.period}
         op_mode = {t: deepgetattr(self.mp_model.period[t], op_blk + ".op_mode") for t in self.mp_model.period}
         shut_down = {t: deepgetattr(self.mp_model.period[t], op_blk + ".shutdown") for t in self.mp_model.period}
-        build =  deepgetattr(self,design_blk + "." + build_binary_var)
+
+        if design_blk is not None:
+            build =  deepgetattr(self,design_blk + "." + build_binary_var)
+
         self.range_time_steps = RangeSet(len(self.mp_model.set_period))
         number_time_steps = len(self.mp_model.set_period)
 
@@ -467,11 +479,12 @@ class PriceTakerModel(ConcreteModel):
         setattr(self.mp_model, blk_name, Block())
         blk = getattr(self.mp_model,blk_name)
 
-        @blk.Constraint(self.range_time_steps)
-        def design_op_relationship_con(b,t):
-            return (start_up[self.mp_model.set_period[t]] + shut_down[self.mp_model.set_period[t]] + 
-                    op_mode[self.mp_model.set_period[t]] <= build
-                   )
+        if design_blk is not None:
+            @blk.Constraint(self.range_time_steps)
+            def design_op_relationship_con(b, t):
+                return (start_up[self.mp_model.set_period[t]] + shut_down[self.mp_model.set_period[t]] +
+                        op_mode[self.mp_model.set_period[t]] <= build
+                       )
 
         @blk.Constraint(self.range_time_steps)
         def minimum_up_time_con(b,t):
