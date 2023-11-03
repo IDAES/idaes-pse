@@ -23,14 +23,15 @@ This model assumes:
 streams.
 * two inlet Ports (solid and liquid)
 * three outlet Ports (solids, liquid with solids, separated liquids).
+
 """
 # Import Python libraries
 import logging
 from pandas import DataFrame
 
 # Import Pyomo libraries
-from pyomo.environ import Constraint, Reference
-from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
+from pyomo.environ import Reference
+from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.network import Port
 
 # Import IDAES cores
