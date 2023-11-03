@@ -416,7 +416,7 @@ class TestSLSeparatorBasic:
         }
 
     @pytest.mark.ui
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_get_stream_table_contents(self, model):
         stable = model.fs.unit._get_stream_table_contents()
 

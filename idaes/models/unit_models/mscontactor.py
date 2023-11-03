@@ -905,21 +905,22 @@ class MSContactorData(UnitModelBlockData):
         )
 
     def _get_performance_contents(self, time_point=0):
-        assert False
-        return {"vars": {"Liquid Recovery": self.liquid_recovery[time_point]}}
+        # Due to the flexibility of the MSContactor and the number of possible terms
+        # that could be included here, we will leave this up to the user to define.
+        return {}
 
     def _get_stream_table_contents(self, time_point=0):
         stream_attributes = {}
         stream_attributes["Units"] = {}
 
         sblocks = {}
-        for stream, pconfig in self.config.streams.keys():
+        for stream, pconfig in self.config.streams.items():
             sblock = getattr(self, stream)
             flow_dir = pconfig.flow_direction
 
             if pconfig.has_feed:
                 inlet_state = getattr(self, stream + "_inlet_state")
-                sblocks[stream + " Inlet"] = inlet_state
+                sblocks[stream + " Inlet"] = inlet_state[time_point]
 
             if flow_dir == FlowDirection.forward:
                 outlet = self.elements.last()
@@ -928,10 +929,10 @@ class MSContactorData(UnitModelBlockData):
             else:
                 raise BurntToast("If/else overrun when constructing stream table")
 
-            sblocks[stream + " Outlet"] = sblock[outlet]
+            sblocks[stream + " Outlet"] = sblock[time_point, outlet]
 
         for n, v in sblocks.items():
-            dvars = v[time_point].define_display_vars()
+            dvars = v.define_display_vars()
 
             stream_attributes[n] = {}
 
