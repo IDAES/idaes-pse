@@ -17,12 +17,9 @@ This model is intended to form the basis for solid-liquid separations where a mi
 stream enters the unit and is separated into a concentrated solid-liquid stream and
 a stream of pure liquid (e.g. filers, thickeners, etc.)
 
-This model assumes:
-
-* separate property packages and ports for the solid and liquid
-streams.
-* two inlet Ports (solid and liquid)
-* three outlet Ports (solids, liquid with solids, separated liquids).
+This model assumes separate property packages and ports for the solid and liquid
+streams and thus two inlet Ports (solid and liquid) and three outlet Ports (solids,
+liquid with solids, separated liquids).
 
 """
 # Import Python libraries
