@@ -11,7 +11,7 @@
 # for full copyright and license information.
 #################################################################################
 """
-Tests for solid-liquid separator unit model.
+Tests for thickener unit model.
 Authors: Andrew Lee
 """
 
@@ -26,7 +26,7 @@ from idaes.core import (
     MaterialBalanceType,
     MomentumBalanceType,
 )
-from idaes.models.unit_models.solid_liquid import SLSeparator
+from idaes.models.unit_models.solid_liquid import Thickener0D
 from idaes.models.unit_models.separator import (
     Separator,
     SeparatorData,
@@ -54,7 +54,7 @@ solver = get_solver()
 
 
 # -----------------------------------------------------------------------------
-class TestSLSeparatorBasic:
+class TestThickener0DBasic:
     @pytest.fixture(scope="class")
     def model(self):
         m = ConcreteModel()
@@ -62,7 +62,7 @@ class TestSLSeparatorBasic:
 
         m.fs.properties = SaponificationParameterBlock()
 
-        m.fs.unit = SLSeparator(
+        m.fs.unit = Thickener0D(
             solid_property_package=m.fs.properties,
             liquid_property_package=m.fs.properties,
         )

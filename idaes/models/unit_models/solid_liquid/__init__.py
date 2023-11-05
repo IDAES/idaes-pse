@@ -11,3 +11,4 @@
 # for full copyright and license information.
 #################################################################################
 from .sl_separator import SLSeparator
+from .thickener import Thickener0D
