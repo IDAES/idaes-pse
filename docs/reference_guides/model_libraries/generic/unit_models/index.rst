@@ -2,7 +2,7 @@ Unit Models
 ===========
 
 .. toctree::
-    :maxdepth: 1
+    :maxdepth: 2
 
     compressor
     cstr
@@ -30,3 +30,5 @@ Unit Models
     translator
     turbine
     valve
+    
+    solid_liquid/index
