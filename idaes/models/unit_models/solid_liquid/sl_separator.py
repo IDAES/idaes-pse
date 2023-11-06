@@ -15,7 +15,7 @@ Base model for solid-liquid separations.
 
 This model is intended to form the basis for solid-liquid separations where a mixed
 stream enters the unit and is separated into a concentrated solid-liquid stream and
-a stream of pure liquid (e.g. filers, thickeners, etc.)
+a stream of pure liquid (e.g. filters, thickeners, etc.)
 
 This model assumes separate property packages and ports for the solid and liquid
 streams and thus two inlet Ports (solid and liquid) and three outlet Ports (solids,
