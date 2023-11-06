@@ -7,3 +7,4 @@ This library contains models specific for solid-liquid processing operations (al
     :maxdepth: 1
 
     sl_separator
+    thickener0d

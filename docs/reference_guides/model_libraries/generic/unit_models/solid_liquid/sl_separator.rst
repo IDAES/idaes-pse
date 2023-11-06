@@ -1,5 +1,5 @@
 Generic Solid-Liquid Separator
-===============================
+==============================
 
 The ``SLSeparator`` unit model is a general purpose model for representing the separation of mixed streams containing solids and liquids, such as filtration and thickening. The model assumes that the mixed stream is separated into a concentrated solid-liquid stream and a stream of clarified liquid.
 
