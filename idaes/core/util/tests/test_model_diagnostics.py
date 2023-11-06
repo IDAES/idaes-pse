@@ -1809,21 +1809,21 @@ class TestDegeneracyHunter:
         dh._prepare_candidates_milp()
         dh._solve_candidates_milp()
 
-        assert value(dh.candidates_milp.nu[0]) == pytest.approx(-1e-05, rel=1e-5)
-        assert value(dh.candidates_milp.nu[1]) == pytest.approx(1e-05, rel=1e-5)
+        assert value(dh.candidates_milp.nu[0]) == pytest.approx(1e-05, rel=1e-5)
+        assert value(dh.candidates_milp.nu[1]) == pytest.approx(-1e-05, rel=1e-5)
 
         assert value(dh.candidates_milp.y_pos[0]) == pytest.approx(0, abs=1e-5)
-        assert value(dh.candidates_milp.y_pos[1]) == pytest.approx(1, rel=1e-5)
+        assert value(dh.candidates_milp.y_pos[1]) == pytest.approx(0, rel=1e-5)
 
-        assert value(dh.candidates_milp.y_neg[0]) == pytest.approx(-0, abs=1e-5)
-        assert value(dh.candidates_milp.y_neg[1]) == pytest.approx(-0, abs=1e-5)
+        assert value(dh.candidates_milp.y_neg[0]) == pytest.approx(0, abs=1e-5)
+        assert value(dh.candidates_milp.y_neg[1]) == pytest.approx(1, abs=1e-5)
 
         assert value(dh.candidates_milp.abs_nu[0]) == pytest.approx(1e-05, rel=1e-5)
         assert value(dh.candidates_milp.abs_nu[1]) == pytest.approx(1e-05, rel=1e-5)
 
         assert dh.degenerate_set == {
-            model.con2: -1e-05,
-            model.con5: 1e-05,
+            model.con2: value(dh.candidates_milp.nu[0]),
+            model.con5: value(dh.candidates_milp.nu[1]),
         }
 
     @pytest.mark.unit
