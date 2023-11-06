@@ -19,7 +19,7 @@ import pytest
 
 from pyomo.environ import check_optimal_termination, ConcreteModel, units, value, Var
 from pyomo.network import Port
-from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
+from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import (
     FlowsheetBlock,
@@ -154,10 +154,6 @@ class TestSLSeparatorBasic:
 
         assert isinstance(model.fs.unit.split, SeparatorData)
         assert isinstance(model.fs.unit.liquid_recovery, Var)
-
-        print(number_variables(model))
-        print(number_total_constraints(model))
-        print(number_unused_variables(model))
 
         assert number_variables(model) == 34
         assert number_total_constraints(model) == 17

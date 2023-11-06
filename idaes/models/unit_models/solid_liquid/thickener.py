@@ -106,7 +106,7 @@ class Thickener0DData(SLSeparatorData):
         )
 
         self.settling_time = Var(
-            self.flowsheet().time(),
+            self.flowsheet().time,
             initialize=1,
             units=s_metadata.get_derived_units("time"),
             doc="Settling time of suspension",
@@ -116,7 +116,7 @@ class Thickener0DData(SLSeparatorData):
             self.flowsheet().time, doc="Constraint to calculate L/S ratio at underflow"
         )
         def underflow_sl_constraint(b, t):
-            return b.liquid_frac_underflow[t] * b.solid_state[
+            return b.liquid_solid_underflow[t] * b.solid_state[
                 t
             ].flow_mass == units.convert(
                 b.split.retained_state[t].flow_mass,
@@ -127,10 +127,10 @@ class Thickener0DData(SLSeparatorData):
             self.flowsheet().time, doc="Constraint to estimate cross-sectional area"
         )
         def cross_sectional_area_constraint(b, t):
-            return b.area * b.liquid_inlet_state[t].dens_mass * b.velocity_pinch[
+            return b.area * b.liquid_inlet_state[
                 t
-            ] == b.solid_state[t].flow_mass * (
-                b.liquid_frac_pinch[t] - b.liquid_frac_underflow[t]
+            ].dens_mass * b.settling_velocity_pinch[t] == b.solid_state[t].flow_mass * (
+                b.liquid_solid_pinch[t] - b.liquid_solid_underflow[t]
             )
 
         @self.Constraint(
@@ -161,11 +161,11 @@ class Thickener0DData(SLSeparatorData):
         return {
             "vars": {
                 "Area": self.area,
-                # TODO: Height
+                "Height": self.height,
                 "Liquid Recovery": self.liquid_recovery[time_point],
                 "Underflow L/S": self.liquid_solid_underflow[time_point],
                 "Pinch L/S": self.liquid_solid_pinch[time_point],
-                "Critical Settling Velocity": self.settling_velocity_pich[time_point],
-                # TODO: Settling time
+                "Critical Settling Velocity": self.settling_velocity_pinch[time_point],
+                "Settling Time": self.settling_time[time_point],
             }
         }

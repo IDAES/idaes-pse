@@ -17,7 +17,15 @@ Authors: Andrew Lee
 
 import pytest
 
-from pyomo.environ import check_optimal_termination, ConcreteModel, units, value, Var
+from pyomo.environ import (
+    check_optimal_termination,
+    ConcreteModel,
+    Constraint,
+    Param,
+    units,
+    value,
+    Var,
+)
 from pyomo.network import Port
 from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 
@@ -25,6 +33,13 @@ from idaes.core import (
     FlowsheetBlock,
     MaterialBalanceType,
     MomentumBalanceType,
+    declare_process_block_class,
+    MaterialFlowBasis,
+    PhysicalParameterBlock,
+    StateBlockData,
+    StateBlock,
+    LiquidPhase,
+    Component,
 )
 from idaes.models.unit_models.solid_liquid import Thickener0D
 from idaes.models.unit_models.separator import (
@@ -38,9 +53,6 @@ from idaes.core.util.model_statistics import (
     number_total_constraints,
     number_unused_variables,
 )
-from idaes.models.properties.examples.saponification_thermo import (
-    SaponificationParameterBlock,
-)
 from idaes.core.solvers import get_solver
 from idaes.core.initialization import (
     BlockTriangularizationInitializer,
@@ -53,6 +65,95 @@ from idaes.core.util import DiagnosticsToolbox
 solver = get_solver()
 
 
+@declare_process_block_class("TestParameterBlock")
+class TestParameterData(PhysicalParameterBlock):
+    def build(self):
+        """
+        Callable method for Block construction.
+        """
+        super().build()
+
+        self._state_block_class = TestStateBlock
+
+        # Add Phase objects
+        self.Liq = LiquidPhase()
+
+        # Add Component objects
+        self.a = Component()
+        self.b = Component()
+
+    @classmethod
+    def define_metadata(cls, obj):
+        obj.add_default_units(
+            {
+                "time": units.s,
+                "length": units.m,
+                "mass": units.kg,
+                "amount": units.mol,
+                "temperature": units.K,
+            }
+        )
+
+
+@declare_process_block_class("TestStateBlock", block_class=StateBlock)
+class TestStateBlockData(StateBlockData):
+    def build(self):
+        super().build()
+
+        # Create state variables
+        self.flow_mass = Var(
+            initialize=1.0,
+            units=units.kg / units.s,
+        )
+        self.pressure = Var(
+            initialize=101325.0,
+            bounds=(1e3, 1e6),
+            units=units.Pa,
+        )
+        self.temperature = Var(
+            initialize=298.15,
+            bounds=(298.15, 323.15),
+            units=units.K,
+        )
+        self.mass_frac_comp = Var(
+            self.params.component_list,
+            initialize=0.1,
+            units=units.dimensionless,
+        )
+
+        self.dens_mass = Param(
+            initialize=1000,
+            units=units.kg / units.m**3,
+        )
+
+        if self.config.defined_state is False:
+            self.summ_mass_frac_eqn = Constraint(
+                expr=sum(self.mass_frac_comp[j] for j in self.component_list) == 1
+            )
+
+    def get_material_flow_terms(b, p, j):
+        return b.flow_mass * b.mass_frac_comp[j]
+
+    def get_enthalpy_flow_terms(b, p):
+        return (
+            b.flow_mass * 42e3 * units.J / units.kg * (b.temperature - 273.15 * units.K)
+        )
+
+    def default_material_balance_type(self):
+        return MaterialBalanceType.componentTotal
+
+    def define_state_vars(b):
+        return {
+            "flow_mass": b.flow_mass,
+            "mass_frac_comp": b.mass_frac_comp,
+            "temperature": b.temperature,
+            "pressure": b.pressure,
+        }
+
+    def get_material_flow_basis(b):
+        return MaterialFlowBasis.mass
+
+
 # -----------------------------------------------------------------------------
 class TestThickener0DBasic:
     @pytest.fixture(scope="class")
@@ -60,32 +161,34 @@ class TestThickener0DBasic:
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.properties = SaponificationParameterBlock()
+        m.fs.properties = TestParameterBlock()
 
         m.fs.unit = Thickener0D(
             solid_property_package=m.fs.properties,
             liquid_property_package=m.fs.properties,
         )
 
-        m.fs.unit.solid_inlet.flow_vol.fix(10)
-        m.fs.unit.solid_inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
-        m.fs.unit.solid_inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
-        m.fs.unit.solid_inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
-        m.fs.unit.solid_inlet.conc_mol_comp[0, "SodiumAcetate"].fix(1e-6)
-        m.fs.unit.solid_inlet.conc_mol_comp[0, "Ethanol"].fix(1e-6)
+        m.fs.unit.solid_inlet.flow_mass.fix(1.33)
+        m.fs.unit.solid_inlet.mass_frac_comp[0, "a"].fix(0.2)
+        m.fs.unit.solid_inlet.mass_frac_comp[0, "b"].fix(0.8)
         m.fs.unit.solid_inlet.temperature.fix(303.15)
         m.fs.unit.solid_inlet.pressure.fix(101325.0)
 
-        m.fs.unit.liquid_inlet.flow_vol.fix(20)
-        m.fs.unit.liquid_inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
-        m.fs.unit.liquid_inlet.conc_mol_comp[0, "NaOH"].fix(1e-6)
-        m.fs.unit.liquid_inlet.conc_mol_comp[0, "EthylAcetate"].fix(1e-6)
-        m.fs.unit.liquid_inlet.conc_mol_comp[0, "SodiumAcetate"].fix(50.0)
-        m.fs.unit.liquid_inlet.conc_mol_comp[0, "Ethanol"].fix(50.0)
+        m.fs.unit.liquid_inlet.flow_mass.fix(6.65)
+        m.fs.unit.liquid_inlet.mass_frac_comp[0, "a"].fix(0.4)
+        m.fs.unit.liquid_inlet.mass_frac_comp[0, "b"].fix(0.6)
         m.fs.unit.liquid_inlet.temperature.fix(320)
         m.fs.unit.liquid_inlet.pressure.fix(2e5)
 
+        # Operating conditions based on Example 5.1 (pg 199)
+        # Coulson & Richardson's Chemical Engineering Vol 2 (4th Ed.)
         m.fs.unit.liquid_recovery.fix(0.7)
+
+        # Thickener specific parameters
+        m.fs.unit.height_clarification.fix(1.5)
+        m.fs.unit.settling_velocity_pinch.fix(0.94e-4)
+        m.fs.unit.liquid_solid_pinch.fix(3.7)
+        m.fs.unit.settling_time.fix(200)
 
         return m
 
@@ -119,54 +222,68 @@ class TestThickener0DBasic:
 
         assert isinstance(model.fs.unit.solid_inlet, Port)
         assert len(model.fs.unit.solid_inlet.vars) == 4
-        assert hasattr(model.fs.unit.solid_inlet, "flow_vol")
-        assert hasattr(model.fs.unit.solid_inlet, "conc_mol_comp")
+        assert hasattr(model.fs.unit.solid_inlet, "flow_mass")
+        assert hasattr(model.fs.unit.solid_inlet, "mass_frac_comp")
         assert hasattr(model.fs.unit.solid_inlet, "temperature")
         assert hasattr(model.fs.unit.solid_inlet, "pressure")
 
         assert isinstance(model.fs.unit.solid_outlet, Port)
         assert len(model.fs.unit.solid_outlet.vars) == 4
-        assert hasattr(model.fs.unit.solid_outlet, "flow_vol")
-        assert hasattr(model.fs.unit.solid_outlet, "conc_mol_comp")
+        assert hasattr(model.fs.unit.solid_outlet, "flow_mass")
+        assert hasattr(model.fs.unit.solid_outlet, "mass_frac_comp")
         assert hasattr(model.fs.unit.solid_outlet, "temperature")
         assert hasattr(model.fs.unit.solid_outlet, "pressure")
 
         assert isinstance(model.fs.unit.liquid_inlet, Port)
         assert len(model.fs.unit.liquid_inlet.vars) == 4
-        assert hasattr(model.fs.unit.liquid_inlet, "flow_vol")
-        assert hasattr(model.fs.unit.liquid_inlet, "conc_mol_comp")
+        assert hasattr(model.fs.unit.liquid_inlet, "flow_mass")
+        assert hasattr(model.fs.unit.liquid_inlet, "mass_frac_comp")
         assert hasattr(model.fs.unit.liquid_inlet, "temperature")
         assert hasattr(model.fs.unit.liquid_inlet, "pressure")
 
         assert isinstance(model.fs.unit.retained_liquid_outlet, Port)
         assert len(model.fs.unit.retained_liquid_outlet.vars) == 4
-        assert hasattr(model.fs.unit.retained_liquid_outlet, "flow_vol")
-        assert hasattr(model.fs.unit.retained_liquid_outlet, "conc_mol_comp")
+        assert hasattr(model.fs.unit.retained_liquid_outlet, "flow_mass")
+        assert hasattr(model.fs.unit.retained_liquid_outlet, "mass_frac_comp")
         assert hasattr(model.fs.unit.retained_liquid_outlet, "temperature")
         assert hasattr(model.fs.unit.retained_liquid_outlet, "pressure")
 
         assert isinstance(model.fs.unit.recovered_liquid_outlet, Port)
         assert len(model.fs.unit.recovered_liquid_outlet.vars) == 4
-        assert hasattr(model.fs.unit.recovered_liquid_outlet, "flow_vol")
-        assert hasattr(model.fs.unit.recovered_liquid_outlet, "conc_mol_comp")
+        assert hasattr(model.fs.unit.recovered_liquid_outlet, "flow_mass")
+        assert hasattr(model.fs.unit.recovered_liquid_outlet, "mass_frac_comp")
         assert hasattr(model.fs.unit.recovered_liquid_outlet, "temperature")
         assert hasattr(model.fs.unit.recovered_liquid_outlet, "pressure")
 
         assert isinstance(model.fs.unit.split, SeparatorData)
         assert isinstance(model.fs.unit.liquid_recovery, Var)
 
-        print(number_variables(model))
-        print(number_total_constraints(model))
-        print(number_unused_variables(model))
+        assert isinstance(model.fs.unit.area, Var)
+        assert isinstance(model.fs.unit.height, Var)
+        assert isinstance(model.fs.unit.height_clarification, Var)
+        assert isinstance(model.fs.unit.settling_velocity_pinch, Var)
+        assert isinstance(model.fs.unit.liquid_solid_pinch, Var)
+        assert isinstance(model.fs.unit.liquid_solid_underflow, Var)
+        assert isinstance(model.fs.unit.settling_time, Var)
 
-        assert number_variables(model) == 34
-        assert number_total_constraints(model) == 17
+        assert isinstance(model.fs.unit.underflow_sl_constraint, Constraint)
+        assert isinstance(model.fs.unit.cross_sectional_area_constraint, Constraint)
+        assert isinstance(model.fs.unit.height_constraint, Constraint)
+
+        assert number_variables(model) == 29
+        assert number_total_constraints(model) == 14
         # These are the solid properties, as they do not appear in constraints
-        assert number_unused_variables(model) == 8
+        assert number_unused_variables(model) == 4
 
     @pytest.mark.component
     def test_units(self, model):
         assert_units_consistent(model)
+
+        assert_units_equivalent(model.fs.unit.height_clarification, units.m)
+        assert_units_equivalent(
+            model.fs.unit.settling_velocity_pinch, units.m / units.s
+        )
+        assert_units_equivalent(model.fs.unit.settling_time, units.s)
 
     @pytest.mark.unit
     def test_dof(self, model):
@@ -175,6 +292,8 @@ class TestThickener0DBasic:
     @pytest.mark.component
     def test_structural_issues(self, model):
         dt = DiagnosticsToolbox(model)
+        dt.report_structural_issues()
+        dt.display_underconstrained_set()
         dt.assert_no_structural_warnings()
 
     @pytest.mark.component
@@ -211,20 +330,15 @@ class TestThickener0DBasic:
         assert pytest.approx(303.15, rel=1e-8) == value(
             model.fs.unit.solid_outlet.temperature[0]
         )
-        assert pytest.approx(100, rel=1e-8) == value(
-            model.fs.unit.solid_outlet.conc_mol_comp[0, "NaOH"]
+        assert pytest.approx(0.2, rel=1e-8) == value(
+            model.fs.unit.solid_outlet.mass_frac_comp[0, "a"]
         )
-        assert pytest.approx(100, rel=1e-8) == value(
-            model.fs.unit.solid_outlet.conc_mol_comp[0, "EthylAcetate"]
+        assert pytest.approx(0.8, rel=1e-8) == value(
+            model.fs.unit.solid_outlet.mass_frac_comp[0, "b"]
         )
-        assert pytest.approx(1e-6, rel=1e-8) == value(
-            model.fs.unit.solid_outlet.conc_mol_comp[0, "Ethanol"]
-        )
-        assert pytest.approx(1e-6, rel=1e-8) == value(
-            model.fs.unit.solid_outlet.conc_mol_comp[0, "SodiumAcetate"]
-        )
-        assert pytest.approx(10, rel=1e-8) == value(
-            model.fs.unit.solid_outlet.flow_vol[0]
+
+        assert pytest.approx(1.33, rel=1e-8) == value(
+            model.fs.unit.solid_outlet.flow_mass[0]
         )
 
         # Retained liquid
@@ -234,20 +348,14 @@ class TestThickener0DBasic:
         assert pytest.approx(320, rel=1e-8) == value(
             model.fs.unit.retained_liquid_outlet.temperature[0]
         )
-        assert pytest.approx(1e-6, rel=1e-8) == value(
-            model.fs.unit.retained_liquid_outlet.conc_mol_comp[0, "NaOH"]
+        assert pytest.approx(0.4, rel=1e-8) == value(
+            model.fs.unit.retained_liquid_outlet.mass_frac_comp[0, "a"]
         )
-        assert pytest.approx(1e-6, rel=1e-8) == value(
-            model.fs.unit.retained_liquid_outlet.conc_mol_comp[0, "EthylAcetate"]
+        assert pytest.approx(0.6, rel=1e-8) == value(
+            model.fs.unit.retained_liquid_outlet.mass_frac_comp[0, "b"]
         )
-        assert pytest.approx(50, rel=1e-8) == value(
-            model.fs.unit.retained_liquid_outlet.conc_mol_comp[0, "Ethanol"]
-        )
-        assert pytest.approx(50, rel=1e-8) == value(
-            model.fs.unit.retained_liquid_outlet.conc_mol_comp[0, "SodiumAcetate"]
-        )
-        assert pytest.approx(20 * 0.3, rel=1e-8) == value(
-            model.fs.unit.retained_liquid_outlet.flow_vol[0]
+        assert pytest.approx(6.65 * 0.3, rel=1e-8) == value(
+            model.fs.unit.retained_liquid_outlet.flow_mass[0]
         )
 
         # Recovered liquid
@@ -257,150 +365,23 @@ class TestThickener0DBasic:
         assert pytest.approx(320, rel=1e-8) == value(
             model.fs.unit.recovered_liquid_outlet.temperature[0]
         )
-        assert pytest.approx(1e-6, rel=1e-8) == value(
-            model.fs.unit.recovered_liquid_outlet.conc_mol_comp[0, "NaOH"]
+        assert pytest.approx(0.4, rel=1e-8) == value(
+            model.fs.unit.recovered_liquid_outlet.mass_frac_comp[0, "a"]
         )
-        assert pytest.approx(1e-6, rel=1e-8) == value(
-            model.fs.unit.recovered_liquid_outlet.conc_mol_comp[0, "EthylAcetate"]
+        assert pytest.approx(0.6, rel=1e-8) == value(
+            model.fs.unit.recovered_liquid_outlet.mass_frac_comp[0, "b"]
         )
-        assert pytest.approx(50, rel=1e-8) == value(
-            model.fs.unit.recovered_liquid_outlet.conc_mol_comp[0, "Ethanol"]
-        )
-        assert pytest.approx(50, rel=1e-8) == value(
-            model.fs.unit.recovered_liquid_outlet.conc_mol_comp[0, "SodiumAcetate"]
-        )
-        assert pytest.approx(20 * 0.7, rel=1e-8) == value(
-            model.fs.unit.recovered_liquid_outlet.flow_vol[0]
+        assert pytest.approx(6.65 * 0.7, rel=1e-8) == value(
+            model.fs.unit.recovered_liquid_outlet.flow_mass[0]
         )
 
-    @pytest.mark.solver
-    @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.component
-    def test_solid_conservation(self, model):
-        assert (
-            abs(
-                value(
-                    model.fs.unit.solid_inlet.flow_vol[0]
-                    - model.fs.unit.solid_outlet.flow_vol[0]
-                )
-            )
-            <= 1e-6
+        # Thickener Vars
+        assert pytest.approx(1.5, rel=1e-6) == value(
+            model.fs.unit.liquid_solid_underflow[0]
         )
-        assert (
-            abs(
-                value(
-                    model.fs.unit.solid_inlet.flow_vol[0]
-                    * sum(
-                        model.fs.unit.solid_inlet.conc_mol_comp[0, j]
-                        for j in model.fs.properties.component_list
-                    )
-                    - model.fs.unit.solid_outlet.flow_vol[0]
-                    * sum(
-                        model.fs.unit.solid_outlet.conc_mol_comp[0, j]
-                        for j in model.fs.properties.component_list
-                    )
-                )
-            )
-            <= 1e-6
-        )
-
-        assert (
-            abs(
-                value(
-                    (
-                        model.fs.unit.solid_inlet.flow_vol[0]
-                        * model.fs.properties.dens_mol
-                        * model.fs.properties.cp_mol
-                        * (
-                            model.fs.unit.solid_inlet.temperature[0]
-                            - model.fs.properties.temperature_ref
-                        )
-                    )
-                    - (
-                        model.fs.unit.solid_outlet.flow_vol[0]
-                        * model.fs.properties.dens_mol
-                        * model.fs.properties.cp_mol
-                        * (
-                            model.fs.unit.solid_outlet.temperature[0]
-                            - model.fs.properties.temperature_ref
-                        )
-                    )
-                )
-            )
-            <= 1e-3
-        )
-
-    @pytest.mark.solver
-    @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.component
-    def test_liquid_conservation(self, model):
-        assert (
-            abs(
-                value(
-                    model.fs.unit.liquid_inlet.flow_vol[0]
-                    - model.fs.unit.retained_liquid_outlet.flow_vol[0]
-                    - model.fs.unit.recovered_liquid_outlet.flow_vol[0]
-                )
-            )
-            <= 1e-6
-        )
-        assert (
-            abs(
-                value(
-                    model.fs.unit.liquid_inlet.flow_vol[0]
-                    * sum(
-                        model.fs.unit.liquid_inlet.conc_mol_comp[0, j]
-                        for j in model.fs.properties.component_list
-                    )
-                    - model.fs.unit.retained_liquid_outlet.flow_vol[0]
-                    * sum(
-                        model.fs.unit.retained_liquid_outlet.conc_mol_comp[0, j]
-                        for j in model.fs.properties.component_list
-                    )
-                    - model.fs.unit.recovered_liquid_outlet.flow_vol[0]
-                    * sum(
-                        model.fs.unit.recovered_liquid_outlet.conc_mol_comp[0, j]
-                        for j in model.fs.properties.component_list
-                    )
-                )
-            )
-            <= 1e-6
-        )
-
-        assert (
-            abs(
-                value(
-                    (
-                        model.fs.unit.liquid_inlet.flow_vol[0]
-                        * model.fs.properties.dens_mol
-                        * model.fs.properties.cp_mol
-                        * (
-                            model.fs.unit.liquid_inlet.temperature[0]
-                            - model.fs.properties.temperature_ref
-                        )
-                    )
-                    - (
-                        model.fs.unit.retained_liquid_outlet.flow_vol[0]
-                        * model.fs.properties.dens_mol
-                        * model.fs.properties.cp_mol
-                        * (
-                            model.fs.unit.retained_liquid_outlet.temperature[0]
-                            - model.fs.properties.temperature_ref
-                        )
-                    )
-                    - (
-                        model.fs.unit.recovered_liquid_outlet.flow_vol[0]
-                        * model.fs.properties.dens_mol
-                        * model.fs.properties.cp_mol
-                        * (
-                            model.fs.unit.recovered_liquid_outlet.temperature[0]
-                            - model.fs.properties.temperature_ref
-                        )
-                    )
-                )
-            )
-            <= 1e-3
-        )
+        assert pytest.approx(31.12766, rel=1e-6) == value(model.fs.unit.area)
+        model.fs.unit.height.display()
+        assert pytest.approx(1.536318, rel=1e-6) == value(model.fs.unit.height)
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -409,82 +390,12 @@ class TestThickener0DBasic:
 
         assert perf_dict == {
             "vars": {
+                "Area": model.fs.unit.area,
+                "Height": model.fs.unit.height,
                 "Liquid Recovery": model.fs.unit.liquid_recovery[0],
+                "Underflow L/S": model.fs.unit.liquid_solid_underflow[0],
+                "Pinch L/S": model.fs.unit.liquid_solid_pinch[0],
+                "Critical Settling Velocity": model.fs.unit.settling_velocity_pinch[0],
+                "Settling Time": model.fs.unit.settling_time[0],
             }
         }
-
-    @pytest.mark.ui
-    @pytest.mark.component
-    def test_get_stream_table_contents(self, model):
-        stable = model.fs.unit._get_stream_table_contents()
-
-        expected = {
-            "Units": {
-                "Volumetric Flowrate": getattr(units.pint_registry, "m**3/second"),
-                "Molar Concentration H2O": getattr(units.pint_registry, "mole/m**3"),
-                "Molar Concentration NaOH": getattr(units.pint_registry, "mole/m**3"),
-                "Molar Concentration EthylAcetate": getattr(
-                    units.pint_registry, "mole/m**3"
-                ),
-                "Molar Concentration SodiumAcetate": getattr(
-                    units.pint_registry, "mole/m**3"
-                ),
-                "Molar Concentration Ethanol": getattr(
-                    units.pint_registry, "mole/m**3"
-                ),
-                "Temperature": getattr(units.pint_registry, "K"),
-                "Pressure": getattr(units.pint_registry, "Pa"),
-            },
-            "Solid Inlet": {
-                "Volumetric Flowrate": pytest.approx(10, rel=1e-4),
-                "Molar Concentration H2O": pytest.approx(5.5388e4, rel=1e-4),
-                "Molar Concentration NaOH": pytest.approx(100, rel=1e-4),
-                "Molar Concentration EthylAcetate": pytest.approx(100, rel=1e-4),
-                "Molar Concentration SodiumAcetate": pytest.approx(1e-6, abs=1e-4),
-                "Molar Concentration Ethanol": pytest.approx(1e-6, rel=1e-4),
-                "Temperature": pytest.approx(303.15, rel=1e-4),
-                "Pressure": pytest.approx(101325, rel=1e-4),
-            },
-            "Liquid Inlet": {
-                "Volumetric Flowrate": pytest.approx(20, rel=1e-4),
-                "Molar Concentration H2O": pytest.approx(5.5388e4, rel=1e-4),
-                "Molar Concentration NaOH": pytest.approx(1e-6, rel=1e-4),
-                "Molar Concentration EthylAcetate": pytest.approx(1e-6, rel=1e-4),
-                "Molar Concentration SodiumAcetate": pytest.approx(50, rel=1e-4),
-                "Molar Concentration Ethanol": pytest.approx(50, rel=1e-4),
-                "Temperature": pytest.approx(320, rel=1e-4),
-                "Pressure": pytest.approx(2e5, rel=1e-4),
-            },
-            "Solid Outlet": {
-                "Volumetric Flowrate": pytest.approx(10, rel=1e-4),
-                "Molar Concentration H2O": pytest.approx(5.5388e4, rel=1e-4),
-                "Molar Concentration NaOH": pytest.approx(100, rel=1e-4),
-                "Molar Concentration EthylAcetate": pytest.approx(100, rel=1e-4),
-                "Molar Concentration SodiumAcetate": pytest.approx(1e-6, rel=1e-4),
-                "Molar Concentration Ethanol": pytest.approx(1e-6, rel=1e-4),
-                "Temperature": pytest.approx(303.15, rel=1e-4),
-                "Pressure": pytest.approx(101325, rel=1e-4),
-            },
-            "Liquid in Solids Outlet": {
-                "Volumetric Flowrate": pytest.approx(20 * 0.3, rel=1e-4),
-                "Molar Concentration H2O": pytest.approx(5.5388e4, rel=1e-4),
-                "Molar Concentration NaOH": pytest.approx(1e-6, rel=1e-4),
-                "Molar Concentration EthylAcetate": pytest.approx(1e-6, rel=1e-4),
-                "Molar Concentration SodiumAcetate": pytest.approx(50, rel=1e-4),
-                "Molar Concentration Ethanol": pytest.approx(50, rel=1e-4),
-                "Temperature": pytest.approx(320, rel=1e-4),
-                "Pressure": pytest.approx(2e5, rel=1e-4),
-            },
-            "Recovered Liquid Outlet": {
-                "Volumetric Flowrate": pytest.approx(20 * 0.7, rel=1e-4),
-                "Molar Concentration H2O": pytest.approx(5.5388e4, rel=1e-4),
-                "Molar Concentration NaOH": pytest.approx(1e-6, rel=1e-4),
-                "Molar Concentration EthylAcetate": pytest.approx(1e-6, rel=1e-4),
-                "Molar Concentration SodiumAcetate": pytest.approx(50, rel=1e-4),
-                "Molar Concentration Ethanol": pytest.approx(50, rel=1e-4),
-                "Temperature": pytest.approx(320, rel=1e-4),
-                "Pressure": pytest.approx(2e5, rel=1e-4),
-            },
-        }
-
-        assert stable.to_dict() == expected
