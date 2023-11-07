@@ -21,8 +21,7 @@ area and vessel height to the liquid recovery fraction.
 import logging
 
 # Import Pyomo libraries
-from pyomo.environ import Constraint, Var, units
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.environ import Var, units
 
 # Import IDAES cores
 from idaes.core import (

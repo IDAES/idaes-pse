@@ -19,7 +19,7 @@ In the current implementation of the model, :math:`Y_{pinch}` and :math:`u_{pinc
 Degrees of Freedom
 ------------------
 
-The ``Thickener0D`` model has 5 degrees of freedom, which is are generally chosen from:
+The ``Thickener0D`` model has 5 degrees of freedom, which are generally chosen from:
 
 * the liquid recovery fraction or underflow liquid-to-solid ratio,
 * the liquid-to-solid ratio and settling velocity at the pinch (critical) point,
