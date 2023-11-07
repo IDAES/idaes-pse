@@ -22,7 +22,7 @@ and standard deviation.
   - a Pyomo solver with appropriate options
 
 The module executes convergence evaluation in two steps. In the first step, a
-json file is created that containsa set of points sampled from the provided
+json file is created that contains a set of points sampled from the provided
 inputs. This step only needs to be done once - up front. The second step, which
 should be executed any time there is a major code change that could impact the
 model, takes that set of sampled points and solves the model at each of the
@@ -79,6 +79,7 @@ from pyomo.common.tee import capture_output
 from pyomo.core import Param, Var
 from pyomo.common.log import LoggingIntercept
 from pyomo.environ import check_optimal_termination
+from pyomo.common.deprecation import deprecated
 
 # idaes
 import idaes.core.util.convergence.mpi_utils as mpiu
@@ -92,6 +93,11 @@ _log = idaeslog.getLogger(__name__)
 convergence_classes = {}
 
 
+@deprecated(
+    msg="This function has been deprecated in favor of the new Parameter Sweep "
+    "tools and may be removed in a future release.",
+    version="2.3.0",
+)
 def register_convergence_class(name):
     def _register_convergence_class(cls):
         if name in convergence_classes:
@@ -102,6 +108,11 @@ def register_convergence_class(name):
     return _register_convergence_class
 
 
+@deprecated(
+    msg="This class has been deprecated in favor of the new Parameter Sweep "
+    "tools and may be removed in a future release.",
+    version="2.3.0",
+)
 class ConvergenceEvaluationSpecification(object):
     """
     Object for defining sample points for convergence evaluations.
@@ -161,6 +172,11 @@ class ConvergenceEvaluationSpecification(object):
         return self._inputs
 
 
+@deprecated(
+    msg="This class has been deprecated in favor of the new Parameter Sweep "
+    "tools and may be removed in a future release.",
+    version="2.3.0",
+)
 class ConvergenceEvaluation:
     """
     Object for running convergence evaluations.
@@ -510,6 +526,11 @@ def _set_model_parameters_from_sample(model, inputs, sample_point):
             )
 
 
+@deprecated(
+    msg="This function has been deprecated in favor of the new Parameter Sweep "
+    "tools and may be removed in a future release.",
+    version="2.3.0",
+)
 def generate_samples(eval_spec, n_points, seed=None):
     """
     Samples the space of the inputs defined in the eval_spec, and creates an
@@ -549,6 +570,11 @@ def generate_samples(eval_spec, n_points, seed=None):
     return samples
 
 
+@deprecated(
+    msg="This function has been deprecated in favor of the new Parameter Sweep "
+    "tools and may be removed in a future release.",
+    version="2.3.0",
+)
 def write_sample_file(
     eval_spec, filename, convergence_evaluation_class_str, n_points, seed=None
 ):
@@ -592,6 +618,11 @@ def write_sample_file(
         json.dump(jsondict, fd, indent=3)
 
 
+@deprecated(
+    msg="This function has been deprecated in favor of the new Parameter Sweep "
+    "tools and may be removed in a future release.",
+    version="2.3.0",
+)
 def run_convergence_evaluation_from_sample_file(sample_file):
     """
     Run convergence evaluation using specified sample file.
@@ -624,6 +655,11 @@ def run_convergence_evaluation_from_sample_file(sample_file):
     return run_convergence_evaluation(jsondict, conv_eval)
 
 
+@deprecated(
+    msg="This function has been deprecated in favor of the new Parameter Sweep "
+    "tools and may be removed in a future release.",
+    version="2.3.0",
+)
 def run_single_sample_from_sample_file(sample_file, name):
     """
     Run single convergence evaluation from sample in provided file.
@@ -657,6 +693,11 @@ def run_single_sample_from_sample_file(sample_file, name):
     return run_single_sample(jsondict, conv_eval, name)
 
 
+@deprecated(
+    msg="This function has been deprecated in favor of the new Parameter Sweep "
+    "tools and may be removed in a future release.",
+    version="2.3.0",
+)
 def run_single_sample(sample_file_dict, conv_eval, name):
     """
     Run single sample from dict and return IPOPT stats.
@@ -676,6 +717,11 @@ def run_single_sample(sample_file_dict, conv_eval, name):
     return _run_ipopt_with_stats(model, solver)
 
 
+@deprecated(
+    msg="This function has been deprecated in favor of the new Parameter Sweep "
+    "tools and may be removed in a future release.",
+    version="2.3.0",
+)
 def run_convergence_evaluation(sample_file_dict, conv_eval):
     """
     Run convergence evaluation and generate the statistics based on information
@@ -754,6 +800,11 @@ def run_convergence_evaluation(sample_file_dict, conv_eval):
     return inputs, samples, global_results
 
 
+@deprecated(
+    msg="This function has been deprecated in favor of the new Parameter Sweep "
+    "tools and may be removed in a future release.",
+    version="2.3.0",
+)
 def generate_baseline_statistics(
     conv_eval, n_points: int, seed: int = None, display: bool = True
 ):
@@ -818,6 +869,11 @@ def generate_baseline_statistics(
     return jsondict
 
 
+@deprecated(
+    msg="This function has been deprecated in favor of the new Parameter Sweep "
+    "tools and may be removed in a future release.",
+    version="2.3.0",
+)
 def save_convergence_statistics(
     inputs, results, dmf=None, display=True, json_path=None, report_path=None
 ):
@@ -838,6 +894,11 @@ def save_convergence_statistics(
     return s
 
 
+@deprecated(
+    msg="This class has been deprecated in favor of the new Parameter Sweep "
+    "tools and may be removed in a future release.",
+    version="2.3.0",
+)
 class Stats(object):
     def __init__(self, inputs=None, results=None, from_dict=None, from_json=None):
         """A convergence stats and results object.  This class stores the
