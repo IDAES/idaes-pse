@@ -567,66 +567,55 @@ spec.add_sampled_input("v2", "v2", 20, 40)
 spec.add_sampled_input("p2", "p2", -10, 10)
 spec.set_sample_size(5)
 spec.generate_samples()
-#
-#
-# psweep_dict = {
-#     "specification": {
-#         "inputs": OrderedDict(
-#             [
-#                 (
-#                     "v2",
-#                     OrderedDict(
-#                         [
-#                             ("pyomo_path", "v2"),
-#                             ("lower", 2),
-#                             ("upper", 6),
-#                             ("mean", None),
-#                             ("std", None),
-#                             ("distribution", "normal"),
-#                         ]
-#                     ),
-#                 )
-#             ]
-#         ),
-#         "sampling_method": "UniformSampling",
-#         "sample_size": [2],
-#         "samples": {
-#             "index": [0, 1],
-#             "columns": ["v2"],
-#             "data": [[2.0], [6.0]],
-#             "index_names": [None],
-#             "column_names": [None],
-#         },
-#     },
-#     "results": OrderedDict(
-#         [
-#             (
-#                 0,
-#                 {
-#                     "solved": True,
-#                     "iters": 1,
-#                     "iters_in_restoration": 0,
-#                     "iters_w_regularization": 0,
-#                     "time": 0.0,
-#                     "numerical_issues": 0,
-#                 },
-#             ),
-#             (
-#                 1,
-#                 {
-#                     "solved": True,
-#                     "iters": 1,
-#                     "iters_in_restoration": 0,
-#                     "iters_w_regularization": 0,
-#                     "time": 0.0,
-#                     "numerical_issues": 0,
-#                 },
-#             ),
-#         ]
-#     ),
-# }
-#
-#
+
+
+psweep_dict = {
+    "specification": {
+        "inputs": OrderedDict(
+            [
+                (
+                    "v2",
+                    OrderedDict(
+                        [
+                            ("pyomo_path", "v2"),
+                            ("lower", 2),
+                            ("upper", 6),
+                        ]
+                    ),
+                )
+            ]
+        ),
+        "sampling_method": "UniformSampling",
+        "sample_size": [2],
+        "samples": {
+            "index": [0, 1],
+            "columns": ["v2"],
+            "data": [[2.0], [6.0]],
+            "index_names": [None],
+            "column_names": [None],
+        },
+    },
+    "results": OrderedDict(
+        [
+            (
+                0,
+                {
+                    "solved": True,
+                    "results": 2,
+                },
+            ),
+            (
+                1,
+                {
+                    "solved": True,
+                    "results": 6,
+                },
+            ),
+        ]
+    ),
+}
+
+
 class TestParameterSweepBase:
     def build_model(self):
         m = ConcreteModel()
@@ -653,7 +642,8 @@ class TestParameterSweepBase:
         assert psweep.config.input_specification is None
         assert psweep.config.solver is None
         assert psweep.config.solver_options is None
-        assert psweep._results is None
+        assert isinstance(psweep.results, OrderedDict)
+        assert len(psweep.results) == 0
 
     @pytest.mark.unit
     def test_get_initialized_model_none(self):
@@ -950,7 +940,237 @@ class TestParameterSweepBase:
         assert results == pytest.approx(6, rel=1e-8)
         assert solved
 
-    # TODO: Test for recourse
+    @pytest.mark.component
+    def test_execute_single_sample_recourse_none(self):
+        def build_model():
+            m = ConcreteModel()
+            m.v1 = Var(initialize=1)
+            m.v2 = Var(initialize=4)
+            m.c1 = Constraint(expr=m.v1 == m.v2)
+
+            m.v2.fix()
+
+            return m
+
+        def dummy_solver(model):
+            raise Exception
+
+        def dummy_get_solver():
+            return dummy_solver
+
+        spec2 = ParameterSweepSpecification()
+        spec2.set_sampling_method(UniformSampling)
+        spec2.add_sampled_input("v2", "v2", 2, 6)
+        spec2.set_sample_size([2])
+
+        psweep = ParameterSweepBase(
+            build_model=build_model,
+            input_specification=spec2,
+        )
+
+        psweep._get_solver = dummy_get_solver
+
+        results, solved = psweep.execute_single_sample(1)
+
+        assert results is None
+        assert not solved
+
+    @pytest.mark.component
+    def test_execute_single_sample_recourse_custom(self):
+        def build_model():
+            m = ConcreteModel()
+            m.v1 = Var(initialize=1)
+            m.v2 = Var(initialize=4)
+            m.c1 = Constraint(expr=m.v1 == m.v2)
+
+            m.v2.fix()
+
+            return m
+
+        def dummy_solver(model):
+            raise Exception
+
+        def dummy_get_solver():
+            return dummy_solver
+
+        def recourse(model):
+            return "foo", "bar"
+
+        spec2 = ParameterSweepSpecification()
+        spec2.set_sampling_method(UniformSampling)
+        spec2.add_sampled_input("v2", "v2", 2, 6)
+        spec2.set_sample_size([2])
+
+        psweep = ParameterSweepBase(
+            build_model=build_model,
+            input_specification=spec2,
+            failure_recourse=recourse,
+        )
+
+        psweep._get_solver = dummy_get_solver
+
+        results, solved = psweep.execute_single_sample(1)
+
+        assert results == "foo"
+        assert solved == "bar"
+
+    @pytest.fixture(scope="class")
+    def psweep_with_results(self):
+        def build_model():
+            m = ConcreteModel()
+            m.v1 = Var(initialize=1)
+            m.v2 = Var(initialize=4)
+            m.c1 = Constraint(expr=m.v1 == m.v2)
+
+            m.v2.fix()
+
+            return m
+
+        spec2 = ParameterSweepSpecification()
+        spec2.set_sampling_method(UniformSampling)
+        spec2.add_sampled_input("v2", "v2", 2, 6)
+        spec2.set_sample_size([2])
+        spec2.generate_samples()
+
+        psweep = ParameterSweepBase(
+            input_specification=spec2,
+        )
+
+        psweep._results = OrderedDict(
+            {
+                0: {"solved": True, "results": 2},
+                1: {"solved": True, "results": 6},
+            }
+        )
+
+        return psweep
+
+    @pytest.mark.component
+    @pytest.mark.solver
+    def test_to_dict(self, psweep_with_results):
+        outdict = psweep_with_results.to_dict()
+        assert outdict == psweep_dict
+
+    @pytest.mark.unit
+    def test_from_dict(self):
+        def build_model():
+            m = ConcreteModel()
+            m.v1 = Var(initialize=1)
+            m.v2 = Var(initialize=4)
+            m.c1 = Constraint(expr=m.v1 == m.v2)
+
+            m.v2.fix()
+
+            return m
+
+        psweep = ParameterSweepBase(
+            build_model=build_model,
+        )
+
+        psweep.from_dict(psweep_dict)
+
+        assert isinstance(psweep._input_spec, ParameterSweepSpecification)
+        assert len(psweep._input_spec.inputs) == 1
+
+        assert psweep._input_spec.sampling_method is UniformSampling
+        assert isinstance(psweep._input_spec.samples, DataFrame)
+        assert psweep._input_spec.sample_size == [2]
+
+        assert isinstance(psweep._results, dict)
+        assert len(psweep._results) == 2
+
+        for i in [0, 1]:
+            assert psweep._results[i]["solved"]
+            assert psweep._results[i]["results"] == 2 + i * 4
+
+    @pytest.mark.component
+    def test_to_json_file(self, psweep_with_results):
+        temp_context = TempfileManager.new_context()
+        tmpfile = temp_context.create_tempfile(suffix=".json")
+
+        psweep_with_results.to_json_file(tmpfile)
+
+        with open(tmpfile, "r") as f:
+            lines = f.read()
+        f.close()
+
+        expected = """{
+   "specification": {
+      "inputs": {
+         "v2": {
+            "pyomo_path": "v2",
+            "lower": 2,
+            "upper": 6
+         }
+      },
+      "sampling_method": "UniformSampling",
+      "sample_size": [
+         2
+      ],
+      "samples": {
+         "index": [
+            0,
+            1
+         ],
+         "columns": [
+            "v2"
+         ],
+         "data": [
+            [
+               2.0
+            ],
+            [
+               6.0
+            ]
+         ],
+         "index_names": [
+            null
+         ],
+         "column_names": [
+            null
+         ]
+      }
+   },
+   "results": {
+      "0": {
+         "solved": true,
+         "results": 2
+      },
+      "1": {
+         "solved": true,
+         "results": 6
+      }
+   }
+}"""
+
+        assert lines == expected
+
+        # Check for clean up
+        temp_context.release(remove=True)
+        assert not os.path.exists(tmpfile)
+
+    @pytest.mark.unit
+    def test_load_from_json_file(self):
+        fname = os.path.join(currdir, "load_psweep.json")
+
+        psweep = ParameterSweepBase()
+        psweep.from_json_file(fname)
+
+        assert psweep.config.build_model is None
+
+        assert isinstance(psweep._input_spec, ParameterSweepSpecification)
+        assert len(psweep._input_spec.inputs) == 1
+
+        assert psweep._input_spec.sampling_method is UniformSampling
+        assert isinstance(psweep._input_spec.samples, DataFrame)
+        assert psweep._input_spec.sample_size == [2]
+
+        assert isinstance(psweep._results, dict)
+        assert len(psweep._results) == 2
+
+        for i in [0, 1]:
+            assert psweep._results[i]["solved"]
+            assert psweep._results[i]["results"] == 2 + i * 4
 
 
 #     @pytest.mark.component
@@ -990,178 +1210,6 @@ class TestParameterSweepBase:
 #             assert results[i]["numerical_issues"] == 0
 #
 #         assert results is psweep.results
-#
-#     @pytest.fixture(scope="class")
-#     def psweep_executed(self):
-#         def build_model():
-#             m = ConcreteModel()
-#             m.v1 = Var(initialize=1)
-#             m.v2 = Var(initialize=4)
-#             m.c1 = Constraint(expr=m.v1 == m.v2)
-#
-#             m.v2.fix()
-#
-#             return m
-#
-#         spec2 = ParameterSweepSpecification()
-#         spec2.set_sampling_method(UniformSampling)
-#         spec2.add_sampled_input("v2", "v2", 2, 6)
-#         spec2.set_sample_size([2])
-#
-#         psweep = ParameterSweepBase(
-#             build_model=build_model,
-#             input_specification=spec2,
-#         )
-#
-#         psweep.run_convergence_evaluation()
-#
-#         return psweep
-#
-#     @pytest.mark.component
-#     @pytest.mark.solver
-#     def test_to_dict(self, psweep_executed):
-#         outdict = psweep_executed.to_dict()
-#         assert outdict == psweep_dict
-#
-#     @pytest.mark.unit
-#     def test_from_dict(self):
-#         def build_model():
-#             m = ConcreteModel()
-#             m.v1 = Var(initialize=1)
-#             m.v2 = Var(initialize=4)
-#             m.c1 = Constraint(expr=m.v1 == m.v2)
-#
-#             m.v2.fix()
-#
-#             return m
-#
-#         psweep = ParameterSweepBase(
-#             build_model=build_model,
-#         )
-#
-#         psweep.from_dict(psweep_dict)
-#
-#         assert isinstance(psweep._input_spec, ParameterSweepSpecification)
-#         assert len(psweep._input_spec.inputs) == 1
-#
-#         assert psweep._input_spec.sampling_method is UniformSampling
-#         assert isinstance(psweep._input_spec.samples, DataFrame)
-#         assert psweep._input_spec.sample_size == [2]
-#
-#         assert isinstance(psweep._results, dict)
-#         assert len(psweep._results) == 2
-#
-#         for i in [0, 1]:
-#             assert psweep._results[i]["solved"]
-#             assert psweep._results[i]["iters"] == 1
-#             assert psweep._results[i]["iters_in_restoration"] == 0
-#             assert psweep._results[i]["iters_w_regularization"] == 0
-#             assert psweep._results[i]["time"] < 0.01
-#             assert psweep._results[i]["numerical_issues"] == 0
-#
-#     @pytest.mark.component
-#     def test_write_to_json_file(self, psweep_executed):
-#         temp_context = TempfileManager.new_context()
-#         tmpfile = temp_context.create_tempfile(suffix=".json")
-#
-#         psweep_executed.write_to_json_file(tmpfile)
-#
-#         with open(tmpfile, "r") as f:
-#             lines = f.read()
-#         f.close()
-#
-#         expected = """{
-#    "specification": {
-#       "inputs": {
-#          "v2": {
-#             "pyomo_path": "v2",
-#             "lower": 2,
-#             "upper": 6,
-#             "mean": null,
-#             "std": null,
-#             "distribution": "normal"
-#          }
-#       },
-#       "sampling_method": "UniformSampling",
-#       "sample_size": [
-#          2
-#       ],
-#       "samples": {
-#          "index": [
-#             0,
-#             1
-#          ],
-#          "columns": [
-#             "v2"
-#          ],
-#          "data": [
-#             [
-#                2.0
-#             ],
-#             [
-#                6.0
-#             ]
-#          ],
-#          "index_names": [
-#             null
-#          ],
-#          "column_names": [
-#             null
-#          ]
-#       }
-#    },
-#    "results": {
-#       "0": {
-#          "solved": true,
-#          "iters": 1,
-#          "iters_in_restoration": 0,
-#          "iters_w_regularization": 0,
-#          "time": 0.0,
-#          "numerical_issues": 0
-#       },
-#       "1": {
-#          "solved": true,
-#          "iters": 1,
-#          "iters_in_restoration": 0,
-#          "iters_w_regularization": 0,
-#          "time": 0.0,
-#          "numerical_issues": 0
-#       }
-#    }
-# }"""
-#
-#         assert lines == expected
-#
-#         # Check for clean up
-#         temp_context.release(remove=True)
-#         assert not os.path.exists(tmpfile)
-#
-#     @pytest.mark.unit
-#     def test_load_from_json_file(self):
-#         fname = os.path.join(currdir, "load_psweep.json")
-#
-#         psweep = ParameterSweepBase()
-#         psweep.load_from_json_file(fname)
-#
-#         assert psweep.config.build_model is None
-#
-#         assert isinstance(psweep._input_spec, ParameterSweepSpecification)
-#         assert len(psweep._input_spec.inputs) == 1
-#
-#         assert psweep._input_spec.sampling_method is UniformSampling
-#         assert isinstance(psweep._input_spec.samples, DataFrame)
-#         assert psweep._input_spec.sample_size == [2]
-#
-#         assert isinstance(psweep._results, dict)
-#         assert len(psweep._results) == 2
-#
-#         for i in [0, 1]:
-#             assert psweep._results[i]["solved"]
-#             assert psweep._results[i]["iters"] == 1
-#             assert psweep._results[i]["iters_in_restoration"] == 0
-#             assert psweep._results[i]["iters_w_regularization"] == 0
-#             assert psweep._results[i]["time"] < 0.01
-#             assert psweep._results[i]["numerical_issues"] == 0
 #
 #     @pytest.mark.component
 #     @pytest.mark.solver

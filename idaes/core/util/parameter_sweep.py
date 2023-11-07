@@ -233,6 +233,12 @@ CONFIG.declare(
     ),
 )
 CONFIG.declare(
+    "failure_recourse",
+    ConfigValue(
+        doc="Callback method to use in case of exception when solving a sample."
+    ),
+)
+CONFIG.declare(
     "input_specification",
     ConfigValue(
         domain=is_psweepspec,
@@ -261,15 +267,13 @@ CONFIG.declare(
 class ParameterSweepBase:
     def __init__(self, **kwargs):
         self.config = CONFIG(kwargs)
-        self._results = None
+        self._results = OrderedDict()
 
     @property
     def results(self):
         return self._results
 
     def execute_single_sample(self, sample_id):
-        # TODO: Add some sort of recourse for failed runs?
-        # Try/except to catch any failures that occur
         model = self.get_initialized_model()
 
         # Load sample values
@@ -277,14 +281,20 @@ class ParameterSweepBase:
 
         # Solve model and capture output
         solver = self._get_solver()
-        status = self.run_model(model, solver)
 
-        solved = check_optimal_termination(status)
-        if not solved:
-            _log.error(f"Sample: {sample_id} failed to converge.")
+        # Try/except to catch any critical failures that occur
+        try:
+            status = self.run_model(model, solver)
 
-        # Compile Results
-        results = self.collect_results(model, status)
+            solved = check_optimal_termination(status)
+            if not solved:
+                _log.error(f"Sample: {sample_id} failed to converge.")
+
+            # Compile Results
+            results = self.collect_results(model, status)
+        except:
+            # Catch any Exception for recourse
+            results, solved = self.execute_recourse(model)
 
         return results, solved
 
@@ -376,6 +386,13 @@ class ParameterSweepBase:
 
         return self.config.collect_results(model, status)
 
+    def execute_recourse(self, model):
+        if self.config.failure_recourse is None:
+            # No recourse specified, so solved=False and results=None
+            return None, False
+        else:
+            return self.config.failure_recourse(model)
+
     def _get_solver(self):
         if self.config.solver is None:
             raise ConfigurationError("Please specify a solver to use.")
@@ -383,6 +400,33 @@ class ParameterSweepBase:
         if self.config.solver_options is not None:
             solver.options = self.config.solver_options
         return solver
+
+    def to_dict(self):
+        # TODO : Need to serialize build_model method somehow?
+        outdict = {}
+        outdict["specification"] = self.get_input_specification().to_dict()
+        outdict["results"] = OrderedDict(self.results)
+
+        return outdict
+
+    def from_dict(self, input_dict):
+        self._input_spec = ParameterSweepSpecification()
+        self._input_spec.from_dict(input_dict["specification"])
+
+        self._results = OrderedDict()
+        # Need to iterate to convert string indices to int
+        # Converting to json turns the indices to strings
+        for k, v in input_dict["results"].items():
+            self._results[int(k)] = v
+
+    def to_json_file(self, filename):
+        with open(filename, "w") as fd:
+            json.dump(self.to_dict(), fd, indent=3)
+
+    def from_json_file(self, filename):
+        with open(filename, "r") as f:
+            self.from_dict(json.load(f))
+        f.close()
 
 
 # class SequentialSweepRunner(ParameterSweepBase):
@@ -396,32 +440,6 @@ class ParameterSweepBase:
 #
 #         return self.results
 
-# def to_dict(self):
-#     # TODO : Need to serialize build_model method somehow?
-#     outdict = {}
-#     outdict["specification"] = self.get_specification().to_dict()
-#     outdict["results"] = self._results
-#
-#     return outdict
-#
-# def from_dict(self, input_dict):
-#     self._input_spec = ParameterSweepSpecification()
-#     self._input_spec.from_dict(input_dict["specification"])
-#
-#     self._results = OrderedDict()
-#     # Need to iterate to convert string indices to int
-#     # Converting to json turns the indices to strings
-#     for k, v in input_dict["results"].items():
-#         self._results[int(k)] = v
-#
-# def to_json_file(self, filename):
-#     with open(filename, "w") as fd:
-#         json.dump(self.to_dict(), fd, indent=3)
-#
-# def from_json_file(self, filename):
-#     with open(filename, "r") as f:
-#         self.from_dict(json.load(f))
-#     f.close()
 #
 # def _verify_samples_from_dict(self, compare_dict):
 #     comp_samples = DataFrame().from_dict(
