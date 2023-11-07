@@ -273,6 +273,11 @@ class ParameterSweepBase:
     def results(self):
         return self._results
 
+    def execute_parameter_sweep(self):
+        raise NotImplementedError(
+            "Derived classes should overload this method with a " "workflow manager."
+        )
+
     def execute_single_sample(self, sample_id):
         model = self.get_initialized_model()
 
@@ -429,26 +434,13 @@ class ParameterSweepBase:
         f.close()
 
 
-# class SequentialSweepRunner(ParameterSweepBase):
-#     def execute_parameter_sweep(self):
-#         self._results = {}
-#         ispec = self.get_input_specification()
-#
-#         for s in ispec:
-#             sresults, solved = self.execute_single_sample(s)
-#             self._results[s] = {"solved": solved, "results": sresults}
-#
-#         return self.results
+class SequentialSweepRunner(ParameterSweepBase):
+    def execute_parameter_sweep(self):
+        self._results = OrderedDict()
+        samples = self.get_input_samples()
 
-#
-# def _verify_samples_from_dict(self, compare_dict):
-#     comp_samples = DataFrame().from_dict(
-#         compare_dict["specification"]["samples"],
-#         orient="tight",
-#     )
-#     try:
-#         assert_frame_equal(self.get_input_samples(), comp_samples)
-#     except AssertionError:
-#         raise ValueError(
-#             "Samples in comparison evaluation do not match current evaluation"
-#         )
+        for s in samples.index:
+            sresults, solved = self.execute_single_sample(s)
+            self._results[s] = {"solved": solved, "results": sresults}
+
+        return self.results

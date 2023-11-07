@@ -36,6 +36,7 @@ from pyomo.common.tempfiles import TempfileManager
 from idaes.core.util.parameter_sweep import (
     ParameterSweepSpecification,
     ParameterSweepBase,
+    SequentialSweepRunner,
 )
 from idaes.core.surrogate.pysmo.sampling import (
     LatinHypercubeSampling,
@@ -1016,16 +1017,6 @@ class TestParameterSweepBase:
 
     @pytest.fixture(scope="class")
     def psweep_with_results(self):
-        def build_model():
-            m = ConcreteModel()
-            m.v1 = Var(initialize=1)
-            m.v2 = Var(initialize=4)
-            m.c1 = Constraint(expr=m.v1 == m.v2)
-
-            m.v2.fix()
-
-            return m
-
         spec2 = ParameterSweepSpecification()
         spec2.set_sampling_method(UniformSampling)
         spec2.add_sampled_input("v2", "v2", 2, 6)
@@ -1172,361 +1163,48 @@ class TestParameterSweepBase:
             assert psweep._results[i]["solved"]
             assert psweep._results[i]["results"] == 2 + i * 4
 
+    @pytest.mark.unit
+    def test_execute_parameter_sweep(self):
+        psweep = ParameterSweepBase()
 
-#     @pytest.mark.component
-#     @pytest.mark.solver
-#     def test_run_convergence_evaluation(self):
-#         def build_model():
-#             m = ConcreteModel()
-#             m.v1 = Var(initialize=1)
-#             m.v2 = Var(initialize=4)
-#             m.c1 = Constraint(expr=m.v1 == m.v2)
-#
-#             m.v2.fix()
-#
-#             return m
-#
-#         spec2 = ParameterSweepSpecification()
-#         spec2.set_sampling_method(UniformSampling)
-#         spec2.add_sampled_input("v2", "v2", 2, 6)
-#         spec2.set_sample_size([2])
-#
-#         psweep = ParameterSweepBase(
-#             build_model=build_model,
-#             input_specification=spec2,
-#         )
-#
-#         results = psweep.run_convergence_evaluation()
-#
-#         assert isinstance(results, dict)
-#         assert len(results) == 2
-#
-#         for i in [0, 1]:
-#             assert results[i]["solved"]
-#             assert results[i]["iters"] == 1
-#             assert results[i]["iters_in_restoration"] == 0
-#             assert results[i]["iters_w_regularization"] == 0
-#             assert results[i]["time"] < 0.01
-#             assert results[i]["numerical_issues"] == 0
-#
-#         assert results is psweep.results
-#
-#     @pytest.mark.component
-#     @pytest.mark.solver
-#     def test_verify_samples_from_dict(self, psweep_executed):
-#         psweep_executed._verify_samples_from_dict(psweep_dict)
-#
-#         with pytest.raises(
-#             ValueError,
-#             match="Samples in comparison evaluation do not match current evaluation",
-#         ):
-#             fail_dict = {
-#                 "specification": {
-#                     "samples": {
-#                         "index": [0, 1],
-#                         "columns": ["v2"],
-#                         "data": [[1.0], [6.0]],  # Changed sample value from 2 to 1
-#                         "index_names": [None],
-#                         "column_names": [None],
-#                     },
-#                 },
-#             }
-#             psweep_executed._verify_samples_from_dict(fail_dict)
-#
-#     @pytest.mark.component
-#     @pytest.mark.solver
-#     def test_compare_results_to_dict_pass(self, psweep_executed):
-#         (
-#             solved_diff,
-#             iters_diff,
-#             restore_diff,
-#             reg_diff,
-#             num_iss_diff,
-#         ) = psweep_executed.compare_results_to_dict(psweep_dict)
-#
-#         assert solved_diff == []
-#         assert iters_diff == []
-#         assert restore_diff == []
-#         assert reg_diff == []
-#         assert num_iss_diff == []
-#
-#     @pytest.mark.component
-#     @pytest.mark.solver
-#     def test_compare_results_to_dict_solved(self, psweep_executed):
-#         fail_dict = {
-#             "results": OrderedDict(
-#                 [
-#                     (
-#                         0,
-#                         {
-#                             "solved": False,
-#                             "iters": 1,
-#                             "iters_in_restoration": 0,
-#                             "iters_w_regularization": 0,
-#                             "time": 0.0,
-#                             "numerical_issues": 0,
-#                         },
-#                     ),
-#                     (
-#                         1,
-#                         {
-#                             "solved": True,
-#                             "iters": 1,
-#                             "iters_in_restoration": 0,
-#                             "iters_w_regularization": 0,
-#                             "time": 0.0,
-#                             "numerical_issues": 0,
-#                         },
-#                     ),
-#                 ]
-#             ),
-#         }
-#
-#         (
-#             solved_diff,
-#             iters_diff,
-#             restore_diff,
-#             reg_diff,
-#             num_iss_diff,
-#         ) = psweep_executed.compare_results_to_dict(fail_dict, verify_samples=False)
-#
-#         assert solved_diff == [0]
-#         assert iters_diff == []
-#         assert restore_diff == []
-#         assert reg_diff == []
-#         assert num_iss_diff == []
-#
-#     @pytest.mark.component
-#     @pytest.mark.solver
-#     def test_compare_results_to_dict_iters(self, psweep_executed):
-#         fail_dict = {
-#             "results": OrderedDict(
-#                 [
-#                     (
-#                         0,
-#                         {
-#                             "solved": True,
-#                             "iters": 2,
-#                             "iters_in_restoration": 0,
-#                             "iters_w_regularization": 0,
-#                             "time": 0.0,
-#                             "numerical_issues": 0,
-#                         },
-#                     ),
-#                     (
-#                         1,
-#                         {
-#                             "solved": True,
-#                             "iters": 3,
-#                             "iters_in_restoration": 0,
-#                             "iters_w_regularization": 0,
-#                             "time": 0.0,
-#                             "numerical_issues": 0,
-#                         },
-#                     ),
-#                 ]
-#             ),
-#         }
-#
-#         (
-#             solved_diff,
-#             iters_diff,
-#             restore_diff,
-#             reg_diff,
-#             num_iss_diff,
-#         ) = psweep_executed.compare_results_to_dict(fail_dict, verify_samples=False)
-#
-#         assert solved_diff == []
-#         assert iters_diff == [1]
-#         assert restore_diff == []
-#         assert reg_diff == []
-#         assert num_iss_diff == []
-#
-#     @pytest.mark.component
-#     @pytest.mark.solver
-#     def test_compare_results_to_dict_restoration(self, psweep_executed):
-#         fail_dict = {
-#             "results": OrderedDict(
-#                 [
-#                     (
-#                         0,
-#                         {
-#                             "solved": True,
-#                             "iters": 1,
-#                             "iters_in_restoration": 1,
-#                             "iters_w_regularization": 0,
-#                             "time": 0.0,
-#                             "numerical_issues": 0,
-#                         },
-#                     ),
-#                     (
-#                         1,
-#                         {
-#                             "solved": True,
-#                             "iters": 1,
-#                             "iters_in_restoration": 2,
-#                             "iters_w_regularization": 0,
-#                             "time": 0.0,
-#                             "numerical_issues": 0,
-#                         },
-#                     ),
-#                 ]
-#             ),
-#         }
-#
-#         (
-#             solved_diff,
-#             iters_diff,
-#             restore_diff,
-#             reg_diff,
-#             num_iss_diff,
-#         ) = psweep_executed.compare_results_to_dict(fail_dict, verify_samples=False)
-#
-#         assert solved_diff == []
-#         assert iters_diff == []
-#         assert restore_diff == [1]
-#         assert reg_diff == []
-#         assert num_iss_diff == []
-#
-#     @pytest.mark.component
-#     @pytest.mark.solver
-#     def test_compare_results_to_dict_regularization(self, psweep_executed):
-#         fail_dict = {
-#             "results": OrderedDict(
-#                 [
-#                     (
-#                         0,
-#                         {
-#                             "solved": True,
-#                             "iters": 1,
-#                             "iters_in_restoration": 0,
-#                             "iters_w_regularization": 2,
-#                             "time": 0.0,
-#                             "numerical_issues": 0,
-#                         },
-#                     ),
-#                     (
-#                         1,
-#                         {
-#                             "solved": True,
-#                             "iters": 1,
-#                             "iters_in_restoration": 0,
-#                             "iters_w_regularization": 1,
-#                             "time": 0.0,
-#                             "numerical_issues": 0,
-#                         },
-#                     ),
-#                 ]
-#             ),
-#         }
-#
-#         (
-#             solved_diff,
-#             iters_diff,
-#             restore_diff,
-#             reg_diff,
-#             num_iss_diff,
-#         ) = psweep_executed.compare_results_to_dict(fail_dict, verify_samples=False)
-#
-#         assert solved_diff == []
-#         assert iters_diff == []
-#         assert restore_diff == []
-#         assert reg_diff == [0]
-#         assert num_iss_diff == []
-#
-#     @pytest.mark.component
-#     @pytest.mark.solver
-#     def test_compare_results_to_dict_numerical_issues(self, psweep_executed):
-#         fail_dict = {
-#             "results": OrderedDict(
-#                 [
-#                     (
-#                         0,
-#                         {
-#                             "solved": True,
-#                             "iters": 1,
-#                             "iters_in_restoration": 0,
-#                             "iters_w_regularization": 0,
-#                             "time": 0.0,
-#                             "numerical_issues": 1,
-#                         },
-#                     ),
-#                     (
-#                         1,
-#                         {
-#                             "solved": True,
-#                             "iters": 1,
-#                             "iters_in_restoration": 0,
-#                             "iters_w_regularization": 0,
-#                             "time": 0.0,
-#                             "numerical_issues": 0,
-#                         },
-#                     ),
-#                 ]
-#             ),
-#         }
-#
-#         (
-#             solved_diff,
-#             iters_diff,
-#             restore_diff,
-#             reg_diff,
-#             num_iss_diff,
-#         ) = psweep_executed.compare_results_to_dict(fail_dict, verify_samples=False)
-#
-#         assert solved_diff == []
-#         assert iters_diff == []
-#         assert restore_diff == []
-#         assert reg_diff == []
-#         assert num_iss_diff == [0]
-#
-#     @pytest.mark.component
-#     @pytest.mark.solver
-#     def test_compare_results_to_json_file(self, psweep_executed):
-#         fname = os.path.join(currdir, "load_psweep.json")
-#
-#         (
-#             solved_diff,
-#             iters_diff,
-#             restore_diff,
-#             reg_diff,
-#             num_iss_diff,
-#         ) = psweep_executed.compare_results_to_json_file(fname)
-#
-#         assert solved_diff == []
-#         assert iters_diff == []
-#         assert restore_diff == []
-#         assert reg_diff == []
-#         assert num_iss_diff == []
-#
-#     @pytest.mark.component
-#     @pytest.mark.solver
-#     def test_run_baseline_comparison(self):
-#         fname = os.path.join(currdir, "load_psweep.json")
-#
-#         def build_model():
-#             m = ConcreteModel()
-#             m.v1 = Var(initialize=1)
-#             m.v2 = Var(initialize=4)
-#             m.c1 = Constraint(expr=m.v1 == m.v2)
-#
-#             m.v2.fix()
-#
-#             return m
-#
-#         psweep = ParameterSweepBase(
-#             build_model=build_model,
-#         )
-#         (
-#             solved_diff,
-#             iters_diff,
-#             restore_diff,
-#             reg_diff,
-#             num_iss_diff,
-#         ) = psweep.run_baseline_comparison(fname)
-#
-#         assert solved_diff == []
-#         assert iters_diff == []
-#         assert restore_diff == []
-#         assert reg_diff == []
-#         assert num_iss_diff == []
+        with pytest.raises(NotImplementedError):
+            psweep.execute_parameter_sweep()
+
+
+class TestSequentialSweepRunner:
+    @pytest.mark.component
+    @pytest.mark.solver
+    def test_sequential_runner(self):
+        def build_model():
+            m = ConcreteModel()
+            m.v1 = Var(initialize=1)
+            m.v2 = Var(initialize=4)
+            m.c1 = Constraint(expr=m.v1 == m.v2 - 1e-3)
+
+            m.v2.fix()
+
+            return m
+
+        def collect_results(model, status):
+            return value(model.v1)
+
+        spec2 = ParameterSweepSpecification()
+        spec2.set_sampling_method(UniformSampling)
+        spec2.add_sampled_input("v2", "v2", 2, 6)
+        spec2.set_sample_size([2])
+        spec2.generate_samples()
+
+        psweep = SequentialSweepRunner(
+            build_model=build_model,
+            input_specification=spec2,
+            solver="ipopt",
+            collect_results=collect_results,
+        )
+
+        psweep.execute_parameter_sweep()
+
+        assert psweep.results[0]["solved"]
+        assert psweep.results[0]["results"] == pytest.approx(2 - 1e-3, rel=1e-8)
+
+        assert psweep.results[1]["solved"]
+        assert psweep.results[1]["results"] == pytest.approx(6 - 1e-3, rel=1e-8)
