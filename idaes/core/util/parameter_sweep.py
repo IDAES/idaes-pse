@@ -205,13 +205,13 @@ class ParameterSweepSpecification(object):
 
 
 def is_psweepspec(val):
-    if isinstance(val, ConvergenceEvaluationSpecification):
+    if isinstance(val, ParameterSweepSpecification):
         return val
     _log.error(
-        f"Input configuration {val} must be an instance of ConvergenceEvaluationSpecification."
+        f"Input configuration {val} must be an instance of ParameterSweepSpecification."
     )
     raise ValueError(
-        "Input configuration must be an instance of ConvergenceEvaluationSpecification."
+        "Input configuration must be an instance of ParameterSweepSpecification."
     )
 
 
@@ -221,8 +221,10 @@ CONFIG.declare(
     ConfigValue(doc="Callback method to construct initialized model for execution."),
 )
 CONFIG.declare(
-    "execute_model",
-    ConfigValue(doc="Callback method to use when running model."),
+    "run_model",
+    ConfigValue(
+        doc="Callback method to use when running model. If None, model is run with solver.solve()"
+    ),
 )
 CONFIG.declare(
     "collect_results",
@@ -231,23 +233,10 @@ CONFIG.declare(
     ),
 )
 CONFIG.declare(
-    "recourse",
-    ConfigValue(
-        doc="Callback method to use if an error occurs during normal execution."
-    ),
-)
-CONFIG.declare(
-    "workflow_runner",
-    ConfigValue(
-        domain=None,
-        doc="Callback setting up workflow manager for parameter sweep",
-    ),
-)
-CONFIG.declare(
     "input_specification",
     ConfigValue(
         domain=is_psweepspec,
-        doc="ConvergenceEvaluationSpecification object defining inputs to be sampled",
+        doc="ParameterSweepSpecification object defining inputs to be sampled",
     ),
 )
 CONFIG.declare(
@@ -269,78 +258,71 @@ CONFIG.declare(
 
 
 @document_kwargs_from_configdict(CONFIG)
-class ParameterSweep:
+class ParameterSweepBase:
     def __init__(self, **kwargs):
         self.config = CONFIG(kwargs)
-        self._input_spec = None
         self._results = None
 
     @property
     def results(self):
         return self._results
 
-    def get_specification(self):
-        """
-        Returns input specification to use for parameter sweep from the
-        configuration block.
+    def execute_single_sample(self, sample_id):
+        # TODO: Add some sort of recourse for failed runs?
+        # Try/except to catch any failures that occur
+        model = self.get_initialized_model()
 
-        For legacy purposes, user can override this method to return an
-        instance of the ConvergenceEvaluationSpecification for this particular
-        model and test set.
+        # Load sample values
+        self.set_input_values(model, sample_id)
 
-        The basic flow for this method is:
-           - Create a ConvergenceEvaluationSpecification.
-           - Call add_sampled_input for every input that should be varied.
-           - Call generate_samples().
-           - return the ConvergenceEvaluationSpecification.
+        # Solve model and capture output
+        solver = self._get_solver()
+        status = self.run_model(model, solver)
 
-        Returns:
-           ConvergenceEvaluationSpecification
-        """
-        if self._input_spec is None:
-            if self.config.input_specification is not None:
-                self._input_spec = self.config.input_specification
-            else:
-                raise ConfigurationError(
-                    "Please specify an input specification to use for sampling."
-                )
-        return self._input_spec
+        solved = check_optimal_termination(status)
+        if not solved:
+            _log.error(f"Sample: {sample_id} failed to converge.")
+
+        # Compile Results
+        results = self.collect_results(model, status)
+
+        return results, solved
 
     def get_initialized_model(self):
-        """
-        Returns the initialized Pyomo model to be executed. By default, this calls
-        the build_model callback method defined in the configuration block. The
-        convergence evaluation methods will change the values of parameters or
-        variables according to the sampling specifications.
+        if self.config.build_model is None:
+            raise ConfigurationError(
+                "Please specify a method to construct the model of interest."
+            )
 
-        For legacy purposes, user can also overload this method to return an
-        initialized model that is ready to solve.
+        model = self.config.build_model()
 
-        Returns:
-           Pyomo model - return a Pyomo model object that is initialized and
-                ready to solve. This is the model object that will be
-                used in the evaluation.
-        """
-        if self.config.build_model is not None:
-            return self.config.build_model()
-        raise ConfigurationError(
-            "Please specify a method to construct the model of interest."
-        )
+        # TODO: Verify model is actually a model?
+
+        return model
+
+    def get_input_specification(self):
+        if self.config.input_specification is None:
+            raise ConfigurationError(
+                "Please specify an input specification to use for sampling."
+            )
+
+        model = self.config.input_specification
+
+        return model
 
     def get_input_samples(self):
-        if self._input_spec is None:
-            self.get_specification()
+        spec = self.get_input_specification()
 
-        samples = self._input_spec.samples
+        samples = spec.samples
 
         if samples is None:
-            samples = self._input_spec.generate_samples()
+            samples = spec.generate_samples()
 
         return samples
 
-    def _set_input_values(self, model, sample_id):
+    def set_input_values(self, model, sample_id):
         samples = self.get_input_samples()
-        inputs = self.get_specification().inputs
+        inputs = self.config.input_specification.inputs
 
         for k, i in inputs.items():
             v = samples[k][sample_id]
@@ -380,73 +362,75 @@ class ParameterSweep:
                     f"pyomo_path: {pyomo_path} returned: {comp}."
                 )
 
+    def run_model(self, model, solver):
+        if self.config.run_model is None:
+            return solver.solve(model)
+
+        return self.config.run_model(model, solver)
+
+    def collect_results(self, model, status):
+        if self.config.collect_results is None:
+            raise ConfigurationError(
+                "Please provide a method to collect results from sample run."
+            )
+
+        return self.config.collect_results(model, status)
+
     def _get_solver(self):
+        if self.config.solver is None:
+            raise ConfigurationError("Please specify a solver to use.")
         solver = SolverFactory(self.config.solver)
         if self.config.solver_options is not None:
             solver.options = self.config.solver_options
         return solver
 
-    def execute_single_sample(self, sample_id):
-        # TODO: Add recourse for critical failure
-        # Try/except to catch any failures that occur
-        try:
-            model = self.get_initialized_model()
 
-            # Load sample values
-            self._set_input_values(model, sample_id)
+# class SequentialSweepRunner(ParameterSweepBase):
+#     def execute_parameter_sweep(self):
+#         self._results = {}
+#         ispec = self.get_input_specification()
+#
+#         for s in ispec:
+#             sresults, solved = self.execute_single_sample(s)
+#             self._results[s] = {"solved": solved, "results": sresults}
+#
+#         return self.results
 
-            # Solve model and capture output
-            solver = self._get_solver()
-            status = self.config.execute_model(model, solver)
-
-            solved = check_optimal_termination(status)
-            if not solved:
-                _log.error(f"Sample: {sample_id} failed to converge.")
-
-            # Compile Results
-            results = self.config.collect_results(model)
-        except:
-            # Catch any exception here
-            solved = False
-            results = self.config.recourse(model)
-
-        return results, solved
-
-    def to_dict(self):
-        # TODO : Need to serialize build_model method somehow?
-        outdict = {}
-        outdict["specification"] = self.get_specification().to_dict()
-        outdict["results"] = self._results
-
-        return outdict
-
-    def from_dict(self, input_dict):
-        self._input_spec = ConvergenceEvaluationSpecification()
-        self._input_spec.from_dict(input_dict["specification"])
-
-        self._results = OrderedDict()
-        # Need to iterate to convert string indices to int
-        # Converting to json turns the indices to strings
-        for k, v in input_dict["results"].items():
-            self._results[int(k)] = v
-
-    def to_json_file(self, filename):
-        with open(filename, "w") as fd:
-            json.dump(self.to_dict(), fd, indent=3)
-
-    def from_json_file(self, filename):
-        with open(filename, "r") as f:
-            self.from_dict(json.load(f))
-        f.close()
-
-    def _verify_samples_from_dict(self, compare_dict):
-        comp_samples = DataFrame().from_dict(
-            compare_dict["specification"]["samples"],
-            orient="tight",
-        )
-        try:
-            assert_frame_equal(self.get_input_samples(), comp_samples)
-        except AssertionError:
-            raise ValueError(
-                "Samples in comparison evaluation do not match current evaluation"
-            )
+# def to_dict(self):
+#     # TODO : Need to serialize build_model method somehow?
+#     outdict = {}
+#     outdict["specification"] = self.get_specification().to_dict()
+#     outdict["results"] = self._results
+#
+#     return outdict
+#
+# def from_dict(self, input_dict):
+#     self._input_spec = ParameterSweepSpecification()
+#     self._input_spec.from_dict(input_dict["specification"])
+#
+#     self._results = OrderedDict()
+#     # Need to iterate to convert string indices to int
+#     # Converting to json turns the indices to strings
+#     for k, v in input_dict["results"].items():
+#         self._results[int(k)] = v
+#
+# def to_json_file(self, filename):
+#     with open(filename, "w") as fd:
+#         json.dump(self.to_dict(), fd, indent=3)
+#
+# def from_json_file(self, filename):
+#     with open(filename, "r") as f:
+#         self.from_dict(json.load(f))
+#     f.close()
+#
+# def _verify_samples_from_dict(self, compare_dict):
+#     comp_samples = DataFrame().from_dict(
+#         compare_dict["specification"]["samples"],
+#         orient="tight",
+#     )
+#     try:
+#         assert_frame_equal(self.get_input_samples(), comp_samples)
+#     except AssertionError:
+#         raise ValueError(
+#             "Samples in comparison evaluation do not match current evaluation"
+#         )
