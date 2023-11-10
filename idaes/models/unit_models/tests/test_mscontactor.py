@@ -2632,6 +2632,79 @@ class TestMSContactorInitializer:
         assert not model.fs.contactor.s2_inlet.temperature[0].fixed
         assert not model.fs.contactor.s2_inlet.pressure[0].fixed
 
+    @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_performance_contents(self, model):
+        perf_dict = model.fs.contactor._get_performance_contents()
+
+        assert perf_dict == {}
+
+    @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_stream_table_contents(self, model):
+        stable = model.fs.contactor._get_stream_table_contents()
+
+        expected = {
+            "Units": {
+                "Volumetric Flowrate": getattr(units.pint_registry, "m**3/second"),
+                "Molar Concentration H2O": getattr(units.pint_registry, "mole/m**3"),
+                "Molar Concentration NaOH": getattr(units.pint_registry, "mole/m**3"),
+                "Molar Concentration EthylAcetate": getattr(
+                    units.pint_registry, "mole/m**3"
+                ),
+                "Molar Concentration SodiumAcetate": getattr(
+                    units.pint_registry, "mole/m**3"
+                ),
+                "Molar Concentration Ethanol": getattr(
+                    units.pint_registry, "mole/m**3"
+                ),
+                "Temperature": getattr(units.pint_registry, "K"),
+                "Pressure": getattr(units.pint_registry, "Pa"),
+            },
+            "s1 Inlet": {
+                "Volumetric Flowrate": pytest.approx(0.001, rel=1e-4),
+                "Molar Concentration H2O": pytest.approx(5.5388e4, rel=1e-4),
+                "Molar Concentration NaOH": pytest.approx(100, rel=1e-4),
+                "Molar Concentration EthylAcetate": pytest.approx(100, rel=1e-4),
+                "Molar Concentration SodiumAcetate": pytest.approx(0, abs=1e-6),
+                "Molar Concentration Ethanol": pytest.approx(0, abs=1e-6),
+                "Temperature": pytest.approx(303.15, rel=1e-4),
+                "Pressure": pytest.approx(101325, rel=1e-4),
+            },
+            "s1 Outlet": {
+                "Volumetric Flowrate": pytest.approx(1, rel=1e-4),
+                "Molar Concentration H2O": pytest.approx(100, rel=1e-4),
+                "Molar Concentration NaOH": pytest.approx(100, rel=1e-4),
+                "Molar Concentration EthylAcetate": pytest.approx(100, rel=1e-4),
+                "Molar Concentration SodiumAcetate": pytest.approx(100, rel=1e-4),
+                "Molar Concentration Ethanol": pytest.approx(100, rel=1e-4),
+                "Temperature": pytest.approx(298.15, rel=1e-4),
+                "Pressure": pytest.approx(101325, rel=1e-4),
+            },
+            "s2 Inlet": {
+                "Volumetric Flowrate": pytest.approx(0.002, rel=1e-4),
+                "Molar Concentration H2O": pytest.approx(5.5388e4, rel=1e-4),
+                "Molar Concentration NaOH": pytest.approx(50, rel=1e-4),
+                "Molar Concentration EthylAcetate": pytest.approx(50, rel=1e-4),
+                "Molar Concentration SodiumAcetate": pytest.approx(50, rel=1e-4),
+                "Molar Concentration Ethanol": pytest.approx(50, rel=1e-4),
+                "Temperature": pytest.approx(323.15, rel=1e-4),
+                "Pressure": pytest.approx(2e5, rel=1e-4),
+            },
+            "s2 Outlet": {
+                "Volumetric Flowrate": pytest.approx(1, rel=1e-4),
+                "Molar Concentration H2O": pytest.approx(100, rel=1e-4),
+                "Molar Concentration NaOH": pytest.approx(100, rel=1e-4),
+                "Molar Concentration EthylAcetate": pytest.approx(100, rel=1e-4),
+                "Molar Concentration SodiumAcetate": pytest.approx(100, rel=1e-4),
+                "Molar Concentration Ethanol": pytest.approx(100, rel=1e-4),
+                "Temperature": pytest.approx(298.15, rel=1e-4),
+                "Pressure": pytest.approx(101325, rel=1e-4),
+            },
+        }
+
+        assert stable.to_dict() == expected
+
 
 class TestLiCODiafiltration:
     """
