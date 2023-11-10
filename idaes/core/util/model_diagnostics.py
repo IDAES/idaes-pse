@@ -21,6 +21,7 @@ from operator import itemgetter
 import sys
 from inspect import signature
 from math import log
+import json
 
 import numpy as np
 from scipy.linalg import svd
@@ -57,6 +58,7 @@ from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
 from pyomo.contrib.pynumero.asl import AmplInterface
 from pyomo.common.deprecation import deprecation_warning
 from pyomo.common.errors import PyomoException
+from pyomo.common.tempfiles import TempfileManager
 
 from idaes.core.util.model_statistics import (
     activated_blocks_set,
@@ -79,6 +81,12 @@ from idaes.core.util.scaling import (
     extreme_jacobian_rows,
     extreme_jacobian_entries,
     jacobian_cond,
+)
+from idaes.core.util.parameter_sweep import (
+    SequentialSweepRunner,
+    ParameterSweepBase,
+    ParameterSweepSpecification,
+    is_psweepspec,
 )
 import idaes.logger as idaeslog
 
@@ -2676,6 +2684,263 @@ class DegeneracyHunter:
 
         """
         print(v, "\t\t", v.lb, "\t", v.value, "\t", v.ub)
+
+
+def psweep_runner_validator(val):
+    """Domain validator for Parameter Sweep runners
+
+    Args:
+        val : value to be checked
+
+    Returns:
+        TypeError if val is not a valid callback
+    """
+    if issubclass(val, ParameterSweepBase):
+        return val
+
+    raise ValueError(f"Workflow runner must be a subclass of ParameterSweepBase.")
+
+
+CACONFIG = ConfigDict()
+CACONFIG.declare(
+    "input_specification",
+    ConfigValue(
+        domain=is_psweepspec,
+        doc="ParameterSweepSpecification object defining inputs to be sampled",
+    ),
+)
+CACONFIG.declare(
+    "workflow_runner",
+    ConfigValue(
+        default=SequentialSweepRunner,
+        domain=psweep_runner_validator,
+        doc="Parameter sweep workflow runner",
+    ),
+)
+CACONFIG.declare(
+    "solver_options",
+    ConfigValue(
+        domain=None,
+        description="Options to pass to IPOPT.",
+    ),
+)
+
+
+class ConvergenceAnalysis:
+    CONFIG = CACONFIG()
+
+    def __init__(self, model, **kwargs):
+        # TODO: In future may want to generalise this to accept indexed blocks
+        # However, for now some of the tools do not support indexed blocks
+        if not isinstance(model, _BlockData):
+            raise TypeError(
+                "model argument must be an instance of a Pyomo BlockData object "
+                "(either a scalar Block or an element of an indexed Block)."
+            )
+
+        self.config = self.CONFIG(kwargs)
+
+        self._model = model
+
+        self._psweep = self.config.workflow_runner(
+            input_specification=self.config.input_specification,
+            build_model=self._build_model,
+            run_model=self._run_model,
+            collect_results=self._collect_results,
+            failure_recourse=self._recourse,
+            solver="ipopt",
+            solver_options=self.config.solver_options,
+        )
+
+    @property
+    def results(self):
+        return self._psweep.results
+
+    @property
+    def samples(self):
+        return self._psweep.get_input_samples()
+
+    def run_convergence_analysis(self):
+        return self._psweep.execute_parameter_sweep()
+
+    def run_convergence_analysis_from_dict(self, input_dict):
+        self.from_dict(input_dict)
+        return self.run_convergence_analysis()
+
+    def run_convergence_analysis_from_file(self, filename):
+        self.from_json_file(filename)
+        return self.run_convergence_analysis()
+
+    def to_dict(self):
+        return self._psweep.to_dict()
+
+    def from_dict(self, input_dict):
+        return self._psweep.from_dict(input_dict)
+
+    def to_json_file(self, filename):
+        return self._psweep.to_json_file(filename)
+
+    def from_json_file(self, filename):
+        return self._psweep.from_json_file(filename)
+
+    # TODO: Load and run from file
+    # Compare results to file
+    # Compare to baseline file
+
+    def _build_model(self):
+        return self._model.clone()
+
+    def _run_model(self, model, solver):
+        (
+            status,
+            iters,
+            iters_in_restoration,
+            iters_w_regularization,
+            time,
+        ) = self._run_ipopt_with_stats(model, solver)
+
+        run_stats = [
+            iters,
+            iters_in_restoration,
+            iters_w_regularization,
+            time,
+        ]
+
+        return status, run_stats
+
+    @staticmethod
+    def _collect_results(model, status, run_stats):
+        # Run model diagnostics numerical checks
+        dt = DiagnosticsToolbox(model=model)
+
+        warnings = False
+        try:
+            dt.assert_no_numerical_warnings()
+        except AssertionError:
+            warnings = True
+
+        # Compile Results
+        return {
+            "iters": run_stats[0],
+            "iters_in_restoration": run_stats[1],
+            "iters_w_regularization": run_stats[2],
+            "time": run_stats[3],
+            "numerical_issues": warnings,
+        }
+
+    @staticmethod
+    def _recourse(model):
+        return {
+            "iters": -1,
+            "iters_in_restoration": -1,
+            "iters_w_regularization": -1,
+            "time": -1,
+            "numerical_issues": -1,
+        }
+
+    @staticmethod
+    def _parse_ipopt_output(ipopt_file):
+        """
+        Parse an IPOPT output file and return:
+
+        * number of iterations
+        * time in IPOPT
+
+        Returns
+        -------
+           Returns a tuple with (solve status object, bool (solve successful or
+           not), number of iters, solve time)
+        """
+        # ToDO: Check for final iteration with regularization or restoration
+
+        iters = 0
+        iters_in_restoration = 0
+        iters_w_regularization = 0
+        time = 0
+        # parse the output file to get the iteration count, solver times, etc.
+        with open(ipopt_file, "r") as f:
+            parseline = False
+            for line in f:
+                if line.startswith("iter"):
+                    # This marks the start of the iteration logging, set parseline True
+                    parseline = True
+                elif line.startswith("Number of Iterations....:"):
+                    # Marks end of iteration logging, set parseline False
+                    parseline = False
+                    tokens = line.split()
+                    iters = int(tokens[3])
+                elif parseline:
+                    # Line contains details of an iteration, look for restoration or regularization
+                    tokens = line.split()
+                    try:
+                        if not tokens[6] == "-":
+                            # Iteration with regularization
+                            iters_w_regularization += 1
+                        if tokens[0].endswith("r"):
+                            # Iteration in restoration
+                            iters_in_restoration += 1
+                    except IndexError:
+                        # Blank line at end of iteration list, so assume we hit this
+                        pass
+                elif line.startswith(
+                    "Total CPU secs in IPOPT (w/o function evaluations)   ="
+                ):
+                    tokens = line.split()
+                    time += float(tokens[9])
+                elif line.startswith(
+                    "Total CPU secs in NLP function evaluations           ="
+                ):
+                    tokens = line.split()
+                    time += float(tokens[8])
+
+        return iters, iters_in_restoration, iters_w_regularization, time
+
+    def _run_ipopt_with_stats(self, model, solver, max_iter=500, max_cpu_time=120):
+        """
+        Run the solver (must be ipopt) and return the convergence statistics
+
+        Parameters
+        ----------
+        model : Pyomo model
+           The pyomo model to be solved
+
+        solver : Pyomo solver
+           The pyomo solver to use - it must be ipopt, but with whichever options
+           are preferred
+
+        max_iter : int
+           The maximum number of iterations to allow for ipopt
+
+        max_cpu_time : int
+           The maximum cpu time to allow for ipopt (in seconds)
+
+        Returns
+        -------
+           Returns a tuple with (solve status object, bool (solve successful or
+           not), number of iters, number of iters in restoration, number of iters with regularization,
+           solve time)
+        """
+        # ToDo: Check that the "solver" is, in fact, IPOPT
+
+        TempfileManager.push()
+        tempfile = TempfileManager.create_tempfile(suffix="ipopt_out", text=True)
+        opts = {
+            "output_file": tempfile,
+            "max_iter": max_iter,
+            "max_cpu_time": max_cpu_time,
+        }
+
+        status_obj = solver.solve(model, options=opts, tee=True)
+
+        (
+            iters,
+            iters_in_restoration,
+            iters_w_regularization,
+            time,
+        ) = self._parse_ipopt_output(tempfile)
+
+        TempfileManager.pop(remove=True)
+        return status_obj, iters, iters_in_restoration, iters_w_regularization, time
 
 
 def get_valid_range_of_component(component):

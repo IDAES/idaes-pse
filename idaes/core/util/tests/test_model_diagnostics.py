@@ -16,6 +16,10 @@ This module contains model diagnostic utility functions for use in IDAES (Pyomo)
 from io import StringIO
 import numpy as np
 import pytest
+from collections import OrderedDict
+import os
+
+from pandas import DataFrame
 
 from pyomo.environ import (
     Block,
@@ -31,10 +35,13 @@ from pyomo.environ import (
     units,
     value,
     Var,
+    assert_optimal_termination,
 )
 from pyomo.common.collections import ComponentSet
 from pyomo.contrib.pynumero.asl import AmplInterface
 from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
+from pyomo.common.fileutils import this_file_dir
+from pyomo.common.tempfiles import TempfileManager
 
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
@@ -42,17 +49,11 @@ from idaes.core.solvers import get_solver
 from idaes.core import FlowsheetBlock
 from idaes.core.util.testing import PhysicalParameterTestBlock
 
-# TODO: Add pyomo.dae test case
-"""
-from pyomo.environ import TransformationFactory
-from pyomo.dae import ContinuousSet, DerivativeVar
-"""
-
-# Need to update
 from idaes.core.util.model_diagnostics import (
     DiagnosticsToolbox,
     SVDToolbox,
     DegeneracyHunter,
+    ConvergenceAnalysis,
     DegeneracyHunter2,
     svd_dense,
     svd_sparse,
@@ -69,10 +70,20 @@ from idaes.core.util.model_diagnostics import (
     _write_report_section,
     _collect_model_statistics,
 )
+from idaes.core.util.parameter_sweep import (
+    SequentialSweepRunner,
+    ParameterSweepSpecification,
+)
+from idaes.core.surrogate.pysmo.sampling import (
+    UniformSampling,
+)
 
 __author__ = "Alex Dowling, Douglas Allan, Andrew Lee"
 
+
+# TODO: Add pyomo.dae test cases
 solver_available = SolverFactory("scip").available()
+currdir = this_file_dir()
 
 
 @pytest.fixture
@@ -1909,6 +1920,453 @@ Irreducible Degenerate Sets
 """
 
         assert stream.getvalue() == expected
+
+
+ca_dict = {
+    "specification": {
+        "inputs": OrderedDict(
+            [
+                (
+                    "v2",
+                    OrderedDict(
+                        [
+                            ("pyomo_path", "v2"),
+                            ("lower", 2),
+                            ("upper", 6),
+                        ]
+                    ),
+                )
+            ]
+        ),
+        "sampling_method": "UniformSampling",
+        "sample_size": [2],
+        "samples": {
+            "index": [0, 1],
+            "columns": ["v2"],
+            "data": [[2.0], [6.0]],
+            "index_names": [None],
+            "column_names": [None],
+        },
+    },
+    "results": OrderedDict(
+        [
+            (
+                0,
+                {
+                    "solved": True,
+                    "results": 2,
+                },
+            ),
+            (
+                1,
+                {
+                    "solved": True,
+                    "results": 6,
+                },
+            ),
+        ]
+    ),
+}
+
+
+class TestConvergenceAnalysis:
+    @pytest.fixture
+    def model(self):
+        m = ConcreteModel()
+
+        m.v1 = Var(bounds=(None, 1))
+        m.v2 = Var()
+        m.c = Constraint(expr=m.v1 == m.v2)
+
+        m.v2.fix(0)
+
+        return m
+
+    @pytest.mark.unit
+    def test_init(self, model):
+        ca = ConvergenceAnalysis(model)
+
+        assert ca._model is model
+        assert isinstance(ca._psweep, SequentialSweepRunner)
+        assert isinstance(ca.results, OrderedDict)
+        assert ca.config.input_specification is None
+        assert ca.config.solver_options is None
+
+    @pytest.mark.unit
+    def test_build_model(self, model):
+        ca = ConvergenceAnalysis(model)
+
+        clone = ca._build_model()
+        clone.pprint()
+
+        assert clone is not model
+        assert isinstance(clone.v1, Var)
+        assert isinstance(clone.v2, Var)
+        assert isinstance(clone.c, Constraint)
+
+    @pytest.mark.unit
+    def test_parse_ipopt_output(self, model):
+        ca = ConvergenceAnalysis(model)
+
+        fname = os.path.join(currdir, "ipopt_output.txt")
+        iters, restoration, regularization, time = ca._parse_ipopt_output(fname)
+
+        assert iters == 43
+        assert restoration == 39
+        assert regularization == 4
+        assert time == 0.016 + 0.035
+
+    @pytest.mark.component
+    @pytest.mark.solver
+    def test_run_ipopt_with_stats(self):
+        m = ConcreteModel()
+        m.v1 = Var(initialize=1)
+        m.c1 = Constraint(expr=m.v1 == 4)
+
+        ca = ConvergenceAnalysis(m)
+        solver = SolverFactory("ipopt")
+
+        (
+            status,
+            iters,
+            iters_in_restoration,
+            iters_w_regularization,
+            time,
+        ) = ca._run_ipopt_with_stats(m, solver)
+
+        assert_optimal_termination(status)
+        assert iters == 1
+        assert iters_in_restoration == 0
+        assert iters_w_regularization == 0
+        assert time < 0.01
+
+    @pytest.mark.component
+    @pytest.mark.solver
+    def test_run_model(self, model):
+        ca = ConvergenceAnalysis(model)
+
+        model.v2.fix(0.5)
+
+        solver = SolverFactory("ipopt")
+
+        status, run_stats = ca._run_model(model, solver)
+
+        assert_optimal_termination(status)
+        assert value(model.v1) == pytest.approx(0.5, rel=1e-8)
+
+        assert len(run_stats) == 4
+        assert run_stats[0] == 1
+        assert run_stats[1] == 0
+        assert run_stats[2] == 0
+
+    @pytest.mark.unit
+    def test_collect_results(self, model):
+        ca = ConvergenceAnalysis(model)
+
+        model.v1.set_value(0.5)
+        model.v2.fix(0.5)
+
+        results = ca._collect_results(model, "foo", (1, 2, 3, 4))
+
+        assert results == {
+            "iters": 1,
+            "iters_in_restoration": 2,
+            "iters_w_regularization": 3,
+            "time": 4,
+            "numerical_issues": False,
+        }
+
+    @pytest.mark.unit
+    def test_collect_results_with_warnings(self, model):
+        ca = ConvergenceAnalysis(model)
+
+        model.v1.set_value(4)
+        model.v2.fix(0.5)
+
+        results = ca._collect_results(model, "foo", (1, 2, 3, 4))
+
+        assert results == {
+            "iters": 1,
+            "iters_in_restoration": 2,
+            "iters_w_regularization": 3,
+            "time": 4,
+            "numerical_issues": True,
+        }
+
+    @pytest.mark.unit
+    def test_recourse(self, model):
+        ca = ConvergenceAnalysis(model)
+
+        assert ca._recourse(model) == {
+            "iters": -1,
+            "iters_in_restoration": -1,
+            "iters_w_regularization": -1,
+            "time": -1,
+            "numerical_issues": -1,
+        }
+
+    @pytest.mark.integration
+    @pytest.mark.solver
+    def test_run_convergence_analysis(self, model):
+        spec = ParameterSweepSpecification()
+        spec.add_sampled_input("v2", "v2", lower=0, upper=3)
+        spec.set_sampling_method(UniformSampling)
+        spec.set_sample_size([4])
+
+        ca = ConvergenceAnalysis(model, input_specification=spec)
+
+        ca.run_convergence_analysis()
+
+        assert isinstance(ca.results, OrderedDict)
+        assert len(ca.results) == 4
+
+        # Ignore time, as it is too noisy to test
+        # Sample 0 should solve cleanly
+        assert ca.results[0]["solved"]
+        assert ca.results[0]["results"]["iters"] == 0
+        assert ca.results[0]["results"]["iters_in_restoration"] == 0
+        assert ca.results[0]["results"]["iters_w_regularization"] == 0
+        assert not ca.results[0]["results"]["numerical_issues"]
+
+        # Sample 1 should solve, but have issues due to bound on v1
+        assert ca.results[1]["solved"]
+        assert ca.results[1]["results"]["iters"] == pytest.approx(3, abs=1)
+        assert ca.results[1]["results"]["iters_in_restoration"] == 0
+        assert ca.results[1]["results"]["iters_w_regularization"] == 0
+        assert ca.results[1]["results"]["numerical_issues"]
+
+        # Other iterations should fail due to bound
+        assert not ca.results[2]["solved"]
+        assert ca.results[2]["results"]["iters"] == pytest.approx(7, abs=1)
+        assert ca.results[2]["results"]["iters_in_restoration"] == pytest.approx(
+            4, abs=1
+        )
+        assert ca.results[2]["results"]["iters_w_regularization"] == 0
+        assert ca.results[2]["results"]["numerical_issues"]
+
+        assert not ca.results[3]["solved"]
+        assert ca.results[3]["results"]["iters"] == pytest.approx(8, abs=1)
+        assert ca.results[3]["results"]["iters_in_restoration"] == pytest.approx(
+            5, abs=1
+        )
+        assert ca.results[3]["results"]["iters_w_regularization"] == 0
+        assert ca.results[3]["results"]["numerical_issues"]
+
+    @pytest.fixture(scope="class")
+    def ca_with_results(self):
+        spec = ParameterSweepSpecification()
+        spec.set_sampling_method(UniformSampling)
+        spec.add_sampled_input("v2", "v2", 2, 6)
+        spec.set_sample_size([2])
+        spec.generate_samples()
+
+        ca = ConvergenceAnalysis(
+            model=ConcreteModel(),
+            input_specification=spec,
+        )
+
+        ca._psweep._results = OrderedDict(
+            {
+                0: {"solved": True, "results": 2},
+                1: {"solved": True, "results": 6},
+            }
+        )
+
+        return ca
+
+    @pytest.mark.component
+    def test_to_dict(self, ca_with_results):
+        outdict = ca_with_results.to_dict()
+        assert outdict == ca_dict
+
+    @pytest.mark.unit
+    def test_from_dict(self):
+        ca = ConvergenceAnalysis(
+            model=ConcreteModel(),
+        )
+
+        ca.from_dict(ca_dict)
+
+        input_spec = ca._psweep.get_input_specification()
+
+        assert isinstance(input_spec, ParameterSweepSpecification)
+        assert len(input_spec.inputs) == 1
+
+        assert input_spec.sampling_method is UniformSampling
+        assert isinstance(input_spec.samples, DataFrame)
+        assert input_spec.sample_size == [2]
+
+        assert isinstance(ca.results, dict)
+        assert len(ca.results) == 2
+
+        for i in [0, 1]:
+            assert ca.results[i]["solved"]
+            assert ca.results[i]["results"] == 2 + i * 4
+
+    @pytest.mark.component
+    def test_to_json_file(self, ca_with_results):
+        temp_context = TempfileManager.new_context()
+        tmpfile = temp_context.create_tempfile(suffix=".json")
+
+        ca_with_results.to_json_file(tmpfile)
+
+        with open(tmpfile, "r") as f:
+            lines = f.read()
+        f.close()
+
+        expected = """{
+   "specification": {
+      "inputs": {
+         "v2": {
+            "pyomo_path": "v2",
+            "lower": 2,
+            "upper": 6
+         }
+      },
+      "sampling_method": "UniformSampling",
+      "sample_size": [
+         2
+      ],
+      "samples": {
+         "index": [
+            0,
+            1
+         ],
+         "columns": [
+            "v2"
+         ],
+         "data": [
+            [
+               2.0
+            ],
+            [
+               6.0
+            ]
+         ],
+         "index_names": [
+            null
+         ],
+         "column_names": [
+            null
+         ]
+      }
+   },
+   "results": {
+      "0": {
+         "solved": true,
+         "results": 2
+      },
+      "1": {
+         "solved": true,
+         "results": 6
+      }
+   }
+}"""
+
+        assert lines == expected
+
+        # Check for clean up
+        temp_context.release(remove=True)
+        assert not os.path.exists(tmpfile)
+
+    @pytest.mark.unit
+    def test_load_from_json_file(self):
+        fname = os.path.join(currdir, "load_psweep.json")
+
+        ca = ConvergenceAnalysis(
+            model=ConcreteModel(),
+        )
+        ca.from_json_file(fname)
+
+        input_spec = ca._psweep.get_input_specification()
+
+        assert isinstance(input_spec, ParameterSweepSpecification)
+        assert len(input_spec.inputs) == 1
+
+        assert input_spec.sampling_method is UniformSampling
+        assert isinstance(input_spec.samples, DataFrame)
+        assert input_spec.sample_size == [2]
+
+        assert isinstance(ca.results, dict)
+        assert len(ca.results) == 2
+
+        for i in [0, 1]:
+            assert ca.results[i]["solved"]
+            assert ca.results[i]["results"] == 2 + i * 4
+
+    @pytest.mark.integration
+    @pytest.mark.solver
+    def test_run_convergence_analysis_from_dict(self, model):
+        ca = ConvergenceAnalysis(
+            model=model,
+        )
+        ca.run_convergence_analysis_from_dict(ca_dict)
+
+        input_spec = ca._psweep.get_input_specification()
+
+        assert isinstance(input_spec, ParameterSweepSpecification)
+        assert len(input_spec.inputs) == 1
+
+        assert input_spec.sampling_method is UniformSampling
+        assert isinstance(input_spec.samples, DataFrame)
+        assert input_spec.sample_size == [2]
+
+        assert isinstance(ca.results, dict)
+        assert len(ca.results) == 2
+
+        assert not ca.results[0]["solved"]
+        assert ca.results[0]["results"]["iters"] == pytest.approx(7, abs=1)
+        assert ca.results[0]["results"]["iters_in_restoration"] == pytest.approx(
+            4, abs=1
+        )
+        assert ca.results[0]["results"]["iters_w_regularization"] == 0
+        assert ca.results[0]["results"]["numerical_issues"]
+
+        assert not ca.results[1]["solved"]
+        assert ca.results[1]["results"]["iters"] == pytest.approx(7, abs=1)
+        assert ca.results[1]["results"]["iters_in_restoration"] == pytest.approx(
+            4, abs=1
+        )
+        assert ca.results[1]["results"]["iters_w_regularization"] == 0
+        assert ca.results[1]["results"]["numerical_issues"]
+
+    @pytest.mark.integration
+    @pytest.mark.solver
+    def test_run_convergence_analysis_from_file(self, model):
+        fname = os.path.join(currdir, "load_psweep.json")
+
+        ca = ConvergenceAnalysis(
+            model=model,
+        )
+        ca.run_convergence_analysis_from_file(fname)
+
+        input_spec = ca._psweep.get_input_specification()
+
+        assert isinstance(input_spec, ParameterSweepSpecification)
+        assert len(input_spec.inputs) == 1
+
+        assert input_spec.sampling_method is UniformSampling
+        assert isinstance(input_spec.samples, DataFrame)
+        assert input_spec.sample_size == [2]
+
+        assert isinstance(ca.results, dict)
+        assert len(ca.results) == 2
+
+        assert not ca.results[0]["solved"]
+        assert ca.results[0]["results"]["iters"] == pytest.approx(7, abs=1)
+        assert ca.results[0]["results"]["iters_in_restoration"] == pytest.approx(
+            4, abs=1
+        )
+        assert ca.results[0]["results"]["iters_w_regularization"] == 0
+        assert ca.results[0]["results"]["numerical_issues"]
+
+        assert not ca.results[1]["solved"]
+        assert ca.results[1]["results"]["iters"] == pytest.approx(7, abs=1)
+        assert ca.results[1]["results"]["iters_in_restoration"] == pytest.approx(
+            4, abs=1
+        )
+        assert ca.results[1]["results"]["iters_w_regularization"] == 0
+        assert ca.results[1]["results"]["numerical_issues"]
 
 
 @pytest.fixture()

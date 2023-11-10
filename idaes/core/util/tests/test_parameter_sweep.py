@@ -864,9 +864,10 @@ class TestParameterSweepBase:
 
         solver = SolverFactory("ipopt")
 
-        status = psweep.run_model(model, solver)
+        status, run_stats = psweep.run_model(model, solver)
 
         assert_optimal_termination(status)
+        assert run_stats is None
         assert value(model.v) == pytest.approx(4, rel=1e-8)
 
     @pytest.mark.unit
@@ -889,11 +890,11 @@ class TestParameterSweepBase:
             ConfigurationError,
             match="Please provide a method to collect results from sample run.",
         ):
-            psweep.collect_results("foo", "bar")
+            psweep.collect_results("foo", "bar", "baz")
 
     @pytest.mark.unit
     def test_collect_results(self):
-        def dummy_collect(model, status):
+        def dummy_collect(model, status, run_stats):
             return value(model.v)
 
         model = ConcreteModel()
@@ -904,7 +905,7 @@ class TestParameterSweepBase:
             collect_results=dummy_collect,
         )
 
-        results = psweep.collect_results(model, "foo")
+        results = psweep.collect_results(model, "foo", "bar")
 
         assert results == 1
 
@@ -921,7 +922,7 @@ class TestParameterSweepBase:
 
             return m
 
-        def collect_results(model, status):
+        def collect_results(model, status, run_stats):
             return value(model.v1)
 
         spec2 = ParameterSweepSpecification()
@@ -1037,7 +1038,6 @@ class TestParameterSweepBase:
         return psweep
 
     @pytest.mark.component
-    @pytest.mark.solver
     def test_to_dict(self, psweep_with_results):
         outdict = psweep_with_results.to_dict()
         assert outdict == psweep_dict
@@ -1060,12 +1060,14 @@ class TestParameterSweepBase:
 
         psweep.from_dict(psweep_dict)
 
-        assert isinstance(psweep._input_spec, ParameterSweepSpecification)
-        assert len(psweep._input_spec.inputs) == 1
+        input_spec = psweep.get_input_specification()
 
-        assert psweep._input_spec.sampling_method is UniformSampling
-        assert isinstance(psweep._input_spec.samples, DataFrame)
-        assert psweep._input_spec.sample_size == [2]
+        assert isinstance(input_spec, ParameterSweepSpecification)
+        assert len(input_spec.inputs) == 1
+
+        assert input_spec.sampling_method is UniformSampling
+        assert isinstance(input_spec.samples, DataFrame)
+        assert input_spec.sample_size == [2]
 
         assert isinstance(psweep._results, dict)
         assert len(psweep._results) == 2
@@ -1149,12 +1151,14 @@ class TestParameterSweepBase:
 
         assert psweep.config.build_model is None
 
-        assert isinstance(psweep._input_spec, ParameterSweepSpecification)
-        assert len(psweep._input_spec.inputs) == 1
+        input_spec = psweep.get_input_specification()
 
-        assert psweep._input_spec.sampling_method is UniformSampling
-        assert isinstance(psweep._input_spec.samples, DataFrame)
-        assert psweep._input_spec.sample_size == [2]
+        assert isinstance(input_spec, ParameterSweepSpecification)
+        assert len(input_spec.inputs) == 1
+
+        assert input_spec.sampling_method is UniformSampling
+        assert isinstance(input_spec.samples, DataFrame)
+        assert input_spec.sample_size == [2]
 
         assert isinstance(psweep._results, dict)
         assert len(psweep._results) == 2
@@ -1185,7 +1189,7 @@ class TestSequentialSweepRunner:
 
             return m
 
-        def collect_results(model, status):
+        def collect_results(model, status, run_stats):
             return value(model.v1)
 
         spec2 = ParameterSweepSpecification()

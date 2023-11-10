@@ -15,7 +15,6 @@ import json
 from collections import OrderedDict
 
 from pandas import DataFrame
-from pandas.testing import assert_frame_equal
 
 from pyomo.core import Param, Var
 from pyomo.environ import check_optimal_termination, SolverFactory
@@ -30,6 +29,7 @@ _log = idaeslog.getLogger(__name__)
 
 
 class ParameterSweepSpecification(object):
+    # TODO: Consider supporting sampling from data sets in the future
     def __init__(self):
         self._inputs = OrderedDict()
         self._sampling_method = None
@@ -289,14 +289,14 @@ class ParameterSweepBase:
 
         # Try/except to catch any critical failures that occur
         try:
-            status = self.run_model(model, solver)
+            status, run_stats = self.run_model(model, solver)
 
             solved = check_optimal_termination(status)
             if not solved:
                 _log.error(f"Sample: {sample_id} failed to converge.")
 
             # Compile Results
-            results = self.collect_results(model, status)
+            results = self.collect_results(model, status, run_stats)
         except:
             # Catch any Exception for recourse
             results, solved = self.execute_recourse(model)
@@ -321,9 +321,7 @@ class ParameterSweepBase:
                 "Please specify an input specification to use for sampling."
             )
 
-        model = self.config.input_specification
-
-        return model
+        return self.config.input_specification
 
     def get_input_samples(self):
         spec = self.get_input_specification()
@@ -379,17 +377,17 @@ class ParameterSweepBase:
 
     def run_model(self, model, solver):
         if self.config.run_model is None:
-            return solver.solve(model)
+            return solver.solve(model), None
 
         return self.config.run_model(model, solver)
 
-    def collect_results(self, model, status):
+    def collect_results(self, model, status, run_stats):
         if self.config.collect_results is None:
             raise ConfigurationError(
                 "Please provide a method to collect results from sample run."
             )
 
-        return self.config.collect_results(model, status)
+        return self.config.collect_results(model, status, run_stats)
 
     def execute_recourse(self, model):
         if self.config.failure_recourse is None:
@@ -415,8 +413,12 @@ class ParameterSweepBase:
         return outdict
 
     def from_dict(self, input_dict):
-        self._input_spec = ParameterSweepSpecification()
-        self._input_spec.from_dict(input_dict["specification"])
+        if self.config.input_specification is not None:
+            # Log a warning about overwriting
+            _log.debug("Overwriting existing input specification")
+
+        self.config.input_specification = ParameterSweepSpecification()
+        self.config.input_specification.from_dict(input_dict["specification"])
 
         self._results = OrderedDict()
         # Need to iterate to convert string indices to int
