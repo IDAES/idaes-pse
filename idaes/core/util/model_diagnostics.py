@@ -20,7 +20,7 @@ __author__ = "Alexander Dowling, Douglas Allan, Andrew Lee"
 from operator import itemgetter
 import sys
 from inspect import signature
-from math import log
+from math import log, isclose
 import json
 
 import numpy as np
@@ -85,7 +85,6 @@ from idaes.core.util.scaling import (
 from idaes.core.util.parameter_sweep import (
     SequentialSweepRunner,
     ParameterSweepBase,
-    ParameterSweepSpecification,
     is_psweepspec,
 )
 import idaes.logger as idaeslog
@@ -2698,7 +2697,7 @@ def psweep_runner_validator(val):
     if issubclass(val, ParameterSweepBase):
         return val
 
-    raise ValueError(f"Workflow runner must be a subclass of ParameterSweepBase.")
+    raise ValueError("Workflow runner must be a subclass of ParameterSweepBase.")
 
 
 CACONFIG = ConfigDict()
@@ -2771,6 +2770,30 @@ class ConvergenceAnalysis:
         self.from_json_file(filename)
         return self.run_convergence_analysis()
 
+    def compare_convergence_to_baseline(
+        self, filename: str, rel_tol: float = 0.1, abs_tol: float = 1
+    ):
+        with open(filename, "r") as f:
+            # Load file manually so we have saved results
+            jdict = json.load(f)
+        f.close()
+
+        # Run convergence analysis from dict
+        self.run_convergence_analysis_from_dict(jdict)
+
+        # Compare results
+        return self._compare_results_to_dict(jdict, rel_tol=rel_tol, abs_tol=abs_tol)
+
+    def assert_baseline_comparison(
+        self, filename: str, rel_tol: float = 0.1, abs_tol: float = 1
+    ):
+        diffs = self.compare_convergence_to_baseline(
+            filename, rel_tol=rel_tol, abs_tol=abs_tol
+        )
+
+        if any(len(v) != 0 for v in diffs.values()):
+            raise AssertionError("Convergence analysis does not match baseline")
+
     def to_dict(self):
         return self._psweep.to_dict()
 
@@ -2782,10 +2805,6 @@ class ConvergenceAnalysis:
 
     def from_json_file(self, filename):
         return self._psweep.from_json_file(filename)
-
-    # TODO: Load and run from file
-    # Compare results to file
-    # Compare to baseline file
 
     def _build_model(self):
         return self._model.clone()
@@ -2941,6 +2960,63 @@ class ConvergenceAnalysis:
 
         TempfileManager.pop(remove=True)
         return status_obj, iters, iters_in_restoration, iters_w_regularization, time
+
+    def _compare_results_to_dict(
+        self,
+        compare_dict: dict,
+        rel_tol: float = 0.1,
+        abs_tol: float = 1,
+    ):
+        # Compare results
+        solved_diff = []
+        iters_diff = []
+        restore_diff = []
+        reg_diff = []
+        num_iss_diff = []
+
+        for k, v in self.results.items():
+            # Get sample result from compare dict
+            try:
+                comp = compare_dict["results"][k]
+            except KeyError:
+                # Reading from json often converts ints to strings
+                # Check to see if the index as a string works
+                comp = compare_dict["results"][str(k)]
+
+            # Check for differences
+            if v["solved"] != comp["solved"]:
+                solved_diff.append(k)
+            if not isclose(
+                v["results"]["iters"],
+                comp["results"]["iters"],
+                rel_tol=rel_tol,
+                abs_tol=abs_tol,
+            ):
+                iters_diff.append(k)
+            if not isclose(
+                v["results"]["iters_in_restoration"],
+                comp["results"]["iters_in_restoration"],
+                rel_tol=rel_tol,
+                abs_tol=abs_tol,
+            ):
+                restore_diff.append(k)
+            if not isclose(
+                v["results"]["iters_w_regularization"],
+                comp["results"]["iters_w_regularization"],
+                rel_tol=rel_tol,
+                abs_tol=abs_tol,
+            ):
+                reg_diff.append(k)
+            if v["results"]["numerical_issues"] != comp["results"]["numerical_issues"]:
+                num_iss_diff.append(k)
+
+        return {
+            "solved": solved_diff,
+            "iters": iters_diff,
+            "iters_in_restoration": restore_diff,
+            "iters_w_regularization": reg_diff,
+            "numerical_issues": num_iss_diff,
+        }
 
 
 def get_valid_range_of_component(component):

@@ -18,6 +18,7 @@ import numpy as np
 import pytest
 from collections import OrderedDict
 import os
+from copy import deepcopy
 
 from pandas import DataFrame
 
@@ -1968,6 +1969,53 @@ ca_dict = {
     ),
 }
 
+ca_res = {
+    "specification": {
+        "inputs": OrderedDict(
+            [("v2", OrderedDict([("pyomo_path", "v2"), ("lower", 2), ("upper", 6)]))]
+        ),
+        "sampling_method": "UniformSampling",
+        "sample_size": [2],
+        "samples": {
+            "index": [0, 1],
+            "columns": ["v2"],
+            "data": [[2.0], [6.0]],
+            "index_names": [None],
+            "column_names": [None],
+        },
+    },
+    "results": OrderedDict(
+        [
+            (
+                0,
+                {
+                    "solved": False,
+                    "results": {
+                        "iters": 7,
+                        "iters_in_restoration": 4,
+                        "iters_w_regularization": 0,
+                        "time": 0.0,
+                        "numerical_issues": True,
+                    },
+                },
+            ),
+            (
+                1,
+                {
+                    "solved": False,
+                    "results": {
+                        "iters": 7,
+                        "iters_in_restoration": 4,
+                        "iters_w_regularization": 0,
+                        "time": 0.0,
+                        "numerical_issues": True,
+                    },
+                },
+            ),
+        ]
+    ),
+}
+
 
 class TestConvergenceAnalysis:
     @pytest.fixture
@@ -2367,6 +2415,153 @@ class TestConvergenceAnalysis:
         )
         assert ca.results[1]["results"]["iters_w_regularization"] == 0
         assert ca.results[1]["results"]["numerical_issues"]
+
+    @pytest.fixture(scope="class")
+    def conv_anal(self):
+        ca = ConvergenceAnalysis(
+            model=ConcreteModel(),
+        )
+        ca.from_dict(ca_res)
+
+        return ca
+
+    @pytest.mark.unit
+    def test_compare_results_to_dict_ok(self, conv_anal):
+        diffs = conv_anal._compare_results_to_dict(ca_res)
+
+        assert diffs["solved"] == []
+        assert diffs["iters"] == []
+        assert diffs["iters_in_restoration"] == []
+        assert diffs["iters_w_regularization"] == []
+        assert diffs["numerical_issues"] == []
+
+    @pytest.mark.unit
+    def test_compare_results_to_dict_solved(self, conv_anal):
+        ca_copy = deepcopy(ca_res)
+        ca_copy["results"][0]["solved"] = True
+
+        diffs = conv_anal._compare_results_to_dict(ca_copy)
+
+        assert diffs["solved"] == [0]
+        assert diffs["iters"] == []
+        assert diffs["iters_in_restoration"] == []
+        assert diffs["iters_w_regularization"] == []
+        assert diffs["numerical_issues"] == []
+
+    @pytest.mark.unit
+    def test_compare_results_to_dict_iters(self, conv_anal):
+        ca_copy = deepcopy(ca_res)
+        ca_copy["results"][0]["results"]["iters"] = 8
+        ca_copy["results"][1]["results"]["iters"] = 9
+
+        diffs = conv_anal._compare_results_to_dict(ca_copy)
+
+        assert diffs["solved"] == []
+        assert diffs["iters"] == [1]
+        assert diffs["iters_in_restoration"] == []
+        assert diffs["iters_w_regularization"] == []
+        assert diffs["numerical_issues"] == []
+
+        diffs = conv_anal._compare_results_to_dict(ca_copy, abs_tol=0, rel_tol=0)
+
+        assert diffs["solved"] == []
+        assert diffs["iters"] == [0, 1]
+        assert diffs["iters_in_restoration"] == []
+        assert diffs["iters_w_regularization"] == []
+        assert diffs["numerical_issues"] == []
+
+    @pytest.mark.unit
+    def test_compare_results_to_dict_restoration(self, conv_anal):
+        ca_copy = deepcopy(ca_res)
+        ca_copy["results"][0]["results"]["iters_in_restoration"] = 5
+        ca_copy["results"][1]["results"]["iters_in_restoration"] = 6
+
+        diffs = conv_anal._compare_results_to_dict(ca_copy)
+
+        assert diffs["solved"] == []
+        assert diffs["iters"] == []
+        assert diffs["iters_in_restoration"] == [1]
+        assert diffs["iters_w_regularization"] == []
+        assert diffs["numerical_issues"] == []
+
+        diffs = conv_anal._compare_results_to_dict(ca_copy, abs_tol=0, rel_tol=0)
+
+        assert diffs["solved"] == []
+        assert diffs["iters"] == []
+        assert diffs["iters_in_restoration"] == [0, 1]
+        assert diffs["iters_w_regularization"] == []
+        assert diffs["numerical_issues"] == []
+
+    @pytest.mark.unit
+    def test_compare_results_to_dict_regularization(self, conv_anal):
+        ca_copy = deepcopy(ca_res)
+        ca_copy["results"][0]["results"]["iters_w_regularization"] = 1
+        ca_copy["results"][1]["results"]["iters_w_regularization"] = 2
+
+        diffs = conv_anal._compare_results_to_dict(ca_copy)
+
+        assert diffs["solved"] == []
+        assert diffs["iters"] == []
+        assert diffs["iters_in_restoration"] == []
+        assert diffs["iters_w_regularization"] == [1]
+        assert diffs["numerical_issues"] == []
+
+        diffs = conv_anal._compare_results_to_dict(ca_copy, abs_tol=0, rel_tol=0)
+
+        assert diffs["solved"] == []
+        assert diffs["iters"] == []
+        assert diffs["iters_in_restoration"] == []
+        assert diffs["iters_w_regularization"] == [0, 1]
+        assert diffs["numerical_issues"] == []
+
+    @pytest.mark.unit
+    def test_compare_results_to_dict_numerical_issues(self, conv_anal):
+        ca_copy = deepcopy(ca_res)
+        ca_copy["results"][1]["results"]["numerical_issues"] = False
+
+        diffs = conv_anal._compare_results_to_dict(ca_copy)
+
+        assert diffs["solved"] == []
+        assert diffs["iters"] == []
+        assert diffs["iters_in_restoration"] == []
+        assert diffs["iters_w_regularization"] == []
+        assert diffs["numerical_issues"] == [1]
+
+    @pytest.mark.integration
+    @pytest.mark.solver
+    def test_compare_convergence_to_baseline(self, model):
+        fname = os.path.join(currdir, "convergence_baseline.json")
+
+        ca = ConvergenceAnalysis(
+            model=model,
+        )
+
+        diffs = ca.compare_convergence_to_baseline(fname)
+
+        # Baseline has incorrect values
+        assert diffs == {
+            "solved": [0],
+            "iters": [],
+            "iters_in_restoration": [],
+            "iters_w_regularization": [1],
+            "numerical_issues": [],
+        }
+
+    @pytest.mark.integration
+    @pytest.mark.solver
+    def test_assert_baseline_comparison(self, model):
+        fname = os.path.join(currdir, "convergence_baseline.json")
+
+        ca = ConvergenceAnalysis(
+            model=model,
+        )
+
+        # Baseline has incorrect values
+        with pytest.raises(
+            AssertionError,
+            match="Convergence analysis does not match baseline",
+        ):
+            diffs = ca.assert_baseline_comparison(fname)
 
 
 @pytest.fixture()

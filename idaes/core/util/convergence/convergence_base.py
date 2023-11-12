@@ -132,28 +132,27 @@ class ConvergenceEvaluationSpecification(object):
         (with given mean and standard deviation)
         truncated to the values given by lower and upper bounds
 
-        Parameters
-        ----------
-        name : str
-           The name of the input.
-        pyomo_path : str
-           A string representation of the path to the variable or parameter to
-           be sampled. This string will be executed to retrieve the Pyomo
-           component.
-        lower : float
-           A lower bound on the input variable or parameter.
-        upper : float
-           An upper bound on the input variable or parameter
-        mean : float
-           The mean value to use when generating normal distribution samples
-        std : float
-           The standard deviation to use when generating normal distribution samples
-        distribution : str
-            The Distribution type {"normal", "uniform"}
+        Args:
+            name - str
+               The name of the input.
+            pyomo_path - str
+               A string representation of the path to the variable or parameter to
+               be sampled. This string will be executed to retrieve the Pyomo
+               component.
+            lower - float
+               A lower bound on the input variable or parameter.
+            upper - float
+               An upper bound on the input variable or parameter
+            mean - float
+               The mean value to use when generating normal distribution samples
+            std - float
+               The standard deviation to use when generating normal distribution samples
+            distribution - str
+                The Distribution type {"normal", "uniform"}
 
-        Returns
-        -------
-           N/A
+        Returns:
+            None
+
         """
         # ToDo: put some error checking here ... Maybe we should have the model
         # ToDo: already? Can use to check if the pyomo_path is valid? check if
@@ -212,11 +211,10 @@ class ConvergenceEvaluation:
         values of parameters or variables according to the sampling
         specifications.
 
-        Returns
-        -------
-           Pyomo model : return a Pyomo model object that is initialized and
-                        ready to solve. This is the model object that will be
-                        used in the evaluation.
+        Returns:
+            Pyomo model - return a Pyomo model object that is initialized and
+                ready to solve. This is the model object that will be
+                used in the evaluation.
         """
         raise NotImplementedError(
             "Not implemented in the base class. This"
@@ -230,9 +228,8 @@ class ConvergenceEvaluation:
 
         Users may overload this to use a custom solver or options if required.
 
-        Returns
-        -------
-           Pyomo solver
+        Returns:
+            Pyomo solver
 
         """
         return get_solver()
@@ -413,26 +410,22 @@ def _run_ipopt_with_stats(model, solver, max_iter=500, max_cpu_time=120):
     """
     Run the solver (must be ipopt) and return the convergence statistics
 
-    Parameters
-    ----------
-    model : Pyomo model
-       The pyomo model to be solved
+    Args:
+        model - Pyomo model
+           The pyomo model to be solved
+        solver - Pyomo solver
+           The pyomo solver to use - it must be ipopt, but with whichever options
+           are preferred
+        max_iter - int
+           The maximum number of iterations to allow for ipopt
+        max_cpu_time - int
+           The maximum cpu time to allow for ipopt (in seconds)
 
-    solver : Pyomo solver
-       The pyomo solver to use - it must be ipopt, but with whichever options
-       are preferred
+    Returns:
+        Returns a tuple with (solve status object, bool (solve successful or
+        not), number of iters, number of iters in restoration, number of iters with regularization,
+        solve time)
 
-    max_iter : int
-       The maximum number of iterations to allow for ipopt
-
-    max_cpu_time : int
-       The maximum cpu time to allow for ipopt (in seconds)
-
-    Returns
-    -------
-       Returns a tuple with (solve status object, bool (solve successful or
-       not), number of iters, number of iters in restoration, number of iters with regularization,
-       solve time)
     """
     # ToDo: Check that the "solver" is, in fact, IPOPT
 
@@ -537,19 +530,19 @@ def generate_samples(eval_spec, n_points, seed=None):
     OrderedDict with all the points to be used in executing a convergence
     evaluation
 
-    Parameters
-    ----------
-    eval_spec : ConvergenceEvaluationSpecification
-       The convergence evaluation specification object that we would like to
-       sample
-    n_points : int
-       The total number of points that should be created
-    seed : int or None
-       The seed to be used when generating samples. If set to None, then the
-       seed is not set
-    Returns
-    -------
+    Args:
+        eval_spec - ConvergenceEvaluationSpecification
+           The convergence evaluation specification object that we would like to
+           sample
+        n_points - int
+           The total number of points that should be created
+        seed - int or None
+           The seed to be used when generating samples. If set to None, then the
+           seed is not set
+
+    Returns:
        OrderedDict of samples
+
     """
     if seed is not None:
         np.random.seed(seed)
@@ -583,25 +576,25 @@ def write_sample_file(
     json file with all the points to be used in executing a convergence
     evaluation
 
-    Parameters
-    ----------
-    filename : str
-       The filename for the json file that will be created containing all the
-       points to be run
-    eval_spec : ConvergenceEvaluationSpecification
-       The convergence evaluation specification object that we would like to
-       sample
-    convergence_evaluation_class_str : str
-       Python string that identifies the convergence evaluation class for this
-       specific evaluation. This is usually in the form of module.class_name.
-    n_points : int
-       The total number of points that should be created
-    seed : int or None
-       The seed to be used when generating samples. If set to None, then the
-       seed is not set
-    Returns
-    -------
-       N/A
+    Args:
+        filename - str
+           The filename for the json file that will be created containing all the
+           points to be run
+        eval_spec - ConvergenceEvaluationSpecification
+           The convergence evaluation specification object that we would like to
+           sample
+        convergence_evaluation_class_str - str
+           Python string that identifies the convergence evaluation class for this
+           specific evaluation. This is usually in the form of module.class_name.
+        n_points - int
+           The total number of points that should be created
+        seed - int or None
+           The seed to be used when generating samples. If set to None, then the
+           seed is not set
+
+    Returns:
+        None
+
     """
     # build the samples
     samples = generate_samples(eval_spec, n_points, seed)
@@ -727,18 +720,16 @@ def run_convergence_evaluation(sample_file_dict, conv_eval):
     Run convergence evaluation and generate the statistics based on information
     in the sample_file.
 
-    Parameters
-    ----------
-    sample_file_dict : dict
-        Dictionary created by ConvergenceEvaluationSpecification that contains
-        the input and sample point information
+    Args:
+        sample_file_dict - dict
+            Dictionary created by ConvergenceEvaluationSpecification that contains
+            the input and sample point information
+        conv_eval - ConvergenceEvaluation
+            The ConvergenceEvaluation object that should be used
 
-    conv_eval : ConvergenceEvaluation
-        The ConvergenceEvaluation object that should be used
+    Returns:
+        None
 
-    Returns
-    -------
-       N/A
     """
     inputs = sample_file_dict["inputs"]
     samples = sample_file_dict["samples"]
