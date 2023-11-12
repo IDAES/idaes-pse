@@ -33,9 +33,9 @@ class ParameterSweepSpecification(object):
     """Defines a set of input variables/parameters and values to be used in
     a parameter sweep study.
 
-    Users can define inputs to be sampled, the numer of samples and the method to
+    Users can define inputs to be sampled, the number of samples and the method to
     use to generate the samples (chosen from Pysmo's sampling methods) and then
-    call the generate_samples method ot generate the desired set of samples.
+    call the generate_samples method to generate the desired set of samples.
     """
 
     # TODO: Consider supporting sampling from data sets in the future
@@ -102,7 +102,7 @@ class ParameterSweepSpecification(object):
             )
 
     def set_sample_size(self, sample_size):
-        """Sets the number of samples ot be generated.
+        """Sets the number of samples to be generated.
 
         The format depends on the sampling method chosen. For UniformSampling, this must
         be a list of ints of length equal to the number of inputs, otherwise it must be
@@ -243,7 +243,7 @@ class ParameterSweepSpecification(object):
         Serialize specification to file in json format.
 
         Args:
-            filename: name of file ot write to as string
+            filename: name of file to write to as string
 
         Returns:
             None
@@ -256,7 +256,7 @@ class ParameterSweepSpecification(object):
         Load specification from json file.
 
         Args:
-            filename: name of file ot load as string
+            filename: name of file to load as string
 
         Returns:
             None
@@ -395,7 +395,7 @@ class ParameterSweepBase:
 
     def get_initialized_model(self):
         """
-        Get instance fo model to be run by calling build_model callback.
+        Get instance of model to be run by calling build_model callback.
 
         Returns:
             Pyomo model to be run
@@ -510,7 +510,7 @@ class ParameterSweepBase:
 
         Args:
             model: instance of model to be run
-            solver: Pyomo solver object to use ot solve model
+            solver: Pyomo solver object to use to solve model
 
         Returns:
             status: a Pyomo solver status object
@@ -607,7 +607,7 @@ class ParameterSweepBase:
         Write specification and results to json file.
 
         Args:
-            filename: name of file to write ot as string
+            filename: name of file to write to as string
 
         Returns:
             None
@@ -620,7 +620,7 @@ class ParameterSweepBase:
         Load specification and results from json file.
 
         Args:
-            filename: name of file ot load from as string
+            filename: name of file to load from as string
 
         Returns:
             None

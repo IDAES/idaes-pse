@@ -2727,7 +2727,7 @@ CACONFIG.declare(
 
 class ConvergenceAnalysis:
     """
-    Tool ot performa a parameter sweep of model checking for numerical issues and
+    Tool to performa a parameter sweep of model checking for numerical issues and
     convergence characteristics. Users may specify an IDAES ParameterSweep class to
     perform the sweep (default is SequentialSweepRunner).
     """
@@ -2874,7 +2874,7 @@ class ConvergenceAnalysis:
         Write specification and results to json file.
 
         Args:
-            filename: name of file to write ot as string
+            filename: name of file to write to as string
 
         Returns:
             None
@@ -2886,7 +2886,7 @@ class ConvergenceAnalysis:
         Load specification and results from json file.
 
         Args:
-            filename: name of file ot load from as string
+            filename: name of file to load from as string
 
         Returns:
             None
@@ -2995,7 +2995,7 @@ class ConvergenceAnalysis:
         return iters, iters_in_restoration, iters_w_regularization, time
 
     def _run_ipopt_with_stats(self, model, solver, max_iter=500, max_cpu_time=120):
-        # Solve model using provided solver (assumed ot be IPOPT) and parse logs
+        # Solve model using provided solver (assumed to be IPOPT) and parse logs
         # ToDo: Check that the "solver" is, in fact, IPOPT
 
         TempfileManager.push()
