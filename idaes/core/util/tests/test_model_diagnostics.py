@@ -2561,7 +2561,7 @@ class TestConvergenceAnalysis:
             AssertionError,
             match="Convergence analysis does not match baseline",
         ):
-            diffs = ca.assert_baseline_comparison(fname)
+            ca.assert_baseline_comparison(fname)
 
 
 @pytest.fixture()

@@ -10,7 +10,6 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-
 import json
 from collections import OrderedDict
 
@@ -24,11 +23,21 @@ import idaes.logger as idaeslog
 from idaes.core.surrogate.pysmo.sampling import SamplingMethods, UniformSampling
 from idaes.core.util.exceptions import ConfigurationError
 
+__author__ = "Andrew Lee"
+
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
 
 class ParameterSweepSpecification(object):
+    """Defines a set of input variables/parameters and values to be used in
+    a parameter sweep study.
+
+    Users can define inputs to be sampled, the numer of samples and the method to
+    use to generate the samples (chosen from Pysmo's sampling methods) and then
+    call the generate_samples method ot generate the desired set of samples.
+    """
+
     # TODO: Consider supporting sampling from data sets in the future
     def __init__(self):
         self._inputs = OrderedDict()
@@ -72,6 +81,15 @@ class ParameterSweepSpecification(object):
         self._inputs[name] = spec
 
     def set_sampling_method(self, sampling_method):
+        """Defines the method to use to generate samples. This must be a Pysmo
+        SamplingMethod
+
+        Args:
+            sampling_method: SamplingMethod class to use.
+
+        Returns:
+            None
+        """
         try:
             if issubclass(sampling_method, SamplingMethods):
                 self._sampling_method = sampling_method
@@ -84,6 +102,18 @@ class ParameterSweepSpecification(object):
             )
 
     def set_sample_size(self, sample_size):
+        """Sets the number of samples ot be generated.
+
+        The format depends on the sampling method chosen. For UniformSampling, this must
+        be a list of ints of length equal to the number of inputs, otherwise it must be
+        an int.
+
+        Args:
+            sample_size: int or list-of-ints
+
+        Returns:
+            None
+        """
         self._sample_size = sample_size
 
     def _generate_pysmo_data_input(self):
@@ -165,6 +195,11 @@ class ParameterSweepSpecification(object):
         return self._samples
 
     def to_dict(self):
+        """Write specification to a dict
+
+        Returns:
+            Input specification as a dict
+        """
         outdict = {}
 
         outdict["inputs"] = self._inputs
@@ -176,7 +211,16 @@ class ParameterSweepSpecification(object):
 
         return outdict
 
-    def from_dict(self, input_dict):
+    def from_dict(self, input_dict: dict):
+        """
+        Load specification from dict
+
+        Args:
+            input_dict: dict to load into specification
+
+        Returns:
+            None
+        """
         self._inputs = OrderedDict()
         for k, v in input_dict["inputs"].items():
             self._inputs[k] = OrderedDict(v)
@@ -194,11 +238,29 @@ class ParameterSweepSpecification(object):
             orient="tight",
         )
 
-    def to_json_file(self, filename):
+    def to_json_file(self, filename: str):
+        """
+        Serialize specification to file in json format.
+
+        Args:
+            filename: name of file ot write to as string
+
+        Returns:
+            None
+        """
         with open(filename, "w") as fd:
             json.dump(self.to_dict(), fd, indent=3)
 
-    def from_json_file(self, filename):
+    def from_json_file(self, filename: str):
+        """
+        Load specification from json file.
+
+        Args:
+            filename: name of file ot load as string
+
+        Returns:
+            None
+        """
         with open(filename, "r") as f:
             self.from_dict(json.load(f))
         f.close()
@@ -265,6 +327,14 @@ CONFIG.declare(
 
 @document_kwargs_from_configdict(CONFIG)
 class ParameterSweepBase:
+    """
+    IDAES base class for defining parameter sweep runners.
+
+    Thus base class defines a basic API for setting up parameter sweep studies
+    and allows the end-user to provide instructions for how to set up and run
+    the model to be studied using a set of callbacks.
+    """
+
     def __init__(self, **kwargs):
         self.config = CONFIG(kwargs)
         self._results = OrderedDict()
@@ -274,11 +344,31 @@ class ParameterSweepBase:
         return self._results
 
     def execute_parameter_sweep(self):
+        """
+        Placeholder method for parameter sweep runners.
+
+        Developers should overload this with a method to execute the parameter sweep
+        using their preferred workflow manager.
+
+        Raises:
+            NotImplementedError
+        """
         raise NotImplementedError(
             "Derived classes should overload this method with a " "workflow manager."
         )
 
-    def execute_single_sample(self, sample_id):
+    def execute_single_sample(self, sample_id: int):
+        """
+        Executes a single run of the model using input values from sample_id.
+
+        Args:
+            sample_id: int indicating row in specification.samples to load into model
+                for run.
+
+        Returns:
+            results: results generated by collect_results callback
+            solved: bool indicating whether solver reported optimal convergence
+        """
         model = self.get_initialized_model()
 
         # Load sample values
@@ -304,6 +394,12 @@ class ParameterSweepBase:
         return results, solved
 
     def get_initialized_model(self):
+        """
+        Get instance fo model to be run by calling build_model callback.
+
+        Returns:
+            Pyomo model to be run
+        """
         if self.config.build_model is None:
             raise ConfigurationError(
                 "Please specify a method to construct the model of interest."
@@ -316,6 +412,15 @@ class ParameterSweepBase:
         return model
 
     def get_input_specification(self):
+        """
+        Get input specification from config block
+
+        Returns:
+            ParameterSweepConfiguration object
+
+        Raises:
+            ConfigurationError if no input specification has been defined
+        """
         if self.config.input_specification is None:
             raise ConfigurationError(
                 "Please specify an input specification to use for sampling."
@@ -324,6 +429,15 @@ class ParameterSweepBase:
         return self.config.input_specification
 
     def get_input_samples(self):
+        """
+        Get dataframe of samples from input specification.
+
+        Returns:
+            pandas dataframe of samples
+
+        Raises:
+            ConfigurationError if no input specification has been defined
+        """
         spec = self.get_input_specification()
 
         samples = spec.samples
@@ -333,7 +447,22 @@ class ParameterSweepBase:
 
         return samples
 
-    def set_input_values(self, model, sample_id):
+    def set_input_values(self, model, sample_id: int):
+        """
+        Set values of input variables/parameters in instance of model using values
+        from sample_id.
+
+        Args:
+            model: instance of model to be executed
+            sample_id: int representing a row in the specification.samples dataframe
+
+        Returns:
+            None
+
+        Raises:
+            ValueError if an input cannot be found or if it is not a fixed Var or
+            mutable Param
+        """
         samples = self.get_input_samples()
         inputs = self.config.input_specification.inputs
 
@@ -376,12 +505,34 @@ class ParameterSweepBase:
                 )
 
     def run_model(self, model, solver):
+        """
+        Executes run of model by calling the run_model callback
+
+        Args:
+            model: instance of model to be run
+            solver: Pyomo solver object to use ot solve model
+
+        Returns:
+            status: a Pyomo solver status object
+            run_stats: additional output collected by run_model callback
+        """
         if self.config.run_model is None:
             return solver.solve(model), None
 
         return self.config.run_model(model, solver)
 
     def collect_results(self, model, status, run_stats):
+        """
+        Collects desired results from instance of model by calling collect_results callback.
+
+        Args:
+            model: instance of model to collect results from
+            status: Pyomo solver status object returned from solving model
+            run_stats: additional output from run_model callback to be collected in results
+
+        Returns:
+            Output of collect_results callback
+        """
         if self.config.collect_results is None:
             raise ConfigurationError(
                 "Please provide a method to collect results from sample run."
@@ -390,6 +541,16 @@ class ParameterSweepBase:
         return self.config.collect_results(model, status, run_stats)
 
     def execute_recourse(self, model):
+        """
+        Call failure_recourse callback. This method is used in case the solver encounters
+        a critical error whilst solving a sample.
+
+        Args:
+            model: instance of model for performing recourse
+
+        Returns:
+            Output of failure_recourse callback
+        """
         if self.config.failure_recourse is None:
             # No recourse specified, so solved=False and results=None
             return None, False
@@ -405,6 +566,12 @@ class ParameterSweepBase:
         return solver
 
     def to_dict(self):
+        """
+        Serialize specification and current results to dict form
+
+        Returns:
+            dict
+        """
         # TODO : Need to serialize build_model method somehow?
         outdict = {}
         outdict["specification"] = self.get_input_specification().to_dict()
@@ -412,7 +579,16 @@ class ParameterSweepBase:
 
         return outdict
 
-    def from_dict(self, input_dict):
+    def from_dict(self, input_dict: dict):
+        """
+        Load specification and results from dict.
+
+        Args:
+            input_dict: dict to load from
+
+        Returns:
+            None
+        """
         if self.config.input_specification is not None:
             # Log a warning about overwriting
             _log.debug("Overwriting existing input specification")
@@ -426,18 +602,49 @@ class ParameterSweepBase:
         for k, v in input_dict["results"].items():
             self._results[int(k)] = v
 
-    def to_json_file(self, filename):
+    def to_json_file(self, filename: str):
+        """
+        Write specification and results to json file.
+
+        Args:
+            filename: name of file to write ot as string
+
+        Returns:
+            None
+        """
         with open(filename, "w") as fd:
             json.dump(self.to_dict(), fd, indent=3)
 
-    def from_json_file(self, filename):
+    def from_json_file(self, filename: str):
+        """
+        Load specification and results from json file.
+
+        Args:
+            filename: name of file ot load from as string
+
+        Returns:
+            None
+        """
         with open(filename, "r") as f:
             self.from_dict(json.load(f))
         f.close()
 
 
 class SequentialSweepRunner(ParameterSweepBase):
+    """
+    Sequential runner for parameter sweeps.
+
+    This class executes a parameter sweep by running all samples sequentially
+    in a for loop.
+    """
+
     def execute_parameter_sweep(self):
+        """
+        Execute sequential parameter sweep.
+
+        Returns:
+            OrderedDict of results indexed by sample ID.
+        """
         self._results = OrderedDict()
         samples = self.get_input_samples()
 

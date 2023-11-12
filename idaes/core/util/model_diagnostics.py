@@ -2726,6 +2726,12 @@ CACONFIG.declare(
 
 
 class ConvergenceAnalysis:
+    """
+    Tool ot performa a parameter sweep of model checking for numerical issues and
+    convergence characteristics. Users may specify an IDAES ParameterSweep class to
+    perform the sweep (default is SequentialSweepRunner).
+    """
+
     CONFIG = CACONFIG()
 
     def __init__(self, model, **kwargs):
@@ -2760,19 +2766,55 @@ class ConvergenceAnalysis:
         return self._psweep.get_input_samples()
 
     def run_convergence_analysis(self):
+        """
+        Execute convergence analysis sweep by calling execute_parameter_sweep
+        method in specified runner.
+
+        Returns:
+            dict of results from parameter sweep
+        """
         return self._psweep.execute_parameter_sweep()
 
-    def run_convergence_analysis_from_dict(self, input_dict):
+    def run_convergence_analysis_from_dict(self, input_dict: dict):
+        """
+        Execute convergence analysis sweep using specification defined in dict.
+
+        Args:
+            input_dict: dict to load specification from
+
+        Returns:
+            dict of results from parameter sweep
+        """
         self.from_dict(input_dict)
         return self.run_convergence_analysis()
 
-    def run_convergence_analysis_from_file(self, filename):
+    def run_convergence_analysis_from_file(self, filename: str):
+        """
+        Execute convergence analysis sweep using specification defined in json file.
+
+        Args:
+            filename: name of file to load specification from as string
+
+        Returns:
+            dict of results from parameter sweep
+        """
         self.from_json_file(filename)
         return self.run_convergence_analysis()
 
     def compare_convergence_to_baseline(
         self, filename: str, rel_tol: float = 0.1, abs_tol: float = 1
     ):
+        """
+        Run convergence analysis and compare results to those defined in baseline file.
+
+        Args:
+            filename: name of baseline file to load specification from as string
+            rel_tol: relative tolerance to use for comparing number of iterations
+            abs_tol: absolute tolerance to use for comparing number of iterations
+
+        Returns:
+            dict containing lists of differences between convergence analysis run and baseline
+        """
         with open(filename, "r") as f:
             # Load file manually so we have saved results
             jdict = json.load(f)
@@ -2787,6 +2829,18 @@ class ConvergenceAnalysis:
     def assert_baseline_comparison(
         self, filename: str, rel_tol: float = 0.1, abs_tol: float = 1
     ):
+        """
+        Run convergence analysis and assert no differences in results to those defined
+        in baseline file.
+
+        Args:
+            filename: name of baseline file to load specification from as string
+            rel_tol: relative tolerance to use for comparing number of iterations
+            abs_tol: absolute tolerance to use for comparing number of iterations
+
+        Raises:
+            AssertionError if results of convergence analysis do not match baseline
+        """
         diffs = self.compare_convergence_to_baseline(
             filename, rel_tol=rel_tol, abs_tol=abs_tol
         )
@@ -2795,21 +2849,56 @@ class ConvergenceAnalysis:
             raise AssertionError("Convergence analysis does not match baseline")
 
     def to_dict(self):
+        """
+        Serialize specification and current results to dict form
+
+        Returns:
+            dict
+        """
         return self._psweep.to_dict()
 
     def from_dict(self, input_dict):
+        """
+        Load specification and results from dict.
+
+        Args:
+            input_dict: dict to load from
+
+        Returns:
+            None
+        """
         return self._psweep.from_dict(input_dict)
 
     def to_json_file(self, filename):
+        """
+        Write specification and results to json file.
+
+        Args:
+            filename: name of file to write ot as string
+
+        Returns:
+            None
+        """
         return self._psweep.to_json_file(filename)
 
     def from_json_file(self, filename):
+        """
+        Load specification and results from json file.
+
+        Args:
+            filename: name of file ot load from as string
+
+        Returns:
+            None
+        """
         return self._psweep.from_json_file(filename)
 
     def _build_model(self):
+        # Create new instance of model by cloning
         return self._model.clone()
 
     def _run_model(self, model, solver):
+        # Run model using IPOPT and collect stats
         (
             status,
             iters,
@@ -2849,6 +2938,7 @@ class ConvergenceAnalysis:
 
     @staticmethod
     def _recourse(model):
+        # Return a default dict indicating no results
         return {
             "iters": -1,
             "iters_in_restoration": -1,
@@ -2859,17 +2949,7 @@ class ConvergenceAnalysis:
 
     @staticmethod
     def _parse_ipopt_output(ipopt_file):
-        """
-        Parse an IPOPT output file and return:
-
-        * number of iterations
-        * time in IPOPT
-
-        Returns
-        -------
-           Returns a tuple with (solve status object, bool (solve successful or
-           not), number of iters, solve time)
-        """
+        # PArse IPOPT logs and return key metrics
         # ToDO: Check for final iteration with regularization or restoration
 
         iters = 0
@@ -2915,30 +2995,7 @@ class ConvergenceAnalysis:
         return iters, iters_in_restoration, iters_w_regularization, time
 
     def _run_ipopt_with_stats(self, model, solver, max_iter=500, max_cpu_time=120):
-        """
-        Run the solver (must be ipopt) and return the convergence statistics
-
-        Parameters
-        ----------
-        model : Pyomo model
-           The pyomo model to be solved
-
-        solver : Pyomo solver
-           The pyomo solver to use - it must be ipopt, but with whichever options
-           are preferred
-
-        max_iter : int
-           The maximum number of iterations to allow for ipopt
-
-        max_cpu_time : int
-           The maximum cpu time to allow for ipopt (in seconds)
-
-        Returns
-        -------
-           Returns a tuple with (solve status object, bool (solve successful or
-           not), number of iters, number of iters in restoration, number of iters with regularization,
-           solve time)
-        """
+        # Solve model using provided solver (assumed ot be IPOPT) and parse logs
         # ToDo: Check that the "solver" is, in fact, IPOPT
 
         TempfileManager.push()
