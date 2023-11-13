@@ -15,6 +15,8 @@ IDAES model for a generic multiple-stream contactor unit.
 """
 from functools import partial
 
+from pandas import DataFrame
+
 # Import Pyomo libraries
 from pyomo.environ import Block, Constraint, RangeSet, Reals, Set, units, Var
 from pyomo.common.config import ConfigDict, ConfigValue, Bool, In
@@ -42,6 +44,7 @@ from idaes.core.initialization.initializer_base import StoreState
 from idaes.core.solvers import get_solver
 from idaes.core.util.model_serializer import to_json, from_json
 import idaes.logger as idaeslog
+from idaes.core.util.units_of_measurement import report_quantity
 
 __author__ = "Andrew Lee"
 
@@ -902,7 +905,47 @@ class MSContactorData(UnitModelBlockData):
         )
 
     def _get_performance_contents(self, time_point=0):
-        raise NotImplementedError()
+        # Due to the flexibility of the MSContactor and the number of possible terms
+        # that could be included here, we will leave this up to the user to define.
+        return {}
+
+    def _get_stream_table_contents(self, time_point=0):
+        stream_attributes = {}
+        stream_attributes["Units"] = {}
+
+        sblocks = {}
+        for stream, pconfig in self.config.streams.items():
+            sblock = getattr(self, stream)
+            flow_dir = pconfig.flow_direction
+
+            if pconfig.has_feed:
+                inlet_state = getattr(self, stream + "_inlet_state")
+                sblocks[stream + " Inlet"] = inlet_state[time_point]
+
+            if flow_dir == FlowDirection.forward:
+                outlet = self.elements.last()
+            elif flow_dir == FlowDirection.backward:
+                outlet = self.elements.first()
+            else:
+                raise BurntToast("If/else overrun when constructing stream table")
+
+            sblocks[stream + " Outlet"] = sblock[time_point, outlet]
+
+        for n, v in sblocks.items():
+            dvars = v.define_display_vars()
+
+            stream_attributes[n] = {}
+
+            for k in dvars:
+                for i in dvars[k].keys():
+                    stream_key = k if i is None else f"{k} {i}"
+
+                    quant = report_quantity(dvars[k][i])
+
+                    stream_attributes[n][stream_key] = quant.m
+                    stream_attributes["Units"][stream_key] = quant.u
+
+        return DataFrame.from_dict(stream_attributes, orient="columns")
 
 
 def _get_state_blocks(blk, t, s, stream):

@@ -30,3 +30,5 @@ Unit Models
     translator
     turbine
     valve
+    
+    solid_liquid/index
