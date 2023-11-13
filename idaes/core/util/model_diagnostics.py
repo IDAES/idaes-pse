@@ -1374,6 +1374,10 @@ class SVDToolbox:
             self._model, scaled=False, equality_constraints_only=True
         )
 
+        # Get list of equality constraint and variable names
+        self.eq_con_list = self.nlp.get_pyomo_equality_constraints()
+        self.var_list = self.nlp.get_pyomo_variables()
+
         if self.jacobian.shape[0] < 2:
             raise ValueError(
                 "Model needs at least 2 equality constraints to perform svd_analysis."
@@ -1486,10 +1490,6 @@ class SVDToolbox:
 
         tol = self.config.size_cutoff_in_singular_vector
 
-        # Get list of equality constraint and variable names
-        eq_con_list = self.nlp.get_pyomo_equality_constraints()
-        var_list = self.nlp.get_pyomo_variables()
-
         if singular_values is None:
             singular_values = range(1, len(self.s) + 1)
 
@@ -1512,11 +1512,11 @@ class SVDToolbox:
             stream.write(f"{TAB}Smallest Singular Value {e}:\n\n")
             stream.write(f"{2 * TAB}Variables:\n\n")
             for v in np.where(abs(self.v[:, e - 1]) > tol)[0]:
-                stream.write(f"{3 * TAB}{var_list[v].name}\n")
+                stream.write(f"{3 * TAB}{self.var_list[v].name}\n")
 
             stream.write(f"\n{2 * TAB}Constraints:\n\n")
             for c in np.where(abs(self.u[:, e - 1]) > tol)[0]:
-                stream.write(f"{3 * TAB}{eq_con_list[c].name}\n")
+                stream.write(f"{3 * TAB}{self.eq_con_list[c].name}\n")
             stream.write("\n")
 
         stream.write("=" * MAX_STR_LENGTH + "\n")
@@ -1544,23 +1544,19 @@ class SVDToolbox:
                 f"object (got {variable})."
             )
 
-        # Get list of equality constraint and variable names
-        eq_con_list = self.nlp.get_pyomo_equality_constraints()
-        var_list = self.nlp.get_pyomo_variables()
-
         # Get index of variable in Jacobian
         try:
-            var_idx = var_list.index(variable)
+            var_idx = self.nlp.get_primal_indices([variable])[0]
         except (ValueError, PyomoException):
             raise AttributeError(f"Could not find {variable.name} in model.")
 
-        nonzeroes = self.jacobian[:, var_idx].nonzero()
+        nonzeros = self.jacobian.getcol(var_idx).nonzero()
 
         # Build a list of all constraints that include var
         cons_w_var = []
-        for i, r in enumerate(nonzeroes[0]):
+        for r in nonzeros[0]:
             cons_w_var.append(
-                f"{eq_con_list[r].name}: {self.jacobian[(r, nonzeroes[1][i])]}"
+                f"{self.eq_con_list[r].name}: {self.jacobian[(r, var_idx)]:.3e}"
             )
 
         # Write the output
@@ -1595,23 +1591,18 @@ class SVDToolbox:
                 f"object (got {constraint})."
             )
 
-        # Get list of equality constraint and variable names
-        eq_con_list = self.nlp.get_pyomo_equality_constraints()
-        var_list = self.nlp.get_pyomo_variables()
-
         # Get index of variable in Jacobian
         try:
-            con_idx = eq_con_list.index(constraint)
+            con_idx = self.nlp.get_constraint_indices([constraint])[0]
         except ValueError:
             raise AttributeError(f"Could not find {constraint.name} in model.")
 
-        nonzeroes = self.jacobian[con_idx, :].nonzero()
+        nonzeros = self.jacobian[con_idx, :].nonzero()
 
         # Build a list of all vars in constraint
         vars_in_cons = []
-        for i, r in enumerate(nonzeroes[0]):
-            c = nonzeroes[1][i]
-            vars_in_cons.append(f"{var_list[c].name}: {self.jacobian[(r, c)]}")
+        for c in nonzeros[1]:
+            vars_in_cons.append(f"{self.var_list[c].name}: {self.jacobian[(con_idx, c)]:.3e}")
 
         # Write the output
         _write_report_section(
