@@ -2759,10 +2759,16 @@ class ConvergenceAnalysis:
 
     @property
     def results(self):
+        """
+        Returns the results of the ConvergenceAnalysis run
+        """
         return self._psweep.results
 
     @property
     def samples(self):
+        """
+        Returns the set of input samples for convergence analysis (pandas DataFrame)
+        """
         return self._psweep.get_input_samples()
 
     def run_convergence_analysis(self):

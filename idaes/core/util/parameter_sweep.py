@@ -10,6 +10,10 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+"""
+IDAES Parameter Sweep API and sequential workflow runner.
+"""
+
 import json
 from collections import OrderedDict
 
@@ -166,6 +170,7 @@ class ParameterSweepSpecification(object):
 
         bounds_list = self._generate_pysmo_data_input()
 
+        # pylint: disable=not-callable
         space_init = self.sampling_method(
             bounds_list,
             sample_size,
@@ -180,18 +185,30 @@ class ParameterSweepSpecification(object):
 
     @property
     def inputs(self):
+        """
+        Returns an OrderedDict containing the declared inputs.
+        """
         return self._inputs
 
     @property
     def sampling_method(self):
+        """
+        Returns the declared sampling method.
+        """
         return self._sampling_method
 
     @property
     def sample_size(self):
+        """
+        Returns the declared sample size.
+        """
         return self._sample_size
 
     @property
     def samples(self):
+        """
+        Returns the generated set of samples (pandas DataFrame).
+        """
         return self._samples
 
     def to_dict(self):
@@ -267,6 +284,18 @@ class ParameterSweepSpecification(object):
 
 
 def is_psweepspec(val):
+    """
+    Config validator for ParameterSweepSpecifications
+
+    Args:
+        val: value to validate
+
+    Returns:
+        ParameterSweepSpecification
+
+    Raises:
+        ValueError if val is not a ParameterSweepSpecification
+    """
     if isinstance(val, ParameterSweepSpecification):
         return val
     _log.error(
@@ -283,9 +312,23 @@ CONFIG.declare(
     ConfigValue(doc="Callback method to construct initialized model for execution."),
 )
 CONFIG.declare(
+    "build_model_arguments",
+    ConfigValue(
+        domain=dict,
+        doc="Arguments to pass to build_model callback.",
+    ),
+)
+CONFIG.declare(
     "run_model",
     ConfigValue(
         doc="Callback method to use when running model. If None, model is run with solver.solve()"
+    ),
+)
+CONFIG.declare(
+    "run_model_arguments",
+    ConfigValue(
+        domain=dict,
+        doc="Arguments to pass to run_model callback.",
     ),
 )
 CONFIG.declare(
@@ -295,9 +338,23 @@ CONFIG.declare(
     ),
 )
 CONFIG.declare(
+    "collect_results_arguments",
+    ConfigValue(
+        domain=dict,
+        doc="Arguments to pass to collect_results callback.",
+    ),
+)
+CONFIG.declare(
     "failure_recourse",
     ConfigValue(
         doc="Callback method to use in case of exception when solving a sample."
+    ),
+)
+CONFIG.declare(
+    "failure_recourse_arguments",
+    ConfigValue(
+        domain=dict,
+        doc="Arguments to pass to failure_recourse callback.",
     ),
 )
 CONFIG.declare(
@@ -341,6 +398,9 @@ class ParameterSweepBase:
 
     @property
     def results(self):
+        """
+        Returns OrderedDict containing the results from the parameter sweep.
+        """
         return self._results
 
     def execute_parameter_sweep(self):
@@ -387,7 +447,7 @@ class ParameterSweepBase:
 
             # Compile Results
             results = self.collect_results(model, status, run_stats)
-        except:
+        except:  # pylint: disable=bare-except
             # Catch any Exception for recourse
             results, solved = self.execute_recourse(model)
 
@@ -404,8 +464,11 @@ class ParameterSweepBase:
             raise ConfigurationError(
                 "Please specify a method to construct the model of interest."
             )
+        args = self.config.build_model_arguments
+        if args is None:
+            args = {}
 
-        model = self.config.build_model()
+        model = self.config.build_model(**args)
 
         # TODO: Verify model is actually a model?
 
@@ -519,7 +582,11 @@ class ParameterSweepBase:
         if self.config.run_model is None:
             return solver.solve(model), None
 
-        return self.config.run_model(model, solver)
+        args = self.config.run_model_arguments
+        if args is None:
+            args = {}
+
+        return self.config.run_model(model, solver, **args)
 
     def collect_results(self, model, status, run_stats):
         """
@@ -537,8 +604,11 @@ class ParameterSweepBase:
             raise ConfigurationError(
                 "Please provide a method to collect results from sample run."
             )
+        args = self.config.collect_results_arguments
+        if args is None:
+            args = {}
 
-        return self.config.collect_results(model, status, run_stats)
+        return self.config.collect_results(model, status, run_stats, **args)
 
     def execute_recourse(self, model):
         """
@@ -555,7 +625,10 @@ class ParameterSweepBase:
             # No recourse specified, so solved=False and results=None
             return None, False
         else:
-            return self.config.failure_recourse(model)
+            args = self.config.failure_recourse_arguments
+            if args is None:
+                args = {}
+            return self.config.failure_recourse(model, **args)
 
     def _get_solver(self):
         if self.config.solver is None:

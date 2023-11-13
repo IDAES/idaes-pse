@@ -10,7 +10,9 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-
+"""
+Tests for IDAES Parameter Sweep API and sequential workflow runner.
+"""
 
 import pytest
 import os
@@ -672,6 +674,26 @@ class TestParameterSweepBase:
         assert isinstance(m2.p3, Param)
 
     @pytest.mark.unit
+    def test_get_initialized_model_w_args(self):
+        def build_model(arg1=None, arg2=None):
+            m = ConcreteModel()
+            m.a1 = arg1
+            m.a2 = arg2
+
+            return m
+
+        psweep = ParameterSweepBase(
+            build_model=build_model,
+            build_model_arguments={"arg1": "foo", "arg2": False},
+        )
+
+        m2 = psweep.get_initialized_model()
+
+        assert isinstance(m2, ConcreteModel)
+        assert m2.a1 == "foo"
+        assert not m2.a2
+
+    @pytest.mark.unit
     def test_get_specification(self):
         psweep = ParameterSweepBase(
             build_model=self.build_model,
@@ -883,6 +905,21 @@ class TestParameterSweepBase:
         assert status == "foo"
 
     @pytest.mark.unit
+    def test_run_model_dummy_w_args(self):
+        def dummy_run(model, solver, arg1=None, arg2=None):
+            return "foo", {"arg1": arg1, "arg2": arg2}
+
+        psweep = ParameterSweepBase(
+            run_model=dummy_run, run_model_arguments={"arg1": "foo", "arg2": False}
+        )
+
+        model = ConcreteModel()
+        status, run_stats = psweep.run_model(model, "bar")
+
+        assert status == "foo"
+        assert run_stats == {"arg1": "foo", "arg2": False}
+
+    @pytest.mark.unit
     def test_collect_results_none(self):
         psweep = ParameterSweepBase()
 
@@ -908,6 +945,65 @@ class TestParameterSweepBase:
         results = psweep.collect_results(model, "foo", "bar")
 
         assert results == 1
+
+    @pytest.mark.unit
+    def test_collect_results_w_args(self):
+        def dummy_collect(model, status, run_stats, arg1=None, arg2=None):
+            return [value(model.v), arg1, arg2]
+
+        model = ConcreteModel()
+        model.v = Var(initialize=1)
+        model.c = Constraint(expr=model.v == 4)
+
+        psweep = ParameterSweepBase(
+            collect_results=dummy_collect,
+            collect_results_arguments={"arg1": "foo", "arg2": False},
+        )
+
+        results = psweep.collect_results(model, "foo", "bar")
+
+        assert results == [1, "foo", False]
+
+    @pytest.mark.unit
+    def test_execute_recourse_none(self):
+        model = ConcreteModel()
+
+        psweep = ParameterSweepBase()
+
+        results = psweep.execute_recourse(model)
+
+        assert results == (None, False)
+
+    @pytest.mark.unit
+    def test_execute_recourse(self):
+        model = ConcreteModel()
+
+        def dummy_recourse(model):
+            return "foo"
+
+        psweep = ParameterSweepBase(
+            failure_recourse=dummy_recourse,
+        )
+
+        results = psweep.execute_recourse(model)
+
+        assert results == "foo"
+
+    @pytest.mark.unit
+    def test_execute_recourse_w_args(self):
+        model = ConcreteModel()
+
+        def dummy_recourse(model, arg1=None, arg2=None):
+            return "foo", arg1, arg2
+
+        psweep = ParameterSweepBase(
+            failure_recourse=dummy_recourse,
+            failure_recourse_arguments={"arg1": "bar", "arg2": False},
+        )
+
+        results = psweep.execute_recourse(model)
+
+        assert results == ("foo", "bar", False)
 
     @pytest.mark.component
     @pytest.mark.solver
