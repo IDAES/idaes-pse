@@ -55,7 +55,9 @@ from pyomo.core.expr.numeric_expr import (
 from pyomo.core.base.block import _BlockData
 from pyomo.core.base.var import _GeneralVarData, _VarData
 from pyomo.core.base.constraint import _ConstraintData
-from pyomo.repn.standard_repn import generate_standard_repn  # pylint: disable=no-name-in-module
+from pyomo.repn.standard_repn import (
+    generate_standard_repn,
+)  # pylint: disable=no-name-in-module
 from pyomo.common.collections import ComponentSet
 from pyomo.common.config import (
     ConfigDict,
@@ -1355,7 +1357,7 @@ class DiagnosticsToolbox:
 
     def display_potential_evaluation_errors(self, stream=None):
         """
-        Prints constraints that may be prone to evaluation errors 
+        Prints constraints that may be prone to evaluation errors
         (e.g., log of a negative number) based on variable bounds.
 
         Args:
@@ -1710,7 +1712,9 @@ def _check_eval_error_division(
     node: NumericExpression, warn_list: List[str], config: ConfigDict
 ):
     lb, ub = _get_bounds_with_inf(node.args[1])
-    if (config.warn_for_evaluation_error_at_bounds and (lb <= 0 <= ub)) or (lb < 0 < ub):
+    if (config.warn_for_evaluation_error_at_bounds and (lb <= 0 <= ub)) or (
+        lb < 0 < ub
+    ):
         msg = f"Potential division by 0 in {node}; Denominator bounds are ({lb}, {ub})"
         warn_list.append(msg)
 
@@ -1847,7 +1851,7 @@ class _EvalErrorWalker(StreamBasedExpressionVisitor):
 
     def exitNode(self, node, data):
         """
-        callback to be called as the visitor moves from the leaf 
+        callback to be called as the visitor moves from the leaf
         nodes back to the root node.
 
         Args:
