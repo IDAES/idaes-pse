@@ -22,7 +22,7 @@ import sys
 from inspect import signature
 import math
 from math import log
-from typing import List, Sequence
+from typing import List
 
 import numpy as np
 from scipy.linalg import svd
@@ -42,7 +42,6 @@ from pyomo.environ import (
     SolverFactory,
     value,
     Var,
-    is_fixed,
 )
 from pyomo.core.expr.numeric_expr import (
     DivisionExpression,
@@ -56,7 +55,7 @@ from pyomo.core.expr.numeric_expr import (
 from pyomo.core.base.block import _BlockData
 from pyomo.core.base.var import _GeneralVarData, _VarData
 from pyomo.core.base.constraint import _ConstraintData
-from pyomo.repn.standard_repn import generate_standard_repn
+from pyomo.repn.standard_repn import generate_standard_repn  # pylint: disable=no-name-in-module
 from pyomo.common.collections import ComponentSet
 from pyomo.common.config import (
     ConfigDict,
@@ -267,7 +266,7 @@ CONFIG.declare(
     ),
 )
 CONFIG.declare(
-    "strict_evaluation_error_detection",
+    "warn_for_evaluation_error_at_bounds",
     ConfigValue(
         default=True,
         domain=bool,
@@ -1334,7 +1333,6 @@ class DiagnosticsToolbox:
         )
 
     def _collect_potential_eval_errors(self) -> List[str]:
-        res = list()
         warnings = list()
         for con in self.model.component_data_objects(
             Constraint, active=True, descend_into=True
@@ -1356,6 +1354,16 @@ class DiagnosticsToolbox:
         return warnings
 
     def display_potential_evaluation_errors(self, stream=None):
+        """
+        Prints constraints that may be prone to evaluation errors 
+        (e.g., log of a negative number) based on variable bounds.
+
+        Args:
+            stream: an I/O object to write the output to (default = stdout)
+
+        Returns:
+            None
+        """
         if stream is None:
             stream = sys.stdout
 
@@ -1702,7 +1710,7 @@ def _check_eval_error_division(
     node: NumericExpression, warn_list: List[str], config: ConfigDict
 ):
     lb, ub = _get_bounds_with_inf(node.args[1])
-    if (config.strict_evaluation_error_detection and (lb <= 0 <= ub)) or (lb < 0 < ub):
+    if (config.warn_for_evaluation_error_at_bounds and (lb <= 0 <= ub)) or (lb < 0 < ub):
         msg = f"Potential division by 0 in {node}; Denominator bounds are ({lb}, {ub})"
         warn_list.append(msg)
 
@@ -1741,7 +1749,7 @@ def _check_eval_error_pow(
 
     if integer_exponent and (
         (lb1 > 0 or ub1 < 0)
-        or (not config.strict_evaluation_error_detection and (lb1 >= 0 or ub1 <= 0))
+        or (not config.warn_for_evaluation_error_at_bounds and (lb1 >= 0 or ub1 <= 0))
     ):
         # life is good; the exponent is an integer and the base is nonzero
         return None
@@ -1750,7 +1758,7 @@ def _check_eval_error_pow(
         return None
 
     # if the base is positive, there should not be any evaluation errors
-    if lb1 > 0 or (not config.strict_evaluation_error_detection and lb1 >= 0):
+    if lb1 > 0 or (not config.warn_for_evaluation_error_at_bounds and lb1 >= 0):
         return None
     if lb1 >= 0 and lb2 >= 0:
         return None
@@ -1765,7 +1773,7 @@ def _check_eval_error_log(
     node: NumericExpression, warn_list: List[str], config: ConfigDict
 ):
     lb, ub = _get_bounds_with_inf(node.args[0])
-    if (config.strict_evaluation_error_detection and lb <= 0) or lb < 0:
+    if (config.warn_for_evaluation_error_at_bounds and lb <= 0) or lb < 0:
         msg = f"Potential log of a non-positive number in {node}; Argument bounds are ({lb}, {ub})"
         warn_list.append(msg)
 
@@ -1838,6 +1846,14 @@ class _EvalErrorWalker(StreamBasedExpressionVisitor):
         self._config = config
 
     def exitNode(self, node, data):
+        """
+        callback to be called as the visitor moves from the leaf 
+        nodes back to the root node.
+
+        Args:
+            node: a pyomo expression node
+            data: not used in this walker
+        """
         if type(node) in _eval_err_handler:
             _eval_err_handler[type(node)](node, self._warn_list, self._config)
         return self._warn_list
