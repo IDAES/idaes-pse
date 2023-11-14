@@ -2608,7 +2608,7 @@ class TestEvalErrorDetection(TestCase):
             w, "c: Potential division by 0 in 1/x; Denominator bounds are (0, inf)"
         )
 
-        dtb.config.strict_evaluation_error_detection = False
+        dtb.config.warn_for_evaluation_error_at_bounds = False
         warnings = dtb._collect_potential_eval_errors()
         self.assertEqual(len(warnings), 0)
 
@@ -2690,7 +2690,7 @@ class TestEvalErrorDetection(TestCase):
             "c: Potential evaluation error in x**-2; base bounds are (0, inf); exponent bounds are (-2, -2)",
         )
 
-        dtb.config.strict_evaluation_error_detection = False
+        dtb.config.warn_for_evaluation_error_at_bounds = False
         warnings = dtb._collect_potential_eval_errors()
         self.assertEqual(len(warnings), 0)
 
@@ -2718,7 +2718,7 @@ class TestEvalErrorDetection(TestCase):
             "c: Potential evaluation error in x**-2.5; base bounds are (0, inf); exponent bounds are (-2.5, -2.5)",
         )
 
-        dtb.config.strict_evaluation_error_detection = False
+        dtb.config.warn_for_evaluation_error_at_bounds = False
         warnings = dtb._collect_potential_eval_errors()
         self.assertEqual(len(warnings), 0)
 
@@ -2750,7 +2750,7 @@ class TestEvalErrorDetection(TestCase):
             "c: Potential log of a non-positive number in log(x); Argument bounds are (0, inf)",
         )
 
-        dtb.config.strict_evaluation_error_detection = False
+        dtb.config.warn_for_evaluation_error_at_bounds = False
         warnings = dtb._collect_potential_eval_errors()
         self.assertEqual(len(warnings), 0)
 
