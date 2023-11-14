@@ -55,9 +55,9 @@ from pyomo.core.expr.numeric_expr import (
 from pyomo.core.base.block import _BlockData
 from pyomo.core.base.var import _GeneralVarData, _VarData
 from pyomo.core.base.constraint import _ConstraintData
-from pyomo.repn.standard_repn import (
+from pyomo.repn.standard_repn import (  # pylint: disable=no-name-in-module
     generate_standard_repn,
-)  # pylint: disable=no-name-in-module
+)
 from pyomo.common.collections import ComponentSet
 from pyomo.common.config import (
     ConfigDict,
