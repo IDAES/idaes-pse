@@ -653,28 +653,6 @@ objects linked to all inlet states and the mixed state,
                         "thus does not support phase equilibrium.".format(self.name)
                     )
 
-            # Define terms to use in mixing equation
-            def phase_equilibrium_term(b, t, p, j):
-                if self.config.has_phase_equilibrium:
-                    sd = {}
-                    for r in pp.phase_equilibrium_idx:
-                        if pp.phase_equilibrium_list[r][0] == j:
-                            if pp.phase_equilibrium_list[r][1][0] == p:
-                                sd[r] = 1
-                            elif pp.phase_equilibrium_list[r][1][1] == p:
-                                sd[r] = -1
-                            else:
-                                sd[r] = 0
-                        else:
-                            sd[r] = 0
-
-                    return sum(
-                        b.phase_equilibrium_generation[t, r] * sd[r]
-                        for r in pp.phase_equilibrium_idx
-                    )
-                else:
-                    return 0
-
             # Write phase-component balances
             @self.Constraint(
                 self.flowsheet().time,
@@ -682,14 +660,25 @@ objects linked to all inlet states and the mixed state,
                 doc="Material mixing equations",
             )
             def material_mixing_equations(b, t, p, j):
-                return 0 == (
-                    sum(
-                        inlet_blocks[i][t].get_material_flow_terms(p, j)
-                        for i in range(len(inlet_blocks))
+                rhs = sum(
+                    inlet_blocks[i][t].get_material_flow_terms(p, j)
+                    for i in range(len(inlet_blocks))
+                ) - mixed_block[t].get_material_flow_terms(p, j)
+
+                if self.config.has_phase_equilibrium:
+                    rhs += sum(
+                        b.phase_equilibrium_generation[t, r]
+                        for r in pp.phase_equilibrium_idx
+                        if pp.phase_equilibrium_list[r][0] == j
+                        and pp.phase_equilibrium_list[r][1][0] == p
+                    ) - sum(
+                        b.phase_equilibrium_generation[t, r]
+                        for r in pp.phase_equilibrium_idx
+                        if pp.phase_equilibrium_list[r][0] == j
+                        and pp.phase_equilibrium_list[r][1][1] == p
                     )
-                    - mixed_block[t].get_material_flow_terms(p, j)
-                    + phase_equilibrium_term(b, t, p, j)
-                )
+
+                return 0 == rhs
 
         elif mb_type == MaterialBalanceType.componentTotal:
             # Write phase-component balances

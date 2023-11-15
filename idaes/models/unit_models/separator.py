@@ -963,29 +963,6 @@ objects linked the mixed state and all outlet states,
                         "does not support phase equilibrium.".format(self.name)
                     )
 
-            # Define terms to use in mixing equation
-            def phase_equilibrium_term(b, t, o, p, j):
-                if self.config.has_phase_equilibrium:
-                    sd = {}
-                    sblock = mixed_block[t]
-                    for r in b.config.property_package.phase_equilibrium_idx:
-                        if sblock.params.phase_equilibrium_list[r][0] == j:
-                            if sblock.params.phase_equilibrium_list[r][1][0] == p:
-                                sd[r] = 1
-                            elif sblock.params.phase_equilibrium_list[r][1][1] == p:
-                                sd[r] = -1
-                            else:
-                                sd[r] = 0
-                        else:
-                            sd[r] = 0
-
-                    return sum(
-                        b.phase_equilibrium_generation[t, o, r] * sd[r]
-                        for r in b.config.property_package.phase_equilibrium_idx
-                    )
-                else:
-                    return 0
-
             @self.Constraint(
                 self.flowsheet().time,
                 self.outlet_idx,
@@ -994,12 +971,24 @@ objects linked the mixed state and all outlet states,
             )
             def material_splitting_eqn(b, t, o, p, j):
                 o_block = getattr(self, o + "_state")
-                return sf(t, o, p, j) * mixed_block[t].get_material_flow_terms(
-                    p, j
-                ) == (
-                    o_block[t].get_material_flow_terms(p, j)
-                    - phase_equilibrium_term(b, t, o, p, j)
-                )
+                lhs = sf(t, o, p, j) * mixed_block[t].get_material_flow_terms(p, j)
+
+                rhs = o_block[t].get_material_flow_terms(p, j)
+
+                if self.config.has_phase_equilibrium:
+                    rhs += -sum(
+                        b.phase_equilibrium_generation[t, o, r]
+                        for r in b.config.property_package.phase_equilibrium_idx
+                        if mixed_block[t].params.phase_equilibrium_list[r][0] == j
+                        and mixed_block[t].params.phase_equilibrium_list[r][1][0] == p
+                    ) + sum(
+                        b.phase_equilibrium_generation[t, o, r]
+                        for r in b.config.property_package.phase_equilibrium_idx
+                        if mixed_block[t].params.phase_equilibrium_list[r][0] == j
+                        and mixed_block[t].params.phase_equilibrium_list[r][1][1] == p
+                    )
+
+                return lhs == rhs
 
         elif mb_type == MaterialBalanceType.componentTotal:
 
