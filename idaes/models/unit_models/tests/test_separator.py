@@ -59,7 +59,6 @@ from idaes.core.util.exceptions import (
 )
 from idaes.core.util.initialization import (
     fix_state_vars,
-    revert_state_vars,
 )
 
 from idaes.models.properties.examples.saponification_thermo import (
