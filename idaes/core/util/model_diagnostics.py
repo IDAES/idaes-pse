@@ -1623,7 +1623,7 @@ class SVDToolbox:
         # Get index of variable in Jacobian
         try:
             var_idx = self.nlp.get_primal_indices([variable])[0]
-        except (ValueError, PyomoException):
+        except (KeyError, PyomoException):
             raise AttributeError(f"Could not find {variable.name} in model.")
 
         nonzeros = self.jacobian.getcol(var_idx).nonzero()
@@ -1670,7 +1670,7 @@ class SVDToolbox:
         # Get index of variable in Jacobian
         try:
             con_idx = self.nlp.get_constraint_indices([constraint])[0]
-        except ValueError:
+        except KeyError:
             raise AttributeError(f"Could not find {constraint.name} in model.")
 
         nonzeros = self.jacobian[con_idx, :].nonzero()
@@ -1678,7 +1678,9 @@ class SVDToolbox:
         # Build a list of all vars in constraint
         vars_in_cons = []
         for c in nonzeros[1]:
-            vars_in_cons.append(f"{self.var_list[c].name}: {self.jacobian[(con_idx, c)]:.3e}")
+            vars_in_cons.append(
+                f"{self.var_list[c].name}: {self.jacobian[(con_idx, c)]:.3e}"
+            )
 
         # Write the output
         _write_report_section(
