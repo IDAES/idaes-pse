@@ -650,7 +650,7 @@ objects linked to all inlet states and the mixed state,
                 mixed_block.params.inherent_reaction_idx,
                 domain=Reals,
                 initialize=0.0,
-                doc=f"Extent of inherent reactions in outlet",
+                doc="Extent of inherent reactions in outlet",
                 units=flow_units,
             )
 
@@ -659,7 +659,7 @@ objects linked to all inlet states and the mixed state,
                 pc_set,
                 domain=Reals,
                 initialize=0.0,
-                doc=f"Generation due to inherent reactions in outlet",
+                doc="Generation due to inherent reactions in outlet",
                 units=flow_units,
             )
 
