@@ -21,6 +21,7 @@ from pandas import DataFrame
 from pyomo.environ import Block, Constraint, RangeSet, Reals, Set, units, Var
 from pyomo.common.config import ConfigDict, ConfigValue, Bool, In
 from pyomo.contrib.incidence_analysis import solve_strongly_connected_components
+from pyomo.dae import DerivativeVar
 
 # Import IDAES cores
 from idaes.core import (
@@ -381,6 +382,8 @@ class MSContactorData(UnitModelBlockData):
         if self.config.heterogeneous_reactions is not None:
             self._build_heterogeneous_reaction_blocks()
 
+        self._add_geometry(uom)
+
         self._build_material_balance_constraints(flow_basis, uom)
         self._build_energy_balance_constraints(uom)
         self._build_pressure_balance_constraints(uom)
@@ -394,16 +397,15 @@ class MSContactorData(UnitModelBlockData):
                 f"{list(self.config.streams.keys())}"
             )
 
-        if self.config.dynamic:
-            raise NotImplementedError(
-                "MSContactor model does not support dynamics yet."
-            )
-
         # Build indexing sets
         self.elements = RangeSet(
             1,
             self.config.number_of_finite_elements,
             doc="Set of finite elements in cascade (1 to number of elements)",
+        )
+        self.streams = Set(
+            initialize=[k for k in self.config.streams.keys()],
+            doc="Set of streams in unit",
         )
 
         interacting_streams = self.config.interacting_streams
@@ -558,15 +560,45 @@ class MSContactorData(UnitModelBlockData):
                 "reactions (reaction_idx)."
             )
 
+    def _add_geometry(self, uom):
+        if self.config.has_holdup:
+            # Add volume for each element
+            # TODO: Assuming constant volume for now
+            self.volume = Var(
+                self.elements,
+                initialize=1,
+                units=uom.VOLUME,
+                doc="Volume of element",
+            )
+            self.volume_frac_stream = Var(
+                self.flowsheet().time,
+                self.elements,
+                self.streams,
+                initialize=1 / len(self.streams),
+                units=units.dimensionless,
+                doc="Volume fraction of each stream in element",
+            )
+
+            @self.Constraint(
+                self.flowsheet().time,
+                self.elements,
+                doc="Sum of volume fractions constraint",
+            )
+            def sum_volume_frac(b, t, e):
+                return 1 == sum(b.volume_frac_stream[t, e, s] for s in b.streams)
+
     def _build_material_balance_constraints(self, flow_basis, uom):
         # Get units for transfer terms
         if flow_basis is MaterialFlowBasis.molar:
             mb_units = uom.FLOW_MOLE
+            hu_units = uom.AMOUNT
         elif flow_basis is MaterialFlowBasis.mass:
             mb_units = uom.FLOW_MASS
+            hu_units = uom.MASS
         else:
             # Flow type other, so cannot determine units
             mb_units = None
+            hu_units = None
 
         # Material transfer terms are indexed by stream pairs and components.
         # Convention is that a positive material flow term indicates flow into
@@ -602,6 +634,49 @@ class MSContactorData(UnitModelBlockData):
             # Get reaction block if present
             if hasattr(self, stream + "_reactions"):
                 reaction_block = getattr(self, stream + "_reactions")
+
+            # Material holdup and accumulation
+            if self.config.has_holdup:
+                material_holdup = Var(
+                    self.flowsheet().time,
+                    self.elements,
+                    pc_set,
+                    domain=Reals,
+                    initialize=1.0,
+                    doc="Material holdup of stream in element",
+                    units=hu_units,
+                )
+                self.add_component(
+                    stream + "_material_holdup",
+                    material_holdup,
+                )
+
+                holdup_eq = Constraint(
+                    self.flowsheet().time,
+                    self.elements,
+                    pc_set,
+                    doc=f"Holdup constraint for stream {stream}",
+                    rule=partial(
+                        _holdup_rule,
+                        stream=stream,
+                    ),
+                )
+                self.add_component(
+                    stream + "_material_holdup_constraint",
+                    holdup_eq,
+                )
+
+            if self.config.dynamic:
+                material_accumulation = DerivativeVar(
+                    material_holdup,
+                    wrt=self.flowsheet().time,
+                    doc="Material accumulation for in element",
+                    units=mb_units,
+                )
+                self.add_component(
+                    stream + "_material_accumulation",
+                    material_accumulation,
+                )
 
             # Add homogeneous rate reaction terms (if required)
             if sconfig.has_rate_reactions:
@@ -1136,7 +1211,13 @@ def _material_balance_rule(blk, t, s, j, stream, mb_units):
             for p in phase_list
         )
 
-    return 0 == rhs
+    if not blk.config.dynamic:
+        lhs = 0
+    else:
+        acc = getattr(blk, stream + "_material_accumulation")
+        lhs = sum(acc[t, s, p, j] for p in phase_list)
+
+    return lhs == rhs
 
 
 def _get_energy_transfer_term(blk, uom):
@@ -1254,3 +1335,14 @@ def _side_stream_pressure_rule(b, t, s, stream):
     side_state = getattr(b, stream + "_side_stream_state")[t, s]
 
     return stage_state.pressure == side_state.pressure
+
+
+def _holdup_rule(b, t, e, p, j, stream):
+    holdup = getattr(b, stream + "_material_holdup")
+    stage_state = getattr(b, stream)[t, e]
+
+    return holdup[t, e, p, j] == (
+        b.volume[e]
+        * b.volume_frac_stream[t, e, stream]
+        * stage_state.get_material_density_terms(p, j)
+    )

@@ -133,6 +133,12 @@ class StateBlock1Data(StateBlockData):
     def get_enthalpy_flow_terms(self, p):
         return self.enth_flow
 
+    def get_material_density_terms(self, p, j):
+        return 42
+
+    def get_energy_density_terms(self, p):
+        return 43
+
     def get_material_flow_basis(self):
         return MaterialFlowBasis.molar
 
@@ -199,6 +205,12 @@ class StateBlock2Data(StateBlockData):
 
     def get_enthalpy_flow_terms(self, p):
         return self.enth_flow
+
+    def get_material_density_terms(self, p, j):
+        return 52
+
+    def get_energy_density_terms(self, p):
+        return 53
 
     def get_material_flow_basis(self):
         return MaterialFlowBasis.molar
@@ -285,6 +297,31 @@ class TestBuild:
 
         return m
 
+    @pytest.fixture
+    def dynamic(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(
+            dynamic=True,
+            time_set=[0, 1],
+            time_units=units.s,
+        )
+
+        m.fs.properties1 = Parameters1()
+        m.fs.properties2 = Parameters2()
+
+        m.fs.unit = ECFrame(
+            number_of_finite_elements=2,
+            streams={
+                "stream1": {"property_package": m.fs.properties1},
+                "stream2": {
+                    "property_package": m.fs.properties2,
+                    "flow_direction": FlowDirection.backward,
+                },
+            },
+        )
+
+        return m
+
     @pytest.mark.unit
     def test_config(self, model):
         assert not model.fs.unit.config.dynamic
@@ -350,27 +387,6 @@ class TestBuild:
             ConfigurationError,
             match="MSContactor models must define at least two streams; received "
             "\['stream1'\]",
-        ):
-            m.fs.unit._verify_inputs()
-
-    @pytest.mark.unit
-    def test_verify_inputs_dynamic(self):
-        m = ConcreteModel()
-        m.fs = FlowsheetBlock(dynamic=True, time_units=units.s)
-
-        m.fs.properties1 = Parameters1()
-
-        m.fs.unit = ECFrame(
-            number_of_finite_elements=2,
-            streams={
-                "stream1": {"property_package": m.fs.properties1},
-                "stream2": {"property_package": m.fs.properties1},
-            },
-        )
-
-        with pytest.raises(
-            NotImplementedError,
-            match="MSContactor model does not support dynamics yet.",
         ):
             m.fs.unit._verify_inputs()
 
@@ -689,6 +705,29 @@ class TestBuild:
         assert side_state is model.fs.unit.stream2_side_stream_state[0, 2]
 
     @pytest.mark.unit
+    def test_add_geometry_no_holdup(self, model):
+        model.fs.unit._verify_inputs()
+        flow_basis, uom = model.fs.unit._build_state_blocks()
+        model.fs.unit._add_geometry(uom)
+
+        assert not hasattr(model.fs.unit, "volume")
+        assert not hasattr(model.fs.unit, "volume_frac_stream")
+        assert not hasattr(model.fs.unit, "sum_volume_frac")
+
+    @pytest.mark.unit
+    def test_add_geometry_holdup(self, dynamic):
+        dynamic.fs.unit._verify_inputs()
+        flow_basis, uom = dynamic.fs.unit._build_state_blocks()
+        dynamic.fs.unit._add_geometry(uom)
+
+        assert isinstance(dynamic.fs.unit.volume, Var)
+        assert len(dynamic.fs.unit.volume) == 2
+        assert isinstance(dynamic.fs.unit.volume_frac_stream, Var)
+        assert len(dynamic.fs.unit.volume_frac_stream) == 2 * 2 * 2
+        assert isinstance(dynamic.fs.unit.sum_volume_frac, Constraint)
+        assert len(dynamic.fs.unit.sum_volume_frac) == 2 * 2 * 1
+
+    @pytest.mark.unit
     def test_material_balances(self, model):
         model.fs.unit._verify_inputs()
         flow_basis, uom = model.fs.unit._build_state_blocks()
@@ -756,6 +795,85 @@ class TestBuild:
                 == model.fs.unit.stream2[0, 2].flow_mol_phase_comp["phase1", j]
                 - model.fs.unit.stream2[0, 1].flow_mol_phase_comp["phase1", j]
                 - model.fs.unit.material_transfer_term[0, 1, "stream1", "stream2", j]
+            )
+
+    @pytest.mark.unit
+    def test_material_balances_dynamic(self, dynamic):
+        dynamic.fs.unit._verify_inputs()
+        flow_basis, uom = dynamic.fs.unit._build_state_blocks()
+        dynamic.fs.unit._add_geometry(uom)
+        dynamic.fs.unit._build_material_balance_constraints(flow_basis, uom)
+
+        assert isinstance(dynamic.fs.unit.material_transfer_term, Var)
+        # One stream pair with two common components over two elements and 1 time point
+        assert len(dynamic.fs.unit.material_transfer_term) == 4
+        assert_units_equivalent(
+            dynamic.fs.unit.material_transfer_term._units, units.mol / units.s
+        )
+
+        assert isinstance(dynamic.fs.unit.stream1_material_balance, Constraint)
+        # 1 time point, 2 elements, 4 components
+        assert len(dynamic.fs.unit.stream1_material_balance) == 8
+
+        for j in ["solvent1", "solute3"]:  # no mass transfer, forward flow
+            assert str(dynamic.fs.unit.stream1_material_balance[0, 1, j].expr) == str(
+                0
+                == dynamic.fs.unit.stream1_inlet_state[0].flow_mol_phase_comp[
+                    "phase1", j
+                ]
+                - dynamic.fs.unit.stream1[0, 1].flow_mol_phase_comp["phase1", j]
+            )
+            assert str(dynamic.fs.unit.stream1_material_balance[0, 2, j].expr) == str(
+                0
+                == dynamic.fs.unit.stream1[0, 1].flow_mol_phase_comp["phase1", j]
+                - dynamic.fs.unit.stream1[0, 2].flow_mol_phase_comp["phase1", j]
+            )
+        for j in ["solute1", "solute2"]:  # has +ve mass transfer, forward flow
+            assert str(dynamic.fs.unit.stream1_material_balance[0, 1, j].expr) == str(
+                0
+                == dynamic.fs.unit.stream1_inlet_state[0].flow_mol_phase_comp[
+                    "phase1", j
+                ]
+                - dynamic.fs.unit.stream1[0, 1].flow_mol_phase_comp["phase1", j]
+                + dynamic.fs.unit.material_transfer_term[0, 1, "stream1", "stream2", j]
+            )
+            assert str(dynamic.fs.unit.stream1_material_balance[0, 2, j].expr) == str(
+                0
+                == dynamic.fs.unit.stream1[0, 1].flow_mol_phase_comp["phase1", j]
+                - dynamic.fs.unit.stream1[0, 2].flow_mol_phase_comp["phase1", j]
+                + dynamic.fs.unit.material_transfer_term[0, 2, "stream1", "stream2", j]
+            )
+
+        assert isinstance(dynamic.fs.unit.stream2_material_balance, Constraint)
+        # 1 time point, 2 elements, 3 components
+        assert len(dynamic.fs.unit.stream2_material_balance) == 6
+        for j in ["solvent2"]:  # no mass transfer, reverse flow
+            assert str(dynamic.fs.unit.stream2_material_balance[0, 2, j].expr) == str(
+                0
+                == dynamic.fs.unit.stream2_inlet_state[0].flow_mol_phase_comp[
+                    "phase1", j
+                ]
+                - dynamic.fs.unit.stream2[0, 2].flow_mol_phase_comp["phase1", j]
+            )
+            assert str(dynamic.fs.unit.stream2_material_balance[0, 1, j].expr) == str(
+                0
+                == dynamic.fs.unit.stream2[0, 2].flow_mol_phase_comp["phase1", j]
+                - dynamic.fs.unit.stream2[0, 1].flow_mol_phase_comp["phase1", j]
+            )
+        for j in ["solute1", "solute2"]:  # has -ve mass transfer, reverse flow
+            assert str(dynamic.fs.unit.stream2_material_balance[0, 2, j].expr) == str(
+                0
+                == dynamic.fs.unit.stream2_inlet_state[0].flow_mol_phase_comp[
+                    "phase1", j
+                ]
+                - dynamic.fs.unit.stream2[0, 2].flow_mol_phase_comp["phase1", j]
+                - dynamic.fs.unit.material_transfer_term[0, 2, "stream1", "stream2", j]
+            )
+            assert str(dynamic.fs.unit.stream2_material_balance[0, 1, j].expr) == str(
+                0
+                == dynamic.fs.unit.stream2[0, 2].flow_mol_phase_comp["phase1", j]
+                - dynamic.fs.unit.stream2[0, 1].flow_mol_phase_comp["phase1", j]
+                - dynamic.fs.unit.material_transfer_term[0, 1, "stream1", "stream2", j]
             )
 
     @pytest.mark.unit
