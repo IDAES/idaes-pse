@@ -21,8 +21,13 @@ This module contains utility functions for use in testing IDAES models.
 __author__ = "Andrew Lee"
 
 
+import os
+from typing import Callable, Union
+
 from pyomo.environ import Constraint, Set, units, Var
 from pyomo.common.config import ConfigBlock
+from pyomo.common import Executable
+from pyomo.common.dependencies import attempt_import
 
 from idaes.core import (
     declare_process_block_class,
@@ -409,3 +414,36 @@ class ReactionBlockData(ReactionBlockDataBase):
             return MaterialFlowBasis.mass
         else:
             return MaterialFlowBasis.other
+
+
+def _enable_scip_solver_for_testing(
+    name: str = "scip",
+) -> Union[Callable[[], None], None]:
+    ampl_module_scip, is_available = attempt_import("ampl_module_scip")
+    if not is_available:
+        _log.warning(
+            "ampl_module_scip must be installed to enable SCIP solver for testing"
+        )
+        return None
+
+    new_path_entry = ampl_module_scip.bin_dir
+    # TODO prepending new_path_entry to PATH means that the "testing" SCIP will "shadow"
+    # existing executable directories already on PATH
+    # this behavior would match the (implied) semantics of this function, i.e.
+    # "enable SCIP solver used for testing (at the expense of other non-testing SCIP executables)"
+    os.environ["PATH"] = os.pathsep.join([new_path_entry, os.environ["PATH"]])
+    Executable.rehash()
+
+    def remove_from_path():
+        path_as_list = os.environ["PATH"].split(os.pathsep)
+
+        try:
+            path_as_list.remove(new_path_entry)
+        except ValueError:
+            # not in PATH
+            pass
+        else:
+            os.environ["PATH"] = os.pathsep.join(path_as_list)
+            Executable.rehash()
+
+    return remove_from_path
