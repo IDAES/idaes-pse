@@ -42,3 +42,9 @@ runs:
         echo '::group::Output of "idaes get-extensions" command'
         idaes get-extensions --extra petsc --verbose
         echo '::endgroup::'
+    - name: Install SCIP from AMPL
+      shell: bash -l {0}
+      run: |
+        echo '::group::Output of "pip install ampl_module_scip" command'
+        ${{ inputs.install-command }} --index-url https://pypi.ampl.com ampl_module_scip
+        echo '::endgroup::'
