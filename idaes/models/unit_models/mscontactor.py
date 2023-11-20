@@ -887,6 +887,52 @@ class MSContactorData(UnitModelBlockData):
 
         for stream, pconfig in self.config.streams.items():
             if pconfig.has_energy_balance:
+                state_block = getattr(self, stream)
+                phase_list = state_block.phase_list
+
+                # Material holdup and accumulation
+                if self.config.has_holdup:
+                    energy_holdup = Var(
+                        self.flowsheet().time,
+                        self.elements,
+                        phase_list,
+                        domain=Reals,
+                        initialize=1.0,
+                        doc="Energy holdup of stream in element",
+                        units=uom.ENERGY,
+                    )
+                    self.add_component(
+                        stream + "_energy_holdup",
+                        energy_holdup,
+                    )
+
+                    energy_holdup_eq = Constraint(
+                        self.flowsheet().time,
+                        self.elements,
+                        phase_list,
+                        doc=f"Energy holdup constraint for stream {stream}",
+                        rule=partial(
+                            _energy_holdup_rule,
+                            stream=stream,
+                        ),
+                    )
+                    self.add_component(
+                        stream + "_energy_holdup_constraint",
+                        energy_holdup_eq,
+                    )
+
+                if self.config.dynamic:
+                    energy_accumulation = DerivativeVar(
+                        energy_holdup,
+                        wrt=self.flowsheet().time,
+                        doc="Energy accumulation for in element",
+                        units=uom.POWER,
+                    )
+                    self.add_component(
+                        stream + "_energy_accumulation",
+                        energy_accumulation,
+                    )
+
                 if pconfig.has_heat_transfer:
                     heat = Var(
                         self.flowsheet().time,
@@ -1212,10 +1258,12 @@ def _material_balance_rule(blk, t, s, j, stream, mb_units):
         )
 
     if not blk.config.dynamic:
-        lhs = 0
+        lhs = 0 * mb_units
     else:
         acc = getattr(blk, stream + "_material_accumulation")
         lhs = sum(acc[t, s, p, j] for p in phase_list)
+        if mb_units is not None:
+            lhs = units.convert(lhs, mb_units)
 
     return lhs == rhs
 
@@ -1306,7 +1354,13 @@ def _energy_balance_rule(blk, t, s, stream, uom):
                 for e in pconfig.reaction_package.equilibrium_reaction_idx
             )
 
-    return 0 == rhs
+    if not blk.config.dynamic:
+        lhs = 0 * uom.POWER
+    else:
+        acc = getattr(blk, stream + "_energy_accumulation")
+        lhs = units.convert(sum(acc[t, s, p] for p in phase_list), uom.POWER)
+
+    return lhs == rhs
 
 
 def _pressure_balance_rule(blk, t, s, stream, uom):
@@ -1345,4 +1399,15 @@ def _holdup_rule(b, t, e, p, j, stream):
         b.volume[e]
         * b.volume_frac_stream[t, e, stream]
         * stage_state.get_material_density_terms(p, j)
+    )
+
+
+def _energy_holdup_rule(b, t, e, p, stream):
+    holdup = getattr(b, stream + "_energy_holdup")
+    stage_state = getattr(b, stream)[t, e]
+
+    return holdup[t, e, p] == (
+        b.volume[e]
+        * b.volume_frac_stream[t, e, stream]
+        * stage_state.get_energy_density_terms(p)
     )
