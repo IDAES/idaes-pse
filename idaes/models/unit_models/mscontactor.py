@@ -18,7 +18,16 @@ from functools import partial
 from pandas import DataFrame
 
 # Import Pyomo libraries
-from pyomo.environ import Block, Constraint, RangeSet, Reals, Set, units, Var
+from pyomo.environ import (
+    Block,
+    Constraint,
+    Expression,
+    RangeSet,
+    Reals,
+    Set,
+    units,
+    Var,
+)
 from pyomo.common.config import ConfigDict, ConfigValue, Bool, In
 from pyomo.contrib.incidence_analysis import solve_strongly_connected_components
 from pyomo.dae import DerivativeVar
@@ -586,6 +595,10 @@ class MSContactorData(UnitModelBlockData):
             )
             def sum_volume_frac(b, t, e):
                 return 1 == sum(b.volume_frac_stream[t, e, s] for s in b.streams)
+
+            for stream in self.config.streams.keys():
+                phase_list = getattr(self, stream).phase_list
+                _add_phase_fractions(self, stream, phase_list)
 
     def _build_material_balance_constraints(self, flow_basis, uom):
         # Get units for transfer terms
@@ -1381,7 +1394,7 @@ def _pressure_balance_rule(blk, t, s, stream, uom):
     if pconfig.has_pressure_change:
         rhs += getattr(blk, stream + "_deltaP")[t, s]
 
-    return 0 == rhs
+    return 0 * uom.PRESSURE == rhs
 
 
 def _side_stream_pressure_rule(b, t, s, stream):
@@ -1394,10 +1407,12 @@ def _side_stream_pressure_rule(b, t, s, stream):
 def _holdup_rule(b, t, e, p, j, stream):
     holdup = getattr(b, stream + "_material_holdup")
     stage_state = getattr(b, stream)[t, e]
+    phase_frac = getattr(b, stream + "_phase_fraction")
 
     return holdup[t, e, p, j] == (
         b.volume[e]
         * b.volume_frac_stream[t, e, stream]
+        * phase_frac[t, e, p]
         * stage_state.get_material_density_terms(p, j)
     )
 
@@ -1405,9 +1420,52 @@ def _holdup_rule(b, t, e, p, j, stream):
 def _energy_holdup_rule(b, t, e, p, stream):
     holdup = getattr(b, stream + "_energy_holdup")
     stage_state = getattr(b, stream)[t, e]
+    phase_frac = getattr(b, stream + "_phase_fraction")
 
     return holdup[t, e, p] == (
         b.volume[e]
         * b.volume_frac_stream[t, e, stream]
+        * phase_frac[t, e, p]
         * stage_state.get_energy_density_terms(p)
     )
+
+
+def _add_phase_fractions(b, stream, phase_list):
+    if len(phase_list) > 1:
+        phase_fraction = Var(
+            b.flowsheet().time,
+            b.elements,
+            phase_list,
+            initialize=1 / len(phase_list),
+            doc=f"Volume fraction of holdup by phase in stream {stream}",
+        )
+        b.add_component(stream + "_phase_fraction", phase_fraction)
+
+        sum_of_phase_fractions = Constraint(
+            b.flowsheet().time,
+            b.elements,
+            rule=partial(
+                _sum_phase_frac_rule, phase_frac=phase_fraction, phase_list=phase_list
+            ),
+            doc=f"Sum of phase fractions constraint for stream {stream}",
+        )
+        b.add_component(stream + "_sum_phase_fractions", sum_of_phase_fractions)
+
+    else:
+
+        def phase_frac_rule(b, t, x, p):
+            return 1
+
+        phase_fraction = Expression(
+            b.flowsheet().time,
+            b.elements,
+            phase_list,
+            rule=phase_frac_rule,
+            doc=f"Volume fraction of holdup by phase in stream {stream}",
+        )
+
+        b.add_component(stream + "_phase_fraction", phase_fraction)
+
+
+def _sum_phase_frac_rule(b, t, x, phase_frac, phase_list):
+    return 1 == sum(phase_frac[t, x, p] for p in phase_list)

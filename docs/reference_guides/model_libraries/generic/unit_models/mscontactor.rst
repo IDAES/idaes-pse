@@ -77,6 +77,7 @@ Variable                      Name                                           Des
 :math:`X_{hetero,t,x,r}`      heterogeneous_reaction_extent                  Extent of heterogeneous reaction ``r`` at ``x`` and ``t``                                                     Only if heterogeneous reactions present
 :math:`V_x`                   volume                                         Total volume of element ``x``                                                                                 Only if ``has_holdup``
 :math:`f_{t,x,s}`             volume_frac_stream                             Volume fraction of stream ``s`` in element ``x`` at time ``t``                                                Only if ``has_holdup``
+:math:`\phi_{t,x,s,p}`        stream + "_phase_fraction"                     Volume fraction of phase ``p`` in stream ``s`` in element ``x`` at time ``t``                                 Only if ``has_holdup``
 :math:`N_{t,x,s,p,j}`         stream + "_material_holdup"                    Holdup of component ``j`` in phase ``p`` for stream ``s`` at ``x`` and ``t``                                  Only if ``has_holdup``
 :math:`dN/dt_{t,x,s,p,j}`     stream + "_material_accumulation"              Accumulation of component ``j`` in phase ``p`` for stream ``s`` at ``x`` and ``t``                            Only if ``dynamic``
 :math:`U_{t,x,s,p}`           stream + "_energy_holdup"                      Holdup of energy in phase ``p`` for stream ``s`` at ``x`` and ``t``                                           Only if ``has_holdup``
@@ -108,7 +109,7 @@ For streams including pressure balances (``has_pressure_balance = True``) the fo
 
 .. math:: 0 = P_{t,x-,s} - P_{t,x,s} + \biggl[ \Delta P_{t,x,s} \biggr]
 
-where ``P`` represents pressure. For streams with side streams, the following pressure equality constraint (names ``stream + "_side_stream_pressure_balance"``) is also written:
+where ``P`` represents pressure. For streams with side streams, the following pressure equality constraint (named ``stream + "_side_stream_pressure_balance"``) is also written:
 
 .. math:: P_{t,x,s} = P_{side,t,x,s}
 
@@ -116,15 +117,19 @@ If ``has_holdup`` is true, the following additional constraints are included to 
 
 .. math:: 1 = \sum_s{f_{t,x,s}}
 
+Additionally, constraints are written for the sum of phase fractions in each stream (named ``stream + "_sum_phase_fractions"``):
+
+.. math:: 1 = \sum_p{\phi_{t,x,s,p}}
+
 The material holdup is defined by the following constraint (named ``stream + "_material_holdup_constraint"``):
 
-.. math:: N_{t,x,s,p,j} = V*f_{t,x,s}*\C_{t,x,s,p,j}
+.. math:: N_{t,x,s,p,j} = V \times f_{t,x,s} \phi_{t,x,s,p} \times \C_{t,x,s,p,j}
 
 where :math:`C_{t,x,s,p,j}` is the concentration of component ``j`` in phase ``p`` for stream ``s`` at ``x`` and ``t``.
 
 The energy holdup is defined by the following constraint (named ``stream + "_energy_holdup_constraint"``):
 
-.. math:: U_{t,x,s,p} = V*f_{t,x,s}*\u_{t,x,s,p}
+.. math:: U_{t,x,s,p} = V*f_{t,x,s} \times \phi_{t,x,s,p} \times \u_{t,x,s,p}
 
 where :math:`u_{t,x,s,p}` is the internal energy density of phase ``p`` for stream ``s`` at ``x`` and ``t``.
 
