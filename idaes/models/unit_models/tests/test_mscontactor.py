@@ -34,6 +34,7 @@ from pyomo.environ import (
 from pyomo.network import Arc, Port
 from pyomo.common.config import ConfigBlock
 from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
+from pyomo.dae import DerivativeVar
 
 from idaes.core import (
     FlowsheetBlock,
@@ -805,32 +806,74 @@ class TestBuild:
         dynamic.fs.unit._build_material_balance_constraints(flow_basis, uom)
 
         assert isinstance(dynamic.fs.unit.material_transfer_term, Var)
-        # One stream pair with two common components over two elements and 1 time point
-        assert len(dynamic.fs.unit.material_transfer_term) == 4
+        # One stream pair with two common components over two elements and 2 time point
+        assert len(dynamic.fs.unit.material_transfer_term) == 8
         assert_units_equivalent(
             dynamic.fs.unit.material_transfer_term._units, units.mol / units.s
         )
 
+        assert isinstance(dynamic.fs.unit.stream1_material_holdup, Var)
+        assert len(dynamic.fs.unit.stream1_material_holdup) == 16
+        assert isinstance(dynamic.fs.unit.stream1_material_accumulation, DerivativeVar)
+        assert len(dynamic.fs.unit.stream1_material_accumulation) == 16
+        assert isinstance(
+            dynamic.fs.unit.stream1_material_holdup_constraint, Constraint
+        )
+        assert len(dynamic.fs.unit.stream1_material_holdup_constraint) == 16
+        for (
+            t,
+            x,
+            p,
+            j,
+        ), con in dynamic.fs.unit.stream1_material_holdup_constraint.items():
+            assert str(con.expr) == str(
+                dynamic.fs.unit.stream1_material_holdup[t, x, p, j]
+                == dynamic.fs.unit.volume[x]
+                * dynamic.fs.unit.volume_frac_stream[t, x, "stream1"]
+                * 42
+            )
+
+        assert isinstance(dynamic.fs.unit.stream2_material_holdup, Var)
+        assert len(dynamic.fs.unit.stream2_material_holdup) == 12
+        assert isinstance(dynamic.fs.unit.stream2_material_accumulation, DerivativeVar)
+        assert len(dynamic.fs.unit.stream2_material_accumulation) == 12
+        assert isinstance(
+            dynamic.fs.unit.stream2_material_holdup_constraint, Constraint
+        )
+        assert len(dynamic.fs.unit.stream2_material_holdup_constraint) == 12
+        for (
+            t,
+            x,
+            p,
+            j,
+        ), con in dynamic.fs.unit.stream2_material_holdup_constraint.items():
+            assert str(con.expr) == str(
+                dynamic.fs.unit.stream2_material_holdup[t, x, p, j]
+                == dynamic.fs.unit.volume[x]
+                * dynamic.fs.unit.volume_frac_stream[t, x, "stream2"]
+                * 52
+            )
+
         assert isinstance(dynamic.fs.unit.stream1_material_balance, Constraint)
-        # 1 time point, 2 elements, 4 components
-        assert len(dynamic.fs.unit.stream1_material_balance) == 8
+        # 2 time point, 2 elements, 4 components
+        assert len(dynamic.fs.unit.stream1_material_balance) == 16
 
         for j in ["solvent1", "solute3"]:  # no mass transfer, forward flow
             assert str(dynamic.fs.unit.stream1_material_balance[0, 1, j].expr) == str(
-                0
+                dynamic.fs.unit.stream1_material_accumulation[0, 1, "phase1", j]
                 == dynamic.fs.unit.stream1_inlet_state[0].flow_mol_phase_comp[
                     "phase1", j
                 ]
                 - dynamic.fs.unit.stream1[0, 1].flow_mol_phase_comp["phase1", j]
             )
             assert str(dynamic.fs.unit.stream1_material_balance[0, 2, j].expr) == str(
-                0
+                dynamic.fs.unit.stream1_material_accumulation[0, 2, "phase1", j]
                 == dynamic.fs.unit.stream1[0, 1].flow_mol_phase_comp["phase1", j]
                 - dynamic.fs.unit.stream1[0, 2].flow_mol_phase_comp["phase1", j]
             )
         for j in ["solute1", "solute2"]:  # has +ve mass transfer, forward flow
             assert str(dynamic.fs.unit.stream1_material_balance[0, 1, j].expr) == str(
-                0
+                dynamic.fs.unit.stream1_material_accumulation[0, 1, "phase1", j]
                 == dynamic.fs.unit.stream1_inlet_state[0].flow_mol_phase_comp[
                     "phase1", j
                 ]
@@ -838,31 +881,31 @@ class TestBuild:
                 + dynamic.fs.unit.material_transfer_term[0, 1, "stream1", "stream2", j]
             )
             assert str(dynamic.fs.unit.stream1_material_balance[0, 2, j].expr) == str(
-                0
+                dynamic.fs.unit.stream1_material_accumulation[0, 2, "phase1", j]
                 == dynamic.fs.unit.stream1[0, 1].flow_mol_phase_comp["phase1", j]
                 - dynamic.fs.unit.stream1[0, 2].flow_mol_phase_comp["phase1", j]
                 + dynamic.fs.unit.material_transfer_term[0, 2, "stream1", "stream2", j]
             )
 
         assert isinstance(dynamic.fs.unit.stream2_material_balance, Constraint)
-        # 1 time point, 2 elements, 3 components
-        assert len(dynamic.fs.unit.stream2_material_balance) == 6
+        # 2 time point, 2 elements, 3 components
+        assert len(dynamic.fs.unit.stream2_material_balance) == 12
         for j in ["solvent2"]:  # no mass transfer, reverse flow
             assert str(dynamic.fs.unit.stream2_material_balance[0, 2, j].expr) == str(
-                0
+                dynamic.fs.unit.stream2_material_accumulation[0, 2, "phase1", j]
                 == dynamic.fs.unit.stream2_inlet_state[0].flow_mol_phase_comp[
                     "phase1", j
                 ]
                 - dynamic.fs.unit.stream2[0, 2].flow_mol_phase_comp["phase1", j]
             )
             assert str(dynamic.fs.unit.stream2_material_balance[0, 1, j].expr) == str(
-                0
+                dynamic.fs.unit.stream2_material_accumulation[0, 1, "phase1", j]
                 == dynamic.fs.unit.stream2[0, 2].flow_mol_phase_comp["phase1", j]
                 - dynamic.fs.unit.stream2[0, 1].flow_mol_phase_comp["phase1", j]
             )
         for j in ["solute1", "solute2"]:  # has -ve mass transfer, reverse flow
             assert str(dynamic.fs.unit.stream2_material_balance[0, 2, j].expr) == str(
-                0
+                dynamic.fs.unit.stream2_material_accumulation[0, 2, "phase1", j]
                 == dynamic.fs.unit.stream2_inlet_state[0].flow_mol_phase_comp[
                     "phase1", j
                 ]
@@ -870,7 +913,7 @@ class TestBuild:
                 - dynamic.fs.unit.material_transfer_term[0, 2, "stream1", "stream2", j]
             )
             assert str(dynamic.fs.unit.stream2_material_balance[0, 1, j].expr) == str(
-                0
+                dynamic.fs.unit.stream2_material_accumulation[0, 1, "phase1", j]
                 == dynamic.fs.unit.stream2[0, 2].flow_mol_phase_comp["phase1", j]
                 - dynamic.fs.unit.stream2[0, 1].flow_mol_phase_comp["phase1", j]
                 - dynamic.fs.unit.material_transfer_term[0, 1, "stream1", "stream2", j]
