@@ -17,10 +17,9 @@ Tests for IDAES Parameter Sweep API and sequential workflow runner.
 import pytest
 import os
 import os.path
-from collections import OrderedDict
 
-from pandas import DataFrame
-from pandas.testing import assert_frame_equal
+from pandas import DataFrame, Series
+from pandas.testing import assert_frame_equal, assert_series_equal
 
 from pyomo.environ import (
     ConcreteModel,
@@ -53,30 +52,18 @@ currdir = this_file_dir()
 
 
 expected_todict = {
-    "inputs": OrderedDict(
-        [
-            (
-                "foo",
-                OrderedDict(
-                    [
-                        ("pyomo_path", "model.foo"),
-                        ("lower", 0),
-                        ("upper", 10),
-                    ]
-                ),
-            ),
-            (
-                "bar",
-                OrderedDict(
-                    [
-                        ("pyomo_path", "model.bar"),
-                        ("lower", 20),
-                        ("upper", 40),
-                    ]
-                ),
-            ),
-        ]
-    ),
+    "inputs": {
+        "foo": {
+            "pyomo_path": "model.foo",
+            "lower": 0,
+            "upper": 10,
+        },
+        "bar": {
+            "pyomo_path": "model.bar",
+            "lower": 20,
+            "upper": 40,
+        },
+    },
     "sampling_method": "UniformSampling",
     "sample_size": [4, 3],
     "samples": {
@@ -107,7 +94,7 @@ class TestParameterSweepSpecification:
     def test_init(self):
         spec = ParameterSweepSpecification()
 
-        assert isinstance(spec.inputs, OrderedDict)
+        assert isinstance(spec.inputs, dict)
         assert len(spec.inputs) == 0
 
         assert spec.sampling_method is None
@@ -123,12 +110,12 @@ class TestParameterSweepSpecification:
 
         assert len(spec.inputs) == 2
 
-        assert isinstance(spec.inputs["foo"], OrderedDict)
+        assert isinstance(spec.inputs["foo"], dict)
         assert spec.inputs["foo"]["pyomo_path"] == "model.foo"
         assert spec.inputs["foo"]["lower"] == 0
         assert spec.inputs["foo"]["upper"] == 10
 
-        assert isinstance(spec.inputs["bar"], OrderedDict)
+        assert isinstance(spec.inputs["bar"], dict)
         assert spec.inputs["bar"]["pyomo_path"] == "model.bar"
         assert spec.inputs["bar"]["lower"] == 20
         assert spec.inputs["bar"]["upper"] == 40
@@ -356,15 +343,15 @@ class TestParameterSweepSpecification:
 
         spec.from_dict(expected_todict)
 
-        assert isinstance(spec.inputs, OrderedDict)
+        assert isinstance(spec.inputs, dict)
         assert len(spec.inputs) == 2
 
-        assert isinstance(spec.inputs["foo"], OrderedDict)
+        assert isinstance(spec.inputs["foo"], dict)
         assert spec.inputs["foo"]["pyomo_path"] == "model.foo"
         assert spec.inputs["foo"]["lower"] == 0
         assert spec.inputs["foo"]["upper"] == 10
 
-        assert isinstance(spec.inputs["bar"], OrderedDict)
+        assert isinstance(spec.inputs["bar"], dict)
         assert spec.inputs["bar"]["pyomo_path"] == "model.bar"
         assert spec.inputs["bar"]["lower"] == 20
         assert spec.inputs["bar"]["upper"] == 40
@@ -523,15 +510,15 @@ class TestParameterSweepSpecification:
 
         spec.from_json_file(fname)
 
-        assert isinstance(spec.inputs, OrderedDict)
+        assert isinstance(spec.inputs, dict)
         assert len(spec.inputs) == 2
 
-        assert isinstance(spec.inputs["foo"], OrderedDict)
+        assert isinstance(spec.inputs["foo"], dict)
         assert spec.inputs["foo"]["pyomo_path"] == "model.foo"
         assert spec.inputs["foo"]["lower"] == 0
         assert spec.inputs["foo"]["upper"] == 10
 
-        assert isinstance(spec.inputs["bar"], OrderedDict)
+        assert isinstance(spec.inputs["bar"], dict)
         assert spec.inputs["bar"]["pyomo_path"] == "model.bar"
         assert spec.inputs["bar"]["lower"] == 20
         assert spec.inputs["bar"]["upper"] == 40
@@ -574,20 +561,13 @@ spec.generate_samples()
 
 psweep_dict = {
     "specification": {
-        "inputs": OrderedDict(
-            [
-                (
-                    "v2",
-                    OrderedDict(
-                        [
-                            ("pyomo_path", "v2"),
-                            ("lower", 2),
-                            ("upper", 6),
-                        ]
-                    ),
-                )
-            ]
-        ),
+        "inputs": {
+            "v2": {
+                "pyomo_path": "v2",
+                "lower": 2,
+                "upper": 6,
+            },
+        },
         "sampling_method": "UniformSampling",
         "sample_size": [2],
         "samples": {
@@ -598,24 +578,16 @@ psweep_dict = {
             "column_names": [None],
         },
     },
-    "results": OrderedDict(
-        [
-            (
-                0,
-                {
-                    "solved": True,
-                    "results": 2,
-                },
-            ),
-            (
-                1,
-                {
-                    "solved": True,
-                    "results": 6,
-                },
-            ),
-        ]
-    ),
+    "results": {
+        0: {
+            "solved": True,
+            "results": 2,
+        },
+        1: {
+            "solved": True,
+            "results": 6,
+        },
+    },
 }
 
 
@@ -638,14 +610,17 @@ class TestParameterSweepBase:
     def test_init(self):
         psweep = ParameterSweepBase()
 
+        assert psweep.config.rebuild_model
         assert psweep.config.build_model is None
         assert psweep.config.run_model is None
         assert psweep.config.collect_results is None
         assert psweep.config.handle_solver_error is None
+        assert not psweep.config.halt_on_error
         assert psweep.config.input_specification is None
         assert psweep.config.solver is None
-        assert isinstance(psweep.results, OrderedDict)
+        assert isinstance(psweep.results, dict)
         assert len(psweep.results) == 0
+        assert psweep._model is None
 
     @pytest.mark.unit
     def test_get_initialized_model_none(self):
@@ -671,6 +646,36 @@ class TestParameterSweepBase:
         assert isinstance(m2.p1, Param)
         assert isinstance(m2.p2, Param)
         assert isinstance(m2.p3, Param)
+
+        assert psweep._model is None
+
+    @pytest.mark.unit
+    def test_get_initialized_model_rebuild_false(self):
+        psweep = ParameterSweepBase(
+            build_model=self.build_model,
+            rebuild_model=False,
+        )
+
+        m2 = psweep.get_initialized_model()
+
+        assert isinstance(m2, ConcreteModel)
+        assert isinstance(m2.v1, Var)
+        assert isinstance(m2.v2, Var)
+        assert isinstance(m2.p1, Param)
+        assert isinstance(m2.p2, Param)
+        assert isinstance(m2.p3, Param)
+
+        assert psweep._model is m2
+
+    @pytest.mark.unit
+    def test_get_initialized_model_rebuild_false_existing(self):
+        psweep = ParameterSweepBase(
+            build_model=self.build_model,
+            rebuild_model=False,
+        )
+        psweep._model = "foo"
+
+        assert psweep.get_initialized_model() == "foo"
 
     @pytest.mark.unit
     def test_get_initialized_model_w_args(self):
@@ -1048,6 +1053,41 @@ class TestParameterSweepBase:
         assert error == "Test exception"
 
     @pytest.mark.component
+    def test_execute_single_sample_halt_on_error(self):
+        def build_model():
+            m = ConcreteModel()
+            m.v1 = Var(initialize=1)
+            m.v2 = Var(initialize=4)
+            m.c1 = Constraint(expr=m.v1 == m.v2)
+
+            m.v2.fix()
+
+            return m
+
+        class dummy_solver:
+            @staticmethod
+            def solve(model, *args, **kwargs):
+                raise RuntimeError("Test exception")
+
+        spec2 = ParameterSweepSpecification()
+        spec2.set_sampling_method(UniformSampling)
+        spec2.add_sampled_input("v2", "v2", 2, 6)
+        spec2.set_sample_size([2])
+
+        psweep = ParameterSweepBase(
+            build_model=build_model,
+            input_specification=spec2,
+            solver=dummy_solver,
+            halt_on_error=True,
+        )
+
+        with pytest.raises(
+            RuntimeError,
+            match="Test exception",
+        ):
+            psweep.execute_single_sample(1)
+
+    @pytest.mark.component
     def test_execute_single_sample_recourse_custom(self):
         def build_model():
             m = ConcreteModel()
@@ -1097,12 +1137,10 @@ class TestParameterSweepBase:
             input_specification=spec2,
         )
 
-        psweep._results = OrderedDict(
-            {
-                0: {"solved": True, "results": 2},
-                1: {"solved": True, "results": 6},
-            }
-        )
+        psweep._results = {
+            0: {"solved": True, "results": 2},
+            1: {"solved": True, "results": 6},
+        }
 
         return psweep
 
@@ -1242,6 +1280,12 @@ class TestParameterSweepBase:
 
         with pytest.raises(NotImplementedError):
             psweep.execute_parameter_sweep()
+
+    @pytest.mark.unit
+    def test_get_sample_values(self, psweep_with_results):
+        expected = Series({"v2": 2.0}, name=0)
+        vals = psweep_with_results.get_sample_values(0)
+        assert_series_equal(expected, vals)
 
 
 class TestSequentialSweepRunner:

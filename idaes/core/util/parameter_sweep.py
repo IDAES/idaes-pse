@@ -15,7 +15,6 @@ IDAES Parameter Sweep API and sequential workflow runner.
 """
 
 import json
-from collections import OrderedDict
 
 from pandas import DataFrame
 
@@ -44,7 +43,7 @@ class ParameterSweepSpecification(object):
 
     # TODO: Consider supporting sampling from data sets in the future
     def __init__(self):
-        self._inputs = OrderedDict()
+        self._inputs = {}
         self._sampling_method = None
         self._samples = None
         self._sample_size = None
@@ -78,7 +77,7 @@ class ParameterSweepSpecification(object):
         # ToDo: put some error checking here ... Maybe we should have the model
         # ToDo: already? Can use to check if the pyomo_path is valid? check if
         # ToDo: bounds will be violated?
-        spec = OrderedDict()
+        spec = {}
         spec["pyomo_path"] = pyomo_path
         spec["lower"] = lower
         spec["upper"] = upper
@@ -186,7 +185,7 @@ class ParameterSweepSpecification(object):
     @property
     def inputs(self):
         """
-        Returns an OrderedDict containing the declared inputs.
+        Returns an dict containing the declared inputs.
         """
         return self._inputs
 
@@ -238,9 +237,9 @@ class ParameterSweepSpecification(object):
         Returns:
             None
         """
-        self._inputs = OrderedDict()
+        self._inputs = {}
         for k, v in input_dict["inputs"].items():
-            self._inputs[k] = OrderedDict(v)
+            self._inputs[k] = v
 
         # Hack to get Pysom sampling method from string name
         mod = __import__(
@@ -330,6 +329,15 @@ def _is_solver(val):
 
 CONFIG = ConfigDict()
 CONFIG.declare(
+    "rebuild_model",
+    ConfigValue(
+        default=True,
+        domain=bool,
+        doc="Whether to rebuild model for each sample, or reuse the same instance for "
+        "all runs (default=True, rebuild for all runs).",
+    ),
+)
+CONFIG.declare(
     "build_model",
     ConfigValue(doc="Callback method to construct initialized model for execution."),
 )
@@ -380,6 +388,14 @@ CONFIG.declare(
     ),
 )
 CONFIG.declare(
+    "halt_on_error",
+    ConfigValue(
+        default=False,
+        domain=bool,
+        doc="Whether to halt execution of parameter sweep on encountering a solver error (default=False).",
+    ),
+)
+CONFIG.declare(
     "input_specification",
     ConfigValue(
         domain=is_psweepspec,
@@ -408,12 +424,13 @@ class ParameterSweepBase:
 
     def __init__(self, **kwargs):
         self.config = CONFIG(kwargs)
-        self._results = OrderedDict()
+        self._results = {}
+        self._model = None  # used to store model instance if rebuild_model is False
 
     @property
     def results(self):
         """
-        Returns OrderedDict containing the results from the parameter sweep.
+        Returns dict containing the results from the parameter sweep.
         """
         return self._results
 
@@ -461,6 +478,9 @@ class ParameterSweepBase:
             if not solved:
                 _log.error(f"Sample: {sample_id} failed to converge.")
         except Exception as e:
+            if self.config.halt_on_error:
+                raise
+
             solved = False
             error = str(e)  # Cast to string for storage
 
@@ -484,13 +504,23 @@ class ParameterSweepBase:
             raise ConfigurationError(
                 "Please specify a method to construct the model of interest."
             )
+
+        if not self.config.rebuild_model:
+            # If reusing model, see if instance has been constructed yet
+            if self._model is not None:
+                # If yes, return and done
+                return self._model
+
+        # Otherwise, build instance of model
         args = self.config.build_model_arguments
         if args is None:
             args = {}
-
         model = self.config.build_model(**args)
-
         # TODO: Verify model is actually a model?
+
+        if not self.config.rebuild_model:
+            # If reusing model, store instance for reuse
+            self._model = model
 
         return model
 
@@ -529,6 +559,20 @@ class ParameterSweepBase:
             samples = spec.generate_samples()
 
         return samples
+
+    def get_sample_values(self, sample_id: int):
+        """
+        Get inputs for a specific sample run indicated by sample_id.
+
+        Args:
+            sample_id: int representing a row in the specification.samples dataframe
+
+        Returns:
+            Pandas Series of input values for chosen sample
+        """
+        samples = self.get_input_samples()
+
+        return samples.iloc[sample_id]
 
     def set_input_values(self, model, sample_id: int):
         """
@@ -660,7 +704,7 @@ class ParameterSweepBase:
         # TODO : Need to serialize build_model method somehow?
         outdict = {}
         outdict["specification"] = self.get_input_specification().to_dict()
-        outdict["results"] = OrderedDict(self.results)
+        outdict["results"] = self.results
 
         return outdict
 
@@ -681,7 +725,7 @@ class ParameterSweepBase:
         self.config.input_specification = ParameterSweepSpecification()
         self.config.input_specification.from_dict(input_dict["specification"])
 
-        self._results = OrderedDict()
+        self._results = {}
         # Need to iterate to convert string indices to int
         # Converting to json turns the indices to strings
         for k, v in input_dict["results"].items():
@@ -728,7 +772,7 @@ class SequentialSweepRunner(ParameterSweepBase):
         Execute sequential parameter sweep.
 
         Returns:
-            OrderedDict of results indexed by sample ID.
+            dict of results indexed by sample ID.
         """
         self._results = {}
         samples = self.get_input_samples()
