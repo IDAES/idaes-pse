@@ -641,10 +641,9 @@ class TestParameterSweepBase:
         assert psweep.config.build_model is None
         assert psweep.config.run_model is None
         assert psweep.config.collect_results is None
-        assert psweep.config.failure_recourse is None
+        assert psweep.config.handle_solver_error is None
         assert psweep.config.input_specification is None
         assert psweep.config.solver is None
-        assert psweep.config.solver_options is None
         assert isinstance(psweep.results, OrderedDict)
         assert len(psweep.results) == 0
 
@@ -848,33 +847,6 @@ class TestParameterSweepBase:
         ):
             psweep.set_input_values(model, 0)
 
-    @pytest.mark.unit
-    def test_get_solver(self):
-        psweep = ParameterSweepBase(
-            build_model=self.build_model,
-            input_specification=spec,
-        )
-
-        with pytest.raises(
-            ConfigurationError,
-            match="Please specify a solver to use.",
-        ):
-            psweep._get_solver()
-
-    @pytest.mark.unit
-    def test_get_solver_w_options(self):
-        psweep = ParameterSweepBase(
-            build_model=self.build_model,
-            input_specification=spec,
-            solver="ipopt",
-            solver_options={"bound_push": 1e-5},
-        )
-
-        solver = psweep._get_solver()
-
-        assert isinstance(solver, IPOPT)
-        assert solver.options == {"bound_push": 1e-5}
-
     @pytest.mark.component
     @pytest.mark.solver
     def test_run_model_none(self):
@@ -965,43 +937,43 @@ class TestParameterSweepBase:
         assert results == [1, "foo", False]
 
     @pytest.mark.unit
-    def test_execute_recourse_none(self):
+    def test_handle_error_none(self):
         model = ConcreteModel()
 
         psweep = ParameterSweepBase()
 
-        results = psweep.execute_recourse(model)
+        results = psweep.handle_error(model)
 
         assert results == (None, False)
 
     @pytest.mark.unit
-    def test_execute_recourse(self):
+    def test_handle_error(self):
         model = ConcreteModel()
 
         def dummy_recourse(model):
             return "foo"
 
         psweep = ParameterSweepBase(
-            failure_recourse=dummy_recourse,
+            handle_solver_error=dummy_recourse,
         )
 
-        results = psweep.execute_recourse(model)
+        results = psweep.handle_error(model)
 
         assert results == "foo"
 
     @pytest.mark.unit
-    def test_execute_recourse_w_args(self):
+    def test_handle_error_w_args(self):
         model = ConcreteModel()
 
         def dummy_recourse(model, arg1=None, arg2=None):
             return "foo", arg1, arg2
 
         psweep = ParameterSweepBase(
-            failure_recourse=dummy_recourse,
-            failure_recourse_arguments={"arg1": "bar", "arg2": False},
+            handle_solver_error=dummy_recourse,
+            handle_solver_error_arguments={"arg1": "bar", "arg2": False},
         )
 
-        results = psweep.execute_recourse(model)
+        results = psweep.handle_error(model)
 
         assert results == ("foo", "bar", False)
 
@@ -1026,17 +998,20 @@ class TestParameterSweepBase:
         spec2.add_sampled_input("v2", "v2", 2, 6)
         spec2.set_sample_size([2])
 
+        solver = SolverFactory("ipopt")
+
         psweep = ParameterSweepBase(
             build_model=build_model,
             input_specification=spec2,
             collect_results=collect_results,
-            solver="ipopt",
+            solver=solver,
         )
 
-        results, solved = psweep.execute_single_sample(1)
+        results, solved, error = psweep.execute_single_sample(1)
 
         assert results == pytest.approx(6, rel=1e-8)
         assert solved
+        assert error is None
 
     @pytest.mark.component
     def test_execute_single_sample_recourse_none(self):
@@ -1050,11 +1025,10 @@ class TestParameterSweepBase:
 
             return m
 
-        def dummy_solver(model):
-            raise Exception
-
-        def dummy_get_solver():
-            return dummy_solver
+        class dummy_solver:
+            @staticmethod
+            def solve(model, *args, **kwargs):
+                raise Exception("Test exception")
 
         spec2 = ParameterSweepSpecification()
         spec2.set_sampling_method(UniformSampling)
@@ -1064,14 +1038,14 @@ class TestParameterSweepBase:
         psweep = ParameterSweepBase(
             build_model=build_model,
             input_specification=spec2,
+            solver=dummy_solver,
         )
 
-        psweep._get_solver = dummy_get_solver
-
-        results, solved = psweep.execute_single_sample(1)
+        results, solved, error = psweep.execute_single_sample(1)
 
         assert results is None
         assert not solved
+        assert error == "Test exception"
 
     @pytest.mark.component
     def test_execute_single_sample_recourse_custom(self):
@@ -1085,11 +1059,10 @@ class TestParameterSweepBase:
 
             return m
 
-        def dummy_solver(model):
-            raise Exception
-
-        def dummy_get_solver():
-            return dummy_solver
+        class dummy_solver:
+            @staticmethod
+            def solve(model, *args, **kwargs):
+                raise Exception("Test exception")
 
         def recourse(model):
             return "foo", "bar"
@@ -1102,15 +1075,15 @@ class TestParameterSweepBase:
         psweep = ParameterSweepBase(
             build_model=build_model,
             input_specification=spec2,
-            failure_recourse=recourse,
+            solver=dummy_solver,
+            handle_solver_error=recourse,
         )
 
-        psweep._get_solver = dummy_get_solver
-
-        results, solved = psweep.execute_single_sample(1)
+        results, solved, error = psweep.execute_single_sample(1)
 
         assert results == "foo"
         assert solved == "bar"
+        assert error == "Test exception"
 
     @pytest.fixture(scope="class")
     def psweep_with_results(self):
@@ -1294,10 +1267,12 @@ class TestSequentialSweepRunner:
         spec2.set_sample_size([2])
         spec2.generate_samples()
 
+        solver = SolverFactory("ipopt")
+
         psweep = SequentialSweepRunner(
             build_model=build_model,
             input_specification=spec2,
-            solver="ipopt",
+            solver=solver,
             collect_results=collect_results,
         )
 
