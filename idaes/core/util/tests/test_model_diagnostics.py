@@ -17,7 +17,6 @@ from io import StringIO
 import math
 import numpy as np
 import pytest
-from collections import OrderedDict
 import os
 from copy import deepcopy
 
@@ -1944,20 +1943,13 @@ Irreducible Degenerate Sets
 
 ca_dict = {
     "specification": {
-        "inputs": OrderedDict(
-            [
-                (
-                    "v2",
-                    OrderedDict(
-                        [
-                            ("pyomo_path", "v2"),
-                            ("lower", 2),
-                            ("upper", 6),
-                        ]
-                    ),
-                )
-            ]
-        ),
+        "inputs": {
+            "v2": {
+                "pyomo_path": "v2",
+                "lower": 2,
+                "upper": 6,
+            },
+        },
         "sampling_method": "UniformSampling",
         "sample_size": [2],
         "samples": {
@@ -1968,31 +1960,21 @@ ca_dict = {
             "column_names": [None],
         },
     },
-    "results": OrderedDict(
-        [
-            (
-                0,
-                {
-                    "solved": True,
-                    "results": 2,
-                },
-            ),
-            (
-                1,
-                {
-                    "solved": True,
-                    "results": 6,
-                },
-            ),
-        ]
-    ),
+    "results": {
+        0: {
+            "solved": True,
+            "results": 2,
+        },
+        1: {
+            "solved": True,
+            "results": 6,
+        },
+    },
 }
 
 ca_res = {
     "specification": {
-        "inputs": OrderedDict(
-            [("v2", OrderedDict([("pyomo_path", "v2"), ("lower", 2), ("upper", 6)]))]
-        ),
+        "inputs": {"v2": {"pyomo_path": "v2", "lower": 2, "upper": 6}},
         "sampling_method": "UniformSampling",
         "sample_size": [2],
         "samples": {
@@ -2003,36 +1985,28 @@ ca_res = {
             "column_names": [None],
         },
     },
-    "results": OrderedDict(
-        [
-            (
-                0,
-                {
-                    "solved": False,
-                    "results": {
-                        "iters": 7,
-                        "iters_in_restoration": 4,
-                        "iters_w_regularization": 0,
-                        "time": 0.0,
-                        "numerical_issues": True,
-                    },
-                },
-            ),
-            (
-                1,
-                {
-                    "solved": False,
-                    "results": {
-                        "iters": 7,
-                        "iters_in_restoration": 4,
-                        "iters_w_regularization": 0,
-                        "time": 0.0,
-                        "numerical_issues": True,
-                    },
-                },
-            ),
-        ]
-    ),
+    "results": {
+        0: {
+            "solved": False,
+            "results": {
+                "iters": 7,
+                "iters_in_restoration": 4,
+                "iters_w_regularization": 0,
+                "time": 0.0,
+                "numerical_issues": True,
+            },
+        },
+        1: {
+            "solved": False,
+            "results": {
+                "iters": 7,
+                "iters_in_restoration": 4,
+                "iters_w_regularization": 0,
+                "time": 0.0,
+                "numerical_issues": True,
+            },
+        },
+    },
 }
 
 
@@ -2055,7 +2029,7 @@ class TestConvergenceAnalysis:
 
         assert ca._model is model
         assert isinstance(ca._psweep, SequentialSweepRunner)
-        assert isinstance(ca.results, OrderedDict)
+        assert isinstance(ca.results, dict)
         assert ca.config.input_specification is None
         assert ca.config.solver_options is None
 
@@ -2184,7 +2158,7 @@ class TestConvergenceAnalysis:
 
         ca.run_convergence_analysis()
 
-        assert isinstance(ca.results, OrderedDict)
+        assert isinstance(ca.results, dict)
         assert len(ca.results) == 4
 
         # Ignore time, as it is too noisy to test
@@ -2232,12 +2206,10 @@ class TestConvergenceAnalysis:
             input_specification=spec,
         )
 
-        ca._psweep._results = OrderedDict(
-            {
-                0: {"solved": True, "results": 2},
-                1: {"solved": True, "results": 6},
-            }
-        )
+        ca._psweep._results = {
+            0: {"solved": True, "results": 2},
+            1: {"solved": True, "results": 6},
+        }
 
         return ca
 

@@ -2962,6 +2962,14 @@ CACONFIG.declare(
         description="Options to pass to IPOPT.",
     ),
 )
+CACONFIG.declare(
+    "halt_on_error",
+    ConfigValue(
+        default=False,
+        domain=bool,
+        doc="Whether to halt execution of parameter sweep on encountering a solver error (default=False).",
+    ),
+)
 
 
 class ConvergenceAnalysis:
@@ -2986,14 +2994,19 @@ class ConvergenceAnalysis:
 
         self._model = model
 
+        solver = SolverFactory("ipopt")
+        if self.config.solver_options is not None:
+            solver.options = self.config.solver_options
+
         self._psweep = self.config.workflow_runner(
             input_specification=self.config.input_specification,
             build_model=self._build_model,
+            rebuild_model=True,
             run_model=self._run_model,
             collect_results=self._collect_results,
-            failure_recourse=self._recourse,
-            solver="ipopt",
-            solver_options=self.config.solver_options,
+            halt_on_error=self.config.halt_on_error,
+            handle_solver_error=self._recourse,
+            solver=solver,
         )
 
     @property

@@ -31,6 +31,10 @@ __author__ = "Andrew Lee"
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
+# TODO: Timeouts
+# TODO: Progress bar/indicator
+# TODO: Re-initialize option/callback
+
 
 class ParameterSweepSpecification(object):
     """Defines a set of input variables/parameters and values to be used in
