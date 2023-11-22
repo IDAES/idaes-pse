@@ -20,7 +20,7 @@ import json
 from pandas import DataFrame
 
 from pyomo.core import Param, Var
-from pyomo.environ import check_optimal_termination, SolverFactory
+from pyomo.environ import check_optimal_termination
 from pyomo.common.config import ConfigDict, ConfigValue, document_kwargs_from_configdict
 
 import idaes.logger as idaeslog
@@ -181,7 +181,7 @@ class ParameterSweepSpecification(object):
         )
 
         self._samples = DataFrame(
-            space_init.sample_points(), columns=[_ for _ in self.inputs.keys()]
+            space_init.sample_points(), columns=[_ for _ in self.inputs]
         )
 
         return self.samples
@@ -481,7 +481,7 @@ class ParameterSweepBase:
             solved = check_optimal_termination(status)
             if not solved:
                 _log.warning(f"Sample {sample_id} failed to converge.")
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-except
             if self.config.halt_on_error:
                 raise
 
