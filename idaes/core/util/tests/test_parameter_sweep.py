@@ -16,7 +16,6 @@ Tests for IDAES Parameter Sweep API and sequential workflow runner.
 
 import pytest
 import os
-import os.path
 
 from pandas import DataFrame, Series
 from pandas.testing import assert_frame_equal, assert_series_equal
@@ -31,7 +30,6 @@ from pyomo.environ import (
     assert_optimal_termination,
 )
 from pyomo.common.fileutils import this_file_dir
-from pyomo.solvers.plugins.solvers.IPOPT import IPOPT
 from pyomo.common.tempfiles import TempfileManager
 
 from idaes.core.util.parameter_sweep import (
@@ -47,6 +45,7 @@ from idaes.core.surrogate.pysmo.sampling import (
     CVTSampling,
 )
 from idaes.core.util.exceptions import ConfigurationError
+import idaes.logger as idaeslog
 
 currdir = this_file_dir()
 
@@ -984,7 +983,9 @@ class TestParameterSweepBase:
 
     @pytest.mark.component
     @pytest.mark.solver
-    def test_execute_single_sample(self):
+    def test_execute_single_sample(self, caplog):
+        caplog.set_level(idaeslog.DEBUG)
+
         def build_model():
             m = ConcreteModel()
             m.v1 = Var(initialize=1)
@@ -1017,6 +1018,8 @@ class TestParameterSweepBase:
         assert results == pytest.approx(6, rel=1e-8)
         assert solved
         assert error is None
+
+        assert "Sample 1 finished." in caplog.text
 
     @pytest.mark.component
     def test_execute_single_sample_recourse_none(self):
@@ -1286,6 +1289,13 @@ class TestParameterSweepBase:
         expected = Series({"v2": 2.0}, name=0)
         vals = psweep_with_results.get_sample_values(0)
         assert_series_equal(expected, vals)
+
+    @pytest.mark.unit
+    def test_progress_bar(self, capsys):
+        psweep = ParameterSweepBase()
+        psweep.progress_bar(0.25, "testing", 16)
+        out, err = capsys.readouterr()
+        assert "25.0% ****------------ testing\n" in out
 
 
 class TestSequentialSweepRunner:

@@ -14,6 +14,7 @@
 IDAES Parameter Sweep API and sequential workflow runner.
 """
 
+import sys
 import json
 
 from pandas import DataFrame
@@ -32,7 +33,6 @@ __author__ = "Andrew Lee"
 _log = idaeslog.getLogger(__name__)
 
 # TODO: Timeouts
-# TODO: Progress bar/indicator
 # TODO: Re-initialize option/callback
 
 
@@ -480,7 +480,7 @@ class ParameterSweepBase:
 
             solved = check_optimal_termination(status)
             if not solved:
-                _log.error(f"Sample: {sample_id} failed to converge.")
+                _log.warning(f"Sample {sample_id} failed to converge.")
         except Exception as e:
             if self.config.halt_on_error:
                 raise
@@ -494,6 +494,8 @@ class ParameterSweepBase:
         else:
             # Catch any Exception for recourse
             results, solved = self.handle_error(model)
+
+        _log.info(f"Sample {sample_id} finished.")
 
         return results, solved, error
 
@@ -762,6 +764,25 @@ class ParameterSweepBase:
             self.from_dict(json.load(f))
         f.close()
 
+    @staticmethod
+    def progress_bar(fraction, msg: str, length: int = 20):
+        """
+        Prints a progress bar to stdout
+
+        Args:
+            fraction: fraction of total samples executed
+            msg: string to append to progress bar
+            length: length of progress bar (default=20)
+
+        Returns:
+            None
+        """
+        n_complete = int(length * fraction)
+        n_remaining = length - n_complete
+        characters = f"{'*' * n_complete}{'-' * n_remaining}"
+        sys.stdout.write(f"{fraction * 100:.1f}% {characters} {msg}\n")
+        sys.stdout.flush()
+
 
 class SequentialSweepRunner(ParameterSweepBase):
     """
@@ -781,8 +802,12 @@ class SequentialSweepRunner(ParameterSweepBase):
         self._results = {}
         samples = self.get_input_samples()
 
+        count = 1
         for s in samples.index:
             sresults, solved, error = self.execute_single_sample(s)
             self._results[s] = {"solved": solved, "results": sresults, "error": error}
+
+            self.progress_bar(float(count) / float(len(samples)), "Complete")
+            count += 1
 
         return self.results
