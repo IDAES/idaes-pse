@@ -80,7 +80,7 @@ class TestBTExample(object):
         m.fs.obj = Objective(expr=(m.fs.state[1].temperature - 510) ** 2)
         m.fs.state[1].temperature.setub(600)
 
-        for logP in range(8, 13, 1):
+        for logP in [9.5, 10, 10.5, 11, 11.5, 12]:
             m.fs.obj.deactivate()
 
             m.fs.state[1].flow_mol.fix(100)
@@ -115,11 +115,11 @@ class TestBTExample(object):
             assert check_optimal_termination(results)
 
             while m.fs.state[1].pressure.value <= 1e6:
-                m.fs.state[1].pressure.value = m.fs.state[1].pressure.value + 1e5
 
                 results = solver.solve(m)
                 assert check_optimal_termination(results)
-                print(T, m.fs.state[1].pressure.value)
+
+                m.fs.state[1].pressure.value = m.fs.state[1].pressure.value + 1e5
 
     @pytest.mark.component
     def test_T350_P1_x5(self, m):
