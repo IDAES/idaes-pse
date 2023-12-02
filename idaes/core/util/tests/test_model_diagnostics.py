@@ -14,6 +14,7 @@
 This module contains model diagnostic utility functions for use in IDAES (Pyomo) models.
 """
 from io import StringIO
+import math
 import numpy as np
 import pytest
 
@@ -23,6 +24,10 @@ from pyomo.environ import (
     Constraint,
     Expression,
     log,
+    tan,
+    asin,
+    acos,
+    sqrt,
     Objective,
     Set,
     SolverFactory,
@@ -31,6 +36,8 @@ from pyomo.environ import (
     units,
     value,
     Var,
+    Param,
+    Integers,
 )
 from pyomo.common.collections import ComponentSet
 from pyomo.contrib.pynumero.asl import AmplInterface
@@ -41,6 +48,7 @@ import idaes.logger as idaeslog
 from idaes.core.solvers import get_solver
 from idaes.core import FlowsheetBlock
 from idaes.core.util.testing import PhysicalParameterTestBlock
+from unittest import TestCase
 
 # TODO: Add pyomo.dae test case
 """
@@ -69,10 +77,24 @@ from idaes.core.util.model_diagnostics import (
     _write_report_section,
     _collect_model_statistics,
 )
+from idaes.core.util.testing import _enable_scip_solver_for_testing
+
 
 __author__ = "Alex Dowling, Douglas Allan, Andrew Lee"
 
-solver_available = SolverFactory("scip").available()
+
+@pytest.fixture(scope="module")
+def scip_solver():
+    solver = SolverFactory("scip")
+    undo_changes = None
+
+    if not solver.available():
+        undo_changes = _enable_scip_solver_for_testing()
+    if not solver.available():
+        pytest.skip(reason="SCIP solver not available")
+    yield solver
+    if undo_changes is not None:
+        undo_changes()
 
 
 @pytest.fixture
@@ -445,7 +467,7 @@ class TestDiagnosticsToolbox:
         m.b.v2 = Var(units=units.m)
         m.b.v3 = Var(bounds=(0, 5))
         m.b.v4 = Var()
-        m.b.v5 = Var(bounds=(0, 1))
+        m.b.v5 = Var(bounds=(0, 5))
         m.b.v6 = Var()
         m.b.v7 = Var(
             units=units.m, bounds=(0, 1)
@@ -528,7 +550,6 @@ The following variable(s) are fixed to zero:
 The following variable(s) have values at or outside their bounds (tol=0.0E+00):
 
     b.v3 (free): value=0.0 bounds=(0, 5)
-    b.v5 (fixed): value=2 bounds=(0, 1)
 
 ====================================================================================
 """
@@ -597,7 +618,6 @@ The following variable(s) have extreme values (<1.0E-04 or > 1.0E+04):
 The following variable(s) have values close to their bounds (abs=1.0E-04, rel=1.0E-04):
 
     b.v3: value=0.0 bounds=(0, 5)
-    b.v5: value=2 bounds=(0, 1)
     b.v7: value=1.0000939326524314e-07 bounds=(0, 1)
 
 ====================================================================================
@@ -987,7 +1007,7 @@ values (<1.0E-04 or>1.0E+04):
 
         assert len(warnings) == 2
         assert "WARNING: 1 Constraint with large residuals (>1.0E-05)" in warnings
-        assert "WARNING: 2 Variables at or outside bounds (tol=0.0E+00)" in warnings
+        assert "WARNING: 1 Variable at or outside bounds (tol=0.0E+00)" in warnings
 
         assert len(next_steps) == 2
         assert "display_constraints_with_large_residuals()" in next_steps
@@ -1048,10 +1068,9 @@ values (<1.0E-04 or>1.0E+04):
         dt = DiagnosticsToolbox(model=model.b)
 
         cautions = dt._collect_numerical_cautions()
-
         assert len(cautions) == 5
         assert (
-            "Caution: 3 Variables with value close to their bounds (abs=1.0E-04, rel=1.0E-04)"
+            "Caution: 2 Variables with value close to their bounds (abs=1.0E-04, rel=1.0E-04)"
             in cautions
         )
         assert "Caution: 2 Variables with value close to zero (tol=1.0E-08)" in cautions
@@ -1111,7 +1130,6 @@ values (<1.0E-04 or>1.0E+04):
 
         # Fix numerical issues
         m.b.v3.setlb(-5)
-        m.b.v5.setub(10)
 
         solver = get_solver()
         solver.solve(m)
@@ -1176,12 +1194,12 @@ Model Statistics
 2 WARNINGS
 
     WARNING: 1 Constraint with large residuals (>1.0E-05)
-    WARNING: 2 Variables at or outside bounds (tol=0.0E+00)
+    WARNING: 1 Variable at or outside bounds (tol=0.0E+00)
 
 ------------------------------------------------------------------------------------
 5 Cautions
 
-    Caution: 3 Variables with value close to their bounds (abs=1.0E-04, rel=1.0E-04)
+    Caution: 2 Variables with value close to their bounds (abs=1.0E-04, rel=1.0E-04)
     Caution: 2 Variables with value close to zero (tol=1.0E-08)
     Caution: 1 Variable with extreme value (<1.0E-04 or >1.0E+04)
     Caution: 1 Variable with None value
@@ -1782,27 +1800,26 @@ class TestDegeneracyHunter:
 
     @pytest.mark.solver
     @pytest.mark.component
-    @pytest.mark.skipif(not solver_available, reason="SCIP is not available")
-    def test_solve_candidates_milp(self, model):
+    def test_solve_candidates_milp(self, model, scip_solver):
         dh = DegeneracyHunter2(model)
         dh._prepare_candidates_milp()
         dh._solve_candidates_milp()
 
-        assert value(dh.candidates_milp.nu[0]) == pytest.approx(-1e-05, rel=1e-5)
-        assert value(dh.candidates_milp.nu[1]) == pytest.approx(1e-05, rel=1e-5)
+        assert value(dh.candidates_milp.nu[0]) == pytest.approx(1e-05, rel=1e-5)
+        assert value(dh.candidates_milp.nu[1]) == pytest.approx(-1e-05, rel=1e-5)
 
         assert value(dh.candidates_milp.y_pos[0]) == pytest.approx(0, abs=1e-5)
-        assert value(dh.candidates_milp.y_pos[1]) == pytest.approx(1, rel=1e-5)
+        assert value(dh.candidates_milp.y_pos[1]) == pytest.approx(0, rel=1e-5)
 
-        assert value(dh.candidates_milp.y_neg[0]) == pytest.approx(-0, abs=1e-5)
-        assert value(dh.candidates_milp.y_neg[1]) == pytest.approx(-0, abs=1e-5)
+        assert value(dh.candidates_milp.y_neg[0]) == pytest.approx(0, abs=1e-5)
+        assert value(dh.candidates_milp.y_neg[1]) == pytest.approx(1, abs=1e-5)
 
         assert value(dh.candidates_milp.abs_nu[0]) == pytest.approx(1e-05, rel=1e-5)
         assert value(dh.candidates_milp.abs_nu[1]) == pytest.approx(1e-05, rel=1e-5)
 
         assert dh.degenerate_set == {
-            model.con2: -1e-05,
-            model.con5: 1e-05,
+            model.con2: value(dh.candidates_milp.nu[0]),
+            model.con5: value(dh.candidates_milp.nu[1]),
         }
 
     @pytest.mark.unit
@@ -1832,8 +1849,7 @@ class TestDegeneracyHunter:
 
     @pytest.mark.solver
     @pytest.mark.component
-    @pytest.mark.skipif(not solver_available, reason="SCIP is not available")
-    def test_solve_ids_milp(self, model):
+    def test_solve_ids_milp(self, model, scip_solver):
         dh = DegeneracyHunter2(model)
         dh._prepare_ids_milp()
         ids_ = dh._solve_ids_milp(cons=model.con2)
@@ -1851,8 +1867,7 @@ class TestDegeneracyHunter:
 
     @pytest.mark.solver
     @pytest.mark.component
-    @pytest.mark.skipif(not solver_available, reason="SCIP is not available")
-    def test_find_irreducible_degenerate_sets(self, model):
+    def test_find_irreducible_degenerate_sets(self, model, scip_solver):
         dh = DegeneracyHunter2(model)
         dh.find_irreducible_degenerate_sets()
 
@@ -1863,8 +1878,7 @@ class TestDegeneracyHunter:
 
     @pytest.mark.solver
     @pytest.mark.component
-    @pytest.mark.skipif(not solver_available, reason="SCIP is not available")
-    def test_report_irreducible_degenerate_sets(self, model):
+    def test_report_irreducible_degenerate_sets(self, model, scip_solver):
         stream = StringIO()
 
         dh = DegeneracyHunter2(model)
@@ -1890,8 +1904,7 @@ Irreducible Degenerate Sets
 
     @pytest.mark.solver
     @pytest.mark.component
-    @pytest.mark.skipif(not solver_available, reason="SCIP is not available")
-    def test_report_irreducible_degenerate_sets_none(self, model):
+    def test_report_irreducible_degenerate_sets_none(self, model, scip_solver):
         stream = StringIO()
 
         # Delete degenerate constraint
@@ -2579,3 +2592,294 @@ def test_ipopt_solve_halt_on_error(capsys):
 
     captured = capsys.readouterr()
     assert "c: can't evaluate log(-5)." in captured.out
+
+
+class TestEvalErrorDetection(TestCase):
+    @pytest.mark.unit
+    def test_div(self):
+        m = ConcreteModel()
+        m.x = Var(bounds=(1, None))
+        m.y = Var()
+        m.c = Constraint(expr=m.y == 1 / m.x)
+        dtb = DiagnosticsToolbox(m)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 0)
+
+        m.x.setlb(0)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 1)
+        w = warnings[0]
+        self.assertEqual(
+            w, "c: Potential division by 0 in 1/x; Denominator bounds are (0, inf)"
+        )
+
+        dtb.config.warn_for_evaluation_error_at_bounds = False
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 0)
+
+        m.x.setlb(-1)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 1)
+        w = warnings[0]
+        self.assertEqual(
+            w, "c: Potential division by 0 in 1/x; Denominator bounds are (-1, inf)"
+        )
+
+    @pytest.mark.unit
+    def test_pow1(self):
+        m = ConcreteModel()
+        m.x = Var(bounds=(None, None))
+        m.y = Var()
+        m.p = Param(initialize=2, mutable=True)
+        m.c = Constraint(expr=m.y == m.x**m.p)
+        dtb = DiagnosticsToolbox(m)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 0)
+
+        m.p.value = 2.5
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 1)
+        w = warnings[0]
+        self.assertEqual(
+            w,
+            "c: Potential evaluation error in x**p; base bounds are (-inf, inf); exponent bounds are (2.5, 2.5)",
+        )
+
+        m.x.setlb(1)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 0)
+
+    @pytest.mark.unit
+    def test_pow2(self):
+        m = ConcreteModel()
+        m.x = Var(bounds=(1, None))
+        m.y = Var()
+        m.p = Var(domain=Integers)
+        m.c = Constraint(expr=m.y == m.x**m.p)
+        dtb = DiagnosticsToolbox(m)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 0)
+
+        m.x.setlb(None)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 1)
+        w = warnings[0]
+        self.assertEqual(
+            w,
+            "c: Potential evaluation error in x**p; base bounds are (-inf, inf); exponent bounds are (-inf, inf)",
+        )
+
+    @pytest.mark.unit
+    def test_pow3(self):
+        m = ConcreteModel()
+        m.x = Var(bounds=(0, None))
+        m.y = Var()
+        m.p = Var(bounds=(0, None))
+        m.c = Constraint(expr=m.y == m.x**m.p)
+        dtb = DiagnosticsToolbox(m)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 0)
+
+    @pytest.mark.unit
+    def test_pow4(self):
+        m = ConcreteModel()
+        m.x = Var(bounds=(0, None))
+        m.y = Var()
+        m.c = Constraint(expr=m.y == m.x ** (-2))
+        dtb = DiagnosticsToolbox(m)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 1)
+        w = warnings[0]
+        self.assertEqual(
+            w,
+            "c: Potential evaluation error in x**-2; base bounds are (0, inf); exponent bounds are (-2, -2)",
+        )
+
+        dtb.config.warn_for_evaluation_error_at_bounds = False
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 0)
+
+        m.x.setlb(-1)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 1)
+        w = warnings[0]
+        self.assertEqual(
+            w,
+            "c: Potential evaluation error in x**-2; base bounds are (-1, inf); exponent bounds are (-2, -2)",
+        )
+
+    @pytest.mark.unit
+    def test_pow5(self):
+        m = ConcreteModel()
+        m.x = Var(bounds=(0, None))
+        m.y = Var()
+        m.c = Constraint(expr=m.y == m.x ** (-2.5))
+        dtb = DiagnosticsToolbox(m)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 1)
+        w = warnings[0]
+        self.assertEqual(
+            w,
+            "c: Potential evaluation error in x**-2.5; base bounds are (0, inf); exponent bounds are (-2.5, -2.5)",
+        )
+
+        dtb.config.warn_for_evaluation_error_at_bounds = False
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 0)
+
+        m.x.setlb(-1)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 1)
+        w = warnings[0]
+        self.assertEqual(
+            w,
+            "c: Potential evaluation error in x**-2.5; base bounds are (-1, inf); exponent bounds are (-2.5, -2.5)",
+        )
+
+    @pytest.mark.unit
+    def test_log(self):
+        m = ConcreteModel()
+        m.x = Var(bounds=(1, None))
+        m.y = Var()
+        m.c = Constraint(expr=m.y == log(m.x))
+        dtb = DiagnosticsToolbox(m)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 0)
+
+        m.x.setlb(0)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 1)
+        w = warnings[0]
+        self.assertEqual(
+            w,
+            "c: Potential log of a non-positive number in log(x); Argument bounds are (0, inf)",
+        )
+
+        dtb.config.warn_for_evaluation_error_at_bounds = False
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 0)
+
+        m.x.setlb(-1)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 1)
+        w = warnings[0]
+        self.assertEqual(
+            w,
+            "c: Potential log of a non-positive number in log(x); Argument bounds are (-1, inf)",
+        )
+
+    @pytest.mark.unit
+    def test_tan(self):
+        m = ConcreteModel()
+        m.x = Var(bounds=(-math.pi / 4, math.pi / 4))
+        m.y = Var()
+        m.c = Constraint(expr=m.y == tan(m.x))
+        dtb = DiagnosticsToolbox(m)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 0)
+
+        m.x.setlb(-math.pi)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 1)
+        w = warnings[0]
+        self.assertEqual(
+            w,
+            "c: tan(x) may evaluate to -inf or inf; Argument bounds are (-3.141592653589793, 0.7853981633974483)",
+        )
+
+    @pytest.mark.unit
+    def test_asin(self):
+        m = ConcreteModel()
+        m.x = Var(bounds=(-0.5, 0.5))
+        m.y = Var()
+        m.c = Constraint(expr=m.y == asin(m.x))
+        dtb = DiagnosticsToolbox(m)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 0)
+
+        m.x.setlb(None)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 1)
+        w = warnings[0]
+        self.assertEqual(
+            w,
+            "c: Potential evaluation of asin outside [-1, 1] in asin(x); Argument bounds are (-inf, 0.5)",
+        )
+
+        m.x.setlb(-0.5)
+        m.x.setub(None)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 1)
+        w = warnings[0]
+        self.assertEqual(
+            w,
+            "c: Potential evaluation of asin outside [-1, 1] in asin(x); Argument bounds are (-0.5, inf)",
+        )
+
+    @pytest.mark.unit
+    def test_acos(self):
+        m = ConcreteModel()
+        m.x = Var(bounds=(-0.5, 0.5))
+        m.y = Var()
+        m.c = Constraint(expr=m.y == acos(m.x))
+        dtb = DiagnosticsToolbox(m)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 0)
+
+        m.x.setlb(None)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 1)
+        w = warnings[0]
+        self.assertEqual(
+            w,
+            "c: Potential evaluation of acos outside [-1, 1] in acos(x); Argument bounds are (-inf, 0.5)",
+        )
+
+        m.x.setlb(-0.5)
+        m.x.setub(None)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 1)
+        w = warnings[0]
+        self.assertEqual(
+            w,
+            "c: Potential evaluation of acos outside [-1, 1] in acos(x); Argument bounds are (-0.5, inf)",
+        )
+
+    @pytest.mark.unit
+    def test_sqrt(self):
+        m = ConcreteModel()
+        m.x = Var(bounds=(1, None))
+        m.y = Var()
+        m.c = Constraint(expr=m.y == sqrt(m.x))
+        dtb = DiagnosticsToolbox(m)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 0)
+
+        m.x.setlb(-1)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 1)
+        w = warnings[0]
+        self.assertEqual(
+            w,
+            "c: Potential square root of a negative number in sqrt(x); Argument bounds are (-1, inf)",
+        )
+
+    @pytest.mark.unit
+    def test_display(self):
+        stream = StringIO()
+        m = ConcreteModel()
+        m.x = Var()
+        m.y = Var()
+        m.obj = Objective(expr=m.x**2 + m.y**2.5)
+        m.c1 = Constraint(expr=m.y >= log(m.x))
+        m.c2 = Constraint(expr=m.y >= (m.x - 1) ** 2.5)
+        m.c3 = Constraint(expr=m.x - 1 >= 0)
+        dtb = DiagnosticsToolbox(m)
+        dtb.display_potential_evaluation_errors(stream=stream)
+        expected = "====================================================================================\n3 WARNINGS\n\n    c1: Potential log of a non-positive number in log(x); Argument bounds are (-inf, inf)\n    c2: Potential evaluation error in (x - 1)**2.5; base bounds are (-inf, inf); exponent bounds are (2.5, 2.5)\n    obj: Potential evaluation error in y**2.5; base bounds are (-inf, inf); exponent bounds are (2.5, 2.5)\n\n====================================================================================\n"
+        got = stream.getvalue()
+        exp_list = expected.split("\n")
+        got_list = got.split("\n")
+        self.assertEqual(len(exp_list), len(got_list))
+        for _exp, _got in zip(exp_list, got_list):
+            self.assertEqual(_exp, _got)
