@@ -67,7 +67,7 @@ def test_config():
 
 workaround_for_1294 = pytest.mark.xfail(
     reason="These tests fail with Pyomo 6.7.0. See IDAES/idaes-pse#1294 for details",
-    strict=True,  # will cause failure if test start passing again so that the marker can be removed
+    strict=False,  # the failures only occur for certain platforms, e.g. Windows on GHA
 )
 
 
