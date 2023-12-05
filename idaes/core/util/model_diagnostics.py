@@ -2093,6 +2093,8 @@ class DegeneracyHunter2:
             def eq_degenerate(m_dh, v):
                 # Find the columns with non-zero entries
                 C = find(J[:, v])[0]
+                if len(C) == 0:
+                    return Constraint.Skip
                 return sum(J[c, v] * m_dh.nu[c] for c in C) == 0
 
         else:
