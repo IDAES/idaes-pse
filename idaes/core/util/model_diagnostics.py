@@ -277,15 +277,15 @@ CONFIG.declare(
 )
 
 
-SVDCONFIG = ConfigDict()
-SVDCONFIG.declare(
+JCONFIG = ConfigDict()
+JCONFIG.declare(
     "number_of_smallest_singular_values",
     ConfigValue(
         domain=PositiveInt,
         description="Number of smallest singular values to compute",
     ),
 )
-SVDCONFIG.declare(
+JCONFIG.declare(
     "svd_callback",
     ConfigValue(
         default=svd_dense,
@@ -297,7 +297,7 @@ SVDCONFIG.declare(
         "return the u, s and v matrices as numpy arrays.",
     ),
 )
-SVDCONFIG.declare(
+JCONFIG.declare(
     "svd_callback_arguments",
     ConfigValue(
         default=None,
@@ -305,7 +305,7 @@ SVDCONFIG.declare(
         description="Optional arguments to pass to  SVD callback (default = None)",
     ),
 )
-SVDCONFIG.declare(
+JCONFIG.declare(
     "singular_value_tolerance",
     ConfigValue(
         default=1e-6,
@@ -313,7 +313,7 @@ SVDCONFIG.declare(
         description="Tolerance for defining a small singular value",
     ),
 )
-SVDCONFIG.declare(
+JCONFIG.declare(
     "size_cutoff_in_singular_vector",
     ConfigValue(
         default=0.1,
@@ -1330,7 +1330,7 @@ class DiagnosticsToolbox:
             lines_list=next_steps,
             title="Suggested next steps:",
             line_if_empty=f"If you still have issues converging your model consider:\n"
-            f"{TAB*2}prepare_svd_toolbox()\n{TAB*2}prepare_degeneracy_hunter()",
+            f"{TAB*2}prepare_jacobian_analysis_toolbox()\n{TAB*2}prepare_degeneracy_hunter()",
             footer="=",
         )
 
@@ -1379,22 +1379,19 @@ class DiagnosticsToolbox:
             footer="=",
         )
 
-    @document_kwargs_from_configdict(SVDCONFIG)
-    def prepare_svd_toolbox(self, **kwargs):
+    @document_kwargs_from_configdict(JCONFIG)
+    def prepare_jacobian_analysis_toolbox(self, **kwargs):
         """
-        Create an instance of the SVDToolbox and store as self.svd_toolbox.
-
-        After creating an instance of the toolbox, call
-        display_underdetermined_variables_and_constraints().
+        Create an instance of the JacobianAnalysisToolbox and store as self.jac_toolbox.
 
         Returns:
 
-            Instance of SVDToolbox
+            Instance of JacobianAnalysisToolbox
 
         """
-        self.svd_toolbox = SVDToolbox(self.model, **kwargs)
+        self.jac_toolbox = JacobianAnalysisToolbox(self.model, **kwargs)
 
-        return self.svd_toolbox
+        return self.jac_toolbox
 
     @document_kwargs_from_configdict(DHCONFIG)
     def prepare_degeneracy_hunter(self, **kwargs):
@@ -1414,18 +1411,18 @@ class DiagnosticsToolbox:
         return self.degeneracy_hunter
 
 
-@document_kwargs_from_configdict(SVDCONFIG)
-class SVDToolbox:
+@document_kwargs_from_configdict(JCONFIG)
+class JacobianAnalysisToolbox:
     """
-    Toolbox for performing Singular Value Decomposition on the model Jacobian.
+    Toolbox for performing analysis the model Jacobian.
 
     Used help() for more information on available methods.
 
-    Original code by Doug Allan
+    Original SVD code by Doug Allan
 
     Args:
 
-        model: model to be diagnosed. The SVDToolbox does not support indexed Blocks.
+        model: model to be diagnosed. The JacobianAnalysisToolbox does not support indexed Blocks.
 
     """
 
@@ -1439,7 +1436,7 @@ class SVDToolbox:
             )
 
         self._model = model
-        self.config = SVDCONFIG(kwargs)
+        self.config = JCONFIG(kwargs)
 
         self.u = None
         self.s = None
@@ -1452,7 +1449,7 @@ class SVDToolbox:
 
         if self.jacobian.shape[0] < 2:
             raise ValueError(
-                "Model needs at least 2 equality constraints to perform svd_analysis."
+                "Model needs at least 2 equality constraints to perform analysis."
             )
 
     def run_svd_analysis(self):

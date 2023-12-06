@@ -59,7 +59,7 @@ from pyomo.dae import ContinuousSet, DerivativeVar
 # Need to update
 from idaes.core.util.model_diagnostics import (
     DiagnosticsToolbox,
-    SVDToolbox,
+    JacobianAnalysisToolbox,
     DegeneracyHunter,
     DegeneracyHunter2,
     svd_dense,
@@ -1272,11 +1272,11 @@ Suggested next steps:
         not AmplInterface.available(), reason="pynumero_ASL is not available"
     )
     @pytest.mark.integration
-    def test_prepare_svd_toolbox(self, model):
+    def test_prepare_jacobian_analysis_toolbox(self, model):
         dt = DiagnosticsToolbox(model=model.b)
-        svd = dt.prepare_svd_toolbox()
+        jac = dt.prepare_jacobian_analysis_toolbox()
 
-        assert isinstance(svd, SVDToolbox)
+        assert isinstance(jac, JacobianAnalysisToolbox)
 
     @pytest.mark.skipif(
         not AmplInterface.available(), reason="pynumero_ASL is not available"
@@ -1300,27 +1300,27 @@ def dummy_callback2(arg1=None, arg2=None):
 @pytest.mark.skipif(
     not AmplInterface.available(), reason="pynumero_ASL is not available"
 )
-class TestSVDToolbox:
+class TestJacobianAnalysisToolbox:
     @pytest.mark.unit
     def test_svd_callback_domain(self, dummy_problem):
         with pytest.raises(
             ValueError,
             match="SVD callback must be a callable which takes at least two arguments.",
         ):
-            SVDToolbox(dummy_problem, svd_callback="foo")
+            JacobianAnalysisToolbox(dummy_problem, svd_callback="foo")
 
         with pytest.raises(
             ValueError,
             match="SVD callback must be a callable which takes at least two arguments.",
         ):
-            SVDToolbox(dummy_problem, svd_callback=dummy_callback)
+            JacobianAnalysisToolbox(dummy_problem, svd_callback=dummy_callback)
 
-        svd = SVDToolbox(dummy_problem, svd_callback=dummy_callback2)
+        svd = JacobianAnalysisToolbox(dummy_problem, svd_callback=dummy_callback2)
         assert svd.config.svd_callback is dummy_callback2
 
     @pytest.mark.unit
     def test_init(self, dummy_problem):
-        svd = SVDToolbox(dummy_problem)
+        svd = JacobianAnalysisToolbox(dummy_problem)
 
         assert svd._model is dummy_problem
         assert svd.u is None
@@ -1348,13 +1348,13 @@ class TestSVDToolbox:
 
         with pytest.raises(
             ValueError,
-            match="Model needs at least 2 equality constraints to perform svd_analysis.",
+            match="Model needs at least 2 equality constraints to perform analysis.",
         ):
-            svd = SVDToolbox(m)
+            svd = JacobianAnalysisToolbox(m)
 
     @pytest.mark.unit
     def test_run_svd_analysis(self, dummy_problem):
-        svd = SVDToolbox(dummy_problem)
+        svd = JacobianAnalysisToolbox(dummy_problem)
 
         assert svd.config.svd_callback is svd_dense
 
@@ -1376,7 +1376,7 @@ class TestSVDToolbox:
 
     @pytest.mark.unit
     def test_run_svd_analysis_sparse(self, dummy_problem):
-        svd = SVDToolbox(dummy_problem, svd_callback=svd_sparse)
+        svd = JacobianAnalysisToolbox(dummy_problem, svd_callback=svd_sparse)
         svd.run_svd_analysis()
 
         # SVD sparse is not consistent with signs - manually iterate and check abs value
@@ -1398,7 +1398,7 @@ class TestSVDToolbox:
 
     @pytest.mark.unit
     def test_run_svd_analysis_sparse_limit(self, dummy_problem):
-        svd = SVDToolbox(
+        svd = JacobianAnalysisToolbox(
             dummy_problem, svd_callback=svd_sparse, number_of_smallest_singular_values=2
         )
         svd.run_svd_analysis()
@@ -1422,7 +1422,7 @@ class TestSVDToolbox:
 
     @pytest.mark.unit
     def test_display_rank_of_equality_constraints(self, dummy_problem):
-        svd = SVDToolbox(dummy_problem)
+        svd = JacobianAnalysisToolbox(dummy_problem)
 
         stream = StringIO()
         svd.display_rank_of_equality_constraints(stream=stream)
@@ -1438,7 +1438,7 @@ Number of Singular Values less than 1.0E-6 is 0
 
     @pytest.mark.unit
     def test_display_rank_of_equality_constraints(self, dummy_problem):
-        svd = SVDToolbox(dummy_problem, singular_value_tolerance=1)
+        svd = JacobianAnalysisToolbox(dummy_problem, singular_value_tolerance=1)
 
         stream = StringIO()
         svd.display_rank_of_equality_constraints(stream=stream)
@@ -1454,7 +1454,7 @@ Number of Singular Values less than 1.0E+00 is 1
 
     @pytest.mark.unit
     def test_display_underdetermined_variables_and_constraints(self, dummy_problem):
-        svd = SVDToolbox(dummy_problem)
+        svd = JacobianAnalysisToolbox(dummy_problem)
 
         stream = StringIO()
         svd.display_underdetermined_variables_and_constraints(stream=stream)
@@ -1511,7 +1511,7 @@ Constraints and Variables associated with smallest singular values
     def test_display_underdetermined_variables_and_constraints_specific(
         self, dummy_problem
     ):
-        svd = SVDToolbox(dummy_problem)
+        svd = JacobianAnalysisToolbox(dummy_problem)
 
         stream = StringIO()
         svd.display_underdetermined_variables_and_constraints(
@@ -1538,7 +1538,7 @@ Constraints and Variables associated with smallest singular values
 
     @pytest.mark.unit
     def test_display_underdetermined_variables_and_constraints(self, dummy_problem):
-        svd = SVDToolbox(dummy_problem, size_cutoff_in_singular_vector=1)
+        svd = JacobianAnalysisToolbox(dummy_problem, size_cutoff_in_singular_vector=1)
 
         stream = StringIO()
         svd.display_underdetermined_variables_and_constraints(stream=stream)
@@ -1594,7 +1594,7 @@ Constraints and Variables associated with smallest singular values
         m.c3 = Constraint(expr=5 * m.v[3] + 6 * m.v[4] == 30)
         m.c4 = Constraint(expr=7 * m.v[4] + 8 * m.v[1] == 40)
 
-        svd = SVDToolbox(m)
+        svd = JacobianAnalysisToolbox(m)
 
         stream = StringIO()
         svd.display_constraints_including_variable(variable=m.v[1], stream=stream)
@@ -1621,7 +1621,7 @@ The following constraints involve v[1]:
         m.c3 = Constraint(expr=5 * m.v[3] + 6 * m.v[4] == 30)
         m.c4 = Constraint(expr=7 * m.v[4] + 8 * m.v[1] == 40)
 
-        svd = SVDToolbox(m)
+        svd = JacobianAnalysisToolbox(m)
 
         with pytest.raises(
             TypeError,
@@ -1643,7 +1643,7 @@ The following constraints involve v[1]:
         m.c3 = Constraint(expr=5 * m.v[3] + 6 * m.v[4] == 30)
         m.c4 = Constraint(expr=7 * m.v[4] + 8 * m.v[1] == 40)
 
-        svd = SVDToolbox(m)
+        svd = JacobianAnalysisToolbox(m)
 
         with pytest.raises(AttributeError, match="Could not find y in model."):
             svd.display_constraints_including_variable(variable=m2.y)
@@ -1659,7 +1659,7 @@ The following constraints involve v[1]:
         m.c3 = Constraint(expr=5 * m.v[3] + 6 * m.v[4] == 30)
         m.c4 = Constraint(expr=7 * m.v[4] + 8 * m.v[1] == 40)
 
-        svd = SVDToolbox(m)
+        svd = JacobianAnalysisToolbox(m)
 
         stream = StringIO()
         svd.display_variables_in_constraint(constraint=m.c1, stream=stream)
@@ -1686,7 +1686,7 @@ The following variables are involved in c1:
         m.c3 = Constraint(expr=5 * m.v[3] + 6 * m.v[4] == 30)
         m.c4 = Constraint(expr=7 * m.v[4] + 8 * m.v[1] == 40)
 
-        svd = SVDToolbox(m)
+        svd = JacobianAnalysisToolbox(m)
 
         with pytest.raises(
             TypeError,
@@ -1708,7 +1708,7 @@ The following variables are involved in c1:
 
         c6 = Constraint(expr=m.v[1] == m.v[2])
 
-        svd = SVDToolbox(m)
+        svd = JacobianAnalysisToolbox(m)
 
         with pytest.raises(
             AttributeError, match="Could not find AbstractScalarConstraint in model."
