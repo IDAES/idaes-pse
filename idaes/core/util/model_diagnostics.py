@@ -71,7 +71,7 @@ from pyomo.core.expr.visitor import identify_variables, StreamBasedExpressionVis
 from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
 from pyomo.contrib.pynumero.asl import AmplInterface
 from pyomo.contrib.fbbt.fbbt import compute_bounds_on_expr
-from pyomo.common.deprecation import deprecation_warning, deprecated
+from pyomo.common.deprecation import deprecation_warning
 from pyomo.common.errors import PyomoException
 
 from idaes.core.util.model_statistics import (
@@ -2238,11 +2238,6 @@ class DegeneracyHunter2:
         stream.write("\n" + "=" * MAX_STR_LENGTH + "\n")
 
 
-@deprecated(
-    "DegeneracyHunter has been replaced by an improved version "
-    "accessible via the DiagnosticsToolbox",
-    version="2.2.0",
-)
 class DegeneracyHunter:
     """
     Degeneracy Hunter is a collection of utility functions to assist in mathematical
