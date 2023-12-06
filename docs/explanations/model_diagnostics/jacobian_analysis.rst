@@ -1,5 +1,5 @@
-SVD Analysis
-============
+Jacobian Analysis
+=================
 
 .. contents::
     :depth: 3

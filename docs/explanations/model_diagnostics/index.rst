@@ -8,7 +8,7 @@ Model Diagnostics Workflow
 .. toctree::
     :maxdepth: 1
     
-    svd_analysis
+    jacobian_analysis
     degeneracy_hunter
 
 Introduction
