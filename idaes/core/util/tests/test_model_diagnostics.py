@@ -467,7 +467,7 @@ class TestDiagnosticsToolbox:
         m.b.v2 = Var(units=units.m)
         m.b.v3 = Var(bounds=(0, 5))
         m.b.v4 = Var()
-        m.b.v5 = Var(bounds=(0, 1))
+        m.b.v5 = Var(bounds=(0, 5))
         m.b.v6 = Var()
         m.b.v7 = Var(
             units=units.m, bounds=(0, 1)
@@ -550,7 +550,6 @@ The following variable(s) are fixed to zero:
 The following variable(s) have values at or outside their bounds (tol=0.0E+00):
 
     b.v3 (free): value=0.0 bounds=(0, 5)
-    b.v5 (fixed): value=2 bounds=(0, 1)
 
 ====================================================================================
 """
@@ -619,7 +618,6 @@ The following variable(s) have extreme values (<1.0E-04 or > 1.0E+04):
 The following variable(s) have values close to their bounds (abs=1.0E-04, rel=1.0E-04):
 
     b.v3: value=0.0 bounds=(0, 5)
-    b.v5: value=2 bounds=(0, 1)
     b.v7: value=1.0000939326524314e-07 bounds=(0, 1)
 
 ====================================================================================
@@ -1009,7 +1007,7 @@ values (<1.0E-04 or>1.0E+04):
 
         assert len(warnings) == 2
         assert "WARNING: 1 Constraint with large residuals (>1.0E-05)" in warnings
-        assert "WARNING: 2 Variables at or outside bounds (tol=0.0E+00)" in warnings
+        assert "WARNING: 1 Variable at or outside bounds (tol=0.0E+00)" in warnings
 
         assert len(next_steps) == 2
         assert "display_constraints_with_large_residuals()" in next_steps
@@ -1070,10 +1068,9 @@ values (<1.0E-04 or>1.0E+04):
         dt = DiagnosticsToolbox(model=model.b)
 
         cautions = dt._collect_numerical_cautions()
-
         assert len(cautions) == 5
         assert (
-            "Caution: 3 Variables with value close to their bounds (abs=1.0E-04, rel=1.0E-04)"
+            "Caution: 2 Variables with value close to their bounds (abs=1.0E-04, rel=1.0E-04)"
             in cautions
         )
         assert "Caution: 2 Variables with value close to zero (tol=1.0E-08)" in cautions
@@ -1133,7 +1130,6 @@ values (<1.0E-04 or>1.0E+04):
 
         # Fix numerical issues
         m.b.v3.setlb(-5)
-        m.b.v5.setub(10)
 
         solver = get_solver()
         solver.solve(m)
@@ -1198,12 +1194,12 @@ Model Statistics
 2 WARNINGS
 
     WARNING: 1 Constraint with large residuals (>1.0E-05)
-    WARNING: 2 Variables at or outside bounds (tol=0.0E+00)
+    WARNING: 1 Variable at or outside bounds (tol=0.0E+00)
 
 ------------------------------------------------------------------------------------
 5 Cautions
 
-    Caution: 3 Variables with value close to their bounds (abs=1.0E-04, rel=1.0E-04)
+    Caution: 2 Variables with value close to their bounds (abs=1.0E-04, rel=1.0E-04)
     Caution: 2 Variables with value close to zero (tol=1.0E-08)
     Caution: 1 Variable with extreme value (<1.0E-04 or >1.0E+04)
     Caution: 1 Variable with None value
