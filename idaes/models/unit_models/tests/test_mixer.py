@@ -44,6 +44,7 @@ from idaes.core import (
     EnergyBalanceType,
     Phase,
     Component,
+    MaterialFlowBasis,
 )
 from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
     BTXParameterBlock,
@@ -84,6 +85,9 @@ from idaes.models.properties.modular_properties.eos.ceos import cubic_roots_avai
 from idaes.core.initialization import (
     BlockTriangularizationInitializer,
     InitializationStatus,
+)
+from idaes.core.util.initialization import (
+    fix_state_vars,
 )
 
 
@@ -1633,3 +1637,299 @@ class TestInitializersIAPWSEquality:
         assert not model.fs.unit.inlet_2.flow_mol[0].fixed
         assert not model.fs.unit.inlet_2.enth_mol[0].fixed
         assert not model.fs.unit.inlet_2.pressure[0].fixed
+
+
+# -----------------------------------------------------------------------------
+# Inherent reaction case
+@declare_process_block_class("LeachSolutionParameters")
+class LeachSolutionParameterData(PhysicalParameterBlock):
+    def build(self):
+        super().build()
+
+        self.liquid = Phase()
+
+        # Solvent
+        self.H2O = Component()
+
+        # Acid related species
+        self.H = Component()
+        self.HSO4 = Component()
+        self.SO4 = Component()
+
+        self.mw = Param(
+            self.component_list,
+            units=pyunits.kg / pyunits.mol,
+            initialize={
+                "H2O": 18e-3,
+                "H": 1e-3,
+                "HSO4": 97e-3,
+                "SO4": 96e-3,
+            },
+        )
+
+        # Inherent reaction for partial dissociation of HSO4
+        self._has_inherent_reactions = True
+        self.inherent_reaction_idx = Set(initialize=["Ka2"])
+        self.inherent_reaction_stoichiometry = {
+            ("Ka2", "liquid", "H"): 1,
+            ("Ka2", "liquid", "HSO4"): -1,
+            ("Ka2", "liquid", "SO4"): 1,
+            ("Ka2", "liquid", "H2O"): 0,
+        }
+        self.Ka2 = Param(
+            initialize=10**-1.99,
+            mutable=True,
+            units=pyunits.mol / pyunits.L,
+        )
+
+        # Assume dilute acid, density of pure water
+        self.dens_mol = Param(
+            initialize=1,
+            units=pyunits.kg / pyunits.litre,
+            mutable=True,
+        )
+
+        self._state_block_class = LeachSolutionStateBlock
+
+    @classmethod
+    def define_metadata(cls, obj):
+        obj.add_properties(
+            {
+                "flow_vol": {"method": None},
+                "conc_mass_comp": {"method": None},
+                "conc_mol_comp": {"method": None},
+                "dens_mol": {"method": "_dens_mol"},
+            }
+        )
+        obj.add_default_units(
+            {
+                "time": pyunits.hour,
+                "length": pyunits.m,
+                "mass": pyunits.kg,
+                "amount": pyunits.mol,
+                "temperature": pyunits.K,
+            }
+        )
+
+
+class _LeachSolutionStateBlock(StateBlock):
+    def fix_initialization_states(self):
+        """
+        Fixes state variables for state blocks.
+
+        Returns:
+            None
+        """
+        # Fix state variables
+        fix_state_vars(self)
+
+        # Deactivate inherent reactions
+        for k in self:
+            if not self[k].config.defined_state:
+                self[k].h2o_concentration.deactivate()
+                self[k].hso4_dissociation.deactivate()
+
+
+@declare_process_block_class(
+    "LeachSolutionStateBlock", block_class=_LeachSolutionStateBlock
+)
+class LeachSolutionStateBlockData(StateBlockData):
+    def build(self):
+        super().build()
+
+        self.flow_vol = Var(
+            units=pyunits.L / pyunits.hour,
+            bounds=(1e-8, None),
+        )
+        self.conc_mass_comp = Var(
+            self.params.component_list,
+            units=pyunits.mg / pyunits.L,
+            bounds=(1e-10, None),
+        )
+        self.conc_mol_comp = Var(
+            self.params.component_list,
+            units=pyunits.mol / pyunits.L,
+            initialize=1e-5,
+            bounds=(1e-8, None),
+        )
+
+        # Concentration conversion constraint
+        @self.Constraint(self.params.component_list)
+        def molar_concentration_constraint(b, j):
+            return (
+                pyunits.convert(
+                    b.conc_mol_comp[j] * b.params.mw[j],
+                    to_units=pyunits.mg / pyunits.litre,
+                )
+                == b.conc_mass_comp[j]
+            )
+
+        if not self.config.defined_state:
+            # Concentration of H2O based on assumed density
+            self.h2o_concentration = Constraint(
+                expr=self.conc_mass_comp["H2O"] == 1e6 * pyunits.mg / pyunits.L
+            )
+            # Equilibrium for partial dissociation of HSO4
+            self.hso4_dissociation = Constraint(
+                expr=self.conc_mol_comp["HSO4"] * self.params.Ka2
+                == self.conc_mol_comp["H"] * self.conc_mol_comp["SO4"]
+            )
+
+    def get_material_flow_terms(self, p, j):
+        # Note conversion to mol/hour
+        if j == "H2O":
+            # Assume constant density of 1 kg/L
+            return self.flow_vol * self.params.dens_mol / self.params.mw[j]
+        else:
+            # Need to convert from moles to mass
+            return pyunits.convert(
+                self.flow_vol * self.conc_mass_comp[j] / self.params.mw[j],
+                to_units=pyunits.mol / pyunits.hour,
+            )
+
+    def get_material_flow_basis(self):
+        return MaterialFlowBasis.molar
+
+    def define_state_vars(self):
+        return {
+            "flow_vol": self.flow_vol,
+            "conc_mass_comp": self.conc_mass_comp,
+        }
+
+
+@pytest.mark.component
+@pytest.mark.solver
+def test_component_phase_w_inherent_rxns():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+
+    m.fs.properties = LeachSolutionParameters()
+
+    m.fs.unit = Mixer(
+        property_package=m.fs.properties,
+        material_balance_type=MaterialBalanceType.componentPhase,
+        energy_mixing_type=MixingType.none,
+        momentum_mixing_type=MomentumMixingType.none,
+    )
+
+    m.fs.unit.inlet_1.flow_vol[0].fix(10)
+    m.fs.unit.inlet_1.conc_mass_comp[0, "H2O"].fix(1e6 * pyunits.mg / pyunits.L)
+    m.fs.unit.inlet_1.conc_mass_comp[0, "H"].fix(57.54848 * pyunits.mg / pyunits.L)
+    m.fs.unit.inlet_1.conc_mass_comp[0, "HSO4"].fix(4117.798 * pyunits.mg / pyunits.L)
+    m.fs.unit.inlet_1.conc_mass_comp[0, "SO4"].fix(724.6539 * pyunits.mg / pyunits.L)
+
+    m.fs.unit.inlet_2.flow_vol[0].fix(10)
+    m.fs.unit.inlet_2.conc_mass_comp[0, "H2O"].fix(1e6 * pyunits.mg / pyunits.L)
+    m.fs.unit.inlet_2.conc_mass_comp[0, "H"].fix(57.54848 * pyunits.mg / pyunits.L)
+    m.fs.unit.inlet_2.conc_mass_comp[0, "HSO4"].fix(4117.798 * pyunits.mg / pyunits.L)
+    m.fs.unit.inlet_2.conc_mass_comp[0, "SO4"].fix(724.6539 * pyunits.mg / pyunits.L)
+
+    assert degrees_of_freedom(m) == 0
+    assert_units_consistent(m)
+
+    initializer = BlockTriangularizationInitializer()
+    initializer.initialize(m.fs.unit)
+
+    results = get_solver().solve(m)
+    assert check_optimal_termination(results)
+
+    assert initializer.summary[m.fs.unit]["status"] == InitializationStatus.Ok
+
+    assert value(m.fs.unit.outlet.flow_vol[0]) == pytest.approx(20, rel=1e-6)
+
+    assert value(m.fs.unit.outlet.conc_mass_comp[0, "H2O"]) == pytest.approx(
+        1e6, rel=1e-6
+    )
+    assert value(m.fs.unit.outlet.conc_mass_comp[0, "H"]) == pytest.approx(
+        57.54848, rel=1e-6
+    )
+    assert value(m.fs.unit.outlet.conc_mass_comp[0, "HSO4"]) == pytest.approx(
+        4117.798, rel=1e-6
+    )
+    assert value(m.fs.unit.outlet.conc_mass_comp[0, "SO4"]) == pytest.approx(
+        724.6539, rel=1e-6
+    )
+
+    assert value(m.fs.unit.inherent_reaction_extent[0, "Ka2"]) == pytest.approx(
+        0, abs=1e-6
+    )
+
+
+@pytest.mark.component
+@pytest.mark.solver
+def test_component_total_w_inherent_rxns():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+
+    m.fs.properties = LeachSolutionParameters()
+
+    m.fs.unit = Mixer(
+        property_package=m.fs.properties,
+        material_balance_type=MaterialBalanceType.componentTotal,
+        energy_mixing_type=MixingType.none,
+        momentum_mixing_type=MomentumMixingType.none,
+    )
+
+    m.fs.unit.inlet_1.flow_vol[0].fix(10)
+    m.fs.unit.inlet_1.conc_mass_comp[0, "H2O"].fix(1e6 * pyunits.mg / pyunits.L)
+    m.fs.unit.inlet_1.conc_mass_comp[0, "H"].fix(57.54848 * pyunits.mg / pyunits.L)
+    m.fs.unit.inlet_1.conc_mass_comp[0, "HSO4"].fix(4117.798 * pyunits.mg / pyunits.L)
+    m.fs.unit.inlet_1.conc_mass_comp[0, "SO4"].fix(724.6539 * pyunits.mg / pyunits.L)
+
+    m.fs.unit.inlet_2.flow_vol[0].fix(10)
+    m.fs.unit.inlet_2.conc_mass_comp[0, "H2O"].fix(1e6 * pyunits.mg / pyunits.L)
+    m.fs.unit.inlet_2.conc_mass_comp[0, "H"].fix(57.54848 * pyunits.mg / pyunits.L)
+    m.fs.unit.inlet_2.conc_mass_comp[0, "HSO4"].fix(4117.798 * pyunits.mg / pyunits.L)
+    m.fs.unit.inlet_2.conc_mass_comp[0, "SO4"].fix(724.6539 * pyunits.mg / pyunits.L)
+
+    assert degrees_of_freedom(m) == 0
+    assert_units_consistent(m)
+
+    initializer = BlockTriangularizationInitializer()
+    initializer.initialize(m.fs.unit)
+
+    results = get_solver().solve(m)
+    assert check_optimal_termination(results)
+
+    assert initializer.summary[m.fs.unit]["status"] == InitializationStatus.Ok
+
+    assert value(m.fs.unit.outlet.flow_vol[0]) == pytest.approx(20, rel=1e-6)
+
+    assert value(m.fs.unit.outlet.conc_mass_comp[0, "H2O"]) == pytest.approx(
+        1e6, rel=1e-6
+    )
+    assert value(m.fs.unit.outlet.conc_mass_comp[0, "H"]) == pytest.approx(
+        57.54848, rel=1e-6
+    )
+    assert value(m.fs.unit.outlet.conc_mass_comp[0, "HSO4"]) == pytest.approx(
+        4117.798, rel=1e-6
+    )
+    assert value(m.fs.unit.outlet.conc_mass_comp[0, "SO4"]) == pytest.approx(
+        724.6539, rel=1e-6
+    )
+
+    assert value(m.fs.unit.inherent_reaction_extent[0, "Ka2"]) == pytest.approx(
+        0, abs=1e-6
+    )
+
+
+@pytest.mark.component
+@pytest.mark.solver
+def test_total_w_inherent_rxns():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+
+    m.fs.properties = LeachSolutionParameters()
+
+    with pytest.raises(
+        ConfigurationError,
+        match="Cannot do total flow mixing with inherent reaction; "
+        "problem is under-constrained. Please use a different "
+        "mixing type.",
+    ):
+        m.fs.unit = Mixer(
+            property_package=m.fs.properties,
+            material_balance_type=MaterialBalanceType.total,
+            energy_mixing_type=MixingType.none,
+            momentum_mixing_type=MomentumMixingType.none,
+        )

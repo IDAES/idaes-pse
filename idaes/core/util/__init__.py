@@ -15,3 +15,4 @@
 
 from .model_serializer import to_json, from_json, StoreSpec
 from .tags import svg_tag, ModelTag, ModelTagGroup
+from .model_diagnostics import DiagnosticsToolbox

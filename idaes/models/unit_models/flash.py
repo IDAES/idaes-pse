@@ -140,7 +140,7 @@ not used for when ideal_separation == True.
 **default** - EnergySplittingType.equal_temperature.
 **Valid values:** {
 **EnergySplittingType.equal_temperature** - outlet temperatures equal inlet
-**EnergySplittingType.equal_molar_enthalpy** - oulet molar enthalpies equal
+**EnergySplittingType.equal_molar_enthalpy** - outlet molar enthalpies equal
 inlet,
 **EnergySplittingType.enthalpy_split** - apply split fractions to enthalpy
 flows.}""",
@@ -258,7 +258,7 @@ see property package for documentation.}""",
 
         split_map = {}
         for p in self.control_volume.properties_in.phase_list:
-            p_obj = self.config.property_package.get_phase(p)
+            p_obj = self.control_volume.properties_in.params.get_phase(p)
             if p_obj.is_vapor_phase():
                 # Vapor leaves through Vap outlet
                 split_map[p] = "Vap"

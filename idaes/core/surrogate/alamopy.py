@@ -86,8 +86,8 @@ supported_options = [
     "sinfcns",
     "cosfcns",
     "constant",
-    "grbfcns",
-    "rbfparam",
+    # "grbfcns",  # TODO: deprecated
+    # "rbfparam",  # TODO: deprecated
     "modeler",
     "builder",
     "backstepper",
@@ -282,7 +282,7 @@ class AlamoTrainer(SurrogateTrainer):
             description="Include cosine basis functions if True.",
         ),
     )
-    CONFIG.declare(
+    CONFIG.declare(  # TODO: deprecated option
         "grbfcns",
         ConfigValue(
             default=None,
@@ -290,7 +290,7 @@ class AlamoTrainer(SurrogateTrainer):
             description="Include Gaussian radial basis functions if True.",
         ),
     )
-    CONFIG.declare(
+    CONFIG.declare(  # TODO: deprecated option
         "rbfparam",
         ConfigValue(
             default=None,
@@ -668,6 +668,15 @@ class AlamoTrainer(SurrogateTrainer):
     # "valid" bounds for the surrogate
     def __init__(self, **settings):
         super().__init__(**settings)
+
+        # TODO: Deprecation warnings for RBF options
+        if self.config.grbfcns is not None or self.config.rbfparam is not None:
+            raise ConfigurationError(
+                "Support for radial basis functions in the ALAMOpy wrapper have been "
+                "deprecated due to limitations in the current implementation. "
+                "Pull requests are welcome to address this, otherwise we recommend using "
+                "Pysmo which includes support for radial basis functions."
+            )
 
         self._temp_context = None
         self._almfile = None

@@ -2395,7 +2395,7 @@ change.
                     "method": None,
                     "units": obj.derived_units.ENTROPY_MASS,
                 },
-                "speed_sound_phase": {
+                "speed_sound": {
                     "method": None,
                     "units": obj.derived_units.VELOCITY,
                 },

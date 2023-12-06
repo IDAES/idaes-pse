@@ -150,7 +150,7 @@ class HX1DInitializer(SingleControlVolumeUnitInitializer):
         # Solve unit with fixed heat duty
         # Guess heat duty based on 1/4 of maximum driving force
         hot_side_units = (
-            model.config.hot_side.property_package.get_metadata().get_derived_units
+            model.hot_side.config.property_package.get_metadata().get_derived_units
         )
         if duty is None:
             duty = (
@@ -613,7 +613,7 @@ cold side flows from 1 to 0""",
         self._make_performance()
 
         hot_side_units = (
-            self.config.hot_side.property_package.get_metadata().get_derived_units
+            self.hot_side.config.property_package.get_metadata().get_derived_units
         )
         q_units = hot_side_units("power") / hot_side_units("length")
 
@@ -632,7 +632,7 @@ cold side flows from 1 to 0""",
 
     def _make_geometry(self):
         hot_side_units = (
-            self.config.hot_side.property_package.get_metadata().get_derived_units
+            self.hot_side.config.property_package.get_metadata().get_derived_units
         )
 
         self.area = Var(
@@ -663,7 +663,7 @@ cold side flows from 1 to 0""",
             None
         """
         hot_side_units = (
-            self.config.hot_side.property_package.get_metadata().get_derived_units
+            self.hot_side.config.property_package.get_metadata().get_derived_units
         )
 
         # Performance variables
@@ -771,10 +771,10 @@ cold side flows from 1 to 0""",
         # Solve unit with fixed heat duty
         # Guess heat duty based on 1/4 of maximum driving force
         hot_side_units = (
-            self.config.hot_side.property_package.get_metadata().get_derived_units
+            self.hot_side.config.property_package.get_metadata().get_derived_units
         )
         cold_side_units = (
-            self.config.cold_side.property_package.get_metadata().get_derived_units
+            self.cold_side.config.property_package.get_metadata().get_derived_units
         )
         if duty is None:
             duty = value(

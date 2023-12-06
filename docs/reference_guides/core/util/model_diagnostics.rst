@@ -3,20 +3,18 @@ Model Diagnostic Functions
 
 The IDAES toolset contains a number of utility functions which can be useful for identifying modeling issues and debugging solver issues.
 
-.. contents:: Contents
-    :depth: 2
+.. toctree::
+    :maxdepth: 1
+    
+    diagnostics/diagnostics_toolbox
+    diagnostics/svd_toolbox
+    diagnostics/degeneracy_hunter
+    diagnostics/degeneracy_hunter_legacy
 
-Degeneracy Hunter
-^^^^^^^^^^^^^^^^^
-
-.. autoclass:: idaes.core.util.model_diagnostics.DegeneracyHunter
-    :members:
-
-
-Available Methods
-^^^^^^^^^^^^^^^^^
+Other Methods
+^^^^^^^^^^^^^
 
 .. automodule:: idaes.core.util.model_diagnostics
-    :exclude-members: DegeneracyHunter
+    :exclude-members: DegeneracyHunter, DiagnosticsToolbox, SVDToolbox, DegeneracyHunter2, svd_dense, svd_sparse
     :members:
 
