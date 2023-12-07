@@ -15,7 +15,7 @@
 This module contains a collection of tools for diagnosing modeling issues.
 """
 
-__author__ = "Alexander Dowling, Douglas Allan, Andrew Lee"
+__author__ = "Alexander Dowling, Douglas Allan, Andrew Lee, Robby Parker, Ben Kneuven"
 
 from operator import itemgetter
 import sys
@@ -36,6 +36,7 @@ from pyomo.environ import (
     check_optimal_termination,
     ConcreteModel,
     Constraint,
+    Expression,
     Objective,
     Param,
     Set,
@@ -273,6 +274,14 @@ CONFIG.declare(
         default=True,
         domain=bool,
         description="If False, warnings will not be generated for things like log(x) with x >= 0",
+    ),
+)
+CONFIG.declare(
+    "parallel_component_tolerance",
+    ConfigValue(
+        default=1e-4,
+        domain=float,
+        description="Tolerance for identifying near-parallel Jacobian rows/columns",
     ),
 )
 
@@ -914,6 +923,70 @@ class DiagnosticsToolbox:
             footer="=",
         )
 
+    def display_near_parallel_constraints(self, stream=None):
+        """
+        Display near-parallel (duplicate) constraints in model.
+
+        Args:
+            stream: I/O object to write report to (default = stdout)
+
+        Returns:
+            None
+
+        """
+        if stream is None:
+            stream = sys.stdout
+
+        parallel = [
+            f"{i[0].name}, {i[1].name}"
+            for i in check_parallel_jacobian(
+                model=self._model,
+                tolerance=self.config.parallel_component_tolerance,
+                direction="row",
+            )
+        ]
+
+        # Write the output
+        _write_report_section(
+            stream=stream,
+            lines_list=parallel,
+            title=f"The following pairs of constraints are nearly parallel:",
+            header="=",
+            footer="=",
+        )
+
+    def display_near_parallel_variables(self, stream=None):
+        """
+        Display near-parallel (duplicate) variables in model.
+
+        Args:
+            stream: I/O object to write report to (default = stdout)
+
+        Returns:
+            None
+
+        """
+        if stream is None:
+            stream = sys.stdout
+
+        parallel = [
+            f"{i[0].name}, {i[1].name}"
+            for i in check_parallel_jacobian(
+                model=self._model,
+                tolerance=self.config.parallel_component_tolerance,
+                direction="column",
+            )
+        ]
+
+        # Write the output
+        _write_report_section(
+            stream=stream,
+            lines_list=parallel,
+            title=f"The following pairs of variables are nearly parallel:",
+            header="=",
+            footer="=",
+        )
+
     # TODO: Block triangularization analysis
     # Number and size of blocks, polynomial degree of 1x1 blocks, simple pivot check of moderate sized sub-blocks?
 
@@ -1330,7 +1403,8 @@ class DiagnosticsToolbox:
             lines_list=next_steps,
             title="Suggested next steps:",
             line_if_empty=f"If you still have issues converging your model consider:\n"
-            f"{TAB*2}prepare_svd_toolbox()\n{TAB*2}prepare_degeneracy_hunter()",
+            f"{TAB*2}display_near_parallel_constraints()\n{TAB*2}display_near_parallel_variables()"
+            f"\n{TAB*2}prepare_degeneracy_hunter()\n{TAB*2}prepare_svd_toolbox()",
             footer="=",
         )
 
@@ -2093,6 +2167,9 @@ class DegeneracyHunter2:
             def eq_degenerate(m_dh, v):
                 # Find the columns with non-zero entries
                 C = find(J[:, v])[0]
+                if len(C) == 0:
+                    # Catch for edge-case of trivial constraint 0==0
+                    return Constraint.Skip
                 return sum(J[c, v] * m_dh.nu[c] for c in C) == 0
 
         else:
@@ -3056,6 +3133,209 @@ def ipopt_solve_halt_on_error(model, options=None):
     return solver.solve(
         model, tee=True, symbolic_solver_labels=True, export_defined_variables=False
     )
+
+
+def check_parallel_jacobian(model, tolerance: float = 1e-4, direction: str = "row"):
+    """
+    Check for near-parallel rows or columns in the Jacobian.
+
+    Near-parallel rows or columns indicate a potential degeneracy in the model,
+    as this means that the associated constraints or variables are (near)
+    duplicates of each other.
+
+    Args:
+        model: model to be analysed
+        tolerance: tolerance to use to determine if constraints/variables are parallel
+        direction: 'row' (default, constraints) or 'column' (variables)
+
+    Returns:
+        list of 2-tuples containing parallel Pyomo components
+
+    """
+    # Thanks to Robby Parker for the sparse matrix implementation and
+    # significant performance improvements
+    jac, nlp = get_jacobian(model, scaled=False)
+
+    # Get list of row/column names
+    if direction == "row":
+        comp_list = nlp.get_pyomo_constraints()
+    elif direction == "column":
+        comp_list = nlp.get_pyomo_variables()
+    else:
+        raise ValueError(
+            f"Unrecognised value for direction ({direction})."
+            "Must be 'row' or 'column'."
+        )
+
+    parallel = []
+
+    if direction == "row":
+        spjac = jac.tocsr()
+        # Make everything a column vector (CSC) for consistency
+        vectors = [spjac[idx, :].transpose() for idx in range(len(comp_list))]
+    else:
+        spjac = jac.tocsc()
+        vectors = [spjac[:, idx] for idx in range(len(comp_list))]
+
+    vectors_by_nz = {}
+    for u, comp in zip(vectors, comp_list):
+        maxval = max(np.abs(u.data))
+        nz = tuple(
+            sorted(
+                idx
+                for idx, val in zip(u.indices, u.data)
+                if abs(val) >= tolerance and abs(val) / maxval >= tolerance
+            )
+        )
+        if nz in vectors_by_nz:
+            vectors_by_nz[nz].append((u, comp))
+        else:
+            vectors_by_nz[nz] = [(u, comp)]
+
+    for vectors in vectors_by_nz.values():
+        for uidx, (u, ucomp) in enumerate(vectors):
+            unorm = norm(u, ord="fro")
+            for v, vcomp in vectors[uidx + 1 :]:
+                vnorm = norm(v, ord="fro")
+
+                # Not sure if this matters, but explicitly do row-vector
+                # times column vector
+                a = u.transpose().dot(v)
+                assert a.shape == (1, 1)
+
+                if abs(abs(a[0, 0]) - unorm * vnorm) <= tolerance:
+                    parallel.append((ucomp, vcomp))
+
+    return parallel
+
+
+def check_ill_conditioning(
+    model,
+    target_feasibility_tol: float = 1e-06,
+    ratio_cutoff: float = 1e-04,
+    direction: str = "row",
+):
+    """
+    Finds constraints (rows) or variables (columns) in the model Jacobian that may be contributing
+    to ill conditioning.
+
+    Args:
+        model: model to be analysed
+        target_feasibility_tol: target tolerance for solving ill conditioning problem
+        ratio_cutoff: cut-off for reporting ill conditioning
+        direction: 'row' (default, constraints) or 'column' (variables)
+
+    Returns:
+        list of strings reporting ill-conditioned variables/constraints and their associated y values
+    """
+    # Thanks to B. Knueven for this implementation
+    jac, nlp = get_jacobian(model, scaled=False)
+
+    inverse_target_kappa = 1e-16 / target_feasibility_tol
+
+    # Get list of row/column names
+    con_list = [i.name for i in nlp.get_pyomo_constraints()]
+    var_list = [i.name for i in nlp.get_pyomo_variables()]
+
+    # Build test problem
+    inf_prob = ConcreteModel()
+    inf_prob.con_set = Set(initialize=con_list)
+    inf_prob.var_set = Set(initialize=var_list)
+
+    if direction == "row":
+        set1 = inf_prob.con_set
+        set2 = inf_prob.var_set
+    elif direction == "column":
+        set2 = inf_prob.con_set
+        set1 = inf_prob.var_set
+    else:
+        raise ValueError(
+            f"Unrecognised value for direction ({direction})."
+            "Must be 'row' or 'column'."
+        )
+
+    inf_prob.y_pos = Var(set1, initialize=0, bounds=(0, None))
+    inf_prob.y_neg = Var(set1, initialize=0, bounds=(0, None))
+    inf_prob.y = Expression(set1, rule=lambda m, i: m.y_pos[i] - m.y_neg[i])
+
+    inf_prob.res_pos = Var(set2, initialize=1e-2, bounds=(0, None))
+    inf_prob.res_neg = Var(set2, initialize=1e-2, bounds=(0, None))
+    inf_prob.res = Expression(set2, rule=lambda m, i: m.res_pos[i] - m.res_neg[i])
+
+    def b_rule(b, i):
+        lhs = 0.0
+
+        for j in set1:
+            if direction == "row":
+                iidx = var_list.index(i)
+                jidx = con_list.index(j)
+                jac_entry = jac[jidx, iidx]
+            else:
+                jidx = var_list.index(j)
+                iidx = con_list.index(i)
+                jac_entry = jac[iidx, jidx]
+
+            if jac_entry != 0:
+                lhs += jac_entry * b.y[j]
+
+        return lhs == b.res[i]
+
+    inf_prob.by = Constraint(set2, rule=b_rule)
+
+    # Normalization of y
+    inf_prob.normalize = Constraint(
+        expr=1 == sum(inf_prob.y_pos.values()) - sum(inf_prob.y_neg.values())
+    )
+
+    inf_prob.y_norm = Var()
+    inf_prob.y_norm_constr = Constraint(
+        expr=inf_prob.y_norm
+        == sum(inf_prob.y_pos.values()) + sum(inf_prob.y_neg.values())
+    )
+
+    inf_prob.res_norm = Var()
+    inf_prob.res_norm_constr = Constraint(
+        expr=inf_prob.res_norm
+        == sum(inf_prob.res_pos.values()) + sum(inf_prob.res_neg.values())
+    )
+
+    # Objective -- minimize residual
+    inf_prob.min_res = Objective(expr=inf_prob.res_norm)
+
+    solver = SolverFactory("cbc")
+
+    # tighten tolerances
+    solver.options["primalT"] = inverse_target_kappa
+    solver.options["dualT"] = inverse_target_kappa
+
+    solver.solve(inf_prob, tee=False)
+
+    result_norm = inf_prob.res_norm.value
+    if result_norm >= inverse_target_kappa:
+        return []
+
+    # find an equivalent solution which minimizes y_norm
+    inf_prob.min_res.deactivate()
+    inf_prob.res_norm.fix()
+
+    inf_prob.min_y = Objective(expr=inf_prob.y_norm)
+
+    solver.solve(inf_prob, tee=False)
+
+    ill_cond = []
+    slist = sorted(
+        inf_prob.y, key=lambda dict_key: abs(value(inf_prob.y[dict_key])), reverse=True
+    )
+    cutoff = None
+    for i in slist:
+        if cutoff is None:
+            cutoff = abs(value(inf_prob.y[i])) * ratio_cutoff
+        val = value(inf_prob.y[i])
+        if abs(val) < cutoff:
+            break
+        ill_cond.append(f"{i}: {val}")
+
+    return ill_cond
 
 
 # -------------------------------------------------------------------------------------------
