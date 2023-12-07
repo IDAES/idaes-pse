@@ -1451,8 +1451,8 @@ class SVDToolbox:
         )
 
         # Get list of equality constraint and variable names
-        self.eq_con_list = self.nlp.get_pyomo_equality_constraints()
-        self.var_list = self.nlp.get_pyomo_variables()
+        self._eq_con_list = self.nlp.get_pyomo_equality_constraints()
+        self._var_list = self.nlp.get_pyomo_variables()
 
         if self.jacobian.shape[0] < 2:
             raise ValueError(
@@ -1588,11 +1588,11 @@ class SVDToolbox:
             stream.write(f"{TAB}Smallest Singular Value {e}:\n\n")
             stream.write(f"{2 * TAB}Variables:\n\n")
             for v in np.where(abs(self.v[:, e - 1]) > tol)[0]:
-                stream.write(f"{3 * TAB}{self.var_list[v].name}\n")
+                stream.write(f"{3 * TAB}{self._var_list[v].name}\n")
 
             stream.write(f"\n{2 * TAB}Constraints:\n\n")
             for c in np.where(abs(self.u[:, e - 1]) > tol)[0]:
-                stream.write(f"{3 * TAB}{self.eq_con_list[c].name}\n")
+                stream.write(f"{3 * TAB}{self._eq_con_list[c].name}\n")
             stream.write("\n")
 
         stream.write("=" * MAX_STR_LENGTH + "\n")
@@ -1632,7 +1632,7 @@ class SVDToolbox:
         cons_w_var = []
         for r in nonzeros[0]:
             cons_w_var.append(
-                f"{self.eq_con_list[r].name}: {self.jacobian[(r, var_idx)]:.3e}"
+                f"{self._eq_con_list[r].name}: {self.jacobian[(r, var_idx)]:.3e}"
             )
 
         # Write the output
@@ -1679,7 +1679,7 @@ class SVDToolbox:
         vars_in_cons = []
         for c in nonzeros[1]:
             vars_in_cons.append(
-                f"{self.var_list[c].name}: {self.jacobian[(con_idx, c)]:.3e}"
+                f"{self._var_list[c].name}: {self.jacobian[(con_idx, c)]:.3e}"
             )
 
         # Write the output
@@ -2274,8 +2274,8 @@ class DegeneracyHunter:
             self.jac_eq = get_jacobian(self.block, equality_constraints_only=True)[0]
 
             # Create a list of equality constraint names
-            self.eq_con_list = self.nlp.get_pyomo_equality_constraints()
-            self.var_list = self.nlp.get_pyomo_variables()
+            self._eq_con_list = self.nlp.get_pyomo_equality_constraints()
+            self._var_list = self.nlp.get_pyomo_variables()
 
             self.candidate_eqns = None
 
@@ -2286,7 +2286,7 @@ class DegeneracyHunter:
 
             # # TODO: Need to refactor, document, and test support for Jacobian
             # self.jac_eq = block_or_jac
-            # self.eq_con_list = None
+            # self._eq_con_list = None
 
         else:
             raise TypeError("Check the type for 'block_or_jac'")
@@ -2806,11 +2806,11 @@ class DegeneracyHunter:
             )
         print("Column:    Variable")
         for i in np.where(abs(self.v[:, n_calc - 1]) > tol)[0]:
-            print(str(i) + ": " + self.var_list[i].name)
+            print(str(i) + ": " + self._var_list[i].name)
         print("")
         print("Row:    Constraint")
         for i in np.where(abs(self.u[:, n_calc - 1]) > tol)[0]:
-            print(str(i) + ": " + self.eq_con_list[i].name)
+            print(str(i) + ": " + self._eq_con_list[i].name)
 
     def find_candidate_equations(self, verbose=True, tee=False):
         """
@@ -2835,7 +2835,7 @@ class DegeneracyHunter:
         if verbose:
             print("Solving MILP model...")
         ce, ds = self._find_candidate_eqs(
-            self.candidates_milp, self.solver, self.eq_con_list, tee
+            self.candidates_milp, self.solver, self._eq_con_list, tee
         )
 
         if ce is not None:
@@ -2876,7 +2876,7 @@ class DegeneracyHunter:
 
                 # Check if equation 'c' is a major element of an IDS
                 ids_ = self._check_candidate_ids(
-                    self.dh_milp, self.solver, c, self.eq_con_list, tee
+                    self.dh_milp, self.solver, c, self._eq_con_list, tee
                 )
 
                 if ids_ is not None:
