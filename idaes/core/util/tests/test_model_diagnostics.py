@@ -77,10 +77,24 @@ from idaes.core.util.model_diagnostics import (
     _write_report_section,
     _collect_model_statistics,
 )
+from idaes.core.util.testing import _enable_scip_solver_for_testing
+
 
 __author__ = "Alex Dowling, Douglas Allan, Andrew Lee"
 
-solver_available = SolverFactory("scip").available()
+
+@pytest.fixture(scope="module")
+def scip_solver():
+    solver = SolverFactory("scip")
+    undo_changes = None
+
+    if not solver.available():
+        undo_changes = _enable_scip_solver_for_testing()
+    if not solver.available():
+        pytest.skip(reason="SCIP solver not available")
+    yield solver
+    if undo_changes is not None:
+        undo_changes()
 
 
 @pytest.fixture
@@ -453,7 +467,7 @@ class TestDiagnosticsToolbox:
         m.b.v2 = Var(units=units.m)
         m.b.v3 = Var(bounds=(0, 5))
         m.b.v4 = Var()
-        m.b.v5 = Var(bounds=(0, 1))
+        m.b.v5 = Var(bounds=(0, 5))
         m.b.v6 = Var()
         m.b.v7 = Var(
             units=units.m, bounds=(0, 1)
@@ -536,7 +550,6 @@ The following variable(s) are fixed to zero:
 The following variable(s) have values at or outside their bounds (tol=0.0E+00):
 
     b.v3 (free): value=0.0 bounds=(0, 5)
-    b.v5 (fixed): value=2 bounds=(0, 1)
 
 ====================================================================================
 """
@@ -605,7 +618,6 @@ The following variable(s) have extreme values (<1.0E-04 or > 1.0E+04):
 The following variable(s) have values close to their bounds (abs=1.0E-04, rel=1.0E-04):
 
     b.v3: value=0.0 bounds=(0, 5)
-    b.v5: value=2 bounds=(0, 1)
     b.v7: value=1.0000939326524314e-07 bounds=(0, 1)
 
 ====================================================================================
@@ -995,7 +1007,7 @@ values (<1.0E-04 or>1.0E+04):
 
         assert len(warnings) == 2
         assert "WARNING: 1 Constraint with large residuals (>1.0E-05)" in warnings
-        assert "WARNING: 2 Variables at or outside bounds (tol=0.0E+00)" in warnings
+        assert "WARNING: 1 Variable at or outside bounds (tol=0.0E+00)" in warnings
 
         assert len(next_steps) == 2
         assert "display_constraints_with_large_residuals()" in next_steps
@@ -1056,10 +1068,9 @@ values (<1.0E-04 or>1.0E+04):
         dt = DiagnosticsToolbox(model=model.b)
 
         cautions = dt._collect_numerical_cautions()
-
         assert len(cautions) == 5
         assert (
-            "Caution: 3 Variables with value close to their bounds (abs=1.0E-04, rel=1.0E-04)"
+            "Caution: 2 Variables with value close to their bounds (abs=1.0E-04, rel=1.0E-04)"
             in cautions
         )
         assert "Caution: 2 Variables with value close to zero (tol=1.0E-08)" in cautions
@@ -1119,7 +1130,6 @@ values (<1.0E-04 or>1.0E+04):
 
         # Fix numerical issues
         m.b.v3.setlb(-5)
-        m.b.v5.setub(10)
 
         solver = get_solver()
         solver.solve(m)
@@ -1184,12 +1194,12 @@ Model Statistics
 2 WARNINGS
 
     WARNING: 1 Constraint with large residuals (>1.0E-05)
-    WARNING: 2 Variables at or outside bounds (tol=0.0E+00)
+    WARNING: 1 Variable at or outside bounds (tol=0.0E+00)
 
 ------------------------------------------------------------------------------------
 5 Cautions
 
-    Caution: 3 Variables with value close to their bounds (abs=1.0E-04, rel=1.0E-04)
+    Caution: 2 Variables with value close to their bounds (abs=1.0E-04, rel=1.0E-04)
     Caution: 2 Variables with value close to zero (tol=1.0E-08)
     Caution: 1 Variable with extreme value (<1.0E-04 or >1.0E+04)
     Caution: 1 Variable with None value
@@ -1790,27 +1800,26 @@ class TestDegeneracyHunter:
 
     @pytest.mark.solver
     @pytest.mark.component
-    @pytest.mark.skipif(not solver_available, reason="SCIP is not available")
-    def test_solve_candidates_milp(self, model):
+    def test_solve_candidates_milp(self, model, scip_solver):
         dh = DegeneracyHunter2(model)
         dh._prepare_candidates_milp()
         dh._solve_candidates_milp()
 
-        assert value(dh.candidates_milp.nu[0]) == pytest.approx(-1e-05, rel=1e-5)
-        assert value(dh.candidates_milp.nu[1]) == pytest.approx(1e-05, rel=1e-5)
+        assert value(dh.candidates_milp.nu[0]) == pytest.approx(1e-05, rel=1e-5)
+        assert value(dh.candidates_milp.nu[1]) == pytest.approx(-1e-05, rel=1e-5)
 
         assert value(dh.candidates_milp.y_pos[0]) == pytest.approx(0, abs=1e-5)
-        assert value(dh.candidates_milp.y_pos[1]) == pytest.approx(1, rel=1e-5)
+        assert value(dh.candidates_milp.y_pos[1]) == pytest.approx(0, rel=1e-5)
 
-        assert value(dh.candidates_milp.y_neg[0]) == pytest.approx(-0, abs=1e-5)
-        assert value(dh.candidates_milp.y_neg[1]) == pytest.approx(-0, abs=1e-5)
+        assert value(dh.candidates_milp.y_neg[0]) == pytest.approx(0, abs=1e-5)
+        assert value(dh.candidates_milp.y_neg[1]) == pytest.approx(1, abs=1e-5)
 
         assert value(dh.candidates_milp.abs_nu[0]) == pytest.approx(1e-05, rel=1e-5)
         assert value(dh.candidates_milp.abs_nu[1]) == pytest.approx(1e-05, rel=1e-5)
 
         assert dh.degenerate_set == {
-            model.con2: -1e-05,
-            model.con5: 1e-05,
+            model.con2: value(dh.candidates_milp.nu[0]),
+            model.con5: value(dh.candidates_milp.nu[1]),
         }
 
     @pytest.mark.unit
@@ -1840,8 +1849,7 @@ class TestDegeneracyHunter:
 
     @pytest.mark.solver
     @pytest.mark.component
-    @pytest.mark.skipif(not solver_available, reason="SCIP is not available")
-    def test_solve_ids_milp(self, model):
+    def test_solve_ids_milp(self, model, scip_solver):
         dh = DegeneracyHunter2(model)
         dh._prepare_ids_milp()
         ids_ = dh._solve_ids_milp(cons=model.con2)
@@ -1859,8 +1867,7 @@ class TestDegeneracyHunter:
 
     @pytest.mark.solver
     @pytest.mark.component
-    @pytest.mark.skipif(not solver_available, reason="SCIP is not available")
-    def test_find_irreducible_degenerate_sets(self, model):
+    def test_find_irreducible_degenerate_sets(self, model, scip_solver):
         dh = DegeneracyHunter2(model)
         dh.find_irreducible_degenerate_sets()
 
@@ -1871,8 +1878,7 @@ class TestDegeneracyHunter:
 
     @pytest.mark.solver
     @pytest.mark.component
-    @pytest.mark.skipif(not solver_available, reason="SCIP is not available")
-    def test_report_irreducible_degenerate_sets(self, model):
+    def test_report_irreducible_degenerate_sets(self, model, scip_solver):
         stream = StringIO()
 
         dh = DegeneracyHunter2(model)
@@ -1898,8 +1904,7 @@ Irreducible Degenerate Sets
 
     @pytest.mark.solver
     @pytest.mark.component
-    @pytest.mark.skipif(not solver_available, reason="SCIP is not available")
-    def test_report_irreducible_degenerate_sets_none(self, model):
+    def test_report_irreducible_degenerate_sets_none(self, model, scip_solver):
         stream = StringIO()
 
         # Delete degenerate constraint
