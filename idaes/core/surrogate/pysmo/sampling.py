@@ -1125,7 +1125,6 @@ class HammersleySampling(SamplingMethods):
         print("Sampling type: ", self.sampling_type, "\n")
 
         if self.sampling_type == "selection":
-
             if isinstance(data_input, (pd.DataFrame, np.ndarray)):
                 self.selection_columns_preprocessing(data_input, xlabels, ylabels)
             else:
@@ -1530,6 +1529,204 @@ class CVTSampling(SamplingMethods):
 
         unique_sample_points = self.sample_point_selection(
             self.data, sample_points, self.sampling_type
+        )
+        if len(self.data_headers) > 0 and self.df_flag:
+            unique_sample_points = pd.DataFrame(
+                unique_sample_points, columns=self.data_headers
+            )
+        return unique_sample_points
+
+
+class CustomSampling(SamplingMethods):
+    """
+    A class that performs custom sampling per dimension as specified by the user. The distribution to be applied per dimension must be specified by the user.
+
+    - The distribution to be used per variable needs to be specified in a list.
+
+    To use: call class with inputs, and then ``sample_points`` function
+
+    **Example:**
+
+    .. code-block:: python
+
+        # To select 50 samples on a (10 x 5) grid in a 2D space:
+        >>> b = rbf.UniformSampling(data, [10, 5], sampling_type="selection")
+        >>> samples = b.sample_points()
+
+    """
+
+    def __init__(
+        self,
+        data_input,
+        number_of_samples=None,
+        list_of_distributions=None,
+        sampling_type=None,
+        xlabels=None,
+        ylabels=None,
+    ):
+        """
+        Initialization of CustomSampling class. Three inputs are required.
+
+        Args:
+            data_input (NumPy Array, Pandas Dataframe or list) :  The input data set or range to be sampled.
+
+                - When the aim is to select a set of samples from an existing dataset, the dataset must be a NumPy Array or a Pandas Dataframe and **sampling_type** option must be set to "selection". A single output variable (y) is assumed to be supplied in the last column if **xlabels** and **ylabels** are not supplied.
+                - When the aim is to generate a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and **sampling_type** option must be set to "creation". It is assumed that the range contains no output variable information in this case.
+
+            number_of_samples(int): The number of samples to be generated. Should be a positive integer less than or equal to the number of entries (rows) in **data_input**.
+            list_of_distributions (list): The list containing the probability distribution for each variable. We currently support random, uniform and normal(i.e. Gaussian) distributions.
+            sampling_type (str) : Option which determines whether the algorithm selects samples from an existing dataset ("selection") or attempts to generate sample from a supplied range ("creation"). Default is "creation".
+
+        Keyword Args:
+            xlabels (list): List of column names (if **data_input** is a dataframe) or column numbers (if **data_input** is an array) for the independent/input  variables.  Only used in "selection" mode. Default is None.
+            ylabels (list): List of column names (if **data_input** is a dataframe) or column numbers (if **data_input** is an array) for the dependent/output variables. Only used in "selection" mode. Default is None.
+
+        Returns:
+            **self** function containing the input information
+
+        Raises:
+            ValueError: The **data_input** is the wrong type
+
+            ValueError: When a non-implemented distribution is supplied in list_of_distributions
+
+            IndexError: When invalid column names are supplied in **xlabels** or **ylabels**
+
+            Exception: When the **number_of_samples** is invalid (not an integer, too large, zero, negative)
+
+
+        """
+        if sampling_type is None:
+            sampling_type = "creation"
+            self.sampling_type = sampling_type
+            print("Creation-type sampling will be used.")
+        elif not isinstance(sampling_type, str):
+            raise Exception("Invalid sampling type entry. Must be of type <str>.")
+        elif (sampling_type.lower() == "creation") or (
+            sampling_type.lower() == "selection"
+        ):
+            sampling_type = sampling_type.lower()
+            self.sampling_type = sampling_type
+        else:
+            raise Exception(
+                'Invalid sampling type requirement entered. Enter "creation" for sampling from a range or "selection" for selecting samples from a dataset.'
+            )
+        print("Sampling type: ", self.sampling_type, "\n")
+
+        if self.sampling_type == "selection":
+            if isinstance(data_input, (pd.DataFrame, np.ndarray)):
+                self.selection_columns_preprocessing(data_input, xlabels, ylabels)
+            else:
+                raise ValueError(
+                    'Pandas dataframe or numpy array required for sampling_type "selection."'
+                )
+
+            # Catch potential errors in number_of_samples
+            if number_of_samples is None:
+                print(
+                    "\nNo entry for number of samples to be generated. The default value of 5 will be used."
+                )
+                number_of_samples = 5
+            elif number_of_samples > self.data.shape[0]:
+                raise Exception(
+                    "LHS sample size cannot be greater than number of samples in the input data set"
+                )
+            elif not isinstance(number_of_samples, int):
+                raise Exception("number_of_samples must be an integer.")
+            elif number_of_samples <= 0:
+                raise Exception("number_of_samples must a positive, non-zero integer.")
+            self.number_of_samples = number_of_samples
+
+        elif self.sampling_type == "creation":
+            if not isinstance(data_input, list):
+                raise ValueError(
+                    'List entry of two elements expected for sampling_type "creation."'
+                )
+            elif len(data_input) != 2:
+                raise Exception("data_input must contain two lists of equal lengths.")
+            elif not isinstance(data_input[0], list) or not isinstance(
+                data_input[1], list
+            ):
+                raise Exception("data_input must contain two lists of equal lengths.")
+            elif len(data_input[0]) != len(data_input[1]):
+                raise Exception("data_input must contain two lists of equal lengths.")
+            elif data_input[0] == data_input[1]:
+                raise Exception("Invalid entry: both lists are equal.")
+            else:
+                bounds_array = np.zeros(
+                    (
+                        2,
+                        len(data_input[0]),
+                    )
+                )
+                bounds_array[0, :] = np.array(data_input[0])
+                bounds_array[1, :] = np.array(data_input[1])
+                data_headers = []
+            self.data = bounds_array
+            self.data_headers = data_headers
+
+            # Catch potential errors in number_of_samples
+            if number_of_samples is None:
+                print(
+                    "\nNo entry for number of samples to be generated. The default value of 5 will be used."
+                )
+                number_of_samples = 5
+            elif not isinstance(number_of_samples, int):
+                raise Exception("number_of_samples must be an integer.")
+            elif number_of_samples <= 0:
+                raise Exception("number_of_samples must a positive, non-zero integer.")
+            self.number_of_samples = number_of_samples
+            self.x_data = bounds_array  # Only x data will be present in this case
+
+        # Check that list_of_distributions is a list, list length is correct and all list values are strings
+        if list_of_distributions is None:
+            raise ValueError("list_of_distributions cannot be empty.")
+        if not isinstance(list_of_distributions, list):
+            raise TypeError("list_of_distributions: list required.")
+        if len(list_of_distributions) != self.x_data.shape[1]:
+            raise ValueError(
+                "Length of list_of_distributions must equal the number of variables."
+            )
+        if all(isinstance(q, str) for q in list_of_distributions) is False:
+            raise TypeError("All values in list must be strings")
+        if not all(
+            q.lower() in ["random", "normal", "uniform"] for q in list_of_distributions
+        ):
+            raise ValueError(
+                "list_of_distributions only supports 'random', 'gaussian' and 'uniform' sampling options."
+            )
+        self.dist_vector = list_of_distributions
+
+    def sample_points(self):
+        points_spread = []
+        for i in self.dist_vector:
+            if i.lower() in ["uniform", "random"]:
+                dist = getattr(np.random.default_rng(), "uniform")
+                var_values = dist(size=self.number_of_samples)
+                points_spread.append(var_values)
+            elif i.lower() == "normal":
+                dist = getattr(np.random.default_rng(), "normal")
+                var_values = dist(loc=0.5, scale=1 / 6, size=self.number_of_samples)
+                if sum(
+                    [1 for i in range(0, var_values.shape[0]) if var_values[i] > 1]
+                ) + sum(
+                    [1 for i in range(0, var_values.shape[0]) if var_values[i] < 0]
+                ):
+                    warnings.warn(
+                        "Points adjusted to remain within specified Gaussian bounds."
+                    )
+                var_values_truncated = np.array(
+                    [1.0 if j > 1.0 else 0.0 if j < 0.0 else j for j in var_values]
+                )
+                points_spread.append(var_values_truncated)
+            else:
+                raise ValueError(
+                    "list_of_distributions only supports 'random', 'normal' and 'uniform' sampling options."
+                )
+        samples_array = np.asarray(points_spread).T
+
+        # Scale input data, then find data points closest in sample space. Unscale before returning points
+        unique_sample_points = self.sample_point_selection(
+            self.data, samples_array, self.sampling_type
         )
         if len(self.data_headers) > 0 and self.df_flag:
             unique_sample_points = pd.DataFrame(
