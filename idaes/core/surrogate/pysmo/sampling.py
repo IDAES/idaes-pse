@@ -1696,7 +1696,6 @@ class CustomSampling(SamplingMethods):
             )
         self.dist_vector = list_of_distributions
 
-
     def generate_from_dist(self, dist_name):
         if dist_name.lower() in ["uniform", "random"]:
             dist = getattr(np.random.default_rng(), dist_name.lower())
@@ -1707,9 +1706,7 @@ class CustomSampling(SamplingMethods):
             var_values = dist(loc=0.5, scale=1 / 6, size=self.number_of_samples)
             if sum(
                 [1 for i in range(0, var_values.shape[0]) if var_values[i] > 1]
-            ) + sum(
-                [1 for i in range(0, var_values.shape[0]) if var_values[i] < 0]
-            ):
+            ) + sum([1 for i in range(0, var_values.shape[0]) if var_values[i] < 0]):
                 warnings.warn(
                     "Points adjusted to remain within specified Gaussian bounds."
                 )
@@ -1717,7 +1714,6 @@ class CustomSampling(SamplingMethods):
                 [1.0 if j > 1.0 else 0.0 if j < 0.0 else j for j in var_values]
             )
             return dist, var_values_truncated
-
 
     def sample_points(self):
         points_spread = []
