@@ -1550,7 +1550,7 @@ class CustomSampling(SamplingMethods):
     .. code-block:: python
 
         # To select 50 samples on a (10 x 5) grid in a 2D space:
-        >>> b = rbf.UniformSampling(data, [10, 5], sampling_type="selection")
+        >>> b = rbf.CustomSampling(data, [10, 5], list_of_distributions= ['normal', 'uniform'], sampling_type="selection")
         >>> samples = b.sample_points()
 
     """
