@@ -5,7 +5,7 @@ Institute for the Design of Advanced Energy Systems
 from pathlib import Path
 import os
 import sys
-from setuptools import setup, find_namespace_packages
+from setuptools import setup, find_packages
 from typing import List, Tuple
 
 
@@ -123,7 +123,7 @@ kwargs = dict(
     zip_safe=False,
     name=NAME,
     version=VERSION,
-    packages=find_namespace_packages(),
+    packages=find_packages(include=["idaes*"]),
     # Put abstract (non-versioned) deps here.
     # Concrete dependencies go in requirements[-dev].txt
     install_requires=[
