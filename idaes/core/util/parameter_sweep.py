@@ -470,15 +470,11 @@ class ParameterSweepBase:
         # Load sample values
         self.set_input_values(model, sample_id)
 
-        if self.config.solver is None:
-            raise ConfigurationError("Please specify a solver to use.")
-
         # Try/except to catch any critical failures that occur
         error = None
         try:
-            status, run_stats = self.run_model(model, self.config.solver)
+            solved, run_stats = self.run_model(model, self.config.solver)
 
-            solved = check_optimal_termination(status)
             if not solved:
                 _log.warning(f"Sample {sample_id} failed to converge.")
         except Exception as e:  # pylint: disable=broad-except
@@ -490,7 +486,7 @@ class ParameterSweepBase:
 
         # Compile Results
         if error is None:
-            results = self.collect_results(model, status, run_stats)
+            results = self.collect_results(model, run_stats)
         else:
             # Catch any Exception for recourse
             results, solved = self.handle_error(model)
@@ -646,11 +642,14 @@ class ParameterSweepBase:
             solver: Pyomo solver object to use to solve model
 
         Returns:
-            status: a Pyomo solver status object
-            run_stats: additional output collected by run_model callback
+            solved: bool indicating whether execution was successful or not
+            run_stats: output collected by run_model callback (default is Pyomo solver status object)
         """
         if self.config.run_model is None:
-            return solver.solve(model), None
+            res = solver.solve(model)
+
+            solved = check_optimal_termination(res)
+            return solved, res
 
         args = self.config.run_model_arguments
         if args is None:
@@ -658,14 +657,14 @@ class ParameterSweepBase:
 
         return self.config.run_model(model, solver, **args)
 
-    def collect_results(self, model, status, run_stats):
+    def collect_results(self, model, run_stats):
         """
         Collects desired results from instance of model by calling collect_results callback.
 
         Args:
             model: instance of model to collect results from
-            status: Pyomo solver status object returned from solving model
-            run_stats: additional output from run_model callback to be collected in results
+            run_stats: output from run_model callback to be collected in results
+                (default is Pyomo results object)
 
         Returns:
             Output of collect_results callback
@@ -678,7 +677,7 @@ class ParameterSweepBase:
         if args is None:
             args = {}
 
-        return self.config.collect_results(model, status, run_stats, **args)
+        return self.config.collect_results(model, run_stats, **args)
 
     def handle_error(self, model):
         """

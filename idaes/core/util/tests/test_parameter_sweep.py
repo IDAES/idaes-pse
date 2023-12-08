@@ -862,10 +862,10 @@ class TestParameterSweepBase:
 
         solver = SolverFactory("ipopt")
 
-        status, run_stats = psweep.run_model(model, solver)
+        solved, run_stats = psweep.run_model(model, solver)
 
-        assert_optimal_termination(status)
-        assert run_stats is None
+        assert solved
+        assert_optimal_termination(run_stats)
         assert value(model.v) == pytest.approx(4, rel=1e-8)
 
     @pytest.mark.unit
@@ -903,11 +903,11 @@ class TestParameterSweepBase:
             ConfigurationError,
             match="Please provide a method to collect results from sample run.",
         ):
-            psweep.collect_results("foo", "bar", "baz")
+            psweep.collect_results("foo", "bar")
 
     @pytest.mark.unit
     def test_collect_results(self):
-        def dummy_collect(model, status, run_stats):
+        def dummy_collect(model, run_stats):
             return value(model.v)
 
         model = ConcreteModel()
@@ -918,13 +918,13 @@ class TestParameterSweepBase:
             collect_results=dummy_collect,
         )
 
-        results = psweep.collect_results(model, "foo", "bar")
+        results = psweep.collect_results(model, "foo")
 
         assert results == 1
 
     @pytest.mark.unit
     def test_collect_results_w_args(self):
-        def dummy_collect(model, status, run_stats, arg1=None, arg2=None):
+        def dummy_collect(model, run_stats, arg1=None, arg2=None):
             return [value(model.v), arg1, arg2]
 
         model = ConcreteModel()
@@ -936,7 +936,7 @@ class TestParameterSweepBase:
             collect_results_arguments={"arg1": "foo", "arg2": False},
         )
 
-        results = psweep.collect_results(model, "foo", "bar")
+        results = psweep.collect_results(model, "bar")
 
         assert results == [1, "foo", False]
 
@@ -996,7 +996,7 @@ class TestParameterSweepBase:
 
             return m
 
-        def collect_results(model, status, run_stats):
+        def collect_results(model, run_stats):
             return value(model.v1)
 
         spec2 = ParameterSweepSpecification()
@@ -1312,7 +1312,7 @@ class TestSequentialSweepRunner:
 
             return m
 
-        def collect_results(model, status, run_stats):
+        def collect_results(model, run_stats):
             return value(model.v1)
 
         spec2 = ParameterSweepSpecification()
