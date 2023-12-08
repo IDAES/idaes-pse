@@ -3136,6 +3136,15 @@ def check_parallel_jacobian(model, tolerance: float = 1e-4, direction: str = "ro
     as this means that the associated constraints or variables are (near)
     duplicates of each other.
 
+    This method is based on work published in:
+
+    Klotz, E., Identification, Assessment, and Correction of Ill-Conditioning and
+    Numerical Instability in Linear and Integer Programs, Informs 2014, pgs. 54-108
+    https://pubsonline.informs.org/doi/epdf/10.1287/educ.2014.0130
+
+    We would also like to acknowledge Gurobi Model Analyzer for their implementation
+    of these methods (https://github.com/Gurobi/gurobi-modelanalyzer).
+
     Args:
         model: model to be analysed
         tolerance: tolerance to use to determine if constraints/variables are parallel
@@ -3213,6 +3222,15 @@ def check_ill_conditioning(
     """
     Finds constraints (rows) or variables (columns) in the model Jacobian that
     may be contributing to ill conditioning.
+
+    This method is based on work published in:
+
+    Klotz, E., Identification, Assessment, and Correction of Ill-Conditioning and
+    Numerical Instability in Linear and Integer Programs, Informs 2014, pgs. 54-108
+    https://pubsonline.informs.org/doi/epdf/10.1287/educ.2014.0130
+
+    We would also like to acknowledge Gurobi Model Analyzer for their implementation
+    of these methods (https://github.com/Gurobi/gurobi-modelanalyzer).
 
     Args:
         model: model to be analysed

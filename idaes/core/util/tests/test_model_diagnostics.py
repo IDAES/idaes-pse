@@ -1237,6 +1237,102 @@ Suggested next steps:
         assert stream.getvalue() == expected
 
     @pytest.mark.component
+    def test_report_structural_issues_ok(self):
+        m = ConcreteModel()
+
+        m.v1 = Var(initialize=1)
+        m.v2 = Var(initialize=2)
+        m.v3 = Var(initialize=3)
+
+        m.c1 = Constraint(expr=2 * m.v1 == m.v2)
+        m.c2 = Constraint(expr=m.v1 + m.v2 == m.v3)
+        m.c3 = Constraint(expr=m.v1 == 1)
+
+        dt = DiagnosticsToolbox(model=m)
+
+        stream = StringIO()
+        dt.report_structural_issues(stream)
+
+        expected = """====================================================================================
+Model Statistics
+
+        Activated Blocks: 1 (Deactivated: 0)
+        Free Variables in Activated Constraints: 3 (External: 0)
+            Free Variables with only lower bounds: 0
+            Free Variables with only upper bounds: 0
+            Free Variables with upper and lower bounds: 0
+        Fixed Variables in Activated Constraints: 0 (External: 0)
+        Activated Equality Constraints: 3 (Deactivated: 0)
+        Activated Inequality Constraints: 0 (Deactivated: 0)
+        Activated Objectives: 0 (Deactivated: 0)
+
+------------------------------------------------------------------------------------
+0 WARNINGS
+
+    No warnings found!
+
+------------------------------------------------------------------------------------
+0 Cautions
+
+    No cautions found!
+
+------------------------------------------------------------------------------------
+Suggested next steps:
+
+    Try to initialize/solve your model and then call report_numerical_issues()
+
+====================================================================================
+"""
+
+        assert stream.getvalue() == expected
+
+    @pytest.mark.component
+    def test_report_numerical_issues_ok(self):
+        m = ConcreteModel()
+
+        m.v1 = Var(initialize=1)
+        m.v2 = Var(initialize=2)
+        m.v3 = Var(initialize=3)
+
+        m.c1 = Constraint(expr=2 * m.v1 == m.v2)
+        m.c2 = Constraint(expr=m.v1 + m.v2 == m.v3)
+        m.c3 = Constraint(expr=m.v1 == 1)
+
+        dt = DiagnosticsToolbox(model=m)
+
+        stream = StringIO()
+        dt.report_numerical_issues(stream)
+
+        expected = """====================================================================================
+Model Statistics
+
+    Jacobian Condition Number: 1.237E+01
+
+------------------------------------------------------------------------------------
+0 WARNINGS
+
+    No warnings found!
+
+------------------------------------------------------------------------------------
+0 Cautions
+
+    No cautions found!
+
+------------------------------------------------------------------------------------
+Suggested next steps:
+
+    If you still have issues converging your model consider:
+        display_near_parallel_constraints()
+        display_near_parallel_variables()
+        prepare_degeneracy_hunter()
+        prepare_svd_toolbox()
+
+====================================================================================
+"""
+
+        assert stream.getvalue() == expected
+
+    @pytest.mark.component
     def test_report_numerical_issues(self, model):
         dt = DiagnosticsToolbox(model=model.b)
 
