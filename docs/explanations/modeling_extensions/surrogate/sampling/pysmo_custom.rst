@@ -1,4 +1,4 @@
-Custom Sampling (LHS)
+Custom Sampling
 ===========================================
 With this method, users can explicitly define the distribution for the sampling of each input variable explicitly.
  
