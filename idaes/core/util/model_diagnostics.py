@@ -3154,18 +3154,20 @@ def check_parallel_jacobian(model, tolerance: float = 1e-4, direction: str = "ro
     """
     # Thanks to Robby Parker for the sparse matrix implementation and
     # significant performance improvements
+
+    if direction not in ["row", "column"]:
+        raise ValueError(
+            f"Unrecognised value for direction ({direction}). "
+            "Must be 'row' or 'column'."
+        )
+
     jac, nlp = get_jacobian(model, scaled=False)
 
     # Get list of row/column names
     if direction == "row":
         comp_list = nlp.get_pyomo_constraints()
-    elif direction == "column":
-        comp_list = nlp.get_pyomo_variables()
     else:
-        raise ValueError(
-            f"Unrecognised value for direction ({direction})."
-            "Must be 'row' or 'column'."
-        )
+        comp_list = nlp.get_pyomo_variables()
 
     parallel = []
 
@@ -3216,8 +3218,8 @@ def check_ill_conditioning(
     direction: str = "row",
 ):
     """
-    Finds constraints (rows) or variables (columns) in the model Jacobian that may be contributing
-    to ill conditioning.
+    Finds constraints (rows) or variables (columns) in the model Jacobian that
+    may be contributing to ill conditioning.
 
     Args:
         model: model to be analysed
@@ -3226,9 +3228,21 @@ def check_ill_conditioning(
         direction: 'row' (default, constraints) or 'column' (variables)
 
     Returns:
-        list of strings reporting ill-conditioned variables/constraints and their associated y values
+        list of strings reporting ill-conditioned variables/constraints and their
+        associated y values
     """
+    _log.warning(
+        "Ill conditioning checks are a beta capability. Please be aware that "
+        "the name, location, and API for this may change in future releases."
+    )
     # Thanks to B. Knueven for this implementation
+
+    if direction not in ["row", "column"]:
+        raise ValueError(
+            f"Unrecognised value for direction ({direction}). "
+            "Must be 'row' or 'column'."
+        )
+
     jac, nlp = get_jacobian(model, scaled=False)
 
     inverse_target_kappa = 1e-16 / target_feasibility_tol
@@ -3245,14 +3259,9 @@ def check_ill_conditioning(
     if direction == "row":
         set1 = inf_prob.con_set
         set2 = inf_prob.var_set
-    elif direction == "column":
+    else:
         set2 = inf_prob.con_set
         set1 = inf_prob.var_set
-    else:
-        raise ValueError(
-            f"Unrecognised value for direction ({direction})."
-            "Must be 'row' or 'column'."
-        )
 
     inf_prob.y_pos = Var(set1, initialize=0, bounds=(0, None))
     inf_prob.y_neg = Var(set1, initialize=0, bounds=(0, None))
@@ -3302,9 +3311,9 @@ def check_ill_conditioning(
     # Objective -- minimize residual
     inf_prob.min_res = Objective(expr=inf_prob.res_norm)
 
-    solver = SolverFactory("cbc")
+    solver = SolverFactory("cbc")  # TODO: Consider making this an option
 
-    # tighten tolerances
+    # tighten tolerances  # TODO: If solver is an option, need ot allow user options
     solver.options["primalT"] = inverse_target_kappa
     solver.options["dualT"] = inverse_target_kappa
 

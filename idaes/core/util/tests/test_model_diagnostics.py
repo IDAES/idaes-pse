@@ -76,6 +76,8 @@ from idaes.core.util.model_diagnostics import (
     _vars_with_extreme_values,
     _write_report_section,
     _collect_model_statistics,
+    check_parallel_jacobian,
+    check_ill_conditioning,
 )
 from idaes.core.util.testing import _enable_scip_solver_for_testing
 
@@ -918,6 +920,62 @@ values (<1.0E-04 or>1.0E+04):
     c2, v3: 1.000E-08
     c3, v1: 1.000E+08
     c3, v3: 1.000E-06
+
+====================================================================================
+"""
+
+        assert stream.getvalue() == expected
+
+    @pytest.mark.component
+    def test_display_near_parallel_constraints(self):
+        model = ConcreteModel()
+        model.v1 = Var(initialize=1e-8)
+        model.v2 = Var()
+        model.v3 = Var()
+
+        model.c1 = Constraint(expr=model.v1 == model.v2)
+        model.c2 = Constraint(expr=model.v1 == 1e-8 * model.v3)
+        model.c3 = Constraint(expr=1e8 * model.v1 + 1e10 * model.v2 == 1e-6 * model.v3)
+        model.c4 = Constraint(expr=-model.v1 == -0.99999 * model.v2)
+
+        dt = DiagnosticsToolbox(model=model)
+
+        stream = StringIO()
+        dt.display_near_parallel_constraints(stream)
+
+        expected = """====================================================================================
+The following pairs of constraints are nearly parallel:
+
+    c1, c4
+
+====================================================================================
+"""
+
+        assert stream.getvalue() == expected
+
+    @pytest.mark.component
+    def test_display_near_parallel_variables(self):
+        model = ConcreteModel()
+        model.v1 = Var(initialize=1e-8)
+        model.v2 = Var()
+        model.v3 = Var()
+        model.v4 = Var()
+
+        model.c1 = Constraint(expr=model.v1 == model.v2 - 0.99999 * model.v4)
+        model.c2 = Constraint(expr=model.v1 + 1.00001 * model.v4 == 1e-8 * model.v3)
+        model.c3 = Constraint(
+            expr=1e8 * (model.v1 + model.v4) + 1e10 * model.v2 == 1e-6 * model.v3
+        )
+
+        dt = DiagnosticsToolbox(model=model)
+
+        stream = StringIO()
+        dt.display_near_parallel_variables(stream)
+
+        expected = """====================================================================================
+The following pairs of variables are nearly parallel:
+
+    v1, v4
 
 ====================================================================================
 """
@@ -2883,3 +2941,101 @@ class TestEvalErrorDetection(TestCase):
         self.assertEqual(len(exp_list), len(got_list))
         for _exp, _got in zip(exp_list, got_list):
             self.assertEqual(_exp, _got)
+
+
+class TestCheckParallelJacobian:
+    @pytest.mark.unit
+    def test_invalid_direction(self):
+        m = ConcreteModel()
+
+        with pytest.raises(
+            ValueError,
+            match="Unrecognised value for direction \(foo\). "
+            "Must be 'row' or 'column'.",
+        ):
+            check_parallel_jacobian(m, direction="foo")
+
+    @pytest.fixture(scope="class")
+    def model(self):
+        m = ConcreteModel()
+
+        m.v1 = Var(initialize=1e-8)
+        m.v2 = Var()
+        m.v3 = Var()
+        m.v4 = Var()
+
+        m.c1 = Constraint(expr=m.v1 == m.v2 - 0.99999 * m.v4)
+        m.c2 = Constraint(expr=m.v1 + 1.00001 * m.v4 == 1e-8 * m.v3)
+        m.c3 = Constraint(expr=1e8 * (m.v1 + m.v4) + 1e10 * m.v2 == 1e-6 * m.v3)
+        m.c4 = Constraint(expr=-m.v1 == -0.99999 * (m.v2 - m.v4))
+
+        return m
+
+    @pytest.mark.unit
+    def test_rows(self, model):
+        assert check_parallel_jacobian(model, direction="row") == [(model.c1, model.c4)]
+        assert check_parallel_jacobian(model, direction="row", tolerance=0) == []
+
+    @pytest.mark.unit
+    def test_columns(self, model):
+        assert check_parallel_jacobian(model, direction="column") == [
+            (model.v1, model.v4)
+        ]
+
+
+class TestCheckIllConditioning:
+    @pytest.mark.unit
+    def test_invalid_direction(self):
+        m = ConcreteModel()
+
+        with pytest.raises(
+            ValueError,
+            match="Unrecognised value for direction \(foo\). "
+            "Must be 'row' or 'column'.",
+        ):
+            check_ill_conditioning(m, direction="foo")
+
+    @pytest.fixture(scope="class")
+    def model(self):
+        m = ConcreteModel()
+
+        m.v1 = Var(initialize=1e-8)
+        m.v2 = Var()
+        m.v3 = Var()
+        m.v4 = Var()
+
+        m.c1 = Constraint(expr=m.v1 == m.v2 - 0.99999 * m.v4)
+        m.c2 = Constraint(expr=m.v1 + 1.00001 * m.v4 == 1e-8 * m.v3)
+        m.c3 = Constraint(expr=1e8 * (m.v1 + m.v4) + 1e10 * m.v2 == 1e-6 * m.v3)
+        m.c4 = Constraint(expr=-m.v1 == -0.99999 * (m.v2 - m.v4))
+
+        return m
+
+    @pytest.mark.unit
+    def test_beta(self, model, caplog):
+
+        check_ill_conditioning(model)
+
+        expected = (
+            "Ill conditioning checks are a beta capability. Please be aware that "
+            "the name, location, and API for this may change in future releases."
+        )
+
+        assert expected in caplog.text
+
+    @pytest.mark.component
+    @pytest.mark.solver
+    def test_rows(self, model):
+        assert check_ill_conditioning(model, direction="row") == [
+            "c4: 0.50000002",
+            "c1: 0.49999998",
+        ]
+
+    @pytest.mark.component
+    @pytest.mark.solver
+    def test_columns(self, model):
+        assert check_ill_conditioning(model, direction="column") == [
+            "v3: 1.0",
+            "v4: 0.00050248753",
+            "v1: -0.00050248255",
+        ]
