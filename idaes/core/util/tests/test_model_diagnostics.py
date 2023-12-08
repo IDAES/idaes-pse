@@ -3107,6 +3107,110 @@ class TestCheckIllConditioning:
 
         return m
 
+    @pytest.fixture(scope="class")
+    def afiro(self):
+        # NETLIB AFIRO example
+        m = ConcreteModel()
+
+        # Vars
+        m.X01 = Var(initialize=1)
+        m.X02 = Var(initialize=1)
+        m.X03 = Var(initialize=1)
+        m.X04 = Var(initialize=1)
+        m.X06 = Var(initialize=1)
+        m.X07 = Var(initialize=1)
+        m.X08 = Var(initialize=1)
+        m.X09 = Var(initialize=1)
+        m.X10 = Var(initialize=1)
+        m.X11 = Var(initialize=1)
+        m.X12 = Var(initialize=1)
+        m.X13 = Var(initialize=1)
+        m.X14 = Var(initialize=1)
+        m.X15 = Var(initialize=1)
+        m.X16 = Var(initialize=1)
+        m.X22 = Var(initialize=1)
+        m.X23 = Var(initialize=1)
+        m.X24 = Var(initialize=1)
+        m.X25 = Var(initialize=1)
+        m.X26 = Var(initialize=1)
+        m.X28 = Var(initialize=1)
+        m.X29 = Var(initialize=1)
+        m.X30 = Var(initialize=1)
+        m.X31 = Var(initialize=1)
+        m.X32 = Var(initialize=1)
+        m.X33 = Var(initialize=1)
+        m.X34 = Var(initialize=1)
+        m.X35 = Var(initialize=1)
+        m.X36 = Var(initialize=1)
+        m.X37 = Var(initialize=1)
+        m.X38 = Var(initialize=1)
+        m.X39 = Var(initialize=1)
+
+        # Constraints
+
+        m.R09 = Constraint(expr=-m.X01 + m.X02 + m.X03 == 0)
+        m.R10 = Constraint(expr=-1.06 * m.X01 + m.X04 == 0)
+        m.X05 = Constraint(expr=m.X01 <= 80)
+        m.X21 = Constraint(expr=-m.X02 + 1.4 * m.X14 <= 0)
+        m.R12 = Constraint(expr=-m.X06 - m.X07 - m.X08 - m.X09 + m.X14 + m.X15 == 0)
+        m.R13 = Constraint(
+            expr=-1.06 * m.X06 - 1.06 * m.X07 - 0.96 * m.X08 - 0.86 * m.X09 + m.X16 == 0
+        )
+        m.X17 = Constraint(expr=m.X06 - m.X10 <= 80)
+        m.X18 = Constraint(expr=m.X07 - m.X11 <= 0)
+        m.X19 = Constraint(expr=m.X08 - m.X12 <= 0)
+        m.X20 = Constraint(expr=m.X09 - m.X13 <= 0)
+        m.R19 = Constraint(expr=-1 * m.X22 + 1 * m.X23 + 1 * m.X24 + 1 * m.X25 == 0)
+        m.R20 = Constraint(expr=-0.43 * m.X22 + m.X26 == 0)
+        m.X27 = Constraint(expr=m.X22 <= 500)
+        m.X44 = Constraint(expr=-m.X23 + 1.4 * m.X36 <= 0)
+        m.R22 = Constraint(
+            expr=-0.43 * m.X28 - 0.43 * m.X29 - 0.39 * m.X30 - 0.37 * m.X31 + m.X38 == 0
+        )
+        m.R23 = Constraint(
+            expr=1 * m.X28
+            + 1 * m.X29
+            + 1 * m.X30
+            + 1 * m.X31
+            - 1 * m.X36
+            + 1 * m.X37
+            + 1 * m.X39
+            == 44
+        )
+        m.X40 = Constraint(expr=m.X28 - m.X32 <= 500)
+        m.X41 = Constraint(expr=m.X29 - m.X33 <= 0)
+        m.X42 = Constraint(expr=m.X30 - m.X34 <= 0)
+        m.X43 = Constraint(expr=m.X31 - m.X35 <= 0)
+        m.X45 = Constraint(
+            expr=2.364 * m.X10
+            + 2.386 * m.X11
+            + 2.408 * m.X12
+            + 2.429 * m.X13
+            - m.X25
+            + 2.191 * m.X32
+            + 2.219 * m.X33
+            + 2.249 * m.X34
+            + 2.279 * m.X35
+            <= 0
+        )
+        m.X46 = Constraint(expr=-m.X03 + 0.109 * m.X22 <= 0)
+        m.X47 = Constraint(
+            expr=-m.X15 + 0.109 * m.X28 + 0.108 * m.X29 + 0.108 * m.X30 + 0.107 * m.X31
+            <= 0
+        )
+        m.X48 = Constraint(expr=0.301 * m.X01 - m.X24 <= 0)
+        m.X49 = Constraint(
+            expr=0.301 * m.X06 + 0.313 * m.X07 + 0.313 * m.X08 + 0.326 * m.X09 - m.X37
+            <= 0
+        )
+        m.X50 = Constraint(expr=m.X04 + m.X26 <= 310)
+        m.X51 = Constraint(expr=m.X16 + m.X38 <= 300)
+
+        # Degenerate constraint
+        m.R09b = Constraint(expr=m.X01 - 0.999999999 * m.X02 - m.X03 == 0)
+
+        return m
+
     @pytest.mark.unit
     def test_beta(self, model, caplog):
 
@@ -3129,9 +3233,28 @@ class TestCheckIllConditioning:
 
     @pytest.mark.component
     @pytest.mark.solver
-    def test_columns(self, model):
-        assert check_ill_conditioning(model, direction="column") == [
-            ("v3", pytest.approx(1.0, rel=1e-5)),
-            ("v4", pytest.approx(0.00050248753, rel=1e-5)),
-            ("v1", pytest.approx(-0.00050248255, rel=1e-5)),
+    def test_rows(self, afiro):
+        assert check_ill_conditioning(afiro, direction="row") == [
+            ("R09", pytest.approx(0.5, rel=1e-5)),
+            ("R09b", pytest.approx(0.5, rel=1e-5)),
+        ]
+
+    @pytest.mark.component
+    @pytest.mark.solver
+    def test_columns(self, afiro):
+        assert check_ill_conditioning(afiro, direction="column") == [
+            ("X39", pytest.approx(1.1955465, rel=1e-5)),
+            ("X23", pytest.approx(1.0668697, rel=1e-5)),
+            ("X25", pytest.approx(-1.0668697, rel=1e-5)),
+            ("X09", pytest.approx(-0.95897123, rel=1e-5)),
+            ("X13", pytest.approx(-0.95897123, rel=1e-5)),
+            ("X06", pytest.approx(0.91651956, rel=1e-5)),
+            ("X10", pytest.approx(0.91651956, rel=1e-5)),
+            ("X36", pytest.approx(0.76204977, rel=1e-5)),
+            ("X31", pytest.approx(-0.39674454, rel=1e-5)),
+            ("X35", pytest.approx(-0.39674454, rel=1e-5)),
+            ("X16", pytest.approx(0.14679548, rel=1e-5)),
+            ("X38", pytest.approx(-0.14679548, rel=1e-5)),
+            ("X15", pytest.approx(-0.042451666, rel=1e-5)),
+            ("X37", pytest.approx(-0.036752232, rel=1e-5)),
         ]

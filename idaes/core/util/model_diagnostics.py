@@ -3325,18 +3325,20 @@ def check_ill_conditioning(
     solver = SolverFactory("cbc")  # TODO: Consider making this an option
 
     # tighten tolerances  # TODO: If solver is an option, need to allow user options
-    solver.options["primalT"] = target_feasibility_tol*1e-1
-    solver.options["dualT"] = target_feasibility_tol*1e-1
+    solver.options["primalT"] = target_feasibility_tol * 1e-1
+    solver.options["dualT"] = target_feasibility_tol * 1e-1
 
     results = solver.solve(inf_prob, tee=False)
-    if check_optimal_termination(results):
+    if not check_optimal_termination(results):
         # TODO: maybe we should tighten tolerances first?
-        raise RuntimeError("Ill conditioning diagnostic problem infeasible") 
+        raise RuntimeError("Ill conditioning diagnostic problem infeasible")
 
     result_norm = inf_prob.res_norm.value
     if result_norm < 0.0:
         # TODO: try again with tighter tolerances?
-        raise RuntimeError("Ill conditioning diagnostic problem has numerically troublesome solution")
+        raise RuntimeError(
+            "Ill conditioning diagnostic problem has numerically troublesome solution"
+        )
     if result_norm >= inverse_target_kappa:
         return []
 
@@ -3346,8 +3348,8 @@ def check_ill_conditioning(
 
     inf_prob.min_y = Objective(expr=inf_prob.y_norm)
 
-    # if the this problem is numerically infeasible, we can still report something to the user
-    results = solver.solve(inf_prob, tee=True, load_solutions=False)
+    # if this problem is numerically infeasible, we can still report something to the user
+    results = solver.solve(inf_prob, tee=False, load_solutions=False)
     if check_optimal_termination(results):
         inf_prob.solutions.load_from(results)
 
