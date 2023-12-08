@@ -612,7 +612,7 @@ class TestParameterSweepBase:
         assert psweep.config.rebuild_model
         assert psweep.config.build_model is None
         assert psweep.config.run_model is None
-        assert psweep.config.collect_results is None
+        assert psweep.config.build_outputs is None
         assert psweep.config.handle_solver_error is None
         assert not psweep.config.halt_on_error
         assert psweep.config.input_specification is None
@@ -896,17 +896,17 @@ class TestParameterSweepBase:
         assert run_stats == {"arg1": "foo", "arg2": False}
 
     @pytest.mark.unit
-    def test_collect_results_none(self):
+    def test_build_outputs_none(self):
         psweep = ParameterSweepBase()
 
         with pytest.raises(
             ConfigurationError,
             match="Please provide a method to collect results from sample run.",
         ):
-            psweep.collect_results("foo", "bar")
+            psweep.build_outputs("foo", "bar")
 
     @pytest.mark.unit
-    def test_collect_results(self):
+    def test_build_outputs(self):
         def dummy_collect(model, run_stats):
             return value(model.v)
 
@@ -915,15 +915,15 @@ class TestParameterSweepBase:
         model.c = Constraint(expr=model.v == 4)
 
         psweep = ParameterSweepBase(
-            collect_results=dummy_collect,
+            build_outputs=dummy_collect,
         )
 
-        results = psweep.collect_results(model, "foo")
+        results = psweep.build_outputs(model, "foo")
 
         assert results == 1
 
     @pytest.mark.unit
-    def test_collect_results_w_args(self):
+    def test_build_outputs_w_args(self):
         def dummy_collect(model, run_stats, arg1=None, arg2=None):
             return [value(model.v), arg1, arg2]
 
@@ -932,11 +932,11 @@ class TestParameterSweepBase:
         model.c = Constraint(expr=model.v == 4)
 
         psweep = ParameterSweepBase(
-            collect_results=dummy_collect,
-            collect_results_arguments={"arg1": "foo", "arg2": False},
+            build_outputs=dummy_collect,
+            build_outputs_arguments={"arg1": "foo", "arg2": False},
         )
 
-        results = psweep.collect_results(model, "bar")
+        results = psweep.build_outputs(model, "bar")
 
         assert results == [1, "foo", False]
 
@@ -996,7 +996,7 @@ class TestParameterSweepBase:
 
             return m
 
-        def collect_results(model, run_stats):
+        def build_outputs(model, run_stats):
             return value(model.v1)
 
         spec2 = ParameterSweepSpecification()
@@ -1009,7 +1009,7 @@ class TestParameterSweepBase:
         psweep = ParameterSweepBase(
             build_model=build_model,
             input_specification=spec2,
-            collect_results=collect_results,
+            build_outputs=build_outputs,
             solver=solver,
         )
 
@@ -1312,7 +1312,7 @@ class TestSequentialSweepRunner:
 
             return m
 
-        def collect_results(model, run_stats):
+        def build_outputs(model, run_stats):
             return value(model.v1)
 
         spec2 = ParameterSweepSpecification()
@@ -1327,7 +1327,7 @@ class TestSequentialSweepRunner:
             build_model=build_model,
             input_specification=spec2,
             solver=solver,
-            collect_results=collect_results,
+            build_outputs=build_outputs,
         )
 
         psweep.execute_parameter_sweep()

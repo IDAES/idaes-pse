@@ -2086,9 +2086,9 @@ class TestConvergenceAnalysis:
 
         solver = SolverFactory("ipopt")
 
-        status, run_stats = ca._run_model(model, solver)
+        solved, run_stats = ca._run_model(model, solver)
 
-        assert_optimal_termination(status)
+        assert solved
         assert value(model.v1) == pytest.approx(0.5, rel=1e-8)
 
         assert len(run_stats) == 4
@@ -2097,13 +2097,13 @@ class TestConvergenceAnalysis:
         assert run_stats[2] == 0
 
     @pytest.mark.unit
-    def test_collect_results(self, model):
+    def test_build_outputs(self, model):
         ca = ConvergenceAnalysis(model)
 
         model.v1.set_value(0.5)
         model.v2.fix(0.5)
 
-        results = ca._collect_results(model, "foo", (1, 2, 3, 4))
+        results = ca._build_outputs(model, (1, 2, 3, 4))
 
         assert results == {
             "iters": 1,
@@ -2114,13 +2114,13 @@ class TestConvergenceAnalysis:
         }
 
     @pytest.mark.unit
-    def test_collect_results_with_warnings(self, model):
+    def test_build_outputs_with_warnings(self, model):
         ca = ConvergenceAnalysis(model)
 
         model.v1.set_value(4)
         model.v2.fix(0.5)
 
-        results = ca._collect_results(model, "foo", (1, 2, 3, 4))
+        results = ca._build_outputs(model, (1, 2, 3, 4))
 
         assert results == {
             "iters": 1,

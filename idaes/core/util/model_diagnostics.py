@@ -2996,7 +2996,7 @@ class ConvergenceAnalysis:
             build_model=self._build_model,
             rebuild_model=True,
             run_model=self._run_model,
-            collect_results=self._collect_results,
+            build_outputs=self._build_outputs,
             halt_on_error=self.config.halt_on_error,
             handle_solver_error=self._recourse,
             solver=solver,
@@ -3165,10 +3165,12 @@ class ConvergenceAnalysis:
             time,
         ]
 
-        return status, run_stats
+        solved = check_optimal_termination(status)
+
+        return solved, run_stats
 
     @staticmethod
-    def _collect_results(model, status, run_stats):
+    def _build_outputs(model, run_stats):
         # Run model diagnostics numerical checks
         dt = DiagnosticsToolbox(model=model)
 
