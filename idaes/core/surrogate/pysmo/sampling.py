@@ -1574,7 +1574,7 @@ class CustomSampling(SamplingMethods):
                 - When the aim is to generate a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and **sampling_type** option must be set to "creation". It is assumed that the range contains no output variable information in this case.
 
             number_of_samples(int): The number of samples to be generated. Should be a positive integer less than or equal to the number of entries (rows) in **data_input**.
-            list_of_distributions (list): The list containing the probability distribution for each variable. We currently support random, uniform and normal(i.e. Gaussian) distributions.
+            list_of_distributions (list): The list containing the probability distribution for each variable. The length of the list must match the number of input (i.e. dependent) variables to be sampled. We currently support random, uniform and normal (i.e. Gaussian) distributions.
             sampling_type (str) : Option which determines whether the algorithm selects samples from an existing dataset ("selection") or attempts to generate sample from a supplied range ("creation"). Default is "creation".
 
         Keyword Args:
