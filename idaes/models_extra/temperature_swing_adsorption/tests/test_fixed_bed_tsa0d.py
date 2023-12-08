@@ -17,6 +17,7 @@ Tests for fixed bed TSA 0D model.
 __author__ = "Alex Noring"
 
 import pytest
+import numpy as np
 
 from pyomo.environ import (
     check_optimal_termination,
@@ -161,11 +162,28 @@ class TestTsaZeolite:
         # air velocity
         assert pytest.approx(2.44178, abs=1e-3) == value(model.fs.unit.velocity_in)
 
-    @pytest.mark.ui
     @pytest.mark.unit
     def test_report(self, model):
-        model.fs.unit.report()
-        tsa_summary(model.fs.unit)
+        stream_table_df = model.fs.unit._get_stream_table_contents()
+        expected_columns = ["Inlet", "CO2 Rich Stream", "N2 Rich Stream", "H2O Stream"]
+        for column in expected_columns:
+            assert column in stream_table_df.columns
+            assert not np.isnan(stream_table_df[column]["temperature"])
+            assert not np.isnan(stream_table_df[column]["pressure"])
+
+        performance_dict = model.fs.unit._get_performance_contents()
+        for k in performance_dict["vars"]:
+            assert performance_dict["vars"][k] is not None
+
+    @pytest.mark.unit
+    def test_summary(self, model):
+        summary_df = tsa_summary(model.fs.unit)
+        assert "Adsorption temperature [K]" in summary_df.index
+        assert "Cycle time [h]" in summary_df.index
+        assert "Pressure drop [Pa]" in summary_df.index
+
+    @pytest.mark.unit
+    def test_plotting(self, model):
         plot_tsa_profiles(model.fs.unit)
 
 
