@@ -3123,15 +3123,15 @@ class TestCheckIllConditioning:
     @pytest.mark.solver
     def test_rows(self, model):
         assert check_ill_conditioning(model, direction="row") == [
-            "c4: 0.50000002",
-            "c1: 0.49999998",
+            ("c4", pytest.approx(0.50000002, rel=1e-5)),
+            ("c1", pytest.approx(0.49999998, rel=1e-5)),
         ]
 
     @pytest.mark.component
     @pytest.mark.solver
     def test_columns(self, model):
         assert check_ill_conditioning(model, direction="column") == [
-            "v3: 1.0",
-            "v4: 0.00050248753",
-            "v1: -0.00050248255",
+            ("v3", pytest.approx(1.0, rel=1e-5)),
+            ("v4", pytest.approx(0.00050248753, rel=1e-5)),
+            ("v1", pytest.approx(-0.00050248255, rel=1e-5)),
         ]

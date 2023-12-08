@@ -950,7 +950,7 @@ class DiagnosticsToolbox:
         _write_report_section(
             stream=stream,
             lines_list=parallel,
-            title=f"The following pairs of constraints are nearly parallel:",
+            title="The following pairs of constraints are nearly parallel:",
             header="=",
             footer="=",
         )
@@ -982,7 +982,7 @@ class DiagnosticsToolbox:
         _write_report_section(
             stream=stream,
             lines_list=parallel,
-            title=f"The following pairs of variables are nearly parallel:",
+            title="The following pairs of variables are nearly parallel:",
             header="=",
             footer="=",
         )
@@ -3353,7 +3353,7 @@ def check_ill_conditioning(
         val = value(inf_prob.y[i])
         if abs(val) < cutoff:
             break
-        ill_cond.append(f"{i}: {val}")
+        ill_cond.append((i, val))
 
     return ill_cond
 
