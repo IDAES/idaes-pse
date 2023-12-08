@@ -15,7 +15,7 @@
 This module contains a collection of tools for diagnosing modeling issues.
 """
 
-__author__ = "Alexander Dowling, Douglas Allan, Andrew Lee, Robby Parker, Ben Kneuven"
+__author__ = "Alexander Dowling, Douglas Allan, Andrew Lee, Robby Parker, Ben Knueven"
 
 from operator import itemgetter
 import sys
@@ -3325,12 +3325,18 @@ def check_ill_conditioning(
     solver = SolverFactory("cbc")  # TODO: Consider making this an option
 
     # tighten tolerances  # TODO: If solver is an option, need to allow user options
-    solver.options["primalT"] = inverse_target_kappa
-    solver.options["dualT"] = inverse_target_kappa
+    solver.options["primalT"] = target_feasibility_tol*1e-1
+    solver.options["dualT"] = target_feasibility_tol*1e-1
 
-    solver.solve(inf_prob, tee=False)
+    results = solver.solve(inf_prob, tee=False)
+    if check_optimal_termination(results):
+        # TODO: maybe we should tighten tolerances first?
+        raise RuntimeError("Ill conditioning diagnostic problem infeasible") 
 
     result_norm = inf_prob.res_norm.value
+    if result_norm < 0.0:
+        # TODO: try again with tighter tolerances?
+        raise RuntimeError("Ill conditioning diagnostic problem has numerically troublesome solution")
     if result_norm >= inverse_target_kappa:
         return []
 
@@ -3340,7 +3346,10 @@ def check_ill_conditioning(
 
     inf_prob.min_y = Objective(expr=inf_prob.y_norm)
 
-    solver.solve(inf_prob, tee=False)
+    # if the this problem is numerically infeasible, we can still report something to the user
+    results = solver.solve(inf_prob, tee=True, load_solutions=False)
+    if check_optimal_termination(results):
+        inf_prob.solutions.load_from(results)
 
     ill_cond = []
     slist = sorted(
