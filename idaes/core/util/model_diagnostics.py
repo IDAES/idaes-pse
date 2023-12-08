@@ -3324,7 +3324,7 @@ def check_ill_conditioning(
 
     solver = SolverFactory("cbc")  # TODO: Consider making this an option
 
-    # tighten tolerances  # TODO: If solver is an option, need ot allow user options
+    # tighten tolerances  # TODO: If solver is an option, need to allow user options
     solver.options["primalT"] = inverse_target_kappa
     solver.options["dualT"] = inverse_target_kappa
 
