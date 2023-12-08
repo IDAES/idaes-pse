@@ -1692,36 +1692,38 @@ class CustomSampling(SamplingMethods):
             q.lower() in ["random", "normal", "uniform"] for q in list_of_distributions
         ):
             raise ValueError(
-                "list_of_distributions only supports 'random', 'gaussian' and 'uniform' sampling options."
+                "list_of_distributions only supports 'random', 'normal' and 'uniform' sampling options."
             )
         self.dist_vector = list_of_distributions
+
+
+    def generate_from_dist(self, dist_name):
+        if dist_name.lower() in ["uniform", "random"]:
+            dist = getattr(np.random.default_rng(), dist_name.lower())
+            var_values = np.array(dist(size=self.number_of_samples))
+            return dist, var_values
+        elif dist_name.lower() == "normal":
+            dist = getattr(np.random.default_rng(), "normal")
+            var_values = dist(loc=0.5, scale=1 / 6, size=self.number_of_samples)
+            if sum(
+                [1 for i in range(0, var_values.shape[0]) if var_values[i] > 1]
+            ) + sum(
+                [1 for i in range(0, var_values.shape[0]) if var_values[i] < 0]
+            ):
+                warnings.warn(
+                    "Points adjusted to remain within specified Gaussian bounds."
+                )
+            var_values_truncated = np.array(
+                [1.0 if j > 1.0 else 0.0 if j < 0.0 else j for j in var_values]
+            )
+            return dist, var_values_truncated
+
 
     def sample_points(self):
         points_spread = []
         for i in self.dist_vector:
-            if i.lower() in ["uniform", "random"]:
-                dist = getattr(np.random.default_rng(), "uniform")
-                var_values = dist(size=self.number_of_samples)
-                points_spread.append(var_values)
-            elif i.lower() == "normal":
-                dist = getattr(np.random.default_rng(), "normal")
-                var_values = dist(loc=0.5, scale=1 / 6, size=self.number_of_samples)
-                if sum(
-                    [1 for i in range(0, var_values.shape[0]) if var_values[i] > 1]
-                ) + sum(
-                    [1 for i in range(0, var_values.shape[0]) if var_values[i] < 0]
-                ):
-                    warnings.warn(
-                        "Points adjusted to remain within specified Gaussian bounds."
-                    )
-                var_values_truncated = np.array(
-                    [1.0 if j > 1.0 else 0.0 if j < 0.0 else j for j in var_values]
-                )
-                points_spread.append(var_values_truncated)
-            else:
-                raise ValueError(
-                    "list_of_distributions only supports 'random', 'normal' and 'uniform' sampling options."
-                )
+            _, var_values = self.generate_from_dist(i)
+            points_spread.append(var_values)
         samples_array = np.asarray(points_spread).T
 
         # Scale input data, then find data points closest in sample space. Unscale before returning points

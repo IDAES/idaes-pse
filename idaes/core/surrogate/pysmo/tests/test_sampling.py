@@ -24,6 +24,7 @@ from idaes.core.surrogate.pysmo.sampling import (
     HaltonSampling,
     HammersleySampling,
     CVTSampling,
+    CustomSampling,
     SamplingMethods,
     FeatureScaling,
 )
@@ -2238,6 +2239,458 @@ class TestCVTSampling:
                 np.unique(unique_sample_points, axis=0).shape,
                 unique_sample_points.shape,
             )
+
+
+class TestCustomSampling:
+    input_array = [[x, x + 10, (x + 1) ** 2 + x + 10] for x in range(10)]
+    input_array_list = [[x, x + 10, (x + 1) ** 2 + x + 10] for x in range(2)]
+    y = np.array(
+        [
+            [i, j, ((i + 1) ** 2) + ((j + 1) ** 2)]
+            for i in np.linspace(0, 10, 21)
+            for j in np.linspace(0, 10, 21)
+        ]
+    )
+    full_data = {"x1": y[:, 0], "x2": y[:, 1], "y": y[:, 2]}
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    def test__init__selection_01(self, array_type):
+        input_array = array_type(self.input_array)
+        CSClass = CustomSampling(
+            input_array, number_of_samples=None, sampling_type="selection", list_of_distributions=['uniform', 'normal'],
+        )
+        np.testing.assert_array_equal(CSClass.data, input_array)
+        np.testing.assert_array_equal(CSClass.number_of_samples, 5)
+        np.testing.assert_array_equal(CSClass.x_data, np.array(input_array)[:, :-1])
+        assert CSClass.dist_vector == ['uniform', 'normal']
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    def test__init__selection_02(self, array_type):
+        input_array = array_type(self.input_array)
+        CSClass = CustomSampling(
+            input_array, number_of_samples=6, sampling_type="selection", list_of_distributions=['uniform', 'normal'],
+        )
+        np.testing.assert_array_equal(CSClass.data, input_array)
+        np.testing.assert_array_equal(CSClass.number_of_samples, 6)
+        np.testing.assert_array_equal(CSClass.x_data, np.array(input_array)[:, :-1])
+        assert CSClass.dist_vector == ['uniform', 'normal']
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    def test__init__selection_03(self, array_type):
+        input_array = array_type(self.input_array)
+        with pytest.raises(Exception):
+            CSClass = CustomSampling(
+                input_array, number_of_samples=0, sampling_type="selection", list_of_distributions=['uniform', 'normal'],
+            )
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    def test__init__selection_04(self, array_type):
+        input_array = array_type(self.input_array)
+        with pytest.raises(Exception):
+            CSClass = CustomSampling(
+                input_array, number_of_samples=-1, sampling_type="selection", list_of_distributions=['uniform', 'normal'],
+            )
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    def test__init__selection_05(self, array_type):
+        input_array = array_type(self.input_array)
+        with pytest.raises(Exception):
+            CSClass = CustomSampling(
+                input_array, number_of_samples=101, sampling_type="selection", list_of_distributions=['uniform', 'normal'],
+            )
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    def test__init__selection_06(self, array_type):
+        input_array = array_type(self.input_array)
+        with pytest.raises(Exception):
+            CSClass = CustomSampling(
+                input_array, number_of_samples=1.1, sampling_type="selection", list_of_distributions=['uniform', 'normal'],
+            )
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [list])
+    def test__init__selection_07(self, array_type):
+        input_array = array_type(self.input_array_list)
+        with pytest.raises(ValueError):
+            CSClass = CustomSampling(
+                input_array, number_of_samples=None, sampling_type="selection", list_of_distributions=['uniform', 'normal'],
+            )
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [list])
+    def test__init__selection_08(self, array_type):
+        input_array = array_type(self.input_array_list)
+        with pytest.raises(ValueError):
+            CSClass = CustomSampling(
+                input_array, number_of_samples=None, sampling_type="selection"
+            )
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    def test__init__selection_09(self, array_type):
+        input_array = array_type(self.input_array_list)
+        with pytest.raises(ValueError):
+            CSClass = CustomSampling(
+                input_array, number_of_samples=None, sampling_type="selection", list_of_distributions=['uniform', 'normal', 'random'],
+            )
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    def test__init__selection_10(self, array_type):
+        input_array = array_type(self.input_array_list)
+        with pytest.raises(ValueError):
+            CSClass = CustomSampling(
+                input_array, number_of_samples=None, sampling_type="selection", list_of_distributions=['uniform'],
+            )
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    def test__init__selection_11(self, array_type):
+        input_array = array_type(self.input_array_list)
+        with pytest.raises(ValueError):
+            CSClass = CustomSampling(
+                input_array, number_of_samples=None, sampling_type="selection", list_of_distributions=None,
+            )
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    def test__init__selection_12(self, array_type):
+        input_array = array_type(self.input_array_list)
+        with pytest.raises(TypeError):
+            CSClass = CustomSampling(
+                input_array, number_of_samples=None, sampling_type="selection", list_of_distributions=('uniform', 'normal'),
+            )
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    def test__init__selection_13(self, array_type):
+        input_array = array_type(self.input_array_list)
+        with pytest.raises(TypeError):
+            CSClass = CustomSampling(
+                input_array, number_of_samples=None, sampling_type="selection", list_of_distributions=['uniform', 1.0]
+            )
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    def test__init__selection_14(self, array_type):
+        input_array = array_type(self.input_array_list)
+        with pytest.raises(ValueError):
+            CSClass = CustomSampling(
+                input_array, number_of_samples=None, sampling_type="selection", list_of_distributions=['uniform', 'binomial']
+            )
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [list])
+    def test__init__creation_01(self, array_type):
+        input_array = array_type(self.input_array_list)
+        CSClass = CustomSampling(
+            input_array, number_of_samples=None, sampling_type=None, list_of_distributions=['uniform', 'normal', 'random'],
+        )
+        np.testing.assert_array_equal(CSClass.data, input_array)
+        np.testing.assert_array_equal(CSClass.number_of_samples, 5)
+        assert CSClass.dist_vector == ['uniform', 'normal', 'random']
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [list])
+    def test__init__creation_02(self, array_type):
+        input_array = array_type(self.input_array_list)
+        CSClass = CustomSampling(
+            input_array, number_of_samples=None, sampling_type="creation", list_of_distributions=['uniform', 'normal', 'random'],
+        )
+        np.testing.assert_array_equal(CSClass.data, input_array)
+        np.testing.assert_array_equal(CSClass.number_of_samples, 5)
+        assert CSClass.dist_vector == ['uniform', 'normal', 'random']
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [list])
+    def test__init__creation_03(self, array_type):
+        input_array = array_type(self.input_array_list)
+        CSClass = CustomSampling(
+            input_array, number_of_samples=100, sampling_type="creation", list_of_distributions=['uniform', 'normal', 'random'],
+        )
+        np.testing.assert_array_equal(CSClass.data, input_array)
+        np.testing.assert_array_equal(CSClass.number_of_samples, 100)
+        assert CSClass.dist_vector == ['uniform', 'normal', 'random']
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [list])
+    def test__init__creation_04(self, array_type):
+        input_array = array_type(self.input_array_list)
+        with pytest.raises(Exception):
+            CSClass = CustomSampling(
+                input_array, number_of_samples=0, sampling_type="creation", list_of_distributions=['uniform', 'normal', 'random'],
+            )
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [list])
+    def test__init__creation_05(self, array_type):
+        input_array = array_type(self.input_array_list)
+        with pytest.raises(Exception):
+            CSClass = CustomSampling(
+                input_array, number_of_samples=-1, sampling_type="creation", list_of_distributions=['uniform', 'normal', 'random'],
+            )
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [list])
+    def test__init__creation_06(self, array_type):
+        input_array = array_type(self.input_array_list)
+        with pytest.raises(Exception):
+            CSClass = CustomSampling(
+                input_array, number_of_samples=1.1, sampling_type="creation", list_of_distributions=['uniform', 'normal', 'random'],
+            )
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    def test__init__creation_07(self, array_type):
+        input_array = array_type(self.input_array)
+        with pytest.raises(ValueError):
+            CSClass = CustomSampling(
+                input_array, number_of_samples=None, sampling_type="creation", list_of_distributions=['uniform', 'normal', 'random'],
+            )
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [pd.DataFrame])
+    def test__init__creation_08(self, array_type):
+        input_array = array_type(self.input_array)
+        with pytest.raises(ValueError):
+            CSClass = CustomSampling(
+                input_array, number_of_samples=None, sampling_type="creation", list_of_distributions=['uniform', 'normal', 'random'],
+            )
+    @pytest.mark.unit
+    def test__init__creation_09(self):
+        input_array = [[2, 11, 4.5]]
+        with pytest.raises(Exception):
+            CSClass = CustomSampling(
+                input_array, number_of_samples=None, sampling_type="creation", list_of_distributions=['uniform', 'normal', 'random'],
+            )
+    @pytest.mark.unit
+    def test__init__creation_10(self):
+        input_array = [np.array([1, 10, 3]), [2, 11, 4.5]]
+        with pytest.raises(Exception):
+            CSClass = CustomSampling(
+                input_array, number_of_samples=None, sampling_type="creation", list_of_distributions=['uniform', 'normal', 'random'],
+            )
+    @pytest.mark.unit
+    def test__init__creation_11(self):
+        input_array = [[1, 10, 3], np.array([2, 11, 4.5])]
+        with pytest.raises(Exception):
+            CSClass = CustomSampling(
+                input_array, number_of_samples=None, sampling_type="creation", list_of_distributions=['uniform', 'normal', 'random'],
+            )
+    @pytest.mark.unit
+    def test__init__creation_12(self):
+        input_array = [[1, 10], [2, 11, 4.5]]
+        with pytest.raises(Exception):
+            CSClass = CustomSampling(
+                input_array, number_of_samples=None, sampling_type="creation", list_of_distributions=['uniform', 'normal', 'random'],
+            )
+    @pytest.mark.unit
+    def test__init__creation_13(self):
+        input_array = [[2, 11, 4.5], [2, 11, 4.5]]
+        with pytest.raises(Exception):
+            csClass = CustomSampling(
+                input_array, number_of_samples=None, sampling_type="creation", list_of_distributions=['uniform', 'normal', 'random'],
+            )
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [list])
+    def test__init__creation_14(self, array_type):
+        input_array = array_type(self.input_array_list)
+        with pytest.raises(ValueError):
+            CSClass = CustomSampling(
+                input_array, number_of_samples=None, sampling_type="creation", list_of_distributions=['uniform', 'normal'],
+            )
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [list])
+    def test__init__creation_15(self, array_type):
+        input_array = array_type(self.input_array_list)
+        with pytest.raises(ValueError):
+            CSClass = CustomSampling(
+                input_array, number_of_samples=None, sampling_type="creation", list_of_distributions=['uniform', 'uniform', 'normal', 'random'],
+            )
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [list])
+    def test__init__selection_16(self, array_type):
+        input_array = array_type(self.input_array_list)
+        with pytest.raises(ValueError):
+            CSClass = CustomSampling(
+                input_array, number_of_samples=None, sampling_type="creation", list_of_distributions=None,
+            )
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [list])
+    def test__init__selection_17(self, array_type):
+        input_array = array_type(self.input_array_list)
+        with pytest.raises(TypeError):
+            CSClass = CustomSampling(
+                input_array, number_of_samples=None, sampling_type="creation", list_of_distributions=('uniform', 'normal', 'random'),
+            )
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [list])
+    def test__init__selection_18(self, array_type):
+        input_array = array_type(self.input_array_list)
+        with pytest.raises(TypeError):
+            CSClass = CustomSampling(
+                input_array, number_of_samples=None, sampling_type="creation", list_of_distributions=['uniform', 1.0, 'normal']
+            )
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [list])
+    def test__init__selection_19(self, array_type):
+        input_array = array_type(self.input_array_list)
+        with pytest.raises(ValueError):
+            CSClass = CustomSampling(
+                input_array, number_of_samples=None, sampling_type="creation", list_of_distributions=['uniform', 'gaussian', 'normal']
+            )
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    def test__init__creation_selection_01(self, array_type):
+        input_array = array_type(self.input_array)
+        with pytest.raises(Exception):
+            CSClass = CustomSampling(
+                input_array, number_of_samples=None, sampling_type=1, list_of_distributions=['uniform', 'normal'],
+            )
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    def test__init__creation_selection_02(self, array_type):
+        input_array = array_type(self.input_array)
+        with pytest.raises(Exception):
+            CSClass = CustomSampling(
+                input_array, number_of_samples=None, sampling_type="jp", list_of_distributions=['uniform', 'normal'],
+            )
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [np.array])
+    def test_generate_from_dist_01(self, array_type):
+        for num_samples in [None, 10, 1]:
+            input_array = array_type(self.input_array)
+            CSClass = CustomSampling(
+                input_array, number_of_samples=num_samples, sampling_type="selection", list_of_distributions=['uniform', 'normal']
+            )
+            dist_type = 'uniform'
+            dist_res, scaled_samples = CSClass.generate_from_dist(dist_type)
+            assert type(scaled_samples) == np.ndarray
+            assert scaled_samples.shape == (CSClass.number_of_samples, )
+            assert dist_res.__name__ == dist_type
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [np.array])
+    def test_generate_from_dist_02(self, array_type):
+        for num_samples in [None, 10, 1]:
+            input_array = array_type(self.input_array)
+            CSClass = CustomSampling(
+                input_array, number_of_samples=num_samples, sampling_type="selection",
+                list_of_distributions=['uniform', 'normal']
+            )
+            dist_type = 'normal'
+            dist_res, scaled_samples = CSClass.generate_from_dist(dist_type)
+            assert type(scaled_samples) == np.ndarray
+            assert scaled_samples.shape == (CSClass.number_of_samples, )
+            assert dist_res.__name__ == dist_type
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [np.array])
+    def test_generate_from_dist_03(self, array_type):
+        for num_samples in [None, 10, 1]:
+            input_array = array_type(self.input_array)
+            CSClass = CustomSampling(
+                input_array, number_of_samples=num_samples, sampling_type="selection",
+                list_of_distributions=['uniform', 'normal']
+            )
+            dist_type = 'random'
+            dist_res, scaled_samples = CSClass.generate_from_dist(dist_type)
+            assert type(scaled_samples) == np.ndarray
+            assert scaled_samples.shape == (CSClass.number_of_samples, )
+            assert dist_res.__name__ == dist_type
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [np.array])
+    def test_generate_from_dist_04(self, array_type):
+        for num_samples in [None, 10, 1]:
+            input_array = array_type(self.input_array)
+            CSClass = CustomSampling(
+                input_array, number_of_samples=num_samples, sampling_type="selection",
+                list_of_distributions=['uniform', 'normal']
+            )
+            for dist_type in ['uniform', 'random', 'uniform']:
+                dist_res, scaled_samples = CSClass.generate_from_dist(dist_type)
+                assert type(scaled_samples) == np.ndarray
+                assert scaled_samples.shape == (CSClass.number_of_samples,)
+                assert dist_res.__name__ == dist_type
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [np.array])
+    def test_sample_points_01(self, array_type):
+        for num_samples in [None, 10, 1]:
+            input_array = array_type(self.input_array)
+            CSClass = CustomSampling(
+                input_array, number_of_samples=num_samples, sampling_type="selection", list_of_distributions=['random', 'normal']
+            )
+            unique_sample_points = CSClass.sample_points()
+            expected_testing = np.array(
+                [True] * unique_sample_points.shape[0], dtype=bool
+            )
+            out_testing = [
+                unique_sample_points[i, :] in input_array
+                for i in range(unique_sample_points.shape[0])
+            ]
+            np.testing.assert_array_equal(
+                np.unique(unique_sample_points, axis=0), unique_sample_points
+            )
+            np.testing.assert_array_equal(expected_testing, out_testing)
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [list])
+    def test_sample_points_02(self, array_type):
+        for num_samples in [None, 10, 1]:
+            input_array = array_type(self.input_array_list)
+            CSClass = CustomSampling(
+                input_array, number_of_samples=num_samples, sampling_type="creation", list_of_distributions=['random', 'normal', 'uniform']
+            )
+            unique_sample_points = CSClass.sample_points()
+            input_array = np.array(input_array)
+            for i in range(input_array.shape[1]):
+                var_range = input_array[:, i]
+                assert (unique_sample_points[:, i] >= var_range[0]).all() and (
+                    unique_sample_points[:, i] <= var_range[1]
+                ).all()
+            np.testing.assert_array_equal(
+                np.unique(unique_sample_points, axis=0).shape,
+                unique_sample_points.shape,
+            )
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [pd.DataFrame])
+    def test_sample_points_03(self, array_type):
+        for num_samples in [None, 10, 1]:
+            input_array = array_type(self.full_data)
+            CSClass = CustomSampling(
+                input_array, number_of_samples=num_samples, sampling_type="selection", list_of_distributions=['random', 'normal']
+            )
+            unique_sample_points = CSClass.sample_points()
+            expected_testing = np.array(
+                [True] * unique_sample_points.shape[0], dtype=bool
+            )
+            unique_sample_points = np.array(unique_sample_points)
+            out_testing = [
+                unique_sample_points[i, :] in np.array(input_array)
+                for i in range(unique_sample_points.shape[0])
+            ]
+            np.testing.assert_array_equal(
+                np.unique(unique_sample_points, axis=0), unique_sample_points
+            )
+            np.testing.assert_array_equal(expected_testing, out_testing)
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [list])
+    def test_sample_points_04(self, array_type):
+        for num_samples in [None, 10, 1]:
+            input_array = array_type(self.input_array_list)
+            CSClass = CustomSampling(
+                input_array, number_of_samples=num_samples, sampling_type="creation", list_of_distributions=['random', 'normal', 'uniform']
+            )
+            unique_sample_points = CSClass.sample_points()
+            assert len(CSClass.dist_vector) == len(input_array[0])
+            assert unique_sample_points.shape[0] == CSClass.number_of_samples
+            assert unique_sample_points.shape[1] == len(input_array[0])
+            assert type(unique_sample_points) == np.ndarray
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [pd.DataFrame])
+    def test_sample_points_05(self, array_type):
+        for num_samples in [None, 10, 1]:
+            input_array = array_type(self.full_data)
+            CSClass = CustomSampling(
+                input_array, number_of_samples=num_samples, sampling_type="selection", list_of_distributions=['random', 'normal']
+            )
+            unique_sample_points = CSClass.sample_points()
+            assert len(CSClass.dist_vector) == input_array.shape[1] - 1
+            assert unique_sample_points.shape[1] == input_array.shape[1]
+            assert type(unique_sample_points) == pd.DataFrame
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [np.array])
+    def test_sample_points_06(self, array_type):
+        for num_samples in [None, 10, 1]:
+            input_array = array_type(self.input_array)
+            CSClass = CustomSampling(
+                input_array, number_of_samples=num_samples, sampling_type="selection", list_of_distributions=['random', 'uniform']
+            )
+            unique_sample_points = CSClass.sample_points()
+            assert len(CSClass.dist_vector) == input_array.shape[1] - 1
+            assert unique_sample_points.shape[1] == input_array.shape[1]
+            assert type(unique_sample_points) == np.ndarray
 
 
 if __name__ == "__main__":
