@@ -1628,7 +1628,7 @@ class CustomSampling(SamplingMethods):
                 number_of_samples = 5
             elif number_of_samples > self.data.shape[0]:
                 raise Exception(
-                    "LHS sample size cannot be greater than number of samples in the input data set"
+                    "Sample size cannot be greater than number of samples in the input data set"
                 )
             elif not isinstance(number_of_samples, int):
                 raise Exception("number_of_samples must be an integer.")
@@ -1681,7 +1681,7 @@ class CustomSampling(SamplingMethods):
         if list_of_distributions is None:
             raise ValueError("list_of_distributions cannot be empty.")
         if not isinstance(list_of_distributions, list):
-            raise TypeError("list_of_distributions: list required.")
+            raise TypeError("Error with list_of_distributions: list required.")
         if len(list_of_distributions) != self.x_data.shape[1]:
             raise ValueError(
                 "Length of list_of_distributions must equal the number of variables."
