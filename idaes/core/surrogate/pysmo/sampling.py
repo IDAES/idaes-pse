@@ -501,11 +501,11 @@ class LatinHypercubeSampling(SamplingMethods):
             **self** function containing the input information
 
         Raises:
-            ValueError: The input data (**data_input**) is the wrong type.
+            ValueError: The input data (**data_input**) is the wrong type/dimension, or **number_of_samples** is invalid (too large, zero, or negative)
+
+            TypeError: When **number_of_samples** is not the right type, or **sampling_type** entry is not a string.
 
             IndexError: When invalid column names are supplied in **xlabels** or **ylabels**
-
-            Exception: When **number_of_samples** is invalid (not an integer, too large, zero, or negative)
 
         """
 
@@ -514,14 +514,14 @@ class LatinHypercubeSampling(SamplingMethods):
             self.sampling_type = sampling_type
             print("Creation-type sampling will be used.")
         elif not isinstance(sampling_type, str):
-            raise Exception("Invalid sampling type entry. Must be of type <str>.")
+            raise TypeError("Invalid sampling type entry. Must be of type <str>.")
         elif (sampling_type.lower() == "creation") or (
             sampling_type.lower() == "selection"
         ):
             sampling_type = sampling_type.lower()
             self.sampling_type = sampling_type
         else:
-            raise Exception(
+            raise ValueError(
                 'Invalid sampling type requirement entered. Enter "creation" for sampling from a range or "selection" for selecting samples from a dataset.'
             )
         print("Sampling type: ", self.sampling_type, "\n")
@@ -541,13 +541,13 @@ class LatinHypercubeSampling(SamplingMethods):
                 )
                 number_of_samples = 5
             elif number_of_samples > self.data.shape[0]:
-                raise Exception(
+                raise ValueError(
                     "LHS sample size cannot be greater than number of samples in the input data set"
                 )
             elif not isinstance(number_of_samples, int):
-                raise Exception("number_of_samples must be an integer.")
+                raise TypeError("number_of_samples must be an integer.")
             elif number_of_samples <= 0:
-                raise Exception("number_of_samples must a positive, non-zero integer.")
+                raise ValueError("number_of_samples must a positive, non-zero integer.")
             self.number_of_samples = number_of_samples
 
         elif self.sampling_type == "creation":
@@ -555,16 +555,19 @@ class LatinHypercubeSampling(SamplingMethods):
                 raise ValueError(
                     'List entry of two elements expected for sampling_type "creation."'
                 )
-            elif len(data_input) != 2:
-                raise Exception("data_input must contain two lists of equal lengths.")
-            elif not isinstance(data_input[0], list) or not isinstance(
-                data_input[1], list
+            elif (
+                len(data_input) != 2
+                or not isinstance(data_input[0], list)
+                or not isinstance(data_input[1], list)
+                or len(data_input[0]) != len(data_input[1])
             ):
-                raise Exception("data_input must contain two lists of equal lengths.")
-            elif len(data_input[0]) != len(data_input[1]):
-                raise Exception("data_input must contain two lists of equal lengths.")
+                raise ValueError("data_input must contain two lists of equal lengths.")
             elif data_input[0] == data_input[1]:
-                raise Exception("Invalid entry: both lists are equal.")
+                raise ValueError("Invalid entry: both lists are equal.")
+            elif any(x == y for x, y in zip(data_input[0], data_input[1])):
+                raise ValueError(
+                    "Invalid entry: at least one variable contains the same value for the lower and upper bounds."
+                )
             else:
                 bounds_array = np.zeros(
                     (
@@ -585,9 +588,9 @@ class LatinHypercubeSampling(SamplingMethods):
                 )
                 number_of_samples = 5
             elif not isinstance(number_of_samples, int):
-                raise Exception("number_of_samples must be an integer.")
+                raise TypeError("number_of_samples must be an integer.")
             elif number_of_samples <= 0:
-                raise Exception("number_of_samples must a positive, non-zero integer.")
+                raise ValueError("number_of_samples must a positive, non-zero integer.")
             self.number_of_samples = number_of_samples
             self.x_data = bounds_array  # Only x data will be present in this case
 
@@ -740,13 +743,11 @@ class UniformSampling(SamplingMethods):
             **self** function containing the input information
 
         Raises:
-            ValueError: The **data_input** is the wrong type
+            ValueError: The **data_input** is the wrong type, or **list_of_samples_per_variable** is of the wrong length, or **list_of_samples_per_variable** is invalid.
 
-            ValueError: When **list_of_samples_per_variable** is of the wrong length, is not a list or contains elements other than integers
+            TypeError: When **list_of_samples_per_variable** is not a list,  or **list_of_samples_per_variable** contains elements other than integers, **sampling_type** is not a string, or **edges** entry is not Boolean
 
             IndexError: When invalid column names are supplied in **xlabels** or **ylabels**
-
-            Exception: When **edges** entry is not Boolean
 
         """
         if sampling_type is None:
@@ -754,14 +755,14 @@ class UniformSampling(SamplingMethods):
             self.sampling_type = sampling_type
             print("Creation-type sampling will be used.")
         elif not isinstance(sampling_type, str):
-            raise Exception("Invalid sampling type entry. Must be of type <str>.")
+            raise TypeError("Invalid sampling type entry. Must be of type <str>.")
         elif (sampling_type.lower() == "creation") or (
             sampling_type.lower() == "selection"
         ):
             sampling_type = sampling_type.lower()
             self.sampling_type = sampling_type
         else:
-            raise Exception(
+            raise ValueError(
                 'Invalid sampling type requirement entered. Enter "creation" for sampling from a range or "selection" for selecting samples from a dataset.'
             )
         print("Sampling type: ", self.sampling_type, "\n")
@@ -779,16 +780,19 @@ class UniformSampling(SamplingMethods):
                 raise ValueError(
                     'List entry of two elements expected for sampling_type "creation."'
                 )
-            elif len(data_input) != 2:
-                raise Exception("data_input must contain two lists of equal lengths.")
-            elif not isinstance(data_input[0], list) or not isinstance(
-                data_input[1], list
+            elif (
+                len(data_input) != 2
+                or not isinstance(data_input[0], list)
+                or not isinstance(data_input[1], list)
+                or len(data_input[0]) != len(data_input[1])
             ):
-                raise Exception("data_input must contain two lists of equal lengths.")
-            elif len(data_input[0]) != len(data_input[1]):
-                raise Exception("data_input must contain two lists of equal lengths.")
+                raise ValueError("data_input must contain two lists of equal lengths.")
             elif data_input[0] == data_input[1]:
-                raise Exception("Invalid entry: both lists are equal.")
+                raise ValueError("Invalid entry: both lists are equal.")
+            elif any(x == y for x, y in zip(data_input[0], data_input[1])):
+                raise ValueError(
+                    "Invalid entry: at least one variable contains the same value for the lower and upper bounds."
+                )
             else:
                 bounds_array = np.zeros(
                     (
@@ -807,7 +811,7 @@ class UniformSampling(SamplingMethods):
             edges = True
             self.edge = edges
         elif not isinstance(edges, bool):
-            raise Exception('Invalid "edges" entry. Must be boolean')
+            raise TypeError('Invalid "edges" entry. Must be boolean')
         elif (edges is True) or (edges is False):
             self.edge = edges
 
@@ -832,7 +836,7 @@ class UniformSampling(SamplingMethods):
             self.sampling_type == "selection"
             and self.number_of_samples > self.data.shape[0]
         ):
-            raise Exception(
+            raise ValueError(
                 "Sample size cannot be greater than number of samples in the input data set"
             )
 
@@ -922,11 +926,11 @@ class HaltonSampling(SamplingMethods):
             **self** function containing the input information.
 
         Raises:
-            ValueError: The **data_input** is the wrong type.
+            ValueError: The input data (**data_input**) is the wrong type/dimension, or **number_of_samples** is invalid (too large, zero, or negative)
+
+            TypeError: When **number_of_samples** is not the right type, or **sampling_type** entry is not a string.
 
             IndexError: When invalid column names are supplied in **xlabels** or **ylabels**
-
-            Exception: When the **number_of_samples** is invalid (not an integer, too large, zero or negative.)
 
         """
         if sampling_type is None:
@@ -934,14 +938,14 @@ class HaltonSampling(SamplingMethods):
             self.sampling_type = sampling_type
             print("Creation-type sampling will be used.")
         elif not isinstance(sampling_type, str):
-            raise Exception("Invalid sampling type entry. Must be of type <str>.")
+            raise TypeError("Invalid sampling type entry. Must be of type <str>.")
         elif (sampling_type.lower() == "creation") or (
             sampling_type.lower() == "selection"
         ):
             sampling_type = sampling_type.lower()
             self.sampling_type = sampling_type
         else:
-            raise Exception(
+            raise ValueError(
                 'Invalid sampling type requirement entered. Enter "creation" for sampling from a range or "selection" for selecting samples from a dataset.'
             )
         print("Sampling type: ", self.sampling_type, "\n")
@@ -961,30 +965,33 @@ class HaltonSampling(SamplingMethods):
                 )
                 number_of_samples = 5
             elif number_of_samples > self.data.shape[0]:
-                raise Exception(
+                raise ValueError(
                     "Sample size cannot be greater than number of samples in the input data set"
                 )
             elif not isinstance(number_of_samples, int):
-                raise Exception("number_of_samples must be an integer.")
+                raise TypeError("number_of_samples must be an integer.")
             elif number_of_samples <= 0:
-                raise Exception("number_of_samples must a positive, non-zero integer.")
+                raise ValueError("number_of_samples must a positive, non-zero integer.")
             self.number_of_samples = number_of_samples
 
         elif self.sampling_type == "creation":
             if not isinstance(data_input, list):
-                raise ValueError(
+                raise TypeError(
                     'List entry of two elements expected for sampling_type "creation."'
                 )
-            elif len(data_input) != 2:
-                raise Exception("data_input must contain two lists of equal lengths.")
-            elif not isinstance(data_input[0], list) or not isinstance(
-                data_input[1], list
+            elif (
+                len(data_input) != 2
+                or not isinstance(data_input[0], list)
+                or not isinstance(data_input[1], list)
+                or len(data_input[0]) != len(data_input[1])
             ):
-                raise Exception("data_input must contain two lists of equal lengths.")
-            elif len(data_input[0]) != len(data_input[1]):
-                raise Exception("data_input must contain two lists of equal lengths.")
+                raise ValueError("data_input must contain two lists of equal lengths.")
             elif data_input[0] == data_input[1]:
-                raise Exception("Invalid entry: both lists are equal.")
+                raise ValueError("Invalid entry: both lists are equal.")
+            elif any(x == y for x, y in zip(data_input[0], data_input[1])):
+                raise ValueError(
+                    "Invalid entry: at least one variable contains the same value for the lower and upper bounds."
+                )
             else:
                 bounds_array = np.zeros(
                     (
@@ -1005,9 +1012,9 @@ class HaltonSampling(SamplingMethods):
                 )
                 number_of_samples = 5
             elif not isinstance(number_of_samples, int):
-                raise Exception("number_of_samples must be an integer.")
+                raise TypeError("number_of_samples must be an integer.")
             elif number_of_samples <= 0:
-                raise Exception("number_of_samples must a positive, non-zero integer.")
+                raise ValueError("number_of_samples must a positive, non-zero integer.")
             self.number_of_samples = number_of_samples
             self.x_data = bounds_array  # Only x data will be present in this case
 
@@ -1100,11 +1107,11 @@ class HammersleySampling(SamplingMethods):
                 **self** function containing the input information.
 
             Raises:
-                ValueError: When **data_input** is the wrong type.
+                ValueError: The input data (**data_input**) is the wrong type/dimension, or **number_of_samples** is invalid (too large, zero, or negative)
+
+                TypeError: When **number_of_samples** is not the right type, or **sampling_type** entry is not a string.
 
                 IndexError: When invalid column names are supplied in **xlabels** or **ylabels**
-
-                Exception: When the **number_of_samples** is invalid (not an integer, too large, zero, negative)
 
         """
         if sampling_type is None:
@@ -1112,14 +1119,14 @@ class HammersleySampling(SamplingMethods):
             self.sampling_type = sampling_type
             print("Creation-type sampling will be used.")
         elif not isinstance(sampling_type, str):
-            raise Exception("Invalid sampling type entry. Must be of type <str>.")
+            raise TypeError("Invalid sampling type entry. Must be of type <str>.")
         elif (sampling_type.lower() == "creation") or (
             sampling_type.lower() == "selection"
         ):
             sampling_type = sampling_type.lower()
             self.sampling_type = sampling_type
         else:
-            raise Exception(
+            raise ValueError(
                 'Invalid sampling type requirement entered. Enter "creation" for sampling from a range or "selection" for selecting samples from a dataset.'
             )
         print("Sampling type: ", self.sampling_type, "\n")
@@ -1139,13 +1146,13 @@ class HammersleySampling(SamplingMethods):
                 )
                 number_of_samples = 5
             elif number_of_samples > self.data.shape[0]:
-                raise Exception(
+                raise ValueError(
                     "Sample size cannot be greater than number of samples in the input data set"
                 )
             elif not isinstance(number_of_samples, int):
-                raise Exception("number_of_samples must be an integer.")
+                raise TypeError("number_of_samples must be an integer.")
             elif number_of_samples <= 0:
-                raise Exception("number_of_samples must a positive, non-zero integer.")
+                raise ValueError("number_of_samples must a positive, non-zero integer.")
             self.number_of_samples = number_of_samples
 
         elif self.sampling_type == "creation":
@@ -1153,16 +1160,19 @@ class HammersleySampling(SamplingMethods):
                 raise ValueError(
                     'List entry of two elements expected for sampling_type "creation."'
                 )
-            elif len(data_input) != 2:
-                raise Exception("data_input must contain two lists of equal lengths.")
-            elif not isinstance(data_input[0], list) or not isinstance(
-                data_input[1], list
+            elif (
+                len(data_input) != 2
+                or not isinstance(data_input[0], list)
+                or not isinstance(data_input[1], list)
+                or len(data_input[0]) != len(data_input[1])
             ):
-                raise Exception("data_input must contain two lists of equal lengths.")
-            elif len(data_input[0]) != len(data_input[1]):
-                raise Exception("data_input must contain two lists of equal lengths.")
+                raise ValueError("data_input must contain two lists of equal lengths.")
             elif data_input[0] == data_input[1]:
-                raise Exception("Invalid entry: both lists are equal.")
+                raise ValueError("Invalid entry: both lists are equal.")
+            elif any(x == y for x, y in zip(data_input[0], data_input[1])):
+                raise ValueError(
+                    "Invalid entry: at least one variable contains the same value for the lower and upper bounds."
+                )
             else:
                 bounds_array = np.zeros(
                     (
@@ -1183,9 +1193,9 @@ class HammersleySampling(SamplingMethods):
                 )
                 number_of_samples = 5
             elif not isinstance(number_of_samples, int):
-                raise Exception("number_of_samples must be an integer.")
+                raise TypeError("number_of_samples must be an integer.")
             elif number_of_samples <= 0:
-                raise Exception("number_of_samples must a positive, non-zero integer.")
+                raise ValueError("number_of_samples must a positive, non-zero integer.")
             self.number_of_samples = number_of_samples
             self.x_data = bounds_array  # Only x data will be present in this case
 
@@ -1284,13 +1294,15 @@ class CVTSampling(SamplingMethods):
 
 
         Raises:
-                ValueError: When **data_input** is the wrong type.
+                ValueError: The input data (**data_input**) is the wrong type/dimension, or **number_of_samples** is invalid (too large, zero, or negative)
+
+                ValueError: When the tolerance specified is too loose (tolerance > 0.1)
+
+                TypeError: When **number_of_samples** is not the right type, or **sampling_type** entry is not a string
 
                 IndexError: When invalid column names are supplied in **xlabels** or **ylabels**
 
-                Exception: When the **number_of_samples** is invalid (not an integer, too large, zero, negative)
-
-                Exception: When the tolerance specified is too loose (tolerance > 0.1) or invalid
+                Exception: When the tolerance specified is invalid
 
                 warnings.warn: when the tolerance specified by the user is too tight (tolerance < :math:`10^{-9}`)
 
@@ -1300,14 +1312,14 @@ class CVTSampling(SamplingMethods):
             self.sampling_type = sampling_type
             print("Creation-type sampling will be used.")
         elif not isinstance(sampling_type, str):
-            raise Exception("Invalid sampling type entry. Must be of type <str>.")
+            raise TypeError("Invalid sampling type entry. Must be of type <str>.")
         elif (sampling_type.lower() == "creation") or (
             sampling_type.lower() == "selection"
         ):
             sampling_type = sampling_type.lower()
             self.sampling_type = sampling_type
         else:
-            raise Exception(
+            raise ValueError(
                 'Invalid sampling type requirement entered. Enter "creation" for sampling from a range or "selection" for selecting samples from a dataset.'
             )
         print("Sampling type: ", self.sampling_type, "\n")
@@ -1327,13 +1339,13 @@ class CVTSampling(SamplingMethods):
                 )
                 number_of_samples = 5
             elif number_of_samples > self.data.shape[0]:
-                raise Exception(
+                raise ValueError(
                     "CVT sample size cannot be greater than number of samples in the input data set"
                 )
             elif not isinstance(number_of_samples, int):
-                raise Exception("number_of_samples must be an integer.")
+                raise TypeError("number_of_samples must be an integer.")
             elif number_of_samples <= 0:
-                raise Exception("number_of_samples must a positive, non-zero integer.")
+                raise ValueError("number_of_samples must a positive, non-zero integer.")
             self.number_of_centres = number_of_samples
 
         elif self.sampling_type == "creation":
@@ -1341,16 +1353,19 @@ class CVTSampling(SamplingMethods):
                 raise ValueError(
                     'List entry of two elements expected for sampling_type "creation."'
                 )
-            elif len(data_input) != 2:
-                raise Exception("data_input must contain two lists of equal lengths.")
-            elif not isinstance(data_input[0], list) or not isinstance(
-                data_input[1], list
+            elif (
+                len(data_input) != 2
+                or not isinstance(data_input[0], list)
+                or not isinstance(data_input[1], list)
+                or len(data_input[0]) != len(data_input[1])
             ):
-                raise Exception("data_input must contain two lists of equal lengths.")
-            elif len(data_input[0]) != len(data_input[1]):
-                raise Exception("data_input must contain two lists of equal lengths.")
+                raise ValueError("data_input must contain two lists of equal lengths.")
             elif data_input[0] == data_input[1]:
-                raise Exception("Invalid entry: both lists are equal.")
+                raise ValueError("Invalid entry: both lists are equal.")
+            elif any(x == y for x, y in zip(data_input[0], data_input[1])):
+                raise ValueError(
+                    "Invalid entry: at least one variable contains the same value for the lower and upper bounds."
+                )
             else:
                 bounds_array = np.zeros(
                     (
@@ -1371,9 +1386,9 @@ class CVTSampling(SamplingMethods):
                 )
                 number_of_samples = 5
             elif not isinstance(number_of_samples, int):
-                raise Exception("number_of_samples must be an integer.")
+                raise TypeError("number_of_samples must be an integer.")
             elif number_of_samples <= 0:
-                raise Exception("number_of_samples must a positive, non-zero integer.")
+                raise ValueError("number_of_samples must a positive, non-zero integer.")
             self.number_of_centres = number_of_samples
 
             x_data = bounds_array  # Only x data will be present in this case
@@ -1385,7 +1400,7 @@ class CVTSampling(SamplingMethods):
         if tolerance is None:
             tolerance = 1e-7
         elif tolerance > 0.1:
-            raise Exception("Tolerance must be less than 0.1 to achieve good results")
+            raise ValueError("Tolerance must be less than 0.1 to achieve good results")
         elif tolerance < 1e-9:
             warnings.warn(
                 "Tolerance too tight. CVT algorithm may take long time to converge."
@@ -1585,13 +1600,12 @@ class CustomSampling(SamplingMethods):
             **self** function containing the input information
 
         Raises:
-            ValueError: The **data_input** is the wrong type
+            ValueError: The input data (**data_input**) is the wrong type/dimension, or **number_of_samples** is invalid (too large, zero, or negative), **list_of_distributions** is the wrong length, or a non-implemented distribution is supplied in **list_of_distributions**.
 
-            ValueError: When a non-implemented distribution is supplied in list_of_distributions
+            TypeError: When **number_of_samples** is not an integer, **list_of_distributions** is not a list, or **sampling_type** entry is not a string
 
             IndexError: When invalid column names are supplied in **xlabels** or **ylabels**
 
-            Exception: When the **number_of_samples** is invalid (not an integer, too large, zero, negative)
 
 
         """
@@ -1600,14 +1614,14 @@ class CustomSampling(SamplingMethods):
             self.sampling_type = sampling_type
             print("Creation-type sampling will be used.")
         elif not isinstance(sampling_type, str):
-            raise Exception("Invalid sampling type entry. Must be of type <str>.")
+            raise TypeError("Invalid sampling type entry. Must be of type <str>.")
         elif (sampling_type.lower() == "creation") or (
             sampling_type.lower() == "selection"
         ):
             sampling_type = sampling_type.lower()
             self.sampling_type = sampling_type
         else:
-            raise Exception(
+            raise ValueError(
                 'Invalid sampling type requirement entered. Enter "creation" for sampling from a range or "selection" for selecting samples from a dataset.'
             )
         print("Sampling type: ", self.sampling_type, "\n")
@@ -1627,13 +1641,13 @@ class CustomSampling(SamplingMethods):
                 )
                 number_of_samples = 5
             elif number_of_samples > self.data.shape[0]:
-                raise Exception(
+                raise ValueError(
                     "Sample size cannot be greater than number of samples in the input data set"
                 )
             elif not isinstance(number_of_samples, int):
-                raise Exception("number_of_samples must be an integer.")
+                raise TypeError("number_of_samples must be an integer.")
             elif number_of_samples <= 0:
-                raise Exception("number_of_samples must a positive, non-zero integer.")
+                raise ValueError("number_of_samples must a positive, non-zero integer.")
             self.number_of_samples = number_of_samples
 
         elif self.sampling_type == "creation":
@@ -1641,16 +1655,19 @@ class CustomSampling(SamplingMethods):
                 raise ValueError(
                     'List entry of two elements expected for sampling_type "creation."'
                 )
-            elif len(data_input) != 2:
-                raise Exception("data_input must contain two lists of equal lengths.")
-            elif not isinstance(data_input[0], list) or not isinstance(
-                data_input[1], list
+            elif (
+                len(data_input) != 2
+                or not isinstance(data_input[0], list)
+                or not isinstance(data_input[1], list)
+                or len(data_input[0]) != len(data_input[1])
             ):
-                raise Exception("data_input must contain two lists of equal lengths.")
-            elif len(data_input[0]) != len(data_input[1]):
-                raise Exception("data_input must contain two lists of equal lengths.")
+                raise ValueError("data_input must contain two lists of equal lengths.")
             elif data_input[0] == data_input[1]:
-                raise Exception("Invalid entry: both lists are equal.")
+                raise ValueError("Invalid entry: both lists are equal.")
+            elif any(x == y for x, y in zip(data_input[0], data_input[1])):
+                raise ValueError(
+                    "Invalid entry: at least one variable contains the same value for the lower and upper bounds."
+                )
             else:
                 bounds_array = np.zeros(
                     (
@@ -1671,9 +1688,9 @@ class CustomSampling(SamplingMethods):
                 )
                 number_of_samples = 5
             elif not isinstance(number_of_samples, int):
-                raise Exception("number_of_samples must be an integer.")
+                raise TypeError("number_of_samples must be an integer.")
             elif number_of_samples <= 0:
-                raise Exception("number_of_samples must a positive, non-zero integer.")
+                raise ValueError("number_of_samples must a positive, non-zero integer.")
             self.number_of_samples = number_of_samples
             self.x_data = bounds_array  # Only x data will be present in this case
 
