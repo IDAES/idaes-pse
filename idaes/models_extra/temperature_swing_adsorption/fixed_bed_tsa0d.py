@@ -1167,29 +1167,35 @@ The property package must be iapws95.
         self.flow_mol_h2o_o2_stream = Var(
             self.flowsheet().time,
             self.component_list - self.isotherm_components,
+            initialize=1,
             units=units.mol / units.s,
             doc="Component mole flow rate at H2O+O2 stream",
         )
         self.temperature_h2o_o2_stream = Var(
-            self.flowsheet().time, units=units.K, doc="Temperature at H2O+O2 stream"
+            self.flowsheet().time,
+            initialize=300,
+            units=units.K,
+            doc="Temperature at H2O+O2 stream",
         )
         self.pressure_h2o_o2_stream = Var(
-            self.flowsheet().time, units=units.Pa, doc="Pressure at H2O+O2 stream"
+            self.flowsheet().time,
+            initialize=101325,
+            units=units.Pa,
+            doc="Pressure at H2O+O2 stream",
         )
 
-        # create empty port
-        p = Port(noruleinit=True, doc="Outlet port for H2O+O2 stream")
-        # add port object as an attribute to model
-        setattr(self, "h2o_o2_stream", p)
         # dictionary containing state of outlet h2o_o2_stream
         h2o_o2_stream_dict = {
             "flow_mol_comp": self.flow_mol_h2o_o2_stream,
             "temperature": self.temperature_h2o_o2_stream,
             "pressure": self.pressure_h2o_o2_stream,
         }
-        # populate port and map names to actual variables as defined
-        for key, item in h2o_o2_stream_dict.items():
-            p.add(item, name=key)
+        # create port
+        self.h2o_o2_stream = Port(
+            noruleinit=True,
+            initialize=h2o_o2_stream_dict,
+            doc="Outlet port for H2O+O2 stream",
+        )
 
         # add constraints to populate h2o_o2_stream
         @self.Constraint(
@@ -1632,7 +1638,9 @@ The property package must be iapws95.
             units=units.dimensionless,
             doc="Mole fraction in pressurization step",
         )
-        self.pressurization.time = Var(units=units.s, doc="Time of pressurization step")
+        self.pressurization.time = Var(
+            initialize=1e2, units=units.s, doc="Time of pressurization step"
+        )
         self.pressurization.loading = Var(
             self.isotherm_components,
             units=units.mol / units.kg,
@@ -1758,7 +1766,9 @@ The property package must be iapws95.
         self.adsorption = SkeletonUnitModel()
 
         # variables
-        self.adsorption.time = Var(units=units.s, doc="Time of adsorption step")
+        self.adsorption.time = Var(
+            initialize=1e2, units=units.s, doc="Time of adsorption step"
+        )
         self.adsorption.loading = Var(
             self.isotherm_components,
             units=units.mol / units.kg,
@@ -2843,7 +2853,7 @@ The property package must be iapws95.
             "Inlet": "inlet",
             "CO2 Rich Stream": "co2_rich_stream",
             "N2 Rich Stream": "n2_rich_stream",
-            "H20 Stream": "h2o_o2_stream",
+            "H2O Stream": "h2o_o2_stream",
         }.items():
             port_obj = getattr(self, v)
 
