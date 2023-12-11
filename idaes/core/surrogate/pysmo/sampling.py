@@ -1558,6 +1558,8 @@ class CustomSampling(SamplingMethods):
 
     - The distribution to be used per variable needs to be specified in a list.
 
+    - Users are urged to visit the documentation for more information about normal distribution-based sampling.
+
     To use: call class with inputs, and then ``sample_points`` function
 
     **Example:**
@@ -1567,6 +1569,16 @@ class CustomSampling(SamplingMethods):
         # To select 50 samples on a (10 x 5) grid in a 2D space:
         >>> b = rbf.CustomSampling(data, [10, 5], list_of_distributions= ['normal', 'uniform'], sampling_type="selection")
         >>> samples = b.sample_points()
+
+    **Note on Gaussian-based sampling**
+
+    To remain consistent with the other sampling methods and distributions, bounds are required for specifying Gaussian distributions, rather than the mean (:math:`\\bar{x}`) and standard deviation (:math:`\\sigma`).
+
+    Given the mean and standard deviation, the bounds of the distribution may be computed as:
+
+    Lower bound = :math:`\\bar{x} - 3\\sigma` ; Upper bound = :math:`\\bar{x} + 3\\sigma`
+
+    Users should visit the documentation for more information.
 
     """
 
@@ -1581,7 +1593,7 @@ class CustomSampling(SamplingMethods):
         strictly_enforce_gaussian_bounds=False,
     ):
         """
-        Initialization of CustomSampling class. Three inputs are required.
+        Initialization of CustomSampling class. Four inputs are required.
 
         Args:
             data_input (NumPy Array, Pandas Dataframe or list) :  The input data set or range to be sampled.
@@ -1607,7 +1619,6 @@ class CustomSampling(SamplingMethods):
             TypeError: When **number_of_samples** is not an integer, **list_of_distributions** is not a list, or **sampling_type** entry is not a string
 
             IndexError: When invalid column names are supplied in **xlabels** or **ylabels**
-
 
 
         """
@@ -1715,6 +1726,10 @@ class CustomSampling(SamplingMethods):
             )
         self.dist_vector = list_of_distributions
 
+        if not isinstance(strictly_enforce_gaussian_bounds, bool):
+            raise TypeError(
+                "Invalid 'strictly_enforce_gaussian_bounds' entry. Must be boolean."
+            )
         self.normal_bounds_enforced = strictly_enforce_gaussian_bounds
 
     def generate_from_dist(self, dist_name):

@@ -3053,7 +3053,7 @@ class TestCustomSampling:
         input_array = array_type([[0, 0, 0], [1, 1, 1]])
         with pytest.raises(
             TypeError,
-            match='Invalid "strictly_enforce_gaussian_bounds" entry. Must be boolean.',
+            match="Invalid 'strictly_enforce_gaussian_bounds' entry. Must be boolean.",
         ):
             CSClass = CustomSampling(
                 input_array,
