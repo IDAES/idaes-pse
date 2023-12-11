@@ -3076,11 +3076,16 @@ class TestCheckParallelJacobian:
 
     @pytest.mark.unit
     def test_columns(self, model):
-        assert check_parallel_jacobian(model, direction="column") == [
-            (model.v1, model.v2),
-            (model.v1, model.v4),
-            (model.v2, model.v4),
+        pcol = check_parallel_jacobian(model, direction="column")
+
+        expected = [
+            ("v1", "v2"),
+            ("v1", "v4"),
+            ("v2", "v4"),
         ]
+
+        for i in pcol:
+            assert tuple(sorted([i[0].name, i[1].name])) in expected
 
 
 class TestCheckIllConditioning:

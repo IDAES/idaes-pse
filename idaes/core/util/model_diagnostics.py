@@ -3142,9 +3142,6 @@ def check_parallel_jacobian(model, tolerance: float = 1e-4, direction: str = "ro
     Numerical Instability in Linear and Integer Programs, Informs 2014, pgs. 54-108
     https://pubsonline.informs.org/doi/epdf/10.1287/educ.2014.0130
 
-    We would also like to acknowledge Gurobi Model Analyzer for their implementation
-    of these methods (https://github.com/Gurobi/gurobi-modelanalyzer).
-
     Args:
         model: model to be analysed
         tolerance: tolerance to use to determine if constraints/variables are parallel
@@ -3233,9 +3230,6 @@ def check_ill_conditioning(
     Klotz, E., Identification, Assessment, and Correction of Ill-Conditioning and
     Numerical Instability in Linear and Integer Programs, Informs 2014, pgs. 54-108
     https://pubsonline.informs.org/doi/epdf/10.1287/educ.2014.0130
-
-    We would also like to acknowledge Gurobi Model Analyzer for their implementation
-    of these methods (https://github.com/Gurobi/gurobi-modelanalyzer).
 
     Args:
         model: model to be analysed
