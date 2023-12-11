@@ -1566,19 +1566,19 @@ class CustomSampling(SamplingMethods):
 
     .. code-block:: python
 
-        # To select 50 samples on a (10 x 5) grid in a 2D space:
-        >>> b = rbf.CustomSampling(data, [10, 5], list_of_distributions= ['normal', 'uniform'], sampling_type="selection")
+        # To select 50 samples drom a dataset:
+        >>> b = rbf.CustomSampling(data, 50, list_of_distributions= ['normal', 'uniform'], sampling_type="selection")
         >>> samples = b.sample_points()
 
-    **Note on Gaussian-based sampling**
+    Note:
 
-    To remain consistent with the other sampling methods and distributions, bounds are required for specifying Gaussian distributions, rather than the mean (:math:`\\bar{x}`) and standard deviation (:math:`\\sigma`).
+        To remain consistent with the other sampling methods and distributions, **bounds are required for specifying normal distributions, rather than the mean and standard deviation**.
 
-    Given the mean and standard deviation, the bounds of the distribution may be computed as:
+        Given the mean (:math:`\\bar{x}`) and standard deviation (:math:`\\sigma`), the bounds of the normal distribution may be computed as:
 
-    Lower bound = :math:`\\bar{x} - 3\\sigma` ; Upper bound = :math:`\\bar{x} + 3\\sigma`
+        Lower bound = :math:`\\bar{x} - 3\\sigma` ; Upper bound = :math:`\\bar{x} + 3\\sigma`
 
-    Users should visit the documentation for more information.
+        Users should visit the documentation for more information.
 
     """
 
