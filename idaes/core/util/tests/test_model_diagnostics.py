@@ -975,7 +975,9 @@ The following pairs of constraints are nearly parallel:
         expected = """====================================================================================
 The following pairs of variables are nearly parallel:
 
+    v1, v2
     v1, v4
+    v2, v4
 
 ====================================================================================
 """
@@ -3075,7 +3077,9 @@ class TestCheckParallelJacobian:
     @pytest.mark.unit
     def test_columns(self, model):
         assert check_parallel_jacobian(model, direction="column") == [
-            (model.v1, model.v4)
+            (model.v1, model.v2),
+            (model.v1, model.v4),
+            (model.v2, model.v4),
         ]
 
 

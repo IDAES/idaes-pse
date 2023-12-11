@@ -3165,51 +3165,56 @@ def check_parallel_jacobian(model, tolerance: float = 1e-4, direction: str = "ro
 
     jac, nlp = get_jacobian(model, scaled=False)
 
-    # Get list of row/column names
+    # Get vectors that we will check, and the Pyomo components
+    # they correspond to.
     if direction == "row":
-        comp_list = nlp.get_pyomo_constraints()
-    else:
-        comp_list = nlp.get_pyomo_variables()
+        components = nlp.get_pyomo_constraints()
+        csrjac = jac.tocsr()
+        # Make everything a column vector (CSC) for consistency
+        vectors = [csrjac[i, :].transpose().tocsc() for i in range(len(components))]
+    elif direction == "column":
+        components = nlp.get_pyomo_variables()
+        cscjac = jac.tocsc()
+        vectors = [cscjac[:, i] for i in range(len(components))]
 
+    # List to store pairs of parallel components
     parallel = []
 
-    if direction == "row":
-        spjac = jac.tocsr()
-        # Make everything a column vector (CSC) for consistency
-        vectors = [spjac[idx, :].transpose() for idx in range(len(comp_list))]
-    else:
-        spjac = jac.tocsc()
-        vectors = [spjac[:, idx] for idx in range(len(comp_list))]
-
     vectors_by_nz = {}
-    for u, comp in zip(vectors, comp_list):
-        maxval = max(np.abs(u.data))
+    for vecidx, vec in enumerate(vectors):
+        maxval = max(np.abs(vec.data))
+        # Construct tuple of sorted col/row indices that participate
+        # in this vector (with non-negligible coefficient).
         nz = tuple(
             sorted(
                 idx
-                for idx, val in zip(u.indices, u.data)
-                if abs(val) >= tolerance and abs(val) / maxval >= tolerance
+                for idx, val in zip(vec.indices, vec.data)
+                if abs(val) > tolerance and abs(val) / maxval > tolerance
             )
         )
         if nz in vectors_by_nz:
-            vectors_by_nz[nz].append((u, comp))
+            # Store the index as well so we know what component this
+            # correrponds to.
+            vectors_by_nz[nz].append((vec, vecidx))
         else:
-            vectors_by_nz[nz] = [(u, comp)]
+            vectors_by_nz[nz] = [(vec, vecidx)]
 
-    for vectors in vectors_by_nz.values():
-        for uidx, (u, ucomp) in enumerate(vectors):
+    for vecs in vectors_by_nz.values():
+        for idx, (u, uidx) in enumerate(vecs):
+            # idx is the "local index", uidx is the "global index"
+            # Frobenius norm of the matrix is 2-norm of this column vector
             unorm = norm(u, ord="fro")
-            for v, vcomp in vectors[uidx + 1 :]:
+            for v, vidx in vecs[idx + 1 :]:
                 vnorm = norm(v, ord="fro")
 
-                # Not sure if this matters, but explicitly do row-vector
-                # times column vector
-                a = u.transpose().dot(v)
-                assert a.shape == (1, 1)
+                # Explicitly multiply a row vector * column vector
+                prod = u.transpose().dot(v)
+                absprod = abs(prod[0, 0])
+                diff = abs(absprod - unorm * vnorm)
+                if diff <= tolerance or diff <= tolerance * max(unorm, vnorm):
+                    parallel.append((uidx, vidx))
 
-                if abs(abs(a[0, 0]) - unorm * vnorm) <= tolerance:
-                    parallel.append((ucomp, vcomp))
-
+    parallel = [(components[uidx], components[vidx]) for uidx, vidx in parallel]
     return parallel
 
 
