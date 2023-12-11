@@ -1578,6 +1578,7 @@ class CustomSampling(SamplingMethods):
         sampling_type=None,
         xlabels=None,
         ylabels=None,
+        strictly_enforce_gaussian_bounds=False,
     ):
         """
         Initialization of CustomSampling class. Three inputs are required.
@@ -1595,6 +1596,7 @@ class CustomSampling(SamplingMethods):
         Keyword Args:
             xlabels (list): List of column names (if **data_input** is a dataframe) or column numbers (if **data_input** is an array) for the independent/input  variables.  Only used in "selection" mode. Default is None.
             ylabels (list): List of column names (if **data_input** is a dataframe) or column numbers (if **data_input** is an array) for the dependent/output variables. Only used in "selection" mode. Default is None.
+            strictly_enforce_gaussian_bounds (bool): Boolean specifying whether the provided bounds for normal distributions should be strictly enforced. Note that selecting this option may affect the underlying distribution. Default is False.
 
         Returns:
             **self** function containing the input information
@@ -1713,6 +1715,8 @@ class CustomSampling(SamplingMethods):
             )
         self.dist_vector = list_of_distributions
 
+        self.normal_bounds_enforced = strictly_enforce_gaussian_bounds
+
     def generate_from_dist(self, dist_name):
         if dist_name.lower() in ["uniform", "random"]:
             dist = getattr(np.random.default_rng(), dist_name.lower())
@@ -1721,16 +1725,37 @@ class CustomSampling(SamplingMethods):
         elif dist_name.lower() == "normal":
             dist = getattr(np.random.default_rng(), "normal")
             var_values = dist(loc=0.5, scale=1 / 6, size=self.number_of_samples)
-            if sum(
-                [1 for i in range(0, var_values.shape[0]) if var_values[i] > 1]
-            ) + sum([1 for i in range(0, var_values.shape[0]) if var_values[i] < 0]):
-                warnings.warn(
-                    "Points adjusted to remain within specified Gaussian bounds."
+            if not self.normal_bounds_enforced:
+                return dist, np.array(var_values)
+            else:
+                if (
+                    sum([1 for i in range(0, var_values.shape[0]) if var_values[i] > 1])
+                    + sum(
+                        [1 for i in range(0, var_values.shape[0]) if var_values[i] < 0]
+                    )
+                    > 0
+                ):
+                    warnings.warn(
+                        "Points adjusted to remain within specified Gaussian bounds. This may affect the underlying distribution."
+                    )
+                    out_locations = [
+                        i
+                        for i in range(0, var_values.shape[0])
+                        if var_values[i] > 1 or var_values[i] < 0
+                    ]
+                    for k in out_locations:
+                        rep_value = var_values[k]
+                        while (rep_value < 0) or (rep_value > 1):
+                            rep_value = dist(loc=0.5, scale=1 / 6, size=1)
+                        var_values[k] = rep_value
+                assert (
+                    sum([1 for i in range(0, var_values.shape[0]) if var_values[i] > 1])
+                    + sum(
+                        [1 for i in range(0, var_values.shape[0]) if var_values[i] < 0]
+                    )
+                    == 0
                 )
-            var_values_truncated = np.array(
-                [1.0 if j > 1.0 else 0.0 if j < 0.0 else j for j in var_values]
-            )
-            return dist, var_values_truncated
+                return dist, np.array(var_values)
 
     def sample_points(self):
         points_spread = []
