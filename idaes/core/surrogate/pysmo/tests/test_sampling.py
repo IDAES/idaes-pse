@@ -3223,6 +3223,7 @@ class TestCustomSampling:
                 number_of_samples=num_samples,
                 sampling_type="creation",
                 list_of_distributions=["random", "normal", "uniform"],
+                strictly_enforce_gaussian_bounds=True,
             )
             unique_sample_points = CSClass.sample_points()
             input_array = np.array(input_array)
