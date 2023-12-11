@@ -3060,7 +3060,7 @@ class TestCustomSampling:
                 number_of_samples=None,
                 sampling_type=None,
                 list_of_distributions=["uniform", "normal", "random"],
-                strictly_enforce_gaussian_bounds=None,
+                strictly_enforce_gaussian_bounds='False',
             )
 
     @pytest.mark.unit
