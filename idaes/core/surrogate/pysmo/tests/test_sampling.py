@@ -2575,6 +2575,7 @@ class TestCustomSampling:
         np.testing.assert_array_equal(CSClass.number_of_samples, 5)
         np.testing.assert_array_equal(CSClass.x_data, np.array(input_array)[:, :-1])
         assert CSClass.dist_vector == ["uniform", "normal"]
+        assert CSClass.normal_bounds_enforced == False
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
@@ -2592,6 +2593,43 @@ class TestCustomSampling:
         np.testing.assert_array_equal(CSClass.number_of_samples, 6)
         np.testing.assert_array_equal(CSClass.x_data, np.array(input_array)[:, :-1])
         assert CSClass.dist_vector == ["uniform", "normal"]
+        assert CSClass.normal_bounds_enforced == False
+
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    def test__init__selection_right_behaviour_with_bounds_option_true(self, array_type):
+        input_array = array_type(self.input_array)
+        CSClass = CustomSampling(
+            input_array,
+            number_of_samples=6,
+            sampling_type="selection",
+            list_of_distributions=["uniform", "normal"],
+            strictly_enforce_gaussian_bounds=True,
+        )
+        np.testing.assert_array_equal(CSClass.data, input_array)
+        np.testing.assert_array_equal(CSClass.number_of_samples, 6)
+        np.testing.assert_array_equal(CSClass.x_data, np.array(input_array)[:, :-1])
+        assert CSClass.dist_vector == ["uniform", "normal"]
+        assert CSClass.normal_bounds_enforced == True
+
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    def test__init__selection_right_behaviour_with_bounds_option_false(
+        self, array_type
+    ):
+        input_array = array_type(self.input_array)
+        CSClass = CustomSampling(
+            input_array,
+            number_of_samples=6,
+            sampling_type="selection",
+            list_of_distributions=["uniform", "normal"],
+            strictly_enforce_gaussian_bounds=False,
+        )
+        np.testing.assert_array_equal(CSClass.data, input_array)
+        np.testing.assert_array_equal(CSClass.number_of_samples, 6)
+        np.testing.assert_array_equal(CSClass.x_data, np.array(input_array)[:, :-1])
+        assert CSClass.dist_vector == ["uniform", "normal"]
+        assert CSClass.normal_bounds_enforced == False
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
@@ -3010,6 +3048,22 @@ class TestCustomSampling:
             )
 
     @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [list])
+    def test__init__creation_nonboolean_bounds_option(self, array_type):
+        input_array = array_type([[0, 0, 0], [1, 1, 1]])
+        with pytest.raises(
+            TypeError,
+            match='Invalid "strictly_enforce_gaussian_bounds" entry. Must be boolean.',
+        ):
+            CSClass = CustomSampling(
+                input_array,
+                number_of_samples=None,
+                sampling_type=None,
+                list_of_distributions=["uniform", "normal", "random"],
+                strictly_enforce_gaussian_bounds=None,
+            )
+
+    @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test__init__samplingtype_nonstring(self, array_type):
         input_array = array_type(self.input_array)
@@ -3071,6 +3125,35 @@ class TestCustomSampling:
             assert type(scaled_samples) == np.ndarray
             assert scaled_samples.shape == (CSClass.number_of_samples,)
             assert dist_res.__name__ == dist_type
+
+    @pytest.mark.unit
+    def test_generate_from_dist_normal_unenforced_gaussian_bounds(self):
+        CSClass = CustomSampling(
+            [[0], [1]],
+            number_of_samples=10000,
+            sampling_type="creation",
+            list_of_distributions=["normal"],
+        )
+        dist_type = "normal"
+        dist_res, scaled_samples = CSClass.generate_from_dist(dist_type)
+        assert dist_res.__name__ == dist_type
+        assert scaled_samples.min() < 0
+        assert scaled_samples.max() > 1
+
+    @pytest.mark.unit
+    def test_generate_from_dist_normal_enforced_gaussian_bounds(self):
+        CSClass = CustomSampling(
+            [[0], [1]],
+            number_of_samples=10000,
+            sampling_type="creation",
+            list_of_distributions=["normal"],
+            strictly_enforce_gaussian_bounds=True,
+        )
+        dist_type = "normal"
+        dist_res, scaled_samples = CSClass.generate_from_dist(dist_type)
+        assert dist_res.__name__ == dist_type
+        assert scaled_samples.min() >= 0
+        assert scaled_samples.max() <= 1
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array])
