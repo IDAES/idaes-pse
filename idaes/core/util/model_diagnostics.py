@@ -3258,14 +3258,14 @@ def check_ill_conditioning(
 
     inverse_target_kappa = 1e-16 / target_feasibility_tol
 
-    # Get list of row/column names
-    con_list = [i.name for i in nlp.get_pyomo_constraints()]
-    var_list = [i.name for i in nlp.get_pyomo_variables()]
+    # Get a mapping of row/column names to index in jac
+    con_dict = {i.name: idx for idx, i in enumerate(nlp.get_pyomo_constraints())}
+    var_dict = {i.name: idx for idx, i in enumerate(nlp.get_pyomo_variables())}
 
     # Build test problem
     inf_prob = ConcreteModel()
-    inf_prob.con_set = Set(initialize=con_list)
-    inf_prob.var_set = Set(initialize=var_list)
+    inf_prob.con_set = Set(initialize=con_dict.keys())
+    inf_prob.var_set = Set(initialize=var_dict.keys())
 
     if direction == "row":
         set1 = inf_prob.con_set
@@ -3287,12 +3287,12 @@ def check_ill_conditioning(
 
         for j in set1:
             if direction == "row":
-                iidx = var_list.index(i)
-                jidx = con_list.index(j)
+                iidx = var_dict[i]
+                jidx = con_dict[j]
                 jac_entry = jac[jidx, iidx]
             else:
-                jidx = var_list.index(j)
-                iidx = con_list.index(i)
+                jidx = var_dict[j]
+                iidx = con_dict[i]
                 jac_entry = jac[iidx, jidx]
 
             if jac_entry != 0:
