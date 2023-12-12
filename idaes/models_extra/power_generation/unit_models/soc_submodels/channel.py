@@ -438,7 +438,7 @@ class SocChannelData(UnitModelBlockData):
             def material_flux_x0_eqn(b, t, iz, i):
                 return (
                     -b.material_flux_x0[t, iz, i] / b.mass_transfer_coeff[t, iz, i]
-                    == b.conc_mol_comp_deviation_x0[t, iz, i]
+                    == -b.conc_mol_comp_deviation_x0[t, iz, i]
                 )
 
         else:
