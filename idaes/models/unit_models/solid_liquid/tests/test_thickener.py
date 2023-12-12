@@ -48,6 +48,15 @@ from idaes.core.initialization import (
     InitializationStatus,
 )
 from idaes.core.util import DiagnosticsToolbox
+from idaes.models.unit_models.separator import (
+    SeparatorData,
+    EnergySplittingType,
+)
+from idaes.core.util.model_statistics import (
+    number_variables,
+    number_total_constraints,
+    number_unused_variables,
+)
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -115,7 +124,7 @@ class SolidStateBlockData(StateBlockData):
         )
 
         self.dens_mass = Param(
-            initialize=1000,
+            initialize=2500,
             units=units.kg / units.m**3,
         )
 
@@ -125,7 +134,7 @@ class SolidStateBlockData(StateBlockData):
             )
 
         self.volumetric_flow = Constraint(
-            expr=self.flow_vol * 2400 * units.kg * units.m**-3 == self.flow_mass
+            expr=self.flow_vol * self.dens_mass == self.flow_mass
         )
 
     def get_material_flow_terms(b, p, j):
@@ -215,6 +224,10 @@ class LiquidStateBlockData(StateBlockData):
             initialize=1000,
             units=units.kg / units.m**3,
         )
+        self.visc_d = Param(
+            initialize=1e-3,
+            units=units.Pa * units.s,
+        )
 
         if self.config.defined_state is False:
             self.sum_mass_frac_eqn = Constraint(
@@ -222,7 +235,7 @@ class LiquidStateBlockData(StateBlockData):
             )
 
         self.volumetric_flow = Constraint(
-            expr=self.flow_vol * 1000 * units.kg * units.m**-3 == self.flow_mass
+            expr=self.flow_vol * self.dens_mass == self.flow_mass
         )
 
     def get_material_flow_terms(b, p, j):
@@ -263,7 +276,7 @@ class TestThickener0DBasic:
             liquid_property_package=m.fs.liquid,
         )
 
-        m.fs.unit.solid_inlet.flow_mass.fix(7e-6 * 2400)
+        m.fs.unit.solid_inlet.flow_mass.fix(7e-6 * 2500)
         m.fs.unit.solid_inlet.mass_frac_comp[0, "a"].fix(0.2)
         m.fs.unit.solid_inlet.mass_frac_comp[0, "b"].fix(0.8)
         m.fs.unit.solid_inlet.temperature.fix(303.15)
@@ -275,7 +288,7 @@ class TestThickener0DBasic:
         m.fs.unit.liquid_inlet.temperature.fix(310)
         m.fs.unit.liquid_inlet.pressure.fix(1.5e5)
 
-        m.fs.unit.solid_underflow.flow_mass.fix(5e-6 * 2400)
+        m.fs.unit.solid_underflow.flow_mass.fix(5e-6 * 2500)
 
         # Parameters
         m.fs.unit.area.fix(1.2)
@@ -286,10 +299,51 @@ class TestThickener0DBasic:
 
         return m
 
+    @pytest.mark.unit
+    def test_config(self, model):
+        # Check unit config arguments
+        assert len(model.fs.unit.config) == 9
+
+        assert not model.fs.unit.config.dynamic
+        assert not model.fs.unit.config.has_holdup
+        assert (
+            model.fs.unit.config.material_balance_type == MaterialBalanceType.useDefault
+        )
+        assert (
+            model.fs.unit.config.energy_split_basis
+            == EnergySplittingType.equal_temperature
+        )
+        assert (
+            model.fs.unit.config.momentum_balance_type
+            == MomentumBalanceType.pressureTotal
+        )
+
+        assert model.fs.unit.config.solid_property_package is model.fs.solid
+        assert model.fs.unit.config.liquid_property_package is model.fs.liquid
+
+        assert model.fs.unit.default_initializer is BlockTriangularizationInitializer
+
+    @pytest.mark.build
+    @pytest.mark.unit
+    def test_build(self, model):
+        assert isinstance(model.fs.unit.solid_inlet, Port)
+        assert isinstance(model.fs.unit.solid_underflow, Port)
+        assert isinstance(model.fs.unit.solid_overflow, Port)
+
+        assert isinstance(model.fs.unit.liquid_inlet, Port)
+        assert isinstance(model.fs.unit.liquid_underflow, Port)
+        assert isinstance(model.fs.unit.liquid_overflow, Port)
+
+        assert isinstance(model.fs.unit.solid_split, SeparatorData)
+        assert isinstance(model.fs.unit.liquid_split, SeparatorData)
+
+        assert number_variables(model) == 51
+        assert number_total_constraints(model) == 37
+        assert number_unused_variables(model) == 0
+
     @pytest.mark.component
     def test_structural_issues(self, model):
         dt = DiagnosticsToolbox(model)
-        dt.report_structural_issues()
         dt.assert_no_structural_warnings()
 
     @pytest.mark.component
@@ -319,6 +373,7 @@ class TestThickener0DBasic:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
+        model.display()
         assert value(model.fs.unit.solid_fraction_feed[0]) == pytest.approx(
             0.7, rel=1e-5
         )
@@ -327,6 +382,9 @@ class TestThickener0DBasic:
         )
         assert value(model.fs.unit.solid_fraction_overflow[0]) == pytest.approx(
             0.447338, rel=1e-5
+        )
+        assert value(model.fs.unit.particle_size[0]) == pytest.approx(
+            1.2018e-5, rel=1e-5
         )
 
     @pytest.mark.ui
@@ -342,9 +400,8 @@ class TestThickener0DBasic:
                 ],
                 "Feed Solid Fraction": model.fs.unit.solid_fraction_feed[0],
                 "Underflow Solid Fraction": model.fs.unit.solid_fraction_underflow[0],
-            },
-            "params": {
-                "v0": model.fs.unit.v0,
+                "particle size": model.fs.unit.particle_size[0],
+                "v0": model.fs.unit.v0[0],
                 "v1": model.fs.unit.v1,
                 "C": model.fs.unit.C,
                 "solid_fraction_max": model.fs.unit.solid_fraction_max,
@@ -367,7 +424,7 @@ class TestThickener0DBasic:
                 "mass_frac_comp d": getattr(units.pint_registry, "dimensionless"),
             },
             "Feed Solid": {
-                "flow_mass": pytest.approx(0.0168, rel=1e-4),
+                "flow_mass": pytest.approx(0.0175, rel=1e-4),
                 "mass_frac_comp a": pytest.approx(0.2, rel=1e-4),
                 "mass_frac_comp b": pytest.approx(0.8, rel=1e-4),
                 "temperature": pytest.approx(303.15, rel=1e-4),
@@ -385,7 +442,7 @@ class TestThickener0DBasic:
                 "mass_frac_comp d": pytest.approx(0.7, rel=1e-4),
             },
             "Underflow Solid": {
-                "flow_mass": pytest.approx(0.012, rel=1e-4),
+                "flow_mass": pytest.approx(0.0125, rel=1e-4),
                 "mass_frac_comp a": pytest.approx(0.2, rel=1e-4),
                 "mass_frac_comp b": pytest.approx(0.8, rel=1e-4),
                 "temperature": pytest.approx(303.15, rel=1e-4),
@@ -403,7 +460,7 @@ class TestThickener0DBasic:
                 "mass_frac_comp d": pytest.approx(0.7, rel=1e-4),
             },
             "Overflow Solid": {
-                "flow_mass": pytest.approx(0.0048, rel=1e-4),
+                "flow_mass": pytest.approx(0.005, rel=1e-4),
                 "mass_frac_comp a": pytest.approx(0.2, rel=1e-4),
                 "mass_frac_comp b": pytest.approx(0.8, rel=1e-4),
                 "temperature": pytest.approx(303.15, rel=1e-4),

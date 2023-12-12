@@ -13,8 +13,18 @@
 """
 Thickener unit model.
 
-This model extends the SLSeparator unit model by adding constraints that relate
-area and vessel height to the liquid recovery fraction.
+Unit model is derived from:
+
+R. Burger, F. Concha, K.H. Karlsen, A. Narvaez,
+Numerical simulation of clarifier-thickener units treating ideal
+suspensions with a flux density function having two inflection points,
+Mathematical and Computer Modelling 44 (2006) 255–275
+doi:10.1016/j.mcm.2005.11.008
+
+Settling velocity function from:
+
+N.G. Barton, C.-H. Li, S.J. Spencer, Control of a surface of discontinuity in continuous thickeners,
+J. Aust. Math. Soc. Ser. B 33 (1992) 269–289
 
 """
 # Import Python libraries
@@ -42,6 +52,7 @@ from idaes.models.unit_models.separator import (
 from idaes.core.initialization import BlockTriangularizationInitializer
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.units_of_measurement import report_quantity
+from idaes.core.util.constants import Constants as CONST
 
 
 __author__ = "Andrew Lee"
@@ -266,7 +277,6 @@ class Thickener0DData(UnitModelBlockData):
 
         # Add additional variables and constraints
         uom = self.solid_inlet_state.params.get_metadata().derived_units
-        # TODO: Add support for molar basis
 
         self.area = Var(
             initialize=1,
@@ -280,33 +290,67 @@ class Thickener0DData(UnitModelBlockData):
             initialize=0.7,
             units=units.dimensionless,
             bounds=(0, None),
+            doc="Volume fraction of solids in feed",
         )
         self.solid_fraction_underflow = Var(
             self.flowsheet().time,
             initialize=0.7,
             units=units.dimensionless,
             bounds=(0, None),
+            doc="Volume fraction of solids in underflow",
         )
         self.solid_fraction_overflow = Var(
             self.flowsheet().time,
             initialize=0.7,
             units=units.dimensionless,
             bounds=(0, None),
+            doc="Volume fraction of solids in overflow",
         )
 
         # Flux densities
         self.flux_density_underflow = Var(
-            self.flowsheet().time, initialize=0, units=uom.VELOCITY
+            self.flowsheet().time,
+            initialize=0,
+            units=uom.VELOCITY,
+            doc="Kynch flux density in underflow",
         )
         self.flux_density_overflow = Var(
-            self.flowsheet().time, initialize=0, units=uom.VELOCITY
+            self.flowsheet().time,
+            initialize=0,
+            units=uom.VELOCITY,
+            doc="Kynch flux density in overflow",
         )
 
         # Parameters
-        self.v0 = Var(initialize=1e-4, units=uom.VELOCITY)
-        self.v1 = Var(initialize=1e-5, units=uom.VELOCITY)
-        self.C = Var(initialize=5, units=units.dimensionless)
-        self.solid_fraction_max = Var(initialize=0.9, units=units.dimensionless)
+        self.particle_size = Var(
+            self.flowsheet().time,
+            initialize=1e-5,
+            units=uom.LENGTH,
+            doc="Characteristic length of particle",
+        )
+        self.v0 = Var(
+            self.flowsheet().time,
+            initialize=1e-4,
+            units=uom.VELOCITY,
+            doc="Stokes velocity of individual particle",
+        )
+        self.v1 = Var(
+            initialize=1e-5,
+            units=uom.VELOCITY,
+            doc="Superficial velocity of a Darcy type flow of liquid",
+        )
+        self.C = Var(
+            initialize=5,
+            units=units.dimensionless,
+            bounds=(0, None),
+            doc="Settling velocity exponent",
+        )
+        self.solid_fraction_max = Var(
+            initialize=0.9,
+            units=units.dimensionless,
+            bounds=(0, 1),
+            doc="Maximum achievable solids volume fraction",
+        )
 
         # ---------------------------------------------------------------------------------------------
         # Constraints
@@ -316,7 +360,7 @@ class Thickener0DData(UnitModelBlockData):
             u = b.solid_fraction_overflow
             return b.flux_density_overflow[t] == Expr_if(
                 IF=inequality(0, u[t], b.solid_fraction_max),
-                THEN=b.v0 * u[t] * (1 - u[t] / b.solid_fraction_max) ** b.C
+                THEN=b.v0[t] * u[t] * (1 - u[t] / b.solid_fraction_max) ** b.C
                 + b.v1 * u[t] ** 2 * (b.solid_fraction_max - u[t]),
                 ELSE=0 * units.m * units.s**-1,
             )
@@ -326,7 +370,7 @@ class Thickener0DData(UnitModelBlockData):
             u = b.solid_fraction_underflow
             return b.flux_density_underflow[t] == Expr_if(
                 IF=inequality(0, u[t], b.solid_fraction_max),
-                THEN=b.v0 * u[t] * (1 - u[t] / b.solid_fraction_max) ** b.C
+                THEN=b.v0[t] * u[t] * (1 - u[t] / b.solid_fraction_max) ** b.C
                 + b.v1 * u[t] ** 2 * (b.solid_fraction_max - u[t]),
                 ELSE=0 * units.m * units.s**-1,
             )
@@ -382,6 +426,15 @@ class Thickener0DData(UnitModelBlockData):
                 )
             )
 
+        @self.Constraint(self.flowsheet().time)
+        def stokes_law(b, t):
+            # Assuming constant properties, source from feed states
+            return 18 * b.v0[t] * b.liquid_inlet_state[t].visc_d == (
+                (b.solid_inlet_state[t].dens_mass - b.liquid_inlet_state[t].dens_mass)
+                * CONST.acceleration_gravity
+                * b.particle_size[t] ** 2
+            )
+
     def _get_performance_contents(self, time_point=0):
         return {
             "vars": {
@@ -391,9 +444,8 @@ class Thickener0DData(UnitModelBlockData):
                 ],
                 "Feed Solid Fraction": self.solid_fraction_feed[time_point],
                 "Underflow Solid Fraction": self.solid_fraction_underflow[time_point],
-            },
-            "params": {
-                "v0": self.v0,
+                "particle size": self.particle_size[time_point],
+                "v0": self.v0[time_point],
                 "v1": self.v1,
                 "C": self.C,
                 "solid_fraction_max": self.solid_fraction_max,
