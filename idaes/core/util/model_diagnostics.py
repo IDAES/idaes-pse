@@ -3356,7 +3356,7 @@ def check_ill_conditioning(
         val = value(inf_prob.y[i])
         if abs(val) < cutoff:
             break
-        ill_cond.append((components[i].name, val))
+        ill_cond.append((components[i], val))
 
     return ill_cond
 
