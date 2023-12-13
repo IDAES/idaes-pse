@@ -206,6 +206,11 @@ class Thickener0DData(UnitModelBlockData):
         Returns:
             None
         """
+        logger.warning(
+            "The Thickener0D model is currently a beta capability and will "
+            "likely change in the next release as a more predictive version is "
+            "developed."
+        )
         # Call super().build to setup dynamics
         super().build()
 
