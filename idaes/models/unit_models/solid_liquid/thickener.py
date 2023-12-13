@@ -32,7 +32,7 @@ import logging
 from pandas import DataFrame
 
 # Import Pyomo libraries
-from pyomo.environ import Constraint, Expr_if, inequality, units, Var
+from pyomo.environ import Expr_if, inequality, units, Var
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.network import Port
 
