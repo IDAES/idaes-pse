@@ -39,7 +39,7 @@ __author__ = __authors__[0]
 NAME = "idaes-pse"
 
 # Keep this the same as constant DMF_DATA_ROOT in setup.py
-DMF_DATA_ROOT = "data"
+DMF_DATA_ROOT = "dmf_data"
 
 _log = logging.getLogger(__name__)
 
