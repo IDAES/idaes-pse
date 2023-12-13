@@ -224,7 +224,7 @@ class Thickener0DData(UnitModelBlockData):
             self.flowsheet().time, doc="Solid properties in separator", **tmp_dict
         )
 
-        # Add solid spliter
+        # Add solid splitter
         self.solid_split = Separator(
             property_package=self.config.solid_property_package,
             property_package_args=self.config.solid_property_package_args,
@@ -257,7 +257,7 @@ class Thickener0DData(UnitModelBlockData):
             self.flowsheet().time, doc="liquid properties in separator", **tmp_dict
         )
 
-        # Add liquid spliter
+        # Add liquid splitter
         self.liquid_split = Separator(
             property_package=self.config.liquid_property_package,
             property_package_args=self.config.liquid_property_package_args,
@@ -407,7 +407,7 @@ class Thickener0DData(UnitModelBlockData):
                 )
             )
 
-        # 2.8
+        # Eqn 2.8 from [1]
         @self.Constraint(self.flowsheet().time)
         def flux_density_function_overflow(b, t):
             u = b.solid_fraction_overflow
@@ -418,6 +418,7 @@ class Thickener0DData(UnitModelBlockData):
                 ELSE=0 * units.m * units.s**-1,
             )
 
+        # Eqn 2.8 from [1]
         @self.Constraint(self.flowsheet().time)
         def flux_density_function_underflow(b, t):
             u = b.solid_fraction_underflow
@@ -428,6 +429,7 @@ class Thickener0DData(UnitModelBlockData):
                 ELSE=0 * units.m * units.s**-1,
             )
 
+        # Modified from 2.23 and 2.33 from [1]
         @self.Constraint(self.flowsheet().time)
         def solids_continuity(b, t):
             return b.flow_vol_feed[t] * b.solid_fraction_feed[t] == (
