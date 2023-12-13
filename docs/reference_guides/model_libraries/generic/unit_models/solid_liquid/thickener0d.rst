@@ -5,7 +5,7 @@ The ``Thickener0D`` unit model is a predictive model for clarifiers and thickene
 
 [1] R. Burger, F. Concha, K.H. Karlsen, A. Narvaez, Numerical simulation of clarifier-thickener units treating ideal suspensions with a flux density function having two inflection points, Mathematical and Computer Modelling 44 (2006) 255–275, doi:10.1016/j.mcm.2005.11.008
 
-[2] N.G. Barton, C.-H. Li, S.J. Spencer, Control of a surface of discontinuity in continuous thickeners, J. Aust. Math. Soc. Ser. B 33 (1992) 269–289
+[2] N.G. Barton, C.-H. Li, S.J. Spencer, Control of a surface of discontinuity in continuous thickeners, Journal of the Australian Mathematical Society Series B 33 (1992) 269–289
 
 
 Degrees of Freedom

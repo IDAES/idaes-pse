@@ -24,7 +24,7 @@ doi:10.1016/j.mcm.2005.11.008
 Settling velocity function from:
 
 N.G. Barton, C.-H. Li, S.J. Spencer, Control of a surface of discontinuity in continuous thickeners,
-J. Aust. Math. Soc. Ser. B 33 (1992) 269–289
+Journal of the Australian Mathematical Society Series B 33 (1992) 269–289
 
 """
 # Import Python libraries
