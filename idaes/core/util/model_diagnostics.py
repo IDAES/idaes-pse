@@ -39,6 +39,7 @@ from pyomo.environ import (
     Expression,
     Objective,
     Param,
+    RangeSet,
     Set,
     SolverFactory,
     value,
@@ -3257,49 +3258,41 @@ def check_ill_conditioning(
 
     inverse_target_kappa = 1e-16 / target_feasibility_tol
 
-    # Get a mapping of row/column names to index in jac
-    con_dict = {i.name: idx for idx, i in enumerate(nlp.get_pyomo_constraints())}
-    var_dict = {i.name: idx for idx, i in enumerate(nlp.get_pyomo_variables())}
+    # Set up the components we will analyze, either row or column
+    if direction == "row":
+        components = nlp.get_pyomo_constraints()
+        components_set = RangeSet(0, len(components) - 1)
+        results_set = RangeSet(0, nlp.n_primals() - 1)
+        jac = jac.transpose().tocsr()
+    elif direction == "column":
+        components = nlp.get_pyomo_variables()
+        components_set = RangeSet(0, len(components) - 1)
+        results_set = RangeSet(0, nlp.n_constraints() - 1)
+        jac = jac.tocsr()
 
     # Build test problem
     inf_prob = ConcreteModel()
-    inf_prob.con_set = Set(initialize=con_dict.keys())
-    inf_prob.var_set = Set(initialize=var_dict.keys())
 
-    if direction == "row":
-        set1 = inf_prob.con_set
-        set2 = inf_prob.var_set
-    else:
-        set2 = inf_prob.con_set
-        set1 = inf_prob.var_set
+    inf_prob.y_pos = Var(components_set, bounds=(0, None))
+    inf_prob.y_neg = Var(components_set, bounds=(0, None))
+    inf_prob.y = Expression(components_set, rule=lambda m, i: m.y_pos[i] - m.y_neg[i])
 
-    inf_prob.y_pos = Var(set1, initialize=0, bounds=(0, None))
-    inf_prob.y_neg = Var(set1, initialize=0, bounds=(0, None))
-    inf_prob.y = Expression(set1, rule=lambda m, i: m.y_pos[i] - m.y_neg[i])
-
-    inf_prob.res_pos = Var(set2, initialize=1e-2, bounds=(0, None))
-    inf_prob.res_neg = Var(set2, initialize=1e-2, bounds=(0, None))
-    inf_prob.res = Expression(set2, rule=lambda m, i: m.res_pos[i] - m.res_neg[i])
+    inf_prob.res_pos = Var(results_set, bounds=(0, None))
+    inf_prob.res_neg = Var(results_set, bounds=(0, None))
+    inf_prob.res = Expression(
+        results_set, rule=lambda m, i: m.res_pos[i] - m.res_neg[i]
+    )
 
     def b_rule(b, i):
         lhs = 0.0
 
-        for j in set1:
-            if direction == "row":
-                iidx = var_dict[i]
-                jidx = con_dict[j]
-                jac_entry = jac[jidx, iidx]
-            else:
-                jidx = var_dict[j]
-                iidx = con_dict[i]
-                jac_entry = jac[iidx, jidx]
-
-            if jac_entry != 0:
-                lhs += jac_entry * b.y[j]
+        row = jac.getrow(i)
+        for j, val in zip(row.indices, row.data):
+            lhs += val * b.y[j]
 
         return lhs == b.res[i]
 
-    inf_prob.by = Constraint(set2, rule=b_rule)
+    inf_prob.by = Constraint(results_set, rule=b_rule)
 
     # Normalization of y
     inf_prob.normalize = Constraint(
@@ -3363,7 +3356,7 @@ def check_ill_conditioning(
         val = value(inf_prob.y[i])
         if abs(val) < cutoff:
             break
-        ill_cond.append((i, val))
+        ill_cond.append((components[i], val))
 
     return ill_cond
 

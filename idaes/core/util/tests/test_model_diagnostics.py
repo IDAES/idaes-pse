@@ -3236,34 +3236,34 @@ class TestCheckIllConditioning:
     @pytest.mark.solver
     def test_rows(self, model):
         assert check_ill_conditioning(model, direction="row") == [
-            ("c4", pytest.approx(0.50000002, rel=1e-5)),
-            ("c1", pytest.approx(0.49999998, rel=1e-5)),
+            (model.c4, pytest.approx(0.50000002, rel=1e-5)),
+            (model.c4, pytest.approx(0.49999998, rel=1e-5)),
         ]
 
     @pytest.mark.component
     @pytest.mark.solver
     def test_rows(self, afiro):
         assert check_ill_conditioning(afiro, direction="row") == [
-            ("R09", pytest.approx(0.5, rel=1e-5)),
-            ("R09b", pytest.approx(0.5, rel=1e-5)),
+            (afiro.R09, pytest.approx(0.5, rel=1e-5)),
+            (afiro.R09b, pytest.approx(0.5, rel=1e-5)),
         ]
 
     @pytest.mark.component
     @pytest.mark.solver
     def test_columns(self, afiro):
         assert check_ill_conditioning(afiro, direction="column") == [
-            ("X39", pytest.approx(1.1955465, rel=1e-5)),
-            ("X23", pytest.approx(1.0668697, rel=1e-5)),
-            ("X25", pytest.approx(-1.0668697, rel=1e-5)),
-            ("X09", pytest.approx(-0.95897123, rel=1e-5)),
-            ("X13", pytest.approx(-0.95897123, rel=1e-5)),
-            ("X06", pytest.approx(0.91651956, rel=1e-5)),
-            ("X10", pytest.approx(0.91651956, rel=1e-5)),
-            ("X36", pytest.approx(0.76204977, rel=1e-5)),
-            ("X31", pytest.approx(-0.39674454, rel=1e-5)),
-            ("X35", pytest.approx(-0.39674454, rel=1e-5)),
-            ("X16", pytest.approx(0.14679548, rel=1e-5)),
-            ("X38", pytest.approx(-0.14679548, rel=1e-5)),
-            ("X15", pytest.approx(-0.042451666, rel=1e-5)),
-            ("X37", pytest.approx(-0.036752232, rel=1e-5)),
+            (afiro.X39, pytest.approx(1.1955465, rel=1e-5)),
+            (afiro.X23, pytest.approx(1.0668697, rel=1e-5)),
+            (afiro.X25, pytest.approx(-1.0668697, rel=1e-5)),
+            (afiro.X09, pytest.approx(-0.95897123, rel=1e-5)),
+            (afiro.X13, pytest.approx(-0.95897123, rel=1e-5)),
+            (afiro.X06, pytest.approx(0.91651956, rel=1e-5)),
+            (afiro.X10, pytest.approx(0.91651956, rel=1e-5)),
+            (afiro.X36, pytest.approx(0.76204977, rel=1e-5)),
+            (afiro.X31, pytest.approx(-0.39674454, rel=1e-5)),
+            (afiro.X35, pytest.approx(-0.39674454, rel=1e-5)),
+            (afiro.X16, pytest.approx(0.14679548, rel=1e-5)),
+            (afiro.X38, pytest.approx(-0.14679548, rel=1e-5)),
+            (afiro.X15, pytest.approx(-0.042451666, rel=1e-5)),
+            (afiro.X37, pytest.approx(-0.036752232, rel=1e-5)),
         ]
