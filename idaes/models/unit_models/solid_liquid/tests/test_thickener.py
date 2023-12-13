@@ -276,22 +276,22 @@ class TestThickener0DBasic:
             liquid_property_package=m.fs.liquid,
         )
 
-        m.fs.unit.solid_inlet.flow_mass.fix(7e-6 * 2500)
+        m.fs.unit.solid_inlet.flow_mass.fix(0.7 * 7e-6 * 2500)
         m.fs.unit.solid_inlet.mass_frac_comp[0, "a"].fix(0.2)
         m.fs.unit.solid_inlet.mass_frac_comp[0, "b"].fix(0.8)
         m.fs.unit.solid_inlet.temperature.fix(303.15)
         m.fs.unit.solid_inlet.pressure.fix(101325.0)
 
-        m.fs.unit.liquid_inlet.flow_mass.fix(0.3 / 0.7 * 7e-6 * 1000)
+        m.fs.unit.liquid_inlet.flow_mass.fix(0.3 * 7e-6 * 1000)
         m.fs.unit.liquid_inlet.mass_frac_comp[0, "c"].fix(0.3)
         m.fs.unit.liquid_inlet.mass_frac_comp[0, "d"].fix(0.7)
         m.fs.unit.liquid_inlet.temperature.fix(310)
         m.fs.unit.liquid_inlet.pressure.fix(1.5e5)
 
-        m.fs.unit.solid_underflow.flow_mass.fix(5e-6 * 2500)
+        m.fs.unit.flow_vol_underflow.fix(5e-6)
 
         # Parameters
-        m.fs.unit.area.fix(1.2)
+        m.fs.unit.area.fix(1)
         m.fs.unit.v0.fix(1.18e-4)
         m.fs.unit.v1.fix(1e-5)
         m.fs.unit.C.fix(5)
@@ -337,8 +337,8 @@ class TestThickener0DBasic:
         assert isinstance(model.fs.unit.solid_split, SeparatorData)
         assert isinstance(model.fs.unit.liquid_split, SeparatorData)
 
-        assert number_variables(model) == 51
-        assert number_total_constraints(model) == 37
+        assert number_variables(model) == 54
+        assert number_total_constraints(model) == 40
         assert number_unused_variables(model) == 0
 
     @pytest.mark.component
@@ -373,19 +373,60 @@ class TestThickener0DBasic:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
-        model.display()
         assert value(model.fs.unit.solid_fraction_feed[0]) == pytest.approx(
             0.7, rel=1e-5
         )
         assert value(model.fs.unit.solid_fraction_underflow[0]) == pytest.approx(
-            0.801065, rel=1e-5
+            0.816954, rel=1e-5
         )
         assert value(model.fs.unit.solid_fraction_overflow[0]) == pytest.approx(
-            0.447338, rel=1e-5
+            0.407615, rel=1e-5
         )
         assert value(model.fs.unit.particle_size[0]) == pytest.approx(
-            1.2018e-5, rel=1e-5
+            1.20163e-5, rel=1e-5
         )
+        so = model.fs.unit.solid_split.overflow_state[0].flow_vol
+        lo = model.fs.unit.liquid_split.overflow_state[0].flow_vol
+        su = model.fs.unit.solid_split.underflow_state[0].flow_vol
+        lu = model.fs.unit.liquid_split.underflow_state[0].flow_vol
+
+        assert value(su / (lu + su)) == pytest.approx(
+            value(model.fs.unit.solid_fraction_underflow[0]), rel=1e-5
+        )
+        assert value(so / (lo + so)) == pytest.approx(
+            value(model.fs.unit.solid_fraction_overflow[0]), rel=1e-5
+        )
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_conservation(self, model):
+        sf = model.fs.unit.solid_inlet_state[0]
+        lf = model.fs.unit.liquid_inlet_state[0]
+        so = model.fs.unit.solid_split.overflow_state[0]
+        lo = model.fs.unit.liquid_split.overflow_state[0]
+        su = model.fs.unit.solid_split.underflow_state[0]
+        lu = model.fs.unit.liquid_split.underflow_state[0]
+
+        # Solid mass conservation
+        assert value(sf.flow_mass - so.flow_mass - su.flow_mass) <= 1e-8
+        # Liquid mass conservation
+        assert value(lf.flow_mass - lo.flow_mass - lu.flow_mass) <= 1e-8
+
+        # Solid volume conservation
+        assert value(sf.flow_vol - so.flow_vol - su.flow_vol) <= 1e-8
+        # Liquid volume conservation
+        assert value(lf.flow_vol - lo.flow_vol - lu.flow_vol) <= 1e-8
+
+        assert value(so.temperature) == pytest.approx(303.15, rel=1e-5)
+        assert value(su.temperature) == pytest.approx(303.15, rel=1e-5)
+        assert value(so.pressure) == pytest.approx(101325, rel=1e-5)
+        assert value(su.pressure) == pytest.approx(101325, rel=1e-5)
+
+        assert value(lo.temperature) == pytest.approx(310, rel=1e-5)
+        assert value(lu.temperature) == pytest.approx(310, rel=1e-5)
+        assert value(lo.pressure) == pytest.approx(1.5e5, rel=1e-5)
+        assert value(lu.pressure) == pytest.approx(1.5e5, rel=1e-5)
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -424,7 +465,7 @@ class TestThickener0DBasic:
                 "mass_frac_comp d": getattr(units.pint_registry, "dimensionless"),
             },
             "Feed Solid": {
-                "flow_mass": pytest.approx(0.0175, rel=1e-4),
+                "flow_mass": pytest.approx(0.01225, rel=1e-4),
                 "mass_frac_comp a": pytest.approx(0.2, rel=1e-4),
                 "mass_frac_comp b": pytest.approx(0.8, rel=1e-4),
                 "temperature": pytest.approx(303.15, rel=1e-4),
@@ -433,7 +474,7 @@ class TestThickener0DBasic:
                 "mass_frac_comp d": float("nan"),
             },
             "Feed Liquid": {
-                "flow_mass": pytest.approx(0.003, rel=1e-4),
+                "flow_mass": pytest.approx(0.0021, rel=1e-4),
                 "mass_frac_comp a": float("nan"),
                 "mass_frac_comp b": float("nan"),
                 "temperature": pytest.approx(310, rel=1e-4),
@@ -442,7 +483,7 @@ class TestThickener0DBasic:
                 "mass_frac_comp d": pytest.approx(0.7, rel=1e-4),
             },
             "Underflow Solid": {
-                "flow_mass": pytest.approx(0.0125, rel=1e-4),
+                "flow_mass": pytest.approx(0.010212, rel=1e-4),
                 "mass_frac_comp a": pytest.approx(0.2, rel=1e-4),
                 "mass_frac_comp b": pytest.approx(0.8, rel=1e-4),
                 "temperature": pytest.approx(303.15, rel=1e-4),
@@ -451,7 +492,7 @@ class TestThickener0DBasic:
                 "mass_frac_comp d": float("nan"),
             },
             "Underflow Liquid": {
-                "flow_mass": pytest.approx(0.0012417, rel=1e-4),
+                "flow_mass": pytest.approx(0.00091523, rel=1e-4),
                 "mass_frac_comp a": float("nan"),
                 "mass_frac_comp b": float("nan"),
                 "temperature": pytest.approx(310, rel=1e-4),
@@ -460,7 +501,7 @@ class TestThickener0DBasic:
                 "mass_frac_comp d": pytest.approx(0.7, rel=1e-4),
             },
             "Overflow Solid": {
-                "flow_mass": pytest.approx(0.005, rel=1e-4),
+                "flow_mass": pytest.approx(0.0020381, rel=1e-4),
                 "mass_frac_comp a": pytest.approx(0.2, rel=1e-4),
                 "mass_frac_comp b": pytest.approx(0.8, rel=1e-4),
                 "temperature": pytest.approx(303.15, rel=1e-4),
@@ -469,7 +510,7 @@ class TestThickener0DBasic:
                 "mass_frac_comp d": float("nan"),
             },
             "Overflow Liquid": {
-                "flow_mass": pytest.approx(0.0017583, rel=1e-4),
+                "flow_mass": pytest.approx(0.0011848, rel=1e-4),
                 "mass_frac_comp a": float("nan"),
                 "mass_frac_comp b": float("nan"),
                 "temperature": pytest.approx(310, rel=1e-4),

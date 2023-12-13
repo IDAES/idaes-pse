@@ -284,6 +284,29 @@ class Thickener0DData(UnitModelBlockData):
             doc="Cross sectional area of thickener",
         )
 
+        # Volumetric Flowrates
+        self.flow_vol_feed = Var(
+            self.flowsheet().time,
+            initialize=0.7,
+            units=uom.FLOW_VOL,
+            bounds=(0, None),
+            doc="Total volumetric flowrate of feed",
+        )
+        self.flow_vol_overflow = Var(
+            self.flowsheet().time,
+            initialize=0.7,
+            units=uom.FLOW_VOL,
+            bounds=(0, None),
+            doc="Total volumetric flowrate of overflow",
+        )
+        self.flow_vol_underflow = Var(
+            self.flowsheet().time,
+            initialize=0.7,
+            units=uom.FLOW_VOL,
+            bounds=(0, None),
+            doc="Total volumetric flowrate of underflow",
+        )
+
         # Solid Fractions
         self.solid_fraction_feed = Var(
             self.flowsheet().time,
@@ -354,6 +377,31 @@ class Thickener0DData(UnitModelBlockData):
 
         # ---------------------------------------------------------------------------------------------
         # Constraints
+        @self.Constraint(self.flowsheet().time)
+        def feed_flowrate(b, t):
+            return b.flow_vol_feed[t] == (
+                b.solid_inlet_state[t].flow_vol
+                + units.convert(b.liquid_inlet_state[t].flow_vol, to_units=uom.FLOW_VOL)
+            )
+
+        @self.Constraint(self.flowsheet().time)
+        def overflow_flowrate(b, t):
+            return b.flow_vol_overflow[t] == (
+                b.solid_split.overflow_state[t].flow_vol
+                + units.convert(
+                    b.liquid_split.overflow_state[t].flow_vol, to_units=uom.FLOW_VOL
+                )
+            )
+
+        @self.Constraint(self.flowsheet().time)
+        def underflow_flowrate(b, t):
+            return b.flow_vol_underflow[t] == (
+                b.solid_split.underflow_state[t].flow_vol
+                + units.convert(
+                    b.liquid_split.underflow_state[t].flow_vol, to_units=uom.FLOW_VOL
+                )
+            )
+
         # 2.8
         @self.Constraint(self.flowsheet().time)
         def flux_density_function_overflow(b, t):
@@ -377,20 +425,19 @@ class Thickener0DData(UnitModelBlockData):
 
         @self.Constraint(self.flowsheet().time)
         def solids_continuity(b, t):
-            return b.solid_inlet_state[t].flow_vol * b.solid_fraction_feed[t] == (
+            return b.flow_vol_feed[t] * b.solid_fraction_feed[t] == (
                 b.area * (b.flux_density_overflow[t] + b.flux_density_underflow[t])
-                - b.solid_split.overflow_state[t].flow_vol
+                - b.flow_vol_overflow[t]
                 * (b.solid_fraction_overflow[t] - b.solid_fraction_feed[t])
-                + b.solid_split.underflow_state[t].flow_vol
+                + b.flow_vol_underflow[t]
                 * (b.solid_fraction_underflow[t] - b.solid_fraction_feed[t])
             )
 
         @self.Constraint(self.flowsheet().time)
         def solids_conservation(b, t):
-            return b.solid_inlet_state[t].flow_vol * b.solid_fraction_feed[t] == (
-                +b.solid_split.overflow_state[t].flow_vol * b.solid_fraction_overflow[t]
-                + b.solid_split.underflow_state[t].flow_vol
-                * b.solid_fraction_underflow[t]
+            return b.flow_vol_feed[t] * b.solid_fraction_feed[t] == (
+                +b.flow_vol_overflow[t] * b.solid_fraction_overflow[t]
+                + b.flow_vol_underflow[t] * b.solid_fraction_underflow[t]
             )
 
         @self.Constraint(self.flowsheet().time)
@@ -429,9 +476,16 @@ class Thickener0DData(UnitModelBlockData):
         @self.Constraint(self.flowsheet().time)
         def stokes_law(b, t):
             # Assuming constant properties, source from feed states
-            return 18 * b.v0[t] * b.liquid_inlet_state[t].visc_d == (
-                (b.solid_inlet_state[t].dens_mass - b.liquid_inlet_state[t].dens_mass)
-                * CONST.acceleration_gravity
+            return 18 * b.v0[t] * units.convert(
+                b.liquid_inlet_state[t].visc_d, to_units=uom.DYNAMIC_VISCOSITY
+            ) == (
+                (
+                    b.solid_inlet_state[t].dens_mass
+                    - units.convert(
+                        b.liquid_inlet_state[t].dens_mass, to_units=uom.DENSITY_MASS
+                    )
+                )
+                * units.convert(CONST.acceleration_gravity, to_units=uom.ACCELERATION)
                 * b.particle_size[t] ** 2
             )
 
