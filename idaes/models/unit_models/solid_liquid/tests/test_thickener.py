@@ -262,26 +262,6 @@ class LiquidStateBlockData(StateBlockData):
 
 
 # -----------------------------------------------------------------------------
-@pytest.mark.unit
-def test_beta_logger(caplog):
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(dynamic=False)
-
-    m.fs.properties = TestParameterBlock()
-
-    m.fs.unit = Thickener0D(
-        solid_property_package=m.fs.properties,
-        liquid_property_package=m.fs.properties,
-    )
-    expected = (
-        "The Thickener0D model is currently a beta capability and will "
-        "likely change in the next release as a more predictive version is "
-        "developed."
-    )
-
-    assert expected in caplog.text
-
-
 class TestThickener0DBasic:
     @pytest.fixture(scope="class")
     def model(self):
