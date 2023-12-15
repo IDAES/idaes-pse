@@ -96,6 +96,8 @@ __version__ = "0.0.2"
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
+EPS = 1e-14
+
 
 @declare_process_block_class("ActivityCoeffParameterBlock")
 class ActivityCoeffParameterData(PhysicalParameterBlock):
@@ -759,13 +761,13 @@ class ActivityCoeffStateBlockData(StateBlockData):
             )
             self.mole_frac_comp = Var(
                 self.params.component_list,
-                bounds=(0, 1),
+                bounds=(EPS, 1),
                 initialize=1 / len(self.params.component_list),
                 doc="Mixture mole fraction",
             )
             self.pressure = Var(
                 initialize=101325,
-                domain=NonNegativeReals,
+                bounds=(1, None),
                 doc="State pressure [Pa]",
                 units=pyunits.Pa,
             )
@@ -785,7 +787,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
             )
             self.pressure = Var(
                 initialize=101325,
-                domain=NonNegativeReals,
+                bounds=(1, None),
                 doc="State pressure [Pa]",
                 units=pyunits.Pa,
             )
@@ -806,6 +808,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
             self.flow_mol_phase_comp = Var(
                 self.params._phase_component_set,
                 initialize=0.5,
+                bounds=(EPS, 1),
                 units=pyunits.mol / pyunits.s,
             )
 
@@ -821,7 +824,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
         self.mole_frac_phase_comp = Var(
             self.params._phase_component_set,
             initialize=1 / len(self.params.component_list),
-            bounds=(0, 1),
+            bounds=(EPS, 1),
         )
 
     def _make_liq_phase_eq(self):
