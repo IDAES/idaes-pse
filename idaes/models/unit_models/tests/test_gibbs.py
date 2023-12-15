@@ -197,6 +197,11 @@ class TestMethane(object):
         m.fs.unit.outlet.temperature[0].fix(2844.38)
         m.fs.unit.deltaP.fix(0)
 
+        # Fix some bounds to avoid potential log(0)
+        # TODO: This really should eb fixed in the property package, but breaks other tests
+        m.fs.unit.control_volume.properties_out[0].pressure.setlb(1000)
+        m.fs.unit.control_volume.properties_out[0].mole_frac_phase_comp.setlb(1e-12)
+
         return m
 
     @pytest.mark.build
