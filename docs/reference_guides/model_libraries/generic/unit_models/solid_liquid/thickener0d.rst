@@ -1,6 +1,9 @@
 Thickener (0D)
 ==============
 
+.. warning::
+    The Thickener model is currently in beta status and will likely change in the next release as a more predictive version is developed.
+
 The ``Thickener0D`` unit model is an extension of the :ref:`SLSeparator <reference_guides/model_libraries/generic/unit_models/solid_liquid/sl_separator:Generic Solid-Liquid Separator>` model which adds constraints to estimate the area and height of a vessel required to achieve the desired separation of solid and liquid based on experimental measurements of the settling velocity. This model is based on correlations described in:
 
 [1] Coulson & Richardson's Chemical Engineering, Volume 2 Particle Technology & Separation Processes (4th Ed.), Butterworth-Heinemann (2001)
