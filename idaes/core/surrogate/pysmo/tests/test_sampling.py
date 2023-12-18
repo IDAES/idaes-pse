@@ -494,6 +494,24 @@ class TestLatinHypercubeSampling:
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    def test__init__selection_right_behaviour_with_specified_random_seed(
+        self, array_type
+    ):
+        input_array = array_type(self.input_array)
+        rand_seed = 100
+        LHSClass = LatinHypercubeSampling(
+            input_array,
+            number_of_samples=6,
+            sampling_type="selection",
+            rand_seed=rand_seed,
+        )
+        np.testing.assert_array_equal(LHSClass.data, input_array)
+        np.testing.assert_array_equal(LHSClass.number_of_samples, 6)
+        np.testing.assert_array_equal(LHSClass.x_data, np.array(input_array)[:, :-1])
+        assert LHSClass.seed_value == rand_seed
+
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test__init__selection_zero_samples(self, array_type):
         input_array = array_type(self.input_array)
         with pytest.raises(
@@ -548,6 +566,18 @@ class TestLatinHypercubeSampling:
             )
 
     @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    def test__init__selection_non_integer_random_seed(self, array_type):
+        input_array = array_type(self.input_array)
+        with pytest.raises(TypeError, match="Random seed must be an integer."):
+            LHSClass = LatinHypercubeSampling(
+                input_array,
+                number_of_samples=5,
+                sampling_type="selection",
+                rand_seed=1.2,
+            )
+
+    @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [list])
     def test__init__creation_right_behaviour_with_none_samplingtype(self, array_type):
         input_array = array_type(self.input_array_list)
@@ -578,6 +608,21 @@ class TestLatinHypercubeSampling:
         )
         np.testing.assert_array_equal(LHSClass.data, input_array)
         np.testing.assert_array_equal(LHSClass.number_of_samples, 100)
+
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [list])
+    def test__init__creation_right_behaviour_with_specified_seed(self, array_type):
+        input_array = array_type(self.input_array_list)
+        rand_seed = 50
+        LHSClass = LatinHypercubeSampling(
+            input_array,
+            number_of_samples=100,
+            sampling_type="creation",
+            rand_seed=rand_seed,
+        )
+        np.testing.assert_array_equal(LHSClass.data, input_array)
+        np.testing.assert_array_equal(LHSClass.number_of_samples, 100)
+        assert LHSClass.seed_value == rand_seed
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [list])
@@ -843,6 +888,33 @@ class TestLatinHypercubeSampling:
                 np.unique(unique_sample_points, axis=0), unique_sample_points
             )
             np.testing.assert_array_equal(expected_testing, out_testing)
+
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [list])
+    def test_sample_points_equality_fixed_seed(self, array_type):
+        rand_seed = 1000
+        for num_samples in [None, 1, 10, 100]:  # Test for different number of samples
+            input_array = array_type(self.input_array_list)
+
+            LHSClass_A = LatinHypercubeSampling(
+                input_array,
+                number_of_samples=num_samples,
+                sampling_type="creation",
+                rand_seed=rand_seed,
+            )
+            unique_sample_points_A = LHSClass_A.sample_points()
+
+            LHSClass_B = LatinHypercubeSampling(
+                input_array,
+                number_of_samples=num_samples,
+                sampling_type="creation",
+                rand_seed=rand_seed,
+            )
+            unique_sample_points_B = LHSClass_B.sample_points()
+
+            np.testing.assert_array_equal(
+                unique_sample_points_A, unique_sample_points_B
+            )
 
 
 class TestUniformSampling:
@@ -2015,6 +2087,26 @@ class TestCVTSampling:
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    def test__init__selection_right_behaviour_with_specified_random_seed(
+        self, array_type
+    ):
+        input_array = array_type(self.input_array)
+        rand_seed = 100
+        CVTClass = CVTSampling(
+            input_array,
+            number_of_samples=6,
+            tolerance=None,
+            sampling_type="selection",
+            rand_seed=rand_seed,
+        )
+        np.testing.assert_array_equal(CVTClass.data, input_array)
+        np.testing.assert_array_equal(CVTClass.number_of_centres, 6)
+        np.testing.assert_array_equal(CVTClass.x_data, np.array(input_array)[:, :-1])
+        np.testing.assert_array_equal(CVTClass.eps, 1e-7)
+        assert CVTClass.seed_value == rand_seed
+
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test__init__selection_zero_samples(self, array_type):
         input_array = array_type(self.input_array)
         with pytest.raises(
@@ -2114,6 +2206,19 @@ class TestCVTSampling:
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    def test__init__selection_non_integer_random_seed(self, array_type):
+        input_array = array_type(self.input_array)
+        with pytest.raises(TypeError, match="Random seed must be an integer."):
+            CVTClass = CVTSampling(
+                input_array,
+                number_of_samples=5,
+                sampling_type="selection",
+                rand_seed=1.2,
+                tolerance=None,
+            )
+
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test__init__selection_valid_tolerance(self, array_type):
         input_array = array_type(self.input_array)
         CVTClass = CVTSampling(
@@ -2183,6 +2288,22 @@ class TestCVTSampling:
         )
         np.testing.assert_array_equal(CVTClass.data, input_array)
         np.testing.assert_array_equal(CVTClass.number_of_centres, 100)
+
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [list])
+    def test__init__creation_right_behaviour_with_specified_seed(self, array_type):
+        input_array = array_type(self.input_array_list)
+        rand_seed = 50
+        CVTClass = CVTSampling(
+            input_array,
+            number_of_samples=100,
+            tolerance=None,
+            sampling_type="creation",
+            rand_seed=rand_seed,
+        )
+        np.testing.assert_array_equal(CVTClass.data, input_array)
+        np.testing.assert_array_equal(CVTClass.number_of_centres, 100)
+        assert CVTClass.seed_value == rand_seed
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [list])
@@ -2548,6 +2669,33 @@ class TestCVTSampling:
                 unique_sample_points.shape,
             )
 
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [list])
+    def test_sample_points_equality_fixed_seed(self, array_type):
+        rand_seed = 1000
+        for num_samples in [None, 1, 10, 100]:  # Test for different number of samples
+            input_array = array_type(self.input_array_list)
+
+            CVTClass_A = CVTSampling(
+                input_array,
+                number_of_samples=num_samples,
+                sampling_type="creation",
+                rand_seed=rand_seed,
+            )
+            unique_sample_points_A = CVTClass_A.sample_points()
+
+            CVTClass_B = CVTSampling(
+                input_array,
+                number_of_samples=num_samples,
+                sampling_type="creation",
+                rand_seed=rand_seed,
+            )
+            unique_sample_points_B = CVTClass_B.sample_points()
+
+            np.testing.assert_array_equal(
+                unique_sample_points_A, unique_sample_points_B
+            )
+
 
 class TestCustomSampling:
     input_array = [[x, x + 10, (x + 1) ** 2 + x + 10] for x in range(10)]
@@ -2630,6 +2778,26 @@ class TestCustomSampling:
         np.testing.assert_array_equal(CSClass.x_data, np.array(input_array)[:, :-1])
         assert CSClass.dist_vector == ["uniform", "normal"]
         assert CSClass.normal_bounds_enforced == False
+
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    def test__init__selection_right_behaviour_with_specified_random_seed(
+        self, array_type
+    ):
+        input_array = array_type(self.input_array)
+        rand_seed = 1000
+        CSClass = CustomSampling(
+            input_array,
+            number_of_samples=6,
+            sampling_type="selection",
+            list_of_distributions=["uniform", "normal"],
+            rand_seed=rand_seed,
+        )
+        np.testing.assert_array_equal(CSClass.data, input_array)
+        np.testing.assert_array_equal(CSClass.number_of_samples, 6)
+        np.testing.assert_array_equal(CSClass.x_data, np.array(input_array)[:, :-1])
+        assert CSClass.dist_vector == ["uniform", "normal"]
+        assert CSClass.seed_value == rand_seed
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
@@ -2789,6 +2957,19 @@ class TestCustomSampling:
             )
 
     @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    def test__init__selection_non_integer_random_seed(self, array_type):
+        input_array = array_type(self.input_array)
+        with pytest.raises(TypeError, match="Random seed must be an integer."):
+            CSClass = CustomSampling(
+                input_array,
+                number_of_samples=5,
+                sampling_type="selection",
+                list_of_distributions=["uniform", "normal"],
+                rand_seed=1.2,
+            )
+
+    @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [list])
     def test__init__creation_right_hahaviour_with_none_samplingtype(self, array_type):
         input_array = array_type(self.input_array_list)
@@ -2831,6 +3012,23 @@ class TestCustomSampling:
         np.testing.assert_array_equal(CSClass.data, input_array)
         np.testing.assert_array_equal(CSClass.number_of_samples, 100)
         assert CSClass.dist_vector == ["uniform", "normal", "random"]
+
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [list])
+    def test__init__creation_right_behaviour_with_specified_seed(self, array_type):
+        input_array = array_type(self.input_array_list)
+        rand_seed = 50
+        CSClass = CustomSampling(
+            input_array,
+            number_of_samples=100,
+            sampling_type="creation",
+            list_of_distributions=["uniform", "normal", "random"],
+            rand_seed=rand_seed,
+        )
+        np.testing.assert_array_equal(CSClass.data, input_array)
+        np.testing.assert_array_equal(CSClass.number_of_samples, 100)
+        assert CSClass.dist_vector == ["uniform", "normal", "random"]
+        assert CSClass.seed_value == rand_seed
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [list])
@@ -3310,6 +3508,34 @@ class TestCustomSampling:
             assert len(CSClass.dist_vector) == input_array.shape[1] - 1
             assert unique_sample_points.shape[1] == input_array.shape[1]
             assert type(unique_sample_points) == np.ndarray
+
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [list])
+    def test_sample_points_equality_fixed_seed(self, array_type):
+        rand_seed = 1000
+        for num_samples in [None, 1, 10, 100]:  # Test for different number of samples
+            input_array = array_type(self.input_array_list)
+            CSClass_A = CustomSampling(
+                input_array,
+                number_of_samples=num_samples,
+                sampling_type="creation",
+                list_of_distributions=["random", "normal", "uniform"],
+                rand_seed=rand_seed,
+            )
+            unique_sample_points_A = CSClass_A.sample_points()
+
+            CSClass_B = CustomSampling(
+                input_array,
+                number_of_samples=num_samples,
+                sampling_type="creation",
+                list_of_distributions=["random", "normal", "uniform"],
+                rand_seed=rand_seed,
+            )
+            unique_sample_points_B = CSClass_B.sample_points()
+
+            np.testing.assert_array_equal(
+                unique_sample_points_A, unique_sample_points_B
+            )
 
 
 if __name__ == "__main__":
