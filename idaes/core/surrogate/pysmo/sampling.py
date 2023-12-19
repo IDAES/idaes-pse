@@ -597,10 +597,11 @@ class LatinHypercubeSampling(SamplingMethods):
             self.x_data = bounds_array  # Only x data will be present in this case
 
         if rand_seed is not None:
-            if not isinstance(rand_seed, int):
-                raise TypeError("Random seed must be an integer.")
-            self.seed_value = rand_seed
-            np.random.seed(self.seed_value)
+            try:
+                self.seed_value = int(rand_seed)
+                np.random.seed(self.seed_value)
+            except ValueError:
+                raise ValueError("Random seed must be an integer.")
 
     def variable_sample_creation(self, variable_min, variable_max):
         """
@@ -1423,10 +1424,11 @@ class CVTSampling(SamplingMethods):
         self.eps = tolerance
 
         if rand_seed is not None:
-            if not isinstance(rand_seed, int):
-                raise TypeError("Random seed must be an integer.")
-            self.seed_value = rand_seed
-            np.random.seed(self.seed_value)
+            try:
+                self.seed_value = int(rand_seed)
+                np.random.seed(self.seed_value)
+            except ValueError:
+                raise ValueError("Random seed must be an integer.")
 
     @staticmethod
     def random_sample_selection(no_samples, no_features):
@@ -1751,9 +1753,12 @@ class CustomSampling(SamplingMethods):
         self.normal_bounds_enforced = strictly_enforce_gaussian_bounds
 
         if rand_seed is not None:
-            if not isinstance(rand_seed, int):
-                raise TypeError("Random seed must be an integer.")
-        self.seed_value = rand_seed
+            try:
+                self.seed_value = int(rand_seed)
+            except ValueError:
+                raise ValueError("Random seed must be an integer.")
+        else:
+            self.seed_value = rand_seed
 
     def generate_from_dist(self, dist_name):
         if dist_name.lower() in ["uniform", "random"]:

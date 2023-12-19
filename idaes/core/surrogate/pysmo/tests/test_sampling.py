@@ -512,6 +512,24 @@ class TestLatinHypercubeSampling:
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    def test__init__selection_right_behaviour_with_specified_float_random_seed(
+        self, array_type
+    ):
+        input_array = array_type(self.input_array)
+        rand_seed = 15.1
+        LHSClass = LatinHypercubeSampling(
+            input_array,
+            number_of_samples=6,
+            sampling_type="selection",
+            rand_seed=rand_seed,
+        )
+        np.testing.assert_array_equal(LHSClass.data, input_array)
+        np.testing.assert_array_equal(LHSClass.number_of_samples, 6)
+        np.testing.assert_array_equal(LHSClass.x_data, np.array(input_array)[:, :-1])
+        assert LHSClass.seed_value == int(rand_seed)
+
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test__init__selection_zero_samples(self, array_type):
         input_array = array_type(self.input_array)
         with pytest.raises(
@@ -569,12 +587,12 @@ class TestLatinHypercubeSampling:
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test__init__selection_non_integer_random_seed(self, array_type):
         input_array = array_type(self.input_array)
-        with pytest.raises(TypeError, match="Random seed must be an integer."):
+        with pytest.raises(ValueError, match="Random seed must be an integer."):
             LHSClass = LatinHypercubeSampling(
                 input_array,
                 number_of_samples=5,
                 sampling_type="selection",
-                rand_seed=1.2,
+                rand_seed="1.2",
             )
 
     @pytest.mark.unit
@@ -2107,6 +2125,26 @@ class TestCVTSampling:
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    def test__init__selection_right_behaviour_with_specified_float_random_seed(
+        self, array_type
+    ):
+        input_array = array_type(self.input_array)
+        rand_seed = 2.2
+        CVTClass = CVTSampling(
+            input_array,
+            number_of_samples=6,
+            tolerance=None,
+            sampling_type="selection",
+            rand_seed=rand_seed,
+        )
+        np.testing.assert_array_equal(CVTClass.data, input_array)
+        np.testing.assert_array_equal(CVTClass.number_of_centres, 6)
+        np.testing.assert_array_equal(CVTClass.x_data, np.array(input_array)[:, :-1])
+        np.testing.assert_array_equal(CVTClass.eps, 1e-7)
+        assert CVTClass.seed_value == int(rand_seed)
+
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test__init__selection_zero_samples(self, array_type):
         input_array = array_type(self.input_array)
         with pytest.raises(
@@ -2208,12 +2246,12 @@ class TestCVTSampling:
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test__init__selection_non_integer_random_seed(self, array_type):
         input_array = array_type(self.input_array)
-        with pytest.raises(TypeError, match="Random seed must be an integer."):
+        with pytest.raises(ValueError, match="Random seed must be an integer."):
             CVTClass = CVTSampling(
                 input_array,
                 number_of_samples=5,
                 sampling_type="selection",
-                rand_seed=1.2,
+                rand_seed="1.2",
                 tolerance=None,
             )
 
@@ -2801,6 +2839,26 @@ class TestCustomSampling:
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    def test__init__selection_right_behaviour_with_specified_float_random_seed(
+        self, array_type
+    ):
+        input_array = array_type(self.input_array)
+        rand_seed = 1.2
+        CSClass = CustomSampling(
+            input_array,
+            number_of_samples=6,
+            sampling_type="selection",
+            list_of_distributions=["uniform", "normal"],
+            rand_seed=rand_seed,
+        )
+        np.testing.assert_array_equal(CSClass.data, input_array)
+        np.testing.assert_array_equal(CSClass.number_of_samples, 6)
+        np.testing.assert_array_equal(CSClass.x_data, np.array(input_array)[:, :-1])
+        assert CSClass.dist_vector == ["uniform", "normal"]
+        assert CSClass.seed_value == int(rand_seed)
+
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test__init__selection_zero_samples(self, array_type):
         input_array = array_type(self.input_array)
         with pytest.raises(
@@ -2960,13 +3018,13 @@ class TestCustomSampling:
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test__init__selection_non_integer_random_seed(self, array_type):
         input_array = array_type(self.input_array)
-        with pytest.raises(TypeError, match="Random seed must be an integer."):
+        with pytest.raises(ValueError, match="Random seed must be an integer."):
             CSClass = CustomSampling(
                 input_array,
                 number_of_samples=5,
                 sampling_type="selection",
                 list_of_distributions=["uniform", "normal"],
-                rand_seed=1.2,
+                rand_seed="1.2",
             )
 
     @pytest.mark.unit
