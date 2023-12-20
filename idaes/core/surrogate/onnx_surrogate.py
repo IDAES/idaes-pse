@@ -29,8 +29,6 @@ from pyomo.common.dependencies import attempt_import
 from idaes.core.surrogate.base.surrogate_base import SurrogateBase
 from idaes.core.surrogate.sampling.scaling import OffsetScaler
 
-from idaes.core.surrogate.omlt_base_surrogate_class import OMLTSurrogate
-
 keras, keras_available = attempt_import("tensorflow.keras")
 omlt, omlt_available = attempt_import("omlt")
 
@@ -47,10 +45,10 @@ if omlt_available:
         from omlt.io import load_keras_sequential
 
 
-class KerasSurrogate(OMLTSurrogate):
+class ONNXSurrogate(SurrogateBase):
     def __init__(
         self,
-        keras_model,
+        onnx_model,
         input_labels,
         output_labels,
         input_bounds,
@@ -70,9 +68,7 @@ class KerasSurrogate(OMLTSurrogate):
         with load_from_folder
 
         Args:
-           keras_model: Keras Sequential model
-              This is the Keras Sequential model that will be loaded. Note that
-              specialized layers may not be supported at this time.
+           onnx_model: Onnx model file to be loaded.
            input_labels: list of str
               The ordered list of labels corresponding to the inputs in the keras model
            output_labels: list of str
@@ -90,7 +86,50 @@ class KerasSurrogate(OMLTSurrogate):
             output_labels=output_labels,
             input_bounds=input_bounds,
         )
-        self._keras_model = keras_model
+
+        # make sure we are using the standard scaler
+        if (
+            input_scaler is not None
+            and not isinstance(input_scaler, OffsetScaler)
+            or output_scaler is not None
+            and not isinstance(output_scaler, OffsetScaler)
+        ):
+            raise NotImplementedError("KerasSurrogate only supports the OffsetScaler.")
+
+        # check that the input labels match
+        if input_scaler is not None and input_scaler.expected_columns() != input_labels:
+            raise ValueError(
+                "KerasSurrogate created with input_labels that do not match"
+                " the expected columns in the input_scaler.\n"
+                "input_labels={}\n"
+                "input_scaler.expected_columns()={}".format(
+                    input_labels, input_scaler.expected_columns()
+                )
+            )
+
+        # check that the output labels match
+        if (
+            output_scaler is not None
+            and output_scaler.expected_columns() != output_labels
+        ):
+            raise ValueError(
+                "KerasSurrogate created with output_labels that do not match"
+                " the expected columns in the output_scaler.\n"
+                "output_labels={}\n"
+                "output_scaler.expected_columns()={}".format(
+                    output_labels, output_scaler.expected_columns()
+                )
+            )
+
+        self._input_scaler = input_scaler
+        self._output_scaler = output_scaler
+        self._onnx_model = onnx_model
+
+    class Formulation(Enum):
+        FULL_SPACE = 1
+        REDUCED_SPACE = 2
+        RELU_BIGM = 3
+        RELU_COMPLEMENTARITY = 4
 
     def populate_block(self, block, additional_options=None):
         """
@@ -108,7 +147,37 @@ class KerasSurrogate(OMLTSurrogate):
         formulation = additional_options.pop(
             "formulation", KerasSurrogate.Formulation.FULL_SPACE
         )
-        omlt_scaling, scaled_input_bounds = self.generate_omlt_scaling_objecets()
+        offset_inputs = np.zeros(self.n_inputs())
+        factor_inputs = np.ones(self.n_inputs())
+        offset_outputs = np.zeros(self.n_outputs())
+        factor_outputs = np.ones(self.n_outputs())
+        if self._input_scaler:
+            offset_inputs = self._input_scaler.offset_series()[
+                self.input_labels()
+            ].to_numpy()
+            factor_inputs = self._input_scaler.factor_series()[
+                self.input_labels()
+            ].to_numpy()
+        if self._output_scaler:
+            offset_outputs = self._output_scaler.offset_series()[
+                self.output_labels()
+            ].to_numpy()
+            factor_outputs = self._output_scaler.factor_series()[
+                self.output_labels()
+            ].to_numpy()
+
+        # build the OMLT scaler object
+        omlt_scaling = OffsetScaling(
+            offset_inputs=offset_inputs,
+            factor_inputs=factor_inputs,
+            offset_outputs=offset_outputs,
+            factor_outputs=factor_outputs,
+        )
+
+        # omlt takes *scaled* input bounds as a dictionary with int keys
+        input_bounds = dict(enumerate(self.input_bounds().values()))
+        scaled_input_bounds = omlt_scaling.get_scaled_input_expressions(input_bounds)
+        scaled_input_bounds = {i: tuple(bnd) for i, bnd in scaled_input_bounds.items()}
 
         net = load_keras_sequential(
             self._keras_model,
@@ -130,7 +199,84 @@ class KerasSurrogate(OMLTSurrogate):
                 "KerasSurrogate.populate_block. Please pass a valid "
                 "formulation.".format(formulation)
             )
-        self.populate_block_with_net(block, net)
+        block.nn = OmltBlock()
+        block.nn.build_formulation(
+            formulation_object,
+        )
+
+        # input/output variables need to be constrained to be equal
+        # auto-created variables that come from OMLT.
+        input_idx_by_label = {s: i for i, s in enumerate(self._input_labels)}
+        input_vars_as_dict = block.input_vars_as_dict()
+
+        @block.Constraint(self._input_labels)
+        def input_surrogate_ties(m, input_label):
+            return (
+                input_vars_as_dict[input_label]
+                == block.nn.inputs[input_idx_by_label[input_label]]
+            )
+
+        output_idx_by_label = {s: i for i, s in enumerate(self._output_labels)}
+        output_vars_as_dict = block.output_vars_as_dict()
+
+        @block.Constraint(self._output_labels)
+        def output_surrogate_ties(m, output_label):
+            return (
+                output_vars_as_dict[output_label]
+                == block.nn.outputs[output_idx_by_label[output_label]]
+            )
+
+    def evaluate_surrogate(self, inputs):
+        """
+        Method to evaluate Keras model at a set of input values.
+
+        Args:
+            inputs: numpy array of input values. First dimension of array
+                must match the number of input variables.
+
+        Returns:
+            outputs: numpy array of values for all outputs evaluated at input
+                points.
+        """
+        x = inputs
+        if self._input_scaler is not None:
+            x = self._input_scaler.scale(x)
+        y = self._keras_model.predict(x.to_numpy())
+
+        # y is a numpy array, make it a dataframe
+        y = pd.DataFrame(
+            data=y, columns=self.output_labels(), index=inputs.index, dtype="float64"
+        )
+        if self._output_scaler is not None:
+            y = self._output_scaler.unscale(y)
+        return y
+
+    def save_to_folder(self, keras_folder_name):
+        """
+        Save the surrogate object to disk by providing the name of the
+        folder to contain the keras model and additional IDAES metadata
+
+        Args:
+           folder_name: str
+              The name of the folder to contain the Keras model and additional
+              IDAES metadata
+        """
+        self._keras_model.save(keras_folder_name)
+        info = dict()
+        info["input_scaler"] = None
+        if self._input_scaler is not None:
+            info["input_scaler"] = self._input_scaler.to_dict()
+        info["output_scaler"] = None
+        if self._output_scaler is not None:
+            info["output_scaler"] = self._output_scaler.to_dict()
+
+        # serialize information from the base class
+        info["input_labels"] = self.input_labels()
+        info["output_labels"] = self.output_labels()
+        info["input_bounds"] = self.input_bounds()
+
+        with open(os.path.join(keras_folder_name, "idaes_info.json"), "w") as fd:
+            json.dump(info, fd)
 
     @classmethod
     def load_from_folder(cls, keras_folder_name):

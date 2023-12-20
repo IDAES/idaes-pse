@@ -1,0 +1,80 @@
+inputs:
+  feed_pH:
+    min: 4.0
+    max: 12.0
+    min_rescale: 0
+    max_rescale: 1
+    index: 0
+  pressure_bar_feed:
+    min: 1.0
+    max: 406.32
+    min_rescale: 0
+    max_rescale: 1
+    index: 1
+  Na:
+    min: 0.0
+    max: 135.99
+    min_rescale: 0
+    max_rescale: 1
+    index: 2
+  Cl:
+    min: 0.0
+    max: 180.0
+    min_rescale: 0
+    max_rescale: 1
+    index: 3
+  Ca:
+    min: 0.0
+    max: 10.0
+    min_rescale: 0
+    max_rescale: 1
+    index: 4
+  Mg:
+    min: 0.0
+    max: 10.0
+    min_rescale: 0
+    max_rescale: 1
+    index: 5
+  HCO3:
+    min: 0.0
+    max: 10.0
+    min_rescale: 0
+    max_rescale: 1
+    index: 6
+  SO4:
+    min: 0.0
+    max: 100.0
+    min_rescale: 0
+    max_rescale: 1
+    index: 7
+  K:
+    min: 0.0
+    max: 40.0
+    min_rescale: 0
+    max_rescale: 1
+    index: 8
+  Sr:
+    min: 0.0
+    max: 10.0
+    min_rescale: 0
+    max_rescale: 1
+    index: 9
+  Ba:
+    min: 0.0
+    max: 0.1
+    min_rescale: 0
+    max_rescale: 1
+    index: 10
+  HCl:
+    min: 0.0
+    max: 2000.0
+    min_rescale: 0
+    max_rescale: 1
+    index: 11
+outputs:
+  Calcite_ST:
+    min: 0.0
+    max: 98.19
+    min_rescale: 0
+    max_rescale: 1
+    index: 0
