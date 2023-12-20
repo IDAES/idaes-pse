@@ -17,6 +17,8 @@ import pytest
 import numpy as np
 
 import pyomo.environ as pyo
+from pyomo.util.check_units import assert_units_consistent
+
 from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.models_extra.power_generation.unit_models.soc_submodels as soc
@@ -121,6 +123,11 @@ def test_build(model):
     assert degrees_of_freedom(model.fs.contact) == 0
 
 
+@pytest.mark.component
+def test_units(model):
+    assert_units_consistent(model)
+
+
 @pytest.mark.build
 @pytest.mark.unit
 def test_build2(model2):
@@ -152,6 +159,11 @@ def test_build2(model2):
         },
     )
     assert degrees_of_freedom(model2.fs.contact) == 0
+
+
+@pytest.mark.component
+def test_units_2(model2):
+    assert_units_consistent(model2)
 
 
 @pytest.mark.solver

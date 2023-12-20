@@ -15,6 +15,7 @@ The PySMO package offers five common sampling methods for one-shot design:
    pysmo_halton
    pysmo_hammersley
    pysmo_cvt
+   pysmo_custom
    pysmo_sampling_properties
 
 

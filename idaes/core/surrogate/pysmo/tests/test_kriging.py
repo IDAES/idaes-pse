@@ -278,6 +278,7 @@ class TestKrigingModel:
         input_array = array_type(self.training_data)
         KrigingClass = KrigingModel(input_array[0:3])
         p = 2
+        np.random.seed(0)
         opt_results = KrigingClass.parameter_optimization(p)
         assert len(opt_results.x) == 3
         assert opt_results.success == True

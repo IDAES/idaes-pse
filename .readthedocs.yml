@@ -5,11 +5,16 @@
 # Required
 version: 2
 
+# Build settings
+build:
+  os: ubuntu-22.04
+  tools:
+      python: "3.11"
+
 # Build documentation in the docs/ directory with Sphinx
 sphinx:
     fail_on_warning: false
 
 python:
-    version: "3.8"
     install:
         - requirements: requirements-dev.txt

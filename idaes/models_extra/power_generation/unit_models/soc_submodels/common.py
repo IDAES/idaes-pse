@@ -601,7 +601,7 @@ _diatomic_gas_standard_state = ["F", "Cl", "H", "N", "O"]
 def _comp_int_energy_expr(temperature, comp):
     # ideal gas internal energy
     # NIST has 298.15 K as a reference state, so adjust internal energy expression for that
-    T_ref = 298.15
+    T_ref = 298.15 * pyo.units.K
     dn_form = 1
     for element, molecule_dict in _element_dict.items():
         if element in _monotomic_gas_standard_state:

@@ -126,6 +126,14 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
             "above the electrolyte. This flag determines the sign of material_flux_x.",
         ),
     )
+    CONFIG.declare(
+        "voltage_drop_custom",
+        ConfigValue(
+            domain=Bool,
+            default=False,
+            description="If True, add voltage_drop_custom Var to be connected to degradation models",
+        ),
+    )
 
     common._submodel_boilerplate_config(CONFIG)
     common._thermal_boundary_conditions_config(CONFIG, thin=True)
@@ -252,13 +260,21 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
             bounds=(0, None),
         )
 
+        # Nominally dimensionless, but specifically the log of the preexponential factor in amps per m**2
         self.exchange_current_log_preexponential_factor = pyo.Var(
-            initialize=1, units=(pyo.units.amp / pyo.units.m**2), bounds=(0, None)
+            initialize=1, units=pyo.units.dimensionless, bounds=(0, None)
         )
 
         self.exchange_current_activation_energy = pyo.Var(
             initialize=0, units=pyo.units.J / pyo.units.mol, bounds=(0, None)
         )
+        if self.config.voltage_drop_custom:
+            self.voltage_drop_custom = pyo.Var(
+                tset,
+                iznodes,
+                units=pyo.units.volts,
+                doc="Custom voltage drop term for degradation modeling",
+            )
 
         @self.Expression(tset, iznodes, comps)
         def conc_mol_comp(b, t, iz, j):
@@ -356,8 +372,9 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
             alpha_1 = b.activation_potential_alpha1[None]
             alpha_2 = b.activation_potential_alpha2[None]
             exp_expr = Constants.faraday_constant * eta / (Constants.gas_constant * T)
-            return i == pyo.exp(log_i0 + alpha_1 * exp_expr) - pyo.exp(
-                log_i0 - alpha_2 * exp_expr
+            return i == pyo.units.A / pyo.units.m**2 * (
+                pyo.exp(log_i0 + alpha_1 * exp_expr)
+                - pyo.exp(log_i0 - alpha_2 * exp_expr)
             )
 
         @self.Expression(tset, iznodes)
@@ -376,7 +393,10 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
         # Put this expression in to prepare for a contact resistance term
         @self.Expression(tset, iznodes)
         def voltage_drop_total(b, t, iz):
-            return b.activation_potential[t, iz]
+            if self.config.voltage_drop_custom:
+                return b.activation_potential[t, iz] + b.voltage_drop_custom[t, iz]
+            else:
+                return b.activation_potential[t, iz]
 
         @self.Constraint(tset, iznodes)
         def heat_flux_x_eqn(b, t, iz):
