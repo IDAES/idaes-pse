@@ -16,6 +16,7 @@ provided below.
     caprese/index
     uncertainty_propagation/index
     diagnostics/index
+    flexibility_analysis/index
 
 .. rubric:: PySMO: Python-based Surrogate Modeling Objects
 

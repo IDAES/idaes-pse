@@ -45,6 +45,7 @@ extensions = [
     "sphinx.ext.autosectionlabel",
     "sphinxarg.ext",
     "sphinx.ext.doctest",
+    "enum_tools.autoenum",
 ]
 
 # Put type hints in the description, not signature

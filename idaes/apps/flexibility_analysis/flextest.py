@@ -19,6 +19,7 @@ from typing import Sequence, Union, Mapping, MutableMapping, Optional, Tuple
 from pyomo.core.base.var import _GeneralVarData
 from pyomo.core.base.param import _ParamData
 from .decision_rules.linear_dr import construct_linear_decision_rule
+from .decision_rules.dr_config import DRConfig
 from pyomo.common.dependencies import attempt_import
 from .sampling import (
     SamplingStrategy,
@@ -35,6 +36,8 @@ from pyomo.common.config import (
     MarkImmutable,
     NonNegativeFloat
 )
+from pyomo.contrib.appsi.base import Solver
+from pyomo.opt.base import OptSolver
 relu_dr, relu_dr_available = attempt_import('idaes.apps.flexibility_analysis.decision_rules.relu_dr',
                                             'The ReLU decision rule requires Tensorflow and OMLT')
 
@@ -62,9 +65,14 @@ class FlexTestMethod(enum.Enum):
     active_constraint = enum.auto()
     linear_decision_rule = enum.auto()
     relu_decision_rule = enum.auto()
-    custom_decision_rule = enum.auto()
     vertex_enumeration = enum.auto()
     sampling = enum.auto()
+
+FlexTestMethod.active_constraint.__doc__ = r"Solve the flexibility test using the active constraint method described in [Grossmann1987]_."
+FlexTestMethod.linear_decision_rule.__doc__ = r"Solve the flexibility test by converting the inner minimization problem to a square problem by removing all degrees of freedom by creating a linear decision rule of the form :math:`z = A \theta + b`"
+FlexTestMethod.relu_decision_rule.__doc__ = r"Solve the flexibility test by converting the inner minimization problem to a square problem by removing all degrees of freedom by creating a decision rule of the form :math:`z = f(\theta)` where :math:`f(\theta)` is a nueral network with ReLU activation functions."
+FlexTestMethod.vertex_enumeration.__doc__ = r"Solve the flexibility test by solving the inner minimization problem at every vertex of the hyperrectangle defined by :math:`(\underline{\theta}, \overline{\theta})`."
+FlexTestMethod.sampling.__doc__ = r"Solve the flexibility test by solving the inner minimization problem at random samples of :math:`\theta \in [\underline{\theta}, \overline{\theta}]`."
 
 
 class ActiveConstraintConfig(ConfigDict):
@@ -101,20 +109,44 @@ class ActiveConstraintConfig(ConfigDict):
 
 
 class FlexTestConfig(ConfigDict):
-    def __init__(
-            self,
+    r"""
+    A class for specifying options for solving the flexibility test.
+
+    Attributes
+    ----------
+    feasibility_tol: float
+        Tolerance for considering constraints to be satisfied. In particular, if the 
+        maximum constraint violation is less than or equal to ``feasibility_tol``, then 
+        the flexibility test passes.
+    terminate_early: bool
+        If True, the specified algorithm should terminate as soon as a point 
+        (:math:`\theta`) is found that confirms the flexibility test fails. If 
+        False, the specified algorithm will continue until the :math:`\theta` 
+        that maximizes the constraint violation is found.
+    method: FlexTestMethod
+        The method that should be used to solve the flexibility test. 
+    minlp_solver: Union[Solver, OptSolver]
+        A Pyomo solver interface appropriate for solving MINLPs
+    sampling_config: SamplingConfig
+        A config object for specifying how sampling should be performed when either 
+        generating data to create a decision rule or using sampling to solve the 
+        flexibility test.
+    decision_rule_config: DRConfig
+        Only used if method is one of the decision rules. Should be either a LinearDRConfig 
+        or a ReluDRConfig.
+    active_constraint_config: ActiveConstraintConfig
+        Only used if method is FlexTestMethod.active_constraint
+    total_violation: bool
+        If False, the maximum constraint violation is considered. If True, the sum 
+        of the violations of all constraints is considered. Should normally be False
+    """
+    def __init__(self):
+        super().__init__(
             description=None,
             doc=None,
             implicit=False,
             implicit_domain=None,
             visibility=0,
-    ):
-        super().__init__(
-            description=description,
-            doc=doc,
-            implicit=implicit,
-            implicit_domain=implicit_domain,
-            visibility=visibility,
         )
         self.feasibility_tol: float = self.declare(
             "feasibility_tol", ConfigValue(domain=PositiveFloat, default=1e-6)
@@ -544,6 +576,34 @@ def solve_flextest(
     in_place: bool = False,
     config: Optional[FlexTestConfig] = None,
 ) -> FlexTestResults:
+    r"""
+    Parameters
+    ----------
+    m: _BlockData
+        The pyomo model to be used for the feasibility/flexibility test.
+    uncertain_params: Sequence[Union[_GeneralVarData, _ParamData]]
+        A sequence (e.g., list) defining the set of uncertain parameters (:math:`\theta`). 
+        These can be pyomo variables (Var) or parameters (param). However, if parameters are used,
+        they must be mutable.  
+    param_nominal_values: Mapping[Union[_GeneralVarData, _ParamData], float]
+        A mapping (e.g., ComponentMap) from the uncertain parameters (:math:`\theta`) to their
+        nominal values (:math:`\theta^{N}`).
+    param_bounds: Mapping[Union[_GeneralVarData, _ParamData], Tuple[float, float]]
+        A mapping (e.g., ComponentMap) from the uncertain parameters (:math:`\theta`) to their
+        bounds (:math:`\underline{\theta}`, :math:`\overline{\theta}`).
+    controls: Sequence[_GeneralVarData]
+        A sequence (e.g., list) defining the set of control variables (:math:`z`).
+    valid_var_bounds: MutableMapping[_GeneralVarData, Tuple[float, float]]
+        A mapping (e.g., ComponentMap) defining bounds for all variables (:math:`x` and :math:`z`) that
+        should be valid for any :math:`\theta` between :math:`\underline{\theta}` and 
+        :math:`\overline{\theta}`. These are only used to make the resulting flexibility test problem
+        more computationally tractable.
+    in_place: bool
+        If True, m is modified in place to generate the model for solving the flexibility test. If False, 
+        the model is cloned first.
+    config: Optional[FlexTestConfig]
+        An object defining options for how the flexibility test should be solved.
+    """
     if config is None:
         config = FlexTestConfig()
 
