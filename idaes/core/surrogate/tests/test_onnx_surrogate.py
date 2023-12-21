@@ -129,3 +129,40 @@ def test_onnx_surrogate_manual_creation():
     assert pytest.approx(test_outputs["Calcite_ST"], rel=1e-3) == value(
         m.outputs["Calcite_ST"]
     )
+
+
+@pytest.mark.unit
+@pytest.mark.skipif(not SolverFactory("ipopt").available(False), reason="no Ipopt")
+def test_onnx_surrogate_load_from_file():
+    ###
+    # Test 1->2 sigmoid
+    ###
+    _, _, test_inputs, test_outputs = load_onnx_model_data()
+
+    onnx_surrogate = ONNXSurrogate.load_onnx_model(
+        onnx_model_location=os.path.join(this_file_dir(), "data", "onnx_models"),
+        model_name="net_st_net_5000_STM_100_s_2000000_60_5_tanh_1e-06_4096_tr_15481_Calcite_ST",
+    )
+
+    m = ConcreteModel()
+
+    output_vars = ["Calcite_ST"]
+    m.inputs = Var(test_inputs["vars"])
+
+    m.outputs = Var(test_outputs["vars"])
+    m.surrogate = SurrogateBlock()
+    m.surrogate.build_model(
+        surrogate_object=onnx_surrogate,
+        input_vars=[m.inputs[input_var] for input_var in test_inputs["vars"]],
+        output_vars=[m.outputs[output_var] for output_var in test_outputs["vars"]],
+        formulation=ONNXSurrogate.Formulation.REDUCED_SPACE,
+    )
+    for key in test_inputs["vars"]:
+        m.inputs[key].fix(test_inputs[key])
+
+    solver = SolverFactory("ipopt")
+    status = solver.solve(m, tee=True)
+    assert_optimal_termination(status)
+    assert pytest.approx(test_outputs["Calcite_ST"], rel=1e-3) == value(
+        m.outputs["Calcite_ST"]
+    )
