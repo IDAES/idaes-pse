@@ -45,8 +45,6 @@ if omlt_available:
     import omlt.io as omltio
     from omlt.io import load_onnx_neural_network, write_onnx_model_with_bounds
 
-# overrides default availble activaiton functions for ONNX, tanh is not listed in 1.1 but is supported
-
 
 class ONNXSurrogate(OMLTSurrogate):
     def __init__(
@@ -124,7 +122,7 @@ class ONNXSurrogate(OMLTSurrogate):
         scaled_input_bounds = {i: tuple(bnd) for i, bnd in scaled_input_bounds.items()}
 
         # TODO: remove this once new OMLT 1.2 is made available and includes tanh support
-        # overrides default availble activaiton functions for ONNX, tanh is not listed in 1.1 but is supported
+        # overrides default available activation functions for ONNX, tanh is not listed in 1.1 but is supported
         omltio.onnx_parser._ACTIVATION_OP_TYPES = [
             "Relu",
             "Sigmoid",
@@ -209,20 +207,23 @@ class ONNXSurrogate(OMLTSurrogate):
         """
         Load the surrogate object from disk by providing the name of the
         folder holding the onnx model and its name, including accompanying json file that includes following
-        sturcture
-            input_scaler{'expected_columns:[list of inputs],
+        structure
+            "input_scaler":{'expected_columns:[list of input_keys],
                         'offset:{input_key:offset_value,etc.},
                         'factor:{input_key:factor_value (e.g. multiplier),etc.}}
-            output_scaler{'expected_columns:[list of outuuts],
+            "output_scaler":{'expected_columns:[list of output_keys],
                             'offset:{output_key:offset_value,etc.},
                             'factor:{output_key:factor_value (e.g. multiplier),etc.}}
+            "input_bounds":{input_key:[low_bound,high_bound],etc.}
+            "input_labels":['list of input_keys]
+            "output_labels":['list of output_keys]
 
         Args:
            folder_name: str
               The name of the folder containing the onnx model and additional
               IDAES metadata
             model_name: str
-              The name of the model to load in the floder
+              The name of the model to load in the folder
 
         Returns: an instance of KerasSurrogate
         """
