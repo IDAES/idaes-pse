@@ -17,16 +17,13 @@ Interface for importing Keras models into IDAES
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 
-from enum import Enum
 import json
 import os.path
 
-import numpy as np
 import pandas as pd
 
 from pyomo.common.dependencies import attempt_import
 
-from idaes.core.surrogate.base.surrogate_base import SurrogateBase
 from idaes.core.surrogate.sampling.scaling import OffsetScaler
 
 from idaes.core.surrogate.omlt_base_surrogate_class import OMLTSurrogate

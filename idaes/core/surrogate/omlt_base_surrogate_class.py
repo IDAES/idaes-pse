@@ -18,9 +18,6 @@ Interface for importing ONNX models into IDAES
 # pylint: disable=missing-function-docstring
 
 from enum import Enum
-import json
-import os.path
-
 import numpy as np
 import pandas as pd
 
@@ -34,12 +31,6 @@ omlt, omlt_available = attempt_import("omlt")
 
 if omlt_available:
     from omlt import OmltBlock, OffsetScaling
-    from omlt.neuralnet import (
-        FullSpaceSmoothNNFormulation,
-        ReducedSpaceSmoothNNFormulation,
-        ReluBigMFormulation,
-        ReluComplementarityFormulation,
-    )
 
 
 class OMLTSurrogate(SurrogateBase):

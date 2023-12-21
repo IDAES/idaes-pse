@@ -28,7 +28,6 @@ from pyomo.environ import (
     SolverFactory,
     assert_optimal_termination,
     value,
-    Objective,
 )
 from idaes.core.surrogate.onnx_surrogate import ONNXSurrogate
 from idaes.core.surrogate.surrogate_block import SurrogateBlock
@@ -36,6 +35,7 @@ from idaes.core.surrogate.sampling.scaling import OffsetScaler
 import json
 import onnx
 
+# onnx, onnx_available = attempt_import("onnx")
 rtol = 1e-4
 atol = 1e-4
 
