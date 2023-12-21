@@ -43,7 +43,7 @@ if omlt_available:
         ReluComplementarityFormulation,
     )
     import omlt.io as omltio
-    from omlt.io import load_onnx_neural_network
+    from omlt.io import load_onnx_neural_network, write_onnx_model_with_bounds
 
 # overrides default availble activaiton functions for ONNX, tanh is not listed in 1.1 but is supported
 
@@ -167,6 +167,42 @@ class ONNXSurrogate(OMLTSurrogate):
                 points.
         """
         raise NotImplementedError
+
+    def save_to_folder(self, save_location, save_name):
+        """
+        Save the surrogate object to disk by providing the location to store the
+                model in and its name, as well as additional IDAES metadata
+
+        Args:
+           save_location: str
+              The name of the folder to contain the ONNX model and additional
+              IDAES metadata
+            save_name: str
+                The name for the model
+        """
+
+        write_onnx_model_with_bounds(
+            os.path.join(save_location, "{}.onnx".format(save_name)),
+            onnx_model=self._onnx_model,
+            input_bounds=None,
+        )
+        info = dict()
+        info["input_scaler"] = None
+        if self._input_scaler is not None:
+            info["input_scaler"] = self._input_scaler.to_dict()
+        info["output_scaler"] = None
+        if self._output_scaler is not None:
+            info["output_scaler"] = self._output_scaler.to_dict()
+
+        # serialize information from the base class
+        info["input_labels"] = self.input_labels()
+        info["output_labels"] = self.output_labels()
+        info["input_bounds"] = self.input_bounds()
+
+        with open(
+            os.path.join(save_location, "{}_idaes_info.json".format(save_name)), "w"
+        ) as fd:
+            json.dump(info, fd)
 
     @classmethod
     def load_onnx_model(cls, onnx_model_location, model_name):

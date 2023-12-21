@@ -133,7 +133,7 @@ def test_onnx_surrogate_manual_creation():
 
 @pytest.mark.unit
 @pytest.mark.skipif(not SolverFactory("ipopt").available(False), reason="no Ipopt")
-def test_onnx_surrogate_load_from_file():
+def test_onnx_surrogate_load_and_save_from_file():
     ###
     # Test 1->2 sigmoid
     ###
@@ -143,7 +143,15 @@ def test_onnx_surrogate_load_from_file():
         onnx_model_location=os.path.join(this_file_dir(), "data", "onnx_models"),
         model_name="net_st_net_5000_STM_100_s_2000000_60_5_tanh_1e-06_4096_tr_15481_Calcite_ST",
     )
+    with TempfileManager.new_context() as tf:
+        dname = tf.mkdtemp()
+        onnx_surrogate.save_to_folder(dname, "temp_model")
 
+        loaded_onnx_surrogate = ONNXSurrogate.load_onnx_model(
+            onnx_model_location=dname,
+            model_name="temp_model",
+        )
+    assert not os.path.isdir(dname)
     m = ConcreteModel()
 
     output_vars = ["Calcite_ST"]
@@ -152,7 +160,7 @@ def test_onnx_surrogate_load_from_file():
     m.outputs = Var(test_outputs["vars"])
     m.surrogate = SurrogateBlock()
     m.surrogate.build_model(
-        surrogate_object=onnx_surrogate,
+        surrogate_object=loaded_onnx_surrogate,
         input_vars=[m.inputs[input_var] for input_var in test_inputs["vars"]],
         output_vars=[m.outputs[output_var] for output_var in test_outputs["vars"]],
         formulation=ONNXSurrogate.Formulation.REDUCED_SPACE,
