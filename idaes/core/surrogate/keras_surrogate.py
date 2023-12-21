@@ -89,6 +89,8 @@ class KerasSurrogate(OMLTSurrogate):
             input_labels=input_labels,
             output_labels=output_labels,
             input_bounds=input_bounds,
+            input_scaler=input_scaler,
+            output_scaler=output_scaler,
         )
         self._keras_model = keras_model
 
@@ -130,7 +132,59 @@ class KerasSurrogate(OMLTSurrogate):
                 "KerasSurrogate.populate_block. Please pass a valid "
                 "formulation.".format(formulation)
             )
-        self.populate_block_with_net(block, net)
+        self.populate_block_with_net(block, formulation_object)
+
+    def evaluate_surrogate(self, inputs):
+        """
+        Method to evaluate Keras model at a set of input values.
+
+        Args:
+            inputs: numpy array of input values. First dimension of array
+                must match the number of input variables.
+
+        Returns:
+            outputs: numpy array of values for all outputs evaluated at input
+                points.
+        """
+        x = inputs
+        if self._input_scaler is not None:
+            x = self._input_scaler.scale(x)
+        y = self._keras_model.predict(x.to_numpy())
+
+        # y is a numpy array, make it a dataframe
+        y = pd.DataFrame(
+            data=y, columns=self.output_labels(), index=inputs.index, dtype="float64"
+        )
+        if self._output_scaler is not None:
+            y = self._output_scaler.unscale(y)
+        return y
+
+    def save_to_folder(self, keras_folder_name):
+        """
+        Save the surrogate object to disk by providing the name of the
+        folder to contain the keras model and additional IDAES metadata
+
+        Args:
+           folder_name: str
+              The name of the folder to contain the Keras model and additional
+              IDAES metadata
+        """
+        self._keras_model.save(keras_folder_name)
+        info = dict()
+        info["input_scaler"] = None
+        if self._input_scaler is not None:
+            info["input_scaler"] = self._input_scaler.to_dict()
+        info["output_scaler"] = None
+        if self._output_scaler is not None:
+            info["output_scaler"] = self._output_scaler.to_dict()
+
+        # serialize information from the base class
+        info["input_labels"] = self.input_labels()
+        info["output_labels"] = self.output_labels()
+        info["input_bounds"] = self.input_bounds()
+
+        with open(os.path.join(keras_folder_name, "idaes_info.json"), "w") as fd:
+            json.dump(info, fd)
 
     @classmethod
     def load_from_folder(cls, keras_folder_name):
