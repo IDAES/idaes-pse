@@ -38,7 +38,9 @@ if omlt_available:
         ReluComplementarityFormulation,
     )
     import omlt.io as omltio
-    from omlt.io import load_onnx_neural_network, write_onnx_model_with_bounds
+
+    if onnx_available:
+        from omlt.io import load_onnx_neural_network, write_onnx_model_with_bounds
 
 
 class ONNXSurrogate(OMLTSurrogate):
