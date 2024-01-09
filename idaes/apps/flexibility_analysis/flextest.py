@@ -116,15 +116,15 @@ class FlexTestConfig(ConfigDict):
     ----------
     feasibility_tol: float
         Tolerance for considering constraints to be satisfied. In particular, if the 
-        maximum constraint violation is less than or equal to ``feasibility_tol``, then 
-        the flexibility test passes.
+        maximum constraint violation is less than or equal to :py:attr:`feasibility_tol<FlexTestConfig.feasibility_tol>`, then 
+        the flexibility test passes. (default: 1e-6)
     terminate_early: bool
         If True, the specified algorithm should terminate as soon as a point 
         (:math:`\theta`) is found that confirms the flexibility test fails. If 
         False, the specified algorithm will continue until the :math:`\theta` 
-        that maximizes the constraint violation is found.
+        that maximizes the constraint violation is found. (default: False)
     method: FlexTestMethod
-        The method that should be used to solve the flexibility test. 
+        The method that should be used to solve the flexibility test. (default: :py:attr:`active_constraint<FlexTestMethod.active_constraint>`) 
     minlp_solver: Union[Solver, OptSolver]
         A Pyomo solver interface appropriate for solving MINLPs
     sampling_config: SamplingConfig
@@ -135,10 +135,10 @@ class FlexTestConfig(ConfigDict):
         Only used if method is one of the decision rules. Should be either a LinearDRConfig 
         or a ReluDRConfig.
     active_constraint_config: ActiveConstraintConfig
-        Only used if method is FlexTestMethod.active_constraint
+        Only used if :py:attr:`method<FlexTestConfig.method>` is :py:attr:`active_constraint<FlexTestMethod.active_constraint>`
     total_violation: bool
         If False, the maximum constraint violation is considered. If True, the sum 
-        of the violations of all constraints is considered. Should normally be False
+        of the violations of all constraints is considered. Should normally be False. (default: False)
     """
     def __init__(self):
         super().__init__(
@@ -181,6 +181,10 @@ class FlexTestTermination(enum.Enum):
     found_infeasible_point = enum.auto()
     proven_feasible = enum.auto()
     uncertain = enum.auto()
+
+FlexTestTermination.found_infeasible_point.__doc__ = r"The meaning of this member depends on the method used to solve the flexibility/feasibility test, but it generally means that the flexibility test failed. If the solution method is not conservative (:py:attr:`FlexTestMethod.vertex_enumeration<idaes.apps.flexibility_analysis.FlexTestMethod.vertex_enumeration>`, :py:attr:`FlexTestMethod.sampling<idaes.apps.flexibility_analysis.FlexTestMethod.sampling>`), then :py:attr:`FlexTestTermination.found_infeasible_point<idaes.apps.flexibility_analysis.FlexTestTermination.found_infeasible_point>` indicates that a value of :math:`\theta` was found where at least one performance constraint (:math:`g_{j}(x, z, \theta) \leq 0`) is violated. Otherwise, :py:attr:`FlexTestTermination.found_infeasible_point<idaes.apps.flexibility_analysis.FlexTestTermination.found_infeasible_point>` indicates that a point was found where the performance constraints might be violated."
+FlexTestTermination.proven_feasible.__doc__ = r"The meaning of this member depends on the method used to solve the flexibility/feasibility test, but it generally means that the flexibility test passed. If the solution method is conservative (:py:attr:`FlexTestMethod.active_constraint<idaes.apps.flexibility_analysis.FlexTestMethod.active_constraint>`, :py:attr:`FlexTestMethod.linear_decision_rule<idaes.apps.flexibility_analysis.FlexTestMethod.linear_decision_rule>`, :py:attr:`FlexTestMethod.relu_decision_rule<idaes.apps.flexibility_analysis.FlexTestMethod.relu_decision_rule>`), then :py:attr:`FlexTestTermination.proven_feasible<idaes.apps.flexibility_analysis.FlexTestTermination.proven_feasible>` indicates that, for any :math:`\theta \in [\underline{\theta}, \overline{\theta}]`, there exists a :math:`z` such that all of the performance constraints (:math:`g_{j}(x, z, \theta) \leq 0`) are satisfied. Otherwise, :py:attr:`FlexTestTermination.proven_feasible<idaes.apps.flexibility_analysis.FlexTestTermination.proven_feasible>` just indicates that no :math:`\theta \in [\underline{\theta}, \overline{\theta}]` was found that violates the performance constraints for all :math:`z`."
+FlexTestTermination.uncertain.__doc__ = r"Cannot definitively say whether the flexibility test passes or fails. This usually indicates an error was encountered."
 
 
 class FlexTestResults(object):
@@ -597,7 +601,10 @@ def solve_flextest(
         A mapping (e.g., ComponentMap) defining bounds for all variables (:math:`x` and :math:`z`) that
         should be valid for any :math:`\theta` between :math:`\underline{\theta}` and 
         :math:`\overline{\theta}`. These are only used to make the resulting flexibility test problem
-        more computationally tractable.
+        more computationally tractable. All variable bounds in the model `m` are treated as performance 
+        constraints and relaxed (:math:`g_{j}(x, z, \theta) \leq u`). The bounds in `valid_var_bounds` 
+        are applied to the single-level problem generated from the active constraint method or one of 
+        the decision rules. This argument is not necessary for vertex enumeration or sampling.
     in_place: bool
         If True, m is modified in place to generate the model for solving the flexibility test. If False, 
         the model is cloned first.

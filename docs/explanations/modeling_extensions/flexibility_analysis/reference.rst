@@ -7,7 +7,6 @@ Enumerations
 
 * :py:enum:`FlexTestMethod<idaes.apps.flexibility_analysis.FlexTestMethod>`
 * :py:enum:`FlexTestTermination<idaes.apps.flexibility_analysis.FlexTestTermination>`
-* :py:enum:`DecisionRuleTypes<idaes.apps.flexibility_analysis.DecisionRuleTypes>`
 
 Configuration
 
@@ -23,8 +22,8 @@ Results
 
 Functions
 
-* :class:`solve_flextest<idaes.apps.flexibility_analysis.solve_flextest>`
-* :class:`solve_flex_index<idaes.apps.flexibility_analysis.solve_flex_index>`
+* :meth:`solve_flextest<idaes.apps.flexibility_analysis.solve_flextest>`
+* :meth:`solve_flex_index<idaes.apps.flexibility_analysis.solve_flex_index>`
 
 Enumerations
 ------------
@@ -32,8 +31,6 @@ Enumerations
 .. autoenum:: idaes.apps.flexibility_analysis.FlexTestMethod
 
 .. autoenum:: idaes.apps.flexibility_analysis.FlexTestTermination
-
-.. autoenum:: idaes.apps.flexibility_analysis.DecisionRuleTypes
 
 Configuration
 -------------
