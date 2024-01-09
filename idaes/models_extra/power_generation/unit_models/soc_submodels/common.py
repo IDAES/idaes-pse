@@ -187,6 +187,7 @@ def _interpolate_2D(
         expression for phi at face
     """
     # TODO add tests to ensure this function works as designed
+    # Also, user beware, use of CV_Bound enums is untested
     icu = ic - 1
     icd = ic
     if ic == ifaces.first():
