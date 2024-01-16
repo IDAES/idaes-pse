@@ -15,6 +15,7 @@ Unit model to adjust size of streams to represent, for example, a stream being s
 which are then all modeled as a single IDAES unit
 """
 from enum import Enum
+from functools import partial
 
 from pyomo.environ import (
     Block,
@@ -193,19 +194,24 @@ see property package for documentation.}""",
         )
         self.add_inlet_port(name="inlet", block=self.inlet_block)
         self.outlet = Port(doc="Outlet port")
+
+        def rule_scale_var(b, *args, var=None):
+            return self.multiplier * var[args]
+
+        def rule_no_scale_var(b, *args, var=None):
+            return var[args]
+
         for var_name in self.inlet.vars.keys():
             var = getattr(self.inlet, var_name)
             if "flow" in var_name:
-                def tmp_rule(b, *args):
-                    return self.multiplier * var[args]
+                rule=partial(rule_scale_var, var=var)
             else:
-                def tmp_rule(b, *args):
-                    return var[args]
+                rule=partial(rule_no_scale_var, var=var)
             self.outlet_block.add_component(
                 var_name,
                 VarLikeExpression(
                     var.index_set(),
-                    rule=tmp_rule
+                    rule=rule
                 )
             )
             expr = getattr(self.outlet_block, var_name)
@@ -280,4 +286,14 @@ see property package for documentation.}""",
     def calculate_scaling_factors(self):
         # Scaling factors for the property block are calculated automatically
         super().calculate_scaling_factors()
+
+        # Need to pass on scaling factors from the property block to the outlet
+        # VarLikeExpressions so arcs get scaled right
+        scale = 1/self.multiplier.value
+        for var_name in self.inlet.vars.keys():
+            var = getattr(self.inlet, var_name)
+            outlet_expr = getattr(self.outlet, var_name)
+            for key, subvar in var.items():
+                sf = iscale.get_scaling_factor(subvar, default=1, warning=True)
+                iscale.set_scaling_factor(outlet_expr[key],scale*sf)
         
