@@ -1798,6 +1798,10 @@ class TestDegeneracyHunter:
             model.con5: 1e-05,
         }
 
+    @pytest.mark.xfail(
+        reason="Known failure. See IDAES/idaes-pse#1317 for details",
+        strict=True,
+    )
     @pytest.mark.solver
     @pytest.mark.component
     def test_solve_candidates_milp(self, model, scip_solver):
@@ -1847,10 +1851,7 @@ class TestDegeneracyHunter:
             model.con5: -1,
         }
 
-    @pytest.mark.xfail(
-        reason="Known failure. See IDAES/idaes-pse#1317 for details",
-        strict=True,
-    )
+    # TODO does this test function have the exact same name as the one above?
     @pytest.mark.solver
     @pytest.mark.component
     def test_solve_ids_milp(self, model, scip_solver):
