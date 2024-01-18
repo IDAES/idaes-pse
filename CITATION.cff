@@ -1,0 +1,43 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+  - name: "IDAES contributors"
+title: "Institute for Design of Advanced Energy Systems (IDAES): advanced computational algorithms to enable the design and optimization of complex, interacting energy and process systems from individual plant components to the entire electrical grid"
+url: "https://github.com/IDAES/idaes-pse"
+license-url: "https://github.com/IDAES/idaes-pse/blob/main/LICENSE.md"
+preferred-citation:
+  type: article
+  authors:
+    - family-names: "Lee"
+      given-names: "Andrew"
+    - family-names: "Ghouse"
+      given-names: "Jaffer H"
+    - family-names: "Eslick"
+      given-names: "John C"
+    - family-names: "Laird"
+      given-names: "Carl D"
+    - family-names: "Siirola"
+      given-names: "John D"
+    - family-names: "Zamarripa"
+      given-names: "Miguel A"
+    - family-names: "Gunter"
+      given-names: "Dan"
+    - family-names: "Shinn"
+      given-names: "John H"
+    - family-names: "Dowling"
+      given-names: "Alexander W"
+    - family-names: "Bhattacharyya"
+      given-names: "Debangsu"
+    - family-names: "Biegler"
+      given-names: "Lorenz T"
+    - family-names: "Burgard"
+      given-names: "Anthony P"
+    - family-names: "Miller"
+      given-names: "David C"
+  title: "The IDAES process modeling framework and model library—Flexibility for process simulation and optimization"
+  journal: "Journal of Advanced Manufacturing and Processing"
+  publisher: "Wiley Online Library"
+  volume: 3
+  year: 2021
+  doi: "doi/10.1002/amp2.10095"
+
