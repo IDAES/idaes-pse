@@ -74,6 +74,12 @@ The IDAES team is comprised of collaborators from the following institutions:
 * University of Notre Dame
 * Georgia Tech
 
+Citing IDAES
+------------
+If you use IDAES software for your research, please cite us:
+
+Lee, Andrew, Jaffer H. Ghouse, John C. Eslick, Carl D. Laird, John D. Siirola, Miguel A. Zamarripa, Dan Gunter et al. "The IDAES process modeling framework and model library—Flexibility for process simulation and optimization." Journal of Advanced Manufacturing and Processing 3, no. 3 (2021): e10095. https://doi.org/10.1002/amp2.10095
+
 Contact us
 -----------
 General, background and overview information is available at the `IDAES website`_.
