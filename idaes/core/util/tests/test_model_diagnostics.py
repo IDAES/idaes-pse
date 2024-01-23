@@ -1798,10 +1798,6 @@ class TestDegeneracyHunter:
             model.con5: 1e-05,
         }
 
-    @pytest.mark.xfail(
-        reason="Known failure. See IDAES/idaes-pse#1317 for details",
-        strict=True,
-    )
     @pytest.mark.solver
     @pytest.mark.component
     def test_solve_candidates_milp(self, model, scip_solver):
