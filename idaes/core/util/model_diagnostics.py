@@ -3216,7 +3216,7 @@ def check_parallel_jacobian(model, tolerance: float = 1e-4, direction: str = "ro
     return parallel
 
 
-def check_ill_conditioning(
+def compute_ill_conditioning_certificate(
     model,
     target_feasibility_tol: float = 1e-06,
     ratio_cutoff: float = 1e-04,

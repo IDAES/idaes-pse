@@ -77,7 +77,7 @@ from idaes.core.util.model_diagnostics import (
     _write_report_section,
     _collect_model_statistics,
     check_parallel_jacobian,
-    check_ill_conditioning,
+    compute_ill_conditioning_certificate,
 )
 from idaes.core.util.testing import _enable_scip_solver_for_testing
 
@@ -3099,7 +3099,7 @@ class TestCheckIllConditioning:
             match="Unrecognised value for direction \(foo\). "
             "Must be 'row' or 'column'.",
         ):
-            check_ill_conditioning(m, direction="foo")
+            compute_ill_conditioning_certificate(m, direction="foo")
 
     @pytest.fixture(scope="class")
     def model(self):
@@ -3224,7 +3224,7 @@ class TestCheckIllConditioning:
     @pytest.mark.unit
     def test_beta(self, model, caplog):
 
-        check_ill_conditioning(model)
+        compute_ill_conditioning_certificate(model)
 
         expected = (
             "Ill conditioning checks are a beta capability. Please be aware that "
@@ -3236,7 +3236,7 @@ class TestCheckIllConditioning:
     @pytest.mark.component
     @pytest.mark.solver
     def test_rows(self, model):
-        assert check_ill_conditioning(model, direction="row") == [
+        assert compute_ill_conditioning_certificate(model, direction="row") == [
             (model.c4, pytest.approx(0.50000002, rel=1e-5)),
             (model.c4, pytest.approx(0.49999998, rel=1e-5)),
         ]
@@ -3244,7 +3244,7 @@ class TestCheckIllConditioning:
     @pytest.mark.component
     @pytest.mark.solver
     def test_rows(self, afiro):
-        assert check_ill_conditioning(afiro, direction="row") == [
+        assert compute_ill_conditioning_certificate(afiro, direction="row") == [
             (afiro.R09, pytest.approx(0.5, rel=1e-5)),
             (afiro.R09b, pytest.approx(0.5, rel=1e-5)),
         ]
@@ -3252,7 +3252,7 @@ class TestCheckIllConditioning:
     @pytest.mark.component
     @pytest.mark.solver
     def test_columns(self, afiro):
-        assert check_ill_conditioning(afiro, direction="column") == [
+        assert compute_ill_conditioning_certificate(afiro, direction="column") == [
             (afiro.X39, pytest.approx(1.1955465, rel=1e-5)),
             (afiro.X23, pytest.approx(1.0668697, rel=1e-5)),
             (afiro.X25, pytest.approx(-1.0668697, rel=1e-5)),
