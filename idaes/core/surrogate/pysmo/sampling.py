@@ -480,6 +480,7 @@ class LatinHypercubeSampling(SamplingMethods):
         sampling_type=None,
         xlabels=None,
         ylabels=None,
+        rand_seed=None,
     ):
         """
         Initialization of **LatinHypercubeSampling** class. Two inputs are required.
@@ -496,6 +497,7 @@ class LatinHypercubeSampling(SamplingMethods):
         Keyword Args:
             xlabels (list): List of column names (if **data_input** is a dataframe) or column numbers (if **data_input** is an array) for the independent/input  variables.  Only used in "selection" mode. Default is None.
             ylabels (list): List of column names (if **data_input** is a dataframe) or column numbers (if **data_input** is an array) for the dependent/output variables. Only used in "selection" mode. Default is None.
+            rand_seed (int): Option that allows users to fix the numpy random seed generator for reproducibility (if required).
 
         Returns:
             **self** function containing the input information
@@ -593,6 +595,13 @@ class LatinHypercubeSampling(SamplingMethods):
                 raise ValueError("number_of_samples must a positive, non-zero integer.")
             self.number_of_samples = number_of_samples
             self.x_data = bounds_array  # Only x data will be present in this case
+
+        if rand_seed is not None:
+            try:
+                self.seed_value = int(rand_seed)
+                np.random.seed(self.seed_value)
+            except ValueError:
+                raise ValueError("Random seed must be an integer.")
 
     def variable_sample_creation(self, variable_min, variable_max):
         """
@@ -1269,6 +1278,7 @@ class CVTSampling(SamplingMethods):
         sampling_type=None,
         xlabels=None,
         ylabels=None,
+        rand_seed=None,
     ):
         """
         Initialization of CVTSampling class. Two inputs are required, while an optional option to control the solution accuracy may be specified.
@@ -1285,6 +1295,7 @@ class CVTSampling(SamplingMethods):
         Keyword Args:
             xlabels (list): List of column names (if **data_input** is a dataframe) or column numbers (if **data_input** is an array) for the independent/input  variables.  Only used in "selection" mode. Default is None.
             ylabels (list): List of column names (if **data_input** is a dataframe) or column numbers (if **data_input** is an array) for the dependent/output variables. Only used in "selection" mode. Default is None.
+            rand_seed (int): Option that allows users to fix the numpy random seed generator for reproducibility (if required).
             tolerance(float): Maximum allowable Euclidean distance between centres from consecutive iterations of the algorithm. Termination condition for algorithm.
 
                 - The smaller the value of tolerance, the better the solution but the longer the algorithm requires to converge. Default value is :math:`10^{-7}`.
@@ -1411,6 +1422,13 @@ class CVTSampling(SamplingMethods):
         else:
             raise Exception("Invalid tolerance input")
         self.eps = tolerance
+
+        if rand_seed is not None:
+            try:
+                self.seed_value = int(rand_seed)
+                np.random.seed(self.seed_value)
+            except ValueError:
+                raise ValueError("Random seed must be an integer.")
 
     @staticmethod
     def random_sample_selection(no_samples, no_features):
@@ -1591,6 +1609,7 @@ class CustomSampling(SamplingMethods):
         xlabels=None,
         ylabels=None,
         strictly_enforce_gaussian_bounds=False,
+        rand_seed=None,
     ):
         """
         Initialization of CustomSampling class. Four inputs are required.
@@ -1608,6 +1627,7 @@ class CustomSampling(SamplingMethods):
         Keyword Args:
             xlabels (list): List of column names (if **data_input** is a dataframe) or column numbers (if **data_input** is an array) for the independent/input  variables.  Only used in "selection" mode. Default is None.
             ylabels (list): List of column names (if **data_input** is a dataframe) or column numbers (if **data_input** is an array) for the dependent/output variables. Only used in "selection" mode. Default is None.
+            rand_seed (int): Option that allows users to fix the numpy random seed generator for reproducibility (if required).
             strictly_enforce_gaussian_bounds (bool): Boolean specifying whether the provided bounds for normal distributions should be strictly enforced. Note that selecting this option may affect the underlying distribution. Default is False.
 
         Returns:
@@ -1732,13 +1752,21 @@ class CustomSampling(SamplingMethods):
             )
         self.normal_bounds_enforced = strictly_enforce_gaussian_bounds
 
+        if rand_seed is not None:
+            try:
+                self.seed_value = int(rand_seed)
+            except ValueError:
+                raise ValueError("Random seed must be an integer.")
+        else:
+            self.seed_value = rand_seed
+
     def generate_from_dist(self, dist_name):
         if dist_name.lower() in ["uniform", "random"]:
-            dist = getattr(np.random.default_rng(), dist_name.lower())
+            dist = getattr(np.random.default_rng(self.seed_value), dist_name.lower())
             var_values = np.array(dist(size=self.number_of_samples))
             return dist, var_values
         elif dist_name.lower() == "normal":
-            dist = getattr(np.random.default_rng(), "normal")
+            dist = getattr(np.random.default_rng(self.seed_value), "normal")
             var_values = dist(loc=0.5, scale=1 / 6, size=self.number_of_samples)
             if not self.normal_bounds_enforced:
                 return dist, np.array(var_values)
