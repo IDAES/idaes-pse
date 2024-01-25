@@ -2003,6 +2003,7 @@ class TestDegeneracyHunter:
             model.con5: -1,
         }
 
+    # TODO does this test function have the exact same name as the one above?
     @pytest.mark.solver
     @pytest.mark.component
     def test_solve_ids_milp(self, model, scip_solver):

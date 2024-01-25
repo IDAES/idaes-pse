@@ -75,6 +75,13 @@ Variable                      Name                                           Des
 :math:`X_{equil,t,x,s,r}`     stream + "_equilibrium_reaction_extent"        Extent of equilibrium reaction ``r`` in stream ``s`` at ``x`` and ``t``                                       Only if equilibrium reactions present for stream
 :math:`X_{inher,t,x,s,r}`     stream + "_inherent_reaction_extent"           Extent of inherent reaction ``r`` in stream ``s`` at ``x`` and ``t``                                          Only if inherent reactions present for stream
 :math:`X_{hetero,t,x,r}`      heterogeneous_reaction_extent                  Extent of heterogeneous reaction ``r`` at ``x`` and ``t``                                                     Only if heterogeneous reactions present
+:math:`V_x`                   volume                                         Total volume of element ``x``                                                                                 Only if ``has_holdup``
+:math:`f_{t,x,s}`             volume_frac_stream                             Volume fraction of stream ``s`` in element ``x`` at time ``t``                                                Only if ``has_holdup``
+:math:`\phi_{t,x,s,p}`        stream + "_phase_fraction"                     Volume fraction of phase ``p`` in stream ``s`` in element ``x`` at time ``t``                                 Only if ``has_holdup``
+:math:`N_{t,x,s,p,j}`         stream + "_material_holdup"                    Holdup of component ``j`` in phase ``p`` for stream ``s`` at ``x`` and ``t``                                  Only if ``has_holdup``
+:math:`dN/dt_{t,x,s,p,j}`     stream + "_material_accumulation"              Accumulation of component ``j`` in phase ``p`` for stream ``s`` at ``x`` and ``t``                            Only if ``dynamic``
+:math:`U_{t,x,s,p}`           stream + "_energy_holdup"                      Holdup of energy in phase ``p`` for stream ``s`` at ``x`` and ``t``                                           Only if ``has_holdup``
+:math:`dU/dt_{t,x,s,p}`       stream + "_energy_accumulation"                Accumulation of energy in phase ``p`` for stream ``s`` at ``x`` and ``t``                                     Only if ``dynamic``
 ============================= ============================================== ============================================================================================================= =========================================
 
 Constraints
@@ -82,7 +89,7 @@ Constraints
 
 In all cases, the multi-stage contactor model writes a set of material balances for each stream in the model. For component ``j`` in stream ``s`` the following constraint, named ``stream + "_material_balance"``, is written for all finite elements ``x``:
 
-.. math:: 0 = \sum_p{F_{t,x-,s,p,j}} - \sum_p{F_{t,x,s,p,j}} + \left[ \sum_p{F_{side,t,x,s,p,j}} \right] + \sum_o{M_{t,x,s,o,j}} + \left[ \sum_p{G_{rate,t,x,s,p,j}} + \sum_p{G_{equil,t,x,s,p,j}} + \sum_p{G_{inher,t,x,s,p,j}} + \sum_p{G_{hetero,t,x,s,p,j}} \right]
+.. math:: dN/dt_{t,x,s,p,j} = \sum_p{F_{t,x-,s,p,j}} - \sum_p{F_{t,x,s,p,j}} + \left[ \sum_p{F_{side,t,x,s,p,j}} \right] + \sum_o{M_{t,x,s,o,j}} + \left[ \sum_p{G_{rate,t,x,s,p,j}} + \sum_p{G_{equil,t,x,s,p,j}} + \sum_p{G_{inher,t,x,s,p,j}} + \sum_p{G_{hetero,t,x,s,p,j}} \right]
 
 where ``F`` is the material flow term, ``x-`` represents the previous finite element (``x-1`` in the case of co-current flow and ``x+1`` in the case of counter-current flow), ``F_side`` is the material flow term for a side stream (if present) and ``o`` represents all other streams in the model (for cases where ``s`` is the second index (i.e., M_{t,x,o,s,j}) the term is multiplied by -1). The reaction generation terms are only included if the appropriate reaction type is supported by the reaction or property package for the stream.
 
@@ -94,7 +101,7 @@ Equivalent constraints are written for equilibrium, inherent and heterogeneous r
 
 For streams including energy balances (``has_energy_balance = True``) the following constraint (named ``stream + "_energy_balance"``) is written at each finite element:
 
-.. math:: 0 = \sum_p{H_{t,x-,s,p}} - \sum_p{H_{t,x,s,p}} + \biggl[ \sum_p{H_{side,t,x,s,p}} \biggr] + \sum_o{E_{t,x,s,o}} + \biggl[ Q_{t,x,s} \biggr] + \biggl[ \sum_{rate}{\Delta H_{rxn,r} \times X_{rate,t,x,s,r}} + \sum_{equil}{\Delta H_{rxn,r} \times X_{equil,t,x,s,r}} + \sum_{inher}{\Delta H_{rxn,r} \times X_{inher,t,x,s,r}} \biggr]
+.. math:: \sum_p{dU/dt_{t,x,s,p}} = \sum_p{H_{t,x-,s,p}} - \sum_p{H_{t,x,s,p}} + \biggl[ \sum_p{H_{side,t,x,s,p}} \biggr] + \sum_o{E_{t,x,s,o}} + \biggl[ Q_{t,x,s} \biggr] + \biggl[ \sum_{rate}{\Delta H_{rxn,r} \times X_{rate,t,x,s,r}} + \sum_{equil}{\Delta H_{rxn,r} \times X_{equil,t,x,s,r}} + \sum_{inher}{\Delta H_{rxn,r} \times X_{inher,t,x,s,r}} \biggr]
 
 where ``H`` represent enthalpy flow terms and :math:`\Delta H_{rxn}` represents heat of reaction. The heat of reaction terms are only included if a reaction package is provided for the stream AND the configuration option ``has_heat_of_reaction = True`` is set for the stream. **Note** heterogeneous reactions **do not** support heat of reaction terms as it is uncertain which stream/phase the heat should be added too.
 
@@ -102,9 +109,29 @@ For streams including pressure balances (``has_pressure_balance = True``) the fo
 
 .. math:: 0 = P_{t,x-,s} - P_{t,x,s} + \biggl[ \Delta P_{t,x,s} \biggr]
 
-where ``P`` represents pressure. For streams with side streams, the following pressure equality constraint (names ``stream + "_side_stream_pressure_balance"``) is also written:
+where ``P`` represents pressure. For streams with side streams, the following pressure equality constraint (named ``stream + "_side_stream_pressure_balance"``) is also written:
 
 .. math:: P_{t,x,s} = P_{side,t,x,s}
+
+If ``has_holdup`` is true, the following additional constraints are included to calculate holdup terms. First, ``sum_volume_frac`` constrains the sum of all volume fractions to be 1.
+
+.. math:: 1 = \sum_s{f_{t,x,s}}
+
+Additionally, constraints are written for the sum of phase fractions in each stream (named ``stream + "_sum_phase_fractions"``):
+
+.. math:: 1 = \sum_p{\phi_{t,x,s,p}}
+
+The material holdup is defined by the following constraint (named ``stream + "_material_holdup_constraint"``):
+
+.. math:: N_{t,x,s,p,j} = V \times f_{t,x,s} \phi_{t,x,s,p} \times \C_{t,x,s,p,j}
+
+where :math:`C_{t,x,s,p,j}` is the concentration of component ``j`` in phase ``p`` for stream ``s`` at ``x`` and ``t``.
+
+The energy holdup is defined by the following constraint (named ``stream + "_energy_holdup_constraint"``):
+
+.. math:: U_{t,x,s,p} = V*f_{t,x,s} \times \phi_{t,x,s,p} \times \u_{t,x,s,p}
+
+where :math:`u_{t,x,s,p}` is the internal energy density of phase ``p`` for stream ``s`` at ``x`` and ``t``.
 
 Initialization
 --------------
