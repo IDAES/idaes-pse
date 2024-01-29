@@ -44,7 +44,7 @@ runs:
         _pip_install_url: ${{ github.server_url}}/${{ inputs.examples-repository }}@${{ inputs.examples-ref }}
       run: |
         echo '::group::Output of `pip install idaes_examples`'
-        pip install "idaes_examples${_pip_extras} @ git+${_pip_install_url}" nbmake>=1.4
+        pip install "idaes_examples${_pip_extras} @ git+${_pip_install_url}" nbmake>=1.4 jupyter-cache
         echo '::endgroup::'
         # uninstall IDAES if installed through idaes_examples so that the version under test can be used
         pip uninstall --yes idaes-pse
