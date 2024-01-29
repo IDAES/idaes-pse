@@ -118,53 +118,10 @@ jobs:
           _display_on_run_dashboard(msg)
           _set_output('workflow-trigger', workflow_trigger)
 
-  pytest:
-    name: pytest (py${{ matrix.python-version }}/${{ matrix.os }}/integration)
-    runs-on: ${{ matrix.runner-image }}
-    needs: [precheck]
-    if: >-
-      (
-        needs.precheck.outputs.workflow-trigger == 'user_dispatch'
-        || needs.precheck.outputs.workflow-trigger == 'not_pr'
-        || needs.precheck.outputs.workflow-trigger == 'approved_pr'
-      )
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11']
-        os:
-          - linux
-          - win64
-        include:
-          - os: linux
-            runner-image: ubuntu-20.04
-          - os: win64
-            runner-image: windows-2022
-    steps:
-      - uses: actions/checkout@v2
-      - uses: ./.github/actions/display-debug-info
-      - name: Set up Conda environment
-        uses: conda-incubator/setup-miniconda@v2.1.1
-        with:
-          activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
-          python-version: ${{ matrix.python-version }}
-      - name: Set up idaes
-        uses: ./.github/actions/setup-idaes
-        with:
-          install-target: -r requirements-dev.txt
-      - name: Run pytest (integration)
-        run: pytest -m integration
-
   examples:
     name: Run examples (py${{ matrix.python-version }}/${{ matrix.os }})
     runs-on: ${{ matrix.runner-image }}
     needs: [precheck]
-    if: >-
-      (
-        needs.precheck.outputs.workflow-trigger == 'user_dispatch'
-        || needs.precheck.outputs.workflow-trigger == 'not_pr'
-        || needs.precheck.outputs.workflow-trigger == 'approved_pr'
-      )
     strategy:
       fail-fast: false
       matrix:
