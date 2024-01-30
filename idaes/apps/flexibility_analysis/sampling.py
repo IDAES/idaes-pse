@@ -28,12 +28,20 @@ class SamplingStrategy(enum.Enum):
     grid = 'grid'
     lhs = 'lhs'
 
+SamplingStrategy.grid.__doc__ = r"Use evenly spaced samples"
+SamplingStrategy.lhs.__doc__ = r"Use latin hypercube sampling"
+
 
 class SamplingInitStrategy(enum.Enum):
     none = 'none'
     square = 'square'
     min_control_deviation = 'min_control_deviation'
     all = 'all'
+
+SamplingInitStrategy.none.__doc__ = r"Use the solution from the previous sample to initialize the inner problem"
+SamplingInitStrategy.square.__doc__ = r"Fix the controls and solve a square problem to initialize the inner problem"
+SamplingInitStrategy.min_control_deviation.__doc__ = r"Fix the maximum constraint violation to 0 and minimized the square of the differences between the controls and their current values"
+SamplingInitStrategy.all.__doc__ = r"Try both square and min_control_deviation"
 
 
 class _GridSamplingState(enum.Enum):
@@ -169,20 +177,37 @@ _sample_strategy_map[SamplingStrategy.lhs] = _lhs_sampling
 
 
 class SamplingConfig(ConfigDict):
-    def __init__(
-        self,
-        description=None,
-        doc=None,
-        implicit=False,
-        implicit_domain=None,
-        visibility=0,
-    ):
+    r"""
+    A class for specifying options for sampling the uncertain parameter values
+    and solving the inner problem of the flexibility test.
+
+    Attributes
+    ----------
+    strategy: SamplingStrategy
+        The method for sampling the uncertain parameters. (default: SamplingStrategy.lhs)
+    lhs_seed: int
+        The seed used for latin hypercube sampling (default: 0)
+    solver: Union[Solver, OptSolver]
+        The solver to use for the inner problem of the flexibility test problem
+    num_points: int
+        The number of samples of uncertain parameter values to use (default: 100)
+    enable_progress_bar: bool
+        If False, no progress bar will be shown (default: True)
+    initialization_strategy: SamplingInitStrategy
+        The initialization strategy to use for the inner problems of the 
+        flexibility test at each sample of the uncertain parameter values.
+        (default: SamplingInitStrategy.none)
+    total_violation: bool
+        If True, the objective of the flexibility test will be the sum of 
+        the constraint violations instead of the maximum violation. (default: False)
+    """
+    def __init__(self):
         super().__init__(
-            description=description,
-            doc=doc,
-            implicit=implicit,
-            implicit_domain=implicit_domain,
-            visibility=visibility,
+            description=None,
+            doc=None,
+            implicit=False,
+            implicit_domain=None,
+            visibility=0,
         )
         self.strategy: SamplingStrategy = self.declare(
             "strategy",

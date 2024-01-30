@@ -7,6 +7,8 @@ Enumerations
 
 * :py:enum:`FlexTestMethod<idaes.apps.flexibility_analysis.FlexTestMethod>`
 * :py:enum:`FlexTestTermination<idaes.apps.flexibility_analysis.FlexTestTermination>`
+* :py:enum:`SamplingStrategy<idaes.apps.flexibility_analysis.SamplingStrategy>`
+* :py:enum:`SamplingIniStrategy<idaes.apps.flexibility_analysis.SamplingInitStrategy>`
 
 Configuration
 
@@ -32,6 +34,10 @@ Enumerations
 
 .. autoenum:: idaes.apps.flexibility_analysis.FlexTestTermination
 
+.. autoenum:: idaes.apps.flexibility_analysis.SamplingStrategy
+
+.. autoenum:: idaes.apps.flexibility_analysis.SamplingInitStrategy
+
 Configuration
 -------------
 
@@ -40,6 +46,8 @@ Configuration
 .. autoclass:: idaes.apps.flexibility_analysis.ActiveConstraintConfig
 
 .. autoclass:: idaes.apps.flexibility_analysis.SamplingConfig
+
+.. autoclass:: idaes.apps.flexibility_analysis.decision_rules.dr_config.DRConfig
 
 .. autoclass:: idaes.apps.flexibility_analysis.LinearDRConfig
 

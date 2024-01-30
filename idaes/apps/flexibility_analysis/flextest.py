@@ -76,20 +76,35 @@ FlexTestMethod.sampling.__doc__ = r"Solve the flexibility test by solving the in
 
 
 class ActiveConstraintConfig(ConfigDict):
-    def __init__(
-        self,
-        description=None,
-        doc=None,
-        implicit=False,
-        implicit_domain=None,
-        visibility=0,
-    ):
+    r"""
+    A class for specifying options for the active constraint method for the 
+    flexibility test problem.
+
+    Attributes
+    ----------
+    use_haar_conditions: bool
+        If False, no constraint will be added to constraint the number of 
+        active inequalities. (default: True)
+    default_BigM: float
+        Default value for the bigM parameter used to reformulate the 
+        complimentarity conditions in the KKT system. (default: None)
+    enforce_equalities: bool
+        If False, :math:`h(x, z, \theta) = 0` is treated as two inequalities
+        (performance constraints) that can be violated (:math:`h_{i}(x, z, \theta) \leq u` 
+        and :math:`-h_{i}(x, z, \theta) \leq u`) (default: True)
+    skip_scaling_check: bool
+        If True, the model scaling will not be checked. (default: False)
+    total_violation: bool
+        If True, the objective of the flexibility test will be the sum of 
+        the constraint violations instead of the maximum violation. (default: False)
+    """
+    def __init__(self):
         super().__init__(
-            description=description,
-            doc=doc,
-            implicit=implicit,
-            implicit_domain=implicit_domain,
-            visibility=visibility,
+            description=None,
+            doc=None,
+            implicit=False,
+            implicit_domain=None,
+            visibility=0,
         )
         self.use_haar_conditions: bool = self.declare(
             'use_haar_conditions', ConfigValue(domain=bool, default=True)
@@ -98,7 +113,7 @@ class ActiveConstraintConfig(ConfigDict):
             'default_BigM', ConfigValue(domain=NonNegativeFloat, default=None)
         )
         self.enforce_equalities: bool = self.declare(
-            'enforce_equalities', ConfigValue(domain=bool, default=False)
+            'enforce_equalities', ConfigValue(domain=bool, default=True)
         )
         self.skip_scaling_check: bool = self.declare(
             'skip_scaling_check', ConfigValue(domain=bool, default=False)
@@ -188,6 +203,17 @@ FlexTestTermination.uncertain.__doc__ = r"Cannot definitively say whether the fl
 
 
 class FlexTestResults(object):
+    r"""
+    Results for the flexibility test problem.
+
+    Attributes
+    ----------
+    termination: FlexTestTermination
+    max_constraint_violation: float
+        The largest constraint violation found (:math:`u`)
+    unc_param_values_at_max_violation: Optional[MutableMapping[Union[_GeneralVarData, _ParamData], float]]
+        The values of the uncertain parameters that generated the maximum constraint violation
+    """
     def __init__(self):
         self.termination = FlexTestTermination.uncertain
         self.max_constraint_violation: Optional[float] = None

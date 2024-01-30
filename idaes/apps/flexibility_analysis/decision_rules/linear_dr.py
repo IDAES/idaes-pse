@@ -9,6 +9,15 @@ from ..check_optimal import assert_optimal_termination
 
 
 class LinearDRConfig(DRConfig):
+    r"""
+    A class for specifying options for constructing linear decision rules
+    for use in the flexibility test problem.
+
+    Attributes
+    ----------
+    solver: Union[Solver, OptSolver]
+        The solver to use for building the linear decision rule (an LP solver).
+    """
     def __init__(
         self,
         description=None,

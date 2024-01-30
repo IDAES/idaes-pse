@@ -3,6 +3,33 @@ from pyomo.common.config import ConfigValue
 
 
 class ReluDRConfig(DRConfig):
+    r"""
+    A class for specifying options for constructing neural network based decision rules
+    for use in the flexibility test problem.
+
+    Attributes
+    ----------
+    n_layers: int
+        The number of layers in the neural network (default=: 4)
+    n_nodes_per_layer: int
+        The number of nodes in each layer of the neural network (default: 4)
+    tensorflow_seed: int
+        The seed to pass to tensorflow during training
+    scale_inputs: bool
+        If False, the inputs to the neural network (uncertain parameter values) 
+        will not be scaled for training (default: True)
+    scale_outputs: bool
+        If False, the outputs to the neural network (controls) 
+        will not be scaled for training (default: True)
+    epochs: int
+        The number of epochs to use in training the neural network (default: 2000)
+    batch_size: int
+        The batch size to use in training the neural network (default: 20)
+    learning_rate: float
+        The learning rate for training the neural network (default: None)
+    plot_history: bool
+        If True, the training history will be plotted (default: False)
+    """
     def __init__(
         self,
         description=None,

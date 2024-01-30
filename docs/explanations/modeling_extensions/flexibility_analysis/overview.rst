@@ -121,7 +121,7 @@ Flexibility Index Solution Methods
 Bisection Method
 ^^^^^^^^^^^^^^^^
 
-The bisection method simply uses bisection to find the :math:`\delta` such that :math:`\phi(\underline{\theta}, \overline{\theta}) = 0` (:math:`\phi(\underline{\theta}, \overline{\theta})` is monotonically increasing with :math:`\delta`). Each subproblem solves the :ref:`FT<FT>` using one of the methods described above.
+The bisection method simply uses bisection to find the :math:`\delta` such that :math:`\phi(\underline{\theta}, \overline{\theta}) = 0`. Bisection works because :math:`\phi(\underline{\theta}, \overline{\theta})` is monotonically increasing with :math:`\delta`. Each subproblem solves the :ref:`FT<FT>` using one of the methods described above.
 
 Usage
 -----
@@ -130,7 +130,10 @@ The flexibility analysis module within IDAES provides two primary
 functions. The first is
 :meth:`solve_flextest<idaes.apps.flexibility_analysis.solve_flextest>`. The
 :class:`FlexTestConfig<idaes.apps.flexibility_analysis.FlexTestConfig>`
-specifies how the flexibility test should be solved.
+specifies how the flexibility test should be solved. The second is
+:meth:`solve_flextest<idaes.apps.flexibility_analysis.solve_flex_index>`. Examples
+can be found `here
+<https://github.com/michaelbynum/idaes-pse/tree/flex/idaes/apps/flexibility_analysis/examples>`_.
 
 .. [Grossmann1987] Grossmann, Ignacio E., and
                    Christodoulos A. Floudas. "Active constraint
