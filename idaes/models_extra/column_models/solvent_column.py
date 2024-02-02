@@ -456,6 +456,7 @@ and used when constructing these
             self.flowsheet().time,
             self.vapor_phase.length_domain,
             equilibrium_comp,
+            bounds=(0, None),
             units=(
                 lunits("amount")
                 / lunits("pressure")

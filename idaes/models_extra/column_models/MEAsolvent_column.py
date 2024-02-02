@@ -137,6 +137,7 @@ class MEAColumnData(PackedColumnData):
             self.flowsheet().time,
             self.liquid_phase.length_domain,
             solute_comp_list,
+            bounds=(0, None),
             units=lunits("length") / lunits("time"),
             doc="Liquid phase mass transfer coefficient",
         )

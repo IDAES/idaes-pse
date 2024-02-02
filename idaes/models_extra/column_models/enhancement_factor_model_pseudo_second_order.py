@@ -59,6 +59,85 @@ def make_enhancement_factor_model(blk, lunits, kinetics="Putta"):
     Enhancement factor based liquid phase mass transfer model.
     """
     assert kinetics in {"Luo", "Putta"}
+    blk.log_rate_constant_MEA = Var(
+        blk.flowsheet().time,
+        blk.liquid_phase.length_domain,
+        doc="Logarithm of rate constant for MEA mechanism",
+        initialize = 0,
+    )
+    @blk.Constraint(blk.flowsheet().time, blk.liquid_phase.length_domain)
+    def log_rate_constant_MEA_eqn(b, t, x):
+        if x == b.liquid_phase.length_domain.last():
+            return Constraint.Skip
+        else:
+            if kinetics == "Putta":
+                # Putta, Svendsen, Knuutila 2017 Eqn. 42
+                reduced_activation_energy_MEA = pyunits.convert(
+                    4936.6 * pyunits.K, to_units=lunits("temperature")
+                )
+                preexponential_factor_MEA = pyunits.convert(
+                    3.1732e3 * ((pyunits.m) ** 6 / (pyunits.mol ** 2 * pyunits.s)),
+                    to_units=1 / (lunits("time") * lunits("density_mole")**2),
+                )
+            elif kinetics == "Luo":
+                reduced_activation_energy_MEA = pyunits.convert(
+                    4742.0 * pyunits.K, to_units=lunits("temperature")
+                )
+                preexponential_factor_MEA = pyunits.convert(
+                    2.003e4 * ((pyunits.m) ** 6 / (pyunits.mol ** 2 * pyunits.s)),
+                    to_units=1 / (lunits("time") * lunits("density_mole")**2),
+                )
+            else:
+                return AssertionError
+                
+            log_preexponential_factor_MEA = log(value(preexponential_factor_MEA))
+
+            return b.log_rate_constant_MEA[t, x] == (
+                log_preexponential_factor_MEA 
+                + b.liquid_phase.properties[t, x].log_conc_mol_phase_comp_true["Liq", "MEA"]
+                - reduced_activation_energy_MEA / b.liquid_phase.properties[t, x].temperature
+            )
+    
+
+    blk.log_rate_constant_H2O = Var(
+        blk.flowsheet().time,
+        blk.liquid_phase.length_domain,
+        doc="Logarithm of rate constant for H2O mechanism",
+        initialize = 0,
+    )
+    @blk.Constraint(blk.flowsheet().time, blk.liquid_phase.length_domain)
+    def log_rate_constant_H2O_eqn(b, t, x):
+        if x == b.liquid_phase.length_domain.last():
+            return Constraint.Skip
+        else:
+            if kinetics == "Putta":
+                # Putta, Svendsen, Knuutila 2017 Eqn. 42
+                reduced_activation_energy_H2O = pyunits.convert(
+                    3900 * pyunits.K, to_units=lunits("temperature")
+                )
+                preexponential_factor_H2O = pyunits.convert(
+                    1.0882e2 * ((pyunits.m) ** 6 / (pyunits.mol ** 2 * pyunits.s)),
+                    to_units=1 / (lunits("time") * lunits("density_mole")**2),
+                )
+                
+            elif kinetics == "Luo":
+                reduced_activation_energy_H2O = pyunits.convert(
+                    3110 * pyunits.K, to_units=lunits("temperature")
+                )
+                preexponential_factor_H2O = pyunits.convert(
+                    4.147 * ((pyunits.m) ** 6 / (pyunits.mol ** 2 * pyunits.s)),
+                    to_units=1 / (lunits("time") * lunits("density_mole")**2),
+                )
+            else:
+                return AssertionError
+
+            log_preexponential_factor_H2O = log(value(preexponential_factor_H2O))
+            return b.log_rate_constant_H2O[t, x] == (
+                log_preexponential_factor_H2O 
+                + b.liquid_phase.properties[t, x].log_conc_mol_phase_comp_true["Liq", "H2O"]
+                - reduced_activation_energy_H2O / b.liquid_phase.properties[t, x].temperature
+            )
+
     @blk.Expression(
         blk.flowsheet().time,
         blk.liquid_phase.length_domain,
@@ -68,60 +147,10 @@ def make_enhancement_factor_model(blk, lunits, kinetics="Putta"):
         if x == b.liquid_phase.length_domain.last():
             return Expression.Skip
         else:
-            T = pyunits.convert(
-                b.liquid_phase.properties[t, x].temperature, to_units=pyunits.K
+            return log(
+                exp(b.log_rate_constant_MEA[t, x])
+                + exp(b.log_rate_constant_H2O[t, x])
             )
-            C_MEA = pyunits.convert(
-                b.liquid_phase.properties[t, x].conc_mol_phase_comp_true[
-                    "Liq", "MEA"
-                ],
-                to_units=pyunits.mol / pyunits.m ** 3,
-            )
-            C_H2O = pyunits.convert(
-                b.liquid_phase.properties[t, x].conc_mol_phase_comp_true[
-                    "Liq", "H2O"
-                ],
-                to_units=pyunits.mol / pyunits.m ** 3,
-            )
-            # Putta, Svendsen, Knuutila 2017 Eqn. 42
-            if kinetics == "Putta":
-                return log(
-                    pyunits.convert(
-                        (
-                            3.1732e9
-                            * exp(-4936.6 * pyunits.K / T)
-                            * C_MEA
-                            * 1e-6
-                            + 1.0882e8
-                            * exp(-3900 * pyunits.K / T)
-                            * C_H2O
-                            * 1e-6
-                        ) * ((pyunits.m) ** 6 / (pyunits.mol ** 2 * pyunits.s)),
-                        to_units=1 / (lunits("time") * lunits("density_mole")),
-                    )
-                    * lunits("time")
-                    * lunits("density_mole")
-                )
-            elif kinetics == "Luo":
-                return log(
-                    pyunits.convert(
-                        (
-                            2.003e10
-                            * exp(-4742 * pyunits.K / T)
-                            * C_MEA
-                            * 1e-6
-                            + 4.147e6
-                            * exp(-3110 * pyunits.K / T)
-                            * C_H2O
-                            * 1e-6
-                        ) * ((pyunits.m) ** 6 / (pyunits.mol ** 2 * pyunits.s)),
-                        to_units=1 / (lunits("time") * lunits("density_mole")),
-                    )
-                    * lunits("time")
-                    * lunits("density_mole")
-                )
-            else:
-                return AssertionError
 
     blk.log_hatta_number = Var(
         blk.flowsheet().time,
@@ -196,9 +225,9 @@ def make_enhancement_factor_model(blk, lunits, kinetics="Putta"):
                     b.vapor_phase.properties[t, zf].mole_frac_comp["CO2"]
                     * Pressure
                     / b.psi[t, zf]
-                    + b.liquid_phase.properties[t, x].conc_mol_phase_comp_true[
+                    + exp(b.liquid_phase.properties[t, x].log_conc_mol_phase_comp_true[
                         "Liq", "CO2"
-                    ]
+                    ])
                 ) / lunits("density_mole")
             ) == b.liquid_phase.properties[t, x].log_conc_mol_phase_comp_true[
                        "Liq", "CO2"
@@ -463,6 +492,8 @@ def make_enhancement_factor_model(blk, lunits, kinetics="Putta"):
         blk.log_conc_interface_MEA,
         blk.conc_CO2_equil_bulk,
         blk.log_singular_CO2_CO2_ratio,
+        blk.log_rate_constant_MEA,
+        blk.log_rate_constant_H2O,
     ]
 
     enhancement_factor_constraints = [
@@ -474,6 +505,8 @@ def make_enhancement_factor_model(blk, lunits, kinetics="Putta"):
         blk.log_singular_CO2_CO2_ratio_eqn,
         blk.enhancement_factor_eqn1,
         blk.enhancement_factor_eqn2,
+        blk.log_rate_constant_MEA_eqn,
+        blk.log_rate_constant_H2O_eqn,
     ]
     
     return enhancement_factor_vars, enhancement_factor_constraints
@@ -502,6 +535,13 @@ def initialize_enhancement_factor_model(
             if x == blk.liquid_phase.length_domain.last():
                 continue
             zf = blk.liquid_phase.length_domain.next(x)
+            
+            calculate_variable_from_constraint(
+                blk.log_rate_constant_MEA[t, x], blk.log_rate_constant_MEA_eqn[t, x]
+            )
+            calculate_variable_from_constraint(
+                blk.log_rate_constant_H2O[t, x], blk.log_rate_constant_H2O_eqn[t, x]
+            )
             calculate_variable_from_constraint(
                 blk.log_conc_CO2_bulk[t, x], blk.conc_CO2_bulk_eqn[t, x]
             )
