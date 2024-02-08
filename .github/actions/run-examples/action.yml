@@ -45,7 +45,7 @@ runs:
       working-directory: ${{ github.action_path }}
       run: |
         echo '::group::Output of `pip install idaes_examples`'
-        pip install "idaes_examples${_pip_extras} @ git+${_pip_install_url}" requirements-test.txt
+        pip install "idaes_examples${_pip_extras} @ git+${_pip_install_url}" -r requirements-test.txt
         pip list
         echo '::endgroup::'
         # uninstall IDAES if installed through idaes_examples so that the version under test can be used
