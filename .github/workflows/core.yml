@@ -135,24 +135,18 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ["linux", "win64"]
-        include:
-          - os: linux
-            codecov-os: linux
-          - os: win64
-            codecov-os: windows
+        report-variant: ["linux", "win64"]
     steps:
       # the checkout step is needed to have access to codecov.yml
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          name: coverage-report-${{ matrix.os }}
+          name: coverage-report-${{ matrix.report-variant }}
       - name: Upload coverage report to Codecov
         uses: codecov/codecov-action@v4
         with:
           fail_ci_if_error: true
           verbose: true
-          os: ${{ matrix.codecov-os }}
 
   build-docs:
     name: Build Sphinx docs
