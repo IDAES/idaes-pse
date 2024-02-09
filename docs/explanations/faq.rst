@@ -13,12 +13,12 @@ Frequently Asked Questions
 Help! My model does not solve!
 ``````````````````````````````
 
-The IDAES team does not have a lot of resources for supporting users to solve their models, so before contacting the IDAES team for help, make sure you have tried all the steps below.
+The IDAES Team has limited resources and bandwidth for providing direct support for assisting users in debugging solver issues.  Before contacting the IDAES team for help, make sure you have tried all the steps below.
 
   1. First, check the output logs for any warnings or cautions as these may indicate that there are problems with your model or code that need to be addressed before you try to solve it. Also make sure that the code is making it to the solver call and that the issue does not lie with the model construction.
   2. Second, check the final solver status to understand how the solver is failing as this can give you hints as to what is wrong. If the solver status is infeasible, it generally indicates that the model is actually infeasible and that you need to fix something in your model. It is also helpful to look at the solver output (`solver.solve(model, tee=True)`) as there is often useful information in the solver traces.
   3. Next, try using the :ref:`IDAES Diagnostics workflow and toolbox <explanations/model_diagnostics/index:Model Diagnostics Workflow>` and ensure there are no structural or numerical issues in your model.
-  4. If the model still fails to solve, try using the Degeneracy Hunter or SVD toolboxes to look for more complex issues.
+  4. If the model still fails to solve, try using the :ref:`Degeneracy Hunter <explanations/model_diagnostics/degeneracy_hunter:Degeneracy Hunter>` or :ref:`SVD <explanations/model_diagnostics/svd_analysis:SVD Analysis>` toolboxes to look for more complex issues.
   5. In some cases, it can help to try a different solver (if you have access to one). Different solvers use different approaches to solving the problem, and sometimes one will succeed where others fail (especially on mildly ill posed problems).
   6. If all else fails, see the “How do I get more help?” section below. When reaching out for help, please include the full output of the IDAES and solver logs, as well as any issues identified by the diagnostics toolbox.
 
@@ -28,7 +28,7 @@ Help! My model raises Exceptions during construction!
 
 Before contacting the IDAES team for assistance or filing a bug report, please do the following checks:
 
-  1. First, check the error message you received and try to understand what it is telling you and where it is coming from (IDAES, Pyomo or Python). Often, the trick to understanding the error message is not understanding what went wrong, but how it happened. If the error appears to be coming from Python or Pyomo, then it is most likely a bug somewhere in the code.
+  1. First, check the error message you received and try to understand what it is telling you and where it is coming from (IDAES, Pyomo, or Python). Often, the trick to understanding the error message is not understanding what went wrong, but how it happened. If the error appears to be coming from Python or Pyomo, then it is most likely a bug somewhere in the code.
   2. Second, check the full Python traceback of the error to try to identify where in the code it is originating. This will help narrow down the possible issues and allow you to isolate the offending code for testing. It is always easier to debug a smaller model than a large flowsheet (especially for an IDAES developer who is not familiar with the flowsheet you are trying to solve).
   3. If you cannot find the source of the error yourself, try to make a minimum failing example which replicates the problem that you can share with the IDAES team, as this will greatly increase the chances of us having the time to test your example and isolate the issue.
   4. To get help, see the “How do I get more help?” section below. When reaching out for help, please include the full Python traceback and any warnings from the logger, as well as the minimum failing example.
