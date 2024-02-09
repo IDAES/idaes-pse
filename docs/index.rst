@@ -60,6 +60,7 @@ See also :doc:`IDAES concepts <explanations/concepts>` in this documentation.
     explanations/index
     reference_guides/index
     archived_features/index
+    explanations/faq
 
 
 Collaborating institutions

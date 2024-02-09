@@ -5,6 +5,10 @@ authors:
 title: "Institute for Design of Advanced Energy Systems (IDAES): advanced computational algorithms to enable the design and optimization of complex, interacting energy and process systems from individual plant components to the entire electrical grid"
 url: "https://github.com/IDAES/idaes-pse"
 license-url: "https://github.com/IDAES/idaes-pse/blob/main/LICENSE.md"
+identifiers:
+  - description: "OSTI archive of IDAES PSE releases."
+    type: url
+    value: "https://www.osti.gov/search/semantic:idaes-pse"
 preferred-citation:
   type: article
   authors:
