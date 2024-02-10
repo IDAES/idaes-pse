@@ -120,11 +120,33 @@ jobs:
       - name: Run pytest (not integration)
         run: |
           pytest -m "not integration"
-      - name: Upload coverage report to Codecov
+      - name: Upload coverage report as GHA workflow artifact
         if: matrix.cov-report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report-${{ matrix.os }}
+          path: coverage.xml
+          if-no-files-found: error
+
+  upload-coverage:
+    name: Upload coverage report (Codecov)
+    needs: [pytest]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        report-variant: ["linux", "win64"]
+    steps:
+      # the checkout step is needed to have access to codecov.yml
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: coverage-report-${{ matrix.report-variant }}
+      - name: Upload coverage report to Codecov
         uses: codecov/codecov-action@v4
         with:
           fail_ci_if_error: true
+          verbose: true
 
   build-docs:
     name: Build Sphinx docs
