@@ -147,6 +147,11 @@ jobs:
         with:
           fail_ci_if_error: true
           verbose: true
+          # NOTE: secrets are not available for pull_request workflows
+          # However, as of 2024-02-10, Codecov is still allowing tokenless upload from PRs
+          # but does require token for other workflows e.g. merge to `main`
+          # see https://github.com/codecov/codecov-action/issues/1274#issuecomment-1934437359
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   build-docs:
     name: Build Sphinx docs
