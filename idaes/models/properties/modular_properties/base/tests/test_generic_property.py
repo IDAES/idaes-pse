@@ -1461,3 +1461,150 @@ class TestGenericStateBlock(object):
 
         for p in frame.props[1].phase_list:
             assert value(frame.props[1].visc_d_phase[p]) == 4
+
+
+class TestCriticalProps:
+    @pytest.mark.unit
+    def test_get_critical_ref_phase_exception(self):
+        # No vapor or liquid phases
+        m = ConcreteModel()
+        m.params = DummyParameterBlock(
+            components={
+                "a": {},
+            },
+            phases={
+                "p1": {
+                    "equation_of_state": DummyEoS,
+                },
+                "p2": {
+                    "equation_of_state": DummyEoS,
+                },
+            },
+            state_definition=modules[__name__],
+            pressure_ref=100000.0,
+            temperature_ref=300,
+            base_units=base_units,
+        )
+
+        m.props = m.params.build_state_block([1], defined_state=False)
+
+        with pytest.raises(
+            AttributeError,
+            match="No liquid or vapor phase found to use as reference phase "
+            "for calculating critical properties.",
+        ):
+            m.props[1]._get_critical_ref_phase()
+
+    @pytest.mark.unit
+    def test_get_critical_ref_phase_exception(self):
+        # No vapor or liquid phases
+        m = ConcreteModel()
+        m.params = DummyParameterBlock(
+            components={
+                "a": {},
+            },
+            phases={
+                "p1": {
+                    "equation_of_state": DummyEoS,
+                },
+                "p2": {
+                    "equation_of_state": DummyEoS,
+                },
+            },
+            state_definition=modules[__name__],
+            pressure_ref=100000.0,
+            temperature_ref=300,
+            base_units=base_units,
+        )
+
+        m.props = m.params.build_state_block([1], defined_state=False)
+
+        with pytest.raises(
+            PropertyPackageError,
+            match="No liquid or vapor phase found to use as reference phase "
+            "for calculating critical properties.",
+        ):
+            m.props[1]._get_critical_ref_phase()
+
+    @pytest.mark.unit
+    def test_get_critical_ref_phase_VL(self):
+        # No vapor or liquid phases
+        m = ConcreteModel()
+        m.params = DummyParameterBlock(
+            components={
+                "a": {},
+            },
+            phases={
+                "p1": {
+                    "type": LiquidPhase,
+                    "equation_of_state": DummyEoS,
+                },
+                "p2": {
+                    "type": VaporPhase,
+                    "equation_of_state": DummyEoS,
+                },
+            },
+            state_definition=modules[__name__],
+            pressure_ref=100000.0,
+            temperature_ref=300,
+            base_units=base_units,
+        )
+
+        m.props = m.params.build_state_block([1], defined_state=False)
+
+        assert m.props[1]._get_critical_ref_phase() == "p1"
+
+    @pytest.mark.unit
+    def test_get_critical_ref_phase_LL(self):
+        # No vapor or liquid phases
+        m = ConcreteModel()
+        m.params = DummyParameterBlock(
+            components={
+                "a": {},
+            },
+            phases={
+                "p1": {
+                    "type": LiquidPhase,
+                    "equation_of_state": DummyEoS,
+                },
+                "p2": {
+                    "type": LiquidPhase,
+                    "equation_of_state": DummyEoS,
+                },
+            },
+            state_definition=modules[__name__],
+            pressure_ref=100000.0,
+            temperature_ref=300,
+            base_units=base_units,
+        )
+
+        m.props = m.params.build_state_block([1], defined_state=False)
+
+        assert m.props[1]._get_critical_ref_phase() == "p1"
+
+    @pytest.mark.unit
+    def test_get_critical_ref_phase_VX(self):
+        # No vapor or liquid phases
+        m = ConcreteModel()
+        m.params = DummyParameterBlock(
+            components={
+                "a": {},
+            },
+            phases={
+                "p1": {
+                    "type": VaporPhase,
+                    "equation_of_state": DummyEoS,
+                },
+                "p2": {
+                    "equation_of_state": DummyEoS,
+                },
+            },
+            state_definition=modules[__name__],
+            pressure_ref=100000.0,
+            temperature_ref=300,
+            base_units=base_units,
+        )
+
+        m.props = m.params.build_state_block([1], defined_state=False)
+
+        assert m.props[1]._get_critical_ref_phase() == "p1"

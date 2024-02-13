@@ -246,6 +246,7 @@ class ComponentData(ProcessBlockData):
 
         # Create Vars for common parameters
         var_dict = {
+            "compress_fact_crit": pyunits.dimensionless,
             "dens_mol_crit": base_units.DENSITY_MOLE,
             "omega": pyunits.dimensionless,
             "pressure_crit": base_units.PRESSURE,

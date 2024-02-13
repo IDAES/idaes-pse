@@ -1073,6 +1073,7 @@ class GenericParameterData(PhysicalParameterBlock):
                     "method": "_act_coeff_phase_comp_apparent"
                 },
                 "compress_fact_phase": {"method": "_compress_fact_phase"},
+                "compress_fact_crit": {"method": "_critical_props"},
                 "conc_mol_comp": {"method": "_conc_mol_comp"},
                 "conc_mol_phase_comp": {"method": "_conc_mol_phase_comp"},
                 "conc_mol_phase_comp_apparent": {
@@ -1094,6 +1095,7 @@ class GenericParameterData(PhysicalParameterBlock):
                 "dens_mass": {"method": "_dens_mass"},
                 "dens_mass_phase": {"method": "_dens_mass_phase"},
                 "dens_mol": {"method": "_dens_mol"},
+                "dens_mol_crit": {"method": "_critical_props"},
                 "dens_mol_phase": {"method": "_dens_mol_phase"},
                 "energy_internal_mol": {"method": "_energy_internal_mol"},
                 "energy_internal_mol_phase": {"method": "_energy_internal_mol_phase"},
@@ -1132,6 +1134,7 @@ class GenericParameterData(PhysicalParameterBlock):
                 "mw_comp": {"method": "_mw_comp"},
                 "mw_phase": {"method": "_mw_phase"},
                 "prandtl_number_phase": {"method": "_prandtl_number_phase"},
+                "pressure_crit": {"method": "_critical_props"},
                 "pressure_phase_comp": {"method": "_pressure_phase_comp"},
                 "pressure_phase_comp_true": {"method": "_pressure_phase_comp_true"},
                 "pressure_phase_comp_apparent": {
@@ -1142,6 +1145,7 @@ class GenericParameterData(PhysicalParameterBlock):
                 "pressure_osm_phase": {"method": "_pressure_osm_phase"},
                 "pressure_sat_comp": {"method": "_pressure_sat_comp"},
                 "surf_tens_phase": {"method": "_surf_tens_phase"},
+                "temperature_crit": {"method": "_critical_props"},
                 "temperature_bubble": {"method": "_temperature_bubble"},
                 "temperature_dew": {"method": "_temperature_dew"},
                 "therm_cond_phase": {"method": "_therm_cond_phase"},
@@ -2919,6 +2923,66 @@ class GenericStateBlockData(StateBlockData):
                 ):
                     return self.mole_frac_phase_comp_apparent
             return self.mole_frac_phase_comp_true
+
+    # -------------------------------------------------------------------------
+    # Mixture critical point
+    # Critical properties will be based off liquid phase if present, as we assume
+    # supercritical fluid is liquid-like. Otherwise, the vapor phase is used.
+    # Get first liquid phase we find
+    def _get_critical_ref_phase(self):
+        ref_phase = None
+        vap_phase = None
+        for p in self.params.phase_list:
+            if self.params.get_phase(p).is_liquid_phase():
+                return p
+            elif self.params.get_phase(p).is_vapor_phase():
+                vap_phase = p
+
+        if ref_phase is None and vap_phase is not None:
+            # Use vapor phase for reference phase
+            return vap_phase
+        if ref_phase is None:
+            # If still no reference phase, raise an exception
+            raise PropertyPackageError(
+                "No liquid or vapor phase found to use as reference phase "
+                "for calculating critical properties."
+            )
+
+    def _critical_props(self):
+        ref_phase = self._get_critical_ref_phase()
+
+        try:
+            base_units = self.params.get_metadata().default_units
+
+            self.compress_fact_crit = Var(
+                doc="Critical compressibility factor of mixture",
+                units=pyunits.dimensionless,
+            )
+
+            self.dens_mol_crit = Var(
+                doc="Critical molar density of mixture",
+                units=base_units.DENS_MOL,
+            )
+
+            self.pressure_crit = Var(
+                doc="Critical pressure of mixture",
+                units=base_units.PRESSURE,
+            )
+
+            self.temperature_crit = Var(
+                doc="Critical temperature of mixture",
+                units=base_units.TEMPERATURE,
+            )
+
+            p_config = self.params.get_phase(ref_phase).config
+            p_config.equation_of_state.build_critical_properties(self, ref_phase)
+
+        except AttributeError:
+            self.del_component(self.compress_fact_crit)
+            self.del_component(self.dens_mol_crit)
+            self.del_component(self.pressure_crit)
+            self.del_component(self.temperature_crit)
+            raise
 
     # -------------------------------------------------------------------------
     # Bubble and Dew Points
