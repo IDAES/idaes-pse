@@ -895,12 +895,12 @@ class StandardPropertySet(PropertySetBase):
     vol_mol = PropertyMetadata(
         name="vol_mol",
         doc="Molar Volume",
-        units="VOLUME_MOL",
+        units="VOLUME_MOLE",
     )
     vol_mol_crit = PropertyMetadata(
         name="vol_mol",
         doc="Molar Volume at Critical Point",
-        units="VOLUME_MOL",
+        units="VOLUME_MOLE",
     )
     # Log terms
     log_act = PropertyMetadata(

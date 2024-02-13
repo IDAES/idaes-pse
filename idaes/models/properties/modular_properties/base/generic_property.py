@@ -2961,7 +2961,7 @@ class GenericStateBlockData(StateBlockData):
 
             self.dens_mol_crit = Var(
                 doc="Critical molar density of mixture",
-                units=base_units.DENS_MOL,
+                units=base_units.DENSITY_MOLE,
             )
 
             self.pressure_crit = Var(

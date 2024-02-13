@@ -1276,6 +1276,13 @@ class TestGenericStateBlock(object):
                         frame.params.get_metadata().properties[p.name].method,
                     )
                 continue
+            elif p.name.endswith(("_crit")):
+                # Critical properties will be tested elsewhere
+                assert hasattr(
+                    frame.props[1],
+                    frame.params.get_metadata().properties[p.name].method,
+                )
+                continue
             elif p.name.endswith(("bubble", "bub", "dew")):
                 # Bubble and dew properties require phase equilibria, which are
                 # not tested here
@@ -1608,3 +1615,99 @@ class TestCriticalProps:
         m.props = m.params.build_state_block([1], defined_state=False)
 
         assert m.props[1]._get_critical_ref_phase() == "p1"
+
+    @pytest.mark.unit
+    def test_critical_props_not_implemented(self):
+        m = ConcreteModel()
+        m.params = DummyParameterBlock(
+            components={
+                "a": {},
+            },
+            phases={
+                "p1": {
+                    "type": LiquidPhase,
+                    "equation_of_state": DummyEoS,
+                },
+            },
+            state_definition=modules[__name__],
+            pressure_ref=100000.0,
+            temperature_ref=300,
+            base_units=base_units,
+        )
+
+        m.props = m.params.build_state_block([1], defined_state=False)
+
+        with pytest.raises(
+            NotImplementedError,
+            match="props\[1\] Equation of State module has not implemented a method for "
+            "build_critical_properties. Please contact the EoS developer or use a "
+            "different module.",
+        ):
+            m.props[1]._critical_props()
+
+    @pytest.mark.unit
+    def test_critical_props_dummy_method(self):
+        class DummyEoS2(DummyEoS):
+            @staticmethod
+            def build_critical_properties(b, *args, **kwargs):
+                b._dummy_crit_executed = True
+
+        m = ConcreteModel()
+        m.params = DummyParameterBlock(
+            components={
+                "a": {},
+            },
+            phases={
+                "p1": {
+                    "type": LiquidPhase,
+                    "equation_of_state": DummyEoS2,
+                },
+            },
+            state_definition=modules[__name__],
+            pressure_ref=100000.0,
+            temperature_ref=300,
+            base_units=base_units,
+        )
+
+        m.props = m.params.build_state_block([1], defined_state=False)
+        m.props[1]._critical_props()
+
+        assert m.props[1]._dummy_crit_executed
+
+        assert isinstance(m.props[1].compress_fact_crit, Var)
+        assert isinstance(m.props[1].dens_mol_crit, Var)
+        assert isinstance(m.props[1].pressure_crit, Var)
+        assert isinstance(m.props[1].temperature_crit, Var)
+
+    @pytest.mark.unit
+    def test_critical_props_attribute_errord(self):
+        class DummyEoS2(DummyEoS):
+            @staticmethod
+            def build_critical_properties(b, *args, **kwargs):
+                raise AttributeError()
+
+        m = ConcreteModel()
+        m.params = DummyParameterBlock(
+            components={
+                "a": {},
+            },
+            phases={
+                "p1": {
+                    "type": LiquidPhase,
+                    "equation_of_state": DummyEoS2,
+                },
+            },
+            state_definition=modules[__name__],
+            pressure_ref=100000.0,
+            temperature_ref=300,
+            base_units=base_units,
+        )
+
+        m.props = m.params.build_state_block([1], defined_state=False)
+        try:
+            m.props[1]._critical_props()
+        except AttributeError:
+            assert not hasattr(m.props[1], "compress_fact_crit")
+            assert not hasattr(m.props[1], "dens_mol_crit")
+            assert not hasattr(m.props[1], "pressure_crit")
+            assert not hasattr(m.props[1], "temperature_crit")
