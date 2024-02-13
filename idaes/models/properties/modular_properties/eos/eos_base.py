@@ -51,12 +51,8 @@ class EoSBase:
         raise NotImplementedError(_msg(b, "build_parameters"))
 
     @staticmethod
-    def build_critical_properties(b, p):
+    def build_critical_properties(b):
         raise NotImplementedError(_msg(b, "build_critical_properties"))
-
-    @staticmethod
-    def initialize_critical_properties(b, p):
-        raise NotImplementedError(_msg(b, "initialize_critical_properties"))
 
     @staticmethod
     def get_vol_mol_pure(b, phase, comp, temperature):

@@ -21,7 +21,7 @@ Currently only supports liquid and vapor phases
 # TODO: Look into protected access issues
 # pylint: disable=protected-access
 
-from pyomo.environ import Expression, log
+from pyomo.environ import Constraint, Expression, log, units
 
 from idaes.core import Apparent
 from idaes.core.util.exceptions import ConfigurationError, PropertyNotSupportedError
@@ -34,6 +34,7 @@ from idaes.models.properties.modular_properties.phase_equil.henry import (
     log_henry_pressure,
 )
 from .eos_base import EoSBase
+from idaes.core.util.constants import Constants as CONST
 
 
 # TODO: Add support for ideal solids
@@ -47,6 +48,41 @@ class Ideal(EoSBase):
     def common(b, pobj):
         # No common components required for ideal property calculations
         pass
+
+    @staticmethod
+    def build_critical_properties(b):
+        base_units = b.params.get_metadata().default_units
+
+        # Use Kay's method for critical pressure and temperature
+        def p_crit_rule(b):
+            return b.pressure_crit == sum(
+                b.mole_frac_comp[j] * b.params.get_component(j).pressure_crit
+                for j in b.component_list
+            )
+
+        b.pressure_crit_constraint = Constraint(rule=p_crit_rule)
+
+        def t_crit_rule(b):
+            return b.temperature_crit == sum(
+                b.mole_frac_comp[j] * b.params.get_component(j).temperature_crit
+                for j in b.component_list
+            )
+
+        b.temperature_crit_constraint = Constraint(rule=t_crit_rule)
+
+        # Fix critical compressibility factor to 1 - user can override if necessary
+        b.compress_fact_crit.fix(1)
+
+        def rho_crit_rule(b):
+            return b.pressure_crit == units.convert(
+                b.compress_fact_crit
+                * CONST.gas_constant
+                * b.temperature_crit
+                * b.dens_mol_crit,
+                to_units=base_units.PRESSURE,
+            )
+
+        b.dens_mol_crit_constraint = Constraint(rule=rho_crit_rule)
 
     @staticmethod
     def calculate_scaling_factors(b, pobj):

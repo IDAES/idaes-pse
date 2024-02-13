@@ -2975,7 +2975,7 @@ class GenericStateBlockData(StateBlockData):
             )
 
             p_config = self.params.get_phase(ref_phase).config
-            p_config.equation_of_state.build_critical_properties(self, ref_phase)
+            p_config.equation_of_state.build_critical_properties(self)
 
         except AttributeError:
             self.del_component(self.compress_fact_crit)

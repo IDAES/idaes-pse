@@ -18,7 +18,7 @@ Author: Andrew Lee
 import pytest
 from sys import modules
 
-from pyomo.environ import ConcreteModel, Var, units as pyunits, value
+from pyomo.environ import ConcreteModel, Constraint, Var, units as pyunits, value
 from pyomo.util.check_units import assert_units_equivalent
 
 from idaes.core import (
@@ -686,3 +686,74 @@ def test_vol_mol_phase():
                 + 1 / 42.0 * m.props[1].mole_frac_phase_comp["Liq", "b"]
                 + 42.0 * m.props[1].mole_frac_phase_comp["Liq", "c"]
             )
+
+
+@pytest.mark.unit
+def test_critical_props():
+    m = ConcreteModel()
+
+    # Dummy params block
+    m.params = DummyParameterBlock(
+        components={
+            "a": {"parameter_data": {"pressure_crit": 1e5, "temperature_crit": 100}},
+            "b": {"parameter_data": {"pressure_crit": 2e5, "temperature_crit": 200}},
+            "c": {"parameter_data": {"pressure_crit": 3e5, "temperature_crit": 300}},
+        },
+        phases={
+            "Vap": {"type": VaporPhase, "equation_of_state": Ideal},
+            "Liq": {"type": LiquidPhase, "equation_of_state": Ideal},
+        },
+        base_units={
+            "time": pyunits.s,
+            "length": pyunits.m,
+            "mass": pyunits.kg,
+            "amount": pyunits.mol,
+            "temperature": pyunits.K,
+        },
+        state_definition=modules[__name__],
+        pressure_ref=100000.0,
+        temperature_ref=300,
+    )
+
+    m.props = m.params.state_block_class([1], defined_state=False, parameters=m.params)
+
+    # Add common variables
+    m.props[1].mole_frac_comp = Var(m.params.component_list, initialize=0.5)
+
+    m.props[1]._critical_props()
+
+    assert isinstance(m.props[1].compress_fact_crit, Var)
+    assert isinstance(m.props[1].dens_mol_crit, Var)
+    assert isinstance(m.props[1].pressure_crit, Var)
+    assert isinstance(m.props[1].temperature_crit, Var)
+
+    assert isinstance(m.props[1].pressure_crit_constraint, Constraint)
+    assert str(m.props[1].pressure_crit_constraint.expr) == str(
+        m.props[1].pressure_crit
+        == m.props[1].mole_frac_comp["a"] * m.params.a.pressure_crit
+        + m.props[1].mole_frac_comp["b"] * m.params.b.pressure_crit
+        + m.props[1].mole_frac_comp["c"] * m.params.c.pressure_crit
+    )
+
+    assert isinstance(m.props[1].temperature_crit_constraint, Constraint)
+    assert str(m.props[1].temperature_crit_constraint.expr) == str(
+        m.props[1].temperature_crit
+        == m.props[1].mole_frac_comp["a"] * m.params.a.temperature_crit
+        + m.props[1].mole_frac_comp["b"] * m.params.b.temperature_crit
+        + m.props[1].mole_frac_comp["c"] * m.params.c.temperature_crit
+    )
+
+    assert m.props[1].compress_fact_crit.fixed
+    assert value(m.props[1].compress_fact_crit) == 1
+
+    assert isinstance(m.props[1].dens_mol_crit_constraint, Constraint)
+    assert str(m.props[1].dens_mol_crit_constraint.expr) == str(
+        m.props[1].pressure_crit
+        == pyunits.convert(
+            m.props[1].compress_fact_crit
+            * const.gas_constant
+            * m.props[1].temperature_crit
+            * m.props[1].dens_mol_crit,
+            to_units=pyunits.kg / pyunits.m / pyunits.s**2,
+        )
+    )
