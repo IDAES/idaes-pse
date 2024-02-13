@@ -627,6 +627,11 @@ class StandardPropertySet(PropertySetBase):
         doc="Compressiblity Factor",
         units=pyunits.dimensionless,
     )
+    compress_fact_crit = PropertyMetadata(
+        name="compress_fact_crit",
+        doc="Compressiblity Factor at Critical Point",
+        units=pyunits.dimensionless,
+    )
     conc_mass = PropertyMetadata(
         name="conc_mass",
         doc="Concentration on a Mass Basis",
@@ -890,12 +895,12 @@ class StandardPropertySet(PropertySetBase):
     vol_mol = PropertyMetadata(
         name="vol_mol",
         doc="Molar Volume",
-        units="MOLAR_VOLUME",
+        units="VOLUME_MOL",
     )
     vol_mol_crit = PropertyMetadata(
         name="vol_mol",
         doc="Molar Volume at Critical Point",
-        units="MOLAR_VOLUME",
+        units="VOLUME_MOL",
     )
     # Log terms
     log_act = PropertyMetadata(
