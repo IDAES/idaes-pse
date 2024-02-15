@@ -51,7 +51,7 @@ class EoSBase:
         raise NotImplementedError(_msg(b, "build_parameters"))
 
     @staticmethod
-    def build_critical_properties(b):
+    def build_critical_properties(b, ref_phase):
         raise NotImplementedError(_msg(b, "build_critical_properties"))
 
     @staticmethod

@@ -25,6 +25,7 @@ from enum import Enum
 from copy import deepcopy
 
 from pyomo.environ import (
+    Constraint,
     exp,
     Expression,
     log,
@@ -350,7 +351,7 @@ class Cubic(EoSBase):
         else:
             raise ConfigurationError(
                 "{} Unrecognized option for Equation of State "
-                "mixing_rule_a: {}. Must be an instance of MixingRuleB "
+                "mixing_rule_b: {}. Must be an instance of MixingRuleB "
                 "Enum.".format(b.name, mixing_rule_b)
             )
 
@@ -901,6 +902,116 @@ class Cubic(EoSBase):
             * (b.compress_fact_phase[p] + _N_dZ_dNj(b, p, j))
         )
 
+    @staticmethod
+    def build_critical_properties(m, ref_phase):
+        pobj = m.params.get_phase(ref_phase)
+        cname = pobj.config.equation_of_state_options["type"].name
+        ctype = pobj._cubic_type
+
+        # Add components for calculation of mixture critical properties
+        def func_a_crit(m, j):
+            cobj = m.params.get_component(j)
+            fw = getattr(m, cname + "_fw")
+            return (
+                EoS_param[ctype]["omegaA"]
+                * (
+                    (Cubic.gas_constant(m) * cobj.temperature_crit) ** 2
+                    / cobj.pressure_crit
+                )
+                * (
+                    (1 + fw[j] * (1 - sqrt(m.temperature_crit / cobj.temperature_crit)))
+                    ** 2
+                )
+            )
+
+        m.add_component(
+            "a_crit",
+            Expression(
+                m.component_list, rule=func_a_crit, doc="Component a coefficient"
+            ),
+        )
+
+        def rule_am_crit(m):
+            try:
+                rule = m.params.get_phase(ref_phase).config.equation_of_state_options[
+                    "mixing_rule_a"
+                ]
+            except (KeyError, TypeError):
+                rule = MixingRuleA.default
+
+            a_crit = getattr(m, "a_crit")
+            if rule == MixingRuleA.default:
+                return rule_am_crit_default(m, cname, a_crit)
+            else:
+                raise ConfigurationError(
+                    "{} Unrecognized option for Equation of State "
+                    "mixing_rule_a: {}. Must be an instance of MixingRuleA "
+                    "Enum.".format(m.name, rule)
+                )
+
+        m.add_component("am_crit", Expression(rule=rule_am_crit))
+
+        def rule_bm_crit(m):
+            try:
+                rule = m.params.get_phase(ref_phase).config.equation_of_state_options[
+                    "mixing_rule_b"
+                ]
+            except KeyError:
+                rule = MixingRuleB.default
+
+            b = getattr(m, cname + "_b")
+            if rule == MixingRuleB.default:
+                return rule_bm_crit_default(m, b)
+            else:
+                raise ConfigurationError(
+                    "{} Unrecognized option for Equation of State "
+                    "mixing_rule_b: {}. Must be an instance of MixingRuleB "
+                    "Enum.".format(m.name, rule)
+                )
+
+        m.add_component("bm_crit", Expression(rule=rule_bm_crit))
+
+        def rule_A_crit(m):
+            am_crit = getattr(m, "am_crit")
+            return EoS_param[ctype]["omegaA"] * (
+                Cubic.gas_constant(m) * m.temperature_crit
+            ) ** 2 == (am_crit * m.pressure_crit)
+
+        m.add_component("A_crit", Constraint(rule=rule_A_crit))
+
+        def rule_B_crit(m):
+            bm_crit = getattr(m, "bm_crit")
+            return EoS_param[ctype]["coeff_b"] * Cubic.gas_constant(
+                m
+            ) * m.temperature_crit == (bm_crit * m.pressure_crit)
+
+        m.add_component("B_crit", Constraint(rule=rule_B_crit))
+
+        Acrit = (
+            m.am_crit
+            * m.pressure_crit
+            / (Cubic.gas_constant(m) * m.temperature_crit) ** 2
+        )
+        Bcrit = (
+            m.bm_crit * m.pressure_crit / (Cubic.gas_constant(m) * m.temperature_crit)
+        )
+
+        expr_write = CubicThermoExpressions(m)
+        if pobj.is_vapor_phase():
+            Z_crit = expr_write.z_vap(eos=pobj._cubic_type, A=Acrit, B=Bcrit)
+        elif pobj.is_liquid_phase():
+            Z_crit = expr_write.z_liq(eos=pobj._cubic_type, A=Acrit, B=Bcrit)
+
+        m.compress_fact_crit_eq = Constraint(rule=m.compress_fact_crit == Z_crit)
+
+        m.dens_mol_crit_eq = Constraint(
+            rule=m.pressure_crit
+            == m.compress_fact_crit
+            * Cubic.gas_constant(m)
+            * m.temperature_crit
+            * m.dens_mol_crit
+        )
+
 
 def _dZ_dT(blk, p):
     pobj = blk.params.get_phase(p)
@@ -1277,5 +1388,23 @@ def rule_am_default(m, cname, a, p, pp=()):
     )
 
 
+def rule_am_crit_default(m, cname, a_crit):
+    k = getattr(m.params, cname + "_kappa")
+    return sum(
+        sum(
+            m.mole_frac_comp[i]
+            * m.mole_frac_comp[j]
+            * sqrt(a_crit[i] * a_crit[j])
+            * (1 - k[i, j])
+            for j in m.component_list
+        )
+        for i in m.component_list
+    )
+
+
 def rule_bm_default(m, b, p):
     return sum(m.mole_frac_phase_comp[p, i] * b[i] for i in m.components_in_phase(p))
+
+
+def rule_bm_crit_default(m, b):
+    return sum(m.mole_frac_comp[i] * b[i] for i in m.component_list)

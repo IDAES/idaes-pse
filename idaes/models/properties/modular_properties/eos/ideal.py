@@ -50,7 +50,7 @@ class Ideal(EoSBase):
         pass
 
     @staticmethod
-    def build_critical_properties(b):
+    def build_critical_properties(b, ref_phase):
         base_units = b.params.get_metadata().default_units
 
         # Use Kay's method for critical pressure and temperature

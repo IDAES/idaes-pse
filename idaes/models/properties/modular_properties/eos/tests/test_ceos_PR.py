@@ -19,7 +19,9 @@ import pytest
 from sys import modules
 
 from pyomo.environ import (
+    assert_optimal_termination,
     ConcreteModel,
+    Constraint,
     Expression,
     log,
     sqrt,
@@ -28,6 +30,7 @@ from pyomo.environ import (
     units as pyunits,
 )
 from pyomo.core.expr.numeric_expr import ExternalFunctionExpression
+from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import declare_process_block_class, LiquidPhase, VaporPhase, SolidPhase
 from idaes.models.properties.modular_properties.eos.ceos import Cubic, CubicType
@@ -37,6 +40,8 @@ from idaes.models.properties.modular_properties.base.generic_property import (
 from idaes.core.util.exceptions import PropertyNotSupportedError, ConfigurationError
 from idaes.core.util.constants import Constants as const
 from idaes.models.properties.modular_properties.eos.ceos import cubic_roots_available
+from idaes.core.solvers import get_solver
+
 
 # Dummy method for property method calls
 def dummy_call(b, j, T):
@@ -1065,3 +1070,280 @@ def test_vol_mol_phase_comp(m):
             for j in m.params.component_list
         )
     )
+
+
+class TestCEOSCriticalProps:
+    @pytest.fixture(scope="class")
+    def model(self):
+        m = ConcreteModel()
+
+        # Dummy params block
+        m.params = DummyParameterBlock(
+            components={
+                "a": {
+                    "parameter_data": {
+                        "omega": 0.1,
+                        "pressure_crit": 1e5,
+                        "temperature_crit": 100,
+                    }
+                },
+                "b": {
+                    "parameter_data": {
+                        "omega": 0.2,
+                        "pressure_crit": 2e5,
+                        "temperature_crit": 200,
+                    }
+                },
+                "c": {
+                    "parameter_data": {
+                        "omega": 0.3,
+                        "pressure_crit": 3e5,
+                        "temperature_crit": 300,
+                    }
+                },
+            },
+            phases={
+                "Vap": {
+                    "type": LiquidPhase,
+                    "equation_of_state": Cubic,
+                    "equation_of_state_options": {"type": CubicType.PR},
+                },
+                "Liq": {
+                    "type": LiquidPhase,
+                    "equation_of_state": Cubic,
+                    "equation_of_state_options": {"type": CubicType.PR},
+                },
+            },
+            base_units={
+                "time": pyunits.s,
+                "length": pyunits.m,
+                "mass": pyunits.kg,
+                "amount": pyunits.mol,
+                "temperature": pyunits.K,
+            },
+            state_definition=modules[__name__],
+            pressure_ref=100000.0,
+            temperature_ref=300,
+            parameter_data={
+                "PR_kappa": {
+                    ("a", "a"): 0.0,
+                    ("a", "b"): 0.0,
+                    ("a", "c"): 0.0,
+                    ("b", "a"): 0.0,
+                    ("b", "b"): 0.0,
+                    ("b", "c"): 0.0,
+                    ("c", "a"): 0.0,
+                    ("c", "b"): 0.0,
+                    ("c", "c"): 0.0,
+                },
+            },
+        )
+
+        m.props = m.params.state_block_class(
+            [1], defined_state=False, parameters=m.params
+        )
+
+        # Add common variables
+        m.props[1].mole_frac_comp = Var(
+            m.params.component_list, initialize=0.5, bounds=(1e-12, 1)
+        )
+        m.props[1].mole_frac_comp["a"].fix(0.4)
+        m.props[1].mole_frac_comp["b"].fix(0.6)
+        m.props[1].mole_frac_comp["c"].fix(1e-8)
+
+        # Build critical properties
+        m.props[1]._critical_props()
+
+        return m
+
+    @pytest.mark.unit
+    def test_build_critical_props(self, model):
+        assert isinstance(model.props[1].a_crit, Expression)
+        assert isinstance(model.props[1].am_crit, Expression)
+        assert isinstance(model.props[1].bm_crit, Expression)
+
+        base_units = model.params.get_metadata().default_units
+
+        assert str(model.props[1].a_crit["a"].expr) == str(
+            0.45724
+            * (
+                (
+                    pyunits.convert(
+                        const.gas_constant, to_units=base_units.GAS_CONSTANT
+                    )
+                    * model.params.a.temperature_crit
+                )
+                ** 2
+                / model.params.a.pressure_crit
+            )
+            * (
+                1
+                + model.props[1].PR_fw["a"]
+                * (
+                    1
+                    - sqrt(
+                        model.props[1].temperature_crit
+                        / model.params.a.temperature_crit
+                    )
+                )
+            )
+            ** 2
+        )
+        assert str(model.props[1].a_crit["b"].expr) == str(
+            0.45724
+            * (
+                (
+                    pyunits.convert(
+                        const.gas_constant, to_units=base_units.GAS_CONSTANT
+                    )
+                    * model.params.b.temperature_crit
+                )
+                ** 2
+                / model.params.b.pressure_crit
+            )
+            * (
+                1
+                + model.props[1].PR_fw["b"]
+                * (
+                    1
+                    - sqrt(
+                        model.props[1].temperature_crit
+                        / model.params.b.temperature_crit
+                    )
+                )
+            )
+            ** 2
+        )
+        assert str(model.props[1].a_crit["c"].expr) == str(
+            0.45724
+            * (
+                (
+                    pyunits.convert(
+                        const.gas_constant, to_units=base_units.GAS_CONSTANT
+                    )
+                    * model.params.c.temperature_crit
+                )
+                ** 2
+                / model.params.c.pressure_crit
+            )
+            * (
+                1
+                + model.props[1].PR_fw["c"]
+                * (
+                    1
+                    - sqrt(
+                        model.props[1].temperature_crit
+                        / model.params.c.temperature_crit
+                    )
+                )
+            )
+            ** 2
+        )
+
+        assert str(model.props[1].am_crit.expr) == str(
+            (
+                model.props[1].mole_frac_comp["a"]
+                * model.props[1].mole_frac_comp["a"]
+                * sqrt(model.props[1].a_crit["a"] * model.props[1].a_crit["a"])
+                * (1 - model.params.PR_kappa["a", "a"])
+            )
+            + (
+                model.props[1].mole_frac_comp["a"]
+                * model.props[1].mole_frac_comp["b"]
+                * sqrt(model.props[1].a_crit["a"] * model.props[1].a_crit["b"])
+                * (1 - model.params.PR_kappa["a", "b"])
+            )
+            + (
+                model.props[1].mole_frac_comp["a"]
+                * model.props[1].mole_frac_comp["c"]
+                * sqrt(model.props[1].a_crit["a"] * model.props[1].a_crit["c"])
+                * (1 - model.params.PR_kappa["a", "c"])
+            )
+            + (
+                model.props[1].mole_frac_comp["b"]
+                * model.props[1].mole_frac_comp["a"]
+                * sqrt(model.props[1].a_crit["b"] * model.props[1].a_crit["a"])
+                * (1 - model.params.PR_kappa["b", "a"])
+            )
+            + (
+                model.props[1].mole_frac_comp["b"]
+                * model.props[1].mole_frac_comp["b"]
+                * sqrt(model.props[1].a_crit["b"] * model.props[1].a_crit["b"])
+                * (1 - model.params.PR_kappa["b", "b"])
+            )
+            + (
+                model.props[1].mole_frac_comp["b"]
+                * model.props[1].mole_frac_comp["c"]
+                * sqrt(model.props[1].a_crit["b"] * model.props[1].a_crit["c"])
+                * (1 - model.params.PR_kappa["b", "c"])
+            )
+            + (
+                model.props[1].mole_frac_comp["c"]
+                * model.props[1].mole_frac_comp["a"]
+                * sqrt(model.props[1].a_crit["c"] * model.props[1].a_crit["a"])
+                * (1 - model.params.PR_kappa["c", "a"])
+            )
+            + (
+                model.props[1].mole_frac_comp["c"]
+                * model.props[1].mole_frac_comp["b"]
+                * sqrt(model.props[1].a_crit["c"] * model.props[1].a_crit["b"])
+                * (1 - model.params.PR_kappa["c", "b"])
+            )
+            + (
+                model.props[1].mole_frac_comp["c"]
+                * model.props[1].mole_frac_comp["c"]
+                * sqrt(model.props[1].a_crit["c"] * model.props[1].a_crit["c"])
+                * (1 - model.params.PR_kappa["c", "c"])
+            )
+        )
+
+        assert str(model.props[1].bm_crit.expr) == str(
+            model.props[1].mole_frac_comp["a"] * model.props[1].PR_b["a"]
+            + model.props[1].mole_frac_comp["b"] * model.props[1].PR_b["b"]
+            + model.props[1].mole_frac_comp["c"] * model.props[1].PR_b["c"]
+        )
+
+        assert isinstance(model.props[1].A_crit, Constraint)
+        assert isinstance(model.props[1].B_crit, Constraint)
+
+        assert str(model.props[1].A_crit.expr) == str(
+            0.45724
+            * (
+                pyunits.convert(const.gas_constant, to_units=base_units.GAS_CONSTANT)
+                * model.props[1].temperature_crit
+            )
+            ** 2
+            == model.props[1].am_crit * model.props[1].pressure_crit
+        )
+
+        assert str(model.props[1].B_crit.expr) == str(
+            0.07780
+            * pyunits.convert(const.gas_constant, to_units=base_units.GAS_CONSTANT)
+            * model.props[1].temperature_crit
+            == model.props[1].bm_crit * model.props[1].pressure_crit
+        )
+
+        assert_units_consistent(model)
+
+    @pytest.mark.component
+    @pytest.mark.solver
+    def test_build_critical_props(self, model):
+        # Initialize model
+        model.props[1].compress_fact_crit.set_value(1)
+        model.props[1].pressure_crit.set_value(1.6e5)
+        model.props[1].temperature_crit.set_value(160)
+
+        # Solve model
+        solver = get_solver()
+        res = solver.solve(model, tee=True)
+        assert_optimal_termination(res)
+
+        # Confirm results
+        assert value(model.props[1].compress_fact_crit) == pytest.approx(
+            0.321379, rel=1e-5
+        )
+        assert value(model.props[1].pressure_crit) == pytest.approx(1.58138e5, rel=1e-5)
+        assert value(model.props[1].temperature_crit) == pytest.approx(
+            158.138, rel=1e-5
+        )
+        assert value(model.props[1].dens_mol_crit) == pytest.approx(374.238, rel=1e-5)
