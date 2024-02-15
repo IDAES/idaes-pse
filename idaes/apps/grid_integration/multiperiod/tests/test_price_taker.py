@@ -111,7 +111,7 @@ def test_logger_messages(excel_data, caplog):
     #
     #     assert f"Optimal number of clusters is close to kmax: {kmax}. Consider increasing kmax." in caplog.text
 
-    # Testing horizon_length errors
+    # Testing horizon_length input value errors
     value = 0
     with pytest.raises(
         ValueError,
@@ -136,7 +136,7 @@ def test_logger_messages(excel_data, caplog):
         m = PriceTakerModel()
         m.seed = value
     
-    # Testing up_time and down_time errors
+    # Testing up_time and down_time input value errors
     des = DesignModel()
     oper = OperationModel()
     build_bin_var = 'build'
@@ -171,6 +171,7 @@ def test_logger_messages(excel_data, caplog):
         m = PriceTakerModel()
         m.add_startup_shutdown(des, oper, build_bin_var, use_min_time, up_time[0], down_time[1])
     
+    # Testing kmin and kmax input value errors
     kmin = [-5, 10.2, 9]
     kmax = [-5, 10.2, 8]
     with pytest.raises(
