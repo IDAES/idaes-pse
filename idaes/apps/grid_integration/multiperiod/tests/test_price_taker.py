@@ -220,6 +220,67 @@ def test_logger_messages(excel_data, caplog):
 
         daily_data, scenarios = m.reconfigure_raw_data(excel_data)
         n_clusters, inertia_values = m.get_optimal_n_clusters(daily_data, kmin=kmin[2], kmax=kmax[2])
+    
+    # Testing ramping rate input value errors
+    des = DesignModel()
+    oper = OperationModel()
+    ramping_var = 'power'
+    capac_var = 'power_max'
+    constraint_type = 'linear'
+    linearization = False
+    op_range_lb = [-0.1, 0.5, 1.0]
+    su_rate = [-0.1, 0.5]
+    sd_rate = [-0.1, 0.5]
+    op_ru_rate = [-0.1, 0.5]
+    op_rd_rate = [-0.1, 0.5]
+    with pytest.raises(
+        ValueError,
+        match=(f"startup_rate fraction must be between 0 and 1, but {su_rate[0]} is not."),
+    ):
+        m = PriceTakerModel()
+        m.add_ramping_constraints(des, oper, capac_var, ramping_var, constraint_type, linearization, 
+                                  op_range_lb[1], su_rate[0], sd_rate[1], op_ru_rate[1], op_rd_rate[1])
+    
+    with pytest.raises(
+        ValueError,
+        match=(f"shutdown_rate fraction must be between 0 and 1, but {sd_rate[0]} is not."),
+    ):
+        m = PriceTakerModel()
+        m.add_ramping_constraints(des, oper, capac_var, ramping_var, constraint_type, linearization, 
+                                  op_range_lb[1], su_rate[1], sd_rate[0], op_ru_rate[1], op_rd_rate[1])
+    
+    with pytest.raises(
+        ValueError,
+        match=(f"ramp_up_rate fraction must be between 0 and 1, but {op_ru_rate[0]} is not."),
+    ):
+        m = PriceTakerModel()
+        m.add_ramping_constraints(des, oper, capac_var, ramping_var, constraint_type, linearization, 
+                                  op_range_lb[1], su_rate[1], sd_rate[1], op_ru_rate[0], op_rd_rate[1])
+    
+    with pytest.raises(
+        ValueError,
+        match=(f"ramp_down_rate fraction must be between 0 and 1, but {op_rd_rate[0]} is not."),
+    ):
+        m = PriceTakerModel()
+        m.add_ramping_constraints(des, oper, capac_var, ramping_var, constraint_type, linearization, 
+                                  op_range_lb[1], su_rate[1], sd_rate[1], op_ru_rate[1], op_rd_rate[0])
+    
+    with pytest.raises(
+        ValueError,
+        match=(f"op_range_lb fraction must be between 0 and 1, but {op_range_lb[0]} is not."),
+    ):
+        m = PriceTakerModel()
+        m.add_ramping_constraints(des, oper, capac_var, ramping_var, constraint_type, linearization, 
+                                  op_range_lb[0], su_rate[1], sd_rate[1], op_ru_rate[1], op_rd_rate[1])
+    
+    with pytest.raises(
+        ValueError,
+        match=(f"op_range_lb fraction must be <= shut_down_rate, otherwise the system cannot reach the off state."),
+    ):
+        m = PriceTakerModel()
+        m.add_ramping_constraints(des, oper, capac_var, ramping_var, constraint_type, linearization, 
+                                  op_range_lb[2], su_rate[1], sd_rate[1], op_ru_rate[1], op_rd_rate[1])
+
 
     
 

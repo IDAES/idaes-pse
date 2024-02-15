@@ -434,22 +434,38 @@ class PriceTakerModel(ConcreteModel):
                                 inputs are in: ["linear", "nonlinear"]
             linearization:      Boolean indicating whether linearization is used when constraint_type is
                                 "nonlinear", True to use linearization, False otherwise
-            op_range_lb:        The fraction of the capacity that represents the lower operating bound
-                                (between 0 and 1)
-            startup_rate:       The fraction of the capacity that variable ramping_var can increase at 
-                                during startup (between 0 and 1)
-            shutdown_rate:      The fraction of the capacity that variable ramping_var can decrease at 
-                                during shutdown (between 0 and 1)
-            ramp_up_rate:       The fraction of the capacity that variable ramping_var can increase at 
-                                during operation (between 0 and 1)
-            ramp_down_rate:     The fraction of the capacity that variable ramping_var can decrease at 
-                                during operation (between 0 and 1)
+            op_range_lb:        The fraction of the maximum capacity that represents the lower operating 
+                                bound (between 0 and 1)
+            startup_rate:       The fraction of the maximum capacity that variable ramping_var can 
+                                increase during startup (between 0 and 1)
+            shutdown_rate:      The fraction of the maximum capacity that variable ramping_var can 
+                                decrease during shutdown (between 0 and 1)
+            ramp_up_rate:       The fraction of the maximum capacity that variable ramping_var can 
+                                increase during operation (between 0 and 1)
+            ramp_down_rate:     The fraction of the maximum capacity that variable ramping_var can 
+                                decrease during operation (between 0 and 1)
 
     
         Assumptions/relationship:
             total_power_upper_bound >= ramp_up_limit >= startup_limit >= total_power_lower_bound > 0
             total_power_upper_bound  >= ramp_down_limit >= shutdown_limit >= total_power_lower_bound > 0
         """
+        # Checking that all ramping rates are between 0 and 1 and that the
+        # lower bound for operation is less than the startup/shutdown ramps
+        if startup_rate <= 0  or startup_rate > 1:
+            raise ValueError(f"startup_rate fraction must be between 0 and 1, but {startup_rate} is not.")
+        if shutdown_rate <= 0  or shutdown_rate > 1:
+            raise ValueError(f"shutdown_rate fraction must be between 0 and 1, but {shutdown_rate} is not.")
+        if ramp_up_rate <= 0  or ramp_up_rate > 1:
+            raise ValueError(f"ramp_up_rate fraction must be between 0 and 1, but {ramp_up_rate} is not.")
+        if ramp_down_rate <= 0  or ramp_down_rate > 1:
+            raise ValueError(f"ramp_down_rate fraction must be between 0 and 1, but {ramp_down_rate} is not.")
+        if op_range_lb < 0  or op_range_lb > 1:
+            raise ValueError(f"op_range_lb fraction must be between 0 and 1, but {op_range_lb} is not.")
+        if op_range_lb >= shutdown_rate:
+            raise ValueError(f"op_range_lb fraction must be <= shut_down_rate, otherwise the system cannot reach the off state.")
+
+
         start_up = {t: deepgetattr(self.mp_model.period[t], op_blk + ".startup") for t in self.mp_model.period}
         op_mode = {t: deepgetattr(self.mp_model.period[t], op_blk + ".op_mode") for t in self.mp_model.period}
         shut_down = {t: deepgetattr(self.mp_model.period[t], op_blk + ".shutdown") for t in self.mp_model.period}
