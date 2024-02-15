@@ -485,10 +485,8 @@ class PriceTakerModel(ConcreteModel):
                 return Constraint.Skip
             else:
                 return (var_ramping[self.mp_model.set_period[t]] - var_ramping[self.mp_model.set_period[t-1]] <= 
-                        startup_rate * act_startup_rate[self.mp_model.set_period[t]]  
-                        - op_range_lb * act_startup_rate[self.mp_model.set_period[t-1]]
-                        + (ramp_up_rate - op_range_lb)  * act_op_mode_rate[self.mp_model.set_period[t]]
-                        - op_range_lb * act_op_mode_rate[self.mp_model.set_period[t-1]]
+                        (startup_rate - ramp_up_rate) * act_startup_rate[self.mp_model.set_period[t]]  
+                        + ramp_up_rate * act_op_mode_rate[self.mp_model.set_period[t]]
                         )
 
         @blk.Constraint(self.range_time_steps)
@@ -498,11 +496,8 @@ class PriceTakerModel(ConcreteModel):
             else:
                 return (
                         var_ramping[self.mp_model.set_period[t-1]]- var_ramping[self.mp_model.set_period[t]] <= 
-                       (shutdown_rate - op_range_lb) * act_shutdown_rate[self.mp_model.set_period[t]]
-                       - op_range_lb * act_startup_rate[self.mp_model.set_period[t]]
-                       +  op_range_lb * act_startup_rate[self.mp_model.set_period[t-1]]
-                       + (ramp_down_rate - op_range_lb) * act_op_mode_rate[self.mp_model.set_period[t]]
-                       + op_range_lb * act_op_mode_rate[self.mp_model.set_period[t-1]]
+                       shutdown_rate * act_shutdown_rate[self.mp_model.set_period[t]]
+                       + ramp_down_rate * act_op_mode_rate[self.mp_model.set_period[t]]
                        )
         
 
@@ -511,7 +506,7 @@ class PriceTakerModel(ConcreteModel):
         op_blk,
         design_blk, 
         build_binary_var,
-        use_min_ud_time=True, 
+        use_min_time=True, 
         up_time=1, 
         down_time=1,
     ):
@@ -526,7 +521,7 @@ class PriceTakerModel(ConcreteModel):
             build_binary_var:   String of the name of the binary variable which indicates if we 
                                 should build (1) or not build (0) the design corresponding to the
                                 'design_blk' referenced above
-            use_min_ud_time:    Boolean that can bypass constructing minimum up and downtime
+            use_min_time:    Boolean that can bypass constructing minimum up and downtime
                                 constraints. (default: True --> constraints are constructed)
             up_time:            Time required for the system to start up fully 
                                     ex: 4 
@@ -538,7 +533,18 @@ class PriceTakerModel(ConcreteModel):
         Assumption:
             up_time >= 1 & down_time >= 1
         """
-     
+        # Check up_time and down_time for validity
+        if not isinstance(up_time, int):
+            raise ValueError(f"up_time must be an integer, but {value} is not an integer")
+        if up_time < 1:
+            raise ValueError(f"up_time must be >= 1, but {value} is not")
+        if not isinstance(down_time, int):
+            raise ValueError(f"down_time must be an integer, but {value} is not an integer")
+        if down_time < 1:
+            raise ValueError(f"down_time must be >= 1, but {value} is not")
+        
+        
+
         start_up = {t: deepgetattr(self.mp_model.period[t], op_blk + ".startup") for t in self.mp_model.period}
         op_mode = {t: deepgetattr(self.mp_model.period[t], op_blk + ".op_mode") for t in self.mp_model.period}
         shut_down = {t: deepgetattr(self.mp_model.period[t], op_blk + ".shutdown") for t in self.mp_model.period}
@@ -556,31 +562,30 @@ class PriceTakerModel(ConcreteModel):
         if design_blk is not None:
             @blk.Constraint(self.range_time_steps)
             def design_op_relationship_con(b, t):
-                return (start_up[self.mp_model.set_period[t]] + shut_down[self.mp_model.set_period[t]] +
-                        op_mode[self.mp_model.set_period[t]] <= build
-                       )
-
-        @blk.Constraint(self.range_time_steps)
-        def minimum_up_time_con(b,t):
-            if t == 1 or t < up_time or t > number_time_steps:
-                return Constraint.Skip
-            else:
-                return sum(start_up[self.mp_model.set_period[i]] for i in range(t-up_time+1,t+1)) <= op_mode[self.mp_model.set_period[t]]
+                return (op_mode[self.mp_model.set_period[t]] <= build)
         
         @blk.Constraint(self.range_time_steps)
-        def minimum_down_time_con(b, t):
-            if t <= down_time or t == 1 or t > number_time_steps:
-                return Constraint.Skip
-            return (sum(shut_down[self.mp_model.set_period[i]] for i in range(t - down_time , t + 1)) <= 
-                   1 - op_mode[self.mp_model.set_period[t]])
-
-        @blk.Constraint(self.range_time_steps)
         def Binary_relationhsip_con(b, t):
-            if t > number_time_steps or t == 1:
+            if t == 1 or t > number_time_steps:
                 return Constraint.Skip
             return (op_mode[self.mp_model.set_period[t]] - op_mode[self.mp_model.set_period[t-1]] == 
                     start_up[self.mp_model.set_period[t-1]] - shut_down[self.mp_model.set_period[t]]
                    )
+
+        if use_min_time:
+            @blk.Constraint(self.range_time_steps)
+            def minimum_up_time_con(b,t):
+                if t == 1 or t < up_time or t > number_time_steps:
+                    return Constraint.Skip
+                else:
+                    return sum(start_up[self.mp_model.set_period[i]] for i in range(t-up_time+1, t+1)) <= op_mode[self.mp_model.set_period[t]]
+            
+            @blk.Constraint(self.range_time_steps)
+            def minimum_down_time_con(b, t):
+                if t < down_time or t == 1 or t > number_time_steps:
+                    return Constraint.Skip
+                return (sum(shut_down[self.mp_model.set_period[i]] for i in range(t-down_time+1, t+1)) <= 
+                    1 - op_mode[self.mp_model.set_period[t]])
 
 
     def build_hourly_cashflows(self, revenue_streams=['elec_revenue',], additional_costs=None):
