@@ -54,8 +54,8 @@ def deepgetattr(obj, attr):
 class PriceTakerModel(ConcreteModel):
     def __init__(self, seed=20, horizon_length=24):
         super().__init__()
-        self._seed = seed
-        self._horizon_length = horizon_length
+        self.seed = seed
+        self.horizon_length = horizon_length
 
     @property
     def seed(self):
@@ -63,6 +63,8 @@ class PriceTakerModel(ConcreteModel):
 
     @seed.setter
     def seed(self, value):
+        if not isinstance(value, int):
+            raise ValueError(f"seed must be an integer, but {value} is not an integer")
         self._seed = value
 
     @property
@@ -73,6 +75,8 @@ class PriceTakerModel(ConcreteModel):
     def horizon_length(self, value):
         if value <= 0:
             raise ValueError(f"horizon_length must be > 0, but {value} is provided.")
+        if not isinstance(value, int):
+            raise ValueError(f"horizon_length must be an integer, but {value} is not an integer")
         self._horizon_length = value
 
     def generate_daily_data(self,raw_data,day_list):
@@ -605,6 +609,7 @@ class PriceTakerModel(ConcreteModel):
             carbon_price = 0
 
             # ToDo: Add multiple revenue streams to the model
+            # ToDo: Add additional costs for time period
 
             for blk in period[p].component_data_objects(Block):
                 if isinstance(blk, OperationModelData):
