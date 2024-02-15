@@ -659,7 +659,7 @@ def unique(list1):
     Returns:
         unique_list
     """
-    # intilize a null list
+    # initialize a null list
     unique_list = []
 
     # traverse for all elements
