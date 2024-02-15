@@ -100,6 +100,7 @@ class PriceTakerModel(ConcreteModel):
 
         Returns:
             daily_data: reconfigured price series data
+            scenarios:  ??? Add description ???
         """
 
         # Get column headings
@@ -118,19 +119,25 @@ class PriceTakerModel(ConcreteModel):
 
         return daily_data, scenarios
 
-    def get_optimal_n_clusters(self, daily_data, kmin=None, kmax=None, plot=False):
+    def get_optimal_n_clusters(
+        self, 
+        daily_data, 
+        kmin=None, 
+        kmax=None, 
+        plot=False,
+    ):
         """
         Determines the appropriate number of clusters needed for a
         given price signal.
 
         Args:
             daily_data: reconfigured price series data
-            kmin: minimum number of clusters
-            kmax: maximum number of clusters
-            plot: flag to determine if an elbow plot should be displayed
+            kmin:       minimum number of clusters
+            kmax:       maximum number of clusters
+            plot:       flag to determine if an elbow plot should be displayed
 
         Returns:
-            n_clusters: the optimal number of clusters for the given data
+            n_clusters:     the optimal number of clusters for the given data
             inertia_values: within-cluster sum-of-squares
         """
         if kmin is None:
@@ -176,19 +183,26 @@ class PriceTakerModel(ConcreteModel):
 
         return n_clusters, inertia_values
 
-    def cluster_lmp_data(self, raw_data, n_clusters, scenarios):
+    def cluster_lmp_data(self, raw_data, n_clusters):
         """
         Clusters the given price signal in n_clusters. This method supports k-means, k-meteiod,...
         techniques for clustering.
 
         Args:
+            raw_data:   imported price series data
+            n_clusters: number of clusters desired for the data (representative days)
 
         Returns:
-            lmp_data = {1: {1: 2, 2: 3, 3: 5}, 2: {1: 2, 2: 3, 3: 5}}
-            weights = {1: 45, 2: 56}
+            lmp_data:   dict of representative day LMP data, indices are indexed
+                        by integers starting at 1 (ex: {1: {1: 4, 2: 3, 3: 5}, 
+                                                        2: {1: 1, 2: 7, 3: 3}})
+                                               Format: {day: {time_period: LMP}}
+            weights:    dict of weights for each representative day, indexed the
+                        same way as lmp_data      (ex: {1: 45, 2: 56})
+                                               Format: {day: weight}
         """
         # reconfiguring raw data 
-        daily_data,scenarios  = self.reconfigure_raw_data(raw_data)
+        daily_data, scenarios  = self.reconfigure_raw_data(raw_data)
         
         # KMeans clustering with the optimal number of clusters
         kmeans = KMeans(n_clusters=n_clusters).fit(daily_data.transpose())
@@ -226,14 +240,31 @@ class PriceTakerModel(ConcreteModel):
     def append_lmp_data(
         self,
         file_path,
-        file_name,
-        sheet = None,
-        column_name="price",
+        sheet=None,
+        column_name=None,
         n_clusters=None,
         horizon_length=None,
     ):
-        # with resources.path(file_path, file_name) as p:
-        #     path_to_file = Path(p).resolve()
+        """
+        This function appends LMP data to the PriceTakerModel using single
+        or multiple year signals, as well as using full price data or 
+        clustering to use representative days.
+
+        Args:
+            file_path:      path to the file containing LMP data
+            sheet:          if the file is in axcel file, the sheet name
+                            where the LMP data is located - (default: None)
+            column_name:    list of integer year names if multiple years of
+                            data are to be used, None otherwise - (default: None)
+            n_clusters:     number of clusters for the data (representative days)
+                            None if representative days not used - (default: None)
+            horizon_length: if a value is given, this will be used to set the
+                            horizon_length attribute of the PriceTakerModel.
+                            (default: None --> use existing horizon_length (default: 24))
+
+        Returns:
+            
+        """
         if os.path.exists(file_path):
             path_to_file = file_path
         else:
@@ -243,12 +274,16 @@ class PriceTakerModel(ConcreteModel):
             full_data = pd.read_excel( path_to_file, sheet_name=[sheet])[sheet]
         elif '.csv' in path_to_file[-5:]:
             full_data = pd.read_csv(path_to_file, )
+        
+        if horizon_length is not None:
+            self.horizon_length(horizon_length)
+        
         # editing the data
         if isinstance(column_name, list) and n_clusters is not None:
             # Multiple years and representative days
             self.set_years = [int(y) for y in column_name]
             self.set_days = RangeSet(1,n_clusters)
-            self._n_time_points = horizon_length if horizon_length is not None else 24
+            self._n_time_points = self.horizon_length if self.horizon_length is not None else 24
             self.set_time = RangeSet(self._n_time_points)
 
             self.LMP = {}
@@ -257,7 +292,7 @@ class PriceTakerModel(ConcreteModel):
             for year in column_name:
                 price_data = full_data[year]
                 lmp_data, weights = self.cluster_lmp_data(
-                    price_data, n_clusters, horizon_length
+                    price_data, n_clusters
                 )
                 y = int(year)
 
@@ -290,7 +325,7 @@ class PriceTakerModel(ConcreteModel):
             # Single price signal, use reprentative days
             self.set_years = None
             self.set_days = RangeSet(1,n_clusters)
-            self._n_time_points = horizon_length if horizon_length is not None else 24
+            self._n_time_points = self.horizon_length if self.horizon_length is not None else 24
             self.set_time = RangeSet(self._n_time_points)
 
             self.LMP = {}
@@ -298,7 +333,7 @@ class PriceTakerModel(ConcreteModel):
 
             price_data = full_data
             lmp_data, weights = self.cluster_lmp_data(
-                price_data, n_clusters, horizon_length
+                price_data, n_clusters
             )
             
             for d in self.set_days:
@@ -354,31 +389,39 @@ class PriceTakerModel(ConcreteModel):
         shutdown_rate= 0.7,
         ramp_up_rate = 0.7, 
         ramp_down_rate = 0.7,
-          ):
+    ):
         """
-        Adds ramping constraints of the form
-        -ramp_down_limit <= var(t) - var(t-1) <= ramp_up_limit on var
+        Adds ramping constraints of the form:
+            -ramp_down_limit <= var(t) - var(t-1) <= ramp_up_limit on var
         
 
-        Arguments: 
-        op_blk: The name of the operation model block, ex: ( "fs.op_name")
-        design_blk: The name of the design model block, ex: ("m.design_name")
-        var: Name of the variable the ramping cosntraints will be applied to, ex: ("total_power")
-        op_range_lb_percentage: The percetage of the capacity that represents the lower operating bound (%)
-        startup_limit_percentage: The percentage of the capacity that variable var can increase at 
-                                  during startup (%)
-        shutdown_limit_percentage: The percentage of the capacity that variable var can decrease at 
-                                   during shutdown (%)
-        ramp_up_limit: The rate at which variable var can increases during operation,
-                       a percentage of the capacity (%)
-        ramp_down_limit: = The rate at which variable var can decrease during operation,
-                          a percentage of the capacity (%)
+        Args: 
+            op_blk:             String of the name of the operation model block, ex: ("fs.op_name")
+            design_blk:         String of the name of the design model block, ex: ("m.design_name")
+            capacity_var:       String of the name of the entity on the model the ramping constraints 
+                                will be applied to, ex: ("total_power") OR integer/float value of the
+                                capacity value
+            ramping_var:        String of the name of the variable that the ramping constraints will
+                                be applied to
+            constraint_type:    String to choose between linear and nonlinear constraints. Valid 
+                                inputs are in: ["linear", "nonlinear"]
+            linearization:      Boolean indicating whether linearization is used when constraint_type is
+                                "nonlinear", True to use linearization, False otherwise
+            op_range_lb:        The fraction of the capacity that represents the lower operating bound
+                                (between 0 and 1)
+            startup_rate:       The fraction of the capacity that variable ramping_var can increase at 
+                                during startup (between 0 and 1)
+            shutdown_rate:      The fraction of the capacity that variable ramping_var can decrease at 
+                                during shutdown (between 0 and 1)
+            ramp_up_rate:       The fraction of the capacity that variable ramping_var can increase at 
+                                during operation (between 0 and 1)
+            ramp_down_rate:     The fraction of the capacity that variable ramping_var can decrease at 
+                                during operation (between 0 and 1)
 
     
         Assumptions/relationship:
-      example:
-      total_power_upper_bound >= ramp_up_limit >= startup_limit >= total_power_lower_bound > 0
-      total_power_upper_bound  >= ramp_down_limit >= shutdown_limit >= total_power_lower_bound > 0
+            total_power_upper_bound >= ramp_up_limit >= startup_limit >= total_power_lower_bound > 0
+            total_power_upper_bound  >= ramp_down_limit >= shutdown_limit >= total_power_lower_bound > 0
         """
         start_up = {t: deepgetattr(self.mp_model.period[t], op_blk + ".startup") for t in self.mp_model.period}
         op_mode = {t: deepgetattr(self.mp_model.period[t], op_blk + ".op_mode") for t in self.mp_model.period}
@@ -388,15 +431,15 @@ class PriceTakerModel(ConcreteModel):
             if isinstance(capacity_var,str):
                 var_capacity = deepgetattr(self, design_blk + "." + capacity_var)
                 act_startup_rate = {t: var_capacity * start_up[t] for t in self.mp_model.period}
-                act_shutdown_rate = {t:var_capacity * shut_down[t] for t in self.mp_model.period}
-                act_op_mode_rate = {t:var_capacity * op_mode[t] for t in self.mp_model.period}
+                act_shutdown_rate = {t: var_capacity * shut_down[t] for t in self.mp_model.period}
+                act_op_mode_rate = {t: var_capacity * op_mode[t] for t in self.mp_model.period}
             if isinstance(capacity_var, (int,float)):
                 act_startup_rate = {t: capacity_var * start_up[t] for t in self.mp_model.period}
-                act_shutdown_rate = {t:capacity_var * shut_down[t]for t in self.mp_model.period}
-                act_op_mode_rate = {t:capacity_var * op_mode[t] for t in self.mp_model.period}
+                act_shutdown_rate = {t: capacity_var * shut_down[t] for t in self.mp_model.period}
+                act_op_mode_rate = {t: capacity_var * op_mode[t] for t in self.mp_model.period}
         elif constraint_type == "nonlinear":
             if linearization == True:
-                if hasattr(self,"capacity_startup") == False:
+                if hasattr(self, "capacity_startup") == False:
                     for t in self.mp_model.period:
                         blk = deepgetattr(self.mp_model.period[t],op_blk)
                         blk._add_capacity_aux_vars()
@@ -407,8 +450,8 @@ class PriceTakerModel(ConcreteModel):
             elif linearization == False:
                 var_capacity = deepgetattr(self, design_blk + "." + capacity_var)
                 act_startup_rate = {t: var_capacity * start_up[t] for t in self.mp_model.period}
-                act_shutdown_rate = {t:var_capacity * shut_down[t] for t in self.mp_model.period}
-                act_op_mode_rate = {t:var_capacity * op_mode[t] for t in self.mp_model.period}
+                act_shutdown_rate = {t: var_capacity * shut_down[t] for t in self.mp_model.period}
+                act_op_mode_rate = {t: var_capacity * op_mode[t] for t in self.mp_model.period}
 
 
 
@@ -448,23 +491,39 @@ class PriceTakerModel(ConcreteModel):
                        )
         
 
-    def add_startup_shutdown(self, op_blk,design_blk, build_binary_var, up_time = 1, down_time =1):
+    def add_startup_shutdown(
+        self, 
+        op_blk,
+        design_blk, 
+        build_binary_var,
+        use_min_ud_time=True, 
+        up_time=1, 
+        down_time=1,
+    ):
         """
         Adds startup/shutdown and minimum uptime/downtime constraints on
         a given unit/process
 
         
-        Arguments:
-        op_blk: op_blk: The name of the operation model block, ex: ( "fs.op_name")
-        up_time: Time required for the system to start up fully 
-                 ex: 4 
-        down_time: Time required for the system to shutdown fully 
-                 ex: 4
-        Assumption:
-        up_time >= 1 & down_time >= 1
-        """
-
+        Args:
+            op_blk:             String of the name of the operation model block, ex: ("fs.op_name")
+            design_blk:         String of the name of the design model block, ex: ("m.design_name")
+            build_binary_var:   String of the name of the binary variable which indicates if we 
+                                should build (1) or not build (0) the design corresponding to the
+                                'design_blk' referenced above
+            use_min_ud_time:    Boolean that can bypass constructing minimum up and downtime
+                                constraints. (default: True --> constraints are constructed)
+            up_time:            Time required for the system to start up fully 
+                                    ex: 4 
+            down_time:          Time required for the system to shutdown fully 
+                                    ex: 4
         
+        Returns:
+
+        Assumption:
+            up_time >= 1 & down_time >= 1
+        """
+     
         start_up = {t: deepgetattr(self.mp_model.period[t], op_blk + ".startup") for t in self.mp_model.period}
         op_mode = {t: deepgetattr(self.mp_model.period[t], op_blk + ".op_mode") for t in self.mp_model.period}
         shut_down = {t: deepgetattr(self.mp_model.period[t], op_blk + ".shutdown") for t in self.mp_model.period}
@@ -508,7 +567,35 @@ class PriceTakerModel(ConcreteModel):
                     start_up[self.mp_model.set_period[t-1]] - shut_down[self.mp_model.set_period[t]]
                    )
 
-    def build_hourly_cashflows(self):
+
+    def build_hourly_cashflows(self, revenue_streams=['elec_revenue',], additional_costs=None):
+        """
+        Adds an expression for the net cash inflow for each operational
+        block. This is the new cash inflow for each time period of the
+        PriceTakerModel. Default costs for each model should include
+        'non_fuel_vom' (non-fuel variable operating costs), 'fuel_cost'
+        (cost of fuel), and 'carbon_price' (cost associated with producing
+        carbon; i.e., a carbon tax). The net cash inflow is caluclated as:
+
+            Sum(revenue streams) - Sum(costs)
+        
+        for every time period in the PriceTakerModel's MultiPeriodModel
+        
+        Args:
+            revenue_streams:    List of strings representing the names of the 
+                                revenue streams coming from the model. 
+                                (default: ['elec_revenue',])
+                                Coproduction example: ['elec_revenue', 
+                                                       'H2_revenue', ]
+            additional_costs:   List of strings representing the names of the
+                                costs associated with operating at a time period.
+                                (default: None)
+                                example: ['hourly_fixed_cost',
+                                          '',]
+
+        Returns:
+
+        """
         period = self.mp_model.period
 
         for p in period:
@@ -516,6 +603,8 @@ class PriceTakerModel(ConcreteModel):
             fuel_cost = 0
             elec_revenue = 0
             carbon_price = 0
+
+            # ToDo: Add multiple revenue streams to the model
 
             for blk in period[p].component_data_objects(Block):
                 if isinstance(blk, OperationModelData):
@@ -546,8 +635,21 @@ class PriceTakerModel(ConcreteModel):
         objective="NPV",
     ):
         """
-        Builds overall cashflow expressions and appends objective function
-        to the model
+        Builds overall cashflow expressions and appends the objective function
+        in terms of cashflows to the PriceTakerModel
+        
+        Args:
+            lifetime:       Number of years (lifetime) to evaluate the equipment
+            discount_rate:  Fractional rate of discount used in NPV calculations.
+                            Must be between 0 and 1.
+            corp_tax:       Fractional value of corporate tax used in NPV calculations.
+                            ??? What are the restrictions on tax ???
+            other_costs:    Additional costs that are not captured
+            other_revenue:  
+            objective:      
+
+        Returns:
+
         """
 
         capex_expr = 0
