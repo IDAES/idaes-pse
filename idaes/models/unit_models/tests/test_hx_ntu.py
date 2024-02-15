@@ -505,16 +505,6 @@ class TestHXNTU(object):
             <= 1e-6
         )
 
-    @pytest.mark.component
-    def test_initialization_error(self, model):
-        model.fs.unit.hot_side_outlet.pressure[0].fix(1)
-
-        with pytest.raises(InitializationError):
-            model.fs.unit.initialize()
-
-        # Revert DoF change to avoid contaminating subsequent tests
-        model.fs.unit.hot_side_outlet.pressure[0].unfix()
-
 
 class TestInitializers(object):
     @pytest.fixture(scope="class")

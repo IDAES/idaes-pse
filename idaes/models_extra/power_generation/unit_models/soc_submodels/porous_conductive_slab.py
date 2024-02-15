@@ -120,6 +120,14 @@ class PorousConductiveSlabData(UnitModelBlockData):
             "component concentration in the bulk channel",
         ),
     )
+    CONFIG.declare(
+        "voltage_drop_custom",
+        ConfigValue(
+            domain=Bool,
+            default=False,
+            description="If True, add voltage_drop_custom Var to be connected to degradation models",
+        ),
+    )
     common._submodel_boilerplate_config(CONFIG)
     common._thermal_boundary_conditions_config(CONFIG, thin=False)
     common._material_boundary_conditions_config(CONFIG, thin=False)
@@ -295,12 +303,20 @@ class PorousConductiveSlabData(UnitModelBlockData):
             units=pyo.units.m**2 / pyo.units.s,
         )
         self.resistivity_log_preexponential_factor = pyo.Var(
-            doc="Logarithm of resistivity preexponential factor " "in units of ohm*m",
+            doc="Logarithm of resistivity preexponential factor in units of ohm*m",
             units=pyo.units.dimensionless,
         )
         self.resistivity_thermal_exponent_dividend = pyo.Var(
             doc="Parameter divided by temperature in exponential", units=pyo.units.K
         )
+        if self.config.voltage_drop_custom:
+            self.voltage_drop_custom = pyo.Var(
+                tset,
+                ixnodes,
+                iznodes,
+                units=pyo.units.volts,
+                doc="Custom voltage drop term for degradation modeling",
+            )
 
         # Parameters
         self.solid_heat_capacity = pyo.Var(
@@ -517,6 +533,8 @@ class PorousConductiveSlabData(UnitModelBlockData):
                 derivative=True,
             )
 
+        conc_grad_units = pyo.units.mol / pyo.units.m**4
+
         @self.Expression(tset, ixnodes, izfaces, comps)
         def dcdz(b, t, ix, iz, i):
             return common._interpolate_2D(
@@ -525,8 +543,8 @@ class PorousConductiveSlabData(UnitModelBlockData):
                 nodes=b.znodes,
                 faces=b.zfaces,
                 phi_func=lambda izf: b.conc_mol_comp[t, ix, izf, i] / b.length_z[None],
-                phi_bound_0=0,  # solid wall no flux
-                phi_bound_1=0,  # solid wall no flux
+                phi_bound_0=0 * conc_grad_units,  # solid wall no flux
+                phi_bound_1=0 * conc_grad_units,  # solid wall no flux
                 derivative=True,
             )
 
@@ -553,6 +571,8 @@ class PorousConductiveSlabData(UnitModelBlockData):
                 derivative=True,
             )
 
+        temp_grad_units = pyo.units.K / pyo.units.m
+
         @self.Expression(tset, ixnodes, izfaces)
         def dTdz(b, t, ix, iz):
             return common._interpolate_2D(
@@ -561,8 +581,8 @@ class PorousConductiveSlabData(UnitModelBlockData):
                 nodes=b.znodes,
                 faces=b.zfaces,
                 phi_func=lambda izf: b.temperature[t, ix, izf] / b.length_z[None],
-                phi_bound_0=0,
-                phi_bound_1=0,
+                phi_bound_0=0 * temp_grad_units,
+                phi_bound_1=0 * temp_grad_units,
                 derivative=True,
             )
 
@@ -584,6 +604,8 @@ class PorousConductiveSlabData(UnitModelBlockData):
                 derivative=False,
             )
 
+        diff_coeff_units = pyo.units.m**2 / pyo.units.s
+
         @self.Expression(tset, ixnodes, izfaces, comps)
         def diff_eff_coeff_zfaces(b, t, ix, iz, i):
             return common._interpolate_2D(
@@ -592,8 +614,8 @@ class PorousConductiveSlabData(UnitModelBlockData):
                 nodes=b.znodes,
                 faces=b.zfaces,
                 phi_func=lambda izf: b.diff_eff_coeff[t, ix, izf, i],
-                phi_bound_0=0,  # solid wall no flux
-                phi_bound_1=0,  # solid wall no flux
+                phi_bound_0=0 * diff_coeff_units,  # solid wall no flux
+                phi_bound_1=0 * diff_coeff_units,  # solid wall no flux
                 derivative=False,
             )
 
@@ -688,7 +710,13 @@ class PorousConductiveSlabData(UnitModelBlockData):
 
         @self.Expression(tset, ixnodes, iznodes)
         def voltage_drop(b, t, ix, iz):
-            return b.current[t, iz] * b.resistance[t, ix, iz]
+            if self.config.voltage_drop_custom:
+                return (
+                    b.current[t, iz] * b.resistance[t, ix, iz]
+                    + b.voltage_drop_custom[t, ix, iz]
+                )
+            else:
+                return b.current[t, iz] * b.resistance[t, ix, iz]
 
         @self.Expression(tset, iznodes)
         def resistance_total(b, t, iz):

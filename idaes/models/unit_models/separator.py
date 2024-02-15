@@ -932,21 +932,65 @@ objects linked the mixed state and all outlet states,
             t_ref = self.flowsheet().time.first()
             mb_type = mixed_block[t_ref].default_material_balance_type()
 
+        # Get units from property package
+        units_meta = mixed_block.params.get_metadata()
+        flow_basis = mixed_block[
+            self.flowsheet().time.first()
+        ].get_material_flow_basis()
+        if flow_basis == MaterialFlowBasis.molar:
+            flow_units = units_meta.get_derived_units("flow_mole")
+        elif flow_basis == MaterialFlowBasis.mass:
+            flow_units = units_meta.get_derived_units("flow_mass")
+        else:
+            # Let this pass for now with no units
+            flow_units = None
+
+        if mixed_block.include_inherent_reactions:
+            # Add extents of reaction and stoichiometric constraints
+            # TODO: It would be nice if there was a way to recognise that
+            # a total flow split does not require calculation of equilibrium
+            # (assuming T&P are constant) and turn of inherent reactions in
+            # that case, but that feature does not exist in property packages
+            self.inherent_reaction_extent = Var(
+                self.flowsheet().time,
+                self.outlet_idx,
+                mixed_block.params.inherent_reaction_idx,
+                domain=Reals,
+                initialize=0.0,
+                doc="Extent of inherent reactions in outlets",
+                units=flow_units,
+            )
+
+            self.inherent_reaction_generation = Var(
+                self.flowsheet().time,
+                self.outlet_idx,
+                pc_set,
+                domain=Reals,
+                initialize=0.0,
+                doc="Generation due to inherent reactions in outlets",
+                units=flow_units,
+            )
+
+            @self.Constraint(
+                self.flowsheet().time,
+                self.outlet_idx,
+                pc_set,
+            )
+            def inherent_reaction_constraint(b, t, o, p, j):
+                if (p, j) in pc_set:
+                    return b.inherent_reaction_generation[t, o, p, j] == (
+                        sum(
+                            mixed_block[t].params.inherent_reaction_stoichiometry[
+                                r, p, j
+                            ]
+                            * self.inherent_reaction_extent[t, o, r]
+                            for r in mixed_block[t].params.inherent_reaction_idx
+                        )
+                    )
+                return Constraint.Skip
+
         if mb_type == MaterialBalanceType.componentPhase:
             if self.config.has_phase_equilibrium is True:
-                # Get units from property package
-                units_meta = mixed_block.params.get_metadata()
-                flow_basis = mixed_block[
-                    self.flowsheet().time.first()
-                ].get_material_flow_basis()
-                if flow_basis == MaterialFlowBasis.molar:
-                    flow_units = units_meta.get_derived_units("flow_mole")
-                elif flow_basis == MaterialFlowBasis.mass:
-                    flow_units = units_meta.get_derived_units("flow_mass")
-                else:
-                    # Let this pass for now with no units
-                    flow_units = None
-
                 try:
                     self.phase_equilibrium_generation = Var(
                         self.flowsheet().time,
@@ -963,29 +1007,6 @@ objects linked the mixed state and all outlet states,
                         "does not support phase equilibrium.".format(self.name)
                     )
 
-            # Define terms to use in mixing equation
-            def phase_equilibrium_term(b, t, o, p, j):
-                if self.config.has_phase_equilibrium:
-                    sd = {}
-                    sblock = mixed_block[t]
-                    for r in b.config.property_package.phase_equilibrium_idx:
-                        if sblock.params.phase_equilibrium_list[r][0] == j:
-                            if sblock.params.phase_equilibrium_list[r][1][0] == p:
-                                sd[r] = 1
-                            elif sblock.params.phase_equilibrium_list[r][1][1] == p:
-                                sd[r] = -1
-                            else:
-                                sd[r] = 0
-                        else:
-                            sd[r] = 0
-
-                    return sum(
-                        b.phase_equilibrium_generation[t, o, r] * sd[r]
-                        for r in b.config.property_package.phase_equilibrium_idx
-                    )
-                else:
-                    return 0
-
             @self.Constraint(
                 self.flowsheet().time,
                 self.outlet_idx,
@@ -994,12 +1015,27 @@ objects linked the mixed state and all outlet states,
             )
             def material_splitting_eqn(b, t, o, p, j):
                 o_block = getattr(self, o + "_state")
-                return sf(t, o, p, j) * mixed_block[t].get_material_flow_terms(
-                    p, j
-                ) == (
-                    o_block[t].get_material_flow_terms(p, j)
-                    - phase_equilibrium_term(b, t, o, p, j)
-                )
+                lhs = sf(t, o, p, j) * mixed_block[t].get_material_flow_terms(p, j)
+
+                rhs = o_block[t].get_material_flow_terms(p, j)
+
+                if self.config.has_phase_equilibrium:
+                    rhs += -sum(
+                        b.phase_equilibrium_generation[t, o, r]
+                        for r in b.config.property_package.phase_equilibrium_idx
+                        if mixed_block[t].params.phase_equilibrium_list[r][0] == j
+                        and mixed_block[t].params.phase_equilibrium_list[r][1][0] == p
+                    ) + sum(
+                        b.phase_equilibrium_generation[t, o, r]
+                        for r in b.config.property_package.phase_equilibrium_idx
+                        if mixed_block[t].params.phase_equilibrium_list[r][0] == j
+                        and mixed_block[t].params.phase_equilibrium_list[r][1][1] == p
+                    )
+
+                if mixed_block.include_inherent_reactions:
+                    rhs += b.inherent_reaction_generation[t, o, p, j]
+
+                return lhs == rhs
 
         elif mb_type == MaterialBalanceType.componentTotal:
 
@@ -1011,15 +1047,26 @@ objects linked the mixed state and all outlet states,
             )
             def material_splitting_eqn(b, t, o, j):
                 o_block = getattr(self, o + "_state")
-                return sum(
+
+                lhs = sum(
                     sf(t, o, p, j) * mixed_block[t].get_material_flow_terms(p, j)
                     for p in mixed_block.phase_list
                     if (p, j) in pc_set
-                ) == sum(
+                )
+                rhs = sum(
                     o_block[t].get_material_flow_terms(p, j)
                     for p in o_block.phase_list
                     if (p, j) in pc_set
                 )
+
+                if mixed_block.include_inherent_reactions:
+                    rhs += sum(
+                        b.inherent_reaction_generation[t, o, p, j]
+                        for p in o_block.phase_list
+                        if (p, j) in pc_set
+                    )
+
+                return lhs == rhs
 
         elif mb_type == MaterialBalanceType.total:
 
@@ -1030,14 +1077,16 @@ objects linked the mixed state and all outlet states,
             )
             def material_splitting_eqn(b, t, o):
                 o_block = getattr(self, o + "_state")
-                return sum(
+
+                lhs = sum(
                     sum(
                         sf(t, o, p, j) * mixed_block[t].get_material_flow_terms(p, j)
                         for j in mixed_block.component_list
                         if (p, j) in pc_set
                     )
                     for p in mixed_block.phase_list
-                ) == sum(
+                )
+                rhs = sum(
                     sum(
                         o_block[t].get_material_flow_terms(p, j)
                         for j in mixed_block.component_list
@@ -1045,6 +1094,18 @@ objects linked the mixed state and all outlet states,
                     )
                     for p in o_block.phase_list
                 )
+
+                if mixed_block.include_inherent_reactions:
+                    rhs += sum(
+                        sum(
+                            b.inherent_reaction_generation[t, o, p, j]
+                            for j in mixed_block.component_list
+                            if (p, j) in pc_set
+                        )
+                        for p in o_block.phase_list
+                    )
+
+                return lhs == rhs
 
         elif mb_type == MaterialBalanceType.elementTotal:
             raise ConfigurationError(

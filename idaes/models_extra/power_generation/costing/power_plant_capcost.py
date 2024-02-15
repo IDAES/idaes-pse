@@ -1712,7 +1712,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         b.other_fixed_costs.fix(0)
 
         # maintenance material cost is technically a variable cost, but it
-        # makes more sense to include with the fixed costs becuase it uses TPC
+        # makes more sense to include with the fixed costs because it uses TPC
         b.maintenance_material_cost = Var(
             initialize=2e-7,
             bounds=(0, 1e4),

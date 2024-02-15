@@ -430,6 +430,7 @@ def petsc_dae_by_time_element(
     interpolate=True,
     calculate_derivatives=True,
     previous_trajectory=None,
+    representative_time=None,
     snes_options=None,
 ):
     """Solve a DAE problem step by step using the PETSc DAE solver.  This
@@ -465,13 +466,7 @@ def petsc_dae_by_time_element(
             for solvers. If you want to read trajectory data from the
             time-stepping solver, this should be True.
         between (list or tuple): List of time points to integrate between. If
-            None use all time points in the model. Generally the list should
-            start with the first time point and end with the last time point;
-            however, this is not a requirement and there are situations where you
-            may not want to include them. If you are not including the first
-            time point, you should take extra care with the initial conditions.
-            If the initial conditions are already correct consider using the
-            ``skip_initial`` option if the first time point is not included.
+            None use all time points in the model.
         interpolate (bool): if True and trajectory is read, interpolate model
             values from the trajectory
         calculate_derivatives: (bool) if True, calculate the derivative values
@@ -479,6 +474,13 @@ def petsc_dae_by_time_element(
             Pyomo model.
         previous_trajectory: (PetscTrajectory) Trajectory from previous integration
             of this model. New results will be appended to this trajectory object.
+        representative_time: (element of Between) Time when all equations necessary to solve DAE are active. Often equations need
+            to be deactivated for the initial condition problem (for example, mole fractions summing to one)
+            because state variables (the individual mole fractions) are fixed. representative_time is a time
+            after the initial condition problem is solved and these equations are reactivated. Note that the
+            equations not active at this point are excluded from the DAE at future points. If no
+            representative_time is specified, it is assumed to be the second element of between.
+            Must be an element of between.
         snes_options (dict): [DEPRECATED in favor of initial_solver_options] nonlinear equation solver options
 
     Returns (PetscDAEResults):
@@ -517,10 +519,29 @@ def petsc_dae_by_time_element(
         between = pyo.Set(initialize=sorted(between))
         between.construct()
 
+    # Make sure that time is a ContinuousSet that has been discretized
+    if not isinstance(time, pyodae.ContinuousSet):
+        raise RuntimeError("Argument time is not a Pyomo ContinuousSet")
+
+    if "scheme" not in time.get_discretization_info():
+        raise RuntimeError("The ContinuousSet time has not been discretized")
+
     solve_log = idaeslog.getSolveLogger("petsc-dae")
 
-    regular_vars, time_vars = flatten_dae_components(m, time, pyo.Var)
-    regular_cons, time_cons = flatten_dae_components(m, time, pyo.Constraint)
+    # Need a representative time for flatten_dae_components to work, because otherwise things like
+    # sums of mole fraction constraints being deactivated at t0 (because all the mole fractions are fixed),
+    # etc., cause flatten_dae_components to miss a constraint that is active at t>t0
+    if representative_time is None:
+        representative_time = between.at(2)  # Two because Pyomo sets start at one
+    elif representative_time not in between:
+        raise RuntimeError("representative_time is not element of between.")
+
+    regular_vars, time_vars = flatten_dae_components(
+        m, time, pyo.Var, active=True, indices=(representative_time,)
+    )
+    regular_cons, time_cons = flatten_dae_components(
+        m, time, pyo.Constraint, active=True, indices=(representative_time,)
+    )
     tdisc = find_discretization_equations(m, time)
 
     solver_dae = pyo.SolverFactory("petsc_ts", options=ts_options)
