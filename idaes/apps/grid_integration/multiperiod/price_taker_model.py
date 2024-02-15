@@ -155,12 +155,24 @@ class PriceTakerModel(ConcreteModel):
             n_clusters:     the optimal number of clusters for the given data
             inertia_values: within-cluster sum-of-squares
         """
+        # Check kmin and kmax for validity
         if kmin is None:
             kmin = 4
         if kmax is None:
             kmax = 30
             _logger.warning(f"kmax was not set - using a default value of 30.")
-
+        
+        if not isinstance(kmin, int):
+            raise ValueError(f"kmin must be an integer, but {kmin} is not an integer")
+        if not isinstance(kmax, int):
+            raise ValueError(f"kmax must be an integer, but {kmax} is not an integer")
+        if kmin < 1:
+            raise ValueError(f"kmin must be > 0, but {kmin} is provided.")
+        if kmax < 1:
+            raise ValueError(f"kmax must be > 0, but {kmax} is provided.")
+        if  kmin >= kmax:
+            raise ValueError(f"kmin must be less than kmax, but {kmin} >= {kmax}")
+        
         k_values = range(kmin, kmax)
         inertia_values = []
 

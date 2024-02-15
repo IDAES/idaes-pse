@@ -170,6 +170,55 @@ def test_logger_messages(excel_data, caplog):
     ):
         m = PriceTakerModel()
         m.add_startup_shutdown(des, oper, build_bin_var, use_min_time, up_time[0], down_time[1])
+    
+    kmin = [-5, 10.2, 9]
+    kmax = [-5, 10.2, 8]
+    with pytest.raises(
+        ValueError,
+        match=(f"kmin must be an integer, but {kmin[1]} is not an integer"),
+    ):
+        m = PriceTakerModel()
+
+        daily_data, scenarios = m.reconfigure_raw_data(excel_data)
+        n_clusters, inertia_values = m.get_optimal_n_clusters(daily_data, kmin=kmin[1], kmax=kmax[2])
+    
+    with pytest.raises(
+        ValueError,
+        match=(f"kmax must be an integer, but {kmax[1]} is not an integer"),
+    ):
+        m = PriceTakerModel()
+
+        daily_data, scenarios = m.reconfigure_raw_data(excel_data)
+        n_clusters, inertia_values = m.get_optimal_n_clusters(daily_data, kmin=kmin[2], kmax=kmax[1])
+
+    with pytest.raises(
+        ValueError,
+        match=(f"kmin must be > 0, but {kmin[0]} is provided."),
+    ):
+        m = PriceTakerModel()
+
+        daily_data, scenarios = m.reconfigure_raw_data(excel_data)
+        n_clusters, inertia_values = m.get_optimal_n_clusters(daily_data, kmin=kmin[0], kmax=kmax[2])
+
+    
+    with pytest.raises(
+        ValueError,
+        match=(f"kmax must be > 0, but {kmax[0]} is provided."),
+    ):
+        m = PriceTakerModel()
+
+        daily_data, scenarios = m.reconfigure_raw_data(excel_data)
+        n_clusters, inertia_values = m.get_optimal_n_clusters(daily_data, kmin=kmin[2], kmax=kmax[0])
+        m.cluster_lmp_data(excel_data, n_clusters)
+    
+    with pytest.raises(
+        ValueError,
+        match=(f"kmin must be less than kmax, but {kmin[2]} >= {kmax[2]}"),
+    ):
+        m = PriceTakerModel()
+
+        daily_data, scenarios = m.reconfigure_raw_data(excel_data)
+        n_clusters, inertia_values = m.get_optimal_n_clusters(daily_data, kmin=kmin[2], kmax=kmax[2])
 
     
 
