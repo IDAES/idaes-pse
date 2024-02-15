@@ -78,7 +78,8 @@ def test_cluster_lmp_data(excel_data):
 
     daily_data, scenarios = m.reconfigure_raw_data(excel_data)
     n_clusters, inertia_values = m.get_optimal_n_clusters(daily_data)
-    lmp_data, weights = m.cluster_lmp_data(daily_data, n_clusters, scenarios)
+    # lmp_data, weights = m.cluster_lmp_data(daily_data, n_clusters)
+    lmp_data, weights = m.cluster_lmp_data(excel_data, n_clusters)
 
     sum_of_weights = 0
     for i in range(0, n_clusters):
@@ -110,6 +111,7 @@ def test_logger_messages(excel_data, caplog):
     #
     #     assert f"Optimal number of clusters is close to kmax: {kmax}. Consider increasing kmax." in caplog.text
 
+    # Testing horizon_length errors
     value = 0
     with pytest.raises(
         ValueError,
@@ -117,6 +119,60 @@ def test_logger_messages(excel_data, caplog):
     ):
         m = PriceTakerModel()
         m.horizon_length = value
+    value = 12.34
+    with pytest.raises(
+        ValueError,
+        match=(f"horizon_length must be an integer, but {value} is not an integer"),
+    ):
+        m = PriceTakerModel()
+        m.horizon_length = value
+    
+    # Testing seed errors
+    value = 12.34
+    with pytest.raises(
+        ValueError,
+        match=(f"seed must be an integer, but {value} is not an integer"),
+    ):
+        m = PriceTakerModel()
+        m.seed = value
+    
+    # Testing up_time and down_time errors
+    des = DesignModel()
+    oper = OperationModel()
+    build_bin_var = 'build'
+    use_min_time=True
+    up_time = [10, -5, 2.2]
+    down_time = [10, -5, 2.2]
+    with pytest.raises(
+        ValueError,
+        match=(f"up_time must be an integer, but {up_time[2]} is not an integer"),
+    ):
+        m = PriceTakerModel()
+        m.add_startup_shutdown(des, oper, build_bin_var, use_min_time, up_time[2], down_time[0])
+    
+    with pytest.raises(
+        ValueError,
+        match=(f"down_time must be an integer, but {down_time[2]} is not an integer"),
+    ):
+        m = PriceTakerModel()
+        m.add_startup_shutdown(des, oper, build_bin_var, use_min_time, up_time[0], down_time[2])
+    
+    with pytest.raises(
+        ValueError,
+        match=(f"up_time must be >= 1, but {up_time[1]} is not"),
+    ):
+        m = PriceTakerModel()
+        m.add_startup_shutdown(des, oper, build_bin_var, use_min_time, up_time[1], down_time[0])
+    
+    with pytest.raises(
+        ValueError,
+        match=(f"down_time must be >= 1, but {down_time[1]} is not"),
+    ):
+        m = PriceTakerModel()
+        m.add_startup_shutdown(des, oper, build_bin_var, use_min_time, up_time[0], down_time[1])
+
+    
+
 
 
 def dfc_design(m, params, capacity_range=(650, 900)):

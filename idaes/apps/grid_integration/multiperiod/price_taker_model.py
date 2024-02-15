@@ -535,13 +535,13 @@ class PriceTakerModel(ConcreteModel):
         """
         # Check up_time and down_time for validity
         if not isinstance(up_time, int):
-            raise ValueError(f"up_time must be an integer, but {value} is not an integer")
+            raise ValueError(f"up_time must be an integer, but {up_time} is not an integer")
         if up_time < 1:
-            raise ValueError(f"up_time must be >= 1, but {value} is not")
+            raise ValueError(f"up_time must be >= 1, but {up_time} is not")
         if not isinstance(down_time, int):
-            raise ValueError(f"down_time must be an integer, but {value} is not an integer")
+            raise ValueError(f"down_time must be an integer, but {down_time} is not an integer")
         if down_time < 1:
-            raise ValueError(f"down_time must be >= 1, but {value} is not")
+            raise ValueError(f"down_time must be >= 1, but {down_time} is not")
         
         
 
