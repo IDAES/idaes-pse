@@ -80,6 +80,17 @@ class PriceTakerModel(ConcreteModel):
         self._horizon_length = value
 
     def generate_daily_data(self,raw_data,day_list):
+        """
+        Function used to generate the daily data in a usable format
+        from the raw data provided.
+
+        Args:
+            raw_data:   LMP data in raw format
+            day_list:   List of days to be used from the raw data
+        
+        Returns:
+            daily_data: Correctly formatted LMP data for later use
+        """
 
         daily_data = pd.DataFrame(columns=day_list)
 
