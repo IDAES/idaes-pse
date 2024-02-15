@@ -82,7 +82,7 @@ def test_cluster_lmp_data(excel_data):
     lmp_data, weights = m.cluster_lmp_data(excel_data, n_clusters)
 
     sum_of_weights = 0
-    for i in range(0, n_clusters):
+    for i in range(1, n_clusters + 1):
         sum_of_weights = sum_of_weights + weights[0][i]
     assert sum_of_weights == 365
 
