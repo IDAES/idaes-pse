@@ -25,7 +25,7 @@ from pyomo.util.check_units import assert_units_equivalent
 from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterData,
     GenericStateBlock,
-    ModularPropertiesInitializer,
+    _initialize_critical_props,
 )
 from idaes.models.properties.modular_properties.base.tests.dummy_eos import DummyEoS
 
@@ -43,7 +43,6 @@ from idaes.core.util.exceptions import ConfigurationError, PropertyPackageError
 from idaes.models.properties.modular_properties.phase_equil.henry import HenryType
 from idaes.core.base.property_meta import UnitSet
 from idaes.core.initialization import BlockTriangularizationInitializer
-from idaes.models.properties.modular_properties.eos.ceos import Cubic, CubicType
 
 import idaes.logger as idaeslog
 
@@ -1127,6 +1126,7 @@ class TestGenericParameterBlock(object):
 # Dummy methods for testing build calls to sub-modules
 def define_state(b):
     b.state_defined = True
+    b.temperature = Var(initialize=100)
 
 
 def get_material_flow_basis(self, *args, **kwargs):
@@ -1592,6 +1592,50 @@ class TestCriticalProps:
         assert m.props[1]._get_critical_ref_phase() == "p1"
 
     @pytest.mark.unit
+    def test_get_critical_ref_phase_VLL(self):
+        class DummyPE:
+            def phase_equil(self, *args, **kwargs):
+                pass
+
+            @staticmethod
+            def return_expression(b, *args, **kwargs):
+                return b.temperature == 42
+
+        # No vapor or liquid phases
+        m = ConcreteModel()
+        m.params = DummyParameterBlock(
+            components={
+                "a": {
+                    "phase_equilibrium_form": {("p2", "p3"): DummyPE},
+                },
+            },
+            phases={
+                "p1": {
+                    "type": LiquidPhase,
+                    "equation_of_state": DummyEoS,
+                },
+                "p2": {
+                    "type": VaporPhase,
+                    "equation_of_state": DummyEoS,
+                },
+                "p3": {
+                    "type": LiquidPhase,
+                    "equation_of_state": DummyEoS,
+                },
+            },
+            state_definition=modules[__name__],
+            pressure_ref=100000.0,
+            temperature_ref=300,
+            base_units=base_units,
+            phases_in_equilibrium=[("p2", "p3")],
+            phase_equilibrium_state={("p2", "p3"): DummyPE},
+        )
+
+        m.props = m.params.build_state_block([1], defined_state=False)
+
+        assert m.props[1]._get_critical_ref_phase() == "p3"
+
+    @pytest.mark.unit
     def test_get_critical_ref_phase_VX(self):
         # No vapor or liquid phases
         m = ConcreteModel()
@@ -1800,8 +1844,7 @@ class TestCriticalProps:
         m.props[1]._critical_props()
 
         # Initialize critical props
-        initializer = ModularPropertiesInitializer()
-        initializer.initialize_critical_props(m.props[1])
+        _initialize_critical_props(m.props[1])
 
         assert (
             value(m.props[1].compress_fact_crit) == 0.4 * 0.1 + 0.6 * 0.2 + 1e-8 * 0.3

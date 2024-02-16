@@ -1299,8 +1299,9 @@ class ModularPropertiesInitializer(InitializerBase):
         # If present, initialize critical properties
         for k in model.values():
             # We only need to look for one critical property as it is all or nothing
-            if hasattr(k, "pressure_crit"):
-                self.initialize_critical_props(k)
+            with k.lock_attribute_creation_context():
+                if hasattr(k, "pressure_crit"):
+                    _initialize_critical_props(k)
 
         # ---------------------------------------------------------------------
         # If present, initialize bubble and dew point calculations
@@ -1568,35 +1569,6 @@ class ModularPropertiesInitializer(InitializerBase):
 
         return None
 
-    def initialize_critical_props(self, state_data):
-        params = state_data.params
-        # Use mole weighted sum of component critical properties
-        state_data.compress_fact_crit.set_value(
-            sum(
-                state_data.mole_frac_comp[j]
-                * params.get_component(j).compress_fact_crit
-                for j in state_data.component_list
-            )
-        )
-        state_data.dens_mol_crit.set_value(
-            sum(
-                state_data.mole_frac_comp[j] * params.get_component(j).dens_mol_crit
-                for j in state_data.component_list
-            )
-        )
-        state_data.pressure_crit.set_value(
-            sum(
-                state_data.mole_frac_comp[j] * params.get_component(j).pressure_crit
-                for j in state_data.component_list
-            )
-        )
-        state_data.temperature_crit.set_value(
-            sum(
-                state_data.mole_frac_comp[j] * params.get_component(j).temperature_crit
-                for j in state_data.component_list
-            )
-        )
-
 
 class _GenericStateBlock(StateBlock):
     """
@@ -1767,6 +1739,14 @@ class _GenericStateBlock(StateBlock):
 
         # Create solver
         opt = get_solver(solver, optarg)
+
+        # ---------------------------------------------------------------------
+        # If present, initialize critical properties
+        for k in blk.values():
+            # We only need to look for one critical property as it is all or nothing
+            with k.lock_attribute_creation_context():
+                if hasattr(k, "pressure_crit"):
+                    _initialize_critical_props(k)
 
         # ---------------------------------------------------------------------
         # If present, initialize bubble and dew point calculations
@@ -2963,11 +2943,23 @@ class GenericStateBlockData(StateBlockData):
     # -------------------------------------------------------------------------
     # Mixture critical point
     # Critical properties will be based off liquid phase if present, as we assume
-    # supercritical fluid is liquid-like. Otherwise, the vapor phase is used.
-    # Get first liquid phase we find
+    # supercritical fluid is liquid-like.
     def _get_critical_ref_phase(self):
         ref_phase = None
         vap_phase = None
+        # First, look for VLE pair and use liquid phase if present
+        if self.params.config.phases_in_equilibrium is not None:
+            for pp in self.params.config.phases_in_equilibrium:
+                p1 = self.params.get_phase(pp[0])
+                p2 = self.params.get_phase(pp[1])
+
+                if p1.is_liquid_phase() and p2.is_vapor_phase():
+                    return pp[0]
+                elif p2.is_liquid_phase() and p1.is_vapor_phase():
+                    return pp[1]
+
+        # Next, iterate all phases and return either the first liquid phase
+        # Also collect vapor phase for final fall back
         for p in self.params.phase_list:
             if self.params.get_phase(p).is_liquid_phase():
                 return p
@@ -5145,3 +5137,32 @@ def _log_mole_frac_bubble_dew(b, name):
             eqn = getattr(b, "log_mole_frac_" + abbrv + "_eqn")
             b.del_component(eqn)
         raise
+
+
+def _initialize_critical_props(state_data):
+    params = state_data.params
+    # Use mole weighted sum of component critical properties
+    state_data.compress_fact_crit.set_value(
+        sum(
+            state_data.mole_frac_comp[j] * params.get_component(j).compress_fact_crit
+            for j in state_data.component_list
+        )
+    )
+    state_data.dens_mol_crit.set_value(
+        sum(
+            state_data.mole_frac_comp[j] * params.get_component(j).dens_mol_crit
+            for j in state_data.component_list
+        )
+    )
+    state_data.pressure_crit.set_value(
+        sum(
+            state_data.mole_frac_comp[j] * params.get_component(j).pressure_crit
+            for j in state_data.component_list
+        )
+    )
+    state_data.temperature_crit.set_value(
+        sum(
+            state_data.mole_frac_comp[j] * params.get_component(j).temperature_crit
+            for j in state_data.component_list
+        )
+    )
