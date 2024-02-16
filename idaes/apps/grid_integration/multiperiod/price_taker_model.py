@@ -400,12 +400,7 @@ class PriceTakerModel(ConcreteModel):
         # If append_lmp_data is automatic, need to append the LMP data.
         # Check if LMP has already been defined with the append_lmp_data
         # function above
-        LMP_exists = False
-        try:
-            _ = self.LMP
-            LMP_exists = True
-        except:
-            LMP_exists = False
+        LMP_exists = hasattr(self, 'LMP')
 
         # Iterate through model to append LMP data if it's been defined
         # and the model says it should be (default)
@@ -529,8 +524,9 @@ class PriceTakerModel(ConcreteModel):
 
 
        
-        # Importing in the nessisary variables
-        self.range_time_steps = RangeSet(len(self.mp_model.set_period))
+        # Importing in the necessary variables
+        if not hasattr(self, 'range_time_steps'):
+            self.range_time_steps = RangeSet(len(self.mp_model.set_period))
         
         #Creating the pyomo block
         blk_name = op_blk.split(".")[-1] + "_rampup_rampdown"
@@ -610,7 +606,8 @@ class PriceTakerModel(ConcreteModel):
         if design_blk is not None:
             build =  deepgetattr(self,design_blk + "." + build_binary_var)
 
-        self.range_time_steps = RangeSet(len(self.mp_model.set_period))
+        if not hasattr(self, 'range_time_steps'):
+            self.range_time_steps = RangeSet(len(self.mp_model.set_period))
         number_time_steps = len(self.mp_model.set_period)
 
         blk_name = op_blk.split(".")[-1] + "_startup_shutdown"
