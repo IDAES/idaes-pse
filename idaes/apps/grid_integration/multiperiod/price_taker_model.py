@@ -438,12 +438,12 @@ class PriceTakerModel(ConcreteModel):
         capacity_var,
         ramping_var,
         constraint_type,
-        linearization = True,
-        op_range_lb = 0.6, 
-        startup_rate = 0.7, 
-        shutdown_rate= 0.7,
-        ramp_up_rate = 0.7, 
-        ramp_down_rate = 0.7,
+        linearization=True,
+        op_range_lb=0.6, 
+        startup_rate=0.7, 
+        shutdown_rate=0.7,
+        ramp_up_rate=0.7, 
+        ramp_down_rate=0.7,
     ):
         """
         Adds ramping constraints of the form:
@@ -498,12 +498,14 @@ class PriceTakerModel(ConcreteModel):
         op_mode = {t: deepgetattr(self.mp_model.period[t], op_blk + ".op_mode") for t in self.mp_model.period}
         shut_down = {t: deepgetattr(self.mp_model.period[t], op_blk + ".shutdown") for t in self.mp_model.period}
         var_ramping = {t: deepgetattr(self.mp_model.period[t], op_blk + "." + ramping_var) for t in self.mp_model.period}
+
         if constraint_type == "linear":
             if isinstance(capacity_var,str):
                 var_capacity = deepgetattr(self, design_blk + "." + capacity_var)
                 act_startup_rate = {t: var_capacity * start_up[t] for t in self.mp_model.period}
                 act_shutdown_rate = {t: var_capacity * shut_down[t] for t in self.mp_model.period}
                 act_op_mode_rate = {t: var_capacity * op_mode[t] for t in self.mp_model.period}
+            
             if isinstance(capacity_var, (int,float)):
                 act_startup_rate = {t: capacity_var * start_up[t] for t in self.mp_model.period}
                 act_shutdown_rate = {t: capacity_var * shut_down[t] for t in self.mp_model.period}
@@ -540,9 +542,9 @@ class PriceTakerModel(ConcreteModel):
             if t == 1:
                 return Constraint.Skip
             else:
-                return (var_ramping[self.mp_model.set_period[t]] - var_ramping[self.mp_model.set_period[t-1]] <= 
-                        (startup_rate - ramp_up_rate) * act_startup_rate[self.mp_model.set_period[t]]  
-                        + ramp_up_rate * act_op_mode_rate[self.mp_model.set_period[t]]
+                return (var_ramping[self.mp_model.set_period.at(t)] - var_ramping[self.mp_model.set_period.at(t-1)] <= 
+                        (startup_rate - ramp_up_rate) * act_startup_rate[self.mp_model.set_period.at(t)]  
+                        + ramp_up_rate * act_op_mode_rate[self.mp_model.set_period.at(t)]
                         )
 
         @blk.Constraint(self.range_time_steps)
@@ -551,9 +553,9 @@ class PriceTakerModel(ConcreteModel):
                 return Constraint.Skip
             else:
                 return (
-                        var_ramping[self.mp_model.set_period[t-1]]- var_ramping[self.mp_model.set_period[t]] <= 
-                       shutdown_rate * act_shutdown_rate[self.mp_model.set_period[t]]
-                       + ramp_down_rate * act_op_mode_rate[self.mp_model.set_period[t]]
+                        var_ramping[self.mp_model.set_period.at(t-1)]- var_ramping[self.mp_model.set_period.at(t)] <= 
+                       shutdown_rate * act_shutdown_rate[self.mp_model.set_period.at(t)]
+                       + ramp_down_rate * act_op_mode_rate[self.mp_model.set_period.at(t)]
                        )
         
 
@@ -618,14 +620,14 @@ class PriceTakerModel(ConcreteModel):
         if design_blk is not None:
             @blk.Constraint(self.range_time_steps)
             def design_op_relationship_con(b, t):
-                return (op_mode[self.mp_model.set_period[t]] <= build)
+                return (op_mode[self.mp_model.set_period.at(t)] <= build)
         
         @blk.Constraint(self.range_time_steps)
         def Binary_relationhsip_con(b, t):
             if t == 1 or t > number_time_steps:
                 return Constraint.Skip
-            return (op_mode[self.mp_model.set_period[t]] - op_mode[self.mp_model.set_period[t-1]] == 
-                    start_up[self.mp_model.set_period[t-1]] - shut_down[self.mp_model.set_period[t]]
+            return (op_mode[self.mp_model.set_period.at(t)] - op_mode[self.mp_model.set_period.at(t-1)] == 
+                    start_up[self.mp_model.set_period.at(t-1)] - shut_down[self.mp_model.set_period.at(t)]
                    )
 
         if use_min_time:
@@ -634,14 +636,14 @@ class PriceTakerModel(ConcreteModel):
                 if t == 1 or t < up_time or t > number_time_steps:
                     return Constraint.Skip
                 else:
-                    return sum(start_up[self.mp_model.set_period[i]] for i in range(t-up_time+1, t+1)) <= op_mode[self.mp_model.set_period[t]]
+                    return sum(start_up[self.mp_model.set_period.at(i)] for i in range(t-up_time+1, t+1)) <= op_mode[self.mp_model.set_period.at(t)]
             
             @blk.Constraint(self.range_time_steps)
             def minimum_down_time_con(b, t):
                 if t < down_time or t == 1 or t > number_time_steps:
                     return Constraint.Skip
-                return (sum(shut_down[self.mp_model.set_period[i]] for i in range(t-down_time+1, t+1)) <= 
-                    1 - op_mode[self.mp_model.set_period[t]])
+                return (sum(shut_down[self.mp_model.set_period.at(i)] for i in range(t-down_time+1, t+1)) <= 
+                    1 - op_mode[self.mp_model.set_period.at(t)])
 
 
     def build_hourly_cashflows(self, revenue_streams=['elec_revenue',], additional_costs=None):
