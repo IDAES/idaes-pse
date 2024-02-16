@@ -78,7 +78,6 @@ def test_cluster_lmp_data(excel_data):
 
     daily_data, scenarios = m.reconfigure_raw_data(excel_data)
     n_clusters, inertia_values = m.get_optimal_n_clusters(daily_data)
-    # lmp_data, weights = m.cluster_lmp_data(daily_data, n_clusters)
     lmp_data, weights = m.cluster_lmp_data(excel_data, n_clusters)
 
     sum_of_weights = 0
@@ -280,6 +279,32 @@ def test_logger_messages(excel_data, caplog):
         m = PriceTakerModel()
         m.add_ramping_constraints(des, oper, capac_var, ramping_var, constraint_type, linearization, 
                                   op_range_lb[2], su_rate[1], sd_rate[1], op_ru_rate[1], op_rd_rate[1])
+    
+    # Testing raised errors in append_lmp_data
+    file_path = "FLECCS.xlsx"
+    n_clusters = [-5, 1.7, 10]
+    with pytest.raises(
+        ValueError,
+        match=(f"n_clusters must be an integer, but {n_clusters[1]} is not an integer"),
+    ):
+        m = PriceTakerModel()
+        m.append_lmp_data(file_path, sheet='2035 - NREL', column_name='MiNg_$100_CAISO', n_clusters=n_clusters[1], horizon_length=24,)
+    
+    with pytest.raises(
+        ValueError,
+        match=(f"n_clusters must be > 0, but {n_clusters[0]} is provided."),
+    ):
+        m = PriceTakerModel()
+        m.append_lmp_data(file_path, sheet='2035 - NREL', column_name='MiNg_$100_CAISO', n_clusters=n_clusters[0], horizon_length=24,)
+    
+    file_path = 'trash'
+    with pytest.raises(
+        ValueError,
+        match=(f"The file path {file_path} does not exist. Please check your file path."),
+    ):
+        m = PriceTakerModel()
+        m.append_lmp_data(file_path, sheet='2035 - NREL', column_name='MiNg_$100_CAISO', n_clusters=n_clusters[2], horizon_length=24,)
+
 
 
     

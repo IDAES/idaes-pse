@@ -279,7 +279,7 @@ class PriceTakerModel(ConcreteModel):
 
         Args:
             file_path:      path to the file containing LMP data
-            sheet:          if the file is in axcel file, the sheet name
+            sheet:          if the file is an excel file, the sheet name
                             where the LMP data is located - (default: None)
             column_name:    list of integer year names if multiple years of
                             data are to be used, None otherwise - (default: None)
@@ -295,7 +295,7 @@ class PriceTakerModel(ConcreteModel):
         if os.path.exists(file_path):
             path_to_file = file_path
         else:
-            raise ValueError()
+            raise ValueError(f"The file path {file_path} does not exist. Please check your file path.")
 
         if '.xls' in path_to_file[-5:]:
             full_data = pd.read_excel( path_to_file, sheet_name=[sheet])[sheet]
@@ -303,7 +303,13 @@ class PriceTakerModel(ConcreteModel):
             full_data = pd.read_csv(path_to_file, )
         
         if horizon_length is not None:
-            self.horizon_length(horizon_length)
+            self.horizon_length = horizon_length
+        
+        if n_clusters is not None:
+            if not isinstance(n_clusters, int):
+                raise ValueError(f"n_clusters must be an integer, but {n_clusters} is not an integer")
+            if n_clusters < 1:
+                raise ValueError(f"n_clusters must be > 0, but {n_clusters} is provided.")
         
         # editing the data
         if isinstance(column_name, list) and n_clusters is not None:
@@ -643,7 +649,7 @@ class PriceTakerModel(ConcreteModel):
                     1 - op_mode[self.mp_model.set_period.at(t)])
 
 
-    def build_hourly_cashflows(self, revenue_streams=['elec_revenue',], additional_costs=None):
+    def build_hourly_cashflows(self, revenue_streams=['elec_revenue',], costs=None):
         """
         Adds an expression for the net cash inflow for each operational
         block. This is the new cash inflow for each time period of the
@@ -666,7 +672,7 @@ class PriceTakerModel(ConcreteModel):
                                 costs associated with operating at a time period.
                                 (default: None)
                                 example: ['hourly_fixed_cost',
-                                          '',]
+                                          'electricity_cost',]
 
         Returns:
 
@@ -674,13 +680,19 @@ class PriceTakerModel(ConcreteModel):
         period = self.mp_model.period
 
         for p in period:
+            for cost_name in costs:
+                setattr(self.mp_model.period[p], cost_name, 0)
+            
+            for revenue_name in revenue_streams:
+                setattr(self.mp_model.period[p], revenue_name, 0)
+            
             non_fuel_vom = 0
             fuel_cost = 0
             elec_revenue = 0
             carbon_price = 0
 
-            # ToDo: Add multiple revenue streams to the model
-            # ToDo: Add additional costs for time period
+            # ToDo: Add multiple revenue streams to the model (full user control)
+            # ToDo: Make costs a list as well (full user control)
 
             for blk in period[p].component_data_objects(Block):
                 if isinstance(blk, OperationModelData):
