@@ -374,11 +374,10 @@ class PriceTakerModel(ConcreteModel):
             # Single price signal, use full year's price signal
             self.set_years = None
             self.set_days = None
-            # self._n_time_points = len(full_data)
-            self._n_time_points = 48
+            self._n_time_points = len(full_data)
             self.set_time = RangeSet(self._n_time_points)
 
-            price_data = full_data[column_name].to_list()[:48]
+            price_data = full_data[column_name].to_list()
             self.LMP = {t: price_data[t - 1] for t in self.set_time}
 
             return
@@ -397,6 +396,35 @@ class PriceTakerModel(ConcreteModel):
             use_stochastic_build=True,
             **kwargs,
         )
+
+        # If append_lmp_data is automatic, need to append the LMP data.
+        # Check if LMP has already been defined with the append_lmp_data
+        # function above
+        LMP_exists = False
+        try:
+            _ = self.LMP
+            LMP_exists = True
+        except:
+            LMP_exists = False
+
+        # Iterate through model to append LMP data if it's been defined
+        # and the model says it should be (default)
+        period = self.mp_model.period
+        for p in period:
+            for blk in period[p].component_data_objects(Block):
+                if isinstance(blk, OperationModelData):
+                    if blk.config.append_lmp_data:
+                        if not LMP_exists:
+                            raise ValueError(f"OperationModelData has been defined to automatically " +
+                                             f"populate LMP data. However, m.LMP does not exist. " +
+                                             f"Please run append_lmp_data() first or set the " +
+                                             f"append_lmp_data attribute to False when configuring " +
+                                             f"your OperationModelData object.")
+                        blk.LMP = self.LMP[p]
+
+
+
+
     #TODO: (1) Need to determine whether the minimum opterating power can be a parameter 
     #      or whether it largly depends on the capacity of the plant. 
     #      (2) Need to determine if the start up and shutdown limits can be modeled as bulk amounts vs

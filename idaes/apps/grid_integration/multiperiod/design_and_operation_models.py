@@ -13,6 +13,7 @@
 
 from pyomo.environ import (
     Var,
+    Param,
     Binary,
     Expression,
     NonNegativeReals,
@@ -136,12 +137,20 @@ class OperationModelData(SkeletonUnitModelData):
             doc="Should op_mode, startup, shutdown vars be defined?",
         ),
     )
+    CONFIG.declare(
+        "append_lmp_data",
+        ConfigValue(
+            default=True,
+            domain=In([True, False]),
+            doc="Should LMP data automatically be appended to the model?"
+        )
+    )
 
     CONFIG.declare(
         "capacity_var",
         ConfigValue(
-            default = None,
-            doc = "capacity variable"
+            default=None,
+            doc="capacity variable"
 
         ),
     )
@@ -164,6 +173,13 @@ class OperationModelData(SkeletonUnitModelData):
             self.shutdown = Var(
                 within=Binary,
                 doc="Binary var: 1 if the shutdown is initiated, 0 otherwise",
+            )
+        
+        if self.config.append_lmp_data:
+            self.LMP = Param(
+                initialize=1, 
+                mutable=True,
+                doc="Parameter: Will be updated to LMP value at given time"
             )
     
         self.config.model_func(self, **self.config.model_args)
