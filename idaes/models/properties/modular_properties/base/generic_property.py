@@ -1296,6 +1296,13 @@ class ModularPropertiesInitializer(InitializerBase):
                     k.inherent_equilibrium_constraint.deactivate()
 
         # ---------------------------------------------------------------------
+        # If present, initialize critical properties
+        for k in model.values():
+            # We only need to look for one critical property as it is all or nothing
+            if hasattr(k, "pressure_crit"):
+                self.initialize_critical_props(k)
+
+        # ---------------------------------------------------------------------
         # If present, initialize bubble and dew point calculations
         for k in model.values():
             T_units = k.params.get_metadata().default_units.TEMPERATURE
@@ -1560,6 +1567,35 @@ class ModularPropertiesInitializer(InitializerBase):
         init_log.info("Property initialization routine finished.")
 
         return None
+
+    def initialize_critical_props(self, state_data):
+        params = state_data.params
+        # Use mole weighted sum of component critical properties
+        state_data.compress_fact_crit.set_value(
+            sum(
+                state_data.mole_frac_comp[j]
+                * params.get_component(j).compress_fact_crit
+                for j in state_data.component_list
+            )
+        )
+        state_data.dens_mol_crit.set_value(
+            sum(
+                state_data.mole_frac_comp[j] * params.get_component(j).dens_mol_crit
+                for j in state_data.component_list
+            )
+        )
+        state_data.pressure_crit.set_value(
+            sum(
+                state_data.mole_frac_comp[j] * params.get_component(j).pressure_crit
+                for j in state_data.component_list
+            )
+        )
+        state_data.temperature_crit.set_value(
+            sum(
+                state_data.mole_frac_comp[j] * params.get_component(j).temperature_crit
+                for j in state_data.component_list
+            )
+        )
 
 
 class _GenericStateBlock(StateBlock):

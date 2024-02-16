@@ -25,6 +25,7 @@ from pyomo.util.check_units import assert_units_equivalent
 from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterData,
     GenericStateBlock,
+    ModularPropertiesInitializer,
 )
 from idaes.models.properties.modular_properties.base.tests.dummy_eos import DummyEoS
 
@@ -42,6 +43,7 @@ from idaes.core.util.exceptions import ConfigurationError, PropertyPackageError
 from idaes.models.properties.modular_properties.phase_equil.henry import HenryType
 from idaes.core.base.property_meta import UnitSet
 from idaes.core.initialization import BlockTriangularizationInitializer
+from idaes.models.properties.modular_properties.eos.ceos import Cubic, CubicType
 
 import idaes.logger as idaeslog
 
@@ -1680,7 +1682,7 @@ class TestCriticalProps:
         assert isinstance(m.props[1].temperature_crit, Var)
 
     @pytest.mark.unit
-    def test_critical_props_attribute_errord(self):
+    def test_critical_props_attribute_error(self):
         class DummyEoS2(DummyEoS):
             @staticmethod
             def build_critical_properties(b, *args, **kwargs):
@@ -1711,3 +1713,99 @@ class TestCriticalProps:
             assert not hasattr(m.props[1], "dens_mol_crit")
             assert not hasattr(m.props[1], "pressure_crit")
             assert not hasattr(m.props[1], "temperature_crit")
+
+    @pytest.mark.unit
+    def test_initialize_critical_props(self):
+        m = ConcreteModel()
+
+        class DummyEoS2(DummyEoS):
+            @staticmethod
+            def build_critical_properties(b, *args, **kwargs):
+                b._dummy_crit_executed = True
+
+        # Dummy params block
+        m.params = DummyParameterBlock(
+            components={
+                "a": {
+                    "parameter_data": {
+                        "compress_fact_crit": 0.1,
+                        "dens_mol_crit": 1,
+                        "pressure_crit": 1e5,
+                        "temperature_crit": 100,
+                    }
+                },
+                "b": {
+                    "parameter_data": {
+                        "compress_fact_crit": 0.2,
+                        "dens_mol_crit": 2,
+                        "pressure_crit": 2e5,
+                        "temperature_crit": 200,
+                    }
+                },
+                "c": {
+                    "parameter_data": {
+                        "compress_fact_crit": 0.3,
+                        "dens_mol_crit": 3,
+                        "pressure_crit": 3e5,
+                        "temperature_crit": 300,
+                    }
+                },
+            },
+            phases={
+                "Vap": {
+                    "type": LiquidPhase,
+                    "equation_of_state": DummyEoS2,
+                },
+                "Liq": {
+                    "type": LiquidPhase,
+                    "equation_of_state": DummyEoS2,
+                },
+            },
+            base_units={
+                "time": pyunits.s,
+                "length": pyunits.m,
+                "mass": pyunits.kg,
+                "amount": pyunits.mol,
+                "temperature": pyunits.K,
+            },
+            state_definition=modules[__name__],
+            pressure_ref=100000.0,
+            temperature_ref=300,
+            parameter_data={
+                "PR_kappa": {
+                    ("a", "a"): 0.0,
+                    ("a", "b"): 0.0,
+                    ("a", "c"): 0.0,
+                    ("b", "a"): 0.0,
+                    ("b", "b"): 0.0,
+                    ("b", "c"): 0.0,
+                    ("c", "a"): 0.0,
+                    ("c", "b"): 0.0,
+                    ("c", "c"): 0.0,
+                },
+            },
+        )
+
+        m.props = m.params.build_state_block([1], defined_state=False)
+
+        # Add common variables
+        m.props[1].mole_frac_comp = Var(
+            m.params.component_list, initialize=0.5, bounds=(1e-12, 1)
+        )
+        m.props[1].mole_frac_comp["a"].fix(0.4)
+        m.props[1].mole_frac_comp["b"].fix(0.6)
+        m.props[1].mole_frac_comp["c"].fix(1e-8)
+
+        # Build critical props
+        m.props[1]._critical_props()
+
+        # Initialize critical props
+        initializer = ModularPropertiesInitializer()
+        initializer.initialize_critical_props(m.props[1])
+
+        assert (
+            value(m.props[1].compress_fact_crit) == 0.4 * 0.1 + 0.6 * 0.2 + 1e-8 * 0.3
+        )
+        assert value(m.props[1].dens_mol_crit) == 0.4 * 1 + 0.6 * 2 + 1e-8 * 3
+        assert value(m.props[1].pressure_crit) == 0.4 * 1e5 + 0.6 * 2e5 + 1e-8 * 3e5
+        assert value(m.props[1].temperature_crit) == 0.4 * 1e2 + 0.6 * 2e2 + 1e-8 * 3e2
