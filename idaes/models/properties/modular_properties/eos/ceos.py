@@ -1012,6 +1012,15 @@ class Cubic(EoSBase):
             * m.dens_mol_crit
         )
 
+    @staticmethod
+    def list_critical_property_constraint_names():
+        return [
+            "dens_mol_crit_eq",
+            "compress_fact_crit_eq",
+            "A_crit",
+            "B_crit",
+        ]
+
 
 def _dZ_dT(blk, p):
     pobj = blk.params.get_phase(p)

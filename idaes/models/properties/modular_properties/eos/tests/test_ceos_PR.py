@@ -35,12 +35,16 @@ from pyomo.util.check_units import assert_units_consistent
 from idaes.core import declare_process_block_class, LiquidPhase, VaporPhase, SolidPhase
 from idaes.models.properties.modular_properties.eos.ceos import Cubic, CubicType
 from idaes.models.properties.modular_properties.base.generic_property import (
+    GenericParameterBlock,
     GenericParameterData,
+    ModularPropertiesInitializer,
 )
 from idaes.core.util.exceptions import PropertyNotSupportedError, ConfigurationError
 from idaes.core.util.constants import Constants as const
 from idaes.models.properties.modular_properties.eos.ceos import cubic_roots_available
 from idaes.core.solvers import get_solver
+from idaes.core.initialization.initializer_base import InitializationStatus
+from idaes.models.properties.modular_properties.state_definitions import FTPx
 
 
 # Dummy method for property method calls
@@ -1078,11 +1082,13 @@ class TestCEOSCriticalProps:
         m = ConcreteModel()
 
         # Dummy params block
-        m.params = DummyParameterBlock(
+        m.params = GenericParameterBlock(
             components={
                 "a": {
                     "parameter_data": {
                         "omega": 0.1,
+                        "compress_fact_crit": 1,
+                        "dens_mol_crit": 1,
                         "pressure_crit": 1e5,
                         "temperature_crit": 100,
                     }
@@ -1090,6 +1096,8 @@ class TestCEOSCriticalProps:
                 "b": {
                     "parameter_data": {
                         "omega": 0.2,
+                        "compress_fact_crit": 1,
+                        "dens_mol_crit": 1,
                         "pressure_crit": 2e5,
                         "temperature_crit": 200,
                     }
@@ -1097,17 +1105,14 @@ class TestCEOSCriticalProps:
                 "c": {
                     "parameter_data": {
                         "omega": 0.3,
+                        "compress_fact_crit": 1,
+                        "dens_mol_crit": 1,
                         "pressure_crit": 3e5,
                         "temperature_crit": 300,
                     }
                 },
             },
             phases={
-                "Vap": {
-                    "type": LiquidPhase,
-                    "equation_of_state": Cubic,
-                    "equation_of_state_options": {"type": CubicType.PR},
-                },
                 "Liq": {
                     "type": LiquidPhase,
                     "equation_of_state": Cubic,
@@ -1121,7 +1126,7 @@ class TestCEOSCriticalProps:
                 "amount": pyunits.mol,
                 "temperature": pyunits.K,
             },
-            state_definition=modules[__name__],
+            state_definition=FTPx,
             pressure_ref=100000.0,
             temperature_ref=300,
             parameter_data={
@@ -1140,13 +1145,14 @@ class TestCEOSCriticalProps:
         )
 
         m.props = m.params.state_block_class(
-            [1], defined_state=False, parameters=m.params
+            [1], defined_state=True, parameters=m.params
         )
 
-        # Add common variables
-        m.props[1].mole_frac_comp = Var(
-            m.params.component_list, initialize=0.5, bounds=(1e-12, 1)
-        )
+        # Fix state variables
+        m.props[1].flow_mol.fix(1)
+        m.props[1].pressure.fix(1e5)
+        m.props[1].temperature.fix(300)
+
         m.props[1].mole_frac_comp["a"].fix(0.4)
         m.props[1].mole_frac_comp["b"].fix(0.6)
         m.props[1].mole_frac_comp["c"].fix(1e-8)
@@ -1325,14 +1331,42 @@ class TestCEOSCriticalProps:
 
         assert_units_consistent(model)
 
+        # Check list_critical_property_constraint_names
+        con_list = Cubic.list_critical_property_constraint_names()
+
+        assert con_list == [
+            "dens_mol_crit_eq",
+            "compress_fact_crit_eq",
+            "A_crit",
+            "B_crit",
+        ]
+
+        # Check that names match constraints that were built
+        for c in con_list:
+            assert isinstance(getattr(model.props[1], c), Constraint)
+
     @pytest.mark.component
     @pytest.mark.solver
-    def test_build_critical_props(self, model):
-        # Initialize model
-        model.props[1].compress_fact_crit.set_value(1)
-        model.props[1].pressure_crit.set_value(1.6e5)
-        model.props[1].temperature_crit.set_value(160)
+    def test_initialize_with_critical_props(self, model):
+        initializer = ModularPropertiesInitializer()
 
+        status = initializer.initialize(model.props)
+
+        assert status == InitializationStatus.Ok
+
+        # Confirm results
+        assert value(model.props[1].compress_fact_crit) == pytest.approx(
+            0.321379, rel=1e-5
+        )
+        assert value(model.props[1].pressure_crit) == pytest.approx(1.58138e5, rel=1e-5)
+        assert value(model.props[1].temperature_crit) == pytest.approx(
+            158.138, rel=1e-5
+        )
+        assert value(model.props[1].dens_mol_crit) == pytest.approx(374.238, rel=1e-5)
+
+    @pytest.mark.component
+    @pytest.mark.solver
+    def test_solve_critical_props(self, model):
         # Solve model
         solver = get_solver()
         res = solver.solve(model, tee=True)

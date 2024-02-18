@@ -1296,17 +1296,41 @@ class ModularPropertiesInitializer(InitializerBase):
                     k.inherent_equilibrium_constraint.deactivate()
 
         # ---------------------------------------------------------------------
-        # If present, initialize critical properties
-        for k in model.values():
-            # We only need to look for one critical property as it is all or nothing
-            with k.lock_attribute_creation_context():
-                if hasattr(k, "pressure_crit"):
-                    _initialize_critical_props(k)
-
-        # ---------------------------------------------------------------------
-        # If present, initialize bubble and dew point calculations
+        # If present, initialize bubble and dew point and critical property calculations
         for k in model.values():
             T_units = k.params.get_metadata().default_units.TEMPERATURE
+
+            # List of bubble and dew point constraints
+            cons_list = [
+                "eq_pressure_dew",
+                "eq_pressure_bubble",
+                "eq_temperature_dew",
+                "eq_temperature_bubble",
+                "eq_mole_frac_tbub",
+                "eq_mole_frac_tdew",
+                "eq_mole_frac_pbub",
+                "eq_mole_frac_pdew",
+                "log_mole_frac_tbub_eqn",
+                "log_mole_frac_tdew_eqn",
+                "log_mole_frac_pbub_eqn",
+                "log_mole_frac_pdew_eqn",
+                "mole_frac_comp_eq",
+                "log_mole_frac_comp_eqn",
+            ]
+
+            # Critical point
+            with k.lock_attribute_creation_context():
+                # Only need to look for one, as it is all-or-nothing
+                if hasattr(k, "pressure_crit"):
+                    # Initialize critical point properties
+                    _initialize_critical_props(k)
+                    # Add critical point constraints to cons_list
+                    ref_phase = k._get_critical_ref_phase()
+                    p_config = k.params.get_phase(ref_phase).config
+                    cons_list += (
+                        p_config.equation_of_state.list_critical_property_constraint_names()
+                    )
+
             # Bubble temperature initialization
             if hasattr(k, "_mole_frac_tbub"):
                 model._init_Tbub(k, T_units)
@@ -1323,26 +1347,11 @@ class ModularPropertiesInitializer(InitializerBase):
             if hasattr(k, "_mole_frac_pdew"):
                 model._init_Pdew(k, T_units)
 
-            # Solve bubble and dew point constraints
+            # Solve bubble, dew and critical point constraints
             for c in k.component_objects(Constraint):
                 # Deactivate all constraints not associated with bubble and dew
-                # points
-                if c.local_name not in (
-                    "eq_pressure_dew",
-                    "eq_pressure_bubble",
-                    "eq_temperature_dew",
-                    "eq_temperature_bubble",
-                    "eq_mole_frac_tbub",
-                    "eq_mole_frac_tdew",
-                    "eq_mole_frac_pbub",
-                    "eq_mole_frac_pdew",
-                    "log_mole_frac_tbub_eqn",
-                    "log_mole_frac_tdew_eqn",
-                    "log_mole_frac_pbub_eqn",
-                    "log_mole_frac_pdew_eqn",
-                    "mole_frac_comp_eq",
-                    "log_mole_frac_comp_eqn",
-                ):
+                # points or critical points
+                if c.local_name not in cons_list:
                     c.deactivate()
 
         # If StateBlock has active constraints (i.e. has bubble and/or dew
@@ -1352,7 +1361,8 @@ class ModularPropertiesInitializer(InitializerBase):
                 if not degrees_of_freedom(b) == 0:
                     raise InitializationError(
                         f"{b.name} Unexpected degrees of freedom during "
-                        f"initialization at bubble and dew point step: {degrees_of_freedom(b)}."
+                        f"initialization at bubble and dew and critical point step: "
+                        f"{degrees_of_freedom(b)}."
                     )
                 with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                     solve_strongly_connected_components(
@@ -1361,7 +1371,7 @@ class ModularPropertiesInitializer(InitializerBase):
                         solve_kwds={"tee": slc.tee},
                         calc_var_kwds=self.config.calculate_variable_options,
                     )
-        init_log.info("Dew and bubble point initialization completed.")
+        init_log.info("Bubble, dew and critical point initialization completed.")
 
         # ---------------------------------------------------------------------
         # Calculate _teq if required
@@ -1741,17 +1751,37 @@ class _GenericStateBlock(StateBlock):
         opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
-        # If present, initialize critical properties
-        for k in blk.values():
-            # We only need to look for one critical property as it is all or nothing
-            with k.lock_attribute_creation_context():
-                if hasattr(k, "pressure_crit"):
-                    _initialize_critical_props(k)
-
-        # ---------------------------------------------------------------------
-        # If present, initialize bubble and dew point calculations
+        # If present, initialize bubble and dew point, and critical property calculations
         for k in blk.values():
             T_units = k.params.get_metadata().default_units.TEMPERATURE
+
+            # List of bubble and dew point constraints
+            cons_list = [
+                "eq_pressure_dew",
+                "eq_pressure_bubble",
+                "eq_temperature_dew",
+                "eq_temperature_bubble",
+                "eq_mole_frac_tbub",
+                "eq_mole_frac_tdew",
+                "eq_mole_frac_pbub",
+                "eq_mole_frac_pdew",
+                "log_mole_frac_tbub_eqn",
+                "log_mole_frac_tdew_eqn",
+                "log_mole_frac_pbub_eqn",
+                "log_mole_frac_pdew_eqn",
+                "mole_frac_comp_eq",
+                "log_mole_frac_comp_eqn",
+            ]
+
+            # Critical point
+            with k.lock_attribute_creation_context():
+                # Only need to look for one, as it is all-or-nothing
+                if hasattr(k, "pressure_crit"):
+                    # Initialize critical point properties
+                    _initialize_critical_props(k)
+                    # Add critical point constraints to cons_list
+                    cons_list += k.list_critical_property_constraint_names()
+
             # Bubble temperature initialization
             if hasattr(k, "_mole_frac_tbub"):
                 blk._init_Tbub(k, T_units)
@@ -1768,26 +1798,11 @@ class _GenericStateBlock(StateBlock):
             if hasattr(k, "_mole_frac_pdew"):
                 blk._init_Pdew(k, T_units)
 
-            # Solve bubble and dew point constraints
+            # Solve bubble, dew and critical point constraints
             for c in k.component_objects(Constraint):
                 # Deactivate all constraints not associated with bubble and dew
-                # points
-                if c.local_name not in (
-                    "eq_pressure_dew",
-                    "eq_pressure_bubble",
-                    "eq_temperature_dew",
-                    "eq_temperature_bubble",
-                    "eq_mole_frac_tbub",
-                    "eq_mole_frac_tdew",
-                    "eq_mole_frac_pbub",
-                    "eq_mole_frac_pdew",
-                    "log_mole_frac_tbub_eqn",
-                    "log_mole_frac_tdew_eqn",
-                    "log_mole_frac_pbub_eqn",
-                    "log_mole_frac_pdew_eqn",
-                    "mole_frac_comp_eq",
-                    "log_mole_frac_comp_eqn",
-                ):
+                # points or critical points
+                if c.local_name not in cons_list:
                     c.deactivate()
 
         # If StateBlock has active constraints (i.e. has bubble and/or dew
@@ -1801,12 +1816,12 @@ class _GenericStateBlock(StateBlock):
             if dof > 0:
                 raise InitializationError(
                     f"{blk.name} Unexpected degrees of freedom during "
-                    f"initialization at bubble and dew point step: {dof}."
+                    f"initialization at bubble, dew and critical point step: {dof}."
                 )
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
             init_log.info(
-                "Dew and bubble point initialization: {}.".format(
+                "Bubble, dew and critical point initialization: {}.".format(
                     idaeslog.condition(res)
                 )
             )
