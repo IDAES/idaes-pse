@@ -43,6 +43,10 @@ def pytest_configure(config: pytest.Config):
             strict=False,
             reason="tensorflow ImportError on 3.11",
         ),
+        "*/surrogates/sco2/alamo/*": pytest.mark.xfail(
+            run=False,
+            reason="notebooks require ALAMO to run",
+        ),
     }
     config.stash[marked] = []
 
