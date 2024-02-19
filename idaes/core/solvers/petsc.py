@@ -733,7 +733,7 @@ def calculate_time_derivatives(m, time, between=None):
     """
     # Leave between an optional argument for backwards compatibility
     if between is None:
-        between=time
+        between = time
     for var in m.component_objects(pyo.Var):
         if isinstance(var, pyodae.DerivativeVar):
             if time in ComponentSet(var.get_continuousset_list()):
@@ -760,9 +760,11 @@ def calculate_time_derivatives(m, time, between=None):
                         if t == time.first() or t == time.last():
                             try:
                                 if disc_eq[t].active and not deriv[t].fixed:
-                                    old_value = deriv[t].value 
+                                    old_value = deriv[t].value
                                     deriv[t].value = 0  # Make sure there is a value
-                                    calculate_variable_from_constraint(deriv[t], disc_eq[t])
+                                    calculate_variable_from_constraint(
+                                        deriv[t], disc_eq[t]
+                                    )
                             except KeyError:
                                 # Discretization and continuity equations may or may not exist at the first or last time
                                 # points depending on the method. Backwards skips first, forwards skips last, central skips
@@ -780,9 +782,11 @@ def calculate_time_derivatives(m, time, between=None):
                             # this the desired behavior?
                             try:
                                 if disc_eq[t].active and not deriv[t].fixed:
-                                    old_value = deriv[t].value 
+                                    old_value = deriv[t].value
                                     deriv[t].value = 0  # Make sure there is a value
-                                    calculate_variable_from_constraint(deriv[t], disc_eq[t])
+                                    calculate_variable_from_constraint(
+                                        deriv[t], disc_eq[t]
+                                    )
                             except ValueError:
                                 # Reset deriv value to old value
                                 if disc_eq[t].active and not deriv[t].fixed:

@@ -989,6 +989,7 @@ def test_representative_time_not_in_between():
             m, time=m.time, between=[0.0, 10.0], representative_time=5.0
         )
 
+
 @pytest.mark.unit
 @pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
 def test_calculate_derivatives():
@@ -1019,14 +1020,15 @@ def test_calculate_derivatives():
             "--ts_type": "beuler",
             "--ts_dt": 3e-2,
         },
-        skip_initial=True, # With u and x fixed, no variables to solve for at t0
-        calculate_derivatives=True
+        skip_initial=True,  # With u and x fixed, no variables to solve for at t0
+        calculate_derivatives=True,
     )
     # No value assigned at 0 because there's no corresponding discretization equation
     assert m.dxdt[0].value is None
     # It should backfill values for interpolated points like t=1
     assert pyo.value(m.dxdt[1]) == pytest.approx(-0.7580125427537873, rel=1e-3)
     assert pyo.value(m.dxdt[2]) == pytest.approx(-0.2034733131369807, rel=1e-3)
+
 
 @pytest.mark.unit
 @pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
@@ -1058,13 +1060,14 @@ def test_calculate_derivatives_integrate_first_half():
             "--ts_type": "beuler",
             "--ts_dt": 3e-2,
         },
-        skip_initial=True, # With u and x fixed, no variables to solve for at t0
-        calculate_derivatives=True
+        skip_initial=True,  # With u and x fixed, no variables to solve for at t0
+        calculate_derivatives=True,
     )
     # No value assigned at 0 because there's no corresponding discretization equation
     assert m.dxdt[0].value is None
     assert pyo.value(m.dxdt[1]) == pytest.approx(-0.7580125427537873, rel=1e-3)
     assert m.dxdt[2].value is None
+
 
 @pytest.mark.unit
 @pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
@@ -1096,13 +1099,14 @@ def test_calculate_derivatives_integrate_second_half():
             "--ts_type": "beuler",
             "--ts_dt": 3e-2,
         },
-        skip_initial=True, # With u and x fixed, no variables to solve for at t0
-        calculate_derivatives=True
+        skip_initial=True,  # With u and x fixed, no variables to solve for at t0
+        calculate_derivatives=True,
     )
     # No value assigned at 0 because there's no corresponding discretization equation
     assert m.dxdt[0].value is None
     assert m.dxdt[1].value is None
     assert pyo.value(m.dxdt[2]) == pytest.approx(-0.2034733131369807, rel=1e-3)
+
 
 @pytest.mark.unit
 @pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
@@ -1133,8 +1137,8 @@ def test_calculate_derivatives_forward_difference():
             "--ts_type": "beuler",
             "--ts_dt": 3e-2,
         },
-        skip_initial=True, # With u and x fixed, no variables to solve for at t0
-        calculate_derivatives=True
+        skip_initial=True,  # With u and x fixed, no variables to solve for at t0
+        calculate_derivatives=True,
     )
     # It should backfill values for interpolated points like t=1
     assert pyo.value(m.dxdt[0]) == pytest.approx(-0.7580125427537873, rel=1e-3)
