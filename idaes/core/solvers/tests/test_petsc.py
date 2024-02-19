@@ -982,7 +982,7 @@ def test_representative_time_not_in_between():
     m.diff_eq = pyo.Constraint(m.time, rule=diff_eq_rule)
 
     discretizer = pyo.TransformationFactory("dae.finite_difference")
-    discretizer.apply_to(m, nfe=1, scheme="BACKWARD")
+    discretizer.apply_to(m, nfe=2, scheme="BACKWARD")
 
     with pytest.raises(RuntimeError, match="representative_time"):
         petsc.petsc_dae_by_time_element(
@@ -1006,7 +1006,7 @@ def test_calculate_derivatives():
     m.diff_eq = pyo.Constraint(m.time, rule=diff_eq_rule)
 
     discretizer = pyo.TransformationFactory("dae.finite_difference")
-    discretizer.apply_to(m, nfe=1, scheme="BACKWARD")
+    discretizer.apply_to(m, nfe=2, scheme="BACKWARD")
 
     m.u.fix(1.0)
     m.x[0].fix(0.0)
@@ -1046,7 +1046,7 @@ def test_calculate_derivatives_integrate_first_half():
     m.diff_eq = pyo.Constraint(m.time, rule=diff_eq_rule)
 
     discretizer = pyo.TransformationFactory("dae.finite_difference")
-    discretizer.apply_to(m, nfe=1, scheme="BACKWARD")
+    discretizer.apply_to(m, nfe=2, scheme="BACKWARD")
 
     m.u.fix(1.0)
     m.x[0].fix(0.0)
@@ -1085,7 +1085,7 @@ def test_calculate_derivatives_integrate_second_half():
     m.diff_eq = pyo.Constraint(m.time, rule=diff_eq_rule)
 
     discretizer = pyo.TransformationFactory("dae.finite_difference")
-    discretizer.apply_to(m, nfe=1, scheme="BACKWARD")
+    discretizer.apply_to(m, nfe=2, scheme="BACKWARD")
 
     m.u.fix(1.0)
     m.x[1].fix(-0.7580125427537873)
@@ -1124,7 +1124,7 @@ def test_calculate_derivatives_forward_difference():
     m.diff_eq = pyo.Constraint(m.time, rule=diff_eq_rule)
 
     discretizer = pyo.TransformationFactory("dae.finite_difference")
-    discretizer.apply_to(m, nfe=1, scheme="FORWARD")
+    discretizer.apply_to(m, nfe=2, scheme="FORWARD")
 
     m.u.fix(1.0)
     m.x[0].fix(0.0)
@@ -1146,3 +1146,123 @@ def test_calculate_derivatives_forward_difference():
     # No value assigned at 2 because there's no corresponding discretization equation
     # TODO I don't understand how a value is getting assigned here
     # assert m.dxdt[2].value is None
+
+
+@pytest.mark.unit
+@pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
+def test_calculate_derivatives_central_difference():
+    m = pyo.ConcreteModel()
+
+    m.time = pyodae.ContinuousSet(initialize=(0.0, 1.0, 2.0))
+    m.x = pyo.Var(m.time)
+    m.u = pyo.Var(m.time)
+    m.dxdt = pyodae.DerivativeVar(m.x, wrt=m.time)
+
+    def diff_eq_rule(m, t):
+        return m.dxdt[t] == m.x[t] ** 2 - m.u[t]
+
+    m.diff_eq = pyo.Constraint(m.time, rule=diff_eq_rule)
+
+    discretizer = pyo.TransformationFactory("dae.finite_difference")
+    discretizer.apply_to(m, nfe=2, scheme="CENTRAL")
+
+    m.u.fix(1.0)
+    m.x[0].fix(0.0)
+
+    res = petsc.petsc_dae_by_time_element(
+        m,
+        time=m.time,
+        between=[0.0, 2.0],
+        ts_options={
+            "--ts_type": "beuler",
+            "--ts_dt": 3e-2,
+        },
+        skip_initial=True,  # With u and x fixed, no variables to solve for at t0
+        calculate_derivatives=True,
+    )
+
+    assert m.dxdt[0].value is None
+    # It should backfill values for interpolated points like t=1
+    assert pyo.value(m.dxdt[1]) == pytest.approx(-0.480742927945384, rel=1e-3)
+    # No value assigned at 2 because there's no corresponding discretization equation
+    # TODO I don't understand how a value is getting assigned here
+    # assert m.dxdt[2].value is None
+
+
+@pytest.mark.unit
+@pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
+def test_calculate_derivatives_collocation_lr():
+    m = pyo.ConcreteModel()
+
+    m.time = pyodae.ContinuousSet(initialize=(0.0, 1.0, 2.0))
+    m.x = pyo.Var(m.time)
+    m.u = pyo.Var(m.time)
+    m.dxdt = pyodae.DerivativeVar(m.x, wrt=m.time)
+
+    def diff_eq_rule(m, t):
+        return m.dxdt[t] == m.x[t] ** 2 - m.u[t]
+
+    m.diff_eq = pyo.Constraint(m.time, rule=diff_eq_rule)
+
+    discretizer = pyo.TransformationFactory("dae.collocation")
+    discretizer.apply_to(m, nfe=2, scheme="LAGRANGE-RADAU")
+
+    m.u.fix(1.0)
+    m.x[0].fix(0.0)
+
+    res = petsc.petsc_dae_by_time_element(
+        m,
+        time=m.time,
+        between=[0.0, 2.0],
+        ts_options={
+            "--ts_type": "beuler",
+            "--ts_dt": 3e-2,
+        },
+        skip_initial=True,  # With u and x fixed, no variables to solve for at t0
+        calculate_derivatives=True,
+    )
+
+    assert m.dxdt[0].value is None
+    # It should backfill values for interpolated points like t=1
+    assert pyo.value(m.dxdt[1]) == pytest.approx(-0.3787483909827891, rel=1e-3)
+    assert pyo.value(m.dxdt[2]) == pytest.approx(-0.07952012649572815, rel=1e-3)
+
+
+# This test fails because the PETSc interface doesn't work with Lagrange-Legendre collocation
+# @pytest.mark.unit
+# @pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
+# def test_calculate_derivatives_collocation_ll():
+#     m = pyo.ConcreteModel()
+
+#     m.time = pyodae.ContinuousSet(initialize=(0.0, 1.0, 2.0))
+#     m.x = pyo.Var(m.time)
+#     m.u = pyo.Var(m.time)
+#     m.dxdt = pyodae.DerivativeVar(m.x, wrt=m.time)
+
+#     def diff_eq_rule(m, t):
+#         return m.dxdt[t] == m.x[t] ** 2 - m.u[t]
+
+#     m.diff_eq = pyo.Constraint(m.time, rule=diff_eq_rule)
+
+#     discretizer = pyo.TransformationFactory("dae.collocation")
+#     discretizer.apply_to(m, nfe=2, scheme="LAGRANGE-LEGENDRE")
+
+#     m.u.fix(1.0)
+#     m.x[0].fix(0.0)
+
+#     res = petsc.petsc_dae_by_time_element(
+#         m,
+#         time=m.time,
+#         between=[0.0, 2.0],
+#         ts_options={
+#             "--ts_type": "beuler",
+#             "--ts_dt": 3e-2,
+#         },
+#         skip_initial=True,  # With u and x fixed, no variables to solve for at t0
+#         calculate_derivatives=True,
+#     )
+
+#     assert m.dxdt[0].value is None
+#     # It should backfill values for interpolated points like t=1
+#     assert pyo.value(m.dxdt[1]) == pytest.approx(-0.3787483909827891, rel=1e-3)
+#     assert pyo.value(m.dxdt[2]) == pytest.approx(-0.07952012649572815, rel=1e-3)
