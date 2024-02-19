@@ -43,6 +43,8 @@ def pytest_configure(config: pytest.Config):
             run=False,
             reason="notebooks require ALAMO to run",
         ),
+        "*/surrogates/sco2/omlt/keras_training*": tensorflow_py311_win,
+        "*/surrogates/sco2/omlt/flowsheet_optimization*": tensorflow_py311_win,
     }
     config.stash[marked] = []
 
