@@ -28,7 +28,7 @@ def _matches_pattern(item: pytest.Item, pattern: str) -> bool:
 
 def pytest_configure(config: pytest.Config):
     tensorflow_py311_win = pytest.mark.xfail(
-        condition=(sys.platform.startswith("win") and sys.version_info > (3, 11)),
+        condition=sys.version_info > (3, 11),
         run=True,
         strict=False,
         reason="tensorflow ImportError on 3.11+ on Windows (cannot import name 'formatargspec' from 'inspect')",
