@@ -67,7 +67,7 @@ Cubic equations of state require the following parameters to be defined:
 
 1. `omega` (Pitzer acentricity factor) needs to be defined for each component (in the `parameter_data` for each component).
 2. `kappa` (binary interaction parameters) needs to be defined for each component pair in the system. This parameter needs to be defined in the general `parameter_data` argument for the overall property package (as it can be used in multiple phases).
-3. Component critical properties (`compresss_fact_crit`, `dens_mol_crit`, `pressure_crit`, and `temperature_crit`) are often required as well.
+3. Component critical properties (`compress_fact_crit`, `dens_mol_crit`, `pressure_crit`, and `temperature_crit`) are often required as well.
 
 Calculation of Properties
 -------------------------
