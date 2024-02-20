@@ -267,9 +267,7 @@ class UnitSet(object):
     # Backward compatibility name
     @property
     def MOLAR_VOLUME(self):
-        msg = (
-            f"The unit name MOLAR_VOLUME is being deprecated in " "favor of VOLUME_MOL."
-        )
+        msg = "The unit name MOLAR_VOLUME is being deprecated in favor of VOLUME_MOL."
         deprecation_warning(msg=msg, logger=_log, version="2.3.0", remove_in="3.0.0")
         return self.VOLUME_MOLE
 
