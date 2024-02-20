@@ -104,8 +104,8 @@ class TestParameterSweepSpecification:
     def test_add_sampled_input(self):
         spec = ParameterSweepSpecification()
 
-        spec.add_sampled_input("foo", "model.foo", 0, 10)
-        spec.add_sampled_input("bar", "model.bar", 20, 40)
+        spec.add_sampled_input("model.foo", 0, 10, name="foo")
+        spec.add_sampled_input("model.bar", 20, 40, name="bar")
 
         assert len(spec.inputs) == 2
 
@@ -120,11 +120,24 @@ class TestParameterSweepSpecification:
         assert spec.inputs["bar"]["upper"] == 40
 
     @pytest.mark.unit
+    def test_add_sampled_input_no_name(self):
+        spec = ParameterSweepSpecification()
+
+        spec.add_sampled_input("model.foo", 0, 10)
+
+        assert len(spec.inputs) == 1
+
+        assert isinstance(spec.inputs["model.foo"], dict)
+        assert spec.inputs["model.foo"]["pyomo_path"] == "model.foo"
+        assert spec.inputs["model.foo"]["lower"] == 0
+        assert spec.inputs["model.foo"]["upper"] == 10
+
+    @pytest.mark.unit
     def test_generate_pysmo_data_input(self):
         spec = ParameterSweepSpecification()
 
-        spec.add_sampled_input("foo", "model.foo", 0, 10)
-        spec.add_sampled_input("bar", "model.bar", 20, 40)
+        spec.add_sampled_input("model.foo", 0, 10, name="foo")
+        spec.add_sampled_input("model.bar", 20, 40, name="bar")
 
         data_spec = spec._generate_pysmo_data_input()
 
@@ -187,8 +200,8 @@ class TestParameterSweepSpecification:
         spec = ParameterSweepSpecification()
         spec.set_sampling_method(LatinHypercubeSampling)
 
-        spec.add_sampled_input("foo", "model.foo", 0, 10)
-        spec.add_sampled_input("bar", "model.bar", 20, 40)
+        spec.add_sampled_input("model.foo", 0, 10, name="foo")
+        spec.add_sampled_input("model.bar", 20, 40, name="bar")
 
         with pytest.raises(ValueError, match="Please set a sample size."):
             spec.generate_samples()
@@ -198,8 +211,8 @@ class TestParameterSweepSpecification:
         spec = ParameterSweepSpecification()
         spec.set_sampling_method(LatinHypercubeSampling)
 
-        spec.add_sampled_input("foo", "model.foo", 0, 10)
-        spec.add_sampled_input("bar", "model.bar", 20, 40)
+        spec.add_sampled_input("model.foo", 0, 10, name="foo")
+        spec.add_sampled_input("model.bar", 20, 40, name="bar")
 
         spec.set_sample_size(0)
 
@@ -213,8 +226,8 @@ class TestParameterSweepSpecification:
         spec = ParameterSweepSpecification()
         spec.set_sampling_method(LatinHypercubeSampling)
 
-        spec.add_sampled_input("foo", "model.foo", 0, 10)
-        spec.add_sampled_input("bar", "model.bar", 20, 40)
+        spec.add_sampled_input("model.foo", 0, 10, name="foo")
+        spec.add_sampled_input("model.bar", 20, 40, name="bar")
 
         spec.set_sample_size(0.5)
 
@@ -226,8 +239,8 @@ class TestParameterSweepSpecification:
         spec = ParameterSweepSpecification()
         spec.set_sampling_method(UniformSampling)
 
-        spec.add_sampled_input("foo", "model.foo", 0, 10)
-        spec.add_sampled_input("bar", "model.bar", 20, 40)
+        spec.add_sampled_input("model.foo", 0, 10, name="foo")
+        spec.add_sampled_input("model.bar", 20, 40, name="bar")
 
         spec.set_sample_size(0.5)
 
@@ -242,8 +255,8 @@ class TestParameterSweepSpecification:
         spec = ParameterSweepSpecification()
         spec.set_sampling_method(UniformSampling)
 
-        spec.add_sampled_input("foo", "model.foo", 0, 10)
-        spec.add_sampled_input("bar", "model.bar", 20, 40)
+        spec.add_sampled_input("model.foo", 0, 10, name="foo")
+        spec.add_sampled_input("model.bar", 20, 40, name="bar")
 
         spec.set_sample_size([4, 3])
 
@@ -276,8 +289,8 @@ class TestParameterSweepSpecification:
         spec = ParameterSweepSpecification()
         spec.set_sampling_method(LatinHypercubeSampling)
 
-        spec.add_sampled_input("foo", "model.foo", 0, 10)
-        spec.add_sampled_input("bar", "model.bar", 20, 40)
+        spec.add_sampled_input("model.foo", 0, 10, name="foo")
+        spec.add_sampled_input("model.bar", 20, 40, name="bar")
 
         spec.set_sample_size(10)
 
@@ -289,8 +302,8 @@ class TestParameterSweepSpecification:
         spec = ParameterSweepSpecification()
         spec.set_sampling_method(CVTSampling)
 
-        spec.add_sampled_input("foo", "model.foo", 0, 10)
-        spec.add_sampled_input("bar", "model.bar", 20, 40)
+        spec.add_sampled_input("model.foo", 0, 10, name="foo")
+        spec.add_sampled_input("model.bar", 20, 40, name="bar")
 
         spec.set_sample_size(10)
 
@@ -302,8 +315,8 @@ class TestParameterSweepSpecification:
         spec = ParameterSweepSpecification()
         spec.set_sampling_method(HaltonSampling)
 
-        spec.add_sampled_input("foo", "model.foo", 0, 10)
-        spec.add_sampled_input("bar", "model.bar", 20, 40)
+        spec.add_sampled_input("model.foo", 0, 10, name="foo")
+        spec.add_sampled_input("model.bar", 20, 40, name="bar")
 
         spec.set_sample_size(10)
 
@@ -315,8 +328,8 @@ class TestParameterSweepSpecification:
         spec = ParameterSweepSpecification()
         spec.set_sampling_method(HammersleySampling)
 
-        spec.add_sampled_input("foo", "model.foo", 0, 10)
-        spec.add_sampled_input("bar", "model.bar", 20, 40)
+        spec.add_sampled_input("model.foo", 0, 10, name="foo")
+        spec.add_sampled_input("model.bar", 20, 40, name="bar")
 
         spec.set_sample_size(10)
 
@@ -327,8 +340,8 @@ class TestParameterSweepSpecification:
     def test_to_dict(self):
         spec = ParameterSweepSpecification()
         spec.set_sampling_method(UniformSampling)
-        spec.add_sampled_input("foo", "model.foo", 0, 10)
-        spec.add_sampled_input("bar", "model.bar", 20, 40)
+        spec.add_sampled_input("model.foo", 0, 10, name="foo")
+        spec.add_sampled_input("model.bar", 20, 40, name="bar")
         spec.set_sample_size([4, 3])
         spec.generate_samples()
 
@@ -388,8 +401,8 @@ class TestParameterSweepSpecification:
 
         spec = ParameterSweepSpecification()
         spec.set_sampling_method(UniformSampling)
-        spec.add_sampled_input("foo", "model.foo", 0, 10)
-        spec.add_sampled_input("bar", "model.bar", 20, 40)
+        spec.add_sampled_input("model.foo", 0, 10, name="foo")
+        spec.add_sampled_input("model.bar", 20, 40, name="bar")
         spec.set_sample_size([4, 3])
         spec.generate_samples()
 
@@ -551,9 +564,9 @@ class TestParameterSweepSpecification:
 
 spec = ParameterSweepSpecification()
 spec.set_sampling_method(LatinHypercubeSampling)
-spec.add_sampled_input("v1", "v1", 0, 10)
-spec.add_sampled_input("v2", "v2", 20, 40)
-spec.add_sampled_input("p2", "p2", -10, 10)
+spec.add_sampled_input("v1", 0, 10)
+spec.add_sampled_input("v2", 20, 40)
+spec.add_sampled_input("p2", -10, 10)
 spec.set_sample_size(5)
 spec.generate_samples()
 
@@ -579,11 +592,11 @@ psweep_dict = {
     },
     "results": {
         0: {
-            "solved": True,
+            "success": True,
             "results": 2,
         },
         1: {
-            "solved": True,
+            "success": True,
             "results": 6,
         },
     },
@@ -734,9 +747,9 @@ class TestParameterSweepBase:
     def test_get_input_samples_none(self):
         spec2 = ParameterSweepSpecification()
         spec2.set_sampling_method(LatinHypercubeSampling)
-        spec2.add_sampled_input("v1", "v1", 0, 10)
-        spec2.add_sampled_input("v2", "v2", 20, 40)
-        spec2.add_sampled_input("p2", "p2", -10, 10)
+        spec2.add_sampled_input("v1", 0, 10)
+        spec2.add_sampled_input("v2", 20, 40)
+        spec2.add_sampled_input("p2", -10, 10)
 
         psweep = ParameterSweepBase(
             build_model=self.build_model,
@@ -778,7 +791,7 @@ class TestParameterSweepBase:
 
         spec2 = ParameterSweepSpecification()
         spec2.set_sampling_method(LatinHypercubeSampling)
-        spec2.add_sampled_input("p1", "p1", 0, 10)
+        spec2.add_sampled_input("p1", 0, 10)
         spec2.set_sample_size(2)
 
         psweep = ParameterSweepBase(
@@ -805,7 +818,7 @@ class TestParameterSweepBase:
 
         spec2 = ParameterSweepSpecification()
         spec2.set_sampling_method(LatinHypercubeSampling)
-        spec2.add_sampled_input("v1", "v1", 0, 10)
+        spec2.add_sampled_input("v1", 0, 10)
         spec2.set_sample_size(2)
 
         psweep = ParameterSweepBase(
@@ -833,7 +846,7 @@ class TestParameterSweepBase:
 
         spec2 = ParameterSweepSpecification()
         spec2.set_sampling_method(LatinHypercubeSampling)
-        spec2.add_sampled_input("c1", "c1", 0, 10)
+        spec2.add_sampled_input("c1", 0, 10)
         spec2.set_sample_size(2)
 
         psweep = ParameterSweepBase(
@@ -862,9 +875,9 @@ class TestParameterSweepBase:
 
         solver = SolverFactory("ipopt")
 
-        solved, run_stats = psweep.run_model(model, solver)
+        success, run_stats = psweep.run_model(model, solver)
 
-        assert solved
+        assert success
         assert_optimal_termination(run_stats)
         assert value(model.v) == pytest.approx(4, rel=1e-8)
 
@@ -899,11 +912,7 @@ class TestParameterSweepBase:
     def test_build_outputs_none(self):
         psweep = ParameterSweepBase()
 
-        with pytest.raises(
-            ConfigurationError,
-            match="Please provide a method to collect results from sample run.",
-        ):
-            psweep.build_outputs("foo", "bar")
+        assert psweep.build_outputs("foo", "bar") == "bar"
 
     @pytest.mark.unit
     def test_build_outputs(self):
@@ -1001,7 +1010,7 @@ class TestParameterSweepBase:
 
         spec2 = ParameterSweepSpecification()
         spec2.set_sampling_method(UniformSampling)
-        spec2.add_sampled_input("v2", "v2", 2, 6)
+        spec2.add_sampled_input("v2", 2, 6)
         spec2.set_sample_size([2])
 
         solver = SolverFactory("ipopt")
@@ -1013,10 +1022,10 @@ class TestParameterSweepBase:
             solver=solver,
         )
 
-        results, solved, error = psweep.execute_single_sample(1)
+        results, success, error = psweep.execute_single_sample(1)
 
         assert results == pytest.approx(6, rel=1e-8)
-        assert solved
+        assert success
         assert error is None
 
         assert "Sample 1 finished." in caplog.text
@@ -1040,7 +1049,7 @@ class TestParameterSweepBase:
 
         spec2 = ParameterSweepSpecification()
         spec2.set_sampling_method(UniformSampling)
-        spec2.add_sampled_input("v2", "v2", 2, 6)
+        spec2.add_sampled_input("v2", 2, 6)
         spec2.set_sample_size([2])
 
         psweep = ParameterSweepBase(
@@ -1049,10 +1058,10 @@ class TestParameterSweepBase:
             solver=dummy_solver,
         )
 
-        results, solved, error = psweep.execute_single_sample(1)
+        results, success, error = psweep.execute_single_sample(1)
 
         assert results is None
-        assert not solved
+        assert not success
         assert error == "Test exception"
 
     @pytest.mark.component
@@ -1074,7 +1083,7 @@ class TestParameterSweepBase:
 
         spec2 = ParameterSweepSpecification()
         spec2.set_sampling_method(UniformSampling)
-        spec2.add_sampled_input("v2", "v2", 2, 6)
+        spec2.add_sampled_input("v2", 2, 6)
         spec2.set_sample_size([2])
 
         psweep = ParameterSweepBase(
@@ -1112,7 +1121,7 @@ class TestParameterSweepBase:
 
         spec2 = ParameterSweepSpecification()
         spec2.set_sampling_method(UniformSampling)
-        spec2.add_sampled_input("v2", "v2", 2, 6)
+        spec2.add_sampled_input("v2", 2, 6)
         spec2.set_sample_size([2])
 
         psweep = ParameterSweepBase(
@@ -1122,17 +1131,17 @@ class TestParameterSweepBase:
             handle_solver_error=recourse,
         )
 
-        results, solved, error = psweep.execute_single_sample(1)
+        results, success, error = psweep.execute_single_sample(1)
 
         assert results == "foo"
-        assert solved == "bar"
+        assert success == "bar"
         assert error == "Test exception"
 
     @pytest.fixture(scope="class")
     def psweep_with_results(self):
         spec2 = ParameterSweepSpecification()
         spec2.set_sampling_method(UniformSampling)
-        spec2.add_sampled_input("v2", "v2", 2, 6)
+        spec2.add_sampled_input("v2", 2, 6)
         spec2.set_sample_size([2])
         spec2.generate_samples()
 
@@ -1141,8 +1150,8 @@ class TestParameterSweepBase:
         )
 
         psweep._results = {
-            0: {"solved": True, "results": 2},
-            1: {"solved": True, "results": 6},
+            0: {"success": True, "results": 2},
+            1: {"success": True, "results": 6},
         }
 
         return psweep
@@ -1183,7 +1192,7 @@ class TestParameterSweepBase:
         assert len(psweep._results) == 2
 
         for i in [0, 1]:
-            assert psweep._results[i]["solved"]
+            assert psweep._results[i]["success"]
             assert psweep._results[i]["results"] == 2 + i * 4
 
     @pytest.mark.component
@@ -1236,11 +1245,11 @@ class TestParameterSweepBase:
    },
    "results": {
       "0": {
-         "solved": true,
+         "success": true,
          "results": 2
       },
       "1": {
-         "solved": true,
+         "success": true,
          "results": 6
       }
    }
@@ -1274,7 +1283,7 @@ class TestParameterSweepBase:
         assert len(psweep._results) == 2
 
         for i in [0, 1]:
-            assert psweep._results[i]["solved"]
+            assert psweep._results[i]["success"]
             assert psweep._results[i]["results"] == 2 + i * 4
 
     @pytest.mark.unit
@@ -1317,7 +1326,7 @@ class TestSequentialSweepRunner:
 
         spec2 = ParameterSweepSpecification()
         spec2.set_sampling_method(UniformSampling)
-        spec2.add_sampled_input("v2", "v2", 2, 6)
+        spec2.add_sampled_input("v2", 2, 6)
         spec2.set_sample_size([2])
         spec2.generate_samples()
 
@@ -1332,8 +1341,8 @@ class TestSequentialSweepRunner:
 
         psweep.execute_parameter_sweep()
 
-        assert psweep.results[0]["solved"]
+        assert psweep.results[0]["success"]
         assert psweep.results[0]["results"] == pytest.approx(2 - 1e-3, rel=1e-8)
 
-        assert psweep.results[1]["solved"]
+        assert psweep.results[1]["success"]
         assert psweep.results[1]["results"] == pytest.approx(6 - 1e-3, rel=1e-8)

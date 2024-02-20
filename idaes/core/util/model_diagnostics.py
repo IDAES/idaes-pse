@@ -3212,13 +3212,13 @@ class ConvergenceAnalysis:
 
     def from_json_file(self, filename):
         """
-        Load specification and results from json file.
+                Load specification and results from json file.
 
-        Args:
-            filename: name of file to load from as string
-
-        Returns:
-            None
+                Args:
+                    filename: name of file to load from as string
+        R
+                Returns:
+                    None
         """
         return self._psweep.from_json_file(filename)
 
@@ -3243,9 +3243,9 @@ class ConvergenceAnalysis:
             time,
         ]
 
-        solved = check_optimal_termination(status)
+        success = check_optimal_termination(status)
 
-        return solved, run_stats
+        return success, run_stats
 
     @staticmethod
     def _build_outputs(model, run_stats):
@@ -3356,7 +3356,7 @@ class ConvergenceAnalysis:
         abs_tol: float = 1,
     ):
         # Compare results
-        solved_diff = []
+        success_diff = []
         iters_diff = []
         restore_diff = []
         reg_diff = []
@@ -3372,8 +3372,8 @@ class ConvergenceAnalysis:
                 comp = compare_dict["results"][str(k)]
 
             # Check for differences
-            if v["solved"] != comp["solved"]:
-                solved_diff.append(k)
+            if v["success"] != comp["success"]:
+                success_diff.append(k)
             if not isclose(
                 v["results"]["iters"],
                 comp["results"]["iters"],
@@ -3399,7 +3399,7 @@ class ConvergenceAnalysis:
                 num_iss_diff.append(k)
 
         return {
-            "solved": solved_diff,
+            "success": success_diff,
             "iters": iters_diff,
             "iters_in_restoration": restore_diff,
             "iters_w_regularization": reg_diff,

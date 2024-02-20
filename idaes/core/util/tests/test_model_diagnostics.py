@@ -2115,11 +2115,11 @@ ca_dict = {
     },
     "results": {
         0: {
-            "solved": True,
+            "success": True,
             "results": 2,
         },
         1: {
-            "solved": True,
+            "success": True,
             "results": 6,
         },
     },
@@ -2140,7 +2140,7 @@ ca_res = {
     },
     "results": {
         0: {
-            "solved": False,
+            "success": False,
             "results": {
                 "iters": 7,
                 "iters_in_restoration": 4,
@@ -2150,7 +2150,7 @@ ca_res = {
             },
         },
         1: {
-            "solved": False,
+            "success": False,
             "results": {
                 "iters": 7,
                 "iters_in_restoration": 4,
@@ -2243,9 +2243,9 @@ class TestConvergenceAnalysis:
 
         solver = SolverFactory("ipopt")
 
-        solved, run_stats = ca._run_model(model, solver)
+        success, run_stats = ca._run_model(model, solver)
 
-        assert solved
+        assert success
         assert value(model.v1) == pytest.approx(0.5, rel=1e-8)
 
         assert len(run_stats) == 4
@@ -2303,7 +2303,7 @@ class TestConvergenceAnalysis:
     @pytest.mark.solver
     def test_run_convergence_analysis(self, model):
         spec = ParameterSweepSpecification()
-        spec.add_sampled_input("v2", "v2", lower=0, upper=3)
+        spec.add_sampled_input("v2", lower=0, upper=3)
         spec.set_sampling_method(UniformSampling)
         spec.set_sample_size([4])
 
@@ -2316,21 +2316,21 @@ class TestConvergenceAnalysis:
 
         # Ignore time, as it is too noisy to test
         # Sample 0 should solve cleanly
-        assert ca.results[0]["solved"]
+        assert ca.results[0]["success"]
         assert ca.results[0]["results"]["iters"] == 0
         assert ca.results[0]["results"]["iters_in_restoration"] == 0
         assert ca.results[0]["results"]["iters_w_regularization"] == 0
         assert not ca.results[0]["results"]["numerical_issues"]
 
         # Sample 1 should solve, but have issues due to bound on v1
-        assert ca.results[1]["solved"]
+        assert ca.results[1]["success"]
         assert ca.results[1]["results"]["iters"] == pytest.approx(3, abs=1)
         assert ca.results[1]["results"]["iters_in_restoration"] == 0
         assert ca.results[1]["results"]["iters_w_regularization"] == 0
         assert ca.results[1]["results"]["numerical_issues"]
 
         # Other iterations should fail due to bound
-        assert not ca.results[2]["solved"]
+        assert not ca.results[2]["success"]
         assert ca.results[2]["results"]["iters"] == pytest.approx(7, abs=1)
         assert ca.results[2]["results"]["iters_in_restoration"] == pytest.approx(
             4, abs=1
@@ -2338,7 +2338,7 @@ class TestConvergenceAnalysis:
         assert ca.results[2]["results"]["iters_w_regularization"] == 0
         assert ca.results[2]["results"]["numerical_issues"]
 
-        assert not ca.results[3]["solved"]
+        assert not ca.results[3]["success"]
         assert ca.results[3]["results"]["iters"] == pytest.approx(8, abs=1)
         assert ca.results[3]["results"]["iters_in_restoration"] == pytest.approx(
             5, abs=1
@@ -2350,7 +2350,7 @@ class TestConvergenceAnalysis:
     def ca_with_results(self):
         spec = ParameterSweepSpecification()
         spec.set_sampling_method(UniformSampling)
-        spec.add_sampled_input("v2", "v2", 2, 6)
+        spec.add_sampled_input("v2", 2, 6)
         spec.set_sample_size([2])
         spec.generate_samples()
 
@@ -2360,8 +2360,8 @@ class TestConvergenceAnalysis:
         )
 
         ca._psweep._results = {
-            0: {"solved": True, "results": 2},
-            1: {"solved": True, "results": 6},
+            0: {"success": True, "results": 2},
+            1: {"success": True, "results": 6},
         }
 
         return ca
@@ -2392,7 +2392,7 @@ class TestConvergenceAnalysis:
         assert len(ca.results) == 2
 
         for i in [0, 1]:
-            assert ca.results[i]["solved"]
+            assert ca.results[i]["success"]
             assert ca.results[i]["results"] == 2 + i * 4
 
     @pytest.mark.component
@@ -2445,11 +2445,11 @@ class TestConvergenceAnalysis:
    },
    "results": {
       "0": {
-         "solved": true,
+         "success": true,
          "results": 2
       },
       "1": {
-         "solved": true,
+         "success": true,
          "results": 6
       }
    }
@@ -2483,7 +2483,7 @@ class TestConvergenceAnalysis:
         assert len(ca.results) == 2
 
         for i in [0, 1]:
-            assert ca.results[i]["solved"]
+            assert ca.results[i]["success"]
             assert ca.results[i]["results"] == 2 + i * 4
 
     @pytest.mark.integration
@@ -2506,7 +2506,7 @@ class TestConvergenceAnalysis:
         assert isinstance(ca.results, dict)
         assert len(ca.results) == 2
 
-        assert not ca.results[0]["solved"]
+        assert not ca.results[0]["success"]
         assert ca.results[0]["results"]["iters"] == pytest.approx(7, abs=1)
         assert ca.results[0]["results"]["iters_in_restoration"] == pytest.approx(
             4, abs=1
@@ -2514,7 +2514,7 @@ class TestConvergenceAnalysis:
         assert ca.results[0]["results"]["iters_w_regularization"] == 0
         assert ca.results[0]["results"]["numerical_issues"]
 
-        assert not ca.results[1]["solved"]
+        assert not ca.results[1]["success"]
         assert ca.results[1]["results"]["iters"] == pytest.approx(7, abs=1)
         assert ca.results[1]["results"]["iters_in_restoration"] == pytest.approx(
             4, abs=1
@@ -2544,7 +2544,7 @@ class TestConvergenceAnalysis:
         assert isinstance(ca.results, dict)
         assert len(ca.results) == 2
 
-        assert not ca.results[0]["solved"]
+        assert not ca.results[0]["success"]
         assert ca.results[0]["results"]["iters"] == pytest.approx(7, abs=1)
         assert ca.results[0]["results"]["iters_in_restoration"] == pytest.approx(
             4, abs=1
@@ -2552,7 +2552,7 @@ class TestConvergenceAnalysis:
         assert ca.results[0]["results"]["iters_w_regularization"] == 0
         assert ca.results[0]["results"]["numerical_issues"]
 
-        assert not ca.results[1]["solved"]
+        assert not ca.results[1]["success"]
         assert ca.results[1]["results"]["iters"] == pytest.approx(7, abs=1)
         assert ca.results[1]["results"]["iters_in_restoration"] == pytest.approx(
             4, abs=1
@@ -2573,20 +2573,20 @@ class TestConvergenceAnalysis:
     def test_compare_results_to_dict_ok(self, conv_anal):
         diffs = conv_anal._compare_results_to_dict(ca_res)
 
-        assert diffs["solved"] == []
+        assert diffs["success"] == []
         assert diffs["iters"] == []
         assert diffs["iters_in_restoration"] == []
         assert diffs["iters_w_regularization"] == []
         assert diffs["numerical_issues"] == []
 
     @pytest.mark.unit
-    def test_compare_results_to_dict_solved(self, conv_anal):
+    def test_compare_results_to_dict_success(self, conv_anal):
         ca_copy = deepcopy(ca_res)
-        ca_copy["results"][0]["solved"] = True
+        ca_copy["results"][0]["success"] = True
 
         diffs = conv_anal._compare_results_to_dict(ca_copy)
 
-        assert diffs["solved"] == [0]
+        assert diffs["success"] == [0]
         assert diffs["iters"] == []
         assert diffs["iters_in_restoration"] == []
         assert diffs["iters_w_regularization"] == []
@@ -2600,7 +2600,7 @@ class TestConvergenceAnalysis:
 
         diffs = conv_anal._compare_results_to_dict(ca_copy)
 
-        assert diffs["solved"] == []
+        assert diffs["success"] == []
         assert diffs["iters"] == [1]
         assert diffs["iters_in_restoration"] == []
         assert diffs["iters_w_regularization"] == []
@@ -2608,7 +2608,7 @@ class TestConvergenceAnalysis:
 
         diffs = conv_anal._compare_results_to_dict(ca_copy, abs_tol=0, rel_tol=0)
 
-        assert diffs["solved"] == []
+        assert diffs["success"] == []
         assert diffs["iters"] == [0, 1]
         assert diffs["iters_in_restoration"] == []
         assert diffs["iters_w_regularization"] == []
@@ -2622,7 +2622,7 @@ class TestConvergenceAnalysis:
 
         diffs = conv_anal._compare_results_to_dict(ca_copy)
 
-        assert diffs["solved"] == []
+        assert diffs["success"] == []
         assert diffs["iters"] == []
         assert diffs["iters_in_restoration"] == [1]
         assert diffs["iters_w_regularization"] == []
@@ -2630,7 +2630,7 @@ class TestConvergenceAnalysis:
 
         diffs = conv_anal._compare_results_to_dict(ca_copy, abs_tol=0, rel_tol=0)
 
-        assert diffs["solved"] == []
+        assert diffs["success"] == []
         assert diffs["iters"] == []
         assert diffs["iters_in_restoration"] == [0, 1]
         assert diffs["iters_w_regularization"] == []
@@ -2644,7 +2644,7 @@ class TestConvergenceAnalysis:
 
         diffs = conv_anal._compare_results_to_dict(ca_copy)
 
-        assert diffs["solved"] == []
+        assert diffs["success"] == []
         assert diffs["iters"] == []
         assert diffs["iters_in_restoration"] == []
         assert diffs["iters_w_regularization"] == [1]
@@ -2652,7 +2652,7 @@ class TestConvergenceAnalysis:
 
         diffs = conv_anal._compare_results_to_dict(ca_copy, abs_tol=0, rel_tol=0)
 
-        assert diffs["solved"] == []
+        assert diffs["success"] == []
         assert diffs["iters"] == []
         assert diffs["iters_in_restoration"] == []
         assert diffs["iters_w_regularization"] == [0, 1]
@@ -2665,7 +2665,7 @@ class TestConvergenceAnalysis:
 
         diffs = conv_anal._compare_results_to_dict(ca_copy)
 
-        assert diffs["solved"] == []
+        assert diffs["success"] == []
         assert diffs["iters"] == []
         assert diffs["iters_in_restoration"] == []
         assert diffs["iters_w_regularization"] == []
@@ -2684,7 +2684,7 @@ class TestConvergenceAnalysis:
 
         # Baseline has incorrect values
         assert diffs == {
-            "solved": [0],
+            "success": [0],
             "iters": [],
             "iters_in_restoration": [],
             "iters_w_regularization": [1],

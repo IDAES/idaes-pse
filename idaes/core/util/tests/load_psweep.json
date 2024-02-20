@@ -37,11 +37,11 @@
    },
    "results": {
       "0": {
-         "solved": true,
+         "success": true,
          "results": 2
       },
       "1": {
-         "solved": true,
+         "success": true,
          "results": 6
       }
    }
