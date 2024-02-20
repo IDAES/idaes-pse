@@ -89,7 +89,7 @@ def test_cluster_lmp_data(excel_data):
 
 
 @pytest.mark.unit
-def test_logger_messages(excel_data, caplog):
+def test_init_logger_messages(excel_data, caplog):
     with caplog.at_level(idaeslog.WARNING):
         m = PriceTakerModel()
 
@@ -97,18 +97,6 @@ def test_logger_messages(excel_data, caplog):
         m.get_optimal_n_clusters(daily_data)
 
         assert f"kmax was not set - using a default value of 30." in caplog.text
-
-    # TODO: The below test is not working because our data doesn't ever seem to arrive at an n_clusters close to kmax
-    # caplog.clear()
-    # with caplog.at_level(idaeslog.WARNING):
-    #     m = PriceTakerModel()
-    #     kmin = 1
-    #     kmax = 7
-    #
-    #     daily_data, scenarios = m.reconfigure_raw_data(excel_data)
-    #     m.get_optimal_n_clusters(daily_data, kmin=kmin, kmax=kmax)
-    #
-    #     assert f"Optimal number of clusters is close to kmax: {kmax}. Consider increasing kmax." in caplog.text
 
     # Testing horizon_length input value errors
     value = 0
@@ -134,8 +122,10 @@ def test_logger_messages(excel_data, caplog):
     ):
         m = PriceTakerModel()
         m.seed = value
-    
-    # Testing up_time and down_time input value errors
+
+
+@pytest.mark.unit
+def test_min_up_down_time_logger_messages(excel_data):
     des = DesignModel()
     oper = OperationModel()
     build_bin_var = 'build'
@@ -169,8 +159,10 @@ def test_logger_messages(excel_data, caplog):
     ):
         m = PriceTakerModel()
         m.add_startup_shutdown(des, oper, build_bin_var, use_min_time, up_time[0], down_time[1])
-    
-    # Testing kmin and kmax input value errors
+
+
+@pytest.mark.unit
+def test_optimal_clusters_logger_messages(excel_data):
     kmin = [-5, 10.2, 9]
     kmax = [-5, 10.2, 8]
     with pytest.raises(
@@ -220,7 +212,21 @@ def test_logger_messages(excel_data, caplog):
         daily_data, scenarios = m.reconfigure_raw_data(excel_data)
         n_clusters, inertia_values = m.get_optimal_n_clusters(daily_data, kmin=kmin[2], kmax=kmax[2])
     
-    # Testing ramping rate input value errors
+    # TODO: The below test is not working because our data doesn't ever seem to arrive at an n_clusters close to kmax
+    # caplog.clear()
+    # with caplog.at_level(idaeslog.WARNING):
+    #     m = PriceTakerModel()
+    #     kmin = 1
+    #     kmax = 7
+    #
+    #     daily_data, scenarios = m.reconfigure_raw_data(excel_data)
+    #     m.get_optimal_n_clusters(daily_data, kmin=kmin, kmax=kmax)
+    #
+    #     assert f"Optimal number of clusters is close to kmax: {kmax}. Consider increasing kmax." in caplog.text
+
+
+@pytest.mark.unit
+def test_ramping_constraint_logger_messages(excel_data):
     des = DesignModel()
     oper = OperationModel()
     ramping_var = 'power'
@@ -279,8 +285,10 @@ def test_logger_messages(excel_data, caplog):
         m = PriceTakerModel()
         m.add_ramping_constraints(des, oper, capac_var, ramping_var, constraint_type, linearization, 
                                   op_range_lb[2], su_rate[1], sd_rate[1], op_ru_rate[1], op_rd_rate[1])
-    
-    # Testing raised errors in append_lmp_data
+
+
+@pytest.mark.unit
+def test_append_lmp_data_logger_messages(excel_data):
     file_path = "FLECCS.xlsx"
     n_clusters = [-5, 1.7, 10]
     with pytest.raises(
@@ -306,10 +314,24 @@ def test_logger_messages(excel_data, caplog):
         m.append_lmp_data(file_path, sheet='2035 - NREL', column_name='MiNg_$100_CAISO', n_clusters=n_clusters[2], horizon_length=24,)
 
 
-
-    
-
-
+# @pytest.mark.unit
+# def test_deepgetattr_logger_messages(excel_data):
+#     m = PriceTakerModel()
+#     des = DesignModel()
+#     oper = OperationModel()
+#     ramping_var = 'power'
+#     capac_var = 'power_max'
+#     constraint_type = 'linear'
+#     linearization = False
+#     op_range_lb = [-0.1, 0.5, 1.0]
+#     su_rate = [-0.1, 0.5]
+#     sd_rate = [-0.1, 0.5]
+#     op_ru_rate = [-0.1, 0.5]
+#     op_rd_rate = [-0.1, 0.5]
+#     with pytest.raises(
+#         ValueError,
+#         match()
+#     ):
 
 def dfc_design(m, params, capacity_range=(650, 900)):
     _dfc_capacity = params["dfc_capacity"]
