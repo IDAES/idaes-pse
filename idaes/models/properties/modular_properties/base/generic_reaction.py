@@ -216,7 +216,7 @@ class GenericReactionParameterData(ReactionParameterBlock):
         ppack = self.config.property_package
 
         if not hasattr(ppack, "_electrolyte") or not ppack._electrolyte:
-            pc_set = ppack._phase_component_set
+            pc_set = ppack.get_phase_component_set()
         elif ppack.config.state_components.name == "true":
             pc_set = ppack.true_phase_component_set
         elif ppack.config.state_components.name == "apparent":

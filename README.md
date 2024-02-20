@@ -19,7 +19,7 @@ scale-up, operation and troubleshooting of innovative, advanced energy systems.
 
 ## Getting Started
 
-Our [complete documentation is online](https://idaes-pse.readthedocs.io/en/stable/) but here is a summarized set of steps to get started using the framework.
+Our [complete documentation is online](https://idaes-pse.readthedocs.io/en/stable/) but here is a summarized set of steps to get started using the framework. For help and assistance, please visit the [IDAES PSE Discussions Board](https://github.com/IDAES/idaes-pse/discussions).
 
 While not required, we encourage the installation of [Anaconda](https://www.anaconda.com/products/individual#Downloads) or [Miniconda](https://docs.conda.io/en/latest/miniconda.html) and using the `conda` command to create a separate python environment in which to install the IDAES Toolkit.
 
