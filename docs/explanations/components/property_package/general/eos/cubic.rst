@@ -67,6 +67,7 @@ Cubic equations of state require the following parameters to be defined:
 
 1. `omega` (Pitzer acentricity factor) needs to be defined for each component (in the `parameter_data` for each component).
 2. `kappa` (binary interaction parameters) needs to be defined for each component pair in the system. This parameter needs to be defined in the general `parameter_data` argument for the overall property package (as it can be used in multiple phases).
+3. Component critical properties (`compresss_fact_crit`, `dens_mol_crit`, `pressure_crit`, and `temperature_crit`) are often required as well.
 
 Calculation of Properties
 -------------------------
@@ -76,6 +77,26 @@ Many thermophysical properties are calculated using an ideal and residual term, 
 .. math:: p = p^0 + p^r
 
 The residual term is derived from the partial derivatives of the cubic equation of state, whilst the ideal term is determined using pure component properties for the ideal gas phase defined for each component.
+
+Critical Properties of Mixtures
+-------------------------------
+
+The critical properties of the mixture are calculated by solving the cubic equation of state at the critical point using the following constraints.
+
+.. math:: \Omega_A R^2 T_c^2 = a_{c,m}P_c
+.. math:: \Omega_BRT_c = b_{c,m}P_c
+.. math:: 0 = Z_c^3 - (1+B_c-uB_c)Z_c^2 + (A_c-uB_c-(u-w)B_c^2)Z_c - A_cB_c-wB_c^2-wB_c^3
+.. math:: P_c = Z_cRT_c\rho_{c}
+
+
+with the following expressions:
+
+.. math:: a_{c,j} = \frac{\Omega_AR^2T_{c,j}^2}{P_{c, j}}\alpha_j(T_c)
+.. math:: a_{c,m} = \sum_i{\sum_j{y_iy_j(a_{c,i}a_{c,j})^{1/2}(1-\kappa_{ij})}}
+.. math:: b_{c,m} = \sum_i{y_ib_i}
+.. math:: A_c = \frac{a_{c,m}P_c}{R^2T_c^2}
+.. math:: B_c = \frac{b_{c,m}P_c}{RT_c}
+
 
 Mass Density by Phase
 ---------------------
@@ -109,14 +130,14 @@ Component Molar Enthalpy by Phase
 
 Component molar enthalpies by phase are calculated using the pure component method provided by the users in the property package configuration arguments.
 
-Molar Isobaric Heat Capcity (:math:`C_p`)
+Molar Isobaric Heat Capacity (:math:`C_p`)
 -----------------------------------------
 
-The ideal molar isobaric heat capcity term is calculated from the weighted sum of the (ideal) component molar isobaric heat capacity:
+The ideal molar isobaric heat capacity term is calculated from the weighted sum of the (ideal) component molar isobaric heat capacity:
 
 .. math:: C_{p, ig}^0 = \sum_j y_j C_{p, ig, j}
 
-The residual molar isobaric heat capcity term is given by:
+The residual molar isobaric heat capacity term is given by:
 
 .. math:: C_p^r = R \left[ T \left(\frac{\partial Z}{\partial T}\right)_P + Z - 1 \right] +  \frac{ T \frac{d^2a_m}{dT^2}}{\sqrt{u^2 - 4w} \cdot b_m} \ln \left[ \frac{2Z + uB + \sqrt{u^2 - 4w} B}{2Z + uB - \sqrt{u^2 - 4w} B} \right]
 .. math:: + \left(a_m - T \frac{da_m}{dT}\right) \cdot \frac{B}{b_m} \cdot \frac{\left(\frac{\partial Z}{\partial T}\right)_P + \frac{Z}{T}}{Z^2 + Z uB + wB^2}

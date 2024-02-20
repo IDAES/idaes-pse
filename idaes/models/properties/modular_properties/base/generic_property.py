@@ -5157,27 +5157,25 @@ def _log_mole_frac_bubble_dew(b, name):
 def _initialize_critical_props(state_data):
     params = state_data.params
     # Use mole weighted sum of component critical properties
-    state_data.compress_fact_crit.set_value(
-        sum(
-            state_data.mole_frac_comp[j] * params.get_component(j).compress_fact_crit
-            for j in state_data.component_list
-        )
-    )
-    state_data.dens_mol_crit.set_value(
-        sum(
-            state_data.mole_frac_comp[j] * params.get_component(j).dens_mol_crit
-            for j in state_data.component_list
-        )
-    )
-    state_data.pressure_crit.set_value(
-        sum(
-            state_data.mole_frac_comp[j] * params.get_component(j).pressure_crit
-            for j in state_data.component_list
-        )
-    )
-    state_data.temperature_crit.set_value(
-        sum(
-            state_data.mole_frac_comp[j] * params.get_component(j).temperature_crit
-            for j in state_data.component_list
-        )
-    )
+    crit_props = [
+        "compress_fact_crit",
+        "dens_mol_crit",
+        "pressure_crit",
+        "temperature_crit",
+    ]
+
+    for prop in crit_props:
+        try:
+            getattr(state_data, prop).set_value(
+                sum(
+                    state_data.mole_frac_comp[j]
+                    * getattr(params.get_component(j), prop)
+                    for j in state_data.component_list
+                )
+            )
+        except AttributeError:
+            raise AttributeError(
+                f"Missing attribute found when initializing {prop}. "
+                f"Make sure you have provided values for {prop} in all Component "
+                "declarations."
+            )
