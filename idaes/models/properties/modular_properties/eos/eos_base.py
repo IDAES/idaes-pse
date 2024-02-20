@@ -68,7 +68,11 @@ class EoSBase:
         Returns:
             list of constraint names
         """
-        raise NotImplementedError(_msg(b, "list_critical_property_constraint_names"))
+        raise NotImplementedError(
+            "Equation of State module has not implemented a method for "
+            "list_critical_property_constraint_names. Please contact the "
+            "EoS developer or use a different module."
+        )
 
     @staticmethod
     def get_vol_mol_pure(b, phase, comp, temperature):

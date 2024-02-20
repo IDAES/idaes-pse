@@ -131,7 +131,7 @@ Component Molar Enthalpy by Phase
 Component molar enthalpies by phase are calculated using the pure component method provided by the users in the property package configuration arguments.
 
 Molar Isobaric Heat Capacity (:math:`C_p`)
------------------------------------------
+------------------------------------------
 
 The ideal molar isobaric heat capacity term is calculated from the weighted sum of the (ideal) component molar isobaric heat capacity:
 
