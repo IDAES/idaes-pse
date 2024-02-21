@@ -93,7 +93,7 @@ class ExtraDependencies:
     ]
     omlt = [
         "omlt==1.1",  # fix the version for now as package evolves
-        "tensorflow",
+        'tensorflow; python_version < "3.12"',
     ]
     grid = [
         "gridx-prescient>=2.2.1",  # idaes.tests.prescient
