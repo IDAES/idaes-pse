@@ -191,7 +191,7 @@ class TestParameterSweepSpecification:
         spec.set_sampling_method(LatinHypercubeSampling)
 
         with pytest.raises(
-            ValueError, match="Please identify at least on input variable to sample."
+            ValueError, match="Please identify at least one input variable to sample."
         ):
             spec.generate_samples()
 
