@@ -20,10 +20,11 @@ import time
 _command_import_start_time = time.time()
 
 import pkgutil
+import click
 from idaes.commands.base import command_base as cb
 
 # import all the commands
-for loader, dotted_module_name, is_pkg in pkgutil.walk_packages(__path__):
+for finder, dotted_module_name, is_pkg in pkgutil.walk_packages(__path__):
     module_name_parts = dotted_module_name.split(".")
     module_name = module_name_parts[-1]
     is_test_module = module_name.startswith("test_")
@@ -32,6 +33,11 @@ for loader, dotted_module_name, is_pkg in pkgutil.walk_packages(__path__):
     elif is_test_module:
         pass
     else:
-        loader.find_module(module_name).load_module(module_name)
+        try:
+            finder.find_spec(module_name).loader.load_module(module_name)
+        except ModuleNotFoundError:
+            click.echo(
+                f"Could not import commands from {module_name}. Perhaps a dependency is missing."
+            )
 
 _command_import_total_time = time.time() - _command_import_start_time
