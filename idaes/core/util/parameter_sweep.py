@@ -159,7 +159,7 @@ class ParameterSweepSpecification(object):
             )
 
         if len(self._inputs) == 0:
-            raise ValueError("Please identify at least on input variable to sample.")
+            raise ValueError("Please identify at least one input variable to sample.")
 
         if self._sample_size is None:
             raise ValueError("Please set a sample size.")
