@@ -3212,13 +3212,13 @@ class ConvergenceAnalysis:
 
     def from_json_file(self, filename):
         """
-                Load specification and results from json file.
+        Load specification and results from json file.
 
-                Args:
-                    filename: name of file to load from as string
-        R
-                Returns:
-                    None
+        Args:
+            filename: name of file to load from as string
+
+        Returns:
+            None
         """
         return self._psweep.from_json_file(filename)
 
