@@ -132,7 +132,7 @@ kwargs = dict(
     # Put abstract (non-versioned) deps here.
     # Concrete dependencies go in requirements[-dev].txt
     install_requires=[
-        "pyomo @ git+https://github.com/IDAES/Pyomo@6.7.1.idaes.2024.02.21",
+        "pyomo >= 6.7.1",
         "pint",  # required to use Pyomo units
         "networkx",  # required to use Pyomo network
         "numpy",
