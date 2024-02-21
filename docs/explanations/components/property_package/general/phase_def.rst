@@ -50,7 +50,7 @@ Critical Properties of Mixtures
 
 Calculation of the critical properties of mixtures depends on the equation of state being used. As the Modular Property Package framework allows users to specify different equations of state for each phase, the following logic is used to determine which equation of state to use for calculating critical properties.
 
-1. If a vapor-liquid equilibrium pair is defined in the `"phases_in_equilibrium"` configuration argument, then the liquid phase from this pair is used (IDAES generally assumed supercritical fluids are liquid-like).
+1. If a vapor-liquid equilibrium pair is defined in the `"phases_in_equilibrium"` configuration argument, then the liquid phase from this pair is used (IDAES generally assumes supercritical fluids are liquid-like).
 2. If no vapor-liquid equilibrium pair is defined, then the first liquid phase defined is used.
 3. If no liquid phases are defined then the vapor phase is used (it is assumed there will only be one vapor phase).
 4. If no vapor phase is defined, then a `PropertyPackageError` is returned as there is no suitable phase for calculating critical properties.
