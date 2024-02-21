@@ -1296,7 +1296,7 @@ class ModularPropertiesInitializer(InitializerBase):
                     k.inherent_equilibrium_constraint.deactivate()
 
         # ---------------------------------------------------------------------
-        # If present, initialize bubble and dew point and critical property calculations
+        # If present, initialize bubble, dew, and critical point calculations
         for k in model.values():
             T_units = k.params.get_metadata().default_units.TEMPERATURE
 
@@ -1347,21 +1347,21 @@ class ModularPropertiesInitializer(InitializerBase):
             if hasattr(k, "_mole_frac_pdew"):
                 model._init_Pdew(k, T_units)
 
-            # Solve bubble, dew and critical point constraints
+            # Solve bubble, dew, and critical point constraints
             for c in k.component_objects(Constraint):
                 # Deactivate all constraints not associated with bubble and dew
                 # points or critical points
                 if c.local_name not in cons_list:
                     c.deactivate()
 
-        # If StateBlock has active constraints (i.e. has bubble and/or dew
+        # If StateBlock has active constraints (i.e. has bubble, dew, or critical
         # point calculations), solve the block to converge these
         for b in model.values():
             if number_activated_constraints(b) > 0:
                 if not degrees_of_freedom(b) == 0:
                     raise InitializationError(
                         f"{b.name} Unexpected degrees of freedom during "
-                        f"initialization at bubble and dew and critical point step: "
+                        f"initialization at bubble, dew, and critical point step: "
                         f"{degrees_of_freedom(b)}."
                     )
                 with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
@@ -1371,7 +1371,7 @@ class ModularPropertiesInitializer(InitializerBase):
                         solve_kwds={"tee": slc.tee},
                         calc_var_kwds=self.config.calculate_variable_options,
                     )
-        init_log.info("Bubble, dew and critical point initialization completed.")
+        init_log.info("Bubble, dew, and critical point initialization completed.")
 
         # ---------------------------------------------------------------------
         # Calculate _teq if required
@@ -1751,7 +1751,7 @@ class _GenericStateBlock(StateBlock):
         opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
-        # If present, initialize bubble and dew point, and critical property calculations
+        # If present, initialize bubble, dew , and critical point calculations
         for k in blk.values():
             T_units = k.params.get_metadata().default_units.TEMPERATURE
 
@@ -1798,14 +1798,14 @@ class _GenericStateBlock(StateBlock):
             if hasattr(k, "_mole_frac_pdew"):
                 blk._init_Pdew(k, T_units)
 
-            # Solve bubble, dew and critical point constraints
+            # Solve bubble, dew, and critical point constraints
             for c in k.component_objects(Constraint):
-                # Deactivate all constraints not associated with bubble and dew
-                # points or critical points
+                # Deactivate all constraints not associated with bubble, dew,
+                # or critical points
                 if c.local_name not in cons_list:
                     c.deactivate()
 
-        # If StateBlock has active constraints (i.e. has bubble and/or dew
+        # If StateBlock has active constraints (i.e. has bubble, dew, or critical
         # point calculations), solve the block to converge these
         n_cons = 0
         dof = 0
@@ -1816,12 +1816,12 @@ class _GenericStateBlock(StateBlock):
             if dof > 0:
                 raise InitializationError(
                     f"{blk.name} Unexpected degrees of freedom during "
-                    f"initialization at bubble, dew and critical point step: {dof}."
+                    f"initialization at bubble, dew, and critical point step: {dof}."
                 )
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
             init_log.info(
-                "Bubble, dew and critical point initialization: {}.".format(
+                "Bubble, dew, and critical point initialization: {}.".format(
                     idaeslog.condition(res)
                 )
             )

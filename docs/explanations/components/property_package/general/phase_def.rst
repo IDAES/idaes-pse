@@ -50,14 +50,14 @@ Critical Properties of Mixtures
 
 Calculation of the critical properties of mixtures depends on the equation of state being used. As the Modular Property Package framework allows users to specify different equations of state for each phase, the following logic is used to determine which equation of state to use for calculating critical properties.
 
-1. If a vapor-liquid equilibrium pair is defined in the `"phases_in_equilibrium"` configuration argument, then the liquid phase from this pair is used (IDAES generally assumed supercritical fluids are liquid like).
-2. If no vapor-liquid equilibrium pair is defined, then the first liquid phase define is used.
+1. If a vapor-liquid equilibrium pair is defined in the `"phases_in_equilibrium"` configuration argument, then the liquid phase from this pair is used (IDAES generally assumed supercritical fluids are liquid-like).
+2. If no vapor-liquid equilibrium pair is defined, then the first liquid phase defined is used.
 3. If no liquid phases are defined then the vapor phase is used (it is assumed there will only be one vapor phase).
 4. If no vapor phase is defined, then a `PropertyPackageError` is returned as there is no suitable phase for calculating critical properties.
 
 Note that not all Equations of State are suitable for calculating critical properties as many cannot represent the critical conditions. The Ideal equation of State is one common example of an equation of state that DOES NOT support critical properties.
 
-During initialization, the critical properties of the mixture are approximated using the mole fraction weighted sum of the component critical properties (note that users must provide values for all component critical properties (i.e., `compress_fact_crit`, `dens_mol_crit`, `pressure_crit` and `temperature_crit`) for initialization if critical properties are to be calculated.
+During initialization, the critical properties of the mixture are approximated using the mole fraction weighted sum of the component critical properties (note that users must provide values for all component critical properties (i.e., `compress_fact_crit`, `dens_mol_crit`, `pressure_crit` and `temperature_crit`) for initialization if critical properties are to be calculated. Note that it is up to the user to ensure these values are consistent (if necessary).
 
 Phase-Specific Parameter
 ^^^^^^^^^^^^^^^^^^^^^^^^
