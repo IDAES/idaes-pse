@@ -257,8 +257,19 @@ class UnitSet(object):
         return self._length**3
 
     @property
-    def MOLAR_VOLUME(self):
+    def VOLUME_MASS(self):
+        return self._length**3 * self._mass**-1
+
+    @property
+    def VOLUME_MOLE(self):
         return self._length**3 * self._amount**-1
+
+    # Backward compatibility name
+    @property
+    def MOLAR_VOLUME(self):
+        msg = "The unit name MOLAR_VOLUME is being deprecated in favor of VOLUME_MOL."
+        deprecation_warning(msg=msg, logger=_log, version="2.3.0", remove_in="3.0.0")
+        return self.VOLUME_MOLE
 
     # Flows
     @property
