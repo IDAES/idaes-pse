@@ -35,6 +35,7 @@ from idaes.apps.grid_integration import MultiPeriodModel
 from idaes.apps.grid_integration.multiperiod.design_and_operation_models import (
     DesignModelData,
     OperationModelData,
+    deepgetattr,
 )
 
 from sklearn.cluster import KMeans
@@ -45,10 +46,6 @@ import matplotlib.pyplot as plt
 import logging
 
 _logger = logging.getLogger(__name__)
-
-
-def deepgetattr(obj, attr):
-    return reduce(getattr, attr.split('.'), obj)
 
 
 class PriceTakerModel(ConcreteModel):
@@ -693,6 +690,8 @@ class PriceTakerModel(ConcreteModel):
 
             # ToDo: Add multiple revenue streams to the model (full user control)
             # ToDo: Make costs a list as well (full user control)
+            # ToDo: Add check for whether or not OperationModelData blocks were found
+            #       (Should throw warning if none were found.)
 
             for blk in period[p].component_data_objects(Block):
                 if isinstance(blk, OperationModelData):
@@ -742,6 +741,9 @@ class PriceTakerModel(ConcreteModel):
 
         capex_expr = 0
         fom_expr = 0
+
+        # ToDo: Add check for whether or not DesignModelData blocks were found
+        #       (Should throw warning if none were found.)
         for blk in self.component_data_objects(Block):
             if isinstance(blk, DesignModelData):
                 capex_expr += blk.capex

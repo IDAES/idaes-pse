@@ -24,7 +24,7 @@ from pyomo.environ import (
     Expression,
 )
 
-from idaes.apps.grid_integration import DesignModel, OperationModel
+from idaes.apps.grid_integration import DesignModel, OperationModel, deepgetattr
 
 import idaes.logger as idaeslog
 
@@ -314,24 +314,19 @@ def test_append_lmp_data_logger_messages(excel_data):
         m.append_lmp_data(file_path, sheet='2035 - NREL', column_name='MiNg_$100_CAISO', n_clusters=n_clusters[2], horizon_length=24,)
 
 
-# @pytest.mark.unit
-# def test_deepgetattr_logger_messages(excel_data):
-#     m = PriceTakerModel()
-#     des = DesignModel()
-#     oper = OperationModel()
-#     ramping_var = 'power'
-#     capac_var = 'power_max'
-#     constraint_type = 'linear'
-#     linearization = False
-#     op_range_lb = [-0.1, 0.5, 1.0]
-#     su_rate = [-0.1, 0.5]
-#     sd_rate = [-0.1, 0.5]
-#     op_ru_rate = [-0.1, 0.5]
-#     op_rd_rate = [-0.1, 0.5]
-#     with pytest.raises(
-#         ValueError,
-#         match()
-#     ):
+@pytest.mark.unit
+def test_deepgetattr_logger_messages(excel_data):
+    class Data:
+        def __init__(self, value):
+            self.value = value
+    
+    A = Data(5)
+    attr = 'valu'
+    with pytest.raises(
+        ValueError,
+        match=(f"The attribute `{attr}` does not exist on the {A.__class__.__name__} instance passed. Make sure that `{attr}` is defined for that object."),
+    ):
+        deepgetattr(A, attr)
 
 def dfc_design(m, params, capacity_range=(650, 900)):
     _dfc_capacity = params["dfc_capacity"]
