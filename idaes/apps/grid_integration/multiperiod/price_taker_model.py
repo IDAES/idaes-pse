@@ -95,6 +95,10 @@ class PriceTakerModel(ConcreteModel):
         i = 0
         j = self._horizon_length
         day = 1
+
+        if j > len(raw_data):
+            raise ValueError(f"tried to generate daily data, but horizon length of {self._horizon_length} exceeds raw_data length of {len(raw_data)}")
+
         while j <= len(raw_data):
             daily_data[day] = raw_data[i:j].reset_index(drop=True)
             i = j
@@ -205,7 +209,7 @@ class PriceTakerModel(ConcreteModel):
             plt.grid()
             plt.show()
 
-        return n_clusters, inertia_values
+        return int(n_clusters), inertia_values
 
     def cluster_lmp_data(self, raw_data, n_clusters):
         """
@@ -225,6 +229,13 @@ class PriceTakerModel(ConcreteModel):
                         same way as lmp_data      (ex: {1: 45, 2: 56})
                                                Format: {day: weight}
         """
+        # testing if n_integers is valid
+        if n_clusters is not None:
+            if not isinstance(n_clusters, int):
+                raise ValueError(f"n_clusters must be an integer, but {n_clusters} is not an integer")
+            if n_clusters < 1:
+                raise ValueError(f"n_clusters must be > 0, but {n_clusters} is provided.")
+
         # reconfiguring raw data 
         daily_data, scenarios  = self.reconfigure_raw_data(raw_data)
         

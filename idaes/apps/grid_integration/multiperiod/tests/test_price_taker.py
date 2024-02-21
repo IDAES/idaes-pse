@@ -54,6 +54,9 @@ def test_daily_data_size(excel_data):
 
 @pytest.mark.unit
 def test_determine_optimal_num_clusters(excel_data):
+    # Test fails because the optimal number of clusters is different
+    # based on which version of scikit-learn and kneed you have.
+    # Older versions get n_clusters = 10, Newer versions n_clusters = 11
     m = PriceTakerModel()
 
     daily_data, scenarios = m.reconfigure_raw_data(excel_data)
@@ -313,6 +316,23 @@ def test_append_lmp_data_logger_messages(excel_data):
         m = PriceTakerModel()
         m.append_lmp_data(file_path, sheet='2035 - NREL', column_name='MiNg_$100_CAISO', n_clusters=n_clusters[2], horizon_length=24,)
 
+@pytest.mark.unit
+def test_cluster_lmp_data_logger_messages(excel_data):
+    n_clusters = [-5, 1.7, 10]
+    with pytest.raises(
+        ValueError,
+        match=(f"n_clusters must be an integer, but {n_clusters[1]} is not an integer"),
+    ):
+        m = PriceTakerModel()
+        _, _ = m.cluster_lmp_data(excel_data, n_clusters[1])
+    
+    with pytest.raises(
+        ValueError,
+        match=(f"n_clusters must be > 0, but {n_clusters[0]} is provided."),
+    ):
+        m = PriceTakerModel()
+        _, _ = m.cluster_lmp_data(excel_data, n_clusters[0])
+
 
 @pytest.mark.unit
 def test_deepgetattr_logger_messages(excel_data):
@@ -327,6 +347,18 @@ def test_deepgetattr_logger_messages(excel_data):
         match=(f"The attribute `{attr}` does not exist on the {A.__class__.__name__} instance passed. Make sure that `{attr}` is defined for that object."),
     ):
         deepgetattr(A, attr)
+
+
+@pytest.mark.unit
+def test_generate_daily_data_logger_messages(excel_data):
+    raw_data = excel_data['BaseCaseTax']
+    with pytest.raises(
+        ValueError,
+        match=(f"tried to generate daily data, but horizon length of {9000} exceeds raw_data length of {len(raw_data)}"),
+    ):
+        m = PriceTakerModel(horizon_length=9000)
+        daily_data = m.generate_daily_data(raw_data, day_list=list(range(365)))
+
 
 def dfc_design(m, params, capacity_range=(650, 900)):
     _dfc_capacity = params["dfc_capacity"]
