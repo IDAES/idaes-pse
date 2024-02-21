@@ -33,6 +33,7 @@ concurrency:
 env:
   IDAES_CONDA_ENV_NAME_DEV: idaes-pse-dev
   PYTEST_ADDOPTS: "--color=yes"
+  DEFAULT_PYTHON_VERSION: '3.11'
 
 defaults:
   run:
@@ -237,7 +238,7 @@ jobs:
         uses: conda-incubator/setup-miniconda@v3
         with:
           activate-environment: idaes-env
-          python-version: '3.8'
+          python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
       - name: Set up idaes (non-editable installation)
         uses: ./.github/actions/setup-idaes
         with:
