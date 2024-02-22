@@ -198,7 +198,7 @@ class TestMethane(object):
         m.fs.unit.deltaP.fix(0)
 
         # Fix some bounds to avoid potential log(0)
-        # TODO: This really should eb fixed in the property package, but breaks other tests
+        # TODO: This really should be fixed in the property package, but breaks other tests
         m.fs.unit.control_volume.properties_out[0].pressure.setlb(1000)
         m.fs.unit.control_volume.properties_out[0].mole_frac_phase_comp.setlb(1e-12)
 
@@ -230,7 +230,7 @@ class TestMethane(object):
         assert number_unused_variables(methane) == 0
 
     @pytest.mark.component
-    def test_strucutural_issues(self, methane):
+    def test_structural_issues(self, methane):
         dt = DiagnosticsToolbox(methane)
         dt.assert_no_structural_warnings()
 
