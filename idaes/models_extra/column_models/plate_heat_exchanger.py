@@ -46,6 +46,7 @@ from pyomo.environ import (
 )
 from pyomo.common.config import ConfigValue, In, Integer
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
+from pyomo.common.deprecation import deprecated
 
 # Import IDAES cores
 from idaes.core import declare_process_block_class
@@ -61,6 +62,13 @@ __author__ = "Paul Akula, Andrew Lee"
 _log = idaeslog.getLogger(__name__)
 
 
+@deprecated(
+    "The Plate Heat Exchanger (PHE) model is known to be affected by "
+    "issues causing it to fail to solve on certain platforms starting with Pyomo v6.7.0. "
+    "This might cause the model to be removed in an upcoming IDAES release if these failures are not resolved. "
+    "For more information, see IDAES/idaes-pse#1294",
+    version="2.3.0",
+)
 @declare_process_block_class("PlateHeatExchanger")
 class PlateHeatExchangerData(HeatExchangerNTUData):
     """Plate Heat Exchanger(PHE) Unit Model."""

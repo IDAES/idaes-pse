@@ -34,7 +34,7 @@ def rglob(path, glob):
 
 
 # For included DMF data
-DMF_DATA_ROOT = "data"
+DMF_DATA_ROOT = "dmf_data"
 
 
 def dmf_data_files(root: str = DMF_DATA_ROOT) -> List[Tuple[str, List[str]]]:
@@ -123,11 +123,16 @@ kwargs = dict(
     zip_safe=False,
     name=NAME,
     version=VERSION,
-    packages=find_namespace_packages(),
+    packages=find_namespace_packages(
+        include=[
+            "idaes*",
+            "dmf_data*",
+        ]
+    ),
     # Put abstract (non-versioned) deps here.
     # Concrete dependencies go in requirements[-dev].txt
     install_requires=[
-        "pyomo @ git+https://github.com/IDAES/Pyomo@6.7.0.idaes.2023.11.6",
+        "pyomo >= 6.7.0",
         "pint",  # required to use Pyomo units
         "networkx",  # required to use Pyomo network
         "numpy",

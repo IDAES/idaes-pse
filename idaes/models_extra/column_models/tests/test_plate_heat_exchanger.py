@@ -65,6 +65,12 @@ def test_config():
     assert len(m.fs.unit.config) == 9
 
 
+workaround_for_1294 = pytest.mark.xfail(
+    reason="These tests fail with Pyomo 6.7.0. See IDAES/idaes-pse#1294 for details",
+    strict=False,  # the failures only occur for certain platforms, e.g. Windows on GHA
+)
+
+
 # -----------------------------------------------------------------------------
 class TestPHE(object):
     @pytest.fixture(scope="class")
@@ -166,6 +172,7 @@ class TestPHE(object):
             phe, duty=(245000, pyunits.W), optarg={"bound_push": 1e-8, "mu_init": 1e-8}
         )
 
+    @workaround_for_1294
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
@@ -175,6 +182,7 @@ class TestPHE(object):
         # Check for optimal solution
         assert check_optimal_termination(results)
 
+    @workaround_for_1294
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
@@ -214,6 +222,7 @@ class TestPHE(object):
             phe.fs.unit.cold_side_outlet.temperature[0]
         )
 
+    @workaround_for_1294
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component

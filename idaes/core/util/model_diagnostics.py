@@ -15,13 +15,13 @@
 This module contains a collection of tools for diagnosing modeling issues.
 """
 
-__author__ = "Alexander Dowling, Douglas Allan, Andrew Lee"
+__author__ = "Alexander Dowling, Douglas Allan, Andrew Lee, Robby Parker, Ben Knueven"
 
 from operator import itemgetter
 import sys
 from inspect import signature
-import math
-from math import log
+from math import log, isclose, inf, isfinite
+import json
 from typing import List
 
 import numpy as np
@@ -36,8 +36,10 @@ from pyomo.environ import (
     check_optimal_termination,
     ConcreteModel,
     Constraint,
+    Expression,
     Objective,
     Param,
+    RangeSet,
     Set,
     SolverFactory,
     value,
@@ -73,6 +75,7 @@ from pyomo.contrib.pynumero.asl import AmplInterface
 from pyomo.contrib.fbbt.fbbt import compute_bounds_on_expr
 from pyomo.common.deprecation import deprecation_warning
 from pyomo.common.errors import PyomoException
+from pyomo.common.tempfiles import TempfileManager
 
 from idaes.core.util.model_statistics import (
     activated_blocks_set,
@@ -95,6 +98,11 @@ from idaes.core.util.scaling import (
     extreme_jacobian_rows,
     extreme_jacobian_entries,
     jacobian_cond,
+)
+from idaes.core.util.parameter_sweep import (
+    SequentialSweepRunner,
+    ParameterSweepBase,
+    is_psweepspec,
 )
 import idaes.logger as idaeslog
 
@@ -273,6 +281,14 @@ CONFIG.declare(
         default=True,
         domain=bool,
         description="If False, warnings will not be generated for things like log(x) with x >= 0",
+    ),
+)
+CONFIG.declare(
+    "parallel_component_tolerance",
+    ConfigValue(
+        default=1e-4,
+        domain=float,
+        description="Tolerance for identifying near-parallel Jacobian rows/columns",
     ),
 )
 
@@ -914,6 +930,70 @@ class DiagnosticsToolbox:
             footer="=",
         )
 
+    def display_near_parallel_constraints(self, stream=None):
+        """
+        Display near-parallel (duplicate) constraints in model.
+
+        Args:
+            stream: I/O object to write report to (default = stdout)
+
+        Returns:
+            None
+
+        """
+        if stream is None:
+            stream = sys.stdout
+
+        parallel = [
+            f"{i[0].name}, {i[1].name}"
+            for i in check_parallel_jacobian(
+                model=self._model,
+                tolerance=self.config.parallel_component_tolerance,
+                direction="row",
+            )
+        ]
+
+        # Write the output
+        _write_report_section(
+            stream=stream,
+            lines_list=parallel,
+            title="The following pairs of constraints are nearly parallel:",
+            header="=",
+            footer="=",
+        )
+
+    def display_near_parallel_variables(self, stream=None):
+        """
+        Display near-parallel (duplicate) variables in model.
+
+        Args:
+            stream: I/O object to write report to (default = stdout)
+
+        Returns:
+            None
+
+        """
+        if stream is None:
+            stream = sys.stdout
+
+        parallel = [
+            f"{i[0].name}, {i[1].name}"
+            for i in check_parallel_jacobian(
+                model=self._model,
+                tolerance=self.config.parallel_component_tolerance,
+                direction="column",
+            )
+        ]
+
+        # Write the output
+        _write_report_section(
+            stream=stream,
+            lines_list=parallel,
+            title="The following pairs of variables are nearly parallel:",
+            header="=",
+            footer="=",
+        )
+
     # TODO: Block triangularization analysis
     # Number and size of blocks, polynomial degree of 1x1 blocks, simple pivot check of moderate sized sub-blocks?
 
@@ -1330,7 +1410,8 @@ class DiagnosticsToolbox:
             lines_list=next_steps,
             title="Suggested next steps:",
             line_if_empty=f"If you still have issues converging your model consider:\n"
-            f"{TAB*2}prepare_svd_toolbox()\n{TAB*2}prepare_degeneracy_hunter()",
+            f"{TAB*2}display_near_parallel_constraints()\n{TAB*2}display_near_parallel_variables()"
+            f"\n{TAB*2}prepare_degeneracy_hunter()\n{TAB*2}prepare_svd_toolbox()",
             footer="=",
         )
 
@@ -1450,6 +1531,10 @@ class SVDToolbox:
             self._model, scaled=False, equality_constraints_only=True
         )
 
+        # Get list of equality constraint and variable names
+        self._eq_con_list = self.nlp.get_pyomo_equality_constraints()
+        self._var_list = self.nlp.get_pyomo_variables()
+
         if self.jacobian.shape[0] < 2:
             raise ValueError(
                 "Model needs at least 2 equality constraints to perform svd_analysis."
@@ -1562,10 +1647,6 @@ class SVDToolbox:
 
         tol = self.config.size_cutoff_in_singular_vector
 
-        # Get list of equality constraint and variable names
-        eq_con_list = self.nlp.get_pyomo_equality_constraints()
-        var_list = self.nlp.get_pyomo_variables()
-
         if singular_values is None:
             singular_values = range(1, len(self.s) + 1)
 
@@ -1588,11 +1669,11 @@ class SVDToolbox:
             stream.write(f"{TAB}Smallest Singular Value {e}:\n\n")
             stream.write(f"{2 * TAB}Variables:\n\n")
             for v in np.where(abs(self.v[:, e - 1]) > tol)[0]:
-                stream.write(f"{3 * TAB}{var_list[v].name}\n")
+                stream.write(f"{3 * TAB}{self._var_list[v].name}\n")
 
             stream.write(f"\n{2 * TAB}Constraints:\n\n")
             for c in np.where(abs(self.u[:, e - 1]) > tol)[0]:
-                stream.write(f"{3 * TAB}{eq_con_list[c].name}\n")
+                stream.write(f"{3 * TAB}{self._eq_con_list[c].name}\n")
             stream.write("\n")
 
         stream.write("=" * MAX_STR_LENGTH + "\n")
@@ -1620,23 +1701,19 @@ class SVDToolbox:
                 f"object (got {variable})."
             )
 
-        # Get list of equality constraint and variable names
-        eq_con_list = self.nlp.get_pyomo_equality_constraints()
-        var_list = self.nlp.get_pyomo_variables()
-
         # Get index of variable in Jacobian
         try:
-            var_idx = var_list.index(variable)
-        except (ValueError, PyomoException):
+            var_idx = self.nlp.get_primal_indices([variable])[0]
+        except (KeyError, PyomoException):
             raise AttributeError(f"Could not find {variable.name} in model.")
 
-        nonzeroes = self.jacobian[:, var_idx].nonzero()
+        nonzeros = self.jacobian.getcol(var_idx).nonzero()
 
         # Build a list of all constraints that include var
         cons_w_var = []
-        for i, r in enumerate(nonzeroes[0]):
+        for r in nonzeros[0]:
             cons_w_var.append(
-                f"{eq_con_list[r].name}: {self.jacobian[(r, nonzeroes[1][i])]}"
+                f"{self._eq_con_list[r].name}: {self.jacobian[(r, var_idx)]:.3e}"
             )
 
         # Write the output
@@ -1671,23 +1748,20 @@ class SVDToolbox:
                 f"object (got {constraint})."
             )
 
-        # Get list of equality constraint and variable names
-        eq_con_list = self.nlp.get_pyomo_equality_constraints()
-        var_list = self.nlp.get_pyomo_variables()
-
         # Get index of variable in Jacobian
         try:
-            con_idx = eq_con_list.index(constraint)
-        except ValueError:
+            con_idx = self.nlp.get_constraint_indices([constraint])[0]
+        except KeyError:
             raise AttributeError(f"Could not find {constraint.name} in model.")
 
-        nonzeroes = self.jacobian[con_idx, :].nonzero()
+        nonzeros = self.jacobian[con_idx, :].nonzero()
 
         # Build a list of all vars in constraint
         vars_in_cons = []
-        for i, r in enumerate(nonzeroes[0]):
-            c = nonzeroes[1][i]
-            vars_in_cons.append(f"{var_list[c].name}: {self.jacobian[(r, c)]}")
+        for c in nonzeros[1]:
+            vars_in_cons.append(
+                f"{self._var_list[c].name}: {self.jacobian[(con_idx, c)]:.3e}"
+            )
 
         # Write the output
         _write_report_section(
@@ -1702,9 +1776,9 @@ class SVDToolbox:
 def _get_bounds_with_inf(node: NumericExpression):
     lb, ub = compute_bounds_on_expr(node)
     if lb is None:
-        lb = -math.inf
+        lb = -inf
     if ub is None:
-        ub = math.inf
+        ub = inf
     return lb, ub
 
 
@@ -1786,7 +1860,7 @@ def _check_eval_error_tan(
     node: NumericExpression, warn_list: List[str], config: ConfigDict
 ):
     lb, ub = _get_bounds_with_inf(node)
-    if not (math.isfinite(lb) and math.isfinite(ub)):
+    if not (isfinite(lb) and isfinite(ub)):
         msg = f"{node} may evaluate to -inf or inf; Argument bounds are {_get_bounds_with_inf(node.args[0])}"
         warn_list.append(msg)
 
@@ -2093,6 +2167,9 @@ class DegeneracyHunter2:
             def eq_degenerate(m_dh, v):
                 # Find the columns with non-zero entries
                 C = find(J[:, v])[0]
+                if len(C) == 0:
+                    # Catch for edge-case of trivial constraint 0==0
+                    return Constraint.Skip
                 return sum(J[c, v] * m_dh.nu[c] for c in C) == 0
 
         else:
@@ -2281,8 +2358,8 @@ class DegeneracyHunter:
             self.jac_eq = get_jacobian(self.block, equality_constraints_only=True)[0]
 
             # Create a list of equality constraint names
-            self.eq_con_list = self.nlp.get_pyomo_equality_constraints()
-            self.var_list = self.nlp.get_pyomo_variables()
+            self._eq_con_list = self.nlp.get_pyomo_equality_constraints()
+            self._var_list = self.nlp.get_pyomo_variables()
 
             self.candidate_eqns = None
 
@@ -2293,7 +2370,7 @@ class DegeneracyHunter:
 
             # # TODO: Need to refactor, document, and test support for Jacobian
             # self.jac_eq = block_or_jac
-            # self.eq_con_list = None
+            # self._eq_con_list = None
 
         else:
             raise TypeError("Check the type for 'block_or_jac'")
@@ -2813,11 +2890,11 @@ class DegeneracyHunter:
             )
         print("Column:    Variable")
         for i in np.where(abs(self.v[:, n_calc - 1]) > tol)[0]:
-            print(str(i) + ": " + self.var_list[i].name)
+            print(str(i) + ": " + self._var_list[i].name)
         print("")
         print("Row:    Constraint")
         for i in np.where(abs(self.u[:, n_calc - 1]) > tol)[0]:
-            print(str(i) + ": " + self.eq_con_list[i].name)
+            print(str(i) + ": " + self._eq_con_list[i].name)
 
     def find_candidate_equations(self, verbose=True, tee=False):
         """
@@ -2842,7 +2919,7 @@ class DegeneracyHunter:
         if verbose:
             print("Solving MILP model...")
         ce, ds = self._find_candidate_eqs(
-            self.candidates_milp, self.solver, self.eq_con_list, tee
+            self.candidates_milp, self.solver, self._eq_con_list, tee
         )
 
         if ce is not None:
@@ -2883,7 +2960,7 @@ class DegeneracyHunter:
 
                 # Check if equation 'c' is a major element of an IDS
                 ids_ = self._check_candidate_ids(
-                    self.dh_milp, self.solver, c, self.eq_con_list, tee
+                    self.dh_milp, self.solver, c, self._eq_con_list, tee
                 )
 
                 if ids_ is not None:
@@ -2916,6 +2993,418 @@ class DegeneracyHunter:
 
         """
         print(v, "\t\t", v.lb, "\t", v.value, "\t", v.ub)
+
+
+def psweep_runner_validator(val):
+    """Domain validator for Parameter Sweep runners
+
+    Args:
+        val : value to be checked
+
+    Returns:
+        TypeError if val is not a valid callback
+    """
+    if issubclass(val, ParameterSweepBase):
+        return val
+
+    raise ValueError("Workflow runner must be a subclass of ParameterSweepBase.")
+
+
+CACONFIG = ConfigDict()
+CACONFIG.declare(
+    "input_specification",
+    ConfigValue(
+        domain=is_psweepspec,
+        doc="ParameterSweepSpecification object defining inputs to be sampled",
+    ),
+)
+CACONFIG.declare(
+    "workflow_runner",
+    ConfigValue(
+        default=SequentialSweepRunner,
+        domain=psweep_runner_validator,
+        doc="Parameter sweep workflow runner",
+    ),
+)
+CACONFIG.declare(
+    "solver_options",
+    ConfigValue(
+        domain=None,
+        description="Options to pass to IPOPT.",
+    ),
+)
+CACONFIG.declare(
+    "halt_on_error",
+    ConfigValue(
+        default=False,
+        domain=bool,
+        doc="Whether to halt execution of parameter sweep on encountering a solver error (default=False).",
+    ),
+)
+
+
+class IpoptConvergenceAnalysis:
+    """
+    Tool to performa a parameter sweep of model checking for numerical issues and
+    convergence characteristics. Users may specify an IDAES ParameterSweep class to
+    perform the sweep (default is SequentialSweepRunner).
+    """
+
+    CONFIG = CACONFIG()
+
+    def __init__(self, model, **kwargs):
+        # TODO: In future may want to generalise this to accept indexed blocks
+        # However, for now some of the tools do not support indexed blocks
+        if not isinstance(model, _BlockData):
+            raise TypeError(
+                "model argument must be an instance of a Pyomo BlockData object "
+                "(either a scalar Block or an element of an indexed Block)."
+            )
+
+        self.config = self.CONFIG(kwargs)
+
+        self._model = model
+
+        solver = SolverFactory("ipopt")
+        if self.config.solver_options is not None:
+            solver.options = self.config.solver_options
+
+        self._psweep = self.config.workflow_runner(
+            input_specification=self.config.input_specification,
+            build_model=self._build_model,
+            rebuild_model=True,
+            run_model=self._run_model,
+            build_outputs=self._build_outputs,
+            halt_on_error=self.config.halt_on_error,
+            handle_solver_error=self._recourse,
+            solver=solver,
+        )
+
+    @property
+    def results(self):
+        """
+        Returns the results of the IpoptConvergenceAnalysis run
+        """
+        return self._psweep.results
+
+    @property
+    def samples(self):
+        """
+        Returns the set of input samples for convergence analysis (pandas DataFrame)
+        """
+        return self._psweep.get_input_samples()
+
+    def run_convergence_analysis(self):
+        """
+        Execute convergence analysis sweep by calling execute_parameter_sweep
+        method in specified runner.
+
+        Returns:
+            dict of results from parameter sweep
+        """
+        return self._psweep.execute_parameter_sweep()
+
+    def run_convergence_analysis_from_dict(self, input_dict: dict):
+        """
+        Execute convergence analysis sweep using specification defined in dict.
+
+        Args:
+            input_dict: dict to load specification from
+
+        Returns:
+            dict of results from parameter sweep
+        """
+        self.from_dict(input_dict)
+        return self.run_convergence_analysis()
+
+    def run_convergence_analysis_from_file(self, filename: str):
+        """
+        Execute convergence analysis sweep using specification defined in json file.
+
+        Args:
+            filename: name of file to load specification from as string
+
+        Returns:
+            dict of results from parameter sweep
+        """
+        self.from_json_file(filename)
+        return self.run_convergence_analysis()
+
+    def compare_convergence_to_baseline(
+        self, filename: str, rel_tol: float = 0.1, abs_tol: float = 1
+    ):
+        """
+        Run convergence analysis and compare results to those defined in baseline file.
+
+        Args:
+            filename: name of baseline file to load specification from as string
+            rel_tol: relative tolerance to use for comparing number of iterations
+            abs_tol: absolute tolerance to use for comparing number of iterations
+
+        Returns:
+            dict containing lists of differences between convergence analysis run and baseline
+        """
+        with open(filename, "r") as f:
+            # Load file manually so we have saved results
+            jdict = json.load(f)
+        f.close()
+
+        # Run convergence analysis from dict
+        self.run_convergence_analysis_from_dict(jdict)
+
+        # Compare results
+        return self._compare_results_to_dict(jdict, rel_tol=rel_tol, abs_tol=abs_tol)
+
+    def assert_baseline_comparison(
+        self, filename: str, rel_tol: float = 0.1, abs_tol: float = 1
+    ):
+        """
+        Run convergence analysis and assert no differences in results to those defined
+        in baseline file.
+
+        Args:
+            filename: name of baseline file to load specification from as string
+            rel_tol: relative tolerance to use for comparing number of iterations
+            abs_tol: absolute tolerance to use for comparing number of iterations
+
+        Raises:
+            AssertionError if results of convergence analysis do not match baseline
+        """
+        diffs = self.compare_convergence_to_baseline(
+            filename, rel_tol=rel_tol, abs_tol=abs_tol
+        )
+
+        if any(len(v) != 0 for v in diffs.values()):
+            raise AssertionError("Convergence analysis does not match baseline")
+
+    def to_dict(self):
+        """
+        Serialize specification and current results to dict form
+
+        Returns:
+            dict
+        """
+        return self._psweep.to_dict()
+
+    def from_dict(self, input_dict):
+        """
+        Load specification and results from dict.
+
+        Args:
+            input_dict: dict to load from
+
+        Returns:
+            None
+        """
+        return self._psweep.from_dict(input_dict)
+
+    def to_json_file(self, filename):
+        """
+        Write specification and results to json file.
+
+        Args:
+            filename: name of file to write to as string
+
+        Returns:
+            None
+        """
+        return self._psweep.to_json_file(filename)
+
+    def from_json_file(self, filename):
+        """
+        Load specification and results from json file.
+
+        Args:
+            filename: name of file to load from as string
+
+        Returns:
+            None
+        """
+        return self._psweep.from_json_file(filename)
+
+    def _build_model(self):
+        # Create new instance of model by cloning
+        return self._model.clone()
+
+    def _run_model(self, model, solver):
+        # Run model using IPOPT and collect stats
+        (
+            status,
+            iters,
+            iters_in_restoration,
+            iters_w_regularization,
+            time,
+        ) = self._run_ipopt_with_stats(model, solver)
+
+        run_stats = [
+            iters,
+            iters_in_restoration,
+            iters_w_regularization,
+            time,
+        ]
+
+        success = check_optimal_termination(status)
+
+        return success, run_stats
+
+    @staticmethod
+    def _build_outputs(model, run_stats):
+        # Run model diagnostics numerical checks
+        dt = DiagnosticsToolbox(model=model)
+
+        warnings = False
+        try:
+            dt.assert_no_numerical_warnings()
+        except AssertionError:
+            warnings = True
+
+        # Compile Results
+        return {
+            "iters": run_stats[0],
+            "iters_in_restoration": run_stats[1],
+            "iters_w_regularization": run_stats[2],
+            "time": run_stats[3],
+            "numerical_issues": warnings,
+        }
+
+    @staticmethod
+    def _recourse(model):
+        # Return a default dict indicating no results
+        return {
+            "iters": -1,
+            "iters_in_restoration": -1,
+            "iters_w_regularization": -1,
+            "time": -1,
+            "numerical_issues": -1,
+        }
+
+    @staticmethod
+    def _parse_ipopt_output(ipopt_file):
+        # PArse IPOPT logs and return key metrics
+        # ToDO: Check for final iteration with regularization or restoration
+
+        iters = 0
+        iters_in_restoration = 0
+        iters_w_regularization = 0
+        time = 0
+        # parse the output file to get the iteration count, solver times, etc.
+        with open(ipopt_file, "r") as f:
+            parseline = False
+            for line in f:
+                if line.startswith("iter"):
+                    # This marks the start of the iteration logging, set parseline True
+                    parseline = True
+                elif line.startswith("Number of Iterations....:"):
+                    # Marks end of iteration logging, set parseline False
+                    parseline = False
+                    tokens = line.split()
+                    iters = int(tokens[3])
+                elif parseline:
+                    # Line contains details of an iteration, look for restoration or regularization
+                    tokens = line.split()
+                    try:
+                        if not tokens[6] == "-":
+                            # Iteration with regularization
+                            iters_w_regularization += 1
+                        if tokens[0].endswith("r"):
+                            # Iteration in restoration
+                            iters_in_restoration += 1
+                    except IndexError:
+                        # Blank line at end of iteration list, so assume we hit this
+                        pass
+                elif line.startswith(
+                    "Total CPU secs in IPOPT (w/o function evaluations)   ="
+                ):
+                    tokens = line.split()
+                    time += float(tokens[9])
+                elif line.startswith(
+                    "Total CPU secs in NLP function evaluations           ="
+                ):
+                    tokens = line.split()
+                    time += float(tokens[8])
+
+        return iters, iters_in_restoration, iters_w_regularization, time
+
+    def _run_ipopt_with_stats(self, model, solver, max_iter=500, max_cpu_time=120):
+        # Solve model using provided solver (assumed to be IPOPT) and parse logs
+        # ToDo: Check that the "solver" is, in fact, IPOPT
+
+        TempfileManager.push()
+        tempfile = TempfileManager.create_tempfile(suffix="ipopt_out", text=True)
+        opts = {
+            "output_file": tempfile,
+            "max_iter": max_iter,
+            "max_cpu_time": max_cpu_time,
+        }
+
+        status_obj = solver.solve(model, options=opts, tee=True)
+
+        (
+            iters,
+            iters_in_restoration,
+            iters_w_regularization,
+            time,
+        ) = self._parse_ipopt_output(tempfile)
+
+        TempfileManager.pop(remove=True)
+        return status_obj, iters, iters_in_restoration, iters_w_regularization, time
+
+    def _compare_results_to_dict(
+        self,
+        compare_dict: dict,
+        rel_tol: float = 0.1,
+        abs_tol: float = 1,
+    ):
+        # Compare results
+        success_diff = []
+        iters_diff = []
+        restore_diff = []
+        reg_diff = []
+        num_iss_diff = []
+
+        for k, v in self.results.items():
+            # Get sample result from compare dict
+            try:
+                comp = compare_dict["results"][k]
+            except KeyError:
+                # Reading from json often converts ints to strings
+                # Check to see if the index as a string works
+                comp = compare_dict["results"][str(k)]
+
+            # Check for differences
+            if v["success"] != comp["success"]:
+                success_diff.append(k)
+            if not isclose(
+                v["results"]["iters"],
+                comp["results"]["iters"],
+                rel_tol=rel_tol,
+                abs_tol=abs_tol,
+            ):
+                iters_diff.append(k)
+            if not isclose(
+                v["results"]["iters_in_restoration"],
+                comp["results"]["iters_in_restoration"],
+                rel_tol=rel_tol,
+                abs_tol=abs_tol,
+            ):
+                restore_diff.append(k)
+            if not isclose(
+                v["results"]["iters_w_regularization"],
+                comp["results"]["iters_w_regularization"],
+                rel_tol=rel_tol,
+                abs_tol=abs_tol,
+            ):
+                reg_diff.append(k)
+            if v["results"]["numerical_issues"] != comp["results"]["numerical_issues"]:
+                num_iss_diff.append(k)
+
+        return {
+            "success": success_diff,
+            "iters": iters_diff,
+            "iters_in_restoration": restore_diff,
+            "iters_w_regularization": reg_diff,
+            "numerical_issues": num_iss_diff,
+        }
 
 
 def get_valid_range_of_component(component):
@@ -3056,6 +3545,238 @@ def ipopt_solve_halt_on_error(model, options=None):
     return solver.solve(
         model, tee=True, symbolic_solver_labels=True, export_defined_variables=False
     )
+
+
+def check_parallel_jacobian(model, tolerance: float = 1e-4, direction: str = "row"):
+    """
+    Check for near-parallel rows or columns in the Jacobian.
+
+    Near-parallel rows or columns indicate a potential degeneracy in the model,
+    as this means that the associated constraints or variables are (near)
+    duplicates of each other.
+
+    This method is based on work published in:
+
+    Klotz, E., Identification, Assessment, and Correction of Ill-Conditioning and
+    Numerical Instability in Linear and Integer Programs, Informs 2014, pgs. 54-108
+    https://pubsonline.informs.org/doi/epdf/10.1287/educ.2014.0130
+
+    Args:
+        model: model to be analysed
+        tolerance: tolerance to use to determine if constraints/variables are parallel
+        direction: 'row' (default, constraints) or 'column' (variables)
+
+    Returns:
+        list of 2-tuples containing parallel Pyomo components
+
+    """
+    # Thanks to Robby Parker for the sparse matrix implementation and
+    # significant performance improvements
+
+    if direction not in ["row", "column"]:
+        raise ValueError(
+            f"Unrecognised value for direction ({direction}). "
+            "Must be 'row' or 'column'."
+        )
+
+    jac, nlp = get_jacobian(model, scaled=False)
+
+    # Get vectors that we will check, and the Pyomo components
+    # they correspond to.
+    if direction == "row":
+        components = nlp.get_pyomo_constraints()
+        csrjac = jac.tocsr()
+        # Make everything a column vector (CSC) for consistency
+        vectors = [csrjac[i, :].transpose().tocsc() for i in range(len(components))]
+    elif direction == "column":
+        components = nlp.get_pyomo_variables()
+        cscjac = jac.tocsc()
+        vectors = [cscjac[:, i] for i in range(len(components))]
+
+    # List to store pairs of parallel components
+    parallel = []
+
+    vectors_by_nz = {}
+    for vecidx, vec in enumerate(vectors):
+        maxval = max(np.abs(vec.data))
+        # Construct tuple of sorted col/row indices that participate
+        # in this vector (with non-negligible coefficient).
+        nz = tuple(
+            sorted(
+                idx
+                for idx, val in zip(vec.indices, vec.data)
+                if abs(val) > tolerance and abs(val) / maxval > tolerance
+            )
+        )
+        if nz in vectors_by_nz:
+            # Store the index as well so we know what component this
+            # correrponds to.
+            vectors_by_nz[nz].append((vec, vecidx))
+        else:
+            vectors_by_nz[nz] = [(vec, vecidx)]
+
+    for vecs in vectors_by_nz.values():
+        for idx, (u, uidx) in enumerate(vecs):
+            # idx is the "local index", uidx is the "global index"
+            # Frobenius norm of the matrix is 2-norm of this column vector
+            unorm = norm(u, ord="fro")
+            for v, vidx in vecs[idx + 1 :]:
+                vnorm = norm(v, ord="fro")
+
+                # Explicitly multiply a row vector * column vector
+                prod = u.transpose().dot(v)
+                absprod = abs(prod[0, 0])
+                diff = abs(absprod - unorm * vnorm)
+                if diff <= tolerance or diff <= tolerance * max(unorm, vnorm):
+                    parallel.append((uidx, vidx))
+
+    parallel = [(components[uidx], components[vidx]) for uidx, vidx in parallel]
+    return parallel
+
+
+def compute_ill_conditioning_certificate(
+    model,
+    target_feasibility_tol: float = 1e-06,
+    ratio_cutoff: float = 1e-04,
+    direction: str = "row",
+):
+    """
+    Finds constraints (rows) or variables (columns) in the model Jacobian that
+    may be contributing to ill conditioning.
+
+    This method is based on work published in:
+
+    Klotz, E., Identification, Assessment, and Correction of Ill-Conditioning and
+    Numerical Instability in Linear and Integer Programs, Informs 2014, pgs. 54-108
+    https://pubsonline.informs.org/doi/epdf/10.1287/educ.2014.0130
+
+    Args:
+        model: model to be analysed
+        target_feasibility_tol: target tolerance for solving ill conditioning problem
+        ratio_cutoff: cut-off for reporting ill conditioning
+        direction: 'row' (default, constraints) or 'column' (variables)
+
+    Returns:
+        list of strings reporting ill-conditioned variables/constraints and their
+        associated y values
+    """
+    _log.warning(
+        "Ill conditioning checks are a beta capability. Please be aware that "
+        "the name, location, and API for this may change in future releases."
+    )
+    # Thanks to B. Knueven for this implementation
+
+    if direction not in ["row", "column"]:
+        raise ValueError(
+            f"Unrecognised value for direction ({direction}). "
+            "Must be 'row' or 'column'."
+        )
+
+    jac, nlp = get_jacobian(model, scaled=False)
+
+    inverse_target_kappa = 1e-16 / target_feasibility_tol
+
+    # Set up the components we will analyze, either row or column
+    if direction == "row":
+        components = nlp.get_pyomo_constraints()
+        components_set = RangeSet(0, len(components) - 1)
+        results_set = RangeSet(0, nlp.n_primals() - 1)
+        jac = jac.transpose().tocsr()
+    elif direction == "column":
+        components = nlp.get_pyomo_variables()
+        components_set = RangeSet(0, len(components) - 1)
+        results_set = RangeSet(0, nlp.n_constraints() - 1)
+        jac = jac.tocsr()
+
+    # Build test problem
+    inf_prob = ConcreteModel()
+
+    inf_prob.y_pos = Var(components_set, bounds=(0, None))
+    inf_prob.y_neg = Var(components_set, bounds=(0, None))
+    inf_prob.y = Expression(components_set, rule=lambda m, i: m.y_pos[i] - m.y_neg[i])
+
+    inf_prob.res_pos = Var(results_set, bounds=(0, None))
+    inf_prob.res_neg = Var(results_set, bounds=(0, None))
+    inf_prob.res = Expression(
+        results_set, rule=lambda m, i: m.res_pos[i] - m.res_neg[i]
+    )
+
+    def b_rule(b, i):
+        lhs = 0.0
+
+        row = jac.getrow(i)
+        for j, val in zip(row.indices, row.data):
+            lhs += val * b.y[j]
+
+        return lhs == b.res[i]
+
+    inf_prob.by = Constraint(results_set, rule=b_rule)
+
+    # Normalization of y
+    inf_prob.normalize = Constraint(
+        expr=1 == sum(inf_prob.y_pos.values()) - sum(inf_prob.y_neg.values())
+    )
+
+    inf_prob.y_norm = Var()
+    inf_prob.y_norm_constr = Constraint(
+        expr=inf_prob.y_norm
+        == sum(inf_prob.y_pos.values()) + sum(inf_prob.y_neg.values())
+    )
+
+    inf_prob.res_norm = Var()
+    inf_prob.res_norm_constr = Constraint(
+        expr=inf_prob.res_norm
+        == sum(inf_prob.res_pos.values()) + sum(inf_prob.res_neg.values())
+    )
+
+    # Objective -- minimize residual
+    inf_prob.min_res = Objective(expr=inf_prob.res_norm)
+
+    solver = SolverFactory("cbc")  # TODO: Consider making this an option
+
+    # tighten tolerances  # TODO: If solver is an option, need to allow user options
+    solver.options["primalT"] = target_feasibility_tol * 1e-1
+    solver.options["dualT"] = target_feasibility_tol * 1e-1
+
+    results = solver.solve(inf_prob, tee=False)
+    if not check_optimal_termination(results):
+        # TODO: maybe we should tighten tolerances first?
+        raise RuntimeError("Ill conditioning diagnostic problem infeasible")
+
+    result_norm = inf_prob.res_norm.value
+    if result_norm < 0.0:
+        # TODO: try again with tighter tolerances?
+        raise RuntimeError(
+            "Ill conditioning diagnostic problem has numerically troublesome solution"
+        )
+    if result_norm >= inverse_target_kappa:
+        return []
+
+    # find an equivalent solution which minimizes y_norm
+    inf_prob.min_res.deactivate()
+    inf_prob.res_norm.fix()
+
+    inf_prob.min_y = Objective(expr=inf_prob.y_norm)
+
+    # if this problem is numerically infeasible, we can still report something to the user
+    results = solver.solve(inf_prob, tee=False, load_solutions=False)
+    if check_optimal_termination(results):
+        inf_prob.solutions.load_from(results)
+
+    ill_cond = []
+    slist = sorted(
+        inf_prob.y, key=lambda dict_key: abs(value(inf_prob.y[dict_key])), reverse=True
+    )
+    cutoff = None
+    for i in slist:
+        if cutoff is None:
+            cutoff = abs(value(inf_prob.y[i])) * ratio_cutoff
+        val = value(inf_prob.y[i])
+        if abs(val) < cutoff:
+            break
+        ill_cond.append((components[i], val))
+
+    return ill_cond
 
 
 # -------------------------------------------------------------------------------------------

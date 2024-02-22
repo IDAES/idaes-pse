@@ -13,7 +13,6 @@ disable=no-self-argument,
     fixme,
     raise-missing-from,
     logging-fstring-interpolation,  # not sure why pylint doesn't like f-strings
-    unnecessary-lambda,
     attribute-defined-outside-init,
     arguments-differ,
     abstract-method,
