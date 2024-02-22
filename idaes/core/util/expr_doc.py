@@ -348,20 +348,13 @@ def document_constraints(
             return f"$${comp.latex_nice_expr}$$"
         except AttributeError:
             pass
-        if comp.upper != comp.lower:
-            if doc:
-                s = "$${} \le {}\le {}$$\n{}".format(
-                    comp.lower, d["latex_expr"], comp.upper, d["where"]
-                )
-            else:
-                s = "$${} \le {}\le {}$$".format(
-                    comp.lower, d["latex_expr"], comp.upper
-                )
+        latex_expr = d["latex_expr"]
+        if comp.upper == comp.lower:
+            s = f"$${comp.lower} = {latex_expr}"
         else:
-            if doc:
-                s = "$${} = {}$$\n{}".format(comp.lower, d["latex_expr"], d["where"])
-            else:
-                s = "$${} = {}$$".format(comp.lower, d["latex_expr"])
+            s = rf"$${comp.lower} \le {latex_expr} \le {comp.upper}$$"
+        if doc:
+            s += f"\n{d['where']}"
     elif isinstance(comp, _BlockData):
         cs = []
         for c in comp.component_data_objects(Constraint, descend_into=descend_into):
