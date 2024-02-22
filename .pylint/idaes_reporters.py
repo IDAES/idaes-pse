@@ -26,7 +26,8 @@ class DisplayProgress(BaseReporter):
         return f() - self._start
 
     def on_set_current_module(self, module, filepath):
-        if filepath is None: return
+        if filepath is None:
+            return
         self.writeln(string=f"{self.elapsed:{self.time_format}} {filepath}")
 
     def _display(self, layout):
