@@ -207,7 +207,7 @@ jobs:
           echo "::group::Display pylint version"
           pip show pylint astroid
           echo "::endgroup::"
-          pylint --rcfile=./.pylint/pylintrc --disable=R --output-format=idaes_reporters.MultiReporter "$pylint_target_dir"
+          pylint --rcfile=./.pylint/pylintrc --disable=R --output-format=idaes_reporters.GHAReporter "$pylint_target_dir"
       - name: Generate pylint report on failure
         if: failure()
         run: |

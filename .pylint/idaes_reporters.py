@@ -1,6 +1,7 @@
 from pathlib import Path
 import time
 
+from pylint.message import Message
 from pylint.reporters import BaseReporter, text, JSONReporter
 
 
@@ -47,6 +48,24 @@ class MultiReporter(BaseReporter):
 
     def _display(self, layout):
         ...
+
+
+class GHAReporter(text.TextReporter):
+    name = "gha"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._map_pylint_to_gha = {
+            "critical": "error",
+            "warning": "warning",
+            "info": "notice",
+        }
+
+    def write_message(self, m: Message) -> None:
+        gha_type = self._map_pylint_to_gha.get(m.category, "notice")
+        gha_title = f"{m.msg_id} ({m.symbol})"
+        line = f"::{gha_type} file={m.path},line={m.line},endLine={m.end_line},title={gha_title}::{m.msg}"
+        self.writeln(line)
 
 
 def register(linter):
