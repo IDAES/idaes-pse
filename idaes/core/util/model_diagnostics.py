@@ -3043,7 +3043,7 @@ CACONFIG.declare(
 )
 
 
-class ConvergenceAnalysis:
+class IpoptConvergenceAnalysis:
     """
     Tool to performa a parameter sweep of model checking for numerical issues and
     convergence characteristics. Users may specify an IDAES ParameterSweep class to
@@ -3083,7 +3083,7 @@ class ConvergenceAnalysis:
     @property
     def results(self):
         """
-        Returns the results of the ConvergenceAnalysis run
+        Returns the results of the IpoptConvergenceAnalysis run
         """
         return self._psweep.results
 

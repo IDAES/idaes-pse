@@ -61,7 +61,7 @@ from idaes.core.util.model_diagnostics import (
     DiagnosticsToolbox,
     SVDToolbox,
     DegeneracyHunter,
-    ConvergenceAnalysis,
+    IpoptConvergenceAnalysis,
     DegeneracyHunter2,
     svd_dense,
     svd_sparse,
@@ -2163,7 +2163,7 @@ ca_res = {
 }
 
 
-class TestConvergenceAnalysis:
+class TestIpoptConvergenceAnalysis:
     @pytest.fixture
     def model(self):
         m = ConcreteModel()
@@ -2178,7 +2178,7 @@ class TestConvergenceAnalysis:
 
     @pytest.mark.unit
     def test_init(self, model):
-        ca = ConvergenceAnalysis(model)
+        ca = IpoptConvergenceAnalysis(model)
 
         assert ca._model is model
         assert isinstance(ca._psweep, SequentialSweepRunner)
@@ -2188,7 +2188,7 @@ class TestConvergenceAnalysis:
 
     @pytest.mark.unit
     def test_build_model(self, model):
-        ca = ConvergenceAnalysis(model)
+        ca = IpoptConvergenceAnalysis(model)
 
         clone = ca._build_model()
         clone.pprint()
@@ -2200,7 +2200,7 @@ class TestConvergenceAnalysis:
 
     @pytest.mark.unit
     def test_parse_ipopt_output(self, model):
-        ca = ConvergenceAnalysis(model)
+        ca = IpoptConvergenceAnalysis(model)
 
         fname = os.path.join(currdir, "ipopt_output.txt")
         iters, restoration, regularization, time = ca._parse_ipopt_output(fname)
@@ -2217,7 +2217,7 @@ class TestConvergenceAnalysis:
         m.v1 = Var(initialize=1)
         m.c1 = Constraint(expr=m.v1 == 4)
 
-        ca = ConvergenceAnalysis(m)
+        ca = IpoptConvergenceAnalysis(m)
         solver = SolverFactory("ipopt")
 
         (
@@ -2237,7 +2237,7 @@ class TestConvergenceAnalysis:
     @pytest.mark.component
     @pytest.mark.solver
     def test_run_model(self, model):
-        ca = ConvergenceAnalysis(model)
+        ca = IpoptConvergenceAnalysis(model)
 
         model.v2.fix(0.5)
 
@@ -2255,7 +2255,7 @@ class TestConvergenceAnalysis:
 
     @pytest.mark.unit
     def test_build_outputs(self, model):
-        ca = ConvergenceAnalysis(model)
+        ca = IpoptConvergenceAnalysis(model)
 
         model.v1.set_value(0.5)
         model.v2.fix(0.5)
@@ -2272,7 +2272,7 @@ class TestConvergenceAnalysis:
 
     @pytest.mark.unit
     def test_build_outputs_with_warnings(self, model):
-        ca = ConvergenceAnalysis(model)
+        ca = IpoptConvergenceAnalysis(model)
 
         model.v1.set_value(4)
         model.v2.fix(0.5)
@@ -2289,7 +2289,7 @@ class TestConvergenceAnalysis:
 
     @pytest.mark.unit
     def test_recourse(self, model):
-        ca = ConvergenceAnalysis(model)
+        ca = IpoptConvergenceAnalysis(model)
 
         assert ca._recourse(model) == {
             "iters": -1,
@@ -2307,7 +2307,7 @@ class TestConvergenceAnalysis:
         spec.set_sampling_method(UniformSampling)
         spec.set_sample_size([4])
 
-        ca = ConvergenceAnalysis(model, input_specification=spec)
+        ca = IpoptConvergenceAnalysis(model, input_specification=spec)
 
         ca.run_convergence_analysis()
 
@@ -2354,7 +2354,7 @@ class TestConvergenceAnalysis:
         spec.set_sample_size([2])
         spec.generate_samples()
 
-        ca = ConvergenceAnalysis(
+        ca = IpoptConvergenceAnalysis(
             model=ConcreteModel(),
             input_specification=spec,
         )
@@ -2373,7 +2373,7 @@ class TestConvergenceAnalysis:
 
     @pytest.mark.unit
     def test_from_dict(self):
-        ca = ConvergenceAnalysis(
+        ca = IpoptConvergenceAnalysis(
             model=ConcreteModel(),
         )
 
@@ -2465,7 +2465,7 @@ class TestConvergenceAnalysis:
     def test_load_from_json_file(self):
         fname = os.path.join(currdir, "load_psweep.json")
 
-        ca = ConvergenceAnalysis(
+        ca = IpoptConvergenceAnalysis(
             model=ConcreteModel(),
         )
         ca.from_json_file(fname)
@@ -2489,7 +2489,7 @@ class TestConvergenceAnalysis:
     @pytest.mark.integration
     @pytest.mark.solver
     def test_run_convergence_analysis_from_dict(self, model):
-        ca = ConvergenceAnalysis(
+        ca = IpoptConvergenceAnalysis(
             model=model,
         )
         ca.run_convergence_analysis_from_dict(ca_dict)
@@ -2527,7 +2527,7 @@ class TestConvergenceAnalysis:
     def test_run_convergence_analysis_from_file(self, model):
         fname = os.path.join(currdir, "load_psweep.json")
 
-        ca = ConvergenceAnalysis(
+        ca = IpoptConvergenceAnalysis(
             model=model,
         )
         ca.run_convergence_analysis_from_file(fname)
@@ -2562,7 +2562,7 @@ class TestConvergenceAnalysis:
 
     @pytest.fixture(scope="class")
     def conv_anal(self):
-        ca = ConvergenceAnalysis(
+        ca = IpoptConvergenceAnalysis(
             model=ConcreteModel(),
         )
         ca.from_dict(ca_res)
@@ -2676,7 +2676,7 @@ class TestConvergenceAnalysis:
     def test_compare_convergence_to_baseline(self, model):
         fname = os.path.join(currdir, "convergence_baseline.json")
 
-        ca = ConvergenceAnalysis(
+        ca = IpoptConvergenceAnalysis(
             model=model,
         )
 
@@ -2696,7 +2696,7 @@ class TestConvergenceAnalysis:
     def test_assert_baseline_comparison(self, model):
         fname = os.path.join(currdir, "convergence_baseline.json")
 
-        ca = ConvergenceAnalysis(
+        ca = IpoptConvergenceAnalysis(
             model=model,
         )
 
