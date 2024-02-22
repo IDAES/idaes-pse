@@ -182,6 +182,8 @@ intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
     # add links to idaes-ui
     "ui": ("https://idaes-ui.readthedocs.io/en/latest/", None),
+    # add links to Pyomo
+    "pyomo": ("https://pyomo.readthedocs.io/en/stable/", None),
 }
 
 # -- Options for HTML output ----------------------------------------------
