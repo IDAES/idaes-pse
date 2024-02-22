@@ -74,7 +74,7 @@ class UI:
             self.visualize = self._visualize_null
             self.installed = False
         else:
-            import idaes_ui
+            import idaes_ui.fv
             self.visualize = idaes_ui.fv.visualize
             self.installed = True
 
