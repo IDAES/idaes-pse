@@ -61,7 +61,7 @@ from idaes.core.util.model_diagnostics import (
     DiagnosticsToolbox,
     SVDToolbox,
     DegeneracyHunter,
-    ConvergenceAnalysis,
+    IpoptConvergenceAnalysis,
     DegeneracyHunter2,
     svd_dense,
     svd_sparse,
@@ -77,6 +77,8 @@ from idaes.core.util.model_diagnostics import (
     _vars_with_extreme_values,
     _write_report_section,
     _collect_model_statistics,
+    check_parallel_jacobian,
+    compute_ill_conditioning_certificate,
 )
 from idaes.core.util.parameter_sweep import (
     SequentialSweepRunner,
@@ -938,6 +940,64 @@ values (<1.0E-04 or>1.0E+04):
         assert stream.getvalue() == expected
 
     @pytest.mark.component
+    def test_display_near_parallel_constraints(self):
+        model = ConcreteModel()
+        model.v1 = Var(initialize=1e-8)
+        model.v2 = Var()
+        model.v3 = Var()
+
+        model.c1 = Constraint(expr=model.v1 == model.v2)
+        model.c2 = Constraint(expr=model.v1 == 1e-8 * model.v3)
+        model.c3 = Constraint(expr=1e8 * model.v1 + 1e10 * model.v2 == 1e-6 * model.v3)
+        model.c4 = Constraint(expr=-model.v1 == -0.99999 * model.v2)
+
+        dt = DiagnosticsToolbox(model=model)
+
+        stream = StringIO()
+        dt.display_near_parallel_constraints(stream)
+
+        expected = """====================================================================================
+The following pairs of constraints are nearly parallel:
+
+    c1, c4
+
+====================================================================================
+"""
+
+        assert stream.getvalue() == expected
+
+    @pytest.mark.component
+    def test_display_near_parallel_variables(self):
+        model = ConcreteModel()
+        model.v1 = Var(initialize=1e-8)
+        model.v2 = Var()
+        model.v3 = Var()
+        model.v4 = Var()
+
+        model.c1 = Constraint(expr=model.v1 == model.v2 - 0.99999 * model.v4)
+        model.c2 = Constraint(expr=model.v1 + 1.00001 * model.v4 == 1e-8 * model.v3)
+        model.c3 = Constraint(
+            expr=1e8 * (model.v1 + model.v4) + 1e10 * model.v2 == 1e-6 * model.v3
+        )
+
+        dt = DiagnosticsToolbox(model=model)
+
+        stream = StringIO()
+        dt.display_near_parallel_variables(stream)
+
+        expected = """====================================================================================
+The following pairs of variables are nearly parallel:
+
+    v1, v2
+    v1, v4
+    v2, v4
+
+====================================================================================
+"""
+
+        assert stream.getvalue() == expected
+
+    @pytest.mark.component
     def test_collect_structural_warnings_base_case(self, model):
         dt = DiagnosticsToolbox(model=model.b)
 
@@ -1185,6 +1245,102 @@ Model Statistics
 Suggested next steps:
 
     display_components_with_inconsistent_units()
+
+====================================================================================
+"""
+
+        assert stream.getvalue() == expected
+
+    @pytest.mark.component
+    def test_report_structural_issues_ok(self):
+        m = ConcreteModel()
+
+        m.v1 = Var(initialize=1)
+        m.v2 = Var(initialize=2)
+        m.v3 = Var(initialize=3)
+
+        m.c1 = Constraint(expr=2 * m.v1 == m.v2)
+        m.c2 = Constraint(expr=m.v1 + m.v2 == m.v3)
+        m.c3 = Constraint(expr=m.v1 == 1)
+
+        dt = DiagnosticsToolbox(model=m)
+
+        stream = StringIO()
+        dt.report_structural_issues(stream)
+
+        expected = """====================================================================================
+Model Statistics
+
+        Activated Blocks: 1 (Deactivated: 0)
+        Free Variables in Activated Constraints: 3 (External: 0)
+            Free Variables with only lower bounds: 0
+            Free Variables with only upper bounds: 0
+            Free Variables with upper and lower bounds: 0
+        Fixed Variables in Activated Constraints: 0 (External: 0)
+        Activated Equality Constraints: 3 (Deactivated: 0)
+        Activated Inequality Constraints: 0 (Deactivated: 0)
+        Activated Objectives: 0 (Deactivated: 0)
+
+------------------------------------------------------------------------------------
+0 WARNINGS
+
+    No warnings found!
+
+------------------------------------------------------------------------------------
+0 Cautions
+
+    No cautions found!
+
+------------------------------------------------------------------------------------
+Suggested next steps:
+
+    Try to initialize/solve your model and then call report_numerical_issues()
+
+====================================================================================
+"""
+
+        assert stream.getvalue() == expected
+
+    @pytest.mark.component
+    def test_report_numerical_issues_ok(self):
+        m = ConcreteModel()
+
+        m.v1 = Var(initialize=1)
+        m.v2 = Var(initialize=2)
+        m.v3 = Var(initialize=3)
+
+        m.c1 = Constraint(expr=2 * m.v1 == m.v2)
+        m.c2 = Constraint(expr=m.v1 + m.v2 == m.v3)
+        m.c3 = Constraint(expr=m.v1 == 1)
+
+        dt = DiagnosticsToolbox(model=m)
+
+        stream = StringIO()
+        dt.report_numerical_issues(stream)
+
+        expected = """====================================================================================
+Model Statistics
+
+    Jacobian Condition Number: 1.237E+01
+
+------------------------------------------------------------------------------------
+0 WARNINGS
+
+    No warnings found!
+
+------------------------------------------------------------------------------------
+0 Cautions
+
+    No cautions found!
+
+------------------------------------------------------------------------------------
+Suggested next steps:
+
+    If you still have issues converging your model consider:
+        display_near_parallel_constraints()
+        display_near_parallel_variables()
+        prepare_degeneracy_hunter()
+        prepare_svd_toolbox()
 
 ====================================================================================
 """
@@ -1860,6 +2016,7 @@ class TestDegeneracyHunter:
             model.con5: -1,
         }
 
+    # TODO does this test function have the exact same name as the one above?
     @pytest.mark.solver
     @pytest.mark.component
     def test_solve_ids_milp(self, model, scip_solver):
@@ -1958,11 +2115,11 @@ ca_dict = {
     },
     "results": {
         0: {
-            "solved": True,
+            "success": True,
             "results": 2,
         },
         1: {
-            "solved": True,
+            "success": True,
             "results": 6,
         },
     },
@@ -1983,7 +2140,7 @@ ca_res = {
     },
     "results": {
         0: {
-            "solved": False,
+            "success": False,
             "results": {
                 "iters": 7,
                 "iters_in_restoration": 4,
@@ -1993,7 +2150,7 @@ ca_res = {
             },
         },
         1: {
-            "solved": False,
+            "success": False,
             "results": {
                 "iters": 7,
                 "iters_in_restoration": 4,
@@ -2006,7 +2163,7 @@ ca_res = {
 }
 
 
-class TestConvergenceAnalysis:
+class TestIpoptConvergenceAnalysis:
     @pytest.fixture
     def model(self):
         m = ConcreteModel()
@@ -2021,7 +2178,7 @@ class TestConvergenceAnalysis:
 
     @pytest.mark.unit
     def test_init(self, model):
-        ca = ConvergenceAnalysis(model)
+        ca = IpoptConvergenceAnalysis(model)
 
         assert ca._model is model
         assert isinstance(ca._psweep, SequentialSweepRunner)
@@ -2031,7 +2188,7 @@ class TestConvergenceAnalysis:
 
     @pytest.mark.unit
     def test_build_model(self, model):
-        ca = ConvergenceAnalysis(model)
+        ca = IpoptConvergenceAnalysis(model)
 
         clone = ca._build_model()
         clone.pprint()
@@ -2043,7 +2200,7 @@ class TestConvergenceAnalysis:
 
     @pytest.mark.unit
     def test_parse_ipopt_output(self, model):
-        ca = ConvergenceAnalysis(model)
+        ca = IpoptConvergenceAnalysis(model)
 
         fname = os.path.join(currdir, "ipopt_output.txt")
         iters, restoration, regularization, time = ca._parse_ipopt_output(fname)
@@ -2060,7 +2217,7 @@ class TestConvergenceAnalysis:
         m.v1 = Var(initialize=1)
         m.c1 = Constraint(expr=m.v1 == 4)
 
-        ca = ConvergenceAnalysis(m)
+        ca = IpoptConvergenceAnalysis(m)
         solver = SolverFactory("ipopt")
 
         (
@@ -2080,15 +2237,15 @@ class TestConvergenceAnalysis:
     @pytest.mark.component
     @pytest.mark.solver
     def test_run_model(self, model):
-        ca = ConvergenceAnalysis(model)
+        ca = IpoptConvergenceAnalysis(model)
 
         model.v2.fix(0.5)
 
         solver = SolverFactory("ipopt")
 
-        solved, run_stats = ca._run_model(model, solver)
+        success, run_stats = ca._run_model(model, solver)
 
-        assert solved
+        assert success
         assert value(model.v1) == pytest.approx(0.5, rel=1e-8)
 
         assert len(run_stats) == 4
@@ -2098,7 +2255,7 @@ class TestConvergenceAnalysis:
 
     @pytest.mark.unit
     def test_build_outputs(self, model):
-        ca = ConvergenceAnalysis(model)
+        ca = IpoptConvergenceAnalysis(model)
 
         model.v1.set_value(0.5)
         model.v2.fix(0.5)
@@ -2115,7 +2272,7 @@ class TestConvergenceAnalysis:
 
     @pytest.mark.unit
     def test_build_outputs_with_warnings(self, model):
-        ca = ConvergenceAnalysis(model)
+        ca = IpoptConvergenceAnalysis(model)
 
         model.v1.set_value(4)
         model.v2.fix(0.5)
@@ -2132,7 +2289,7 @@ class TestConvergenceAnalysis:
 
     @pytest.mark.unit
     def test_recourse(self, model):
-        ca = ConvergenceAnalysis(model)
+        ca = IpoptConvergenceAnalysis(model)
 
         assert ca._recourse(model) == {
             "iters": -1,
@@ -2146,11 +2303,11 @@ class TestConvergenceAnalysis:
     @pytest.mark.solver
     def test_run_convergence_analysis(self, model):
         spec = ParameterSweepSpecification()
-        spec.add_sampled_input("v2", "v2", lower=0, upper=3)
+        spec.add_sampled_input("v2", lower=0, upper=3)
         spec.set_sampling_method(UniformSampling)
         spec.set_sample_size([4])
 
-        ca = ConvergenceAnalysis(model, input_specification=spec)
+        ca = IpoptConvergenceAnalysis(model, input_specification=spec)
 
         ca.run_convergence_analysis()
 
@@ -2159,21 +2316,21 @@ class TestConvergenceAnalysis:
 
         # Ignore time, as it is too noisy to test
         # Sample 0 should solve cleanly
-        assert ca.results[0]["solved"]
+        assert ca.results[0]["success"]
         assert ca.results[0]["results"]["iters"] == 0
         assert ca.results[0]["results"]["iters_in_restoration"] == 0
         assert ca.results[0]["results"]["iters_w_regularization"] == 0
         assert not ca.results[0]["results"]["numerical_issues"]
 
         # Sample 1 should solve, but have issues due to bound on v1
-        assert ca.results[1]["solved"]
+        assert ca.results[1]["success"]
         assert ca.results[1]["results"]["iters"] == pytest.approx(3, abs=1)
         assert ca.results[1]["results"]["iters_in_restoration"] == 0
         assert ca.results[1]["results"]["iters_w_regularization"] == 0
         assert ca.results[1]["results"]["numerical_issues"]
 
         # Other iterations should fail due to bound
-        assert not ca.results[2]["solved"]
+        assert not ca.results[2]["success"]
         assert ca.results[2]["results"]["iters"] == pytest.approx(7, abs=1)
         assert ca.results[2]["results"]["iters_in_restoration"] == pytest.approx(
             4, abs=1
@@ -2181,7 +2338,7 @@ class TestConvergenceAnalysis:
         assert ca.results[2]["results"]["iters_w_regularization"] == 0
         assert ca.results[2]["results"]["numerical_issues"]
 
-        assert not ca.results[3]["solved"]
+        assert not ca.results[3]["success"]
         assert ca.results[3]["results"]["iters"] == pytest.approx(8, abs=1)
         assert ca.results[3]["results"]["iters_in_restoration"] == pytest.approx(
             5, abs=1
@@ -2193,18 +2350,18 @@ class TestConvergenceAnalysis:
     def ca_with_results(self):
         spec = ParameterSweepSpecification()
         spec.set_sampling_method(UniformSampling)
-        spec.add_sampled_input("v2", "v2", 2, 6)
+        spec.add_sampled_input("v2", 2, 6)
         spec.set_sample_size([2])
         spec.generate_samples()
 
-        ca = ConvergenceAnalysis(
+        ca = IpoptConvergenceAnalysis(
             model=ConcreteModel(),
             input_specification=spec,
         )
 
         ca._psweep._results = {
-            0: {"solved": True, "results": 2},
-            1: {"solved": True, "results": 6},
+            0: {"success": True, "results": 2},
+            1: {"success": True, "results": 6},
         }
 
         return ca
@@ -2216,7 +2373,7 @@ class TestConvergenceAnalysis:
 
     @pytest.mark.unit
     def test_from_dict(self):
-        ca = ConvergenceAnalysis(
+        ca = IpoptConvergenceAnalysis(
             model=ConcreteModel(),
         )
 
@@ -2235,7 +2392,7 @@ class TestConvergenceAnalysis:
         assert len(ca.results) == 2
 
         for i in [0, 1]:
-            assert ca.results[i]["solved"]
+            assert ca.results[i]["success"]
             assert ca.results[i]["results"] == 2 + i * 4
 
     @pytest.mark.component
@@ -2288,11 +2445,11 @@ class TestConvergenceAnalysis:
    },
    "results": {
       "0": {
-         "solved": true,
+         "success": true,
          "results": 2
       },
       "1": {
-         "solved": true,
+         "success": true,
          "results": 6
       }
    }
@@ -2308,7 +2465,7 @@ class TestConvergenceAnalysis:
     def test_load_from_json_file(self):
         fname = os.path.join(currdir, "load_psweep.json")
 
-        ca = ConvergenceAnalysis(
+        ca = IpoptConvergenceAnalysis(
             model=ConcreteModel(),
         )
         ca.from_json_file(fname)
@@ -2326,13 +2483,13 @@ class TestConvergenceAnalysis:
         assert len(ca.results) == 2
 
         for i in [0, 1]:
-            assert ca.results[i]["solved"]
+            assert ca.results[i]["success"]
             assert ca.results[i]["results"] == 2 + i * 4
 
     @pytest.mark.integration
     @pytest.mark.solver
     def test_run_convergence_analysis_from_dict(self, model):
-        ca = ConvergenceAnalysis(
+        ca = IpoptConvergenceAnalysis(
             model=model,
         )
         ca.run_convergence_analysis_from_dict(ca_dict)
@@ -2349,7 +2506,7 @@ class TestConvergenceAnalysis:
         assert isinstance(ca.results, dict)
         assert len(ca.results) == 2
 
-        assert not ca.results[0]["solved"]
+        assert not ca.results[0]["success"]
         assert ca.results[0]["results"]["iters"] == pytest.approx(7, abs=1)
         assert ca.results[0]["results"]["iters_in_restoration"] == pytest.approx(
             4, abs=1
@@ -2357,7 +2514,7 @@ class TestConvergenceAnalysis:
         assert ca.results[0]["results"]["iters_w_regularization"] == 0
         assert ca.results[0]["results"]["numerical_issues"]
 
-        assert not ca.results[1]["solved"]
+        assert not ca.results[1]["success"]
         assert ca.results[1]["results"]["iters"] == pytest.approx(7, abs=1)
         assert ca.results[1]["results"]["iters_in_restoration"] == pytest.approx(
             4, abs=1
@@ -2370,7 +2527,7 @@ class TestConvergenceAnalysis:
     def test_run_convergence_analysis_from_file(self, model):
         fname = os.path.join(currdir, "load_psweep.json")
 
-        ca = ConvergenceAnalysis(
+        ca = IpoptConvergenceAnalysis(
             model=model,
         )
         ca.run_convergence_analysis_from_file(fname)
@@ -2387,7 +2544,7 @@ class TestConvergenceAnalysis:
         assert isinstance(ca.results, dict)
         assert len(ca.results) == 2
 
-        assert not ca.results[0]["solved"]
+        assert not ca.results[0]["success"]
         assert ca.results[0]["results"]["iters"] == pytest.approx(7, abs=1)
         assert ca.results[0]["results"]["iters_in_restoration"] == pytest.approx(
             4, abs=1
@@ -2395,7 +2552,7 @@ class TestConvergenceAnalysis:
         assert ca.results[0]["results"]["iters_w_regularization"] == 0
         assert ca.results[0]["results"]["numerical_issues"]
 
-        assert not ca.results[1]["solved"]
+        assert not ca.results[1]["success"]
         assert ca.results[1]["results"]["iters"] == pytest.approx(7, abs=1)
         assert ca.results[1]["results"]["iters_in_restoration"] == pytest.approx(
             4, abs=1
@@ -2405,7 +2562,7 @@ class TestConvergenceAnalysis:
 
     @pytest.fixture(scope="class")
     def conv_anal(self):
-        ca = ConvergenceAnalysis(
+        ca = IpoptConvergenceAnalysis(
             model=ConcreteModel(),
         )
         ca.from_dict(ca_res)
@@ -2416,20 +2573,20 @@ class TestConvergenceAnalysis:
     def test_compare_results_to_dict_ok(self, conv_anal):
         diffs = conv_anal._compare_results_to_dict(ca_res)
 
-        assert diffs["solved"] == []
+        assert diffs["success"] == []
         assert diffs["iters"] == []
         assert diffs["iters_in_restoration"] == []
         assert diffs["iters_w_regularization"] == []
         assert diffs["numerical_issues"] == []
 
     @pytest.mark.unit
-    def test_compare_results_to_dict_solved(self, conv_anal):
+    def test_compare_results_to_dict_success(self, conv_anal):
         ca_copy = deepcopy(ca_res)
-        ca_copy["results"][0]["solved"] = True
+        ca_copy["results"][0]["success"] = True
 
         diffs = conv_anal._compare_results_to_dict(ca_copy)
 
-        assert diffs["solved"] == [0]
+        assert diffs["success"] == [0]
         assert diffs["iters"] == []
         assert diffs["iters_in_restoration"] == []
         assert diffs["iters_w_regularization"] == []
@@ -2443,7 +2600,7 @@ class TestConvergenceAnalysis:
 
         diffs = conv_anal._compare_results_to_dict(ca_copy)
 
-        assert diffs["solved"] == []
+        assert diffs["success"] == []
         assert diffs["iters"] == [1]
         assert diffs["iters_in_restoration"] == []
         assert diffs["iters_w_regularization"] == []
@@ -2451,7 +2608,7 @@ class TestConvergenceAnalysis:
 
         diffs = conv_anal._compare_results_to_dict(ca_copy, abs_tol=0, rel_tol=0)
 
-        assert diffs["solved"] == []
+        assert diffs["success"] == []
         assert diffs["iters"] == [0, 1]
         assert diffs["iters_in_restoration"] == []
         assert diffs["iters_w_regularization"] == []
@@ -2465,7 +2622,7 @@ class TestConvergenceAnalysis:
 
         diffs = conv_anal._compare_results_to_dict(ca_copy)
 
-        assert diffs["solved"] == []
+        assert diffs["success"] == []
         assert diffs["iters"] == []
         assert diffs["iters_in_restoration"] == [1]
         assert diffs["iters_w_regularization"] == []
@@ -2473,7 +2630,7 @@ class TestConvergenceAnalysis:
 
         diffs = conv_anal._compare_results_to_dict(ca_copy, abs_tol=0, rel_tol=0)
 
-        assert diffs["solved"] == []
+        assert diffs["success"] == []
         assert diffs["iters"] == []
         assert diffs["iters_in_restoration"] == [0, 1]
         assert diffs["iters_w_regularization"] == []
@@ -2487,7 +2644,7 @@ class TestConvergenceAnalysis:
 
         diffs = conv_anal._compare_results_to_dict(ca_copy)
 
-        assert diffs["solved"] == []
+        assert diffs["success"] == []
         assert diffs["iters"] == []
         assert diffs["iters_in_restoration"] == []
         assert diffs["iters_w_regularization"] == [1]
@@ -2495,7 +2652,7 @@ class TestConvergenceAnalysis:
 
         diffs = conv_anal._compare_results_to_dict(ca_copy, abs_tol=0, rel_tol=0)
 
-        assert diffs["solved"] == []
+        assert diffs["success"] == []
         assert diffs["iters"] == []
         assert diffs["iters_in_restoration"] == []
         assert diffs["iters_w_regularization"] == [0, 1]
@@ -2508,7 +2665,7 @@ class TestConvergenceAnalysis:
 
         diffs = conv_anal._compare_results_to_dict(ca_copy)
 
-        assert diffs["solved"] == []
+        assert diffs["success"] == []
         assert diffs["iters"] == []
         assert diffs["iters_in_restoration"] == []
         assert diffs["iters_w_regularization"] == []
@@ -2519,7 +2676,7 @@ class TestConvergenceAnalysis:
     def test_compare_convergence_to_baseline(self, model):
         fname = os.path.join(currdir, "convergence_baseline.json")
 
-        ca = ConvergenceAnalysis(
+        ca = IpoptConvergenceAnalysis(
             model=model,
         )
 
@@ -2527,7 +2684,7 @@ class TestConvergenceAnalysis:
 
         # Baseline has incorrect values
         assert diffs == {
-            "solved": [0],
+            "success": [0],
             "iters": [],
             "iters_in_restoration": [],
             "iters_w_regularization": [1],
@@ -2539,7 +2696,7 @@ class TestConvergenceAnalysis:
     def test_assert_baseline_comparison(self, model):
         fname = os.path.join(currdir, "convergence_baseline.json")
 
-        ca = ConvergenceAnalysis(
+        ca = IpoptConvergenceAnalysis(
             model=model,
         )
 
@@ -3510,3 +3667,231 @@ class TestEvalErrorDetection(TestCase):
         self.assertEqual(len(exp_list), len(got_list))
         for _exp, _got in zip(exp_list, got_list):
             self.assertEqual(_exp, _got)
+
+
+class TestCheckParallelJacobian:
+    @pytest.mark.unit
+    def test_invalid_direction(self):
+        m = ConcreteModel()
+
+        with pytest.raises(
+            ValueError,
+            match="Unrecognised value for direction \(foo\). "
+            "Must be 'row' or 'column'.",
+        ):
+            check_parallel_jacobian(m, direction="foo")
+
+    @pytest.fixture(scope="class")
+    def model(self):
+        m = ConcreteModel()
+
+        m.v1 = Var(initialize=1e-8)
+        m.v2 = Var()
+        m.v3 = Var()
+        m.v4 = Var()
+
+        m.c1 = Constraint(expr=m.v1 == m.v2 - 0.99999 * m.v4)
+        m.c2 = Constraint(expr=m.v1 + 1.00001 * m.v4 == 1e-8 * m.v3)
+        m.c3 = Constraint(expr=1e8 * (m.v1 + m.v4) + 1e10 * m.v2 == 1e-6 * m.v3)
+        m.c4 = Constraint(expr=-m.v1 == -0.99999 * (m.v2 - m.v4))
+
+        return m
+
+    @pytest.mark.unit
+    def test_rows(self, model):
+        assert check_parallel_jacobian(model, direction="row") == [(model.c1, model.c4)]
+        assert check_parallel_jacobian(model, direction="row", tolerance=0) == []
+
+    @pytest.mark.unit
+    def test_columns(self, model):
+        pcol = check_parallel_jacobian(model, direction="column")
+
+        expected = [
+            ("v1", "v2"),
+            ("v1", "v4"),
+            ("v2", "v4"),
+        ]
+
+        for i in pcol:
+            assert tuple(sorted([i[0].name, i[1].name])) in expected
+
+
+class TestCheckIllConditioning:
+    @pytest.mark.unit
+    def test_invalid_direction(self):
+        m = ConcreteModel()
+
+        with pytest.raises(
+            ValueError,
+            match="Unrecognised value for direction \(foo\). "
+            "Must be 'row' or 'column'.",
+        ):
+            compute_ill_conditioning_certificate(m, direction="foo")
+
+    @pytest.fixture(scope="class")
+    def model(self):
+        m = ConcreteModel()
+
+        m.v1 = Var(initialize=1e-8)
+        m.v2 = Var()
+        m.v3 = Var()
+        m.v4 = Var()
+
+        m.c1 = Constraint(expr=m.v1 == m.v2 - 0.99999 * m.v4)
+        m.c2 = Constraint(expr=m.v1 + 1.00001 * m.v4 == 1e-8 * m.v3)
+        m.c3 = Constraint(expr=1e8 * (m.v1 + m.v4) + 1e10 * m.v2 == 1e-6 * m.v3)
+        m.c4 = Constraint(expr=-m.v1 == -0.99999 * (m.v2 - m.v4))
+
+        return m
+
+    @pytest.fixture(scope="class")
+    def afiro(self):
+        # NETLIB AFIRO example
+        m = ConcreteModel()
+
+        # Vars
+        m.X01 = Var(initialize=1)
+        m.X02 = Var(initialize=1)
+        m.X03 = Var(initialize=1)
+        m.X04 = Var(initialize=1)
+        m.X06 = Var(initialize=1)
+        m.X07 = Var(initialize=1)
+        m.X08 = Var(initialize=1)
+        m.X09 = Var(initialize=1)
+        m.X10 = Var(initialize=1)
+        m.X11 = Var(initialize=1)
+        m.X12 = Var(initialize=1)
+        m.X13 = Var(initialize=1)
+        m.X14 = Var(initialize=1)
+        m.X15 = Var(initialize=1)
+        m.X16 = Var(initialize=1)
+        m.X22 = Var(initialize=1)
+        m.X23 = Var(initialize=1)
+        m.X24 = Var(initialize=1)
+        m.X25 = Var(initialize=1)
+        m.X26 = Var(initialize=1)
+        m.X28 = Var(initialize=1)
+        m.X29 = Var(initialize=1)
+        m.X30 = Var(initialize=1)
+        m.X31 = Var(initialize=1)
+        m.X32 = Var(initialize=1)
+        m.X33 = Var(initialize=1)
+        m.X34 = Var(initialize=1)
+        m.X35 = Var(initialize=1)
+        m.X36 = Var(initialize=1)
+        m.X37 = Var(initialize=1)
+        m.X38 = Var(initialize=1)
+        m.X39 = Var(initialize=1)
+
+        # Constraints
+
+        m.R09 = Constraint(expr=-m.X01 + m.X02 + m.X03 == 0)
+        m.R10 = Constraint(expr=-1.06 * m.X01 + m.X04 == 0)
+        m.X05 = Constraint(expr=m.X01 <= 80)
+        m.X21 = Constraint(expr=-m.X02 + 1.4 * m.X14 <= 0)
+        m.R12 = Constraint(expr=-m.X06 - m.X07 - m.X08 - m.X09 + m.X14 + m.X15 == 0)
+        m.R13 = Constraint(
+            expr=-1.06 * m.X06 - 1.06 * m.X07 - 0.96 * m.X08 - 0.86 * m.X09 + m.X16 == 0
+        )
+        m.X17 = Constraint(expr=m.X06 - m.X10 <= 80)
+        m.X18 = Constraint(expr=m.X07 - m.X11 <= 0)
+        m.X19 = Constraint(expr=m.X08 - m.X12 <= 0)
+        m.X20 = Constraint(expr=m.X09 - m.X13 <= 0)
+        m.R19 = Constraint(expr=-1 * m.X22 + 1 * m.X23 + 1 * m.X24 + 1 * m.X25 == 0)
+        m.R20 = Constraint(expr=-0.43 * m.X22 + m.X26 == 0)
+        m.X27 = Constraint(expr=m.X22 <= 500)
+        m.X44 = Constraint(expr=-m.X23 + 1.4 * m.X36 <= 0)
+        m.R22 = Constraint(
+            expr=-0.43 * m.X28 - 0.43 * m.X29 - 0.39 * m.X30 - 0.37 * m.X31 + m.X38 == 0
+        )
+        m.R23 = Constraint(
+            expr=1 * m.X28
+            + 1 * m.X29
+            + 1 * m.X30
+            + 1 * m.X31
+            - 1 * m.X36
+            + 1 * m.X37
+            + 1 * m.X39
+            == 44
+        )
+        m.X40 = Constraint(expr=m.X28 - m.X32 <= 500)
+        m.X41 = Constraint(expr=m.X29 - m.X33 <= 0)
+        m.X42 = Constraint(expr=m.X30 - m.X34 <= 0)
+        m.X43 = Constraint(expr=m.X31 - m.X35 <= 0)
+        m.X45 = Constraint(
+            expr=2.364 * m.X10
+            + 2.386 * m.X11
+            + 2.408 * m.X12
+            + 2.429 * m.X13
+            - m.X25
+            + 2.191 * m.X32
+            + 2.219 * m.X33
+            + 2.249 * m.X34
+            + 2.279 * m.X35
+            <= 0
+        )
+        m.X46 = Constraint(expr=-m.X03 + 0.109 * m.X22 <= 0)
+        m.X47 = Constraint(
+            expr=-m.X15 + 0.109 * m.X28 + 0.108 * m.X29 + 0.108 * m.X30 + 0.107 * m.X31
+            <= 0
+        )
+        m.X48 = Constraint(expr=0.301 * m.X01 - m.X24 <= 0)
+        m.X49 = Constraint(
+            expr=0.301 * m.X06 + 0.313 * m.X07 + 0.313 * m.X08 + 0.326 * m.X09 - m.X37
+            <= 0
+        )
+        m.X50 = Constraint(expr=m.X04 + m.X26 <= 310)
+        m.X51 = Constraint(expr=m.X16 + m.X38 <= 300)
+
+        # Degenerate constraint
+        m.R09b = Constraint(expr=m.X01 - 0.999999999 * m.X02 - m.X03 == 0)
+
+        return m
+
+    @pytest.mark.unit
+    def test_beta(self, model, caplog):
+
+        compute_ill_conditioning_certificate(model)
+
+        expected = (
+            "Ill conditioning checks are a beta capability. Please be aware that "
+            "the name, location, and API for this may change in future releases."
+        )
+
+        assert expected in caplog.text
+
+    @pytest.mark.component
+    @pytest.mark.solver
+    def test_rows(self, model):
+        assert compute_ill_conditioning_certificate(model, direction="row") == [
+            (model.c4, pytest.approx(0.50000002, rel=1e-5)),
+            (model.c4, pytest.approx(0.49999998, rel=1e-5)),
+        ]
+
+    @pytest.mark.component
+    @pytest.mark.solver
+    def test_rows(self, afiro):
+        assert compute_ill_conditioning_certificate(afiro, direction="row") == [
+            (afiro.R09, pytest.approx(0.5, rel=1e-5)),
+            (afiro.R09b, pytest.approx(0.5, rel=1e-5)),
+        ]
+
+    @pytest.mark.component
+    @pytest.mark.solver
+    def test_columns(self, afiro):
+        assert compute_ill_conditioning_certificate(afiro, direction="column") == [
+            (afiro.X39, pytest.approx(1.1955465, rel=1e-5)),
+            (afiro.X23, pytest.approx(1.0668697, rel=1e-5)),
+            (afiro.X25, pytest.approx(-1.0668697, rel=1e-5)),
+            (afiro.X09, pytest.approx(-0.95897123, rel=1e-5)),
+            (afiro.X13, pytest.approx(-0.95897123, rel=1e-5)),
+            (afiro.X06, pytest.approx(0.91651956, rel=1e-5)),
+            (afiro.X10, pytest.approx(0.91651956, rel=1e-5)),
+            (afiro.X36, pytest.approx(0.76204977, rel=1e-5)),
+            (afiro.X31, pytest.approx(-0.39674454, rel=1e-5)),
+            (afiro.X35, pytest.approx(-0.39674454, rel=1e-5)),
+            (afiro.X16, pytest.approx(0.14679548, rel=1e-5)),
+            (afiro.X38, pytest.approx(-0.14679548, rel=1e-5)),
+            (afiro.X15, pytest.approx(-0.042451666, rel=1e-5)),
+            (afiro.X37, pytest.approx(-0.036752232, rel=1e-5)),
+        ]

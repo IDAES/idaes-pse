@@ -15,7 +15,7 @@
 This module contains a collection of tools for diagnosing modeling issues.
 """
 
-__author__ = "Alexander Dowling, Douglas Allan, Andrew Lee"
+__author__ = "Alexander Dowling, Douglas Allan, Andrew Lee, Robby Parker, Ben Knueven"
 
 from operator import itemgetter
 import sys
@@ -36,8 +36,10 @@ from pyomo.environ import (
     check_optimal_termination,
     ConcreteModel,
     Constraint,
+    Expression,
     Objective,
     Param,
+    RangeSet,
     Set,
     SolverFactory,
     value,
@@ -279,6 +281,14 @@ CONFIG.declare(
         default=True,
         domain=bool,
         description="If False, warnings will not be generated for things like log(x) with x >= 0",
+    ),
+)
+CONFIG.declare(
+    "parallel_component_tolerance",
+    ConfigValue(
+        default=1e-4,
+        domain=float,
+        description="Tolerance for identifying near-parallel Jacobian rows/columns",
     ),
 )
 
@@ -920,6 +930,70 @@ class DiagnosticsToolbox:
             footer="=",
         )
 
+    def display_near_parallel_constraints(self, stream=None):
+        """
+        Display near-parallel (duplicate) constraints in model.
+
+        Args:
+            stream: I/O object to write report to (default = stdout)
+
+        Returns:
+            None
+
+        """
+        if stream is None:
+            stream = sys.stdout
+
+        parallel = [
+            f"{i[0].name}, {i[1].name}"
+            for i in check_parallel_jacobian(
+                model=self._model,
+                tolerance=self.config.parallel_component_tolerance,
+                direction="row",
+            )
+        ]
+
+        # Write the output
+        _write_report_section(
+            stream=stream,
+            lines_list=parallel,
+            title="The following pairs of constraints are nearly parallel:",
+            header="=",
+            footer="=",
+        )
+
+    def display_near_parallel_variables(self, stream=None):
+        """
+        Display near-parallel (duplicate) variables in model.
+
+        Args:
+            stream: I/O object to write report to (default = stdout)
+
+        Returns:
+            None
+
+        """
+        if stream is None:
+            stream = sys.stdout
+
+        parallel = [
+            f"{i[0].name}, {i[1].name}"
+            for i in check_parallel_jacobian(
+                model=self._model,
+                tolerance=self.config.parallel_component_tolerance,
+                direction="column",
+            )
+        ]
+
+        # Write the output
+        _write_report_section(
+            stream=stream,
+            lines_list=parallel,
+            title="The following pairs of variables are nearly parallel:",
+            header="=",
+            footer="=",
+        )
+
     # TODO: Block triangularization analysis
     # Number and size of blocks, polynomial degree of 1x1 blocks, simple pivot check of moderate sized sub-blocks?
 
@@ -1336,7 +1410,8 @@ class DiagnosticsToolbox:
             lines_list=next_steps,
             title="Suggested next steps:",
             line_if_empty=f"If you still have issues converging your model consider:\n"
-            f"{TAB*2}prepare_svd_toolbox()\n{TAB*2}prepare_degeneracy_hunter()",
+            f"{TAB*2}display_near_parallel_constraints()\n{TAB*2}display_near_parallel_variables()"
+            f"\n{TAB*2}prepare_degeneracy_hunter()\n{TAB*2}prepare_svd_toolbox()",
             footer="=",
         )
 
@@ -2092,6 +2167,9 @@ class DegeneracyHunter2:
             def eq_degenerate(m_dh, v):
                 # Find the columns with non-zero entries
                 C = find(J[:, v])[0]
+                if len(C) == 0:
+                    # Catch for edge-case of trivial constraint 0==0
+                    return Constraint.Skip
                 return sum(J[c, v] * m_dh.nu[c] for c in C) == 0
 
         else:
@@ -2965,7 +3043,7 @@ CACONFIG.declare(
 )
 
 
-class ConvergenceAnalysis:
+class IpoptConvergenceAnalysis:
     """
     Tool to performa a parameter sweep of model checking for numerical issues and
     convergence characteristics. Users may specify an IDAES ParameterSweep class to
@@ -3005,7 +3083,7 @@ class ConvergenceAnalysis:
     @property
     def results(self):
         """
-        Returns the results of the ConvergenceAnalysis run
+        Returns the results of the IpoptConvergenceAnalysis run
         """
         return self._psweep.results
 
@@ -3165,9 +3243,9 @@ class ConvergenceAnalysis:
             time,
         ]
 
-        solved = check_optimal_termination(status)
+        success = check_optimal_termination(status)
 
-        return solved, run_stats
+        return success, run_stats
 
     @staticmethod
     def _build_outputs(model, run_stats):
@@ -3278,7 +3356,7 @@ class ConvergenceAnalysis:
         abs_tol: float = 1,
     ):
         # Compare results
-        solved_diff = []
+        success_diff = []
         iters_diff = []
         restore_diff = []
         reg_diff = []
@@ -3294,8 +3372,8 @@ class ConvergenceAnalysis:
                 comp = compare_dict["results"][str(k)]
 
             # Check for differences
-            if v["solved"] != comp["solved"]:
-                solved_diff.append(k)
+            if v["success"] != comp["success"]:
+                success_diff.append(k)
             if not isclose(
                 v["results"]["iters"],
                 comp["results"]["iters"],
@@ -3321,7 +3399,7 @@ class ConvergenceAnalysis:
                 num_iss_diff.append(k)
 
         return {
-            "solved": solved_diff,
+            "success": success_diff,
             "iters": iters_diff,
             "iters_in_restoration": restore_diff,
             "iters_w_regularization": reg_diff,
@@ -3467,6 +3545,238 @@ def ipopt_solve_halt_on_error(model, options=None):
     return solver.solve(
         model, tee=True, symbolic_solver_labels=True, export_defined_variables=False
     )
+
+
+def check_parallel_jacobian(model, tolerance: float = 1e-4, direction: str = "row"):
+    """
+    Check for near-parallel rows or columns in the Jacobian.
+
+    Near-parallel rows or columns indicate a potential degeneracy in the model,
+    as this means that the associated constraints or variables are (near)
+    duplicates of each other.
+
+    This method is based on work published in:
+
+    Klotz, E., Identification, Assessment, and Correction of Ill-Conditioning and
+    Numerical Instability in Linear and Integer Programs, Informs 2014, pgs. 54-108
+    https://pubsonline.informs.org/doi/epdf/10.1287/educ.2014.0130
+
+    Args:
+        model: model to be analysed
+        tolerance: tolerance to use to determine if constraints/variables are parallel
+        direction: 'row' (default, constraints) or 'column' (variables)
+
+    Returns:
+        list of 2-tuples containing parallel Pyomo components
+
+    """
+    # Thanks to Robby Parker for the sparse matrix implementation and
+    # significant performance improvements
+
+    if direction not in ["row", "column"]:
+        raise ValueError(
+            f"Unrecognised value for direction ({direction}). "
+            "Must be 'row' or 'column'."
+        )
+
+    jac, nlp = get_jacobian(model, scaled=False)
+
+    # Get vectors that we will check, and the Pyomo components
+    # they correspond to.
+    if direction == "row":
+        components = nlp.get_pyomo_constraints()
+        csrjac = jac.tocsr()
+        # Make everything a column vector (CSC) for consistency
+        vectors = [csrjac[i, :].transpose().tocsc() for i in range(len(components))]
+    elif direction == "column":
+        components = nlp.get_pyomo_variables()
+        cscjac = jac.tocsc()
+        vectors = [cscjac[:, i] for i in range(len(components))]
+
+    # List to store pairs of parallel components
+    parallel = []
+
+    vectors_by_nz = {}
+    for vecidx, vec in enumerate(vectors):
+        maxval = max(np.abs(vec.data))
+        # Construct tuple of sorted col/row indices that participate
+        # in this vector (with non-negligible coefficient).
+        nz = tuple(
+            sorted(
+                idx
+                for idx, val in zip(vec.indices, vec.data)
+                if abs(val) > tolerance and abs(val) / maxval > tolerance
+            )
+        )
+        if nz in vectors_by_nz:
+            # Store the index as well so we know what component this
+            # correrponds to.
+            vectors_by_nz[nz].append((vec, vecidx))
+        else:
+            vectors_by_nz[nz] = [(vec, vecidx)]
+
+    for vecs in vectors_by_nz.values():
+        for idx, (u, uidx) in enumerate(vecs):
+            # idx is the "local index", uidx is the "global index"
+            # Frobenius norm of the matrix is 2-norm of this column vector
+            unorm = norm(u, ord="fro")
+            for v, vidx in vecs[idx + 1 :]:
+                vnorm = norm(v, ord="fro")
+
+                # Explicitly multiply a row vector * column vector
+                prod = u.transpose().dot(v)
+                absprod = abs(prod[0, 0])
+                diff = abs(absprod - unorm * vnorm)
+                if diff <= tolerance or diff <= tolerance * max(unorm, vnorm):
+                    parallel.append((uidx, vidx))
+
+    parallel = [(components[uidx], components[vidx]) for uidx, vidx in parallel]
+    return parallel
+
+
+def compute_ill_conditioning_certificate(
+    model,
+    target_feasibility_tol: float = 1e-06,
+    ratio_cutoff: float = 1e-04,
+    direction: str = "row",
+):
+    """
+    Finds constraints (rows) or variables (columns) in the model Jacobian that
+    may be contributing to ill conditioning.
+
+    This method is based on work published in:
+
+    Klotz, E., Identification, Assessment, and Correction of Ill-Conditioning and
+    Numerical Instability in Linear and Integer Programs, Informs 2014, pgs. 54-108
+    https://pubsonline.informs.org/doi/epdf/10.1287/educ.2014.0130
+
+    Args:
+        model: model to be analysed
+        target_feasibility_tol: target tolerance for solving ill conditioning problem
+        ratio_cutoff: cut-off for reporting ill conditioning
+        direction: 'row' (default, constraints) or 'column' (variables)
+
+    Returns:
+        list of strings reporting ill-conditioned variables/constraints and their
+        associated y values
+    """
+    _log.warning(
+        "Ill conditioning checks are a beta capability. Please be aware that "
+        "the name, location, and API for this may change in future releases."
+    )
+    # Thanks to B. Knueven for this implementation
+
+    if direction not in ["row", "column"]:
+        raise ValueError(
+            f"Unrecognised value for direction ({direction}). "
+            "Must be 'row' or 'column'."
+        )
+
+    jac, nlp = get_jacobian(model, scaled=False)
+
+    inverse_target_kappa = 1e-16 / target_feasibility_tol
+
+    # Set up the components we will analyze, either row or column
+    if direction == "row":
+        components = nlp.get_pyomo_constraints()
+        components_set = RangeSet(0, len(components) - 1)
+        results_set = RangeSet(0, nlp.n_primals() - 1)
+        jac = jac.transpose().tocsr()
+    elif direction == "column":
+        components = nlp.get_pyomo_variables()
+        components_set = RangeSet(0, len(components) - 1)
+        results_set = RangeSet(0, nlp.n_constraints() - 1)
+        jac = jac.tocsr()
+
+    # Build test problem
+    inf_prob = ConcreteModel()
+
+    inf_prob.y_pos = Var(components_set, bounds=(0, None))
+    inf_prob.y_neg = Var(components_set, bounds=(0, None))
+    inf_prob.y = Expression(components_set, rule=lambda m, i: m.y_pos[i] - m.y_neg[i])
+
+    inf_prob.res_pos = Var(results_set, bounds=(0, None))
+    inf_prob.res_neg = Var(results_set, bounds=(0, None))
+    inf_prob.res = Expression(
+        results_set, rule=lambda m, i: m.res_pos[i] - m.res_neg[i]
+    )
+
+    def b_rule(b, i):
+        lhs = 0.0
+
+        row = jac.getrow(i)
+        for j, val in zip(row.indices, row.data):
+            lhs += val * b.y[j]
+
+        return lhs == b.res[i]
+
+    inf_prob.by = Constraint(results_set, rule=b_rule)
+
+    # Normalization of y
+    inf_prob.normalize = Constraint(
+        expr=1 == sum(inf_prob.y_pos.values()) - sum(inf_prob.y_neg.values())
+    )
+
+    inf_prob.y_norm = Var()
+    inf_prob.y_norm_constr = Constraint(
+        expr=inf_prob.y_norm
+        == sum(inf_prob.y_pos.values()) + sum(inf_prob.y_neg.values())
+    )
+
+    inf_prob.res_norm = Var()
+    inf_prob.res_norm_constr = Constraint(
+        expr=inf_prob.res_norm
+        == sum(inf_prob.res_pos.values()) + sum(inf_prob.res_neg.values())
+    )
+
+    # Objective -- minimize residual
+    inf_prob.min_res = Objective(expr=inf_prob.res_norm)
+
+    solver = SolverFactory("cbc")  # TODO: Consider making this an option
+
+    # tighten tolerances  # TODO: If solver is an option, need to allow user options
+    solver.options["primalT"] = target_feasibility_tol * 1e-1
+    solver.options["dualT"] = target_feasibility_tol * 1e-1
+
+    results = solver.solve(inf_prob, tee=False)
+    if not check_optimal_termination(results):
+        # TODO: maybe we should tighten tolerances first?
+        raise RuntimeError("Ill conditioning diagnostic problem infeasible")
+
+    result_norm = inf_prob.res_norm.value
+    if result_norm < 0.0:
+        # TODO: try again with tighter tolerances?
+        raise RuntimeError(
+            "Ill conditioning diagnostic problem has numerically troublesome solution"
+        )
+    if result_norm >= inverse_target_kappa:
+        return []
+
+    # find an equivalent solution which minimizes y_norm
+    inf_prob.min_res.deactivate()
+    inf_prob.res_norm.fix()
+
+    inf_prob.min_y = Objective(expr=inf_prob.y_norm)
+
+    # if this problem is numerically infeasible, we can still report something to the user
+    results = solver.solve(inf_prob, tee=False, load_solutions=False)
+    if check_optimal_termination(results):
+        inf_prob.solutions.load_from(results)
+
+    ill_cond = []
+    slist = sorted(
+        inf_prob.y, key=lambda dict_key: abs(value(inf_prob.y[dict_key])), reverse=True
+    )
+    cutoff = None
+    for i in slist:
+        if cutoff is None:
+            cutoff = abs(value(inf_prob.y[i])) * ratio_cutoff
+        val = value(inf_prob.y[i])
+        if abs(val) < cutoff:
+            break
+        ill_cond.append((components[i], val))
+
+    return ill_cond
 
 
 # -------------------------------------------------------------------------------------------

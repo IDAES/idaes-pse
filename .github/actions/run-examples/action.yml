@@ -40,11 +40,13 @@ runs:
       shell: bash -l {0}
       env:
         PIP_PROGRESS_BAR: 'off'
-        _pip_extras: '[jb,dev]'
+        _pip_extras: ''
         _pip_install_url: ${{ github.server_url}}/${{ inputs.examples-repository }}@${{ inputs.examples-ref }}
+      working-directory: ${{ github.action_path }}
       run: |
         echo '::group::Output of `pip install idaes_examples`'
-        pip install "idaes_examples${_pip_extras} @ git+${_pip_install_url}"
+        pip install "idaes_examples${_pip_extras} @ git+${_pip_install_url}" -r requirements-test.txt
+        pip list
         echo '::endgroup::'
         # uninstall IDAES if installed through idaes_examples so that the version under test can be used
         pip uninstall --yes idaes-pse

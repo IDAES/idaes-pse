@@ -175,6 +175,8 @@ def test_luminous_intensity(unit_set):
 derived_quantities = {
     "area": units.m**2,
     "volume": units.m**3,
+    "volume_mass": units.m**3 / units.kg,
+    "volume_mole": units.m**3 / units.mol,
     "flow_mass": units.kg * units.s**-1,
     "flow_mole": units.mol * units.s**-1,
     "flow_vol": units.m**3 * units.s**-1,

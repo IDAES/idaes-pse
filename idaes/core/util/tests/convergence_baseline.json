@@ -37,7 +37,7 @@
    },
    "results": {
       "0": {
-         "solved": true,
+         "success": true,
          "results": {
             "iters": 7,
             "iters_in_restoration": 4,
@@ -47,7 +47,7 @@
          }
       },
       "1": {
-         "solved": false,
+         "success": false,
          "results": {
             "iters": 7,
             "iters_in_restoration": 4,
