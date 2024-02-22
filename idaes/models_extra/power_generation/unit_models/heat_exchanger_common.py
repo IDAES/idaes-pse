@@ -70,94 +70,75 @@ _log = idaeslog.getLogger(__name__)
 def _make_geometry_common(blk, shell_units):
     # Number of tube columns in the cross section plane perpendicular to shell side fluid flow (y direction)
     blk.ncol_tube = Var(
-        initialize=10.0, doc="number of tube columns", units=pyunits.dimensionless
+        initialize=10.0, doc="Number of tube columns", units=pyunits.dimensionless
     )
 
     # Number of segments of tube bundles
     blk.nseg_tube = Var(
-        initialize=10.0, doc="number of tube segments", units=pyunits.dimensionless
+        initialize=10.0, doc="Number of segments of tube bundles", units=pyunits.dimensionless
     )
 
     # Number of inlet tube rows
     blk.nrow_inlet = Var(
-        initialize=1, doc="number of inlet tube rows", units=pyunits.dimensionless
+        initialize=1, doc="Number of inlet tube rows", units=pyunits.dimensionless
     )
 
     # Inner diameter of tubes
     blk.di_tube = Var(
-        initialize=0.05, doc="inner diameter of tube", units=shell_units["length"]
+        initialize=0.05, doc="Inner diameter of tube", units=shell_units["length"]
     )
 
     # Thickness of tube
     blk.thickness_tube = Var(
-        initialize=0.005, doc="tube thickness", units=shell_units["length"]
+        initialize=0.005, doc="Tube thickness", units=shell_units["length"]
     )
 
     # Pitch of tubes between two neighboring columns (in y direction). Always greater than tube outside diameter
     blk.pitch_y = Var(
         initialize=0.1,
-        doc="pitch between two neighboring columns",
+        doc="Pitch between two neighboring columns",
         units=shell_units["length"],
     )
 
     # Pitch of tubes between two neighboring rows (in x direction). Always greater than tube outside diameter
     blk.pitch_x = Var(
         initialize=0.1,
-        doc="pitch between two neighboring rows",
+        doc="Pitch between two neighboring rows",
         units=shell_units["length"],
     )
 
     # Length of tube per segment in z direction
     blk.length_tube_seg = Var(
-        initialize=1.0, doc="length of tube per segment", units=shell_units["length"]
+        initialize=1.0, doc="Length of tube per segment", units=shell_units["length"]
     )
 
     # Minimum cross-sectional area on shell side
     blk.area_flow_shell_min = Var(
-        initialize=1.0, doc="minimum flow area on shell side", units=shell_units["area"]
+        initialize=1.0, doc="Minimum flow area on shell side", units=shell_units["area"]
     )
 
     # total number of tube rows
-    @blk.Expression(doc="total number of tube rows")
+    @blk.Expression(doc="Total number of tube rows")
     def nrow_tube(b):
         return b.nseg_tube * b.nrow_inlet
 
     # Tube outside diameter
-    @blk.Expression(doc="outside diameter of tube")
+    @blk.Expression(doc="Outside diameter of tube")
     def do_tube(b):
         return b.di_tube + b.thickness_tube * 2.0
 
-    # Mean beam length for radiation
-    if blk.config.has_radiation:
-
-        @blk.Expression(doc="mean bean length")
-        def mbl(b):
-            return 3.6 * (
-                b.pitch_x * b.pitch_y / const.pi / b.do_tube - b.do_tube / 4.0
-            )
-
-        # Mean beam length for radiation divided by sqrt(2)
-        @blk.Expression(doc="sqrt(1/2) of mean bean length")
-        def mbl_div2(b):
-            return b.mbl / sqrt(2.0)
-
-        # Mean beam length for radiation multiplied by sqrt(2)
-        @blk.Expression(doc="sqrt(2) of mean bean length")
-        def mbl_mul2(b):
-            return b.mbl * sqrt(2.0)
-
     # Ratio of pitch_x/do_tube
-    @blk.Expression(doc="ratio of pitch in x direction to tube outside diameter")
+    @blk.Expression(doc="Ratio of pitch in x direction to tube outside diameter")
     def pitch_x_to_do(b):
         return b.pitch_x / b.do_tube
 
     # Ratio of pitch_y/do_tube
-    @blk.Expression(doc="ratio of pitch in y direction to tube outside diameter")
+    @blk.Expression(doc="Ratio of pitch in y direction to tube outside diameter")
     def pitch_y_to_do(b):
         return b.pitch_y / b.do_tube
 
     # Total cross-sectional area of tube metal per segment
-    @blk.Expression(doc="total cross section area of tube metal per segment")
+    @blk.Expression(doc="Total cross section area of tube metal per segment")
     def area_wall_seg(b):
         return (
             0.25
@@ -244,11 +225,6 @@ def _make_performance_common(
         add_object_reference(blk, "deltaP_shell", shell.deltaP)
 
     # Parameters
-    if blk.config.has_radiation:
-        # tube wall emissivity, converted from parameter to variable
-        # TODO is this dimensionless?
-        blk.emissivity_wall = Var(initialize=0.7, doc="shell side wall emissivity")
-
     # Wall thermal conductivity
     blk.therm_cond_wall = Param(
         initialize=1.0,
@@ -290,57 +266,6 @@ def _make_performance_common(
         )
 
     # Performance variables
-    if blk.config.has_radiation:
-        # Gas emissivity at mbl
-        blk.gas_emissivity = Var(
-            blk.flowsheet().config.time,
-            shell.length_domain,
-            initialize=0.5,
-            doc="emissivity at given mean beam length",
-        )
-
-        # Gas emissivity at mbl/sqrt(2)
-        blk.gas_emissivity_div2 = Var(
-            blk.flowsheet().config.time,
-            shell.length_domain,
-            initialize=0.4,
-            doc="emissivity at mean beam length divided by sqrt of 2",
-        )
-
-        # Gas emissivity at mbl*sqrt(2)
-        blk.gas_emissivity_mul2 = Var(
-            blk.flowsheet().config.time,
-            shell.length_domain,
-            initialize=0.6,
-            doc="emissivity at mean beam length multiplied by sqrt of 2",
-        )
-
-        # Gray fraction of gas in entire spectrum
-        blk.gas_gray_fraction = Var(
-            blk.flowsheet().config.time,
-            shell.length_domain,
-            initialize=0.5,
-            doc="gray fraction of gas in entire spectrum",
-        )
-
-        # Gas-surface radiation exchange factor for shell side wall
-        blk.frad_gas_shell = Var(
-            blk.flowsheet().config.time,
-            shell.length_domain,
-            initialize=0.5,
-            doc="gas-surface radiation exchange factor for shell side wall",
-        )
-
-        # Shell side equivalent convective heat transfer coefficient due to radiation
-        blk.hconv_shell_rad = Var(
-            blk.flowsheet().config.time,
-            shell.length_domain,
-            initialize=100.0,
-            bounds=(0, None),
-            units=shell_units["heat_transfer_coefficient"],
-            doc="shell side convective heat transfer coefficient due to radiation",
-        )
-
     # Shell side convective heat transfer coefficient due to convection only
     blk.hconv_shell_conv = Var(
         blk.flowsheet().config.time,
@@ -348,7 +273,7 @@ def _make_performance_common(
         initialize=100.0,
         bounds=(0, None),
         units=shell_units["heat_transfer_coefficient"],
-        doc="shell side convective heat transfer coefficient due to convection",
+        doc="Shell side convective heat transfer coefficient due to convection",
     )
 
     # Boundary wall temperature on shell side
@@ -357,7 +282,7 @@ def _make_performance_common(
         shell.length_domain,
         initialize=500,
         units=shell_units["temperature"],
-        doc="boundary wall temperature on shell side",
+        doc="Boundary wall temperature on shell side",
     )
 
     # Central wall temperature of tube metal, used to calculate energy contained by tube metal
@@ -366,7 +291,7 @@ def _make_performance_common(
         shell.length_domain,
         initialize=500,
         units=shell_units["temperature"],
-        doc="tube wall temperature at center",
+        doc="Tube wall temperature at center",
     )
 
     # Tube wall heat holdup per length of shell
@@ -376,12 +301,12 @@ def _make_performance_common(
             shell.length_domain,
             initialize=1e6,
             units=shell_units["energy"] / shell_units["length"],
-            doc="tube wall heat holdup per length of shell",
+            doc="Tube wall heat holdup per length of shell",
         )
         @blk.Constraint(
             blk.flowsheet().config.time,
             shell.length_domain,
-            doc="heat holdup of tube metal",
+            doc="Heat holdup of tube metal",
         )
         def heat_holdup_eqn(b, t, x):
             return (
@@ -403,213 +328,6 @@ def _make_performance_common(
             units=shell_units["energy"] / shell_units["length"] / shell_units["time"],
             doc="Tube wall heat accumulation per unit length of shell",
         )
-
-    if blk.config.has_radiation:
-        # TODO Make units consistent for radiation
-        # Constraints for gas emissivity
-        @blk.Constraint(
-            blk.flowsheet().config.time, shell.length_domain, doc="Gas emissivity"
-        )
-        def gas_emissivity_eqn(b, t, x):
-            X1 = shell.properties[t, x].temperature
-            X2 = b.mbl
-            X3 = shell.properties[t, x].pressure
-            try:
-                X4 = shell.properties[t, x].mole_frac_comp["CO2"]
-            except KeyError:
-                X4 = 0
-            try:
-                X5 = shell.properties[t, x].mole_frac_comp["H2O"]
-            except KeyError:
-                X5 = 0
-            try:
-                X6 = shell.properties[t, x].mole_frac_comp["O2"]
-            except KeyError:
-                X6 = 0
-            return (
-                b.gas_emissivity[t, x]
-                == -0.000116906 * X1
-                + 1.02113 * X2
-                + 4.81687e-07 * X3
-                + 0.922679 * X4
-                - 0.0708822 * X5
-                - 0.0368321 * X6
-                + 0.121843 * log(X1)
-                + 0.0353343 * log(X2)
-                + 0.0346181 * log(X3)
-                + 0.0180859 * log(X5)
-                - 0.256274 * exp(X2)
-                - 0.674791 * exp(X4)
-                - 0.724802 * sin(X2)
-                - 0.0206726 * cos(X2)
-                - 9.01012e-05 * cos(X3)
-                - 3.09283e-05 * X1 * X2
-                - 5.44339e-10 * X1 * X3
-                - 0.000196134 * X1 * X5
-                + 4.54838e-05 * X1 * X6
-                + 7.57411e-07 * X2 * X3
-                + 0.0395456 * X2 * X4
-                + 0.726625 * X2 * X5
-                - 0.034842 * X2 * X6
-                + 4.00056e-06 * X3 * X5
-                + 5.71519e-09 * (X1 * X2) ** 2
-                - 1.27853 * (X2 * X5) ** 2
-            )
-
-        # Constraints for gas emissivity at mbl/sqrt(2)
-        @blk.Constraint(
-            blk.flowsheet().config.time,
-            shell.length_domain,
-            doc="Gas emissivity at a lower mean beam length",
-        )
-        def gas_emissivity_div2_eqn(b, t, x):
-            X1 = shell.properties[t, x].temperature
-            X2 = b.mbl_div2
-            X3 = shell.properties[t, x].pressure
-            try:
-                X4 = shell.properties[t, x].mole_frac_comp["CO2"]
-            except KeyError:
-                X4 = 0
-            try:
-                X5 = shell.properties[t, x].mole_frac_comp["H2O"]
-            except KeyError:
-                X5 = 0
-            try:
-                X6 = shell.properties[t, x].mole_frac_comp["O2"]
-            except KeyError:
-                X6 = 0
-            return (
-                b.gas_emissivity_div2[t, x]
-                == -0.000116906 * X1
-                + 1.02113 * X2
-                + 4.81687e-07 * X3
-                + 0.922679 * X4
-                - 0.0708822 * X5
-                - 0.0368321 * X6
-                + 0.121843 * log(X1)
-                + 0.0353343 * log(X2)
-                + 0.0346181 * log(X3)
-                + 0.0180859 * log(X5)
-                - 0.256274 * exp(X2)
-                - 0.674791 * exp(X4)
-                - 0.724802 * sin(X2)
-                - 0.0206726 * cos(X2)
-                - 9.01012e-05 * cos(X3)
-                - 3.09283e-05 * X1 * X2
-                - 5.44339e-10 * X1 * X3
-                - 0.000196134 * X1 * X5
-                + 4.54838e-05 * X1 * X6
-                + 7.57411e-07 * X2 * X3
-                + 0.0395456 * X2 * X4
-                + 0.726625 * X2 * X5
-                - 0.034842 * X2 * X6
-                + 4.00056e-06 * X3 * X5
-                + 5.71519e-09 * (X1 * X2) ** 2
-                - 1.27853 * (X2 * X5) ** 2
-            )
-
-        # Constraints for gas emissivity at mbl*sqrt(2)
-        @blk.Constraint(
-            blk.flowsheet().config.time,
-            shell.length_domain,
-            doc="Gas emissivity at a higher mean beam length",
-        )
-        def gas_emissivity_mul2_eqn(b, t, x):
-            X1 = shell.properties[t, x].temperature
-            X2 = b.mbl_mul2
-            X3 = shell.properties[t, x].pressure
-            try:
-                X4 = shell.properties[t, x].mole_frac_comp["CO2"]
-            except KeyError:
-                X4 = 0
-            try:
-                X5 = shell.properties[t, x].mole_frac_comp["H2O"]
-            except KeyError:
-                X5 = 0
-            try:
-                X6 = shell.properties[t, x].mole_frac_comp["O2"]
-            except KeyError:
-                X6 = 0
-            return (
-                b.gas_emissivity_mul2[t, x]
-                == -0.000116906 * X1
-                + 1.02113 * X2
-                + 4.81687e-07 * X3
-                + 0.922679 * X4
-                - 0.0708822 * X5
-                - 0.0368321 * X6
-                + 0.121843 * log(X1)
-                + 0.0353343 * log(X2)
-                + 0.0346181 * log(X3)
-                + 0.0180859 * log(X5)
-                - 0.256274 * exp(X2)
-                - 0.674791 * exp(X4)
-                - 0.724802 * sin(X2)
-                - 0.0206726 * cos(X2)
-                - 9.01012e-05 * cos(X3)
-                - 3.09283e-05 * X1 * X2
-                - 5.44339e-10 * X1 * X3
-                - 0.000196134 * X1 * X5
-                + 4.54838e-05 * X1 * X6
-                + 7.57411e-07 * X2 * X3
-                + 0.0395456 * X2 * X4
-                + 0.726625 * X2 * X5
-                - 0.034842 * X2 * X6
-                + 4.00056e-06 * X3 * X5
-                + 5.71519e-09 * (X1 * X2) ** 2
-                - 1.27853 * (X2 * X5) ** 2
-            )
-
-        # fraction of gray gas spectrum
-        @blk.Constraint(
-            blk.flowsheet().config.time,
-            shell.length_domain,
-            doc="fraction of gray gas spectrum",
-        )
-        def gas_gray_fraction_eqn(b, t, x):
-            return (
-                b.gas_gray_fraction[t, x]
-                * (2 * b.gas_emissivity_div2[t, x] - b.gas_emissivity_mul2[t, x])
-                == b.gas_emissivity_div2[t, x] ** 2
-            )
-
-        # gas-surface radiation exchange factor between gas and shell side wall
-        @blk.Constraint(
-            blk.flowsheet().config.time,
-            shell.length_domain,
-            doc="gas-surface radiation exchange factor between gas and shell side wall",
-        )
-        def frad_gas_shell_eqn(b, t, x):
-            return (
-                b.frad_gas_shell[t, x]
-                * (
-                    (1 / b.emissivity_wall - 1) * b.gas_emissivity[t, x]
-                    + b.gas_gray_fraction[t, x]
-                )
-                == b.gas_gray_fraction[t, x] * b.gas_emissivity[t, x]
-            )
-
-        # equivalent convective heat transfer coefficient due to radiation
-        @blk.Constraint(
-            blk.flowsheet().config.time,
-            shell.length_domain,
-            doc="equivalent convective heat transfer coefficient due to radiation",
-        )
-        def hconv_shell_rad_eqn(b, t, x):
-            return b.hconv_shell_rad[t, x] == (
-                pyunits.convert(
-                    const.stefan_constant,
-                    to_units=shell_units["power"]
-                    / shell_units["length"] ** 2
-                    / shell_units["temperature"] ** 4,
-                )
-                * b.frad_gas_shell[t, x]
-                * (shell.properties[t, x].temperature + b.temp_wall_shell[t, x])
-                * (
-                    shell.properties[t, x].temperature ** 2
-                    + b.temp_wall_shell[t, x] ** 2
-                )
-            )
 
     # Pressure drop and heat transfer coefficient on shell side
     # ----------------------------------------------------------
