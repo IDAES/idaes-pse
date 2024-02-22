@@ -207,19 +207,11 @@ jobs:
           echo "::group::Display pylint version"
           pip show pylint astroid
           echo "::endgroup::"
-          pylint --rcfile=./.pylint/pylintrc --disable=R --output-format=idaes_reporters.GHAReporter "$pylint_target_dir"
-      - name: Generate pylint report on failure
-        if: failure()
+          pylint --rcfile=./.pylint/pylintrc --disable=R --output-format=idaes_reporters.DisplayProgress,colorized,idaes_reporters.GHACheckAnnotations:pylint.txt "$pylint_target_dir"
+      - name: Generate GHA Check Annotations from Pylint report
+        if: success() || failure()
         run: |
-          base_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blame/$GITHUB_SHA"
-
-          echo '
-          ## Pylint failures
-
-          For more information, refer to the [Pylint section](https://github.com/IDAES/idaes-pse/wiki/IDAES-Check-Suite#pylint) of the [IDAES check suite Wiki page](https://github.com/IDAES/idaes-pse/wiki/IDAES-Check-Suite).
-
-          ' >> "$GITHUB_STEP_SUMMARY"
-          python .pylint/render_report.py --base-url="$base_url" --markdown-output-path="$GITHUB_STEP_SUMMARY" --pylint-data-path="$pylint_output_path"
+          cat pylint.txt || echo "GHA-compatible Pylint report not found"
       - name: Show PYLINT-TODO comments left in the codebase
         if: always()
         run: |
