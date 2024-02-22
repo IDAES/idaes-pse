@@ -305,7 +305,7 @@ class PriceTakerModel(ConcreteModel):
         # editing the data
         if isinstance(column_name, list) and n_clusters is not None:
             # Multiple years and representative days
-            self.set_years = [int(y) for y in column_name]
+            self.set_years = [y for y in column_name]
             self.set_days = RangeSet(1,n_clusters)
             self._n_time_points = self.horizon_length if self.horizon_length is not None else 24
             self.set_time = RangeSet(self._n_time_points)
@@ -313,12 +313,11 @@ class PriceTakerModel(ConcreteModel):
             self.LMP = {}
             self.WEIGHTS = {}
 
-            for year in column_name:
-                price_data = full_data[year]
+            for y in column_name:
+                price_data = full_data[y]
                 lmp_data, weights = self.cluster_lmp_data(
                     price_data, n_clusters
                 )
-                y = int(year)
 
                 for d in self.set_days:
                     for t in self.set_time:
@@ -329,16 +328,15 @@ class PriceTakerModel(ConcreteModel):
 
         elif isinstance(column_name, list):
             # Multiple years, use fullyear price signal for each year
-            self.set_years = [int(y) for y in column_name]
+            self.set_years = [y for y in column_name]
             self.set_days = None
             self._n_time_points = len(full_data)
             self.set_time = RangeSet(self._n_time_points)
 
             self.LMP = {}
 
-            for year in column_name:
-                price_data = full_data[year]
-                y = int(year)
+            for y in column_name:
+                price_data = full_data[y]
 
                 for t in self.set_time:
                     self.LMP[t, y] = price_data[t - 1]
