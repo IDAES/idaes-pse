@@ -46,7 +46,7 @@ def test_daily_data_size(excel_data):
     m = PriceTakerModel()
 
     # Generate price data for each hour of every day in the data
-    daily_data, scenarios = m.reconfigure_raw_data(excel_data)
+    daily_data = m.generate_daily_data(excel_data['BaseCaseTax'])
 
     # Check that there is a row for each horizon length in a representative day
     assert len(daily_data) == m.horizon_length
@@ -59,7 +59,7 @@ def test_determine_optimal_num_clusters(excel_data):
     # Older versions get n_clusters = 10, Newer versions n_clusters = 11
     m = PriceTakerModel()
 
-    daily_data, scenarios = m.reconfigure_raw_data(excel_data)
+    daily_data = m.generate_daily_data(excel_data['BaseCaseTax'])
     n_clusters, inertia_values = m.get_optimal_n_clusters(daily_data)
 
     assert n_clusters == 10
@@ -69,7 +69,7 @@ def test_determine_optimal_num_clusters(excel_data):
 def test_elbow_plot(excel_data):
     m = PriceTakerModel()
 
-    daily_data, scenarios = m.reconfigure_raw_data(excel_data)
+    daily_data = m.generate_daily_data(excel_data['BaseCaseTax'])
     m.get_optimal_n_clusters(daily_data, plot=True)
 
     assert plt.gcf() is not None
@@ -79,9 +79,9 @@ def test_elbow_plot(excel_data):
 def test_cluster_lmp_data(excel_data):
     m = PriceTakerModel()
 
-    daily_data, scenarios = m.reconfigure_raw_data(excel_data)
+    daily_data = m.generate_daily_data(excel_data['BaseCaseTax'])
     n_clusters, inertia_values = m.get_optimal_n_clusters(daily_data)
-    lmp_data, weights = m.cluster_lmp_data(excel_data, n_clusters)
+    lmp_data, weights = m.cluster_lmp_data(excel_data['BaseCaseTax'], n_clusters=n_clusters)
 
     sum_of_weights = 0
     for i in range(1, n_clusters + 1):
@@ -96,7 +96,7 @@ def test_init_logger_messages(excel_data, caplog):
     with caplog.at_level(idaeslog.WARNING):
         m = PriceTakerModel()
 
-        daily_data, scenarios = m.reconfigure_raw_data(excel_data)
+        daily_data = m.generate_daily_data(excel_data['BaseCaseTax'])
         m.get_optimal_n_clusters(daily_data)
 
         assert f"kmax was not set - using a default value of 30." in caplog.text
@@ -174,7 +174,7 @@ def test_optimal_clusters_logger_messages(excel_data):
     ):
         m = PriceTakerModel()
 
-        daily_data, scenarios = m.reconfigure_raw_data(excel_data)
+        daily_data = m.generate_daily_data(excel_data['BaseCaseTax'])
         n_clusters, inertia_values = m.get_optimal_n_clusters(daily_data, kmin=kmin[1], kmax=kmax[2])
     
     with pytest.raises(
@@ -183,7 +183,7 @@ def test_optimal_clusters_logger_messages(excel_data):
     ):
         m = PriceTakerModel()
 
-        daily_data, scenarios = m.reconfigure_raw_data(excel_data)
+        daily_data = m.generate_daily_data(excel_data['BaseCaseTax'])
         n_clusters, inertia_values = m.get_optimal_n_clusters(daily_data, kmin=kmin[2], kmax=kmax[1])
 
     with pytest.raises(
@@ -192,7 +192,7 @@ def test_optimal_clusters_logger_messages(excel_data):
     ):
         m = PriceTakerModel()
 
-        daily_data, scenarios = m.reconfigure_raw_data(excel_data)
+        daily_data = m.generate_daily_data(excel_data['BaseCaseTax'])
         n_clusters, inertia_values = m.get_optimal_n_clusters(daily_data, kmin=kmin[0], kmax=kmax[2])
 
     
@@ -202,7 +202,7 @@ def test_optimal_clusters_logger_messages(excel_data):
     ):
         m = PriceTakerModel()
 
-        daily_data, scenarios = m.reconfigure_raw_data(excel_data)
+        daily_data = m.generate_daily_data(excel_data['BaseCaseTax'])
         n_clusters, inertia_values = m.get_optimal_n_clusters(daily_data, kmin=kmin[2], kmax=kmax[0])
         m.cluster_lmp_data(excel_data, n_clusters)
     
@@ -212,7 +212,7 @@ def test_optimal_clusters_logger_messages(excel_data):
     ):
         m = PriceTakerModel()
 
-        daily_data, scenarios = m.reconfigure_raw_data(excel_data)
+        daily_data = m.generate_daily_data(excel_data['BaseCaseTax'])
         n_clusters, inertia_values = m.get_optimal_n_clusters(daily_data, kmin=kmin[2], kmax=kmax[2])
     
     # TODO: The below test is not working because our data doesn't ever seem to arrive at an n_clusters close to kmax
@@ -291,7 +291,7 @@ def test_ramping_constraint_logger_messages(excel_data):
 
 
 @pytest.mark.unit
-def test_append_lmp_data_logger_messages(excel_data):
+def test_append_lmp_data_logger_messages(excel_data, caplog):
     file_path = "FLECCS.xlsx"
     n_clusters = [-5, 1.7, 10]
     with pytest.raises(
@@ -315,6 +315,23 @@ def test_append_lmp_data_logger_messages(excel_data):
     ):
         m = PriceTakerModel()
         m.append_lmp_data(file_path, sheet='2035 - NREL', column_name='MiNg_$100_CAISO', n_clusters=n_clusters[2], horizon_length=24,)
+
+    file_path = "FLECCS_no_sheet.xlsx"
+    caplog.clear()
+    with caplog.at_level(idaeslog.WARNING):
+        m = PriceTakerModel()
+    
+        m.append_lmp_data(file_path, column_name=1, n_clusters=n_clusters[2], horizon_length=24,)
+    
+        assert f"Excel file was provided but no sheet was specified. Using the first sheet of the excel file." in caplog.text
+
+    caplog.clear()
+    with caplog.at_level(idaeslog.WARNING):
+        m = PriceTakerModel()
+    
+        m.append_lmp_data(file_path, sheet=0, n_clusters=n_clusters[2], horizon_length=24,)
+    
+        assert f"Data was provided but no column name was provided. Using the first column of the data." in caplog.text
 
 @pytest.mark.unit
 def test_cluster_lmp_data_logger_messages(excel_data):
@@ -357,7 +374,7 @@ def test_generate_daily_data_logger_messages(excel_data):
         match=(f"tried to generate daily data, but horizon length of {9000} exceeds raw_data length of {len(raw_data)}"),
     ):
         m = PriceTakerModel(horizon_length=9000)
-        daily_data = m.generate_daily_data(raw_data, day_list=list(range(365)))
+        daily_data = m.generate_daily_data(raw_data)
 
 
 def dfc_design(m, params, capacity_range=(650, 900)):

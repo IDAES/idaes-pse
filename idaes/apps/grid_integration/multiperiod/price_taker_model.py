@@ -76,18 +76,18 @@ class PriceTakerModel(ConcreteModel):
             raise ValueError(f"horizon_length must be an integer, but {value} is not an integer")
         self._horizon_length = value
 
-    def generate_daily_data(self,raw_data,day_list):
+    def generate_daily_data(self, raw_data):
         """
         Function used to generate the daily data in a usable format
         from the raw data provided.
 
         Args:
-            raw_data:   LMP data in raw format
-            day_list:   List of days to be used from the raw data
+            raw_data:       LMP data as a column of values
         
         Returns:
-            daily_data: Correctly formatted LMP data for later use
+            daily_data: Correctly formatted daily LMP data for later use
         """
+        day_list = list(range(1, (len(raw_data) // self._horizon_length) + 1))
 
         daily_data = pd.DataFrame(columns=day_list)
 
@@ -106,34 +106,6 @@ class PriceTakerModel(ConcreteModel):
             day = day + 1
         
         return daily_data
-
-    def reconfigure_raw_data(self, raw_data):
-        """
-        Reconfigures the raw price series data into a usable form
-
-        Args:
-            raw_data: imported price series data
-
-        Returns:
-            daily_data: reconfigured price series data
-            scenarios:  ??? Add description ???
-        """
-
-        # Get column headings
-        column_head = raw_data.columns.tolist()
-        # Remove the date/time column
-        scenarios = column_head[2:]
-
-        # Creating an empty dataframe to store daily data for clustering
-        day_list = list(range(1, (len(raw_data) // self._horizon_length) + 1))
-
-        # Generate daily data
-        for i in scenarios[0:1]:
-            daily_data = self.generate_daily_data(
-                raw_data=raw_data[i], day_list=day_list
-            )
-
-        return daily_data, scenarios
 
     def get_optimal_n_clusters(
         self, 
@@ -237,7 +209,7 @@ class PriceTakerModel(ConcreteModel):
                 raise ValueError(f"n_clusters must be > 0, but {n_clusters} is provided.")
 
         # reconfiguring raw data 
-        daily_data, scenarios  = self.reconfigure_raw_data(raw_data)
+        daily_data  = self.generate_daily_data(raw_data)
         
         # KMeans clustering with the optimal number of clusters
         kmeans = KMeans(n_clusters=n_clusters).fit(daily_data.transpose())
@@ -306,10 +278,21 @@ class PriceTakerModel(ConcreteModel):
             raise ValueError(f"The file path {file_path} does not exist. Please check your file path.")
 
         if '.xls' in path_to_file[-5:]:
+            if sheet is None:
+                _logger.warning(
+                f"Excel file was provided but no sheet was specified. Using the first sheet of the excel file."
+                )
+                sheet = 0
             full_data = pd.read_excel( path_to_file, sheet_name=[sheet])[sheet]
         elif '.csv' in path_to_file[-5:]:
             full_data = pd.read_csv(path_to_file, )
         
+        if column_name is None:
+            _logger.warning(
+                f"Data was provided but no column name was provided. Using the first column of the data."
+            )
+            column_name = full_data.columns[0]
+
         if horizon_length is not None:
             self.horizon_length = horizon_length
         
@@ -372,7 +355,7 @@ class PriceTakerModel(ConcreteModel):
             self.LMP = {}
             self.WEIGHTS = {}
 
-            price_data = full_data
+            price_data = full_data[column_name]
             lmp_data, weights = self.cluster_lmp_data(
                 price_data, n_clusters
             )
@@ -432,14 +415,6 @@ class PriceTakerModel(ConcreteModel):
                         blk.LMP = self.LMP[p]
 
 
-
-
-    #TODO: (1) Need to determine whether the minimum opterating power can be a parameter 
-    #      or whether it largly depends on the capacity of the plant. 
-    #      (2) Need to determine if the start up and shutdown limits can be modeled as bulk amounts vs
-    #      a percentage of capacity 
-    #      (3) How to model/code the cosntraints in without knowing what variable
-    #      these constraints will be applied to. 
     def add_ramping_constraints(
         self,
         op_blk,
