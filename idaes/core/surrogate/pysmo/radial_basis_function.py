@@ -153,7 +153,7 @@ class FeatureScaling:
 
 
 class RadialBasisFunctions:
-    """
+    r"""
     The RadialBasisFunctions class generates a radial basis function fitting for a training data set.
 
     The class must first be initialized by calling **RadialBasisFunctions**. Regression is then carried out by calling the method ``training``.
@@ -198,7 +198,7 @@ class RadialBasisFunctions:
         fname=None,
         overwrite=False,
     ):
-        """
+        r"""
 
         Initialization of **RadialBasisFunctions** class.
 
@@ -1015,7 +1015,7 @@ class RadialBasisFunctions:
         return r_best, lambda_best, error_best
 
     def training(self):
-        """
+        r"""
         Main function for RBF training.
 
         To train the RBF:

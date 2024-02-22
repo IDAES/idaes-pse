@@ -152,7 +152,7 @@ class FeatureScaling:
 
 
 class PolynomialRegression:
-    """
+    r"""
 
     The PolynomialRegression class performs polynomial regression on a training data set.
 
