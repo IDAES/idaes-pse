@@ -50,7 +50,7 @@ See also :doc:`IDAES concepts <explanations/concepts>` in this documentation.
          | :doc:`Logging Processing & Outputs <reference_guides/logging>`
          | :doc:`Developing for IDAES <reference_guides/developer/index>`
          | :doc:`Grid integration application <reference_guides/apps/grid_integration/index>`
-         | :external:doc:`Flowsheet Visualizer <fv>`
+         | :external+ui:doc:`Flowsheet Visualizer <fv>`
 
 .. toctree::
     :hidden:
