@@ -761,8 +761,8 @@ def calculate_time_derivatives(m, time, between=None):
                             # if one of the state var values is from outside the
                             # integration range, so long as it's initialized. Is
                             # this the desired behavior?
+                            old_value = deriv[t].value
                             if disc_eq[t].active and not deriv[t].fixed:
-                                old_value = deriv[t].value
                                 deriv[t].value = 0  # Make sure there is a value
                                 calculate_variable_from_constraint(deriv[t], disc_eq[t])
                         except KeyError as err:
