@@ -1351,7 +1351,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                     units=pyunits.C,
                 )
 
-                self.temp_eq = Constraint(expr=(self.temperature == temp_C))
+                self.temp_eq = Constraint(expr=self.temperature == temp_C)
 
                 def temp_correction_rule(costing):  # rule for temp correction
                     return (
