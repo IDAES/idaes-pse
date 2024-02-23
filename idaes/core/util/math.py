@@ -36,9 +36,7 @@ def smooth_abs(a, eps=1e-4):
     """
     # Check type of eps
     if not isinstance(eps, (float, int, Param)):
-        raise TypeError(
-            "smooth_abs eps argument must be a float, int or Pyomo Param"
-        )
+        raise TypeError("smooth_abs eps argument must be a float, int or Pyomo Param")
 
     # Create expression
     try:
