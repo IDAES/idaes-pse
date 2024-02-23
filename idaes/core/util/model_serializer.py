@@ -996,6 +996,8 @@ def from_json(o, sd=None, fname=None, s=None, wts=None, gz=None, root_name=None)
     elif s is not None:  # Use a json string (not really sure if useful)
         sd = json.loads(s)  # json string
     else:  # Didn't specify at least one source
+        # PYLINT-TODO
+        # pylint: disable-next=broad-exception-raised
         raise Exception("Need to specify a data source to load from")
     dict_time = time.time()  # To calculate how long it took to read file
     if wts is None:  # if no StoreSpec object given use the default, which should

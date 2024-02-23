@@ -1741,6 +1741,8 @@ class _GenericStateBlock(StateBlock):
             # When state vars are fixed, check that DoF is 0
             for k in blk.values():
                 if degrees_of_freedom(k) != 0:
+                    # PYLINT-TODO
+                    # pylint: disable-next=broad-exception-raised
                     raise Exception(
                         "State vars fixed but degrees of "
                         "freedom for state block is not zero "

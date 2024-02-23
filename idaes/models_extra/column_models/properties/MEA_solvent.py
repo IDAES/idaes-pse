@@ -281,6 +281,8 @@ class PressureSatSolvent:
     @staticmethod
     def return_expression(b, cobj, T, dT=False):
         if dT:
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception("No dT method for pressure sat")
 
         return (
