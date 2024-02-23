@@ -391,7 +391,9 @@ def cat_resources(path, objects=(), color=True):
     # get all resources,
     # display any that match an object as a prefix
     for r in d.find():
-        for oid in unmatched:
+        # iterate on a copy of the set to avoid
+        # mutating an object being iterated on
+        for oid in set(unmatched):
             if r.uuid.startswith(oid):
                 unmatched.remove(oid)  # don't show twice
                 if not first:

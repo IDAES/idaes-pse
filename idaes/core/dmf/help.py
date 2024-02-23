@@ -88,7 +88,8 @@ def get_html_docs(dmf, module_, name, sphinx_version=(1, 5, 5)):
             url = p + "/genindex.html"
             _log.debug(f"(Help) reading index file: {url}")
             try:
-                response = requests.get(url)
+                # arbitrarily add 10 s timeout b/c Pylint's missing-timeout
+                response = requests.get(url, timeout=10)
                 if response.status_code == 200:
                     html_content = response.text
                 else:

@@ -152,7 +152,7 @@ class FeatureScaling:
 
 
 class PolynomialRegression:
-    """
+    r"""
 
     The PolynomialRegression class performs polynomial regression on a training data set.
 
@@ -255,6 +255,8 @@ class PolynomialRegression:
         )
         # Checks if fname is provided or exists in the path
         if not isinstance(overwrite, bool):
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception("overwrite must be boolean.")
         self.overwrite = overwrite
         if fname is None:
@@ -264,6 +266,8 @@ class PolynomialRegression:
             not isinstance(fname, str)
             or os.path.splitext(fname)[-1].lower() != ".pickle"
         ):
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception(
                 'fname must be a string with extension ".pickle". Please correct.'
             )
@@ -317,14 +321,20 @@ class PolynomialRegression:
 
         # Check for potential dimensionality problems in input data
         if regression_data.shape[0] > original_data.shape[0]:
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception(
                 "The sampled data has more entries than the original dataset."
             )
         elif regression_data.shape[1] != original_data.shape[1]:
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception(
                 "Dimensional discrepancies in the dimensions of the original and regression datasets."
             )
         elif (regression_data.shape[1] == 1) or (original_data.shape[1] == 1):
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception(
                 "Input data requires at least two dimensions (X and Y data)."
             )
@@ -342,6 +352,8 @@ class PolynomialRegression:
         self.number_of_crossvalidations = number_of_crossvalidations
 
         if not isinstance(maximum_polynomial_order, int):
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception("Maximum polynomial order must be an integer")
         elif maximum_polynomial_order > 10:
             warnings.warn(
@@ -356,6 +368,8 @@ class PolynomialRegression:
             print("The default training/cross-validation split of 0.75 is used.")
             training_split = 0.75
         elif training_split >= 1 or training_split <= 0:
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception(
                 "Fraction of samples used for training must be between 0 and 1"
             )
@@ -370,6 +384,8 @@ class PolynomialRegression:
         if max_fraction_training_samples is None:
             max_fraction_training_samples = 0.5
         elif max_fraction_training_samples > 1 or max_fraction_training_samples < 0:
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception(
                 "The fraction for the maximum number of training samples must be between 0 and 1"
             )
@@ -387,21 +403,33 @@ class PolynomialRegression:
 
         # Ensure all other key variables are integers
         if not isinstance(self.number_of_crossvalidations, int):
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception("Number of cross-validations must be an integer")
         elif not isinstance(self.no_adaptive_samples, int):
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception("Number of adaptive samples must be an integer")
         elif not isinstance(self.max_iter, int):
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception("Maximum number of iterations must be an integer")
         elif self.max_polynomial_order >= regression_data.shape[0]:
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception(
                 "max_polynomial_order too high for the number of samples supplied"
             )
 
         if (self.max_polynomial_order <= 0) or (self.number_of_crossvalidations <= 0):
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception(
                 "maximum_polynomial_order and number_of_crossvalidations must be positive, non-zero integers"
             )
         elif (self.no_adaptive_samples < 0) or (self.max_iter < 0):
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception("no_adaptive_samples and max_iter must be positive")
 
         if solution_method is None:
@@ -409,6 +437,8 @@ class PolynomialRegression:
             self.solution_method = solution_method
             print("Default parameter estimation method is used.")
         elif not isinstance(solution_method, str):
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception("Invalid solution method. Must be of type <str>.")
         elif (
             (solution_method.lower() == "mle")
@@ -418,6 +448,8 @@ class PolynomialRegression:
             solution_method = solution_method.lower()
             self.solution_method = solution_method
         else:
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception(
                 'Invalid parameter estimation method entered. Select one of maximum likelihood (solution_method="mle"), Pyomo optimization (solution_method="pyomo") or BFGS (solution_method="bfgs") methods. '
             )
@@ -430,6 +462,8 @@ class PolynomialRegression:
         elif multinomials == 0:
             self.multinomials = 0
         else:
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception(
                 'Multinomial must be binary: input "1" for "Yes" and "0" for "No". '
             )
@@ -483,8 +517,12 @@ class PolynomialRegression:
         cross_val_data = {}
         num_training = int(np.around(self.number_of_samples * self.fraction_training))
         if num_training == 0:
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception("The inputted of fraction_training is too low.")
         elif num_training == self.number_of_samples:
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception("The inputted of fraction_training is too high.")
         for i in range(1, self.number_of_crossvalidations + 1):
             np.random.seed(i)
@@ -1100,6 +1138,8 @@ class PolynomialRegression:
                     i
                 ].values
             else:
+                # PYLINT-TODO
+                # pylint: disable-next=broad-exception-raised
                 raise Exception(
                     "Wrong data dimensions or type - additional_regression_features contain 1-D vectors, have same number of entries as regression_data and be of type pd.Series, pd.Dataframe or np.ndarray."
                 )
@@ -1697,6 +1737,8 @@ class PolynomialRegression:
             filehandler = open(solution_file, "rb")
             return pickle.load(filehandler)
         except:
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception("File could not be loaded.")
 
     def parity_residual_plots(self):

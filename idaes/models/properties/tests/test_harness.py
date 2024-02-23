@@ -291,6 +291,8 @@ class PropertyTestHarness(object):
         frame._flags = frame.fs.props.initialize(hold_state=True)
 
         if degrees_of_freedom(frame.fs.props[1]) != 0:
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception(
                 "initialize did not result in a State Block with 0 "
                 "degrees of freedom."
@@ -308,6 +310,8 @@ class PropertyTestHarness(object):
         frame.fs.props.release_state(frame._flags)
 
         if degrees_of_freedom(frame.fs.props[1]) != frame._init_dof:
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception(
                 "release state did not restore State Block to original "
                 "degrees of freedom."

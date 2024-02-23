@@ -1028,6 +1028,8 @@ class HaltonSampling(SamplingMethods):
             self.x_data = bounds_array  # Only x data will be present in this case
 
         if self.x_data.shape[1] > 10:
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception(
                 "Dimensionality problem: This method is not available for problems with dimensionality > 10: the performance of the method degrades substantially at higher dimensions"
             )
@@ -1066,12 +1068,12 @@ class HaltonSampling(SamplingMethods):
 
 
 class HammersleySampling(SamplingMethods):
-    """
+    r"""
     A class that performs Hammersley Sampling.
 
     Hammersley samples are generated in a similar way to Halton samples - based on the reversing/flipping the base conversion of numbers using primes.
 
-    To generate :math:`n` samples in a :math:`p`-dimensional space, the first :math:`\\left(p-1\\right)` prime numbers are used to generate the samples. The first dimension is obtained by uniformly dividing the region into **no_samples points**.
+    To generate :math:`n` samples in a :math:`p`-dimensional space, the first :math:`\left(p-1\right)` prime numbers are used to generate the samples. The first dimension is obtained by uniformly dividing the region into **no_samples points**.
 
     Note:
         Use of this method is limited to use in low-dimensionality problems (less than 10 variables). At higher dimensionalities, the performance of the sampling method has been shown to degrade.
@@ -1209,6 +1211,8 @@ class HammersleySampling(SamplingMethods):
             self.x_data = bounds_array  # Only x data will be present in this case
 
         if self.x_data.shape[1] > 10:
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception(
                 "Dimensionality problem: This method is not available for problems with dimensionality > 10: the performance of the method degrades substantially at higher dimensions"
             )
@@ -1420,6 +1424,8 @@ class CVTSampling(SamplingMethods):
             # valid tolerance
             pass
         else:
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception("Invalid tolerance input")
         self.eps = tolerance
 
