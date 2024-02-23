@@ -455,7 +455,7 @@ class ParameterSweepBase:
             NotImplementedError
         """
         raise NotImplementedError(
-            "Derived classes should overload this method with a " "workflow manager."
+            "Derived classes should overload this method with a workflow manager."
         )
 
     def execute_single_sample(self, sample_id: int):

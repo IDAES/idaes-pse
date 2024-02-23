@@ -191,11 +191,11 @@ def homotopy(
         )
     if min_step > max_step:
         raise ConfigurationError(
-            "Invalid arguments: step_min must be less " "or equal to step_max."
+            "Invalid arguments: step_min must be less or equal to step_max."
         )
     if not min_step <= step_init <= max_step:
         raise ConfigurationError(
-            "Invalid arguments: step_init must lie " "between min_step and max_step."
+            "Invalid arguments: step_init must lie between min_step and max_step."
         )
     if max_eval < 1:
         raise ConfigurationError(

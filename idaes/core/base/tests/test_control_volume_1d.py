@@ -396,7 +396,7 @@ def test_add_geometry_length_var_invalid_type():
 
     with pytest.raises(
         ConfigurationError,
-        match="fs.cv length_var must be a Pyomo Var, Param or " "Expression.",
+        match="fs.cv length_var must be a Pyomo Var, Param or Expression.",
     ):
         m.fs.cv.add_geometry(length_var="foo")
 
@@ -418,7 +418,7 @@ def test_add_geometry_length_var_indexed():
 
     with pytest.raises(
         ConfigurationError,
-        match="fs.cv length_var must be a scalar \(unindexed\) " "component.",
+        match="fs.cv length_var must be a scalar \(unindexed\) component.",
     ):
         m.fs.cv.add_geometry(length_var=m.fs.length)
 
