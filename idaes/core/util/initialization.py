@@ -168,7 +168,7 @@ def propagate_state(
     if arc is not None:
         if destination is not None or source is not None:
             raise RuntimeError(
-                "In propagate_state(), provide only arc or " "source and destination"
+                "In propagate_state(), provide only arc or source and destination"
             )
         try:
             source = arc.src

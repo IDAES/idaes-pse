@@ -1849,7 +1849,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         if len(resources) != len(rates):
             # PYLINT-TODO
             # pylint: disable-next=broad-exception-raised
-            raise Exception("resources and rates must be lists of the same" " length")
+            raise Exception("resources and rates must be lists of the same length")
 
         # dictionary of default prices
         # the currency units are millions of USD, so all prices need a 1e-6
