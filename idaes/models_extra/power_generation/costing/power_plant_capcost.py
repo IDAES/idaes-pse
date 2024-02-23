@@ -428,6 +428,8 @@ class QGESSCostingData(FlowsheetCostingBlockData):
 
             else:  # except the case where transport_cost is passed but tonne_CO2_capture is not passed
                 if transport_cost is not None:
+                    # PYLINT-TODO
+                    # pylint: disable-next=broad-exception-raised
                     raise Exception(
                         "If a transport_cost is not None, "
                         "tonne_CO2_capture cannot be None."
@@ -679,7 +681,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             elif tech == 7:
                 cost_accounts = AUSC_preloaded_accounts[cost_accounts]
             else:
-                AttributeError("{} technology not supported".format(blk.name))
+                raise AttributeError("{} technology not supported".format(blk.name))
 
         # pull data for each account into dictionaries
         process_params = {}
@@ -937,6 +939,8 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                         try:
                             pyunits.convert(sp, ref_units)
                         except InconsistentUnitsError:
+                            # PYLINT-TODO
+                            # pylint: disable-next=broad-exception-raised
                             raise Exception(
                                 "Account %s uses units of %s. "
                                 "Units of %s were passed. "
@@ -1843,6 +1847,8 @@ class QGESSCostingData(FlowsheetCostingBlockData):
 
         # assert lists are the same length
         if len(resources) != len(rates):
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception("resources and rates must be lists of the same" " length")
 
         # dictionary of default prices
@@ -1868,6 +1874,8 @@ class QGESSCostingData(FlowsheetCostingBlockData):
 
         # raise error if the user included a resource not in default_prices
         if not set(resources).issubset(default_prices.keys()):
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception(
                 "A resource was included that does not contain a "
                 "price. Prices exist for the following resources: "

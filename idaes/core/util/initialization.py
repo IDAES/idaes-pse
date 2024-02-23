@@ -267,6 +267,8 @@ def solve_indexed_blocks(solver, blocks, **kwds):
                     (b, i + 1 if i < nBlocks - 1 else None)
                 )
             except Exception:
+                # PYLINT-TODO
+                # pylint: disable-next=broad-exception-raised
                 raise Exception(
                     "solve_indexed_blocks method failed adding "
                     "components to temporary block."

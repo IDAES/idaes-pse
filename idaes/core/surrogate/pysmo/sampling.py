@@ -1028,6 +1028,8 @@ class HaltonSampling(SamplingMethods):
             self.x_data = bounds_array  # Only x data will be present in this case
 
         if self.x_data.shape[1] > 10:
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception(
                 "Dimensionality problem: This method is not available for problems with dimensionality > 10: the performance of the method degrades substantially at higher dimensions"
             )
@@ -1209,6 +1211,8 @@ class HammersleySampling(SamplingMethods):
             self.x_data = bounds_array  # Only x data will be present in this case
 
         if self.x_data.shape[1] > 10:
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception(
                 "Dimensionality problem: This method is not available for problems with dimensionality > 10: the performance of the method degrades substantially at higher dimensions"
             )
@@ -1420,6 +1424,8 @@ class CVTSampling(SamplingMethods):
             # valid tolerance
             pass
         else:
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception("Invalid tolerance input")
         self.eps = tolerance
 

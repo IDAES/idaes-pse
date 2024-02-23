@@ -126,6 +126,8 @@ class KrigingModel:
 
         """
         if not isinstance(overwrite, bool):
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception("overwrite must be boolean.")
         self.overwrite = overwrite
         if fname is None:
@@ -135,6 +137,8 @@ class KrigingModel:
             not isinstance(fname, str)
             or os.path.splitext(fname)[-1].lower() != ".pickle"
         ):
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception(
                 'fname must be a string with extension ".pickle". Please correct.'
             )
@@ -186,11 +190,15 @@ class KrigingModel:
         if isinstance(numerical_gradients, bool):
             self.num_grads = numerical_gradients
         else:
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception("numerical_gradients must be boolean.")
 
         if isinstance(regularization, bool):
             self.regularization = regularization
         else:
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception("Choice of regularization must be boolean.")
 
         # Results
@@ -751,6 +759,8 @@ class KrigingModel:
             filehandler = open(solution_file, "rb")
             return pickle.load(filehandler)
         except:
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception("File could not be loaded.")
 
     def parity_residual_plots(self):

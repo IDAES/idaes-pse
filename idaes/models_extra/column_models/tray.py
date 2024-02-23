@@ -736,6 +736,8 @@ see property package for documentation.}""",
                 )
             )
         else:
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception(
                 "State vars fixed but degrees of freedom "
                 "for tray block is not zero during "

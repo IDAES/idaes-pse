@@ -1432,6 +1432,8 @@ tube side flows from 1 to 0""",
                 initialize=1.0, doc="Staggered Tube Arrangement Factor"
             )
         else:
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception("Tube Arrangement Not Supported")
 
         # Velocity on shell side
@@ -1540,6 +1542,8 @@ tube side flows from 1 to 0""",
                 )
 
         else:
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception("Tube Arrangement Not Supported")
 
         # Pressure drop on shell side

@@ -880,6 +880,8 @@ class BoilerHeatExchangerData(HeatExchangerData):
                 initialize=1.0, doc="Staggered tube arrangement factor"
             )
         else:
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception("tube arrangement type not supported")
         # Velocity on shell side
         self.v_shell = Var(
@@ -970,6 +972,8 @@ class BoilerHeatExchangerData(HeatExchangerData):
                     )
 
             else:
+                # PYLINT-TODO
+                # pylint: disable-next=broad-exception-raised
                 raise Exception("tube arrangement type not supported")
 
             # Pressure drop on shell side

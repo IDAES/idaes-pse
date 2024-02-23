@@ -1045,6 +1045,8 @@ class TestParameterSweepBase:
         class dummy_solver:
             @staticmethod
             def solve(model, *args, **kwargs):
+                # PYLINT-TODO
+                # pylint: disable-next=broad-exception-raised
                 raise Exception("Test exception")
 
         spec2 = ParameterSweepSpecification()
@@ -1114,6 +1116,8 @@ class TestParameterSweepBase:
         class dummy_solver:
             @staticmethod
             def solve(model, *args, **kwargs):
+                # PYLINT-TODO
+                # pylint: disable-next=broad-exception-raised
                 raise Exception("Test exception")
 
         def recourse(model):
