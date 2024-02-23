@@ -7,9 +7,15 @@
 Institute for the Design of Advanced Energy Systems (IDAES)
 ===========================================================
 
+About IDAES
+-----------
+
 The Institute for Design of Advanced Energy Systems (IDAES) was originated to bring the most advanced modeling and optimization capabilities to the challenges of transforming and decarbonizing the world’s energy systems to make them environmentally sustainable while maintaining high reliability and low cost.
 For more information about the project, see the `IDAES website`_.
 See also :doc:`IDAES concepts <explanations/concepts>` in this documentation.
+
+Contents
+--------
 
 .. list-table::
    :class: index-table
@@ -68,13 +74,66 @@ Collaborating institutions
 --------------------------
 The IDAES team is comprised of collaborators from the following institutions:
 
-* National Energy Technology Laboratory (Lead)
-* Sandia National Laboratories
-* Lawrence Berkeley National Laboratory
-* Carnegie-Mellon University
-* West Virginia University
-* University of Notre Dame
-* Georgia Tech
+.. |netl_logo| image:: images/institution_logos/netl.png
+    :width: 200px
+
+.. |lbnl_logo| image:: images/institution_logos/lbnl.jpg
+    :width: 200px
+
+.. |snl_logo| image:: images/institution_logos/snl.png
+    :width: 200px
+
+.. |cmu_logo| image:: images/institution_logos/cmu.png
+    :width: 200px
+
+.. |wvu_logo| image:: images/institution_logos/wvu.png
+    :width: 200px
+
+.. |und_logo| image:: images/institution_logos/und.png
+    :width: 200px
+
+.. |gatech_logo| image:: images/institution_logos/gatech.png
+    :width: 200px
+
+
+National Laboratory Collaborators
++++++++++++++++++++++++++++++++++
+
+.. table::
+   :widths: auto
+
+   +---------------+-------------------------------------------+
+   | |netl_logo|   |   National Energy Technology Laboratory   |
+   +---------------+-------------------------------------------+
+   | |lbnl_logo|   |   Lawrence Berkeley National Laboratory   |
+   +---------------+-------------------------------------------+
+   | |snl_logo|    |   Sandia National Laboratories            |
+   +---------------+-------------------------------------------+
+
+University Collaborators
+++++++++++++++++++++++++
+
+.. table::
+   :widths: auto
+
+   +---------------+-------------------------------------------+
+   | |cmu_logo|    |   Carnegie Mellon University              |
+   +---------------+-------------------------------------------+
+   | |wvu_logo|    |   West Virginia University                |
+   +---------------+-------------------------------------------+
+   | |und_logo|    |   University of Notre Dame                |
+   +---------------+-------------------------------------------+
+   | |gatech_logo| |   Georgia Institute of Technology         |
+   +---------------+-------------------------------------------+
+
+Sponsor
+-------
+
+This work was sponsored by the Department of Energy, Fossil Energy and Carbon Management
+
+.. image:: images/institution_logos/doe.jpg
+    :align: center
+    :width: 400px
 
 Citing IDAES
 ------------
