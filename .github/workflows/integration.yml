@@ -33,7 +33,7 @@ concurrency:
 env:
   IDAES_CONDA_ENV_NAME_DEV: idaes-pse-dev
   PYTEST_ADDOPTS: "--color=yes"
-  DEFAULT_PYTHON_VERSION: '3.11'
+  DEFAULT_PYTHON_VERSION: '3.10'
 
 defaults:
   run:

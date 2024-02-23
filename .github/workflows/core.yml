@@ -38,7 +38,7 @@ concurrency:
 
 env:
   # default Python version to use for checks that do not require multiple versions
-  DEFAULT_PYTHON_VERSION: '3.11'
+  DEFAULT_PYTHON_VERSION: '3.10'
   IDAES_CONDA_ENV_NAME_DEV: idaes-pse-dev
   PYTEST_ADDOPTS: "--color=yes"
 

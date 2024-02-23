@@ -136,7 +136,7 @@ pygments_style = "sphinx"
 todo_include_todos = False
 
 # Global constants for supported Python versions
-IDAES_PV_MIN, IDAES_PV_MAX, IDAES_PV_DEFAULT = "3.8", "3.12", "3.11"
+IDAES_PV_MIN, IDAES_PV_MAX, IDAES_PV_DEFAULT = "3.8", "3.12", "3.10"
 
 # This block of text will be virtually present at the end of every file.
 # Used here to define substitutions for re-used URLs, e.g. just add "|examples-site|" to
