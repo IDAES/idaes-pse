@@ -105,7 +105,7 @@ def _process_kwargs(o, kwargs):
 class _IndexedProcessBlockMeta(type):
     """Metaclass used to create an indexed model class."""
 
-    def __new__(cls, name, bases, dct):
+    def __new__(mcs, name, bases, dct):
         def __init__(self, *args, **kwargs):
             _pyomo_kwargs = _process_kwargs(self, kwargs)
             bases[0].__init__(self, *args, **_pyomo_kwargs)
@@ -113,14 +113,14 @@ class _IndexedProcessBlockMeta(type):
         dct["__init__"] = __init__
         dct["__process_block__"] = "indexed"
         # provide function ``base_class_module()`` to get unit module, for visualizer
-        dct["base_class_module"] = lambda cls: bases[0].__module__
-        return type.__new__(cls, name, bases, dct)
+        dct["base_class_module"] = lambda mcs: bases[0].__module__
+        return type.__new__(mcs, name, bases, dct)
 
 
 class _ScalarProcessBlockMeta(type):
     """Metaclass used to create a scalar model class."""
 
-    def __new__(cls, name, bases, dct):
+    def __new__(mcs, name, bases, dct):
         def __init__(self, *args, **kwargs):
             _pyomo_kwargs = _process_kwargs(self, kwargs)
             bases[0].__init__(self, component=self)
@@ -129,8 +129,8 @@ class _ScalarProcessBlockMeta(type):
         dct["__init__"] = __init__
         dct["__process_block__"] = "scalar"
         # provide function ``base_class_module()`` to get unit module, for visualizer
-        dct["base_class_module"] = lambda cls: bases[0].__module__
-        return type.__new__(cls, name, bases, dct)
+        dct["base_class_module"] = lambda mcs: bases[0].__module__
+        return type.__new__(mcs, name, bases, dct)
 
 
 class ProcessBlock(Block):
