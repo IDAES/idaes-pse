@@ -250,6 +250,8 @@ def test_unit_conversion():
                 found = True
                 break
         if not found:
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception("Expected warning about undefined unit not found.")
 
     assert p_psi[0] == pytest.approx(14.7, rel=1e-1)

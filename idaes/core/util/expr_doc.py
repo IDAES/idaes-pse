@@ -129,6 +129,8 @@ class PyomoSympyBimap(object):
             i = self.i_func
             self.i_func += 1
         else:
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception("Should be Var, Expression, or ExternalFunction")
 
         if parent_object.is_indexed() and parent_object in self.parent_symbol:
