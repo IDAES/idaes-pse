@@ -756,46 +756,33 @@ def calculate_time_derivatives(m, time, between=None):
                         if t < between.first() or t > between.last():
                             # Outside of integration range, skip calculation
                             continue
-                        # Check time index to decide what constraints to scale
-                        if t == time.first() or t == time.last():
-                            try:
-                                if disc_eq[t].active and not deriv[t].fixed:
-                                    old_value = deriv[t].value
-                                    deriv[t].value = 0  # Make sure there is a value
-                                    calculate_variable_from_constraint(
-                                        deriv[t], disc_eq[t]
-                                    )
-                            except KeyError:
-                                # Discretization and continuity equations may or may not exist at the first or last time
-                                # points depending on the method. Backwards skips first, forwards skips last, central skips
-                                # both (which means the user needs to provide additional equations)
-                                pass
-
-                        elif t == between.first() or t == between.last():
-                            # At edges of between, it's unclear which adjacent
-                            # values of state variables have been populated.
-                            # Therefore we might get hit with value errors.
-
+                        try:
                             # TODO This calculates the value of the derivative even
                             # if one of the state var values is from outside the
                             # integration range, so long as it's initialized. Is
                             # this the desired behavior?
-                            try:
-                                if disc_eq[t].active and not deriv[t].fixed:
-                                    old_value = deriv[t].value
-                                    deriv[t].value = 0  # Make sure there is a value
-                                    calculate_variable_from_constraint(
-                                        deriv[t], disc_eq[t]
-                                    )
-                            except ValueError:
+                            if disc_eq[t].active and not deriv[t].fixed:
+                                old_value = deriv[t].value
+                                deriv[t].value = 0  # Make sure there is a value
+                                calculate_variable_from_constraint(deriv[t], disc_eq[t])
+                        except KeyError as err:
+                            # Discretization and continuity equations may or may not exist at the first or last time
+                            # points depending on the method. Backwards skips first, forwards skips last, central skips
+                            # both (which means the user needs to provide additional equations)
+                            if t == time.first() or t == time.last():
+                                pass
+                            else:
+                                raise err
+                        except ValueError as err:
+                            # At edges of between, it's unclear which adjacent
+                            # values of state variables have been populated.
+                            # Therefore we might get hit with value errors.
+                            if t == between.first() or t == between.last():
                                 # Reset deriv value to old value
                                 if disc_eq[t].active and not deriv[t].fixed:
                                     deriv[t].value = old_value
-
-                        else:
-                            if disc_eq[t].active and not deriv[t].fixed:
-                                deriv[t].value = 0  # Make sure there is a value
-                                calculate_variable_from_constraint(deriv[t], disc_eq[t])
+                            else:
+                                raise err
 
 
 class PetscTrajectory(object):
