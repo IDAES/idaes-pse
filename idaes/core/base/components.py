@@ -439,7 +439,7 @@ class IonData(SoluteData):
     CONFIG = SoluteData.CONFIG()
 
     # Remove valid_phase_types argument, as ions are aqueous phase only
-    CONFIG.__delitem__("valid_phase_types")
+    del CONFIG["valid_phase_types"]
     # Set as not having a vapor pressure
     has_psat = CONFIG.get("has_vapor_pressure")
     has_psat.set_value(False)
