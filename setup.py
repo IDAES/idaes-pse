@@ -93,7 +93,7 @@ class ExtraDependencies:
     ]
     omlt = [
         "omlt==1.1",  # fix the version for now as package evolves
-        "tensorflow",
+        'tensorflow; python_version < "3.12"',
     ]
     grid = [
         "gridx-prescient>=2.2.1",  # idaes.tests.prescient
@@ -204,6 +204,7 @@ kwargs = dict(
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
         "Programming Language :: Python :: Implementation :: CPython",
         "Topic :: Scientific/Engineering :: Mathematics",
         "Topic :: Scientific/Engineering :: Chemistry",

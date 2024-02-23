@@ -38,7 +38,7 @@ concurrency:
 
 env:
   # default Python version to use for checks that do not require multiple versions
-  DEFAULT_PYTHON_VERSION: '3.8'
+  DEFAULT_PYTHON_VERSION: '3.10'
   IDAES_CONDA_ENV_NAME_DEV: idaes-pse-dev
   PYTEST_ADDOPTS: "--color=yes"
 
@@ -56,7 +56,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
       - name: Install Black
         # unlike the other jobs, we don't need to install IDAES and/or all the dev dependencies,
         # but we still want to specify the Black version to use in requirements-dev.txt for local development
@@ -88,7 +88,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11']
+        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
         os:
           - linux
           - win64
@@ -97,7 +97,7 @@ jobs:
             runner-image: ubuntu-20.04
           - os: win64
             runner-image: windows-2022
-          - python-version: '3.8'
+          - python-version: '3.11'
             # only generate coverage report for a single python version in the matrix
             # to avoid overloading Codecov
             cov-report: true
