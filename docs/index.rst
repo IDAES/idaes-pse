@@ -14,6 +14,12 @@ The Institute for Design of Advanced Energy Systems (IDAES) was originated to br
 For more information about the project, see the `IDAES website`_.
 See also :doc:`IDAES concepts <explanations/concepts>` in this documentation.
 
+Citing IDAES
+------------
+If you use IDAES software for your research, please cite the following publication:
+
+Lee, Andrew, Jaffer H. Ghouse, John C. Eslick, Carl D. Laird, John D. Siirola, Miguel A. Zamarripa, Dan Gunter et al. "The IDAES process modeling framework and model library—Flexibility for process simulation and optimization." Journal of Advanced Manufacturing and Processing 3, no. 3 (2021): e10095. https://doi.org/10.1002/amp2.10095
+
 Contents
 --------
 
@@ -134,12 +140,6 @@ This work was sponsored by the Department of Energy, Fossil Energy and Carbon Ma
 .. image:: images/institution_logos/doe.jpg
     :align: center
     :width: 400px
-
-Citing IDAES
-------------
-If you use IDAES software for your research, please cite us:
-
-Lee, Andrew, Jaffer H. Ghouse, John C. Eslick, Carl D. Laird, John D. Siirola, Miguel A. Zamarripa, Dan Gunter et al. "The IDAES process modeling framework and model library—Flexibility for process simulation and optimization." Journal of Advanced Manufacturing and Processing 3, no. 3 (2021): e10095. https://doi.org/10.1002/amp2.10095
 
 Contact us
 -----------
