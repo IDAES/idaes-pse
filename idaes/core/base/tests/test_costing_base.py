@@ -103,7 +103,7 @@ class TestFlowsheetCostingBlock:
     def test_build_global_params(self):
         with pytest.raises(
             NotImplementedError,
-            match="Derived class has not defined a " "build_global_params method.",
+            match="Derived class has not defined a build_global_params method.",
         ):
             FlowsheetCostingBlockData.build_global_params(self)
 
@@ -111,7 +111,7 @@ class TestFlowsheetCostingBlock:
     def test_build_process_costs(self):
         with pytest.raises(
             NotImplementedError,
-            match="Derived class has not defined a " "build_process_costs method.",
+            match="Derived class has not defined a build_process_costs method.",
         ):
             FlowsheetCostingBlockData.build_process_costs(self)
 
@@ -119,7 +119,7 @@ class TestFlowsheetCostingBlock:
     def test_initialize_build(self):
         with pytest.raises(
             NotImplementedError,
-            match="Derived class has not defined an " "initialize_build method.",
+            match="Derived class has not defined an initialize_build method.",
         ):
             FlowsheetCostingBlockData.initialize(self)
 

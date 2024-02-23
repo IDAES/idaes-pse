@@ -55,7 +55,7 @@ def get_workspace(path="", name=None, desc=None, create=False, errs=None, **kwar
         if isinstance(err, errors.DMFError) and not create:
             msg += 'Directory not found, and "create" flag is False\n'
             msg += (
-                "If you want to create the workspace, try again with " "create=True\n"
+                "If you want to create the workspace, try again with create=True\n"
             )
         else:
             msg += "{}\n".format(err)

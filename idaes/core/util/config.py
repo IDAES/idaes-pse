@@ -115,7 +115,7 @@ def is_port(arg):
     """
     if not isinstance(arg, Port):
         raise ConfigurationError(
-            "Invalid argument type. Expected an instance " "of a Pyomo Port object"
+            "Invalid argument type. Expected an instance of a Pyomo Port object"
         )
     return arg
 

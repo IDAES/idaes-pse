@@ -37,7 +37,7 @@ def smooth_abs(a, eps=1e-4):
     # Check type of eps
     if not isinstance(eps, (float, int, Param)):
         raise TypeError(
-            "smooth_abs eps argument must be a float, int or " "Pyomo Param"
+            "smooth_abs eps argument must be a float, int or Pyomo Param"
         )
 
     # Create expression
@@ -81,7 +81,7 @@ def smooth_minmax(a, b, eps=1e-4, sense="max"):
         mm = -1
     else:
         raise ValueError(
-            "Unrecognised sense argument to smooth_minmax. " "Must be 'min' or 'max'."
+            "Unrecognised sense argument to smooth_minmax. Must be 'min' or 'max'."
         )
 
     # Create expression

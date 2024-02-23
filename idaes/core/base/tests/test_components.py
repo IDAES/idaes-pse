@@ -507,7 +507,7 @@ class TestIon:
 
         with pytest.raises(
             PropertyPackageError,
-            match="comp Ion Component types should only be used with " "Aqueous Phases",
+            match="comp Ion Component types should only be used with Aqueous Phases",
         ):
             m.comp = Ion(_electrolyte=False)
 
@@ -533,7 +533,7 @@ class TestAnion:
 
         with pytest.raises(
             PropertyPackageError,
-            match="comp Ion Component types should only be used with " "Aqueous Phases",
+            match="comp Ion Component types should only be used with Aqueous Phases",
         ):
             m.comp = Anion(_electrolyte=False)
 
@@ -598,7 +598,7 @@ class TestAnion:
     @pytest.mark.unit
     def test_no_charge(self, m):
         with pytest.raises(
-            ConfigurationError, match="an was not provided with a value " "for charge."
+            ConfigurationError, match="an was not provided with a value for charge."
         ):
             m.an = Anion(_electrolyte=True)
 
@@ -636,7 +636,7 @@ class TestCation:
 
         with pytest.raises(
             PropertyPackageError,
-            match="comp Ion Component types should only be used with " "Aqueous Phases",
+            match="comp Ion Component types should only be used with Aqueous Phases",
         ):
             m.comp = Cation(_electrolyte=False)
 
@@ -701,7 +701,7 @@ class TestCation:
     @pytest.mark.unit
     def test_no_charge(self, m):
         with pytest.raises(
-            ConfigurationError, match="cat was not provided with a value " "for charge."
+            ConfigurationError, match="cat was not provided with a value for charge."
         ):
             m.cat = Cation(_electrolyte=True)
 

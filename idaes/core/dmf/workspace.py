@@ -205,7 +205,7 @@ class Workspace(object):
                     self._create_new_config(add_defaults)
                 except OSError as err:
                     raise WorkspaceError(
-                        "while creating new workspace " "configuration: {}".format(err)
+                        "while creating new workspace configuration: {}".format(err)
                     )
         else:
             # assert that the workspace exists

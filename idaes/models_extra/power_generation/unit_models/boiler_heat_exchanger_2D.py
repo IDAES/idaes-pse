@@ -413,22 +413,22 @@ tube side flows from 1 to 0""",
         # tube inputs:
         if self.config.tube_inner_diameter is None:
             raise ConfigurationError(
-                "User must provide a value for " "tube_inner_diameter"
+                "User must provide a value for tube_inner_diameter"
             )
         if self.config.tube_thickness is None:
-            raise ConfigurationError("User must provide a value for " "tube_thickness")
+            raise ConfigurationError("User must provide a value for tube_thickness")
         # header inputs:
         if (
             self.config.has_header is False
             and self.config.header_inner_diameter is True
         ):
             _log.info_high(
-                "User set has_header to False " "and provided header_inner_diameter"
+                "User set has_header to False and provided header_inner_diameter"
             )
 
         if self.config.has_header and self.config.header_inner_diameter is None:
             raise ConfigurationError(
-                "If has_header is True, user must " "provide header_inner_diameter"
+                "If has_header is True, user must provide header_inner_diameter"
             )
 
         if (
@@ -436,12 +436,12 @@ tube side flows from 1 to 0""",
             and self.config.header_wall_thickness is True
         ):
             _log.info_high(
-                "User set has_header to False " "and provided header_wall_thickness"
+                "User set has_header to False and provided header_wall_thickness"
             )
 
         if self.config.has_header and self.config.header_wall_thickness is None:
             raise ConfigurationError(
-                "If has_header is True, user must " "provide header_wall_thickness"
+                "If has_header is True, user must provide header_wall_thickness"
             )
 
         self._make_geometry()
