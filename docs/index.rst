@@ -16,9 +16,14 @@ See also :doc:`IDAES concepts <explanations/concepts>` in this documentation.
 
 Citing IDAES
 ------------
-If you use IDAES software for your research, please cite the following publication:
+If you use IDAES software for your research, please cite `the following publication <https://aiche.onlinelibrary.wiley.com/doi/10.1002/amp2.10095>`_::
 
-Lee, Andrew, Jaffer H. Ghouse, John C. Eslick, Carl D. Laird, John D. Siirola, Miguel A. Zamarripa, Dan Gunter et al. "The IDAES process modeling framework and model library—Flexibility for process simulation and optimization." Journal of Advanced Manufacturing and Processing 3, no. 3 (2021): e10095. https://doi.org/10.1002/amp2.10095
+    Lee, Andrew, Jaffer H. Ghouse, John C. Eslick, Carl D. Laird, John D. Siirola,
+    Miguel A. Zamarripa, Dan Gunter et al. "The IDAES process modeling framework
+    and model library—Flexibility for process simulation and optimization."
+    Journal of Advanced Manufacturing and Processing 3, no. 3 (2021): e10095.
+    https://doi.org/10.1002/amp2.10095
+
 
 Contents
 --------

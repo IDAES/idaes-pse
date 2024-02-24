@@ -34,6 +34,7 @@ extensions = [
     "sphinx.ext.autosectionlabel",
     "sphinxarg.ext",
     "sphinx.ext.doctest",
+    "sphinx_copybutton",
 ]
 
 # Put type hints in the description, not signature
@@ -161,6 +162,10 @@ html_static_path = ["static", "images"]
 html_css_files = ["css/custom.css", "css/badge_only.css"]
 html_extra_path = ["static/extra/"]
 htmlhelp_basename = "IDAESdoc"
+
+# Sphinx-copybutton options
+# XXX: This does not add the button to blockquotes, for some reason
+# copybutton_selector = "div.highlight pre,blockquote"
 
 # -- Options for LaTeX output ---------------------------------------------
 
