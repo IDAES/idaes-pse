@@ -254,6 +254,7 @@ variables, expressions, or constraints required can also be added by the callbac
         if hasattr(self, "pressure_flow_equation_scale"):
             ff = self.pressure_flow_equation_scale
         else:
+            # pylint: disable-next=unnecessary-lambda-assignment
             ff = lambda x: x
         # if the "flow_var" is not set raise an exception
         if not hasattr(self, "flow_var"):

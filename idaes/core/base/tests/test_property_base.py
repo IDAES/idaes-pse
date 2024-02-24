@@ -596,6 +596,8 @@ class _State(StateBlockData):
         self.recursive_cons2 = Constraint(expr=self.recursion1 == 1)
 
     def _raise_exception(self):
+        # PYLINT-TODO
+        # pylint: disable-next=broad-exception-raised
         raise Exception()
 
     def _does_not_create_component(self):
