@@ -428,8 +428,7 @@ class PriceTakerModel(ConcreteModel):
             op_blk:             String of the name of the operation model block, ex: ("fs.op_name")
             design_blk:         String of the name of the design model block, ex: ("m.design_name")
             capacity_var:       String of the name of the entity on the model the ramping constraints 
-                                will be applied to, ex: ("total_power") OR integer/float value of the
-                                capacity value
+                                will be applied to, ex: ("total_power")
             ramping_var:        String of the name of the variable that the ramping constraints will
                                 be applied to
             constraint_type:    String to choose between linear and nonlinear constraints. Valid 
@@ -474,16 +473,11 @@ class PriceTakerModel(ConcreteModel):
         var_ramping = {t: deepgetattr(self.mp_model.period[t], op_blk + "." + ramping_var) for t in self.mp_model.period}
 
         if constraint_type == "linear":
-            if isinstance(capacity_var,str):
-                var_capacity = deepgetattr(self, design_blk + "." + capacity_var)
-                act_startup_rate = {t: var_capacity * start_up[t] for t in self.mp_model.period}
-                act_shutdown_rate = {t: var_capacity * shut_down[t] for t in self.mp_model.period}
-                act_op_mode_rate = {t: var_capacity * op_mode[t] for t in self.mp_model.period}
+            var_capacity = deepgetattr(self, design_blk + "." + capacity_var)
+            act_startup_rate = {t: var_capacity * start_up[t] for t in self.mp_model.period}
+            act_shutdown_rate = {t: var_capacity * shut_down[t] for t in self.mp_model.period}
+            act_op_mode_rate = {t: var_capacity * op_mode[t] for t in self.mp_model.period}
             
-            if isinstance(capacity_var, (int,float)):
-                act_startup_rate = {t: capacity_var * start_up[t] for t in self.mp_model.period}
-                act_shutdown_rate = {t: capacity_var * shut_down[t] for t in self.mp_model.period}
-                act_op_mode_rate = {t: capacity_var * op_mode[t] for t in self.mp_model.period}
         elif constraint_type == "nonlinear":
             if linearization == True:
                 if hasattr(self, "capacity_startup") == False:
@@ -652,49 +646,69 @@ class PriceTakerModel(ConcreteModel):
         """
         period = self.mp_model.period
 
+        count_op_blks = 0
         for p in period:
-            for cost_name in costs:
-                setattr(self.mp_model.period[p], cost_name, 0)
+            # Set net profit contribution expressions to 0
+            total_cost_expr = 0
+            total_revenue_expr = 0
+            if costs is None:
+                _logger.warning(
+                f"No costs were provided while building the hourly cashflow. Costs will be set to 0."
+                )
+                costs = []
             
-            for revenue_name in revenue_streams:
-                setattr(self.mp_model.period[p], revenue_name, 0)
-            
-            non_fuel_vom = 0
-            fuel_cost = 0
-            elec_revenue = 0
-            carbon_price = 0
-
-            # ToDo: Add multiple revenue streams to the model (full user control)
-            # ToDo: Make costs a list as well (full user control)
-            # ToDo: Add check for whether or not OperationModelData blocks were found
-            #       (Should throw warning if none were found.)
+            if revenue_streams is None:
+                _logger.warning(
+                f"No revenues were provided while building the hourly cashflow. Revenues will be set to 0."
+                )
+                revenue_streams = []
 
             for blk in period[p].component_data_objects(Block):
                 if isinstance(blk, OperationModelData):
-                    non_fuel_vom += blk.non_fuel_vom
-                    fuel_cost += blk.fuel_cost
-                    elec_revenue += blk.elec_revenue
-                    carbon_price += blk.carbon_price
+                    count_op_blks += 1
 
-            period[p].non_fuel_vom = Expression(expr=non_fuel_vom)
-            period[p].fuel_cost = Expression(expr=fuel_cost)
-            period[p].elec_revenue = Expression(expr=elec_revenue)
-            period[p].carbon_price = Expression(expr=carbon_price)
+                    # Add costs for each block. If more than one block, may have
+                    # costs that exist on one block and not on another. (i.e., coproduction)
+                    for ind, cost in enumerate(costs):
+                        curr_cost = 0
+                        try:
+                            curr_cost += deepgetattr(blk, costs[ind])
+                        except:
+                            pass
+                        total_cost_expr += curr_cost
+                    
+                    # Add revenue streams for each block. If more than one block, may have
+                    # revenues that exist on one block and not on another. (i.e., coproduction)
+                    for ind, rev in enumerate(revenue_streams):
+                        curr_rev = 0
+                        try:
+                            curr_rev += deepgetattr(blk, revenue_streams[ind])
+                        except:
+                            pass
+                        total_revenue_expr += curr_rev
+            
+            # Set total cost expression
+            self.mp_model.period[p].total_cost = Expression(expr=total_cost_expr)
+            
+            # Set total revenue expression
+            self.mp_model.period[p].total_revenue = Expression(expr=total_revenue_expr)
 
-            period[p].net_cash_inflow = Expression(
-                expr=period[p].elec_revenue
-                - period[p].non_fuel_vom
-                - period[p].fuel_cost
-                - period[p].carbon_price
-            )
+            # Individual cost expression can be found on the operation model itself. No need to add these here.
+
+            period[p].net_cash_inflow = Expression(expr=period[p].total_revenue - period[p].total_cost)
+        
+        if count_op_blks < 1:
+            _logger.warning(
+                f"build_hourly_cashflows was called but no operation blocks were found so hourly cashflow of the model was set to 0. If you have hourly costs, please manually assign them."
+                )
 
     def build_cashflows(
         self,
         lifetime=30,
         discount_rate=0.08,
         corp_tax=0.2,
-        other_costs=0,
-        other_revenue=0,
+        other_costs=None,
+        other_revenue=None,
         objective="NPV",
     ):
         """
@@ -707,9 +721,12 @@ class PriceTakerModel(ConcreteModel):
                             Must be between 0 and 1.
             corp_tax:       Fractional value of corporate tax used in NPV calculations.
                             ??? What are the restrictions on tax ???
-            other_costs:    Additional costs that are not captured
-            other_revenue:  
-            objective:      
+            other_costs:    List of costs not captured by capex and fom that are 
+                            defined on the model.
+            other_revenue:  List of revenues not captured by capex and fom that are
+                            defined on the price take model.
+            objective:      String to choose which objective form is used in the model.
+                            Options: ["NPV", "Annualized NPV", "Net Profit"]
 
         Returns:
 
@@ -720,8 +737,11 @@ class PriceTakerModel(ConcreteModel):
 
         # ToDo: Add check for whether or not DesignModelData blocks were found
         #       (Should throw warning if none were found.)
+        count_des_blks = 0
         for blk in self.component_data_objects(Block):
             if isinstance(blk, DesignModelData):
+                count_des_blks += 1
+
                 capex_expr += blk.capex
                 fom_expr += blk.fom
 
@@ -740,7 +760,7 @@ class PriceTakerModel(ConcreteModel):
         self.net_cash_inflow_calculation = Constraint(
             expr=self.NET_CASH_INFLOW
             == sum(self.mp_model.period[p].net_cash_inflow for p in self.mp_model.period) # added period block name to the net_cash_inflow callout
-        ) # added period block name to mp_model, to kthe len, and made a range list to loop over
+        ) # added period block name to mp_model, to the len, and made a range list to loop over
 
         self.CORP_TAX = Var(within=NonNegativeReals, doc="Corporate tax")
         self.corp_tax_calculation = Constraint(
@@ -771,11 +791,27 @@ class PriceTakerModel(ConcreteModel):
             expr=self.NET_PROFIT - (1 / constant_cf_factor) * self.CAPEX,
         )
 
+        obj_set = False
+
         if objective == "NPV":
             self.obj = Objective(expr=self.NPV, sense=maximize)
+            obj_set = True
 
         elif objective == "Annualized NPV":
             self.obj = Objective(expr=self.Annualized_NPV, sense=maximize)
+            obj_set = True
 
         elif objective == "Net Profit":
             self.obj = Objective(expr=self.NET_PROFIT, sense=maximize)
+            obj_set = True
+        
+        if not obj_set:
+            _logger.warning(
+                f"build_cashflows was called, but the objective type provided, {objective}, is invalid. The objective has been set to 0. Please manually add your cost objective if you require one."
+                )
+            self.obj = Objective(expr=0, sense=maximize)
+
+        if count_des_blks < 1:
+            _logger.warning(
+                f"build_cashflows was called, but no design blocks were found so capex and FOM are 0. Please manually add your cost objective if you require one."
+                )

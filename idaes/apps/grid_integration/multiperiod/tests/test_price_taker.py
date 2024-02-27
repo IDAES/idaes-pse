@@ -170,7 +170,7 @@ def test_min_up_down_time_logger_messages(excel_data):
 
 
 @pytest.mark.unit
-def test_optimal_clusters_logger_messages(excel_data, caplog):
+def test_optimal_clusters_logger_messages(excel_data):
     kmin = [-5, 10.2, 9]
     kmax = [-5, 10.2, 8]
     with pytest.raises(
@@ -232,9 +232,12 @@ def test_optimal_clusters_logger_messages(excel_data, caplog):
         daily_data = m.generate_daily_data(excel_data['BaseCaseTax'])
         n_clusters, inertia_values = m.get_optimal_n_clusters(daily_data, kmin=kmin, kmax=kmax)
 
+
+@pytest.mark.unit
+def test_optimal_clusters_close_to_kmax(excel_data, caplog):
     # Ideally the following test will work, however this will depend on the version of scikit-learn and
     # kneed. It is possible that if these packages change, the test will fail. In that case, the test
-    # could be removed as the function works properly, but would not be covered.
+    # could be removed as the function works properly, but some lines of code will not be covered.
     caplog.clear()
     with caplog.at_level(idaeslog.WARNING):
         m = PriceTakerModel()
@@ -245,8 +248,6 @@ def test_optimal_clusters_logger_messages(excel_data, caplog):
         m.get_optimal_n_clusters(daily_data, kmin=kmin, kmax=kmax)
     
         assert f"Optimal number of clusters is close to kmax: {kmax}. Consider increasing kmax." in caplog.text
-    
-
 
 
 @pytest.mark.unit
@@ -436,3 +437,9 @@ def dfc_design(m, params, capacity_range=(650, 900)):
         expr=_fom_factor * m.capex,
         doc="Fixed O&M cost [in 1000$/year]",
     )
+
+# Test cases to be done (4 total):
+# (LMP1, RR1, MUD1, OBJ1)
+# (LMP2, RR2, MUD2, OBJ2)
+# (LMP3, RR3, MUD2, OBJ3)
+# (LMP4, MUD1, RR1, OBJ1)
