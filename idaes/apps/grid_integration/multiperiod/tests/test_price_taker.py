@@ -24,6 +24,14 @@ from pyomo.environ import (
     Expression,
 )
 
+import pyomo.environ as aml
+from pyomo.common.config import ConfigValue, In
+
+from idaes.core import FlowsheetBlock
+
+from idaes.core.base.process_base import declare_process_block_class
+from idaes.models.unit_models import SkeletonUnitModelData
+
 from idaes.apps.grid_integration import DesignModel, OperationModel, deepgetattr
 
 import idaes.logger as idaeslog
@@ -399,47 +407,422 @@ def test_generate_daily_data_logger_messages(excel_data):
         daily_data = m.generate_daily_data(raw_data)
 
 
-def dfc_design(m, params, capacity_range=(650, 900)):
-    _dfc_capacity = params["dfc_capacity"]
-    _ng_flow = params["ng_flow"]
-    _capex = params["capex"]
-    _fom_factor = params["fom_factor"]
+@pytest.mark.unit
+def test_build_hourly_cashflow_logger_message_no_op_blks(excel_data, caplog):
+    # Tests building the model with startup/shutdown then ramping rate with LMP as a single year with all time points
+    caplog.clear()
+    with caplog.at_level(idaeslog.WARNING):
+        #Create an instance of the Pricetrackermodel class
+        m = PriceTakerModel()
 
-    m.capacity = Var(
-        within=NonNegativeReals,
-        initialize=_dfc_capacity,
-        bounds=(0, capacity_range[1]),
-        doc="Capacity of the power plant [in MW]",
+        # Appending the data to the model
+        m.append_lmp_data(
+            file_path='FLECCS_shortened.xlsx', 
+            sheet="2030 - Princeton", 
+            column_name='BaseCaseTax'
+        )
+
+        m.sofc_design = DesignModel(model_func=SOFC_design_model, model_args={"min_power": 200, "max_power": 650})
+        
+        # Build the multiperiod model
+        m.build_multiperiod_model(
+            process_model_func=build_sofc_flowsheet_no_op_blk,
+            linking_variable_func=None,
+            flowsheet_options={"sofc_design": None}
+            )
+
+        # ramping and startup constraints
+        m.add_startup_shutdown(op_blk="fs.sofc_operation",
+                            design_blk="sofc_design",
+                            build_binary_var="build_unit",
+                            use_min_time=True,
+                            up_time=4, 
+                            down_time=4)
+
+        m.add_ramping_constraints(
+            op_blk="fs.sofc_operation",
+            design_blk="sofc_design",
+            capacity_var="PMAX",
+            ramping_var="power",
+            constraint_type="linear",
+            linearization=True,
+            op_range_lb=200/650, 
+            startup_rate=1.0, 
+            shutdown_rate=1.0,
+            ramp_up_rate=1.0, 
+            ramp_down_rate=1.0,
+        )
+
+        m.build_hourly_cashflows(
+            revenue_streams=None, 
+            costs=['fuel_cost', 'hourly_fixed_costs'],
+        )
+
+        m.build_cashflows(objective="NPV",)
+    
+        assert f"build_hourly_cashflows was called but no operation blocks were found so hourly cashflow of the model was set to 0. If you have hourly costs, please manually assign them." in caplog.text
+
+
+@pytest.mark.unit
+def test_build_multiperiod_model_no_LMP_logger_message(excel_data):
+    # Tests building the model with startup/shutdown then ramping rate with LMP as a single year with all time points
+    with pytest.raises(
+        ValueError,
+        match=(f"OperationModelData has been defined to automatically " +
+               f"populate LMP data. However, m.LMP does not exist. " +
+               f"Please run the append_lmp_data function first or set the " +
+               f"append_lmp_data attribute to False when configuring " +
+               f"your OperationModelData object."),
+    ):
+        #Create an instance of the Pricetrackermodel class
+        m = PriceTakerModel()
+
+        m._n_time_points = 240
+        m.set_days = None
+        m.set_years = None
+
+        # m.sofc_design = DesignModel(model_func=SOFC_design_model, model_args={"min_power": 200, "max_power": 650})
+        m.sofc_design = aml.Block()
+        m.sofc_design.PMAX = 650
+        m.sofc_design.PMIN = 200
+        m.sofc_design.build_unit = 1
+        # Build the multiperiod model
+        m.build_multiperiod_model(
+            process_model_func=build_sofc_flowsheet_no_LMP,
+            linking_variable_func=None,
+            flowsheet_options={"sofc_design": None}
+            )
+
+
+
+@pytest.mark.unit
+def test_build_hourly_cashflow_logger_message_no_des_blks(excel_data, caplog):
+    # Tests building the model with startup/shutdown then ramping rate with LMP as a single year with all time points
+    caplog.clear()
+    with caplog.at_level(idaeslog.WARNING):
+        #Create an instance of the Pricetrackermodel class
+        m = PriceTakerModel()
+
+        # Appending the data to the model
+        m.append_lmp_data(
+            file_path='FLECCS_shortened.xlsx', 
+            sheet="2030 - Princeton", 
+            column_name='BaseCaseTax'
+        )
+
+        # m.sofc_design = DesignModel(model_func=SOFC_design_model, model_args={"min_power": 200, "max_power": 650})
+        m.sofc_design = aml.Block()
+        m.sofc_design.PMAX = 650
+        m.sofc_design.PMIN = 200
+        m.sofc_design.build_unit = 1
+        # Build the multiperiod model
+        m.build_multiperiod_model(
+            process_model_func=build_sofc_flowsheet,
+            linking_variable_func=None,
+            flowsheet_options={"sofc_design": None}
+            )
+
+        # ramping and startup constraints
+        m.add_startup_shutdown(op_blk="fs.sofc_operation",
+                            design_blk="sofc_design",
+                            build_binary_var="build_unit",
+                            use_min_time=True,
+                            up_time=4, 
+                            down_time=4)
+
+        m.add_ramping_constraints(
+            op_blk="fs.sofc_operation",
+            design_blk="sofc_design",
+            capacity_var="PMAX",
+            ramping_var="power",
+            constraint_type="linear",
+            linearization=True,
+            op_range_lb=200/650, 
+            startup_rate=1.0, 
+            shutdown_rate=1.0,
+            ramp_up_rate=1.0, 
+            ramp_down_rate=1.0,
+        )
+
+        m.build_hourly_cashflows(
+            revenue_streams=None, 
+            costs=['fuel_cost', 'hourly_fixed_costs'],
+        )
+
+        m.build_cashflows(objective="NPV",)
+    
+        assert f"build_cashflows was called, but no design blocks were found so capex and FOM are 0. Please manually add your cost objective if you require one." in caplog.text
+
+
+@pytest.mark.unit
+def test_build_hourly_cashflow_logger_messages_and_build_1(excel_data, caplog):
+    # Tests building the model with startup/shutdown then ramping rate with LMP as a single year with all time points
+    caplog.clear()
+    with caplog.at_level(idaeslog.WARNING):
+        #Create an instance of the Pricetrackermodel class
+        m = PriceTakerModel()
+
+        # Appending the data to the model
+        m.append_lmp_data(
+            file_path='FLECCS_shortened.xlsx', 
+            sheet="2030 - Princeton", 
+            column_name='BaseCaseTax'
+        )
+
+        m.sofc_design = DesignModel(model_func=SOFC_design_model, model_args={"min_power": 200, "max_power": 650})
+        
+        # Build the multiperiod model
+        m.build_multiperiod_model(
+            process_model_func=build_sofc_flowsheet,
+            linking_variable_func=None,
+            flowsheet_options={"sofc_design": None}
+            )
+
+        # ramping and startup constraints
+        m.add_startup_shutdown(op_blk="fs.sofc_operation",
+                            design_blk="sofc_design",
+                            build_binary_var="build_unit",
+                            use_min_time=True,
+                            up_time=4, 
+                            down_time=4)
+
+        m.add_ramping_constraints(
+            op_blk="fs.sofc_operation",
+            design_blk="sofc_design",
+            capacity_var="PMAX",
+            ramping_var="power",
+            constraint_type="linear",
+            linearization=True,
+            op_range_lb=200/650, 
+            startup_rate=1.0, 
+            shutdown_rate=1.0,
+            ramp_up_rate=1.0, 
+            ramp_down_rate=1.0,
+        )
+
+        m.build_hourly_cashflows(
+            revenue_streams=None, 
+            costs=['fuel_cost', 'hourly_fixed_costs'],
+        )
+
+        m.build_cashflows(objective="NPV",)
+    
+        assert f"No revenues were provided while building the hourly cashflow. Revenues will be set to 0." in caplog.text
+
+
+@pytest.mark.unit
+def test_build_hourly_cashflow_logger_messages_and_build_2(excel_data, caplog):
+    # Tests building the model with ramping rate then startup/shutdown with LMP as a single year with representative days
+    caplog.clear()
+    with caplog.at_level(idaeslog.WARNING):
+        #Create an instance of the Pricetrackermodel class
+        m = PriceTakerModel()
+
+        # Appending the data to the model
+        m.append_lmp_data(
+            file_path='FLECCS_shortened.xlsx', 
+            sheet="2030 - Princeton", 
+            column_name='BaseCaseTax',
+            n_clusters=5,
+            horizon_length=6,
+        )
+
+        m.sofc_design = DesignModel(model_func=SOFC_design_model, model_args={"min_power": 200, "max_power": 650})
+        
+        # Build the multiperiod model
+        m.build_multiperiod_model(
+            process_model_func=build_sofc_flowsheet,
+            linking_variable_func=None,
+            flowsheet_options={"sofc_design": None}
+            )
+
+        # ramping and startup constraints
+        m.add_ramping_constraints(
+            op_blk="fs.sofc_operation",
+            design_blk="sofc_design",
+            capacity_var="PMAX",
+            ramping_var="power",
+            constraint_type="linear",
+            linearization=True,
+            op_range_lb=200/650, 
+            startup_rate=1.0, 
+            shutdown_rate=1.0,
+            ramp_up_rate=1.0, 
+            ramp_down_rate=1.0,
+        )
+
+        m.add_startup_shutdown(op_blk="fs.sofc_operation",
+                            design_blk="sofc_design",
+                            build_binary_var="build_unit",
+                            use_min_time=True,
+                            up_time=4, 
+                            down_time=4)
+
+        m.build_hourly_cashflows(
+            revenue_streams=['elec_revenue', 'H2_revenue'], 
+            costs=None,
+        )
+
+        m.build_cashflows(objective="Annualized NPV",)
+    
+        assert f"No costs were provided while building the hourly cashflow. Costs will be set to 0." in caplog.text
+
+
+# Model for testing builds with Linear capacity constraints
+#############################################################
+def SOFC_design_model(
+    m,
+    max_power=None,
+    min_power=None,
+):
+    # Capacity parameters
+    m.PMAX = aml.Param(initialize=max_power, mutable=False)
+    m.PMIN = aml.Param(initialize=min_power, mutable=False)
+
+    m.build_unit = aml.Param(initialize=1, mutable=False)
+
+    # Capital investment cost ($)
+    m.capex = 616441.20
+    # Fixed operating and investment ($ / year)
+    m.fom = 433882.80
+
+def SOFC_operation_model(
+    m,
+    sofc_design_blk=None,
+):
+    # LMP value dummy
+    #m.LMP = aml.Param(intialize=1, mutable=True)
+
+    # Operation Variables
+    m.power = aml.Var(domain=aml.NonNegativeReals)
+    
+    # cost expressions
+    # Linear version of surrogate cost constraint (combined fuel_cost and non_fuel_vom)
+    m.fuel_cost = aml.Expression(expr=(23.2934 * m.power + 49.21504))
+    # Nonlinear version of surrogate cost constraint (combined fuel_cost and non_fuel_vom)
+    # m.fuel_cost = aml.Expression(expr=(23.2934 * m.power + 0.287571e-3 * m.power ** 2 + 0.1155903e-5 * m.power ** 3 + 49.21504))
+    m.elec_revenue = aml.Expression(expr=(m.power * m.LMP))
+    m.H2_revenue = aml.Expression(expr=(0))
+    m.non_fuel_vom = aml.Expression(expr=(0))
+    m.carbon_price = aml.Expression(expr=(0))
+
+    fixed_cap_hourly = 70.37 * 1e6 / 365 / 24
+    fixed_op_hourly = 49.53 * 1e6 / 365 / 24
+
+    m.hourly_fixed_cost = aml.Expression(expr=(fixed_cap_hourly + fixed_op_hourly))
+
+def build_sofc_flowsheet(
+    m, 
+    sofc_design,
+):
+    
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.sofc_operation = OperationModel(model_func=SOFC_operation_model, 
+                                         model_args={"sofc_design_blk": sofc_design, })
+
+    # Flowsheet level aml.Variables (none for this case)
+    
+    # Flowsheet level constraints (none for this case)
+
+#############################################################
+# End model for testing builds with Linear 
+
+
+
+# Extra functions for different edge-case warning messages
+#############################################################
+@declare_process_block_class("SOFC_op")
+class SOFC_op_blk(SkeletonUnitModelData):
+    CONFIG = SkeletonUnitModelData.CONFIG()
+    CONFIG.declare(
+        "model_func",
+        ConfigValue(
+            doc="Function that builds the design model",
+        ),
+    )
+    CONFIG.declare(
+        "model_args",
+        ConfigValue(
+            default={},
+            doc="Dictionary containing arguments needed for model_func",
+        ),
     )
 
-    # Define a variable that informs whether the plant needs to built or not.
-    m.build_unit = Var(
-        within=Binary,
-        doc="1: Plant is built, 0: Plant is not built",
-    )
+    def build(self):
+        super().build()
 
-    # Bound the capcity of the plant in the specified range
-    m.capacity_lb_con = Constraint(expr=m.capacity >= m.build_unit * capacity_range[0])
-    m.capacity_ub_con = Constraint(expr=m.capacity <= m.build_unit * capacity_range[1])
+        # Declare variables
+        self.power = Var(
+            within=NonNegativeReals,
+            doc="Total power generated [in MW]",
+        )
+        self.op_mode = Var(
+            within=Binary,
+            doc="1: In Operation, 0: Shutdown",
+        )
+        self.startup = Var(
+            within=Binary,
+            doc="1: Plant is startup at this hour, 0: Otherwise",
+        )
+        self.shutdown = Var(
+            within=Binary,
+            doc="1: Plant is shutdown at this hour, 0: Otherwise",
+        )
 
-    # Compute the natural gas flowrate required at maximum capacity.
-    m.ng_flow = Expression(
-        expr=m.capacity * (_ng_flow / _dfc_capacity),
-        doc="Computes the natural flowrate required [in kg/s] at full load",
-    )
+def build_sofc_flowsheet_no_op_blk(
+    m, 
+    sofc_design,
+):
+    
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.sofc_operation = SOFC_op(model_func=SOFC_operation_model, model_args={"sofc_design_blk": sofc_design, })
 
-    # Define an expression for CAPEX and FOM
-    m.capex = Expression(
-        expr=_capex * (m.capacity / _dfc_capacity),
-        doc="CAPEX of the power cycle [in 1000$]",
-    )
-    m.fom = Expression(
-        expr=_fom_factor * m.capex,
-        doc="Fixed O&M cost [in 1000$/year]",
-    )
+    # Flowsheet level aml.Variables (none for this case)
+    
+    # Flowsheet level constraints (none for this case)
+
+
+def SOFC_operation_model_no_LMP(
+    m,
+    sofc_design_blk=None,
+):
+    # LMP value dummy
+    #m.LMP = aml.Param(intialize=1, mutable=True)
+
+    # Operation Variables
+    m.power = aml.Var(domain=aml.NonNegativeReals)
+    
+    # cost expressions
+    # Linear version of surrogate cost constraint (combined fuel_cost and non_fuel_vom)
+    m.fuel_cost = aml.Expression(expr=(23.2934 * m.power + 49.21504))
+    # Nonlinear version of surrogate cost constraint (combined fuel_cost and non_fuel_vom)
+    # m.fuel_cost = aml.Expression(expr=(23.2934 * m.power + 0.287571e-3 * m.power ** 2 + 0.1155903e-5 * m.power ** 3 + 49.21504))
+    m.elec_revenue = aml.Expression(expr=(m.power * 1.0))
+    m.H2_revenue = aml.Expression(expr=(0))
+    m.non_fuel_vom = aml.Expression(expr=(0))
+    m.carbon_price = aml.Expression(expr=(0))
+
+    fixed_cap_hourly = 70.37 * 1e6 / 365 / 24
+    fixed_op_hourly = 49.53 * 1e6 / 365 / 24
+
+    m.hourly_fixed_cost = aml.Expression(expr=(fixed_cap_hourly + fixed_op_hourly))
+
+
+def build_sofc_flowsheet_no_LMP(
+    m, 
+    sofc_design,
+):
+    
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.sofc_operation = OperationModel(model_func=SOFC_operation_model_no_LMP, 
+                                         model_args={"sofc_design_blk": sofc_design, },)
+
+    # Flowsheet level aml.Variables (none for this case)
+    
+    # Flowsheet level constraints (none for this case)
 
 # Test cases to be done (4 total):
-# (LMP1, RR1, MUD1, OBJ1)
-# (LMP2, RR2, MUD2, OBJ2)
+# (LMP1, RR1, MUD1, OBJ1) x
+# (LMP2, RR2, MUD2, OBJ2) x
 # (LMP3, RR3, MUD2, OBJ3)
 # (LMP4, MUD1, RR1, OBJ1)

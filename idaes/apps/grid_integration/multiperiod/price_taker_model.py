@@ -399,7 +399,7 @@ class PriceTakerModel(ConcreteModel):
                         if not LMP_exists:
                             raise ValueError(f"OperationModelData has been defined to automatically " +
                                              f"populate LMP data. However, m.LMP does not exist. " +
-                                             f"Please run append_lmp_data() first or set the " +
+                                             f"Please run the append_lmp_data function first or set the " +
                                              f"append_lmp_data attribute to False when configuring " +
                                              f"your OperationModelData object.")
                         blk.LMP = self.LMP[p]
@@ -616,7 +616,7 @@ class PriceTakerModel(ConcreteModel):
                     1 - op_mode[self.mp_model.set_period.at(t)])
 
 
-    def build_hourly_cashflows(self, revenue_streams=['elec_revenue',], costs=None):
+    def build_hourly_cashflows(self, revenue_streams=None, costs=None):
         """
         Adds an expression for the net cash inflow for each operational
         block. This is the new cash inflow for each time period of the
@@ -707,8 +707,8 @@ class PriceTakerModel(ConcreteModel):
         lifetime=30,
         discount_rate=0.08,
         corp_tax=0.2,
-        other_costs=None,
-        other_revenue=None,
+        other_costs=0,
+        other_revenue=0,
         objective="NPV",
     ):
         """
@@ -721,10 +721,8 @@ class PriceTakerModel(ConcreteModel):
                             Must be between 0 and 1.
             corp_tax:       Fractional value of corporate tax used in NPV calculations.
                             ??? What are the restrictions on tax ???
-            other_costs:    List of costs not captured by capex and fom that are 
-                            defined on the model.
-            other_revenue:  List of revenues not captured by capex and fom that are
-                            defined on the price take model.
+            other_costs:    Pyomo expression for other costs
+            other_revenue:  Pyomo expression for other sources of revenue
             objective:      String to choose which objective form is used in the model.
                             Options: ["NPV", "Annualized NPV", "Net Profit"]
 
@@ -735,8 +733,6 @@ class PriceTakerModel(ConcreteModel):
         capex_expr = 0
         fom_expr = 0
 
-        # ToDo: Add check for whether or not DesignModelData blocks were found
-        #       (Should throw warning if none were found.)
         count_des_blks = 0
         for blk in self.component_data_objects(Block):
             if isinstance(blk, DesignModelData):
@@ -759,9 +755,9 @@ class PriceTakerModel(ConcreteModel):
         self.NET_CASH_INFLOW = Var(doc="Net cash inflow")
         self.net_cash_inflow_calculation = Constraint(
             expr=self.NET_CASH_INFLOW
-            == sum(self.mp_model.period[p].net_cash_inflow for p in self.mp_model.period) # added period block name to the net_cash_inflow callout
-        ) # added period block name to mp_model, to the len, and made a range list to loop over
-
+            == sum(self.mp_model.period[p].net_cash_inflow for p in self.mp_model.period)
+        )
+        
         self.CORP_TAX = Var(within=NonNegativeReals, doc="Corporate tax")
         self.corp_tax_calculation = Constraint(
             expr=self.CORP_TAX
