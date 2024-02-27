@@ -82,7 +82,7 @@ class PriceTakerModel(ConcreteModel):
         from the raw data provided.
 
         Args:
-            raw_data:       LMP data as a column of values
+            raw_data:   Columnar data for a given LMP signal
         
         Returns:
             daily_data: Correctly formatted daily LMP data for later use
@@ -119,7 +119,7 @@ class PriceTakerModel(ConcreteModel):
         given price signal.
 
         Args:
-            daily_data: reconfigured price series data
+            daily_data: LMP signal grouped by days (output of generate_daily_data function)
             kmin:       minimum number of clusters
             kmax:       maximum number of clusters
             plot:       flag to determine if an elbow plot should be displayed
@@ -146,13 +146,12 @@ class PriceTakerModel(ConcreteModel):
         if  kmin >= kmax:
             raise ValueError(f"kmin must be less than kmax, but {kmin} >= {kmax}")
         
-        k_values = range(kmin, kmax)
+        k_values = range(kmin, kmax + 1)
         inertia_values = []
 
         np.random.seed(self._seed)
 
         # Compute the inertia (SSE) for k clusters
-
         for k in k_values:
             kmeans = KMeans(n_clusters=k).fit(daily_data.transpose())
             inertia_values.append(kmeans.inertia_)
@@ -163,9 +162,12 @@ class PriceTakerModel(ConcreteModel):
         )
         n_clusters = elbow_point.knee
 
+        if n_clusters is None:
+            raise ValueError(f"Could not find elbow point for given kmin, kmax. Consider increasing the range of kmin, kmax.")
+
         print(f"Optimal # of clusters is: {n_clusters}")
 
-        if n_clusters + 2 >= kmax:
+        if int(n_clusters) + 2 >= kmax:
             _logger.warning(
                 f"Optimal number of clusters is close to kmax: {kmax}. Consider increasing kmax."
             )
@@ -189,7 +191,7 @@ class PriceTakerModel(ConcreteModel):
         techniques for clustering.
 
         Args:
-            raw_data:   imported price series data
+            raw_data:   Columnar data for a given LMP signal
             n_clusters: number of clusters desired for the data (representative days)
 
         Returns:
@@ -217,26 +219,16 @@ class PriceTakerModel(ConcreteModel):
         labels = kmeans.labels_
 
         # Set any centroid values that are < 1e-4 to 0 to avoid noise
-        for d in range(n_clusters):
-            for t in range(24):
-                if centroids[d][t] < 1e-4:
-                    centroids[d][t] = 0
-
-        n_clusters_list = range(0, n_clusters)
-        weights_counter = np.zeros(n_clusters)
+        centroids = centroids * (centroids >= 1e-4)
 
         # Compute weight for each cluster by counting its occurrences in the dataset
-        for j in range(0, len(labels)):
-            for k in n_clusters_list:
-                if labels[j] == k:
-                    weights_counter[k] += 1
+        unique_labels, weights_counter = np.unique(labels, return_counts=True)
 
         # Create dicts for lmp data and the weight of each cluster
         rep_days_data = {}
         weights_data = {}
-
         
-        rep_days_data = pd.DataFrame(centroids.transpose(), columns = range(1,n_clusters+1))
+        rep_days_data = pd.DataFrame(centroids.transpose(), columns=range(1,n_clusters+1))
         lmp_data = rep_days_data.to_dict()
         weights_data = pd.DataFrame(weights_counter)
         weights_data.index = np.arange(1, len(weights_data) + 1)
@@ -499,8 +491,8 @@ class PriceTakerModel(ConcreteModel):
                         blk = deepgetattr(self.mp_model.period[t],op_blk)
                         blk._add_capacity_aux_vars()
 
-                act_startup_rate= {t: deepgetattr(self.mp_model.period[t], op_blk + "." + capacity_var + "_startup") for t in self.mp_model.period}
-                act_shutdown_rate= {t: deepgetattr(self.mp_model.period[t], op_blk + "." + capacity_var + "_shutdown") for t in self.mp_model.period}
+                act_startup_rate = {t: deepgetattr(self.mp_model.period[t], op_blk + "." + capacity_var + "_startup") for t in self.mp_model.period}
+                act_shutdown_rate = {t: deepgetattr(self.mp_model.period[t], op_blk + "." + capacity_var + "_shutdown") for t in self.mp_model.period}
                 act_op_mode_rate = {t: deepgetattr(self.mp_model.period[t], op_blk + "." + capacity_var + "_op_mode") for t in self.mp_model.period}
             elif linearization == False:
                 var_capacity = deepgetattr(self, design_blk + "." + capacity_var)
