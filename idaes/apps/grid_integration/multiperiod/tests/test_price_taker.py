@@ -54,7 +54,7 @@ def test_daily_data_size(excel_data):
     m = PriceTakerModel()
 
     # Generate price data for each hour of every day in the data
-    daily_data = m.generate_daily_data(excel_data['BaseCaseTax'])
+    daily_data = m.generate_daily_data(excel_data["BaseCaseTax"])
 
     # Check that there is a row for each horizon length in a representative day
     assert len(daily_data) == m.horizon_length
@@ -70,7 +70,7 @@ def test_determine_optimal_num_clusters(excel_data):
     # Older versions get n_clusters = 10, Newer versions n_clusters = 11
     m = PriceTakerModel()
 
-    daily_data = m.generate_daily_data(excel_data['BaseCaseTax'])
+    daily_data = m.generate_daily_data(excel_data["BaseCaseTax"])
     n_clusters, inertia_values = m.get_optimal_n_clusters(daily_data)
 
     assert 9 <= n_clusters <= 15
@@ -80,7 +80,7 @@ def test_determine_optimal_num_clusters(excel_data):
 def test_elbow_plot(excel_data):
     m = PriceTakerModel()
 
-    daily_data = m.generate_daily_data(excel_data['BaseCaseTax'])
+    daily_data = m.generate_daily_data(excel_data["BaseCaseTax"])
     m.get_optimal_n_clusters(daily_data, plot=True)
 
     assert plt.gcf() is not None
@@ -92,9 +92,11 @@ def test_cluster_lmp_data(excel_data):
     # cluster_lmp_data function currently.
     m = PriceTakerModel()
 
-    daily_data = m.generate_daily_data(excel_data['BaseCaseTax'])
+    daily_data = m.generate_daily_data(excel_data["BaseCaseTax"])
     n_clusters, inertia_values = m.get_optimal_n_clusters(daily_data)
-    lmp_data, weights = m.cluster_lmp_data(excel_data['BaseCaseTax'], n_clusters=n_clusters)
+    lmp_data, weights = m.cluster_lmp_data(
+        excel_data["BaseCaseTax"], n_clusters=n_clusters
+    )
 
     sum_of_weights = 0
     for i in range(1, n_clusters + 1):
@@ -109,7 +111,7 @@ def test_init_logger_messages(excel_data, caplog):
     with caplog.at_level(idaeslog.WARNING):
         m = PriceTakerModel()
 
-        daily_data = m.generate_daily_data(excel_data['BaseCaseTax'])
+        daily_data = m.generate_daily_data(excel_data["BaseCaseTax"])
         m.get_optimal_n_clusters(daily_data)
 
         assert f"kmax was not set - using a default value of 30." in caplog.text
@@ -129,7 +131,7 @@ def test_init_logger_messages(excel_data, caplog):
     ):
         m = PriceTakerModel()
         m.horizon_length = value
-    
+
     # Testing seed errors
     value = 12.34
     with pytest.raises(
@@ -144,8 +146,8 @@ def test_init_logger_messages(excel_data, caplog):
 def test_min_up_down_time_logger_messages(excel_data):
     des = DesignModel()
     oper = OperationModel()
-    build_bin_var = 'build'
-    use_min_time=True
+    build_bin_var = "build"
+    use_min_time = True
     up_time = [10, -5, 2.2]
     down_time = [10, -5, 2.2]
     with pytest.raises(
@@ -153,28 +155,36 @@ def test_min_up_down_time_logger_messages(excel_data):
         match=(f"up_time must be an integer, but {up_time[2]} is not an integer"),
     ):
         m = PriceTakerModel()
-        m.add_startup_shutdown(des, oper, build_bin_var, use_min_time, up_time[2], down_time[0])
-    
+        m.add_startup_shutdown(
+            des, oper, build_bin_var, use_min_time, up_time[2], down_time[0]
+        )
+
     with pytest.raises(
         ValueError,
         match=(f"down_time must be an integer, but {down_time[2]} is not an integer"),
     ):
         m = PriceTakerModel()
-        m.add_startup_shutdown(des, oper, build_bin_var, use_min_time, up_time[0], down_time[2])
-    
+        m.add_startup_shutdown(
+            des, oper, build_bin_var, use_min_time, up_time[0], down_time[2]
+        )
+
     with pytest.raises(
         ValueError,
         match=(f"up_time must be >= 1, but {up_time[1]} is not"),
     ):
         m = PriceTakerModel()
-        m.add_startup_shutdown(des, oper, build_bin_var, use_min_time, up_time[1], down_time[0])
-    
+        m.add_startup_shutdown(
+            des, oper, build_bin_var, use_min_time, up_time[1], down_time[0]
+        )
+
     with pytest.raises(
         ValueError,
         match=(f"down_time must be >= 1, but {down_time[1]} is not"),
     ):
         m = PriceTakerModel()
-        m.add_startup_shutdown(des, oper, build_bin_var, use_min_time, up_time[0], down_time[1])
+        m.add_startup_shutdown(
+            des, oper, build_bin_var, use_min_time, up_time[0], down_time[1]
+        )
 
 
 @pytest.mark.unit
@@ -187,17 +197,21 @@ def test_optimal_clusters_logger_messages(excel_data):
     ):
         m = PriceTakerModel()
 
-        daily_data = m.generate_daily_data(excel_data['BaseCaseTax'])
-        n_clusters, inertia_values = m.get_optimal_n_clusters(daily_data, kmin=kmin[1], kmax=kmax[2])
-    
+        daily_data = m.generate_daily_data(excel_data["BaseCaseTax"])
+        n_clusters, inertia_values = m.get_optimal_n_clusters(
+            daily_data, kmin=kmin[1], kmax=kmax[2]
+        )
+
     with pytest.raises(
         ValueError,
         match=(f"kmax must be an integer, but {kmax[1]} is not an integer"),
     ):
         m = PriceTakerModel()
 
-        daily_data = m.generate_daily_data(excel_data['BaseCaseTax'])
-        n_clusters, inertia_values = m.get_optimal_n_clusters(daily_data, kmin=kmin[2], kmax=kmax[1])
+        daily_data = m.generate_daily_data(excel_data["BaseCaseTax"])
+        n_clusters, inertia_values = m.get_optimal_n_clusters(
+            daily_data, kmin=kmin[2], kmax=kmax[1]
+        )
 
     with pytest.raises(
         ValueError,
@@ -205,40 +219,49 @@ def test_optimal_clusters_logger_messages(excel_data):
     ):
         m = PriceTakerModel()
 
-        daily_data = m.generate_daily_data(excel_data['BaseCaseTax'])
-        n_clusters, inertia_values = m.get_optimal_n_clusters(daily_data, kmin=kmin[0], kmax=kmax[2])
+        daily_data = m.generate_daily_data(excel_data["BaseCaseTax"])
+        n_clusters, inertia_values = m.get_optimal_n_clusters(
+            daily_data, kmin=kmin[0], kmax=kmax[2]
+        )
 
-    
     with pytest.raises(
         ValueError,
         match=(f"kmax must be > 0, but {kmax[0]} is provided."),
     ):
         m = PriceTakerModel()
 
-        daily_data = m.generate_daily_data(excel_data['BaseCaseTax'])
-        n_clusters, inertia_values = m.get_optimal_n_clusters(daily_data, kmin=kmin[2], kmax=kmax[0])
+        daily_data = m.generate_daily_data(excel_data["BaseCaseTax"])
+        n_clusters, inertia_values = m.get_optimal_n_clusters(
+            daily_data, kmin=kmin[2], kmax=kmax[0]
+        )
         m.cluster_lmp_data(excel_data, n_clusters)
-    
+
     with pytest.raises(
         ValueError,
         match=(f"kmin must be less than kmax, but {kmin[2]} >= {kmax[2]}"),
     ):
         m = PriceTakerModel()
 
-        daily_data = m.generate_daily_data(excel_data['BaseCaseTax'])
-        n_clusters, inertia_values = m.get_optimal_n_clusters(daily_data, kmin=kmin[2], kmax=kmax[2])
-    
+        daily_data = m.generate_daily_data(excel_data["BaseCaseTax"])
+        n_clusters, inertia_values = m.get_optimal_n_clusters(
+            daily_data, kmin=kmin[2], kmax=kmax[2]
+        )
+
     with pytest.raises(
         ValueError,
-        match=(f"Could not find elbow point for given kmin, kmax. Consider increasing the range of kmin, kmax."),
+        match=(
+            f"Could not find elbow point for given kmin, kmax. Consider increasing the range of kmin, kmax."
+        ),
     ):
         m = PriceTakerModel()
 
         kmin = 9
         kmax = 10
 
-        daily_data = m.generate_daily_data(excel_data['BaseCaseTax'])
-        n_clusters, inertia_values = m.get_optimal_n_clusters(daily_data, kmin=kmin, kmax=kmax)
+        daily_data = m.generate_daily_data(excel_data["BaseCaseTax"])
+        n_clusters, inertia_values = m.get_optimal_n_clusters(
+            daily_data, kmin=kmin, kmax=kmax
+        )
 
 
 @pytest.mark.unit
@@ -251,20 +274,23 @@ def test_optimal_clusters_close_to_kmax(excel_data, caplog):
         m = PriceTakerModel()
         kmin = 9
         kmax = 14
-    
-        daily_data = m.generate_daily_data(excel_data['BaseCaseTax'])
+
+        daily_data = m.generate_daily_data(excel_data["BaseCaseTax"])
         m.get_optimal_n_clusters(daily_data, kmin=kmin, kmax=kmax)
-    
-        assert f"Optimal number of clusters is close to kmax: {kmax}. Consider increasing kmax." in caplog.text
+
+        assert (
+            f"Optimal number of clusters is close to kmax: {kmax}. Consider increasing kmax."
+            in caplog.text
+        )
 
 
 @pytest.mark.unit
 def test_ramping_constraint_logger_messages(excel_data):
     des = DesignModel()
     oper = OperationModel()
-    ramping_var = 'power'
-    capac_var = 'power_max'
-    constraint_type = 'linear'
+    ramping_var = "power"
+    capac_var = "power_max"
+    constraint_type = "linear"
     linearization = False
     op_range_lb = [-0.1, 0.5, 1.0]
     su_rate = [-0.1, 0.5]
@@ -273,51 +299,129 @@ def test_ramping_constraint_logger_messages(excel_data):
     op_rd_rate = [-0.1, 0.5]
     with pytest.raises(
         ValueError,
-        match=(f"startup_rate fraction must be between 0 and 1, but {su_rate[0]} is not."),
+        match=(
+            f"startup_rate fraction must be between 0 and 1, but {su_rate[0]} is not."
+        ),
     ):
         m = PriceTakerModel()
-        m.add_ramping_constraints(des, oper, capac_var, ramping_var, constraint_type, linearization, 
-                                  op_range_lb[1], su_rate[0], sd_rate[1], op_ru_rate[1], op_rd_rate[1])
-    
+        m.add_ramping_constraints(
+            des,
+            oper,
+            capac_var,
+            ramping_var,
+            constraint_type,
+            linearization,
+            op_range_lb[1],
+            su_rate[0],
+            sd_rate[1],
+            op_ru_rate[1],
+            op_rd_rate[1],
+        )
+
     with pytest.raises(
         ValueError,
-        match=(f"shutdown_rate fraction must be between 0 and 1, but {sd_rate[0]} is not."),
+        match=(
+            f"shutdown_rate fraction must be between 0 and 1, but {sd_rate[0]} is not."
+        ),
     ):
         m = PriceTakerModel()
-        m.add_ramping_constraints(des, oper, capac_var, ramping_var, constraint_type, linearization, 
-                                  op_range_lb[1], su_rate[1], sd_rate[0], op_ru_rate[1], op_rd_rate[1])
-    
+        m.add_ramping_constraints(
+            des,
+            oper,
+            capac_var,
+            ramping_var,
+            constraint_type,
+            linearization,
+            op_range_lb[1],
+            su_rate[1],
+            sd_rate[0],
+            op_ru_rate[1],
+            op_rd_rate[1],
+        )
+
     with pytest.raises(
         ValueError,
-        match=(f"ramp_up_rate fraction must be between 0 and 1, but {op_ru_rate[0]} is not."),
+        match=(
+            f"ramp_up_rate fraction must be between 0 and 1, but {op_ru_rate[0]} is not."
+        ),
     ):
         m = PriceTakerModel()
-        m.add_ramping_constraints(des, oper, capac_var, ramping_var, constraint_type, linearization, 
-                                  op_range_lb[1], su_rate[1], sd_rate[1], op_ru_rate[0], op_rd_rate[1])
-    
+        m.add_ramping_constraints(
+            des,
+            oper,
+            capac_var,
+            ramping_var,
+            constraint_type,
+            linearization,
+            op_range_lb[1],
+            su_rate[1],
+            sd_rate[1],
+            op_ru_rate[0],
+            op_rd_rate[1],
+        )
+
     with pytest.raises(
         ValueError,
-        match=(f"ramp_down_rate fraction must be between 0 and 1, but {op_rd_rate[0]} is not."),
+        match=(
+            f"ramp_down_rate fraction must be between 0 and 1, but {op_rd_rate[0]} is not."
+        ),
     ):
         m = PriceTakerModel()
-        m.add_ramping_constraints(des, oper, capac_var, ramping_var, constraint_type, linearization, 
-                                  op_range_lb[1], su_rate[1], sd_rate[1], op_ru_rate[1], op_rd_rate[0])
-    
+        m.add_ramping_constraints(
+            des,
+            oper,
+            capac_var,
+            ramping_var,
+            constraint_type,
+            linearization,
+            op_range_lb[1],
+            su_rate[1],
+            sd_rate[1],
+            op_ru_rate[1],
+            op_rd_rate[0],
+        )
+
     with pytest.raises(
         ValueError,
-        match=(f"op_range_lb fraction must be between 0 and 1, but {op_range_lb[0]} is not."),
+        match=(
+            f"op_range_lb fraction must be between 0 and 1, but {op_range_lb[0]} is not."
+        ),
     ):
         m = PriceTakerModel()
-        m.add_ramping_constraints(des, oper, capac_var, ramping_var, constraint_type, linearization, 
-                                  op_range_lb[0], su_rate[1], sd_rate[1], op_ru_rate[1], op_rd_rate[1])
-    
+        m.add_ramping_constraints(
+            des,
+            oper,
+            capac_var,
+            ramping_var,
+            constraint_type,
+            linearization,
+            op_range_lb[0],
+            su_rate[1],
+            sd_rate[1],
+            op_ru_rate[1],
+            op_rd_rate[1],
+        )
+
     with pytest.raises(
         ValueError,
-        match=(f"op_range_lb fraction must be <= shut_down_rate, otherwise the system cannot reach the off state."),
+        match=(
+            f"op_range_lb fraction must be <= shut_down_rate, otherwise the system cannot reach the off state."
+        ),
     ):
         m = PriceTakerModel()
-        m.add_ramping_constraints(des, oper, capac_var, ramping_var, constraint_type, linearization, 
-                                  op_range_lb[2], su_rate[1], sd_rate[1], op_ru_rate[1], op_rd_rate[1])
+        m.add_ramping_constraints(
+            des,
+            oper,
+            capac_var,
+            ramping_var,
+            constraint_type,
+            linearization,
+            op_range_lb[2],
+            su_rate[1],
+            sd_rate[1],
+            op_ru_rate[1],
+            op_rd_rate[1],
+        )
 
 
 @pytest.mark.unit
@@ -329,39 +433,76 @@ def test_append_lmp_data_logger_messages(excel_data, caplog):
         match=(f"n_clusters must be an integer, but {n_clusters[1]} is not an integer"),
     ):
         m = PriceTakerModel()
-        m.append_lmp_data(file_path, sheet='2035 - NREL', column_name='MiNg_$100_CAISO', n_clusters=n_clusters[1], horizon_length=24,)
-    
+        m.append_lmp_data(
+            file_path,
+            sheet="2035 - NREL",
+            column_name="MiNg_$100_CAISO",
+            n_clusters=n_clusters[1],
+            horizon_length=24,
+        )
+
     with pytest.raises(
         ValueError,
         match=(f"n_clusters must be > 0, but {n_clusters[0]} is provided."),
     ):
         m = PriceTakerModel()
-        m.append_lmp_data(file_path, sheet='2035 - NREL', column_name='MiNg_$100_CAISO', n_clusters=n_clusters[0], horizon_length=24,)
-    
-    file_path = 'trash'
+        m.append_lmp_data(
+            file_path,
+            sheet="2035 - NREL",
+            column_name="MiNg_$100_CAISO",
+            n_clusters=n_clusters[0],
+            horizon_length=24,
+        )
+
+    file_path = "trash"
     with pytest.raises(
         ValueError,
-        match=(f"The file path {file_path} does not exist. Please check your file path."),
+        match=(
+            f"The file path {file_path} does not exist. Please check your file path."
+        ),
     ):
         m = PriceTakerModel()
-        m.append_lmp_data(file_path, sheet='2035 - NREL', column_name='MiNg_$100_CAISO', n_clusters=n_clusters[2], horizon_length=24,)
+        m.append_lmp_data(
+            file_path,
+            sheet="2035 - NREL",
+            column_name="MiNg_$100_CAISO",
+            n_clusters=n_clusters[2],
+            horizon_length=24,
+        )
 
     file_path = "FLECCS_no_sheet.xlsx"
     caplog.clear()
     with caplog.at_level(idaeslog.WARNING):
         m = PriceTakerModel()
-    
-        m.append_lmp_data(file_path, column_name=1, n_clusters=n_clusters[2], horizon_length=24,)
-    
-        assert f"Excel file was provided but no sheet was specified. Using the first sheet of the excel file." in caplog.text
+
+        m.append_lmp_data(
+            file_path,
+            column_name=1,
+            n_clusters=n_clusters[2],
+            horizon_length=24,
+        )
+
+        assert (
+            f"Excel file was provided but no sheet was specified. Using the first sheet of the excel file."
+            in caplog.text
+        )
 
     caplog.clear()
     with caplog.at_level(idaeslog.WARNING):
         m = PriceTakerModel()
-    
-        m.append_lmp_data(file_path, sheet=0, n_clusters=n_clusters[2], horizon_length=24,)
-    
-        assert f"Data was provided but no column name was provided. Using the first column of the data." in caplog.text
+
+        m.append_lmp_data(
+            file_path,
+            sheet=0,
+            n_clusters=n_clusters[2],
+            horizon_length=24,
+        )
+
+        assert (
+            f"Data was provided but no column name was provided. Using the first column of the data."
+            in caplog.text
+        )
+
 
 @pytest.mark.unit
 def test_cluster_lmp_data_logger_messages(excel_data):
@@ -372,7 +513,7 @@ def test_cluster_lmp_data_logger_messages(excel_data):
     ):
         m = PriceTakerModel()
         _, _ = m.cluster_lmp_data(excel_data, n_clusters[1])
-    
+
     with pytest.raises(
         ValueError,
         match=(f"n_clusters must be > 0, but {n_clusters[0]} is provided."),
@@ -386,22 +527,26 @@ def test_deepgetattr_logger_messages(excel_data):
     class Data:
         def __init__(self, value):
             self.value = value
-    
+
     A = Data(5)
-    attr = 'valu'
+    attr = "values"
     with pytest.raises(
         ValueError,
-        match=(f"The attribute `{attr}` does not exist on the {A.__class__.__name__} instance passed. Make sure that `{attr}` is defined for that object."),
+        match=(
+            f"The attribute `{attr}` does not exist on the {A.__class__.__name__} instance passed. Make sure that `{attr}` is defined for that object."
+        ),
     ):
         deepgetattr(A, attr)
 
 
 @pytest.mark.unit
 def test_generate_daily_data_logger_messages(excel_data):
-    raw_data = excel_data['BaseCaseTax']
+    raw_data = excel_data["BaseCaseTax"]
     with pytest.raises(
         ValueError,
-        match=(f"tried to generate daily data, but horizon length of {9000} exceeds raw_data length of {len(raw_data)}"),
+        match=(
+            f"tried to generate daily data, but horizon length of {9000} exceeds raw_data length of {len(raw_data)}"
+        ),
     ):
         m = PriceTakerModel(horizon_length=9000)
         daily_data = m.generate_daily_data(raw_data)
@@ -412,32 +557,37 @@ def test_build_hourly_cashflow_logger_message_no_op_blks(excel_data, caplog):
     # Tests building the model with startup/shutdown then ramping rate with LMP as a single year with all time points
     caplog.clear()
     with caplog.at_level(idaeslog.WARNING):
-        #Create an instance of the Pricetrackermodel class
+        # Create an instance of the Pricetrackermodel class
         m = PriceTakerModel()
 
         # Appending the data to the model
         m.append_lmp_data(
-            file_path='FLECCS_shortened.xlsx', 
-            sheet="2030 - Princeton", 
-            column_name='BaseCaseTax'
+            file_path="FLECCS_shortened.xlsx",
+            sheet="2030 - Princeton",
+            column_name="BaseCaseTax",
         )
 
-        m.sofc_design = DesignModel(model_func=SOFC_design_model, model_args={"min_power": 200, "max_power": 650})
-        
+        m.sofc_design = DesignModel(
+            model_func=SOFC_design_model,
+            model_args={"min_power": 200, "max_power": 650},
+        )
+
         # Build the multiperiod model
         m.build_multiperiod_model(
             process_model_func=build_sofc_flowsheet_no_op_blk,
             linking_variable_func=None,
-            flowsheet_options={"sofc_design": None}
-            )
+            flowsheet_options={"sofc_design": None},
+        )
 
         # ramping and startup constraints
-        m.add_startup_shutdown(op_blk="fs.sofc_operation",
-                            design_blk="sofc_design",
-                            build_binary_var="build_unit",
-                            use_min_time=True,
-                            up_time=4, 
-                            down_time=4)
+        m.add_startup_shutdown(
+            op_blk="fs.sofc_operation",
+            design_blk="sofc_design",
+            build_binary_var="build_unit",
+            use_min_time=True,
+            up_time=4,
+            down_time=4,
+        )
 
         m.add_ramping_constraints(
             op_blk="fs.sofc_operation",
@@ -446,21 +596,26 @@ def test_build_hourly_cashflow_logger_message_no_op_blks(excel_data, caplog):
             ramping_var="power",
             constraint_type="linear",
             linearization=True,
-            op_range_lb=200/650, 
-            startup_rate=1.0, 
+            op_range_lb=200 / 650,
+            startup_rate=1.0,
             shutdown_rate=1.0,
-            ramp_up_rate=1.0, 
+            ramp_up_rate=1.0,
             ramp_down_rate=1.0,
         )
 
         m.build_hourly_cashflows(
-            revenue_streams=None, 
-            costs=['fuel_cost', 'hourly_fixed_costs'],
+            revenue_streams=None,
+            costs=["fuel_cost", "hourly_fixed_costs"],
         )
 
-        m.build_cashflows(objective="NPV",)
-    
-        assert f"build_hourly_cashflows was called but no operation blocks were found so hourly cashflow of the model was set to 0. If you have hourly costs, please manually assign them." in caplog.text
+        m.build_cashflows(
+            objective="NPV",
+        )
+
+        assert (
+            f"build_hourly_cashflows was called but no operation blocks were found so hourly cashflow of the model was set to 0. If you have hourly costs, please manually assign them."
+            in caplog.text
+        )
 
 
 @pytest.mark.unit
@@ -468,13 +623,15 @@ def test_build_multiperiod_model_no_LMP_logger_message(excel_data):
     # Tests building the model with startup/shutdown then ramping rate with LMP as a single year with all time points
     with pytest.raises(
         ValueError,
-        match=(f"OperationModelData has been defined to automatically " +
-               f"populate LMP data. However, m.LMP does not exist. " +
-               f"Please run the append_lmp_data function first or set the " +
-               f"append_lmp_data attribute to False when configuring " +
-               f"your OperationModelData object."),
+        match=(
+            f"OperationModelData has been defined to automatically "
+            + f"populate LMP data. However, m.LMP does not exist. "
+            + f"Please run the append_lmp_data function first or set the "
+            + f"append_lmp_data attribute to False when configuring "
+            + f"your OperationModelData object."
+        ),
     ):
-        #Create an instance of the Pricetrackermodel class
+        # Create an instance of the Pricetrackermodel class
         m = PriceTakerModel()
 
         m._n_time_points = 240
@@ -490,9 +647,8 @@ def test_build_multiperiod_model_no_LMP_logger_message(excel_data):
         m.build_multiperiod_model(
             process_model_func=build_sofc_flowsheet_no_LMP,
             linking_variable_func=None,
-            flowsheet_options={"sofc_design": None}
-            )
-
+            flowsheet_options={"sofc_design": None},
+        )
 
 
 @pytest.mark.unit
@@ -500,14 +656,14 @@ def test_build_hourly_cashflow_logger_message_no_des_blks(excel_data, caplog):
     # Tests building the model with startup/shutdown then ramping rate with LMP as a single year with all time points
     caplog.clear()
     with caplog.at_level(idaeslog.WARNING):
-        #Create an instance of the Pricetrackermodel class
+        # Create an instance of the Pricetrackermodel class
         m = PriceTakerModel()
 
         # Appending the data to the model
         m.append_lmp_data(
-            file_path='FLECCS_shortened.xlsx', 
-            sheet="2030 - Princeton", 
-            column_name='BaseCaseTax'
+            file_path="FLECCS_shortened.xlsx",
+            sheet="2030 - Princeton",
+            column_name="BaseCaseTax",
         )
 
         # m.sofc_design = DesignModel(model_func=SOFC_design_model, model_args={"min_power": 200, "max_power": 650})
@@ -519,16 +675,18 @@ def test_build_hourly_cashflow_logger_message_no_des_blks(excel_data, caplog):
         m.build_multiperiod_model(
             process_model_func=build_sofc_flowsheet,
             linking_variable_func=None,
-            flowsheet_options={"sofc_design": None}
-            )
+            flowsheet_options={"sofc_design": None},
+        )
 
         # ramping and startup constraints
-        m.add_startup_shutdown(op_blk="fs.sofc_operation",
-                            design_blk="sofc_design",
-                            build_binary_var="build_unit",
-                            use_min_time=True,
-                            up_time=4, 
-                            down_time=4)
+        m.add_startup_shutdown(
+            op_blk="fs.sofc_operation",
+            design_blk="sofc_design",
+            build_binary_var="build_unit",
+            use_min_time=True,
+            up_time=4,
+            down_time=4,
+        )
 
         m.add_ramping_constraints(
             op_blk="fs.sofc_operation",
@@ -537,21 +695,26 @@ def test_build_hourly_cashflow_logger_message_no_des_blks(excel_data, caplog):
             ramping_var="power",
             constraint_type="linear",
             linearization=True,
-            op_range_lb=200/650, 
-            startup_rate=1.0, 
+            op_range_lb=200 / 650,
+            startup_rate=1.0,
             shutdown_rate=1.0,
-            ramp_up_rate=1.0, 
+            ramp_up_rate=1.0,
             ramp_down_rate=1.0,
         )
 
         m.build_hourly_cashflows(
-            revenue_streams=None, 
-            costs=['fuel_cost', 'hourly_fixed_costs'],
+            revenue_streams=None,
+            costs=["fuel_cost", "hourly_fixed_costs"],
         )
 
-        m.build_cashflows(objective="NPV",)
-    
-        assert f"build_cashflows was called, but no design blocks were found so capex and FOM are 0. Please manually add your cost objective if you require one." in caplog.text
+        m.build_cashflows(
+            objective="NPV",
+        )
+
+        assert (
+            f"build_cashflows was called, but no design blocks were found so capex and FOM are 0. Please manually add your cost objective if you require one."
+            in caplog.text
+        )
 
 
 @pytest.mark.unit
@@ -559,32 +722,37 @@ def test_build_hourly_cashflow_logger_messages_and_build_1(excel_data, caplog):
     # Tests building the model with startup/shutdown then ramping rate with LMP as a single year with all time points
     caplog.clear()
     with caplog.at_level(idaeslog.WARNING):
-        #Create an instance of the Pricetrackermodel class
+        # Create an instance of the Pricetrackermodel class
         m = PriceTakerModel()
 
         # Appending the data to the model
         m.append_lmp_data(
-            file_path='FLECCS_shortened.xlsx', 
-            sheet="2030 - Princeton", 
-            column_name='BaseCaseTax'
+            file_path="FLECCS_shortened.xlsx",
+            sheet="2030 - Princeton",
+            column_name="BaseCaseTax",
         )
 
-        m.sofc_design = DesignModel(model_func=SOFC_design_model, model_args={"min_power": 200, "max_power": 650})
-        
+        m.sofc_design = DesignModel(
+            model_func=SOFC_design_model,
+            model_args={"min_power": 200, "max_power": 650},
+        )
+
         # Build the multiperiod model
         m.build_multiperiod_model(
             process_model_func=build_sofc_flowsheet,
             linking_variable_func=None,
-            flowsheet_options={"sofc_design": None}
-            )
+            flowsheet_options={"sofc_design": None},
+        )
 
         # ramping and startup constraints
-        m.add_startup_shutdown(op_blk="fs.sofc_operation",
-                            design_blk="sofc_design",
-                            build_binary_var="build_unit",
-                            use_min_time=True,
-                            up_time=4, 
-                            down_time=4)
+        m.add_startup_shutdown(
+            op_blk="fs.sofc_operation",
+            design_blk="sofc_design",
+            build_binary_var="build_unit",
+            use_min_time=True,
+            up_time=4,
+            down_time=4,
+        )
 
         m.add_ramping_constraints(
             op_blk="fs.sofc_operation",
@@ -593,21 +761,26 @@ def test_build_hourly_cashflow_logger_messages_and_build_1(excel_data, caplog):
             ramping_var="power",
             constraint_type="linear",
             linearization=True,
-            op_range_lb=200/650, 
-            startup_rate=1.0, 
+            op_range_lb=200 / 650,
+            startup_rate=1.0,
             shutdown_rate=1.0,
-            ramp_up_rate=1.0, 
+            ramp_up_rate=1.0,
             ramp_down_rate=1.0,
         )
 
         m.build_hourly_cashflows(
-            revenue_streams=None, 
-            costs=['fuel_cost', 'hourly_fixed_costs'],
+            revenue_streams=None,
+            costs=["fuel_cost", "hourly_fixed_costs"],
         )
 
-        m.build_cashflows(objective="NPV",)
-    
-        assert f"No revenues were provided while building the hourly cashflow. Revenues will be set to 0." in caplog.text
+        m.build_cashflows(
+            objective="NPV",
+        )
+
+        assert (
+            f"No revenues were provided while building the hourly cashflow. Revenues will be set to 0."
+            in caplog.text
+        )
 
 
 @pytest.mark.unit
@@ -615,26 +788,29 @@ def test_build_hourly_cashflow_logger_messages_and_build_2(excel_data, caplog):
     # Tests building the model with ramping rate then startup/shutdown with LMP as a single year with representative days
     caplog.clear()
     with caplog.at_level(idaeslog.WARNING):
-        #Create an instance of the Pricetrackermodel class
+        # Create an instance of the Pricetrackermodel class
         m = PriceTakerModel()
 
         # Appending the data to the model
         m.append_lmp_data(
-            file_path='FLECCS_shortened.xlsx', 
-            sheet="2030 - Princeton", 
-            column_name='BaseCaseTax',
+            file_path="FLECCS_shortened.xlsx",
+            sheet="2030 - Princeton",
+            column_name="BaseCaseTax",
             n_clusters=5,
             horizon_length=6,
         )
 
-        m.sofc_design = DesignModel(model_func=SOFC_design_model, model_args={"min_power": 200, "max_power": 650})
-        
+        m.sofc_design = DesignModel(
+            model_func=SOFC_design_model,
+            model_args={"min_power": 200, "max_power": 650},
+        )
+
         # Build the multiperiod model
         m.build_multiperiod_model(
             process_model_func=build_sofc_flowsheet,
             linking_variable_func=None,
-            flowsheet_options={"sofc_design": None}
-            )
+            flowsheet_options={"sofc_design": None},
+        )
 
         # ramping and startup constraints
         m.add_ramping_constraints(
@@ -644,28 +820,35 @@ def test_build_hourly_cashflow_logger_messages_and_build_2(excel_data, caplog):
             ramping_var="power",
             constraint_type="linear",
             linearization=True,
-            op_range_lb=200/650, 
-            startup_rate=1.0, 
+            op_range_lb=200 / 650,
+            startup_rate=1.0,
             shutdown_rate=1.0,
-            ramp_up_rate=1.0, 
+            ramp_up_rate=1.0,
             ramp_down_rate=1.0,
         )
 
-        m.add_startup_shutdown(op_blk="fs.sofc_operation",
-                            design_blk="sofc_design",
-                            build_binary_var="build_unit",
-                            use_min_time=True,
-                            up_time=4, 
-                            down_time=4)
+        m.add_startup_shutdown(
+            op_blk="fs.sofc_operation",
+            design_blk="sofc_design",
+            build_binary_var="build_unit",
+            use_min_time=True,
+            up_time=4,
+            down_time=4,
+        )
 
         m.build_hourly_cashflows(
-            revenue_streams=['elec_revenue', 'H2_revenue'], 
+            revenue_streams=["elec_revenue", "H2_revenue"],
             costs=None,
         )
 
-        m.build_cashflows(objective="Annualized NPV",)
-    
-        assert f"No costs were provided while building the hourly cashflow. Costs will be set to 0." in caplog.text
+        m.build_cashflows(
+            objective="Annualized NPV",
+        )
+
+        assert (
+            f"No costs were provided while building the hourly cashflow. Costs will be set to 0."
+            in caplog.text
+        )
 
 
 # Model for testing builds with Linear capacity constraints
@@ -686,16 +869,17 @@ def SOFC_design_model(
     # Fixed operating and investment ($ / year)
     m.fom = 433882.80
 
+
 def SOFC_operation_model(
     m,
     sofc_design_blk=None,
 ):
     # LMP value dummy
-    #m.LMP = aml.Param(intialize=1, mutable=True)
+    # m.LMP = aml.Param(initialize=1, mutable=True)
 
     # Operation Variables
     m.power = aml.Var(domain=aml.NonNegativeReals)
-    
+
     # cost expressions
     # Linear version of surrogate cost constraint (combined fuel_cost and non_fuel_vom)
     m.fuel_cost = aml.Expression(expr=(23.2934 * m.power + 49.21504))
@@ -711,22 +895,27 @@ def SOFC_operation_model(
 
     m.hourly_fixed_cost = aml.Expression(expr=(fixed_cap_hourly + fixed_op_hourly))
 
+
 def build_sofc_flowsheet(
-    m, 
+    m,
     sofc_design,
 ):
-    
+
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.sofc_operation = OperationModel(model_func=SOFC_operation_model, 
-                                         model_args={"sofc_design_blk": sofc_design, })
+    m.fs.sofc_operation = OperationModel(
+        model_func=SOFC_operation_model,
+        model_args={
+            "sofc_design_blk": sofc_design,
+        },
+    )
 
     # Flowsheet level aml.Variables (none for this case)
-    
+
     # Flowsheet level constraints (none for this case)
 
-#############################################################
-# End model for testing builds with Linear 
 
+#############################################################
+# End model for testing builds with Linear
 
 
 # Extra functions for different edge-case warning messages
@@ -769,16 +958,22 @@ class SOFC_op_blk(SkeletonUnitModelData):
             doc="1: Plant is shutdown at this hour, 0: Otherwise",
         )
 
+
 def build_sofc_flowsheet_no_op_blk(
-    m, 
+    m,
     sofc_design,
 ):
-    
+
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.sofc_operation = SOFC_op(model_func=SOFC_operation_model, model_args={"sofc_design_blk": sofc_design, })
+    m.fs.sofc_operation = SOFC_op(
+        model_func=SOFC_operation_model,
+        model_args={
+            "sofc_design_blk": sofc_design,
+        },
+    )
 
     # Flowsheet level aml.Variables (none for this case)
-    
+
     # Flowsheet level constraints (none for this case)
 
 
@@ -787,11 +982,11 @@ def SOFC_operation_model_no_LMP(
     sofc_design_blk=None,
 ):
     # LMP value dummy
-    #m.LMP = aml.Param(intialize=1, mutable=True)
+    # m.LMP = aml.Param(initialize=1, mutable=True)
 
     # Operation Variables
     m.power = aml.Var(domain=aml.NonNegativeReals)
-    
+
     # cost expressions
     # Linear version of surrogate cost constraint (combined fuel_cost and non_fuel_vom)
     m.fuel_cost = aml.Expression(expr=(23.2934 * m.power + 49.21504))
@@ -809,17 +1004,22 @@ def SOFC_operation_model_no_LMP(
 
 
 def build_sofc_flowsheet_no_LMP(
-    m, 
+    m,
     sofc_design,
 ):
-    
+
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.sofc_operation = OperationModel(model_func=SOFC_operation_model_no_LMP, 
-                                         model_args={"sofc_design_blk": sofc_design, },)
+    m.fs.sofc_operation = OperationModel(
+        model_func=SOFC_operation_model_no_LMP,
+        model_args={
+            "sofc_design_blk": sofc_design,
+        },
+    )
 
     # Flowsheet level aml.Variables (none for this case)
-    
+
     # Flowsheet level constraints (none for this case)
+
 
 # Test cases to be done (4 total):
 # (LMP1, RR1, MUD1, OBJ1) x
