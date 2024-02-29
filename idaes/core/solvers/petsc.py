@@ -756,12 +756,12 @@ def calculate_time_derivatives(m, time, between=None):
                         if t < between.first() or t > between.last():
                             # Outside of integration range, skip calculation
                             continue
+                        old_value = deriv[t].value
                         try:
                             # TODO This calculates the value of the derivative even
                             # if one of the state var values is from outside the
                             # integration range, so long as it's initialized. Is
                             # this the desired behavior?
-                            old_value = deriv[t].value
                             if disc_eq[t].active and not deriv[t].fixed:
                                 deriv[t].value = 0  # Make sure there is a value
                                 calculate_variable_from_constraint(deriv[t], disc_eq[t])
