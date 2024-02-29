@@ -8,6 +8,10 @@ inputs:
     description: 'Command to use to install `install-target`'
     required: false
     default: pip --no-cache-dir install --progress-bar off
+  ampl-scip-version:
+    description: Version of AMPL Scip solver to install
+    required: false
+    default: '20240121'
 runs:
   using: "composite"
   steps:
@@ -46,5 +50,5 @@ runs:
       shell: bash -l {0}
       run: |
         echo '::group::Output of "pip install ampl_module_scip" command'
-        ${{ inputs.install-command }} --index-url https://pypi.ampl.com ampl_module_scip
+        ${{ inputs.install-command }} --index-url https://pypi.ampl.com ampl_module_scip==${{ inputs.ampl-scip-version }}
         echo '::endgroup::'
