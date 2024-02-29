@@ -16,4 +16,8 @@ from .coordinator import DoubleLoopCoordinator
 from .forecaster import PlaceHolderForecaster
 from .multiperiod.multiperiod import MultiPeriodModel
 from .multiperiod.price_taker_model import PriceTakerModel
-from .multiperiod.design_and_operation_models import DesignModel, OperationModel, deepgetattr
+from .multiperiod.design_and_operation_models import (
+    DesignModel,
+    OperationModel,
+    deepgetattr,
+)
