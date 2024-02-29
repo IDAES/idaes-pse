@@ -88,6 +88,7 @@ from idaes.core.surrogate.pysmo.sampling import (
     UniformSampling,
 )
 from idaes.core.util.testing import _enable_scip_solver_for_testing
+from idaes.core.util.testing import _install_dist
 
 
 __author__ = "Alex Dowling, Douglas Allan, Andrew Lee"
@@ -98,8 +99,35 @@ solver_available = SolverFactory("scip").available()
 currdir = this_file_dir()
 
 
+def pytest_generate_tests(metafunc):
+    if "ampl_scip_solver_version" in metafunc.fixturenames:
+        metafunc.parametrize(
+            "ampl_scip_solver_version",
+            [
+                "20240221",
+                "20240121",
+                "20230831",
+                "20230726",
+            ],
+            ids=lambda v: f"SCIP={v}",
+            indirect=True,
+        )
+
+
 @pytest.fixture(scope="module")
-def scip_solver():
+def ampl_scip_solver_version(request) -> str:
+    version = request.param
+    undo_installation_changes = _install_dist(
+        "ampl-module-scip",
+        version,
+        "--index-url=https://pypi.ampl.com",
+    )
+    yield version
+    undo_installation_changes()
+
+
+@pytest.fixture(scope="module")
+def scip_solver(ampl_scip_solver_version: str):
     solver = SolverFactory("scip")
     undo_changes = None
 
@@ -1974,8 +2002,8 @@ class TestDegeneracyHunter:
         dh._prepare_candidates_milp()
         dh._solve_candidates_milp()
 
-        assert value(dh.candidates_milp.nu[0]) == pytest.approx(1e-05, rel=1e-5)
-        assert value(dh.candidates_milp.nu[1]) == pytest.approx(-1e-05, rel=1e-5)
+        assert abs(value(dh.candidates_milp.nu[0])) == pytest.approx(1e-05, rel=1e-5)
+        assert abs(value(dh.candidates_milp.nu[1])) == pytest.approx(1e-05, rel=1e-5)
 
         assert value(dh.candidates_milp.y_pos[0]) == pytest.approx(0, abs=1e-5)
         assert value(dh.candidates_milp.y_pos[1]) == pytest.approx(0, rel=1e-5)

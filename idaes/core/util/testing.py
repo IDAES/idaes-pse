@@ -21,7 +21,10 @@ This module contains utility functions for use in testing IDAES models.
 __author__ = "Andrew Lee"
 
 
+import importlib
 import os
+import subprocess
+import sys
 from typing import Callable, Union
 
 from pyomo.environ import Constraint, Set, units, Var
@@ -447,3 +450,76 @@ def _enable_scip_solver_for_testing(
             Executable.rehash()
 
     return remove_from_path
+
+
+class _pip:
+    "Utility class to run pip commands within the current environment"
+
+    def __init__(self, python_exe: str = sys.executable):
+        self._python_exe = python_exe
+
+    def _run(self, cmd: str, *args: str, **kwargs):
+        return subprocess.run(
+            [
+                self._python_exe,
+                "-m",
+                "pip",
+                cmd,
+                *args,
+            ],
+            **kwargs,
+        )
+
+    def install(self, *args, **kwargs):
+        return self._run(
+            "install",
+            *args,
+            **kwargs,
+        )
+
+    def uninstall(self, *args, **kwargs):
+        return self._run(
+            "uninstall",
+            "--yes",
+            *args,
+            **kwargs,
+        )
+
+
+def _install_dist(name: str, version: str, *args) -> Callable[[], None]:
+    desired_version = version
+    pip = _pip()
+
+    try:
+        existing_version = importlib.metadata.version(name)
+    except importlib.metadata.PackageNotFoundError:
+        existing_version = None
+
+    if existing_version is None:
+
+        def do():
+            pip.install(f"{name}=={desired_version}", *args)
+
+        def undo():
+            pip.uninstall(name)
+
+    elif existing_version != desired_version:
+
+        def do():
+            pip.uninstall(name)
+            pip.install(f"{name}=={desired_version}", *args)
+
+        def undo():
+            pip.uninstall(name)
+            pip.install(f"{name}=={existing_version}", *args)
+
+    else:  # desired_version is already installed, nothing needs to be done
+
+        def do():
+            pass
+
+        def undo():
+            pass
+
+    do()
+    return undo
