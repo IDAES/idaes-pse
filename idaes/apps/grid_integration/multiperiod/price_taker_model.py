@@ -686,7 +686,7 @@ class PriceTakerModel(ConcreteModel):
             return (
                 op_mode[self.mp_model.set_period.at(t)]
                 - op_mode[self.mp_model.set_period.at(t - 1)]
-                == start_up[self.mp_model.set_period.at(t - 1)]
+                == start_up[self.mp_model.set_period.at(t)]
                 - shut_down[self.mp_model.set_period.at(t)]
             )
 

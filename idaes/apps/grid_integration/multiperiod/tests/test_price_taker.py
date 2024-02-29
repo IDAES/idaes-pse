@@ -426,7 +426,8 @@ def test_ramping_constraint_logger_messages(excel_data):
 
 @pytest.mark.unit
 def test_append_lmp_data_logger_messages(excel_data, caplog):
-    file_path = "FLECCS.xlsx"
+    DATA_DIR = Path(__file__).parent
+    file_path = DATA_DIR / "FLECCS.xlsx"
     n_clusters = [-5, 1.7, 10]
     with pytest.raises(
         ValueError,
@@ -470,7 +471,8 @@ def test_append_lmp_data_logger_messages(excel_data, caplog):
             horizon_length=24,
         )
 
-    file_path = "FLECCS_no_sheet.xlsx"
+    DATA_DIR = Path(__file__).parent
+    file_path = DATA_DIR / "FLECCS_no_sheet.xlsx"
     caplog.clear()
     with caplog.at_level(idaeslog.WARNING):
         m = PriceTakerModel()
@@ -561,8 +563,10 @@ def test_build_hourly_cashflow_logger_message_no_op_blks(excel_data, caplog):
         m = PriceTakerModel()
 
         # Appending the data to the model
+        DATA_DIR = Path(__file__).parent
+        file_path = DATA_DIR / "FLECCS_shortened.xlsx"
         m.append_lmp_data(
-            file_path="FLECCS_shortened.xlsx",
+            file_path=file_path,
             sheet="2030 - Princeton",
             column_name="BaseCaseTax",
         )
@@ -660,8 +664,10 @@ def test_build_hourly_cashflow_logger_message_no_des_blks(excel_data, caplog):
         m = PriceTakerModel()
 
         # Appending the data to the model
+        DATA_DIR = Path(__file__).parent
+        file_path = DATA_DIR / "FLECCS_shortened.xlsx"
         m.append_lmp_data(
-            file_path="FLECCS_shortened.xlsx",
+            file_path=file_path,
             sheet="2030 - Princeton",
             column_name="BaseCaseTax",
         )
@@ -726,8 +732,10 @@ def test_build_hourly_cashflow_logger_messages_and_build_1(excel_data, caplog):
         m = PriceTakerModel()
 
         # Appending the data to the model
+        DATA_DIR = Path(__file__).parent
+        file_path = DATA_DIR / "FLECCS_shortened.xlsx"
         m.append_lmp_data(
-            file_path="FLECCS_shortened.xlsx",
+            file_path=file_path,
             sheet="2030 - Princeton",
             column_name="BaseCaseTax",
         )
@@ -792,8 +800,10 @@ def test_build_hourly_cashflow_logger_messages_and_build_2(excel_data, caplog):
         m = PriceTakerModel()
 
         # Appending the data to the model
+        DATA_DIR = Path(__file__).parent
+        file_path = DATA_DIR / "FLECCS_shortened.xlsx"
         m.append_lmp_data(
-            file_path="FLECCS_shortened.xlsx",
+            file_path=file_path,
             sheet="2030 - Princeton",
             column_name="BaseCaseTax",
             n_clusters=5,
