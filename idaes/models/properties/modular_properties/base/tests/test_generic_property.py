@@ -15,6 +15,7 @@ Tests for generic property package core code
 
 Author: Andrew Lee
 """
+import functools
 import pytest
 from sys import modules
 from types import MethodType
@@ -1846,12 +1847,21 @@ class TestCriticalProps:
         # Initialize critical props
         _initialize_critical_props(m.props[1])
 
-        assert (
-            value(m.props[1].compress_fact_crit) == 0.4 * 0.1 + 0.6 * 0.2 + 1e-8 * 0.3
+        # these equalities are expected to be as exact as possible,
+        # i.e. very small tolerances
+        almost_exactly = functools.partial(pytest.approx, rel=1e-12)
+        assert value(m.props[1].compress_fact_crit) == almost_exactly(
+            0.4 * 0.1 + 0.6 * 0.2 + 1e-8 * 0.3
         )
-        assert value(m.props[1].dens_mol_crit) == 0.4 * 1 + 0.6 * 2 + 1e-8 * 3
-        assert value(m.props[1].pressure_crit) == 0.4 * 1e5 + 0.6 * 2e5 + 1e-8 * 3e5
-        assert value(m.props[1].temperature_crit) == 0.4 * 1e2 + 0.6 * 2e2 + 1e-8 * 3e2
+        assert value(m.props[1].dens_mol_crit) == almost_exactly(
+            0.4 * 1 + 0.6 * 2 + 1e-8 * 3
+        )
+        assert value(m.props[1].pressure_crit) == almost_exactly(
+            0.4 * 1e5 + 0.6 * 2e5 + 1e-8 * 3e5
+        )
+        assert value(m.props[1].temperature_crit) == almost_exactly(
+            0.4 * 1e2 + 0.6 * 2e2 + 1e-8 * 3e2
+        )
 
     @pytest.mark.unit
     def test_initialize_critical_props_missing_value(self):
