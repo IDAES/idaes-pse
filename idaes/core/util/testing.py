@@ -467,6 +467,7 @@ class _pip:
                 cmd,
                 *args,
             ],
+            check=True,
             **kwargs,
         )
 
