@@ -780,7 +780,6 @@ def calculate_time_derivatives(m, time, between=None):
                             if t == between.first() or t == between.last():
                                 # Reset deriv value to old value
                                 if disc_eq[t].active and not deriv[t].fixed:
-                                    # pylint: disable-next=used-before-assignment
                                     deriv[t].value = old_value
                             else:
                                 raise err
