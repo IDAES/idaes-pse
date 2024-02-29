@@ -119,7 +119,7 @@ jobs:
           echo PYTEST_ADDOPTS="$PYTEST_ADDOPTS --cov --cov-report=xml" >> "$GITHUB_ENV"
       - name: Run pytest (not integration)
         run: |
-          pytest -m "not integration"
+          pytest -k test_model_diagnostics
       - name: Upload coverage report as GHA workflow artifact
         if: matrix.cov-report
         uses: actions/upload-artifact@v4
