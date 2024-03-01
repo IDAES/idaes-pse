@@ -41,6 +41,26 @@ import pytest
 ####
 
 
+MARKERS = {
+    "build": "test of model build methods",
+    "cubic_root": "test requires the compiled cubic root finder",
+    "iapws": "test requires the compiled IAPWS95 property package",
+    "initialization": "test of initialization methods. These generally require a solver as well",
+    "solver": "test requires a solver",
+    "ui": "tests of an aspect of the ui",
+    "unit": "quick tests that do not require a solver, must run in <2s",
+    "component": "quick tests that may require a solver",
+    "integration": "long duration tests",
+    "performance": "tests for the IDAES performance testing suite",
+}
+
+
+def pytest_configure(config: pytest.Config):
+
+    for name, description in MARKERS.items():
+        config.addinivalue_line("markers", f"{name}: {description}")
+
+
 REQUIRED_MARKERS = {"unit", "component", "integration", "performance"}
 ALL_PLATFORMS = {"darwin", "linux", "win32"}
 
