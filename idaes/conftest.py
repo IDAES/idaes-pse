@@ -82,7 +82,6 @@ def pytest_configure(config: pytest.Config):
         setattr(config.option, "markexpr", "performance")
 
 
-
 REQUIRED_MARKERS = {"unit", "component", "integration", "performance"}
 ALL_PLATFORMS = {"darwin", "linux", "win32"}
 
@@ -155,7 +154,6 @@ def _validate_required_markers(item, required_markers=None, expected_count=1):
             f"found: {required_markers_on_item or required_count}"
         )
         pytest.fail(msg)
-
 
 
 ModuleName = str
