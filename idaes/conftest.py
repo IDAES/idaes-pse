@@ -41,6 +41,16 @@ import pytest
 ####
 
 
+def pytest_addoption(parser):
+    parser.addoption(
+        "--performance",
+        action="store_true",
+        dest="performance",
+        default=False,
+        help="enable performance decorated tests",
+    )
+
+
 MARKERS = {
     "build": "test of model build methods",
     "cubic_root": "test requires the compiled cubic root finder",
@@ -56,9 +66,21 @@ MARKERS = {
 
 
 def pytest_configure(config: pytest.Config):
-
     for name, description in MARKERS.items():
         config.addinivalue_line("markers", f"{name}: {description}")
+
+    if not config.option.performance:
+        if len(config.option.markexpr) > 0:
+            setattr(
+                config.option,
+                "markexpr",
+                f"{config.option.markexpr} and not performance",
+            )
+        else:
+            setattr(config.option, "markexpr", "not performance")
+    else:
+        setattr(config.option, "markexpr", "performance")
+
 
 
 REQUIRED_MARKERS = {"unit", "component", "integration", "performance"}
@@ -134,29 +156,6 @@ def _validate_required_markers(item, required_markers=None, expected_count=1):
         )
         pytest.fail(msg)
 
-
-def pytest_addoption(parser):
-    parser.addoption(
-        "--performance",
-        action="store_true",
-        dest="performance",
-        default=False,
-        help="enable performance decorated tests",
-    )
-
-
-def pytest_configure(config):
-    if not config.option.performance:
-        if len(config.option.markexpr) > 0:
-            setattr(
-                config.option,
-                "markexpr",
-                f"{config.option.markexpr} and not performance",
-            )
-        else:
-            setattr(config.option, "markexpr", "not performance")
-    else:
-        setattr(config.option, "markexpr", "performance")
 
 
 ModuleName = str
