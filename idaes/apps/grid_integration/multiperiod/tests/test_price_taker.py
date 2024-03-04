@@ -82,8 +82,10 @@ def test_elbow_plot(excel_data):
 
     daily_data = m.generate_daily_data(excel_data["BaseCaseTax"])
     m.get_optimal_n_clusters(daily_data, plot=True)
+    test_fig = plt.gcf()
+    plt.close('all')
 
-    assert plt.gcf() is not None
+    assert test_fig is not None
 
 
 @pytest.mark.unit

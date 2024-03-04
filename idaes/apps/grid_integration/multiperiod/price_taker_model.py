@@ -179,7 +179,6 @@ class PriceTakerModel(ConcreteModel):
             )
 
         if plot == True:
-            plt.show()
             plt.plot(k_values, inertia_values)
             plt.axvline(x=n_clusters, color="red", linestyle="--", label="Elbow")
             plt.xlabel("Number of clusters")
@@ -187,7 +186,6 @@ class PriceTakerModel(ConcreteModel):
             plt.title("Elbow Method")
             plt.xlim(kmin, kmax)
             plt.grid()
-            plt.show()
 
         return int(n_clusters), inertia_values
 
