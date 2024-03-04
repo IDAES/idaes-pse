@@ -283,14 +283,14 @@ class PriceTakerModel(ConcreteModel):
                 f"The file path {file_path} does not exist. Please check your file path."
             )
 
-        if ".xls" in path_to_file[-5:]:
+        if ".xls" in path_to_file.suffix:
             if sheet is None:
                 _logger.warning(
                     f"Excel file was provided but no sheet was specified. Using the first sheet of the excel file."
                 )
                 sheet = 0
             full_data = pd.read_excel(path_to_file, sheet_name=[sheet])[sheet]
-        elif ".csv" in path_to_file[-5:]:
+        elif ".csv" in path_to_file.suffix:
             full_data = pd.read_csv(
                 path_to_file,
             )
