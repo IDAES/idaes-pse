@@ -18,6 +18,7 @@ from enum import Enum
 from pyomo.environ import (
     Block,
     check_optimal_termination,
+    Constraint,
     Param,
     PositiveReals,
     Reals,
@@ -635,6 +636,50 @@ objects linked to all inlet states and the mixed state,
             # Let this pass for now with no units
             flow_units = None
 
+        if mixed_block.include_inherent_reactions:
+            if mb_type == MaterialBalanceType.total:
+                raise ConfigurationError(
+                    "Cannot do total flow mixing with inherent reaction; "
+                    "problem is under-constrained. Please use a different "
+                    "mixing type."
+                )
+
+            # Add extents of reaction and stoichiometric constraints
+            self.inherent_reaction_extent = Var(
+                self.flowsheet().time,
+                mixed_block.params.inherent_reaction_idx,
+                domain=Reals,
+                initialize=0.0,
+                doc="Extent of inherent reactions in outlet",
+                units=flow_units,
+            )
+
+            self.inherent_reaction_generation = Var(
+                self.flowsheet().time,
+                pc_set,
+                domain=Reals,
+                initialize=0.0,
+                doc="Generation due to inherent reactions in outlet",
+                units=flow_units,
+            )
+
+            @self.Constraint(
+                self.flowsheet().time,
+                pc_set,
+            )
+            def inherent_reaction_constraint(b, t, p, j):
+                if (p, j) in pc_set:
+                    return b.inherent_reaction_generation[t, p, j] == (
+                        sum(
+                            mixed_block[t].params.inherent_reaction_stoichiometry[
+                                r, p, j
+                            ]
+                            * self.inherent_reaction_extent[t, r]
+                            for r in mixed_block[t].params.inherent_reaction_idx
+                        )
+                    )
+                return Constraint.Skip
+
         if mb_type == MaterialBalanceType.componentPhase:
             # Create equilibrium generation term and constraints if required
             if self.config.has_phase_equilibrium is True:
@@ -653,28 +698,6 @@ objects linked to all inlet states and the mixed state,
                         "thus does not support phase equilibrium.".format(self.name)
                     )
 
-            # Define terms to use in mixing equation
-            def phase_equilibrium_term(b, t, p, j):
-                if self.config.has_phase_equilibrium:
-                    sd = {}
-                    for r in pp.phase_equilibrium_idx:
-                        if pp.phase_equilibrium_list[r][0] == j:
-                            if pp.phase_equilibrium_list[r][1][0] == p:
-                                sd[r] = 1
-                            elif pp.phase_equilibrium_list[r][1][1] == p:
-                                sd[r] = -1
-                            else:
-                                sd[r] = 0
-                        else:
-                            sd[r] = 0
-
-                    return sum(
-                        b.phase_equilibrium_generation[t, r] * sd[r]
-                        for r in pp.phase_equilibrium_idx
-                    )
-                else:
-                    return 0
-
             # Write phase-component balances
             @self.Constraint(
                 self.flowsheet().time,
@@ -682,14 +705,28 @@ objects linked to all inlet states and the mixed state,
                 doc="Material mixing equations",
             )
             def material_mixing_equations(b, t, p, j):
-                return 0 == (
-                    sum(
-                        inlet_blocks[i][t].get_material_flow_terms(p, j)
-                        for i in range(len(inlet_blocks))
+                rhs = sum(
+                    inlet_blocks[i][t].get_material_flow_terms(p, j)
+                    for i in range(len(inlet_blocks))
+                ) - mixed_block[t].get_material_flow_terms(p, j)
+
+                if self.config.has_phase_equilibrium:
+                    rhs += sum(
+                        b.phase_equilibrium_generation[t, r]
+                        for r in pp.phase_equilibrium_idx
+                        if pp.phase_equilibrium_list[r][0] == j
+                        and pp.phase_equilibrium_list[r][1][0] == p
+                    ) - sum(
+                        b.phase_equilibrium_generation[t, r]
+                        for r in pp.phase_equilibrium_idx
+                        if pp.phase_equilibrium_list[r][0] == j
+                        and pp.phase_equilibrium_list[r][1][1] == p
                     )
-                    - mixed_block[t].get_material_flow_terms(p, j)
-                    + phase_equilibrium_term(b, t, p, j)
-                )
+
+                if mixed_block.include_inherent_reactions:
+                    rhs += b.inherent_reaction_generation[t, p, j]
+
+                return 0 == rhs
 
         elif mb_type == MaterialBalanceType.componentTotal:
             # Write phase-component balances
@@ -699,7 +736,7 @@ objects linked to all inlet states and the mixed state,
                 doc="Material mixing equations",
             )
             def material_mixing_equations(b, t, j):
-                return 0 == sum(
+                rhs = sum(
                     sum(
                         inlet_blocks[i][t].get_material_flow_terms(p, j)
                         for i in range(len(inlet_blocks))
@@ -709,11 +746,20 @@ objects linked to all inlet states and the mixed state,
                     if (p, j) in pc_set
                 )
 
+                if mixed_block.include_inherent_reactions:
+                    rhs += sum(
+                        b.inherent_reaction_generation[t, p, j]
+                        for p in mixed_block.phase_list
+                        if (p, j) in pc_set
+                    )
+
+                return 0 == rhs
+
         elif mb_type == MaterialBalanceType.total:
             # Write phase-component balances
             @self.Constraint(self.flowsheet().time, doc="Material mixing equations")
             def material_mixing_equations(b, t):
-                return 0 == sum(
+                rhs = sum(
                     sum(
                         sum(
                             inlet_blocks[i][t].get_material_flow_terms(p, j)
@@ -725,6 +771,8 @@ objects linked to all inlet states and the mixed state,
                     )
                     for p in mixed_block.phase_list
                 )
+
+                return 0 == rhs
 
         elif mb_type == MaterialBalanceType.elementTotal:
             raise ConfigurationError(

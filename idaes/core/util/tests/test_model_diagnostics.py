@@ -14,8 +14,13 @@
 This module contains model diagnostic utility functions for use in IDAES (Pyomo) models.
 """
 from io import StringIO
+import math
 import numpy as np
 import pytest
+import os
+from copy import deepcopy
+
+from pandas import DataFrame
 
 from pyomo.environ import (
     Block,
@@ -23,6 +28,10 @@ from pyomo.environ import (
     Constraint,
     Expression,
     log,
+    tan,
+    asin,
+    acos,
+    sqrt,
     Objective,
     Set,
     SolverFactory,
@@ -31,28 +40,28 @@ from pyomo.environ import (
     units,
     value,
     Var,
+    assert_optimal_termination,
+    Param,
+    Integers,
 )
 from pyomo.common.collections import ComponentSet
 from pyomo.contrib.pynumero.asl import AmplInterface
 from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
+from pyomo.common.fileutils import this_file_dir
+from pyomo.common.tempfiles import TempfileManager
 
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 from idaes.core.solvers import get_solver
 from idaes.core import FlowsheetBlock
 from idaes.core.util.testing import PhysicalParameterTestBlock
+from unittest import TestCase
 
-# TODO: Add pyomo.dae test case
-"""
-from pyomo.environ import TransformationFactory
-from pyomo.dae import ContinuousSet, DerivativeVar
-"""
-
-# Need to update
 from idaes.core.util.model_diagnostics import (
     DiagnosticsToolbox,
     SVDToolbox,
     DegeneracyHunter,
+    IpoptConvergenceAnalysis,
     DegeneracyHunter2,
     svd_dense,
     svd_sparse,
@@ -68,11 +77,39 @@ from idaes.core.util.model_diagnostics import (
     _vars_with_extreme_values,
     _write_report_section,
     _collect_model_statistics,
+    check_parallel_jacobian,
+    compute_ill_conditioning_certificate,
 )
+from idaes.core.util.parameter_sweep import (
+    SequentialSweepRunner,
+    ParameterSweepSpecification,
+)
+from idaes.core.surrogate.pysmo.sampling import (
+    UniformSampling,
+)
+from idaes.core.util.testing import _enable_scip_solver_for_testing
+
 
 __author__ = "Alex Dowling, Douglas Allan, Andrew Lee"
 
+
+# TODO: Add pyomo.dae test cases
 solver_available = SolverFactory("scip").available()
+currdir = this_file_dir()
+
+
+@pytest.fixture(scope="module")
+def scip_solver():
+    solver = SolverFactory("scip")
+    undo_changes = None
+
+    if not solver.available():
+        undo_changes = _enable_scip_solver_for_testing()
+    if not solver.available():
+        pytest.skip(reason="SCIP solver not available")
+    yield solver
+    if undo_changes is not None:
+        undo_changes()
 
 
 @pytest.fixture
@@ -445,7 +482,7 @@ class TestDiagnosticsToolbox:
         m.b.v2 = Var(units=units.m)
         m.b.v3 = Var(bounds=(0, 5))
         m.b.v4 = Var()
-        m.b.v5 = Var(bounds=(0, 1))
+        m.b.v5 = Var(bounds=(0, 5))
         m.b.v6 = Var()
         m.b.v7 = Var(
             units=units.m, bounds=(0, 1)
@@ -528,7 +565,6 @@ The following variable(s) are fixed to zero:
 The following variable(s) have values at or outside their bounds (tol=0.0E+00):
 
     b.v3 (free): value=0.0 bounds=(0, 5)
-    b.v5 (fixed): value=2 bounds=(0, 1)
 
 ====================================================================================
 """
@@ -597,7 +633,6 @@ The following variable(s) have extreme values (<1.0E-04 or > 1.0E+04):
 The following variable(s) have values close to their bounds (abs=1.0E-04, rel=1.0E-04):
 
     b.v3: value=0.0 bounds=(0, 5)
-    b.v5: value=2 bounds=(0, 1)
     b.v7: value=1.0000939326524314e-07 bounds=(0, 1)
 
 ====================================================================================
@@ -905,6 +940,64 @@ values (<1.0E-04 or>1.0E+04):
         assert stream.getvalue() == expected
 
     @pytest.mark.component
+    def test_display_near_parallel_constraints(self):
+        model = ConcreteModel()
+        model.v1 = Var(initialize=1e-8)
+        model.v2 = Var()
+        model.v3 = Var()
+
+        model.c1 = Constraint(expr=model.v1 == model.v2)
+        model.c2 = Constraint(expr=model.v1 == 1e-8 * model.v3)
+        model.c3 = Constraint(expr=1e8 * model.v1 + 1e10 * model.v2 == 1e-6 * model.v3)
+        model.c4 = Constraint(expr=-model.v1 == -0.99999 * model.v2)
+
+        dt = DiagnosticsToolbox(model=model)
+
+        stream = StringIO()
+        dt.display_near_parallel_constraints(stream)
+
+        expected = """====================================================================================
+The following pairs of constraints are nearly parallel:
+
+    c1, c4
+
+====================================================================================
+"""
+
+        assert stream.getvalue() == expected
+
+    @pytest.mark.component
+    def test_display_near_parallel_variables(self):
+        model = ConcreteModel()
+        model.v1 = Var(initialize=1e-8)
+        model.v2 = Var()
+        model.v3 = Var()
+        model.v4 = Var()
+
+        model.c1 = Constraint(expr=model.v1 == model.v2 - 0.99999 * model.v4)
+        model.c2 = Constraint(expr=model.v1 + 1.00001 * model.v4 == 1e-8 * model.v3)
+        model.c3 = Constraint(
+            expr=1e8 * (model.v1 + model.v4) + 1e10 * model.v2 == 1e-6 * model.v3
+        )
+
+        dt = DiagnosticsToolbox(model=model)
+
+        stream = StringIO()
+        dt.display_near_parallel_variables(stream)
+
+        expected = """====================================================================================
+The following pairs of variables are nearly parallel:
+
+    v1, v2
+    v1, v4
+    v2, v4
+
+====================================================================================
+"""
+
+        assert stream.getvalue() == expected
+
+    @pytest.mark.component
     def test_collect_structural_warnings_base_case(self, model):
         dt = DiagnosticsToolbox(model=model.b)
 
@@ -987,7 +1080,7 @@ values (<1.0E-04 or>1.0E+04):
 
         assert len(warnings) == 2
         assert "WARNING: 1 Constraint with large residuals (>1.0E-05)" in warnings
-        assert "WARNING: 2 Variables at or outside bounds (tol=0.0E+00)" in warnings
+        assert "WARNING: 1 Variable at or outside bounds (tol=0.0E+00)" in warnings
 
         assert len(next_steps) == 2
         assert "display_constraints_with_large_residuals()" in next_steps
@@ -1048,10 +1141,9 @@ values (<1.0E-04 or>1.0E+04):
         dt = DiagnosticsToolbox(model=model.b)
 
         cautions = dt._collect_numerical_cautions()
-
         assert len(cautions) == 5
         assert (
-            "Caution: 3 Variables with value close to their bounds (abs=1.0E-04, rel=1.0E-04)"
+            "Caution: 2 Variables with value close to their bounds (abs=1.0E-04, rel=1.0E-04)"
             in cautions
         )
         assert "Caution: 2 Variables with value close to zero (tol=1.0E-08)" in cautions
@@ -1111,7 +1203,6 @@ values (<1.0E-04 or>1.0E+04):
 
         # Fix numerical issues
         m.b.v3.setlb(-5)
-        m.b.v5.setub(10)
 
         solver = get_solver()
         solver.solve(m)
@@ -1161,6 +1252,102 @@ Suggested next steps:
         assert stream.getvalue() == expected
 
     @pytest.mark.component
+    def test_report_structural_issues_ok(self):
+        m = ConcreteModel()
+
+        m.v1 = Var(initialize=1)
+        m.v2 = Var(initialize=2)
+        m.v3 = Var(initialize=3)
+
+        m.c1 = Constraint(expr=2 * m.v1 == m.v2)
+        m.c2 = Constraint(expr=m.v1 + m.v2 == m.v3)
+        m.c3 = Constraint(expr=m.v1 == 1)
+
+        dt = DiagnosticsToolbox(model=m)
+
+        stream = StringIO()
+        dt.report_structural_issues(stream)
+
+        expected = """====================================================================================
+Model Statistics
+
+        Activated Blocks: 1 (Deactivated: 0)
+        Free Variables in Activated Constraints: 3 (External: 0)
+            Free Variables with only lower bounds: 0
+            Free Variables with only upper bounds: 0
+            Free Variables with upper and lower bounds: 0
+        Fixed Variables in Activated Constraints: 0 (External: 0)
+        Activated Equality Constraints: 3 (Deactivated: 0)
+        Activated Inequality Constraints: 0 (Deactivated: 0)
+        Activated Objectives: 0 (Deactivated: 0)
+
+------------------------------------------------------------------------------------
+0 WARNINGS
+
+    No warnings found!
+
+------------------------------------------------------------------------------------
+0 Cautions
+
+    No cautions found!
+
+------------------------------------------------------------------------------------
+Suggested next steps:
+
+    Try to initialize/solve your model and then call report_numerical_issues()
+
+====================================================================================
+"""
+
+        assert stream.getvalue() == expected
+
+    @pytest.mark.component
+    def test_report_numerical_issues_ok(self):
+        m = ConcreteModel()
+
+        m.v1 = Var(initialize=1)
+        m.v2 = Var(initialize=2)
+        m.v3 = Var(initialize=3)
+
+        m.c1 = Constraint(expr=2 * m.v1 == m.v2)
+        m.c2 = Constraint(expr=m.v1 + m.v2 == m.v3)
+        m.c3 = Constraint(expr=m.v1 == 1)
+
+        dt = DiagnosticsToolbox(model=m)
+
+        stream = StringIO()
+        dt.report_numerical_issues(stream)
+
+        expected = """====================================================================================
+Model Statistics
+
+    Jacobian Condition Number: 1.237E+01
+
+------------------------------------------------------------------------------------
+0 WARNINGS
+
+    No warnings found!
+
+------------------------------------------------------------------------------------
+0 Cautions
+
+    No cautions found!
+
+------------------------------------------------------------------------------------
+Suggested next steps:
+
+    If you still have issues converging your model consider:
+        display_near_parallel_constraints()
+        display_near_parallel_variables()
+        prepare_degeneracy_hunter()
+        prepare_svd_toolbox()
+
+====================================================================================
+"""
+
+        assert stream.getvalue() == expected
+
+    @pytest.mark.component
     def test_report_numerical_issues(self, model):
         dt = DiagnosticsToolbox(model=model.b)
 
@@ -1176,12 +1363,12 @@ Model Statistics
 2 WARNINGS
 
     WARNING: 1 Constraint with large residuals (>1.0E-05)
-    WARNING: 2 Variables at or outside bounds (tol=0.0E+00)
+    WARNING: 1 Variable at or outside bounds (tol=0.0E+00)
 
 ------------------------------------------------------------------------------------
 5 Cautions
 
-    Caution: 3 Variables with value close to their bounds (abs=1.0E-04, rel=1.0E-04)
+    Caution: 2 Variables with value close to their bounds (abs=1.0E-04, rel=1.0E-04)
     Caution: 2 Variables with value close to zero (tol=1.0E-08)
     Caution: 1 Variable with extreme value (<1.0E-04 or >1.0E+04)
     Caution: 1 Variable with None value
@@ -1580,8 +1767,8 @@ Constraints and Variables associated with smallest singular values
         expected = """====================================================================================
 The following constraints involve v[1]:
 
-    c1: 1.0
-    c4: 8.0
+    c1: 1.000e+00
+    c4: 8.000e+00
 
 ====================================================================================
 """
@@ -1645,8 +1832,8 @@ The following constraints involve v[1]:
         expected = """====================================================================================
 The following variables are involved in c1:
 
-    v[1]: 1.0
-    v[2]: 2.0
+    v[1]: 1.000e+00
+    v[2]: 2.000e+00
 
 ====================================================================================
 """
@@ -1782,28 +1969,36 @@ class TestDegeneracyHunter:
 
     @pytest.mark.solver
     @pytest.mark.component
-    @pytest.mark.skipif(not solver_available, reason="SCIP is not available")
-    def test_solve_candidates_milp(self, model):
+    def test_solve_candidates_milp(self, model, scip_solver):
         dh = DegeneracyHunter2(model)
         dh._prepare_candidates_milp()
         dh._solve_candidates_milp()
 
-        assert value(dh.candidates_milp.nu[0]) == pytest.approx(-1e-05, rel=1e-5)
-        assert value(dh.candidates_milp.nu[1]) == pytest.approx(1e-05, rel=1e-5)
+        assert dh.degenerate_set == {
+            model.con2: value(dh.candidates_milp.nu[0]),
+            model.con5: value(dh.candidates_milp.nu[1]),
+        }
 
-        assert value(dh.candidates_milp.y_pos[0]) == pytest.approx(0, abs=1e-5)
-        assert value(dh.candidates_milp.y_pos[1]) == pytest.approx(1, rel=1e-5)
+        assert abs(value(dh.candidates_milp.nu[0])) == pytest.approx(1e-05, rel=1e-5)
+        assert abs(value(dh.candidates_milp.nu[1])) == pytest.approx(1e-05, rel=1e-5)
 
-        assert value(dh.candidates_milp.y_neg[0]) == pytest.approx(-0, abs=1e-5)
-        assert value(dh.candidates_milp.y_neg[1]) == pytest.approx(-0, abs=1e-5)
+        # One must be positive and one must be negative, so produce will be negative
+        assert value(
+            dh.candidates_milp.nu[0] * dh.candidates_milp.nu[1]
+        ) == pytest.approx(-1e-10, rel=1e-5)
+
+        assert (
+            value(
+                dh.candidates_milp.y_pos[0]
+                + dh.candidates_milp.y_pos[1]
+                + dh.candidates_milp.y_neg[0]
+                + dh.candidates_milp.y_neg[1]
+            )
+            >= 1
+        )
 
         assert value(dh.candidates_milp.abs_nu[0]) == pytest.approx(1e-05, rel=1e-5)
         assert value(dh.candidates_milp.abs_nu[1]) == pytest.approx(1e-05, rel=1e-5)
-
-        assert dh.degenerate_set == {
-            model.con2: -1e-05,
-            model.con5: 1e-05,
-        }
 
     @pytest.mark.unit
     def test_prepare_ids_milp(self, model):
@@ -1830,10 +2025,10 @@ class TestDegeneracyHunter:
             model.con5: -1,
         }
 
+    # TODO does this test function have the exact same name as the one above?
     @pytest.mark.solver
     @pytest.mark.component
-    @pytest.mark.skipif(not solver_available, reason="SCIP is not available")
-    def test_solve_ids_milp(self, model):
+    def test_solve_ids_milp(self, model, scip_solver):
         dh = DegeneracyHunter2(model)
         dh._prepare_ids_milp()
         ids_ = dh._solve_ids_milp(cons=model.con2)
@@ -1851,8 +2046,7 @@ class TestDegeneracyHunter:
 
     @pytest.mark.solver
     @pytest.mark.component
-    @pytest.mark.skipif(not solver_available, reason="SCIP is not available")
-    def test_find_irreducible_degenerate_sets(self, model):
+    def test_find_irreducible_degenerate_sets(self, model, scip_solver):
         dh = DegeneracyHunter2(model)
         dh.find_irreducible_degenerate_sets()
 
@@ -1863,8 +2057,7 @@ class TestDegeneracyHunter:
 
     @pytest.mark.solver
     @pytest.mark.component
-    @pytest.mark.skipif(not solver_available, reason="SCIP is not available")
-    def test_report_irreducible_degenerate_sets(self, model):
+    def test_report_irreducible_degenerate_sets(self, model, scip_solver):
         stream = StringIO()
 
         dh = DegeneracyHunter2(model)
@@ -1890,8 +2083,7 @@ Irreducible Degenerate Sets
 
     @pytest.mark.solver
     @pytest.mark.component
-    @pytest.mark.skipif(not solver_available, reason="SCIP is not available")
-    def test_report_irreducible_degenerate_sets_none(self, model):
+    def test_report_irreducible_degenerate_sets_none(self, model, scip_solver):
         stream = StringIO()
 
         # Delete degenerate constraint
@@ -1909,6 +2101,620 @@ Irreducible Degenerate Sets
 """
 
         assert stream.getvalue() == expected
+
+
+ca_dict = {
+    "specification": {
+        "inputs": {
+            "v2": {
+                "pyomo_path": "v2",
+                "lower": 2,
+                "upper": 6,
+            },
+        },
+        "sampling_method": "UniformSampling",
+        "sample_size": [2],
+        "samples": {
+            "index": [0, 1],
+            "columns": ["v2"],
+            "data": [[2.0], [6.0]],
+            "index_names": [None],
+            "column_names": [None],
+        },
+    },
+    "results": {
+        0: {
+            "success": True,
+            "results": 2,
+        },
+        1: {
+            "success": True,
+            "results": 6,
+        },
+    },
+}
+
+ca_res = {
+    "specification": {
+        "inputs": {"v2": {"pyomo_path": "v2", "lower": 2, "upper": 6}},
+        "sampling_method": "UniformSampling",
+        "sample_size": [2],
+        "samples": {
+            "index": [0, 1],
+            "columns": ["v2"],
+            "data": [[2.0], [6.0]],
+            "index_names": [None],
+            "column_names": [None],
+        },
+    },
+    "results": {
+        0: {
+            "success": False,
+            "results": {
+                "iters": 7,
+                "iters_in_restoration": 4,
+                "iters_w_regularization": 0,
+                "time": 0.0,
+                "numerical_issues": True,
+            },
+        },
+        1: {
+            "success": False,
+            "results": {
+                "iters": 7,
+                "iters_in_restoration": 4,
+                "iters_w_regularization": 0,
+                "time": 0.0,
+                "numerical_issues": True,
+            },
+        },
+    },
+}
+
+
+class TestIpoptConvergenceAnalysis:
+    @pytest.fixture
+    def model(self):
+        m = ConcreteModel()
+
+        m.v1 = Var(bounds=(None, 1))
+        m.v2 = Var()
+        m.c = Constraint(expr=m.v1 == m.v2)
+
+        m.v2.fix(0)
+
+        return m
+
+    @pytest.mark.unit
+    def test_init(self, model):
+        ca = IpoptConvergenceAnalysis(model)
+
+        assert ca._model is model
+        assert isinstance(ca._psweep, SequentialSweepRunner)
+        assert isinstance(ca.results, dict)
+        assert ca.config.input_specification is None
+        assert ca.config.solver_options is None
+
+    @pytest.mark.unit
+    def test_build_model(self, model):
+        ca = IpoptConvergenceAnalysis(model)
+
+        clone = ca._build_model()
+        clone.pprint()
+
+        assert clone is not model
+        assert isinstance(clone.v1, Var)
+        assert isinstance(clone.v2, Var)
+        assert isinstance(clone.c, Constraint)
+
+    @pytest.mark.unit
+    def test_parse_ipopt_output(self, model):
+        ca = IpoptConvergenceAnalysis(model)
+
+        fname = os.path.join(currdir, "ipopt_output.txt")
+        iters, restoration, regularization, time = ca._parse_ipopt_output(fname)
+
+        assert iters == 43
+        assert restoration == 39
+        assert regularization == 4
+        assert time == 0.016 + 0.035
+
+    @pytest.mark.component
+    @pytest.mark.solver
+    def test_run_ipopt_with_stats(self):
+        m = ConcreteModel()
+        m.v1 = Var(initialize=1)
+        m.c1 = Constraint(expr=m.v1 == 4)
+
+        ca = IpoptConvergenceAnalysis(m)
+        solver = SolverFactory("ipopt")
+
+        (
+            status,
+            iters,
+            iters_in_restoration,
+            iters_w_regularization,
+            time,
+        ) = ca._run_ipopt_with_stats(m, solver)
+
+        assert_optimal_termination(status)
+        assert iters == 1
+        assert iters_in_restoration == 0
+        assert iters_w_regularization == 0
+        assert time < 0.01
+
+    @pytest.mark.component
+    @pytest.mark.solver
+    def test_run_model(self, model):
+        ca = IpoptConvergenceAnalysis(model)
+
+        model.v2.fix(0.5)
+
+        solver = SolverFactory("ipopt")
+
+        success, run_stats = ca._run_model(model, solver)
+
+        assert success
+        assert value(model.v1) == pytest.approx(0.5, rel=1e-8)
+
+        assert len(run_stats) == 4
+        assert run_stats[0] == 1
+        assert run_stats[1] == 0
+        assert run_stats[2] == 0
+
+    @pytest.mark.unit
+    def test_build_outputs(self, model):
+        ca = IpoptConvergenceAnalysis(model)
+
+        model.v1.set_value(0.5)
+        model.v2.fix(0.5)
+
+        results = ca._build_outputs(model, (1, 2, 3, 4))
+
+        assert results == {
+            "iters": 1,
+            "iters_in_restoration": 2,
+            "iters_w_regularization": 3,
+            "time": 4,
+            "numerical_issues": False,
+        }
+
+    @pytest.mark.unit
+    def test_build_outputs_with_warnings(self, model):
+        ca = IpoptConvergenceAnalysis(model)
+
+        model.v1.set_value(4)
+        model.v2.fix(0.5)
+
+        results = ca._build_outputs(model, (1, 2, 3, 4))
+
+        assert results == {
+            "iters": 1,
+            "iters_in_restoration": 2,
+            "iters_w_regularization": 3,
+            "time": 4,
+            "numerical_issues": True,
+        }
+
+    @pytest.mark.unit
+    def test_recourse(self, model):
+        ca = IpoptConvergenceAnalysis(model)
+
+        assert ca._recourse(model) == {
+            "iters": -1,
+            "iters_in_restoration": -1,
+            "iters_w_regularization": -1,
+            "time": -1,
+            "numerical_issues": -1,
+        }
+
+    @pytest.mark.integration
+    @pytest.mark.solver
+    def test_run_convergence_analysis(self, model):
+        spec = ParameterSweepSpecification()
+        spec.add_sampled_input("v2", lower=0, upper=3)
+        spec.set_sampling_method(UniformSampling)
+        spec.set_sample_size([4])
+
+        ca = IpoptConvergenceAnalysis(model, input_specification=spec)
+
+        ca.run_convergence_analysis()
+
+        assert isinstance(ca.results, dict)
+        assert len(ca.results) == 4
+
+        # Ignore time, as it is too noisy to test
+        # Sample 0 should solve cleanly
+        assert ca.results[0]["success"]
+        assert ca.results[0]["results"]["iters"] == 0
+        assert ca.results[0]["results"]["iters_in_restoration"] == 0
+        assert ca.results[0]["results"]["iters_w_regularization"] == 0
+        assert not ca.results[0]["results"]["numerical_issues"]
+
+        # Sample 1 should solve, but have issues due to bound on v1
+        assert ca.results[1]["success"]
+        assert ca.results[1]["results"]["iters"] == pytest.approx(3, abs=1)
+        assert ca.results[1]["results"]["iters_in_restoration"] == 0
+        assert ca.results[1]["results"]["iters_w_regularization"] == 0
+        assert ca.results[1]["results"]["numerical_issues"]
+
+        # Other iterations should fail due to bound
+        assert not ca.results[2]["success"]
+        assert ca.results[2]["results"]["iters"] == pytest.approx(7, abs=1)
+        assert ca.results[2]["results"]["iters_in_restoration"] == pytest.approx(
+            4, abs=1
+        )
+        assert ca.results[2]["results"]["iters_w_regularization"] == 0
+        assert ca.results[2]["results"]["numerical_issues"]
+
+        assert not ca.results[3]["success"]
+        assert ca.results[3]["results"]["iters"] == pytest.approx(8, abs=1)
+        assert ca.results[3]["results"]["iters_in_restoration"] == pytest.approx(
+            5, abs=1
+        )
+        assert ca.results[3]["results"]["iters_w_regularization"] == 0
+        assert ca.results[3]["results"]["numerical_issues"]
+
+    @pytest.fixture(scope="class")
+    def ca_with_results(self):
+        spec = ParameterSweepSpecification()
+        spec.set_sampling_method(UniformSampling)
+        spec.add_sampled_input("v2", 2, 6)
+        spec.set_sample_size([2])
+        spec.generate_samples()
+
+        ca = IpoptConvergenceAnalysis(
+            model=ConcreteModel(),
+            input_specification=spec,
+        )
+
+        ca._psweep._results = {
+            0: {"success": True, "results": 2},
+            1: {"success": True, "results": 6},
+        }
+
+        return ca
+
+    @pytest.mark.component
+    def test_to_dict(self, ca_with_results):
+        outdict = ca_with_results.to_dict()
+        assert outdict == ca_dict
+
+    @pytest.mark.unit
+    def test_from_dict(self):
+        ca = IpoptConvergenceAnalysis(
+            model=ConcreteModel(),
+        )
+
+        ca.from_dict(ca_dict)
+
+        input_spec = ca._psweep.get_input_specification()
+
+        assert isinstance(input_spec, ParameterSweepSpecification)
+        assert len(input_spec.inputs) == 1
+
+        assert input_spec.sampling_method is UniformSampling
+        assert isinstance(input_spec.samples, DataFrame)
+        assert input_spec.sample_size == [2]
+
+        assert isinstance(ca.results, dict)
+        assert len(ca.results) == 2
+
+        for i in [0, 1]:
+            assert ca.results[i]["success"]
+            assert ca.results[i]["results"] == 2 + i * 4
+
+    @pytest.mark.component
+    def test_to_json_file(self, ca_with_results):
+        temp_context = TempfileManager.new_context()
+        tmpfile = temp_context.create_tempfile(suffix=".json")
+
+        ca_with_results.to_json_file(tmpfile)
+
+        with open(tmpfile, "r") as f:
+            lines = f.read()
+        f.close()
+
+        expected = """{
+   "specification": {
+      "inputs": {
+         "v2": {
+            "pyomo_path": "v2",
+            "lower": 2,
+            "upper": 6
+         }
+      },
+      "sampling_method": "UniformSampling",
+      "sample_size": [
+         2
+      ],
+      "samples": {
+         "index": [
+            0,
+            1
+         ],
+         "columns": [
+            "v2"
+         ],
+         "data": [
+            [
+               2.0
+            ],
+            [
+               6.0
+            ]
+         ],
+         "index_names": [
+            null
+         ],
+         "column_names": [
+            null
+         ]
+      }
+   },
+   "results": {
+      "0": {
+         "success": true,
+         "results": 2
+      },
+      "1": {
+         "success": true,
+         "results": 6
+      }
+   }
+}"""
+
+        assert lines == expected
+
+        # Check for clean up
+        temp_context.release(remove=True)
+        assert not os.path.exists(tmpfile)
+
+    @pytest.mark.unit
+    def test_load_from_json_file(self):
+        fname = os.path.join(currdir, "load_psweep.json")
+
+        ca = IpoptConvergenceAnalysis(
+            model=ConcreteModel(),
+        )
+        ca.from_json_file(fname)
+
+        input_spec = ca._psweep.get_input_specification()
+
+        assert isinstance(input_spec, ParameterSweepSpecification)
+        assert len(input_spec.inputs) == 1
+
+        assert input_spec.sampling_method is UniformSampling
+        assert isinstance(input_spec.samples, DataFrame)
+        assert input_spec.sample_size == [2]
+
+        assert isinstance(ca.results, dict)
+        assert len(ca.results) == 2
+
+        for i in [0, 1]:
+            assert ca.results[i]["success"]
+            assert ca.results[i]["results"] == 2 + i * 4
+
+    @pytest.mark.integration
+    @pytest.mark.solver
+    def test_run_convergence_analysis_from_dict(self, model):
+        ca = IpoptConvergenceAnalysis(
+            model=model,
+        )
+        ca.run_convergence_analysis_from_dict(ca_dict)
+
+        input_spec = ca._psweep.get_input_specification()
+
+        assert isinstance(input_spec, ParameterSweepSpecification)
+        assert len(input_spec.inputs) == 1
+
+        assert input_spec.sampling_method is UniformSampling
+        assert isinstance(input_spec.samples, DataFrame)
+        assert input_spec.sample_size == [2]
+
+        assert isinstance(ca.results, dict)
+        assert len(ca.results) == 2
+
+        assert not ca.results[0]["success"]
+        assert ca.results[0]["results"]["iters"] == pytest.approx(7, abs=1)
+        assert ca.results[0]["results"]["iters_in_restoration"] == pytest.approx(
+            4, abs=1
+        )
+        assert ca.results[0]["results"]["iters_w_regularization"] == 0
+        assert ca.results[0]["results"]["numerical_issues"]
+
+        assert not ca.results[1]["success"]
+        assert ca.results[1]["results"]["iters"] == pytest.approx(7, abs=1)
+        assert ca.results[1]["results"]["iters_in_restoration"] == pytest.approx(
+            4, abs=1
+        )
+        assert ca.results[1]["results"]["iters_w_regularization"] == 0
+        assert ca.results[1]["results"]["numerical_issues"]
+
+    @pytest.mark.integration
+    @pytest.mark.solver
+    def test_run_convergence_analysis_from_file(self, model):
+        fname = os.path.join(currdir, "load_psweep.json")
+
+        ca = IpoptConvergenceAnalysis(
+            model=model,
+        )
+        ca.run_convergence_analysis_from_file(fname)
+
+        input_spec = ca._psweep.get_input_specification()
+
+        assert isinstance(input_spec, ParameterSweepSpecification)
+        assert len(input_spec.inputs) == 1
+
+        assert input_spec.sampling_method is UniformSampling
+        assert isinstance(input_spec.samples, DataFrame)
+        assert input_spec.sample_size == [2]
+
+        assert isinstance(ca.results, dict)
+        assert len(ca.results) == 2
+
+        assert not ca.results[0]["success"]
+        assert ca.results[0]["results"]["iters"] == pytest.approx(7, abs=1)
+        assert ca.results[0]["results"]["iters_in_restoration"] == pytest.approx(
+            4, abs=1
+        )
+        assert ca.results[0]["results"]["iters_w_regularization"] == 0
+        assert ca.results[0]["results"]["numerical_issues"]
+
+        assert not ca.results[1]["success"]
+        assert ca.results[1]["results"]["iters"] == pytest.approx(7, abs=1)
+        assert ca.results[1]["results"]["iters_in_restoration"] == pytest.approx(
+            4, abs=1
+        )
+        assert ca.results[1]["results"]["iters_w_regularization"] == 0
+        assert ca.results[1]["results"]["numerical_issues"]
+
+    @pytest.fixture(scope="class")
+    def conv_anal(self):
+        ca = IpoptConvergenceAnalysis(
+            model=ConcreteModel(),
+        )
+        ca.from_dict(ca_res)
+
+        return ca
+
+    @pytest.mark.unit
+    def test_compare_results_to_dict_ok(self, conv_anal):
+        diffs = conv_anal._compare_results_to_dict(ca_res)
+
+        assert diffs["success"] == []
+        assert diffs["iters"] == []
+        assert diffs["iters_in_restoration"] == []
+        assert diffs["iters_w_regularization"] == []
+        assert diffs["numerical_issues"] == []
+
+    @pytest.mark.unit
+    def test_compare_results_to_dict_success(self, conv_anal):
+        ca_copy = deepcopy(ca_res)
+        ca_copy["results"][0]["success"] = True
+
+        diffs = conv_anal._compare_results_to_dict(ca_copy)
+
+        assert diffs["success"] == [0]
+        assert diffs["iters"] == []
+        assert diffs["iters_in_restoration"] == []
+        assert diffs["iters_w_regularization"] == []
+        assert diffs["numerical_issues"] == []
+
+    @pytest.mark.unit
+    def test_compare_results_to_dict_iters(self, conv_anal):
+        ca_copy = deepcopy(ca_res)
+        ca_copy["results"][0]["results"]["iters"] = 8
+        ca_copy["results"][1]["results"]["iters"] = 9
+
+        diffs = conv_anal._compare_results_to_dict(ca_copy)
+
+        assert diffs["success"] == []
+        assert diffs["iters"] == [1]
+        assert diffs["iters_in_restoration"] == []
+        assert diffs["iters_w_regularization"] == []
+        assert diffs["numerical_issues"] == []
+
+        diffs = conv_anal._compare_results_to_dict(ca_copy, abs_tol=0, rel_tol=0)
+
+        assert diffs["success"] == []
+        assert diffs["iters"] == [0, 1]
+        assert diffs["iters_in_restoration"] == []
+        assert diffs["iters_w_regularization"] == []
+        assert diffs["numerical_issues"] == []
+
+    @pytest.mark.unit
+    def test_compare_results_to_dict_restoration(self, conv_anal):
+        ca_copy = deepcopy(ca_res)
+        ca_copy["results"][0]["results"]["iters_in_restoration"] = 5
+        ca_copy["results"][1]["results"]["iters_in_restoration"] = 6
+
+        diffs = conv_anal._compare_results_to_dict(ca_copy)
+
+        assert diffs["success"] == []
+        assert diffs["iters"] == []
+        assert diffs["iters_in_restoration"] == [1]
+        assert diffs["iters_w_regularization"] == []
+        assert diffs["numerical_issues"] == []
+
+        diffs = conv_anal._compare_results_to_dict(ca_copy, abs_tol=0, rel_tol=0)
+
+        assert diffs["success"] == []
+        assert diffs["iters"] == []
+        assert diffs["iters_in_restoration"] == [0, 1]
+        assert diffs["iters_w_regularization"] == []
+        assert diffs["numerical_issues"] == []
+
+    @pytest.mark.unit
+    def test_compare_results_to_dict_regularization(self, conv_anal):
+        ca_copy = deepcopy(ca_res)
+        ca_copy["results"][0]["results"]["iters_w_regularization"] = 1
+        ca_copy["results"][1]["results"]["iters_w_regularization"] = 2
+
+        diffs = conv_anal._compare_results_to_dict(ca_copy)
+
+        assert diffs["success"] == []
+        assert diffs["iters"] == []
+        assert diffs["iters_in_restoration"] == []
+        assert diffs["iters_w_regularization"] == [1]
+        assert diffs["numerical_issues"] == []
+
+        diffs = conv_anal._compare_results_to_dict(ca_copy, abs_tol=0, rel_tol=0)
+
+        assert diffs["success"] == []
+        assert diffs["iters"] == []
+        assert diffs["iters_in_restoration"] == []
+        assert diffs["iters_w_regularization"] == [0, 1]
+        assert diffs["numerical_issues"] == []
+
+    @pytest.mark.unit
+    def test_compare_results_to_dict_numerical_issues(self, conv_anal):
+        ca_copy = deepcopy(ca_res)
+        ca_copy["results"][1]["results"]["numerical_issues"] = False
+
+        diffs = conv_anal._compare_results_to_dict(ca_copy)
+
+        assert diffs["success"] == []
+        assert diffs["iters"] == []
+        assert diffs["iters_in_restoration"] == []
+        assert diffs["iters_w_regularization"] == []
+        assert diffs["numerical_issues"] == [1]
+
+    @pytest.mark.integration
+    @pytest.mark.solver
+    def test_compare_convergence_to_baseline(self, model):
+        fname = os.path.join(currdir, "convergence_baseline.json")
+
+        ca = IpoptConvergenceAnalysis(
+            model=model,
+        )
+
+        diffs = ca.compare_convergence_to_baseline(fname)
+
+        # Baseline has incorrect values
+        assert diffs == {
+            "success": [0],
+            "iters": [],
+            "iters_in_restoration": [],
+            "iters_w_regularization": [1],
+            "numerical_issues": [],
+        }
+
+    @pytest.mark.integration
+    @pytest.mark.solver
+    def test_assert_baseline_comparison(self, model):
+        fname = os.path.join(currdir, "convergence_baseline.json")
+
+        ca = IpoptConvergenceAnalysis(
+            model=model,
+        )
+
+        # Baseline has incorrect values
+        with pytest.raises(
+            AssertionError,
+            match="Convergence analysis does not match baseline",
+        ):
+            ca.assert_baseline_comparison(fname)
 
 
 @pytest.fixture()
@@ -2579,3 +3385,522 @@ def test_ipopt_solve_halt_on_error(capsys):
 
     captured = capsys.readouterr()
     assert "c: can't evaluate log(-5)." in captured.out
+
+
+class TestEvalErrorDetection(TestCase):
+    @pytest.mark.unit
+    def test_div(self):
+        m = ConcreteModel()
+        m.x = Var(bounds=(1, None))
+        m.y = Var()
+        m.c = Constraint(expr=m.y == 1 / m.x)
+        dtb = DiagnosticsToolbox(m)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 0)
+
+        m.x.setlb(0)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 1)
+        w = warnings[0]
+        self.assertEqual(
+            w, "c: Potential division by 0 in 1/x; Denominator bounds are (0, inf)"
+        )
+
+        dtb.config.warn_for_evaluation_error_at_bounds = False
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 0)
+
+        m.x.setlb(-1)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 1)
+        w = warnings[0]
+        self.assertEqual(
+            w, "c: Potential division by 0 in 1/x; Denominator bounds are (-1, inf)"
+        )
+
+    @pytest.mark.unit
+    def test_pow1(self):
+        m = ConcreteModel()
+        m.x = Var(bounds=(None, None))
+        m.y = Var()
+        m.p = Param(initialize=2, mutable=True)
+        m.c = Constraint(expr=m.y == m.x**m.p)
+        dtb = DiagnosticsToolbox(m)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 0)
+
+        m.p.value = 2.5
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 1)
+        w = warnings[0]
+        self.assertEqual(
+            w,
+            "c: Potential evaluation error in x**p; base bounds are (-inf, inf); exponent bounds are (2.5, 2.5)",
+        )
+
+        m.x.setlb(1)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 0)
+
+    @pytest.mark.unit
+    def test_pow2(self):
+        m = ConcreteModel()
+        m.x = Var(bounds=(1, None))
+        m.y = Var()
+        m.p = Var(domain=Integers)
+        m.c = Constraint(expr=m.y == m.x**m.p)
+        dtb = DiagnosticsToolbox(m)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 0)
+
+        m.x.setlb(None)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 1)
+        w = warnings[0]
+        self.assertEqual(
+            w,
+            "c: Potential evaluation error in x**p; base bounds are (-inf, inf); exponent bounds are (-inf, inf)",
+        )
+
+    @pytest.mark.unit
+    def test_pow3(self):
+        m = ConcreteModel()
+        m.x = Var(bounds=(0, None))
+        m.y = Var()
+        m.p = Var(bounds=(0, None))
+        m.c = Constraint(expr=m.y == m.x**m.p)
+        dtb = DiagnosticsToolbox(m)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 0)
+
+    @pytest.mark.unit
+    def test_pow4(self):
+        m = ConcreteModel()
+        m.x = Var(bounds=(0, None))
+        m.y = Var()
+        m.c = Constraint(expr=m.y == m.x ** (-2))
+        dtb = DiagnosticsToolbox(m)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 1)
+        w = warnings[0]
+        self.assertEqual(
+            w,
+            "c: Potential evaluation error in x**-2; base bounds are (0, inf); exponent bounds are (-2, -2)",
+        )
+
+        dtb.config.warn_for_evaluation_error_at_bounds = False
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 0)
+
+        m.x.setlb(-1)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 1)
+        w = warnings[0]
+        self.assertEqual(
+            w,
+            "c: Potential evaluation error in x**-2; base bounds are (-1, inf); exponent bounds are (-2, -2)",
+        )
+
+    @pytest.mark.unit
+    def test_pow5(self):
+        m = ConcreteModel()
+        m.x = Var(bounds=(0, None))
+        m.y = Var()
+        m.c = Constraint(expr=m.y == m.x ** (-2.5))
+        dtb = DiagnosticsToolbox(m)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 1)
+        w = warnings[0]
+        self.assertEqual(
+            w,
+            "c: Potential evaluation error in x**-2.5; base bounds are (0, inf); exponent bounds are (-2.5, -2.5)",
+        )
+
+        dtb.config.warn_for_evaluation_error_at_bounds = False
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 0)
+
+        m.x.setlb(-1)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 1)
+        w = warnings[0]
+        self.assertEqual(
+            w,
+            "c: Potential evaluation error in x**-2.5; base bounds are (-1, inf); exponent bounds are (-2.5, -2.5)",
+        )
+
+    @pytest.mark.unit
+    def test_log(self):
+        m = ConcreteModel()
+        m.x = Var(bounds=(1, None))
+        m.y = Var()
+        m.c = Constraint(expr=m.y == log(m.x))
+        dtb = DiagnosticsToolbox(m)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 0)
+
+        m.x.setlb(0)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 1)
+        w = warnings[0]
+        self.assertEqual(
+            w,
+            "c: Potential log of a non-positive number in log(x); Argument bounds are (0, inf)",
+        )
+
+        dtb.config.warn_for_evaluation_error_at_bounds = False
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 0)
+
+        m.x.setlb(-1)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 1)
+        w = warnings[0]
+        self.assertEqual(
+            w,
+            "c: Potential log of a non-positive number in log(x); Argument bounds are (-1, inf)",
+        )
+
+    @pytest.mark.unit
+    def test_tan(self):
+        m = ConcreteModel()
+        m.x = Var(bounds=(-math.pi / 4, math.pi / 4))
+        m.y = Var()
+        m.c = Constraint(expr=m.y == tan(m.x))
+        dtb = DiagnosticsToolbox(m)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 0)
+
+        m.x.setlb(-math.pi)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 1)
+        w = warnings[0]
+        self.assertEqual(
+            w,
+            "c: tan(x) may evaluate to -inf or inf; Argument bounds are (-3.141592653589793, 0.7853981633974483)",
+        )
+
+    @pytest.mark.unit
+    def test_asin(self):
+        m = ConcreteModel()
+        m.x = Var(bounds=(-0.5, 0.5))
+        m.y = Var()
+        m.c = Constraint(expr=m.y == asin(m.x))
+        dtb = DiagnosticsToolbox(m)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 0)
+
+        m.x.setlb(None)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 1)
+        w = warnings[0]
+        self.assertEqual(
+            w,
+            "c: Potential evaluation of asin outside [-1, 1] in asin(x); Argument bounds are (-inf, 0.5)",
+        )
+
+        m.x.setlb(-0.5)
+        m.x.setub(None)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 1)
+        w = warnings[0]
+        self.assertEqual(
+            w,
+            "c: Potential evaluation of asin outside [-1, 1] in asin(x); Argument bounds are (-0.5, inf)",
+        )
+
+    @pytest.mark.unit
+    def test_acos(self):
+        m = ConcreteModel()
+        m.x = Var(bounds=(-0.5, 0.5))
+        m.y = Var()
+        m.c = Constraint(expr=m.y == acos(m.x))
+        dtb = DiagnosticsToolbox(m)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 0)
+
+        m.x.setlb(None)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 1)
+        w = warnings[0]
+        self.assertEqual(
+            w,
+            "c: Potential evaluation of acos outside [-1, 1] in acos(x); Argument bounds are (-inf, 0.5)",
+        )
+
+        m.x.setlb(-0.5)
+        m.x.setub(None)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 1)
+        w = warnings[0]
+        self.assertEqual(
+            w,
+            "c: Potential evaluation of acos outside [-1, 1] in acos(x); Argument bounds are (-0.5, inf)",
+        )
+
+    @pytest.mark.unit
+    def test_sqrt(self):
+        m = ConcreteModel()
+        m.x = Var(bounds=(1, None))
+        m.y = Var()
+        m.c = Constraint(expr=m.y == sqrt(m.x))
+        dtb = DiagnosticsToolbox(m)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 0)
+
+        m.x.setlb(-1)
+        warnings = dtb._collect_potential_eval_errors()
+        self.assertEqual(len(warnings), 1)
+        w = warnings[0]
+        self.assertEqual(
+            w,
+            "c: Potential square root of a negative number in sqrt(x); Argument bounds are (-1, inf)",
+        )
+
+    @pytest.mark.unit
+    def test_display(self):
+        stream = StringIO()
+        m = ConcreteModel()
+        m.x = Var()
+        m.y = Var()
+        m.obj = Objective(expr=m.x**2 + m.y**2.5)
+        m.c1 = Constraint(expr=m.y >= log(m.x))
+        m.c2 = Constraint(expr=m.y >= (m.x - 1) ** 2.5)
+        m.c3 = Constraint(expr=m.x - 1 >= 0)
+        dtb = DiagnosticsToolbox(m)
+        dtb.display_potential_evaluation_errors(stream=stream)
+        expected = "====================================================================================\n3 WARNINGS\n\n    c1: Potential log of a non-positive number in log(x); Argument bounds are (-inf, inf)\n    c2: Potential evaluation error in (x - 1)**2.5; base bounds are (-inf, inf); exponent bounds are (2.5, 2.5)\n    obj: Potential evaluation error in y**2.5; base bounds are (-inf, inf); exponent bounds are (2.5, 2.5)\n\n====================================================================================\n"
+        got = stream.getvalue()
+        exp_list = expected.split("\n")
+        got_list = got.split("\n")
+        self.assertEqual(len(exp_list), len(got_list))
+        for _exp, _got in zip(exp_list, got_list):
+            self.assertEqual(_exp, _got)
+
+
+class TestCheckParallelJacobian:
+    @pytest.mark.unit
+    def test_invalid_direction(self):
+        m = ConcreteModel()
+
+        with pytest.raises(
+            ValueError,
+            match="Unrecognised value for direction \(foo\). "
+            "Must be 'row' or 'column'.",
+        ):
+            check_parallel_jacobian(m, direction="foo")
+
+    @pytest.fixture(scope="class")
+    def model(self):
+        m = ConcreteModel()
+
+        m.v1 = Var(initialize=1e-8)
+        m.v2 = Var()
+        m.v3 = Var()
+        m.v4 = Var()
+
+        m.c1 = Constraint(expr=m.v1 == m.v2 - 0.99999 * m.v4)
+        m.c2 = Constraint(expr=m.v1 + 1.00001 * m.v4 == 1e-8 * m.v3)
+        m.c3 = Constraint(expr=1e8 * (m.v1 + m.v4) + 1e10 * m.v2 == 1e-6 * m.v3)
+        m.c4 = Constraint(expr=-m.v1 == -0.99999 * (m.v2 - m.v4))
+
+        return m
+
+    @pytest.mark.unit
+    def test_rows(self, model):
+        assert check_parallel_jacobian(model, direction="row") == [(model.c1, model.c4)]
+        assert check_parallel_jacobian(model, direction="row", tolerance=0) == []
+
+    @pytest.mark.unit
+    def test_columns(self, model):
+        pcol = check_parallel_jacobian(model, direction="column")
+
+        expected = [
+            ("v1", "v2"),
+            ("v1", "v4"),
+            ("v2", "v4"),
+        ]
+
+        for i in pcol:
+            assert tuple(sorted([i[0].name, i[1].name])) in expected
+
+
+class TestCheckIllConditioning:
+    @pytest.mark.unit
+    def test_invalid_direction(self):
+        m = ConcreteModel()
+
+        with pytest.raises(
+            ValueError,
+            match="Unrecognised value for direction \(foo\). "
+            "Must be 'row' or 'column'.",
+        ):
+            compute_ill_conditioning_certificate(m, direction="foo")
+
+    @pytest.fixture(scope="class")
+    def model(self):
+        m = ConcreteModel()
+
+        m.v1 = Var(initialize=1e-8)
+        m.v2 = Var()
+        m.v3 = Var()
+        m.v4 = Var()
+
+        m.c1 = Constraint(expr=m.v1 == m.v2 - 0.99999 * m.v4)
+        m.c2 = Constraint(expr=m.v1 + 1.00001 * m.v4 == 1e-8 * m.v3)
+        m.c3 = Constraint(expr=1e8 * (m.v1 + m.v4) + 1e10 * m.v2 == 1e-6 * m.v3)
+        m.c4 = Constraint(expr=-m.v1 == -0.99999 * (m.v2 - m.v4))
+
+        return m
+
+    @pytest.fixture(scope="class")
+    def afiro(self):
+        # NETLIB AFIRO example
+        m = ConcreteModel()
+
+        # Vars
+        m.X01 = Var(initialize=1)
+        m.X02 = Var(initialize=1)
+        m.X03 = Var(initialize=1)
+        m.X04 = Var(initialize=1)
+        m.X06 = Var(initialize=1)
+        m.X07 = Var(initialize=1)
+        m.X08 = Var(initialize=1)
+        m.X09 = Var(initialize=1)
+        m.X10 = Var(initialize=1)
+        m.X11 = Var(initialize=1)
+        m.X12 = Var(initialize=1)
+        m.X13 = Var(initialize=1)
+        m.X14 = Var(initialize=1)
+        m.X15 = Var(initialize=1)
+        m.X16 = Var(initialize=1)
+        m.X22 = Var(initialize=1)
+        m.X23 = Var(initialize=1)
+        m.X24 = Var(initialize=1)
+        m.X25 = Var(initialize=1)
+        m.X26 = Var(initialize=1)
+        m.X28 = Var(initialize=1)
+        m.X29 = Var(initialize=1)
+        m.X30 = Var(initialize=1)
+        m.X31 = Var(initialize=1)
+        m.X32 = Var(initialize=1)
+        m.X33 = Var(initialize=1)
+        m.X34 = Var(initialize=1)
+        m.X35 = Var(initialize=1)
+        m.X36 = Var(initialize=1)
+        m.X37 = Var(initialize=1)
+        m.X38 = Var(initialize=1)
+        m.X39 = Var(initialize=1)
+
+        # Constraints
+
+        m.R09 = Constraint(expr=-m.X01 + m.X02 + m.X03 == 0)
+        m.R10 = Constraint(expr=-1.06 * m.X01 + m.X04 == 0)
+        m.X05 = Constraint(expr=m.X01 <= 80)
+        m.X21 = Constraint(expr=-m.X02 + 1.4 * m.X14 <= 0)
+        m.R12 = Constraint(expr=-m.X06 - m.X07 - m.X08 - m.X09 + m.X14 + m.X15 == 0)
+        m.R13 = Constraint(
+            expr=-1.06 * m.X06 - 1.06 * m.X07 - 0.96 * m.X08 - 0.86 * m.X09 + m.X16 == 0
+        )
+        m.X17 = Constraint(expr=m.X06 - m.X10 <= 80)
+        m.X18 = Constraint(expr=m.X07 - m.X11 <= 0)
+        m.X19 = Constraint(expr=m.X08 - m.X12 <= 0)
+        m.X20 = Constraint(expr=m.X09 - m.X13 <= 0)
+        m.R19 = Constraint(expr=-1 * m.X22 + 1 * m.X23 + 1 * m.X24 + 1 * m.X25 == 0)
+        m.R20 = Constraint(expr=-0.43 * m.X22 + m.X26 == 0)
+        m.X27 = Constraint(expr=m.X22 <= 500)
+        m.X44 = Constraint(expr=-m.X23 + 1.4 * m.X36 <= 0)
+        m.R22 = Constraint(
+            expr=-0.43 * m.X28 - 0.43 * m.X29 - 0.39 * m.X30 - 0.37 * m.X31 + m.X38 == 0
+        )
+        m.R23 = Constraint(
+            expr=1 * m.X28
+            + 1 * m.X29
+            + 1 * m.X30
+            + 1 * m.X31
+            - 1 * m.X36
+            + 1 * m.X37
+            + 1 * m.X39
+            == 44
+        )
+        m.X40 = Constraint(expr=m.X28 - m.X32 <= 500)
+        m.X41 = Constraint(expr=m.X29 - m.X33 <= 0)
+        m.X42 = Constraint(expr=m.X30 - m.X34 <= 0)
+        m.X43 = Constraint(expr=m.X31 - m.X35 <= 0)
+        m.X45 = Constraint(
+            expr=2.364 * m.X10
+            + 2.386 * m.X11
+            + 2.408 * m.X12
+            + 2.429 * m.X13
+            - m.X25
+            + 2.191 * m.X32
+            + 2.219 * m.X33
+            + 2.249 * m.X34
+            + 2.279 * m.X35
+            <= 0
+        )
+        m.X46 = Constraint(expr=-m.X03 + 0.109 * m.X22 <= 0)
+        m.X47 = Constraint(
+            expr=-m.X15 + 0.109 * m.X28 + 0.108 * m.X29 + 0.108 * m.X30 + 0.107 * m.X31
+            <= 0
+        )
+        m.X48 = Constraint(expr=0.301 * m.X01 - m.X24 <= 0)
+        m.X49 = Constraint(
+            expr=0.301 * m.X06 + 0.313 * m.X07 + 0.313 * m.X08 + 0.326 * m.X09 - m.X37
+            <= 0
+        )
+        m.X50 = Constraint(expr=m.X04 + m.X26 <= 310)
+        m.X51 = Constraint(expr=m.X16 + m.X38 <= 300)
+
+        # Degenerate constraint
+        m.R09b = Constraint(expr=m.X01 - 0.999999999 * m.X02 - m.X03 == 0)
+
+        return m
+
+    @pytest.mark.unit
+    def test_beta(self, model, caplog):
+
+        compute_ill_conditioning_certificate(model)
+
+        expected = (
+            "Ill conditioning checks are a beta capability. Please be aware that "
+            "the name, location, and API for this may change in future releases."
+        )
+
+        assert expected in caplog.text
+
+    @pytest.mark.component
+    @pytest.mark.solver
+    def test_rows(self, model):
+        assert compute_ill_conditioning_certificate(model, direction="row") == [
+            (model.c4, pytest.approx(0.50000002, rel=1e-5)),
+            (model.c4, pytest.approx(0.49999998, rel=1e-5)),
+        ]
+
+    @pytest.mark.component
+    @pytest.mark.solver
+    def test_rows(self, afiro):
+        assert compute_ill_conditioning_certificate(afiro, direction="row") == [
+            (afiro.R09, pytest.approx(0.5, rel=1e-5)),
+            (afiro.R09b, pytest.approx(0.5, rel=1e-5)),
+        ]
+
+    @pytest.mark.component
+    @pytest.mark.solver
+    def test_columns(self, afiro):
+        assert compute_ill_conditioning_certificate(afiro, direction="column") == [
+            (afiro.X39, pytest.approx(1.1955465, rel=1e-5)),
+            (afiro.X23, pytest.approx(1.0668697, rel=1e-5)),
+            (afiro.X25, pytest.approx(-1.0668697, rel=1e-5)),
+            (afiro.X09, pytest.approx(-0.95897123, rel=1e-5)),
+            (afiro.X13, pytest.approx(-0.95897123, rel=1e-5)),
+            (afiro.X06, pytest.approx(0.91651956, rel=1e-5)),
+            (afiro.X10, pytest.approx(0.91651956, rel=1e-5)),
+            (afiro.X36, pytest.approx(0.76204977, rel=1e-5)),
+            (afiro.X31, pytest.approx(-0.39674454, rel=1e-5)),
+            (afiro.X35, pytest.approx(-0.39674454, rel=1e-5)),
+            (afiro.X16, pytest.approx(0.14679548, rel=1e-5)),
+            (afiro.X38, pytest.approx(-0.14679548, rel=1e-5)),
+            (afiro.X15, pytest.approx(-0.042451666, rel=1e-5)),
+            (afiro.X37, pytest.approx(-0.036752232, rel=1e-5)),
+        ]

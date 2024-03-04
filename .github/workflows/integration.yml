@@ -33,6 +33,7 @@ concurrency:
 env:
   IDAES_CONDA_ENV_NAME_DEV: idaes-pse-dev
   PYTEST_ADDOPTS: "--color=yes"
+  DEFAULT_PYTHON_VERSION: '3.10'
 
 defaults:
   run:
@@ -63,7 +64,7 @@ jobs:
       is-pr-approved: ${{ steps.check-pr-approval.outputs.is-approved }}
       workflow-trigger: ${{ steps.determine-trigger.outputs.workflow-trigger }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/display-debug-info
       - id: check-pr-approval
         uses: ./.github/actions/check-pr-approval
@@ -131,7 +132,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11']
+        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
         os:
           - linux
           - win64
@@ -141,10 +142,10 @@ jobs:
           - os: win64
             runner-image: windows-2022
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/display-debug-info
       - name: Set up Conda environment
-        uses: conda-incubator/setup-miniconda@v2.1.1
+        uses: conda-incubator/setup-miniconda@v3
         with:
           activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
           python-version: ${{ matrix.python-version }}
@@ -168,7 +169,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11']
+        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
         os:
           - linux
           - win64
@@ -178,10 +179,10 @@ jobs:
           - os: win64
             runner-image: windows-2022
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/display-debug-info
       - name: Set up Conda environment
-        uses: conda-incubator/setup-miniconda@v2.1.1
+        uses: conda-incubator/setup-miniconda@v3
         with:
           activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
           python-version: ${{ matrix.python-version }}
@@ -232,12 +233,12 @@ jobs:
             pip-install-target: '.'
             dependencies-to-uninstall: omlt
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Set up Conda environment
-        uses: conda-incubator/setup-miniconda@v2.1.1
+        uses: conda-incubator/setup-miniconda@v3
         with:
           activate-environment: idaes-env
-          python-version: '3.8'
+          python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
       - name: Set up idaes (non-editable installation)
         uses: ./.github/actions/setup-idaes
         with:

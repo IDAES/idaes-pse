@@ -127,7 +127,7 @@ class TestStateBlock(object):
             "state_definition": FTPx,
             "state_bounds": {
                 "flow_mol": (0, 100, 1000, pyunits.mol / pyunits.s),
-                "temperature": (273.15, 300, 450, pyunits.K),
+                "temperature": (100, 300, 450, pyunits.K),
                 "pressure": (5e4, 1e5, 1e6, pyunits.Pa),
             },
             "pressure_ref": (1e5, pyunits.Pa),

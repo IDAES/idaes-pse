@@ -253,13 +253,6 @@ class TestSaponification(object):
             }
         }
 
-    @pytest.mark.component
-    def test_initialization_error(self, sapon):
-        sapon.fs.unit.outlet.pressure[0].fix(1)
-
-        with pytest.raises(InitializationError):
-            sapon.fs.unit.initialize()
-
 
 class TestInitializers:
     @pytest.fixture

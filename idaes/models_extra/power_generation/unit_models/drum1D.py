@@ -1344,7 +1344,7 @@ discretizing length domain (default=3)""",
         blk.control_volume.initialize(
             outlvl=outlvl, optarg=optarg, solver=solver, hold_state=False
         )
-        init_log.info("Initialization Step 3 Complete." "Control Volume Initialized")
+        init_log.info("Initialization Step 3 Complete. Control Volume Initialized")
 
         # fix flash model inlet
         flags_steam = fix_state_vars(blk.flash.mixed_state, state_args_water_steam)

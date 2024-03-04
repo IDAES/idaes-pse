@@ -8,6 +8,10 @@ inputs:
     description: 'Command to use to install `install-target`'
     required: false
     default: pip --no-cache-dir install --progress-bar off
+  ampl-scip-pip-target:
+    description: pip install target (dist name and optionally version constraint) of AMPL SCIP solver to install
+    required: false
+    default: ampl-module-scip
 runs:
   using: "composite"
   steps:
@@ -41,4 +45,11 @@ runs:
       run: |
         echo '::group::Output of "idaes get-extensions" command'
         idaes get-extensions --extra petsc --verbose
+        echo '::endgroup::'
+    - name: Install AMPL SCIP (${{ inputs.ampl-scip-pip-target }})
+      if: inputs.ampl-scip-pip-target
+      shell: bash -l {0}
+      run: |
+        echo '::group::Output of "pip install ampl_module_scip" command'
+        ${{ inputs.install-command }} --index-url https://pypi.ampl.com ${{ inputs.ampl-scip-pip-target }}
         echo '::endgroup::'

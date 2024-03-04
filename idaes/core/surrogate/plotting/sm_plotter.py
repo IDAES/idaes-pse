@@ -73,6 +73,8 @@ def _scatter2D(
 
     if filename is not None:
         if filename[-4:] != ".pdf":  # checking if extension is present
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception(
                 "Filename does not end in .pdf, please amend "
                 "filename with the proper extension."
@@ -144,6 +146,8 @@ def _scatter3D(
 
     if filename is not None:
         if filename[-4:] != ".pdf":  # checking if extension is present
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception(
                 "Filename does not end in .pdf, please amend "
                 "filename with the proper extension."
@@ -217,6 +221,8 @@ def _parity(zdata, zfit, zlabels=None, show=True, filename=None):
 
     if filename is not None:
         if filename[-4:] != ".pdf":  # checking if extension is present
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception(
                 "Filename does not end in .pdf, please amend "
                 "filename with the proper extension."
@@ -289,6 +295,8 @@ def _residual(xdata, residual, xlabels=None, elabels=None, show=True, filename=N
 
     if filename is not None:
         if filename[-4:] != ".pdf":  # checking if extension is present
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception(
                 "Filename does not end in .pdf, please amend "
                 "filename with the proper extension."

@@ -43,13 +43,13 @@ def test_SimpleVarLikeExpression():
 
     with pytest.raises(
         TypeError,
-        match="e is an Expression and does not have a value " "which can be set.",
+        match="e is an Expression and does not have a value which can be set.",
     ):
         m.e.set_value(10)
 
     with pytest.raises(
         TypeError,
-        match="e is an Expression and does not have a value " "which can be set.",
+        match="e is an Expression and does not have a value which can be set.",
     ):
         m.e.value = 10
 
@@ -155,7 +155,7 @@ def test_IndexedVarLikeExpression():
             m.e[i].fix(8)
         with pytest.raises(
             TypeError,
-            match="e\[{}\] is an Expression and can not be " "unfixed.".format(i),
+            match="e\[{}\] is an Expression and can not be unfixed.".format(i),
         ):
             m.e[i].unfix()
 
