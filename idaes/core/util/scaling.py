@@ -1179,9 +1179,15 @@ def set_scaling_from_default(
                 return
 
         parent = component.parent_block()
-        dsf = parent.get_default_scaling(
-            component.parent_component().local_name, index=component.index()
-        )
+        try:
+            dsf = parent.get_default_scaling(
+                component.parent_component().local_name, index=component.index()
+            )
+        except AttributeError:
+            dsf = None
+            _log.warning(
+                f"{component.name} block missing 'get_default_scaling()' method, no scaling factor assigned."
+            )
 
         if dsf is not None:
             set_scaling_factor(component, dsf, overwrite=overwrite)
