@@ -50,6 +50,15 @@ def excel_data():
 
 
 @pytest.mark.unit
+def test_seed_value():
+    m = PriceTakerModel()
+
+    m.seed = 50
+
+    assert m.seed == 50
+
+
+@pytest.mark.unit
 def test_daily_data_size(excel_data):
     m = PriceTakerModel()
 
@@ -546,16 +555,22 @@ def test_deepgetattr_logger_messages(excel_data):
 
 
 @pytest.mark.unit
-def test_generate_daily_data_logger_messages(excel_data):
-    raw_data = excel_data["BaseCaseTax"]
+def test_generate_daily_data_logger_messages():
+    DATA_DIR = Path(__file__).parent
+    file_path = DATA_DIR / "FLECCS_princeton.csv"
+    raw_data = pd.read_csv(file_path)
     with pytest.raises(
         ValueError,
         match=(
-            f"tried to generate daily data, but horizon length of {9000} exceeds raw_data length of {len(raw_data)}"
+            f"tried to generate daily data, but horizon length of {9000} exceeds raw_data length of {len(raw_data['BaseCaseTax'])}"
         ),
     ):
         m = PriceTakerModel(horizon_length=9000)
-        daily_data = m.generate_daily_data(raw_data)
+        m.append_lmp_data(
+            file_path,
+            column_name="BaseCaseTax",
+            n_clusters=10,
+        )
 
 
 @pytest.mark.unit
