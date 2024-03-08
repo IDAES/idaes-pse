@@ -23,7 +23,6 @@ from pyomo.environ import (
     units,
     units as pyunits,
 )
-from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 
 from idaes.core import (
     FlowsheetBlock,
@@ -37,7 +36,6 @@ from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import
 )
 from idaes.models.properties import iapws95
 from idaes.core.util.model_statistics import (
-    degrees_of_freedom,
     number_variables,
     number_total_constraints,
     number_unused_variables,
@@ -50,6 +48,7 @@ from idaes.core.initialization import (
     SingleControlVolumeUnitInitializer,
     InitializationStatus,
 )
+from idaes.core.util import DiagnosticsToolbox
 
 
 # -----------------------------------------------------------------------------
@@ -114,6 +113,27 @@ class TestBTXIdeal(object):
         m.fs.unit.heat_duty.fix(0)
         m.fs.unit.deltaP.fix(0)
 
+        # Legacy property package, does not bound many variables which triggers
+        # warnings for potential evaluation errors.
+        # Fixing property package is out of scope for now.
+        m.fs.unit.control_volume.properties_in[0.0].temperature_bubble.setlb(300)
+        m.fs.unit.control_volume.properties_in[0.0].temperature_bubble.setub(550)
+        m.fs.unit.control_volume.properties_in[0.0].temperature_dew.setlb(300)
+        m.fs.unit.control_volume.properties_in[0.0].temperature_dew.setub(550)
+        m.fs.unit.control_volume.properties_in[0.0]._temperature_equilibrium.setlb(300)
+        m.fs.unit.control_volume.properties_in[0.0]._temperature_equilibrium.setub(550)
+        m.fs.unit.control_volume.properties_in[0.0].pressure_sat_comp.setlb(1e4)
+        m.fs.unit.control_volume.properties_in[0.0].pressure_sat_comp.setub(5e6)
+
+        m.fs.unit.control_volume.properties_out[0.0].temperature_bubble.setlb(300)
+        m.fs.unit.control_volume.properties_out[0.0].temperature_bubble.setub(550)
+        m.fs.unit.control_volume.properties_out[0.0].temperature_dew.setlb(300)
+        m.fs.unit.control_volume.properties_out[0.0].temperature_dew.setub(550)
+        m.fs.unit.control_volume.properties_out[0.0]._temperature_equilibrium.setlb(300)
+        m.fs.unit.control_volume.properties_out[0.0]._temperature_equilibrium.setub(550)
+        m.fs.unit.control_volume.properties_out[0.0].pressure_sat_comp.setlb(1e4)
+        m.fs.unit.control_volume.properties_out[0.0].pressure_sat_comp.setub(5e6)
+
         return m
 
     @pytest.mark.build
@@ -147,14 +167,10 @@ class TestBTXIdeal(object):
         assert number_unused_variables(btx) == 0
 
     @pytest.mark.component
-    def test_units(self, btx):
-        assert_units_consistent(btx)
-        assert_units_equivalent(btx.fs.unit.heat_duty[0], units.W)
-        assert_units_equivalent(btx.fs.unit.deltaP[0], units.Pa)
-
-    @pytest.mark.unit
-    def test_dof(self, btx):
-        assert degrees_of_freedom(btx) == 0
+    def test_structural_issues(self, btx):
+        dt = DiagnosticsToolbox(btx)
+        dt.display_potential_evaluation_errors()
+        dt.assert_no_structural_warnings()
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -272,6 +288,13 @@ class TestBTXIdeal(object):
             <= 1e-6
         )
 
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, btx):
+        dt = DiagnosticsToolbox(btx)
+        dt.assert_no_numerical_warnings()
+
 
 # -----------------------------------------------------------------------------
 @pytest.mark.iapws
@@ -330,14 +353,9 @@ class TestIAPWS(object):
         assert number_unused_variables(iapws) == 0
 
     @pytest.mark.component
-    def test_units(self, iapws):
-        assert_units_consistent(iapws)
-        assert_units_equivalent(iapws.fs.unit.heat_duty[0], units.W)
-        assert_units_equivalent(iapws.fs.unit.deltaP[0], units.Pa)
-
-    @pytest.mark.unit
-    def test_dof(self, iapws):
-        assert degrees_of_freedom(iapws) == 0
+    def test_structural_issues(self, iapws):
+        dt = DiagnosticsToolbox(iapws)
+        dt.assert_no_structural_warnings()
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -474,6 +492,13 @@ class TestIAPWS(object):
             )
             <= 1e-6
         )
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, iapws):
+        dt = DiagnosticsToolbox(iapws)
+        dt.assert_no_numerical_warnings()
 
 
 class TestInitializersIAPWS:
