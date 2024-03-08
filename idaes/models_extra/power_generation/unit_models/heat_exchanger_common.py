@@ -413,10 +413,6 @@ def _make_performance_common(
                 * shell.properties[t, x].dens_mol_phase["Vap"]
                 * shell.properties[t, x].mw
             )
-            # return b.N_Re_shell[t,x] * shell.properties[t,x].visc_d * b.area_flow_shell_min == \
-            #     b.do_tube * shell.properties[t,x].dens_mol_phase["Vap"]**2 * sum(
-            #         shell.properties[t,x].flow_mol_comp[j]*shell.properties[t,x].mw_comp[j]
-            #         for j in shell.properties[t,x].component_list)
 
     if shell_has_pressure_change == True:
         # Friction factor on shell side
@@ -630,10 +626,6 @@ def _make_performance_tube(
                 * tube.properties[t, x].dens_mol_phase["Vap"]
                 * tube.properties[t, x].mw
             )
-            # return b.N_Re_tube[t,x] * tube.properties[t,x].visc_d * b.area_flow_tube == \
-            #     b.di_tube * tube.properties[t,x].dens_mol_phase["Vap"]**2 * sum(
-            #         tube.properties[t,x].flow_mol_comp[j]*tube.properties[t,x].mw_comp[j]
-            #         for j in tube.properties[t,x].component_list)
 
     if tube_has_pressure_change:
         # Friction factor
@@ -764,7 +756,6 @@ def _scale_common(blk, shell, shell_has_pressure_change, make_reynolds, make_nus
                     blk.hconv_shell_conv[t, z], sf_N_Nu_shell * sf_k_shell / sf_do_tube
                 )
                 cst(blk.hconv_shell_conv_eqn[t, z], sf_hconv_shell_conv * sf_do_tube)
-
 
 
             # FIXME estimate from parameters

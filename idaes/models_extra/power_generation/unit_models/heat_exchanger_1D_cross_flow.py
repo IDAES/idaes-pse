@@ -696,11 +696,7 @@ class HeatExchangerCrossFlow1DData(HeatExchanger1DData):
                 ssf(self.temp_wall_tube[t, z], sf_T_tube)
                 cst(self.temp_wall_tube_eqn[t, z], sf_T_tube)
 
-                sf_hconv_tube = gsf(self.hconv_tube[t, z])
-                sf_Q_tube = sgsf(
-                    tube.heat[t, z],
-                    sf_hconv_tube * sf_area_per_length_tube * sf_T_tube,
-                )
+                sf_Q_tube = gsf(tube.heat[t, z])
                 cst(self.heat_tube_eqn[t, z], sf_Q_tube)
 
                 sf_T_shell = gsf(shell.properties[t, z].temperature)
@@ -718,16 +714,9 @@ class HeatExchangerCrossFlow1DData(HeatExchanger1DData):
                     )
                 )
                 sf_hconv_shell_conv = gsf(self.hconv_shell_conv[t, z])
-                if self.config.has_radiation:
-                    sf_hconv_shell_rad = 1  # FIXME Placeholder
-                    sf_hconv_shell_total = 1 / (
-                            1 / sf_hconv_shell_conv + 1 / sf_hconv_shell_rad
-                    )
-                else:
-                    sf_hconv_shell_total = sf_hconv_shell_conv
                 s_Q_shell = sgsf(
                     shell.heat[t, z],
-                    sf_hconv_shell_total * sf_area_per_length_shell * sf_T_shell,
+                    sf_hconv_shell_conv * sf_area_per_length_shell * sf_T_shell,
                 )
                 cst(self.heat_shell_eqn[t, z], s_Q_shell * value(self.length_flow_shell))
                 # Geometric mean is overkill for most reasonable cases, but it mitigates
