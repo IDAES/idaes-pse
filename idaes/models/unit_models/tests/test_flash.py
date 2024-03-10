@@ -169,7 +169,6 @@ class TestBTXIdeal(object):
     @pytest.mark.component
     def test_structural_issues(self, btx):
         dt = DiagnosticsToolbox(btx)
-        dt.display_potential_evaluation_errors()
         dt.assert_no_structural_warnings()
 
     @pytest.mark.ui
