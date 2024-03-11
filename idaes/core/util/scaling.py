@@ -1509,7 +1509,7 @@ class NominalValueExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
         # first check if the node is a leaf
         nodetype = type(node)
 
-        if nodetype in native_types or nodetype in pyomo_constant_types:
+        if nodetype in native_types:
             return [node]
 
         node_func = self.node_type_method_map.get(nodetype, None)
