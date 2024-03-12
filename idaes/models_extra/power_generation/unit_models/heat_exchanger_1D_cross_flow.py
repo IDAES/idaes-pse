@@ -228,19 +228,22 @@ class HeatExchangerCrossFlow1DData(HeatExchanger1DData):
                 f"phases on the hot side and {len(self.config.cold_side.property_package.phase_list)} "
                 "phases on the cold side."
             )
-        elif not self.config.hot_side.property_package.phase_list[0].is_vapor_phase():
+        
+        p_hot = self.config.hot_side.property_package.phase_list.at(1)
+        pobj_hot = self.config.hot_side.property_package.get_phase(p_hot)
+        p_cold = self.config.cold_side.property_package.phase_list.at(1)
+        pobj_cold = self.config.cold_side.property_package.get_phase(p_cold)
+        if not pobj_hot.is_vapor_phase():
             raise ConfigurationError(
                 "The HeatExchangerCrossFlow1D model is valid only for property packages "
                 "whose single phase is a vapor phase. The hot side phase is not a vapor phase."
             )
-        elif not self.config.cold_side.property_package.phase_list[0].is_vapor_phase():
+        if not pobj_cold.is_vapor_phase():
             raise ConfigurationError(
                 "The HeatExchangerCrossFlow1D model is valid only for property packages "
                 "whose single phase is a vapor phase. The cold side phase is not a vapor phase."
             )
-        else:
-            p_hot = self.config.hot_side.property_package.phase_list[0]
-            p_cold = self.config.cold_side.property_package.phase_list[0]
+
         # Reference
         add_object_reference(self, "heat_tube", tube.heat)
         add_object_reference(self, "heat_shell", shell.heat)
@@ -459,10 +462,10 @@ class HeatExchangerCrossFlow1DData(HeatExchanger1DData):
 
         hot_side = blk.hot_side
         cold_side = blk.cold_side
-
+        t0 = blk.flowsheet().time.first()
         if not (
-            "temperature" in blk.config.hot_side.property_package.define_state_vars().keys()
-            and "temperature" in blk.config.cold_side.property_package.define_state_vars().keys()
+            "temperature" in hot_side.properties[t0, 0].define_state_vars().keys()
+            and "temperature" in cold_side.properties[t0, 0].define_state_vars().keys()
         ):
             raise NotImplementedError(
                 "Presently, initialization of the HeatExchangerCrossFlow1D requires "
@@ -564,29 +567,29 @@ class HeatExchangerCrossFlow1DData(HeatExchanger1DData):
                 )
         
             for z in cold_side.length_domain:
-                hot_side.temperature[t, z].fix(
+                hot_side.properties[t, z].temperature.fix(
                     value(
                         (1 - z) * hot_side.properties[t, 0].temperature
                         + z * hot_side.properties[t, 1].temperature
                     )
                 )
-                cold_side.temperature[t, z].fix(
+                cold_side.properties[t, z].temperature.fix(
                     value(
                         (1 - z) * cold_side.properties[t, 0].temperature
                         + z * cold_side.properties[t, 1].temperature
                     )
                 )
                 blk.temp_wall_center[t, z].fix(
-                    value(hot_side.temperature[t, z] + cold_side.temperature[t, z]) / 2
+                    value(hot_side.properties[t, z].temperature + cold_side.properties[t, z].temperature) / 2
                 )
 
-                blk.temp_wall_hot_side[t, z].set_value(blk.temp_wall_center[t, z].value)
-                blk.temp_wall_cold_side[t, z].set_value(blk.temp_wall_center[t, z].value)
+                blk.temp_wall_shell[t, z].set_value(blk.temp_wall_center[t, z].value)
+                blk.temp_wall_tube[t, z].set_value(blk.temp_wall_center[t, z].value)
 
                 if blk.config.cold_side.has_pressure_change:
-                    cold_side[t, z].pressure.fix(P_in_cold_side)
+                    cold_side.properties[t, z].pressure.fix(P_in_cold_side)
                 if blk.config.hot_side.has_pressure_change:
-                    hot_side[t, z].pressure.fix(P_in_hot_side)
+                    hot_side.properties[t, z].pressure.fix(P_in_hot_side)
 
         blk.temp_wall_center_eqn.deactivate()
         if tube_has_pressure_change == True:
@@ -603,13 +606,13 @@ class HeatExchangerCrossFlow1DData(HeatExchanger1DData):
 
         # In Step 3, unfix fluid state variables (enthalpy/temperature and pressure)
         # keep the inlet state variables fixed, otherwise, the degree of freedom > 0
-        hot_side.properties.temperature.unfix()
-        hot_side.properties.pressure.unfix()
-        hot_side.properties.temperature[:, 0].fix()
-        hot_side.properties.pressure[:, 0].fix()
+        hot_side.properties[:, :].temperature.unfix()
+        hot_side.properties[:, :].pressure.unfix()
+        hot_side.properties[:, 0].temperature.fix()
+        hot_side.properties[:, 0].pressure.fix()
 
-        cold_side.properties.temperature.unfix()
-        cold_side.properties.pressure.unfix()
+        cold_side.properties[:, :].temperature.unfix()
+        cold_side.properties[:, :].pressure.unfix()
         if blk.config.flow_type == HeatExchangerFlowPattern.cocurrent:
             cold_side.properties[:, 0].temperature.fix()
             cold_side.properties[:, 0].pressure.fix()
