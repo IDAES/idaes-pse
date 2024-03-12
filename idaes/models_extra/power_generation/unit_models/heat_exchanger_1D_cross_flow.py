@@ -59,6 +59,7 @@ from pyomo.network import Port
 from idaes.core.solvers import get_solver
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
+from idaes.core.util.exceptions import ConfigurationError, BurntToast
 import idaes.logger as idaeslog
 from idaes.core.util.tables import create_stream_table_dataframe
 
@@ -217,6 +218,29 @@ class HeatExchangerCrossFlow1DData(HeatExchanger1DData):
             tube_units = (
                 self.config.hot_side.property_package.get_metadata().derived_units
             )
+        if (
+            len(self.config.hot_side.property_package.phase_list) != 1
+            or len(self.config.cold_side.property_package.phase_list) != 1
+        ):
+            raise ConfigurationError(
+                "The HeatExchangerCrossFlow1D model is valid only for property packages "
+                f"with a single phase. Found {len(self.config.hot_side.property_package.phase_list)} "
+                f"phases on the hot side and {len(self.config.cold_side.property_package.phase_list)} "
+                "phases on the cold side."
+            )
+        elif not self.config.hot_side.property_package.phase_list[0].is_vapor_phase():
+            raise ConfigurationError(
+                "The HeatExchangerCrossFlow1D model is valid only for property packages "
+                "whose single phase is a vapor phase. The hot side phase is not a vapor phase."
+            )
+        elif not self.config.cold_side.property_package.phase_list[0].is_vapor_phase():
+            raise ConfigurationError(
+                "The HeatExchangerCrossFlow1D model is valid only for property packages "
+                "whose single phase is a vapor phase. The cold side phase is not a vapor phase."
+            )
+        else:
+            p_hot = self.config.hot_side.property_package.phase_list[0]
+            p_cold = self.config.cold_side.property_package.phase_list[0]
         # Reference
         add_object_reference(self, "heat_tube", tube.heat)
         add_object_reference(self, "heat_shell", shell.heat)
@@ -353,6 +377,9 @@ class HeatExchangerCrossFlow1DData(HeatExchanger1DData):
             doc="center point wall temperature",
         )
         def temp_wall_center_eqn(b, t, x):
+            # heat_shell and heat_tube are positive when heat flows into those
+            # control volumes (and out of the wall), hence the negative sign
+            # on heat_accumulation_term
             return -heat_accumulation_term(b, t, x) == (
                 b.heat_shell[t, x] * b.length_flow_shell / b.length_flow_tube
                 + b.heat_tube[t, x]
@@ -364,14 +391,10 @@ class HeatExchangerCrossFlow1DData(HeatExchanger1DData):
 
             @self.Expression(self.flowsheet().config.time)
             def total_heat_duty(b, t):
-                if self.config.flow_type == HeatExchangerFlowPattern.cocurrent:
-                    enth_in = shell.properties[t, z0].enth_mol
-                    enth_out = shell.properties[t, z1].enth_mol
-                else:
-                    enth_out = shell.properties[t, z0].enth_mol
-                    enth_in = shell.properties[t, z1].enth_mol
+                enth_in = b.hot_side.properties[t, z0].get_enthalpy_flow_terms(p_hot)
+                enth_out = b.hot_side.properties[t, z1].get_enthalpy_flow_terms(p_hot)
 
-                return (enth_out - enth_in) * shell.properties[t, z0].flow_mol
+                return enth_out - enth_in
 
             @self.Expression(self.flowsheet().config.time)
             def log_mean_delta_temperature(b, t):
@@ -401,7 +424,7 @@ class HeatExchangerCrossFlow1DData(HeatExchanger1DData):
         blk,
         shell_state_args=None,
         tube_state_args=None,
-        outlvl=0,
+        outlvl=idaeslog.NOTSET,
         solver="ipopt",
         optarg=None,
     ):
@@ -434,6 +457,20 @@ class HeatExchangerCrossFlow1DData(HeatExchanger1DData):
             optarg = {}
         opt = get_solver(solver, optarg)
 
+        hot_side = blk.hot_side
+        cold_side = blk.cold_side
+
+        if not (
+            "temperature" in blk.config.hot_side.property_package.define_state_vars().keys()
+            and "temperature" in blk.config.cold_side.property_package.define_state_vars().keys()
+        ):
+            raise NotImplementedError(
+                "Presently, initialization of the HeatExchangerCrossFlow1D requires "
+                "temperature to be a state variable of both hot side and cold side "
+                "property packages. Extension to enth_mol or enth_mass as state variables "
+                "is straightforward---feel free to open a pull request implementing it."
+            )
+
         if blk.config.shell_is_hot:
             shell = blk.hot_side
             tube = blk.cold_side
@@ -449,11 +486,11 @@ class HeatExchangerCrossFlow1DData(HeatExchanger1DData):
         # Initialize shell block
 
         flags_tube = tube.initialize(
-            outlvl=0, optarg=optarg, solver=solver, state_args=tube_state_args
+            outlvl=outlvl, optarg=optarg, solver=solver, state_args=tube_state_args
         )
 
         flags_shell = shell.initialize(
-            outlvl=0, optarg=optarg, solver=solver, state_args=shell_state_args
+            outlvl=outlvl, optarg=optarg, solver=solver, state_args=shell_state_args
         )
 
         init_log.info_high("Initialization Step 1 Complete.")
@@ -463,118 +500,93 @@ class HeatExchangerCrossFlow1DData(HeatExchanger1DData):
         blk.therm_cond_wall = 0.05
         # In Step 2, fix tube metal temperatures fix fluid state variables (enthalpy/temperature and pressure)
         # calculate maximum heat duty assuming infinite area and use half of the maximum duty as initial guess to calculate outlet temperature
-        if blk.config.flow_type == HeatExchangerFlowPattern.cocurrent:
-            mcp_shell = value(
-                shell.properties[0, 0].flow_mol * shell.properties[0, 0].cp_mol
-            )
-            mcp_tube = value(
-                tube.properties[0, 0].flow_mol * tube.properties[0, 0].cp_mol
-            )
-            tout_max = (
-                mcp_tube * value(tube.properties[0, 0].temperature)
-                + mcp_shell * value(shell.properties[0, 0].temperature)
-            ) / (mcp_tube + mcp_shell)
-            q_guess = (
-                mcp_tube
-                * value(tout_max - value(tube.properties[0, 0].temperature))
-                / 2
-            )
-            temp_out_tube_guess = (
-                value(tube.properties[0, 0].temperature) + q_guess / mcp_tube
-            )
-            temp_out_shell_guess = (
-                value(shell.properties[0, 0].temperature) - q_guess / mcp_shell
-            )
-        else:
-            mcp_shell = value(
-                shell.properties[0, 0].flow_mol * shell.properties[0, 0].cp_mol
-            )
-            mcp_tube = value(
-                tube.properties[0, 1].flow_mol * tube.properties[0, 1].cp_mol
-            )
-            print("mcp_shell=", mcp_shell)
-            print("mcp_tube=", mcp_tube)
-            if mcp_tube < mcp_shell:
-                q_guess = (
-                    mcp_tube
-                    * value(
-                        shell.properties[0, 0].temperature
-                        - tube.properties[0, 1].temperature
-                    )
-                    / 2
-                )
-            else:
-                q_guess = (
-                    mcp_shell
-                    * value(
-                        shell.properties[0, 0].temperature
-                        - tube.properties[0, 1].temperature
-                    )
-                    / 2
-                )
-            temp_out_tube_guess = (
-                value(tube.properties[0, 1].temperature) + q_guess / mcp_tube
-            )
-            temp_out_shell_guess = (
-                value(shell.properties[0, 0].temperature) - q_guess / mcp_shell
-            )
 
         for t in blk.flowsheet().config.time:
-            for z in tube.length_domain:
-                if blk.config.flow_type == "co_current":
-                    blk.temp_wall_center[t, z].fix(
-                        value(
-                            0.5
-                            * (
-                                (1 - z) * shell.properties[0, 0].temperature
-                                + z * temp_out_shell_guess
-                            )
-                            + 0.5
-                            * (
-                                (1 - z) * tube.properties[0, 0].temperature
-                                + z * temp_out_tube_guess
-                            )
-                        )
-                    )
+            # TODO we first access cp during initialization. That could pose a problem if it is 
+            # converted to a Var-Constraint pair instead of being a giant Expression like it is
+            # presently.
+            mcp_hot_side = value(
+                hot_side.properties[t, 0].flow_mol * hot_side.properties[t, 0].cp_mol
+            )
+            T_in_hot_side = value(hot_side.properties[t, 0].temperature)
+            P_in_hot_side = value(hot_side.properties[t, 0].pressure)
+            if blk.config.flow_type == HeatExchangerFlowPattern.cocurrent:
+                mcp_cold_side = value(
+                    cold_side.properties[t, 0].flow_mol * cold_side.properties[t, 0].cp_mol
+                )
+                T_in_cold_side = value(cold_side.properties[t, 0].temperature)
+                P_in_cold_side = value(cold_side.properties[t, 0].pressure)
+
+                T_out_max = (
+                    mcp_cold_side * T_in_cold_side
+                    + mcp_hot_side * T_in_hot_side
+                ) / (mcp_cold_side + mcp_hot_side)
+
+                q_guess = mcp_cold_side * (T_out_max - T_in_cold_side) / 2
+
+                temp_out_cold_side_guess = (
+                    T_in_cold_side + q_guess / mcp_cold_side
+                )
+                cold_side.properties[t, 1].temperature.fix(temp_out_cold_side_guess)
+
+                temp_out_hot_side_guess = (
+                    T_in_cold_side - q_guess / mcp_hot_side
+                )
+                hot_side.properties[t, 1].temperature.fix(temp_out_hot_side_guess)
+
+            elif blk.config.flow_type == HeatExchangerFlowPattern.countercurrent:
+                mcp_cold_side = value(
+                    cold_side.properties[t, 1].flow_mol * cold_side.properties[t, 1].cp_mol
+                )
+                T_in_cold_side = value(cold_side.properties[t, 1].temperature)
+                P_in_cold_side = value(cold_side.properties[t, 1].pressure)
+
+                if mcp_cold_side < mcp_hot_side:
+                    q_guess = mcp_cold_side * (T_in_hot_side - T_in_cold_side) / 2
                 else:
-                    blk.temp_wall_center[t, z].fix(
-                        value(
-                            0.5
-                            * (
-                                (1 - z) * shell.properties[0, 0].temperature
-                                + z * temp_out_shell_guess
-                            )
-                            + 0.5
-                            * (
-                                (1 - z) * temp_out_tube_guess
-                                + z * tube.properties[0, 1].temperature
-                            )
-                        )
-                    )
-                blk.temp_wall_shell[t, z].fix(blk.temp_wall_center[t, z].value)
-                blk.temp_wall_tube[t, z].fix(blk.temp_wall_center[t, z].value)
-                blk.temp_wall_shell[t, z].unfix()
-                blk.temp_wall_tube[t, z].unfix()
-
-        for t in blk.flowsheet().config.time:
-            for z in tube.length_domain:
-                tube.properties[t, z].temperature.fix(
-                    value(tube.properties[t, 0].temperature)
+                    q_guess = mcp_hot_side * (T_in_hot_side - T_in_cold_side) / 2
+                
+                temp_out_cold_side_guess = (
+                    T_in_cold_side + q_guess / mcp_cold_side
                 )
-                if tube_has_pressure_change:
-                    tube.properties[t, z].pressure.fix(
-                        value(tube.properties[t, 0].pressure)
-                    )
+                cold_side.properties[t, 0].temperature.fix(temp_out_cold_side_guess)
 
-        for t in blk.flowsheet().config.time:
-            for z in shell.length_domain:
-                shell.properties[t, z].temperature.fix(
-                    value(shell.properties[t, 0].temperature)
+                temp_out_hot_side_guess = (
+                    T_in_hot_side - q_guess / mcp_hot_side
                 )
-                if shell_has_pressure_change:
-                    shell.properties[t, z].pressure.fix(
-                        value(shell.properties[t, 0].pressure)
+                hot_side.properties[t, 1].temperature.fix(temp_out_hot_side_guess)
+
+            else:
+                raise BurntToast(
+                    "HeatExchangerFlowPattern should be limited to cocurrent "
+                    "or countercurrent flow by parent model. Please open an "
+                    "issue on the IDAES Github so this error can be fixed."
+                )
+        
+            for z in cold_side.length_domain:
+                hot_side.temperature[t, z].fix(
+                    value(
+                        (1 - z) * hot_side.properties[t, 0].temperature
+                        + z * hot_side.properties[t, 1].temperature
                     )
+                )
+                cold_side.temperature[t, z].fix(
+                    value(
+                        (1 - z) * cold_side.properties[t, 0].temperature
+                        + z * cold_side.properties[t, 1].temperature
+                    )
+                )
+                blk.temp_wall_center[t, z].fix(
+                    value(hot_side.temperature[t, z] + cold_side.temperature[t, z]) / 2
+                )
+
+                blk.temp_wall_hot_side[t, z].set_value(blk.temp_wall_center[t, z].value)
+                blk.temp_wall_cold_side[t, z].set_value(blk.temp_wall_center[t, z].value)
+
+                if blk.config.cold_side.has_pressure_change:
+                    cold_side[t, z].pressure.fix(P_in_cold_side)
+                if blk.config.hot_side.has_pressure_change:
+                    hot_side[t, z].pressure.fix(P_in_hot_side)
 
         blk.temp_wall_center_eqn.deactivate()
         if tube_has_pressure_change == True:
@@ -584,7 +596,6 @@ class HeatExchangerCrossFlow1DData(HeatExchanger1DData):
         blk.heat_tube_eqn.deactivate()
         blk.heat_shell_eqn.deactivate()
 
-        # import pdb; pdb.set_trace()
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
         pyomo.opt.assert_optimal_termination(res)
@@ -592,29 +603,25 @@ class HeatExchangerCrossFlow1DData(HeatExchanger1DData):
 
         # In Step 3, unfix fluid state variables (enthalpy/temperature and pressure)
         # keep the inlet state variables fixed, otherwise, the degree of freedom > 0
-        for t in blk.flowsheet().config.time:
-            for z in tube.length_domain:
-                tube.properties[t, z].temperature.unfix()
-                tube.properties[t, z].pressure.unfix()
-            if blk.config.flow_type == "co_current":
-                tube.properties[t, 0].temperature.fix(
-                    value(blk.tube_inlet.temperature[0])
-                )
-                tube.properties[t, 0].pressure.fix(value(blk.tube_inlet.pressure[0]))
-            else:
-                tube.properties[t, 1].temperature.fix(
-                    value(blk.tube_inlet.temperature[0])
-                )
-                tube.properties[t, 1].pressure.fix(value(blk.tube_inlet.pressure[0]))
+        hot_side.properties.temperature.unfix()
+        hot_side.properties.pressure.unfix()
+        hot_side.properties.temperature[:, 0].fix()
+        hot_side.properties.pressure[:, 0].fix()
 
-        for t in blk.flowsheet().config.time:
-            for z in shell.length_domain:
-                shell.properties[t, z].temperature.unfix()
-                shell.properties[t, z].pressure.unfix()
-            shell.properties[t, 0].temperature.fix(
-                value(blk.shell_inlet.temperature[0])
+        cold_side.properties.temperature.unfix()
+        cold_side.properties.pressure.unfix()
+        if blk.config.flow_type == HeatExchangerFlowPattern.cocurrent:
+            cold_side.properties[:, 0].temperature.fix()
+            cold_side.properties[:, 0].pressure.fix()
+        elif blk.config.flow_type == HeatExchangerFlowPattern.countercurrent:
+            cold_side.properties[:, 1].temperature.fix()
+            cold_side.properties[:, 1].pressure.fix()
+        else:
+            raise BurntToast(
+                "HeatExchangerFlowPattern should be limited to cocurrent "
+                "or countercurrent flow by parent model. Please open an "
+                "issue on the IDAES Github so this error can be fixed."
             )
-            shell.properties[t, 0].pressure.fix(value(blk.shell_inlet.pressure[0]))
 
         if tube_has_pressure_change == True:
             blk.deltaP_tube_eqn.activate()
@@ -623,14 +630,13 @@ class HeatExchangerCrossFlow1DData(HeatExchanger1DData):
         blk.heat_tube_eqn.activate()
         blk.heat_shell_eqn.activate()
 
-        # return
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
         pyomo.opt.assert_optimal_termination(res)
 
         init_log.info_high("Initialization Step 3 {}.".format(idaeslog.condition(res)))
 
-        blk.temp_wall_center[:, :].unfix()
+        blk.temp_wall_center.unfix()
         blk.temp_wall_center_eqn.activate()
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:

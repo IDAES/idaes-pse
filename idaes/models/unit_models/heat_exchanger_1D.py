@@ -430,39 +430,63 @@ cold side flows from 1 to 0""",
 
         # Set flow directions for the control volume blocks and specify
         # discretization if not specified.
-        if self.config.flow_type == HeatExchangerFlowPattern.cocurrent:
-            set_direction_hot = FlowDirection.forward
-            set_direction_cold = FlowDirection.forward
+        if self.config.hot_side.transformation_method is useDefault:
+            _log.warning(
+                "Discretization method was "
+                "not specified for the hot side of the "
+                "co-current heat exchanger. "
+                "Defaulting to finite "
+                "difference method on the hot side."
+            )
+            self.config.hot_side.transformation_method = "dae.finite_difference"
+        if self.config.cold_side.transformation_method is useDefault:
+            _log.warning(
+                "Discretization method was "
+                "not specified for the cold side of the "
+                "co-current heat exchanger. "
+                "Defaulting to finite "
+                "difference method on the cold side."
+            )
+            self.config.cold_side.transformation_method = "dae.finite_difference"
+
+        if (
+            self.config.hot_side.transformation_method
+            != self.config.cold_side.transformation_method
+        ):
+            raise ConfigurationError(
+                "HeatExchanger1D only supports similar transformation "
+                "methods on the hot and cold side domains for "
+                "both cocurrent and countercurrent flow patterns. "
+                f"Found method {self.config.hot_side.transformation_method} "
+                f"on hot side and method {self.config.cold_side.transformation_method} "
+                "on cold side."
+            )
+        if self.config.hot_side.transformation_method == "dae.collocation":
             if (
-                self.config.hot_side.transformation_method
-                != self.config.cold_side.transformation_method
-            ) or (
+                self.config.hot_side.transformation_scheme is useDefault
+                or self.config.cold_side.transformation_scheme is useDefault
+            ):
+                raise ConfigurationError(
+                    "If a collocation method is used for HeatExchanger1D, the user "
+                    "must specify the transformation scheme they want to use."
+                )
+            if (
                 self.config.hot_side.transformation_scheme
                 != self.config.cold_side.transformation_scheme
             ):
                 raise ConfigurationError(
+                    "If a collocation method is used, "
                     "HeatExchanger1D only supports similar transformation "
-                    "schemes on the hot and cold side domains for "
-                    "both cocurrent and countercurrent flow patterns."
+                    "schemes on the hot and cold side domains. Found "
+                    f"{self.config.hot_side.transformation_scheme} scheme on "
+                    f"hot side and {self.config.cold_side.transformation_scheme} "
+                    "scheme on cold side."
                 )
-            if self.config.hot_side.transformation_method is useDefault:
-                _log.warning(
-                    "Discretization method was "
-                    "not specified for the hot side of the "
-                    "co-current heat exchanger. "
-                    "Defaulting to finite "
-                    "difference method on the hot side."
-                )
-                self.config.hot_side.transformation_method = "dae.finite_difference"
-            if self.config.cold_side.transformation_method is useDefault:
-                _log.warning(
-                    "Discretization method was "
-                    "not specified for the cold side of the "
-                    "co-current heat exchanger. "
-                    "Defaulting to finite "
-                    "difference method on the cold side."
-                )
-                self.config.cold_side.transformation_method = "dae.finite_difference"
+
+
+        if self.config.flow_type == HeatExchangerFlowPattern.cocurrent:
+            set_direction_hot = FlowDirection.forward
+            set_direction_cold = FlowDirection.forward
             if self.config.hot_side.transformation_scheme is useDefault:
                 _log.warning(
                     "Discretization scheme was "
@@ -484,24 +508,6 @@ cold side flows from 1 to 0""",
         elif self.config.flow_type == HeatExchangerFlowPattern.countercurrent:
             set_direction_hot = FlowDirection.forward
             set_direction_cold = FlowDirection.backward
-            if self.config.hot_side.transformation_method is useDefault:
-                _log.warning(
-                    "Discretization method was "
-                    "not specified for the hot side of the "
-                    "counter-current heat exchanger. "
-                    "Defaulting to finite "
-                    "difference method on the hot side."
-                )
-                self.config.hot_side.transformation_method = "dae.finite_difference"
-            if self.config.cold_side.transformation_method is useDefault:
-                _log.warning(
-                    "Discretization method was "
-                    "not specified for the cold side of the "
-                    "counter-current heat exchanger. "
-                    "Defaulting to finite "
-                    "difference method on the cold side."
-                )
-                self.config.cold_side.transformation_method = "dae.finite_difference"
             if self.config.hot_side.transformation_scheme is useDefault:
                 _log.warning(
                     "Discretization scheme was "
@@ -519,7 +525,7 @@ cold side flows from 1 to 0""",
                     "Defaulting to forward finite "
                     "difference on the cold side."
                 )
-                self.config.cold_side.transformation_scheme = "BACKWARD"
+                self.config.cold_side.transformation_scheme = "FORWARD"
         else:
             raise ConfigurationError(
                 "{} HeatExchanger1D only supports cocurrent and "
@@ -776,6 +782,7 @@ cold side flows from 1 to 0""",
         cold_side_units = (
             self.cold_side.config.property_package.get_metadata().get_derived_units
         )
+        # TODO What if there is more than one time point? What if t0 != 0?
         if duty is None:
             duty = value(
                 0.25
