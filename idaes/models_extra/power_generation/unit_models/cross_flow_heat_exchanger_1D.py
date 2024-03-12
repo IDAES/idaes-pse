@@ -79,7 +79,7 @@ __author__ = "Jinliang Ma, Douglas Allan"
 _log = idaeslog.getLogger(__name__)
 
 
-@declare_process_block_class("HeatExchangerCrossFlow1D")
+@declare_process_block_class("CrossFlowHeatExchanger1D")
 class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
     """Standard Heat Exchanger Cross Flow Unit Model Class."""
 
@@ -214,7 +214,7 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
             or len(self.config.cold_side.property_package.phase_list) != 1
         ):
             raise ConfigurationError(
-                "The HeatExchangerCrossFlow1D model is valid only for property packages "
+                "The CrossFlowHeatExchanger1D model is valid only for property packages "
                 f"with a single phase. Found {len(self.config.hot_side.property_package.phase_list)} "
                 f"phases on the hot side and {len(self.config.cold_side.property_package.phase_list)} "
                 "phases on the cold side."
@@ -226,12 +226,12 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
         pobj_cold = self.config.cold_side.property_package.get_phase(p_cold)
         if not pobj_hot.is_vapor_phase():
             raise ConfigurationError(
-                "The HeatExchangerCrossFlow1D model is valid only for property packages "
+                "The CrossFlowHeatExchanger1D model is valid only for property packages "
                 "whose single phase is a vapor phase. The hot side phase is not a vapor phase."
             )
         if not pobj_cold.is_vapor_phase():
             raise ConfigurationError(
-                "The HeatExchangerCrossFlow1D model is valid only for property packages "
+                "The CrossFlowHeatExchanger1D model is valid only for property packages "
                 "whose single phase is a vapor phase. The cold side phase is not a vapor phase."
             )
 
@@ -423,7 +423,7 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
         optarg=None,
     ):
         """
-        HeatExchangerCrossFlow1D initialization routine
+        CrossFlowHeatExchanger1D initialization routine
 
         Keyword Arguments:
             state_args : a dict of arguments to be passed to the property
@@ -459,7 +459,7 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
             and "temperature" in cold_side.properties[t0, 0].define_state_vars().keys()
         ):
             raise NotImplementedError(
-                "Presently, initialization of the HeatExchangerCrossFlow1D requires "
+                "Presently, initialization of the CrossFlowHeatExchanger1D requires "
                 "temperature to be a state variable of both hot side and cold side "
                 "property packages. Extension to enth_mol or enth_mass as state variables "
                 "is straightforward---feel free to open a pull request implementing it."
