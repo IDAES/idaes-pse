@@ -20,6 +20,7 @@ from .drum import Drum
 from .drum1D import Drum1D
 from .feedwater_heater_0D_dynamic import FWH0DDynamic
 from .heat_exchanger_3streams import HeatExchangerWith3Streams
+from .cross_flow_heat_exchanger_1D import CrossFlowHeatExchanger1D
 from .steamheater import SteamHeater
 from .waterpipe import WaterPipe
 from .watertank import WaterTank

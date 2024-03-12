@@ -80,7 +80,7 @@ _log = idaeslog.getLogger(__name__)
 
 
 @declare_process_block_class("HeatExchangerCrossFlow1D")
-class HeatExchangerCrossFlow1DData(HeatExchanger1DData):
+class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
     """Standard Heat Exchanger Cross Flow Unit Model Class."""
 
     CONFIG = HeatExchanger1DData.CONFIG()
@@ -101,15 +101,6 @@ class HeatExchangerCrossFlow1DData(HeatExchanger1DData):
             domain=In(["in-line", "staggered"]),
             description="tube configuration",
             doc="tube arrangement could be in-line or staggered",
-        ),
-    )
-    CONFIG.declare(
-        "has_radiation",
-        ConfigValue(
-            default=False,
-            domain=Bool,
-            description="Has side 2 gas radiation",
-            doc="define if shell side gas radiation is to be considered",
         ),
     )
 
