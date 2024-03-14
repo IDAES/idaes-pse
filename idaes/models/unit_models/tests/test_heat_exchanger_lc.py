@@ -299,7 +299,7 @@ class TestHXLCGeneric(object):
     def test_structural_issues(self, model):
         dt = DiagnosticsToolbox(model)
         dt.display_potential_evaluation_errors()
-        # TODO: Evaluation errors due ot temperature differentials
+        # TODO: Evaluation errors due to temperature differentials
         # TODO: Skip unit consistency due to Pyomo DAE issue
         dt.assert_no_structural_warnings(
             ignore_evaluation_errors=True, ignore_unit_consistency=True
