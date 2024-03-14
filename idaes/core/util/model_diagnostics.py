@@ -18,6 +18,7 @@ This module contains a collection of tools for diagnosing modeling issues.
 __author__ = "Alexander Dowling, Douglas Allan, Andrew Lee, Robby Parker, Ben Knueven"
 
 from operator import itemgetter
+import os
 import sys
 from inspect import signature
 from math import log, isclose, inf, isfinite
@@ -76,6 +77,7 @@ from pyomo.contrib.fbbt.fbbt import compute_bounds_on_expr
 from pyomo.common.deprecation import deprecation_warning
 from pyomo.common.errors import PyomoException
 from pyomo.common.tempfiles import TempfileManager
+from pyomo.common.fileutils import find_library
 
 from idaes.core.util.model_statistics import (
     activated_blocks_set,
@@ -438,6 +440,24 @@ class DiagnosticsToolbox:
 
         self._model = model
         self.config = CONFIG(kwargs)
+
+        # There appears to be a bug in the ASL which causes terminal failures
+        # if you try to create multiple ASL structs with different external
+        # functions in the same process. This causes pytest to crash during testing.
+        # To avoid this, register all known external functions before we call
+        # PyNumero.
+        ext_funcs = ["cubic_roots", "general_helmholtz_external", "functions"]
+        library_set = set()
+        libraries = []
+
+        for f in ext_funcs:
+            library = find_library(f)
+            if library not in library_set:
+                library_set.add(library)
+                libraries.append(library)
+
+        lib_str = "\n".join(libraries)
+        os.environ["AMPLFUNC"] = lib_str
 
     @property
     def model(self):
@@ -997,16 +1017,25 @@ class DiagnosticsToolbox:
     # TODO: Block triangularization analysis
     # Number and size of blocks, polynomial degree of 1x1 blocks, simple pivot check of moderate sized sub-blocks?
 
-    def _collect_structural_warnings(self):
+    def _collect_structural_warnings(
+        self, ignore_evaluation_errors=False, ignore_unit_consistency=False
+    ):
         """
         Runs checks for structural warnings and returns two lists.
+
+        Args:
+            ignore_evaluation_errors - ignore potential evaluation error warnings
+            ignore_unit_consistency - ignore unit consistency warnings
 
         Returns:
             warnings - list of warning messages from structural analysis
             next_steps - list of suggested next steps to further investigate warnings
 
         """
-        uc = identify_inconsistent_units(self._model)
+        if not ignore_unit_consistency:
+            uc = identify_inconsistent_units(self._model)
+        else:
+            uc = []
         uc_var, uc_con, oc_var, oc_con = self.get_dulmage_mendelsohn_partition()
 
         # Collect warnings
@@ -1040,12 +1069,15 @@ class DiagnosticsToolbox:
         if any(len(x) > 0 for x in [oc_var, oc_con]):
             next_steps.append(self.display_overconstrained_set.__name__ + "()")
 
-        eval_warnings = self._collect_potential_eval_errors()
-        if len(eval_warnings) > 0:
-            warnings.append(
-                f"WARNING: Found {len(eval_warnings)} potential evaluation errors."
-            )
-            next_steps.append(self.display_potential_evaluation_errors.__name__ + "()")
+        if not ignore_evaluation_errors:
+            eval_warnings = self._collect_potential_eval_errors()
+            if len(eval_warnings) > 0:
+                warnings.append(
+                    f"WARNING: Found {len(eval_warnings)} potential evaluation errors."
+                )
+                next_steps.append(
+                    self.display_potential_evaluation_errors.__name__ + "()"
+                )
 
         return warnings, next_steps
 
@@ -1289,16 +1321,27 @@ class DiagnosticsToolbox:
 
         return cautions
 
-    def assert_no_structural_warnings(self):
+    def assert_no_structural_warnings(
+        self,
+        ignore_evaluation_errors: bool = False,
+        ignore_unit_consistency: bool = False,
+    ):
         """
         Checks for structural warnings in the model and raises an AssertionError
         if any are found.
+
+        Args:
+            ignore_evaluation_errors - ignore potential evaluation error warnings
+            ignore_unit_consistency - ignore unit consistency warnings
 
         Raises:
             AssertionError if any warnings are identified by structural analysis.
 
         """
-        warnings, _ = self._collect_structural_warnings()
+        warnings, _ = self._collect_structural_warnings(
+            ignore_evaluation_errors=ignore_evaluation_errors,
+            ignore_unit_consistency=ignore_unit_consistency,
+        )
         if len(warnings) > 0:
             raise AssertionError(f"Structural issues found ({len(warnings)}).")
 
