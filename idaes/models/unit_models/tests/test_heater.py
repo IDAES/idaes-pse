@@ -23,7 +23,6 @@ from pyomo.environ import (
     value,
     units as pyunits,
 )
-from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 
 from idaes.core import (
     FlowsheetBlock,
@@ -43,7 +42,6 @@ from idaes.models.properties.examples.saponification_thermo import (
 from idaes.models.properties.modular_properties.examples.BT_PR import configuration
 
 from idaes.core.util.model_statistics import (
-    degrees_of_freedom,
     number_variables,
     number_total_constraints,
     number_unused_variables,
@@ -540,25 +538,10 @@ class TestBT_Generic(object):
         # Unused vars are density parameters
         assert number_unused_variables(btg) == 10
 
-    # TODO: Modular properties results in many potential evaluation errors
-    # TODO: Comment out until fixed
-    # @pytest.mark.component
-    # def test_structural_issues(self, btg):
-    #     dt = DiagnosticsToolbox(btg)
-    #     dt.assert_no_structural_warnings()
-
-    # TODO: Remove once diagnostics issues fixed
-    @pytest.mark.integration
-    def test_units(self, btg):
-        assert_units_equivalent(btg.fs.unit.control_volume.heat, pyunits.J / pyunits.s)
-        assert_units_equivalent(btg.fs.unit.heat_duty[0], pyunits.J / pyunits.s)
-        assert_units_equivalent(btg.fs.unit.deltaP[0], pyunits.Pa)
-        assert_units_consistent(btg)
-
-    # TODO: Remove once diagnostics issues fixed
-    @pytest.mark.unit
-    def test_dof(self, btg):
-        assert degrees_of_freedom(btg) == 0
+    @pytest.mark.component
+    def test_structural_issues(self, btg):
+        dt = DiagnosticsToolbox(btg)
+        dt.assert_no_structural_warnings(ignore_evaluation_errors=True)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
