@@ -34,9 +34,12 @@ from pyomo.environ import (
     sin,
     cos,
     SolverStatus,
+    units as pyunits,
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
+
+from pyomo.dae import DerivativeVar
 
 # Import IDAES cores
 from idaes.core import (
@@ -53,8 +56,6 @@ from idaes.core import (
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.constants import Constants as const
 import idaes.core.util.scaling as iscale
-from pyomo.dae import DerivativeVar
-from pyomo.environ import units as pyunits
 from idaes.core.solvers import get_solver
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
@@ -251,7 +252,10 @@ def _make_performance_common(
 
     # Heat transfer resistance due to the fouling on shell side
     blk.rfouling_shell = Param(
-        initialize=0.0001, mutable=True, doc="Fouling resistance on tube side"
+        units=1/shell_units["heat_transfer_coefficient"],
+        initialize=0.0001,
+        mutable=True,
+        doc="Fouling resistance on tube side"
     )
 
     # Correction factor for convective heat transfer coefficient on shell side
@@ -490,10 +494,8 @@ def _make_performance_common(
         doc="Total convective heat transfer coefficient on shell side",
     )
     def hconv_shell_total(b, t, x):
-        if blk.config.has_radiation:
-            return b.hconv_shell_conv[t, x] + b.hconv_shell_rad[t, x]
-        else:
-            return b.hconv_shell_conv[t, x]
+        # Retain in case we add back radiation    
+        return b.hconv_shell_conv[t, x]
 
 
 def _make_performance_tube(
@@ -508,6 +510,7 @@ def _make_performance_tube(
         blk.flowsheet().config.time,
         tube.length_domain,
         initialize=100.0,
+        units=tube_units["heat_transfer_coefficient"],
         doc="tube side convective heat transfer coefficient",
     )
 
@@ -518,7 +521,10 @@ def _make_performance_tube(
 
     # Heat transfer resistance due to the fouling on tube side
     blk.rfouling_tube = Param(
-        initialize=0.0, mutable=True, doc="fouling resistance on tube side"
+        initialize=0.0,
+        mutable=True,
+        units=1/tube_units["heat_transfer_coefficient"],
+        doc="fouling resistance on tube side"
     )
     # Correction factor for convective heat transfer coefficient on tube side
     blk.fcorrection_htc_tube = Var(
@@ -535,7 +541,7 @@ def _make_performance_tube(
         blk.flowsheet().config.time,
         tube.length_domain,
         initialize=500,
-        units=tube_units["temperature"],
+        units=tube_units["temperature"], # Want to be in shell units for consistency in equations
         doc="boundary wall temperature on tube side",
     )
     if make_reynolds:
