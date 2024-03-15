@@ -28,6 +28,7 @@ variables to calculate additional scaling factors.
 __author__ = "John Eslick, Tim Bartholomew, Robert Parker, Andrew Lee"
 
 import math
+import os
 import sys
 
 import scipy.sparse.linalg as spla
@@ -49,10 +50,34 @@ from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from pyomo.core import expr as EXPR
 from pyomo.common.numeric_types import native_types
 from pyomo.core.base.units_container import _PyomoUnit
+from pyomo.common.fileutils import find_library
 
 import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
+
+
+# There appears to be a bug in the ASL which causes terminal failures
+# if you try to create multiple ASL structs with different external
+# functions in the same process. This causes pytest to crash during testing.
+# To avoid this, register all known external functions before we call
+# PyNumero.
+ext_funcs = ["cubic_roots", "general_helmholtz_external", "functions"]
+library_set = set()
+libraries = []
+
+for f in ext_funcs:
+    library = find_library(f)
+    if library not in library_set:
+        library_set.add(library)
+        libraries.append(library)
+
+if "AMPLFUNC" in os.environ:
+    env_str = "\n".join([os.environ["AMPLFUNC"], *libraries])
+else:
+    env_str = "\n".join(libraries)
+
+os.environ["AMPLFUNC"] = env_str
 
 
 def __none_left_mult(x, y):

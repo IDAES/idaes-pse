@@ -18,7 +18,6 @@ This module contains a collection of tools for diagnosing modeling issues.
 __author__ = "Alexander Dowling, Douglas Allan, Andrew Lee, Robby Parker, Ben Knueven"
 
 from operator import itemgetter
-import os
 import sys
 from inspect import signature
 from math import log, isclose, inf, isfinite
@@ -77,7 +76,6 @@ from pyomo.contrib.fbbt.fbbt import compute_bounds_on_expr
 from pyomo.common.deprecation import deprecation_warning
 from pyomo.common.errors import PyomoException
 from pyomo.common.tempfiles import TempfileManager
-from pyomo.common.fileutils import find_library
 
 from idaes.core.util.model_statistics import (
     activated_blocks_set,
@@ -441,23 +439,27 @@ class DiagnosticsToolbox:
         self._model = model
         self.config = CONFIG(kwargs)
 
-        # There appears to be a bug in the ASL which causes terminal failures
-        # if you try to create multiple ASL structs with different external
-        # functions in the same process. This causes pytest to crash during testing.
-        # To avoid this, register all known external functions before we call
-        # PyNumero.
-        ext_funcs = ["cubic_roots", "general_helmholtz_external", "functions"]
-        library_set = set()
-        libraries = []
-
-        for f in ext_funcs:
-            library = find_library(f)
-            if library not in library_set:
-                library_set.add(library)
-                libraries.append(library)
-
-        lib_str = "\n".join(libraries)
-        os.environ["AMPLFUNC"] = lib_str
+        # # There appears to be a bug in the ASL which causes terminal failures
+        # # if you try to create multiple ASL structs with different external
+        # # functions in the same process. This causes pytest to crash during testing.
+        # # To avoid this, register all known external functions before we call
+        # # PyNumero.
+        # ext_funcs = ["cubic_roots", "general_helmholtz_external", "functions"]
+        # library_set = set()
+        # libraries = []
+        #
+        # for f in ext_funcs:
+        #     library = find_library(f)
+        #     if library not in library_set:
+        #         library_set.add(library)
+        #         libraries.append(library)
+        #
+        # if "AMPLFUNC" in os.environ:
+        #     env_str = "\n".join([os.environ["AMPLFUNC"], *libraries])
+        # else:
+        #     env_str = "\n".join(libraries)
+        #
+        # os.environ["AMPLFUNC"] = env_str
 
     @property
     def model(self):
@@ -1430,9 +1432,17 @@ class DiagnosticsToolbox:
         cautions = self._collect_numerical_cautions(jac=jac, nlp=nlp)
 
         stats = []
-        stats.append(
-            f"Jacobian Condition Number: {jacobian_cond(jac=jac, scaled=False):.3E}"
-        )
+        try:
+            stats.append(
+                f"Jacobian Condition Number: {jacobian_cond(jac=jac, scaled=False):.3E}"
+            )
+        except RuntimeError as err:
+            if "Factor is exactly singular" in str(err):
+                _log.info(err)
+                stats.append(f"Jacobian Condition Number: Undefined (Exactly Singular)")
+            else:
+                raise
+
         _write_report_section(
             stream=stream, lines_list=stats, title="Model Statistics", header="="
         )
