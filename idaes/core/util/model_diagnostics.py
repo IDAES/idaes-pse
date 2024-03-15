@@ -1439,7 +1439,7 @@ class DiagnosticsToolbox:
         except RuntimeError as err:
             if "Factor is exactly singular" in str(err):
                 _log.info(err)
-                stats.append(f"Jacobian Condition Number: Undefined (Exactly Singular)")
+                stats.append("Jacobian Condition Number: Undefined (Exactly Singular)")
             else:
                 raise
 

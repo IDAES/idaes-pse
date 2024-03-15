@@ -30,6 +30,7 @@ __author__ = "John Eslick, Tim Bartholomew, Robert Parker, Andrew Lee"
 import math
 import os
 import sys
+from typing import Optional, List
 
 import scipy.sparse.linalg as spla
 import scipy.linalg as la
@@ -63,7 +64,7 @@ _log = idaeslog.getLogger(__name__)
 # To avoid this, register all known external functions before we call
 # PyNumero.
 def _ensure_external_functions_libs_in_env(
-    ext_funcs: list[str], var_name: str = "AMPLFUNC", sep: str = "\n"
+    ext_funcs: List[str], var_name: str = "AMPLFUNC", sep: str = "\n"
 ):
     libraries_str = os.environ.get(var_name, "")
     libraries = [lib for lib in libraries_str.split(sep) if lib.strip()]
