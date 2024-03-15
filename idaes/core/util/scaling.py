@@ -62,22 +62,21 @@ _log = idaeslog.getLogger(__name__)
 # functions in the same process. This causes pytest to crash during testing.
 # To avoid this, register all known external functions before we call
 # PyNumero.
-ext_funcs = ["cubic_roots", "general_helmholtz_external", "functions"]
-library_set = set()
-libraries = []
+def _ensure_external_functions_libs_in_env(
+    ext_funcs: list[str], var_name: str = "AMPLFUNC", sep: str = "\n"
+):
+    libraries_str = os.environ.get(var_name, "")
+    libraries = [lib for lib in libraries_str.split(sep) if lib.strip()]
+    for func_name in ext_funcs:
+        lib: Optional[str] = find_library(func_name)
+        if lib is not None and lib not in libraries:
+            libraries.append(lib)
+    os.environ[var_name] = sep.join(libraries)
 
-for f in ext_funcs:
-    library = find_library(f)
-    if library not in library_set:
-        library_set.add(library)
-        libraries.append(library)
 
-if "AMPLFUNC" in os.environ:
-    env_str = "\n".join([os.environ["AMPLFUNC"], *libraries])
-else:
-    env_str = "\n".join(libraries)
-
-os.environ["AMPLFUNC"] = env_str
+_ensure_external_functions_libs_in_env(
+    ["cubic_roots", "general_helmholtz_external", "functions"]
+)
 
 
 def __none_left_mult(x, y):
