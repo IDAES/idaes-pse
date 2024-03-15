@@ -439,28 +439,6 @@ class DiagnosticsToolbox:
         self._model = model
         self.config = CONFIG(kwargs)
 
-        # # There appears to be a bug in the ASL which causes terminal failures
-        # # if you try to create multiple ASL structs with different external
-        # # functions in the same process. This causes pytest to crash during testing.
-        # # To avoid this, register all known external functions before we call
-        # # PyNumero.
-        # ext_funcs = ["cubic_roots", "general_helmholtz_external", "functions"]
-        # library_set = set()
-        # libraries = []
-        #
-        # for f in ext_funcs:
-        #     library = find_library(f)
-        #     if library not in library_set:
-        #         library_set.add(library)
-        #         libraries.append(library)
-        #
-        # if "AMPLFUNC" in os.environ:
-        #     env_str = "\n".join([os.environ["AMPLFUNC"], *libraries])
-        # else:
-        #     env_str = "\n".join(libraries)
-        #
-        # os.environ["AMPLFUNC"] = env_str
-
     @property
     def model(self):
         """
