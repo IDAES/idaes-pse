@@ -463,6 +463,7 @@ def _make_performance_common(
             doc="pressure change on shell side",
         )
         def deltaP_shell_eqn(b, t, x):
+            # FIXME this equation doesn't have elevation change---is this right?
             return (
                 b.deltaP_shell[t, x] * b.pitch_x
                 == -1.4
@@ -580,7 +581,7 @@ def _make_performance_tube(
             blk.flowsheet().config.time,
             tube.length_domain,
             initialize=-10.0,
-            units=tube_units["pressure"],
+            units=tube_units["pressure"] / tube_units["length"],
             doc="pressure drop due to friction on tube side",
         )
 
@@ -589,7 +590,7 @@ def _make_performance_tube(
             blk.flowsheet().config.time,
             tube.length_domain,
             initialize=-10.0,
-            units=tube_units["pressure"],
+            units=tube_units["pressure"] / tube_units["length"],
             doc="pressure drop due to u-turn on tube side",
         )
     if make_nusselt:

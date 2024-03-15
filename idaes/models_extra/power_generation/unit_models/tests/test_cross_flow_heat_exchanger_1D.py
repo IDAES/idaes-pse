@@ -142,7 +142,7 @@ def _create_model(pressure_drop):
 
     return m
 
-def _check_model_statistics(m):
+def _check_model_statistics(m, deltaP):
     fixed_unused_var_set = {
         "fs.h2_side_prop_params.H2.omega",
         "fs.h2_side_prop_params.H2.pressure_crit",
@@ -168,6 +168,9 @@ def _check_model_statistics(m):
         "fs.h2_side_prop_params.N2.cp_mol_ig_comp_coeff_G",
         "fs.h2_side_prop_params.N2.cp_mol_ig_comp_coeff_H",
     }
+    if not deltaP:
+        fixed_unused_var_set.add("fs.heat_exchanger.delta_elevation")
+    
     for var in mstat.fixed_unused_variables_set(m):
         assert var.name in fixed_unused_var_set
 
@@ -201,12 +204,12 @@ def test_initialization(model_no_dP):
     m = model_no_dP
 
     assert degrees_of_freedom(m) == 0
-    _check_model_statistics(m)
+    _check_model_statistics(m, deltaP=False)
 
     m.fs.heat_exchanger.initialize_build(optarg=optarg)
 
     assert degrees_of_freedom(m) == 0
-    _check_model_statistics(m)
+    _check_model_statistics(m, deltaP=False)
     assert (
         pyo.value(m.fs.heat_exchanger.hot_side_outlet.temperature[0])
         == pytest.approx(485.34, abs=1e-1)
@@ -229,16 +232,16 @@ def model_dP():
     return m
 
 @pytest.mark.component
-def test_initialization(model_dP):
+def test_initialization_dP(model_dP):
     m = model_dP
 
     assert degrees_of_freedom(m) == 0
-    _check_model_statistics(m)
+    _check_model_statistics(m, deltaP=True)
 
     m.fs.heat_exchanger.initialize_build(optarg=optarg)
 
     assert degrees_of_freedom(m) == 0
-    _check_model_statistics(m)
+    _check_model_statistics(m, deltaP=True)
 
     assert (
         pyo.value(m.fs.heat_exchanger.hot_side_outlet.temperature[0])
@@ -248,8 +251,16 @@ def test_initialization(model_dP):
         pyo.value(m.fs.heat_exchanger.cold_side_outlet.temperature[0])
         == pytest.approx(911.47, abs=1e-1)
     )
+    assert (
+        pyo.value(m.fs.heat_exchanger.hot_side_outlet.pressure[0])
+        == pytest.approx(118870.08569, abs=1)
+    )
+    assert (
+        pyo.value(m.fs.heat_exchanger.cold_side_outlet.pressure[0])
+        == pytest.approx(111418.71399, abs=1)
+    )
 
 
 @pytest.mark.integration
-def test_units(model_dP):
+def test_units_dP(model_dP):
     assert_units_consistent(model_dP.fs.heat_exchanger)
