@@ -13,7 +13,7 @@ the operational (hours to year timescale) interactions between energy systems an
 wholesale electricity markets. For more information, please look at the introduction section.
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    Introduction
    Implementation
