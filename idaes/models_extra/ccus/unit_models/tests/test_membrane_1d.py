@@ -33,10 +33,14 @@ from idaes.core.initialization import (
     BlockTriangularizationInitializer,
 )
 from idaes.core.util import DiagnosticsToolbox
-from idaes.models_extra.power_generation.properties.natural_gas_PR import get_prop, EosType
-from idaes.models.properties.modular_properties.base.generic_property import GenericParameterBlock
-from membrane_unit  import  Membrane1D, MembraneFlowPattern 
-
+from idaes.models_extra.power_generation.properties.natural_gas_PR import (
+    get_prop,
+    EosType,
+)
+from idaes.models.properties.modular_properties.base.generic_property import (
+    GenericParameterBlock,
+)
+from membrane_unit import Membrane1D, MembraneFlowPattern
 
 
 # -----------------------------------------------------------------------------
@@ -50,25 +54,23 @@ def test_config():
     m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.properties = GenericParameterBlock(
-    **get_prop(["CO2", "H2O",  "N2"], ["Vap"], eos=EosType.IDEAL),
-    doc="Key flue gas property parameters",
+        **get_prop(["CO2", "H2O", "N2"], ["Vap"], eos=EosType.IDEAL),
+        doc="Key flue gas property parameters",
     )
 
     m.fs.unit = Membrane1D(
-            finite_elements = 3,
-            dynamic=False,
-            sweep_flow = True,
-            flow_type = MembraneFlowPattern.countercurrent,
-            property_package = m.fs.properties,
-
-        )
+        finite_elements=3,
+        dynamic=False,
+        sweep_flow=True,
+        flow_type=MembraneFlowPattern.countercurrent,
+        property_package=m.fs.properties,
+    )
 
     # Check unit config arguments
     assert len(m.fs.unit.config) == 9
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup
     assert m.fs.unit.config.property_package is m.fs.properties
-
 
 
 class TestMembrane(object):
@@ -78,36 +80,33 @@ class TestMembrane(object):
         m.fs = FlowsheetBlock(dynamic=False)
 
         m.fs.properties = GenericParameterBlock(
-           **get_prop(["CO2", "H2O",  "N2"], ["Vap"], eos=EosType.IDEAL),
-           doc="Key flue gas property parameters",
-           )
+            **get_prop(["CO2", "H2O", "N2"], ["Vap"], eos=EosType.IDEAL),
+            doc="Key flue gas property parameters",
+        )
         m.fs.unit = Membrane1D(
-            finite_elements = 3,
+            finite_elements=3,
             dynamic=False,
-            sweep_flow = True,
-            flow_type = MembraneFlowPattern.countercurrent,
-            property_package = m.fs.properties,
+            sweep_flow=True,
+            flow_type=MembraneFlowPattern.countercurrent,
+            property_package=m.fs.properties,
         )
 
-
-        m.fs.unit.permeance[:,:,'CO2'].fix(1500)
-        m.fs.unit.permeance[:,:,'H2O'].fix(1500/25)
-        m.fs.unit.permeance[:,:,'N2'].fix(1500/25)
+        m.fs.unit.permeance[:, :, "CO2"].fix(1500)
+        m.fs.unit.permeance[:, :, "H2O"].fix(1500 / 25)
+        m.fs.unit.permeance[:, :, "N2"].fix(1500 / 25)
         m.fs.unit.area.fix(100)
         m.fs.unit.length.fix(10)
 
-
-        m.fs.unit.feed_side_inlet.flow_mol[0].fix(100) 
-        m.fs.unit.feed_side_inlet.temperature[0].fix(365) 
-        m.fs.unit.feed_side_inlet.pressure[0].fix(120000)  
+        m.fs.unit.feed_side_inlet.flow_mol[0].fix(100)
+        m.fs.unit.feed_side_inlet.temperature[0].fix(365)
+        m.fs.unit.feed_side_inlet.pressure[0].fix(120000)
         m.fs.unit.feed_side_inlet.mole_frac_comp[0, "N2"].fix(0.76)
         m.fs.unit.feed_side_inlet.mole_frac_comp[0, "CO2"].fix(0.13)
         m.fs.unit.feed_side_inlet.mole_frac_comp[0, "H2O"].fix(0.11)
 
-
-        m.fs.unit.sweep_side_inlet.flow_mol[0].fix(0.01)  
-        m.fs.unit.sweep_side_inlet.temperature[0].fix(300)  
-        m.fs.unit.sweep_side_inlet.pressure[0].fix(51325)  
+        m.fs.unit.sweep_side_inlet.flow_mol[0].fix(0.01)
+        m.fs.unit.sweep_side_inlet.temperature[0].fix(300)
+        m.fs.unit.sweep_side_inlet.pressure[0].fix(51325)
         m.fs.unit.sweep_side_inlet.mole_frac_comp[0, "H2O"].fix(0.9986)
         m.fs.unit.sweep_side_inlet.mole_frac_comp[0, "CO2"].fix(0.0003)
         m.fs.unit.sweep_side_inlet.mole_frac_comp[0, "N2"].fix(0.0001)
@@ -145,7 +144,6 @@ class TestMembrane(object):
         assert hasattr(membrane.fs.unit.sweep_side_outlet, "temperature")
         assert hasattr(membrane.fs.unit.sweep_side_outlet, "pressure")
 
-
         assert hasattr(membrane.fs.unit, "mscontactor")
         assert hasattr(membrane.fs.unit, "permeability_calculation")
         assert hasattr(membrane.fs.unit, "energy_transfer")
@@ -168,14 +166,13 @@ class TestMembrane(object):
         results = solver.solve(membrane)
         # Check for optimal solution
         assert check_optimal_termination(results)
-    
+
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_numerical_issues(self, membrane):
         dt = DiagnosticsToolbox(membrane)
         dt.assert_no_numerical_warnings()
-
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -194,7 +191,9 @@ class TestMembrane(object):
             membrane.fs.unit.feed_side_outlet.mole_frac_comp[0, "N2"]
         )
 
-        assert pytest.approx(365, abs=1e-2) == value(membrane.fs.unit.feed_side_outlet.temperature[0])
+        assert pytest.approx(365, abs=1e-2) == value(
+            membrane.fs.unit.feed_side_outlet.temperature[0]
+        )
         assert pytest.approx(120000, abs=1e-2) == value(
             membrane.fs.unit.feed_side_outlet.pressure[0]
         )
@@ -206,7 +205,7 @@ class TestMembrane(object):
         assert pytest.approx(0.01006, abs=1e-4) == value(
             membrane.fs.unit.sweep_side_outlet.flow_mol[0]
         )
-        assert pytest.approx( 0.0070, abs=1e-4) == value(
+        assert pytest.approx(0.0070, abs=1e-4) == value(
             membrane.fs.unit.sweep_side_outlet.mole_frac_comp[0, "CO2"]
         )
         assert pytest.approx(0.99120, abs=1e-4) == value(
@@ -216,7 +215,9 @@ class TestMembrane(object):
             membrane.fs.unit.sweep_side_outlet.mole_frac_comp[0, "N2"]
         )
 
-        assert pytest.approx(365, abs=1e-2) == value(membrane.fs.unit.sweep_side_outlet.temperature[0])
+        assert pytest.approx(365, abs=1e-2) == value(
+            membrane.fs.unit.sweep_side_outlet.temperature[0]
+        )
         assert pytest.approx(51325.0, abs=1e-2) == value(
             membrane.fs.unit.sweep_side_outlet.pressure[0]
         )
@@ -231,20 +232,23 @@ class TestMembrane(object):
                 value(
                     (
                         membrane.fs.unit.feed_side_inlet.flow_mol[0]
-                        * membrane.fs.unit.mscontactor.feed_side_inlet_state[0].enth_mol_phase["Vap"]
+                        * membrane.fs.unit.mscontactor.feed_side_inlet_state[
+                            0
+                        ].enth_mol_phase["Vap"]
                         + membrane.fs.unit.sweep_side_inlet.flow_mol[0]
-                        * membrane.fs.unit.mscontactor.sweep_side_inlet_state[0].enth_mol_phase["Vap"]
+                        * membrane.fs.unit.mscontactor.sweep_side_inlet_state[
+                            0
+                        ].enth_mol_phase["Vap"]
                         - membrane.fs.unit.feed_side_outlet.flow_mol[0]
-                        * membrane.fs.unit.mscontactor.feed_side[0,3].enth_mol_phase["Vap"]
+                        * membrane.fs.unit.mscontactor.feed_side[0, 3].enth_mol_phase[
+                            "Vap"
+                        ]
                         - membrane.fs.unit.sweep_side_outlet.flow_mol[0]
-                        * membrane.fs.unit.mscontactor.sweep_side[0,1].enth_mol_phase["Vap"]
-                       
+                        * membrane.fs.unit.mscontactor.sweep_side[0, 1].enth_mol_phase[
+                            "Vap"
+                        ]
                     )
-                   
                 )
             )
             <= 1e-6
         )
-
-    
-
