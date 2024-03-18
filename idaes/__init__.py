@@ -24,6 +24,8 @@ import copy
 import logging
 from typing import Optional, List
 
+from pyomo.common.fileutils import find_library
+
 from . import config
 from .ver import __version__  # noqa
 
@@ -96,14 +98,14 @@ def _ensure_external_functions_libs_in_env(
     libraries_str = os.environ.get(var_name, "")
     libraries = [lib for lib in libraries_str.split(sep) if lib.strip()]
     for func_name in ext_funcs:
-        lib: Optional[str] = os.path.join(bin_directory, func_name)
+        lib: Optional[str] = find_library(func_name)
         if lib is not None and lib not in libraries:
             libraries.append(lib)
     os.environ[var_name] = sep.join(libraries)
 
 
 _ensure_external_functions_libs_in_env(
-    ["cubic_roots.so", "general_helmholtz_external.so", "functions.so"]
+    ["cubic_roots", "general_helmholtz_external", "functions"]
 )
 
 
