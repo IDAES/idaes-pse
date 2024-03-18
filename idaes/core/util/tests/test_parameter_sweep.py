@@ -957,7 +957,7 @@ class TestParameterSweepBase:
 
         results = psweep.handle_error(model)
 
-        assert results == (None, False)
+        assert results == None
 
     @pytest.mark.unit
     def test_handle_error(self):
@@ -1121,7 +1121,7 @@ class TestParameterSweepBase:
                 raise Exception("Test exception")
 
         def recourse(model):
-            return "foo", "bar"
+            return "foo"
 
         spec2 = ParameterSweepSpecification()
         spec2.set_sampling_method(UniformSampling)
@@ -1138,7 +1138,7 @@ class TestParameterSweepBase:
         results, success, error = psweep.execute_single_sample(1)
 
         assert results == "foo"
-        assert success == "bar"
+        assert not success
         assert error == "Test exception"
 
     @pytest.fixture(scope="class")
