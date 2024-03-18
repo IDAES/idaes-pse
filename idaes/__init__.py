@@ -98,7 +98,7 @@ def _ensure_external_functions_libs_in_env(
     libraries_str = os.environ.get(var_name, "")
     libraries = [lib for lib in libraries_str.split(sep) if lib.strip()]
     for func_name in ext_funcs:
-        lib: Optional[str] = find_library(func_name)
+        lib: Optional[str] = find_library(os.path.join(bin_directory, func_name))
         if lib is not None and lib not in libraries:
             libraries.append(lib)
     os.environ[var_name] = sep.join(libraries)
