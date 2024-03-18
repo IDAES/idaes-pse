@@ -3197,7 +3197,7 @@ class IpoptConvergenceAnalysis:
         runs_w_regulariztion = 0
         runs_w_num_iss = 0
 
-        for k, v in self.results.items():
+        for v in self.results.values():
             # Check for differences
             if v["success"]:
                 successes += 1
