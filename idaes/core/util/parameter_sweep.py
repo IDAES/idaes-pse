@@ -495,7 +495,7 @@ class ParameterSweepBase:
             results = self.build_outputs(model, run_stats)
         else:
             # Catch any Exception for recourse
-            results, success = self.handle_error(model)
+            results = self.handle_error(model)
 
         _log.info(f"Sample {sample_id} finished.")
 
