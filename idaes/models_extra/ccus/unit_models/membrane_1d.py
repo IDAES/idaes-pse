@@ -13,7 +13,7 @@
 
 
 from enum import Enum
-from pyomo.common.config import Bool, ConfigDict, ConfigValue,In
+from pyomo.common.config import Bool, ConfigDict, ConfigValue, In
 from pyomo.environ import Constraint, Param, Var, units, Expression
 from pyomo.network import Port
 
@@ -28,7 +28,7 @@ from idaes.core.util.config import is_physical_parameter_block
 from idaes.models.unit_models.mscontactor import MSContactor
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 
-#TODO: add robust initialization
+# TODO: add robust initialization
 __author__ = "Maojian Wang"
 
 
@@ -37,10 +37,10 @@ class MembraneFlowPattern(Enum):
     Enum of supported flow patterns for membrane.
     So far only support countercurrent and cocurrent flow
     """
+
     countercurrent = 1
     cocurrent = 2
     crossflow = 3
-
 
 
 @declare_process_block_class("Membrane1D")
@@ -118,16 +118,15 @@ class Membrane1DData(UnitModelBlockData):
         ),
     )
     CONFIG.declare(
-    "sweep_flow",
-    ConfigValue(
-        default=True,
-        domain=Bool,
-        doc="Bool indicating whether there is a sweep flow in the permeate side.",
-        description="Bool indicating whether stream has a feed Port and inlet "
-        "state, or if all flow is provided via mass transfer. Default=True.",
-    ),
+        "sweep_flow",
+        ConfigValue(
+            default=True,
+            domain=Bool,
+            doc="Bool indicating whether there is a sweep flow in the permeate side.",
+            description="Bool indicating whether stream has a feed Port and inlet "
+            "state, or if all flow is provided via mass transfer. Default=True.",
+        ),
     )
-
 
     CONFIG.declare(
         "finite_elements",
@@ -140,7 +139,6 @@ class Membrane1DData(UnitModelBlockData):
         ),
     )
 
-
     CONFIG.declare(
         "flow_type",
         ConfigValue(
@@ -150,7 +148,7 @@ class Membrane1DData(UnitModelBlockData):
             doc="""Flow configuration of membrane
                - MembraneFlowPattern.cocurrent: feed and sweep flows from 0 to 1
                - MembraneFlowPattern.countercurrent: feed side flows from 0 to 1
-                                                    sweep side flows from 1 to 0  (default)"""  ,
+                                                    sweep side flows from 1 to 0  (default)""",
         ),
     )
 
@@ -178,28 +176,28 @@ class Membrane1DData(UnitModelBlockData):
             (default = 'use_parent_value')
             - 'use_parent_value' - get package from parent (default = None)
             - a dict (see property package for documentation)""",
-                    ),
+        ),
     )
 
-    for side_name in ['feed', 'sweep']:
-        CONFIG.declare(side_name+'_side', Stream_Config(),)
-
-
+    for side_name in ["feed", "sweep"]:
+        CONFIG.declare(
+            side_name + "_side",
+            Stream_Config(),
+        )
 
     def build(self):
         super().build()
-        
+
         if self.config.sweep_flow == False:
             self.config.sweep_side.has_feed = False
-        
 
         # Set flow directions
         if self.config.flow_type == MembraneFlowPattern.cocurrent:
             self.config.feed_side.flow_direction = FlowDirection.forward
-            self.config.sweep_side.flow_direction  = FlowDirection.forward
+            self.config.sweep_side.flow_direction = FlowDirection.forward
         elif self.config.flow_type == MembraneFlowPattern.countercurrent:
             self.config.feed_side.flow_direction = FlowDirection.forward
-            self.config.sweep_side.flow_direction  = FlowDirection.backward
+            self.config.sweep_side.flow_direction = FlowDirection.backward
 
         else:
             raise ConfigurationError(
@@ -207,13 +205,12 @@ class Membrane1DData(UnitModelBlockData):
                 "countercurrent flow patterns, but flow_type configuration"
                 " argument was set to {}.".format(self.name, self.config.flow_type)
             )
-        
+
         if self.config.property_package != None:
             if self.config.feed_side.property_package == useDefault:
                 self.config.feed_side.property_package = self.config.property_package
             if self.config.sweep_side.property_package == useDefault:
                 self.config.sweep_side.property_package = self.config.property_package
-
 
         streams_dict = {
             "feed_side": self.config.feed_side,
@@ -222,7 +219,6 @@ class Membrane1DData(UnitModelBlockData):
         self.mscontactor = MSContactor(
             streams=streams_dict,
             number_of_finite_elements=self.config.finite_elements,
-
         )
 
         self.feed_side_inlet = Port(extends=self.mscontactor.feed_side_inlet)
@@ -230,38 +226,32 @@ class Membrane1DData(UnitModelBlockData):
         if self.config.sweep_flow == True:
             self.sweep_side_inlet = Port(extends=self.mscontactor.sweep_side_inlet)
         self.sweep_side_outlet = Port(extends=self.mscontactor.sweep_side_outlet)
-        
+
         self._make_geometry()
         self._make_performance()
-    
+
     def _make_geometry(self):
-        feed_side_units = self.config.feed_side.property_package.get_metadata().derived_units
-
-        self.area = Var(
-            initialize=100, 
-            units = units.cm**2, 
-            doc="The membrane area"
+        feed_side_units = (
+            self.config.feed_side.property_package.get_metadata().derived_units
         )
 
-        self.length = Var(
-            initialize=100, 
-            units = units.cm, 
-            doc="The membrane length"
-        )
-        self.cell_length = Expression(expr=self.length/self.config.finite_elements)
+        self.area = Var(initialize=100, units=units.cm**2, doc="The membrane area")
+
+        self.length = Var(initialize=100, units=units.cm, doc="The membrane length")
+        self.cell_length = Expression(expr=self.length / self.config.finite_elements)
 
         self.cell_area = Var(
-            initialize=100, 
-            units = units.cm**2, 
-            doc="The membrane area"
+            initialize=100, units=units.cm**2, doc="The membrane area"
         )
+
         @self.Constraint()
         def area_per_cell(self):
-            return  self.cell_area == self.area/self.config.finite_elements
-        
+            return self.cell_area == self.area / self.config.finite_elements
 
-    def _make_performance(self):   
-        feed_side_units = self.config.feed_side.property_package.get_metadata().derived_units
+    def _make_performance(self):
+        feed_side_units = (
+            self.config.feed_side.property_package.get_metadata().derived_units
+        )
 
         self.permeance = Var(
             self.flowsheet().time,
@@ -273,11 +263,11 @@ class Membrane1DData(UnitModelBlockData):
         )
 
         self.gpu_factor = Param(
-            default=10e-8/13333.2239,
-            units=units.m/units.s/units.Pa,
+            default=10e-8 / 13333.2239,
+            units=units.m / units.s / units.Pa,
             mutable=True,
         )
-        
+
         self.selectivity = Var(
             self.flowsheet().time,
             self.mscontactor.elements,
@@ -292,48 +282,60 @@ class Membrane1DData(UnitModelBlockData):
             self.mscontactor.elements,
             self.mscontactor.feed_side.component_list,
             self.mscontactor.feed_side.component_list,
-            doc =  "permeance calculation",
+            doc="permeance calculation",
         )
-        def permeance_calculation(self, t, e, a , b ):
+        def permeance_calculation(self, t, e, a, b):
             return (
-                self.permeance[t,e,a] * self.selectivity[t,e,a,b] == self.permeance[t,e,b]
+                self.permeance[t, e, a] * self.selectivity[t, e, a, b]
+                == self.permeance[t, e, b]
             )
 
-        
         p_units = feed_side_units.PRESSURE
 
         @self.Constraint(
             self.flowsheet().time,
             self.mscontactor.elements,
             self.mscontactor.feed_side.component_list,
-            doc =  "permeability calculation",
+            doc="permeability calculation",
         )
         def permeability_calculation(self, t, s, m):
-            feed_side_state = self.mscontactor.feed_side[t,s]
+            feed_side_state = self.mscontactor.feed_side[t, s]
             if feed_side_state.get_material_flow_basis() is MaterialFlowBasis.molar:
                 mb_units = feed_side_units.FLOW_MOLE
-                rho = self.mscontactor.feed_side[t,s].dens_mol
+                rho = self.mscontactor.feed_side[t, s].dens_mol
             elif feed_side_state.get_material_flow_basis() is MaterialFlowBasis.mass:
                 mb_units = feed_side_units.FLOW_MASS
-                rho = self.mscontactor.feed_side[t,s].dens_mass
+                rho = self.mscontactor.feed_side[t, s].dens_mass
             else:
                 raise TypeError("Undefined flow basis, please define the flow basis")
 
-            return (
-                    self.mscontactor.material_transfer_term[t, s, 'feed_side', 'sweep_side', m]
-                    == - units.convert((
-                rho * self.gpu_factor * self.permeance[t,s,m] * self.cell_area *
-                  (self.mscontactor.feed_side[t,s].pressure * self.mscontactor.feed_side[t, s].mole_frac_comp[m] 
-                                                        -units.convert(self.mscontactor.sweep_side[t,s].pressure, to_units=p_units) * self.mscontactor.sweep_side[t, s].mole_frac_comp[m])
-                    ),
-                to_units = mb_units,)
-                    )        
-        
+            return self.mscontactor.material_transfer_term[
+                t, s, "feed_side", "sweep_side", m
+            ] == -units.convert(
+                (
+                    rho
+                    * self.gpu_factor
+                    * self.permeance[t, s, m]
+                    * self.cell_area
+                    * (
+                        self.mscontactor.feed_side[t, s].pressure
+                        * self.mscontactor.feed_side[t, s].mole_frac_comp[m]
+                        - units.convert(
+                            self.mscontactor.sweep_side[t, s].pressure, to_units=p_units
+                        )
+                        * self.mscontactor.sweep_side[t, s].mole_frac_comp[m]
+                    )
+                ),
+                to_units=mb_units,
+            )
+
         @self.Constraint(
             self.flowsheet().time,
-            self.mscontactor.elements,  
-            doc = "Energy balance" ,
+            self.mscontactor.elements,
+            doc="Energy balance",
         )
         def energy_transfer(self, t, s):
-            return  self.mscontactor.feed_side[t, s].temperature == self.mscontactor.sweep_side[t, s].temperature
-
+            return (
+                self.mscontactor.feed_side[t, s].temperature
+                == self.mscontactor.sweep_side[t, s].temperature
+            )
