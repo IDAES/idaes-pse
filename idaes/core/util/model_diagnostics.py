@@ -286,7 +286,7 @@ CONFIG.declare(
 CONFIG.declare(
     "parallel_component_tolerance",
     ConfigValue(
-        default=1e-4,
+        default=1e-8,
         domain=float,
         description="Tolerance for identifying near-parallel Jacobian rows/columns",
     ),
@@ -1179,6 +1179,23 @@ class DiagnosticsToolbox:
                 self.display_constraints_with_extreme_jacobians.__name__ + "()"
             )
 
+        # Parallel variables and constraints
+        partol = self.config.parallel_component_tolerance
+        par_cons = check_parallel_jacobian(self._model, tolerance=partol, direction="row")
+        par_vars = check_parallel_jacobian(self._model, tolerance=partol, direction="column")
+        if par_cons:
+            warnings.append(
+                f"WARNING: {len(par_cons)} pairs of constraints are parallel"
+                f" (to tolerance {partol})"
+            )
+            next_steps.append(self.display_near_parallel_constraints.__name__ + "()")
+        if par_vars:
+            warnings.append(
+                f"WARNING: {len(par_vars)} pairs of variables are parallel"
+                f" (to tolerance {partol})"
+            )
+            next_steps.append(self.display_near_parallel_variables.__name__ + "()")
+
         return warnings, next_steps
 
     def _collect_numerical_cautions(self, jac=None, nlp=None):
@@ -1441,7 +1458,6 @@ class DiagnosticsToolbox:
             lines_list=next_steps,
             title="Suggested next steps:",
             line_if_empty=f"If you still have issues converging your model consider:\n"
-            f"{TAB*2}display_near_parallel_constraints()\n{TAB*2}display_near_parallel_variables()"
             f"\n{TAB*2}prepare_degeneracy_hunter()\n{TAB*2}prepare_svd_toolbox()",
             footer="=",
         )
