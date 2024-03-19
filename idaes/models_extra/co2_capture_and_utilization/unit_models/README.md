@@ -1,1 +1,1 @@
-This directory contains theunit models of Carbon Capture, Utilisation and Storage(CCUS)
+This directory contains the unit models for Carbon Capture and Utilization
