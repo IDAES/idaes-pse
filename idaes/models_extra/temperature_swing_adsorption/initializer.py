@@ -413,7 +413,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
 
                 # initialization of steam heater
                 init_log.info(
-                    "Starting initialization of heater model for steam " "calculation."
+                    "Starting initialization of heater model for steam calculation."
                 )
 
                 # activate steam heater model

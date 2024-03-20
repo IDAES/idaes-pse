@@ -535,6 +535,8 @@ see property package for documentation.}""",
 
         # expecting 2 DOF due to pressure driven constraint
         if degrees_of_freedom(blk) != 2:
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception(degrees_of_freedom(blk))
 
         blk.flash.initialize(

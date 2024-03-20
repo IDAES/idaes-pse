@@ -626,7 +626,6 @@ class TrainedSurrogateEncoder(JSONEncoder, TSEBase):
         "optimal_p",
         "optimal_mean",
         "optimal_variance",
-        "regularization_parameter",
         "optimal_covariance_matrix",
         "covariance_matrix_inverse",
         "optimal_y_mu",
