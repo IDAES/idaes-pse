@@ -483,7 +483,6 @@ cold side flows from 1 to 0""",
                     "scheme on cold side."
                 )
 
-
         if self.config.flow_type == HeatExchangerFlowPattern.cocurrent:
             set_direction_hot = FlowDirection.forward
             set_direction_cold = FlowDirection.forward
