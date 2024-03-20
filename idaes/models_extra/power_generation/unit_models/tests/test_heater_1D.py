@@ -17,26 +17,29 @@ from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
 import idaes.core.util.scaling as iscale
-from idaes.models.unit_models import HeatExchangerFlowPattern
 from idaes.models.properties.modular_properties import GenericParameterBlock
-from idaes.models_extra.power_generation.properties.natural_gas_PR import get_prop, EosType
+from idaes.models_extra.power_generation.properties.natural_gas_PR import (
+    get_prop,
+    EosType,
+)
 from idaes.models_extra.power_generation.unit_models import Heater1D
 import idaes.core.util.model_statistics as mstat
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.solvers import get_solver
 
 # Set up solver
-optarg={
+optarg = {
     # 'bound_push' : 1e-6,
-    'constr_viol_tol': 1e-8,
-    'nlp_scaling_method': 'user-scaling',
-    'linear_solver': 'ma57',
-    'OF_ma57_automatic_scaling': 'yes',
-    'max_iter': 350,
-    'tol': 1e-8,
-    'halt_on_ampl_error': 'no',
+    "constr_viol_tol": 1e-8,
+    "nlp_scaling_method": "user-scaling",
+    "linear_solver": "ma57",
+    "OF_ma57_automatic_scaling": "yes",
+    "max_iter": 350,
+    "tol": 1e-8,
+    "halt_on_ampl_error": "no",
 }
 solver = get_solver("ipopt", options=optarg)
+
 
 def _create_model(pressure_drop):
     m = pyo.ConcreteModel()
@@ -45,56 +48,43 @@ def _create_model(pressure_drop):
         **get_prop(["H2", "H2O", "Ar", "N2"], {"Vap"}, eos=EosType.IDEAL),
         doc="H2O + H2 gas property parameters",
     )
-    m.fs.feed_heater = Heater1D(
-            property_package=m.fs.h2_side_prop_params,
-            has_holdup=True,
-            dynamic=False,
-            has_fluid_holdup=False,
-            has_pressure_change=pressure_drop,
-            finite_elements=4,
-            tube_arrangement="in-line",
-            transformation_method="dae.finite_difference",
-            transformation_scheme="BACKWARD",
-        )
+    m.fs.heater = Heater1D(
+        property_package=m.fs.h2_side_prop_params,
+        has_holdup=True,
+        dynamic=False,
+        has_fluid_holdup=False,
+        has_pressure_change=pressure_drop,
+        finite_elements=4,
+        tube_arrangement="in-line",
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+    )
 
-    hx = m.fs.heat_exchanger
+    heater = m.fs.heater
 
-    hx.hot_side_inlet.flow_mol.fix(2619.7)
-    hx.hot_side_inlet.temperature.fix(971.6)
-    hx.hot_side_inlet.pressure.fix(1.2e5)
-    hx.hot_side_inlet.mole_frac_comp[0, "H2"].fix(0.79715)
-    hx.hot_side_inlet.mole_frac_comp[0, "H2O"].fix(0.20177)
-    hx.hot_side_inlet.mole_frac_comp[0, "Ar"].fix(0.00086358)
-    hx.hot_side_inlet.mole_frac_comp[0, "N2"].fix(0.00021589)
+    heater.inlet.flow_mol.fix(5102.5)
+    heater.inlet.temperature.fix(938.83)
+    heater.inlet.pressure.fix(1.2e5)
+    heater.inlet.mole_frac_comp[0, "H2"].fix(0.57375)
+    heater.inlet.mole_frac_comp[0, "H2O"].fix(0.42517)
+    heater.inlet.mole_frac_comp[0, "Ar"].fix(0.00086358)
+    heater.inlet.mole_frac_comp[0, "N2"].fix(0.00021589)
 
-    hx.cold_side_inlet.flow_mol.fix(2619.7)
-    hx.cold_side_inlet.temperature.fix(446.21)
-    hx.cold_side_inlet.pressure.fix(1.2e5)
-    hx.cold_side_inlet.mole_frac_comp[0, "H2"].fix(0.36203)
-    hx.cold_side_inlet.mole_frac_comp[0, "H2O"].fix(0.63689)
-    hx.cold_side_inlet.mole_frac_comp[0, "Ar"].fix(0.00086358)
-    hx.cold_side_inlet.mole_frac_comp[0, "N2"].fix(0.00021589)
-
-    hx.di_tube.fix(0.0525018)
-    hx.thickness_tube.fix(0.0039116)
-    hx.length_tube_seg.fix(4.3)
-    hx.nseg_tube.fix(12)
-    hx.ncol_tube.fix(50)
-    hx.nrow_inlet.fix(25)
-
-    hx.pitch_x.fix(0.1)
-    hx.pitch_y.fix(0.1)
-    hx.delta_elevation.fix(0)
-    hx.therm_cond_wall = 43.0
-    hx.rfouling_tube = 0.0001
-    hx.rfouling_shell = 0.0001
-    hx.fcorrection_htc_tube.fix(1)
-    hx.fcorrection_htc_shell.fix(1)
+    heater.di_tube.fix(0.0525018)
+    heater.thickness_tube.fix(0.0039116)
+    heater.pitch_x.fix(0.1)
+    heater.pitch_y.fix(0.1)
+    heater.length_tube_seg.fix(10)
+    heater.nseg_tube.fix(1)
+    heater.rfouling = 0.0001
+    heater.fcorrection_htc_shell.fix(1)
+    heater.cp_wall = 502.4
     if pressure_drop:
-        hx.fcorrection_dp_tube.fix(1)
-        hx.fcorrection_dp_shell.fix(1)
+        heater.fcorrection_dp_shell.fix(1)
 
-    hx.cp_wall.value = 502.4
+    heater.ncol_tube.fix(40)
+    heater.nrow_inlet.fix(40)
+    heater.electric_heat_duty.fix(3.6504e06)
 
     pp = m.fs.h2_side_prop_params
     pp.set_default_scaling("enth_mol_phase", 1e-3)
@@ -112,22 +102,18 @@ def _create_model(pressure_drop):
         pp.set_default_scaling("mole_frac_comp", s, index=comp)
         pp.set_default_scaling("mole_frac_phase_comp", s, index=("Vap", comp))
         pp.set_default_scaling("flow_mol_phase_comp", s * 1e-3, index=("Vap", comp))
-    
-    shell = hx.hot_side
-    tube = hx.cold_side
+
+    shell = heater.control_volume
     iscale.set_scaling_factor(shell.area, 1e-1)
-    # ssf(hx.shell.heat, 1e-6)
-    iscale.set_scaling_factor(tube.area, 1)
-    # ssf(hx.tube.heat, 1e-6)
-    iscale.set_scaling_factor(shell._enthalpy_flow, 1e-8)
-    iscale.set_scaling_factor(tube._enthalpy_flow, 1e-8)
+    iscale.set_scaling_factor(shell.heat, 1e-6)
+    iscale.set_scaling_factor(shell._enthalpy_flow, 1e-8)  # pylint: disable=W0212
     iscale.set_scaling_factor(shell.enthalpy_flow_dx, 1e-7)
-    iscale.set_scaling_factor(tube.enthalpy_flow_dx, 1e-7)
-    iscale.set_scaling_factor(hx.heat_holdup, 1e-8)
+    iscale.set_scaling_factor(heater.heat_holdup, 1e-8)
 
     iscale.calculate_scaling_factors(m)
 
     return m
+
 
 def _check_model_statistics(m, deltaP):
     fixed_unused_var_set = {
@@ -156,18 +142,18 @@ def _check_model_statistics(m, deltaP):
         "fs.h2_side_prop_params.N2.cp_mol_ig_comp_coeff_H",
     }
     if not deltaP:
-        fixed_unused_var_set.add("fs.heat_exchanger.delta_elevation")
-    
+        fixed_unused_var_set.add("fs.heater.delta_elevation")
+
     for var in mstat.fixed_unused_variables_set(m):
         assert var.name in fixed_unused_var_set
 
     unfixed_unused_var_set = {
-        "fs.heat_exchanger.hot_side.material_flow_dx[0.0,0.0,Vap,H2]",
-        "fs.heat_exchanger.hot_side.material_flow_dx[0.0,0.0,Vap,H2O]",
-        "fs.heat_exchanger.hot_side.material_flow_dx[0.0,0.0,Vap,Ar]",
-        "fs.heat_exchanger.hot_side.material_flow_dx[0.0,0.0,Vap,N2]",
-        "fs.heat_exchanger.hot_side.enthalpy_flow_dx[0.0,0.0,Vap]",
-        "fs.heat_exchanger.hot_side.pressure_dx[0.0,0.0]",
+        "fs.heater.control_volume.material_flow_dx[0.0,0.0,Vap,H2]",
+        "fs.heater.control_volume.material_flow_dx[0.0,0.0,Vap,H2O]",
+        "fs.heater.control_volume.material_flow_dx[0.0,0.0,Vap,Ar]",
+        "fs.heater.control_volume.material_flow_dx[0.0,0.0,Vap,N2]",
+        "fs.heater.control_volume.enthalpy_flow_dx[0.0,0.0,Vap]",
+        "fs.heater.control_volume.pressure_dx[0.0,0.0]",
         "fs.heat_exchanger.cold_side.material_flow_dx[0.0,1.0,Vap,H2]",
         "fs.heat_exchanger.cold_side.material_flow_dx[0.0,1.0,Vap,H2O]",
         "fs.heat_exchanger.cold_side.material_flow_dx[0.0,1.0,Vap,Ar]",
@@ -181,10 +167,12 @@ def _check_model_statistics(m, deltaP):
 
     assert len(mstat.deactivated_constraints_set(m)) == 0
 
+
 @pytest.fixture
 def model_no_dP():
     m = _create_model(pressure_drop=False)
     return m
+
 
 @pytest.mark.component
 def test_initialization(model_no_dP):
@@ -193,30 +181,25 @@ def test_initialization(model_no_dP):
     assert degrees_of_freedom(m) == 0
     _check_model_statistics(m, deltaP=False)
 
-    m.fs.heat_exchanger.initialize_build(optarg=optarg)
+    m.fs.heater.initialize_build(optarg=optarg)
 
     assert degrees_of_freedom(m) == 0
     _check_model_statistics(m, deltaP=False)
-    assert (
-        pyo.value(m.fs.heat_exchanger.hot_side_outlet.temperature[0])
-        == pytest.approx(485.34, abs=1e-1)
-    )
-    assert (
-        pyo.value(m.fs.heat_exchanger.cold_side_outlet.temperature[0])
-        == pytest.approx(911.47, abs=1e-1)
+    assert pyo.value(m.fs.heater.outlet.temperature[0]) == pytest.approx(
+        959.55, abs=1e-1
     )
 
 
 @pytest.mark.integration
 def test_units(model_no_dP):
-    assert_units_consistent(model_no_dP.fs.heat_exchanger)
-
+    assert_units_consistent(model_no_dP.fs.heater)
 
 
 @pytest.fixture
 def model_dP():
     m = _create_model(pressure_drop=True)
     return m
+
 
 @pytest.mark.component
 def test_initialization_dP(model_dP):
@@ -225,29 +208,17 @@ def test_initialization_dP(model_dP):
     assert degrees_of_freedom(m) == 0
     _check_model_statistics(m, deltaP=True)
 
-    m.fs.heat_exchanger.initialize_build(optarg=optarg)
+    m.fs.heater.initialize_build(optarg=optarg)
 
     assert degrees_of_freedom(m) == 0
     _check_model_statistics(m, deltaP=True)
 
-    assert (
-        pyo.value(m.fs.heat_exchanger.hot_side_outlet.temperature[0])
-        == pytest.approx(485.34, abs=1e-1)
+    assert pyo.value(m.fs.heater.outlet.temperature[0]) == pytest.approx(
+        959.55, abs=1e-1
     )
-    assert (
-        pyo.value(m.fs.heat_exchanger.cold_side_outlet.temperature[0])
-        == pytest.approx(911.47, abs=1e-1)
-    )
-    assert (
-        pyo.value(m.fs.heat_exchanger.hot_side_outlet.pressure[0])
-        == pytest.approx(118870.08569, abs=1)
-    )
-    assert (
-        pyo.value(m.fs.heat_exchanger.cold_side_outlet.pressure[0])
-        == pytest.approx(111418.71399, abs=1)
-    )
+    assert pyo.value(m.fs.heater.outlet.pressure[0]) == pytest.approx(119762.3, abs=1)
 
 
 @pytest.mark.integration
 def test_units_dP(model_dP):
-    assert_units_consistent(model_dP.fs.heat_exchanger)
+    assert_units_consistent(model_dP.fs.heater)

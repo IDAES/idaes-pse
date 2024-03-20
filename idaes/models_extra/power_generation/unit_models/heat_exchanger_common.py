@@ -15,57 +15,25 @@
 
 Discretization based on tube rows
 """
-from __future__ import division
-
-# Import Python libraries
-import math
 
 # Import Pyomo libraries
 from pyomo.environ import (
-    SolverFactory,
     Var,
     Param,
-    Constraint,
     value,
-    TerminationCondition,
-    exp,
-    sqrt,
-    log,
-    sin,
-    cos,
-    SolverStatus,
     units as pyunits,
 )
-from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 from pyomo.dae import DerivativeVar
 
 # Import IDAES cores
-from idaes.core import (
-    ControlVolume1DBlock,
-    UnitModelBlockData,
-    declare_process_block_class,
-    MaterialBalanceType,
-    EnergyBalanceType,
-    MomentumBalanceType,
-    FlowDirection,
-    UnitModelBlockData,
-    useDefault,
-)
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.constants import Constants as const
 import idaes.core.util.scaling as iscale
-from idaes.core.solvers import get_solver
-from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
-import idaes.logger as idaeslog
-from idaes.core.util.tables import create_stream_table_dataframe
 
 __author__ = "Jinliang Ma, Douglas Allan"
-
-# Set up logger
-_log = idaeslog.getLogger(__name__)
 
 
 def _make_geometry_common(blk, shell_units):
@@ -76,7 +44,9 @@ def _make_geometry_common(blk, shell_units):
 
     # Number of segments of tube bundles
     blk.nseg_tube = Var(
-        initialize=10.0, doc="Number of segments of tube bundles", units=pyunits.dimensionless
+        initialize=10.0,
+        doc="Number of segments of tube bundles",
+        units=pyunits.dimensionless,
     )
 
     # Number of inlet tube rows
@@ -252,10 +222,10 @@ def _make_performance_common(
 
     # Heat transfer resistance due to the fouling on shell side
     blk.rfouling_shell = Param(
-        units=1/shell_units["heat_transfer_coefficient"],
+        units=1 / shell_units["heat_transfer_coefficient"],
         initialize=0.0001,
         mutable=True,
-        doc="Fouling resistance on tube side"
+        doc="Fouling resistance on tube side",
     )
 
     # Correction factor for convective heat transfer coefficient on shell side
@@ -307,6 +277,7 @@ def _make_performance_common(
             units=shell_units["energy"] / shell_units["length"],
             doc="Tube wall heat holdup per length of shell",
         )
+
         @blk.Constraint(
             blk.flowsheet().config.time,
             shell.length_domain,
@@ -369,7 +340,6 @@ def _make_performance_common(
 
     if shell_has_pressure_change:
         # Friction factor on shell side
-        # TODO does this have units?
         blk.friction_factor_shell = Var(
             blk.flowsheet().config.time,
             shell.length_domain,
@@ -418,7 +388,7 @@ def _make_performance_common(
                 * shell.properties[t, x].mw
             )
 
-    if shell_has_pressure_change == True:
+    if shell_has_pressure_change:
         # Friction factor on shell side
         if blk.config.tube_arrangement == "in-line":
 
@@ -495,7 +465,7 @@ def _make_performance_common(
         doc="Total convective heat transfer coefficient on shell side",
     )
     def hconv_shell_total(b, t, x):
-        # Retain in case we add back radiation    
+        # Retain in case we add back radiation
         return b.hconv_shell_conv[t, x]
 
 
@@ -524,8 +494,8 @@ def _make_performance_tube(
     blk.rfouling_tube = Param(
         initialize=0.0,
         mutable=True,
-        units=1/tube_units["heat_transfer_coefficient"],
-        doc="fouling resistance on tube side"
+        units=1 / tube_units["heat_transfer_coefficient"],
+        doc="fouling resistance on tube side",
     )
     # Correction factor for convective heat transfer coefficient on tube side
     blk.fcorrection_htc_tube = Var(
@@ -542,7 +512,9 @@ def _make_performance_tube(
         blk.flowsheet().config.time,
         tube.length_domain,
         initialize=500,
-        units=tube_units["temperature"], # Want to be in shell units for consistency in equations
+        units=tube_units[
+            "temperature"
+        ],  # Want to be in shell units for consistency in equations
         doc="boundary wall temperature on tube side",
     )
     if make_reynolds:
@@ -566,9 +538,8 @@ def _make_performance_tube(
             doc="Reynolds number on tube side",
             bounds=(1e-7, None),
         )
-    if tube_has_pressure_change == True:
+    if tube_has_pressure_change:
         # Friction factor on tube side
-        # TODO does this have units?
         blk.friction_factor_tube = Var(
             blk.flowsheet().config.time,
             tube.length_domain,
@@ -702,6 +673,7 @@ def _make_performance_tube(
             )
 
     if make_nusselt:
+
         @blk.Constraint(
             blk.flowsheet().config.time,
             tube.length_domain,
@@ -714,28 +686,28 @@ def _make_performance_tube(
                 * tube.properties[t, x].therm_cond_phase["Vap"]
                 * b.fcorrection_htc_tube
             )
+
+
 def _scale_common(blk, shell, shell_has_pressure_change, make_reynolds, make_nusselt):
     def gsf(obj):
         return iscale.get_scaling_factor(obj, default=1, warning=True)
+
     def ssf(obj, sf):
         iscale.set_scaling_factor(obj, sf, overwrite=False)
+
     def cst(con, sf):
         iscale.constraint_scaling_transform(con, sf, overwrite=False)
+
     sgsf = iscale.set_and_get_scaling_factor
 
-    sf_do_tube = iscale.get_scaling_factor(
-        blk.do_tube, default=1 / value(blk.do_tube)
-    )
+    sf_do_tube = iscale.get_scaling_factor(blk.do_tube, default=1 / value(blk.do_tube))
 
-    sf_di_tube = iscale.get_scaling_factor(
-        blk.do_tube, default=1 / value(blk.di_tube)
-    )
+    sf_di_tube = iscale.get_scaling_factor(blk.do_tube, default=1 / value(blk.di_tube))
     calculate_variable_from_constraint(
-        blk.area_flow_shell_min,
-        blk.area_flow_shell_min_eqn
+        blk.area_flow_shell_min, blk.area_flow_shell_min_eqn
     )
     sf_area_flow_shell_min = iscale.get_scaling_factor(
-        blk.area_flow_shell_min, default=1/value(blk.area_flow_shell_min)
+        blk.area_flow_shell_min, default=1 / value(blk.area_flow_shell_min)
     )
     for t in blk.flowsheet().time:
         for z in shell.length_domain:
@@ -743,10 +715,10 @@ def _scale_common(blk, shell, shell_has_pressure_change, make_reynolds, make_nus
 
             if make_reynolds:
                 # FIXME get better scaling later
-                ssf(blk.v_shell[t, z], 1/10)
+                ssf(blk.v_shell[t, z], 1 / 10)
                 cst(blk.v_shell_eqn[t, z], sf_flow_mol_shell)
 
-                #FIXME should get scaling of N_Re from defining eqn
+                # FIXME should get scaling of N_Re from defining eqn
                 sf_N_Re_shell = sgsf(blk.N_Re_shell[t, z], 1e-4)
 
                 sf_visc_d_shell = gsf(shell.properties[t, z].visc_d_phase["Vap"])
@@ -755,7 +727,7 @@ def _scale_common(blk, shell, shell_has_pressure_change, make_reynolds, make_nus
                 sf_k_shell = gsf(shell.properties[t, z].therm_cond_phase["Vap"])
 
                 sf_N_Nu_shell = sgsf(
-                    blk.N_Nu_shell[t, z], 1 / 0.33 * sf_N_Re_shell ** 0.6
+                    blk.N_Nu_shell[t, z], 1 / 0.33 * sf_N_Re_shell**0.6
                 )
                 cst(blk.N_Nu_shell_eqn[t, z], sf_N_Nu_shell)
 
@@ -764,13 +736,15 @@ def _scale_common(blk, shell, shell_has_pressure_change, make_reynolds, make_nus
                 )
                 cst(blk.hconv_shell_conv_eqn[t, z], sf_hconv_shell_conv * sf_do_tube)
 
-
             # FIXME estimate from parameters
             if blk.config.has_holdup:
                 s_U_holdup = gsf(blk.heat_holdup[t, z])
                 cst(blk.heat_holdup_eqn[t, z], s_U_holdup)
 
-def _scale_tube(blk, tube, tube_has_presure_change, make_reynolds, make_nusselt):
+
+def _scale_tube(
+    blk, tube, tube_has_presure_change, make_reynolds, make_nusselt
+):  # pylint: disable=W0613
     def gsf(obj):
         return iscale.get_scaling_factor(obj, default=1, warning=True)
 
@@ -782,18 +756,13 @@ def _scale_tube(blk, tube, tube_has_presure_change, make_reynolds, make_nusselt)
 
     sgsf = iscale.set_and_get_scaling_factor
 
-    sf_di_tube = iscale.get_scaling_factor(
-        blk.do_tube, default=1 / value(blk.di_tube)
-    )
-    sf_do_tube = iscale.get_scaling_factor(
-        blk.do_tube, default=1 / value(blk.do_tube)
-    )
+    sf_di_tube = iscale.get_scaling_factor(blk.do_tube, default=1 / value(blk.di_tube))
 
     for t in blk.flowsheet().time:
         for z in tube.length_domain:
             if make_reynolds:
                 # FIXME get better scaling later
-                ssf(blk.v_tube[t, z], 1/20)
+                ssf(blk.v_tube[t, z], 1 / 20)
                 sf_flow_mol_tube = gsf(tube.properties[t, z].flow_mol)
 
                 cst(blk.v_tube_eqn[t, z], sf_flow_mol_tube)
@@ -807,7 +776,7 @@ def _scale_tube(blk, tube, tube_has_presure_change, make_reynolds, make_nusselt)
                 sf_k_tube = gsf(tube.properties[t, z].therm_cond_phase["Vap"])
 
                 sf_N_Nu_tube = sgsf(
-                    blk.N_Nu_tube[t, z], 1 / 0.023 * sf_N_Re_tube ** 0.8
+                    blk.N_Nu_tube[t, z], 1 / 0.023 * sf_N_Re_tube**0.8
                 )
                 cst(blk.N_Nu_tube_eqn[t, z], sf_N_Nu_tube)
 

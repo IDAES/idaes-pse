@@ -19,24 +19,28 @@ from idaes.core import FlowsheetBlock
 import idaes.core.util.scaling as iscale
 from idaes.models.unit_models import HeatExchangerFlowPattern
 from idaes.models.properties.modular_properties import GenericParameterBlock
-from idaes.models_extra.power_generation.properties.natural_gas_PR import get_prop, EosType
+from idaes.models_extra.power_generation.properties.natural_gas_PR import (
+    get_prop,
+    EosType,
+)
 from idaes.models_extra.power_generation.unit_models import CrossFlowHeatExchanger1D
 import idaes.core.util.model_statistics as mstat
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.solvers import get_solver
 
 # Set up solver
-optarg={
+optarg = {
     # 'bound_push' : 1e-6,
-    'constr_viol_tol': 1e-8,
-    'nlp_scaling_method': 'user-scaling',
-    'linear_solver': 'ma57',
-    'OF_ma57_automatic_scaling': 'yes',
-    'max_iter': 350,
-    'tol': 1e-8,
-    'halt_on_ampl_error': 'no',
+    "constr_viol_tol": 1e-8,
+    "nlp_scaling_method": "user-scaling",
+    "linear_solver": "ma57",
+    "OF_ma57_automatic_scaling": "yes",
+    "max_iter": 350,
+    "tol": 1e-8,
+    "halt_on_ampl_error": "no",
 }
 solver = get_solver("ipopt", options=optarg)
+
 
 def _create_model(pressure_drop):
     m = pyo.ConcreteModel()
@@ -125,15 +129,15 @@ def _create_model(pressure_drop):
         pp.set_default_scaling("mole_frac_comp", s, index=comp)
         pp.set_default_scaling("mole_frac_phase_comp", s, index=("Vap", comp))
         pp.set_default_scaling("flow_mol_phase_comp", s * 1e-3, index=("Vap", comp))
-    
+
     shell = hx.hot_side
     tube = hx.cold_side
     iscale.set_scaling_factor(shell.area, 1e-1)
     # ssf(hx.shell.heat, 1e-6)
     iscale.set_scaling_factor(tube.area, 1)
     # ssf(hx.tube.heat, 1e-6)
-    iscale.set_scaling_factor(shell._enthalpy_flow, 1e-8)
-    iscale.set_scaling_factor(tube._enthalpy_flow, 1e-8)
+    iscale.set_scaling_factor(shell._enthalpy_flow, 1e-8)  # pylint: disable=W0212
+    iscale.set_scaling_factor(tube._enthalpy_flow, 1e-8)  # pylint: disable=W0212
     iscale.set_scaling_factor(shell.enthalpy_flow_dx, 1e-7)
     iscale.set_scaling_factor(tube.enthalpy_flow_dx, 1e-7)
     iscale.set_scaling_factor(hx.heat_holdup, 1e-8)
@@ -141,6 +145,7 @@ def _create_model(pressure_drop):
     iscale.calculate_scaling_factors(m)
 
     return m
+
 
 def _check_model_statistics(m, deltaP):
     fixed_unused_var_set = {
@@ -170,7 +175,7 @@ def _check_model_statistics(m, deltaP):
     }
     if not deltaP:
         fixed_unused_var_set.add("fs.heat_exchanger.delta_elevation")
-    
+
     for var in mstat.fixed_unused_variables_set(m):
         assert var.name in fixed_unused_var_set
 
@@ -194,10 +199,12 @@ def _check_model_statistics(m, deltaP):
 
     assert len(mstat.deactivated_constraints_set(m)) == 0
 
+
 @pytest.fixture
 def model_no_dP():
     m = _create_model(pressure_drop=False)
     return m
+
 
 @pytest.mark.component
 def test_initialization(model_no_dP):
@@ -210,14 +217,12 @@ def test_initialization(model_no_dP):
 
     assert degrees_of_freedom(m) == 0
     _check_model_statistics(m, deltaP=False)
-    assert (
-        pyo.value(m.fs.heat_exchanger.hot_side_outlet.temperature[0])
-        == pytest.approx(485.34, abs=1e-1)
-    )
-    assert (
-        pyo.value(m.fs.heat_exchanger.cold_side_outlet.temperature[0])
-        == pytest.approx(911.47, abs=1e-1)
-    )
+    assert pyo.value(
+        m.fs.heat_exchanger.hot_side_outlet.temperature[0]
+    ) == pytest.approx(485.34, abs=1e-1)
+    assert pyo.value(
+        m.fs.heat_exchanger.cold_side_outlet.temperature[0]
+    ) == pytest.approx(911.47, abs=1e-1)
 
 
 @pytest.mark.integration
@@ -225,11 +230,11 @@ def test_units(model_no_dP):
     assert_units_consistent(model_no_dP.fs.heat_exchanger)
 
 
-
 @pytest.fixture
 def model_dP():
     m = _create_model(pressure_drop=True)
     return m
+
 
 @pytest.mark.component
 def test_initialization_dP(model_dP):
@@ -243,21 +248,17 @@ def test_initialization_dP(model_dP):
     assert degrees_of_freedom(m) == 0
     _check_model_statistics(m, deltaP=True)
 
-    assert (
-        pyo.value(m.fs.heat_exchanger.hot_side_outlet.temperature[0])
-        == pytest.approx(485.34, abs=1e-1)
+    assert pyo.value(
+        m.fs.heat_exchanger.hot_side_outlet.temperature[0]
+    ) == pytest.approx(485.34, abs=1e-1)
+    assert pyo.value(
+        m.fs.heat_exchanger.cold_side_outlet.temperature[0]
+    ) == pytest.approx(911.47, abs=1e-1)
+    assert pyo.value(m.fs.heat_exchanger.hot_side_outlet.pressure[0]) == pytest.approx(
+        118870.08569, abs=1
     )
-    assert (
-        pyo.value(m.fs.heat_exchanger.cold_side_outlet.temperature[0])
-        == pytest.approx(911.47, abs=1e-1)
-    )
-    assert (
-        pyo.value(m.fs.heat_exchanger.hot_side_outlet.pressure[0])
-        == pytest.approx(118870.08569, abs=1)
-    )
-    assert (
-        pyo.value(m.fs.heat_exchanger.cold_side_outlet.pressure[0])
-        == pytest.approx(111418.71399, abs=1)
+    assert pyo.value(m.fs.heat_exchanger.cold_side_outlet.pressure[0]) == pytest.approx(
+        111418.71399, abs=1
     )
 
 
