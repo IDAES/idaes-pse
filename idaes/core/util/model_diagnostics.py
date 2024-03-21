@@ -3208,6 +3208,47 @@ class IpoptConvergenceAnalysis:
         if any(len(v) != 0 for v in diffs.values()):
             raise AssertionError("Convergence analysis does not match baseline")
 
+    def report_convergence_summary(self, stream=None):
+        """
+        Reports a brief summary of the model convergence run.
+
+        Args:
+            stream: Optional output stream to print results to.
+
+        Returns:
+            None
+
+        """
+        if stream is None:
+            stream = sys.stdout
+
+        successes = 0
+        failures = 0
+        runs_w_restoration = 0
+        runs_w_regulariztion = 0
+        runs_w_num_iss = 0
+
+        for v in self.results.values():
+            # Check for differences
+            if v["success"]:
+                successes += 1
+            else:
+                failures += 1
+
+            if v["results"]["iters_in_restoration"] > 0:
+                runs_w_restoration += 1
+            if v["results"]["iters_w_regularization"] > 0:
+                runs_w_regulariztion += 1
+            if v["results"]["numerical_issues"] > 0:
+                runs_w_num_iss += 1
+
+        stream.write(
+            f"Successes: {successes}, Failures {failures} ({100*successes/(successes+failures)}%)\n"
+        )
+        stream.write(f"Runs with Restoration: {runs_w_restoration}\n")
+        stream.write(f"Runs with Regularization: {runs_w_regulariztion}\n")
+        stream.write(f"Runs with Numerical Issues: {runs_w_num_iss}\n")
+
     def to_dict(self):
         """
         Serialize specification and current results to dict form

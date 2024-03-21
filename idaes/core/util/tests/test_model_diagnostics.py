@@ -2416,6 +2416,51 @@ class TestIpoptConvergenceAnalysis:
 
         return ca
 
+    @pytest.mark.unit
+    def test_report_convergence_summary(self):
+        stream = StringIO()
+
+        ca = IpoptConvergenceAnalysis(
+            model=ConcreteModel(),
+        )
+
+        ca._psweep._results = {
+            0: {
+                "success": True,
+                "results": {
+                    "iters_in_restoration": 1,
+                    "iters_w_regularization": 0,
+                    "numerical_issues": 10,
+                },
+            },
+            1: {
+                "success": True,
+                "results": {
+                    "iters_in_restoration": 0,
+                    "iters_w_regularization": 5,
+                    "numerical_issues": 5,
+                },
+            },
+            2: {
+                "success": False,
+                "results": {
+                    "iters_in_restoration": 0,
+                    "iters_w_regularization": 0,
+                    "numerical_issues": 0,
+                },
+            },
+        }
+
+        ca.report_convergence_summary(stream)
+
+        expected = """Successes: 2, Failures 1 (66.66666666666667%)
+Runs with Restoration: 1
+Runs with Regularization: 1
+Runs with Numerical Issues: 2
+"""
+
+        assert stream.getvalue() == expected
+
     @pytest.mark.component
     def test_to_dict(self, ca_with_results):
         outdict = ca_with_results.to_dict()
