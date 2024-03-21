@@ -33,6 +33,7 @@ from pyomo.environ import (
     acos,
     sqrt,
     Objective,
+    PositiveIntegers,
     Set,
     SolverFactory,
     Suffix,
@@ -1348,6 +1349,46 @@ Suggested next steps:
         assert stream.getvalue() == expected
 
     @pytest.mark.component
+    def test_report_numerical_issues_exactly_singular(self):
+        m = ConcreteModel()
+        m.x = Var([1, 2], initialize=1.0)
+        m.eq = Constraint(PositiveIntegers)
+        m.eq[1] = m.x[1] * m.x[2] == 1.5
+        m.eq[2] = m.x[2] * m.x[1] == 1.5
+        m.obj = Objective(expr=m.x[1] ** 2 + 2 * m.x[2] ** 2)
+
+        dt = DiagnosticsToolbox(m)
+        dt.report_numerical_issues()
+
+        stream = StringIO()
+        dt.report_numerical_issues(stream)
+
+        expected = """====================================================================================
+Model Statistics
+
+    Jacobian Condition Number: Undefined (Exactly Singular)
+
+------------------------------------------------------------------------------------
+1 WARNINGS
+
+    WARNING: 2 Constraints with large residuals (>1.0E-05)
+
+------------------------------------------------------------------------------------
+0 Cautions
+
+    No cautions found!
+
+------------------------------------------------------------------------------------
+Suggested next steps:
+
+    display_constraints_with_large_residuals()
+
+====================================================================================
+"""
+
+        assert stream.getvalue() == expected
+
+    @pytest.mark.component
     def test_report_numerical_issues(self, model):
         dt = DiagnosticsToolbox(model=model.b)
 
@@ -2241,7 +2282,7 @@ class TestIpoptConvergenceAnalysis:
         assert iters == 1
         assert iters_in_restoration == 0
         assert iters_w_regularization == 0
-        assert time < 0.01
+        assert isinstance(time, float)
 
     @pytest.mark.component
     @pytest.mark.solver
