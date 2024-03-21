@@ -495,7 +495,7 @@ class ParameterSweepBase:
             results = self.build_outputs(model, run_stats)
         else:
             # Catch any Exception for recourse
-            results, success = self.handle_error(model)
+            results = self.handle_error(model)
 
         _log.info(f"Sample {sample_id} finished.")
 
@@ -697,8 +697,8 @@ class ParameterSweepBase:
             Output of handle_solver_error callback
         """
         if self.config.handle_solver_error is None:
-            # No recourse specified, so success=False and results=None
-            return None, False
+            # No recourse specified, so results=None
+            return None
         else:
             args = self.config.handle_solver_error_arguments
             if args is None:
