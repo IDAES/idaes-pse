@@ -310,7 +310,10 @@ def test_config_validation(caplog):
         "Defaulting to finite "
         "difference method on the hot side."
     ) in caplog.text
-    assert m.fs.HX_countercurrent2.config.hot_side.transformation_method == "dae.finite_difference"
+    assert (
+        m.fs.HX_countercurrent2.config.hot_side.transformation_method
+        == "dae.finite_difference"
+    )
     assert (
         "Discretization method was "
         "not specified for the cold side of the "
@@ -318,7 +321,10 @@ def test_config_validation(caplog):
         "Defaulting to finite "
         "difference method on the cold side."
     ) in caplog.text
-    assert m.fs.HX_countercurrent2.config.cold_side.transformation_method == "dae.finite_difference"
+    assert (
+        m.fs.HX_countercurrent2.config.cold_side.transformation_method
+        == "dae.finite_difference"
+    )
     assert (
         "For cold_side, a BACKWARD scheme was chosen to discretize the length domain. "
         "However, this scheme is not an upwind scheme for countercurrent flow, and "
@@ -369,7 +375,10 @@ def test_config_validation(caplog):
         "Defaulting to finite "
         "difference method on the hot side."
     ) in caplog.text
-    assert m.fs.HX_cocurrent1.config.hot_side.transformation_method == "dae.finite_difference"
+    assert (
+        m.fs.HX_cocurrent1.config.hot_side.transformation_method
+        == "dae.finite_difference"
+    )
     assert (
         "Discretization method was "
         "not specified for the cold side of the "
@@ -377,7 +386,10 @@ def test_config_validation(caplog):
         "Defaulting to finite "
         "difference method on the cold side."
     ) in caplog.text
-    assert m.fs.HX_cocurrent1.config.cold_side.transformation_method == "dae.finite_difference"
+    assert (
+        m.fs.HX_cocurrent1.config.cold_side.transformation_method
+        == "dae.finite_difference"
+    )
     caplog.clear()
 
     with caplog.at_level(idaeslog.INFO):
@@ -454,9 +466,6 @@ def test_config_validation(caplog):
             },
             flow_type=HeatExchangerFlowPattern.cocurrent,
         )
-    
-
-    
 
 
 # -----------------------------------------------------------------------------
@@ -681,6 +690,7 @@ class TestBTX_cocurrent(object):
             )
         )
         assert abs(hot_side - cold_side) <= 1e-6
+
 
 # -----------------------------------------------------------------------------
 class TestBTX_countercurrent(object):
@@ -912,6 +922,7 @@ class TestBTX_countercurrent(object):
     def test_numerical_issues(self, btx):
         dt = DiagnosticsToolbox(btx)
         dt.assert_no_numerical_warnings()
+
 
 # -----------------------------------------------------------------------------
 class TestBTX_collocation(object):
