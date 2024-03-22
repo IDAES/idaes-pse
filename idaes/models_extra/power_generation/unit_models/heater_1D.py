@@ -11,7 +11,7 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-1-D Cross Flow Heat Exchanger Model With Wall Temperatures
+1-D Electric Trim Heater Model With Wall Temperatures
 
 Discretization based on tube rows
 """
@@ -54,9 +54,8 @@ __author__ = "Jinliang Ma, Douglas Allan"
 
 @declare_process_block_class("Heater1D")
 class Heater1DData(UnitModelBlockData):
-    """Standard Heat Exchanger Cross Flow Unit Model Class."""
+    """Standard Trim Heater Model Class Class."""
 
-    # Template for config arguments for shell and tube side
     CONFIG = ConfigBlock()
     CONFIG.declare(
         "dynamic",

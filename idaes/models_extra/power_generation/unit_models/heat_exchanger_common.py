@@ -11,10 +11,10 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-1-D Cross Flow Heat Exchanger Model With Wall Temperatures
-
-Discretization based on tube rows
+Methods shared by the CrossFlowHeatExchanger1D and Heater1D models.
 """
+# Presently the tube methods are not shared. I'm not sure why I chose to extract
+# them here, but I don't want to change things this late into development. --Doug
 
 # Import Pyomo libraries
 from pyomo.environ import (
@@ -701,13 +701,8 @@ def _scale_common(blk, shell, shell_has_pressure_change, make_reynolds, make_nus
     sgsf = iscale.set_and_get_scaling_factor
 
     sf_do_tube = iscale.get_scaling_factor(blk.do_tube, default=1 / value(blk.do_tube))
-
-    sf_di_tube = iscale.get_scaling_factor(blk.do_tube, default=1 / value(blk.di_tube))
     calculate_variable_from_constraint(
         blk.area_flow_shell_min, blk.area_flow_shell_min_eqn
-    )
-    sf_area_flow_shell_min = iscale.get_scaling_factor(
-        blk.area_flow_shell_min, default=1 / value(blk.area_flow_shell_min)
     )
     for t in blk.flowsheet().time:
         for z in shell.length_domain:

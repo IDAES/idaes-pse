@@ -51,7 +51,7 @@ _log = idaeslog.getLogger(__name__)
 
 @declare_process_block_class("CrossFlowHeatExchanger1D")
 class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
-    """Standard Heat Exchanger Cross Flow Unit Model Class."""
+    """Standard Cross Flow Heat Exchanger Unit Model Class."""
 
     CONFIG = HeatExchanger1DData.CONFIG()
     CONFIG.declare(
@@ -148,12 +148,10 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
         add_object_reference(self, "area_flow_tube", tube.area)
         # total tube length of flow path
         add_object_reference(self, "length_flow_tube", tube.length)
-        heat_exchanger_common._make_geometry_common(
-            self, shell_units=shell_units
-        )  # pylint: disable=W0212
-        heat_exchanger_common._make_geometry_tube(
-            self, shell_units=shell_units
-        )  # pylint: disable=W0212
+        # pylint: disable-next=W0212
+        heat_exchanger_common._make_geometry_common(self, shell_units=shell_units)
+        # pylint: disable-next=W0212
+        heat_exchanger_common._make_geometry_tube(self, shell_units=shell_units)
 
     def _make_performance(self):
         """
@@ -648,9 +646,9 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
                     hot_side.properties[t, z].pressure.fix(P_in_hot_side)
 
         blk.temp_wall_center_eqn.deactivate()
-        if tube_has_pressure_change == True:
+        if tube_has_pressure_change:
             blk.deltaP_tube_eqn.deactivate()
-        if shell_has_pressure_change == True:
+        if shell_has_pressure_change:
             blk.deltaP_shell_eqn.deactivate()
         blk.heat_tube_eqn.deactivate()
         blk.heat_shell_eqn.deactivate()
@@ -682,9 +680,9 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
                 "issue on the IDAES Github so this error can be fixed."
             )
 
-        if tube_has_pressure_change == True:
+        if tube_has_pressure_change:
             blk.deltaP_tube_eqn.activate()
-        if shell_has_pressure_change == True:
+        if shell_has_pressure_change:
             blk.deltaP_shell_eqn.activate()
         blk.heat_tube_eqn.activate()
         blk.heat_shell_eqn.activate()
@@ -705,7 +703,7 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
         init_log.info_high("Initialization Step 4 {}.".format(idaeslog.condition(res)))
 
         # set the wall thermal conductivity back to the user specified value
-        blk.therm_cond_wall = therm_cond_wall_save
+        blk.therm_cond_wall.set_value(therm_cond_wall_save)
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
@@ -741,6 +739,7 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
         tube_has_pressure_change = hasattr(self, "deltaP_tube")
         shell_has_pressure_change = hasattr(self, "deltaP_shell")
 
+        # pylint: disable-next=W0212
         heat_exchanger_common._scale_common(
             self,
             shell,
@@ -748,6 +747,7 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
             make_reynolds=True,
             make_nusselt=True,
         )
+        # pylint: disable-next=W0212
         heat_exchanger_common._scale_tube(
             self, tube, tube_has_pressure_change, make_reynolds=True, make_nusselt=True
         )
