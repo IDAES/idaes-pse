@@ -398,12 +398,6 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
                     b.total_heat_transfer_area * b.log_mean_delta_temperature[t]
                 )
 
-    def set_initial_condition(self):
-        if self.config.dynamic is True:
-            self.heat_accumulation[:, :].value = 0
-            self.heat_accumulation[0, :].fix(0)
-            # no accumulation term for fluid side models to avoid pressure waves
-
     def initialize_build(
         blk,
         shell_state_args=None,

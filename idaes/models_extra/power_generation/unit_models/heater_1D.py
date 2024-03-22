@@ -220,7 +220,7 @@ domain (default=5). Should set to the number of tube rows""",
             default=3,
             domain=int,
             description="Number of collocation points per finite element",
-            doc="""If using collocation, number of collocation points to use 
+            doc="""If using collocation, number of collocation points to use
             per finite element when discretizing length domain (default=3)""",
         ),
     )
@@ -418,13 +418,6 @@ domain (default=5). Should set to the number of tube rows""",
                 -b.control_volume.heat[t, x]
                 + b.electric_heat_duty[t] / b.length_flow_shell
             )
-
-    def set_initial_condition(self):
-        # TODO how to deal with holdup for fluid side?
-        if self.config.dynamic is True:
-            self.heat_accumulation[:, :].value = 0
-            self.heat_accumulation[0, :].fix(0)
-            # no accumulation term for fluid side models to avoid pressure waves
 
     def initialize_build(blk, state_args=None, outlvl=0, solver="ipopt", optarg=None):
         """
