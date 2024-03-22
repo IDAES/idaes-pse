@@ -682,9 +682,239 @@ class TestBTX_cocurrent(object):
         )
         assert abs(hot_side - cold_side) <= 1e-6
 
-
 # -----------------------------------------------------------------------------
 class TestBTX_countercurrent(object):
+    @pytest.fixture(scope="class")
+    def btx(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.properties = BTXParameterBlock(valid_phase="Liq")
+
+        m.fs.unit = HX1D(
+            hot_side={"property_package": m.fs.properties},
+            cold_side={"property_package": m.fs.properties},
+            flow_type=HeatExchangerFlowPattern.countercurrent,
+        )
+
+        m.fs.unit.length.fix(4.85)
+        m.fs.unit.area.fix(0.5)
+        m.fs.unit.heat_transfer_coefficient.fix(500)
+
+        m.fs.unit.hot_side_inlet.flow_mol[0].fix(5)  # mol/s
+        m.fs.unit.hot_side_inlet.temperature[0].fix(365)  # K
+        m.fs.unit.hot_side_inlet.pressure[0].fix(101325)  # Pa
+        m.fs.unit.hot_side_inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+        m.fs.unit.hot_side_inlet.mole_frac_comp[0, "toluene"].fix(0.5)
+
+        m.fs.unit.cold_side_inlet.flow_mol[0].fix(1)  # mol/s
+        m.fs.unit.cold_side_inlet.temperature[0].fix(300)  # K
+        m.fs.unit.cold_side_inlet.pressure[0].fix(101325)  # Pa
+        m.fs.unit.cold_side_inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+        m.fs.unit.cold_side_inlet.mole_frac_comp[0, "toluene"].fix(0.5)
+
+        iscale.calculate_scaling_factors(m.fs.unit)
+
+        return m
+
+    @pytest.mark.unit
+    def test_build(self, btx):
+        assert hasattr(btx.fs.unit, "hot_side_inlet")
+        assert len(btx.fs.unit.hot_side_inlet.vars) == 4
+        assert hasattr(btx.fs.unit.hot_side_inlet, "flow_mol")
+        assert hasattr(btx.fs.unit.hot_side_inlet, "mole_frac_comp")
+        assert hasattr(btx.fs.unit.hot_side_inlet, "temperature")
+        assert hasattr(btx.fs.unit.hot_side_inlet, "pressure")
+
+        assert hasattr(btx.fs.unit, "cold_side_inlet")
+        assert len(btx.fs.unit.cold_side_inlet.vars) == 4
+        assert hasattr(btx.fs.unit.cold_side_inlet, "flow_mol")
+        assert hasattr(btx.fs.unit.cold_side_inlet, "mole_frac_comp")
+        assert hasattr(btx.fs.unit.cold_side_inlet, "temperature")
+        assert hasattr(btx.fs.unit.cold_side_inlet, "pressure")
+
+        assert hasattr(btx.fs.unit, "hot_side_outlet")
+        assert len(btx.fs.unit.hot_side_outlet.vars) == 4
+        assert hasattr(btx.fs.unit.hot_side_outlet, "flow_mol")
+        assert hasattr(btx.fs.unit.hot_side_outlet, "mole_frac_comp")
+        assert hasattr(btx.fs.unit.hot_side_outlet, "temperature")
+        assert hasattr(btx.fs.unit.hot_side_outlet, "pressure")
+
+        assert hasattr(btx.fs.unit, "cold_side_outlet")
+        assert len(btx.fs.unit.cold_side_outlet.vars) == 4
+        assert hasattr(btx.fs.unit.cold_side_outlet, "flow_mol")
+        assert hasattr(btx.fs.unit.cold_side_outlet, "mole_frac_comp")
+        assert hasattr(btx.fs.unit.cold_side_outlet, "temperature")
+        assert hasattr(btx.fs.unit.cold_side_outlet, "pressure")
+
+        assert hasattr(btx.fs.unit, "area")
+        assert hasattr(btx.fs.unit, "length")
+        assert hasattr(btx.fs.unit, "heat_transfer_coefficient")
+        assert hasattr(btx.fs.unit, "heat_transfer_eq")
+        assert hasattr(btx.fs.unit, "heat_conservation")
+
+        assert number_variables(btx) == 824
+        assert number_total_constraints(btx) == 781
+        assert number_unused_variables(btx) == 10
+
+    @pytest.mark.integration
+    def test_structural_issues(self, btx):
+        dt = DiagnosticsToolbox(btx)
+        dt.assert_no_structural_warnings()
+
+    @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_performance_contents(self, btx):
+        perf_dict = btx.fs.unit._get_performance_contents()
+
+        assert perf_dict == {
+            "vars": {
+                "Area": btx.fs.unit.area,
+                "Length": btx.fs.unit.hot_side.length,
+            }
+        }
+
+    @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_stream_table_contents(self, btx):
+        stable = btx.fs.unit._get_stream_table_contents()
+
+        expected = {
+            "Units": {
+                "flow_mol": getattr(pyunits.pint_registry, "mole/second"),
+                "mole_frac_comp benzene": getattr(
+                    pyunits.pint_registry, "dimensionless"
+                ),
+                "mole_frac_comp toluene": getattr(
+                    pyunits.pint_registry, "dimensionless"
+                ),
+                "temperature": getattr(pyunits.pint_registry, "kelvin"),
+                "pressure": getattr(pyunits.pint_registry, "Pa"),
+            },
+            "Hot Side Inlet": {
+                "flow_mol": pytest.approx(5.0, rel=1e-4),
+                "mole_frac_comp benzene": pytest.approx(0.5, rel=1e-4),
+                "mole_frac_comp toluene": pytest.approx(0.5, rel=1e-4),
+                "temperature": pytest.approx(365, rel=1e-4),
+                "pressure": pytest.approx(101325.0, rel=1e-4),
+            },
+            "Hot Side Outlet": {
+                "flow_mol": pytest.approx(1, rel=1e-4),
+                "mole_frac_comp benzene": pytest.approx(0.5, rel=1e-4),
+                "mole_frac_comp toluene": pytest.approx(0.5, rel=1e-4),
+                "temperature": pytest.approx(298.15, rel=1e-4),
+                "pressure": pytest.approx(101325.0, rel=1e-4),
+            },
+            "Cold Side Inlet": {
+                "flow_mol": pytest.approx(1.0, rel=1e-4),
+                "mole_frac_comp benzene": pytest.approx(0.5, rel=1e-4),
+                "mole_frac_comp toluene": pytest.approx(0.5, rel=1e-4),
+                "temperature": pytest.approx(300, rel=1e-4),
+                "pressure": pytest.approx(101325.0, rel=1e-4),
+            },
+            "Cold Side Outlet": {
+                "flow_mol": pytest.approx(1, rel=1e-4),
+                "mole_frac_comp benzene": pytest.approx(0.5, rel=1e-4),
+                "mole_frac_comp toluene": pytest.approx(0.5, rel=1e-4),
+                "temperature": pytest.approx(298.15, rel=1e-4),
+                "pressure": pytest.approx(101325.0, rel=1e-4),
+            },
+        }
+
+        assert stable.to_dict() == expected
+
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_initialize(self, btx):
+        initialization_tester(
+            btx,
+            optarg={"tol": 1e-6},
+            hot_side_state_args={"flow_mol": 5, "temperature": 304, "pressure": 101325},
+            cold_side_state_args={
+                "flow_mol": 1,
+                "temperature": 331.5,
+                "pressure": 101325,
+            },
+        )
+
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solve(self, btx):
+        results = solver.solve(btx)
+
+        # Check for optimal solution
+        assert_optimal_termination(results)
+
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solution(self, btx):
+        assert pytest.approx(5, rel=1e-5) == value(
+            btx.fs.unit.hot_side_outlet.flow_mol[0]
+        )
+        assert pytest.approx(355.505, rel=1e-5) == value(
+            btx.fs.unit.hot_side_outlet.temperature[0]
+        )
+        assert pytest.approx(101325, rel=1e-5) == value(
+            btx.fs.unit.hot_side_outlet.pressure[0]
+        )
+
+        assert pytest.approx(1, rel=1e-5) == value(
+            btx.fs.unit.cold_side_outlet.flow_mol[0]
+        )
+        assert pytest.approx(350.67, rel=1e-5) == value(
+            btx.fs.unit.cold_side_outlet.temperature[0]
+        )
+        assert pytest.approx(101325, rel=1e-5) == value(
+            btx.fs.unit.cold_side_outlet.pressure[0]
+        )
+
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_conservation(self, btx):
+        assert (
+            abs(
+                value(
+                    btx.fs.unit.hot_side_inlet.flow_mol[0]
+                    - btx.fs.unit.hot_side_outlet.flow_mol[0]
+                )
+            )
+            <= 1e-6
+        )
+        assert (
+            abs(
+                value(
+                    btx.fs.unit.cold_side_inlet.flow_mol[0]
+                    - btx.fs.unit.cold_side_outlet.flow_mol[0]
+                )
+            )
+            <= 1e-6
+        )
+
+        hot_side = value(
+            btx.fs.unit.hot_side_outlet.flow_mol[0]
+            * (
+                btx.fs.unit.hot_side.properties[0, 0].enth_mol_phase["Liq"]
+                - btx.fs.unit.hot_side.properties[0, 1].enth_mol_phase["Liq"]
+            )
+        )
+        cold_side = value(
+            btx.fs.unit.cold_side_outlet.flow_mol[0]
+            * (
+                btx.fs.unit.cold_side.properties[0, 0].enth_mol_phase["Liq"]
+                - btx.fs.unit.cold_side.properties[0, 1].enth_mol_phase["Liq"]
+            )
+        )
+        assert abs(hot_side - cold_side) <= 1e-6
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, btx):
+        dt = DiagnosticsToolbox(btx)
+        dt.assert_no_numerical_warnings()
+
+# -----------------------------------------------------------------------------
+class TestBTX_collocation(object):
     @pytest.fixture(scope="class")
     def btx(self):
         m = ConcreteModel()
