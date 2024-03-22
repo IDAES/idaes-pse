@@ -28,6 +28,7 @@ from pyomo.util.check_units import assert_units_consistent, assert_units_equival
 import pyomo.common.unittest as unittest
 
 import idaes
+import idaes.logger as idaeslog
 from idaes.core import (
     FlowsheetBlock,
     MaterialBalanceType,
@@ -273,27 +274,14 @@ def test_config():
 
 
 @pytest.mark.unit
-def test_config_validation():
+def test_config_validation(caplog):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.properties = BTXParameterBlock(valid_phase="Liq")
 
     with pytest.raises(ConfigurationError):
-        m.fs.HX_co_current = HX1D(
-            hot_side={
-                "property_package": m.fs.properties,
-                "transformation_scheme": "BACKWARD",
-            },
-            cold_side={
-                "property_package": m.fs.properties,
-                "transformation_scheme": "FORWARD",
-            },
-            flow_type=HeatExchangerFlowPattern.cocurrent,
-        )
-
-    with pytest.raises(ConfigurationError):
-        m.fs.HX_counter_current = HX1D(
+        m.fs.HX_counter_current1 = HX1D(
             hot_side={
                 "property_package": m.fs.properties,
                 "transformation_method": "dae.finite_difference",
@@ -304,6 +292,37 @@ def test_config_validation():
             },
             flow_type=HeatExchangerFlowPattern.countercurrent,
         )
+
+    with caplog.at_level(idaeslog.WARNING):
+        m.fs.HX_cocurrent1 = HX1D(
+            hot_side={
+                "property_package": m.fs.properties,
+            },
+            cold_side={
+                "property_package": m.fs.properties,
+            },
+            flow_type=HeatExchangerFlowPattern.cocurrent,
+        )
+    assert (
+        "Discretization method was "
+        "not specified for the hot side of the "
+        "heat exchanger. "
+        "Defaulting to finite "
+        "difference method on the hot side."
+    ) in caplog.text
+    assert m.fs.HX_cocurrent1.config.hot_side.transformation_method == "dae.finite_difference"
+    assert (
+        "Discretization method was "
+        "not specified for the cold side of the "
+        "heat exchanger. "
+        "Defaulting to finite "
+        "difference method on the cold side."
+    ) in caplog.text
+    assert m.fs.HX_cocurrent1.config.cold_side.transformation_method == "dae.finite_difference"
+
+    
+
+    
 
 
 # -----------------------------------------------------------------------------
@@ -540,9 +559,19 @@ class TestBTX_countercurrent(object):
         m.fs.properties = BTXParameterBlock(valid_phase="Liq")
 
         m.fs.unit = HX1D(
-            hot_side={"property_package": m.fs.properties},
-            cold_side={"property_package": m.fs.properties},
+            hot_side={
+                "property_package": m.fs.properties,
+                "transformation_method": "dae.collocation",
+                "transformation_scheme": "LAGRANGE-LEGENDRE",
+            },
+            cold_side={
+                "property_package": m.fs.properties,
+                "transformation_method": "dae.collocation",
+                "transformation_scheme": "LAGRANGE-LEGENDRE",
+            },
             flow_type=HeatExchangerFlowPattern.countercurrent,
+            finite_elements=2,
+            collocation_points=5,
         )
 
         m.fs.unit.length.fix(4.85)
@@ -601,8 +630,8 @@ class TestBTX_countercurrent(object):
         assert hasattr(btx.fs.unit, "heat_transfer_eq")
         assert hasattr(btx.fs.unit, "heat_conservation")
 
-        assert number_variables(btx) == 824
-        assert number_total_constraints(btx) == 781
+        assert number_variables(btx) == 512
+        assert number_total_constraints(btx) == 477
         assert number_unused_variables(btx) == 10
 
     @pytest.mark.integration
@@ -709,7 +738,7 @@ class TestBTX_countercurrent(object):
         assert pytest.approx(5, rel=1e-5) == value(
             btx.fs.unit.hot_side_outlet.flow_mol[0]
         )
-        assert pytest.approx(355.505, rel=1e-5) == value(
+        assert pytest.approx(355.6370, rel=1e-5) == value(
             btx.fs.unit.hot_side_outlet.temperature[0]
         )
         assert pytest.approx(101325, rel=1e-5) == value(
@@ -719,7 +748,7 @@ class TestBTX_countercurrent(object):
         assert pytest.approx(1, rel=1e-5) == value(
             btx.fs.unit.cold_side_outlet.flow_mol[0]
         )
-        assert pytest.approx(350.67, rel=1e-5) == value(
+        assert pytest.approx(350.0019, rel=1e-5) == value(
             btx.fs.unit.cold_side_outlet.temperature[0]
         )
         assert pytest.approx(101325, rel=1e-5) == value(
@@ -1012,8 +1041,12 @@ class TestIAPWS_countercurrent(object):
         )
 
         m.fs.unit = HX1D(
-            hot_side={"property_package": m.fs.properties},
-            cold_side={"property_package": m.fs.properties},
+            hot_side={
+                "property_package": m.fs.properties,
+            },
+            cold_side={
+                "property_package": m.fs.properties,
+            },
             flow_type=HeatExchangerFlowPattern.countercurrent,
         )
 
