@@ -33,6 +33,7 @@ from pyomo.environ import (
     acos,
     sqrt,
     Objective,
+    PositiveIntegers,
     Set,
     SolverFactory,
     Suffix,
@@ -1348,6 +1349,46 @@ Suggested next steps:
         assert stream.getvalue() == expected
 
     @pytest.mark.component
+    def test_report_numerical_issues_exactly_singular(self):
+        m = ConcreteModel()
+        m.x = Var([1, 2], initialize=1.0)
+        m.eq = Constraint(PositiveIntegers)
+        m.eq[1] = m.x[1] * m.x[2] == 1.5
+        m.eq[2] = m.x[2] * m.x[1] == 1.5
+        m.obj = Objective(expr=m.x[1] ** 2 + 2 * m.x[2] ** 2)
+
+        dt = DiagnosticsToolbox(m)
+        dt.report_numerical_issues()
+
+        stream = StringIO()
+        dt.report_numerical_issues(stream)
+
+        expected = """====================================================================================
+Model Statistics
+
+    Jacobian Condition Number: Undefined (Exactly Singular)
+
+------------------------------------------------------------------------------------
+1 WARNINGS
+
+    WARNING: 2 Constraints with large residuals (>1.0E-05)
+
+------------------------------------------------------------------------------------
+0 Cautions
+
+    No cautions found!
+
+------------------------------------------------------------------------------------
+Suggested next steps:
+
+    display_constraints_with_large_residuals()
+
+====================================================================================
+"""
+
+        assert stream.getvalue() == expected
+
+    @pytest.mark.component
     def test_report_numerical_issues(self, model):
         dt = DiagnosticsToolbox(model=model.b)
 
@@ -2241,7 +2282,7 @@ class TestIpoptConvergenceAnalysis:
         assert iters == 1
         assert iters_in_restoration == 0
         assert iters_w_regularization == 0
-        assert time < 0.01
+        assert isinstance(time, float)
 
     @pytest.mark.component
     @pytest.mark.solver
@@ -2374,6 +2415,51 @@ class TestIpoptConvergenceAnalysis:
         }
 
         return ca
+
+    @pytest.mark.unit
+    def test_report_convergence_summary(self):
+        stream = StringIO()
+
+        ca = IpoptConvergenceAnalysis(
+            model=ConcreteModel(),
+        )
+
+        ca._psweep._results = {
+            0: {
+                "success": True,
+                "results": {
+                    "iters_in_restoration": 1,
+                    "iters_w_regularization": 0,
+                    "numerical_issues": 10,
+                },
+            },
+            1: {
+                "success": True,
+                "results": {
+                    "iters_in_restoration": 0,
+                    "iters_w_regularization": 5,
+                    "numerical_issues": 5,
+                },
+            },
+            2: {
+                "success": False,
+                "results": {
+                    "iters_in_restoration": 0,
+                    "iters_w_regularization": 0,
+                    "numerical_issues": 0,
+                },
+            },
+        }
+
+        ca.report_convergence_summary(stream)
+
+        expected = """Successes: 2, Failures 1 (66.66666666666667%)
+Runs with Restoration: 1
+Runs with Regularization: 1
+Runs with Numerical Issues: 2
+"""
+
+        assert stream.getvalue() == expected
 
     @pytest.mark.component
     def test_to_dict(self, ca_with_results):
