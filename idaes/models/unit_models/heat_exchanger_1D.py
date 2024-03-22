@@ -916,7 +916,7 @@ cold side flows from 1 to 0""",
 def _log_upwinding_disclaimer(side, flow_config, bad_scheme, good_scheme):
     _log.info(
         f"For {side}, a {bad_scheme} scheme was chosen to discretize the length domain. "
-        f"However, this scheme is not an upwind scheme for {flow_config}, and "
+        f"However, this scheme is not an upwind scheme for {flow_config} flow, and "
         f"as a result may run into numerical stability issues. To avoid this, "
         f"use a {good_scheme} scheme (which may result into energy conservation issues "
         "for coarse discretizations) or use a high-order collocation method."

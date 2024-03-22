@@ -292,6 +292,65 @@ def test_config_validation(caplog):
             },
             flow_type=HeatExchangerFlowPattern.countercurrent,
         )
+    caplog.clear()
+    with caplog.at_level(idaeslog.INFO):
+        m.fs.HX_countercurrent2 = HX1D(
+            hot_side={
+                "property_package": m.fs.properties,
+            },
+            cold_side={
+                "property_package": m.fs.properties,
+            },
+            flow_type=HeatExchangerFlowPattern.countercurrent,
+        )
+    assert (
+        "Discretization method was "
+        "not specified for the hot side of the "
+        "heat exchanger. "
+        "Defaulting to finite "
+        "difference method on the hot side."
+    ) in caplog.text
+    assert m.fs.HX_countercurrent2.config.hot_side.transformation_method == "dae.finite_difference"
+    assert (
+        "Discretization method was "
+        "not specified for the cold side of the "
+        "heat exchanger. "
+        "Defaulting to finite "
+        "difference method on the cold side."
+    ) in caplog.text
+    assert m.fs.HX_countercurrent2.config.cold_side.transformation_method == "dae.finite_difference"
+    assert (
+        "For cold_side, a BACKWARD scheme was chosen to discretize the length domain. "
+        "However, this scheme is not an upwind scheme for countercurrent flow, and "
+        "as a result may run into numerical stability issues. To avoid this, "
+        "use a FORWARD scheme (which may result into energy conservation issues "
+        "for coarse discretizations) or use a high-order collocation method."
+    ) in caplog.text
+    caplog.clear()
+
+    with caplog.at_level(idaeslog.INFO):
+        m.fs.HX_countercurrent3 = HX1D(
+            hot_side={
+                "property_package": m.fs.properties,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+            },
+            cold_side={
+                "property_package": m.fs.properties,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "FORWARD",
+            },
+            flow_type=HeatExchangerFlowPattern.countercurrent,
+        )
+    assert "To avoid" not in caplog.text
+    assert (
+        "The hot and cold sides are being discretized with different "
+        "discretization schemes. While this may result in better numerical "
+        "stability if an upwind scheme is used, it may also result in "
+        "energy conservation errors. High-order collocation methods can "
+        "provide both accuracy and numerical stability."
+    ) in caplog.text
+    caplog.clear()
 
     with caplog.at_level(idaeslog.WARNING):
         m.fs.HX_cocurrent1 = HX1D(
@@ -319,7 +378,82 @@ def test_config_validation(caplog):
         "difference method on the cold side."
     ) in caplog.text
     assert m.fs.HX_cocurrent1.config.cold_side.transformation_method == "dae.finite_difference"
+    caplog.clear()
 
+    with caplog.at_level(idaeslog.INFO):
+        m.fs.HX_cocurrent2 = HX1D(
+            hot_side={
+                "property_package": m.fs.properties,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "FORWARD",
+            },
+            cold_side={
+                "property_package": m.fs.properties,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "FORWARD",
+            },
+            flow_type=HeatExchangerFlowPattern.cocurrent,
+        )
+    assert (
+        "For hot_side, a FORWARD scheme was chosen to discretize the length domain. "
+        "However, this scheme is not an upwind scheme for cocurrent flow, and "
+        "as a result may run into numerical stability issues. To avoid this, "
+        "use a BACKWARD scheme (which may result into energy conservation issues "
+        "for coarse discretizations) or use a high-order collocation method."
+    ) in caplog.text
+    assert (
+        "For cold_side, a FORWARD scheme was chosen to discretize the length domain. "
+        "However, this scheme is not an upwind scheme for cocurrent flow, and "
+        "as a result may run into numerical stability issues. To avoid this, "
+        "use a BACKWARD scheme (which may result into energy conservation issues "
+        "for coarse discretizations) or use a high-order collocation method."
+    ) in caplog.text
+    caplog.clear()
+
+    with caplog.at_level(idaeslog.INFO):
+        m.fs.HX_cocurrent3 = HX1D(
+            hot_side={
+                "property_package": m.fs.properties,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "FORWARD",
+            },
+            cold_side={
+                "property_package": m.fs.properties,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+            },
+            flow_type=HeatExchangerFlowPattern.cocurrent,
+        )
+    assert (
+        "For hot_side, a FORWARD scheme was chosen to discretize the length domain. "
+        "However, this scheme is not an upwind scheme for cocurrent flow, and "
+        "as a result may run into numerical stability issues. To avoid this, "
+        "use a BACKWARD scheme (which may result into energy conservation issues "
+        "for coarse discretizations) or use a high-order collocation method."
+    ) in caplog.text
+    assert (
+        "The hot and cold sides are being discretized with different "
+        "discretization schemes. While this may result in better numerical "
+        "stability if an upwind scheme is used, it may also result in "
+        "energy conservation errors. High-order collocation methods can "
+        "provide both accuracy and numerical stability."
+    ) in caplog.text
+    caplog.clear()
+
+    with pytest.raises(ConfigurationError):
+        m.fs.HX_cocurrent4 = HX1D(
+            hot_side={
+                "property_package": m.fs.properties,
+                "transformation_method": "dae.collocation",
+                "transformation_scheme": "LAGRANGE-RADAU",
+            },
+            cold_side={
+                "property_package": m.fs.properties,
+                "transformation_method": "dae.collocation",
+                "transformation_scheme": "LAGRANGE-LEGENDRE",
+            },
+            flow_type=HeatExchangerFlowPattern.cocurrent,
+        )
     
 
     
