@@ -1121,7 +1121,7 @@ The following pairs of variables are nearly parallel:
 
         warnings, next_steps = dt._collect_numerical_warnings()
 
-        assert len(warnings) == 3
+        assert len(warnings) == 4
         assert (
             "WARNING: 2 Variables with extreme Jacobian values (<1.0E-08 or >1.0E+08)"
             in warnings
@@ -1132,7 +1132,7 @@ The following pairs of variables are nearly parallel:
         )
         assert "WARNING: 1 Constraint with large residuals (>1.0E-05)" in warnings
 
-        assert len(next_steps) == 3
+        assert len(next_steps) == 4
         assert "display_variables_with_extreme_jacobians()" in next_steps
         assert "display_constraints_with_extreme_jacobians()" in next_steps
         assert "display_constraints_with_large_residuals()" in next_steps
@@ -1338,8 +1338,7 @@ Model Statistics
 Suggested next steps:
 
     If you still have issues converging your model consider:
-        display_near_parallel_constraints()
-        display_near_parallel_variables()
+
         prepare_degeneracy_hunter()
         prepare_svd_toolbox()
 
@@ -1369,9 +1368,11 @@ Model Statistics
     Jacobian Condition Number: Undefined (Exactly Singular)
 
 ------------------------------------------------------------------------------------
-1 WARNINGS
+3 WARNINGS
 
     WARNING: 2 Constraints with large residuals (>1.0E-05)
+    WARNING: 1 pair of constraints are parallel (to tolerance 0.0001)
+    WARNING: 1 pair of variables are parallel (to tolerance 0.0001)
 
 ------------------------------------------------------------------------------------
 0 Cautions
@@ -1382,6 +1383,8 @@ Model Statistics
 Suggested next steps:
 
     display_constraints_with_large_residuals()
+    display_near_parallel_constraints()
+    display_near_parallel_variables()
 
 ====================================================================================
 """
@@ -1448,11 +1451,12 @@ Model Statistics
     Jacobian Condition Number: 1.407E+18
 
 ------------------------------------------------------------------------------------
-3 WARNINGS
+4 WARNINGS
 
     WARNING: 1 Constraint with large residuals (>1.0E-05)
     WARNING: 2 Variables with extreme Jacobian values (<1.0E-08 or >1.0E+08)
     WARNING: 1 Constraint with extreme Jacobian values (<1.0E-08 or >1.0E+08)
+    WARNING: 1 pair of variables are parallel (to tolerance 0.0001)
 
 ------------------------------------------------------------------------------------
 4 Cautions
@@ -1468,6 +1472,7 @@ Suggested next steps:
     display_constraints_with_large_residuals()
     display_variables_with_extreme_jacobians()
     display_constraints_with_extreme_jacobians()
+    display_near_parallel_variables()
 
 ====================================================================================
 """
