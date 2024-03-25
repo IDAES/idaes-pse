@@ -15,6 +15,8 @@
 # pylint: disable=missing-class-docstring
 
 from pyomo.environ import SolverFactory
+from pyomo.contrib.solver.base import LegacySolverWrapper
+
 import idaes
 
 
@@ -44,7 +46,7 @@ class SolverWrapper(object):
             solver = self.solver
 
         # TODO: new solvers use solver_options in place of options
-        if name.endswith("_v2"):
+        if isinstance(solver, LegacySolverWrapper):
             sopt_name = "solver_options"
         else:
             sopt_name = "options"
@@ -64,12 +66,15 @@ class SolverWrapper(object):
                     for opk, opv in v.items():
                         if opk not in kwargs[sopt_name]:
                             kwargs[sopt_name][opk] = opv
+                elif k == "writer_config":
+                    # writer_config is in ConfigBlock and in kwargs, treat "writer_config"
+                    # special so individual options can have defaults not just
+                    # the whole options block
+                    for opk, opv in v.items():
+                        if opk not in kwargs["writer_config"]:
+                            kwargs["writer_config"][opk] = opv
 
         solver_obj = solver(*args, **kwargs)
-
-        # TODO: Placeholder for v2 solvers to disable scaling
-        if name.endswith("_v2"):
-            solver_obj.config.writer_config.scale_model = False
 
         return solver_obj
 

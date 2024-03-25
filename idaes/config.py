@@ -369,6 +369,25 @@ def _new_idaes_config_block():
         ),
     )
 
+    cfg["ipopt_v2"].declare(
+        "writer_config",
+        pyomo.common.config.ConfigBlock(
+            implicit=True,
+            description="Default writer configuration for 'ipopt'",
+            doc="Default writer configuration for 'ipopt' solver",
+        ),
+    )
+
+    cfg["ipopt_v2"]["writer_config"].declare(
+        "scale_model",
+        pyomo.common.config.ConfigValue(
+            domain=bool,
+            default=False,  # TODO: Change to true once transition complete
+            description="Whether to apply model scaling in writer",
+            doc="Whether to apply model scaling in writer",
+        ),
+    )
+
     cfg.declare(
         "ipopt_l1",
         pyomo.common.config.ConfigBlock(

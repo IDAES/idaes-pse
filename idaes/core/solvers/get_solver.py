@@ -15,6 +15,8 @@
 This module contains the IDAES get_solver method.
 """
 
+from pyomo.contrib.solver.base import LegacySolverWrapper
+
 import idaes.logger as idaeslog
 import idaes.core.solvers
 
@@ -22,7 +24,7 @@ _log = idaeslog.getLogger(__name__)
 
 
 # Author: Andrew Lee
-def get_solver(solver=None, options=None):
+def get_solver(solver=None, options=None, writer_config=None):
     """
     General method for getting a solver object which defaults to the standard
     IDAES solver (defined in the IDAES configuration).
@@ -32,6 +34,9 @@ def get_solver(solver=None, options=None):
         options: dict of solver options to use, overwrites any settings
                  provided by IDAES configuration. Default = None, use default
                  solver options.
+        writer_config: dict of configuration options for solver writer, overwrites
+                 ny settings provided by IDAES configuration. Default = None, use
+                 default solver options.
 
     Returns:
         A Pyomo solver object
@@ -40,7 +45,15 @@ def get_solver(solver=None, options=None):
         solver = "default"
     solver_obj = idaes.core.solvers.SolverWrapper(solver, register=False)()
 
-    if options is not None:
-        solver_obj.options.update(options)
+    if isinstance(solver_obj, LegacySolverWrapper):
+        if options is not None:
+            for k, v in options.items():
+                solver_obj.config.solver_options[k] = v
+        if writer_config is not None:
+            for k, v in writer_config.items():
+                solver_obj.config.writer_config[k] = v
+    else:
+        if options is not None:
+            solver_obj.options.update(options)
 
     return solver_obj
