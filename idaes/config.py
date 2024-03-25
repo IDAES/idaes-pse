@@ -323,6 +323,72 @@ def _new_idaes_config_block():
     )
 
     cfg.declare(
+        "ipopt_v2",
+        pyomo.common.config.ConfigBlock(
+            implicit=False,
+            description="Default config for 'ipopt' solver",
+            doc="Default config for 'ipopt' solver",
+        ),
+    )
+    cfg["ipopt_v2"].declare(
+        "solver_options",
+        pyomo.common.config.ConfigBlock(
+            implicit=True,
+            description="Default solver options for 'ipopt'",
+            doc="Default solver options for 'ipopt' solver",
+        ),
+    )
+
+    cfg["ipopt_v2"]["solver_options"].declare(
+        "nlp_scaling_method",
+        pyomo.common.config.ConfigValue(
+            domain=str,
+            default="gradient-based",
+            description="Ipopt NLP scaling method",
+            doc="Ipopt NLP scaling method",
+        ),
+    )
+
+    cfg["ipopt_v2"]["solver_options"].declare(
+        "tol",
+        pyomo.common.config.ConfigValue(
+            domain=float,
+            default=1e-6,
+            description="Ipopt tol option",
+            doc="Ipopt tol option",
+        ),
+    )
+
+    cfg["ipopt_v2"]["solver_options"].declare(
+        "max_iter",
+        pyomo.common.config.ConfigValue(
+            domain=int,
+            default=200,
+            description="Ipopt max_iter option",
+            doc="Ipopt max_iter option",
+        ),
+    )
+
+    cfg["ipopt_v2"].declare(
+        "writer_config",
+        pyomo.common.config.ConfigBlock(
+            implicit=True,
+            description="Default writer configuration for 'ipopt'",
+            doc="Default writer configuration for 'ipopt' solver",
+        ),
+    )
+
+    cfg["ipopt_v2"]["writer_config"].declare(
+        "scale_model",
+        pyomo.common.config.ConfigValue(
+            domain=bool,
+            default=False,  # TODO: Change to true once transition complete
+            description="Whether to apply model scaling in writer",
+            doc="Whether to apply model scaling in writer",
+        ),
+    )
+
+    cfg.declare(
         "ipopt_l1",
         pyomo.common.config.ConfigBlock(
             implicit=False,
