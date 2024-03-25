@@ -504,7 +504,7 @@ class PriceTakerModel(ConcreteModel):
             setattr(
                 blk,
                 "capacity_limit_high_" + commodity_var,
-                Constraint(self.range_time_steps, rule=capacity_low_limit_rule),
+                Constraint(self.range_time_steps, rule=capacity_high_limit_rule),
             )
 
         elif constraint_type == "nonlinear" and linearization:
