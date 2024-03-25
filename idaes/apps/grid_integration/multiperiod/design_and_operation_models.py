@@ -107,11 +107,6 @@ class OperationModelData(SkeletonUnitModelData):
         ),
     )
 
-    CONFIG.declare(
-        "capacity_var",
-        ConfigValue(default=None, doc="capacity variable"),
-    )
-
     # noinspection PyAttributeOutsideInit
     def build(self):
         super().build()
@@ -141,86 +136,3 @@ class OperationModelData(SkeletonUnitModelData):
             )
 
         self.config.model_func(self, **self.config.model_args)
-
-        if isinstance(self.config.capacity_var, str):
-            self._add_capacity_aux_vars()
-
-    def _add_capacity_aux_vars(self):
-        aux_op_mode = self.config.capacity_var.split(".")[-1] + "_op_mode"
-        aux_startup = self.config.capacity_var.split(".")[-1] + "_startup"
-        aux_shutdown = self.config.capacity_var.split(".")[-1] + "_shutdown"
-
-        setattr(self, aux_op_mode, Var())
-        setattr(self, aux_startup, Var())
-        setattr(self, aux_shutdown, Var())
-
-        aux_var_op_mode = getattr(self, aux_op_mode)
-        aux_var_startup = getattr(self, aux_startup)
-        aux_var_shutdown = getattr(self, aux_shutdown)
-        for blk in self.config.model_args:
-            if isinstance(self.config.model_args[blk], DesignModelData):
-                design_blk = self.config.model_args[blk]
-
-        capacity = deepgetattr(design_blk, self.config.capacity_var)
-        capacity_ub = deepgetattr(design_blk, self.config.capacity_var + ".ub")
-        capacity_lb = deepgetattr(design_blk, self.config.capacity_var + ".lb")
-
-        setattr(
-            self,
-            self.config.capacity_var.split(".")[-1] + "_linearization_con1",
-            Constraint(
-                expr=(
-                    design_blk.build_unit - self.op_mode - self.startup - self.shutdown
-                )
-                * capacity_lb
-                <= capacity - aux_var_op_mode - aux_var_startup - aux_var_shutdown
-            ),
-        )
-
-        setattr(
-            self,
-            self.config.capacity_var.split(".")[-1] + "_linearization_con2",
-            Constraint(
-                expr=(
-                    design_blk.build_unit - self.op_mode - self.startup - self.shutdown
-                )
-                * capacity_ub
-                >= capacity - aux_var_op_mode - aux_var_startup - aux_var_shutdown
-            ),
-        )
-
-        setattr(
-            self,
-            self.config.capacity_var.split(".")[-1] + "_linearization_con3",
-            Constraint(expr=(self.op_mode * capacity_lb <= aux_var_op_mode)),
-        )
-
-        setattr(
-            self,
-            self.config.capacity_var.split(".")[-1] + "_linearization_con4",
-            Constraint(expr=(self.op_mode * capacity_ub >= aux_var_op_mode)),
-        )
-
-        setattr(
-            self,
-            self.config.capacity_var.split(".")[-1] + "_linearization_con5",
-            Constraint(expr=(self.startup * capacity_lb <= aux_var_startup)),
-        )
-
-        setattr(
-            self,
-            self.config.capacity_var.split(".")[-1] + "_linearization_con6",
-            Constraint(expr=(self.startup * capacity_ub >= aux_var_startup)),
-        )
-
-        setattr(
-            self,
-            self.config.capacity_var.split(".")[-1] + "_linearization_con7",
-            Constraint(expr=(self.shutdown * capacity_lb <= aux_var_shutdown)),
-        )
-
-        setattr(
-            self,
-            self.config.capacity_var.split(".")[-1] + "_linearization_con8",
-            Constraint(expr=(self.shutdown * capacity_ub >= aux_var_shutdown)),
-        )

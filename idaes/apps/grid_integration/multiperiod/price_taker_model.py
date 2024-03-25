@@ -388,12 +388,6 @@ class PriceTakerModel(ConcreteModel):
             return
 
     def build_multiperiod_model(self, **kwargs):
-
-        # if not self.model_sets_available:
-        #     raise Exception(
-        #         "Model sets have not been defined. Run get_lmp_data to construct model sets"
-        #     )
-
         self.mp_model = MultiPeriodModel(
             n_time_points=self._n_time_points,
             set_days=self.set_days,
@@ -424,6 +418,81 @@ class PriceTakerModel(ConcreteModel):
                             )
                         blk.LMP = self.LMP[p]
 
+    def add_capacity_limits(
+        self,
+        op_blk,
+        design_blk,
+        commodity_var,
+        capacity_min,
+        capacity_max,
+        constraint_type,
+        linearization=False,
+    ):
+        """
+        Adds capacity limit constraints of the form:
+                capacity_min * y(t) <= commodity_var(t) <= capacity_max * y(t)
+                ex: P_min * y(t) <= P(t) <= P_max * y(t) [where P(t) is power at time t]
+
+
+            Args:
+                op_blk:             String of the name of the operation model block, ex: ("fs.op_name")
+                design_blk:         String of the name of the design model block, ex: ("m.design_name")
+                commodity_var:      String of the name of the entity on the model the capacity constraints
+                                    will be applied to, ex: ("total_power")
+                capacity_min:       String of the name of the minimum capacity, ex: ("min_power_capacity")
+                capacity_max:       String of the name of the maximum capacity, ex: ("max_power_capacity")
+                constraint_type:    String to choose between linear and nonlinear constraints. Valid
+                                    inputs are in: ["linear", "nonlinear"]
+                linearization:      Boolean indicating whether linearization is used when constraint_type is
+                                    "nonlinear", True to use linearization, False otherwise
+
+            Assumptions/relationship:
+                capacity min <= capacity max
+                capacity min >= 0
+                capacity max >= 0
+        """
+        op_mode = {
+            t: deepgetattr(self.mp_model.period[t], op_blk + ".op_mode")
+            for t in self.mp_model.period
+        }
+        var_commodity = {
+            t: deepgetattr(self.mp_model.period[t], op_blk + "." + commodity_var)
+            for t in self.mp_model.period
+        }
+        max_capacity = deepgetattr(self, design_blk + "." + capacity_max)
+        min_capacity = deepgetattr(self, design_blk + "." + capacity_min)
+        
+        # Importing in the necessary variables
+        if not hasattr(self, "range_time_steps"):
+            self.range_time_steps = RangeSet(len(self.mp_model.set_period))
+        
+        blk_name = op_blk.split(".")[-1] + "_capacity_limits"
+        setattr(self.mp_model, blk_name, Block())
+        blk = getattr(self.mp_model, blk_name)
+        
+        # Constraint rules for avoiding overlap for multiple-commodity naming
+        def capacity_low_limit_rule(b, t):
+                return min_capacity * op_mode[self.mp_model.set_period.at(t)] <= var_commodity[self.mp_model.set_period.at(t)]
+            
+        def capacity_high_limit_rule(b, t):
+            return max_capacity * op_mode[self.mp_model.set_period.at(t)] >= var_commodity[self.mp_model.set_period.at(t)] 
+
+        if constraint_type == "linear" or (constraint_type == "nonlinear" and not linearization):
+            # Set constraints that have same form
+            setattr(blk, 'capacity_limit_low_' + commodity_var, Constraint(self.range_time_steps, rule=capacity_low_limit_rule))
+            setattr(blk, 'capacity_limit_high_' + commodity_var, Constraint(self.range_time_steps, rule=capacity_low_limit_rule))
+
+        elif constraint_type == "nonlinear" and linearization:
+            raise NotImplementedError(
+                f"You tried use nonlinear capcity with linearization. This is not yet supported."
+            )
+        else:
+            raise ValueError(
+                f"constraint_type must be either linear, or nonliner, but {constraint_type} is not."
+            )
+
+
+    
     def add_ramping_constraints(
         self,
         op_blk,
@@ -492,7 +561,7 @@ class PriceTakerModel(ConcreteModel):
             raise ValueError(
                 f"op_range_lb fraction must be between 0 and 1, but {op_range_lb} is not."
             )
-        if op_range_lb >= shutdown_rate:
+        if op_range_lb > shutdown_rate:
             raise ValueError(
                 f"op_range_lb fraction must be <= shut_down_rate, otherwise the system cannot reach the off state."
             )
@@ -528,32 +597,9 @@ class PriceTakerModel(ConcreteModel):
 
         elif constraint_type == "nonlinear":
             if linearization == True:
-                if hasattr(self, "capacity_startup") == False:
-                    for t in self.mp_model.period:
-                        blk = deepgetattr(self.mp_model.period[t], op_blk)
-                        blk._add_capacity_aux_vars()
-
-                act_startup_rate = {
-                    t: deepgetattr(
-                        self.mp_model.period[t],
-                        op_blk + "." + capacity_var + "_startup",
-                    )
-                    for t in self.mp_model.period
-                }
-                act_shutdown_rate = {
-                    t: deepgetattr(
-                        self.mp_model.period[t],
-                        op_blk + "." + capacity_var + "_shutdown",
-                    )
-                    for t in self.mp_model.period
-                }
-                act_op_mode_rate = {
-                    t: deepgetattr(
-                        self.mp_model.period[t],
-                        op_blk + "." + capacity_var + "_op_mode",
-                    )
-                    for t in self.mp_model.period
-                }
+                raise NotImplementedError(
+                    f"You tried use nonlinear capcity with linearization. This is not yet supported."
+                )
             elif linearization == False:
                 var_capacity = deepgetattr(self, design_blk + "." + capacity_var)
                 act_startup_rate = {
@@ -565,6 +611,10 @@ class PriceTakerModel(ConcreteModel):
                 act_op_mode_rate = {
                     t: var_capacity * op_mode[t] for t in self.mp_model.period
                 }
+        else:
+            raise ValueError(
+                f"constraint_type must be either linear, or nonliner, but {constraint_type} is not."
+            )
 
         # Importing in the necessary variables
         if not hasattr(self, "range_time_steps"):
@@ -606,7 +656,6 @@ class PriceTakerModel(ConcreteModel):
         op_blk,
         design_blk,
         build_binary_var,
-        use_min_time=True,
         up_time=1,
         down_time=1,
     ):
@@ -621,12 +670,10 @@ class PriceTakerModel(ConcreteModel):
             build_binary_var:   String of the name of the binary variable which indicates if we
                                 should build (1) or not build (0) the design corresponding to the
                                 'design_blk' referenced above
-            use_min_time:    Boolean that can bypass constructing minimum up and downtime
-                                constraints. (default: True --> constraints are constructed)
-            up_time:            Time required for the system to start up fully
-                                    ex: 4
-            down_time:          Time required for the system to shutdown fully
-                                    ex: 4
+            up_time:            Time period required for the system to start up fully
+                                    ex: 4 time periods
+            down_time:          Time period required for the system to shutdown fully
+                                    ex: 4 time periods
 
         Returns:
 
@@ -688,32 +735,38 @@ class PriceTakerModel(ConcreteModel):
                 - shut_down[self.mp_model.set_period.at(t)]
             )
 
-        if use_min_time:
+        # Check to see if there is a representative day structure
+        if self.set_days is not None:
+            raise NotImplementedError(
+                f"You tried to use representative days with minimum up or minimum downtime constraints. This is not yet supported."
+            )
+        else:
+            if up_time > 1:
+                @blk.Constraint(self.range_time_steps)
+                def minimum_up_time_con(b, t):
+                    if t == 1 or t < up_time or t > number_time_steps:
+                        return Constraint.Skip
+                    else:
+                        return (
+                            sum(
+                                start_up[self.mp_model.set_period.at(i)]
+                                for i in range(t - up_time + 1, t + 1)
+                            )
+                            <= op_mode[self.mp_model.set_period.at(t)]
+                        )
 
-            @blk.Constraint(self.range_time_steps)
-            def minimum_up_time_con(b, t):
-                if t == 1 or t < up_time or t > number_time_steps:
-                    return Constraint.Skip
-                else:
+            if down_time > 1:
+                @blk.Constraint(self.range_time_steps)
+                def minimum_down_time_con(b, t):
+                    if t < down_time or t == 1 or t > number_time_steps:
+                        return Constraint.Skip
                     return (
                         sum(
-                            start_up[self.mp_model.set_period.at(i)]
-                            for i in range(t - up_time + 1, t + 1)
+                            shut_down[self.mp_model.set_period.at(i)]
+                            for i in range(t - down_time + 1, t + 1)
                         )
-                        <= op_mode[self.mp_model.set_period.at(t)]
+                        <= 1 - op_mode[self.mp_model.set_period.at(t)]
                     )
-
-            @blk.Constraint(self.range_time_steps)
-            def minimum_down_time_con(b, t):
-                if t < down_time or t == 1 or t > number_time_steps:
-                    return Constraint.Skip
-                return (
-                    sum(
-                        shut_down[self.mp_model.set_period.at(i)]
-                        for i in range(t - down_time + 1, t + 1)
-                    )
-                    <= 1 - op_mode[self.mp_model.set_period.at(t)]
-                )
 
     def build_hourly_cashflows(self, revenue_streams=None, costs=None):
         """
@@ -734,7 +787,7 @@ class PriceTakerModel(ConcreteModel):
                                 (default: ['elec_revenue',])
                                 Coproduction example: ['elec_revenue',
                                                        'H2_revenue', ]
-            additional_costs:   List of strings representing the names of the
+            costs:              List of strings representing the names of the
                                 costs associated with operating at a time period.
                                 (default: None)
                                 example: ['hourly_fixed_cost',
