@@ -165,37 +165,29 @@ def test_min_up_down_time_logger_messages(excel_data):
         match=(f"up_time must be an integer, but {up_time[2]} is not an integer"),
     ):
         m = PriceTakerModel()
-        m.add_startup_shutdown(
-            des, oper, build_bin_var, up_time[2], down_time[0]
-        )
+        m.add_startup_shutdown(des, oper, build_bin_var, up_time[2], down_time[0])
 
     with pytest.raises(
         ValueError,
         match=(f"down_time must be an integer, but {down_time[2]} is not an integer"),
     ):
         m = PriceTakerModel()
-        m.add_startup_shutdown(
-            des, oper, build_bin_var, up_time[0], down_time[2]
-        )
+        m.add_startup_shutdown(des, oper, build_bin_var, up_time[0], down_time[2])
 
     with pytest.raises(
         ValueError,
         match=(f"up_time must be >= 1, but {up_time[1]} is not"),
     ):
         m = PriceTakerModel()
-        m.add_startup_shutdown(
-            des, oper, build_bin_var, up_time[1], down_time[0]
-        )
+        m.add_startup_shutdown(des, oper, build_bin_var, up_time[1], down_time[0])
 
     with pytest.raises(
         ValueError,
         match=(f"down_time must be >= 1, but {down_time[1]} is not"),
     ):
         m = PriceTakerModel()
-        m.add_startup_shutdown(
-            des, oper, build_bin_var, up_time[0], down_time[1]
-        )
-    
+        m.add_startup_shutdown(des, oper, build_bin_var, up_time[0], down_time[1])
+
     # Test Not Implemented Error (Rep. Days used for su/sd code)
     with pytest.raises(
         NotImplementedError,
@@ -474,7 +466,7 @@ def test_ramping_constraint_logger_messages(excel_data):
             op_ru_rate[1],
             op_rd_rate[1],
         )
-    
+
     # Test NotImplementedError (linearization = True)
     with pytest.raises(
         NotImplementedError,
@@ -518,7 +510,7 @@ def test_ramping_constraint_logger_messages(excel_data):
             op_ru_rate[1],
             op_rd_rate[1],
         )
-    
+
     # Test Value Error (wrong constraint type)
     with pytest.raises(
         ValueError,
@@ -563,6 +555,7 @@ def test_ramping_constraint_logger_messages(excel_data):
             op_rd_rate[1],
         )
 
+
 @pytest.mark.unit
 def test_add_capacity_limits_logger_messages(excel_data, caplog):
     # Test Value Error (wrong constraint type)
@@ -605,7 +598,7 @@ def test_add_capacity_limits_logger_messages(excel_data, caplog):
             constraint_type="garbage",
             linearization=False,
         )
-    
+
     # Test Not Implemented Error (linearization is True when nonlinear is chosen)
     with pytest.raises(
         NotImplementedError,
@@ -1106,6 +1099,7 @@ def test_build_hourly_cashflow_logger_messages_and_build_2(excel_data, caplog):
             in caplog.text
         )
 
+
 @pytest.mark.unit
 def test_build_hourly_cashflow_logger_messages_and_build_3(excel_data, caplog):
     # Tests building the model with ramping rate then startup/shutdown with LMP as a single year with representative days
@@ -1177,6 +1171,7 @@ def test_build_hourly_cashflow_logger_messages_and_build_3(excel_data, caplog):
         m.build_cashflows(
             objective="Net Profit",
         )
+
 
 @pytest.mark.unit
 def test_build_hourly_cashflow_logger_messages_and_build_4(excel_data, caplog):
@@ -1255,6 +1250,7 @@ def test_build_hourly_cashflow_logger_messages_and_build_4(excel_data, caplog):
             f"build_cashflows was called, but the objective type provided, {bad_obj}, is invalid. The objective has been set to 0. Please manually add your cost objective if you require one."
             in caplog.text
         )
+
 
 # Model for testing builds with Linear capacity constraints
 #############################################################

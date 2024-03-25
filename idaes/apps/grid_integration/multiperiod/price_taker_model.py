@@ -470,26 +470,42 @@ class PriceTakerModel(ConcreteModel):
         }
         max_capacity = deepgetattr(self, design_blk + "." + capacity_max)
         min_capacity = deepgetattr(self, design_blk + "." + capacity_min)
-        
+
         # Importing in the necessary variables
         if not hasattr(self, "range_time_steps"):
             self.range_time_steps = RangeSet(len(self.mp_model.set_period))
-        
+
         blk_name = op_blk.split(".")[-1] + "_capacity_limits"
         setattr(self.mp_model, blk_name, Block())
         blk = getattr(self.mp_model, blk_name)
-        
+
         # Constraint rules for avoiding overlap for multiple-commodity naming
         def capacity_low_limit_rule(b, t):
-                return min_capacity * op_mode[self.mp_model.set_period.at(t)] <= var_commodity[self.mp_model.set_period.at(t)]
-            
-        def capacity_high_limit_rule(b, t):
-            return max_capacity * op_mode[self.mp_model.set_period.at(t)] >= var_commodity[self.mp_model.set_period.at(t)] 
+            return (
+                min_capacity * op_mode[self.mp_model.set_period.at(t)]
+                <= var_commodity[self.mp_model.set_period.at(t)]
+            )
 
-        if constraint_type == "linear" or (constraint_type == "nonlinear" and not linearization):
+        def capacity_high_limit_rule(b, t):
+            return (
+                max_capacity * op_mode[self.mp_model.set_period.at(t)]
+                >= var_commodity[self.mp_model.set_period.at(t)]
+            )
+
+        if constraint_type == "linear" or (
+            constraint_type == "nonlinear" and not linearization
+        ):
             # Set constraints that have same form
-            setattr(blk, 'capacity_limit_low_' + commodity_var, Constraint(self.range_time_steps, rule=capacity_low_limit_rule))
-            setattr(blk, 'capacity_limit_high_' + commodity_var, Constraint(self.range_time_steps, rule=capacity_low_limit_rule))
+            setattr(
+                blk,
+                "capacity_limit_low_" + commodity_var,
+                Constraint(self.range_time_steps, rule=capacity_low_limit_rule),
+            )
+            setattr(
+                blk,
+                "capacity_limit_high_" + commodity_var,
+                Constraint(self.range_time_steps, rule=capacity_low_limit_rule),
+            )
 
         elif constraint_type == "nonlinear" and linearization:
             raise NotImplementedError(
@@ -500,8 +516,6 @@ class PriceTakerModel(ConcreteModel):
                 f"constraint_type must be either linear, or nonliner, but {constraint_type} is not."
             )
 
-
-    
     def add_ramping_constraints(
         self,
         op_blk,
@@ -751,6 +765,7 @@ class PriceTakerModel(ConcreteModel):
             )
         else:
             if up_time > 1:
+
                 @blk.Constraint(self.range_time_steps)
                 def minimum_up_time_con(b, t):
                     if t == 1 or t < up_time or t > number_time_steps:
@@ -765,6 +780,7 @@ class PriceTakerModel(ConcreteModel):
                         )
 
             if down_time > 1:
+
                 @blk.Constraint(self.range_time_steps)
                 def minimum_down_time_con(b, t):
                     if t < down_time or t == 1 or t > number_time_steps:
