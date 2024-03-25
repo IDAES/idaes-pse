@@ -388,6 +388,15 @@ class PriceTakerModel(ConcreteModel):
             return
 
     def build_multiperiod_model(self, **kwargs):
+        """
+        Builds the multiperiod model using other price taker class functions
+        to populate the important sets (self.set_days, self.set_years, etc.)
+
+        Args:
+            **kwargs:   keyword argument dictionary to be passed to the
+                        MultiPeriodModel class to build the time-series
+                        based price taker model.
+        """
         self.mp_model = MultiPeriodModel(
             n_time_points=self._n_time_points,
             set_days=self.set_days,
@@ -434,22 +443,22 @@ class PriceTakerModel(ConcreteModel):
                 ex: P_min * y(t) <= P(t) <= P_max * y(t) [where P(t) is power at time t]
 
 
-            Args:
-                op_blk:             String of the name of the operation model block, ex: ("fs.op_name")
-                design_blk:         String of the name of the design model block, ex: ("m.design_name")
-                commodity_var:      String of the name of the entity on the model the capacity constraints
-                                    will be applied to, ex: ("total_power")
-                capacity_min:       String of the name of the minimum capacity, ex: ("min_power_capacity")
-                capacity_max:       String of the name of the maximum capacity, ex: ("max_power_capacity")
-                constraint_type:    String to choose between linear and nonlinear constraints. Valid
-                                    inputs are in: ["linear", "nonlinear"]
-                linearization:      Boolean indicating whether linearization is used when constraint_type is
-                                    "nonlinear", True to use linearization, False otherwise
+        Args:
+            op_blk:             String of the name of the operation model block, ex: ("fs.op_name")
+            design_blk:         String of the name of the design model block, ex: ("m.design_name")
+            commodity_var:      String of the name of the entity on the model the capacity constraints
+                                will be applied to, ex: ("total_power")
+            capacity_min:       String of the name of the minimum capacity, ex: ("min_power_capacity")
+            capacity_max:       String of the name of the maximum capacity, ex: ("max_power_capacity")
+            constraint_type:    String to choose between linear and nonlinear constraints. Valid
+                                inputs are in: ["linear", "nonlinear"]
+            linearization:      Boolean indicating whether linearization is used when constraint_type is
+                                "nonlinear", True to use linearization, False otherwise
 
-            Assumptions/relationship:
-                capacity min <= capacity max
-                capacity min >= 0
-                capacity max >= 0
+        Assumptions/relationship:
+            capacity min <= capacity max
+            capacity min >= 0
+            capacity max >= 0
         """
         op_mode = {
             t: deepgetattr(self.mp_model.period[t], op_blk + ".op_mode")
