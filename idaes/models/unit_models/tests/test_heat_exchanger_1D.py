@@ -349,6 +349,8 @@ def test_config_validation(caplog):
             },
             flow_type=HeatExchangerFlowPattern.countercurrent,
         )
+    # Test to make sure that we don't get the warning for not having an upwind
+    # scheme (because this scheme is in fact upwind)
     assert "To avoid" not in caplog.text
     assert (
         "The hot and cold sides are being discretized with different "
