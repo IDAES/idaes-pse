@@ -10,6 +10,18 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+"""
+    Immediate ToDo list:
+        - Write methods to handle the representative day case
+            - automate cash flow expressions (likely use a 
+              weighted sum for representative days?)
+            - automate startup/shutdown constraints to
+              appropriately address the differences when
+              using representative days
+        - Add documentation to the IDAES readthedocs
+        - Add a warning when costs/revenues are given,
+          but are never used during cashflow construction
+"""
 import pandas as pd
 import numpy as np
 from functools import reduce
@@ -263,8 +275,8 @@ class PriceTakerModel(ConcreteModel):
             file_path:      path to the file containing LMP data
             sheet:          if the file is an excel file, the sheet name
                             where the LMP data is located - (default: None)
-            column_name:    list of integer year names if multiple years of
-                            data are to be used, None otherwise - (default: None)
+            column_name:    string name of the column to be used for the
+                            LMP signal
             n_clusters:     number of clusters for the data (representative days)
                             None if representative days not used - (default: None)
             horizon_length: if a value is given, this will be used to set the
@@ -312,48 +324,7 @@ class PriceTakerModel(ConcreteModel):
                     f"n_clusters must be > 0, but {n_clusters} is provided."
                 )
 
-        # editing the data
-        if isinstance(column_name, list) and n_clusters is not None:
-            # Multiple years and representative days
-            self.set_years = [y for y in column_name]
-            self.set_days = RangeSet(1, n_clusters)
-            self._n_time_points = (
-                self.horizon_length if self.horizon_length is not None else 24
-            )
-            self.set_time = RangeSet(self._n_time_points)
-
-            self.LMP = {}
-            self.WEIGHTS = {}
-
-            for y in column_name:
-                price_data = full_data[y]
-                lmp_data, weights = self.cluster_lmp_data(price_data, n_clusters)
-
-                for d in self.set_days:
-                    for t in self.set_time:
-                        self.LMP[t, d, y] = lmp_data[d][t - 1]
-                        self.WEIGHTS[d, y] = weights[0][d]
-
-            return
-
-        elif isinstance(column_name, list):
-            # Multiple years, use fullyear price signal for each year
-            self.set_years = [y for y in column_name]
-            self.set_days = None
-            self._n_time_points = len(full_data)
-            self.set_time = RangeSet(self._n_time_points)
-
-            self.LMP = {}
-
-            for y in column_name:
-                price_data = full_data[y]
-
-                for t in self.set_time:
-                    self.LMP[t, y] = price_data[t - 1]
-
-            return
-
-        elif n_clusters is not None:
+        if n_clusters is not None:
             # Single price signal, use reprentative days
             self.set_years = None
             self.set_days = RangeSet(1, n_clusters)
