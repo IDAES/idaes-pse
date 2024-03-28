@@ -21,7 +21,7 @@ black>=22.1.0
 pylint==3.0.3
 astroid==3.0.3
 flake8
-black==22.3.0
+black==24.3.0
 # pre-commit install, manage, and run pre-commit hooks
 pre-commit
 
