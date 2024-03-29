@@ -18,7 +18,13 @@ One-dimensional membrane class for CO2 gas separation
 
 from enum import Enum
 from pyomo.common.config import Bool, ConfigDict, ConfigValue, In
-from pyomo.environ import Constraint, Param, Var, units, Expression #pylint: disable = unused-import
+from pyomo.environ import (
+    Constraint,
+    Param,
+    Var,
+    units,
+    Expression,
+)  # pylint: disable = unused-import
 from pyomo.network import Port
 
 from idaes.core import (
@@ -33,8 +39,6 @@ from idaes.models.unit_models.mscontactor import MSContactor
 from idaes.core.util.exceptions import ConfigurationError
 
 __author__ = "Maojian Wang"
-
-
 
 
 class MembraneFlowPattern(Enum):
@@ -69,7 +73,6 @@ class Membrane1DData(UnitModelBlockData):
     **PhysicalParameterObject** - a PhysicalParameterBlock object.}""",
         ),
     )
-
     Stream_Config.declare(
         "property_package_args",
         ConfigDict(
@@ -82,18 +85,6 @@ class Membrane1DData(UnitModelBlockData):
     see property package for documentation.}""",
         ),
     )
-
-    Stream_Config.declare(
-        "flow_direction",
-        ConfigValue(
-            default=FlowDirection.forward,
-            domain=In(FlowDirection),
-            doc="Direction of flow for stream",
-            description="FlowDirection Enum indicating direction of "
-            "flow for given stream. Default=FlowDirection.forward.",
-        ),
-    )
-
     Stream_Config.declare(
         "has_energy_balance",
         ConfigValue(
@@ -102,7 +93,6 @@ class Membrane1DData(UnitModelBlockData):
             doc="Bool indicating whether to include energy balance for stream. Default=True.",
         ),
     )
-
     Stream_Config.declare(
         "has_pressure_balance",
         ConfigValue(
@@ -112,16 +102,6 @@ class Membrane1DData(UnitModelBlockData):
         ),
     )
 
-    Stream_Config.declare(
-        "has_feed",
-        ConfigValue(
-            default=True,
-            domain=Bool,
-            doc="Bool indicating whether stream has a feed.",
-            description="Bool indicating whether stream has a feed Port and inlet "
-            "state, or if all flow is provided via mass transfer. Default=True.",
-        ),
-    )
     CONFIG.declare(
         "sweep_flow",
         ConfigValue(
@@ -132,7 +112,6 @@ class Membrane1DData(UnitModelBlockData):
             "state, or if all flow is provided via mass transfer. Default=True.",
         ),
     )
-
     CONFIG.declare(
         "finite_elements",
         ConfigValue(
@@ -143,7 +122,6 @@ class Membrane1DData(UnitModelBlockData):
                 domain (default=5)""",
         ),
     )
-
     CONFIG.declare(
         "flow_type",
         ConfigValue(
@@ -156,7 +134,6 @@ class Membrane1DData(UnitModelBlockData):
                                                     sweep side flows from 1 to 0  (default)""",
         ),
     )
-
     CONFIG.declare(
         "property_package",
         ConfigValue(
@@ -170,7 +147,6 @@ class Membrane1DData(UnitModelBlockData):
             - a ParameterBlock object""",
         ),
     )
-
     CONFIG.declare(
         "property_package_args",
         ConfigValue(
@@ -193,17 +169,20 @@ class Membrane1DData(UnitModelBlockData):
     def build(self):
         super().build()
 
-        if self.config.sweep_flow is False:
-            self.config.sweep_side.has_feed = False
+        if self.config.property_package is not None:
+            if self.config.feed_side.property_package == useDefault:
+                self.config.feed_side.property_package = self.config.property_package
+            if self.config.sweep_side.property_package == useDefault:
+                self.config.sweep_side.property_package = self.config.property_package
 
-        # Set flow directions
+        feed_dict = dict(self.config.feed_side)
+        sweep_dict = dict(self.config.sweep_side)
+
+        feed_dict["flow_direction"] = FlowDirection.forward
         if self.config.flow_type == MembraneFlowPattern.COCURRENT:
-            self.config.feed_side.flow_direction = FlowDirection.forward
-            self.config.sweep_side.flow_direction = FlowDirection.forward
+            sweep_dict["flow_direction"] = FlowDirection.forward
         elif self.config.flow_type == MembraneFlowPattern.COUNTERCURRENT:
-            self.config.feed_side.flow_direction = FlowDirection.forward
-            self.config.sweep_side.flow_direction = FlowDirection.backward
-
+            sweep_dict["flow_direction"] = FlowDirection.backward
         else:
             raise ConfigurationError(
                 f"{self.name} Membrane1D only supports cocurrent and "
@@ -211,16 +190,10 @@ class Membrane1DData(UnitModelBlockData):
                 " argument was set to {config.flow_type}."
             )
 
-        if self.config.property_package is not None:
-            if self.config.feed_side.property_package == useDefault:
-                self.config.feed_side.property_package = self.config.property_package
-            if self.config.sweep_side.property_package == useDefault:
-                self.config.sweep_side.property_package = self.config.property_package
+        if self.config.sweep_flow is False:
+            sweep_dict["has_feed"] = False
 
-        streams_dict = {
-            "feed_side": self.config.feed_side,
-            "sweep_side": self.config.sweep_side,
-        }
+        streams_dict = {"feed_side": feed_dict, "sweep_side": sweep_dict}
         self.mscontactor = MSContactor(
             streams=streams_dict,
             number_of_finite_elements=self.config.finite_elements,
