@@ -61,7 +61,7 @@ def test_config():
         finite_elements=3,
         dynamic=False,
         sweep_flow=True,
-        flow_type=MembraneFlowPattern.countercurrent,
+        flow_type=MembraneFlowPattern.COUNTERCURRENT,
         property_package=m.fs.properties,
     )
 
@@ -86,7 +86,7 @@ class TestMembrane(object):
             finite_elements=3,
             dynamic=False,
             sweep_flow=True,
-            flow_type=MembraneFlowPattern.countercurrent,
+            flow_type=MembraneFlowPattern.COUNTERCURRENT,
             property_package=m.fs.properties,
         )
 

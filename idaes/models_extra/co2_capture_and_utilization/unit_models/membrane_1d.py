@@ -11,10 +11,14 @@
 # for full copyright and license information.
 #################################################################################
 
+"""
+One-dimensional membrane class for CO2 gas separation
+"""
+
 
 from enum import Enum
 from pyomo.common.config import Bool, ConfigDict, ConfigValue, In
-from pyomo.environ import Constraint, Param, Var, units, Expression
+from pyomo.environ import Constraint, Param, Var, units, Expression #pylint: disable = unused-import
 from pyomo.network import Port
 
 from idaes.core import (
@@ -26,10 +30,11 @@ from idaes.core import (
 )
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.models.unit_models.mscontactor import MSContactor
-from idaes.core.util.exceptions import ConfigurationError, InitializationError
+from idaes.core.util.exceptions import ConfigurationError
 
-# TODO: add robust initialization
 __author__ = "Maojian Wang"
+
+
 
 
 class MembraneFlowPattern(Enum):
@@ -38,9 +43,9 @@ class MembraneFlowPattern(Enum):
     So far only support countercurrent and cocurrent flow
     """
 
-    countercurrent = 1
-    cocurrent = 2
-    crossflow = 3
+    COUNTERCURRENT = 1
+    COCURRENT = 2
+    CROSSFLOW = 3
 
 
 @declare_process_block_class("Membrane1D")
@@ -142,12 +147,12 @@ class Membrane1DData(UnitModelBlockData):
     CONFIG.declare(
         "flow_type",
         ConfigValue(
-            default=MembraneFlowPattern.countercurrent,
+            default=MembraneFlowPattern.COUNTERCURRENT,
             domain=In(MembraneFlowPattern),
             description="Flow configuration of membrane",
             doc="""Flow configuration of membrane
-               - MembraneFlowPattern.cocurrent: feed and sweep flows from 0 to 1
-               - MembraneFlowPattern.countercurrent: feed side flows from 0 to 1
+               - MembraneFlowPattern.COCURRENT: feed and sweep flows from 0 to 1
+               - MembraneFlowPattern.COUNTERCURRENT: feed side flows from 0 to 1
                                                     sweep side flows from 1 to 0  (default)""",
         ),
     )
@@ -188,25 +193,25 @@ class Membrane1DData(UnitModelBlockData):
     def build(self):
         super().build()
 
-        if self.config.sweep_flow == False:
+        if self.config.sweep_flow is False:
             self.config.sweep_side.has_feed = False
 
         # Set flow directions
-        if self.config.flow_type == MembraneFlowPattern.cocurrent:
+        if self.config.flow_type == MembraneFlowPattern.COCURRENT:
             self.config.feed_side.flow_direction = FlowDirection.forward
             self.config.sweep_side.flow_direction = FlowDirection.forward
-        elif self.config.flow_type == MembraneFlowPattern.countercurrent:
+        elif self.config.flow_type == MembraneFlowPattern.COUNTERCURRENT:
             self.config.feed_side.flow_direction = FlowDirection.forward
             self.config.sweep_side.flow_direction = FlowDirection.backward
 
         else:
             raise ConfigurationError(
-                "{} Membrane1D only supports cocurrent and "
+                f"{self.name} Membrane1D only supports cocurrent and "
                 "countercurrent flow patterns, but flow_type configuration"
-                " argument was set to {}.".format(self.name, self.config.flow_type)
+                " argument was set to {config.flow_type}."
             )
 
-        if self.config.property_package != None:
+        if self.config.property_package is not None:
             if self.config.feed_side.property_package == useDefault:
                 self.config.feed_side.property_package = self.config.property_package
             if self.config.sweep_side.property_package == useDefault:
@@ -223,7 +228,7 @@ class Membrane1DData(UnitModelBlockData):
 
         self.feed_side_inlet = Port(extends=self.mscontactor.feed_side_inlet)
         self.feed_side_outlet = Port(extends=self.mscontactor.feed_side_outlet)
-        if self.config.sweep_flow == True:
+        if self.config.sweep_flow is True:
             self.sweep_side_inlet = Port(extends=self.mscontactor.sweep_side_inlet)
         self.sweep_side_outlet = Port(extends=self.mscontactor.sweep_side_outlet)
 
@@ -231,9 +236,6 @@ class Membrane1DData(UnitModelBlockData):
         self._make_performance()
 
     def _make_geometry(self):
-        feed_side_units = (
-            self.config.feed_side.property_package.get_metadata().derived_units
-        )
 
         self.area = Var(initialize=100, units=units.cm**2, doc="The membrane area")
 
