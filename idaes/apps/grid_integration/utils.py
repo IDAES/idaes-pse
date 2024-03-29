@@ -13,7 +13,6 @@
 
 
 def convert_marginal_costs_to_actual_costs(power_marginal_cost_pairs):
-
     """
     Convert a list of power and marginal cost pairs to a list of power and actual
     cost pairs.

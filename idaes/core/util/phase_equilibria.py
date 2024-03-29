@@ -46,7 +46,6 @@ def Txy_diagram(
     solver=None,
     solver_op=None,
 ):
-
     """
     This method generates T-x-y plots. Given the components, pressure and property dictionary
     this function calls Txy_data() to generate T-x-y data and once the data has

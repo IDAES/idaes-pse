@@ -389,13 +389,9 @@ class KrigingModel:
             of_plus = self.objective_function(var_vector_plus, x, y, p)
             of_minus = self.objective_function(var_vector_minus, x, y, p)
             grad_current = (of_plus - of_minus) / (2 * eps)
-            grad_vec[
-                i,
-            ] = grad_current
+            grad_vec[i,] = grad_current
         if self.regularization is False:
-            grad_vec[
-                -1,
-            ] = 0
+            grad_vec[-1,] = 0
         return grad_vec
 
     def parameter_optimization(self, p):
