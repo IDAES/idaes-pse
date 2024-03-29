@@ -18,11 +18,11 @@ __author__ = "Maojian Wang"
 # pylint: disable=unused-import
 import pytest
 
-from pyomo.environ import ( 
+from pyomo.environ import (
     check_optimal_termination,
     ConcreteModel,
     value,
-) 
+)
 from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import (
     number_variables,
@@ -40,7 +40,7 @@ from idaes.models_extra.power_generation.properties.natural_gas_PR import (
 )
 from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
-) 
+)
 from idaes.models_extra.co2_capture_and_utilization.unit_models import (
     Membrane1D,
     MembraneFlowPattern,
