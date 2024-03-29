@@ -14,8 +14,9 @@
 # pylint: disable=missing-module-docstring
 # pylint: disable=missing-class-docstring
 
+from copy import deepcopy
+
 from pyomo.environ import SolverFactory
-from pyomo.contrib.solver.base import LegacySolverWrapper
 
 import idaes
 
@@ -46,13 +47,11 @@ class SolverWrapper(object):
             solver = self.solver
 
         if name in idaes.cfg and (
-            idaes.cfg.use_idaes_solver_config
-            or name == "default"
-            or not self.registered
+            idaes.cfg.use_idaes_solver_config or not self.registered
         ):
             for k, v in idaes.cfg[name].items():
                 if k not in kwargs:
-                    kwargs[k] = v
+                    kwargs[k] = deepcopy(v)
                 elif k == "options":
                     # options is in ConfigBlock and in kwargs, treat "options"
                     # special so individual options can have defaults not just
