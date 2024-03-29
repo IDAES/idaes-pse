@@ -15,16 +15,16 @@
 One-dimensional membrane class for CO2 gas separation
 """
 
-
+# pylint: disable=unused-import
 from enum import Enum
 from pyomo.common.config import Bool, ConfigDict, ConfigValue, In
 from pyomo.environ import (
-    Constraint,
+    Constraint,  
     Param,
     Var,
     units,
     Expression,
-)  # pylint: disable = unused-import
+) 
 from pyomo.network import Port
 
 from idaes.core import (
