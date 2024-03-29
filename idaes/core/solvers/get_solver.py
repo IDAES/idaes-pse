@@ -48,7 +48,7 @@ def get_solver(solver=None, options=None, writer_config=None):
     if isinstance(solver_obj, LegacySolverWrapper):
         if options is not None:
             for k, v in options.items():
-                solver_obj.config.solver_options[k] = v
+                solver_obj.options[k] = v
         if writer_config is not None:
             for k, v in writer_config.items():
                 solver_obj.config.writer_config[k] = v

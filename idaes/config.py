@@ -331,7 +331,7 @@ def _new_idaes_config_block():
         ),
     )
     cfg["ipopt_v2"].declare(
-        "solver_options",
+        "options",
         pyomo.common.config.ConfigBlock(
             implicit=True,
             description="Default solver options for 'ipopt'",
@@ -339,7 +339,7 @@ def _new_idaes_config_block():
         ),
     )
 
-    cfg["ipopt_v2"]["solver_options"].declare(
+    cfg["ipopt_v2"]["options"].declare(
         "nlp_scaling_method",
         pyomo.common.config.ConfigValue(
             domain=str,
@@ -349,7 +349,7 @@ def _new_idaes_config_block():
         ),
     )
 
-    cfg["ipopt_v2"]["solver_options"].declare(
+    cfg["ipopt_v2"]["options"].declare(
         "tol",
         pyomo.common.config.ConfigValue(
             domain=float,
@@ -359,7 +359,7 @@ def _new_idaes_config_block():
         ),
     )
 
-    cfg["ipopt_v2"]["solver_options"].declare(
+    cfg["ipopt_v2"]["options"].declare(
         "max_iter",
         pyomo.common.config.ConfigValue(
             domain=int,
@@ -385,6 +385,16 @@ def _new_idaes_config_block():
             default=False,  # TODO: Change to true once transition complete
             description="Whether to apply model scaling in writer",
             doc="Whether to apply model scaling in writer",
+        ),
+    )
+
+    cfg["ipopt_v2"]["writer_config"].declare(
+        "linear_presolve",
+        pyomo.common.config.ConfigValue(
+            domain=bool,
+            default=False,  # TODO: Change to true once transition complete
+            description="Whether to apply linear presolve in writer",
+            doc="Whether to apply linear presolve in writer",
         ),
     )
 
@@ -517,7 +527,7 @@ def _new_idaes_config_block():
     cfg.declare(
         "default_solver",
         pyomo.common.config.ConfigValue(
-            default="ipopt",
+            default="ipopt_v2",
             domain=str,
             description="Default solver.  See Pyomo's SolverFactory for details.",
             doc="Default solver.  See Pyomo's SolverFactory for details.",

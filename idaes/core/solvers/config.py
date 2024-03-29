@@ -45,12 +45,6 @@ class SolverWrapper(object):
             name = self.name
             solver = self.solver
 
-        # TODO: new solvers use solver_options in place of options
-        if isinstance(solver, LegacySolverWrapper):
-            sopt_name = "solver_options"
-        else:
-            sopt_name = "options"
-
         if name in idaes.cfg and (
             idaes.cfg.use_idaes_solver_config
             or name == "default"
@@ -59,13 +53,13 @@ class SolverWrapper(object):
             for k, v in idaes.cfg[name].items():
                 if k not in kwargs:
                     kwargs[k] = v
-                elif k == sopt_name:
+                elif k == "options":
                     # options is in ConfigBlock and in kwargs, treat "options"
                     # special so individual options can have defaults not just
                     # the whole options block
                     for opk, opv in v.items():
-                        if opk not in kwargs[sopt_name]:
-                            kwargs[sopt_name][opk] = opv
+                        if opk not in kwargs["options"]:
+                            kwargs["options"][opk] = opv
                 elif k == "writer_config":
                     # writer_config is in ConfigBlock and in kwargs, treat "writer_config"
                     # special so individual options can have defaults not just
