@@ -103,7 +103,13 @@ class TestBTExample(object):
         m.fs.state[0].temperature.fix(300)
         m.fs.state[0].pressure.fix(1e5)
 
-        m.fs.state[0].p_bound = Constraint(expr=m.fs.state[0].pressure <= 1e4)
+        m.fs.state[0].infeas = Constraint(
+            expr=sum(
+                m.fs.state[0].get_material_flow_terms(p, j) ** 2
+                for p, j in m.fs.state[0].phase_component_set
+            )
+            <= 0
+        )
 
         with pytest.raises(
             InitializationError,

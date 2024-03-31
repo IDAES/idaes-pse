@@ -1490,7 +1490,14 @@ def test_initialization_error():
 
     m.fs.mix.inlet_1_state[0].material_flow_mol.fix(10)
     m.fs.mix.inlet_2_state[0].material_flow_mol.fix(10)
-    m.fs.mix.mixed_state[0].material_flow_mol.fix(100)
+
+    m.fs.mix.infeas = Constraint(
+        expr=sum(
+            m.fs.mix.mixed_state[0].get_material_flow_terms(p, j) ** 2
+            for p, j in m.fs.mix.mixed_state[0].phase_component_set
+        )
+        <= 0
+    )
 
     with pytest.raises(InitializationError):
         m.fs.mix.initialize()

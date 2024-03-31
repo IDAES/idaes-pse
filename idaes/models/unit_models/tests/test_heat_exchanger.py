@@ -1898,7 +1898,11 @@ class TestBT_Generic_cocurrent(object):
 
     @pytest.mark.component
     def test_initialization_error(self, btx):
-        btx.fs.unit.hot_side_outlet.flow_mol[0].fix(20)
+        btx.fs.unit.infeas = Constraint(
+            expr=btx.fs.unit.hot_side_outlet.flow_mol[0] ** 2
+            + btx.fs.unit.cold_side_outlet.flow_mol[0] ** 2
+            <= 0
+        )
 
         with pytest.raises(InitializationError):
             btx.fs.unit.initialize()

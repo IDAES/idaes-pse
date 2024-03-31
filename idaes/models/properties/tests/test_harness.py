@@ -323,7 +323,14 @@ class PropertyTestHarness(object):
             for n, v in frame.fs.props[1].define_state_vars().items():
                 for i in v:
                     frame.fs.props[1].add_component(
-                        "_init_test_" + str(v) + str(i), Constraint(expr=v[i] <= 0)
+                        "_init_test_" + str(v) + str(i),
+                        Constraint(
+                            expr=sum(
+                                frame.fs.props[1].get_material_flow_terms(p, j) ** 2
+                                for p, j in frame.fs.props.phase_component_set
+                            )
+                            <= 0
+                        ),
                     )
 
             with pytest.raises(

@@ -690,8 +690,10 @@ def initialize(m):
     outlvl = idaeslog.INFO_LOW
     _log = idaeslog.getLogger(fs.name, outlvl, tag="unit")
     solve_log = idaeslog.getSolveLogger(fs.name, outlvl, tag="unit")
+    # TODO: ipopt_v2 fails with no solution
+    # TODO: "OF_ma57_automatic_scaling" is not an option, remove OF_
     solver = get_solver(
-        options={"linear_solver": "ma57", "OF_ma57_automatic_scaling": "yes"}
+        "ipopt", options={"linear_solver": "ma57", "OF_ma57_automatic_scaling": "yes"}
     )
 
     # set initial condition to steady-state condition for dynamic flowsheet

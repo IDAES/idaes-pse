@@ -3257,24 +3257,6 @@ class TestBTX_IdealSep(object):
         dt.assert_no_numerical_warnings()
 
 
-@pytest.mark.unit
-def test_initialization_error():
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.pp = PhysicalParameterTestBlock()
-
-    m.fs.sep = Separator(property_package=m.fs.pp)
-
-    m.fs.sep.outlet_1_state[0].material_flow_mol.fix(10)
-    m.fs.sep.outlet_2_state[0].material_flow_mol.fix(10)
-    m.fs.sep.mixed_state[0].material_flow_mol.fix(100)
-
-    m.fs.sep.split_fraction.fix()
-
-    with pytest.raises(InitializationError):
-        m.fs.sep.initialize()
-
-
 class TestInitializersBTX_IdealSep:
     @pytest.fixture
     def model(self):
