@@ -552,7 +552,7 @@ class TestIronOC(object):
         iron_oc.fs.unit.gas.report()
         iron_oc.fs.unit.solids.report()
 
-    @pytest.skip("New solver interface identifies this a trivially infeasible")
+    @pytest.mark.skip("New solver interface identifies this a trivially infeasible")
     @pytest.mark.component
     def test_initialization_error(self, iron_oc):
         iron_oc.fs.unit.volume_bed.fix(1)
@@ -972,7 +972,7 @@ class TestIronOC_EnergyBalanceType(object):
         iron_oc.fs.unit.gas.report()
         iron_oc.fs.unit.solids.report()
 
-    @pytest.skip("New solver interface identifies this a trivially infeasible")
+    @pytest.mark.skip("New solver interface identifies this a trivially infeasible")
     @pytest.mark.component
     def test_initialization_error(self, iron_oc):
         iron_oc.fs.unit.volume_bed.fix(1)

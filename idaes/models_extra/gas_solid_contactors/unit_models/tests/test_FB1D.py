@@ -611,7 +611,7 @@ class TestIronOC(object):
             }
         }
 
-    @pytest.skip("New solver interface identifies this a trivially infeasible")
+    @pytest.mark.skip("New solver interface identifies this a trivially infeasible")
     @pytest.mark.component
     def test_initialization_error(self, iron_oc):
         tf = iron_oc.fs.time.last()
@@ -1411,7 +1411,7 @@ class TestIronOC_NoReaction(object):
             }
         }
 
-    @pytest.skip("New solver interface identifies this a trivially infeasible")
+    @pytest.mark.skip("New solver interface identifies this a trivially infeasible")
     @pytest.mark.component
     def test_initialization_error(self, iron_oc):
         tf = iron_oc.fs.time.last()
