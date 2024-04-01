@@ -101,7 +101,6 @@ def _create_model(pressure_drop):
 
     hx.pitch_x.fix(0.1)
     hx.pitch_y.fix(0.1)
-    hx.delta_elevation.fix(0)
     hx.therm_cond_wall = 43.0
     hx.rfouling_tube = 0.0001
     hx.rfouling_shell = 0.0001

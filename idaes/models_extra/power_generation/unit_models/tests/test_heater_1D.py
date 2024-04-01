@@ -141,8 +141,6 @@ def _check_model_statistics(m, deltaP):
         "fs.h2_side_prop_params.N2.cp_mol_ig_comp_coeff_G",
         "fs.h2_side_prop_params.N2.cp_mol_ig_comp_coeff_H",
     }
-    if not deltaP:
-        fixed_unused_var_set.add("fs.heater.delta_elevation")
 
     for var in mstat.fixed_unused_variables_set(m):
         assert var.name in fixed_unused_var_set

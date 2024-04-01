@@ -159,13 +159,6 @@ def _make_geometry_common(blk, shell_units):
 
 
 def _make_geometry_tube(blk, shell_units):
-    # Elevation difference (outlet - inlet) for static pressure calculation
-    blk.delta_elevation = Var(
-        initialize=0.0,
-        units=shell_units["length"],
-        doc="Elevation increase used for static pressure calculation",
-    )
-
     # Length of tube side flow
     @blk.Constraint(doc="Length of tube side flow")
     def length_flow_tube_eqn(b):
@@ -433,7 +426,6 @@ def _make_performance_common(
             doc="pressure change on shell side",
         )
         def deltaP_shell_eqn(b, t, x):
-            # FIXME this equation doesn't have elevation change---is this right?
             return (
                 b.deltaP_shell[t, x] * b.pitch_x
                 == -1.4
@@ -662,14 +654,6 @@ def _make_performance_tube(
             return b.deltaP_tube[t, x] == (
                 b.deltaP_tube_friction[t, x]
                 + b.deltaP_tube_uturn[t, x]
-                - pyunits.convert(b.delta_elevation, to_units=tube_units["length"])
-                / b.nseg_tube
-                * pyunits.convert(
-                    const.acceleration_gravity, to_units=tube_units["acceleration"]
-                )
-                * tube.properties[t, x].dens_mol_phase["Vap"]
-                * tube.properties[t, x].mw
-                / pyunits.convert(b.length_tube_seg, to_units=tube_units["length"])
             )
 
     if make_nusselt:
