@@ -652,8 +652,7 @@ def _make_performance_tube(
         )
         def deltaP_tube_eqn(b, t, x):
             return b.deltaP_tube[t, x] == (
-                b.deltaP_tube_friction[t, x]
-                + b.deltaP_tube_uturn[t, x]
+                b.deltaP_tube_friction[t, x] + b.deltaP_tube_uturn[t, x]
             )
 
     if make_nusselt:
