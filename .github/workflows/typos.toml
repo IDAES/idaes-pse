@@ -38,3 +38,12 @@ astroid = "astroid"
 delt = "delt"
 # TEMPORARY - Remove after example update
 upadate = "upadate"
+
+# false positive from 1.20.3
+RTO = "RTO"
+ans = "ans"
+PN = "PN"
+hd = "hd"
+Tge = "Tge"
+iy = "iy"
+frst = "frst"  # variable name in idaes/core/util/model_serializer.py
