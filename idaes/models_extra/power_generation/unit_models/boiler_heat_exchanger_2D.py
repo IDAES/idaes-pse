@@ -2869,7 +2869,7 @@ tube side flows from 1 to 0""",
 
             # rupture time calculation at crotch corner
             @self.Expression(
-                self.flowsheet().time, doc="Rupture Tme at Crotch Corner for Header"
+                self.flowsheet().time, doc="Rupture Time at Crotch Corner for Header"
             )
             def rupture_time_crotch_corner(b, t):
                 if value(b.sigma_eff_P1[t]) > 10:  # MPa
