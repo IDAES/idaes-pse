@@ -29,7 +29,6 @@ from idaes.core.solvers import get_solver
 
 # Set up solver
 optarg = {
-    # 'bound_push' : 1e-6,
     "constr_viol_tol": 1e-8,
     "nlp_scaling_method": "user-scaling",
     "linear_solver": "ma57",

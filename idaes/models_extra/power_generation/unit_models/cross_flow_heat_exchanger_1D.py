@@ -785,13 +785,6 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {}
-        # var_dict = {
-        #     "HX Coefficient": self.overall_heat_transfer_coefficient[time_point]
-        # }
-        # var_dict["HX Area"] = self.area
-        # var_dict["Heat Duty"] = self.heat_duty[time_point]
-        # if self.config.flow_pattern == HeatExchangerFlowPattern.crossflow:
-        #     var_dict = {"Crossflow Factor": self.crossflow_factor[time_point]}
 
         expr_dict = {}
         expr_dict["HX Area"] = self.total_heat_transfer_area

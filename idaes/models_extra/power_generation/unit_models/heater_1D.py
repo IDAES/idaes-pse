@@ -458,8 +458,6 @@ domain (default=5). Should set to the number of tube rows""",
 
         init_log.info_high("Initialization Step 1 Complete.")
 
-        # mcp = value(blk.control_volume.properties[0,0].flow_mol * blk.control_volume.properties[0,0].cp_mol)
-        # tout_guess = value(blk.tube.properties[0,0].temperature) + value(blk.electric_heat_duty[0]/blk.length_flow)
         calc_var = calculate_variable_from_constraint
 
         calc_var(blk.length_flow_shell, blk.length_flow_shell_eqn)

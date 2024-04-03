@@ -30,7 +30,6 @@ from idaes.core.solvers import get_solver
 
 # Set up solver
 optarg = {
-    # 'bound_push' : 1e-6,
     "constr_viol_tol": 1e-8,
     "nlp_scaling_method": "user-scaling",
     "linear_solver": "ma57",
@@ -132,9 +131,9 @@ def _create_model(pressure_drop):
     shell = hx.hot_side
     tube = hx.cold_side
     iscale.set_scaling_factor(shell.area, 1e-1)
-    # ssf(hx.shell.heat, 1e-6)
+    iscale.set_scaling_factor(shell.heat, 1e-6)
     iscale.set_scaling_factor(tube.area, 1)
-    # ssf(hx.tube.heat, 1e-6)
+    iscale.set_scaling_factor(tube.heat, 1e-6)
     iscale.set_scaling_factor(shell._enthalpy_flow, 1e-8)  # pylint: disable=W0212
     iscale.set_scaling_factor(tube._enthalpy_flow, 1e-8)  # pylint: disable=W0212
     iscale.set_scaling_factor(shell.enthalpy_flow_dx, 1e-7)
