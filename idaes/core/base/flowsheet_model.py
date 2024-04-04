@@ -77,6 +77,7 @@ class UI:
             # FIXME the explicit submodule import is needed because the idaes_ui doesn't import its fv submodule
             # otherwise, you get "AttributeError: module 'idaes_ui' has no 'fv' attribute"
             import idaes_ui.fv
+
             self.visualize = idaes_ui.fv.visualize
             self.installed = True
 
