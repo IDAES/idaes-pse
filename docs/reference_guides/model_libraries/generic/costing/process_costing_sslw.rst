@@ -138,7 +138,7 @@ Heat Exchanger Cost
 
 .. note:: IDAES does not yet support costing for heat exchangers requiring both shell and tube area (HX1D).
 
-The purchse cost is computed based on the base unit cost and three correction factors (Eq. 22.43 in Seider et al.), and is adjusted by user-defined currency units with the appropriate CE index value. The base cost is computed depending on the heat exchanger type selected by the user.
+The purchase cost is computed based on the base unit cost and three correction factors (Eq. 22.43 in Seider et al.), and is adjusted by user-defined currency units with the appropriate CE index value. The base cost is computed depending on the heat exchanger type selected by the user.
 
 The heat exchanger costing method has three arguments, hx_type = heat exchanger type, material_type = construction material, and tube_length = tube length ('*' corresponds to the default options):
 
