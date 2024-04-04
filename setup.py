@@ -34,7 +34,7 @@ def rglob(path, glob):
 
 
 # For included DMF data
-DMF_DATA_ROOT = "data"
+DMF_DATA_ROOT = "dmf_data"
 
 
 def dmf_data_files(root: str = DMF_DATA_ROOT) -> List[Tuple[str, List[str]]]:
@@ -93,7 +93,7 @@ class ExtraDependencies:
     ]
     omlt = [
         "omlt==1.1",  # fix the version for now as package evolves
-        "tensorflow",
+        'tensorflow < 2.16.1 ; python_version < "3.12"',
     ]
     grid = [
         "gridx-prescient>=2.2.1",  # idaes.tests.prescient
@@ -123,17 +123,22 @@ kwargs = dict(
     zip_safe=False,
     name=NAME,
     version=VERSION,
-    packages=find_namespace_packages(),
+    packages=find_namespace_packages(
+        include=[
+            "idaes*",
+            "dmf_data*",
+        ]
+    ),
     # Put abstract (non-versioned) deps here.
     # Concrete dependencies go in requirements[-dev].txt
     install_requires=[
-        "pyomo @ git+https://github.com/IDAES/Pyomo@6.7.0.idaes.2023.11.6",
+        "pyomo >= 6.7.1",
         "pint",  # required to use Pyomo units
         "networkx",  # required to use Pyomo network
-        "numpy",
+        "numpy<2",
         # pandas constraint added on 2023-08-30 b/c bug in v2.1
         # see IDAES/idaes-pse#1253
-        "pandas!=2.1.0",
+        "pandas!=2.1.0,<3",
         "scipy",
         "sympy",  # idaes.core.util.expr_doc
         "matplotlib",
@@ -199,6 +204,7 @@ kwargs = dict(
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
         "Programming Language :: Python :: Implementation :: CPython",
         "Topic :: Scientific/Engineering :: Mathematics",
         "Topic :: Scientific/Engineering :: Chemistry",

@@ -730,6 +730,43 @@ def test_initialization_cell_voltage_drop_custom(model_vdc):
     assert approx(0.3094487) == pyo.value(cell.oxygen_outlet.mole_frac_comp[0, "O2"])
     assert approx(0.690551) == pyo.value(cell.oxygen_outlet.mole_frac_comp[0, "N2"])
 
+    for iz in cell.iznodes:
+        # H2O is consumed at fuel electrode, concentration at electrode surface
+        # should be less than that in channel, and concentration at TPB should
+        # be less than that at the surface
+        assert pyo.value(cell.fuel_channel.conc_mol_comp_deviation_x1[0, iz, "H2O"]) < 0
+        assert (
+            pyo.value(
+                cell.fuel_electrode.conc_mol_comp_deviation_x1[0, iz, "H2O"]
+                - cell.fuel_channel.conc_mol_comp_deviation_x1[0, iz, "H2O"]
+            )
+            < 0
+        )
+        # H2 is produced at fuel electrode, concentration at electrode surface
+        # should be greater than that in channel, and concentration at TPB should
+        # be greater than that at the surface
+        assert pyo.value(cell.fuel_channel.conc_mol_comp_deviation_x1[0, iz, "H2"]) > 0
+        assert (
+            pyo.value(
+                cell.fuel_electrode.conc_mol_comp_deviation_x1[0, iz, "H2"]
+                - cell.fuel_channel.conc_mol_comp_deviation_x1[0, iz, "H2"]
+            )
+            > 0
+        )
+        # O2 is produced at oxygen electrode, concentration at electrode surface
+        # should be greater than that in channel, and concentration at TPB should
+        # be greater than that at the surface
+        assert (
+            pyo.value(cell.oxygen_channel.conc_mol_comp_deviation_x0[0, iz, "O2"]) > 0
+        )
+        assert (
+            pyo.value(
+                cell.oxygen_electrode.conc_mol_comp_deviation_x0[0, iz, "O2"]
+                - cell.oxygen_channel.conc_mol_comp_deviation_x0[0, iz, "O2"]
+            )
+            > 0
+        )
+
     # Test whether unfixed degrees of freedom remain unfixed
     cell.potential.unfix()
     cell.fuel_inlet.temperature[0].unfix()
@@ -790,5 +827,5 @@ if __name__ == "__main__":
     m = model_func()
     out = kazempoor_braun_replication(m)
     # Uncomment to recreate cached data
-    # for i, df in enumerate(out):
-    #     df.to_csv(os.sep.join([data_cache, f"case_{i+1}_interconnect.csv"]))
+    for i, df in enumerate(out):
+        df.to_csv(os.sep.join([data_cache, f"case_{i+1}_interconnect.csv"]))

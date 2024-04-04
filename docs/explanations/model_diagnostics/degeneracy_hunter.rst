@@ -14,3 +14,9 @@ Introduction
 ------------
 
 TBA
+
+More Information
+----------------
+
+The reference guide for Degeneracy Hunter can be found :ref:`here <reference_guides/core/util/diagnostics/degeneracy_hunter:Degeneracy Hunter>`.
+

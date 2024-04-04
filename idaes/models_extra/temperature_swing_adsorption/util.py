@@ -63,6 +63,8 @@ def tsa_summary(tsa, stream=stdout, export=False):
     stream.write(textwrap.indent(stream_table_dataframe_to_string(df), " " * 4))
     stream.write("\n" + "=" * 84 + "\n")
 
+    return df
+
 
 def plot_tsa_profiles(tsa):
     """

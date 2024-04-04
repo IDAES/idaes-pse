@@ -24,7 +24,6 @@ from pyomo.environ import (
     value,
     units as pyunits,
 )
-from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
 from idaes.models.unit_models.product import Product, ProductInitializer
@@ -38,7 +37,6 @@ from idaes.models.properties.examples.saponification_thermo import (
 )
 
 from idaes.core.util.model_statistics import (
-    degrees_of_freedom,
     number_variables,
     number_total_constraints,
     number_unused_variables,
@@ -49,6 +47,7 @@ from idaes.core.initialization import (
     BlockTriangularizationInitializer,
     InitializationStatus,
 )
+from idaes.core.util import DiagnosticsToolbox
 
 
 # -----------------------------------------------------------------------------
@@ -91,8 +90,8 @@ class TestSaponification(object):
         m.fs.unit.conc_mol_comp[0, "H2O"].fix(55388.0)
         m.fs.unit.conc_mol_comp[0, "NaOH"].fix(100.0)
         m.fs.unit.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
-        m.fs.unit.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
-        m.fs.unit.conc_mol_comp[0, "Ethanol"].fix(0.0)
+        m.fs.unit.conc_mol_comp[0, "SodiumAcetate"].fix(1e-8)
+        m.fs.unit.conc_mol_comp[0, "Ethanol"].fix(1e-8)
 
         m.fs.unit.temperature.fix(303.15)
         m.fs.unit.pressure.fix(101325.0)
@@ -120,12 +119,9 @@ class TestSaponification(object):
         assert number_unused_variables(sapon) == 8
 
     @pytest.mark.component
-    def test_units(self, sapon):
-        assert_units_consistent(sapon)
-
-    @pytest.mark.unit
-    def test_dof(self, sapon):
-        assert degrees_of_freedom(sapon) == 0
+    def test_structural_issues(self, sapon):
+        dt = DiagnosticsToolbox(sapon)
+        dt.assert_no_structural_warnings()
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -184,7 +180,7 @@ class TestSaponification(object):
     def test_initialize(self, sapon):
         initialization_tester(sapon)
 
-    # No solve tests, as Product block has nothing to solve
+    # No solve or numerical tests, as Product block has nothing to solve
 
 
 # -----------------------------------------------------------------------------
@@ -226,12 +222,9 @@ class TestBTX(object):
         assert number_unused_variables(btx) == 2
 
     @pytest.mark.component
-    def test_units(self, btx):
-        assert_units_consistent(btx)
-
-    @pytest.mark.unit
-    def test_dof(self, btx):
-        assert degrees_of_freedom(btx) == 0
+    def test_structural_issues(self, btx):
+        dt = DiagnosticsToolbox(btx)
+        dt.assert_no_structural_warnings()
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -299,6 +292,13 @@ class TestBTX(object):
             btx.fs.unit.properties[0].mole_frac_phase_comp["Liq", "toluene"]
         )
 
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, btx):
+        dt = DiagnosticsToolbox(btx)
+        dt.assert_no_numerical_warnings()
+
 
 # -----------------------------------------------------------------------------
 @pytest.mark.iapws
@@ -336,12 +336,9 @@ class TestIAPWS(object):
         assert number_unused_variables(iapws) == 3
 
     @pytest.mark.component
-    def test_units(self, iapws):
-        assert_units_consistent(iapws)
-
-    @pytest.mark.unit
-    def test_dof(self, iapws):
-        assert degrees_of_freedom(iapws) == 0
+    def test_structural_issues(self, iapws):
+        dt = DiagnosticsToolbox(iapws)
+        dt.assert_no_structural_warnings()
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -384,7 +381,7 @@ class TestIAPWS(object):
     def test_initialize(self, iapws):
         initialization_tester(iapws)
 
-    # No solve as there is nothing to solve for
+    # No solve or numerical tests as there is nothing to solve for
 
 
 class TestInitializers:

@@ -168,7 +168,7 @@ def propagate_state(
     if arc is not None:
         if destination is not None or source is not None:
             raise RuntimeError(
-                "In propagate_state(), provide only arc or " "source and destination"
+                "In propagate_state(), provide only arc or source and destination"
             )
         try:
             source = arc.src
@@ -267,6 +267,8 @@ def solve_indexed_blocks(solver, blocks, **kwds):
                     (b, i + 1 if i < nBlocks - 1 else None)
                 )
             except Exception:
+                # PYLINT-TODO
+                # pylint: disable-next=broad-exception-raised
                 raise Exception(
                     "solve_indexed_blocks method failed adding "
                     "components to temporary block."
