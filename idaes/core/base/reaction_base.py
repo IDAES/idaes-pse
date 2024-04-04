@@ -77,7 +77,7 @@ class ReactionParameterBlock(ProcessBlockData, property_meta.HasPropertyClassMet
     CONFIG.declare(
         "property_package",
         ConfigValue(
-            description="Reference to associated PropertyPackageParameter " "object",
+            description="Reference to associated PropertyPackageParameter object",
             domain=is_physical_parameter_block,
         ),
     )

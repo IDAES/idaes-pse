@@ -22,6 +22,9 @@ Set up logging for the idaes module, and import plugins.
 import os
 import copy
 import logging
+from typing import Optional, List
+
+from pyomo.common.fileutils import find_library
 
 from . import config
 from .ver import __version__  # noqa
@@ -81,6 +84,29 @@ config.setup_environment(bin_directory, cfg.use_idaes_solvers)
 
 # Debug log for basic testing of the logging config
 _log.debug("'idaes' logger debug test")
+
+
+# TODO: Remove once AMPL bug is fixed
+# TODO: https://github.com/ampl/asl/issues/13
+# There appears to be a bug in the ASL which causes terminal failures
+# if you try to create multiple ASL structs with different external
+# functions in the same process. This causes pytest to crash during testing.
+# To avoid this, register all known external functions at initialization.
+def _ensure_external_functions_libs_in_env(
+    ext_funcs: List[str], var_name: str = "AMPLFUNC", sep: str = "\n"
+):
+    libraries_str = os.environ.get(var_name, "")
+    libraries = [lib for lib in libraries_str.split(sep) if lib.strip()]
+    for func_name in ext_funcs:
+        lib: Optional[str] = find_library(os.path.join(bin_directory, func_name))
+        if lib is not None and lib not in libraries:
+            libraries.append(lib)
+    os.environ[var_name] = sep.join(libraries)
+
+
+_ensure_external_functions_libs_in_env(
+    ["cubic_roots", "general_helmholtz_external", "functions"]
+)
 
 
 def _create_data_dir():

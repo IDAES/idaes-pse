@@ -110,7 +110,7 @@ class ModuleClassWalker(Walker):
                 )
         else:
             raise ValueError(
-                'Missing arguments: either "from_pkg" or ' '"from_path" must be given'
+                'Missing arguments: either "from_pkg" or "from_path" must be given'
             )
         if not os.path.isdir(self._root):
             raise IOError('Root directory "{}"'.format(self._root))

@@ -182,7 +182,8 @@ def dummy_package():
     # build a bad module in a temporary package
     d = mkdtemp()
     sys.path.append(d)
-    foo = os.path.join(d, "foo{}".format(random.randint(1e6, 1e7 - 1)))
+    generated_suffix = str(random.randint(1_000_000, 9_999_999))
+    foo = os.path.join(d, f"foo{generated_suffix}")
     os.mkdir(foo)
     open(os.path.join(foo, "__init__.py"), "w")
     # create some modules

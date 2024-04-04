@@ -29,11 +29,11 @@ Units are :math:`\text{J/kmol}\cdotp\text{K}`.
 .. csv-table::
    :header: "Symbol", "Parameter Name", "Units", "Description"
 
-   ":math:`C_1`", "cp_mol_ig_comp_coeff_1", ":math:`\text{J/kmol}\cdotp\text{K}`", ""
-   ":math:`C_2`", "cp_mol_ig_comp_coeff_2", ":math:`\text{J/kmol}\cdotp\text{K}^2`", ""
-   ":math:`C_3`", "cp_mol_ig_comp_coeff_3", ":math:`\text{J/kmol}\cdotp\text{K}^3`", ""
-   ":math:`C_4`", "cp_mol_ig_comp_coeff_4", ":math:`\text{J/kmol}\cdotp\text{K}^4`", ""
-   ":math:`C_5`", "cp_mol_ig_comp_coeff_5", ":math:`\text{J/kmol}\cdotp\text{K}^5`", ""
+   ":math:`C_1`", "cp_mol_liq_comp_coeff_1", ":math:`\text{J/kmol}\cdotp\text{K}`", ""
+   ":math:`C_2`", "cp_mol_liq_comp_coeff_2", ":math:`\text{J/kmol}\cdotp\text{K}^2`", ""
+   ":math:`C_3`", "cp_mol_liq_comp_coeff_3", ":math:`\text{J/kmol}\cdotp\text{K}^3`", ""
+   ":math:`C_4`", "cp_mol_liq_comp_coeff_4", ":math:`\text{J/kmol}\cdotp\text{K}^4`", ""
+   ":math:`C_5`", "cp_mol_liq_comp_coeff_5", ":math:`\text{J/kmol}\cdotp\text{K}^5`", ""
 
 Ideal Liquid Molar Enthalpy
 ---------------------------
@@ -49,11 +49,11 @@ Units are :math:`\text{J/kmol}`.
 .. csv-table::
    :header: "Symbol", "Parameter Name", "Units", "Description"
 
-   ":math:`C_1`", "cp_mol_ig_comp_coeff_1", ":math:`\text{J/kmol}\cdotp\text{K}`", ""
-   ":math:`C_2`", "cp_mol_ig_comp_coeff_2", ":math:`\text{J/kmol}\cdotp\text{K}^2`", ""
-   ":math:`C_3`", "cp_mol_ig_comp_coeff_3", ":math:`\text{J/kmol}\cdotp\text{K}^3`", ""
-   ":math:`C_4`", "cp_mol_ig_comp_coeff_4", ":math:`\text{J/kmol}\cdotp\text{K}^4`", ""
-   ":math:`C_5`", "cp_mol_ig_comp_coeff_5", ":math:`\text{J/kmol}\cdotp\text{K}^5`", ""
+   ":math:`C_1`", "cp_mol_liq_comp_coeff_1", ":math:`\text{J/kmol}\cdotp\text{K}`", ""
+   ":math:`C_2`", "cp_mol_liq_comp_coeff_2", ":math:`\text{J/kmol}\cdotp\text{K}^2`", ""
+   ":math:`C_3`", "cp_mol_liq_comp_coeff_3", ":math:`\text{J/kmol}\cdotp\text{K}^3`", ""
+   ":math:`C_4`", "cp_mol_liq_comp_coeff_4", ":math:`\text{J/kmol}\cdotp\text{K}^4`", ""
+   ":math:`C_5`", "cp_mol_liq_comp_coeff_5", ":math:`\text{J/kmol}\cdotp\text{K}^5`", ""
    ":math:`\Delta h_{\text{form, Liq}}`", "enth_mol_form_liq_comp_ref", "Base units", "Molar heat of formation at reference state"
 
 .. note::
@@ -74,11 +74,11 @@ Units are :math:`\text{J/kmol}\cdotp\text{K}`.
 .. csv-table::
    :header: "Symbol", "Parameter Name", "Units", "Description"
 
-   ":math:`C_1`", "cp_mol_ig_comp_coeff_1", ":math:`\text{J/kmol}\cdotp\text{K}`", ""
-   ":math:`C_2`", "cp_mol_ig_comp_coeff_2", ":math:`\text{J/kmol}\cdotp\text{K}^2`", ""
-   ":math:`C_3`", "cp_mol_ig_comp_coeff_3", ":math:`\text{J/kmol}\cdotp\text{K}^3`", ""
-   ":math:`C_4`", "cp_mol_ig_comp_coeff_4", ":math:`\text{J/kmol}\cdotp\text{K}^4`", ""
-   ":math:`C_5`", "cp_mol_ig_comp_coeff_5", ":math:`\text{J/kmol}\cdotp\text{K}^5`", ""
+   ":math:`C_1`", "cp_mol_liq_comp_coeff_1", ":math:`\text{J/kmol}\cdotp\text{K}`", ""
+   ":math:`C_2`", "cp_mol_liq_comp_coeff_2", ":math:`\text{J/kmol}\cdotp\text{K}^2`", ""
+   ":math:`C_3`", "cp_mol_liq_comp_coeff_3", ":math:`\text{J/kmol}\cdotp\text{K}^3`", ""
+   ":math:`C_4`", "cp_mol_liq_comp_coeff_4", ":math:`\text{J/kmol}\cdotp\text{K}^4`", ""
+   ":math:`C_5`", "cp_mol_liq_comp_coeff_5", ":math:`\text{J/kmol}\cdotp\text{K}^5`", ""
    ":math:`s_{\text{form, Liq}}`", "entr_mol_form_liq_comp_ref", "Base units", "Standard molar entropy of formation at reference state"
 
 .. note::

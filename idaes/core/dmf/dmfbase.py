@@ -235,7 +235,7 @@ class DMF(workspace.Workspace, HasTraits):
     """
 
     db_file = Unicode(help="Database file name")
-    datafile_dir = Unicode(help="Data file directory, " "relative to DMF root")
+    datafile_dir = Unicode(help="Data file directory, relative to DMF root")
 
     CONF_DB_FILE = "db_file"
     CONF_DATA_DIR = "datafile_dir"

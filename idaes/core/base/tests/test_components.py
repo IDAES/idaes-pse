@@ -185,6 +185,8 @@ class TestComponent:
         m.comp = Component(
             parameter_data={
                 "mw": 10,
+                "compress_fact_crit": 1,
+                "dens_mol_crit": 55,
                 "pressure_crit": 1e5,
                 "temperature_crit": 500,
             }
@@ -192,6 +194,12 @@ class TestComponent:
 
         assert isinstance(m.comp.mw, Param)
         assert m.comp.mw.value == 10
+
+        assert isinstance(m.comp.compress_fact_crit, Var)
+        assert m.comp.compress_fact_crit.value == 1
+
+        assert isinstance(m.comp.dens_mol_crit, Var)
+        assert m.comp.dens_mol_crit.value == 55
 
         assert isinstance(m.comp.pressure_crit, Var)
         assert m.comp.pressure_crit.value == 1e5
@@ -499,7 +507,7 @@ class TestIon:
 
         with pytest.raises(
             PropertyPackageError,
-            match="comp Ion Component types should only be used with " "Aqueous Phases",
+            match="comp Ion Component types should only be used with Aqueous Phases",
         ):
             m.comp = Ion(_electrolyte=False)
 
@@ -525,7 +533,7 @@ class TestAnion:
 
         with pytest.raises(
             PropertyPackageError,
-            match="comp Ion Component types should only be used with " "Aqueous Phases",
+            match="comp Ion Component types should only be used with Aqueous Phases",
         ):
             m.comp = Anion(_electrolyte=False)
 
@@ -590,7 +598,7 @@ class TestAnion:
     @pytest.mark.unit
     def test_no_charge(self, m):
         with pytest.raises(
-            ConfigurationError, match="an was not provided with a value " "for charge."
+            ConfigurationError, match="an was not provided with a value for charge."
         ):
             m.an = Anion(_electrolyte=True)
 
@@ -628,7 +636,7 @@ class TestCation:
 
         with pytest.raises(
             PropertyPackageError,
-            match="comp Ion Component types should only be used with " "Aqueous Phases",
+            match="comp Ion Component types should only be used with Aqueous Phases",
         ):
             m.comp = Cation(_electrolyte=False)
 
@@ -693,7 +701,7 @@ class TestCation:
     @pytest.mark.unit
     def test_no_charge(self, m):
         with pytest.raises(
-            ConfigurationError, match="cat was not provided with a value " "for charge."
+            ConfigurationError, match="cat was not provided with a value for charge."
         ):
             m.cat = Cation(_electrolyte=True)
 

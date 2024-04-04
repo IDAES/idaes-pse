@@ -68,6 +68,7 @@ from idaes.core.initialization import (
     BlockTriangularizationInitializer,
     InitializationStatus,
 )
+from idaes.core.util import DiagnosticsToolbox
 
 # Imports to assemble BT-PR with different units
 from idaes.core import LiquidPhase, VaporPhase, Component
@@ -384,15 +385,9 @@ class TestBTX_cocurrent(object):
         assert number_unused_variables(btx) == 10
 
     @pytest.mark.integration
-    def test_units(self, btx):
-        assert_units_equivalent(btx.fs.unit.area, pyunits.m**2)
-        assert_units_equivalent(btx.fs.unit.length, pyunits.m)
-
-        assert_units_consistent(btx)
-
-    @pytest.mark.unit
-    def test_dof(self, btx):
-        assert degrees_of_freedom(btx) == 0
+    def test_structural_issues(self, btx):
+        dt = DiagnosticsToolbox(btx)
+        dt.assert_no_structural_warnings()
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -529,6 +524,13 @@ class TestBTX_cocurrent(object):
         )
         assert abs(hot_side - cold_side) <= 1e-6
 
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, btx):
+        dt = DiagnosticsToolbox(btx)
+        dt.assert_no_numerical_warnings()
+
 
 # -----------------------------------------------------------------------------
 class TestBTX_countercurrent(object):
@@ -606,19 +608,9 @@ class TestBTX_countercurrent(object):
         assert number_unused_variables(btx) == 10
 
     @pytest.mark.integration
-    def test_units(self, btx):
-        assert_units_equivalent(btx.fs.unit.area, pyunits.m**2)
-        assert_units_equivalent(btx.fs.unit.length, pyunits.m)
-        assert_units_equivalent(
-            btx.fs.unit.heat_transfer_coefficient,
-            pyunits.W / pyunits.m**2 / pyunits.K,
-        )
-
-        assert_units_consistent(btx)
-
-    @pytest.mark.unit
-    def test_dof(self, btx):
-        assert degrees_of_freedom(btx) == 0
+    def test_structural_issues(self, btx):
+        dt = DiagnosticsToolbox(btx)
+        dt.assert_no_structural_warnings()
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -764,6 +756,13 @@ class TestBTX_countercurrent(object):
         )
         assert abs(hot_side - cold_side) <= 1e-6
 
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, btx):
+        dt = DiagnosticsToolbox(btx)
+        dt.assert_no_numerical_warnings()
+
 
 # -----------------------------------------------------------------------------
 def build_model():
@@ -846,19 +845,9 @@ class TestIAPWS_cocurrent(object):
         assert number_unused_variables(iapws) == 12
 
     @pytest.mark.integration
-    def test_units(self, iapws):
-        assert_units_equivalent(iapws.fs.unit.area, pyunits.m**2)
-        assert_units_equivalent(iapws.fs.unit.length, pyunits.m)
-        assert_units_equivalent(
-            iapws.fs.unit.heat_transfer_coefficient,
-            pyunits.W / pyunits.m**2 / pyunits.K,
-        )
-
-        assert_units_consistent(iapws)
-
-    @pytest.mark.unit
-    def test_dof(self, iapws):
-        assert degrees_of_freedom(iapws) == 0
+    def test_structural_issues(self, iapws):
+        dt = DiagnosticsToolbox(iapws)
+        dt.assert_no_structural_warnings()
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -997,6 +986,13 @@ class TestIAPWS_cocurrent(object):
         )
         assert abs(hot_side + cold_side) <= 1e-6
 
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, iapws):
+        dt = DiagnosticsToolbox(iapws)
+        dt.assert_no_numerical_warnings()
+
 
 # # -----------------------------------------------------------------------------
 @pytest.mark.iapws
@@ -1066,19 +1062,9 @@ class TestIAPWS_countercurrent(object):
         assert number_unused_variables(iapws) == 12
 
     @pytest.mark.integration
-    def test_units(self, iapws):
-        assert_units_equivalent(iapws.fs.unit.area, pyunits.m**2)
-        assert_units_equivalent(iapws.fs.unit.length, pyunits.m)
-        assert_units_equivalent(
-            iapws.fs.unit.heat_transfer_coefficient,
-            pyunits.W / pyunits.m**2 / pyunits.K,
-        )
-
-        assert_units_consistent(iapws)
-
-    @pytest.mark.unit
-    def test_dof(self, iapws):
-        assert degrees_of_freedom(iapws) == 0
+    def test_structural_issues(self, iapws):
+        dt = DiagnosticsToolbox(iapws)
+        dt.assert_no_structural_warnings()
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -1217,6 +1203,13 @@ class TestIAPWS_countercurrent(object):
         )
         assert abs(hot_side + cold_side) <= 1e-6
 
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, iapws):
+        dt = DiagnosticsToolbox(iapws)
+        dt.assert_no_numerical_warnings()
+
 
 # # -----------------------------------------------------------------------------
 class TestSaponification_cocurrent(object):
@@ -1243,8 +1236,8 @@ class TestSaponification_cocurrent(object):
         m.fs.unit.hot_side_inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
         m.fs.unit.hot_side_inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
         m.fs.unit.hot_side_inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
-        m.fs.unit.hot_side_inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
-        m.fs.unit.hot_side_inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
+        m.fs.unit.hot_side_inlet.conc_mol_comp[0, "SodiumAcetate"].fix(1e-8)
+        m.fs.unit.hot_side_inlet.conc_mol_comp[0, "Ethanol"].fix(1e-8)
 
         m.fs.unit.cold_side_inlet.flow_vol[0].fix(1e-3)
         m.fs.unit.cold_side_inlet.temperature[0].fix(300)
@@ -1252,8 +1245,8 @@ class TestSaponification_cocurrent(object):
         m.fs.unit.cold_side_inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
         m.fs.unit.cold_side_inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
         m.fs.unit.cold_side_inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
-        m.fs.unit.cold_side_inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
-        m.fs.unit.cold_side_inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
+        m.fs.unit.cold_side_inlet.conc_mol_comp[0, "SodiumAcetate"].fix(1e-8)
+        m.fs.unit.cold_side_inlet.conc_mol_comp[0, "Ethanol"].fix(1e-8)
 
         return m
 
@@ -1294,19 +1287,9 @@ class TestSaponification_cocurrent(object):
         assert number_unused_variables(sapon) == 16
 
     @pytest.mark.integration
-    def test_units(self, sapon):
-        assert_units_equivalent(sapon.fs.unit.area, pyunits.m**2)
-        assert_units_equivalent(sapon.fs.unit.length, pyunits.m)
-        assert_units_equivalent(
-            sapon.fs.unit.heat_transfer_coefficient,
-            pyunits.W / pyunits.m**2 / pyunits.K,
-        )
-
-        assert_units_consistent(sapon)
-
-    @pytest.mark.unit
-    def test_dof(self, sapon):
-        assert degrees_of_freedom(sapon) == 0
+    def test_structural_issues(self, sapon):
+        dt = DiagnosticsToolbox(sapon)
+        dt.assert_no_structural_warnings()
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -1409,25 +1392,37 @@ class TestSaponification_cocurrent(object):
             sapon.fs.unit.cold_side_outlet.flow_vol[0]
         )
 
-        assert 55388.0 == value(sapon.fs.unit.hot_side_inlet.conc_mol_comp[0, "H2O"])
-        assert 100.0 == value(sapon.fs.unit.hot_side_inlet.conc_mol_comp[0, "NaOH"])
-        assert 100.0 == value(
+        assert pytest.approx(55388.0, rel=1e-5) == value(
+            sapon.fs.unit.hot_side_inlet.conc_mol_comp[0, "H2O"]
+        )
+        assert pytest.approx(100.0, rel=1e-5) == value(
+            sapon.fs.unit.hot_side_inlet.conc_mol_comp[0, "NaOH"]
+        )
+        assert pytest.approx(100.0, rel=1e-5) == value(
             sapon.fs.unit.hot_side_inlet.conc_mol_comp[0, "EthylAcetate"]
         )
-        assert 0.0 == value(
+        assert pytest.approx(0.0, abs=1e-5) == value(
             sapon.fs.unit.hot_side_inlet.conc_mol_comp[0, "SodiumAcetate"]
         )
-        assert 0.0 == value(sapon.fs.unit.hot_side_inlet.conc_mol_comp[0, "Ethanol"])
+        assert pytest.approx(0.0, abs=1e-5) == value(
+            sapon.fs.unit.hot_side_inlet.conc_mol_comp[0, "Ethanol"]
+        )
 
-        assert 55388.0 == value(sapon.fs.unit.cold_side_inlet.conc_mol_comp[0, "H2O"])
-        assert 100.0 == value(sapon.fs.unit.cold_side_inlet.conc_mol_comp[0, "NaOH"])
-        assert 100.0 == value(
+        assert pytest.approx(55388.0, rel=1e-5) == value(
+            sapon.fs.unit.cold_side_inlet.conc_mol_comp[0, "H2O"]
+        )
+        assert pytest.approx(100.0, rel=1e-5) == value(
+            sapon.fs.unit.cold_side_inlet.conc_mol_comp[0, "NaOH"]
+        )
+        assert pytest.approx(100.0, rel=1e-5) == value(
             sapon.fs.unit.cold_side_inlet.conc_mol_comp[0, "EthylAcetate"]
         )
-        assert 0.0 == value(
+        assert pytest.approx(0.0, abs=1e-5) == value(
             sapon.fs.unit.cold_side_inlet.conc_mol_comp[0, "SodiumAcetate"]
         )
-        assert 0.0 == value(sapon.fs.unit.cold_side_inlet.conc_mol_comp[0, "Ethanol"])
+        assert pytest.approx(0.0, abs=1e-5) == value(
+            sapon.fs.unit.cold_side_inlet.conc_mol_comp[0, "Ethanol"]
+        )
 
         assert pytest.approx(318.873, rel=1e-5) == value(
             sapon.fs.unit.hot_side_outlet.temperature[0]
@@ -1466,6 +1461,13 @@ class TestSaponification_cocurrent(object):
         )
         assert abs(hot_side + cold_side) <= 1e-6
 
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, sapon):
+        dt = DiagnosticsToolbox(sapon)
+        dt.assert_no_numerical_warnings()
+
 
 # # -----------------------------------------------------------------------------
 class TestSaponification_countercurrent(object):
@@ -1492,8 +1494,8 @@ class TestSaponification_countercurrent(object):
         m.fs.unit.hot_side_inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
         m.fs.unit.hot_side_inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
         m.fs.unit.hot_side_inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
-        m.fs.unit.hot_side_inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
-        m.fs.unit.hot_side_inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
+        m.fs.unit.hot_side_inlet.conc_mol_comp[0, "SodiumAcetate"].fix(1e-8)
+        m.fs.unit.hot_side_inlet.conc_mol_comp[0, "Ethanol"].fix(1e-8)
 
         m.fs.unit.cold_side_inlet.flow_vol[0].fix(1e-3)
         m.fs.unit.cold_side_inlet.temperature[0].fix(300)
@@ -1501,8 +1503,8 @@ class TestSaponification_countercurrent(object):
         m.fs.unit.cold_side_inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
         m.fs.unit.cold_side_inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
         m.fs.unit.cold_side_inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
-        m.fs.unit.cold_side_inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
-        m.fs.unit.cold_side_inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
+        m.fs.unit.cold_side_inlet.conc_mol_comp[0, "SodiumAcetate"].fix(1e-8)
+        m.fs.unit.cold_side_inlet.conc_mol_comp[0, "Ethanol"].fix(1e-8)
 
         return m
 
@@ -1543,19 +1545,9 @@ class TestSaponification_countercurrent(object):
         assert number_unused_variables(sapon) == 16
 
     @pytest.mark.integration
-    def test_units(self, sapon):
-        assert_units_equivalent(sapon.fs.unit.area, pyunits.m**2)
-        assert_units_equivalent(sapon.fs.unit.length, pyunits.m)
-        assert_units_equivalent(
-            sapon.fs.unit.heat_transfer_coefficient,
-            pyunits.W / pyunits.m**2 / pyunits.K,
-        )
-
-        assert_units_consistent(sapon)
-
-    @pytest.mark.unit
-    def test_dof(self, sapon):
-        assert degrees_of_freedom(sapon) == 0
+    def test_structural_issues(self, sapon):
+        dt = DiagnosticsToolbox(sapon)
+        dt.assert_no_structural_warnings()
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -1658,25 +1650,37 @@ class TestSaponification_countercurrent(object):
             sapon.fs.unit.cold_side_outlet.flow_vol[0]
         )
 
-        assert 55388.0 == value(sapon.fs.unit.hot_side_inlet.conc_mol_comp[0, "H2O"])
-        assert 100.0 == value(sapon.fs.unit.hot_side_inlet.conc_mol_comp[0, "NaOH"])
-        assert 100.0 == value(
+        assert pytest.approx(55388.0, rel=1e-5) == value(
+            sapon.fs.unit.hot_side_inlet.conc_mol_comp[0, "H2O"]
+        )
+        assert pytest.approx(100.0, rel=1e-5) == value(
+            sapon.fs.unit.hot_side_inlet.conc_mol_comp[0, "NaOH"]
+        )
+        assert pytest.approx(100.0, rel=1e-5) == value(
             sapon.fs.unit.hot_side_inlet.conc_mol_comp[0, "EthylAcetate"]
         )
-        assert 0.0 == value(
+        assert pytest.approx(0.0, abs=1e-5) == value(
             sapon.fs.unit.hot_side_inlet.conc_mol_comp[0, "SodiumAcetate"]
         )
-        assert 0.0 == value(sapon.fs.unit.hot_side_inlet.conc_mol_comp[0, "Ethanol"])
+        assert pytest.approx(0.0, abs=1e-5) == value(
+            sapon.fs.unit.hot_side_inlet.conc_mol_comp[0, "Ethanol"]
+        )
 
-        assert 55388.0 == value(sapon.fs.unit.cold_side_inlet.conc_mol_comp[0, "H2O"])
-        assert 100.0 == value(sapon.fs.unit.cold_side_inlet.conc_mol_comp[0, "NaOH"])
-        assert 100.0 == value(
+        assert pytest.approx(55388.0, rel=1e-5) == value(
+            sapon.fs.unit.cold_side_inlet.conc_mol_comp[0, "H2O"]
+        )
+        assert pytest.approx(100.0, rel=1e-5) == value(
+            sapon.fs.unit.cold_side_inlet.conc_mol_comp[0, "NaOH"]
+        )
+        assert pytest.approx(100.0, rel=1e-5) == value(
             sapon.fs.unit.cold_side_inlet.conc_mol_comp[0, "EthylAcetate"]
         )
-        assert 0.0 == value(
+        assert pytest.approx(0.0, abs=1e-5) == value(
             sapon.fs.unit.cold_side_inlet.conc_mol_comp[0, "SodiumAcetate"]
         )
-        assert 0.0 == value(sapon.fs.unit.cold_side_inlet.conc_mol_comp[0, "Ethanol"])
+        assert pytest.approx(0.0, abs=1e-5) == value(
+            sapon.fs.unit.cold_side_inlet.conc_mol_comp[0, "Ethanol"]
+        )
 
         assert pytest.approx(318.869, rel=1e-5) == value(
             sapon.fs.unit.hot_side_outlet.temperature[0]
@@ -1714,6 +1718,13 @@ class TestSaponification_countercurrent(object):
             )
         )
         assert abs(hot_side + cold_side) <= 1e-6
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, sapon):
+        dt = DiagnosticsToolbox(sapon)
+        dt.assert_no_numerical_warnings()
 
 
 # # -----------------------------------------------------------------------------
@@ -1908,19 +1919,11 @@ class TestBT_Generic_cocurrent(object):
         assert number_unused_variables(btx) == 36
 
     @pytest.mark.integration
-    def test_units(self, btx):
-        assert_units_equivalent(btx.fs.unit.area, pyunits.m**2)
-        assert_units_equivalent(btx.fs.unit.length, pyunits.m)
-        assert_units_equivalent(
-            btx.fs.unit.heat_transfer_coefficient,
-            pyunits.W / pyunits.m**2 / pyunits.K,
+    def test_structural_issues(self, btx):
+        dt = DiagnosticsToolbox(btx)
+        dt.assert_no_structural_warnings(
+            ignore_evaluation_errors=True,
         )
-
-        assert_units_consistent(btx)
-
-    @pytest.mark.component
-    def test_dof(self, btx):
-        assert degrees_of_freedom(btx) == 0
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -2060,6 +2063,13 @@ class TestBT_Generic_cocurrent(object):
             )
         )
         assert abs((hot_side - cold_side) / hot_side) <= 3e-4
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.integration
+    def test_numerical_issues(self, btx):
+        dt = DiagnosticsToolbox(btx)
+        dt.assert_no_numerical_warnings()
 
     @pytest.mark.component
     def test_initialization_error(self, btx):
