@@ -279,12 +279,12 @@ class TestMethane(object):
         methane.scaling_factor[
             methane.fs.unit.control_volume.enthalpy_balances[0.0]
         ] = 6.343688225967796e-08
-        methane.scaling_factor[
-            methane.fs.unit.control_volume.heat[0.0]
-        ] = 1.3415588575040103e-07
-        methane.scaling_factor[
-            methane.fs.unit.control_volume.pressure_balance[0.0]
-        ] = 9.869232667160129e-06
+        methane.scaling_factor[methane.fs.unit.control_volume.heat[0.0]] = (
+            1.3415588575040103e-07
+        )
+        methane.scaling_factor[methane.fs.unit.control_volume.pressure_balance[0.0]] = (
+            9.869232667160129e-06
+        )
         methane.scaling_factor[
             methane.fs.unit.control_volume.properties_in[0.0].enth_mol_phase["Vap"]
         ] = 0.00010271414106049353
@@ -796,36 +796,36 @@ class TestMethane(object):
         methane.scaling_factor[
             methane.fs.unit.gibbs_minimization[0.0, "Vap", "CO2"]
         ] = 7.052606407804767e-07
-        methane.scaling_factor[
-            methane.fs.unit.gibbs_minimization[0.0, "Vap", "CO"]
-        ] = 1.1096130740800528e-06
+        methane.scaling_factor[methane.fs.unit.gibbs_minimization[0.0, "Vap", "CO"]] = (
+            1.1096130740800528e-06
+        )
         methane.scaling_factor[
             methane.fs.unit.gibbs_minimization[0.0, "Vap", "H2O"]
         ] = 9.679516364316312e-07
-        methane.scaling_factor[
-            methane.fs.unit.gibbs_minimization[0.0, "Vap", "H2"]
-        ] = 1.5736217717559093e-06
-        methane.scaling_factor[
-            methane.fs.unit.gibbs_minimization[0.0, "Vap", "N2"]
-        ] = 1.2499361838560746e-06
+        methane.scaling_factor[methane.fs.unit.gibbs_minimization[0.0, "Vap", "H2"]] = (
+            1.5736217717559093e-06
+        )
+        methane.scaling_factor[methane.fs.unit.gibbs_minimization[0.0, "Vap", "N2"]] = (
+            1.2499361838560746e-06
+        )
         methane.scaling_factor[
             methane.fs.unit.gibbs_minimization[0.0, "Vap", "NH3"]
         ] = 8.304717457164266e-07
-        methane.scaling_factor[
-            methane.fs.unit.gibbs_minimization[0.0, "Vap", "O2"]
-        ] = 8.983346084706515e-07
-        methane.scaling_factor[
-            methane.fs.unit.lagrange_mult[0.0, "C"]
-        ] = 2.926858666284934e-06
-        methane.scaling_factor[
-            methane.fs.unit.lagrange_mult[0.0, "H"]
-        ] = 4.450874503325572e-06
-        methane.scaling_factor[
-            methane.fs.unit.lagrange_mult[0.0, "N"]
-        ] = 3.535353406620262e-06
-        methane.scaling_factor[
-            methane.fs.unit.lagrange_mult[0.0, "O"]
-        ] = 2.5408739736966393e-06
+        methane.scaling_factor[methane.fs.unit.gibbs_minimization[0.0, "Vap", "O2"]] = (
+            8.983346084706515e-07
+        )
+        methane.scaling_factor[methane.fs.unit.lagrange_mult[0.0, "C"]] = (
+            2.926858666284934e-06
+        )
+        methane.scaling_factor[methane.fs.unit.lagrange_mult[0.0, "H"]] = (
+            4.450874503325572e-06
+        )
+        methane.scaling_factor[methane.fs.unit.lagrange_mult[0.0, "N"]] = (
+            3.535353406620262e-06
+        )
+        methane.scaling_factor[methane.fs.unit.lagrange_mult[0.0, "O"]] = (
+            2.5408739736966393e-06
+        )
 
         scaling = TransformationFactory("core.scale_model")
         sm = scaling.create_using(methane, rename=False)
@@ -975,9 +975,9 @@ class TestMethane(object):
         methane.scaling_factor[
             methane.fs.unit.control_volume.enthalpy_balances[0.0]
         ] = 7.199382898409605e-08
-        methane.scaling_factor[
-            methane.fs.unit.control_volume.pressure_balance[0.0]
-        ] = 9.869232667160129e-06
+        methane.scaling_factor[methane.fs.unit.control_volume.pressure_balance[0.0]] = (
+            9.869232667160129e-06
+        )
         methane.scaling_factor[
             methane.fs.unit.control_volume.properties_in[0.0].enth_mol_phase["Vap"]
         ] = 0.00010271414106049353
@@ -1492,36 +1492,36 @@ class TestMethane(object):
         methane.scaling_factor[
             methane.fs.unit.gibbs_minimization[0.0, "Vap", "CO2"]
         ] = 7.961846197368761e-07
-        methane.scaling_factor[
-            methane.fs.unit.gibbs_minimization[0.0, "Vap", "CO"]
-        ] = 1.306639729794169e-06
+        methane.scaling_factor[methane.fs.unit.gibbs_minimization[0.0, "Vap", "CO"]] = (
+            1.306639729794169e-06
+        )
         methane.scaling_factor[
             methane.fs.unit.gibbs_minimization[0.0, "Vap", "H2O"]
         ] = 1.1245365150847992e-06
-        methane.scaling_factor[
-            methane.fs.unit.gibbs_minimization[0.0, "Vap", "H2"]
-        ] = 1.9650913378522065e-06
-        methane.scaling_factor[
-            methane.fs.unit.gibbs_minimization[0.0, "Vap", "N2"]
-        ] = 1.5268799321929755e-06
+        methane.scaling_factor[methane.fs.unit.gibbs_minimization[0.0, "Vap", "H2"]] = (
+            1.9650913378522065e-06
+        )
+        methane.scaling_factor[methane.fs.unit.gibbs_minimization[0.0, "Vap", "N2"]] = (
+            1.5268799321929755e-06
+        )
         methane.scaling_factor[
             methane.fs.unit.gibbs_minimization[0.0, "Vap", "NH3"]
         ] = 1.0314993300171925e-06
-        methane.scaling_factor[
-            methane.fs.unit.gibbs_minimization[0.0, "Vap", "O2"]
-        ] = 9.653850829168712e-07
-        methane.scaling_factor[
-            methane.fs.unit.lagrange_mult[0.0, "C"]
-        ] = 3.915957066473961e-06
-        methane.scaling_factor[
-            methane.fs.unit.lagrange_mult[0.0, "H"]
-        ] = 5.55811764258496e-06
-        methane.scaling_factor[
-            methane.fs.unit.lagrange_mult[0.0, "N"]
-        ] = 4.318668616445236e-06
-        methane.scaling_factor[
-            methane.fs.unit.lagrange_mult[0.0, "O"]
-        ] = 2.730521354347429e-06
+        methane.scaling_factor[methane.fs.unit.gibbs_minimization[0.0, "Vap", "O2"]] = (
+            9.653850829168712e-07
+        )
+        methane.scaling_factor[methane.fs.unit.lagrange_mult[0.0, "C"]] = (
+            3.915957066473961e-06
+        )
+        methane.scaling_factor[methane.fs.unit.lagrange_mult[0.0, "H"]] = (
+            5.55811764258496e-06
+        )
+        methane.scaling_factor[methane.fs.unit.lagrange_mult[0.0, "N"]] = (
+            4.318668616445236e-06
+        )
+        methane.scaling_factor[methane.fs.unit.lagrange_mult[0.0, "O"]] = (
+            2.730521354347429e-06
+        )
 
         scaling = TransformationFactory("core.scale_model")
         sm = scaling.create_using(methane, rename=False)

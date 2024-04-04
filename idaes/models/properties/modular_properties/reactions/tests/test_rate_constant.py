@@ -264,9 +264,7 @@ def test_arrhenius_partial_pressure(model):
     )
 
     assert value(rform) == pytest.approx(0.81836, rel=1e-3)
-    assert_units_equivalent(
-        rform, pyunits.mol / pyunits.m**3 / pyunits.s / pyunits.Pa
-    )
+    assert_units_equivalent(rform, pyunits.mol / pyunits.m**3 / pyunits.s / pyunits.Pa)
 
 
 @pytest.mark.unit
@@ -299,6 +297,4 @@ def test_arrhenius_partial_pressure_convert(model):
     )
 
     assert value(rform) == pytest.approx(0.81836, rel=1e-3)
-    assert_units_equivalent(
-        rform, pyunits.mol / pyunits.m**3 / pyunits.s / pyunits.Pa
-    )
+    assert_units_equivalent(rform, pyunits.mol / pyunits.m**3 / pyunits.s / pyunits.Pa)

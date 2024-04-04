@@ -43,37 +43,25 @@ class NIST(object):
 
             cobj.cp_mol_ig_comp_coeff_B = Var(
                 doc="Shomate B parameter for ideal gas molar heat capacity",
-                units=pyunits.J
-                * pyunits.mol**-1
-                * pyunits.K**-1
-                * pyunits.kiloK**-1,
+                units=pyunits.J * pyunits.mol**-1 * pyunits.K**-1 * pyunits.kiloK**-1,
             )
             set_param_from_config(cobj, param="cp_mol_ig_comp_coeff", index="B")
 
             cobj.cp_mol_ig_comp_coeff_C = Var(
                 doc="Shomate C parameter for ideal gas molar heat capacity",
-                units=pyunits.J
-                * pyunits.mol**-1
-                * pyunits.K**-1
-                * pyunits.kiloK**-2,
+                units=pyunits.J * pyunits.mol**-1 * pyunits.K**-1 * pyunits.kiloK**-2,
             )
             set_param_from_config(cobj, param="cp_mol_ig_comp_coeff", index="C")
 
             cobj.cp_mol_ig_comp_coeff_D = Var(
                 doc="Shomate D parameter for ideal gas molar heat capacity",
-                units=pyunits.J
-                * pyunits.mol**-1
-                * pyunits.K**-1
-                * pyunits.kiloK**-3,
+                units=pyunits.J * pyunits.mol**-1 * pyunits.K**-1 * pyunits.kiloK**-3,
             )
             set_param_from_config(cobj, param="cp_mol_ig_comp_coeff", index="D")
 
             cobj.cp_mol_ig_comp_coeff_E = Var(
                 doc="Shomate E parameter for ideal gas molar heat capacity",
-                units=pyunits.J
-                * pyunits.mol**-1
-                * pyunits.K**-1
-                * pyunits.kiloK**2,
+                units=pyunits.J * pyunits.mol**-1 * pyunits.K**-1 * pyunits.kiloK**2,
             )
             set_param_from_config(cobj, param="cp_mol_ig_comp_coeff", index="E")
 

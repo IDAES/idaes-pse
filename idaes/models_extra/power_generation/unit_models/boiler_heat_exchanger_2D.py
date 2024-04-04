@@ -2536,10 +2536,7 @@ tube side flows from 1 to 0""",
                         )
                         * b.head_ri**2
                         * b.head_ro**2
-                        / (
-                            (r * b.head_ri_scaling) ** 2
-                            * (b.head_ro**2 - b.head_ri**2)
-                        )
+                        / ((r * b.head_ri_scaling) ** 2 * (b.head_ro**2 - b.head_ri**2))
                     )
                 )
 

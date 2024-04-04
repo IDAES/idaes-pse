@@ -4,6 +4,7 @@ dynamically created through the `declare_process_block_class()` decorator.
 
 See #1159 for more information.
 """
+
 from dataclasses import dataclass
 import sys
 import functools

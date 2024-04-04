@@ -47,9 +47,11 @@ def get_tracking_cost_from_constant_setpoint(
 
     """
     variable_names = [
-        str(ComponentUID(var))
-        if not var.is_reference()
-        else str(ComponentUID(var.referent))
+        (
+            str(ComponentUID(var))
+            if not var.is_reference()
+            else str(ComponentUID(var.referent))
+        )
         for var in variables
     ]
     if weight_data is None:
