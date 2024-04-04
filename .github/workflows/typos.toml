@@ -41,7 +41,6 @@ upadate = "upadate"
 
 # false positive from 1.20.3
 RTO = "RTO"
-ans = "ans"
 PN = "PN"
 hd = "hd"
 Tge = "Tge"
