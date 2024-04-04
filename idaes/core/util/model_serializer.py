@@ -604,7 +604,7 @@ def _write_component_data(sd, o, wts, count=None, lookup=None, suffixes=None):
                 continue
             sd[lookup[id(key)]] = el  # Assume keys are Pyomo model components
     else:  # rest of components with normal component data structure
-        frst = True  # on first item when true
+        is_first_item = True  # on first item when true
         try:
             item_keys = o.keys()
         except AttributeError:
@@ -614,12 +614,12 @@ def _write_component_data(sd, o, wts, count=None, lookup=None, suffixes=None):
                 el = o
             else:
                 el = o[key]
-            if frst:  # assume all item are same type, use first to get alist
+            if is_first_item:  # assume all item are same type, use first to get alist
                 # Get all attributes
                 (alist, _) = wts.get_data_class_attr_list(el)
                 if alist is None:
                     return  # if None then skip writing
-            frst = False  # done with first only stuff
+            is_first_item = False  # done with first only stuff
             edict = {"__type__": str(type(el))}
             if Suffix in wts.classes:  # if writing suffixes give data components an id
                 edict["__id__"] = count.count
