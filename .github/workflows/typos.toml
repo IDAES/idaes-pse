@@ -46,4 +46,3 @@ PN = "PN"
 hd = "hd"
 Tge = "Tge"
 iy = "iy"
-frst = "frst"  # variable name in idaes/core/util/model_serializer.py
