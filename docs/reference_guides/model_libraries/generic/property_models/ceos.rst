@@ -183,7 +183,7 @@ List of Variables
    "``fug_phase_comp``", "Fugacity indexed by phase and component", "Pa"
    "``fug_coeff_phase_comp``", "Fugacity coefficient indexed by phase and component", "None"
    "``gibbs_mol_phase``", "Molar Gibbs energy indexed by phase", "J/mol"
-   "``heat_capacity_ratio_phase``", "Heat capcity ratio by phase", "-"
+   "``heat_capacity_ratio_phase``", "Heat capacity ratio by phase", "-"
    "``isothermal_speed_sound_phase``", "Isothermal speed of sound by phase", "m/s"
    "``isentropic_speed_sound_phase``", "Isentropic speed of sound by phase", "m/s"
    "``mw``", "Molecular weight of mixture", "kg/mol"
