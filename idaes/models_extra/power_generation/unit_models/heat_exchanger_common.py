@@ -721,7 +721,7 @@ def _scale_common(blk, shell, shell_has_pressure_change, make_reynolds, make_nus
 
 
 def _scale_tube(
-    blk, tube, tube_has_presure_change, make_reynolds, make_nusselt
+    blk, tube, tube_has_pressure_change, make_reynolds, make_nusselt
 ):  # pylint: disable=W0613
     def gsf(obj):
         return iscale.get_scaling_factor(obj, default=1, warning=True)
