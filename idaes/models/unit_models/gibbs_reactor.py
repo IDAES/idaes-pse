@@ -249,6 +249,10 @@ see property package for documentation.}""",
                         j
                     ][e]
                     for e in b.control_volume.config.property_package.element_list
+                    if b.control_volume.properties_out[
+                        t
+                    ].config.parameters.element_comp[j][e]
+                    != 0
                 )
             )
 
