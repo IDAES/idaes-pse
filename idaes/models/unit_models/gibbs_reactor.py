@@ -14,7 +14,7 @@
 Standard IDAES Gibbs reactor model.
 """
 # Import Pyomo libraries
-from pyomo.environ import Constraint, Param, Reals, Reference, Var
+from pyomo.environ import Constraint, Param, Reals, Reference, Set, Var
 from pyomo.common.config import ConfigBlock, ConfigValue, In, ListOf, Bool
 
 # Import IDAES cores
@@ -212,19 +212,33 @@ see property package for documentation.}""",
 
         # Add performance equations
         # Add Lagrangian multiplier variables
+        # Only need multipliers for species which participate in reactions
+        l_set = []
+        for e in self.control_volume.config.property_package.element_list:
+            skip = True
+            for j in self.control_volume.properties_in.component_list:
+                if j in self.config.inert_species:
+                    continue
+                elif self.control_volume.properties_out.params.element_comp[j][e] != 0:
+                    skip = False
+
+            if not skip:
+                l_set.append(e)
+        self.lagrange_set = Set(initialize=l_set)
+
         e_units = self.control_volume.config.property_package.get_metadata().get_derived_units(
             "energy_mole"
         )
         self.lagrange_mult = Var(
             self.flowsheet().time,
-            self.control_volume.config.property_package.element_list,
+            self.lagrange_set,
             domain=Reals,
             initialize=100,
             doc="Lagrangian multipliers",
             units=e_units,
         )
 
-        # TODO : Remove this once sacling is properly implemented
+        # TODO : Remove this once scaling is properly implemented
         self.gibbs_scaling = Param(default=1, mutable=True)
 
         # Use Lagrangian multiple method to derive equations for Out_Fi
@@ -248,11 +262,7 @@ see property package for documentation.}""",
                     * b.control_volume.properties_out[t].config.parameters.element_comp[
                         j
                     ][e]
-                    for e in b.control_volume.config.property_package.element_list
-                    if b.control_volume.properties_out[
-                        t
-                    ].config.parameters.element_comp[j][e]
-                    != 0
+                    for e in self.lagrange_set
                 )
             )
 
