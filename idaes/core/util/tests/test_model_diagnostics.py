@@ -975,10 +975,10 @@ The following pairs of constraints are nearly parallel:
         model.v3 = Var()
         model.v4 = Var()
 
-        model.c1 = Constraint(expr=model.v1 == model.v2 - 0.99999 * model.v4)
-        model.c2 = Constraint(expr=model.v1 + 1.00001 * model.v4 == 1e-8 * model.v3)
+        model.c1 = Constraint(expr=1e-8 * model.v1 == 1e-8 * model.v2 - 1e-8 * model.v4)
+        model.c2 = Constraint(expr=1e-8 * model.v1 + 1e-8 * model.v4 == model.v3)
         model.c3 = Constraint(
-            expr=1e8 * (model.v1 + model.v4) + 1e10 * model.v2 == 1e-6 * model.v3
+            expr=1e3 * (model.v1 + model.v4) + 1e3 * model.v2 == model.v3
         )
 
         dt = DiagnosticsToolbox(model=model)
