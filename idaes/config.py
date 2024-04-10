@@ -369,6 +369,27 @@ def _new_idaes_config_block():
         ),
     )
 
+    # cfg["ipopt_v2"]["options"].declare(
+    #     "linear_solver",
+    #     pyomo.common.config.ConfigValue(
+    #         domain=str,
+    #         default="ma57",
+    #         description="Linear solver to be used by IPOPT",
+    #         doc="Linear solver to be used by IPOPT",
+    #     ),
+    # )
+    #
+    # cfg["ipopt_v2"]["options"].declare(
+    #     "ma57_automatic_scaling",
+    #     pyomo.common.config.ConfigValue(
+    #         domain=str,
+    #         default="yes",
+    #         description="Whether to use automatic scaling in MA57",
+    #         doc="Whether to use automatic scaling in MA57. "
+    #         "Valid values: 'yes' (default), 'no'.",
+    #     ),
+    # )
+
     cfg["ipopt_v2"].declare(
         "writer_config",
         pyomo.common.config.ConfigBlock(
@@ -392,7 +413,7 @@ def _new_idaes_config_block():
         "linear_presolve",
         pyomo.common.config.ConfigValue(
             domain=bool,
-            default=False,  # TODO: Change to true once transition complete
+            default=True,  # TODO: Change to true once transition complete
             description="Whether to apply linear presolve in writer",
             doc="Whether to apply linear presolve in writer",
         ),

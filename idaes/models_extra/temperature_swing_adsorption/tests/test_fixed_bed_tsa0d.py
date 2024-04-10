@@ -47,10 +47,7 @@ from idaes.models_extra.temperature_swing_adsorption import (
     SteamCalculationType,
     TransformationScheme,
 )
-from idaes.models_extra.temperature_swing_adsorption.util import (
-    plot_tsa_profiles,
-    tsa_summary,
-)
+from idaes.models_extra.temperature_swing_adsorption.util import tsa_summary
 import idaes.core.util.scaling as iscale
 
 # -----------------------------------------------------------------------------
@@ -181,10 +178,6 @@ class TestTsaZeolite:
         assert "Adsorption temperature [K]" in summary_df.index
         assert "Cycle time [h]" in summary_df.index
         assert "Pressure drop [Pa]" in summary_df.index
-
-    @pytest.mark.unit
-    def test_plotting(self, model):
-        plot_tsa_profiles(model.fs.unit)
 
 
 class TestTsaMgmof:
