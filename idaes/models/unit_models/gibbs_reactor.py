@@ -259,9 +259,7 @@ see property package for documentation.}""",
                 b.control_volume.properties_out[t].gibbs_mol_phase_comp[p, j]
                 + sum(
                     b.lagrange_mult[t, e]
-                    * b.control_volume.properties_out[t].config.parameters.element_comp[
-                        j
-                    ][e]
+                    * b.control_volume.properties_out[t].params.element_comp[j][e]
                     for e in self.lagrange_set
                 )
             )
