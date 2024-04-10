@@ -1257,15 +1257,8 @@ class TestPolynomialRegression:
         x = input_array[:, 0]
         y = input_array[:, 1]
         x_vector = np.zeros((x.shape[0], 3))
-        x_vector[:, 0] = (
-            x[
-                :,
-            ]
-            ** 2
-        )
-        x_vector[:, 1] = x[
-            :,
-        ]
+        x_vector[:, 0] = x[:,] ** 2
+        x_vector[:, 1] = x[:,]
         x_vector[:, 2] = 1
         expected_value = np.array([[1.0], [2.0], [1.0]]).reshape(
             3,
@@ -1329,15 +1322,8 @@ class TestPolynomialRegression:
         x = input_array[:, 0]
         y = input_array[:, 1]
         x_vector = np.zeros((x.shape[0], 3))
-        x_vector[:, 0] = (
-            x[
-                :,
-            ]
-            ** 2
-        )
-        x_vector[:, 1] = x[
-            :,
-        ]
+        x_vector[:, 0] = x[:,] ** 2
+        x_vector[:, 1] = x[:,]
         x_vector[:, 2] = 1
         expected_value = np.array([[1.0], [2.0], [1.0]]).reshape(
             3,
