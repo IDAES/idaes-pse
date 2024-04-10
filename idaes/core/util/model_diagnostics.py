@@ -3681,8 +3681,9 @@ def check_parallel_jacobian(model, tolerance: float = 1e-4, direction: str = "ro
         diff = abs(abs(val) - norms[row] * norms[col])
         if diff <= tolerance or diff <= tolerance * max(norms[row], norms[col]):
             parallel.append((components[row], components[col]))
-    
+
     return parallel
+
 
 def check_parallel_jacobian_old(model, tolerance: float = 1e-4, direction: str = "row"):
     """
