@@ -853,14 +853,14 @@ class TestIronOC_reverse_flow(object):
             }
         }
 
-    # TODO: New solver interface identifies this a trivially infeasible
-    # @pytest.mark.component
-    # def test_initialization_error(self, iron_oc):
-    #     tf = iron_oc.fs.time.last()
-    #     iron_oc.fs.unit.gas_outlet.flow_mol[tf].fix(0)
-    #
-    #     with pytest.raises(InitializationError):
-    #         iron_oc.fs.unit.initialize()
+    @pytest.mark.skip("New solver interface identifies this a trivially infeasible")
+    @pytest.mark.component
+    def test_initialization_error(self, iron_oc):
+        tf = iron_oc.fs.time.last()
+        iron_oc.fs.unit.gas_outlet.flow_mol[tf].fix(0)
+
+        with pytest.raises(InitializationError):
+            iron_oc.fs.unit.initialize()
 
 
 # -----------------------------------------------------------------------------
