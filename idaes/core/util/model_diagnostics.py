@@ -1191,14 +1191,14 @@ class DiagnosticsToolbox:
             p = "pair" if len(par_cons) == 1 else "pairs"
             warnings.append(
                 f"WARNING: {len(par_cons)} {p} of constraints are parallel"
-                f" (to tolerance {partol})"
+                f" (to tolerance {partol:.1E})"
             )
             next_steps.append(self.display_near_parallel_constraints.__name__ + "()")
         if par_vars:
             p = "pair" if len(par_vars) == 1 else "pairs"
             warnings.append(
                 f"WARNING: {len(par_vars)} {p} of variables are parallel"
-                f" (to tolerance {partol})"
+                f" (to tolerance {partol:.1E})"
             )
             next_steps.append(self.display_near_parallel_variables.__name__ + "()")
 
