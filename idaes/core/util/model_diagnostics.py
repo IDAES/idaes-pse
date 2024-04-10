@@ -27,7 +27,7 @@ from typing import List
 import numpy as np
 from scipy.linalg import svd
 from scipy.sparse.linalg import svds, norm
-from scipy.sparse import issparse, find
+from scipy.sparse import issparse, find, triu
 
 from pyomo.environ import (
     Binary,
@@ -3620,6 +3620,71 @@ def ipopt_solve_halt_on_error(model, options=None):
 
 
 def check_parallel_jacobian(model, tolerance: float = 1e-4, direction: str = "row"):
+    """
+    Check for near-parallel rows or columns in the Jacobian.
+
+    Near-parallel rows or columns indicate a potential degeneracy in the model,
+    as this means that the associated constraints or variables are (near)
+    duplicates of each other.
+
+    This method is based on work published in:
+
+    Klotz, E., Identification, Assessment, and Correction of Ill-Conditioning and
+    Numerical Instability in Linear and Integer Programs, Informs 2014, pgs. 54-108
+    https://pubsonline.informs.org/doi/epdf/10.1287/educ.2014.0130
+
+    Args:
+        model: model to be analysed
+        tolerance: tolerance to use to determine if constraints/variables are parallel
+        direction: 'row' (default, constraints) or 'column' (variables)
+
+    Returns:
+        list of 2-tuples containing parallel Pyomo components
+
+    """
+    # Thanks to Robby Parker for the sparse matrix implementation and
+    # significant performance improvements
+
+    if direction not in ["row", "column"]:
+        raise ValueError(
+            f"Unrecognised value for direction ({direction}). "
+            "Must be 'row' or 'column'."
+        )
+
+    jac, nlp = get_jacobian(model, scaled=False)
+
+    # Get vectors that we will check, and the Pyomo components
+    # they correspond to.
+    if direction == "row":
+        components = nlp.get_pyomo_constraints()
+        mat = jac.tocsr()
+
+    elif direction == "column":
+        components = nlp.get_pyomo_variables()
+        mat = jac.transpose().tocsr()
+
+    norms = [norm(mat[i, :], ord="fro") for i in range(len(components))]
+
+    # Take product of all rows/columns with all rows/columns by taking outer
+    # product of matrix with itself
+    outer = mat @ mat.transpose()
+    # Get rid of duplicate values by only taking upper triangular part of
+    # resulting matrix
+    upper_tri = triu(outer)
+    # List to store pairs of parallel components
+    parallel = []
+
+    for row, col, val in zip(*find(upper_tri), strict=True):
+        if row == col:
+            # A vector is parallel to itself
+            continue
+        diff = abs(abs(val) - norms[row] * norms[col])
+        if diff <= tolerance or diff <= tolerance * max(norms[row], norms[col]):
+            parallel.append((components[row], components[col]))
+    
+    return parallel
+
+def check_parallel_jacobian_old(model, tolerance: float = 1e-4, direction: str = "row"):
     """
     Check for near-parallel rows or columns in the Jacobian.
 
