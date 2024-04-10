@@ -1371,8 +1371,8 @@ Model Statistics
 3 WARNINGS
 
     WARNING: 2 Constraints with large residuals (>1.0E-05)
-    WARNING: 1 pair of constraints are parallel (to tolerance 0.0001)
-    WARNING: 1 pair of variables are parallel (to tolerance 0.0001)
+    WARNING: 1 pair of constraints are parallel (to tolerance 1e-08)
+    WARNING: 1 pair of variables are parallel (to tolerance 1e-08)
 
 ------------------------------------------------------------------------------------
 0 Cautions
@@ -1436,8 +1436,8 @@ Suggested next steps:
         model.v2 = Var(initialize=0)
         model.v3 = Var(initialize=0)
 
-        model.c1 = Constraint(expr=model.v1 == model.v2)
-        model.c2 = Constraint(expr=model.v1 == 1e-8 * model.v3)
+        model.c1 = Constraint(expr=1e-2 * model.v1 == model.v2)
+        model.c2 = Constraint(expr=1e-2 * model.v1 == 1e-8 * model.v3)
         model.c3 = Constraint(expr=1e8 * model.v1 + 1e10 * model.v2 == 1e-6 * model.v3)
 
         dt = DiagnosticsToolbox(model=model)
@@ -1448,7 +1448,7 @@ Suggested next steps:
         expected = """====================================================================================
 Model Statistics
 
-    Jacobian Condition Number: 1.407E+18
+    Jacobian Condition Number: 1.118E+18
 
 ------------------------------------------------------------------------------------
 4 WARNINGS
@@ -1456,7 +1456,7 @@ Model Statistics
     WARNING: 1 Constraint with large residuals (>1.0E-05)
     WARNING: 2 Variables with extreme Jacobian values (<1.0E-08 or >1.0E+08)
     WARNING: 1 Constraint with extreme Jacobian values (<1.0E-08 or >1.0E+08)
-    WARNING: 1 pair of variables are parallel (to tolerance 0.0001)
+    WARNING: 3 pairs of variables are parallel (to tolerance 1e-08)
 
 ------------------------------------------------------------------------------------
 4 Cautions
