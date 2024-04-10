@@ -18,6 +18,7 @@ This module contains utility functions for initialization of IDAES models.
 from pyomo.environ import (
     Block,
     check_optimal_termination,
+    ConcreteModel,
     Constraint,
     value,
 )
@@ -248,7 +249,7 @@ def solve_indexed_blocks(solver, blocks, **kwds):
 
     try:
         # Create a temporary Block
-        tmp = Block(concrete=True)
+        tmp = ConcreteModel(concrete=True)
 
         nBlocks = len(blocks)
 
