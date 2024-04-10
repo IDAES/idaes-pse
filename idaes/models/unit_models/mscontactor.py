@@ -432,7 +432,7 @@ class MSContactorData(UnitModelBlockData):
         self.stream_component_interactions = Set(
             doc="Set of interacting components between streams."
         )
-        for (stream1, stream2) in self.stream_interactions:
+        for stream1, stream2 in self.stream_interactions:
             for j in self.config.streams[stream1].property_package.component_list:
                 if (
                     j in self.config.streams[stream2].property_package.component_list

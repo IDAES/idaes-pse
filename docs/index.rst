@@ -67,7 +67,7 @@ Contents
          | :doc:`Logging Processing & Outputs <reference_guides/logging>`
          | :doc:`Developing for IDAES <reference_guides/developer/index>`
          | :doc:`Grid integration application <reference_guides/apps/grid_integration/index>`
-         | :external+ui:doc:`Flowsheet Visualizer <fv>`
+         | `Flowsheet Visualizer <https://idaes-ui.readthedocs.io/en/latest/user/fv/>`_
 
 .. toctree::
     :hidden:

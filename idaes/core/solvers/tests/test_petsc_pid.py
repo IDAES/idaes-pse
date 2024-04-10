@@ -245,7 +245,7 @@ def test_petsc_with_pid_model():
     assert pyo.value(
         tj2.get_vec(m.fs.valve_1.control_volume.properties_in[24].pressure)[20]
     ) == pytest.approx(6e5)
-    # make sure after the controller comes on the presure goes to the set point
+    # make sure after the controller comes on the pressure goes to the set point
     assert pyo.value(
         tj2.get_vec(m.fs.tank.control_volume.properties_out[24].pressure)[9]
     ) == pytest.approx(3e5)
