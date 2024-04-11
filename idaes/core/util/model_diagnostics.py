@@ -27,7 +27,7 @@ from typing import List
 import numpy as np
 from scipy.linalg import svd
 from scipy.sparse.linalg import svds, norm
-from scipy.sparse import issparse, find, triu
+from scipy.sparse import issparse, find, triu, diags
 
 from pyomo.environ import (
     Binary,
@@ -3656,7 +3656,8 @@ def check_parallel_jacobian(
             "Must be 'row' or 'column'."
         )
 
-    jac, nlp = get_jacobian(model, scaled=False)
+    if nlp is None or jac is None:
+        jac, nlp = get_jacobian(model, scaled=False)
 
     # Get vectors that we will check, and the Pyomo components
     # they correspond to.
@@ -3672,38 +3673,38 @@ def check_parallel_jacobian(
     # product of matrix with itself
     outer = mat @ mat.transpose()
 
-    # Along the diagonal of the outer product you get the dot product of the matrix
+    # Along the diagonal of the outer product you get the dot product of the row
     # with itself, which is equal to the norm squared.
     norms = np.sqrt(outer.diagonal())
 
-    # norms = np.array([norm(mat[i, :], ord="fro") for i in range(len(components))])
     zero_norm_indices = np.nonzero(np.abs(norms) <= zero_norm_tolerance)
+
+    # Want to ignore indices with zero norm. If we give them
+    # norms of infinity, we scale the rows and columns to zero
+    # which allows us to ignore them
+    norms[zero_norm_indices] = float('inf') # 1/float('inf') == 0
+
+    scaling = diags(1/norms)
+    outer = scaling * outer * scaling
 
     # Get rid of duplicate values by only taking upper triangular part of
     # resulting matrix
     upper_tri = triu(outer)
 
-    parallel = []
+    # Set diagonal elements to zero
+    # Subtracting diags(upper_tri.diagonal()) is a more reliable
+    # method of getting the entries to exactly zero than subtracting
+    # an identity matrix, where one can encounter values of 1e-16
+    upper_tri = upper_tri - diags(upper_tri.diagonal())
 
-    # find returns a tuple of three arrays, with entries corresponding to matrix
-    # row number, matrix column number, and entry value for nonzero entries of
-    # upper_tri. * expands the tuple into three arguments for zip, which then
-    # allows us to iterate over row, column, and value simultaneously.
-    for row, col, val in zip(*find(upper_tri)):
-        if row == col:
-            # A vector is parallel to itself
-            continue
-        elif row in zero_norm_indices or col in zero_norm_indices:
-            # Any index with effectively zero norm will be reported
-            # by the jacobian_rows and jacobian_columns functions
-            continue
-        # We have that dot(u,v) == norm(u) * norm(v) * cos(theta) in which
-        # theta is the angle between u and v. If theta is approximately
-        # 0 or pi, sqrt(2*(1 - abs(dot(u,v)) / (norm(u) * norm(v)))) approximately
-        # equals the number of radians from 0 or pi. A tolerance of 1e-8 corresponds
-        # to a tolerance of sqrt(2) * 1e-4 radians
-        elif 1 - abs(val) / (norms[row] * norms[col]) <= tolerance:
-            parallel.append((components[row], components[col]))
+    # Get the nonzero entries of upper_tri in three arrays,
+    # corresponding to row indices, column indices, and values
+    rows, columns, values = find(upper_tri)
+
+    # Find values with an absolute value less than tolerance away from 1 
+    parallel_1D = np.nonzero(1 - abs(values) < tolerance)[0]
+
+    parallel = [(components[rows[idx]], components[columns[idx]]) for idx in parallel_1D]
 
     return parallel
 
