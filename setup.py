@@ -132,7 +132,7 @@ kwargs = dict(
     # Put abstract (non-versioned) deps here.
     # Concrete dependencies go in requirements[-dev].txt
     install_requires=[
-        "pyomo @ https://github.com/jsiirola/pyomo/tree/ipopt_v2-disable-universal-newlines",
+        "pyomo @ https://github.com/pyomo/pyomo@refs/pull/3231/merge",
         "pint",  # required to use Pyomo units
         "networkx",  # required to use Pyomo network
         "numpy<2",
