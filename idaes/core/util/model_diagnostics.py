@@ -3663,7 +3663,7 @@ def check_parallel_jacobian(model, tolerance: float = 1e-8, direction: str = "ro
         components = nlp.get_pyomo_variables()
         mat = jac.transpose().tocsr()
 
-    norms = np.NaN(len(components))
+    norms = np.NaN * np.ones(len(components))
 
     for i in range(len(components)):
         norms[i] = norm(mat[i, :], ord="fro")
