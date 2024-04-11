@@ -132,7 +132,7 @@ kwargs = dict(
     # Put abstract (non-versioned) deps here.
     # Concrete dependencies go in requirements[-dev].txt
     install_requires=[
-        "pyomo @ https://github.com/pyomo/pyomo@refs/pull/3231/merge",
+        "pyomo @ git+https://github.com/pyomo/pyomo@refs/pull/3231/merge",
         "pint",  # required to use Pyomo units
         "networkx",  # required to use Pyomo network
         "numpy<2",
