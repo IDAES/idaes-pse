@@ -3624,8 +3624,8 @@ def check_parallel_jacobian(
     tolerance: float = 1e-8,
     direction: str = "row",
     zero_norm_tolerance: float = 1e-8,
-    jac = None,
-    nlp = None,
+    jac=None,
+    nlp=None,
 ):
     """
     Check for near-parallel rows or columns in the Jacobian.
@@ -3684,9 +3684,9 @@ def check_parallel_jacobian(
     # Want to ignore indices with zero norm. If we give them
     # norms of infinity, we scale the rows and columns to zero
     # which allows us to ignore them
-    norms[zero_norm_indices] = float('inf') # 1/float('inf') == 0
+    norms[zero_norm_indices] = float("inf")  # 1/float('inf') == 0
 
-    scaling = diags(1/norms)
+    scaling = diags(1 / norms)
     outer = scaling * outer * scaling
 
     # Get rid of duplicate values by only taking upper triangular part of
@@ -3703,10 +3703,12 @@ def check_parallel_jacobian(
     # corresponding to row indices, column indices, and values
     rows, columns, values = find(upper_tri)
 
-    # Find values with an absolute value less than tolerance away from 1 
+    # Find values with an absolute value less than tolerance away from 1
     parallel_1D = np.nonzero(1 - abs(values) < tolerance)[0]
 
-    parallel = [(components[rows[idx]], components[columns[idx]]) for idx in parallel_1D]
+    parallel = [
+        (components[rows[idx]], components[columns[idx]]) for idx in parallel_1D
+    ]
 
     return parallel
 
