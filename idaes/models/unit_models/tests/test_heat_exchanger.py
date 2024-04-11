@@ -28,7 +28,6 @@ from pyomo.environ import (
     units as pyunits,
 )
 from pyomo.common.config import ConfigBlock
-from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 
 from idaes.core import (
     FlowsheetBlock,
