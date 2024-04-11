@@ -3668,22 +3668,27 @@ def check_parallel_jacobian(
         components = nlp.get_pyomo_variables()
         mat = jac.transpose().tocsr()
 
-    norms = np.NaN * np.ones(len(components))
-
-    for i in range(len(components)):
-        norms[i] = norm(mat[i, :], ord="fro")
-    # norms = np.array([norm(mat[i, :], ord="fro") for i in range(len(components))])
-    zero_norm_indices = np.nonzero(np.abs(norms) <= zero_norm_tolerance)
-
     # Take product of all rows/columns with all rows/columns by taking outer
     # product of matrix with itself
     outer = mat @ mat.transpose()
+
+    # Along the diagonal of the outer product you get the dot product of the matrix
+    # with itself, which is equal to the norm squared.
+    norms = np.sqrt(outer.diagonal())
+
+    # norms = np.array([norm(mat[i, :], ord="fro") for i in range(len(components))])
+    zero_norm_indices = np.nonzero(np.abs(norms) <= zero_norm_tolerance)
+
     # Get rid of duplicate values by only taking upper triangular part of
     # resulting matrix
     upper_tri = triu(outer)
-    # List to store pairs of parallel components
+
     parallel = []
 
+    # find returns a tuple of three arrays, with entries corresponding to matrix
+    # row number, matrix column number, and entry value for nonzero entries of
+    # upper_tri. * expands the tuple into three arguments for zip, which then
+    # allows us to iterate over row, column, and value simultaneously.
     for row, col, val in zip(*find(upper_tri)):
         if row == col:
             # A vector is parallel to itself
