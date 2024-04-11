@@ -3624,6 +3624,8 @@ def check_parallel_jacobian(
     tolerance: float = 1e-8,
     direction: str = "row",
     zero_norm_tolerance: float = 1e-8,
+    jac = None,
+    nlp = None,
 ):
     """
     Check for near-parallel rows or columns in the Jacobian.

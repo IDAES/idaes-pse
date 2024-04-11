@@ -991,7 +991,10 @@ The following pairs of variables are nearly parallel:
 
     v1, v2
     v1, v4
+    v1, v3
     v2, v4
+    v2, v3
+    v4, v3
 
 ====================================================================================
 """
