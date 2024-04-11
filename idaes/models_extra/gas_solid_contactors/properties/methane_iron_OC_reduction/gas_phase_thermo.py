@@ -651,9 +651,7 @@ class GasPhaseStateBlockData(StateBlockData):
         def ideal_gas(b):
             pressure = pyunits.convert(b.pressure, to_units=pyunits.Pa)
             temperature = pyunits.convert(b.temperature, to_units=pyunits.K)
-            dens_mol = pyunits.convert(
-                b.dens_mol, to_units=pyunits.mol / pyunits.m**3
-            )
+            dens_mol = pyunits.convert(b.dens_mol, to_units=pyunits.mol / pyunits.m**3)
             gas_constant = pyunits.convert(
                 Constants.gas_constant, to_units=pyunits.J / pyunits.mol / pyunits.K
             )

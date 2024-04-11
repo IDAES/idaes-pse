@@ -1,6 +1,7 @@
 """
 pytest plugin for testing IDAES "through" IDAES/examples within the IDAES/idaes-pse CI
 """
+
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 import fnmatch
