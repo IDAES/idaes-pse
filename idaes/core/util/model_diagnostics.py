@@ -3619,7 +3619,7 @@ def ipopt_solve_halt_on_error(model, options=None):
     )
 
 
-def check_parallel_jacobian(model, tolerance: float = 1e-4, direction: str = "row"):
+def check_parallel_jacobian(model, tolerance: float = 1e-8, direction: str = "row", zero_norm_tolerance: float = 1e-8):
     """
     Check for near-parallel rows or columns in the Jacobian.
 
@@ -3663,7 +3663,12 @@ def check_parallel_jacobian(model, tolerance: float = 1e-4, direction: str = "ro
         components = nlp.get_pyomo_variables()
         mat = jac.transpose().tocsr()
 
-    norms = [norm(mat[i, :], ord="fro") for i in range(len(components))]
+    norms = np.NaN(len(components))
+
+    for i in range(len(components)):
+        norms[i] = norm(mat[i, :], ord="fro")
+    #norms = np.array([norm(mat[i, :], ord="fro") for i in range(len(components))])
+    zero_norm_indices = np.nonzero(np.abs(norms) <= zero_norm_tolerance)
 
     # Take product of all rows/columns with all rows/columns by taking outer
     # product of matrix with itself
@@ -3678,8 +3683,16 @@ def check_parallel_jacobian(model, tolerance: float = 1e-4, direction: str = "ro
         if row == col:
             # A vector is parallel to itself
             continue
-        diff = abs(abs(val) - norms[row] * norms[col])
-        if diff <= tolerance or diff <= tolerance * max(norms[row], norms[col]):
+        elif row in zero_norm_indices or col in zero_norm_indices:
+            # Any index with effectively zero norm will be reported
+            # by the jacobian_rows and jacobian_columns functions
+            continue
+        # We have that dot(u,v) == norm(u) * norm(v) * cos(theta) in which
+        # theta is the angle between u and v. If theta is approximately
+        # 0 or pi, sqrt(2*(1 - abs(dot(u,v)) / (norm(u) * norm(v)))) approximately
+        # equals the number of radians from 0 or pi. A tolerance of 1e-8 corresponds
+        # to a tolerance of sqrt(2) * 1e-4 radians
+        elif 1 - abs(val) / (norms[row] * norms[col]) <= tolerance:
             parallel.append((components[row], components[col]))
 
     return parallel
