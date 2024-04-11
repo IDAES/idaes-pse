@@ -3674,7 +3674,7 @@ def check_parallel_jacobian(model, tolerance: float = 1e-4, direction: str = "ro
     # List to store pairs of parallel components
     parallel = []
 
-    for row, col, val in zip(*find(upper_tri), strict=True):
+    for row, col, val in zip(*find(upper_tri)):
         if row == col:
             # A vector is parallel to itself
             continue
