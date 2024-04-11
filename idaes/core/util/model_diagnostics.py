@@ -3619,7 +3619,12 @@ def ipopt_solve_halt_on_error(model, options=None):
     )
 
 
-def check_parallel_jacobian(model, tolerance: float = 1e-8, direction: str = "row", zero_norm_tolerance: float = 1e-8):
+def check_parallel_jacobian(
+    model,
+    tolerance: float = 1e-8,
+    direction: str = "row",
+    zero_norm_tolerance: float = 1e-8,
+):
     """
     Check for near-parallel rows or columns in the Jacobian.
 
@@ -3667,7 +3672,7 @@ def check_parallel_jacobian(model, tolerance: float = 1e-8, direction: str = "ro
 
     for i in range(len(components)):
         norms[i] = norm(mat[i, :], ord="fro")
-    #norms = np.array([norm(mat[i, :], ord="fro") for i in range(len(components))])
+    # norms = np.array([norm(mat[i, :], ord="fro") for i in range(len(components))])
     zero_norm_indices = np.nonzero(np.abs(norms) <= zero_norm_tolerance)
 
     # Take product of all rows/columns with all rows/columns by taking outer
