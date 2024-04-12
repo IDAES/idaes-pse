@@ -36,7 +36,7 @@ from idaes.core.util.misc import add_object_reference
 __author__ = "Jinliang Ma, Douglas Allan"
 
 
-def make_geometry_common(blk, shell_units):
+def make_geometry_common(blk, shell, shell_units):
     # Number of tube columns in the cross section plane perpendicular to shell side fluid flow (y direction)
     blk.ncol_tube = Var(
         initialize=10.0, doc="Number of tube columns", units=pyunits.dimensionless

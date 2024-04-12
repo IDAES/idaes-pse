@@ -22,7 +22,7 @@ from pyomo.environ import (
     value,
     units as pyunits,
 )
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigValue, In
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 # Import IDAES cores
@@ -56,35 +56,7 @@ __author__ = "Jinliang Ma, Douglas Allan"
 class Heater1DData(UnitModelBlockData):
     """Standard Trim Heater Model Class Class."""
 
-    CONFIG = ConfigBlock()
-    CONFIG.declare(
-        "dynamic",
-        ConfigValue(
-            default=useDefault,
-            domain=In([useDefault, True, False]),
-            description="Dynamic model flag",
-            doc="""Indicates whether this model will be dynamic or not,
-**default** = useDefault.
-**Valid values:** {
-**useDefault** - get flag from parent (default = False),
-**True** - set as a dynamic model,
-**False** - set as a steady-state model.}""",
-        ),
-    )
-    CONFIG.declare(
-        "has_holdup",
-        ConfigValue(
-            default=False,
-            domain=In([True, False]),
-            description="Holdup construction flag",
-            doc="""Indicates whether holdup terms should be constructed or not.
-Must be True if dynamic = True,
-**default** - False.
-**Valid values:** {
-**True** - construct holdup terms,
-**False** - do not construct holdup terms}""",
-        ),
-    )
+    CONFIG = UnitModelBlockData.CONFIG()
     CONFIG.declare(
         "has_fluid_holdup",
         ConfigValue(
@@ -318,7 +290,7 @@ domain (default=5). Should set to the number of tube rows""",
         # Add reference to control volume geometry
         add_object_reference(self, "area_flow_shell", self.control_volume.area)
         add_object_reference(self, "length_flow_shell", self.control_volume.length)
-        make_geometry_common(self, shell_units=units)
+        make_geometry_common(self, shell=self.control_volume, shell_units=units)
 
         @self.Expression(
             doc="Common performance equations expect this expression to be here"

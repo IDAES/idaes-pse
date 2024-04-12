@@ -21,9 +21,9 @@ Discretization based on tube rows
 from pyomo.environ import (
     value,
     log,
+    Reference,
     units as pyunits,
 )
-import pyomo.common.config
 import pyomo.opt
 from pyomo.common.config import ConfigValue, In, Bool
 from pyomo.network import Port
@@ -142,15 +142,13 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
             shell_units = (
                 self.config.cold_side.property_package.get_metadata().derived_units
             )
-        # Add reference to control volume geometry
+        # Use add_object_reference for scalar vars
         add_object_reference(self, "area_flow_shell", shell.area)
-        add_object_reference(self, "length_flow_shell", shell.length)
         add_object_reference(self, "area_flow_tube", tube.area)
-        # total tube length of flow path
+        add_object_reference(self, "length_flow_shell", shell.length)
         add_object_reference(self, "length_flow_tube", tube.length)
-        # pylint: disable-next=W0212
-        heat_exchanger_common.make_geometry_common(self, shell_units=shell_units)
-        # pylint: disable-next=W0212
+
+        heat_exchanger_common.make_geometry_common(self, shell=shell, shell_units=shell_units)
         heat_exchanger_common.make_geometry_tube(self, shell_units=shell_units)
 
     def _make_performance(self):
@@ -207,29 +205,28 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
                 "whose single phase is a vapor phase. The cold side phase is not a vapor phase."
             )
 
-        # Reference
-        add_object_reference(self, "heat_tube", tube.heat)
-        add_object_reference(self, "heat_shell", shell.heat)
+        self.heat_tube = Reference(tube.heat)
+        self.heat_shell = Reference(shell.heat)
 
         shell_has_pressure_change = False
         tube_has_pressure_change = False
 
         if self.config.cold_side.has_pressure_change:
             if self.config.shell_is_hot:
-                add_object_reference(self, "deltaP_tube", tube.deltaP)
+                self.deltaP_tube = Reference(tube.deltaP)
                 tube_has_pressure_change = True
             else:
-                add_object_reference(self, "deltaP_shell", shell.deltaP)
+                self.deltaP_shell = Reference(shell.deltaP)
                 shell_has_pressure_change = True
         if self.config.hot_side.has_pressure_change:
             if self.config.shell_is_hot:
-                add_object_reference(self, "deltaP_shell", shell.deltaP)
+                self.deltaP_shell = Reference(shell.deltaP)
                 shell_has_pressure_change = True
             else:
-                add_object_reference(self, "deltaP_tube", tube.deltaP)
+                self.deltaP_tube = Reference(tube.deltaP)
                 tube_has_pressure_change = True
 
-        heat_exchanger_common.make_performance_common(  # pylint: disable=W0212
+        heat_exchanger_common.make_performance_common(
             self,
             shell=shell,
             shell_units=shell_units,
@@ -237,7 +234,7 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
             make_reynolds=True,
             make_nusselt=True,
         )
-        heat_exchanger_common.make_performance_tube(  # pylint: disable=W0212
+        heat_exchanger_common.make_performance_tube(
             self,
             tube=tube,
             tube_units=tube_units,
@@ -245,9 +242,6 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
             make_reynolds=True,
             make_nusselt=True,
         )
-
-        def heat_accumulation_term(b, t, x):
-            return b.heat_accumulation[t, x] if b.config.dynamic else 0
 
         # Nusselts number
         @self.Constraint(
@@ -345,6 +339,9 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
                 * (b.thickness_tube / 2 / b.therm_cond_wall + b.rfouling_shell)
                 == b.temp_wall_shell[t, x] - b.temp_wall_center[t, x]
             )
+
+        def heat_accumulation_term(b, t, x):
+            return b.heat_accumulation[t, x] if b.config.dynamic else 0
 
         # Center point wall temperature based on energy balance for tube wall heat holdup
         @self.Constraint(
@@ -733,7 +730,6 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
         tube_has_pressure_change = hasattr(self, "deltaP_tube")
         shell_has_pressure_change = hasattr(self, "deltaP_shell")
 
-        # pylint: disable-next=W0212
         heat_exchanger_common.scale_common(
             self,
             shell,
@@ -741,7 +737,6 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
             make_reynolds=True,
             make_nusselt=True,
         )
-        # pylint: disable-next=W0212
         heat_exchanger_common.scale_tube(
             self, tube, tube_has_pressure_change, make_reynolds=True, make_nusselt=True
         )
