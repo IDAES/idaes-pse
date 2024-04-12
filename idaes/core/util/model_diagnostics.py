@@ -3686,6 +3686,10 @@ def check_parallel_jacobian(
     # which allows us to ignore them
     norms[zero_norm_indices] = float("inf")  # 1/float('inf') == 0
 
+    # Divide each row and each column by the vector norm. This leaves
+    # the entries as dot(u, v) / (norm(u) * norm(v)). The exception is
+    # entries with "zero norm", whose corresponding rows and columns are
+    # set to zero.
     scaling = diags(1 / norms)
     outer = scaling * outer * scaling
 
@@ -3703,7 +3707,11 @@ def check_parallel_jacobian(
     # corresponding to row indices, column indices, and values
     rows, columns, values = find(upper_tri)
 
-    # Find values with an absolute value less than tolerance away from 1
+    # We have that dot(u,v) == norm(u) * norm(v) * cos(theta) in which
+    # theta is the angle between u and v. If theta is approximately
+    # 0 or pi, sqrt(2*(1 - abs(dot(u,v)) / (norm(u) * norm(v)))) approximately
+    # equals the number of radians from 0 or pi. A tolerance of 1e-8 corresponds
+    # to a tolerance of sqrt(2) * 1e-4 radians
     parallel_1D = np.nonzero(1 - abs(values) < tolerance)[0]
 
     parallel = [

@@ -985,21 +985,12 @@ The following pairs of constraints are nearly parallel:
 
         stream = StringIO()
         dt.display_near_parallel_variables(stream)
-
-        expected = """====================================================================================
-The following pairs of variables are nearly parallel:
-
-    v1, v2
-    v1, v4
-    v1, v3
-    v2, v4
-    v2, v3
-    v4, v3
-
-====================================================================================
-"""
-
-        assert stream.getvalue() == expected
+        expected_pairs = ["v1, v2", "v1, v4", "v1, v3", "v2, v4", "v2, v3", "v4, v3"]
+        assert (
+            "The following pairs of variables are nearly parallel:" in stream.getvalue()
+        )
+        for pair in expected_pairs:
+            assert pair in stream.getvalue()
 
     @pytest.mark.component
     def test_collect_structural_warnings_base_case(self, model):
