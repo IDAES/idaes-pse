@@ -385,17 +385,21 @@ class MSContactorData(UnitModelBlockData):
         # Call UnitModel.build
         super().build()
 
+        # Placeholders for things we will get from first StateBlock
+        self.flow_basis = None
+        self.uom = None
+
         self._verify_inputs()
-        flow_basis, uom = self._build_state_blocks()
+        self._build_state_blocks()
 
         if self.config.heterogeneous_reactions is not None:
             self._build_heterogeneous_reaction_blocks()
 
-        self._add_geometry(uom)
+        self._add_geometry(self.uom)
 
-        self._build_material_balance_constraints(flow_basis, uom)
-        self._build_energy_balance_constraints(uom)
-        self._build_pressure_balance_constraints(uom)
+        self._build_material_balance_constraints(self.flow_basis, self.uom)
+        self._build_energy_balance_constraints(self.uom)
+        self._build_pressure_balance_constraints(self.uom)
         self._build_ports()
 
     def _verify_inputs(self):
@@ -461,10 +465,6 @@ class MSContactorData(UnitModelBlockData):
 
     def _build_state_blocks(self):
         # Build state blocks
-        # Placeholders for things we will get from first StateBlock
-        flow_basis = None
-        uom = None
-
         for stream, pconfig in self.config.streams.items():
             ppack = pconfig.property_package
 
@@ -514,19 +514,19 @@ class MSContactorData(UnitModelBlockData):
 
             tref = self.flowsheet().time.first()
             sref = self.elements.first()
-            if flow_basis is None:
+            if self.flow_basis is None:
                 # Set unit level flow basis and units from first stream
 
-                flow_basis = state[tref, sref].get_material_flow_basis()
-                uom = state[tref, sref].params.get_metadata().derived_units
+                self.flow_basis = state[tref, sref].get_material_flow_basis()
+                self.uom = state[tref, sref].params.get_metadata().derived_units
             else:
                 # Check that flow bases are consistent
-                if not state[tref, sref].get_material_flow_basis() == flow_basis:
+                if not state[tref, sref].get_material_flow_basis() == self.flow_basis:
                     raise ConfigurationError(
                         f"Property packages use different flow bases: ExtractionCascade "
                         f"requires all property packages to use the same basis. "
                         f"{stream} uses {state[tref, sref].get_material_flow_basis()}, "
-                        f"whilst first stream uses {flow_basis}."
+                        f"whilst first stream uses {self.flow_basis}."
                     )
 
             # Build reactions blocks if provided
@@ -542,8 +542,6 @@ class MSContactorData(UnitModelBlockData):
                     **tmp_dict,
                 )
                 self.add_component(stream + "_reactions", reactions)
-
-        return flow_basis, uom
 
     def _build_heterogeneous_reaction_blocks(self):
         rpack = self.config.heterogeneous_reactions
