@@ -149,9 +149,9 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
         # total tube length of flow path
         add_object_reference(self, "length_flow_tube", tube.length)
         # pylint: disable-next=W0212
-        heat_exchanger_common._make_geometry_common(self, shell_units=shell_units)
+        heat_exchanger_common.make_geometry_common(self, shell_units=shell_units)
         # pylint: disable-next=W0212
-        heat_exchanger_common._make_geometry_tube(self, shell_units=shell_units)
+        heat_exchanger_common.make_geometry_tube(self, shell_units=shell_units)
 
     def _make_performance(self):
         """
@@ -229,7 +229,7 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
                 add_object_reference(self, "deltaP_tube", tube.deltaP)
                 tube_has_pressure_change = True
 
-        heat_exchanger_common._make_performance_common(  # pylint: disable=W0212
+        heat_exchanger_common.make_performance_common(  # pylint: disable=W0212
             self,
             shell=shell,
             shell_units=shell_units,
@@ -237,7 +237,7 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
             make_reynolds=True,
             make_nusselt=True,
         )
-        heat_exchanger_common._make_performance_tube(  # pylint: disable=W0212
+        heat_exchanger_common.make_performance_tube(  # pylint: disable=W0212
             self,
             tube=tube,
             tube_units=tube_units,
@@ -734,7 +734,7 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
         shell_has_pressure_change = hasattr(self, "deltaP_shell")
 
         # pylint: disable-next=W0212
-        heat_exchanger_common._scale_common(
+        heat_exchanger_common.scale_common(
             self,
             shell,
             shell_has_pressure_change,
@@ -742,7 +742,7 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
             make_nusselt=True,
         )
         # pylint: disable-next=W0212
-        heat_exchanger_common._scale_tube(
+        heat_exchanger_common.scale_tube(
             self, tube, tube_has_pressure_change, make_reynolds=True, make_nusselt=True
         )
 

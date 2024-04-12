@@ -44,9 +44,9 @@ import idaes.logger as idaeslog
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.models_extra.power_generation.unit_models.heat_exchanger_common import (
-    _make_geometry_common,  # pylint: disable=W0212
-    _make_performance_common,  # pylint: disable=W0212
-    _scale_common,  # pylint: disable=W0212
+    make_geometry_common,  # pylint: disable=W0212
+    make_performance_common,  # pylint: disable=W0212
+    scale_common,  # pylint: disable=W0212
 )
 
 __author__ = "Jinliang Ma, Douglas Allan"
@@ -318,7 +318,7 @@ domain (default=5). Should set to the number of tube rows""",
         # Add reference to control volume geometry
         add_object_reference(self, "area_flow_shell", self.control_volume.area)
         add_object_reference(self, "length_flow_shell", self.control_volume.length)
-        _make_geometry_common(self, shell_units=units)
+        make_geometry_common(self, shell_units=units)
 
         @self.Expression(
             doc="Common performance equations expect this expression to be here"
@@ -343,7 +343,7 @@ domain (default=5). Should set to the number of tube rows""",
             doc="Heat duty provided to heater through resistive heating",
         )
         units = self.config.property_package.get_metadata().derived_units
-        _make_performance_common(
+        make_performance_common(
             self,
             shell=self.control_volume,
             shell_units=units,
@@ -517,7 +517,7 @@ domain (default=5). Should set to the number of tube rows""",
         def cst(con, sf):
             iscale.constraint_scaling_transform(con, sf, overwrite=False)
 
-        _scale_common(
+        scale_common(
             self,
             self.control_volume,
             self.config.has_pressure_change,

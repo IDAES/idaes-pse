@@ -36,7 +36,7 @@ from idaes.core.util.misc import add_object_reference
 __author__ = "Jinliang Ma, Douglas Allan"
 
 
-def _make_geometry_common(blk, shell_units):
+def make_geometry_common(blk, shell_units):
     # Number of tube columns in the cross section plane perpendicular to shell side fluid flow (y direction)
     blk.ncol_tube = Var(
         initialize=10.0, doc="Number of tube columns", units=pyunits.dimensionless
@@ -158,7 +158,7 @@ def _make_geometry_common(blk, shell_units):
         )
 
 
-def _make_geometry_tube(blk, shell_units):
+def make_geometry_tube(blk, shell_units):
     # Length of tube side flow
     @blk.Constraint(doc="Length of tube side flow")
     def length_flow_tube_eqn(b):
@@ -176,7 +176,7 @@ def _make_geometry_tube(blk, shell_units):
         )
 
 
-def _make_performance_common(
+def make_performance_common(
     blk, shell, shell_units, shell_has_pressure_change, make_reynolds, make_nusselt
 ):
     # We need the Reynolds number for pressure change, even if we don't need it for heat transfer
@@ -461,7 +461,7 @@ def _make_performance_common(
         return b.hconv_shell_conv[t, x]
 
 
-def _make_performance_tube(
+def make_performance_tube(
     blk, tube, tube_units, tube_has_pressure_change, make_reynolds, make_nusselt
 ):
 
@@ -671,7 +671,7 @@ def _make_performance_tube(
             )
 
 
-def _scale_common(blk, shell, shell_has_pressure_change, make_reynolds, make_nusselt):
+def scale_common(blk, shell, shell_has_pressure_change, make_reynolds, make_nusselt):
     def gsf(obj):
         return iscale.get_scaling_factor(obj, default=1, warning=True)
 
@@ -720,7 +720,7 @@ def _scale_common(blk, shell, shell_has_pressure_change, make_reynolds, make_nus
                 cst(blk.heat_holdup_eqn[t, z], s_U_holdup)
 
 
-def _scale_tube(
+def scale_tube(
     blk, tube, tube_has_pressure_change, make_reynolds, make_nusselt
 ):  # pylint: disable=W0613
     def gsf(obj):
