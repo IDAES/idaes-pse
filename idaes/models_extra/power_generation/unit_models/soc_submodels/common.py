@@ -514,9 +514,7 @@ def _binary_diffusion_coefficient_expr(temperature, p, c1, c2):
     f = 1.52996
     g = 1.76474
     h = 3.89411
-    omega = (
-        a / tr**b + c / pyo.exp(d * tr) + e / pyo.exp(f * tr) + g / pyo.exp(h * tr)
-    )
+    omega = a / tr**b + c / pyo.exp(d * tr) + e / pyo.exp(f * tr) + g / pyo.exp(h * tr)
     cm2_to_m2 = 0.01 * 0.01
     Pa_to_bar = 1e-5
     return (

@@ -50,6 +50,12 @@ from idaes.core.initialization import (
 )
 from idaes.core.util import DiagnosticsToolbox
 
+# Natural gas property package for integration testing
+from idaes.models.properties.modular_properties.base.generic_property import (
+    GenericParameterBlock,
+)
+from idaes.models_extra.power_generation.properties.natural_gas_PR import get_prop
+
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -84,87 +90,138 @@ def test_config():
     assert not hasattr(m.fs.unit, "inert_species_balance")
 
 
-@pytest.mark.unit
-def test_inerts():
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(dynamic=False)
+class TestGibbsInerts:
+    @pytest.mark.unit
+    def test_no_inerts(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.properties = PhysicalParameterTestBlock()
+        m.fs.properties = PhysicalParameterTestBlock()
 
-    m.fs.unit = GibbsReactor(property_package=m.fs.properties, inert_species=["c1"])
+        m.fs.unit = GibbsReactor(property_package=m.fs.properties)
 
-    assert isinstance(m.fs.unit.inert_species_balance, Constraint)
-    assert len(m.fs.unit.inert_species_balance) == 2
-    assert m.fs.unit.inert_species_balance[0, "p1", "c1"] != Constraint.Skip
-    assert m.fs.unit.inert_species_balance[0, "p2", "c1"] != Constraint.Skip
+        for e in m.fs.unit.lagrange_set:
+            assert e in ["H", "He", "Li"]
 
-    assert isinstance(m.fs.unit.gibbs_minimization, Constraint)
-    assert len(m.fs.unit.gibbs_minimization) == 2
+        assert not hasattr(m.fs.unit, "inert_species_balance")
 
+    @pytest.mark.unit
+    def test_inerts(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
 
-@pytest.mark.unit
-def test_inerts_dependent_w_multi_phase():
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.properties = PhysicalParameterTestBlock()
 
-    m.fs.properties = PhysicalParameterTestBlock()
-    # Change elemental composition to introduce dependency
-    m.fs.properties.element_comp = {
-        "c1": {"H": 0, "He": 0, "Li": 3},
-        "c2": {"H": 4, "He": 5, "Li": 0},
-    }
+        m.fs.unit = GibbsReactor(property_package=m.fs.properties, inert_species=["c1"])
 
-    m.fs.unit = GibbsReactor(property_package=m.fs.properties, inert_species=["c1"])
+        for e in m.fs.unit.lagrange_set:
+            assert e in ["H", "He", "Li"]
 
-    assert isinstance(m.fs.unit.inert_species_balance, Constraint)
-    assert len(m.fs.unit.inert_species_balance) == 2
-    assert m.fs.unit.inert_species_balance[0, "p1", "c1"] != Constraint.Skip
-    assert m.fs.unit.inert_species_balance[0, "p2", "c1"] != Constraint.Skip
+        assert isinstance(m.fs.unit.inert_species_balance, Constraint)
+        assert len(m.fs.unit.inert_species_balance) == 2
+        assert m.fs.unit.inert_species_balance[0, "p1", "c1"] != Constraint.Skip
+        assert m.fs.unit.inert_species_balance[0, "p2", "c1"] != Constraint.Skip
 
-    assert isinstance(m.fs.unit.gibbs_minimization, Constraint)
-    assert len(m.fs.unit.gibbs_minimization) == 2
+        assert isinstance(m.fs.unit.gibbs_minimization, Constraint)
+        assert len(m.fs.unit.gibbs_minimization) == 2
 
+    @pytest.mark.unit
+    def test_inerts_dependent_w_multi_phase(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
 
-@pytest.mark.unit
-def test_inerts_dependent_w_single_phase():
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.properties = PhysicalParameterTestBlock()
+        # Change elemental composition to introduce dependency
+        m.fs.properties.element_comp = {
+            "c1": {"H": 0, "He": 0, "Li": 3},
+            "c2": {"H": 4, "He": 5, "Li": 0},
+        }
 
-    m.fs.properties = PhysicalParameterTestBlock()
-    # Set phase list to only have 1 phase
-    m.fs.properties.phase_list = ["p1"]
-    # Change elemental composition to introduce dependency
-    m.fs.properties.element_comp = {
-        "c1": {"H": 0, "He": 0, "Li": 3},
-        "c2": {"H": 4, "He": 5, "Li": 0},
-    }
+        m.fs.unit = GibbsReactor(property_package=m.fs.properties, inert_species=["c1"])
 
-    m.fs.unit = GibbsReactor(property_package=m.fs.properties, inert_species=["c1"])
+        for e in m.fs.unit.lagrange_set:
+            assert e in ["H", "He"]
 
-    assert isinstance(m.fs.unit.inert_species_balance, Constraint)
-    assert len(m.fs.unit.inert_species_balance) == 0
-    assert (0, "p1", "c1") not in m.fs.unit.inert_species_balance
+        assert isinstance(m.fs.unit.inert_species_balance, Constraint)
+        assert len(m.fs.unit.inert_species_balance) == 2
+        assert m.fs.unit.inert_species_balance[0, "p1", "c1"] != Constraint.Skip
+        assert m.fs.unit.inert_species_balance[0, "p2", "c1"] != Constraint.Skip
 
-    assert isinstance(m.fs.unit.gibbs_minimization, Constraint)
-    assert len(m.fs.unit.gibbs_minimization) == 1
+        assert isinstance(m.fs.unit.gibbs_minimization, Constraint)
+        assert len(m.fs.unit.gibbs_minimization) == 2
 
+    @pytest.mark.unit
+    def test_inerts_dependent_w_single_phase(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
 
-@pytest.mark.unit
-def test_invalid_inert():
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.properties = PhysicalParameterTestBlock()
+        # Set phase list to only have 1 phase
+        m.fs.properties.phase_list = ["p1"]
+        # Change elemental composition to introduce dependency
+        m.fs.properties.element_comp = {
+            "c1": {"H": 0, "He": 0, "Li": 3},
+            "c2": {"H": 4, "He": 5, "Li": 0},
+        }
 
-    m.fs.properties = PhysicalParameterTestBlock()
+        m.fs.unit = GibbsReactor(property_package=m.fs.properties, inert_species=["c1"])
 
-    with pytest.raises(
-        ConfigurationError,
-        match="fs.unit invalid component in inert_species "
-        "argument. foo is not in the property package "
-        "component list.",
-    ):
-        m.fs.unit = GibbsReactor(
-            property_package=m.fs.properties, inert_species=["foo"]
+        for e in m.fs.unit.lagrange_set:
+            assert e in ["H", "He"]
+
+        assert isinstance(m.fs.unit.inert_species_balance, Constraint)
+        assert len(m.fs.unit.inert_species_balance) == 0
+        assert (0, "p1", "c1") not in m.fs.unit.inert_species_balance
+
+        assert isinstance(m.fs.unit.gibbs_minimization, Constraint)
+        assert len(m.fs.unit.gibbs_minimization) == 1
+
+    @pytest.mark.unit
+    def test_invalid_inert(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.properties = PhysicalParameterTestBlock()
+
+        with pytest.raises(
+            ConfigurationError,
+            match="fs.unit invalid component in inert_species "
+            "argument. foo is not in the property package "
+            "component list.",
+        ):
+            m.fs.unit = GibbsReactor(
+                property_package=m.fs.properties, inert_species=["foo"]
+            )
+
+    @pytest.mark.integration
+    def test_natural_gas_w_inerts(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+        ng_config = get_prop(
+            components=[
+                "H2",
+                "CO",
+                "H2O",
+                "CO2",
+                "CH4",
+                "C2H6",
+                "C3H8",
+                "C4H10",
+                "N2",
+                "O2",
+                "Ar",
+            ]
         )
+        m.fs.ng_props = GenericParameterBlock(**ng_config)
+        m.fs.unit = GibbsReactor(
+            has_heat_transfer=True,
+            has_pressure_change=True,
+            inert_species=["N2", "Ar"],
+            property_package=m.fs.ng_props,
+        )
+
+        for e in m.fs.unit.lagrange_set:
+            assert e in ["H", "C", "O"]
 
 
 # -----------------------------------------------------------------------------
@@ -279,12 +336,12 @@ class TestMethane(object):
         methane.scaling_factor[
             methane.fs.unit.control_volume.enthalpy_balances[0.0]
         ] = 6.343688225967796e-08
-        methane.scaling_factor[
-            methane.fs.unit.control_volume.heat[0.0]
-        ] = 1.3415588575040103e-07
-        methane.scaling_factor[
-            methane.fs.unit.control_volume.pressure_balance[0.0]
-        ] = 9.869232667160129e-06
+        methane.scaling_factor[methane.fs.unit.control_volume.heat[0.0]] = (
+            1.3415588575040103e-07
+        )
+        methane.scaling_factor[methane.fs.unit.control_volume.pressure_balance[0.0]] = (
+            9.869232667160129e-06
+        )
         methane.scaling_factor[
             methane.fs.unit.control_volume.properties_in[0.0].enth_mol_phase["Vap"]
         ] = 0.00010271414106049353
@@ -796,36 +853,36 @@ class TestMethane(object):
         methane.scaling_factor[
             methane.fs.unit.gibbs_minimization[0.0, "Vap", "CO2"]
         ] = 7.052606407804767e-07
-        methane.scaling_factor[
-            methane.fs.unit.gibbs_minimization[0.0, "Vap", "CO"]
-        ] = 1.1096130740800528e-06
+        methane.scaling_factor[methane.fs.unit.gibbs_minimization[0.0, "Vap", "CO"]] = (
+            1.1096130740800528e-06
+        )
         methane.scaling_factor[
             methane.fs.unit.gibbs_minimization[0.0, "Vap", "H2O"]
         ] = 9.679516364316312e-07
-        methane.scaling_factor[
-            methane.fs.unit.gibbs_minimization[0.0, "Vap", "H2"]
-        ] = 1.5736217717559093e-06
-        methane.scaling_factor[
-            methane.fs.unit.gibbs_minimization[0.0, "Vap", "N2"]
-        ] = 1.2499361838560746e-06
+        methane.scaling_factor[methane.fs.unit.gibbs_minimization[0.0, "Vap", "H2"]] = (
+            1.5736217717559093e-06
+        )
+        methane.scaling_factor[methane.fs.unit.gibbs_minimization[0.0, "Vap", "N2"]] = (
+            1.2499361838560746e-06
+        )
         methane.scaling_factor[
             methane.fs.unit.gibbs_minimization[0.0, "Vap", "NH3"]
         ] = 8.304717457164266e-07
-        methane.scaling_factor[
-            methane.fs.unit.gibbs_minimization[0.0, "Vap", "O2"]
-        ] = 8.983346084706515e-07
-        methane.scaling_factor[
-            methane.fs.unit.lagrange_mult[0.0, "C"]
-        ] = 2.926858666284934e-06
-        methane.scaling_factor[
-            methane.fs.unit.lagrange_mult[0.0, "H"]
-        ] = 4.450874503325572e-06
-        methane.scaling_factor[
-            methane.fs.unit.lagrange_mult[0.0, "N"]
-        ] = 3.535353406620262e-06
-        methane.scaling_factor[
-            methane.fs.unit.lagrange_mult[0.0, "O"]
-        ] = 2.5408739736966393e-06
+        methane.scaling_factor[methane.fs.unit.gibbs_minimization[0.0, "Vap", "O2"]] = (
+            8.983346084706515e-07
+        )
+        methane.scaling_factor[methane.fs.unit.lagrange_mult[0.0, "C"]] = (
+            2.926858666284934e-06
+        )
+        methane.scaling_factor[methane.fs.unit.lagrange_mult[0.0, "H"]] = (
+            4.450874503325572e-06
+        )
+        methane.scaling_factor[methane.fs.unit.lagrange_mult[0.0, "N"]] = (
+            3.535353406620262e-06
+        )
+        methane.scaling_factor[methane.fs.unit.lagrange_mult[0.0, "O"]] = (
+            2.5408739736966393e-06
+        )
 
         scaling = TransformationFactory("core.scale_model")
         sm = scaling.create_using(methane, rename=False)
@@ -975,9 +1032,9 @@ class TestMethane(object):
         methane.scaling_factor[
             methane.fs.unit.control_volume.enthalpy_balances[0.0]
         ] = 7.199382898409605e-08
-        methane.scaling_factor[
-            methane.fs.unit.control_volume.pressure_balance[0.0]
-        ] = 9.869232667160129e-06
+        methane.scaling_factor[methane.fs.unit.control_volume.pressure_balance[0.0]] = (
+            9.869232667160129e-06
+        )
         methane.scaling_factor[
             methane.fs.unit.control_volume.properties_in[0.0].enth_mol_phase["Vap"]
         ] = 0.00010271414106049353
@@ -1492,36 +1549,36 @@ class TestMethane(object):
         methane.scaling_factor[
             methane.fs.unit.gibbs_minimization[0.0, "Vap", "CO2"]
         ] = 7.961846197368761e-07
-        methane.scaling_factor[
-            methane.fs.unit.gibbs_minimization[0.0, "Vap", "CO"]
-        ] = 1.306639729794169e-06
+        methane.scaling_factor[methane.fs.unit.gibbs_minimization[0.0, "Vap", "CO"]] = (
+            1.306639729794169e-06
+        )
         methane.scaling_factor[
             methane.fs.unit.gibbs_minimization[0.0, "Vap", "H2O"]
         ] = 1.1245365150847992e-06
-        methane.scaling_factor[
-            methane.fs.unit.gibbs_minimization[0.0, "Vap", "H2"]
-        ] = 1.9650913378522065e-06
-        methane.scaling_factor[
-            methane.fs.unit.gibbs_minimization[0.0, "Vap", "N2"]
-        ] = 1.5268799321929755e-06
+        methane.scaling_factor[methane.fs.unit.gibbs_minimization[0.0, "Vap", "H2"]] = (
+            1.9650913378522065e-06
+        )
+        methane.scaling_factor[methane.fs.unit.gibbs_minimization[0.0, "Vap", "N2"]] = (
+            1.5268799321929755e-06
+        )
         methane.scaling_factor[
             methane.fs.unit.gibbs_minimization[0.0, "Vap", "NH3"]
         ] = 1.0314993300171925e-06
-        methane.scaling_factor[
-            methane.fs.unit.gibbs_minimization[0.0, "Vap", "O2"]
-        ] = 9.653850829168712e-07
-        methane.scaling_factor[
-            methane.fs.unit.lagrange_mult[0.0, "C"]
-        ] = 3.915957066473961e-06
-        methane.scaling_factor[
-            methane.fs.unit.lagrange_mult[0.0, "H"]
-        ] = 5.55811764258496e-06
-        methane.scaling_factor[
-            methane.fs.unit.lagrange_mult[0.0, "N"]
-        ] = 4.318668616445236e-06
-        methane.scaling_factor[
-            methane.fs.unit.lagrange_mult[0.0, "O"]
-        ] = 2.730521354347429e-06
+        methane.scaling_factor[methane.fs.unit.gibbs_minimization[0.0, "Vap", "O2"]] = (
+            9.653850829168712e-07
+        )
+        methane.scaling_factor[methane.fs.unit.lagrange_mult[0.0, "C"]] = (
+            3.915957066473961e-06
+        )
+        methane.scaling_factor[methane.fs.unit.lagrange_mult[0.0, "H"]] = (
+            5.55811764258496e-06
+        )
+        methane.scaling_factor[methane.fs.unit.lagrange_mult[0.0, "N"]] = (
+            4.318668616445236e-06
+        )
+        methane.scaling_factor[methane.fs.unit.lagrange_mult[0.0, "O"]] = (
+            2.730521354347429e-06
+        )
 
         scaling = TransformationFactory("core.scale_model")
         sm = scaling.create_using(methane, rename=False)

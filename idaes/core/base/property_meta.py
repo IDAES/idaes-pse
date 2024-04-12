@@ -384,9 +384,7 @@ class UnitSet(object):
     # Entropy
     @property
     def ENTROPY(self):
-        return (
-            self._mass * self._length**2 * self._time**-2 * self._temperature**-1
-        )
+        return self._mass * self._length**2 * self._time**-2 * self._temperature**-1
 
     @property
     def ENTROPY_MASS(self):

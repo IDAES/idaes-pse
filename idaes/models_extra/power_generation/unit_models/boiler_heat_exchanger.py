@@ -289,6 +289,7 @@ class BoilerHeatExchangerData(HeatExchangerData):
         if self.config.has_holdup is True:
             add_object_reference(self, "volume_cold_side", self.cold_side.volume)
             add_object_reference(self, "volume_hot_side", self.hot_side.volume)
+
             # Total tube side valume
             def volume_cold_side_eqn(b):
                 return b.volume_cold_side == (
