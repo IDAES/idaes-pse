@@ -395,11 +395,11 @@ class MSContactorData(UnitModelBlockData):
         if self.config.heterogeneous_reactions is not None:
             self._build_heterogeneous_reaction_blocks()
 
-        self._add_geometry(self.uom)
+        self._add_geometry()
 
-        self._build_material_balance_constraints(self.flow_basis, self.uom)
-        self._build_energy_balance_constraints(self.uom)
-        self._build_pressure_balance_constraints(self.uom)
+        self._build_material_balance_constraints()
+        self._build_energy_balance_constraints()
+        self._build_pressure_balance_constraints()
         self._build_ports()
 
     def _verify_inputs(self):
@@ -567,14 +567,14 @@ class MSContactorData(UnitModelBlockData):
                 "reactions (reaction_idx)."
             )
 
-    def _add_geometry(self, uom):
+    def _add_geometry(self):
         if self.config.has_holdup:
             # Add volume for each element
             # TODO: Assuming constant volume for now
             self.volume = Var(
                 self.elements,
                 initialize=1,
-                units=uom.VOLUME,
+                units=self.uom.VOLUME,
                 doc="Volume of element",
             )
             self.volume_frac_stream = Var(
@@ -598,14 +598,14 @@ class MSContactorData(UnitModelBlockData):
                 phase_list = getattr(self, stream).phase_list
                 _add_phase_fractions(self, stream, phase_list)
 
-    def _build_material_balance_constraints(self, flow_basis, uom):
+    def _build_material_balance_constraints(self):
         # Get units for transfer terms
-        if flow_basis is MaterialFlowBasis.molar:
-            mb_units = uom.FLOW_MOLE
-            hu_units = uom.AMOUNT
-        elif flow_basis is MaterialFlowBasis.mass:
-            mb_units = uom.FLOW_MASS
-            hu_units = uom.MASS
+        if self.flow_basis is MaterialFlowBasis.molar:
+            mb_units = self.uom.FLOW_MOLE
+            hu_units = self.uom.AMOUNT
+        elif self.flow_basis is MaterialFlowBasis.mass:
+            mb_units = self.uom.FLOW_MASS
+            hu_units = self.uom.MASS
         else:
             # Flow type other, so cannot determine units
             mb_units = None
@@ -893,9 +893,8 @@ class MSContactorData(UnitModelBlockData):
             )
             self.add_component(stream + "_material_balance", mbal)
 
-    def _build_energy_balance_constraints(self, uom):
+    def _build_energy_balance_constraints(self):
         # Energy Balances
-
         for stream, pconfig in self.config.streams.items():
             if pconfig.has_energy_balance:
                 state_block = getattr(self, stream)
@@ -910,7 +909,7 @@ class MSContactorData(UnitModelBlockData):
                         domain=Reals,
                         initialize=1.0,
                         doc="Energy holdup of stream in element",
-                        units=uom.ENERGY,
+                        units=self.uom.ENERGY,
                     )
                     self.add_component(
                         stream + "_energy_holdup",
@@ -937,7 +936,7 @@ class MSContactorData(UnitModelBlockData):
                         energy_holdup,
                         wrt=self.flowsheet().time,
                         doc="Energy accumulation for in element",
-                        units=uom.POWER,
+                        units=self.uom.POWER,
                     )
                     self.add_component(
                         stream + "_energy_accumulation",
@@ -949,7 +948,7 @@ class MSContactorData(UnitModelBlockData):
                         self.flowsheet().time,
                         self.elements,
                         initialize=0,
-                        units=uom.POWER,
+                        units=self.uom.POWER,
                         doc=f"External heat transfer term for stream {stream}",
                     )
                     self.add_component(stream + "_heat", heat)
@@ -960,12 +959,12 @@ class MSContactorData(UnitModelBlockData):
                     rule=partial(
                         _energy_balance_rule,
                         stream=stream,
-                        uom=uom,
+                        uom=self.uom,
                     ),
                 )
                 self.add_component(stream + "_energy_balance", ebal)
 
-    def _build_pressure_balance_constraints(self, uom):
+    def _build_pressure_balance_constraints(self):
         # Pressure Balances
         for stream, pconfig in self.config.streams.items():
             if pconfig.has_pressure_balance:
@@ -975,7 +974,7 @@ class MSContactorData(UnitModelBlockData):
                         self.flowsheet().time,
                         self.elements,
                         initialize=0,
-                        units=uom.PRESSURE,
+                        units=self.uom.PRESSURE,
                         doc=f"DeltaP term for stream {stream}",
                     )
                     self.add_component(stream + "_deltaP", deltaP)
@@ -986,7 +985,7 @@ class MSContactorData(UnitModelBlockData):
                     rule=partial(
                         _pressure_balance_rule,
                         stream=stream,
-                        uom=uom,
+                        uom=self.uom,
                     ),
                 )
                 self.add_component(stream + "_pressure_balance", pbal)
