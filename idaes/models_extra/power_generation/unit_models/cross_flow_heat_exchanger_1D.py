@@ -19,6 +19,7 @@ Discretization based on tube rows
 
 # Import Pyomo libraries
 from pyomo.environ import (
+    Block,
     value,
     log,
     Reference,
@@ -42,12 +43,316 @@ from idaes.models.unit_models.heat_exchanger import (
 )
 from idaes.models.unit_models.heat_exchanger_1D import HeatExchanger1DData
 from idaes.models_extra.power_generation.unit_models import heat_exchanger_common
+from idaes.core.util.exceptions import InitializationError
+import idaes.logger as idaeslog
+from idaes.core.initialization import SingleControlVolumeUnitInitializer
+
 
 __author__ = "Jinliang Ma, Douglas Allan"
 
-# Set up logger
-_log = idaeslog.getLogger(__name__)
+class CrossFlowHeatExchanger1DInitializer(SingleControlVolumeUnitInitializer):
+    """
+    Initializer for Cross Flow Heat Exchanger 1D units.
+    """
 
+    def initialize_main_model(
+        self,
+        model: Block,
+        copy_inlet_state: bool = False,
+    ):
+        """
+        Initialization routine for the main Cross Flow Heat Exchanger 1D model
+        (as opposed to submodels like costing, which presently do not exist).
+
+        Args:
+            model: Pyomo Block to be initialized.
+            copy_inlet_state: bool (default=False). Whether to copy inlet state to other states or not
+                (0-D control volumes only). Copying will generally be faster, but inlet states may not contain
+                all properties required elsewhere.
+            duty: initial guess for heat duty to assist with initialization. Can be a Pyomo expression with units.
+
+        Returns:
+            Pyomo solver results object.
+
+        """
+        # Set solver options
+        init_log = idaeslog.getInitLogger(
+            model.name, self.get_output_level(), tag="unit"
+        )
+        solve_log = idaeslog.getSolveLogger(
+            model.name, self.get_output_level(), tag="unit"
+        )
+
+        solver_obj = get_solver(self.config.solver, self.config.solver_options)
+
+        hot_side = model.hot_side
+        cold_side = model.cold_side
+        t0 = model.flowsheet().time.first()
+        if not (
+            "temperature" in hot_side.properties[t0, 0].define_state_vars().keys()
+            and "temperature" in cold_side.properties[t0, 0].define_state_vars().keys()
+        ):
+            raise NotImplementedError(
+                "Presently, initialization of the CrossFlowHeatExchanger1D requires "
+                "temperature to be a state variable of both hot side and cold side "
+                "property packages. Extension to enth_mol or enth_mass as state variables "
+                "is straightforward---feel free to open a pull request implementing it."
+            )
+
+        hot_units = model.config.hot_side.property_package.get_metadata().derived_units
+        cold_units = model.config.cold_side.property_package.get_metadata().derived_units
+
+        if model.config.shell_is_hot:
+            shell = model.hot_side
+            tube = model.cold_side
+            shell_has_pressure_change = model.config.hot_side.has_pressure_change
+            tube_has_pressure_change = model.config.cold_side.has_pressure_change
+            shell_units = (
+                model.config.hot_side.property_package.get_metadata().derived_units
+            )
+            tube_units = (
+                model.config.cold_side.property_package.get_metadata().derived_units
+            )
+        else:
+            shell = model.cold_side
+            tube = model.hot_side
+            shell_has_pressure_change = model.config.cold_side.has_pressure_change
+            tube_has_pressure_change = model.config.hot_side.has_pressure_change
+            shell_units = (
+                model.config.cold_side.property_package.get_metadata().derived_units
+            )
+            tube_units = (
+                model.config.hot_side.property_package.get_metadata().derived_units
+            )
+
+        # Trigger creation of cp for use in future initialization
+        # Important to do before initializing property packages in
+        # case it is implemented as Var-Constraint pair instead of
+        # an Expression
+        value(hot_side.properties[t0, 0].cp_mol)
+        value(cold_side.properties[t0, 0].cp_mol)
+
+        # ---------------------------------------------------------------------
+        # Initialize shell block
+        self.initialize_control_volume(tube, copy_inlet_state)
+        self.initialize_control_volume(shell, copy_inlet_state)
+
+        init_log.info_high("Initialization Step 1 Complete.")
+
+        # Set tube thermal conductivity to a small value to avoid IPOPT unable to solve initially
+        therm_cond_wall_save = model.therm_cond_wall.value
+        model.therm_cond_wall.set_value(0.05)
+        # In Step 2, fix tube metal temperatures fix fluid state variables (enthalpy/temperature and pressure)
+        # calculate maximum heat duty assuming infinite area and use half of the maximum duty as initial guess to calculate outlet temperature
+
+        for t in model.flowsheet().config.time:
+            mcp_hot_side = value(
+                pyunits.convert(
+                    hot_side.properties[t, 0].flow_mol
+                    * hot_side.properties[t, 0].cp_mol,
+                    to_units=shell_units["power"] / shell_units["temperature"],
+                )
+            )
+            T_in_hot_side = value(
+                pyunits.convert(
+                    hot_side.properties[t, 0].temperature,
+                    to_units=shell_units["temperature"],
+                )
+            )
+            P_in_hot_side = value(hot_side.properties[t, 0].pressure)
+            if model.config.flow_type == HeatExchangerFlowPattern.cocurrent:
+                mcp_cold_side = value(
+                    pyunits.convert(
+                        cold_side.properties[t, 0].flow_mol
+                        * cold_side.properties[t, 0].cp_mol,
+                        to_units=shell_units["power"] / shell_units["temperature"],
+                    )
+                )
+                T_in_cold_side = value(
+                    pyunits.convert(
+                        cold_side.properties[t, 0].temperature,
+                        to_units=shell_units["temperature"],
+                    )
+                )
+                P_in_cold_side = value(cold_side.properties[t, 0].pressure)
+
+                T_out_max = (
+                    mcp_cold_side * T_in_cold_side + mcp_hot_side * T_in_hot_side
+                ) / (mcp_cold_side + mcp_hot_side)
+
+                q_guess = mcp_cold_side * (T_out_max - T_in_cold_side) / 2
+
+                temp_out_cold_side_guess = T_in_cold_side + q_guess / mcp_cold_side
+
+                cold_side.properties[t, 1].temperature.fix(
+                    pyunits.convert_value(
+                        temp_out_cold_side_guess,
+                        from_units=shell_units["temperature"],
+                        to_units=cold_units["temperature"],
+                    )
+                )
+
+                temp_out_hot_side_guess = T_in_cold_side - q_guess / mcp_hot_side
+                hot_side.properties[t, 1].temperature.fix(
+                    pyunits.convert_value(
+                        temp_out_hot_side_guess,
+                        from_units=shell_units["temperature"],
+                        to_units=hot_units["temperature"],
+                    )
+                )
+
+            elif model.config.flow_type == HeatExchangerFlowPattern.countercurrent:
+                mcp_cold_side = value(
+                    pyunits.convert(
+                        cold_side.properties[t, 1].flow_mol
+                        * cold_side.properties[t, 1].cp_mol,
+                        to_units=shell_units["power"] / shell_units["temperature"],
+                    )
+                )
+                T_in_cold_side = value(
+                    pyunits.convert(
+                        cold_side.properties[t, 1].temperature,
+                        to_units=shell_units["temperature"],
+                    )
+                )
+                P_in_cold_side = value(cold_side.properties[t, 1].pressure)
+
+                if mcp_cold_side < mcp_hot_side:
+                    q_guess = mcp_cold_side * (T_in_hot_side - T_in_cold_side) / 2
+                else:
+                    q_guess = mcp_hot_side * (T_in_hot_side - T_in_cold_side) / 2
+
+                temp_out_cold_side_guess = T_in_cold_side + q_guess / mcp_cold_side
+                cold_side.properties[t, 0].temperature.fix(
+                    pyunits.convert_value(
+                        temp_out_cold_side_guess,
+                        from_units=shell_units["temperature"],
+                        to_units=cold_units["temperature"],
+                    )
+                )
+
+                temp_out_hot_side_guess = T_in_hot_side - q_guess / mcp_hot_side
+                hot_side.properties[t, 1].temperature.fix(
+                    pyunits.convert_value(
+                        temp_out_hot_side_guess,
+                        from_units=shell_units["temperature"],
+                        to_units=hot_units["temperature"],
+                    )
+                )
+
+            else:
+                raise BurntToast(
+                    "HeatExchangerFlowPattern should be limited to cocurrent "
+                    "or countercurrent flow by parent model. Please open an "
+                    "issue on the IDAES Github so this error can be fixed."
+                )
+
+            for z in cold_side.length_domain:
+                hot_side.properties[t, z].temperature.fix(
+                    value(
+                        (1 - z) * hot_side.properties[t, 0].temperature
+                        + z * hot_side.properties[t, 1].temperature
+                    )
+                )
+                cold_side.properties[t, z].temperature.fix(
+                    value(
+                        (1 - z) * cold_side.properties[t, 0].temperature
+                        + z * cold_side.properties[t, 1].temperature
+                    )
+                )
+                model.temp_wall_center[t, z].fix(
+                    value(
+                        pyunits.convert(
+                            hot_side.properties[t, z].temperature,
+                            to_units=shell_units["temperature"],
+                        )
+                        + pyunits.convert(
+                            cold_side.properties[t, z].temperature,
+                            to_units=shell_units["temperature"],
+                        )
+                    )
+                    / 2
+                )
+
+                model.temp_wall_shell[t, z].set_value(model.temp_wall_center[t, z].value)
+                model.temp_wall_tube[t, z].set_value(
+                    pyunits.convert_value(
+                        model.temp_wall_center[t, z].value,
+                        from_units=shell_units["temperature"],
+                        to_units=tube_units["temperature"],
+                    )
+                )
+
+                if model.config.cold_side.has_pressure_change:
+                    cold_side.properties[t, z].pressure.fix(P_in_cold_side)
+                if model.config.hot_side.has_pressure_change:
+                    hot_side.properties[t, z].pressure.fix(P_in_hot_side)
+
+        model.temp_wall_center_eqn.deactivate()
+        if tube_has_pressure_change:
+            model.deltaP_tube_eqn.deactivate()
+        if shell_has_pressure_change:
+            model.deltaP_shell_eqn.deactivate()
+        model.heat_tube_eqn.deactivate()
+        model.heat_shell_eqn.deactivate()
+
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = solver_obj.solve(model, tee=slc.tee)
+        pyomo.opt.assert_optimal_termination(res)
+        init_log.info_high("Initialization Step 2 {}.".format(idaeslog.condition(res)))
+
+        # In Step 3, unfix fluid state variables (enthalpy/temperature and pressure)
+        # keep the inlet state variables fixed, otherwise, the degree of freedom > 0
+        hot_side.properties[:, :].temperature.unfix()
+        hot_side.properties[:, :].pressure.unfix()
+        hot_side.properties[:, 0].temperature.fix()
+        hot_side.properties[:, 0].pressure.fix()
+
+        cold_side.properties[:, :].temperature.unfix()
+        cold_side.properties[:, :].pressure.unfix()
+        if model.config.flow_type == HeatExchangerFlowPattern.cocurrent:
+            cold_side.properties[:, 0].temperature.fix()
+            cold_side.properties[:, 0].pressure.fix()
+        elif model.config.flow_type == HeatExchangerFlowPattern.countercurrent:
+            cold_side.properties[:, 1].temperature.fix()
+            cold_side.properties[:, 1].pressure.fix()
+        else:
+            raise BurntToast(
+                "HeatExchangerFlowPattern should be limited to cocurrent "
+                "or countercurrent flow by parent model. Please open an "
+                "issue on the IDAES Github so this error can be fixed."
+            )
+
+        if tube_has_pressure_change:
+            model.deltaP_tube_eqn.activate()
+        if shell_has_pressure_change:
+            model.deltaP_shell_eqn.activate()
+        model.heat_tube_eqn.activate()
+        model.heat_shell_eqn.activate()
+
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = solver_obj.solve(model, tee=slc.tee)
+        pyomo.opt.assert_optimal_termination(res)
+
+        init_log.info_high("Initialization Step 3 {}.".format(idaeslog.condition(res)))
+
+        model.temp_wall_center.unfix()
+        model.temp_wall_center_eqn.activate()
+
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = solver_obj.solve(model, tee=slc.tee)
+        pyomo.opt.assert_optimal_termination(res)
+
+        init_log.info_high("Initialization Step 4 {}.".format(idaeslog.condition(res)))
+
+        # set the wall thermal conductivity back to the user specified value
+        model.therm_cond_wall.set_value(therm_cond_wall_save)
+
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = solver_obj.solve(model, tee=slc.tee)
+        init_log.info_high("Initialization Step 5 {}.".format(idaeslog.condition(res)))
+        init_log.info("Initialization Complete.")
+        return res
 
 @declare_process_block_class("CrossFlowHeatExchanger1D")
 class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
@@ -394,314 +699,6 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
                 return b.total_heat_duty[t] / (
                     b.total_heat_transfer_area * b.log_mean_delta_temperature[t]
                 )
-
-    def initialize_build(
-        blk,
-        shell_state_args=None,
-        tube_state_args=None,
-        outlvl=idaeslog.NOTSET,
-        solver="ipopt",
-        optarg=None,
-    ):
-        """
-        CrossFlowHeatExchanger1D initialization routine
-
-        Keyword Arguments:
-            state_args : a dict of arguments to be passed to the property
-                         package(s) to provide an initial state for
-                         initialization (see documentation of the specific
-                         property package) (default = None).
-            outlvl : sets output level of initialization routine
-
-                     * 0 = no output (default)
-                     * 1 = return solver state for each step in routine
-                     * 2 = return solver state for each step in subroutines
-                     * 3 = include solver output information (tee=True)
-
-            optarg : solver options dictionary object (default={'tol': 1e-6})
-            solver : str indicating which solver to use during
-                     initialization (default = 'ipopt')
-
-        Returns:
-            None
-        """
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
-        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
-
-        if optarg is None:
-            optarg = {}
-        opt = get_solver(solver, optarg)
-
-        hot_side = blk.hot_side
-        cold_side = blk.cold_side
-        t0 = blk.flowsheet().time.first()
-        if not (
-            "temperature" in hot_side.properties[t0, 0].define_state_vars().keys()
-            and "temperature" in cold_side.properties[t0, 0].define_state_vars().keys()
-        ):
-            raise NotImplementedError(
-                "Presently, initialization of the CrossFlowHeatExchanger1D requires "
-                "temperature to be a state variable of both hot side and cold side "
-                "property packages. Extension to enth_mol or enth_mass as state variables "
-                "is straightforward---feel free to open a pull request implementing it."
-            )
-
-        hot_units = blk.config.hot_side.property_package.get_metadata().derived_units
-        cold_units = blk.config.cold_side.property_package.get_metadata().derived_units
-
-        if blk.config.shell_is_hot:
-            shell = blk.hot_side
-            tube = blk.cold_side
-            shell_has_pressure_change = blk.config.hot_side.has_pressure_change
-            tube_has_pressure_change = blk.config.cold_side.has_pressure_change
-            shell_units = (
-                blk.config.hot_side.property_package.get_metadata().derived_units
-            )
-            tube_units = (
-                blk.config.cold_side.property_package.get_metadata().derived_units
-            )
-        else:
-            shell = blk.cold_side
-            tube = blk.hot_side
-            shell_has_pressure_change = blk.config.cold_side.has_pressure_change
-            tube_has_pressure_change = blk.config.hot_side.has_pressure_change
-            shell_units = (
-                blk.config.cold_side.property_package.get_metadata().derived_units
-            )
-            tube_units = (
-                blk.config.hot_side.property_package.get_metadata().derived_units
-            )
-        # ---------------------------------------------------------------------
-        # Initialize shell block
-
-        flags_tube = tube.initialize(
-            outlvl=outlvl, optarg=optarg, solver=solver, state_args=tube_state_args
-        )
-
-        flags_shell = shell.initialize(
-            outlvl=outlvl, optarg=optarg, solver=solver, state_args=shell_state_args
-        )
-
-        init_log.info_high("Initialization Step 1 Complete.")
-
-        # Set tube thermal conductivity to a small value to avoid IPOPT unable to solve initially
-        therm_cond_wall_save = blk.therm_cond_wall.value
-        blk.therm_cond_wall.set_value(0.05)
-        # In Step 2, fix tube metal temperatures fix fluid state variables (enthalpy/temperature and pressure)
-        # calculate maximum heat duty assuming infinite area and use half of the maximum duty as initial guess to calculate outlet temperature
-
-        for t in blk.flowsheet().config.time:
-            # TODO we first access cp during initialization. That could pose a problem if it is
-            # converted to a Var-Constraint pair instead of being a giant Expression like it is
-            # presently.
-            mcp_hot_side = value(
-                pyunits.convert(
-                    hot_side.properties[t, 0].flow_mol
-                    * hot_side.properties[t, 0].cp_mol,
-                    to_units=shell_units["power"] / shell_units["temperature"],
-                )
-            )
-            T_in_hot_side = value(
-                pyunits.convert(
-                    hot_side.properties[t, 0].temperature,
-                    to_units=shell_units["temperature"],
-                )
-            )
-            P_in_hot_side = value(hot_side.properties[t, 0].pressure)
-            if blk.config.flow_type == HeatExchangerFlowPattern.cocurrent:
-                mcp_cold_side = value(
-                    pyunits.convert(
-                        cold_side.properties[t, 0].flow_mol
-                        * cold_side.properties[t, 0].cp_mol,
-                        to_units=shell_units["power"] / shell_units["temperature"],
-                    )
-                )
-                T_in_cold_side = value(
-                    pyunits.convert(
-                        cold_side.properties[t, 0].temperature,
-                        to_units=shell_units["temperature"],
-                    )
-                )
-                P_in_cold_side = value(cold_side.properties[t, 0].pressure)
-
-                T_out_max = (
-                    mcp_cold_side * T_in_cold_side + mcp_hot_side * T_in_hot_side
-                ) / (mcp_cold_side + mcp_hot_side)
-
-                q_guess = mcp_cold_side * (T_out_max - T_in_cold_side) / 2
-
-                temp_out_cold_side_guess = T_in_cold_side + q_guess / mcp_cold_side
-
-                cold_side.properties[t, 1].temperature.fix(
-                    pyunits.convert_value(
-                        temp_out_cold_side_guess,
-                        from_units=shell_units["temperature"],
-                        to_units=cold_units["temperature"],
-                    )
-                )
-
-                temp_out_hot_side_guess = T_in_cold_side - q_guess / mcp_hot_side
-                hot_side.properties[t, 1].temperature.fix(
-                    pyunits.convert_value(
-                        temp_out_hot_side_guess,
-                        from_units=shell_units["temperature"],
-                        to_units=hot_units["temperature"],
-                    )
-                )
-
-            elif blk.config.flow_type == HeatExchangerFlowPattern.countercurrent:
-                mcp_cold_side = value(
-                    pyunits.convert(
-                        cold_side.properties[t, 1].flow_mol
-                        * cold_side.properties[t, 1].cp_mol,
-                        to_units=shell_units["power"] / shell_units["temperature"],
-                    )
-                )
-                T_in_cold_side = value(
-                    pyunits.convert(
-                        cold_side.properties[t, 1].temperature,
-                        to_units=shell_units["temperature"],
-                    )
-                )
-                P_in_cold_side = value(cold_side.properties[t, 1].pressure)
-
-                if mcp_cold_side < mcp_hot_side:
-                    q_guess = mcp_cold_side * (T_in_hot_side - T_in_cold_side) / 2
-                else:
-                    q_guess = mcp_hot_side * (T_in_hot_side - T_in_cold_side) / 2
-
-                temp_out_cold_side_guess = T_in_cold_side + q_guess / mcp_cold_side
-                cold_side.properties[t, 0].temperature.fix(
-                    pyunits.convert_value(
-                        temp_out_cold_side_guess,
-                        from_units=shell_units["temperature"],
-                        to_units=cold_units["temperature"],
-                    )
-                )
-
-                temp_out_hot_side_guess = T_in_hot_side - q_guess / mcp_hot_side
-                hot_side.properties[t, 1].temperature.fix(
-                    pyunits.convert_value(
-                        temp_out_hot_side_guess,
-                        from_units=shell_units["temperature"],
-                        to_units=hot_units["temperature"],
-                    )
-                )
-
-            else:
-                raise BurntToast(
-                    "HeatExchangerFlowPattern should be limited to cocurrent "
-                    "or countercurrent flow by parent model. Please open an "
-                    "issue on the IDAES Github so this error can be fixed."
-                )
-
-            for z in cold_side.length_domain:
-                hot_side.properties[t, z].temperature.fix(
-                    value(
-                        (1 - z) * hot_side.properties[t, 0].temperature
-                        + z * hot_side.properties[t, 1].temperature
-                    )
-                )
-                cold_side.properties[t, z].temperature.fix(
-                    value(
-                        (1 - z) * cold_side.properties[t, 0].temperature
-                        + z * cold_side.properties[t, 1].temperature
-                    )
-                )
-                blk.temp_wall_center[t, z].fix(
-                    value(
-                        pyunits.convert(
-                            hot_side.properties[t, z].temperature,
-                            to_units=shell_units["temperature"],
-                        )
-                        + pyunits.convert(
-                            cold_side.properties[t, z].temperature,
-                            to_units=shell_units["temperature"],
-                        )
-                    )
-                    / 2
-                )
-
-                blk.temp_wall_shell[t, z].set_value(blk.temp_wall_center[t, z].value)
-                blk.temp_wall_tube[t, z].set_value(
-                    pyunits.convert_value(
-                        blk.temp_wall_center[t, z].value,
-                        from_units=shell_units["temperature"],
-                        to_units=tube_units["temperature"],
-                    )
-                )
-
-                if blk.config.cold_side.has_pressure_change:
-                    cold_side.properties[t, z].pressure.fix(P_in_cold_side)
-                if blk.config.hot_side.has_pressure_change:
-                    hot_side.properties[t, z].pressure.fix(P_in_hot_side)
-
-        blk.temp_wall_center_eqn.deactivate()
-        if tube_has_pressure_change:
-            blk.deltaP_tube_eqn.deactivate()
-        if shell_has_pressure_change:
-            blk.deltaP_shell_eqn.deactivate()
-        blk.heat_tube_eqn.deactivate()
-        blk.heat_shell_eqn.deactivate()
-
-        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = opt.solve(blk, tee=slc.tee)
-        pyomo.opt.assert_optimal_termination(res)
-        init_log.info_high("Initialization Step 2 {}.".format(idaeslog.condition(res)))
-
-        # In Step 3, unfix fluid state variables (enthalpy/temperature and pressure)
-        # keep the inlet state variables fixed, otherwise, the degree of freedom > 0
-        hot_side.properties[:, :].temperature.unfix()
-        hot_side.properties[:, :].pressure.unfix()
-        hot_side.properties[:, 0].temperature.fix()
-        hot_side.properties[:, 0].pressure.fix()
-
-        cold_side.properties[:, :].temperature.unfix()
-        cold_side.properties[:, :].pressure.unfix()
-        if blk.config.flow_type == HeatExchangerFlowPattern.cocurrent:
-            cold_side.properties[:, 0].temperature.fix()
-            cold_side.properties[:, 0].pressure.fix()
-        elif blk.config.flow_type == HeatExchangerFlowPattern.countercurrent:
-            cold_side.properties[:, 1].temperature.fix()
-            cold_side.properties[:, 1].pressure.fix()
-        else:
-            raise BurntToast(
-                "HeatExchangerFlowPattern should be limited to cocurrent "
-                "or countercurrent flow by parent model. Please open an "
-                "issue on the IDAES Github so this error can be fixed."
-            )
-
-        if tube_has_pressure_change:
-            blk.deltaP_tube_eqn.activate()
-        if shell_has_pressure_change:
-            blk.deltaP_shell_eqn.activate()
-        blk.heat_tube_eqn.activate()
-        blk.heat_shell_eqn.activate()
-
-        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = opt.solve(blk, tee=slc.tee)
-        pyomo.opt.assert_optimal_termination(res)
-
-        init_log.info_high("Initialization Step 3 {}.".format(idaeslog.condition(res)))
-
-        blk.temp_wall_center.unfix()
-        blk.temp_wall_center_eqn.activate()
-
-        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = opt.solve(blk, tee=slc.tee)
-        pyomo.opt.assert_optimal_termination(res)
-
-        init_log.info_high("Initialization Step 4 {}.".format(idaeslog.condition(res)))
-
-        # set the wall thermal conductivity back to the user specified value
-        blk.therm_cond_wall.set_value(therm_cond_wall_save)
-
-        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = opt.solve(blk, tee=slc.tee)
-        init_log.info_high("Initialization Step 5 {}.".format(idaeslog.condition(res)))
-        tube.release_state(flags_tube)
-        shell.release_state(flags_shell)
-        init_log.info("Initialization Complete.")
 
     def calculate_scaling_factors(self):
         def gsf(obj):
