@@ -74,15 +74,15 @@ def _create_model(pressure_drop):
     heater.pitch_x.fix(0.1)
     heater.pitch_y.fix(0.1)
     heater.length_tube_seg.fix(10)
-    heater.nseg_tube.fix(1)
+    heater.number_passes.fix(1)
     heater.rfouling = 0.0001
     heater.fcorrection_htc_shell.fix(1)
     heater.cp_wall = 502.4
     if pressure_drop:
         heater.fcorrection_dp_shell.fix(1)
 
-    heater.ncol_tube.fix(40)
-    heater.nrow_inlet.fix(40)
+    heater.number_columns_per_pass.fix(40)
+    heater.number_rows_per_pass.fix(40)
     heater.electric_heat_duty.fix(3.6504e06)
 
     pp = m.fs.h2_side_prop_params

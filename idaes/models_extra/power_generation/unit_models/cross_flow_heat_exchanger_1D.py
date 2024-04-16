@@ -589,8 +589,8 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
                 b.hconv_tube[t, x]
                 * const.pi
                 * pyunits.convert(b.di_tube, to_units=tube_units["length"])
-                * b.nrow_inlet
-                * b.ncol_tube
+                * b.number_rows_per_pass
+                * b.number_columns_per_pass
                 * (b.temp_wall_tube[t, x] - tube.properties[t, x].temperature)
             )
 
@@ -605,7 +605,7 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
                 b.length_flow_tube, to_units=shell_units["length"]
             ) * b.hconv_shell_total[
                 t, x
-            ] * const.pi * b.do_tube * b.nrow_inlet * b.ncol_tube * (
+            ] * const.pi * b.do_tube * b.number_rows_per_pass * b.number_columns_per_pass * (
                 b.temp_wall_shell[t, x] - shell.properties[t, x].temperature
             )
 
@@ -744,8 +744,8 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
                 pyunits.convert(self.length_flow_tube, to_units=shell_units["length"])
                 * const.pi
                 * self.do_tube
-                * self.nrow_inlet
-                * self.ncol_tube
+                * self.number_rows_per_pass
+                * self.number_columns_per_pass
             )
         )
 

@@ -38,19 +38,19 @@ __author__ = "Jinliang Ma, Douglas Allan"
 
 def make_geometry_common(blk, shell, shell_units):
     # Number of tube columns in the cross section plane perpendicular to shell side fluid flow (y direction)
-    blk.ncol_tube = Var(
+    blk.number_columns_per_pass = Var(
         initialize=10.0, doc="Number of tube columns", units=pyunits.dimensionless
     )
 
     # Number of segments of tube bundles
-    blk.nseg_tube = Var(
+    blk.number_passes = Var(
         initialize=10.0,
         doc="Number of segments of tube bundles",
         units=pyunits.dimensionless,
     )
 
     # Number of inlet tube rows
-    blk.nrow_inlet = Var(
+    blk.number_rows_per_pass = Var(
         initialize=1, doc="Number of inlet tube rows", units=pyunits.dimensionless
     )
 
@@ -91,7 +91,7 @@ def make_geometry_common(blk, shell, shell_units):
     # total number of tube rows
     @blk.Expression(doc="Total number of tube rows")
     def nrow_tube(b):
-        return b.nseg_tube * b.nrow_inlet
+        return b.number_passes * b.number_rows_per_pass
 
     # Tube outside diameter
     @blk.Expression(doc="Outside diameter of tube")
@@ -115,8 +115,8 @@ def make_geometry_common(blk, shell, shell_units):
             0.25
             * const.pi
             * (b.do_tube**2 - b.di_tube**2)
-            * b.ncol_tube
-            * b.nrow_inlet
+            * b.number_columns_per_pass
+            * b.number_rows_per_pass
         )
 
     # Length of shell side flow
@@ -129,8 +129,8 @@ def make_geometry_common(blk, shell, shell_units):
     def area_flow_shell_eqn(b):
         return (
             b.length_flow_shell * b.area_flow_shell
-            == b.length_tube_seg * b.length_flow_shell * b.pitch_y * b.ncol_tube
-            - b.ncol_tube
+            == b.length_tube_seg * b.length_flow_shell * b.pitch_y * b.number_columns_per_pass
+            - b.number_columns_per_pass
             * b.nrow_tube
             * 0.25
             * const.pi
@@ -143,7 +143,7 @@ def make_geometry_common(blk, shell, shell_units):
     def area_flow_shell_min_eqn(b):
         return (
             b.area_flow_shell_min
-            == b.length_tube_seg * (b.pitch_y - b.do_tube) * b.ncol_tube
+            == b.length_tube_seg * (b.pitch_y - b.do_tube) * b.number_columns_per_pass
         )
 
     @blk.Expression()
@@ -151,9 +151,9 @@ def make_geometry_common(blk, shell, shell_units):
         return (
             const.pi
             * b.do_tube
-            * b.nrow_inlet
-            * b.ncol_tube
-            * b.nseg_tube
+            * b.number_rows_per_pass
+            * b.number_columns_per_pass
+            * b.number_passes
             * b.length_tube_seg
         )
 
@@ -164,7 +164,7 @@ def make_geometry_tube(blk, shell_units):
     def length_flow_tube_eqn(b):
         return (
             pyunits.convert(b.length_flow_tube, to_units=shell_units["length"])
-            == b.nseg_tube * b.length_tube_seg
+            == b.number_passes * b.length_tube_seg
         )
 
     # Total flow area on tube side
@@ -172,7 +172,7 @@ def make_geometry_tube(blk, shell_units):
     def area_flow_tube_eqn(b):
         return (
             b.area_flow_tube
-            == 0.25 * const.pi * b.di_tube**2.0 * b.ncol_tube * b.nrow_inlet
+            == 0.25 * const.pi * b.di_tube**2.0 * b.number_columns_per_pass * b.number_rows_per_pass
         )
 
 

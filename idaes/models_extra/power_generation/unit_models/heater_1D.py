@@ -391,7 +391,7 @@ domain (default=5). Should set to the number of tube rows""",
             doc="Common performance equations expect this expression to be here"
         )
         def length_flow_tube(b):
-            return b.nseg_tube * b.length_tube_seg
+            return b.number_passes * b.length_tube_seg
 
     def _make_performance(self):
         """

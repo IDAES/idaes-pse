@@ -97,9 +97,9 @@ def _create_model(pressure_drop):
     hx.di_tube.fix(0.0525018)
     hx.thickness_tube.fix(0.0039116)
     hx.length_tube_seg.fix(4.3)
-    hx.nseg_tube.fix(12)
-    hx.ncol_tube.fix(50)
-    hx.nrow_inlet.fix(25)
+    hx.number_passes.fix(12)
+    hx.number_columns_per_pass.fix(50)
+    hx.number_rows_per_pass.fix(25)
 
     hx.pitch_x.fix(0.1)
     hx.pitch_y.fix(0.1)
@@ -253,7 +253,7 @@ def test_initialization_dP(model_dP):
         solver_options=optarg
     )
     initializer.initialize(m.fs.heat_exchanger)
-
+    assert False
     assert degrees_of_freedom(m) == 0
     _check_model_statistics(m, deltaP=True)
 
