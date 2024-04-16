@@ -448,7 +448,7 @@ domain (default=5). Should set to the number of tube rows""",
         )
         def heat_shell_eqn(b, t, x):
             return b.control_volume.heat[t, x] * b.length_flow_shell == (
-                b.hconv_shell_total[t, x]
+                b.total_heat_transfer_coeff_shell[t, x]
                 * b.total_heat_transfer_area
                 * (
                     b.temp_wall_shell[t, x]
@@ -464,7 +464,7 @@ domain (default=5). Should set to the number of tube rows""",
         )
         def temp_wall_shell_eqn(b, t, x):
             return (
-                b.hconv_shell_total[t, x]
+                b.total_heat_transfer_coeff_shell[t, x]
                 * (
                     b.control_volume.properties[t, x].temperature
                     - b.temp_wall_shell[t, x]
@@ -510,8 +510,8 @@ domain (default=5). Should set to the number of tube rows""",
 
         for t in self.flowsheet().time:
             for z in self.control_volume.length_domain:
-                sf_hconv_conv = gsf(self.hconv_shell_conv[t, z])
-                cst(self.hconv_shell_conv_eqn[t, z], sf_hconv_conv * sf_d_tube)
+                sf_hconv_conv = gsf(self.conv_heat_transfer_coeff_shell[t, z])
+                cst(self.conv_heat_transfer_coeff_shell_eqn[t, z], sf_hconv_conv * sf_d_tube)
 
                 sf_T = gsf(self.control_volume.properties[t, z].temperature)
                 ssf(self.temp_wall_shell[t, z], sf_T)

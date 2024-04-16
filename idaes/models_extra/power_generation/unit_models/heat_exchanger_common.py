@@ -119,6 +119,17 @@ def make_geometry_common(blk, shell, shell_units):
             * b.number_rows_per_pass
         )
 
+    @blk.Expression(doc="Total heat transfer area on outer surface of tubes")
+    def total_heat_transfer_area(b):
+        return (
+            const.pi
+            * b.do_tube
+            * b.number_rows_per_pass
+            * b.number_columns_per_pass
+            * b.number_passes
+            * b.length_tube_seg
+        )
+
     # Length of shell side flow
     @blk.Constraint(doc="Length of shell side flow")
     def length_flow_shell_eqn(b):
@@ -144,17 +155,6 @@ def make_geometry_common(blk, shell, shell_units):
         return (
             b.area_flow_shell_min
             == b.length_tube_seg * (b.pitch_y - b.do_tube) * b.number_columns_per_pass
-        )
-
-    @blk.Expression()
-    def total_heat_transfer_area(b):
-        return (
-            const.pi
-            * b.do_tube
-            * b.number_rows_per_pass
-            * b.number_columns_per_pass
-            * b.number_passes
-            * b.length_tube_seg
         )
 
 
@@ -234,7 +234,7 @@ def make_performance_common(
 
     # Performance variables
     # Shell side convective heat transfer coefficient due to convection only
-    blk.hconv_shell_conv = Var(
+    blk.conv_heat_transfer_coeff_shell = Var(
         blk.flowsheet().config.time,
         shell.length_domain,
         initialize=100.0,
@@ -377,8 +377,7 @@ def make_performance_common(
                 b.N_Re_shell[t, x] * shell.properties[t, x].visc_d_phase["Vap"]
                 == b.do_tube
                 * b.v_shell[t, x]
-                * shell.properties[t, x].dens_mol_phase["Vap"]
-                * shell.properties[t, x].mw
+                * shell.properties[t, x].dens_mass_phase["Vap"]
             )
 
     if shell_has_pressure_change:
@@ -430,8 +429,7 @@ def make_performance_common(
                 b.deltaP_shell[t, x] * b.pitch_x
                 == -1.4
                 * b.friction_factor_shell[t, x]
-                * shell.properties[t, x].dens_mol_phase["Vap"]
-                * shell.properties[t, x].mw
+                * shell.properties[t, x].dens_mass_phase["Vap"]
                 * b.v_shell[t, x] ** 2
             )
 
@@ -442,9 +440,9 @@ def make_performance_common(
             shell.length_domain,
             doc="Convective heat transfer coefficient equation on shell side due to convection",
         )
-        def hconv_shell_conv_eqn(b, t, x):
+        def conv_heat_transfer_coeff_shell_eqn(b, t, x):
             return (
-                b.hconv_shell_conv[t, x] * b.do_tube
+                b.conv_heat_transfer_coeff_shell[t, x] * b.do_tube
                 == b.N_Nu_shell[t, x]
                 * shell.properties[t, x].therm_cond_phase["Vap"]
                 * b.fcorrection_htc_shell
@@ -456,9 +454,9 @@ def make_performance_common(
         shell.length_domain,
         doc="Total convective heat transfer coefficient on shell side",
     )
-    def hconv_shell_total(b, t, x):
+    def total_heat_transfer_coeff_shell(b, t, x):
         # Retain in case we add back radiation
-        return b.hconv_shell_conv[t, x]
+        return b.conv_heat_transfer_coeff_shell[t, x]
 
 
 def make_performance_tube(
@@ -469,17 +467,12 @@ def make_performance_tube(
     if tube_has_pressure_change:
         make_reynolds = True
 
-    blk.hconv_tube = Var(
+    blk.heat_transfer_coeff_tube = Var(
         blk.flowsheet().config.time,
         tube.length_domain,
         initialize=100.0,
         units=tube_units["heat_transfer_coefficient"],
         doc="tube side convective heat transfer coefficient",
-    )
-
-    # Loss coefficient for a 180 degree bend (u-turn), usually related to radius to inside diameter ratio
-    blk.kloss_uturn = Param(
-        initialize=0.5, mutable=True, doc="loss coefficient of a tube u-turn"
     )
 
     # Heat transfer resistance due to the fouling on tube side
@@ -495,6 +488,10 @@ def make_performance_tube(
     )
     # Correction factor for tube side pressure drop due to friction
     if tube_has_pressure_change:
+        # Loss coefficient for a 180 degree bend (u-turn), usually related to radius to inside diameter ratio
+        blk.kloss_uturn = Param(
+            initialize=0.5, mutable=True, doc="loss coefficient of a tube u-turn"
+        )
         blk.fcorrection_dp_tube = Var(
             initialize=1.0, doc="correction factor for tube side pressure drop"
         )
@@ -621,8 +618,7 @@ def make_performance_tube(
                 b.deltaP_tube_friction[t, x]
                 * pyunits.convert(b.di_tube, to_units=tube_units["length"])
                 == -0.5
-                * tube.properties[t, x].dens_mol_phase["Vap"]
-                * tube.properties[t, x].mw
+                * tube.properties[t, x].dens_mass_phase["Vap"]
                 * b.v_tube[t, x] ** 2
                 * b.friction_factor_tube[t, x]
             )
@@ -638,8 +634,7 @@ def make_performance_tube(
                 b.deltaP_tube_uturn[t, x]
                 * pyunits.convert(b.length_tube_seg, to_units=tube_units["length"])
                 == -0.5
-                * tube.properties[t, x].dens_mol_phase["Vap"]
-                * tube.properties[t, x].mw
+                * tube.properties[t, x].dens_mass_phase["Vap"]
                 * b.v_tube[t, x] ** 2
                 * b.kloss_uturn
             )
@@ -662,9 +657,9 @@ def make_performance_tube(
             tube.length_domain,
             doc="convective heat transfer coefficient equation on tube side",
         )
-        def hconv_tube_eqn(b, t, x):
+        def heat_transfer_coeff_tube_eqn(b, t, x):
             return (
-                b.hconv_tube[t, x] * b.di_tube
+                b.heat_transfer_coeff_tube[t, x] * b.di_tube
                 == b.N_Nu_tube[t, x]
                 * tube.properties[t, x].therm_cond_phase["Vap"]
                 * b.fcorrection_htc_tube
@@ -709,10 +704,10 @@ def scale_common(blk, shell, shell_has_pressure_change, make_reynolds, make_nuss
                 )
                 cst(blk.N_Nu_shell_eqn[t, z], sf_N_Nu_shell)
 
-                sf_hconv_shell_conv = sgsf(
-                    blk.hconv_shell_conv[t, z], sf_N_Nu_shell * sf_k_shell / sf_do_tube
+                sf_conv_heat_transfer_coeff_shell = sgsf(
+                    blk.conv_heat_transfer_coeff_shell[t, z], sf_N_Nu_shell * sf_k_shell / sf_do_tube
                 )
-                cst(blk.hconv_shell_conv_eqn[t, z], sf_hconv_shell_conv * sf_do_tube)
+                cst(blk.conv_heat_transfer_coeff_shell_eqn[t, z], sf_conv_heat_transfer_coeff_shell * sf_do_tube)
 
             # FIXME estimate from parameters
             if blk.config.has_holdup:
@@ -758,7 +753,7 @@ def scale_tube(
                 )
                 cst(blk.N_Nu_tube_eqn[t, z], sf_N_Nu_tube)
 
-                sf_hconv_tube = sgsf(
-                    blk.hconv_tube[t, z], sf_N_Nu_tube * sf_k_tube / sf_di_tube
+                sf_heat_transfer_coeff_tube = sgsf(
+                    blk.heat_transfer_coeff_tube[t, z], sf_N_Nu_tube * sf_k_tube / sf_di_tube
                 )
-                cst(blk.hconv_tube_eqn[t, z], sf_hconv_tube * sf_di_tube)
+                cst(blk.heat_transfer_coeff_tube_eqn[t, z], sf_heat_transfer_coeff_tube * sf_di_tube)

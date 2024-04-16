@@ -586,7 +586,7 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
         )
         def heat_tube_eqn(b, t, x):
             return b.heat_tube[t, x] == (
-                b.hconv_tube[t, x]
+                b.heat_transfer_coeff_tube[t, x]
                 * const.pi
                 * pyunits.convert(b.di_tube, to_units=tube_units["length"])
                 * b.number_rows_per_pass
@@ -603,7 +603,7 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
         def heat_shell_eqn(b, t, x):
             return b.heat_shell[t, x] * b.length_flow_shell == pyunits.convert(
                 b.length_flow_tube, to_units=shell_units["length"]
-            ) * b.hconv_shell_total[
+            ) * b.total_heat_transfer_coeff_shell[
                 t, x
             ] * const.pi * b.do_tube * b.number_rows_per_pass * b.number_columns_per_pass * (
                 b.temp_wall_shell[t, x] - shell.properties[t, x].temperature
@@ -617,7 +617,7 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
             doc="tube side wall temperature",
         )
         def temp_wall_tube_eqn(b, t, x):
-            return b.hconv_tube[t, x] * (
+            return b.heat_transfer_coeff_tube[t, x] * (
                 tube.properties[t, x].temperature - b.temp_wall_tube[t, x]
             ) * (
                 pyunits.convert(
@@ -639,7 +639,7 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
         )
         def temp_wall_shell_eqn(b, t, x):
             return (
-                b.hconv_shell_total[t, x]
+                b.total_heat_transfer_coeff_shell[t, x]
                 * (shell.properties[t, x].temperature - b.temp_wall_shell[t, x])
                 * (b.thickness_tube / 2 / b.therm_cond_wall + b.rfouling_shell)
                 == b.temp_wall_shell[t, x] - b.temp_wall_center[t, x]
@@ -762,10 +762,10 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
                 ssf(self.temp_wall_shell[t, z], sf_T_shell)
                 cst(self.temp_wall_shell_eqn[t, z], sf_T_shell)
 
-                sf_hconv_shell_conv = gsf(self.hconv_shell_conv[t, z])
+                sf_conv_heat_transfer_coeff_shell = gsf(self.conv_heat_transfer_coeff_shell[t, z])
                 s_Q_shell = sgsf(
                     shell.heat[t, z],
-                    sf_hconv_shell_conv * sf_area_per_length_shell * sf_T_shell,
+                    sf_conv_heat_transfer_coeff_shell * sf_area_per_length_shell * sf_T_shell,
                 )
                 cst(
                     self.heat_shell_eqn[t, z], s_Q_shell * value(self.length_flow_shell)
