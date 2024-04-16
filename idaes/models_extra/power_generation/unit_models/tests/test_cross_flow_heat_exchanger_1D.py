@@ -253,7 +253,7 @@ def test_initialization_dP(model_dP):
         solver_options=optarg
     )
     initializer.initialize(m.fs.heat_exchanger)
-    assert False
+
     assert degrees_of_freedom(m) == 0
     _check_model_statistics(m, deltaP=True)
 
