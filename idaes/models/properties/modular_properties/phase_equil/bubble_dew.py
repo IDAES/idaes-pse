@@ -16,20 +16,15 @@ Modular methods for calculating bubble and dew points
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 
-# TODO: Look into protected access issues
-# pylint: disable=protected-access
-
 from pyomo.environ import Constraint
 
 from idaes.models.properties.modular_properties.base.utility import (
     get_method,
     get_component_object as cobj,
+    identify_VL_component_list,
 )
 import idaes.core.util.scaling as iscale
 from idaes.core.util.exceptions import ConfigurationError
-
-# _valid_VL_component_list return variables that are not need in all cases
-# pylint: disable=W0612
 
 
 class IdealBubbleDew:
@@ -54,7 +49,7 @@ class IdealBubbleDew:
                     henry_comps,
                     l_only_comps,
                     v_only_comps,
-                ) = _valid_VL_component_list(b, (p1, p2))
+                ) = identify_VL_component_list(b, (p1, p2))
 
                 if l_phase is None or v_phase is None:
                     # Not a VLE pair
@@ -97,7 +92,7 @@ class IdealBubbleDew:
                 henry_comps,
                 l_only_comps,
                 v_only_comps,
-            ) = _valid_VL_component_list(b, (p1, p2))
+            ) = identify_VL_component_list(b, (p1, p2))
 
             if l_phase is None or v_phase is None:
                 # Not a VLE pair
@@ -141,7 +136,7 @@ class IdealBubbleDew:
                     henry_comps,
                     l_only_comps,
                     v_only_comps,
-                ) = _valid_VL_component_list(b, pp)
+                ) = identify_VL_component_list(b, pp)
                 if l_phase is None or v_phase is None:
                     continue
                 elif v_only_comps != []:
@@ -174,7 +169,7 @@ class IdealBubbleDew:
                     henry_comps,
                     l_only_comps,
                     v_only_comps,
-                ) = _valid_VL_component_list(b, (p1, p2))
+                ) = identify_VL_component_list(b, (p1, p2))
 
                 if l_phase is None or v_phase is None:
                     # Not a VLE pair
@@ -219,7 +214,7 @@ class IdealBubbleDew:
                 henry_comps,
                 l_only_comps,
                 v_only_comps,
-            ) = _valid_VL_component_list(b, (p1, p2))
+            ) = identify_VL_component_list(b, (p1, p2))
 
             if l_phase is None or v_phase is None:
                 # Not a VLE pair
@@ -265,7 +260,7 @@ class IdealBubbleDew:
                     henry_comps,
                     l_only_comps,
                     v_only_comps,
-                ) = _valid_VL_component_list(b, pp)
+                ) = identify_VL_component_list(b, pp)
                 if l_phase is None or v_phase is None:
                     continue
                 elif v_only_comps != []:
@@ -296,7 +291,7 @@ class IdealBubbleDew:
                     henry_comps,
                     l_only_comps,
                     v_only_comps,
-                ) = _valid_VL_component_list(b, (p1, p2))
+                ) = identify_VL_component_list(b, (p1, p2))
 
                 if l_phase is None or v_phase is None:
                     # Not a VLE pair
@@ -328,7 +323,7 @@ class IdealBubbleDew:
                 henry_comps,
                 l_only_comps,
                 v_only_comps,
-            ) = _valid_VL_component_list(b, (p1, p2))
+            ) = identify_VL_component_list(b, (p1, p2))
 
             if l_phase is None or v_phase is None:
                 # Not a VLE pair
@@ -368,7 +363,7 @@ class IdealBubbleDew:
                     henry_comps,
                     l_only_comps,
                     v_only_comps,
-                ) = _valid_VL_component_list(b, pp)
+                ) = identify_VL_component_list(b, pp)
                 if l_phase is None or v_phase is None:
                     continue
                 elif v_only_comps != []:
@@ -401,7 +396,7 @@ class IdealBubbleDew:
                     henry_comps,
                     l_only_comps,
                     v_only_comps,
-                ) = _valid_VL_component_list(b, (p1, p2))
+                ) = identify_VL_component_list(b, (p1, p2))
 
                 if l_phase is None or v_phase is None:
                     # Not a VLE pair
@@ -431,7 +426,7 @@ class IdealBubbleDew:
                 henry_comps,
                 l_only_comps,
                 v_only_comps,
-            ) = _valid_VL_component_list(b, (p1, p2))
+            ) = identify_VL_component_list(b, (p1, p2))
 
             if l_phase is None or v_phase is None:
                 # Not a VLE pair
@@ -471,7 +466,7 @@ class IdealBubbleDew:
                     henry_comps,
                     l_only_comps,
                     v_only_comps,
-                ) = _valid_VL_component_list(b, pp)
+                ) = identify_VL_component_list(b, pp)
                 if l_phase is None or v_phase is None:
                     continue
                 elif v_only_comps != []:
@@ -505,7 +500,7 @@ class LogBubbleDew:
                     henry_comps,
                     l_only_comps,
                     v_only_comps,
-                ) = _valid_VL_component_list(b, (p1, p2))
+                ) = identify_VL_component_list(b, (p1, p2))
 
                 if l_phase is None or v_phase is None:
                     # Not a VLE pair
@@ -540,7 +535,7 @@ class LogBubbleDew:
                 henry_comps,
                 l_only_comps,
                 v_only_comps,
-            ) = _valid_VL_component_list(b, (p1, p2))
+            ) = identify_VL_component_list(b, (p1, p2))
 
             if l_phase is None or v_phase is None:
                 # Not a VLE pair
@@ -570,7 +565,7 @@ class LogBubbleDew:
                 henry_comps,
                 l_only_comps,
                 v_only_comps,
-            ) = _valid_VL_component_list(b, pp)
+            ) = identify_VL_component_list(b, pp)
             if l_phase is None or v_phase is None:
                 continue
             elif v_only_comps != []:
@@ -595,7 +590,7 @@ class LogBubbleDew:
                     henry_comps,
                     l_only_comps,
                     v_only_comps,
-                ) = _valid_VL_component_list(b, (p1, p2))
+                ) = identify_VL_component_list(b, (p1, p2))
 
                 if l_phase is None or v_phase is None:
                     # Not a VLE pair
@@ -630,7 +625,7 @@ class LogBubbleDew:
                 henry_comps,
                 l_only_comps,
                 v_only_comps,
-            ) = _valid_VL_component_list(b, (p1, p2))
+            ) = identify_VL_component_list(b, (p1, p2))
 
             if l_phase is None or v_phase is None:
                 # Not a VLE pair
@@ -660,7 +655,7 @@ class LogBubbleDew:
                 henry_comps,
                 l_only_comps,
                 v_only_comps,
-            ) = _valid_VL_component_list(b, pp)
+            ) = identify_VL_component_list(b, pp)
             if l_phase is None or v_phase is None:
                 continue
             elif v_only_comps != []:
@@ -685,7 +680,7 @@ class LogBubbleDew:
                     henry_comps,
                     l_only_comps,
                     v_only_comps,
-                ) = _valid_VL_component_list(b, (p1, p2))
+                ) = identify_VL_component_list(b, (p1, p2))
 
                 if l_phase is None or v_phase is None:
                     # Not a VLE pair
@@ -720,7 +715,7 @@ class LogBubbleDew:
                 henry_comps,
                 l_only_comps,
                 v_only_comps,
-            ) = _valid_VL_component_list(b, (p1, p2))
+            ) = identify_VL_component_list(b, (p1, p2))
 
             if l_phase is None or v_phase is None:
                 # Not a VLE pair
@@ -750,7 +745,7 @@ class LogBubbleDew:
                 henry_comps,
                 l_only_comps,
                 v_only_comps,
-            ) = _valid_VL_component_list(b, pp)
+            ) = identify_VL_component_list(b, pp)
             if l_phase is None or v_phase is None:
                 continue
             elif v_only_comps != []:
@@ -775,7 +770,7 @@ class LogBubbleDew:
                     henry_comps,
                     l_only_comps,
                     v_only_comps,
-                ) = _valid_VL_component_list(b, (p1, p2))
+                ) = identify_VL_component_list(b, (p1, p2))
 
                 if l_phase is None or v_phase is None:
                     # Not a VLE pair
@@ -810,7 +805,7 @@ class LogBubbleDew:
                 henry_comps,
                 l_only_comps,
                 v_only_comps,
-            ) = _valid_VL_component_list(b, (p1, p2))
+            ) = identify_VL_component_list(b, (p1, p2))
 
             if l_phase is None or v_phase is None:
                 # Not a VLE pair
@@ -840,7 +835,7 @@ class LogBubbleDew:
                 henry_comps,
                 l_only_comps,
                 v_only_comps,
-            ) = _valid_VL_component_list(b, pp)
+            ) = identify_VL_component_list(b, pp)
             if l_phase is None or v_phase is None:
                 continue
             elif v_only_comps != []:
@@ -850,48 +845,6 @@ class LogBubbleDew:
             iscale.constraint_scaling_transform(
                 b.eq_mole_frac_pdew[pp[0], pp[1]], sf_mf, overwrite=overwrite
             )
-
-
-def _valid_VL_component_list(blk, pp):
-    vl_comps = []
-    henry_comps = []
-    l_only_comps = []
-    v_only_comps = []
-
-    pparams = blk.params
-    l_phase = None
-    v_phase = None
-    if pparams.get_phase(pp[0]).is_liquid_phase():
-        l_phase = pp[0]
-    elif pparams.get_phase(pp[0]).is_vapor_phase():
-        v_phase = pp[0]
-
-    if pparams.get_phase(pp[1]).is_liquid_phase():
-        l_phase = pp[1]
-    elif pparams.get_phase(pp[1]).is_vapor_phase():
-        v_phase = pp[1]
-
-    # Only need to do this for V-L pairs, so check
-    if l_phase is not None and v_phase is not None:
-        for j in blk.params.component_list:
-            if (l_phase, j) in blk.phase_component_set and (
-                v_phase,
-                j,
-            ) in blk.phase_component_set:
-                cobj = pparams.get_component(j)
-                if cobj.config.henry_component is not None and (
-                    pp[0] in cobj.config.henry_component
-                    or pp[1] in cobj.config.henry_component
-                ):
-                    henry_comps.append(j)
-                else:
-                    vl_comps.append(j)
-            elif (l_phase, j) in blk.phase_component_set:
-                l_only_comps.append(j)
-            elif (v_phase, j) in blk.phase_component_set:
-                v_only_comps.append(j)
-
-    return l_phase, v_phase, vl_comps, henry_comps, l_only_comps, v_only_comps
 
 
 def _non_vle_phase_check(blk):

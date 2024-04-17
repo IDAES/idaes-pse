@@ -21,14 +21,11 @@ Process Systems Engineering – PSE 2018, July 1-5, 2018, San Diego.
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 
-# TODO: Look into protected access issues
-# pylint: disable=protected-access
-
 from pyomo.environ import Constraint, Param, Var, value
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.math import smooth_max, smooth_min
-from idaes.models.properties.modular_properties.phase_equil.bubble_dew import (
-    _valid_VL_component_list,
+from idaes.models.properties.modular_properties.base.utility import (
+    identify_VL_component_list,
 )
 import idaes.core.util.scaling as iscale
 
@@ -51,7 +48,7 @@ class SmoothVLE(object):
             _,
             l_only_comps,
             v_only_comps,
-        ) = _valid_VL_component_list(b, phase_pair)
+        ) = identify_VL_component_list(b, phase_pair)
 
         if l_phase is None or v_phase is None:
             raise ConfigurationError(

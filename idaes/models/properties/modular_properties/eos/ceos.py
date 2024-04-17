@@ -18,9 +18,6 @@ Currently only supports liquid and vapor phases
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 
-# TODO: Look into protected access issues
-# pylint: disable=protected-access
-
 from enum import Enum
 from copy import deepcopy
 
@@ -457,6 +454,35 @@ class Cubic(EoSBase):
                 Expression(
                     b.params._pe_pairs, b.phase_component_set, rule=rule_delta_eq
                 ),
+            )
+
+            # Calculate cubic coefficients
+            def calculate_cubic_coefficients(b, p1, p2, p3):
+                """
+                Calculates the coefficients b, c, and d of the cubic
+                0 = z**3 + b * z**2 + c * z + d
+                """
+
+                _A_eq = getattr(b, "_" + cname + "_A_eq")
+                _B_eq = getattr(b, "_" + cname + "_B_eq")
+                A_eq = _A_eq[p1, p2, p3]
+                B_eq = _B_eq[p1, p2, p3]
+                EoS_u = EoS_param[ctype]["u"]
+                EoS_w = EoS_param[ctype]["w"]
+
+                _b = -(1 + B_eq - EoS_u * B_eq)
+                _c = A_eq - EoS_u * B_eq - EoS_u * B_eq**2 + EoS_w * B_eq**2
+                _d = -(A_eq * B_eq + EoS_w * B_eq**2 + EoS_w * B_eq**3)
+                return (_b, _c, _d)
+
+            def second_derivative(b, p1, p2, p3):
+                _b, _, _ = calculate_cubic_coefficients(b, p1, p2, p3)
+                z = b.compress_fact_phase[p3]
+                return 6 * z + 2 * _b
+
+            b.add_component(
+                "_" + cname + "_cubic_second_derivative",
+                Expression(b.params._pe_pairs, b.phase_list, rule=second_derivative),
             )
 
     @staticmethod
@@ -1356,26 +1382,79 @@ def _bubble_dew_log_fug_coeff_method(blk, p, j, pp, pt_var):
 # -----------------------------------------------------------------------------
 # Default rules for cubic expressions
 def func_fw_PR(cobj):
+    """
+    fw function for Peng-Robinson EoS.
+
+    Args:
+        cobj: Component object
+
+    Returns:
+        expression for fw
+
+    """
     return 0.37464 + 1.54226 * cobj.omega - 0.26992 * cobj.omega**2
 
 
 def func_fw_SRK(cobj):
+    """
+    fw function for SRK EoS.
+
+    Args:
+        cobj: Component object
+
+    Returns:
+        expression for fw
+
+    """
     return 0.48 + 1.574 * cobj.omega - 0.176 * cobj.omega**2
 
 
 def func_alpha_soave(T, fw, cobj):
+    """
+    alpha function for SRK EoS.
+
+    Args:
+        fw: expression for fw
+        cobj: Component object
+
+    Returns:
+        expression for alpha
+
+    """
     Tc = cobj.temperature_crit
     Tr = T / Tc
     return (1 + fw * (1 - sqrt(Tr))) ** 2
 
 
 def func_dalpha_dT_soave(T, fw, cobj):
+    """
+    Function to get first derivative of alpha for SRK EoS.
+
+    Args:
+        fw: expression for fw
+        cobj: Component object
+
+    Returns:
+        expression for first derivative of alpha
+
+    """
     Tc = cobj.temperature_crit
     Tr = T / Tc
     return 1 / Tc * (-fw / sqrt(Tr)) * (1 + fw * (1 - sqrt(Tr)))
 
 
 def func_d2alpha_dT2_soave(T, fw, cobj):
+    """
+    Function to get 2nd derivative of alpha for SRK EoS.
+
+    Args:
+        fw: expression for fw
+        cobj: Component object
+
+    Returns:
+        expression for 2nd derivative of alpha
+
+    """
     Tc = cobj.temperature_crit
     Tr = T / Tc
     return 1 / Tc**2 * ((fw**2 + fw) / (2 * Tr * sqrt(Tr)))
@@ -1384,6 +1463,9 @@ def func_d2alpha_dT2_soave(T, fw, cobj):
 # -----------------------------------------------------------------------------
 # Mixing rules
 def rule_am_default(m, cname, a, p, pp=()):
+    """
+    Standard mixing rule for a term
+    """
     k = getattr(m.params, cname + "_kappa")
     return sum(
         sum(
@@ -1398,6 +1480,9 @@ def rule_am_default(m, cname, a, p, pp=()):
 
 
 def rule_am_crit_default(m, cname, a_crit):
+    """
+    Standard mixing rule for a term at critical point
+    """
     k = getattr(m.params, cname + "_kappa")
     return sum(
         sum(
@@ -1412,8 +1497,14 @@ def rule_am_crit_default(m, cname, a_crit):
 
 
 def rule_bm_default(m, b, p):
+    """
+    Standard mixing rule for b term
+    """
     return sum(m.mole_frac_phase_comp[p, i] * b[i] for i in m.components_in_phase(p))
 
 
 def rule_bm_crit_default(m, b):
+    """
+    Standard mixing rule for b term at critical point
+    """
     return sum(m.mole_frac_comp[i] * b[i] for i in m.component_list)
