@@ -178,10 +178,11 @@ def test_initialization(model_no_dP):
     assert degrees_of_freedom(m) == 0
     _check_model_statistics(m, deltaP=False)
 
-    initializer = Heater1DInitializer(
+    initializer = m.fs.heater.default_initializer(
         solver="ipopt",
         solver_options=optarg
     )
+    assert isinstance(initializer, Heater1DInitializer)
     initializer.initialize(model=m.fs.heater)
 
     assert degrees_of_freedom(m) == 0
@@ -209,10 +210,11 @@ def test_initialization_dP(model_dP):
     assert degrees_of_freedom(m) == 0
     _check_model_statistics(m, deltaP=True)
 
-    initializer = Heater1DInitializer(
+    initializer = m.fs.heater.default_initializer(
         solver="ipopt",
         solver_options=optarg
     )
+    assert isinstance(initializer, Heater1DInitializer)
     initializer.initialize(model=m.fs.heater)
 
     assert degrees_of_freedom(m) == 0

@@ -61,7 +61,6 @@ class Heater1DInitializer(SingleControlVolumeUnitInitializer):
         self,
         model: Block,
         copy_inlet_state: bool = False,
-        duty=1000 * pyunits.W,
     ):
         """
         Initialization routine for the main Heater 1D model
@@ -78,8 +77,6 @@ class Heater1DInitializer(SingleControlVolumeUnitInitializer):
             Pyomo solver results object.
 
         """
-        # TODO: Aside from one differences in constraint names, this is
-        # identical to the Initializer for the 0D HX unit.
         # Set solver options
         init_log = idaeslog.getInitLogger(
             model.name, self.get_output_level(), tag="unit"
@@ -150,6 +147,8 @@ class Heater1DInitializer(SingleControlVolumeUnitInitializer):
 @declare_process_block_class("Heater1D")
 class Heater1DData(UnitModelBlockData):
     """Standard Trim Heater Model Class Class."""
+
+    default_initializer = Heater1DInitializer
 
     CONFIG = UnitModelBlockData.CONFIG()
     CONFIG.declare(

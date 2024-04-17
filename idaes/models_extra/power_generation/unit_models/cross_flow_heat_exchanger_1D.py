@@ -358,6 +358,8 @@ class CrossFlowHeatExchanger1DInitializer(SingleControlVolumeUnitInitializer):
 class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
     """Standard Cross Flow Heat Exchanger Unit Model Class."""
 
+    default_initializer = CrossFlowHeatExchanger1DInitializer
+
     CONFIG = HeatExchanger1DData.CONFIG()
     CONFIG.declare(
         "shell_is_hot",

@@ -6,7 +6,8 @@ CrossFlowHeatExchanger1D
 
 .. module:: idaes.models_extra.power_generation.unit_models.cross_flow_heat_exchanger_1D
 
-This model is for a cross flow heat exchanger between two gases. 
+This model is for a cross flow heat exchanger between two gases. The gas in the shell has a straight path,
+while the gas in the tubes snakes back and forth across the shell's path.
 
 Example
 -------
@@ -24,12 +25,8 @@ Example
       EosType,
   )
   from idaes.models_extra.power_generation.unit_models import CrossFlowHeatExchanger1D
-  import idaes.core.util.model_statistics as mstat
   from idaes.core.util.model_statistics import degrees_of_freedom
-  from idaes.core.solvers import get_solver
 
-
-  # Set up solver
   optarg = {
       "constr_viol_tol": 1e-8,
       "nlp_scaling_method": "user-scaling",
@@ -39,7 +36,6 @@ Example
       "tol": 1e-8,
       "halt_on_ampl_error": "no",
   }
-  solver = get_solver("ipopt", options=optarg)
 
   m = pyo.ConcreteModel()
   m.fs = pyo.FlowsheetBlock(dynamic=False)
@@ -93,9 +89,9 @@ Example
   hx.di_tube.fix(0.0525018)
   hx.thickness_tube.fix(0.0039116)
   hx.length_tube_seg.fix(4.3)
-  hx.nseg_tube.fix(12)
-  hx.ncol_tube.fix(50)
-  hx.nrow_inlet.fix(25)
+  hx.number_passes.fix(12)
+  hx.number_columns_per_pass.fix(50)
+  hx.number_rows_per_pass.fix(25)
 
   hx.pitch_x.fix(0.1)
   hx.pitch_y.fix(0.1)
@@ -104,9 +100,6 @@ Example
   hx.rfouling_shell = 0.0001
   hx.fcorrection_htc_tube.fix(1)
   hx.fcorrection_htc_shell.fix(1)
-  if pressure_drop:
-      hx.fcorrection_dp_tube.fix(1)
-      hx.fcorrection_dp_shell.fix(1)
 
   hx.cp_wall.value = 502.4
 
@@ -141,7 +134,7 @@ Example
 
   iscale.calculate_scaling_factors(m)
 
-  initializer = CrossFlowHeatExchanger1DInitializer(
+  initializer = m.fs.heat_exchanger.default_initializer(
         solver="ipopt",
         solver_options=optarg
   )
@@ -157,22 +150,26 @@ Variable                    Index Sets  Doc
 =========================== =========== =================================================================================
 ``number_columns_per_pass`` None        Number of columns of tube per pass
 ``number_rows_per_pass``    None        Number of rows of tube per pass
-``number_passes``           None        Number of tube banks of `nrow_tube * ncol_inlet` tubes
+``number_passes``           None        Number of tube banks of ``nrow_tube * ncol_inlet`` tubes
 ``pitch_x``                 None        Distance between columns (TODO rows?) of tubes, measured from center-of-tube to center-of-tube
 ``pitch_y``                 None        Distance between rows (TODO columns?) of tubes, measured from center-of-tube to center-of-tube
 ``length_tube_seg``         None        Length of tube segment perpendicular to flow in each pass
+``area_flow_shell``         None        Reference to flow area on shell control volume
+``length_flow_shell``       None        Reference to flow length on shell control volume
 ``area_flow_shell_min``     None        Minimum flow area on shell side
 ``di_tube``                 None        Inner diameter of tubes
 ``thickness_tube``          None        Thickness of tube wall.
+``area_flow_tube``          None        Reference to flow area on tube control volume
+``length_flow_tube``        None        Reference to flow length on tube control volume
 =========================== =========== =================================================================================
 
 ============================ =========== ===========================================================================
 Expression                   Index Sets  Doc
 ============================ =========== ===========================================================================
 ``nrow_tube``                None        Total number of rows of tube
-``do_tube``                  None        Outer diameter of tube (equal to `di_tube+2*thickness_tube`)
-``pitch_x_to_do``            None        Ratio of `pitch_x` to `do_tube`
-``pitch_y_to_do``            None        Ratio of `pitch_y` to `do_tube`
+``do_tube``                  None        Outer diameter of tube (equal to ``di_tube+2*thickness_tube``)
+``pitch_x_to_do``            None        Ratio of ``pitch_x`` to ``do_tube``
+``pitch_y_to_do``            None        Ratio of ``pitch_y`` to ``do_tube``
 ``area_wall_seg``            None        Total cross-sectional area of tube per pass
 ``total_heat_transfer_area`` None        Total heat transfer area, as measured on outer surface of tubes
 ============================ =========== ===========================================================================
@@ -182,7 +179,7 @@ Constraint                  Index Sets  Doc
 =========================== =========== =================================================================================================
 ``length_flow_shell_eqn``   None        Constrains shell flow length from control volume to equal value implied by geometry
 ``area_flow_shell_eqn``     None        Constrains shell flow cross-sectional area from control volume to equal value implied by geometry
-``area_flow_shell_min_eqn`` None        Constraints `area_flow_shell_min` to equal value determined by geometry
+``area_flow_shell_min_eqn`` None        Constraints ``area_flow_shell_min`` to equal value determined by geometry
 ``length_flow_tube_eqn``    None        Constrains tube flow length from control volume to equal value implied by geometry
 ``area_flow_tube_eqn``      None        Constrains tube flow cross-sectional area from control volume to equal value implied by geometry
 =========================== =========== =================================================================================================
@@ -214,24 +211,34 @@ Parameter                   Index Sets  Doc
 ``density_wall``            None        Mass density of tube wall metal
 ``cp_wall``                 None        Tube wall heat capacity (mass basis)
 ``rfouling_shell``          None        Fouling resistance on shell side
-``f_arrangement``           None        Adjustment factor depending on `tube_arrangement` in config
+``f_arrangement``           None        Adjustment factor depending on ``tube_arrangement`` in config
 =========================== =========== =================================================================================
 
 ====================================== ============ =================================================================================
 Constraint                             Index Sets   Doc
 ====================================== ============ =================================================================================
-``v_shell_eqn``                        time, length Calculates velocity of flow through shell using `area_flow_shell_min`
+``v_shell_eqn``                        time, length Calculates velocity of flow through shell using ``area_flow_shell_min``
 ``N_Re_shell_eqn``                     time, length Calculates the shell-side Reynolds number
 ``conv_heat_transfer_coeff_shell_eqn`` time, length Calculates the shell-side convective heat transfer coefficient 
 ``v_tube_eqn``                         time, length Calculates gas velocity in tube
 ``N_Re_tube_eqn``                      time, length Calculates the tube-side Reynolds number
 ``heat_transfer_coeff_tube_eqn``       time, length Calcualtes the tube-side heat transfer coefficient
+``N_Nu_shell_eqn``                     time, length Calculate the shell-side Nusselt number
+``N_Nu_tube_eqn``                      time, length Calculate the tube-side Nusselt number
+``heat_tube_eqn``                      time, length Calculates heat transfer per unit length
+``heat_shell_eqn``                     time, length Calculates heat transfer per unit length
+``temp_wall_tube_eqn``                 time, length Calculate the wall temperature of the inner tube
+``temp_wall_shell_eqn``                time, length Calculate the wall temperature of the outer tube
+``temp_wall_center_eqn``               time, length Overall energy balance on tube metal
 ====================================== ============ =================================================================================
 
 ====================================== ============ ===================================================================================
 Expression                             Index Sets   Doc
 ====================================== ============ ===================================================================================
-``total_heat_transfer_coeff_shell``    time, length Returns ``conv_heat_transfer_coeff_shell``. Could be extended to include radiation.
+``total_heat_transfer_coeff_shell``    time         Returns ``conv_heat_transfer_coeff_shell``. Could be extended to include radiation.
+``total_heat_duty``                    time         Created only if not ``dynamic``. Gives total heat transferred over entire exchanger
+``log_mean_delta_temperature``         time         Created only if not ``dynamic``. Gives the log mean temperature difference (LMTD).
+``overall_heat_transfer_coefficient``  time         Created only if not ``dynamic``. Calculated from total heat transfer, area, and LMTD.
 ====================================== ============ ===================================================================================
 
 Pressure Change Equations
@@ -255,21 +262,23 @@ Variable                    Index Sets   Doc
 ``deltaP_tube_uturn``       time, length Change of pressure in tube due to U turns
 =========================== ============ =================================================================================
 
-================================== ============ =================================================================================
+================================== ============ ==================================================================================
 Constraint                         Index Sets   Doc
-================================== ============ =================================================================================
+================================== ============ ==================================================================================
 ``friction_factor_shell_eqn``      time, length Calculates the shell-side friction factor
-``deltaP_shell_eqn``               time, length Sets `deltaP_shell` based on the friction factor and shell properties
+``deltaP_shell_eqn``               time, length Sets ``deltaP_shell`` based on the friction factor and shell properties
 ``friction_factor_tube_eqn``       time, length Calculates the tube-side friction factor
-``deltaP_tube_friction_eqn``       time, length Sets `deltaP_tube_friction` based on friction factor
-``deltaP_tube_uturn_eqn``          time, length Sets `deltaP_tube_uturn` based on `kloss_uturn`
-``deltaP_tube_eqn``                time, length Sets `deltaP_tube` by summing `deltaP_tube_friction` and `deltaP_tube_uturn`
-================================== ============ =================================================================================
+``deltaP_tube_friction_eqn``       time, length Sets ``deltaP_tube_friction`` based on friction factor
+``deltaP_tube_uturn_eqn``          time, length Sets ``deltaP_tube_uturn`` based on ``kloss_uturn``
+``deltaP_tube_eqn``                time, length Sets ``deltaP_tube`` by summing ``deltaP_tube_friction`` and ``deltaP_tube_uturn``
+================================== ============ ==================================================================================
 
 
 Holdup Equations
 ----------------
-Created when `has_holdup=True` in the config.
+
+Created when ``has_holdup=True`` in the config.
+
 =========================== ============ =================================================================================
 Variable                    Index Sets   Doc
 =========================== ============ =================================================================================
@@ -284,7 +293,9 @@ Constraint                  Index Sets   Doc
 
 Dynamic Equations
 -----------------
-Created when `dynamic=True` in the config.
+
+Created when ``dynamic=True`` in the config.
+
 =========================== ============ =================================================================================
 Derivative Variable         Index Sets   Doc
 =========================== ============ =================================================================================
@@ -292,27 +303,9 @@ Derivative Variable         Index Sets   Doc
 =========================== ============ =================================================================================
 
 
-Constraints
------------
-
-The pressure flow relation is added to the inherited constraints from the :ref:`PressureChanger model
-<reference_guides/model_libraries/generic/unit_models/pressure_changer:Pressure Changer>`.
-
-If the ``phase`` option is set to ``"Liq"`` the following equation describes the pressure-flow relation.
-
-.. math::
-
-  \frac{1}{s_f^2}F^2 = \frac{1}{s_f^2}C_v^2\left(P_{in} - P_{out}\right)f(x)^2
-
-If the ``phase`` option is set to ``"Vap"`` the following equation describes the pressure-flow relation.
-
-.. math::
-
-  \frac{1}{s_f^2}F^2 = \frac{1}{s_f^2}C_v^2\left(P_{in}^2 - P_{out}^2\right)f(x)^2
-
-
 Initialization
 --------------
+
 First, the shell and tube control volumes are initialized without heat transfer. Next
 the total possible heat transfer between streams is estimated based on heat capacity, 
 flow rate, and inlet/outlet temperatures. The actual temperature change is set to be 
@@ -321,14 +314,14 @@ temperature profiles. Finally, temperatures besides the inlets are unfixed and
 the performance equations are activated before a full solve of the system model.
 
 
-HelmValve Class
-----------------
+CrossFlowHeatExchanger1D Class
+------------------------------
 
 .. autoclass:: CrossFlowHeatExchanger1D
   :members:
 
-HelmValveData Class
----------------------
+CrossFlowHeatExchanger1DData Class
+----------------------------------
 
 .. autoclass:: CrossFlowHeatExchanger1DData
   :members:

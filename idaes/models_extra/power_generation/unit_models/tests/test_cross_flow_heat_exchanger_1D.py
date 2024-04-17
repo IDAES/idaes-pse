@@ -214,10 +214,11 @@ def test_initialization(model_no_dP):
     assert degrees_of_freedom(m) == 0
     _check_model_statistics(m, deltaP=False)
 
-    initializer = CrossFlowHeatExchanger1DInitializer(
+    initializer = m.fs.heat_exchanger.default_initializer(
         solver="ipopt",
         solver_options=optarg
     )
+    assert isinstance(initializer, CrossFlowHeatExchanger1DInitializer)
     initializer.initialize(model=m.fs.heat_exchanger)
 
     assert degrees_of_freedom(m) == 0
@@ -248,10 +249,11 @@ def test_initialization_dP(model_dP):
     assert degrees_of_freedom(m) == 0
     _check_model_statistics(m, deltaP=True)
 
-    initializer = CrossFlowHeatExchanger1DInitializer(
+    initializer = m.fs.heat_exchanger.default_initializer(
         solver="ipopt",
         solver_options=optarg
     )
+    assert isinstance(initializer, CrossFlowHeatExchanger1DInitializer)
     initializer.initialize(m.fs.heat_exchanger)
 
     assert degrees_of_freedom(m) == 0
