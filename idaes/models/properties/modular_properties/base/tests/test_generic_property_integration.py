@@ -217,6 +217,7 @@ class TestInherentReactions(object):
             rel=1e-5,
         )
 
+        frame.fs.H101.outlet.mole_frac_comp.display()
         assert value(frame.fs.H101.outlet.mole_frac_comp[0, "a"]) == pytest.approx(
             1 / 6, rel=1e-5
         )

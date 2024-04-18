@@ -13,6 +13,9 @@
 """
 Framework for generic property packages
 """
+# TODO: Pylint complains about variables with _x names as they are built by sub-classes
+# pylint: disable=protected-access
+
 # Import Pyomo libraries
 from pyomo.environ import (
     Block,
@@ -1334,19 +1337,19 @@ class ModularPropertiesInitializer(InitializerBase):
 
             # Bubble temperature initialization
             if hasattr(k, "_mole_frac_tbub"):
-                model._init_Tbub(k, T_units)
+                _init_Tbub(k, T_units)
 
             # Dew temperature initialization
             if hasattr(k, "_mole_frac_tdew"):
-                model._init_Tdew(k, T_units)
+                _init_Tdew(k, T_units)
 
             # Bubble pressure initialization
             if hasattr(k, "_mole_frac_pbub"):
-                model._init_Pbub(k, T_units)
+                _init_Pbub(k)
 
             # Dew pressure initialization
             if hasattr(k, "_mole_frac_pdew"):
-                model._init_Pdew(k, T_units)
+                _init_Pdew(k)
 
             # Solve bubble, dew, and critical point constraints
             for c in k.component_objects(Constraint):

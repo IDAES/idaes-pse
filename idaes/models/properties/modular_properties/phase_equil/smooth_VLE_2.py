@@ -17,6 +17,8 @@ Dabadghao, V., Ghouse, J., Eslick, J., Lee, A., Burgard, A., Miller, D., Biegler
 A complementarity-based vapor-liquid equilibrium formulation for equation-oriented simulation
 and optimization. AIChE Journal, DOI: 10.1002/aic.18029
 """
+# TODO: Pylint complains about variables with _x names as they are built by other classes
+# pylint: disable=protected-access
 
 from pyomo.environ import Constraint, Param, units as pyunits, Var, value
 

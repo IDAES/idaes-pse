@@ -13,8 +13,8 @@
 """
 Modular methods for calculating bubble and dew points
 """
-# TODO: Missing docstrings
-# pylint: disable=missing-function-docstring
+# TODO: Pylint complains about variables with _x names as they are built by other classes
+# pylint: disable=protected-access
 
 from pyomo.environ import Constraint
 

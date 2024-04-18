@@ -18,8 +18,8 @@ Miller, D.C., 2018, A Smooth, Square Flash Formulation for Equation-Oriented
 Flowsheet Optimization. Proceedings of the 13th International Symposium on
 Process Systems Engineering – PSE 2018, July 1-5, 2018, San Diego.
 """
-# TODO: Missing docstrings
-# pylint: disable=missing-function-docstring
+# TODO: Pylint complains about variables with _x names as they are built by other classes
+# pylint: disable=protected-access
 
 from pyomo.environ import Constraint, Param, Var, value
 from idaes.core.util.exceptions import ConfigurationError

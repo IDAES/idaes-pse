@@ -15,8 +15,8 @@ Methods for cubic equations of state.
 
 Currently only supports liquid and vapor phases
 """
-# TODO: Missing docstrings
-# pylint: disable=missing-function-docstring
+# TODO: Pylint complains about variables with _x names as they are built by other classes
+# pylint: disable=protected-access
 
 from enum import Enum
 from copy import deepcopy
@@ -449,41 +449,24 @@ class Cubic(EoSBase):
                     )
                 )
 
-            b.add_component(
-                "_" + cname + "_delta_eq",
-                Expression(
-                    b.params._pe_pairs, b.phase_component_set, rule=rule_delta_eq
-                ),
+        b.add_component(
+            "_" + cname + "_delta_eq",
+            Expression(b.params._pe_pairs, b.phase_component_set, rule=rule_delta_eq),
+        )
+
+        def cubic_second_derivative_eq(b, p1, p2, p3):
+            b, _, _ = _calculate_equilibrium_cubic_coefficients(
+                b, cname, ctype, p1, p2, p3
             )
+            z = b.compress_fact_phase[p3]
+            return 6 * z + 2 * b
 
-            # Calculate cubic coefficients
-            def calculate_cubic_coefficients(b, p1, p2, p3):
-                """
-                Calculates the coefficients b, c, and d of the cubic
-                0 = z**3 + b * z**2 + c * z + d
-                """
-
-                _A_eq = getattr(b, "_" + cname + "_A_eq")
-                _B_eq = getattr(b, "_" + cname + "_B_eq")
-                A_eq = _A_eq[p1, p2, p3]
-                B_eq = _B_eq[p1, p2, p3]
-                EoS_u = EoS_param[ctype]["u"]
-                EoS_w = EoS_param[ctype]["w"]
-
-                _b = -(1 + B_eq - EoS_u * B_eq)
-                _c = A_eq - EoS_u * B_eq - EoS_u * B_eq**2 + EoS_w * B_eq**2
-                _d = -(A_eq * B_eq + EoS_w * B_eq**2 + EoS_w * B_eq**3)
-                return (_b, _c, _d)
-
-            def second_derivative(b, p1, p2, p3):
-                _b, _, _ = calculate_cubic_coefficients(b, p1, p2, p3)
-                z = b.compress_fact_phase[p3]
-                return 6 * z + 2 * _b
-
-            b.add_component(
-                "_" + cname + "_cubic_second_derivative",
-                Expression(b.params._pe_pairs, b.phase_list, rule=second_derivative),
-            )
+        b.add_component(
+            "_" + cname + "_cubic_second_derivative_eq",
+            Expression(
+                b.params._pe_pairs, b.phase_list, rule=cubic_second_derivative_eq
+            ),
+        )
 
     @staticmethod
     def calculate_scaling_factors(b, pobj):
@@ -1381,6 +1364,37 @@ def _bubble_dew_log_fug_coeff_method(blk, p, j, pp, pt_var):
 
 # -----------------------------------------------------------------------------
 # Default rules for cubic expressions
+def _calculate_equilibrium_cubic_coefficients(b, cubic_name, cubic_type, p1, p2, p3):
+    """
+    Calculates the coefficients b, c, and d of the cubic 0 = z**3 + b * z**2 + c * z + d
+    at the equilibrium conditions
+
+    Args:
+        b: StateBlock of interest
+        cubic_name: Name of Cubic EoS
+        cubic_type: Type of Cubic EoS
+        p1: Phase 1
+        p2: Phase 2
+        p3; Phase 3
+
+    Returns:
+        expressions for b, c, d
+    """
+
+    A_eq = getattr(b, "_" + cubic_name + "_A_eq")
+    B_eq = getattr(b, "_" + cubic_name + "_B_eq")
+    A_eq = A_eq[p1, p2, p3]
+    B_eq = B_eq[p1, p2, p3]
+    EoS_u = EoS_param[cubic_type]["u"]
+    EoS_w = EoS_param[cubic_type]["w"]
+
+    b = -(1 + B_eq - EoS_u * B_eq)
+    c = A_eq - EoS_u * B_eq - EoS_u * B_eq**2 + EoS_w * B_eq**2
+    d = -(A_eq * B_eq + EoS_w * B_eq**2 + EoS_w * B_eq**3)
+
+    return b, c, d
+
+
 def func_fw_PR(cobj):
     """
     fw function for Peng-Robinson EoS.
