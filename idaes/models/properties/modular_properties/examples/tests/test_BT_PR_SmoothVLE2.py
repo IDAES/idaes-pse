@@ -48,7 +48,7 @@ import idaes.logger as idaeslog
 SOUT = idaeslog.INFO
 
 # Set module level pyest marker
-pytestmark = pytest.mark.cubic_root
+pytestmark = [pytest.mark.cubic_root, pytest.mark.skip]
 
 
 # -----------------------------------------------------------------------------

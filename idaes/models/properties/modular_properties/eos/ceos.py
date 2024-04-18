@@ -449,24 +449,26 @@ class Cubic(EoSBase):
                     )
                 )
 
-        b.add_component(
-            "_" + cname + "_delta_eq",
-            Expression(b.params._pe_pairs, b.phase_component_set, rule=rule_delta_eq),
-        )
-
-        def cubic_second_derivative_eq(b, p1, p2, p3):
-            b, _, _ = _calculate_equilibrium_cubic_coefficients(
-                b, cname, ctype, p1, p2, p3
+            b.add_component(
+                "_" + cname + "_delta_eq",
+                Expression(
+                    b.params._pe_pairs, b.phase_component_set, rule=rule_delta_eq
+                ),
             )
-            z = b.compress_fact_phase[p3]
-            return 6 * z + 2 * b
 
-        b.add_component(
-            "_" + cname + "_cubic_second_derivative_eq",
-            Expression(
-                b.params._pe_pairs, b.phase_list, rule=cubic_second_derivative_eq
-            ),
-        )
+            def cubic_second_derivative_eq(m, p1, p2, p3):
+                _b, _, _ = _calculate_equilibrium_cubic_coefficients(
+                    m, cname, ctype, p1, p2, p3
+                )
+                z = m.compress_fact_phase[p3]
+                return 6 * z + 2 * _b
+
+            b.add_component(
+                "_" + cname + "_cubic_second_derivative_eq",
+                Expression(
+                    b.params._pe_pairs, b.phase_list, rule=cubic_second_derivative_eq
+                ),
+            )
 
     @staticmethod
     def calculate_scaling_factors(b, pobj):

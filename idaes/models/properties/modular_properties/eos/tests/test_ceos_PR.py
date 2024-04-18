@@ -1089,8 +1089,8 @@ def test_calculate_equilibrium_cubic_coefficients(m):
 
     A_eq = m.props[1]._PR_A_eq["Vap", "Liq", "Liq"]
     B_eq = m.props[1]._PR_B_eq["Vap", "Liq", "Liq"]
-    EoS_u = EoS_param["PR"]["u"]
-    EoS_w = EoS_param["PR"]["w"]
+    EoS_u = EoS_param[CubicType.PR]["u"]
+    EoS_w = EoS_param[CubicType.PR]["w"]
 
     assert str(b) == str(-(1 + B_eq - EoS_u * B_eq))
     assert str(c) == str(A_eq - EoS_u * B_eq - EoS_u * B_eq**2 + EoS_w * B_eq**2)
@@ -1100,7 +1100,7 @@ def test_calculate_equilibrium_cubic_coefficients(m):
 @pytest.mark.skipif(not cubic_roots_available(), reason="Cubic functions not available")
 @pytest.mark.unit
 def test_cubic_second_derivative(m):
-    EoS_u = EoS_param["PR"]["u"]
+    EoS_u = EoS_param[CubicType.PR]["u"]
 
     for k, v in m.props[1]._PR_cubic_second_derivative_eq.items():
         B_eq = m.props[1]._PR_B_eq[k]
@@ -1108,23 +1108,6 @@ def test_cubic_second_derivative(m):
         z = m.props[1].compress_fact_phase[k[2]]
 
         assert str(v) == str(6 * z + 2 * b)
-
-
-@pytest.mark.skipif(not cubic_roots_available(), reason="Cubic functions not available")
-@pytest.mark.unit
-def test_calculate_equilibrium_cubic_coefficients(m):
-    b, c, d = _calculate_equilibrium_cubic_coefficients(
-        m.props[1], "PR", CubicType.PR, "Vap", "Liq", "Liq"
-    )
-
-    A_eq = m.props[1]._PR_A_eq["Vap", "Liq", "Liq"]
-    B_eq = m.props[1]._PR_B_eq["Vap", "Liq", "Liq"]
-    EoS_u = EoS_param["PR"]["u"]
-    EoS_w = EoS_param["PR"]["w"]
-
-    assert str(b) == str(-(1 + B_eq - EoS_u * B_eq))
-    assert str(c) == str(A_eq - EoS_u * B_eq - EoS_u * B_eq**2 + EoS_w * B_eq**2)
-    assert str(d) == str(-(A_eq * B_eq + EoS_w * B_eq**2 + EoS_w * B_eq**3))
 
 
 class TestCEOSCriticalProps:
