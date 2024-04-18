@@ -7,7 +7,9 @@ Heater1D
 .. module:: idaes.models_extra.power_generation.unit_models.heater_1D
 
 This model is for a gas trim heater modeled as gas being blown perpendicularly across banks of hollow tubes,
-which are heated by resistive heating. 
+which are heated by resistive heating. Note that the ``finite_elements`` option in the control
+volume config should be set to an integer factor of ``number_passes`` in order for the
+discretization equations to make sense as a cross-flow heat exchanger.
 
 Example
 -------
@@ -116,21 +118,21 @@ Example
 
 Heater Geometry
 ---------------
-=========================== =========== =================================================================================
+=========================== =========== =============================================================================================
 Variable                    Index Sets  Doc
-=========================== =========== =================================================================================
+=========================== =========== =============================================================================================
 ``number_columns_per_pass`` None        Number of columns of tube per pass
 ``number_rows_per_pass``    None        Number of rows of tube per pass
 ``number_passes``           None        Number of tube banks of ``nrow_tube * ncol_inlet`` tubes
-``pitch_x``                 None        Distance between columns (TODO rows?) of tubes, measured from center-of-tube to center-of-tube
-``pitch_y``                 None        Distance between rows (TODO columns?) of tubes, measured from center-of-tube to center-of-tube
+``pitch_x``                 None        Distance between tubes parallel to flow, measured from center-of-tube to center-of-tube
+``pitch_y``                 None        Distance between tubes perpendicular to flow, measured from center-of-tube to center-of-tube
 ``length_tube_seg``         None        Length of tube segment perpendicular to flow in each pass
 ``area_flow_shell``         None        Reference to flow area on control volume
 ``length_flow_shell``       None        Reference to flow length on control volume
 ``area_flow_shell_min``     None        Minimum flow area on shell side
 ``di_tube``                 None        Inner diameter of tubes
 ``thickness_tube``          None        Thickness of tube wall.
-=========================== =========== =================================================================================
+=========================== =========== =============================================================================================
 
 ============================ =========== ===========================================================================
 Expression                   Index Sets  Doc

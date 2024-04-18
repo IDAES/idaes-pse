@@ -6,8 +6,10 @@ CrossFlowHeatExchanger1D
 
 .. module:: idaes.models_extra.power_generation.unit_models.cross_flow_heat_exchanger_1D
 
-This model is for a cross flow heat exchanger between two gases. The gas in the shell has a straight path,
-while the gas in the tubes snakes back and forth across the shell's path.
+This model is for a cross flow heat exchanger between two gases. The gas in the shell has a straight path, 
+while the gas in the tubes snakes back and forth across the shell's path. Note that the ``finite_elements`` 
+option in the shell and tube control volume configs should be set to an integer factor of ``number_passes`` 
+in order for the discretization equations to make sense as a cross-flow heat exchanger.
 
 Example
 -------
@@ -145,14 +147,14 @@ Example
 
 Heat Exchanger Geometry
 -----------------------
-=========================== =========== =================================================================================
+=========================== =========== ===================================================================================================
 Variable                    Index Sets  Doc
-=========================== =========== =================================================================================
+=========================== =========== ===================================================================================================
 ``number_columns_per_pass`` None        Number of columns of tube per pass
 ``number_rows_per_pass``    None        Number of rows of tube per pass
 ``number_passes``           None        Number of tube banks of ``nrow_tube * ncol_inlet`` tubes
-``pitch_x``                 None        Distance between columns (TODO rows?) of tubes, measured from center-of-tube to center-of-tube
-``pitch_y``                 None        Distance between rows (TODO columns?) of tubes, measured from center-of-tube to center-of-tube
+``pitch_x``                 None        Distance between tubes parallel to shell flow, measured from center-of-tube to center-of-tube
+``pitch_y``                 None        Distance between tubes perpendicular to shell flow, measured from center-of-tube to center-of-tube
 ``length_tube_seg``         None        Length of tube segment perpendicular to flow in each pass
 ``area_flow_shell``         None        Reference to flow area on shell control volume
 ``length_flow_shell``       None        Reference to flow length on shell control volume
@@ -161,7 +163,7 @@ Variable                    Index Sets  Doc
 ``thickness_tube``          None        Thickness of tube wall.
 ``area_flow_tube``          None        Reference to flow area on tube control volume
 ``length_flow_tube``        None        Reference to flow length on tube control volume
-=========================== =========== =================================================================================
+=========================== =========== ===================================================================================================
 
 ============================ =========== ===========================================================================
 Expression                   Index Sets  Doc
@@ -222,7 +224,7 @@ Constraint                             Index Sets   Doc
 ``conv_heat_transfer_coeff_shell_eqn`` time, length Calculates the shell-side convective heat transfer coefficient 
 ``v_tube_eqn``                         time, length Calculates gas velocity in tube
 ``N_Re_tube_eqn``                      time, length Calculates the tube-side Reynolds number
-``heat_transfer_coeff_tube_eqn``       time, length Calcualtes the tube-side heat transfer coefficient
+``heat_transfer_coeff_tube_eqn``       time, length Calculates the tube-side heat transfer coefficient
 ``N_Nu_shell_eqn``                     time, length Calculate the shell-side Nusselt number
 ``N_Nu_tube_eqn``                      time, length Calculate the tube-side Nusselt number
 ``heat_tube_eqn``                      time, length Calculates heat transfer per unit length
@@ -309,7 +311,7 @@ Initialization
 First, the shell and tube control volumes are initialized without heat transfer. Next
 the total possible heat transfer between streams is estimated based on heat capacity, 
 flow rate, and inlet/outlet temperatures. The actual temperature change is set to be 
-half the theoretical maximum, and the shell and tube are initalized with linear 
+half the theoretical maximum, and the shell and tube are initialized with linear 
 temperature profiles. Finally, temperatures besides the inlets are unfixed and 
 the performance equations are activated before a full solve of the system model.
 

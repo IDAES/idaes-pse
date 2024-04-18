@@ -50,6 +50,7 @@ from idaes.core.initialization import SingleControlVolumeUnitInitializer
 
 __author__ = "Jinliang Ma, Douglas Allan"
 
+
 class CrossFlowHeatExchanger1DInitializer(SingleControlVolumeUnitInitializer):
     """
     Initializer for Cross Flow Heat Exchanger 1D units.
@@ -100,7 +101,9 @@ class CrossFlowHeatExchanger1DInitializer(SingleControlVolumeUnitInitializer):
             )
 
         hot_units = model.config.hot_side.property_package.get_metadata().derived_units
-        cold_units = model.config.cold_side.property_package.get_metadata().derived_units
+        cold_units = (
+            model.config.cold_side.property_package.get_metadata().derived_units
+        )
 
         if model.config.shell_is_hot:
             shell = model.hot_side
@@ -274,7 +277,9 @@ class CrossFlowHeatExchanger1DInitializer(SingleControlVolumeUnitInitializer):
                     / 2
                 )
 
-                model.temp_wall_shell[t, z].set_value(model.temp_wall_center[t, z].value)
+                model.temp_wall_shell[t, z].set_value(
+                    model.temp_wall_center[t, z].value
+                )
                 model.temp_wall_tube[t, z].set_value(
                     pyunits.convert_value(
                         model.temp_wall_center[t, z].value,
@@ -353,6 +358,7 @@ class CrossFlowHeatExchanger1DInitializer(SingleControlVolumeUnitInitializer):
         init_log.info_high("Initialization Step 5 {}.".format(idaeslog.condition(res)))
         init_log.info("Initialization Complete.")
         return res
+
 
 @declare_process_block_class("CrossFlowHeatExchanger1D")
 class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
@@ -455,7 +461,9 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
         add_object_reference(self, "length_flow_shell", shell.length)
         add_object_reference(self, "length_flow_tube", tube.length)
 
-        heat_exchanger_common.make_geometry_common(self, shell=shell, shell_units=shell_units)
+        heat_exchanger_common.make_geometry_common(
+            self, shell=shell, shell_units=shell_units
+        )
         heat_exchanger_common.make_geometry_tube(self, shell_units=shell_units)
 
     def _make_performance(self):
@@ -764,10 +772,14 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
                 ssf(self.temp_wall_shell[t, z], sf_T_shell)
                 cst(self.temp_wall_shell_eqn[t, z], sf_T_shell)
 
-                sf_conv_heat_transfer_coeff_shell = gsf(self.conv_heat_transfer_coeff_shell[t, z])
+                sf_conv_heat_transfer_coeff_shell = gsf(
+                    self.conv_heat_transfer_coeff_shell[t, z]
+                )
                 s_Q_shell = sgsf(
                     shell.heat[t, z],
-                    sf_conv_heat_transfer_coeff_shell * sf_area_per_length_shell * sf_T_shell,
+                    sf_conv_heat_transfer_coeff_shell
+                    * sf_area_per_length_shell
+                    * sf_T_shell,
                 )
                 cst(
                     self.heat_shell_eqn[t, z], s_Q_shell * value(self.length_flow_shell)

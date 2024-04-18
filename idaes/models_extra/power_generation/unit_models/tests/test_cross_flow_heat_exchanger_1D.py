@@ -25,7 +25,7 @@ from idaes.models_extra.power_generation.properties.natural_gas_PR import (
 )
 from idaes.models_extra.power_generation.unit_models import (
     CrossFlowHeatExchanger1D,
-    CrossFlowHeatExchanger1DInitializer
+    CrossFlowHeatExchanger1DInitializer,
 )
 import idaes.core.util.model_statistics as mstat
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -215,8 +215,7 @@ def test_initialization(model_no_dP):
     _check_model_statistics(m, deltaP=False)
 
     initializer = m.fs.heat_exchanger.default_initializer(
-        solver="ipopt",
-        solver_options=optarg
+        solver="ipopt", solver_options=optarg
     )
     assert isinstance(initializer, CrossFlowHeatExchanger1DInitializer)
     initializer.initialize(model=m.fs.heat_exchanger)
@@ -250,8 +249,7 @@ def test_initialization_dP(model_dP):
     _check_model_statistics(m, deltaP=True)
 
     initializer = m.fs.heat_exchanger.default_initializer(
-        solver="ipopt",
-        solver_options=optarg
+        solver="ipopt", solver_options=optarg
     )
     assert isinstance(initializer, CrossFlowHeatExchanger1DInitializer)
     initializer.initialize(m.fs.heat_exchanger)

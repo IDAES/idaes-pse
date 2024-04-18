@@ -137,7 +137,10 @@ def make_geometry_common(blk, shell, shell_units):
     def area_flow_shell_eqn(b):
         return (
             b.length_flow_shell * b.area_flow_shell
-            == b.length_tube_seg * b.length_flow_shell * b.pitch_y * b.number_columns_per_pass
+            == b.length_tube_seg
+            * b.length_flow_shell
+            * b.pitch_y
+            * b.number_columns_per_pass
             - b.number_columns_per_pass
             * b.nrow_tube
             * 0.25
@@ -169,7 +172,11 @@ def make_geometry_tube(blk, shell_units):
     def area_flow_tube_eqn(b):
         return (
             b.area_flow_tube
-            == 0.25 * const.pi * b.di_tube**2.0 * b.number_columns_per_pass * b.number_rows_per_pass
+            == 0.25
+            * const.pi
+            * b.di_tube**2.0
+            * b.number_columns_per_pass
+            * b.number_rows_per_pass
         )
 
 
@@ -702,9 +709,13 @@ def scale_common(blk, shell, shell_has_pressure_change, make_reynolds, make_nuss
                 cst(blk.N_Nu_shell_eqn[t, z], sf_N_Nu_shell)
 
                 sf_conv_heat_transfer_coeff_shell = sgsf(
-                    blk.conv_heat_transfer_coeff_shell[t, z], sf_N_Nu_shell * sf_k_shell / sf_do_tube
+                    blk.conv_heat_transfer_coeff_shell[t, z],
+                    sf_N_Nu_shell * sf_k_shell / sf_do_tube,
                 )
-                cst(blk.conv_heat_transfer_coeff_shell_eqn[t, z], sf_conv_heat_transfer_coeff_shell * sf_do_tube)
+                cst(
+                    blk.conv_heat_transfer_coeff_shell_eqn[t, z],
+                    sf_conv_heat_transfer_coeff_shell * sf_do_tube,
+                )
 
             # FIXME estimate from parameters
             if blk.config.has_holdup:
@@ -751,6 +762,10 @@ def scale_tube(
                 cst(blk.N_Nu_tube_eqn[t, z], sf_N_Nu_tube)
 
                 sf_heat_transfer_coeff_tube = sgsf(
-                    blk.heat_transfer_coeff_tube[t, z], sf_N_Nu_tube * sf_k_tube / sf_di_tube
+                    blk.heat_transfer_coeff_tube[t, z],
+                    sf_N_Nu_tube * sf_k_tube / sf_di_tube,
                 )
-                cst(blk.heat_transfer_coeff_tube_eqn[t, z], sf_heat_transfer_coeff_tube * sf_di_tube)
+                cst(
+                    blk.heat_transfer_coeff_tube_eqn[t, z],
+                    sf_heat_transfer_coeff_tube * sf_di_tube,
+                )

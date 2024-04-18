@@ -22,7 +22,10 @@ from idaes.models_extra.power_generation.properties.natural_gas_PR import (
     get_prop,
     EosType,
 )
-from idaes.models_extra.power_generation.unit_models import Heater1D, Heater1DInitializer
+from idaes.models_extra.power_generation.unit_models import (
+    Heater1D,
+    Heater1DInitializer,
+)
 import idaes.core.util.model_statistics as mstat
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.solvers import get_solver
@@ -178,10 +181,7 @@ def test_initialization(model_no_dP):
     assert degrees_of_freedom(m) == 0
     _check_model_statistics(m, deltaP=False)
 
-    initializer = m.fs.heater.default_initializer(
-        solver="ipopt",
-        solver_options=optarg
-    )
+    initializer = m.fs.heater.default_initializer(solver="ipopt", solver_options=optarg)
     assert isinstance(initializer, Heater1DInitializer)
     initializer.initialize(model=m.fs.heater)
 
@@ -210,10 +210,7 @@ def test_initialization_dP(model_dP):
     assert degrees_of_freedom(m) == 0
     _check_model_statistics(m, deltaP=True)
 
-    initializer = m.fs.heater.default_initializer(
-        solver="ipopt",
-        solver_options=optarg
-    )
+    initializer = m.fs.heater.default_initializer(solver="ipopt", solver_options=optarg)
     assert isinstance(initializer, Heater1DInitializer)
     initializer.initialize(model=m.fs.heater)
 

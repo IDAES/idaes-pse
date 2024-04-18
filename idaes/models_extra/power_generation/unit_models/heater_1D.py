@@ -53,10 +53,12 @@ from idaes.core.initialization import SingleControlVolumeUnitInitializer
 
 __author__ = "Jinliang Ma, Douglas Allan"
 
+
 class Heater1DInitializer(SingleControlVolumeUnitInitializer):
     """
     Initializer for Heater 1D units.
     """
+
     def initialize_main_model(
         self,
         model: Block,
@@ -143,6 +145,7 @@ class Heater1DInitializer(SingleControlVolumeUnitInitializer):
         init_log.info_high("Initialization Step 3 Complete.")
 
         return res
+
 
 @declare_process_block_class("Heater1D")
 class Heater1DData(UnitModelBlockData):
@@ -510,7 +513,10 @@ domain (default=5). Should set to the number of tube rows""",
         for t in self.flowsheet().time:
             for z in self.control_volume.length_domain:
                 sf_hconv_conv = gsf(self.conv_heat_transfer_coeff_shell[t, z])
-                cst(self.conv_heat_transfer_coeff_shell_eqn[t, z], sf_hconv_conv * sf_d_tube)
+                cst(
+                    self.conv_heat_transfer_coeff_shell_eqn[t, z],
+                    sf_hconv_conv * sf_d_tube,
+                )
 
                 sf_T = gsf(self.control_volume.properties[t, z].temperature)
                 ssf(self.temp_wall_shell[t, z], sf_T)
