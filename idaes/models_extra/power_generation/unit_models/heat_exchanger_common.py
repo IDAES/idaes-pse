@@ -756,9 +756,7 @@ def scale_tube(
             if make_nusselt:
                 sf_k_tube = gsf(tube.properties[t, z].therm_cond_phase["Vap"])
 
-                sf_N_Nu_tube = sgsf(
-                    blk.N_Nu_tube[t, z], 1 / 0.023 * sf_N_Re_tube**0.8
-                )
+                sf_N_Nu_tube = sgsf(blk.N_Nu_tube[t, z], 1 / 0.023 * sf_N_Re_tube**0.8)
                 cst(blk.N_Nu_tube_eqn[t, z], sf_N_Nu_tube)
 
                 sf_heat_transfer_coeff_tube = sgsf(
