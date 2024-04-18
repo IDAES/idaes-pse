@@ -387,7 +387,7 @@ domain (default=5). Should set to the number of tube rows""",
         # Add reference to control volume geometry
         add_object_reference(self, "area_flow_shell", self.control_volume.area)
         add_object_reference(self, "length_flow_shell", self.control_volume.length)
-        make_geometry_common(self, shell=self.control_volume, shell_units=units)
+        make_geometry_common(self, shell_units=units)
 
         @self.Expression(
             doc="Common performance equations expect this expression to be here"

@@ -36,7 +36,17 @@ from idaes.core.util.misc import add_object_reference
 __author__ = "Jinliang Ma, Douglas Allan"
 
 
-def make_geometry_common(blk, shell, shell_units):
+def make_geometry_common(blk, shell_units):
+    """Function to create variables, constraints, and expressions regarding
+    unit geometry shared between the CrossFlowHeatExchanger1D and Heater1D models.
+
+    Args:
+        blk : unit model on which components are being generated
+        shell_units : derived units for property package of shell control volume
+
+    Returns:
+        None
+    """
     # Number of tube columns in the cross section plane perpendicular to shell side fluid flow (y direction)
     blk.number_columns_per_pass = Var(
         initialize=10.0, doc="Number of tube columns", units=pyunits.dimensionless
@@ -157,32 +167,29 @@ def make_geometry_common(blk, shell, shell_units):
             == b.length_tube_seg * (b.pitch_y - b.do_tube) * b.number_columns_per_pass
         )
 
-
-def make_geometry_tube(blk, shell_units):
-    # Length of tube side flow
-    @blk.Constraint(doc="Length of tube side flow")
-    def length_flow_tube_eqn(b):
-        return (
-            pyunits.convert(b.length_flow_tube, to_units=shell_units["length"])
-            == b.number_passes * b.length_tube_seg
-        )
-
-    # Total flow area on tube side
-    @blk.Constraint(doc="Total area of tube flow")
-    def area_flow_tube_eqn(b):
-        return (
-            b.area_flow_tube
-            == 0.25
-            * const.pi
-            * b.di_tube**2.0
-            * b.number_columns_per_pass
-            * b.number_rows_per_pass
-        )
-
-
 def make_performance_common(
-    blk, shell, shell_units, shell_has_pressure_change, make_reynolds, make_nusselt
+    blk,
+    shell,
+    shell_units,
+    shell_has_pressure_change: bool,
+    make_reynolds: bool,
+    make_nusselt: bool,
 ):
+    """Function to create variables, constraints, and expressions regarding
+    performance constraints shared between the CrossFlowHeatExchanger1D and
+    Heater1D models.
+
+    Args:
+        blk : unit model on which components are being generated
+        shell: shell control volume
+        shell_units : derived units for property package of shell control volume
+        shell_has_pressure_change: bool about whether to make pressure change components
+        make_reynolds: bool about whether to create the Reynolds numebr
+        make_nusselt: bool about whether to create Nusselt number
+
+    Returns:
+        None
+    """
     # We need the Reynolds number for pressure change, even if we don't need it for heat transfer
     if shell_has_pressure_change:
         make_reynolds = True

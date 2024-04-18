@@ -21,7 +21,9 @@ Discretization based on tube rows
 from pyomo.environ import (
     Block,
     value,
+    Var,
     log,
+    Param,
     Reference,
     units as pyunits,
 )
@@ -462,9 +464,26 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
         add_object_reference(self, "length_flow_tube", tube.length)
 
         heat_exchanger_common.make_geometry_common(
-            self, shell=shell, shell_units=shell_units
+            self, shell_units=shell_units
         )
-        heat_exchanger_common.make_geometry_tube(self, shell_units=shell_units)
+        # Important that these values about tube geometry are in shell units!
+        @self.Constraint(doc="Length of tube side flow")
+        def length_flow_tube_eqn(b):
+            return (
+                pyunits.convert(b.length_flow_tube, to_units=shell_units["length"])
+                == b.number_passes * b.length_tube_seg
+            )
+
+        @self.Constraint(doc="Total area of tube flow")
+        def area_flow_tube_eqn(b):
+            return (
+                b.area_flow_tube
+                == 0.25
+                * const.pi
+                * b.di_tube**2.0
+                * b.number_columns_per_pass
+                * b.number_rows_per_pass
+            )
 
     def _make_performance(self):
         """
@@ -549,15 +568,198 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
             make_reynolds=True,
             make_nusselt=True,
         )
-        heat_exchanger_common.make_performance_tube(
-            self,
-            tube=tube,
-            tube_units=tube_units,
-            tube_has_pressure_change=tube_has_pressure_change,
-            make_reynolds=True,
-            make_nusselt=True,
+
+        self.heat_transfer_coeff_tube = Var(
+            self.flowsheet().config.time,
+            tube.length_domain,
+            initialize=100.0,
+            units=tube_units["heat_transfer_coefficient"],
+            doc="tube side convective heat transfer coefficient",
         )
 
+        # Heat transfer resistance due to the fouling on tube side
+        self.rfouling_tube = Param(
+            initialize=0.0,
+            mutable=True,
+            units=1 / tube_units["heat_transfer_coefficient"],
+            doc="fouling resistance on tube side",
+        )
+        # Correction factor for convective heat transfer coefficient on tube side
+        self.fcorrection_htc_tube = Var(
+            initialize=1.0, doc="correction factor for convective HTC on tube side"
+        )
+        # Correction factor for tube side pressure drop due to friction
+        if tube_has_pressure_change:
+            # Loss coefficient for a 180 degree bend (u-turn), usually related to radius to inside diameter ratio
+            self.kloss_uturn = Param(
+                initialize=0.5, mutable=True, doc="loss coefficient of a tube u-turn"
+            )
+            self.fcorrection_dp_tube = Var(
+                initialize=1.0, doc="correction factor for tube side pressure drop"
+            )
+
+        # Boundary wall temperature on tube side
+        self.temp_wall_tube = Var(
+            self.flowsheet().config.time,
+            tube.length_domain,
+            initialize=500,
+            units=tube_units[
+                "temperature"
+            ],  # Want to be in shell units for consistency in equations
+            doc="boundary wall temperature on tube side",
+        )
+        # Tube side heat transfer coefficient and pressure drop
+        # -----------------------------------------------------
+        # Velocity on tube side
+        self.v_tube = Var(
+            self.flowsheet().config.time,
+            tube.length_domain,
+            initialize=1.0,
+            units=tube_units["velocity"],
+            doc="velocity on tube side",
+        )
+
+        # Reynalds number on tube side
+        self.N_Re_tube = Var(
+            self.flowsheet().config.time,
+            tube.length_domain,
+            initialize=10000.0,
+            units=pyunits.dimensionless,
+            doc="Reynolds number on tube side",
+            bounds=(1e-7, None),
+        )
+        if tube_has_pressure_change:
+            # Friction factor on tube side
+            self.friction_factor_tube = Var(
+                self.flowsheet().config.time,
+                tube.length_domain,
+                initialize=1.0,
+                doc="friction factor on tube side",
+            )
+
+            # Pressure drop due to friction on tube side
+            self.deltaP_tube_friction = Var(
+                self.flowsheet().config.time,
+                tube.length_domain,
+                initialize=-10.0,
+                units=tube_units["pressure"] / tube_units["length"],
+                doc="pressure drop due to friction on tube side",
+            )
+
+            # Pressure drop due to 180 degree turn on tube side
+            self.deltaP_tube_uturn = Var(
+                self.flowsheet().config.time,
+                tube.length_domain,
+                initialize=-10.0,
+                units=tube_units["pressure"] / tube_units["length"],
+                doc="pressure drop due to u-turn on tube side",
+            )
+        # Nusselt number on tube side
+        self.N_Nu_tube = Var(
+            self.flowsheet().config.time,
+            tube.length_domain,
+            initialize=1,
+            units=pyunits.dimensionless,
+            doc="Nusselts number on tube side",
+            bounds=(1e-7, None),
+        )
+
+        # Velocity equation
+        @self.Constraint(
+            self.flowsheet().config.time,
+            tube.length_domain,
+            doc="tube side velocity equation",
+        )
+        def v_tube_eqn(b, t, x):
+            return (
+                b.v_tube[t, x]
+                * pyunits.convert(b.area_flow_tube, to_units=tube_units["area"])
+                * tube.properties[t, x].dens_mol_phase["Vap"]
+                == tube.properties[t, x].flow_mol
+            )
+
+        # Reynolds number
+        @self.Constraint(
+            self.flowsheet().config.time,
+            tube.length_domain,
+            doc="Reynolds number equation on tube side",
+        )
+        def N_Re_tube_eqn(b, t, x):
+            return (
+                b.N_Re_tube[t, x] * tube.properties[t, x].visc_d_phase["Vap"]
+                == pyunits.convert(b.di_tube, to_units=tube_units["length"])
+                * b.v_tube[t, x]
+                * tube.properties[t, x].dens_mol_phase["Vap"]
+                * tube.properties[t, x].mw
+            )
+
+        if tube_has_pressure_change:
+            # Friction factor
+            @self.Constraint(
+                self.flowsheet().config.time,
+                tube.length_domain,
+                doc="Darcy friction factor on tube side",
+            )
+            def friction_factor_tube_eqn(b, t, x):
+                return (
+                    b.friction_factor_tube[t, x] * b.N_Re_tube[t, x] ** 0.25
+                    == 0.3164 * b.fcorrection_dp_tube
+                )
+
+            # Pressure drop due to friction per tube length
+            @self.Constraint(
+                self.flowsheet().config.time,
+                tube.length_domain,
+                doc="pressure drop due to friction per tube length",
+            )
+            def deltaP_tube_friction_eqn(b, t, x):
+                return (
+                    b.deltaP_tube_friction[t, x]
+                    * pyunits.convert(b.di_tube, to_units=tube_units["length"])
+                    == -0.5
+                    * tube.properties[t, x].dens_mass_phase["Vap"]
+                    * b.v_tube[t, x] ** 2
+                    * b.friction_factor_tube[t, x]
+                )
+
+            # Pressure drop due to u-turn
+            @self.Constraint(
+                self.flowsheet().config.time,
+                tube.length_domain,
+                doc="pressure drop due to u-turn on tube side",
+            )
+            def deltaP_tube_uturn_eqn(b, t, x):
+                return (
+                    b.deltaP_tube_uturn[t, x]
+                    * pyunits.convert(b.length_tube_seg, to_units=tube_units["length"])
+                    == -0.5
+                    * tube.properties[t, x].dens_mass_phase["Vap"]
+                    * b.v_tube[t, x] ** 2
+                    * b.kloss_uturn
+                )
+
+            # Total pressure drop on tube side
+            @self.Constraint(
+                self.flowsheet().config.time,
+                tube.length_domain,
+                doc="total pressure drop on tube side",
+            )
+            def deltaP_tube_eqn(b, t, x):
+                return b.deltaP_tube[t, x] == (
+                    b.deltaP_tube_friction[t, x] + b.deltaP_tube_uturn[t, x]
+                )
+        @self.Constraint(
+            self.flowsheet().config.time,
+            tube.length_domain,
+            doc="convective heat transfer coefficient equation on tube side",
+        )
+        def heat_transfer_coeff_tube_eqn(b, t, x):
+            return (
+                b.heat_transfer_coeff_tube[t, x] * b.di_tube
+                == b.N_Nu_tube[t, x]
+                * tube.properties[t, x].therm_cond_phase["Vap"]
+                * b.fcorrection_htc_tube
+            )
         # Nusselts number
         @self.Constraint(
             self.flowsheet().config.time,
