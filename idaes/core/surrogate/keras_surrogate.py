@@ -34,7 +34,7 @@ omlt, omlt_available = attempt_import("omlt")
 
 if omlt_available:
     from omlt import OmltBlock, OffsetScaling
-    from omlt.neuralnet import (
+    from omlt.neuralnet.nn_formulation import (
         FullSpaceSmoothNNFormulation,
         ReducedSpaceSmoothNNFormulation,
         ReluBigMFormulation,
