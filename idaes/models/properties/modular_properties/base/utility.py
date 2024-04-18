@@ -355,30 +355,23 @@ def identify_VL_component_list(blk, phase_pair):
             f"{phase_pair[1]} is liquid."
         )
 
-    # Only need to do this for V-L pairs, so check
-    if l_phase is not None and v_phase is not None:
-        for j in blk.params.component_list:
-            if (l_phase, j) in blk.phase_component_set and (
-                v_phase,
-                j,
-            ) in blk.phase_component_set:
-                cobj = pparams.get_component(j)
-                if cobj.config.henry_component is not None and (
-                    phase_pair[0] in cobj.config.henry_component
-                    or phase_pair[1] in cobj.config.henry_component
-                ):
-                    henry_comps.append(j)
-                else:
-                    vl_comps.append(j)
-            elif (l_phase, j) in blk.phase_component_set:
-                l_only_comps.append(j)
-            elif (v_phase, j) in blk.phase_component_set:
-                v_only_comps.append(j)
-    else:
-        vl_comps = []
-        henry_comps = []
-        l_only_comps = []
-        v_only_comps = []
+    for j in blk.params.component_list:
+        if (l_phase, j) in blk.phase_component_set and (
+            v_phase,
+            j,
+        ) in blk.phase_component_set:
+            cobj = pparams.get_component(j)
+            if cobj.config.henry_component is not None and (
+                phase_pair[0] in cobj.config.henry_component
+                or phase_pair[1] in cobj.config.henry_component
+            ):
+                henry_comps.append(j)
+            else:
+                vl_comps.append(j)
+        elif (l_phase, j) in blk.phase_component_set:
+            l_only_comps.append(j)
+        elif (v_phase, j) in blk.phase_component_set:
+            v_only_comps.append(j)
 
     return l_phase, v_phase, vl_comps, henry_comps, l_only_comps, v_only_comps
 

@@ -16,9 +16,13 @@ Tests for common methods used by generic framework
 Author: A Lee
 """
 import pytest
-
 from types import MethodType
 
+from pyomo.environ import Block, ConcreteModel, units as pyunits, Var
+from pyomo.common.config import ConfigBlock, ConfigValue
+
+from idaes.core import declare_process_block_class
+from idaes.core import LiquidPhase, SolidPhase, VaporPhase, PhaseType as PT
 from idaes.models.properties.modular_properties.base.utility import (
     GenericPropertyPackageError,
     get_method,
@@ -27,13 +31,19 @@ from idaes.models.properties.modular_properties.base.utility import (
     get_bounds_from_config,
     get_concentration_term,
     ConcentrationForm,
+    identify_VL_component_list,
 )
-
+from idaes.models.properties.modular_properties.base.generic_property import (
+    GenericParameterData,
+)
 from idaes.models.properties.modular_properties.base.generic_reaction import rxn_config
-from pyomo.environ import Block, units as pyunits, Var
-from pyomo.common.config import ConfigBlock, ConfigValue
 from idaes.core.util.exceptions import ConfigurationError, PropertyPackageError
 from idaes.core.util.misc import add_object_reference
+from idaes.models.properties.modular_properties.base.tests.dummy_eos import DummyEoS
+from idaes.models.properties.modular_properties.phase_equil.henry import (
+    ConstantH,
+    HenryType,
+)
 
 
 @pytest.fixture
@@ -559,3 +569,142 @@ class TestGetConcentrationTerm:
             get_concentration_term(frame2, "i1", log=True)
             is frame2.log_pressure_phase_comp
         )
+
+
+class TestIdentifyVLComponentList:
+    # Declare a base units dict to save code later
+    base_units = {
+        "time": pyunits.s,
+        "length": pyunits.m,
+        "mass": pyunits.kg,
+        "amount": pyunits.mol,
+        "temperature": pyunits.K,
+    }
+
+    # Dummy methods for properties
+    def set_metadata(self, b):
+        pass
+
+    def define_state(self, b):
+        pass
+
+    @declare_process_block_class("DummyParameterBlock")
+    class DummyParameterData(GenericParameterData):
+        def configure(self):
+            self.configured = True
+
+    @pytest.fixture()
+    def frame(self):
+        m = ConcreteModel()
+        m.params = DummyParameterBlock(
+            components={
+                "a": {},
+                "b": {},
+                "c": {},
+            },
+            phases={
+                "p1": {
+                    "type": LiquidPhase,
+                    "equation_of_state": DummyEoS,
+                },
+                "p2": {
+                    "type": VaporPhase,
+                    "equation_of_state": DummyEoS,
+                },
+                "p3": {
+                    "type": SolidPhase,
+                    "equation_of_state": DummyEoS,
+                },
+            },
+            state_definition=self,
+            pressure_ref=100000.0,
+            temperature_ref=300,
+            base_units=self.base_units,
+        )
+
+        m.props = m.params.build_state_block([1], defined_state=False)
+
+        return m
+
+    @pytest.mark.unit
+    def test_invalid_VL_pair(self, frame):
+        with pytest.raises(
+            PropertyPackageError,
+            match="Phase pair p1-p3 was identified as being a VLE pair, "
+            "however p1 is liquid but p3 is not vapor.",
+        ):
+            identify_VL_component_list(frame.props[1], ("p1", "p3"))
+
+        with pytest.raises(
+            PropertyPackageError,
+            match="Phase pair p2-p3 was identified as being a VLE pair, "
+            "however neither p2 nor p3 is liquid.",
+        ):
+            identify_VL_component_list(frame.props[1], ("p2", "p3"))
+
+    @pytest.mark.unit
+    def test_all_components(self, frame):
+        l_phase, v_phase, vl_comps, henry_comps, l_only_comps, v_only_comps = (
+            identify_VL_component_list(frame.props[1], ("p1", "p2"))
+        )
+
+        assert l_phase == "p1"
+        assert v_phase == "p2"
+        assert vl_comps == ["a", "b", "c"]
+        assert henry_comps == []
+        assert l_only_comps == []
+        assert v_only_comps == []
+
+    @pytest.mark.unit
+    def test_all_types_components(self):
+        m = ConcreteModel()
+        m.params = DummyParameterBlock(
+            components={
+                "a": {},
+                "b": {
+                    "valid_phase_types": PT.liquidPhase,
+                },
+                "c": {
+                    "valid_phase_types": PT.vaporPhase,
+                },
+                "d": {
+                    "valid_phase_types": PT.solidPhase,
+                },
+                "e": {
+                    "parameter_data": {"henry_ref": {"p1": 86}},
+                    "henry_component": {
+                        "p1": {"method": ConstantH, "type": HenryType.Kpx}
+                    },
+                },
+            },
+            phases={
+                "p1": {
+                    "type": LiquidPhase,
+                    "equation_of_state": DummyEoS,
+                },
+                "p2": {
+                    "type": VaporPhase,
+                    "equation_of_state": DummyEoS,
+                },
+                "p3": {
+                    "type": SolidPhase,
+                    "equation_of_state": DummyEoS,
+                },
+            },
+            state_definition=self,
+            pressure_ref=100000.0,
+            temperature_ref=300,
+            base_units=self.base_units,
+        )
+
+        m.props = m.params.build_state_block([1], defined_state=False)
+
+        l_phase, v_phase, vl_comps, henry_comps, l_only_comps, v_only_comps = (
+            identify_VL_component_list(m.props[1], ("p1", "p2"))
+        )
+        assert l_phase == "p1"
+        assert v_phase == "p2"
+        assert vl_comps == ["a"]
+        assert henry_comps == ["e"]
+        assert l_only_comps == ["b"]
+        assert v_only_comps == ["c"]
