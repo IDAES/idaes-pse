@@ -59,22 +59,19 @@ def make_geometry_common(blk, shell, shell_units):
         initialize=0.05, doc="Inner diameter of tube", units=shell_units["length"]
     )
 
-    # Thickness of tube
     blk.thickness_tube = Var(
         initialize=0.005, doc="Tube thickness", units=shell_units["length"]
     )
 
-    # Pitch of tubes between two neighboring columns (in y direction). Always greater than tube outside diameter
     blk.pitch_y = Var(
         initialize=0.1,
-        doc="Pitch between two neighboring columns",
+        doc="Pitch between tubes perpendicular to direction of flow",
         units=shell_units["length"],
     )
 
-    # Pitch of tubes between two neighboring rows (in x direction). Always greater than tube outside diameter
     blk.pitch_x = Var(
         initialize=0.1,
-        doc="Pitch between two neighboring rows",
+        doc="Pitch between tubes in line with direction of flow",
         units=shell_units["length"],
     )
 
