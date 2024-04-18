@@ -22,7 +22,6 @@ Process Systems Engineering – PSE 2018, July 1-5, 2018, San Diego.
 # pylint: disable=protected-access
 
 from pyomo.environ import Constraint, Param, Var, value
-from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.math import smooth_max, smooth_min
 from idaes.models.properties.modular_properties.base.utility import (
     identify_VL_component_list,
@@ -49,14 +48,6 @@ class SmoothVLE(object):
             l_only_comps,
             v_only_comps,
         ) = identify_VL_component_list(b, phase_pair)
-
-        if l_phase is None or v_phase is None:
-            raise ConfigurationError(
-                "{} Generic Property Package phase pair {}-{} was set to use "
-                "Smooth VLE formulation, however this is not a vapor-liquid pair.".format(
-                    b.params.name, phase_pair[0], phase_pair[1]
-                )
-            )
 
         # Definition of equilibrium temperature for smooth VLE
         t_units = b.params.get_metadata().default_units.TEMPERATURE

@@ -327,17 +327,33 @@ def identify_VL_component_list(blk, phase_pair):
     v_only_comps = []
 
     pparams = blk.params
-    l_phase = None
-    v_phase = None
+
     if pparams.get_phase(phase_pair[0]).is_liquid_phase():
         l_phase = phase_pair[0]
-    elif pparams.get_phase(phase_pair[0]).is_vapor_phase():
-        v_phase = phase_pair[0]
-
-    if pparams.get_phase(phase_pair[1]).is_liquid_phase():
+        if pparams.get_phase(phase_pair[1]).is_vapor_phase():
+            v_phase = phase_pair[1]
+        else:
+            raise PropertyPackageError(
+                f"Phase pair {phase_pair[0]}-{phase_pair[1]} was identified as "
+                f"being a VLE pair, however {phase_pair[0]} is liquid but "
+                f"{phase_pair[1]} is not vapor."
+            )
+    elif pparams.get_phase(phase_pair[1]).is_liquid_phase():
         l_phase = phase_pair[1]
-    elif pparams.get_phase(phase_pair[1]).is_vapor_phase():
-        v_phase = phase_pair[1]
+        if pparams.get_phase(phase_pair[0]).is_vapor_phase():
+            v_phase = phase_pair[0]
+        else:
+            raise PropertyPackageError(
+                f"Phase pair {phase_pair[0]}-{phase_pair[1]} was identified as "
+                f"being a VLE pair, however {phase_pair[1]} is liquid but "
+                f"{phase_pair[0]} is not vapor."
+            )
+    else:
+        raise PropertyPackageError(
+            f"Phase pair {phase_pair[0]}-{phase_pair[1]} was identified as "
+            f"being a VLE pair, however neither {phase_pair[0]} nor "
+            f"{phase_pair[1]} is liquid."
+        )
 
     # Only need to do this for V-L pairs, so check
     if l_phase is not None and v_phase is not None:

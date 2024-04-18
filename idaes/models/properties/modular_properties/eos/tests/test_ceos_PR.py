@@ -1107,7 +1107,7 @@ def test_cubic_second_derivative(m):
         b = -(1 + B_eq - EoS_u * B_eq)
         z = m.props[1].compress_fact_phase[k[2]]
 
-        assert str(v) == str(6 * z + 2 * b)
+        assert str(v.expr) == str(6 * z + 2 * b)
 
 
 class TestCEOSCriticalProps:
