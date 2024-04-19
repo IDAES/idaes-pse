@@ -3649,8 +3649,6 @@ def check_parallel_jacobian(
         list of 2-tuples containing parallel Pyomo components
 
     """
-    # Thanks to Robby Parker for the sparse matrix implementation and
-    # significant performance improvements
 
     if direction not in ["row", "column"]:
         raise ValueError(
@@ -3679,18 +3677,19 @@ def check_parallel_jacobian(
     # with itself, which is equal to the norm squared.
     norms = np.sqrt(outer.diagonal())
 
-    zero_norm_indices = np.nonzero(np.abs(norms) <= zero_norm_tolerance)
+    # Want to ignore indices with zero norm. By zeroing out the corresponding
+    # entries of the scaling matrix, we set the corresponding rows and columns
+    # to zero, which will then be ignored.
 
-    # Want to ignore indices with zero norm. If we give them
-    # norms of infinity, we scale the rows and columns to zero
-    # which allows us to ignore them
-    norms[zero_norm_indices] = float("inf")  # 1/float('inf') == 0
+    zero_norm_indices = np.nonzero(np.abs(norms) <= zero_norm_tolerance)
+    inv_norms = 1 / norms
+    inv_norms[zero_norm_indices] = 0
 
     # Divide each row and each column by the vector norm. This leaves
     # the entries as dot(u, v) / (norm(u) * norm(v)). The exception is
     # entries with "zero norm", whose corresponding rows and columns are
     # set to zero.
-    scaling = diags(1 / norms)
+    scaling = diags(inv_norms)
     outer = scaling * outer * scaling
 
     # Get rid of duplicate values by only taking upper triangular part of
@@ -3712,99 +3711,16 @@ def check_parallel_jacobian(
     # 0 or pi, sqrt(2*(1 - abs(dot(u,v)) / (norm(u) * norm(v)))) approximately
     # equals the number of radians from 0 or pi. A tolerance of 1e-8 corresponds
     # to a tolerance of sqrt(2) * 1e-4 radians
+
+    # The expression (1 - abs(values) < tolerance) returns an array with values
+    # of ones and zeros, depending on whether the condition is fulfilled or not.
+    # We then find indices where it is filled using np.nonzero.
     parallel_1D = np.nonzero(1 - abs(values) < tolerance)[0]
 
     parallel = [
         (components[rows[idx]], components[columns[idx]]) for idx in parallel_1D
     ]
 
-    return parallel
-
-
-def check_parallel_jacobian_old(model, tolerance: float = 1e-4, direction: str = "row"):
-    """
-    Check for near-parallel rows or columns in the Jacobian.
-
-    Near-parallel rows or columns indicate a potential degeneracy in the model,
-    as this means that the associated constraints or variables are (near)
-    duplicates of each other.
-
-    This method is based on work published in:
-
-    Klotz, E., Identification, Assessment, and Correction of Ill-Conditioning and
-    Numerical Instability in Linear and Integer Programs, Informs 2014, pgs. 54-108
-    https://pubsonline.informs.org/doi/epdf/10.1287/educ.2014.0130
-
-    Args:
-        model: model to be analysed
-        tolerance: tolerance to use to determine if constraints/variables are parallel
-        direction: 'row' (default, constraints) or 'column' (variables)
-
-    Returns:
-        list of 2-tuples containing parallel Pyomo components
-
-    """
-    # Thanks to Robby Parker for the sparse matrix implementation and
-    # significant performance improvements
-
-    if direction not in ["row", "column"]:
-        raise ValueError(
-            f"Unrecognised value for direction ({direction}). "
-            "Must be 'row' or 'column'."
-        )
-
-    jac, nlp = get_jacobian(model, scaled=False)
-
-    # Get vectors that we will check, and the Pyomo components
-    # they correspond to.
-    if direction == "row":
-        components = nlp.get_pyomo_constraints()
-        csrjac = jac.tocsr()
-        # Make everything a column vector (CSC) for consistency
-        vectors = [csrjac[i, :].transpose().tocsc() for i in range(len(components))]
-    elif direction == "column":
-        components = nlp.get_pyomo_variables()
-        cscjac = jac.tocsc()
-        vectors = [cscjac[:, i] for i in range(len(components))]
-
-    # List to store pairs of parallel components
-    parallel = []
-
-    vectors_by_nz = {}
-    for vecidx, vec in enumerate(vectors):
-        maxval = max(np.abs(vec.data))
-        # Construct tuple of sorted col/row indices that participate
-        # in this vector (with non-negligible coefficient).
-        nz = tuple(
-            sorted(
-                idx
-                for idx, val in zip(vec.indices, vec.data)
-                if abs(val) > tolerance and abs(val) / maxval > tolerance
-            )
-        )
-        if nz in vectors_by_nz:
-            # Store the index as well so we know what component this
-            # correrponds to.
-            vectors_by_nz[nz].append((vec, vecidx))
-        else:
-            vectors_by_nz[nz] = [(vec, vecidx)]
-
-    for vecs in vectors_by_nz.values():
-        for idx, (u, uidx) in enumerate(vecs):
-            # idx is the "local index", uidx is the "global index"
-            # Frobenius norm of the matrix is 2-norm of this column vector
-            unorm = norm(u, ord="fro")
-            for v, vidx in vecs[idx + 1 :]:
-                vnorm = norm(v, ord="fro")
-
-                # Explicitly multiply a row vector * column vector
-                prod = u.transpose().dot(v)
-                absprod = abs(prod[0, 0])
-                diff = abs(absprod - unorm * vnorm)
-                if diff <= tolerance or diff <= tolerance * max(unorm, vnorm):
-                    parallel.append((uidx, vidx))
-
-    parallel = [(components[uidx], components[vidx]) for uidx, vidx in parallel]
     return parallel
 
 
