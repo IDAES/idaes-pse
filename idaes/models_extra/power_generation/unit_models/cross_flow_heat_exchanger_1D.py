@@ -463,9 +463,8 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
         add_object_reference(self, "length_flow_shell", shell.length)
         add_object_reference(self, "length_flow_tube", tube.length)
 
-        heat_exchanger_common.make_geometry_common(
-            self, shell_units=shell_units
-        )
+        heat_exchanger_common.make_geometry_common(self, shell_units=shell_units)
+
         # Important that these values about tube geometry are in shell units!
         @self.Constraint(doc="Length of tube side flow")
         def length_flow_tube_eqn(b):
@@ -748,6 +747,7 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
                 return b.deltaP_tube[t, x] == (
                     b.deltaP_tube_friction[t, x] + b.deltaP_tube_uturn[t, x]
                 )
+
         @self.Constraint(
             self.flowsheet().config.time,
             tube.length_domain,
@@ -760,6 +760,7 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
                 * tube.properties[t, x].therm_cond_phase["Vap"]
                 * b.fcorrection_htc_tube
             )
+
         # Nusselts number
         @self.Constraint(
             self.flowsheet().config.time,
@@ -946,8 +947,9 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
             make_reynolds=True,
             make_nusselt=True,
         )
-        heat_exchanger_common.scale_tube(
-            self, tube, tube_has_pressure_change, make_reynolds=True, make_nusselt=True
+
+        sf_di_tube = iscale.get_scaling_factor(
+            self.do_tube, default=1 / value(self.di_tube)
         )
 
         sf_area_per_length_shell = value(
@@ -963,6 +965,32 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
 
         for t in self.flowsheet().time:
             for z in shell.length_domain:
+                # FIXME get better scaling later
+                ssf(self.v_tube[t, z], 1 / 20)
+                sf_flow_mol_tube = gsf(tube.properties[t, z].flow_mol)
+
+                cst(self.v_tube_eqn[t, z], sf_flow_mol_tube)
+
+                # FIXME should get scaling of N_Re from defining eqn
+                sf_N_Re_tube = sgsf(self.N_Re_tube[t, z], 1e-4)
+
+                sf_visc_d_tube = gsf(tube.properties[t, z].visc_d_phase["Vap"])
+                cst(self.N_Re_tube_eqn[t, z], sf_N_Re_tube * sf_visc_d_tube)
+
+                sf_k_tube = gsf(tube.properties[t, z].therm_cond_phase["Vap"])
+
+                sf_N_Nu_tube = sgsf(self.N_Nu_tube[t, z], 1 / 0.023 * sf_N_Re_tube**0.8)
+                cst(self.N_Nu_tube_eqn[t, z], sf_N_Nu_tube)
+
+                sf_heat_transfer_coeff_tube = sgsf(
+                    self.heat_transfer_coeff_tube[t, z],
+                    sf_N_Nu_tube * sf_k_tube / sf_di_tube,
+                )
+                cst(
+                    self.heat_transfer_coeff_tube_eqn[t, z],
+                    sf_heat_transfer_coeff_tube * sf_di_tube,
+                )
+
                 sf_T_tube = gsf(tube.properties[t, z].temperature)
                 ssf(self.temp_wall_tube[t, z], sf_T_tube)
                 cst(self.temp_wall_tube_eqn[t, z], sf_T_tube)

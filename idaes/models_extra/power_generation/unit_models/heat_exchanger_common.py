@@ -167,6 +167,7 @@ def make_geometry_common(blk, shell_units):
             == b.length_tube_seg * (b.pitch_y - b.do_tube) * b.number_columns_per_pass
         )
 
+
 def make_performance_common(
     blk,
     shell,
@@ -470,214 +471,22 @@ def make_performance_common(
         return b.conv_heat_transfer_coeff_shell[t, x]
 
 
-def make_performance_tube(
-    blk, tube, tube_units, tube_has_pressure_change, make_reynolds, make_nusselt
-):
-
-    # Need Reynolds number for pressure drop, even if we don't need it for heat transfer
-    if tube_has_pressure_change:
-        make_reynolds = True
-
-    blk.heat_transfer_coeff_tube = Var(
-        blk.flowsheet().config.time,
-        tube.length_domain,
-        initialize=100.0,
-        units=tube_units["heat_transfer_coefficient"],
-        doc="tube side convective heat transfer coefficient",
-    )
-
-    # Heat transfer resistance due to the fouling on tube side
-    blk.rfouling_tube = Param(
-        initialize=0.0,
-        mutable=True,
-        units=1 / tube_units["heat_transfer_coefficient"],
-        doc="fouling resistance on tube side",
-    )
-    # Correction factor for convective heat transfer coefficient on tube side
-    blk.fcorrection_htc_tube = Var(
-        initialize=1.0, doc="correction factor for convective HTC on tube side"
-    )
-    # Correction factor for tube side pressure drop due to friction
-    if tube_has_pressure_change:
-        # Loss coefficient for a 180 degree bend (u-turn), usually related to radius to inside diameter ratio
-        blk.kloss_uturn = Param(
-            initialize=0.5, mutable=True, doc="loss coefficient of a tube u-turn"
-        )
-        blk.fcorrection_dp_tube = Var(
-            initialize=1.0, doc="correction factor for tube side pressure drop"
-        )
-
-    # Boundary wall temperature on tube side
-    blk.temp_wall_tube = Var(
-        blk.flowsheet().config.time,
-        tube.length_domain,
-        initialize=500,
-        units=tube_units[
-            "temperature"
-        ],  # Want to be in shell units for consistency in equations
-        doc="boundary wall temperature on tube side",
-    )
-    if make_reynolds:
-        # Tube side heat transfer coefficient and pressure drop
-        # -----------------------------------------------------
-        # Velocity on tube side
-        blk.v_tube = Var(
-            blk.flowsheet().config.time,
-            tube.length_domain,
-            initialize=1.0,
-            units=tube_units["velocity"],
-            doc="velocity on tube side",
-        )
-
-        # Reynalds number on tube side
-        blk.N_Re_tube = Var(
-            blk.flowsheet().config.time,
-            tube.length_domain,
-            initialize=10000.0,
-            units=pyunits.dimensionless,
-            doc="Reynolds number on tube side",
-            bounds=(1e-7, None),
-        )
-    if tube_has_pressure_change:
-        # Friction factor on tube side
-        blk.friction_factor_tube = Var(
-            blk.flowsheet().config.time,
-            tube.length_domain,
-            initialize=1.0,
-            doc="friction factor on tube side",
-        )
-
-        # Pressure drop due to friction on tube side
-        blk.deltaP_tube_friction = Var(
-            blk.flowsheet().config.time,
-            tube.length_domain,
-            initialize=-10.0,
-            units=tube_units["pressure"] / tube_units["length"],
-            doc="pressure drop due to friction on tube side",
-        )
-
-        # Pressure drop due to 180 degree turn on tube side
-        blk.deltaP_tube_uturn = Var(
-            blk.flowsheet().config.time,
-            tube.length_domain,
-            initialize=-10.0,
-            units=tube_units["pressure"] / tube_units["length"],
-            doc="pressure drop due to u-turn on tube side",
-        )
-    if make_nusselt:
-        # Nusselt number on tube side
-        blk.N_Nu_tube = Var(
-            blk.flowsheet().config.time,
-            tube.length_domain,
-            initialize=1,
-            units=pyunits.dimensionless,
-            doc="Nusselts number on tube side",
-            bounds=(1e-7, None),
-        )
-
-    if make_reynolds:
-        # Velocity equation
-        @blk.Constraint(
-            blk.flowsheet().config.time,
-            tube.length_domain,
-            doc="tube side velocity equation",
-        )
-        def v_tube_eqn(b, t, x):
-            return (
-                b.v_tube[t, x]
-                * pyunits.convert(b.area_flow_tube, to_units=tube_units["area"])
-                * tube.properties[t, x].dens_mol_phase["Vap"]
-                == tube.properties[t, x].flow_mol
-            )
-
-        # Reynolds number
-        @blk.Constraint(
-            blk.flowsheet().config.time,
-            tube.length_domain,
-            doc="Reynolds number equation on tube side",
-        )
-        def N_Re_tube_eqn(b, t, x):
-            return (
-                b.N_Re_tube[t, x] * tube.properties[t, x].visc_d_phase["Vap"]
-                == pyunits.convert(b.di_tube, to_units=tube_units["length"])
-                * b.v_tube[t, x]
-                * tube.properties[t, x].dens_mol_phase["Vap"]
-                * tube.properties[t, x].mw
-            )
-
-    if tube_has_pressure_change:
-        # Friction factor
-        @blk.Constraint(
-            blk.flowsheet().config.time,
-            tube.length_domain,
-            doc="Darcy friction factor on tube side",
-        )
-        def friction_factor_tube_eqn(b, t, x):
-            return (
-                b.friction_factor_tube[t, x] * b.N_Re_tube[t, x] ** 0.25
-                == 0.3164 * b.fcorrection_dp_tube
-            )
-
-        # Pressure drop due to friction per tube length
-        @blk.Constraint(
-            blk.flowsheet().config.time,
-            tube.length_domain,
-            doc="pressure drop due to friction per tube length",
-        )
-        def deltaP_tube_friction_eqn(b, t, x):
-            return (
-                b.deltaP_tube_friction[t, x]
-                * pyunits.convert(b.di_tube, to_units=tube_units["length"])
-                == -0.5
-                * tube.properties[t, x].dens_mass_phase["Vap"]
-                * b.v_tube[t, x] ** 2
-                * b.friction_factor_tube[t, x]
-            )
-
-        # Pressure drop due to u-turn
-        @blk.Constraint(
-            blk.flowsheet().config.time,
-            tube.length_domain,
-            doc="pressure drop due to u-turn on tube side",
-        )
-        def deltaP_tube_uturn_eqn(b, t, x):
-            return (
-                b.deltaP_tube_uturn[t, x]
-                * pyunits.convert(b.length_tube_seg, to_units=tube_units["length"])
-                == -0.5
-                * tube.properties[t, x].dens_mass_phase["Vap"]
-                * b.v_tube[t, x] ** 2
-                * b.kloss_uturn
-            )
-
-        # Total pressure drop on tube side
-        @blk.Constraint(
-            blk.flowsheet().config.time,
-            tube.length_domain,
-            doc="total pressure drop on tube side",
-        )
-        def deltaP_tube_eqn(b, t, x):
-            return b.deltaP_tube[t, x] == (
-                b.deltaP_tube_friction[t, x] + b.deltaP_tube_uturn[t, x]
-            )
-
-    if make_nusselt:
-
-        @blk.Constraint(
-            blk.flowsheet().config.time,
-            tube.length_domain,
-            doc="convective heat transfer coefficient equation on tube side",
-        )
-        def heat_transfer_coeff_tube_eqn(b, t, x):
-            return (
-                b.heat_transfer_coeff_tube[t, x] * b.di_tube
-                == b.N_Nu_tube[t, x]
-                * tube.properties[t, x].therm_cond_phase["Vap"]
-                * b.fcorrection_htc_tube
-            )
-
-
 def scale_common(blk, shell, shell_has_pressure_change, make_reynolds, make_nusselt):
+    """Function to scale variables and constraints shared between
+    the CrossFlowHeatExchanger1D and Heater1D models.
+
+    Args:
+        blk : unit model on which components are being generated
+        shell: shell control volume
+        shell_units : derived units for property package of shell control volume
+        shell_has_pressure_change: bool about whether to make pressure change components
+        make_reynolds: bool about whether to create the Reynolds numebr
+        make_nusselt: bool about whether to create Nusselt number
+
+    Returns:
+        None
+    """
+
     def gsf(obj):
         return iscale.get_scaling_factor(obj, default=1, warning=True)
 
@@ -728,49 +537,3 @@ def scale_common(blk, shell, shell_has_pressure_change, make_reynolds, make_nuss
             if blk.config.has_holdup:
                 s_U_holdup = gsf(blk.heat_holdup[t, z])
                 cst(blk.heat_holdup_eqn[t, z], s_U_holdup)
-
-
-def scale_tube(
-    blk, tube, tube_has_pressure_change, make_reynolds, make_nusselt
-):  # pylint: disable=W0613
-    def gsf(obj):
-        return iscale.get_scaling_factor(obj, default=1, warning=True)
-
-    def ssf(obj, sf):
-        iscale.set_scaling_factor(obj, sf, overwrite=False)
-
-    def cst(con, sf):
-        iscale.constraint_scaling_transform(con, sf, overwrite=False)
-
-    sgsf = iscale.set_and_get_scaling_factor
-
-    sf_di_tube = iscale.get_scaling_factor(blk.do_tube, default=1 / value(blk.di_tube))
-
-    for t in blk.flowsheet().time:
-        for z in tube.length_domain:
-            if make_reynolds:
-                # FIXME get better scaling later
-                ssf(blk.v_tube[t, z], 1 / 20)
-                sf_flow_mol_tube = gsf(tube.properties[t, z].flow_mol)
-
-                cst(blk.v_tube_eqn[t, z], sf_flow_mol_tube)
-
-                # FIXME should get scaling of N_Re from defining eqn
-                sf_N_Re_tube = sgsf(blk.N_Re_tube[t, z], 1e-4)
-
-                sf_visc_d_tube = gsf(tube.properties[t, z].visc_d_phase["Vap"])
-                cst(blk.N_Re_tube_eqn[t, z], sf_N_Re_tube * sf_visc_d_tube)
-            if make_nusselt:
-                sf_k_tube = gsf(tube.properties[t, z].therm_cond_phase["Vap"])
-
-                sf_N_Nu_tube = sgsf(blk.N_Nu_tube[t, z], 1 / 0.023 * sf_N_Re_tube**0.8)
-                cst(blk.N_Nu_tube_eqn[t, z], sf_N_Nu_tube)
-
-                sf_heat_transfer_coeff_tube = sgsf(
-                    blk.heat_transfer_coeff_tube[t, z],
-                    sf_N_Nu_tube * sf_k_tube / sf_di_tube,
-                )
-                cst(
-                    blk.heat_transfer_coeff_tube_eqn[t, z],
-                    sf_heat_transfer_coeff_tube * sf_di_tube,
-                )
