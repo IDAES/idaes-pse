@@ -45,8 +45,6 @@ from idaes.models.unit_models.heat_exchanger import (
 )
 from idaes.models.unit_models.heat_exchanger_1D import HeatExchanger1DData
 from idaes.models_extra.power_generation.unit_models import heat_exchanger_common
-from idaes.core.util.exceptions import InitializationError
-import idaes.logger as idaeslog
 from idaes.core.initialization import SingleControlVolumeUnitInitializer
 
 
@@ -937,7 +935,6 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
                 self.config.cold_side.property_package.get_metadata().derived_units
             )
 
-        tube_has_pressure_change = hasattr(self, "deltaP_tube")
         shell_has_pressure_change = hasattr(self, "deltaP_shell")
 
         heat_exchanger_common.scale_common(
