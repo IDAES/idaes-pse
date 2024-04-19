@@ -185,7 +185,7 @@ def make_performance_common(
         shell: shell control volume
         shell_units : derived units for property package of shell control volume
         shell_has_pressure_change: bool about whether to make pressure change components
-        make_reynolds: bool about whether to create the Reynolds numebr
+        make_reynolds: bool about whether to create the Reynolds number
         make_nusselt: bool about whether to create Nusselt number
 
     Returns:
@@ -480,7 +480,7 @@ def scale_common(blk, shell, shell_has_pressure_change, make_reynolds, make_nuss
         shell: shell control volume
         shell_units : derived units for property package of shell control volume
         shell_has_pressure_change: bool about whether to make pressure change components
-        make_reynolds: bool about whether to create the Reynolds numebr
+        make_reynolds: bool about whether to create the Reynolds number
         make_nusselt: bool about whether to create Nusselt number
 
     Returns:
