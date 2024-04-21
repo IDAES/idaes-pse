@@ -22,7 +22,7 @@ from pyomo.environ import Block, ConcreteModel, units as pyunits, Var
 from pyomo.common.config import ConfigBlock, ConfigValue
 
 from idaes.core import declare_process_block_class
-from idaes.core import LiquidPhase, SolidPhase, VaporPhase, PhaseType as PT
+from idaes.core import Component, LiquidPhase, SolidPhase, VaporPhase, PhaseType as PT
 from idaes.models.properties.modular_properties.base.utility import (
     GenericPropertyPackageError,
     get_method,
@@ -32,6 +32,10 @@ from idaes.models.properties.modular_properties.base.utility import (
     get_concentration_term,
     ConcentrationForm,
     identify_VL_component_list,
+    estimate_Pbub,
+    estimate_Pdew,
+    estimate_Tbub,
+    estimate_Tdew,
 )
 from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterData,
@@ -44,6 +48,14 @@ from idaes.models.properties.modular_properties.phase_equil.henry import (
     ConstantH,
     HenryType,
 )
+from idaes.models.properties.modular_properties.eos.ceos import Cubic, CubicType
+from idaes.models.properties.modular_properties.phase_equil import SmoothVLE
+from idaes.models.properties.modular_properties.phase_equil.bubble_dew import (
+    LogBubbleDew,
+)
+from idaes.models.properties.modular_properties.phase_equil.forms import log_fugacity
+from idaes.models.properties.modular_properties.pure import NIST
+from idaes.models.properties.modular_properties.state_definitions import FTPx
 
 
 @pytest.fixture
@@ -708,3 +720,114 @@ class TestIdentifyVLComponentList:
         assert henry_comps == ["e"]
         assert l_only_comps == ["b"]
         assert v_only_comps == ["c"]
+
+
+# Property configuration for pure water to use in bubble and dew point tests
+configuration = {
+    # Specifying components
+    "components": {
+        "H2O": {
+            "type": Component,
+            "pressure_sat_comp": NIST,
+            "phase_equilibrium_form": {("Vap", "Liq"): log_fugacity},
+            "parameter_data": {
+                "pressure_crit": (220.6e5, pyunits.Pa),
+                "temperature_crit": (647, pyunits.K),
+                "omega": 0.344,
+                "pressure_sat_comp_coeff": {
+                    "A": (3.55959, None),
+                    "B": (643.748, pyunits.K),
+                    "C": (-198.043, pyunits.K),
+                },
+            },
+        },
+    },
+    # Specifying phases
+    "phases": {
+        "Liq": {
+            "type": LiquidPhase,
+            "equation_of_state": Cubic,
+            "equation_of_state_options": {"type": CubicType.PR},
+        },
+        "Vap": {
+            "type": VaporPhase,
+            "equation_of_state": Cubic,
+            "equation_of_state_options": {"type": CubicType.PR},
+        },
+    },
+    # Set base units of measurement
+    "base_units": {
+        "time": pyunits.s,
+        "length": pyunits.m,
+        "mass": pyunits.kg,
+        "amount": pyunits.mol,
+        "temperature": pyunits.K,
+    },
+    # Specifying state definition
+    "state_definition": FTPx,
+    "state_bounds": {
+        "flow_mol": (0, 100, 1000, pyunits.mol / pyunits.s),
+        "temperature": (273.15, 300, 500, pyunits.K),
+        "pressure": (5e4, 1e5, 1e6, pyunits.Pa),
+    },
+    "pressure_ref": (101325, pyunits.Pa),
+    "temperature_ref": (298.15, pyunits.K),
+    # Defining phase equilibria
+    "phases_in_equilibrium": [("Vap", "Liq")],
+    "phase_equilibrium_state": {("Vap", "Liq"): SmoothVLE},
+    "bubble_dew_method": LogBubbleDew,
+    "parameter_data": {
+        "PR_kappa": {
+            ("H2O", "H2O"): 0.000,
+        }
+    },
+}
+
+
+class TestBubbleDewPoints:
+    @pytest.fixture
+    def model(self):
+        m = ConcreteModel()
+        m.params = DummyParameterBlock(
+            **configuration,
+        )
+
+        m.props = m.params.build_state_block([1], defined_state=False)
+
+        return m
+
+    @pytest.mark.unit
+    def test_bubble_temperature(self, model):
+        # Test bubble temperature at atmospheric pressure
+        model.props[1].pressure.set_value(101325)
+        Tbub = estimate_Tbub(model.props[1], pyunits.K, ["H2O"], [], "Liq")
+
+        # Expected value = 379.1828 from parameters used
+        assert Tbub == pytest.approx(379.1828, rel=1e-6)
+
+    @pytest.mark.unit
+    def test_dew_temperature(self, model):
+        # Test dew temperature at atmospheric pressure
+        model.props[1].pressure.set_value(101325)
+        Tdew = estimate_Tdew(model.props[1], pyunits.K, ["H2O"], [], "Liq")
+
+        # Expected value = 379.1828 from parameters used
+        assert Tdew == pytest.approx(379.1828, rel=1e-6)
+
+    @pytest.mark.unit
+    def test_bubble_pressure(self, model):
+        # Test bubble pressure at 100C
+        model.props[1].temperature.set_value(373.15)
+        Pbub = estimate_Pbub(model.props[1], ["H2O"], [], "Liq")
+
+        # Expected value = 76432.45 from parameters used
+        assert Pbub == pytest.approx(76432.45, rel=1e-6)
+
+    @pytest.mark.unit
+    def test_dew_pressure(self, model):
+        # Test dew pressure at 100C
+        model.props[1].temperature.set_value(373.15)
+        Pdew = estimate_Pdew(model.props[1], ["H2O"], [], "Liq")
+
+        # Expected value = 76432.45 from parameters used
+        assert Pdew == pytest.approx(76432.45, rel=1e-6)

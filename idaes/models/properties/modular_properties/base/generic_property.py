@@ -883,13 +883,10 @@ class GenericParameterData(PhysicalParameterBlock):
                 if build_parameters is not None:
                     try:
                         build_parameters(pobj)
-                    except KeyError:
+                    except KeyError as err:
                         raise ConfigurationError(
-                            "{} values were not defined for parameter {} in "
-                            "phase {}. Please check the parameter_data "
-                            "argument to ensure values are provided.".format(
-                                self.name, a, p
-                            )
+                            f"{self.name} - values were not defined for parameter {a} in "
+                            f"phase {p}. {str(err)}"
                         )
 
         # Next, add inherent reactions if they exist
