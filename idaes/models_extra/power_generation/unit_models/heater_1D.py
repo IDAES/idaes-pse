@@ -60,7 +60,7 @@ class Heater1DInitializer(SingleControlVolumeUnitInitializer):
     Initializer for Heater 1D units.
 
     A simple initialization method that first initializes the control volume
-    without heat transfer, then adds heat transfer in and solves it again, 
+    without heat transfer, then adds heat transfer in and solves it again,
     then finally solves the entire model.
     """
 

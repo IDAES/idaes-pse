@@ -232,6 +232,7 @@ def test_structural_issues_no_dP(model_no_dP):
     dt = DiagnosticsToolbox(model_no_dP)
     dt.assert_no_structural_warnings(ignore_evaluation_errors=True)
 
+
 @pytest.mark.integration
 def test_numerical_issues_no_dP(model_no_dP):
     # Model will already be initialized if the component test is run,
@@ -241,10 +242,13 @@ def test_numerical_issues_no_dP(model_no_dP):
     )
     initializer.initialize(model=model_no_dP.fs.heat_exchanger)
 
-    m_scaled = pyo.TransformationFactory('core.scale_model').create_using(model_no_dP, rename=False)
-    
+    m_scaled = pyo.TransformationFactory("core.scale_model").create_using(
+        model_no_dP, rename=False
+    )
+
     dt = DiagnosticsToolbox(m_scaled)
     dt.assert_no_numerical_warnings()
+
 
 @pytest.fixture
 def model_dP():
@@ -287,6 +291,7 @@ def test_structural_issues_dP(model_dP):
     dt = DiagnosticsToolbox(model_dP)
     dt.assert_no_structural_warnings(ignore_evaluation_errors=True)
 
+
 @pytest.mark.integration
 def test_numerical_issues_dP(model_dP):
     # Model will already be initialized if the component test is run,
@@ -296,7 +301,9 @@ def test_numerical_issues_dP(model_dP):
     )
     initializer.initialize(model=model_dP.fs.heat_exchanger)
 
-    m_scaled = pyo.TransformationFactory('core.scale_model').create_using(model_dP, rename=False)
-    
+    m_scaled = pyo.TransformationFactory("core.scale_model").create_using(
+        model_dP, rename=False
+    )
+
     dt = DiagnosticsToolbox(m_scaled)
     dt.assert_no_numerical_warnings()

@@ -57,10 +57,10 @@ class CrossFlowHeatExchanger1DInitializer(SingleControlVolumeUnitInitializer):
     Initializer for Cross Flow Heat Exchanger 1D units.
 
     First, the shell and tube control volumes are initialized without heat transfer. Next
-    the total possible heat transfer between streams is estimated based on heat capacity, 
-    flow rate, and inlet/outlet temperatures. The actual temperature change is set to be 
-    half the theoretical maximum, and the shell and tube are initialized with linear 
-    temperature profiles. Finally, temperatures besides the inlets are unfixed and 
+    the total possible heat transfer between streams is estimated based on heat capacity,
+    flow rate, and inlet/outlet temperatures. The actual temperature change is set to be
+    half the theoretical maximum, and the shell and tube are initialized with linear
+    temperature profiles. Finally, temperatures besides the inlets are unfixed and
     the performance equations are activated before a full solve of the system model.
     """
 
