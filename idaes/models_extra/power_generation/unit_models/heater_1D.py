@@ -40,6 +40,7 @@ from idaes.core import (
 import idaes.core.util.scaling as iscale
 from idaes.core.solvers import get_solver
 from idaes.core.util.config import is_physical_parameter_block
+from idaes.core.util.exceptions import InitializationError
 from idaes.core.util.misc import add_object_reference
 import idaes.logger as idaeslog
 from idaes.core.util.tables import create_stream_table_dataframe
@@ -57,6 +58,10 @@ __author__ = "Jinliang Ma, Douglas Allan"
 class Heater1DInitializer(SingleControlVolumeUnitInitializer):
     """
     Initializer for Heater 1D units.
+
+    A simple initialization method that first initializes the control volume
+    without heat transfer, then adds heat transfer in and solves it again, 
+    then finally solves the entire model.
     """
 
     def initialize_main_model(
@@ -67,6 +72,7 @@ class Heater1DInitializer(SingleControlVolumeUnitInitializer):
         """
         Initialization routine for the main Heater 1D model
         (as opposed to submodels like costing, which presently do not exist).
+
 
         Args:
             model: Pyomo Block to be initialized.
@@ -113,11 +119,13 @@ class Heater1DInitializer(SingleControlVolumeUnitInitializer):
             model.control_volume.pressure.fix()
 
         model.control_volume.length.fix()
-        assert degrees_of_freedom(model.control_volume) == 0
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solver_obj.solve(model.control_volume, tee=slc.tee)
 
-        assert_optimal_termination(res)
+        try:
+            assert_optimal_termination(res)
+        except AssertionError:
+            raise InitializationError("Initialization solve failed.")
 
         init_log.info_high("Initialization Step 2 Complete.")
         model.control_volume.length.unfix()
@@ -135,12 +143,13 @@ class Heater1DInitializer(SingleControlVolumeUnitInitializer):
             model.control_volume.pressure.unfix()
             model.control_volume.pressure[:, 0].fix()
 
-        assert degrees_of_freedom(model) == 0
-
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solver_obj.solve(model, tee=slc.tee)
 
-        assert_optimal_termination(res)
+        try:
+            assert_optimal_termination(res)
+        except AssertionError:
+            raise InitializationError("Initialization solve failed.")
 
         init_log.info_high("Initialization Step 3 Complete.")
 
@@ -269,8 +278,6 @@ documentation for supported transformations.""",
 documentation for supported schemes.""",
         ),
     )
-
-    CONFIG = CONFIG
 
     # Common config args for both sides
     CONFIG.declare(

@@ -13,7 +13,6 @@
 
 import pytest
 import pyomo.environ as pyo
-from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
 import idaes.core.util.scaling as iscale
@@ -28,7 +27,7 @@ from idaes.models_extra.power_generation.unit_models import (
 )
 import idaes.core.util.model_statistics as mstat
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.solvers import get_solver
+from idaes.core.util.model_diagnostics import DiagnosticsToolbox
 
 # Set up solver
 optarg = {
@@ -40,7 +39,6 @@ optarg = {
     "tol": 1e-8,
     "halt_on_ampl_error": "no",
 }
-solver = get_solver("ipopt", options=optarg)
 
 
 def _create_model(pressure_drop):
@@ -193,9 +191,21 @@ def test_initialization(model_no_dP):
 
 
 @pytest.mark.integration
-def test_units(model_no_dP):
-    assert_units_consistent(model_no_dP.fs.heater)
+def test_structural_issues_no_dP(model_no_dP):
+    dt = DiagnosticsToolbox(model_no_dP)
+    dt.assert_no_structural_warnings(ignore_evaluation_errors=True)
 
+@pytest.mark.integration
+def test_numerical_issues_no_dP(model_no_dP):
+    # Model will already be initialized if the component test is run,
+    # but reinitialize in case integration tests are run alone
+    initializer = model_no_dP.fs.heater.default_initializer(solver="ipopt", solver_options=optarg)
+    initializer.initialize(model=model_no_dP.fs.heater)
+
+    m_scaled = pyo.TransformationFactory('core.scale_model').create_using(model_no_dP, rename=False)
+    
+    dt = DiagnosticsToolbox(m_scaled)
+    dt.assert_no_numerical_warnings()
 
 @pytest.fixture
 def model_dP():
@@ -224,5 +234,18 @@ def test_initialization_dP(model_dP):
 
 
 @pytest.mark.integration
-def test_units_dP(model_dP):
-    assert_units_consistent(model_dP.fs.heater)
+def test_structural_issues_dP(model_dP):
+    dt = DiagnosticsToolbox(model_dP)
+    dt.assert_no_structural_warnings(ignore_evaluation_errors=True)
+
+@pytest.mark.integration
+def test_numerical_issues_dP(model_dP):
+    # Model will already be initialized if the component test is run,
+    # but reinitialize in case integration tests are run alone
+    initializer = model_dP.fs.heater.default_initializer(solver="ipopt", solver_options=optarg)
+    initializer.initialize(model=model_dP.fs.heater)
+
+    m_scaled = pyo.TransformationFactory('core.scale_model').create_using(model_dP, rename=False)
+    
+    dt = DiagnosticsToolbox(m_scaled)
+    dt.assert_no_numerical_warnings()

@@ -304,18 +304,6 @@ Derivative Variable         Index Sets   Doc
 ``heat_accumulation``       time, length Energy accumulation in tube wall per unit length of shell flow path per unit time
 =========================== ============ =================================================================================
 
-
-Initialization
---------------
-
-First, the shell and tube control volumes are initialized without heat transfer. Next
-the total possible heat transfer between streams is estimated based on heat capacity, 
-flow rate, and inlet/outlet temperatures. The actual temperature change is set to be 
-half the theoretical maximum, and the shell and tube are initialized with linear 
-temperature profiles. Finally, temperatures besides the inlets are unfixed and 
-the performance equations are activated before a full solve of the system model.
-
-
 CrossFlowHeatExchanger1D Class
 ------------------------------
 
@@ -326,4 +314,10 @@ CrossFlowHeatExchanger1DData Class
 ----------------------------------
 
 .. autoclass:: CrossFlowHeatExchanger1DData
+  :members:
+
+CrossFlowHeatExchanger1DInitializer Class
+-----------------------------------------
+
+.. autoclass:: CrossFlowHeatExchanger1DInitializer
   :members:

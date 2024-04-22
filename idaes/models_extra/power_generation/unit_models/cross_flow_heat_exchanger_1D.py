@@ -19,6 +19,7 @@ Discretization based on tube rows
 
 # Import Pyomo libraries
 from pyomo.environ import (
+    assert_optimal_termination,
     Block,
     value,
     Var,
@@ -27,7 +28,6 @@ from pyomo.environ import (
     Reference,
     units as pyunits,
 )
-import pyomo.opt
 from pyomo.common.config import ConfigValue, In, Bool
 from pyomo.network import Port
 
@@ -36,6 +36,7 @@ from idaes.core import declare_process_block_class
 from idaes.core.util.constants import Constants as const
 import idaes.core.util.scaling as iscale
 from idaes.core.solvers import get_solver
+from idaes.core.util.exceptions import InitializationError
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import ConfigurationError, BurntToast
 import idaes.logger as idaeslog
@@ -54,6 +55,13 @@ __author__ = "Jinliang Ma, Douglas Allan"
 class CrossFlowHeatExchanger1DInitializer(SingleControlVolumeUnitInitializer):
     """
     Initializer for Cross Flow Heat Exchanger 1D units.
+
+    First, the shell and tube control volumes are initialized without heat transfer. Next
+    the total possible heat transfer between streams is estimated based on heat capacity, 
+    flow rate, and inlet/outlet temperatures. The actual temperature change is set to be 
+    half the theoretical maximum, and the shell and tube are initialized with linear 
+    temperature profiles. Finally, temperatures besides the inlets are unfixed and 
+    the performance equations are activated before a full solve of the system model.
     """
 
     def initialize_main_model(
@@ -132,8 +140,8 @@ class CrossFlowHeatExchanger1DInitializer(SingleControlVolumeUnitInitializer):
         # Important to do before initializing property packages in
         # case it is implemented as Var-Constraint pair instead of
         # an Expression
-        value(hot_side.properties[t0, 0].cp_mol)
-        value(cold_side.properties[t0, 0].cp_mol)
+        hot_side.properties[t0, 0].cp_mol
+        cold_side.properties[t0, 0].cp_mol
 
         # ---------------------------------------------------------------------
         # Initialize shell block
@@ -303,7 +311,10 @@ class CrossFlowHeatExchanger1DInitializer(SingleControlVolumeUnitInitializer):
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solver_obj.solve(model, tee=slc.tee)
-        pyomo.opt.assert_optimal_termination(res)
+        try:
+            assert_optimal_termination(res)
+        except AssertionError:
+            raise InitializationError("Initialization solve failed.")
         init_log.info_high("Initialization Step 2 {}.".format(idaeslog.condition(res)))
 
         # In Step 3, unfix fluid state variables (enthalpy/temperature and pressure)
@@ -337,7 +348,10 @@ class CrossFlowHeatExchanger1DInitializer(SingleControlVolumeUnitInitializer):
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solver_obj.solve(model, tee=slc.tee)
-        pyomo.opt.assert_optimal_termination(res)
+        try:
+            assert_optimal_termination(res)
+        except AssertionError:
+            raise InitializationError("Initialization solve failed.")
 
         init_log.info_high("Initialization Step 3 {}.".format(idaeslog.condition(res)))
 
@@ -346,7 +360,10 @@ class CrossFlowHeatExchanger1DInitializer(SingleControlVolumeUnitInitializer):
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solver_obj.solve(model, tee=slc.tee)
-        pyomo.opt.assert_optimal_termination(res)
+        try:
+            assert_optimal_termination(res)
+        except AssertionError:
+            raise InitializationError("Initialization solve failed.")
 
         init_log.info_high("Initialization Step 4 {}.".format(idaeslog.condition(res)))
 

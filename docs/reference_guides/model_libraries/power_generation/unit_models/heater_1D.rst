@@ -268,3 +268,9 @@ Heater1DData Class
 
 .. autoclass:: Heater1DData
   :members:
+
+Heater1DInitializer Class
+-------------------------
+
+.. autoclass:: Heater1DInitializer
+  :members:
