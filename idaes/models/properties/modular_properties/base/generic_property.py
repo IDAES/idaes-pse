@@ -2097,9 +2097,13 @@ class GenericStateBlockData(StateBlockData):
         ):
 
             t_units = self.params.get_metadata().default_units.TEMPERATURE
+            if self.temperature.value is not None:
+                t_value = value(self.temperature)
+            else:
+                t_value = None
             self._teq = Var(
                 self.params._pe_pairs,
-                initialize=value(self.temperature),
+                initialize=t_value,
                 doc="Temperature for calculating phase equilibrium",
                 units=t_units,
             )

@@ -145,15 +145,15 @@ class SmoothVLE(object):
 
         if hasattr(b, "eq_temperature_bubble"):
             _t1 = getattr(b, "_t1" + suffix)
-            _t1.value = max(
-                value(b.temperature), b.temperature_bubble[phase_pair].value
+            _t1.set_value(
+                max(value(b.temperature), value(b.temperature_bubble[phase_pair]))
             )
         else:
             _t1 = b.temperature
 
         if hasattr(b, "eq_temperature_dew"):
-            b._teq[phase_pair].value = min(
-                _t1.value, b.temperature_dew[phase_pair].value
+            b._teq[phase_pair].set_value(
+                min(value(_t1), value(b.temperature_dew[phase_pair]))
             )
         else:
-            b._teq[phase_pair].value = _t1.value
+            b._teq[phase_pair].set_value(value(_t1))

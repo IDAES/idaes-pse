@@ -20,7 +20,7 @@ and optimization. AIChE Journal, DOI: 10.1002/aic.18029
 # TODO: Pylint complains about variables with _x names as they are built by other classes
 # pylint: disable=protected-access
 
-from pyomo.environ import Constraint, Param, units as pyunits, Var, value
+from pyomo.environ import Constraint, Expression, Param, units as pyunits, Var, value
 
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.math import smooth_min
@@ -30,6 +30,9 @@ from idaes.models.properties.modular_properties.base.utility import (
 from idaes.models.properties.modular_properties.base.utility import (
     estimate_Tbub,
     estimate_Tdew,
+)
+from idaes.models.properties.modular_properties.eos.ceos import (
+    calculate_equilibrium_cubic_coefficients,
 )
 import idaes.core.util.scaling as iscale
 
@@ -62,11 +65,16 @@ class SmoothVLE2:
                 "was set to use Smooth VLE formulation, however this is not a vapor-liquid pair."
             )
 
+        lobj = b.params.get_phase(l_phase)
+        ctype = lobj._cubic_type
+        cname = lobj.config.equation_of_state_options["type"].name
+
         # Definition of equilibrium temperature for smooth VLE
         uom = b.params.get_metadata().default_units
         t_units = uom.TEMPERATURE
         f_units = uom.AMOUNT / uom.TIME
 
+        # TODO: Do these need to be indexed by ALL phases, or just the VLE phases?
         s = Var(
             b.params.phase_list,
             initialize=0.0,
@@ -92,7 +100,7 @@ class SmoothVLE2:
                 == 0
             )
 
-        b.add_component("_tbar_constraint" + suffix, Constraint(rule=rule_teq))
+        b.add_component("_teq_constraint" + suffix, Constraint(rule=rule_teq))
 
         eps = Param(
             default=1e-04,
@@ -133,15 +141,24 @@ class SmoothVLE2:
             ),
         )
 
-        def rule_cubic_root_complementarity(b, p):
+        def rule_cubic_second_derivative(b, p):
             p1, p2 = phase_pair
-            pobj = b.params.get_phase(p)
-            cname = pobj.config.equation_of_state_options["type"].name
-            cubic_second_derivative = getattr(
-                b,
-                "_" + cname + "_cubic_second_derivative",
+
+            _b, _, _ = calculate_equilibrium_cubic_coefficients(
+                b, cname, ctype, p1, p2, p
             )
-            return cubic_second_derivative[p1, p2, p] == gp[p] - gn[p]
+            z = b.compress_fact_phase[p]
+
+            return 6 * z + 2 * _b
+
+        b.add_component(
+            "cubic_second_derivative" + suffix,
+            Expression(b.params.phase_list, rule=rule_cubic_second_derivative),
+        )
+
+        def rule_cubic_root_complementarity(b, p):
+            der = getattr(b, "cubic_second_derivative" + suffix)
+            return der[p] == gp[p] - gn[p]
 
         b.add_component(
             "cubic_root_complementarity" + suffix,
@@ -179,38 +196,46 @@ class SmoothVLE2:
         # equilibrium temperature _teq
         T_units = blk.params.get_metadata().default_units.TEMPERATURE
 
-        liquid_phase, _, raoult_comps, henry_comps, _, _ = identify_VL_component_list(
-            blk, pp
-        )
+        (
+            liquid_phase,
+            vapor_phase,
+            raoult_comps,
+            henry_comps,
+            l_only_comps,
+            v_only_comps,
+        ) = identify_VL_component_list(blk, pp)
 
-        Tbub = estimate_Tbub(blk, T_units, raoult_comps, henry_comps, liquid_phase)
-        Tdew = estimate_Tbub(blk, T_units, raoult_comps, henry_comps, liquid_phase)
-
-        assert False
-        suffix = "_" + phase_pair[0] + "_" + phase_pair[1]
-
-        if hasattr(b, "eq_temperature_bubble"):
-            _t1 = getattr(b, "_t1" + suffix)
-            _t1.value = max(
-                value(b.temperature), b.temperature_bubble[phase_pair].value
-            )
+        if v_only_comps is None:
+            if blk.is_property_constructed("temperature_bubble"):
+                Tbub = value(blk.temeprature_bubble[pp])
+            else:
+                Tbub = estimate_Tbub(
+                    blk, T_units, raoult_comps, henry_comps, liquid_phase
+                )
+            t1 = max(value(blk.temperature), Tbub)
         else:
-            _t1 = b.temperature
+            t1 = value(blk.temperature)
 
-        if hasattr(b, "eq_temperature_dew"):
-            b._teq[phase_pair].value = min(
-                _t1.value, b.temperature_dew[phase_pair].value
-            )
+        if v_only_comps is None:
+            if blk.is_property_constructed("temperature_dew"):
+                Tdew = value(blk.temeprature_bubble[pp])
+            else:
+                Tdew = estimate_Tdew(
+                    blk, T_units, raoult_comps, henry_comps, liquid_phase
+                )
+            t2 = min(t1, Tdew)
         else:
-            b._teq[phase_pair].value = _t1.value
+            t2 = t1
+
+        blk._teq[pp].set_value(t2)
 
         # ---------------------------------------------------------------------
         # Initialize sV and sL slacks
-        _calculate_temperature_slacks(blk, pp)
+        _calculate_temperature_slacks(blk, pp, liquid_phase, vapor_phase)
 
         # ---------------------------------------------------------------------
         # If flash, initialize g+ and g- slacks
-        _calculate_ceos_derivative_slacks(blk, pp)
+        _calculate_ceos_derivative_slacks(blk, liquid_phase, vapor_phase)
 
     @staticmethod
     def phase_equil_initialization(b, phase_pair):
@@ -222,59 +247,39 @@ class SmoothVLE2:
                 c.deactivate()
 
 
-def _calculate_temperature_slacks(b, phase_pair):
+def _calculate_temperature_slacks(b, phase_pair, liquid_phase, vapor_phase):
     suffix = "_" + phase_pair[0] + "_" + phase_pair[1]
 
     s = getattr(b, "s" + suffix)
 
-    if b.params.get_phase(phase_pair[0]).is_vapor_phase():
-        vapor_phase = phase_pair[0]
-        liquid_phase = phase_pair[1]
+    if value(b._teq[phase_pair]) > value(b.temperature):
+        s[vapor_phase].set_value(value(b._teq[phase_pair] - b.temperature))
+        s[liquid_phase].set_value(0)
+    elif value(b._teq[phase_pair]) < value(b.temperature):
+        s[vapor_phase].set_value(0)
+        s[liquid_phase].set_value(value(b.temperature - b._teq[phase_pair]))
     else:
-        vapor_phase = phase_pair[1]
-        liquid_phase = phase_pair[0]
-
-    if b._teq[phase_pair].value > b.temperature.value:
-        s[vapor_phase].value = value(b._teq[phase_pair] - b.temperature)
-        s[liquid_phase].value = 0
-    elif b._teq[phase_pair].value < b.temperature.value:
-        s[vapor_phase].value = 0
-        s[liquid_phase].value = value(b.temperature - b._teq[phase_pair])
-    else:
-        s[vapor_phase].value = 0
-        s[liquid_phase].value = 0
+        s[vapor_phase].set_value(0)
+        s[liquid_phase].set_value(0)
 
 
-def _calculate_ceos_derivative_slacks(b, phase_pair):
+def _calculate_ceos_derivative_slacks(b, phase_pair, liquid_phase, vapor_phase):
     suffix = "_" + phase_pair[0] + "_" + phase_pair[1]
-    p1, p2 = phase_pair
 
     gp = getattr(b, "gp" + suffix)
     gn = getattr(b, "gn" + suffix)
+    der = getattr(b, "cubic_second_derivative" + suffix)
 
-    if b.params.get_phase(phase_pair[0]).is_vapor_phase():
-        vapor_phase = phase_pair[0]
-        liquid_phase = phase_pair[1]
+    if value(der[liquid_phase]) < 0:
+        gp[liquid_phase].set_value(0)
+        gn[liquid_phase].set_value(value(-der[liquid_phase]))
     else:
-        vapor_phase = phase_pair[1]
-        liquid_phase = phase_pair[0]
+        gp[liquid_phase].set_value(0)
+        gn[liquid_phase].set_value(0)
 
-    vapobj = b.params.get_phase(vapor_phase)
-    liqobj = b.params.get_phase(liquid_phase)
-    cname_vap = vapobj.config.equation_of_state_options["type"].name
-    cname_liq = liqobj.config.equation_of_state_options["type"].name
-    cubic_second_derivative_vap = getattr(
-        b, "_" + cname_vap + "_cubic_second_derivative"
-    )
-    cubic_second_derivative_liq = getattr(
-        b, "_" + cname_liq + "_cubic_second_derivative"
-    )
-
-    if value(cubic_second_derivative_liq[p1, p2, liquid_phase]) < 0:
-        gp[liquid_phase].value = 0
-        gn[liquid_phase].value = value(
-            -cubic_second_derivative_liq[p1, p2, liquid_phase]
-        )
-    if value(cubic_second_derivative_vap[p1, p2, vapor_phase]) > 0:
-        gp[vapor_phase].value = value(cubic_second_derivative_vap[p1, p2, vapor_phase])
-        gn[vapor_phase].value = 0
+    if value(der[vapor_phase]) > 0:
+        gp[vapor_phase].set_value(value(der[vapor_phase]))
+        gn[vapor_phase].set_value(0)
+    else:
+        gp[vapor_phase].set_value(0)
+        gn[vapor_phase].set_value(0)

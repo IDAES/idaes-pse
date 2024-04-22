@@ -456,20 +456,6 @@ class Cubic(EoSBase):
                 ),
             )
 
-            def cubic_second_derivative_eq(m, p1, p2, p3):
-                _b, _, _ = _calculate_equilibrium_cubic_coefficients(
-                    m, cname, ctype, p1, p2, p3
-                )
-                z = m.compress_fact_phase[p3]
-                return 6 * z + 2 * _b
-
-            b.add_component(
-                "_" + cname + "_cubic_second_derivative_eq",
-                Expression(
-                    b.params._pe_pairs, b.phase_list, rule=cubic_second_derivative_eq
-                ),
-            )
-
     @staticmethod
     def calculate_scaling_factors(b, pobj):
         pass
@@ -1366,7 +1352,7 @@ def _bubble_dew_log_fug_coeff_method(blk, p, j, pp, pt_var):
 
 # -----------------------------------------------------------------------------
 # Default rules for cubic expressions
-def _calculate_equilibrium_cubic_coefficients(b, cubic_name, cubic_type, p1, p2, p3):
+def calculate_equilibrium_cubic_coefficients(b, cubic_name, cubic_type, p1, p2, p3):
     """
     Calculates the coefficients b, c, and d of the cubic 0 = z**3 + b * z**2 + c * z + d
     at the equilibrium conditions
@@ -1383,10 +1369,8 @@ def _calculate_equilibrium_cubic_coefficients(b, cubic_name, cubic_type, p1, p2,
         expressions for b, c, d
     """
 
-    A_eq = getattr(b, "_" + cubic_name + "_A_eq")
-    B_eq = getattr(b, "_" + cubic_name + "_B_eq")
-    A_eq = A_eq[p1, p2, p3]
-    B_eq = B_eq[p1, p2, p3]
+    A_eq = getattr(b, "_" + cubic_name + "_A_eq")[p1, p2, p3]
+    B_eq = getattr(b, "_" + cubic_name + "_B_eq")[p1, p2, p3]
     EoS_u = EoS_param[cubic_type]["u"]
     EoS_w = EoS_param[cubic_type]["w"]
 
@@ -1427,7 +1411,7 @@ def func_fw_SRK(cobj):
 
 def func_alpha_soave(T, fw, cobj):
     """
-    alpha function for SRK EoS.
+    Soave alpha function.
 
     Args:
         fw: expression for fw
@@ -1444,7 +1428,7 @@ def func_alpha_soave(T, fw, cobj):
 
 def func_dalpha_dT_soave(T, fw, cobj):
     """
-    Function to get first derivative of alpha for SRK EoS.
+    Function to get first derivative of Soave alpha function.
 
     Args:
         fw: expression for fw
@@ -1461,7 +1445,7 @@ def func_dalpha_dT_soave(T, fw, cobj):
 
 def func_d2alpha_dT2_soave(T, fw, cobj):
     """
-    Function to get 2nd derivative of alpha for SRK EoS.
+    Function to get 2nd derivative of Soave alpha function.
 
     Args:
         fw: expression for fw

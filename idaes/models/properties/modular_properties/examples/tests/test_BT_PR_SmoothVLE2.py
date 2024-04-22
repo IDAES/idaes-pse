@@ -48,7 +48,7 @@ import idaes.logger as idaeslog
 SOUT = idaeslog.INFO
 
 # Set module level pyest marker
-pytestmark = [pytest.mark.cubic_root, pytest.mark.skip]
+pytestmark = pytest.mark.cubic_root
 
 
 # -----------------------------------------------------------------------------
@@ -196,10 +196,11 @@ class TestBTExample(object):
 
         m.fs.props = GenericParameterBlock(**configuration)
 
-        m.fs.state = m.fs.props.build_state_block([1], defined_state=True)
+        m.fs.state = m.fs.props.build_state_block([1], defined_state=False)
 
         iscale.calculate_scaling_factors(m.fs.props)
         iscale.calculate_scaling_factors(m.fs.state[1])
+
         return m
 
     @pytest.mark.integration
