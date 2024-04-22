@@ -44,7 +44,6 @@ from idaes.core.util.exceptions import InitializationError
 from idaes.core.util.misc import add_object_reference
 import idaes.logger as idaeslog
 from idaes.core.util.tables import create_stream_table_dataframe
-from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.models_extra.power_generation.unit_models.heat_exchanger_common import (
     make_geometry_common,
     make_performance_common,

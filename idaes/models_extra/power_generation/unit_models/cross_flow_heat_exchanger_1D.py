@@ -140,8 +140,8 @@ class CrossFlowHeatExchanger1DInitializer(SingleControlVolumeUnitInitializer):
         # Important to do before initializing property packages in
         # case it is implemented as Var-Constraint pair instead of
         # an Expression
-        hot_side.properties[t0, 0].cp_mol
-        cold_side.properties[t0, 0].cp_mol
+        value(hot_side.properties[t0, 0].cp_mol)
+        value(cold_side.properties[t0, 0].cp_mol)
 
         # ---------------------------------------------------------------------
         # Initialize shell block
