@@ -36,7 +36,7 @@ from idaes.models.properties.tests.test_harness import PropertyTestHarness
 from idaes.core import LiquidPhase, VaporPhase, Component
 from idaes.models.properties.modular_properties.state_definitions import FTPx
 from idaes.models.properties.modular_properties.eos.ceos import Cubic, CubicType
-from idaes.models.properties.modular_properties.phase_equil import SmoothVLE2
+from idaes.models.properties.modular_properties.phase_equil import SmoothVLE
 from idaes.models.properties.modular_properties.phase_equil.bubble_dew import (
     LogBubbleDew,
 )
@@ -45,7 +45,7 @@ from idaes.models.properties.modular_properties.pure import RPP4
 
 import idaes.logger as idaeslog
 
-SOUT = idaeslog.DEBUG
+SOUT = idaeslog.INFO
 
 # Set module level pyest marker
 pytestmark = pytest.mark.cubic_root
@@ -162,7 +162,7 @@ configuration = {
     "temperature_ref": (298.15, pyunits.K),
     # Defining phase equilibria
     "phases_in_equilibrium": [("Vap", "Liq")],
-    "phase_equilibrium_state": {("Vap", "Liq"): SmoothVLE2},
+    "phase_equilibrium_state": {("Vap", "Liq"): SmoothVLE},
     "bubble_dew_method": LogBubbleDew,
     "parameter_data": {
         "PR_kappa": {

@@ -1480,8 +1480,8 @@ class TestBT_Generic_cocurrent(object):
         assert hasattr(btx.fs.unit, "cold_side_heat_transfer_eq")
         assert hasattr(btx.fs.unit, "heat_conservation")
 
-        assert number_variables(btx) == 2021
-        assert number_total_constraints(btx) == 1890
+        assert number_variables(btx) == 1874
+        assert number_total_constraints(btx) == 1743
         assert number_unused_variables(btx) == 34
 
     @pytest.mark.integration

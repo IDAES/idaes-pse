@@ -1725,8 +1725,8 @@ class TestBT_Generic_cocurrent(object):
         assert isinstance(btx.fs.unit.delta_temperature, (Var, Expression))
         assert isinstance(btx.fs.unit.heat_transfer_equation, Constraint)
 
-        assert number_variables(btx) == 190
-        assert number_total_constraints(btx) == 118
+        assert number_variables(btx) == 176
+        assert number_total_constraints(btx) == 104
         assert number_unused_variables(btx) == 20
 
     @pytest.mark.component

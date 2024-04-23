@@ -533,8 +533,8 @@ class TestBT_Generic(object):
         assert hasattr(btg.fs.unit, "heat_duty")
         assert hasattr(btg.fs.unit, "deltaP")
 
-        assert number_variables(btg) == 94
-        assert number_total_constraints(btg) == 57
+        assert number_variables(btg) == 80
+        assert number_total_constraints(btg) == 43
         # Unused vars are density parameters
         assert number_unused_variables(btg) == 10
 

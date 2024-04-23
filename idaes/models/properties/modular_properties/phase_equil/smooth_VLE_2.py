@@ -20,7 +20,15 @@ and optimization. AIChE Journal, DOI: 10.1002/aic.18029
 # TODO: Pylint complains about variables with _x names as they are built by other classes
 # pylint: disable=protected-access
 
-from pyomo.environ import Constraint, Expression, Param, units as pyunits, Var, value
+from pyomo.environ import (
+    Constraint,
+    Expression,
+    Param,
+    Set,
+    units as pyunits,
+    Var,
+    value,
+)
 
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.math import smooth_min
@@ -74,9 +82,11 @@ class SmoothVLE2:
         t_units = uom.TEMPERATURE
         f_units = uom.AMOUNT / uom.TIME
 
-        # TODO: Do these need to be indexed by ALL phases, or just the VLE phases?
+        vl_phase_set = Set(initialize=[phase_pair[0], phase_pair[1]])
+        b.add_component("_vle_set" + suffix, vl_phase_set)
+
         s = Var(
-            b.params.phase_list,
+            vl_phase_set,
             initialize=0.0,
             bounds=(0, None),
             doc="Slack variable for equilibrium temperature",
@@ -105,7 +115,7 @@ class SmoothVLE2:
         b.add_component("eps" + suffix, eps)
 
         gp = Var(
-            b.params.phase_list,
+            vl_phase_set,
             initialize=0.0,
             bounds=(0, None),
             doc="Slack variable for cubic second derivative for phase p",
@@ -114,7 +124,7 @@ class SmoothVLE2:
         b.add_component("gp" + suffix, gp)
 
         gn = Var(
-            b.params.phase_list,
+            vl_phase_set,
             initialize=0.0,
             bounds=(0, None),
             doc="Slack variable for cubic second derivative for phase p",
@@ -130,7 +140,7 @@ class SmoothVLE2:
         b.add_component(
             "temperature_slack_complementarity" + suffix,
             Constraint(
-                b.params.phase_list,
+                vl_phase_set,
                 rule=rule_temperature_slack_complementarity,
             ),
         )
@@ -147,7 +157,7 @@ class SmoothVLE2:
 
         b.add_component(
             "cubic_second_derivative" + suffix,
-            Expression(b.params.phase_list, rule=rule_cubic_second_derivative),
+            Expression(vl_phase_set, rule=rule_cubic_second_derivative),
         )
 
         def rule_cubic_root_complementarity(b, p):
@@ -156,7 +166,7 @@ class SmoothVLE2:
 
         b.add_component(
             "cubic_root_complementarity" + suffix,
-            Constraint(b.params.phase_list, rule=rule_cubic_root_complementarity),
+            Constraint(vl_phase_set, rule=rule_cubic_root_complementarity),
         )
 
         def rule_cubic_slack_complementarity(b, p):
@@ -169,7 +179,7 @@ class SmoothVLE2:
 
         b.add_component(
             "cubic_slack_complementarity" + suffix,
-            Constraint(b.params.phase_list, rule=rule_cubic_slack_complementarity),
+            Constraint(vl_phase_set, rule=rule_cubic_slack_complementarity),
         )
 
     @staticmethod
