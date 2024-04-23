@@ -18,7 +18,7 @@ def y2_func(x1, x2):
 
 
 class TestLinearDecisionRule(unittest.TestCase):
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_construct_linear_dr(self):
         x1_samples = [float(i) for i in np.linspace(-5, 5, 100)]
         x2_samples = [float(i) for i in np.linspace(-5, 5, 100)]

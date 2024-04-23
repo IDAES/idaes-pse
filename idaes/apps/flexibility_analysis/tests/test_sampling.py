@@ -92,7 +92,7 @@ def create_hx_network_model():
     return m, nominal_values, param_bounds
 
 
-@pytest.mark.unit
+@pytest.mark.component
 class TestSampling(unittest.TestCase):
     def test_poly(self):
         m, nominal_values, param_bounds = create_poly_model()

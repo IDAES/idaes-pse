@@ -11,7 +11,7 @@ import unittest
 import pytest
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 class TestExamples(unittest.TestCase):
     def test_linear_hx_network(self):
         res = linear_hx_network.main(
