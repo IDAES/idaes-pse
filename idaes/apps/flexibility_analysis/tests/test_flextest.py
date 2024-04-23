@@ -113,15 +113,15 @@ class TestFlexTest(unittest.TestCase):
         self.assertAlmostEqual(m.unc_param_vars[ndx].value, 65, 5)
 
     def test_hx_network(self):
-        m, nominal_values, param_bounds = create_hx_network_model()
-        var_bounds = pe.ComponentMap()
-        for v in m.variable_temps.values():
-            var_bounds[v] = (100, 1000)
-        var_bounds[m.qc] = interval.mul(1.5, 1.5, *interval.sub(100, 1000, 350, 350))
-        config = ActiveConstraintConfig()
         expected = [4, 8.8]
         enforce_eq = [False, True]
         for exp, ee in zip(expected, enforce_eq):
+            m, nominal_values, param_bounds = create_hx_network_model()
+            var_bounds = pe.ComponentMap()
+            for v in m.variable_temps.values():
+                var_bounds[v] = (100, 1000)
+            var_bounds[m.qc] = interval.mul(1.5, 1.5, *interval.sub(100, 1000, 350, 350))
+            config = ActiveConstraintConfig()
             config.enforce_equalities = ee
             build_active_constraint_flextest(
                 m,
