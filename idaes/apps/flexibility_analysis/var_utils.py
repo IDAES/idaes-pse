@@ -2,7 +2,6 @@ import pyomo.environ as pe
 from pyomo.core.base.block import _BlockData
 from pyomo.common.collections import ComponentSet
 from pyomo.core.expr.visitor import identify_variables
-from pyomo.common.dependencies import attempt_import
 from pyomo.contrib.solver.util import get_objective
 
 from typing import Mapping, Sequence

@@ -2,11 +2,9 @@ from __future__ import annotations
 from pyomo.core.base.block import _BlockData
 import pyomo.environ as pe
 import numpy as np
-import itertools
 from typing import Sequence, Union, Mapping, Optional, MutableMapping, Tuple, List
 from pyomo.core.base.var import _GeneralVarData
 from pyomo.core.base.param import _ParamData
-from pyomo.contrib.appsi.base import PersistentSolver
 from .uncertain_params import _replace_uncertain_params
 from .inner_problem import _build_inner_problem
 import enum
@@ -15,7 +13,6 @@ from .indices import _VarIndex
 from pyomo.common.config import ConfigDict, ConfigValue, InEnum
 from pyomo.contrib.solver.util import get_objective
 from pyomo.common.errors import ApplicationError
-from pyomo.contrib import appsi
 from .check_optimal import assert_optimal_termination
 
 try:

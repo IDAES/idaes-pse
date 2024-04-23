@@ -20,7 +20,6 @@ from pyomo.core.base.var import _GeneralVarData
 from pyomo.core.base.param import _ParamData
 from pyomo.contrib.solver.util import get_objective
 from .decision_rules.linear_dr import construct_linear_decision_rule
-from .decision_rules.dr_config import DRConfig
 from pyomo.common.dependencies import attempt_import
 from .sampling import (
     SamplingStrategy,
@@ -37,8 +36,6 @@ from pyomo.common.config import (
     MarkImmutable,
     NonNegativeFloat,
 )
-from pyomo.contrib.appsi.base import Solver
-from pyomo.opt.base import OptSolver
 
 relu_dr, relu_dr_available = attempt_import(
     "idaes.apps.flexibility_analysis.decision_rules.relu_dr",

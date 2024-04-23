@@ -1,6 +1,5 @@
 import pyomo.environ as pe
 from pyomo.core.expr.calculus.diff_with_pyomo import reverse_sd
-from pyomo.common.dependencies import attempt_import
 
 from pyomo.core.base.block import _BlockData
 from pyomo.contrib.fbbt.fbbt import fbbt

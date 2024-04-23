@@ -5,7 +5,6 @@ from idaes.apps.flexibility_analysis import (
 import idaes.apps.flexibility_analysis as flex
 from idaes.apps.flexibility_analysis.examples import (
     linear_hx_network,
-    nonlin_hx_network,
     idaes_hx_network,
 )
 import unittest
