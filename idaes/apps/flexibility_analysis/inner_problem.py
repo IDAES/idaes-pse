@@ -1,14 +1,10 @@
 import pyomo.environ as pe
 from pyomo.core.base.block import _BlockData
 from pyomo.core.base.var import _GeneralVarData, ScalarVar
-from pyomo.common.dependencies import attempt_import
 from pyomo.core.expr.numeric_expr import ExpressionBase
 
-coramin, coramin_available = attempt_import(
-    "coramin", "coramin is required for flexibility analysis"
-)
+from pyomo.contrib.solver.util import get_objective
 from .var_utils import (
-    get_all_unfixed_variables,
     BoundsManager,
     _apply_var_bounds,
     get_used_unfixed_variables,
@@ -227,7 +223,7 @@ def _build_inner_problem(
     if total_violation_disjunctions:
         assert total_violation
 
-    obj = coramin.utils.get_objective(m)
+    obj = get_objective(m)
     if obj is not None:
         obj.deactivate()
 

@@ -13,7 +13,7 @@ import enum
 from idaes.core.surrogate.pysmo.sampling import LatinHypercubeSampling
 from .indices import _VarIndex
 from pyomo.common.config import ConfigDict, ConfigValue, InEnum
-import coramin
+from pyomo.contrib.solver.util import get_objective
 from pyomo.common.errors import ApplicationError
 from pyomo.contrib import appsi
 from .check_optimal import assert_optimal_termination
@@ -292,7 +292,7 @@ def _init_with_square_problem(m: _BlockData, controls, solver):
 
 
 def _solve_with_max_viol_fixed(m: _BlockData, controls, solver):
-    orig_obj = coramin.utils.get_objective(m)
+    orig_obj = get_objective(m)
     orig_obj.deactivate()
     orig_max_viol_value = m.max_constraint_violation.value
     m.max_constraint_violation.fix(0)
@@ -347,7 +347,7 @@ def _perform_sampling(
     )
 
     obj_values = list()
-    obj = coramin.utils.get_objective(m)
+    obj = get_objective(m)
 
     control_values = pe.ComponentMap()
     for v in controls:

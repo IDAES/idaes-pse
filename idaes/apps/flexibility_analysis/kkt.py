@@ -2,9 +2,6 @@ import pyomo.environ as pe
 from pyomo.core.expr.calculus.diff_with_pyomo import reverse_sd
 from pyomo.common.dependencies import attempt_import
 
-coramin, coramin_available = attempt_import(
-    "coramin", "coramin is required for flexibility analysis"
-)
 from pyomo.core.base.block import _BlockData
 from pyomo.contrib.fbbt.fbbt import fbbt
 from .var_utils import (
@@ -14,6 +11,7 @@ from .var_utils import (
 from typing import Sequence, Mapping
 from pyomo.core.base.var import _GeneralVarData
 from pyomo.core.expr.sympy_tools import sympyify_expression, sympy2pyomo_expression
+from pyomo.contrib.solver.util import get_objective
 from .indices import _VarIndex, _ConIndex
 
 
@@ -33,7 +31,7 @@ def _add_grad_lag_constraints(m: _BlockData) -> _BlockData:
     m.duals_ineq_set = pe.Set()
     m.duals_ineq = pe.Var(m.duals_ineq_set, bounds=(0, None))
 
-    obj = coramin.utils.get_objective(m)
+    obj = get_objective(m)
     assert obj.sense == pe.minimize
     if obj is None:
         lagrangian = 0
@@ -139,7 +137,7 @@ def add_kkt_with_milp_complementarity_conditions(
         v.fix()
 
     _add_grad_lag_constraints(m)
-    obj = coramin.utils.get_objective(m)
+    obj = get_objective(m)
     obj.deactivate()
 
     _apply_var_bounds(valid_var_bounds)

@@ -4,11 +4,7 @@ from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import
 )
 from idaes.core import FlowsheetBlock
 from idaes.models.unit_models.heater import Heater
-from pyomo.common.dependencies import attempt_import
 
-coramin, coramin_available = attempt_import(
-    "coramin", "coramin is required for flexibility analysis"
-)
 import logging
 from pyomo.contrib.fbbt.fbbt import fbbt
 from pyomo.network import Arc
@@ -16,13 +12,10 @@ from idaes.core.util.initialization import propagate_state
 from pyomo.util.infeasible import log_infeasible_constraints, log_infeasible_bounds
 from idaes.core.base.control_volume_base import ControlVolumeBlockData
 from pyomo.core.base.block import _BlockData
-import numpy as np
 import idaes.apps.flexibility_analysis as flexibility
 from idaes.apps.flexibility_analysis.var_utils import BoundsManager
-from pyomo.core.expr.numvalue import polynomial_degree
-from pyomo.core.expr.sympy_tools import sympy2pyomo_expression, sympyify_expression
-from pyomo.repn.standard_repn import generate_standard_repn
-from coramin.utils.pyomo_utils import simplify_expr
+from idaes.apps.flexibility_analysis.simplify import simplify_expr
+from pyomo.contrib.solver.util import get_objective
 
 
 logging.basicConfig(level=logging.INFO)
@@ -307,7 +300,7 @@ def scale_model(m):
     m.scaling_factor[m.fs.s1_expanded.pressure_equality[0]] = 1e-4
     m.scaling_factor[m.fs.s2_expanded.pressure_equality[0]] = 1e-4
     m.scaling_factor[m.fs.s3_expanded.pressure_equality[0]] = 1e-4
-    m.scaling_factor[coramin.utils.get_objective(m)] = 1e-4
+    m.scaling_factor[get_objective(m)] = 1e-4
 
     pe.TransformationFactory("core.scale_model").apply_to(m, rename=False)
 

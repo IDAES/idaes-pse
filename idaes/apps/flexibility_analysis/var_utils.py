@@ -3,10 +3,8 @@ from pyomo.core.base.block import _BlockData
 from pyomo.common.collections import ComponentSet
 from pyomo.core.expr.visitor import identify_variables
 from pyomo.common.dependencies import attempt_import
+from pyomo.contrib.solver.util import get_objective
 
-coramin, coramin_available = attempt_import(
-    "coramin", "coramin is required for flexibility analysis"
-)
 from typing import Mapping, Sequence
 from pyomo.core.base.var import _GeneralVarData
 
@@ -23,7 +21,7 @@ def get_used_unfixed_variables(m: _BlockData):
     res = ComponentSet()
     for c in m.component_data_objects(pe.Constraint, active=True, descend_into=True):
         res.update(v for v in identify_variables(c.body, include_fixed=False))
-    obj = coramin.utils.get_objective(m)
+    obj = get_objective(m)
     if obj is not None:
         res.update(identify_variables(obj.expr, include_fixed=False))
     return res

@@ -5,8 +5,6 @@ import unittest
 from idaes.apps.flexibility_analysis.indices import _VarIndex
 from pyomo.contrib.fbbt import interval
 import pytest
-import coramin
-from pyomo.contrib import appsi
 
 
 def create_poly_model():
@@ -103,17 +101,9 @@ class TestFlexTest(unittest.TestCase):
             param_bounds=param_bounds,
             valid_var_bounds=var_bounds,
         )
-        nlp_solver = appsi.solvers.Ipopt()
-        mip_solver = appsi.solvers.Gurobi()
-        opt = coramin.algorithms.multitree.multitree.MultiTree(
-            mip_solver=mip_solver, nlp_solver=nlp_solver
-        )
-        opt.config.stream_solver = False
-        opt.config.obbt_at_new_incumbents = True
-        opt.config.relax_integers_for_obbt = False
-        opt.config.mip_gap = 1e-4
+        opt = pe.SolverFactory('scip')
         res = opt.solve(m)
-        assert res.termination_condition == appsi.base.TerminationCondition.optimal
+        pe.assert_optimal_termination(res)
         self.assertAlmostEqual(m.max_constraint_violation.value, 48.4649, 4)
         self.assertAlmostEqual(m.z.value, -2.6513, 4)
         ndx = _VarIndex(m.theta, None)

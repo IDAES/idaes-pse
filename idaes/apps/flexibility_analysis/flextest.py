@@ -3,9 +3,6 @@ from .kkt import add_kkt_with_milp_complementarity_conditions
 from pyomo.core.base.block import _BlockData
 from pyomo.common.dependencies import attempt_import
 
-coramin, coramin_available = attempt_import(
-    "coramin", "coramin is required for flexibility analysis"
-)
 import pyomo.environ as pe
 from .var_utils import (
     get_used_unfixed_variables,
@@ -21,6 +18,7 @@ import logging
 from typing import Sequence, Union, Mapping, MutableMapping, Optional, Tuple
 from pyomo.core.base.var import _GeneralVarData
 from pyomo.core.base.param import _ParamData
+from pyomo.contrib.solver.util import get_objective
 from .decision_rules.linear_dr import construct_linear_decision_rule
 from .decision_rules.dr_config import DRConfig
 from pyomo.common.dependencies import attempt_import
@@ -357,7 +355,7 @@ def build_flextest_with_dr(
     _apply_var_bounds(valid_var_bounds)
     m.decision_rule = dr
 
-    obj = coramin.utils.get_objective(m)
+    obj = get_objective(m)
     obj.deactivate()
 
     if config.total_violation:
