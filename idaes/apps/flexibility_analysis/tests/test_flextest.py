@@ -120,7 +120,9 @@ class TestFlexTest(unittest.TestCase):
             var_bounds = pe.ComponentMap()
             for v in m.variable_temps.values():
                 var_bounds[v] = (100, 1000)
-            var_bounds[m.qc] = interval.mul(1.5, 1.5, *interval.sub(100, 1000, 350, 350))
+            var_bounds[m.qc] = interval.mul(
+                1.5, 1.5, *interval.sub(100, 1000, 350, 350)
+            )
             config = ActiveConstraintConfig()
             config.enforce_equalities = ee
             build_active_constraint_flextest(
