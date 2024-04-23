@@ -3,7 +3,7 @@ import unittest
 import pyomo.environ as pe
 from idaes.apps.flexibility_analysis.decision_rules.linear_dr import (
     construct_linear_decision_rule,
-    LinearDRConfig
+    LinearDRConfig,
 )
 import numpy as np
 import pytest
@@ -44,7 +44,7 @@ class TestLinearDecisionRule(unittest.TestCase):
         output_vals[m.y1] = [float(i) for i in y1_samples]
         output_vals[m.y2] = [float(i) for i in y2_samples]
 
-        opt = pe.SolverFactory('appsi_gurobi')
+        opt = pe.SolverFactory("appsi_gurobi")
         config = LinearDRConfig()
         config.solver = opt
         m.dr = construct_linear_decision_rule(

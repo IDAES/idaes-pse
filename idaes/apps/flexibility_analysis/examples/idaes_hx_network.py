@@ -5,7 +5,10 @@ from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import
 from idaes.core import FlowsheetBlock
 from idaes.models.unit_models.heater import Heater
 from pyomo.common.dependencies import attempt_import
-coramin, coramin_available = attempt_import('coramin', 'coramin is required for flexibility analysis')
+
+coramin, coramin_available = attempt_import(
+    "coramin", "coramin is required for flexibility analysis"
+)
 import logging
 from pyomo.contrib.fbbt.fbbt import fbbt
 from pyomo.network import Arc

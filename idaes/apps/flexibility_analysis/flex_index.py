@@ -80,9 +80,9 @@ def solve_flex_index(
     m: _BlockData
         The pyomo model to be used for the feasibility/flexibility test.
     uncertain_params: Sequence[Union[_GeneralVarData, _ParamData]]
-        A sequence (e.g., list) defining the set of uncertain parameters (:math:`\theta`). 
+        A sequence (e.g., list) defining the set of uncertain parameters (:math:`\theta`).
         These can be pyomo variables (Var) or parameters (param). However, if parameters are used,
-        they must be mutable.  
+        they must be mutable.
     param_nominal_values: Mapping[Union[_GeneralVarData, _ParamData], float]
         A mapping (e.g., ComponentMap) from the uncertain parameters (:math:`\theta`) to their
         nominal values (:math:`\theta^{N}`).
@@ -93,23 +93,23 @@ def solve_flex_index(
         A sequence (e.g., list) defining the set of control variables (:math:`z`).
     valid_var_bounds: MutableMapping[_GeneralVarData, Tuple[float, float]]
         A mapping (e.g., ComponentMap) defining bounds for all variables (:math:`x` and :math:`z`) that
-        should be valid for any :math:`\theta` between :math:`\underline{\theta}` and 
+        should be valid for any :math:`\theta` between :math:`\underline{\theta}` and
         :math:`\overline{\theta}`. These are only used to make the resulting flexibility test problem
-        more computationally tractable. All variable bounds in the model `m` are treated as performance 
-        constraints and relaxed (:math:`g_{j}(x, z, \theta) \leq u`). The bounds in `valid_var_bounds` 
-        are applied to the single-level problem generated from the active constraint method or one of 
+        more computationally tractable. All variable bounds in the model `m` are treated as performance
+        constraints and relaxed (:math:`g_{j}(x, z, \theta) \leq u`). The bounds in `valid_var_bounds`
+        are applied to the single-level problem generated from the active constraint method or one of
         the decision rules. This argument is not necessary for vertex enumeration or sampling.
     in_place: bool
-        If True, m is modified in place to generate the model for solving the flexibility test. If False, 
+        If True, m is modified in place to generate the model for solving the flexibility test. If False,
         the model is cloned first.
     cap_index_at_1: bool
-        If False, the flexibility index (:math:`\delta`) will be allowed to be larger than 1. Otherwise, 
+        If False, the flexibility index (:math:`\delta`) will be allowed to be larger than 1. Otherwise,
         it will be between 0 and 1. (default: True)
     reconstruct_decision_rule: Optional[bool]
-        If True, the decision rule will be re-trained for every flexibility test subproblem solved in the 
+        If True, the decision rule will be re-trained for every flexibility test subproblem solved in the
         bisection method.
     config: Optional[FlexTestConfig]
-        An object defining options for how the flexibility test should be solved for each subproblem 
+        An object defining options for how the flexibility test should be solved for each subproblem
         in the bisection method.
     log_level: int
         The level at which to log progress (default: logging.INFO)

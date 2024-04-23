@@ -16,7 +16,7 @@ def create_poly_model():
 
     offset = 1.5
 
-    m.obj = pe.Objective(expr=m.z ** 2)
+    m.obj = pe.Objective(expr=m.z**2)
     m.c1 = pe.Constraint(
         expr=0.01 * (m.z - offset) ** 4
         - 0.05 * (m.z - offset) ** 3
@@ -105,7 +105,9 @@ class TestFlexTest(unittest.TestCase):
         )
         nlp_solver = appsi.solvers.Ipopt()
         mip_solver = appsi.solvers.Gurobi()
-        opt = coramin.algorithms.multitree.multitree.MultiTree(mip_solver=mip_solver, nlp_solver=nlp_solver)
+        opt = coramin.algorithms.multitree.multitree.MultiTree(
+            mip_solver=mip_solver, nlp_solver=nlp_solver
+        )
         opt.config.stream_solver = False
         opt.config.obbt_at_new_incumbents = True
         opt.config.relax_integers_for_obbt = False

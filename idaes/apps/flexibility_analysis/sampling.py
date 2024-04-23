@@ -17,36 +17,44 @@ import coramin
 from pyomo.common.errors import ApplicationError
 from pyomo.contrib import appsi
 from .check_optimal import assert_optimal_termination
+
 try:
     from tqdm import tqdm
 except ImportError:
+
     def tqdm(items, ncols, desc, disable):
         return items
 
 
 class SamplingStrategy(enum.Enum):
-    grid = 'grid'
-    lhs = 'lhs'
+    grid = "grid"
+    lhs = "lhs"
+
 
 SamplingStrategy.grid.__doc__ = r"Use evenly spaced samples"
 SamplingStrategy.lhs.__doc__ = r"Use latin hypercube sampling"
 
 
 class SamplingInitStrategy(enum.Enum):
-    none = 'none'
-    square = 'square'
-    min_control_deviation = 'min_control_deviation'
-    all = 'all'
+    none = "none"
+    square = "square"
+    min_control_deviation = "min_control_deviation"
+    all = "all"
 
-SamplingInitStrategy.none.__doc__ = r"Use the solution from the previous sample to initialize the inner problem"
-SamplingInitStrategy.square.__doc__ = r"Fix the controls and solve a square problem to initialize the inner problem"
+
+SamplingInitStrategy.none.__doc__ = (
+    r"Use the solution from the previous sample to initialize the inner problem"
+)
+SamplingInitStrategy.square.__doc__ = (
+    r"Fix the controls and solve a square problem to initialize the inner problem"
+)
 SamplingInitStrategy.min_control_deviation.__doc__ = r"Fix the maximum constraint violation to 0 and minimized the square of the differences between the controls and their current values"
 SamplingInitStrategy.all.__doc__ = r"Try both square and min_control_deviation"
 
 
 class _GridSamplingState(enum.Enum):
-    increment = 'increment'
-    decrement = 'decrement'
+    increment = "increment"
+    decrement = "decrement"
 
 
 class _ParamIterator(object):
@@ -58,7 +66,9 @@ class _ParamIterator(object):
     ):
         self.state = _GridSamplingState.increment
         self.ndx = 0
-        self.pts = list(set([float(i) for i in np.linspace(param.lb, param.ub, num_points)]))
+        self.pts = list(
+            set([float(i) for i in np.linspace(param.lb, param.ub, num_points)])
+        )
         self.pts.sort()
         self.next_param = next_param
 
@@ -101,9 +111,7 @@ class _ParamIterator(object):
 
 
 class _GridSamplingIterator(object):
-    def __init__(
-        self, uncertain_params: Sequence[_GeneralVarData], num_points: int
-    ):
+    def __init__(self, uncertain_params: Sequence[_GeneralVarData], num_points: int):
         self.params = list(uncertain_params)
         self.param_iterators: List[Optional[_ParamIterator]] = [None] * len(self.params)
         self.param_iterators[-1] = _ParamIterator(
@@ -111,8 +119,9 @@ class _GridSamplingIterator(object):
         )
         for ndx in reversed(range(len(self.params) - 1)):
             self.param_iterators[ndx] = _ParamIterator(
-                param=self.params[ndx], num_points=num_points,
-                next_param=self.param_iterators[ndx + 1]
+                param=self.params[ndx],
+                num_points=num_points,
+                next_param=self.param_iterators[ndx + 1],
             )
         self.done = False
 
@@ -194,13 +203,14 @@ class SamplingConfig(ConfigDict):
     enable_progress_bar: bool
         If False, no progress bar will be shown (default: True)
     initialization_strategy: SamplingInitStrategy
-        The initialization strategy to use for the inner problems of the 
+        The initialization strategy to use for the inner problems of the
         flexibility test at each sample of the uncertain parameter values.
         (default: SamplingInitStrategy.none)
     total_violation: bool
-        If True, the objective of the flexibility test will be the sum of 
+        If True, the objective of the flexibility test will be the sum of
         the constraint violations instead of the maximum violation. (default: False)
     """
+
     def __init__(self):
         super().__init__(
             description=None,
@@ -229,7 +239,7 @@ class SamplingConfig(ConfigDict):
             "initialization_strategy",
             ConfigValue(
                 domain=InEnum(SamplingInitStrategy), default=SamplingInitStrategy.none
-            )
+            ),
         )
         self.total_violation: bool = self.declare(
             "total_violation", ConfigValue(domain=bool, default=False)
@@ -249,8 +259,8 @@ def _init_with_square_problem(m: _BlockData, controls, solver):
     for v in controls:
         if v.value is None:
             raise RuntimeError(
-                'Cannot initialize sampling problem with square problem because the '
-                'control values are not initialized.'
+                "Cannot initialize sampling problem with square problem because the "
+                "control values are not initialized."
             )
         v.fix()
     if m.max_constraint_violation.value is None:
@@ -292,7 +302,7 @@ def _solve_with_max_viol_fixed(m: _BlockData, controls, solver):
         if v.value is None:
             obj_expr += v**2
         else:
-            obj_expr += (v - v.value)**2
+            obj_expr += (v - v.value) ** 2
     m.control_setpoints_obj = pe.Objective(expr=obj_expr)
 
     try:
@@ -356,12 +366,20 @@ def _perform_sampling(
         for p, p_vals in sample_points.items():
             p.fix(p_vals[sample_ndx])
 
-        if not config.total_violation and config.initialization_strategy in {SamplingInitStrategy.square, SamplingInitStrategy.all}:
+        if not config.total_violation and config.initialization_strategy in {
+            SamplingInitStrategy.square,
+            SamplingInitStrategy.all,
+        }:
             max_viol_ub = _init_with_square_problem(m, controls, config.solver)
             if max_viol_ub is not None:
                 m.max_constraint_violation.setub(max_viol_ub)
-        if not config.total_violation and config.initialization_strategy in {SamplingInitStrategy.min_control_deviation, SamplingInitStrategy.all}:
-            feasible, control_vals = _solve_with_max_viol_fixed(m, controls, config.solver)
+        if not config.total_violation and config.initialization_strategy in {
+            SamplingInitStrategy.min_control_deviation,
+            SamplingInitStrategy.all,
+        }:
+            feasible, control_vals = _solve_with_max_viol_fixed(
+                m, controls, config.solver
+            )
         else:
             feasible = False
             control_vals = None

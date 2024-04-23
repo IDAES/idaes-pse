@@ -3,8 +3,17 @@ from pyomo.core.base.block import _BlockData
 from pyomo.core.base.var import _GeneralVarData, ScalarVar
 from pyomo.common.dependencies import attempt_import
 from pyomo.core.expr.numeric_expr import ExpressionBase
-coramin, coramin_available = attempt_import('coramin', 'coramin is required for flexibility analysis')
-from .var_utils import get_all_unfixed_variables, BoundsManager, _apply_var_bounds, get_used_unfixed_variables, _remove_var_bounds
+
+coramin, coramin_available = attempt_import(
+    "coramin", "coramin is required for flexibility analysis"
+)
+from .var_utils import (
+    get_all_unfixed_variables,
+    BoundsManager,
+    _apply_var_bounds,
+    get_used_unfixed_variables,
+    _remove_var_bounds,
+)
 from .indices import _ConIndex, _VarIndex
 from typing import MutableMapping, Tuple, Optional, Mapping, Union
 from pyomo.contrib.fbbt.fbbt import compute_bounds_on_expr
@@ -59,23 +68,29 @@ def _get_g_bounds(
     return g_bounds
 
 
-def _add_total_violation_disjunctions(m: _BlockData, g: ExpressionBase, key,
-                                      g_bounds: MutableMapping):
+def _add_total_violation_disjunctions(
+    m: _BlockData, g: ExpressionBase, key, g_bounds: MutableMapping
+):
     m.zero_violation_cons[key] = (
         None,
-        (m.constraint_violation[key] -
-         (1 - m.zero_violation[key]) * m.violation_disjunction_BigM[key]),
+        (
+            m.constraint_violation[key]
+            - (1 - m.zero_violation[key]) * m.violation_disjunction_BigM[key]
+        ),
         0,
     )
     m.nonzero_violation_cons[key] = (
         None,
-        (m.constraint_violation[key] - g -
-         (1 - m.nonzero_violation[key]) * m.violation_disjunction_BigM[key]),
+        (
+            m.constraint_violation[key]
+            - g
+            - (1 - m.nonzero_violation[key]) * m.violation_disjunction_BigM[key]
+        ),
         0,
     )
     m.violation_disjunction_cons[key] = (
         m.zero_violation[key] + m.nonzero_violation[key],
-        1
+        1,
     )
     lb, ub = g_bounds[key]
     m.violation_disjunction_BigM[key].value = max(abs(lb), abs(ub))
@@ -253,15 +268,27 @@ def _build_inner_problem(
         if c.lower is not None:
             key = _ConIndex(c, "lb")
             g = c.lower - c.body
-            _process_constraint(m, g, key, unique_constraint_violations,
-                                total_violation, total_violation_disjunctions,
-                                g_bounds)
+            _process_constraint(
+                m,
+                g,
+                key,
+                unique_constraint_violations,
+                total_violation,
+                total_violation_disjunctions,
+                g_bounds,
+            )
         if c.upper is not None:
             key = _ConIndex(c, "ub")
             g = c.body - c.upper
-            _process_constraint(m, g, key, unique_constraint_violations,
-                                total_violation, total_violation_disjunctions,
-                                g_bounds)
+            _process_constraint(
+                m,
+                g,
+                key,
+                unique_constraint_violations,
+                total_violation,
+                total_violation_disjunctions,
+                g_bounds,
+            )
 
     for v in original_vars:
         if v.is_integer():
@@ -269,15 +296,27 @@ def _build_inner_problem(
         if v.lb is not None:
             key = _VarIndex(v, "lb")
             g = v.lb - v
-            _process_constraint(m, g, key, unique_constraint_violations,
-                                total_violation, total_violation_disjunctions,
-                                g_bounds)
+            _process_constraint(
+                m,
+                g,
+                key,
+                unique_constraint_violations,
+                total_violation,
+                total_violation_disjunctions,
+                g_bounds,
+            )
         if v.ub is not None:
             key = _VarIndex(v, "ub")
             g = v - v.ub
-            _process_constraint(m, g, key, unique_constraint_violations,
-                                total_violation, total_violation_disjunctions,
-                                g_bounds)
+            _process_constraint(
+                m,
+                g,
+                key,
+                unique_constraint_violations,
+                total_violation,
+                total_violation_disjunctions,
+                g_bounds,
+            )
 
     if total_violation:
         m.total_constraint_violation_obj = pe.Objective(
@@ -294,7 +333,9 @@ def _build_inner_problem(
             key.var.setub(None)
             key.var.domain = pe.Reals
 
-    if (total_violation or unique_constraint_violations) and valid_var_bounds is not None:
+    if (
+        total_violation or unique_constraint_violations
+    ) and valid_var_bounds is not None:
         for key in m.ineq_violation_set:
             lb, ub = g_bounds[key]
             v = m.constraint_violation[key]

@@ -72,7 +72,11 @@ def get_var_bounds(m):
     return res
 
 
-def main(flex_index: bool = False, method: flexibility.FlexTestMethod = flexibility.FlexTestMethod.active_constraint, plot_history=True):
+def main(
+    flex_index: bool = False,
+    method: flexibility.FlexTestMethod = flexibility.FlexTestMethod.active_constraint,
+    plot_history=True,
+):
     np.random.seed(0)
     random.seed(1)
     m, nominal_values, param_bounds = create_model()
@@ -83,9 +87,9 @@ def main(flex_index: bool = False, method: flexibility.FlexTestMethod = flexibil
     config.method = method
     config.minlp_solver = pe.SolverFactory("gurobi_direct")
     config.sampling_config.solver = pe.SolverFactory("appsi_gurobi")
-    config.sampling_config.strategy = 'lhs'
+    config.sampling_config.strategy = "lhs"
     config.sampling_config.num_points = 600
-    config.sampling_config.initialization_strategy = 'square'
+    config.sampling_config.initialization_strategy = "square"
     if method == flexibility.FlexTestMethod.linear_decision_rule:
         config.decision_rule_config = flexibility.LinearDRConfig()
         config.decision_rule_config.solver = pe.SolverFactory("appsi_gurobi")
@@ -100,9 +104,15 @@ def main(flex_index: bool = False, method: flexibility.FlexTestMethod = flexibil
         config.decision_rule_config.plot_history = plot_history
         config.decision_rule_config.tensorflow_seed = 2
     if not flex_index:
-        results = flexibility.solve_flextest(m=m, uncertain_params=list(nominal_values.keys()),
-                                             param_nominal_values=nominal_values, param_bounds=param_bounds,
-                                             controls=[m.qc], valid_var_bounds=var_bounds, config=config)
+        results = flexibility.solve_flextest(
+            m=m,
+            uncertain_params=list(nominal_values.keys()),
+            param_nominal_values=nominal_values,
+            param_bounds=param_bounds,
+            controls=[m.qc],
+            valid_var_bounds=var_bounds,
+            config=config,
+        )
         print(results)
     else:
         results = flexibility.solve_flex_index(

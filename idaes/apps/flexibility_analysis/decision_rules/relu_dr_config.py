@@ -16,10 +16,10 @@ class ReluDRConfig(DRConfig):
     tensorflow_seed: int
         The seed to pass to tensorflow during training
     scale_inputs: bool
-        If False, the inputs to the neural network (uncertain parameter values) 
+        If False, the inputs to the neural network (uncertain parameter values)
         will not be scaled for training (default: True)
     scale_outputs: bool
-        If False, the outputs to the neural network (controls) 
+        If False, the outputs to the neural network (controls)
         will not be scaled for training (default: True)
     epochs: int
         The number of epochs to use in training the neural network (default: 2000)
@@ -30,6 +30,7 @@ class ReluDRConfig(DRConfig):
     plot_history: bool
         If True, the training history will be plotted (default: False)
     """
+
     def __init__(
         self,
         description=None,
@@ -64,9 +65,7 @@ class ReluDRConfig(DRConfig):
         self.batch_size: int = self.declare(
             "batch_size", ConfigValue(domain=int, default=20)
         )
-        self.learning_rate = self.declare(
-            "learning_rate", ConfigValue(default=None)
-        )
+        self.learning_rate = self.declare("learning_rate", ConfigValue(default=None))
         self.plot_history: bool = self.declare(
             "plot_history", ConfigValue(domain=bool, default=False)
         )

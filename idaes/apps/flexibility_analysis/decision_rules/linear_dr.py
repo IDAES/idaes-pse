@@ -18,6 +18,7 @@ class LinearDRConfig(DRConfig):
     solver: Union[Solver, OptSolver]
         The solver to use for building the linear decision rule (an LP solver).
     """
+
     def __init__(
         self,
         description=None,

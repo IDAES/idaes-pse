@@ -1,6 +1,10 @@
 from idaes.apps.flexibility_analysis import _check_dependencies
 import pyomo.environ as pe
-from idaes.apps.flexibility_analysis.sampling import perform_sampling, SamplingConfig, SamplingStrategy
+from idaes.apps.flexibility_analysis.sampling import (
+    perform_sampling,
+    SamplingConfig,
+    SamplingStrategy,
+)
 import unittest
 import numpy as np
 import pytest
@@ -15,7 +19,7 @@ def create_poly_model():
 
     offset = 1.5
 
-    m.obj = pe.Objective(expr=m.z ** 2)
+    m.obj = pe.Objective(expr=m.z**2)
     m.c1 = pe.Constraint(
         expr=0.01 * (m.z - offset) ** 4
         - 0.05 * (m.z - offset) ** 3
@@ -109,7 +113,7 @@ class TestSampling(unittest.TestCase):
             param_bounds=param_bounds,
             controls=[m.z],
             in_place=True,
-            config=config
+            config=config,
         )
         sample_points, max_violation_values, control_values = tmp
         max_viol_ndx = np.argmax(max_violation_values)
@@ -131,7 +135,7 @@ class TestSampling(unittest.TestCase):
             param_bounds=param_bounds,
             controls=[m.qc],
             in_place=True,
-            config=config
+            config=config,
         )
         sample_points, max_violation_values, control_values = tmp
         max_viol_ndx = np.argmax(max_violation_values)
@@ -151,7 +155,7 @@ class TestSampling(unittest.TestCase):
             param_bounds=param_bounds,
             controls=[m.qc],
             in_place=True,
-            config=config
+            config=config,
         )
         sample_points, max_violation_values, control_values = tmp
         max_viol_ndx = np.argmax(max_violation_values)

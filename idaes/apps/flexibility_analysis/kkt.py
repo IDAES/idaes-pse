@@ -1,7 +1,10 @@
 import pyomo.environ as pe
 from pyomo.core.expr.calculus.diff_with_pyomo import reverse_sd
 from pyomo.common.dependencies import attempt_import
-coramin, coramin_available = attempt_import('coramin', 'coramin is required for flexibility analysis')
+
+coramin, coramin_available = attempt_import(
+    "coramin", "coramin is required for flexibility analysis"
+)
 from pyomo.core.base.block import _BlockData
 from pyomo.contrib.fbbt.fbbt import fbbt
 from .var_utils import (

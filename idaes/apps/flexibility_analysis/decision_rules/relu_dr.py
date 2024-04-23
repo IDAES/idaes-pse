@@ -76,7 +76,7 @@ def construct_relu_decision_rule(
         training_output,
         batch_size=config.batch_size,
         epochs=config.epochs,
-        #verbose=0,
+        # verbose=0,
     )
 
     if config.plot_history:

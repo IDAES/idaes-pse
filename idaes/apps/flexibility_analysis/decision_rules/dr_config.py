@@ -3,9 +3,10 @@ from pyomo.common.config import ConfigDict
 
 class DRConfig(ConfigDict):
     r"""
-    A base class for specifying options for building 
+    A base class for specifying options for building
     decision rules.
     """
+
     def __init__(
         self,
         description=None,

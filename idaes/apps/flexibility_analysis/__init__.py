@@ -9,7 +9,7 @@ from .flextest import (
     FlexTest,
     ActiveConstraintConfig,
     build_active_constraint_flextest,
-    build_flextest_with_dr
+    build_flextest_with_dr,
 )
 from .decision_rules.dr_enum import DecisionRuleTypes
 from .decision_rules.linear_dr import LinearDRConfig

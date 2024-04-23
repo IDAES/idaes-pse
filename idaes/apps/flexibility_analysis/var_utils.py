@@ -3,7 +3,10 @@ from pyomo.core.base.block import _BlockData
 from pyomo.common.collections import ComponentSet
 from pyomo.core.expr.visitor import identify_variables
 from pyomo.common.dependencies import attempt_import
-coramin, coramin_available = attempt_import('coramin', 'coramin is required for flexibility analysis')
+
+coramin, coramin_available = attempt_import(
+    "coramin", "coramin is required for flexibility analysis"
+)
 from typing import Mapping, Sequence
 from pyomo.core.base.var import _GeneralVarData
 
