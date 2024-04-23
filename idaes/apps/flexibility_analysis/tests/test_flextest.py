@@ -1,6 +1,6 @@
 from idaes.apps.flexibility_analysis import _check_dependencies
 import pyomo.environ as pe
-from idaes.apps.flexibility_analysis.flextest import build_active_constraint_flextest
+from idaes.apps.flexibility_analysis.flextest import build_active_constraint_flextest, ActiveConstraintConfig
 import unittest
 from idaes.apps.flexibility_analysis.indices import _VarIndex
 from pyomo.contrib.fbbt import interval
@@ -115,14 +115,20 @@ class TestFlexTest(unittest.TestCase):
         for v in m.variable_temps.values():
             var_bounds[v] = (100, 1000)
         var_bounds[m.qc] = interval.mul(1.5, 1.5, *interval.sub(100, 1000, 350, 350))
-        build_active_constraint_flextest(
-            m,
-            uncertain_params=list(nominal_values.keys()),
-            param_nominal_values=nominal_values,
-            param_bounds=param_bounds,
-            valid_var_bounds=var_bounds,
-        )
-        opt = pe.SolverFactory("gurobi_direct")
-        res = opt.solve(m, tee=False)
-        pe.assert_optimal_termination(res)
-        self.assertAlmostEqual(m.max_constraint_violation.value, 4, 4)
+        config = ActiveConstraintConfig()
+        expected = [4, 8.8]
+        enforce_eq = [False, True]
+        for exp, ee in zip(expected, enforce_eq):
+            config.enforce_equalities = ee
+            build_active_constraint_flextest(
+                m,
+                uncertain_params=list(nominal_values.keys()),
+                param_nominal_values=nominal_values,
+                param_bounds=param_bounds,
+                valid_var_bounds=var_bounds,
+                config=config,
+            )
+            opt = pe.SolverFactory("gurobi_direct")
+            res = opt.solve(m, tee=False)
+            pe.assert_optimal_termination(res)
+            self.assertAlmostEqual(m.max_constraint_violation.value, exp, 4)

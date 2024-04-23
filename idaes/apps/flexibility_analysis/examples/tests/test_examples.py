@@ -22,7 +22,7 @@ class TestExamples(unittest.TestCase):
         self.assertEqual(
             res.termination, flex.FlexTestTermination.found_infeasible_point
         )
-        self.assertAlmostEqual(res.max_constraint_violation, 4, 5)
+        self.assertAlmostEqual(res.max_constraint_violation, 8.8, 5)
 
         res = linear_hx_network.main(
             flex_index=False,

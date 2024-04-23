@@ -208,14 +208,22 @@ class SamplingConfig(ConfigDict):
         the constraint violations instead of the maximum violation. (default: False)
     """
 
-    def __init__(self):
+    def __init__(
+        self,
+        description=None,
+        doc=None,
+        implicit=False,
+        implicit_domain=None,
+        visibility=0,
+    ):
         super().__init__(
-            description=None,
-            doc=None,
-            implicit=False,
-            implicit_domain=None,
-            visibility=0,
+            description=description,
+            doc=doc,
+            implicit=implicit,
+            implicit_domain=implicit_domain,
+            visibility=visibility,
         )
+
         self.strategy: SamplingStrategy = self.declare(
             "strategy",
             ConfigValue(domain=InEnum(SamplingStrategy), default=SamplingStrategy.lhs),

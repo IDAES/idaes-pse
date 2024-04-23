@@ -101,14 +101,22 @@ class ActiveConstraintConfig(ConfigDict):
         the constraint violations instead of the maximum violation. (default: False)
     """
 
-    def __init__(self):
+    def __init__(
+        self,
+        description=None,
+        doc=None,
+        implicit=False,
+        implicit_domain=None,
+        visibility=0,
+    ):
         super().__init__(
-            description=None,
-            doc=None,
-            implicit=False,
-            implicit_domain=None,
-            visibility=0,
+            description=description,
+            doc=doc,
+            implicit=implicit,
+            implicit_domain=implicit_domain,
+            visibility=visibility,
         )
+
         self.use_haar_conditions: bool = self.declare(
             "use_haar_conditions", ConfigValue(domain=bool, default=True)
         )
@@ -159,14 +167,22 @@ class FlexTestConfig(ConfigDict):
         of the violations of all constraints is considered. Should normally be False. (default: False)
     """
 
-    def __init__(self):
+    def __init__(
+        self,
+        description=None,
+        doc=None,
+        implicit=False,
+        implicit_domain=None,
+        visibility=0,
+    ):
         super().__init__(
-            description=None,
-            doc=None,
-            implicit=False,
-            implicit_domain=None,
-            visibility=0,
+            description=description,
+            doc=doc,
+            implicit=implicit,
+            implicit_domain=implicit_domain,
+            visibility=visibility,
         )
+
         self.feasibility_tol: float = self.declare(
             "feasibility_tol", ConfigValue(domain=PositiveFloat, default=1e-6)
         )
@@ -567,7 +583,7 @@ def _solve_flextest_vertex_enumeration(
     param_bounds: Mapping[Union[_GeneralVarData, _ParamData], Tuple[float, float]],
     controls: Sequence[_GeneralVarData],
     valid_var_bounds: MutableMapping[_GeneralVarData, Tuple[float, float]],
-    config: Optional[FlexTestConfig] = None,
+    config: FlexTestConfig,
 ) -> FlexTestResults:
     config: FlexTestConfig = config()
     config.sampling_config.num_points = 2
