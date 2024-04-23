@@ -235,7 +235,7 @@ class SmoothVLE2:
 
         # ---------------------------------------------------------------------
         # If flash, initialize g+ and g- slacks
-        _calculate_ceos_derivative_slacks(blk, liquid_phase, vapor_phase)
+        _calculate_ceos_derivative_slacks(blk, pp, liquid_phase, vapor_phase)
 
     @staticmethod
     def phase_equil_initialization(b, phase_pair):
