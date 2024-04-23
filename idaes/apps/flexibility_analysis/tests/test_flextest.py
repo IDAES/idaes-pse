@@ -101,7 +101,7 @@ class TestFlexTest(unittest.TestCase):
             param_bounds=param_bounds,
             valid_var_bounds=var_bounds,
         )
-        opt = pe.SolverFactory('scip')
+        opt = pe.SolverFactory("scip")
         res = opt.solve(m)
         pe.assert_optimal_termination(res)
         self.assertAlmostEqual(m.max_constraint_violation.value, 48.4649, 4)

@@ -96,7 +96,7 @@ def create_hx_network_model():
 class TestSampling(unittest.TestCase):
     def test_poly(self):
         m, nominal_values, param_bounds = create_poly_model()
-        opt = pe.SolverFactory('scip')
+        opt = pe.SolverFactory("scip")
         config = SamplingConfig()
         config.solver = opt
         config.num_points = 5
