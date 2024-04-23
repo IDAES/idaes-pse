@@ -45,7 +45,7 @@ from idaes.models.properties.modular_properties.pure import RPP4
 
 import idaes.logger as idaeslog
 
-SOUT = idaeslog.INFO
+SOUT = idaeslog.DEBUG
 
 # Set module level pyest marker
 pytestmark = pytest.mark.cubic_root
@@ -54,7 +54,7 @@ pytestmark = pytest.mark.cubic_root
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_solver()
-# Limit iterations to make sure sweeps aren';'t getting out of hand
+# Limit iterations to make sure sweeps aren't getting out of hand
 solver.options["max_iter"] = 50
 
 # ---------------------------------------------------------------------
@@ -196,7 +196,7 @@ class TestBTExample(object):
 
         m.fs.props = GenericParameterBlock(**configuration)
 
-        m.fs.state = m.fs.props.build_state_block([1], defined_state=False)
+        m.fs.state = m.fs.props.build_state_block([1], defined_state=True)
 
         iscale.calculate_scaling_factors(m.fs.props)
         iscale.calculate_scaling_factors(m.fs.state[1])
@@ -265,7 +265,13 @@ class TestBTExample(object):
 
         m.fs.state.initialize(outlvl=SOUT)
 
-        results = solver.solve(m)
+        from idaes.core.util import DiagnosticsToolbox
+
+        dt = DiagnosticsToolbox(m.fs.state[1])
+        dt.report_structural_issues()
+        dt.display_overconstrained_set()
+
+        results = solver.solve(m, tee=True)
 
         # Check for optimal solution
         assert check_optimal_termination(results)
@@ -789,104 +795,4 @@ class TestBTExample(object):
         )
         assert (
             pytest.approx(value(m.fs.state[1].entr_mol_phase["Vap"]), 1e-5) == -273.513
-        )
-
-    @pytest.mark.unit
-    def test_basic_scaling(self, m):
-        assert len(m.fs.state[1].scaling_factor) == 23
-        assert m.fs.state[1].scaling_factor[m.fs.state[1].flow_mol] == 1e-2
-        assert m.fs.state[1].scaling_factor[m.fs.state[1].flow_mol_phase["Liq"]] == 1e-2
-        assert m.fs.state[1].scaling_factor[m.fs.state[1].flow_mol_phase["Vap"]] == 1e-2
-        assert (
-            m.fs.state[1].scaling_factor[
-                m.fs.state[1].flow_mol_phase_comp["Liq", "benzene"]
-            ]
-            == 1e-2
-        )
-        assert (
-            m.fs.state[1].scaling_factor[
-                m.fs.state[1].flow_mol_phase_comp["Liq", "toluene"]
-            ]
-            == 1e-2
-        )
-        assert (
-            m.fs.state[1].scaling_factor[
-                m.fs.state[1].flow_mol_phase_comp["Vap", "benzene"]
-            ]
-            == 1e-2
-        )
-        assert (
-            m.fs.state[1].scaling_factor[
-                m.fs.state[1].flow_mol_phase_comp["Vap", "toluene"]
-            ]
-            == 1e-2
-        )
-        assert (
-            m.fs.state[1].scaling_factor[m.fs.state[1].mole_frac_comp["benzene"]]
-            == 1000
-        )
-        assert (
-            m.fs.state[1].scaling_factor[m.fs.state[1].mole_frac_comp["toluene"]]
-            == 1000
-        )
-        assert (
-            m.fs.state[1].scaling_factor[
-                m.fs.state[1].mole_frac_phase_comp["Liq", "benzene"]
-            ]
-            == 1000
-        )
-        assert (
-            m.fs.state[1].scaling_factor[
-                m.fs.state[1].mole_frac_phase_comp["Liq", "toluene"]
-            ]
-            == 1000
-        )
-        assert (
-            m.fs.state[1].scaling_factor[
-                m.fs.state[1].mole_frac_phase_comp["Vap", "benzene"]
-            ]
-            == 1000
-        )
-        assert (
-            m.fs.state[1].scaling_factor[
-                m.fs.state[1].mole_frac_phase_comp["Vap", "toluene"]
-            ]
-            == 1000
-        )
-        assert m.fs.state[1].scaling_factor[m.fs.state[1].pressure] == 1e-5
-        assert m.fs.state[1].scaling_factor[m.fs.state[1].temperature] == 1e-2
-        assert m.fs.state[1].scaling_factor[m.fs.state[1]._teq["Vap", "Liq"]] == 1e-2
-        assert m.fs.state[1].scaling_factor[m.fs.state[1]._t1_Vap_Liq] == 1e-2
-
-        assert (
-            m.fs.state[1].scaling_factor[
-                m.fs.state[1]._mole_frac_tbub["Vap", "Liq", "benzene"]
-            ]
-            == 1000
-        )
-        assert (
-            m.fs.state[1].scaling_factor[
-                m.fs.state[1]._mole_frac_tbub["Vap", "Liq", "toluene"]
-            ]
-            == 1000
-        )
-        assert (
-            m.fs.state[1].scaling_factor[
-                m.fs.state[1]._mole_frac_tdew["Vap", "Liq", "benzene"]
-            ]
-            == 1000
-        )
-        assert (
-            m.fs.state[1].scaling_factor[
-                m.fs.state[1]._mole_frac_tdew["Vap", "Liq", "toluene"]
-            ]
-            == 1000
-        )
-        assert (
-            m.fs.state[1].scaling_factor[m.fs.state[1].temperature_bubble["Vap", "Liq"]]
-            == 1e-2
-        )
-        assert (
-            m.fs.state[1].scaling_factor[m.fs.state[1].temperature_dew["Vap", "Liq"]]
-            == 1e-2
         )

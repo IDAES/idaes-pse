@@ -86,17 +86,11 @@ class SmoothVLE2:
 
         # Equilibrium temperature
         def rule_teq(b):
-            if b.params.get_phase(phase_pair[0]).is_vapor_phase():
-                vapor_phase = phase_pair[0]
-                liquid_phase = phase_pair[1]
-            else:
-                vapor_phase = phase_pair[1]
-                liquid_phase = phase_pair[0]
             return (
                 b._teq[phase_pair]
                 - b.temperature
-                - s[vapor_phase] * t_units
-                + s[liquid_phase] * t_units
+                - s[v_phase] * t_units
+                + s[l_phase] * t_units
                 == 0
             )
 
@@ -170,6 +164,7 @@ class SmoothVLE2:
             if b.params.get_phase(p).is_vapor_phase():
                 return smooth_min(gn[p] * f_units, flow_phase, eps) == 0
             else:
+                # return smooth_min((gp[p] + s[p]) * f_units, flow_phase, eps) == 0
                 return smooth_min(gp[p] * f_units, flow_phase, eps) == 0
 
         b.add_component(
@@ -243,8 +238,13 @@ class SmoothVLE2:
 
         for c in b.component_objects(Constraint):
             # Activate equilibrium constraints
-            if c.local_name in ("_teq_constraint" + suffix,):
-                c.deactivate()
+            if c.local_name in (
+                "_teq_constraint" + suffix,
+                "temperature_slack_complementarity" + suffix,
+                "cubic_root_complementarity" + suffix,
+                "cubic_slack_complementarity" + suffix,
+            ):
+                c.activate()
 
 
 def _calculate_temperature_slacks(b, phase_pair, liquid_phase, vapor_phase):
