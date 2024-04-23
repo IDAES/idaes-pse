@@ -1,6 +1,9 @@
 from idaes.apps.flexibility_analysis import _check_dependencies
 import pyomo.environ as pe
-from idaes.apps.flexibility_analysis.flextest import build_active_constraint_flextest, ActiveConstraintConfig
+from idaes.apps.flexibility_analysis.flextest import (
+    build_active_constraint_flextest,
+    ActiveConstraintConfig,
+)
 import unittest
 from idaes.apps.flexibility_analysis.indices import _VarIndex
 from pyomo.contrib.fbbt import interval
