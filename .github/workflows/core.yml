@@ -38,7 +38,7 @@ concurrency:
 
 env:
   # default Python version to use for checks that do not require multiple versions
-  DEFAULT_PYTHON_VERSION: '3.8'
+  DEFAULT_PYTHON_VERSION: '3.10'
   IDAES_CONDA_ENV_NAME_DEV: idaes-pse-dev
   PYTEST_ADDOPTS: "--color=yes"
 
@@ -53,10 +53,10 @@ jobs:
     # OS and/or Python version don't make a difference, so we choose ubuntu and 3.10 for performance
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
       - name: Install Black
         # unlike the other jobs, we don't need to install IDAES and/or all the dev dependencies,
         # but we still want to specify the Black version to use in requirements-dev.txt for local development
@@ -74,7 +74,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout source
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Run Spell Checker
         uses: crate-ci/typos@master
         with: 
@@ -88,7 +88,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11']
+        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
         os:
           - linux
           - win64
@@ -97,15 +97,15 @@ jobs:
             runner-image: ubuntu-20.04
           - os: win64
             runner-image: windows-2022
-          - python-version: '3.8'
+          - python-version: '3.11'
             # only generate coverage report for a single python version in the matrix
             # to avoid overloading Codecov
             cov-report: true
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/display-debug-info
       - name: Set up Conda environment
-        uses: conda-incubator/setup-miniconda@v2.1.1
+        uses: conda-incubator/setup-miniconda@v3
         with:
           activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
           python-version: ${{ matrix.python-version }}
@@ -119,21 +119,48 @@ jobs:
           echo PYTEST_ADDOPTS="$PYTEST_ADDOPTS --cov --cov-report=xml" >> "$GITHUB_ENV"
       - name: Run pytest (not integration)
         run: |
-          pytest -m "not integration"
-      - name: Upload coverage report to Codecov
+          pytest --pyargs idaes -m "not integration"
+      - name: Upload coverage report as GHA workflow artifact
         if: matrix.cov-report
-        uses: codecov/codecov-action@v2
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report-${{ matrix.os }}
+          path: coverage.xml
+          if-no-files-found: error
+
+  upload-coverage:
+    name: Upload coverage report (Codecov)
+    needs: [pytest]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        report-variant: ["linux", "win64"]
+    steps:
+      # the checkout step is needed to have access to codecov.yml
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: coverage-report-${{ matrix.report-variant }}
+      - name: Upload coverage report to Codecov
+        uses: codecov/codecov-action@v4
         with:
           fail_ci_if_error: true
+          verbose: true
+          # NOTE: secrets are not available for pull_request workflows
+          # However, as of 2024-02-10, Codecov is still allowing tokenless upload from PRs
+          # but does require token for other workflows e.g. merge to `main`
+          # see https://github.com/codecov/codecov-action/issues/1274#issuecomment-1934437359
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   build-docs:
     name: Build Sphinx docs
     runs-on: ubuntu-latest
     needs: [code-formatting, spell-check]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Set up Conda environment
-        uses: conda-incubator/setup-miniconda@v2.1.1
+        uses: conda-incubator/setup-miniconda@v3
         with:
           activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
@@ -147,7 +174,7 @@ jobs:
           cd docs/
           python build.py --timeout 600
       - name: Publish built docs
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: idaes-pse-docs-html
           path: docs/build/html/
@@ -162,12 +189,12 @@ jobs:
       pylint_output_path: pylint.json
       pylint_todo_sentinel: PYLINT-TODO
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       # NOTE: using Conda instead of actions/setup-python in this job is not strictly necessary
       # as it doesn't need to run on Windows or use the setup-idaes local action,
       # but we do it for consistency with the other jobs
       - name: Set up Conda environment
-        uses: conda-incubator/setup-miniconda@v2.1.1
+        uses: conda-incubator/setup-miniconda@v3
         with:
           activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
@@ -180,19 +207,11 @@ jobs:
           echo "::group::Display pylint version"
           pip show pylint astroid
           echo "::endgroup::"
-          pylint --rcfile=./.pylint/pylintrc --disable=R --output-format=idaes_reporters.MultiReporter "$pylint_target_dir"
-      - name: Generate pylint report on failure
-        if: failure()
+          pylint --rcfile=./.pylint/pylintrc --disable=R --output-format=idaes_reporters.DisplayProgress,colorized,idaes_reporters.GHACheckAnnotations:pylint.txt "$pylint_target_dir"
+      - name: Generate GHA Check Annotations from Pylint report
+        if: success() || failure()
         run: |
-          base_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blame/$GITHUB_SHA"
-
-          echo '
-          ## Pylint failures
-
-          For more information, refer to the [Pylint section](https://github.com/IDAES/idaes-pse/wiki/IDAES-Check-Suite#pylint) of the [IDAES check suite Wiki page](https://github.com/IDAES/idaes-pse/wiki/IDAES-Check-Suite).
-
-          ' >> "$GITHUB_STEP_SUMMARY"
-          python .pylint/render_report.py --base-url="$base_url" --markdown-output-path="$GITHUB_STEP_SUMMARY" --pylint-data-path="$pylint_output_path"
+          cat pylint.txt || echo "GHA-compatible Pylint report not found"
       - name: Show PYLINT-TODO comments left in the codebase
         if: always()
         run: |
@@ -205,9 +224,9 @@ jobs:
     name: Compatibility tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Set up Conda environment
-        uses: conda-incubator/setup-miniconda@v2.1.1
+        uses: conda-incubator/setup-miniconda@v3
         with:
           activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}

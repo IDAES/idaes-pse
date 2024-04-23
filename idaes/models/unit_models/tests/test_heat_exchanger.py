@@ -28,7 +28,6 @@ from pyomo.environ import (
     units as pyunits,
 )
 from pyomo.common.config import ConfigBlock
-from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 
 from idaes.core import (
     FlowsheetBlock,
@@ -71,6 +70,7 @@ from idaes.core.initialization import (
     BlockTriangularizationInitializer,
     InitializationStatus,
 )
+from idaes.core.util import DiagnosticsToolbox
 
 
 # Imports to assemble BT-PR with different units
@@ -501,6 +501,13 @@ class TestBTX_cocurrent(object):
         m.fs.unit.area.fix(1)
         m.fs.unit.overall_heat_transfer_coefficient.fix(100)
 
+        # Bound temperature differences to avoid division by zero
+        m.fs.unit.delta_temperature_in[0.0].setlb(40)
+        m.fs.unit.delta_temperature_out[0.0].setlb(0.1)
+
+        m.fs.unit.delta_temperature_in[0.0].setub(80)
+        m.fs.unit.delta_temperature_out[0.0].setub(35)
+
         return m
 
     @pytest.mark.build
@@ -548,21 +555,11 @@ class TestBTX_cocurrent(object):
         assert number_total_constraints(btx) == 38
         assert number_unused_variables(btx) == 0
 
-    @pytest.mark.integration
-    def test_units(self, btx):
-        assert_units_equivalent(
-            btx.fs.unit.overall_heat_transfer_coefficient,
-            pyunits.W / pyunits.m**2 / pyunits.K,
-        )
-        assert_units_equivalent(btx.fs.unit.area, pyunits.m**2)
-        assert_units_equivalent(btx.fs.unit.delta_temperature_in, pyunits.K)
-        assert_units_equivalent(btx.fs.unit.delta_temperature_out, pyunits.K)
-
-        assert_units_consistent(btx)
-
-    @pytest.mark.unit
-    def test_dof(self, btx):
-        assert degrees_of_freedom(btx) == 0
+    @pytest.mark.component
+    def test_structural_issues(self, btx):
+        dt = DiagnosticsToolbox(btx)
+        dt.display_potential_evaluation_errors()
+        dt.assert_no_structural_warnings()
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -574,11 +571,11 @@ class TestBTX_cocurrent(object):
                 "HX Area": btx.fs.unit.area,
                 "Heat Duty": btx.fs.unit.heat_duty[0],
                 "HX Coefficient": btx.fs.unit.overall_heat_transfer_coefficient[0],
+                "Delta T In": btx.fs.unit.delta_temperature_in[0],
+                "Delta T Out": btx.fs.unit.delta_temperature_out[0],
             },
             "exprs": {
                 "Delta T Driving": btx.fs.unit.delta_temperature[0],
-                "Delta T In": btx.fs.unit.delta_temperature_in[0],
-                "Delta T Out": btx.fs.unit.delta_temperature_out[0],
             },
         }
 
@@ -711,6 +708,13 @@ class TestBTX_cocurrent(object):
         )
         assert abs(hot_side + cold_side) <= 1e-6
 
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, btx):
+        dt = DiagnosticsToolbox(btx)
+        dt.assert_no_numerical_warnings()
+
 
 # -----------------------------------------------------------------------------
 class TestBTX_cocurrent_alt_name(object):
@@ -743,6 +747,13 @@ class TestBTX_cocurrent_alt_name(object):
 
         m.fs.unit.area.fix(1)
         m.fs.unit.overall_heat_transfer_coefficient.fix(100)
+
+        # Bound temperature differences to avoid division by zero
+        m.fs.unit.delta_temperature_in[0.0].setlb(40)
+        m.fs.unit.delta_temperature_out[0.0].setlb(0.1)
+
+        m.fs.unit.delta_temperature_in[0.0].setub(80)
+        m.fs.unit.delta_temperature_out[0.0].setub(35)
 
         return m
 
@@ -791,21 +802,10 @@ class TestBTX_cocurrent_alt_name(object):
         assert number_total_constraints(btx) == 38
         assert number_unused_variables(btx) == 0
 
-    @pytest.mark.integration
-    def test_units(self, btx):
-        assert_units_equivalent(
-            btx.fs.unit.overall_heat_transfer_coefficient,
-            pyunits.W / pyunits.m**2 / pyunits.K,
-        )
-        assert_units_equivalent(btx.fs.unit.area, pyunits.m**2)
-        assert_units_equivalent(btx.fs.unit.delta_temperature_in, pyunits.K)
-        assert_units_equivalent(btx.fs.unit.delta_temperature_out, pyunits.K)
-
-        assert_units_consistent(btx)
-
-    @pytest.mark.unit
-    def test_dof(self, btx):
-        assert degrees_of_freedom(btx) == 0
+    @pytest.mark.component
+    def test_structural_issues(self, btx):
+        dt = DiagnosticsToolbox(btx)
+        dt.assert_no_structural_warnings()
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -817,11 +817,11 @@ class TestBTX_cocurrent_alt_name(object):
                 "HX Area": btx.fs.unit.area,
                 "Heat Duty": btx.fs.unit.heat_duty[0],
                 "HX Coefficient": btx.fs.unit.overall_heat_transfer_coefficient[0],
+                "Delta T In": btx.fs.unit.delta_temperature_in[0],
+                "Delta T Out": btx.fs.unit.delta_temperature_out[0],
             },
             "exprs": {
                 "Delta T Driving": btx.fs.unit.delta_temperature[0],
-                "Delta T In": btx.fs.unit.delta_temperature_in[0],
-                "Delta T Out": btx.fs.unit.delta_temperature_out[0],
             },
         }
 
@@ -950,6 +950,13 @@ class TestBTX_cocurrent_alt_name(object):
         )
         assert abs(hot_side + cold_side) <= 1e-6
 
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, btx):
+        dt = DiagnosticsToolbox(btx)
+        dt.assert_no_numerical_warnings()
+
 
 # -----------------------------------------------------------------------------
 @pytest.mark.iapws
@@ -1047,21 +1054,11 @@ class TestIAPWS_countercurrent(object):
         assert number_total_constraints(iapws) == 10
         assert number_unused_variables(iapws) == 0
 
-    @pytest.mark.integration
-    def test_units(self, iapws):
-        assert_units_equivalent(
-            iapws.fs.unit.overall_heat_transfer_coefficient,
-            pyunits.W / pyunits.m**2 / pyunits.K,
-        )
-        assert_units_equivalent(iapws.fs.unit.area, pyunits.m**2)
-        assert_units_equivalent(iapws.fs.unit.delta_temperature_in, pyunits.K)
-        assert_units_equivalent(iapws.fs.unit.delta_temperature_out, pyunits.K)
-
-        assert_units_consistent(iapws)
-
-    @pytest.mark.unit
-    def test_dof(self, iapws):
-        assert degrees_of_freedom(iapws) == 0
+    @pytest.mark.component
+    def test_structural_issues(self, iapws):
+        dt = DiagnosticsToolbox(iapws)
+        # Delta T calculations cause potential evaluation errors that are hard to bound
+        dt.assert_no_structural_warnings(ignore_evaluation_errors=True)
 
     @pytest.mark.unit
     def test_dof_alt_name1(self, iapws):
@@ -1088,11 +1085,11 @@ class TestIAPWS_countercurrent(object):
                 "HX Area": iapws.fs.unit.area,
                 "Heat Duty": iapws.fs.unit.heat_duty[0],
                 "HX Coefficient": iapws.fs.unit.overall_heat_transfer_coefficient[0],
+                "Delta T In": iapws.fs.unit.delta_temperature_in[0],
+                "Delta T Out": iapws.fs.unit.delta_temperature_out[0],
             },
             "exprs": {
                 "Delta T Driving": iapws.fs.unit.delta_temperature[0],
-                "Delta T In": iapws.fs.unit.delta_temperature_in[0],
-                "Delta T Out": iapws.fs.unit.delta_temperature_out[0],
             },
         }
 
@@ -1242,6 +1239,13 @@ class TestIAPWS_countercurrent(object):
         )
         assert abs(hot_side + cold_side) <= 1e-6
 
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, iapws):
+        dt = DiagnosticsToolbox(iapws)
+        dt.assert_no_numerical_warnings()
+
 
 # -----------------------------------------------------------------------------
 class TestSaponification_crossflow(object):
@@ -1264,8 +1268,8 @@ class TestSaponification_crossflow(object):
         m.fs.unit.hot_side_inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
         m.fs.unit.hot_side_inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
         m.fs.unit.hot_side_inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
-        m.fs.unit.hot_side_inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
-        m.fs.unit.hot_side_inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
+        m.fs.unit.hot_side_inlet.conc_mol_comp[0, "SodiumAcetate"].fix(1e-12)
+        m.fs.unit.hot_side_inlet.conc_mol_comp[0, "Ethanol"].fix(1e-12)
 
         m.fs.unit.cold_side_inlet.flow_vol[0].fix(1e-3)
         m.fs.unit.cold_side_inlet.temperature[0].fix(300)
@@ -1273,8 +1277,8 @@ class TestSaponification_crossflow(object):
         m.fs.unit.cold_side_inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
         m.fs.unit.cold_side_inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
         m.fs.unit.cold_side_inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
-        m.fs.unit.cold_side_inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
-        m.fs.unit.cold_side_inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
+        m.fs.unit.cold_side_inlet.conc_mol_comp[0, "SodiumAcetate"].fix(1e-12)
+        m.fs.unit.cold_side_inlet.conc_mol_comp[0, "Ethanol"].fix(1e-12)
 
         m.fs.unit.area.fix(1000)
         m.fs.unit.overall_heat_transfer_coefficient.fix(100)
@@ -1323,21 +1327,11 @@ class TestSaponification_crossflow(object):
         assert number_total_constraints(sapon) == 20
         assert number_unused_variables(sapon) == 0
 
-    @pytest.mark.integration
-    def test_units(self, sapon):
-        assert_units_equivalent(
-            sapon.fs.unit.overall_heat_transfer_coefficient,
-            pyunits.W / pyunits.m**2 / pyunits.K,
-        )
-        assert_units_equivalent(sapon.fs.unit.area, pyunits.m**2)
-        assert_units_equivalent(sapon.fs.unit.delta_temperature_in, pyunits.K)
-        assert_units_equivalent(sapon.fs.unit.delta_temperature_out, pyunits.K)
-
-        assert_units_consistent(sapon)
-
-    @pytest.mark.unit
-    def test_dof(self, sapon):
-        assert degrees_of_freedom(sapon) == 0
+    @pytest.mark.component
+    def test_structural_issues(self, sapon):
+        dt = DiagnosticsToolbox(sapon)
+        # Delta T calculations cause potential evaluation errors that are hard to bound
+        dt.assert_no_structural_warnings(ignore_evaluation_errors=True)
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -1350,11 +1344,11 @@ class TestSaponification_crossflow(object):
                 "Heat Duty": sapon.fs.unit.heat_duty[0],
                 "HX Coefficient": sapon.fs.unit.overall_heat_transfer_coefficient[0],
                 "Crossflow Factor": sapon.fs.unit.crossflow_factor[0],
+                "Delta T In": sapon.fs.unit.delta_temperature_in[0],
+                "Delta T Out": sapon.fs.unit.delta_temperature_out[0],
             },
             "exprs": {
                 "Delta T Driving": sapon.fs.unit.delta_temperature[0],
-                "Delta T In": sapon.fs.unit.delta_temperature_in[0],
-                "Delta T Out": sapon.fs.unit.delta_temperature_out[0],
             },
         }
 
@@ -1527,6 +1521,15 @@ class TestSaponification_crossflow(object):
             )
         )
         assert abs(hot_side + cold_side) <= 1e0
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, sapon):
+        # Heat transfer constraint has a a residual of ~1e-3
+        # Model could be better scaled
+        dt = DiagnosticsToolbox(sapon, constraint_residual_tolerance=1e-2)
+        dt.assert_no_numerical_warnings()
 
 
 # -----------------------------------------------------------------------------
@@ -1726,21 +1729,11 @@ class TestBT_Generic_cocurrent(object):
         assert number_total_constraints(btx) == 118
         assert number_unused_variables(btx) == 20
 
-    @pytest.mark.integration
-    def test_units(self, btx):
-        assert_units_equivalent(
-            btx.fs.unit.overall_heat_transfer_coefficient,
-            pyunits.W / pyunits.m**2 / pyunits.K,
-        )
-        assert_units_equivalent(btx.fs.unit.area, pyunits.m**2)
-        assert_units_equivalent(btx.fs.unit.delta_temperature_in, pyunits.K)
-        assert_units_equivalent(btx.fs.unit.delta_temperature_out, pyunits.K)
-
-        assert_units_consistent(btx)
-
-    @pytest.mark.unit
-    def test_dof(self, btx):
-        assert degrees_of_freedom(btx) == 0
+    @pytest.mark.component
+    def test_structural_issues(self, btx):
+        dt = DiagnosticsToolbox(btx)
+        # Delta T calculations cause potential evaluation errors that are hard to bound
+        dt.assert_no_structural_warnings(ignore_evaluation_errors=True)
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -1752,11 +1745,11 @@ class TestBT_Generic_cocurrent(object):
                 "HX Area": btx.fs.unit.area,
                 "Heat Duty": btx.fs.unit.heat_duty[0],
                 "HX Coefficient": btx.fs.unit.overall_heat_transfer_coefficient[0],
+                "Delta T In": btx.fs.unit.delta_temperature_in[0],
+                "Delta T Out": btx.fs.unit.delta_temperature_out[0],
             },
             "exprs": {
                 "Delta T Driving": btx.fs.unit.delta_temperature[0],
-                "Delta T In": btx.fs.unit.delta_temperature_in[0],
-                "Delta T Out": btx.fs.unit.delta_temperature_out[0],
             },
         }
 
@@ -1894,6 +1887,13 @@ class TestBT_Generic_cocurrent(object):
             to_units=pyunits.J / pyunits.s,
         )
         assert abs(hot_side + cold_side) <= 1e-6
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, btx):
+        dt = DiagnosticsToolbox(btx)
+        dt.assert_no_numerical_warnings()
 
     @pytest.mark.component
     def test_initialization_error(self, btx):

@@ -40,7 +40,6 @@ from idaes.core.util.testing import PhysicalParameterTestBlock, initialization_t
 from idaes.core.solvers import get_solver
 from idaes.core.initialization import (
     BlockTriangularizationInitializer,
-    InitializationStatus,
 )
 
 

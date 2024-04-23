@@ -175,6 +175,8 @@ def test_luminous_intensity(unit_set):
 derived_quantities = {
     "area": units.m**2,
     "volume": units.m**3,
+    "volume_mass": units.m**3 / units.kg,
+    "volume_mole": units.m**3 / units.mol,
     "flow_mass": units.kg * units.s**-1,
     "flow_mole": units.mol * units.s**-1,
     "flow_vol": units.m**3 * units.s**-1,
@@ -192,9 +194,7 @@ derived_quantities = {
     "dynamic_viscosity": (units.kg * units.m**-1 * units.s**-1),
     "entropy": (units.kg * units.m**2 * units.s**-2 * units.K**-1),
     "entropy_mass": (units.m**2 * units.s**-2 * units.K**-1),
-    "entropy_mole": (
-        units.kg * units.m**2 * units.s**-2 * units.K**-1 * units.mol**-1
-    ),
+    "entropy_mole": (units.kg * units.m**2 * units.s**-2 * units.K**-1 * units.mol**-1),
     "power": (units.kg * units.m**2 * units.s**-3),
     "voltage": (units.kg * units.m**2 * units.s**-3 * units.ampere**-1),
     "pressure": (units.kg * units.m**-1 * units.s**-2),
@@ -204,9 +204,7 @@ derived_quantities = {
     ),
     "heat_transfer_coefficient": (units.kg * units.s**-3 * units.K**-1),
     "thermal_conductivity": (units.kg * units.m * units.s**-3 * units.K**-1),
-    "gas_constant": (
-        units.kg * units.m**2 * units.s**-2 * units.K**-1 * units.mol**-1
-    ),
+    "gas_constant": (units.kg * units.m**2 * units.s**-2 * units.K**-1 * units.mol**-1),
 }
 
 

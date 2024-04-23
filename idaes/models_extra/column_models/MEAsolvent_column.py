@@ -948,14 +948,14 @@ class MEAColumnData(PackedColumnData):
             )
 
         for v in blk.liquid_phase.properties.values():
-            for (p, j) in v.appr_to_true_species.keys():
+            for p, j in v.appr_to_true_species.keys():
                 iscale.constraint_scaling_transform(
                     v.appr_to_true_species[p, j],
                     iscale.get_scaling_factor(
                         v.flow_mol_phase_comp_true[p, j], default=1, warning=True
                     ),
                 )
-            for (p, j) in v.true_mole_frac_constraint.keys():
+            for p, j in v.true_mole_frac_constraint.keys():
                 iscale.constraint_scaling_transform(
                     v.true_mole_frac_constraint[p, j],
                     iscale.get_scaling_factor(

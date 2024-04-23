@@ -3,6 +3,8 @@ init-hook="import sys; sys.path.append('.pylint')"
 load-plugins=idaes_transform
 ignore-patterns=test_.*,__init__.*
 ignore=alamopy_depr,grid_integration,helmet,matopt,ripe,roundingRegression
+extension-pkg-allow-list=
+    pyomo.core.expr.numeric_expr,
 
 [MESSAGES CONTROL]
 disable=no-self-argument,
@@ -13,7 +15,6 @@ disable=no-self-argument,
     fixme,
     raise-missing-from,
     logging-fstring-interpolation,  # not sure why pylint doesn't like f-strings
-    unnecessary-lambda,
     attribute-defined-outside-init,
     arguments-differ,
     abstract-method,

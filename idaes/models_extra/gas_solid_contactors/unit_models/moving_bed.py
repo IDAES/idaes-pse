@@ -639,9 +639,9 @@ see reaction package for documentation.}""",
             tmp_dict = dict(**self.config.solid_phase_config.reaction_package_args)
             tmp_dict["gas_state_block"] = self.gas_phase.properties
             tmp_dict["solid_state_block"] = self.solid_phase.properties
-            tmp_dict[
-                "has_equilibrium"
-            ] = self.config.solid_phase_config.has_equilibrium_reactions
+            tmp_dict["has_equilibrium"] = (
+                self.config.solid_phase_config.has_equilibrium_reactions
+            )
             tmp_dict["parameters"] = self.config.solid_phase_config.reaction_package
             self.solid_phase.reactions = (
                 self.config.solid_phase_config.reaction_package.reaction_block_class(
@@ -1328,7 +1328,7 @@ see reaction package for documentation.}""",
 
         init_log.info("Initialize Mass Balances")
         init_log.info_high(
-            "initialize mass balances - no reactions " "and no pressure drop"
+            "initialize mass balances - no reactions and no pressure drop"
         )
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             results = opt.solve(blk, tee=slc.tee)
@@ -1453,7 +1453,7 @@ see reaction package for documentation.}""",
             or solid_phase.reaction_package is not None
         ):
             init_log.info_high(
-                "initialize mass balances - with reactions " "and no pressure drop"
+                "initialize mass balances - with reactions and no pressure drop"
             )
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 results = opt.solve(blk, tee=slc.tee)
@@ -1484,7 +1484,7 @@ see reaction package for documentation.}""",
                     )
 
             init_log.info_high(
-                "initialize mass balances - with reactions " "and pressure drop"
+                "initialize mass balances - with reactions and pressure drop"
             )
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 results = opt.solve(blk, tee=slc.tee)

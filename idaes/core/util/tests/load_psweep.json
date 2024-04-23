@@ -1,0 +1,48 @@
+{
+   "specification": {
+      "inputs": {
+         "v2": {
+            "pyomo_path": "v2",
+            "lower": 2,
+            "upper": 6
+         }
+      },
+      "sampling_method": "UniformSampling",
+      "sample_size": [
+         2
+      ],
+      "samples": {
+         "index": [
+            0,
+            1
+         ],
+         "columns": [
+            "v2"
+         ],
+         "data": [
+            [
+               2.0
+            ],
+            [
+               6.0
+            ]
+         ],
+         "index_names": [
+            null
+         ],
+         "column_names": [
+            null
+         ]
+      }
+   },
+   "results": {
+      "0": {
+         "success": true,
+         "results": 2
+      },
+      "1": {
+         "success": true,
+         "results": 6
+      }
+   }
+}

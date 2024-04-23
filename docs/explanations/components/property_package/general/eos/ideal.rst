@@ -9,6 +9,11 @@ Introduction
 
 Ideal behavior represents the simplest possible equation of state that ensures thermodynamic consistency between different properties.
 
+Critical Properties of Mixtures
+-------------------------------
+
+The Ideal Equation of State module does not support the calculation of mixture critical properties as the ideal equation of state cannot represent the critical point.
+
 Mass Density by Phase
 ---------------------
 

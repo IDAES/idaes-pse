@@ -1,6 +1,7 @@
 """
 pytest plugin for testing IDAES "through" IDAES/examples within the IDAES/idaes-pse CI
 """
+
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 import fnmatch
@@ -27,22 +28,24 @@ def _matches_pattern(item: pytest.Item, pattern: str) -> bool:
 
 
 def pytest_configure(config: pytest.Config):
+    tensorflow_py311_win = pytest.mark.xfail(
+        condition=sys.version_info > (3, 11),
+        run=True,
+        strict=False,
+        reason="tensorflow ImportError on 3.11+ on Windows (cannot import name 'formatargspec' from 'inspect')",
+    )
     config.stash[matchmarker] = {
         "*/held/*": pytest.mark.xfail(run=False, reason="notebook has 'held' status"),
         "*/archive/*": pytest.mark.skip(reason="notebook is archived"),
         # TODO: Need to fix this once the Python 3.11 issue is resolved in tensorflow
-        "*/surrogates/best_practices_optimization*": pytest.mark.xfail(
-            condition=sys.version_info > (3, 11),
-            run=True,
-            strict=False,
-            reason="tensorflow ImportError on 3.11",
+        "*/surrogates/best_practices_optimization*": tensorflow_py311_win,
+        "*/surrogates/omlt/keras_flowsheet_optimization*": tensorflow_py311_win,
+        "*/surrogates/sco2/alamo/*": pytest.mark.xfail(
+            run=False,
+            reason="notebooks require ALAMO to run",
         ),
-        "*/surrogates/omlt/keras_flowsheet_optimization*": pytest.mark.xfail(
-            condition=sys.version_info > (3, 11),
-            run=True,
-            strict=False,
-            reason="tensorflow ImportError on 3.11",
-        ),
+        "*/surrogates/sco2/omlt/keras_training*": tensorflow_py311_win,
+        "*/surrogates/sco2/omlt/flowsheet_optimization*": tensorflow_py311_win,
     }
     config.stash[marked] = []
 

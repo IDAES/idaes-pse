@@ -26,3 +26,5 @@ Unit Models
     waterpipe
     boiler_heat_exchanger_3streams
     feedwater_heater_0D_dynamic
+    cross_flow_heat_exchanger_1D
+    heater_1D

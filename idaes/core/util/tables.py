@@ -284,6 +284,9 @@ def stream_table_dataframe_to_string(stream_table, **kwargs):
     # Set some default values for keyword arguments
     na_rep = kwargs.pop("na_rep", "-")
     justify = kwargs.pop("justify", "center")
+    # the lambda here could be replaced by "{:#.5g}".format,
+    # but arguably that's not as clearly identifiable as a function/callable
+    # pylint: disable-next=unnecessary-lambda
     float_format = kwargs.pop("float_format", lambda x: "{:#.5g}".format(x))
 
     # Print stream table
