@@ -10,13 +10,20 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+"""
+A flexibility analysis example from 
+
+    Grossmann, I. E., & Floudas, C. A. (1987). Active constraint strategy for
+    flexibility analysis in chemical processes. Computers & Chemical Engineering,
+    11(6), 675-693.
+"""
+from typing import Tuple, Mapping
+import random
+import numpy as np
 import pyomo.environ as pe
 from pyomo.core.base.block import _BlockData
-import idaes.apps.flexibility_analysis as flexibility
-from typing import Tuple, Mapping
 from pyomo.contrib.fbbt import interval
-import numpy as np
-import random
+import idaes.apps.flexibility_analysis as flexibility
 
 
 def create_model() -> Tuple[_BlockData, Mapping, Mapping]:
@@ -77,6 +84,10 @@ def create_model() -> Tuple[_BlockData, Mapping, Mapping]:
 
 
 def get_var_bounds(m):
+    """
+    Generate a map with valid variable bounds for 
+    any possible realization of the uncertain parameters
+    """
     res = pe.ComponentMap()
     for v in m.variable_temps.values():
         res[v] = (100, 1000)
@@ -89,6 +100,20 @@ def main(
     method: flexibility.FlexTestMethod = flexibility.FlexTestMethod.active_constraint,
     plot_history=True,
 ):
+    """
+    Run the example
+
+    Parameters
+    ----------
+    flex_index: bool
+        If True, the flexibility index will be solved. Otherwise, the flexibility
+        test will be solved.
+    method: flexibility.FlexTestMethod
+        The method to use for the flexibility test
+    plot_history: bool
+        Only used if method is flexibility.FlexTestMethod.relu_decision_rule;
+        Plots the training history for the neural network
+    """
     np.random.seed(0)
     random.seed(1)
     m, nominal_values, param_bounds = create_model()

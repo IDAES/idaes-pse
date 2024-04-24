@@ -10,14 +10,17 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+"""
+This module defines a function for replacing uncertain parameters with variables
+"""
+from typing import Sequence, Union, Mapping
 from pyomo.core.base.block import _BlockData
 import pyomo.environ as pe
 from pyomo.core.expr.visitor import replace_expressions
-from .indices import _VarIndex, _ConIndex
-from typing import Sequence, Union, Mapping
 from pyomo.core.base.var import _GeneralVarData
 from pyomo.core.base.param import _ParamData
 from .var_utils import get_all_unfixed_variables
+from .indices import _VarIndex, _ConIndex
 
 
 def _replace_uncertain_params(
@@ -27,11 +30,11 @@ def _replace_uncertain_params(
     param_bounds: Mapping[Union[_GeneralVarData, _ParamData], Sequence[float]],
 ) -> _BlockData:
     for v in get_all_unfixed_variables(m):
-        if not pe.is_constant(v._lb):
+        if not pe.is_constant(v.lower):
             raise ValueError(
                 f"The lower bound on {str(v)} is not constant. All variable bounds must be constant."
             )
-        if not pe.is_constant(v._ub):
+        if not pe.is_constant(v.upper):
             raise ValueError(
                 f"The upper bound on {str(v)} is not constant. All variable bounds must be constant."
             )

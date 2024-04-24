@@ -15,20 +15,20 @@ This module provides functions for solving the inner problem of the flexibility
 test at different samples of the uncertain parameters.
 """
 from __future__ import annotations
+import enum
+from typing import Sequence, Union, Mapping, Optional, MutableMapping, Tuple, List
+import numpy as np
 from pyomo.core.base.block import _BlockData
 import pyomo.environ as pe
-import numpy as np
-from typing import Sequence, Union, Mapping, Optional, MutableMapping, Tuple, List
 from pyomo.core.base.var import _GeneralVarData
 from pyomo.core.base.param import _ParamData
-from .uncertain_params import _replace_uncertain_params
-from .inner_problem import _build_inner_problem
-import enum
-from idaes.core.surrogate.pysmo.sampling import LatinHypercubeSampling
-from .indices import _VarIndex
 from pyomo.common.config import ConfigDict, ConfigValue, InEnum
 from pyomo.contrib.solver.util import get_objective
 from pyomo.common.errors import ApplicationError
+from idaes.core.surrogate.pysmo.sampling import LatinHypercubeSampling
+from .uncertain_params import _replace_uncertain_params
+from .inner_problem import _build_inner_problem
+from .indices import _VarIndex
 from .check_optimal import assert_optimal_termination
 
 try:
@@ -162,7 +162,8 @@ class _GridSamplingIterator(object):
         return res
 
     def __iter__(self):
-        [i.reset() for i in self.param_iterators]
+        for i in self.param_iterators:
+            i.reset()
         self.done = False
         return self
 
@@ -447,15 +448,51 @@ def perform_sampling(
     m: _BlockData,
     uncertain_params: Sequence[Union[_GeneralVarData, _ParamData]],
     param_nominal_values: Mapping[Union[_GeneralVarData, _ParamData], float],
-    param_bounds: Mapping[Union[_GeneralVarData, _ParamData], Sequence[float]],
+    param_bounds: Mapping[Union[_GeneralVarData, _ParamData], Tuple[float, float]],
     controls: Optional[Sequence[_GeneralVarData]],
     in_place: bool,
     config: SamplingConfig,
 ) -> Tuple[
-    MutableMapping[Union[_GeneralVarData, _ParamData], Sequence[float]],
-    Sequence[float],
-    MutableMapping[_GeneralVarData, Sequence[float]],
+    MutableMapping[Union[_GeneralVarData, _ParamData], List[float]],
+    List[float],
+    MutableMapping[_GeneralVarData, List[float]],
 ]:
+    r"""
+    Sample values of the uncertain parameters and solve the inner problem 
+    of the flexibility test for each sample.
+
+    Parameters
+    ----------
+    m: _BlockData
+        The pyomo model to be used for the feasibility/flexibility test.
+    uncertain_params: Sequence[Union[_GeneralVarData, _ParamData]]
+        A sequence (e.g., list) defining the set of uncertain parameters (:math:`\theta`).
+        These can be pyomo variables (Var) or parameters (param). However, if parameters are used,
+        they must be mutable.
+    param_nominal_values: Mapping[Union[_GeneralVarData, _ParamData], float]
+        A mapping (e.g., ComponentMap) from the uncertain parameters (:math:`\theta`) to their
+        nominal values (:math:`\theta^{N}`).
+    param_bounds: Mapping[Union[_GeneralVarData, _ParamData], Tuple[float, float]]
+        A mapping (e.g., ComponentMap) from the uncertain parameters (:math:`\theta`) to their
+        bounds (:math:`\underline{\theta}`, :math:`\overline{\theta}`).
+    controls: Optional[Sequence[_GeneralVarData]]
+        A sequence (e.g., list) defining the set of control variables (:math:`z`).
+    in_place: bool
+        If True, m is modified in place to generate the model for solving the flexibility test. If False,
+        the model is cloned first.
+    config: SamplingConfig
+        An object defining options for how the flexibility test should be solved.
+
+    Returns
+    -------
+    sample_points: MutableMapping[Union[_GeneralVarData, _ParamData], List[float]]
+        The sampled values of the uncertain parameters
+    obj_values: List[float]
+        The value of the maximum (or total) constraint violation for each sample 
+        of the uncertain parameters
+    control_values: MutableMapping[_GeneralVarData, List[float]]
+        The optimal values of the controls for each sample of the uncertain parameters
+    """
     original_model = m
     if not in_place:
         m = m.clone()

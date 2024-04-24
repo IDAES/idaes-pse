@@ -940,8 +940,8 @@ class FlexTest(object):
         Parameters
         ----------
         param_bounds: Mapping[Union[_GeneralVarData, _ParamData], Tuple[float, float]]
-        A mapping (e.g., ComponentMap) from the uncertain parameters (:math:`\theta`) to their
-        bounds (:math:`\underline{\theta}`, :math:`\overline{\theta}`).
+            A mapping (e.g., ComponentMap) from the uncertain parameters (:math:`\theta`) to their
+            bounds (:math:`\underline{\theta}`, :math:`\overline{\theta}`).
         """
         if self.config.method in {
             FlexTestMethod.active_constraint,

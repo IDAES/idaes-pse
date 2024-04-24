@@ -10,6 +10,10 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+"""
+This module contains some utility classes for creating meaningful indices
+when formulating the flexibility test problem.
+"""
 class _ConIndex(object):
     def __init__(self, con, bound):
         self._con = con
@@ -17,10 +21,12 @@ class _ConIndex(object):
 
     @property
     def con(self):
+        # pylint: disable=missing-function-docstring
         return self._con
 
     @property
     def bound(self):
+        # pylint: disable=missing-function-docstring
         return self._bound
 
     def __repr__(self):
@@ -48,10 +54,12 @@ class _VarIndex(object):
 
     @property
     def var(self):
+        # pylint: disable=missing-function-docstring
         return self._var
 
     @property
     def bound(self):
+        # pylint: disable=missing-function-docstring
         return self._bound
 
     def __repr__(self):

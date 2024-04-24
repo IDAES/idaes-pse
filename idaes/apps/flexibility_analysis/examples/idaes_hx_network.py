@@ -10,24 +10,24 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+import logging
 import pyomo.environ as pe
+from pyomo.contrib.fbbt.fbbt import fbbt
+from pyomo.network import Arc
+from pyomo.util.infeasible import log_infeasible_constraints, log_infeasible_bounds
+from pyomo.core.base.block import _BlockData
+from pyomo.contrib.solver.util import get_objective
 from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
     BTXParameterBlock,
 )
 from idaes.core import FlowsheetBlock
 from idaes.models.unit_models.heater import Heater
 
-import logging
-from pyomo.contrib.fbbt.fbbt import fbbt
-from pyomo.network import Arc
 from idaes.core.util.initialization import propagate_state
-from pyomo.util.infeasible import log_infeasible_constraints, log_infeasible_bounds
 from idaes.core.base.control_volume_base import ControlVolumeBlockData
-from pyomo.core.base.block import _BlockData
 import idaes.apps.flexibility_analysis as flexibility
 from idaes.apps.flexibility_analysis.var_utils import BoundsManager
 from idaes.apps.flexibility_analysis.simplify import simplify_expr
-from pyomo.contrib.solver.util import get_objective
 
 
 logging.basicConfig(level=logging.INFO)

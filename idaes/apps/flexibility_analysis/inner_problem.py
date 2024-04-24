@@ -10,11 +10,16 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+"""
+This module contains functions for formulating the inner problem of the 
+flexibility test problem
+"""
+from typing import MutableMapping, Tuple, Optional, Mapping, Union
+from pyomo.contrib.fbbt.fbbt import compute_bounds_on_expr
 import pyomo.environ as pe
 from pyomo.core.base.block import _BlockData
 from pyomo.core.base.var import _GeneralVarData, ScalarVar
 from pyomo.core.expr.numeric_expr import ExpressionBase
-
 from pyomo.contrib.solver.util import get_objective
 from .var_utils import (
     BoundsManager,
@@ -23,8 +28,6 @@ from .var_utils import (
     _remove_var_bounds,
 )
 from .indices import _ConIndex, _VarIndex
-from typing import MutableMapping, Tuple, Optional, Mapping, Union
-from pyomo.contrib.fbbt.fbbt import compute_bounds_on_expr
 
 
 def _get_g_bounds(
