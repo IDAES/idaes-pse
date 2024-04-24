@@ -347,8 +347,7 @@ def main(method: flexibility.FlexTestMethod):
     config.method = method
     config.minlp_solver = pe.SolverFactory("scip")
     config.minlp_solver.options["limits/time"] = 300
-    config.sampling_config.solver = pe.SolverFactory("appsi_ipopt")
-    config.sampling_config.solver.config.log_level = logging.DEBUG
+    config.sampling_config.solver = pe.SolverFactory("ipopt")
     config.sampling_config.strategy = flexibility.SamplingStrategy.grid
     config.sampling_config.num_points = 3
     if method == flexibility.FlexTestMethod.linear_decision_rule:
