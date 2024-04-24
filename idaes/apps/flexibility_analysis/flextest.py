@@ -10,36 +10,21 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+"""
+A module for formulating different versions of the flexibility/feasibility 
+test problem.
+"""
+import enum
+import logging
 import numpy as np
-from .kkt import add_kkt_with_milp_complementarity_conditions
+from typing import Sequence, Union, Mapping, MutableMapping, Optional, Tuple
 from pyomo.core.base.block import _BlockData
 from pyomo.common.dependencies import attempt_import
-
-import pyomo.environ as pe
-from .var_utils import (
-    get_used_unfixed_variables,
-    BoundsManager,
-    _remove_var_bounds,
-    _apply_var_bounds,
-)
-from .indices import _VarIndex, _ConIndex
-from .uncertain_params import _replace_uncertain_params
-from .inner_problem import _build_inner_problem
 from pyomo.util.report_scaling import report_scaling
-import logging
-from typing import Sequence, Union, Mapping, MutableMapping, Optional, Tuple
 from pyomo.core.base.var import _GeneralVarData
 from pyomo.core.base.param import _ParamData
 from pyomo.contrib.solver.util import get_objective
-from .decision_rules.linear_dr import construct_linear_decision_rule
-from pyomo.common.dependencies import attempt_import
-from .sampling import (
-    SamplingStrategy,
-    perform_sampling,
-    SamplingConfig,
-    _perform_sampling,
-)
-import enum
+import pyomo.environ as pe
 from pyomo.common.config import (
     ConfigDict,
     ConfigValue,
@@ -47,6 +32,23 @@ from pyomo.common.config import (
     InEnum,
     MarkImmutable,
     NonNegativeFloat,
+)
+from .var_utils import (
+    get_used_unfixed_variables,
+    BoundsManager,
+    _remove_var_bounds,
+    _apply_var_bounds,
+)
+from .indices import _VarIndex, _ConIndex
+from .kkt import add_kkt_with_milp_complementarity_conditions
+from .uncertain_params import _replace_uncertain_params
+from .inner_problem import _build_inner_problem
+from .decision_rules.linear_dr import construct_linear_decision_rule
+from .sampling import (
+    SamplingStrategy,
+    perform_sampling,
+    SamplingConfig,
+    _perform_sampling,
 )
 
 relu_dr, relu_dr_available = attempt_import(
@@ -75,6 +77,11 @@ def _get_longest_name(comps):
 
 
 class FlexTestMethod(enum.Enum):
+    """
+    Enum for specifying how to formulate the
+    flexibility test problem.
+    """
+
     active_constraint = enum.auto()
     linear_decision_rule = enum.auto()
     relu_decision_rule = enum.auto()
@@ -223,6 +230,11 @@ class FlexTestConfig(ConfigDict):
 
 
 class FlexTestTermination(enum.Enum):
+    """
+    An enum for communicating the results of a
+    flexibility test problem.
+    """
+
     found_infeasible_point = enum.auto()
     proven_feasible = enum.auto()
     uncertain = enum.auto()
@@ -257,7 +269,7 @@ class FlexTestResults(object):
         s = f"Termination: {self.termination}\n"
         s += f"Maximum constraint violation: {self.max_constraint_violation}\n"
         if self.unc_param_values_at_max_violation is not None:
-            s += f"Uncertain parameter values at maximum constraint violation: \n"
+            s += "Uncertain parameter values at maximum constraint violation: \n"
             longest_param_name = _get_longest_name(
                 self.unc_param_values_at_max_violation.keys()
             )
@@ -296,6 +308,9 @@ def build_flextest_with_dr(
     valid_var_bounds: MutableMapping[_GeneralVarData, Tuple[float, float]],
     config: FlexTestConfig,
 ):
+    """
+    Build the flexibility test problem using a decision rule.
+    """
     config.sampling_config.total_violation = config.total_violation
 
     # this has to be here in case tensorflow or omlt are not installed
@@ -317,7 +332,7 @@ def build_flextest_with_dr(
         config=config.sampling_config,
     )
 
-    _sample_points, max_violation_values, control_values = tmp
+    _sample_points, _, control_values = tmp
 
     # replace uncertain parameters with variables
     _replace_uncertain_params(m, uncertain_params, param_nominal_values, param_bounds)
@@ -401,6 +416,9 @@ def build_active_constraint_flextest(
     valid_var_bounds: MutableMapping[_GeneralVarData, Tuple[float, float]],
     config: Optional[ActiveConstraintConfig] = None,
 ):
+    """
+    Build the flexibility test problem using the active constraint method.
+    """
     if config is None:
         config = ActiveConstraintConfig()
 
@@ -573,7 +591,7 @@ def _solve_flextest_sampling(
         in_place=True,
         config=config.sampling_config,
     )
-    sample_points, max_violation_values, control_values = tmp
+    sample_points, max_violation_values, _ = tmp
     max_viol_ndx = int(np.argmax(max_violation_values))
 
     results = FlexTestResults()
@@ -610,7 +628,7 @@ def _solve_flextest_vertex_enumeration(
         in_place=True,
         config=config.sampling_config,
     )
-    sample_points, max_violation_values, control_values = tmp
+    sample_points, max_violation_values, _ = tmp
     max_viol_ndx = int(np.argmax(max_violation_values))
 
     results = FlexTestResults()

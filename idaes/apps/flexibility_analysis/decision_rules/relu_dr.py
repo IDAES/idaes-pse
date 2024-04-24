@@ -16,14 +16,14 @@ import pyomo.environ as pe
 from pyomo.core.base.var import _GeneralVarData
 from pyomo.core.base.block import _BlockData
 from typing import MutableMapping, Sequence
-from omlt import OmltBlock, OffsetScaling
-from omlt.neuralnet import ReluBigMFormulation
-from omlt.io import load_keras_sequential
 from idaes.apps.flexibility_analysis.indices import _VarIndex
 from .relu_dr_config import ReluDRConfig
 
 tf, tensorflow_available = attempt_import("tensorflow")
 keras, keras_available = attempt_import("tensorflow.keras")
+omlt, omlt_available = attempt_import("omlt")
+omlt_nn, _ = attempt_import("omlt.neuralnet")
+omlt_io, _ = attempt_import("omlt.io")
 
 
 def construct_relu_decision_rule(
@@ -103,9 +103,9 @@ def construct_relu_decision_rule(
         plt.close()
 
     res = pe.Block(concrete=True)
-    res.nn = OmltBlock()
+    res.nn = omlt.OmltBlock()
 
-    scaler = OffsetScaling(
+    scaler = omlt.OffsetScaling(
         offset_inputs=[float(i) for i in input_mean],
         factor_inputs=[float(i) for i in input_std],
         offset_outputs=[float(i) for i in output_mean],
@@ -118,8 +118,8 @@ def construct_relu_decision_rule(
         )
         for ndx, v in enumerate(inputs)
     }
-    net = load_keras_sequential(nn, scaler, input_bounds)
-    formulation = ReluBigMFormulation(net)
+    net = omlt_io.load_keras_sequential(nn, scaler, input_bounds)
+    formulation = omlt_nn.ReluBigMFormulation(net)
     res.nn.build_formulation(formulation)
 
     res.input_set = pe.Set()

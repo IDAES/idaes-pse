@@ -10,20 +10,23 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+"""
+This module contains functions for generating the KKT system for the 
+inner problem of the flexibility/feasibility test problem. 
+"""
+from typing import Sequence, Mapping
 import pyomo.environ as pe
 from pyomo.core.expr.calculus.diff_with_pyomo import reverse_sd
-
 from pyomo.core.base.block import _BlockData
 from pyomo.contrib.fbbt.fbbt import fbbt
-from .var_utils import (
-    get_used_unfixed_variables,
-    _apply_var_bounds,
-)
-from typing import Sequence, Mapping
 from pyomo.core.base.var import _GeneralVarData
 from pyomo.core.expr.sympy_tools import sympyify_expression, sympy2pyomo_expression
 from pyomo.contrib.solver.util import get_objective
 from .indices import _VarIndex, _ConIndex
+from .var_utils import (
+    get_used_unfixed_variables,
+    _apply_var_bounds,
+)
 
 
 def _simplify(expr):
@@ -80,7 +83,9 @@ def _add_grad_lag_constraints(m: _BlockData) -> _BlockData:
     m.grad_lag_set = pe.Set()
     m.grad_lag = pe.Constraint(m.grad_lag_set)
     for v in primal_vars:
-        if v in grad_lag and (type(grad_lag[v]) != float or grad_lag[v] != 0):
+        if v in grad_lag and (
+            type(grad_lag[v]) not in {float, int} or grad_lag[v] != 0
+        ):
             key = _VarIndex(v, None)
             m.grad_lag_set.add(key)
             m.grad_lag[key] = _simplify(grad_lag[v]) == 0
@@ -144,6 +149,26 @@ def add_kkt_with_milp_complementarity_conditions(
     valid_var_bounds: Mapping[_GeneralVarData, Sequence[float]],
     default_M=None,
 ) -> _BlockData:
+    """
+    Generate the KKT conditions for the model m using a MIP
+    representation of the complementarity conditions.
+
+    Parameters
+    ----------
+    m: _BlockData
+        The model for which to build the KKT conditions
+    uncertain_params: Sequence[_GeneralVarData]
+        These variables are decisions for the outer problem
+        and should be considered parameters when generating
+        the KKT conditions
+    valid_var_bounds: Mapping[_GeneralVarData, Sequence[float]]
+        Variable bounds that are valid for any values of the
+        uncertain parameters. This is only used to make the
+        resulting problem more tractable.
+    default_M: Optional[float]
+        M value to use for the Big-M representation of the
+        complementarity conditions
+    """
     for v in uncertain_params:
         v.fix()
 

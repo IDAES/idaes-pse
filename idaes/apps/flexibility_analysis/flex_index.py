@@ -10,9 +10,15 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+"""
+This module contains a function for solving the flexibility index problem using 
+the bisection method. A flexibility test problem is solved at each iteration.
+"""
+import math
+import logging
+from typing import Sequence, Union, Mapping, MutableMapping, Optional
 from pyomo.core.base.block import _BlockData
 import pyomo.environ as pe
-from typing import Sequence, Union, Mapping, MutableMapping, Optional
 from pyomo.core.base.var import _GeneralVarData
 from pyomo.core.base.param import _ParamData
 from .sampling import SamplingStrategy
@@ -23,8 +29,6 @@ from .flextest import (
     FlexTestTermination,
     FlexTest,
 )
-import math
-import logging
 
 
 logger = logging.getLogger(__name__)

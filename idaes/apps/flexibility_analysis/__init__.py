@@ -10,6 +10,10 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+"""
+A module for formulating flexibility analysis problems (feasibility test and 
+flexibility index).
+"""
 from .flextest import (
     solve_flextest,
     SamplingStrategy,
