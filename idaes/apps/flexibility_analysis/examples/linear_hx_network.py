@@ -99,6 +99,7 @@ def main(
     flex_index: bool = False,
     method: flexibility.FlexTestMethod = flexibility.FlexTestMethod.active_constraint,
     plot_history=True,
+    relu_epochs=3000,
 ):
     """
     Run the example
@@ -134,7 +135,7 @@ def main(
         config.decision_rule_config = flexibility.ReluDRConfig()
         config.decision_rule_config.n_layers = 1
         config.decision_rule_config.n_nodes_per_layer = 15
-        config.decision_rule_config.epochs = 3000
+        config.decision_rule_config.epochs = relu_epochs
         config.decision_rule_config.batch_size = 150
         config.decision_rule_config.scale_inputs = True
         config.decision_rule_config.scale_outputs = True

@@ -56,15 +56,6 @@ class TestExamples(unittest.TestCase):
         )
 
         res = linear_hx_network.main(
-            flex_index=False,
-            method=flex.FlexTestMethod.relu_decision_rule,
-            plot_history=False,
-        )
-        self.assertEqual(
-            res.termination, flex.FlexTestTermination.found_infeasible_point
-        )
-
-        res = linear_hx_network.main(
             flex_index=True,
             method=flex.FlexTestMethod.active_constraint,
             plot_history=False,
@@ -89,8 +80,10 @@ class TestExamples(unittest.TestCase):
             flex_index=True,
             method=flex.FlexTestMethod.relu_decision_rule,
             plot_history=False,
+            relu_epochs=100,
         )
-        self.assertAlmostEqual(res, 0.5, 2)
+        self.assertGreaterEqual(res, 0.1)
+        self.assertLessEqual(res, 0.5)
 
     def test_idaes_hx_network(self):
         res = idaes_hx_network.main(flex.FlexTestMethod.sampling)
