@@ -124,7 +124,7 @@ class TestFlexTest(unittest.TestCase):
     def test_poly(self):
         m, nominal_values, param_bounds = create_poly_model()
         var_bounds = pe.ComponentMap()
-        var_bounds[m.z] = (-20, 20)
+        var_bounds[m.z] = (-10, 10)
         build_active_constraint_flextest(
             m,
             uncertain_params=list(nominal_values.keys()),
