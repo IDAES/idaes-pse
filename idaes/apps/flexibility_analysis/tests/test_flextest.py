@@ -8,6 +8,22 @@ import unittest
 from idaes.apps.flexibility_analysis.indices import _VarIndex
 from pyomo.contrib.fbbt import interval
 import pytest
+from idaes.core.util.testing import _enable_scip_solver_for_testing
+from contextlib import contextmanager
+
+
+@contextmanager
+def scip_solver():
+    solver = pe.SolverFactory("scip")
+    undo_changes = None
+
+    if not solver.available():
+        undo_changes = _enable_scip_solver_for_testing()
+    if not solver.available():
+        pytest.skip(reason="SCIP solver not available")
+    yield solver
+    if undo_changes is not None:
+        undo_changes()
 
 
 def create_poly_model():
@@ -104,13 +120,13 @@ class TestFlexTest(unittest.TestCase):
             param_bounds=param_bounds,
             valid_var_bounds=var_bounds,
         )
-        opt = pe.SolverFactory("scip")
-        res = opt.solve(m)
-        pe.assert_optimal_termination(res)
-        self.assertAlmostEqual(m.max_constraint_violation.value, 48.4649, 4)
-        self.assertAlmostEqual(m.z.value, -2.6513, 4)
-        ndx = _VarIndex(m.theta, None)
-        self.assertAlmostEqual(m.unc_param_vars[ndx].value, 65, 5)
+        with scip_solver() as opt:
+            res = opt.solve(m)
+            pe.assert_optimal_termination(res)
+            self.assertAlmostEqual(m.max_constraint_violation.value, 48.4649, 4)
+            self.assertAlmostEqual(m.z.value, -2.6513, 4)
+            ndx = _VarIndex(m.theta, None)
+            self.assertAlmostEqual(m.unc_param_vars[ndx].value, 65, 5)
 
     def test_hx_network(self):
         expected = [4, 8.8]
@@ -133,7 +149,7 @@ class TestFlexTest(unittest.TestCase):
                 valid_var_bounds=var_bounds,
                 config=config,
             )
-            opt = pe.SolverFactory("scip")
-            res = opt.solve(m, tee=False)
-            pe.assert_optimal_termination(res)
-            self.assertAlmostEqual(m.max_constraint_violation.value, exp, 4)
+            with scip_solver() as opt:
+                res = opt.solve(m, tee=False)
+                pe.assert_optimal_termination(res)
+                self.assertAlmostEqual(m.max_constraint_violation.value, exp, 4)
