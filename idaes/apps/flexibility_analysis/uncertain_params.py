@@ -30,11 +30,11 @@ def _replace_uncertain_params(
     param_bounds: Mapping[Union[_GeneralVarData, _ParamData], Sequence[float]],
 ) -> _BlockData:
     for v in get_all_unfixed_variables(m):
-        if not pe.is_constant(v.lower):
+        if not pe.is_constant(v._lb):  # pylint: disable=protected-access
             raise ValueError(
                 f"The lower bound on {str(v)} is not constant. All variable bounds must be constant."
             )
-        if not pe.is_constant(v.upper):
+        if not pe.is_constant(v._ub):  # pylint: disable=protected-access
             raise ValueError(
                 f"The upper bound on {str(v)} is not constant. All variable bounds must be constant."
             )
