@@ -131,7 +131,7 @@ functions. The first is
 :meth:`solve_flextest<idaes.apps.flexibility_analysis.solve_flextest>`. The
 :class:`FlexTestConfig<idaes.apps.flexibility_analysis.FlexTestConfig>`
 specifies how the flexibility test should be solved. The second is
-:meth:`solve_flextest<idaes.apps.flexibility_analysis.solve_flex_index>`. Examples
+:meth:`solve_flex_index<idaes.apps.flexibility_analysis.solve_flex_index>`. Examples
 can be found `here
 <https://github.com/michaelbynum/idaes-pse/tree/flex/idaes/apps/flexibility_analysis/examples>`_.
 
