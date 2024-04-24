@@ -130,7 +130,7 @@ jobs:
         || needs.precheck.outputs.workflow-trigger == 'approved_pr'
       )
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
         os:
@@ -154,7 +154,7 @@ jobs:
         with:
           install-target: -r requirements-dev.txt
       - name: Run pytest (integration)
-        run: pytest --pyargs idaes -x -m integration
+        run: pytest --pyargs idaes -m integration
 
   examples:
     name: Run examples (py${{ matrix.python-version }}/${{ matrix.os }})
