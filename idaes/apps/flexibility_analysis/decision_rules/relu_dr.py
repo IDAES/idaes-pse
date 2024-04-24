@@ -11,9 +11,9 @@
 # for full copyright and license information.
 #################################################################################
 import numpy as np
-import tensorflow as tf
-from tensorflow import keras
-from tensorflow.keras import layers
+from pyomo.common.dependencies import attempt_import
+tf, tensorflow_available = attempt_import("tensorflow")
+keras, keras_available = attempt_import("tensorflow.keras")
 import pyomo.environ as pe
 from pyomo.core.base.var import _GeneralVarData
 from pyomo.core.base.block import _BlockData
@@ -71,13 +71,13 @@ def construct_relu_decision_rule(
 
     nn = keras.Sequential()
     nn.add(
-        layers.Dense(
+        keras.layers.Dense(
             units=config.n_nodes_per_layer, input_dim=len(inputs), activation="relu"
         )
     )
     for layer_ndx in range(config.n_layers - 1):
-        nn.add(layers.Dense(config.n_nodes_per_layer, activation="relu"))
-    nn.add(layers.Dense(len(outputs)))
+        nn.add(keras.layers.Dense(config.n_nodes_per_layer, activation="relu"))
+    nn.add(keras.layers.Dense(len(outputs)))
     if config.learning_rate is None:
         opt = keras.optimizers.Adam()
     else:
