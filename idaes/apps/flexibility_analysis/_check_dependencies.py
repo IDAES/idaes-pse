@@ -10,8 +10,11 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-from pyomo.common.dependencies import attempt_import
+"""
+This module is only used to check dependencies for unit tests.
+"""
 import unittest
+from pyomo.common.dependencies import attempt_import
 
 np, nump_available = attempt_import("numpy")
 if not nump_available:

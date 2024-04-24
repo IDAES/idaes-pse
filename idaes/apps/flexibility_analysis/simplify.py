@@ -26,7 +26,7 @@ def simplify_expr(expr: NumericExpression) -> Union[float, NumericExpression]:
     Parameters
     ----------
     expr: NumericExpression
-        The pyomo expresssion to be simplified
+        The pyomo expression to be simplified
 
     Returns
     -------

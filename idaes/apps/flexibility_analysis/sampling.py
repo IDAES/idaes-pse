@@ -10,6 +10,10 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+"""
+This module provides functions for solving the inner problem of the flexibility 
+test at different samples of the uncertain parameters.
+"""
 from __future__ import annotations
 from pyomo.core.base.block import _BlockData
 import pyomo.environ as pe
@@ -31,11 +35,15 @@ try:
     from tqdm import tqdm
 except ImportError:
 
-    def tqdm(items, ncols, desc, disable):
+    def tqdm(items, ncols, desc, disable):  # pylint: disable=missing-function-docstring
         return items
 
 
 class SamplingStrategy(enum.Enum):
+    """
+    An enum for specifying the sampling method to use.
+    """
+
     grid = "grid"
     lhs = "lhs"
 
@@ -45,6 +53,12 @@ SamplingStrategy.lhs.__doc__ = r"Use latin hypercube sampling"
 
 
 class SamplingInitStrategy(enum.Enum):
+    """
+    An enum for specifying how to initialize the inner problem
+    of the flexibility test for each sample of the uncertain
+    parameters
+    """
+
     none = "none"
     square = "square"
     min_control_deviation = "min_control_deviation"
@@ -82,14 +96,17 @@ class _ParamIterator(object):
         self.next_param = next_param
 
     def reset(self):
+        # pylint: disable=missing-function-docstring
         self.state = _GridSamplingState.increment
         self.ndx = 0
 
     def get_value(self):
+        # pylint: disable=missing-function-docstring
         res = self.pts[self.ndx]
         return res
 
     def swap_state(self):
+        # pylint: disable=missing-function-docstring
         if self.state == _GridSamplingState.increment:
             self.state = _GridSamplingState.decrement
         else:
@@ -97,6 +114,7 @@ class _ParamIterator(object):
             self.state = _GridSamplingState.increment
 
     def step(self) -> bool:
+        # pylint: disable=missing-function-docstring
         if self.state == _GridSamplingState.increment:
             if self.ndx == len(self.pts) - 1:
                 if self.next_param is None:

@@ -56,7 +56,7 @@ def get_used_unfixed_variables(m: _BlockData) -> MutableSet[_GeneralVarData]:
     Returns
     -------
     vset: MutableSet[_GeneralVarData]
-        The set of all variables in active constriants or objectives.
+        The set of all variables in active constraints or objectives.
     """
     res = ComponentSet()
     for c in m.component_data_objects(pe.Constraint, active=True, descend_into=True):

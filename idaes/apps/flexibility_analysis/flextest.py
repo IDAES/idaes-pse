@@ -16,8 +16,8 @@ test problem.
 """
 import enum
 import logging
-import numpy as np
 from typing import Sequence, Union, Mapping, MutableMapping, Optional, Tuple
+import numpy as np
 from pyomo.core.base.block import _BlockData
 from pyomo.common.dependencies import attempt_import
 from pyomo.util.report_scaling import report_scaling
@@ -742,6 +742,12 @@ def solve_flextest(
 
 
 class FlexTest(object):
+    """
+    This class is mostly here for the flexibility index problem.
+    This class enables solving the same flexibility test problem
+    repeatedly with different uncertain parameter bounds.
+    """
+
     def __init__(
         self,
         m: _BlockData,
@@ -749,9 +755,38 @@ class FlexTest(object):
         param_nominal_values: Mapping[Union[_GeneralVarData, _ParamData], float],
         max_param_bounds: Mapping[Union[_GeneralVarData, _ParamData], Sequence[float]],
         controls: Sequence[_GeneralVarData],
-        valid_var_bounds: MutableMapping[_GeneralVarData, Sequence[float]],
+        valid_var_bounds: MutableMapping[_GeneralVarData, Tuple[float, float]],
         config: Optional[FlexTestConfig] = None,
     ):
+        r"""
+        Parameters
+        ----------
+        m: _BlockData
+            The pyomo model to be used for the feasibility/flexibility test.
+        uncertain_params: Sequence[Union[_GeneralVarData, _ParamData]]
+            A sequence (e.g., list) defining the set of uncertain parameters (:math:`\theta`).
+            These can be pyomo variables (Var) or parameters (param). However, if parameters are used,
+            they must be mutable.
+        param_nominal_values: Mapping[Union[_GeneralVarData, _ParamData], float]
+            A mapping (e.g., ComponentMap) from the uncertain parameters (:math:`\theta`) to their
+            nominal values (:math:`\theta^{N}`).
+        max_param_bounds: Mapping[Union[_GeneralVarData, _ParamData], Tuple[float, float]]
+            A mapping (e.g., ComponentMap) from the uncertain parameters (:math:`\theta`) to the
+            widest possible bounds (:math:`\underline{\theta}`, :math:`\overline{\theta}`) that will
+            be considered for any call to solve().
+        controls: Sequence[_GeneralVarData]
+            A sequence (e.g., list) defining the set of control variables (:math:`z`).
+        valid_var_bounds: MutableMapping[_GeneralVarData, Tuple[float, float]]
+            A mapping (e.g., ComponentMap) defining bounds for all variables (:math:`x` and :math:`z`) that
+            should be valid for any :math:`\theta` between :math:`\underline{\theta}` and
+            :math:`\overline{\theta}`. These are only used to make the resulting flexibility test problem
+            more computationally tractable. All variable bounds in the model `m` are treated as performance
+            constraints and relaxed (:math:`g_{j}(x, z, \theta) \leq u`). The bounds in `valid_var_bounds`
+            are applied to the single-level problem generated from the active constraint method or one of
+            the decision rules. This argument is not necessary for vertex enumeration or sampling.
+        config: Optional[FlexTestConfig]
+            An object defining options for how the flexibility test should be solved.
+        """
         if config is None:
             self.config: FlexTestConfig = FlexTestConfig()
         else:
@@ -878,7 +913,7 @@ class FlexTest(object):
             controls=self._controls,
             config=self.config.sampling_config,
         )
-        sample_points, max_violation_values, control_values = tmp
+        sample_points, max_violation_values, _ = tmp
         sample_points = pe.ComponentMap(
             (self._clone_param_orig_param_map[p], vals)
             for p, vals in sample_points.items()
@@ -897,8 +932,17 @@ class FlexTest(object):
         return results
 
     def solve(
-        self, param_bounds: Mapping[Union[_GeneralVarData, _ParamData], Sequence[float]]
+        self, param_bounds: Mapping[Union[_GeneralVarData, _ParamData], Tuple[float]]
     ) -> FlexTestResults:
+        r"""
+        Solve the flexibility test problem for the specified uncertain parameter bounds.
+
+        Parameters
+        ----------
+        param_bounds: Mapping[Union[_GeneralVarData, _ParamData], Tuple[float, float]]
+        A mapping (e.g., ComponentMap) from the uncertain parameters (:math:`\theta`) to their
+        bounds (:math:`\underline{\theta}`, :math:`\overline{\theta}`).
+        """
         if self.config.method in {
             FlexTestMethod.active_constraint,
             FlexTestMethod.linear_decision_rule,
