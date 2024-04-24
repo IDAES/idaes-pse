@@ -118,7 +118,7 @@ class TestSampling(unittest.TestCase):
 
     def test_hx_network(self):
         m, nominal_values, param_bounds = create_hx_network_model()
-        opt = pe.SolverFactory("gurobi_direct")
+        opt = pe.SolverFactory("scip")
         config = SamplingConfig()
         config.solver = opt
         config.num_points = 2
@@ -138,7 +138,7 @@ class TestSampling(unittest.TestCase):
 
     def test_hx_network3(self):
         m, nominal_values, param_bounds = create_hx_network_model()
-        opt = appsi.solvers.Gurobi()
+        opt = appsi.solvers.Highs()
         config = SamplingConfig()
         config.solver = opt
         config.num_points = 2

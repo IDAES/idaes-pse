@@ -85,14 +85,14 @@ def main(
     config.feasibility_tol = 1e-6
     config.terminate_early = False  # TODO: this does not do anything yet
     config.method = method
-    config.minlp_solver = pe.SolverFactory("gurobi_direct")
-    config.sampling_config.solver = pe.SolverFactory("appsi_gurobi")
+    config.minlp_solver = pe.SolverFactory("scip")
+    config.sampling_config.solver = pe.SolverFactory("appsi_highs")
     config.sampling_config.strategy = "lhs"
     config.sampling_config.num_points = 600
     config.sampling_config.initialization_strategy = "square"
     if method == flexibility.FlexTestMethod.linear_decision_rule:
         config.decision_rule_config = flexibility.LinearDRConfig()
-        config.decision_rule_config.solver = pe.SolverFactory("appsi_gurobi")
+        config.decision_rule_config.solver = pe.SolverFactory("ipopt")
     elif method == flexibility.FlexTestMethod.relu_decision_rule:
         config.decision_rule_config = flexibility.ReluDRConfig()
         config.decision_rule_config.n_layers = 1

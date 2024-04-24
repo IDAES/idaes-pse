@@ -133,7 +133,7 @@ class TestFlexTest(unittest.TestCase):
                 valid_var_bounds=var_bounds,
                 config=config,
             )
-            opt = pe.SolverFactory("gurobi_direct")
+            opt = pe.SolverFactory("scip")
             res = opt.solve(m, tee=False)
             pe.assert_optimal_termination(res)
             self.assertAlmostEqual(m.max_constraint_violation.value, exp, 4)

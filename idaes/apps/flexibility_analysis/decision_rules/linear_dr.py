@@ -35,7 +35,7 @@ class LinearDRConfig(DRConfig):
             visibility=visibility,
         )
         self.solver = self.declare(
-            "solver", ConfigValue(default=pe.SolverFactory("appsi_gurobi"))
+            "solver", ConfigValue(default=pe.SolverFactory("ipopt"))
         )
 
 

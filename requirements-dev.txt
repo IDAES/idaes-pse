@@ -29,6 +29,7 @@ jsonschema
 jupyter_contrib_nbextensions
 snowballstemmer==1.2.1
 addheader>=0.2.2
+highspy
 
 # this will install IDAES in editable mode using the dependencies defined under the `extras_require` tags defined in `setup.py`
 --editable .[ui,dmf,grid,omlt,coolprop]

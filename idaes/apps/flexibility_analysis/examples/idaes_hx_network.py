@@ -341,7 +341,7 @@ def main(method):
     config.sampling_config.num_points = 3
     if method == flexibility.FlexTestMethod.linear_decision_rule:
         config.decision_rule_config = flexibility.LinearDRConfig()
-        config.decision_rule_config.solver = pe.SolverFactory("appsi_gurobi")
+        config.decision_rule_config.solver = pe.SolverFactory("scip")
     elif method == flexibility.FlexTestMethod.relu_decision_rule:
         config.decision_rule_config = flexibility.ReluDRConfig()
         config.decision_rule_config.n_layers = 1

@@ -58,12 +58,12 @@ def main(method):
     config.terminate_early = False
     config.method = method
     config.minlp_solver = pe.SolverFactory("scip")
-    config.sampling_config.solver = pe.SolverFactory("gurobi_direct")
+    config.sampling_config.solver = pe.SolverFactory("scip")
     config.sampling_config.strategy = flexibility.SamplingStrategy.lhs
     config.sampling_config.num_points = 100
     if method == flexibility.FlexTestMethod.linear_decision_rule:
         config.decision_rule_config = flexibility.LinearDRConfig()
-        config.decision_rule_config.solver = pe.SolverFactory("appsi_gurobi")
+        config.decision_rule_config.solver = pe.SolverFactory("ipopt")
     elif method == flexibility.FlexTestMethod.relu_decision_rule:
         config.decision_rule_config = flexibility.ReluDRConfig()
         config.decision_rule_config.n_layers = 1
