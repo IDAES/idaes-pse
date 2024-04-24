@@ -458,7 +458,7 @@ def perform_sampling(
     MutableMapping[_GeneralVarData, List[float]],
 ]:
     r"""
-    Sample values of the uncertain parameters and solve the inner problem 
+    Sample values of the uncertain parameters and solve the inner problem
     of the flexibility test for each sample.
 
     Parameters
@@ -488,7 +488,7 @@ def perform_sampling(
     sample_points: MutableMapping[Union[_GeneralVarData, _ParamData], List[float]]
         The sampled values of the uncertain parameters
     obj_values: List[float]
-        The value of the maximum (or total) constraint violation for each sample 
+        The value of the maximum (or total) constraint violation for each sample
         of the uncertain parameters
     control_values: MutableMapping[_GeneralVarData, List[float]]
         The optimal values of the controls for each sample of the uncertain parameters

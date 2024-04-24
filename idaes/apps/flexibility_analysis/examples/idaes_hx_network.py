@@ -10,11 +10,14 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+"""
+This is a flexibility analysis example using an IDAES model of a 
+heat exchanger network. 
+"""
 import logging
 import pyomo.environ as pe
 from pyomo.contrib.fbbt.fbbt import fbbt
 from pyomo.network import Arc
-from pyomo.util.infeasible import log_infeasible_constraints, log_infeasible_bounds
 from pyomo.core.base.block import _BlockData
 from pyomo.contrib.solver.util import get_objective
 from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
@@ -34,6 +37,10 @@ logging.basicConfig(level=logging.INFO)
 
 
 def create_model():
+    """
+    This function creates an IDAES model of a
+    heat exchanger network for flexibility analysis.
+    """
     m = pe.ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = BTXParameterBlock(
@@ -162,8 +169,7 @@ def create_model():
         p.unfix()
 
     for c in m.component_data_objects(pe.Constraint, active=True, descend_into=True):
-        lower, body, upper = c.lower, c.body, c.upper
-        body = simplify_expr(body)
+        body = simplify_expr(c.body)
         c.set_value((c.lower, body, c.upper))
 
     for p in nominal_values.keys():
@@ -173,17 +179,10 @@ def create_model():
     return m, nominal_values, param_bounds
 
 
-def remove_inequalities(m):
-    for c in m.component_data_objects(pe.Constraint, active=True, descend_into=True):
-        if not c.equality:
-            c.deactivate()
-
-    for v in m.component_data_objects(pe.Var, descend_into=True):
-        v.setlb(None)
-        v.setub(None)
-
-
 def initialize(m):
+    """
+    Initialize the model
+    """
     m.fs.heater1.heat_duty[0].fix(0.1000)
     m.fs.heater1.initialize()
     m.fs.heater1.heat_duty[0].unfix()
@@ -211,6 +210,10 @@ def initialize(m):
 
 
 def get_var_bounds(m: _BlockData, param_bounds):
+    """
+    Generate a map with valid variable bounds for
+    any possible realization of the uncertain parameters
+    """
     for p, (p_lb, p_ub) in param_bounds.items():
         p.unfix()
         p.setlb(p_lb)
@@ -273,6 +276,15 @@ def get_var_bounds(m: _BlockData, param_bounds):
 
 
 def scale_model(m):
+    """
+    This function scales the heat exchanger network model
+    prior to performing flexibility analysis
+
+    Parameters
+    ----------
+    m: _BlockData
+        The IDAES model of the heat exchanger network
+    """
     m.scaling_factor = pe.Suffix(direction=pe.Suffix.EXPORT)
     for b in m.block_data_objects(active=True, descend_into=True):
         if isinstance(b, ControlVolumeBlockData):
@@ -317,27 +329,15 @@ def scale_model(m):
     pe.TransformationFactory("core.scale_model").apply_to(m, rename=False)
 
 
-def nominal_optimization():
-    m, nominal_values, param_bounds = create_model()
-    initialize(m)
+def main(method: flexibility.FlexTestMethod):
+    """
+    Run the example
 
-    log_infeasible_constraints(m, log_variables=False)
-    log_infeasible_bounds(m)
-
-    opt = pe.SolverFactory("ipopt")
-    res = opt.solve(m, tee=True)
-    pe.assert_optimal_termination(res)
-
-    m.fs.heater1.report()
-    m.fs.cooler1.report()
-    m.fs.heater2.report()
-    m.fs.cooler2.report()
-    m.fs.heater3.report()
-    m.fs.cooler3.report()
-    m.fs.cooler4.report()
-
-
-def main(method):
+    Parameters
+    ----------
+    method: flexibility.FlexTestMethod
+        The method to use for the flexibility test
+    """
     m, nominal_values, param_bounds = create_model()
     initialize(m)
     var_bounds = get_var_bounds(m, param_bounds)

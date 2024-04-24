@@ -85,7 +85,7 @@ def create_model() -> Tuple[_BlockData, Mapping, Mapping]:
 
 def get_var_bounds(m):
     """
-    Generate a map with valid variable bounds for 
+    Generate a map with valid variable bounds for
     any possible realization of the uncertain parameters
     """
     res = pe.ComponentMap()

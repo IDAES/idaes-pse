@@ -14,6 +14,8 @@
 This module contains some utility classes for creating meaningful indices
 when formulating the flexibility test problem.
 """
+
+
 class _ConIndex(object):
     def __init__(self, con, bound):
         self._con = con
