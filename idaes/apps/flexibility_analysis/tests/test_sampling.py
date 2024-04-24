@@ -21,6 +21,22 @@ import unittest
 import numpy as np
 import pytest
 from pyomo.contrib import appsi
+from idaes.core.util.testing import _enable_scip_solver_for_testing
+from contextlib import contextmanager
+
+
+@contextmanager
+def scip_solver():
+    solver = pe.SolverFactory("scip")
+    undo_changes = None
+
+    if not solver.available():
+        undo_changes = _enable_scip_solver_for_testing()
+    if not solver.available():
+        pytest.skip(reason="SCIP solver not available")
+    yield solver
+    if undo_changes is not None:
+        undo_changes()
 
 
 def create_poly_model():
@@ -108,45 +124,45 @@ def create_hx_network_model():
 class TestSampling(unittest.TestCase):
     def test_poly(self):
         m, nominal_values, param_bounds = create_poly_model()
-        opt = pe.SolverFactory("scip")
-        config = SamplingConfig()
-        config.solver = opt
-        config.num_points = 5
-        config.strategy = SamplingStrategy.grid
-        tmp = perform_sampling(
-            m,
-            uncertain_params=list(nominal_values.keys()),
-            param_nominal_values=nominal_values,
-            param_bounds=param_bounds,
-            controls=[m.z],
-            in_place=True,
-            config=config,
-        )
-        sample_points, max_violation_values, control_values = tmp
-        max_viol_ndx = np.argmax(max_violation_values)
-        self.assertAlmostEqual(max_violation_values[max_viol_ndx], -1.0142, 4)
-        self.assertAlmostEqual(control_values[m.z][max_viol_ndx], 4.6319, 4)
-        self.assertAlmostEqual(sample_points[m.theta][max_viol_ndx], 22.5)
+        with scip_solver() as opt:
+            config = SamplingConfig()
+            config.solver = opt
+            config.num_points = 5
+            config.strategy = SamplingStrategy.grid
+            tmp = perform_sampling(
+                m,
+                uncertain_params=list(nominal_values.keys()),
+                param_nominal_values=nominal_values,
+                param_bounds=param_bounds,
+                controls=[m.z],
+                in_place=True,
+                config=config,
+            )
+            sample_points, max_violation_values, control_values = tmp
+            max_viol_ndx = np.argmax(max_violation_values)
+            self.assertAlmostEqual(max_violation_values[max_viol_ndx], -1.0142, 4)
+            self.assertAlmostEqual(control_values[m.z][max_viol_ndx], 4.6319, 4)
+            self.assertAlmostEqual(sample_points[m.theta][max_viol_ndx], 22.5)
 
     def test_hx_network(self):
         m, nominal_values, param_bounds = create_hx_network_model()
-        opt = pe.SolverFactory("scip")
-        config = SamplingConfig()
-        config.solver = opt
-        config.num_points = 2
-        config.strategy = SamplingStrategy.grid
-        tmp = perform_sampling(
-            m,
-            uncertain_params=list(nominal_values.keys()),
-            param_nominal_values=nominal_values,
-            param_bounds=param_bounds,
-            controls=[m.qc],
-            in_place=True,
-            config=config,
-        )
-        sample_points, max_violation_values, control_values = tmp
-        max_viol_ndx = np.argmax(max_violation_values)
-        self.assertAlmostEqual(max_violation_values[max_viol_ndx], 8.8)
+        with scip_solver() as opt:
+            config = SamplingConfig()
+            config.solver = opt
+            config.num_points = 2
+            config.strategy = SamplingStrategy.grid
+            tmp = perform_sampling(
+                m,
+                uncertain_params=list(nominal_values.keys()),
+                param_nominal_values=nominal_values,
+                param_bounds=param_bounds,
+                controls=[m.qc],
+                in_place=True,
+                config=config,
+            )
+            sample_points, max_violation_values, control_values = tmp
+            max_viol_ndx = np.argmax(max_violation_values)
+            self.assertAlmostEqual(max_violation_values[max_viol_ndx], 8.8)
 
     def test_hx_network3(self):
         m, nominal_values, param_bounds = create_hx_network_model()
