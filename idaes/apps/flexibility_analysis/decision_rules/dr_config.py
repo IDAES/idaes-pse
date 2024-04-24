@@ -10,6 +10,9 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+"""
+This module defines a config for specifying options related to decision rules
+"""
 from pyomo.common.config import ConfigDict
 
 

@@ -10,8 +10,12 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-from .dr_config import DRConfig
+"""
+This module defines a config for specifying options related to neural network-based 
+decision rules
+"""
 from pyomo.common.config import ConfigValue
+from .dr_config import DRConfig
 
 
 class ReluDRConfig(DRConfig):

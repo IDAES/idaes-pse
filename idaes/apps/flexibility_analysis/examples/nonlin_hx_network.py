@@ -10,11 +10,18 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+"""
+A flexibility analysis example from 
+
+    Grossmann, I. E., & Floudas, C. A. (1987). Active constraint strategy for
+    flexibility analysis in chemical processes. Computers & Chemical Engineering,
+    11(6), 675-693.
+"""
+from typing import Tuple, MutableMapping
 import pyomo.environ as pe
 from pyomo.core.base.block import _BlockData
 from pyomo.core.base.param import _ParamData
 import idaes.apps.flexibility_analysis as flexibility
-from typing import Tuple, MutableMapping
 
 
 def create_model() -> Tuple[
@@ -57,12 +64,24 @@ def create_model() -> Tuple[
 
 
 def get_var_bounds(m):
+    """
+    Generate a map with valid variable bounds for
+    any possible realization of the uncertain parameters
+    """
     res = pe.ComponentMap()
     res[m.qc] = (-1000, 1000)
     return res
 
 
 def main(method):
+    """
+    Run the example
+
+    Parameters
+    ----------
+    method: flexibility.FlexTestMethod
+        The method to use for the flexibility test
+    """
     m, nominal_values, param_bounds = create_model()
     var_bounds = get_var_bounds(m)
     config = flexibility.FlexTestConfig()

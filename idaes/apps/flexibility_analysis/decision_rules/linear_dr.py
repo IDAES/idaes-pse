@@ -10,13 +10,17 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-import pyomo.environ as pe
+"""
+This module contains a function for constructing a linear decision rule for 
+the inner problem of the flexibility test.
+"""
 from typing import MutableMapping, Sequence
-from pyomo.core.base.var import _GeneralVarData
+import pyomo.environ as pe
+from pyomo.core.base.var import _GeneralVarData, ScalarVar, IndexedVar
 from pyomo.core.base.block import _BlockData
 from pyomo.core.expr.numeric_expr import LinearExpression
-from .dr_config import DRConfig
 from pyomo.common.config import ConfigValue
+from .dr_config import DRConfig
 from ..check_optimal import assert_optimal_termination
 
 
@@ -56,6 +60,24 @@ def construct_linear_decision_rule(
     output_vals: MutableMapping[_GeneralVarData, Sequence[float]],
     config: LinearDRConfig,
 ) -> _BlockData:
+    """
+    Construct a linear decision rule from the data provided for the inputs
+    and outputs.
+
+    Parameters
+    ----------
+    input_vals: input_vals: MutableMapping[_GeneralVarData, Sequence[float]]
+        Data for the variables that are inputs to the decision rule
+    output_vals: input_vals: MutableMapping[_GeneralVarData, Sequence[float]]
+        Data for the variables that are outputs to the decision rule
+    config: LinearDRConfig
+        A config object to specify options for the decision rule
+
+    Returns
+    -------
+    res: _BlockData
+        A pyomo model containing the linear decision rule
+    """
     n_inputs = len(input_vals)
     n_outputs = len(output_vals)
 
@@ -70,9 +92,9 @@ def construct_linear_decision_rule(
         trainer.input_set = pe.Set(initialize=list(range(n_inputs)))
         trainer.sample_set = pe.Set(initialize=list(range(n_samples)))
 
-        trainer.const = pe.Var()
-        trainer.coefs = pe.Var(trainer.input_set)
-        trainer.out_est = pe.Var(trainer.sample_set)
+        trainer.const = ScalarVar()
+        trainer.coefs = IndexedVar(trainer.input_set)
+        trainer.out_est = IndexedVar(trainer.sample_set)
 
         obj_expr = sum(
             (trainer.out_est[i] - out_samples[i]) ** 2 for i in trainer.sample_set

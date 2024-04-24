@@ -10,9 +10,17 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+"""
+This module defines an enum for specifying the type of decision rule when a 
+decision rule is used.
+"""
 import enum
 
 
 class DecisionRuleTypes(enum.Enum):
+    """
+    An enum to specify the type of decision rule to use.
+    """
+
     linear = enum.auto()
     relu_nn = enum.auto()

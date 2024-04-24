@@ -10,12 +10,16 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+"""
+This module contains a function for constructing a neural network-based decision 
+rule for the inner problem of the flexibility test.
+"""
+from typing import MutableMapping, Sequence
 import numpy as np
 from pyomo.common.dependencies import attempt_import
 import pyomo.environ as pe
 from pyomo.core.base.var import _GeneralVarData
 from pyomo.core.base.block import _BlockData
-from typing import MutableMapping, Sequence
 from idaes.apps.flexibility_analysis.indices import _VarIndex
 from .relu_dr_config import ReluDRConfig
 
@@ -24,6 +28,7 @@ keras, keras_available = attempt_import("tensorflow.keras")
 omlt, omlt_available = attempt_import("omlt")
 omlt_nn, _ = attempt_import("omlt.neuralnet")
 omlt_io, _ = attempt_import("omlt.io")
+plt, _ = attempt_import("matplotlib.pyplot")
 
 
 def construct_relu_decision_rule(
@@ -31,6 +36,24 @@ def construct_relu_decision_rule(
     output_vals: MutableMapping[_GeneralVarData, Sequence[float]],
     config: ReluDRConfig,
 ) -> _BlockData:
+    """
+    Construct a neural network-based decision rule with ReLU activation functions
+    from the data provided for the inputs and outputs.
+
+    Parameters
+    ----------
+    input_vals: input_vals: MutableMapping[_GeneralVarData, Sequence[float]]
+        Data for the variables that are inputs to the decision rule
+    output_vals: input_vals: MutableMapping[_GeneralVarData, Sequence[float]]
+        Data for the variables that are outputs to the decision rule
+    config: ReluDRConfig
+        A config object to specify options for the decision rule
+
+    Returns
+    -------
+    res: _BlockData
+        A pyomo model containing the linear decision rule
+    """
     tf.random.set_seed(config.tensorflow_seed)
     inputs = list(input_vals.keys())
     outputs = list(output_vals.keys())
@@ -76,7 +99,7 @@ def construct_relu_decision_rule(
             units=config.n_nodes_per_layer, input_dim=len(inputs), activation="relu"
         )
     )
-    for layer_ndx in range(config.n_layers - 1):
+    for _ in range(config.n_layers - 1):
         nn.add(keras.layers.Dense(config.n_nodes_per_layer, activation="relu"))
     nn.add(keras.layers.Dense(len(outputs)))
     if config.learning_rate is None:
@@ -93,8 +116,6 @@ def construct_relu_decision_rule(
     )
 
     if config.plot_history:
-        import matplotlib.pyplot as plt
-
         plt.scatter(history.epoch, history.history["loss"])
         plt.xlabel("Epoch")
         plt.ylabel("Loss")
@@ -126,14 +147,14 @@ def construct_relu_decision_rule(
     res.input_links = pe.Constraint(res.input_set)
     for ndx, v in enumerate(inputs):
         key = _VarIndex(v, None)
-        res.input_set.add(key)
+        res.input_set.add(key)  # pylint: disable=no-member
         res.input_links[key] = v == res.nn.inputs[ndx]
 
     res.output_set = pe.Set()
     res.output_links = pe.Constraint(res.output_set)
     for ndx, v in enumerate(outputs):
         key = _VarIndex(v, None)
-        res.output_set.add(key)
+        res.output_set.add(key)  # pylint: disable=no-member
         res.output_links[key] = v == res.nn.outputs[ndx]
 
     return res
