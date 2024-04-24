@@ -12,8 +12,6 @@
 #################################################################################
 import numpy as np
 from pyomo.common.dependencies import attempt_import
-tf, tensorflow_available = attempt_import("tensorflow")
-keras, keras_available = attempt_import("tensorflow.keras")
 import pyomo.environ as pe
 from pyomo.core.base.var import _GeneralVarData
 from pyomo.core.base.block import _BlockData
@@ -23,6 +21,9 @@ from omlt.neuralnet import ReluBigMFormulation
 from omlt.io import load_keras_sequential
 from idaes.apps.flexibility_analysis.indices import _VarIndex
 from .relu_dr_config import ReluDRConfig
+
+tf, tensorflow_available = attempt_import("tensorflow")
+keras, keras_available = attempt_import("tensorflow.keras")
 
 
 def construct_relu_decision_rule(
