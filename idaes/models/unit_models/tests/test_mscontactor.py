@@ -314,6 +314,10 @@ class ECFrameData(MSContactorData):
     def build(self):
         super(MSContactorData, self).build()
 
+        # Add placeholders that would normally be built in build()
+        self.flow_basis = None
+        self.uom = None
+
 
 # -----------------------------------------------------------------------------
 class TestBuild:
@@ -507,10 +511,10 @@ class TestBuild:
     @pytest.mark.unit
     def test_build_state_blocks(self, model):
         model.fs.unit._verify_inputs()
-        flow_basis, uom = model.fs.unit._build_state_blocks()
+        model.fs.unit._build_state_blocks()
 
-        assert flow_basis == MaterialFlowBasis.molar
-        assert uom == model.fs.properties1.get_metadata().derived_units
+        assert model.fs.unit.flow_basis == MaterialFlowBasis.molar
+        assert model.fs.unit.uom == model.fs.properties1.get_metadata().derived_units
 
         assert isinstance(model.fs.unit.stream1, StateBlock1)
         assert len(model.fs.unit.stream1) == 2
@@ -540,10 +544,10 @@ class TestBuild:
     def test_build_state_blocks_no_feed(self, model):
         model.fs.unit.config.streams["stream2"].has_feed = False
         model.fs.unit._verify_inputs()
-        flow_basis, uom = model.fs.unit._build_state_blocks()
+        model.fs.unit._build_state_blocks()
 
-        assert flow_basis == MaterialFlowBasis.molar
-        assert uom == model.fs.properties1.get_metadata().derived_units
+        assert model.fs.unit.flow_basis == MaterialFlowBasis.molar
+        assert model.fs.unit.uom == model.fs.properties1.get_metadata().derived_units
 
         assert isinstance(model.fs.unit.stream1, StateBlock1)
         assert len(model.fs.unit.stream1) == 2
@@ -570,10 +574,10 @@ class TestBuild:
     def test_build_state_blocks_side_stream(self, model):
         model.fs.unit.config.streams["stream2"].side_streams = [1]
         model.fs.unit._verify_inputs()
-        flow_basis, uom = model.fs.unit._build_state_blocks()
+        model.fs.unit._build_state_blocks()
 
-        assert flow_basis == MaterialFlowBasis.molar
-        assert uom == model.fs.properties1.get_metadata().derived_units
+        assert model.fs.unit.flow_basis == MaterialFlowBasis.molar
+        assert model.fs.unit.uom == model.fs.properties1.get_metadata().derived_units
 
         assert isinstance(model.fs.unit.stream1, StateBlock1)
         assert len(model.fs.unit.stream1) == 2
@@ -748,8 +752,8 @@ class TestBuild:
     @pytest.mark.unit
     def test_add_geometry_no_holdup(self, model):
         model.fs.unit._verify_inputs()
-        flow_basis, uom = model.fs.unit._build_state_blocks()
-        model.fs.unit._add_geometry(uom)
+        model.fs.unit._build_state_blocks()
+        model.fs.unit._add_geometry()
 
         assert not hasattr(model.fs.unit, "volume")
         assert not hasattr(model.fs.unit, "volume_frac_stream")
@@ -764,8 +768,8 @@ class TestBuild:
     @pytest.mark.unit
     def test_add_geometry_holdup_single_phase(self, dynamic):
         dynamic.fs.unit._verify_inputs()
-        flow_basis, uom = dynamic.fs.unit._build_state_blocks()
-        dynamic.fs.unit._add_geometry(uom)
+        dynamic.fs.unit._build_state_blocks()
+        dynamic.fs.unit._add_geometry()
 
         assert isinstance(dynamic.fs.unit.volume, Var)
         assert len(dynamic.fs.unit.volume) == 2
@@ -808,8 +812,8 @@ class TestBuild:
         )
 
         m.fs.unit._verify_inputs()
-        flow_basis, uom = m.fs.unit._build_state_blocks()
-        m.fs.unit._add_geometry(uom)
+        m.fs.unit._build_state_blocks()
+        m.fs.unit._add_geometry()
 
         assert isinstance(m.fs.unit.volume, Var)
         assert len(m.fs.unit.volume) == 2
@@ -838,8 +842,8 @@ class TestBuild:
     @pytest.mark.unit
     def test_material_balances(self, model):
         model.fs.unit._verify_inputs()
-        flow_basis, uom = model.fs.unit._build_state_blocks()
-        model.fs.unit._build_material_balance_constraints(flow_basis, uom)
+        model.fs.unit._build_state_blocks()
+        model.fs.unit._build_material_balance_constraints()
 
         assert isinstance(model.fs.unit.material_transfer_term, Var)
         # One stream pair with two common components over two elements and 1 time point
@@ -908,9 +912,9 @@ class TestBuild:
     @pytest.mark.unit
     def test_material_balances_dynamic(self, dynamic):
         dynamic.fs.unit._verify_inputs()
-        flow_basis, uom = dynamic.fs.unit._build_state_blocks()
-        dynamic.fs.unit._add_geometry(uom)
-        dynamic.fs.unit._build_material_balance_constraints(flow_basis, uom)
+        dynamic.fs.unit._build_state_blocks()
+        dynamic.fs.unit._add_geometry()
+        dynamic.fs.unit._build_material_balance_constraints()
 
         assert isinstance(dynamic.fs.unit.material_transfer_term, Var)
         # One stream pair with two common components over two elements and 2 time point
@@ -1059,8 +1063,8 @@ class TestBuild:
     def test_build_material_balances_no_feed(self, model):
         model.fs.unit.config.streams["stream2"].has_feed = False
         model.fs.unit._verify_inputs()
-        flow_basis, uom = model.fs.unit._build_state_blocks()
-        model.fs.unit._build_material_balance_constraints(flow_basis, uom)
+        model.fs.unit._build_state_blocks()
+        model.fs.unit._build_material_balance_constraints()
 
         assert isinstance(model.fs.unit.material_transfer_term, Var)
         # One stream pair with two common components over two elements and 1 time point
@@ -1128,8 +1132,8 @@ class TestBuild:
     def test_material_balances_side_stream(self, model):
         model.fs.unit.config.streams["stream2"].side_streams = [1]
         model.fs.unit._verify_inputs()
-        flow_basis, uom = model.fs.unit._build_state_blocks()
-        model.fs.unit._build_material_balance_constraints(flow_basis, uom)
+        model.fs.unit._build_state_blocks()
+        model.fs.unit._build_material_balance_constraints()
 
         assert isinstance(model.fs.unit.material_transfer_term, Var)
         # One stream pair with two common components over two elements and 1 time point
@@ -1204,8 +1208,8 @@ class TestBuild:
     @pytest.mark.unit
     def test_energy_balances(self, model):
         model.fs.unit._verify_inputs()
-        _, uom = model.fs.unit._build_state_blocks()
-        model.fs.unit._build_energy_balance_constraints(uom)
+        model.fs.unit._build_state_blocks()
+        model.fs.unit._build_energy_balance_constraints()
 
         assert isinstance(model.fs.unit.energy_transfer_term, Var)
         # 1 stream interaction, 2 elements
@@ -1265,9 +1269,9 @@ class TestBuild:
     @pytest.mark.unit
     def test_energy_balances_dynamic(self, dynamic):
         dynamic.fs.unit._verify_inputs()
-        _, uom = dynamic.fs.unit._build_state_blocks()
-        dynamic.fs.unit._add_geometry(uom)
-        dynamic.fs.unit._build_energy_balance_constraints(uom)
+        dynamic.fs.unit._build_state_blocks()
+        dynamic.fs.unit._add_geometry()
+        dynamic.fs.unit._build_energy_balance_constraints()
 
         assert isinstance(dynamic.fs.unit.energy_transfer_term, Var)
         # 1 stream interaction, 2 elements
@@ -1370,8 +1374,8 @@ class TestBuild:
     def test_energy_balances_has_heat_transfer(self, model):
         model.fs.unit.config.streams["stream2"].has_heat_transfer = True
         model.fs.unit._verify_inputs()
-        _, uom = model.fs.unit._build_state_blocks()
-        model.fs.unit._build_energy_balance_constraints(uom)
+        model.fs.unit._build_state_blocks()
+        model.fs.unit._build_energy_balance_constraints()
 
         assert not hasattr(model.fs.unit, "stream1_heat")
         assert isinstance(model.fs.unit.stream1_energy_balance, Constraint)
@@ -1430,8 +1434,8 @@ class TestBuild:
     def test_energy_balances_no_feed(self, model):
         model.fs.unit.config.streams["stream2"].has_feed = False
         model.fs.unit._verify_inputs()
-        _, uom = model.fs.unit._build_state_blocks()
-        model.fs.unit._build_energy_balance_constraints(uom)
+        model.fs.unit._build_state_blocks()
+        model.fs.unit._build_energy_balance_constraints()
 
         assert isinstance(model.fs.unit.stream1_energy_balance, Constraint)
         # 1 time point, 2 elements
@@ -1482,8 +1486,8 @@ class TestBuild:
     def test_energy_balances_has_energy_balance_false(self, model):
         model.fs.unit.config.streams["stream2"].has_energy_balance = False
         model.fs.unit._verify_inputs()
-        _, uom = model.fs.unit._build_state_blocks()
-        model.fs.unit._build_energy_balance_constraints(uom)
+        model.fs.unit._build_state_blocks()
+        model.fs.unit._build_energy_balance_constraints()
 
         assert isinstance(model.fs.unit.stream1_energy_balance, Constraint)
         # 1 time point, 2 elements
@@ -1514,8 +1518,8 @@ class TestBuild:
     def test_energy_balances_side_stream(self, model):
         model.fs.unit.config.streams["stream2"].side_streams = [1]
         model.fs.unit._verify_inputs()
-        _, uom = model.fs.unit._build_state_blocks()
-        model.fs.unit._build_energy_balance_constraints(uom)
+        model.fs.unit._build_state_blocks()
+        model.fs.unit._build_energy_balance_constraints()
 
         assert isinstance(model.fs.unit.stream1_energy_balance, Constraint)
         # 1 time point, 2 elements
@@ -1567,8 +1571,8 @@ class TestBuild:
     @pytest.mark.unit
     def test_pressure_balances(self, model):
         model.fs.unit._verify_inputs()
-        _, uom = model.fs.unit._build_state_blocks()
-        model.fs.unit._build_pressure_balance_constraints(uom)
+        model.fs.unit._build_state_blocks()
+        model.fs.unit._build_pressure_balance_constraints()
 
         assert isinstance(model.fs.unit.stream1_pressure_balance, Constraint)
         # 1 time point, 2 elements
@@ -1619,8 +1623,8 @@ class TestBuild:
     def test_pressure_balances_deltaP(self, model):
         model.fs.unit.config.streams["stream2"].has_pressure_change = True
         model.fs.unit._verify_inputs()
-        _, uom = model.fs.unit._build_state_blocks()
-        model.fs.unit._build_pressure_balance_constraints(uom)
+        model.fs.unit._build_state_blocks()
+        model.fs.unit._build_pressure_balance_constraints()
 
         assert not hasattr(model.fs.unit, "stream1_deltaP")
         assert isinstance(model.fs.unit.stream1_pressure_balance, Constraint)
@@ -1678,8 +1682,8 @@ class TestBuild:
     def test_pressure_balances_no_feed(self, model):
         model.fs.unit.config.streams["stream2"].has_feed = False
         model.fs.unit._verify_inputs()
-        _, uom = model.fs.unit._build_state_blocks()
-        model.fs.unit._build_pressure_balance_constraints(uom)
+        model.fs.unit._build_state_blocks()
+        model.fs.unit._build_pressure_balance_constraints()
 
         assert isinstance(model.fs.unit.stream1_pressure_balance, Constraint)
         # 1 time point, 2 elements
@@ -1722,8 +1726,8 @@ class TestBuild:
     def test_pressure_balances_has_pressure_balance_false(self, model):
         model.fs.unit.config.streams["stream2"].has_pressure_balance = False
         model.fs.unit._verify_inputs()
-        _, uom = model.fs.unit._build_state_blocks()
-        model.fs.unit._build_pressure_balance_constraints(uom)
+        model.fs.unit._build_state_blocks()
+        model.fs.unit._build_pressure_balance_constraints()
 
         assert isinstance(model.fs.unit.stream1_pressure_balance, Constraint)
         # 1 time point, 2 elements
@@ -1755,8 +1759,8 @@ class TestBuild:
     def test_pressure_balances_side_stream(self, model):
         model.fs.unit.config.streams["stream2"].side_streams = [1]
         model.fs.unit._verify_inputs()
-        _, uom = model.fs.unit._build_state_blocks()
-        model.fs.unit._build_pressure_balance_constraints(uom)
+        model.fs.unit._build_state_blocks()
+        model.fs.unit._build_pressure_balance_constraints()
 
         assert isinstance(model.fs.unit.stream1_pressure_balance, Constraint)
         # 1 time point, 2 elements
@@ -1961,8 +1965,8 @@ class TestReactions:
         model.fs.properties._has_inherent_reactions = True
 
         model.fs.unit._verify_inputs()
-        flow_basis, uom = model.fs.unit._build_state_blocks()
-        model.fs.unit._build_material_balance_constraints(flow_basis, uom)
+        model.fs.unit._build_state_blocks()
+        model.fs.unit._build_material_balance_constraints()
 
         assert isinstance(model.fs.unit.stream1_inherent_reaction_extent, Var)
         assert len(model.fs.unit.stream1_inherent_reaction_extent) == 4
@@ -2135,8 +2139,8 @@ class TestReactions:
         model.fs.unit.config.streams["stream2"].has_equilibrium_reactions = True
 
         model.fs.unit._verify_inputs()
-        flow_basis, uom = model.fs.unit._build_state_blocks()
-        model.fs.unit._build_material_balance_constraints(flow_basis, uom)
+        model.fs.unit._build_state_blocks()
+        model.fs.unit._build_material_balance_constraints()
 
         assert not hasattr(model.fs.unit, "stream1_equilibrium_reaction_extent")
         assert not hasattr(model.fs.unit, "stream1_equilibrium_reaction_generation")
@@ -2248,7 +2252,7 @@ class TestReactions:
         model.fs.unit.config.heterogeneous_reactions = True
 
         model.fs.unit._verify_inputs()
-        _, _ = model.fs.unit._build_state_blocks()
+        model.fs.unit._build_state_blocks()
 
         with pytest.raises(
             ConfigurationError,
@@ -2272,7 +2276,7 @@ class TestReactions:
         model.fs.unit.config.heterogeneous_reactions = model.hetero_dummy
 
         model.fs.unit._verify_inputs()
-        _, _ = model.fs.unit._build_state_blocks()
+        model.fs.unit._build_state_blocks()
 
         with pytest.raises(
             PropertyNotSupportedError,
@@ -2295,7 +2299,7 @@ class TestReactions:
         model.fs.unit.config.heterogeneous_reactions = model.fs.hetero_dummy
 
         model.fs.unit._verify_inputs()
-        flow_basis, uom = model.fs.unit._build_state_blocks()
+        model.fs.unit._build_state_blocks()
 
         model.fs.unit.heterogeneous_reactions = Block(
             model.fs.time,
@@ -2308,7 +2312,7 @@ class TestReactions:
                 model.fs.hetero_dummy,
             )
 
-        model.fs.unit._build_material_balance_constraints(flow_basis, uom)
+        model.fs.unit._build_material_balance_constraints()
 
         assert isinstance(model.fs.unit.heterogeneous_reaction_extent, Var)
         for k in model.fs.unit.heterogeneous_reaction_extent.keys():
@@ -2446,8 +2450,8 @@ class TestReactions:
         model.fs.unit.config.streams["stream2"].has_rate_reactions = True
 
         model.fs.unit._verify_inputs()
-        flow_basis, uom = model.fs.unit._build_state_blocks()
-        model.fs.unit._build_material_balance_constraints(flow_basis, uom)
+        model.fs.unit._build_state_blocks()
+        model.fs.unit._build_material_balance_constraints()
 
         assert not hasattr(model.fs.unit, "stream1_rate_reaction_extent")
         assert not hasattr(model.fs.unit, "stream1_rate_reaction_generation")
@@ -2559,9 +2563,9 @@ class TestReactions:
         model.fs.unit.config.streams["stream2"].has_heat_of_reaction = True
 
         model.fs.unit._verify_inputs()
-        flow_basis, uom = model.fs.unit._build_state_blocks()
-        model.fs.unit._build_material_balance_constraints(flow_basis, uom)
-        model.fs.unit._build_energy_balance_constraints(uom)
+        model.fs.unit._build_state_blocks()
+        model.fs.unit._build_material_balance_constraints()
+        model.fs.unit._build_energy_balance_constraints()
 
         assert str(model.fs.unit.stream1_energy_balance[0, 1].expr) == str(
             0 * (units.kg * units.m**2 * units.s**-3)
@@ -2642,9 +2646,9 @@ class TestReactions:
         model.fs.unit.config.streams["stream2"].has_heat_of_reaction = True
 
         model.fs.unit._verify_inputs()
-        flow_basis, uom = model.fs.unit._build_state_blocks()
-        model.fs.unit._build_material_balance_constraints(flow_basis, uom)
-        model.fs.unit._build_energy_balance_constraints(uom)
+        model.fs.unit._build_state_blocks()
+        model.fs.unit._build_material_balance_constraints()
+        model.fs.unit._build_energy_balance_constraints()
 
         assert str(model.fs.unit.stream1_energy_balance[0, 1].expr) == str(
             0 * (units.kg * units.m**2 * units.s**-3)

@@ -68,9 +68,7 @@ class Constants:
     acceleration_gravity = 9.80665 * units.metre / units.second**2
 
     # https://physics.nist.gov/cgi-bin/cuu/Value?bg
-    gravitational_constant = (
-        6.67430e-11 * units.metre**3 / units.kg / units.second**2
-    )
+    gravitational_constant = 6.67430e-11 * units.metre**3 / units.kg / units.second**2
 
     # https://physics.nist.gov/cgi-bin/cuu/Value?me
     mass_electron = 9.1093837015e-31 * units.kilogram

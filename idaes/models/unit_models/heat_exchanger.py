@@ -814,11 +814,11 @@ class HeatExchangerData(UnitModelBlockData):
         var_dict["Heat Duty"] = self.heat_duty[time_point]
         if self.config.flow_pattern == HeatExchangerFlowPattern.crossflow:
             var_dict["Crossflow Factor"] = self.crossflow_factor[time_point]
+        var_dict["Delta T In"] = self.delta_temperature_in[time_point]
+        var_dict["Delta T Out"] = self.delta_temperature_out[time_point]
 
         expr_dict = {}
         expr_dict["Delta T Driving"] = self.delta_temperature[time_point]
-        expr_dict["Delta T In"] = self.delta_temperature_in[time_point]
-        expr_dict["Delta T Out"] = self.delta_temperature_out[time_point]
 
         return {"vars": var_dict, "exprs": expr_dict}
 

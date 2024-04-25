@@ -837,6 +837,40 @@ class TestParameterSweepBase:
             psweep.set_input_values(model, 0)
 
     @pytest.mark.unit
+    def test_set_input_indexed_var(self):
+        def bm():
+            m = ConcreteModel()
+            m.v1 = Var([1, 2])
+            return m
+
+        spec2 = ParameterSweepSpecification()
+        spec2.set_sampling_method(UniformSampling)
+        spec2.add_sampled_input("v1", 0, 10)
+        spec2.set_sample_size([2])
+
+        psweep = ParameterSweepBase(
+            build_model=bm,
+            input_specification=spec2,
+        )
+
+        model = psweep.get_initialized_model()
+
+        with pytest.raises(
+            ValueError,
+            match="Convergence testing found an input of type IndexedVar that "
+            "was not fixed \(v1, index 1\). Please make sure all "
+            "sampled inputs are either mutable params or fixed vars.",
+        ):
+            psweep.set_input_values(model, 0)
+
+        model.v1.fix(20)
+
+        psweep.set_input_values(model, 0)
+
+        assert value(model.v1[1]) == 0
+        assert value(model.v1[2]) == 0
+
+    @pytest.mark.unit
     def test_set_input_invalid_ctype(self):
         def bm():
             m = ConcreteModel()
@@ -957,7 +991,7 @@ class TestParameterSweepBase:
 
         results = psweep.handle_error(model)
 
-        assert results == (None, False)
+        assert results == None
 
     @pytest.mark.unit
     def test_handle_error(self):
@@ -1121,7 +1155,7 @@ class TestParameterSweepBase:
                 raise Exception("Test exception")
 
         def recourse(model):
-            return "foo", "bar"
+            return "foo"
 
         spec2 = ParameterSweepSpecification()
         spec2.set_sampling_method(UniformSampling)
@@ -1138,7 +1172,7 @@ class TestParameterSweepBase:
         results, success, error = psweep.execute_single_sample(1)
 
         assert results == "foo"
-        assert success == "bar"
+        assert not success
         assert error == "Test exception"
 
     @pytest.fixture(scope="class")

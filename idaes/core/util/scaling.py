@@ -47,7 +47,7 @@ from pyomo.dae import DerivativeVar
 from pyomo.dae.flatten import slice_component_along_sets
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from pyomo.core import expr as EXPR
-from pyomo.core.expr.numvalue import native_types, pyomo_constant_types
+from pyomo.common.numeric_types import native_types
 from pyomo.core.base.units_container import _PyomoUnit
 
 import idaes.logger as idaeslog
@@ -1515,7 +1515,7 @@ class NominalValueExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
         # first check if the node is a leaf
         nodetype = type(node)
 
-        if nodetype in native_types or nodetype in pyomo_constant_types:
+        if nodetype in native_types:
             return [node]
 
         node_func = self.node_type_method_map.get(nodetype, None)

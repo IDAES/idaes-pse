@@ -86,6 +86,7 @@ from idaes.core.initialization import (
     BlockTriangularizationInitializer,
     InitializationStatus,
 )
+from idaes.core.util import DiagnosticsToolbox
 
 
 # -----------------------------------------------------------------------------
@@ -803,8 +804,8 @@ class TestSaponification(object):
         m.fs.unit.inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
         m.fs.unit.inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
         m.fs.unit.inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
-        m.fs.unit.inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
-        m.fs.unit.inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "SodiumAcetate"].fix(1e-8)
+        m.fs.unit.inlet.conc_mol_comp[0, "Ethanol"].fix(1e-8)
 
         m.fs.unit.inlet.temperature.fix(303.15)
         m.fs.unit.inlet.pressure.fix(101325.0)
@@ -853,12 +854,9 @@ class TestSaponification(object):
         assert number_unused_variables(sapon) == 0
 
     @pytest.mark.component
-    def test_units(self, sapon):
-        assert_units_consistent(sapon)
-
-    @pytest.mark.unit
-    def test_dof(self, sapon):
-        assert degrees_of_freedom(sapon) == 0
+    def test_structural_issues(self, sapon):
+        dt = DiagnosticsToolbox(sapon)
+        dt.assert_no_structural_warnings()
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -1111,6 +1109,13 @@ class TestSaponification(object):
             <= 1e-3
         )
 
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, sapon):
+        dt = DiagnosticsToolbox(sapon)
+        dt.assert_no_numerical_warnings()
+
 
 # -----------------------------------------------------------------------------
 class TestBTXIdeal(object):
@@ -1139,6 +1144,36 @@ class TestBTXIdeal(object):
 
         m.fs.unit.split_fraction[0, "outlet_1", "Vap"].fix(0.8)
         m.fs.unit.split_fraction[0, "outlet_2", "Liq"].fix(0.8)
+
+        # Legacy property package, does not bound many variables which triggers
+        # warnings for potential evaluation errors.
+        # Fixing property package is out of scope for now.
+        m.fs.unit.mixed_state[0.0].temperature_bubble.setlb(300)
+        m.fs.unit.mixed_state[0.0].temperature_bubble.setub(550)
+        m.fs.unit.mixed_state[0.0].temperature_dew.setlb(300)
+        m.fs.unit.mixed_state[0.0].temperature_dew.setub(550)
+        m.fs.unit.mixed_state[0.0]._temperature_equilibrium.setlb(300)
+        m.fs.unit.mixed_state[0.0]._temperature_equilibrium.setub(550)
+        m.fs.unit.mixed_state[0.0].pressure_sat_comp.setlb(1e4)
+        m.fs.unit.mixed_state[0.0].pressure_sat_comp.setub(5e6)
+
+        m.fs.unit.outlet_1_state[0.0].temperature_bubble.setlb(300)
+        m.fs.unit.outlet_1_state[0.0].temperature_bubble.setub(550)
+        m.fs.unit.outlet_1_state[0.0].temperature_dew.setlb(300)
+        m.fs.unit.outlet_1_state[0.0].temperature_dew.setub(550)
+        m.fs.unit.outlet_1_state[0.0]._temperature_equilibrium.setlb(300)
+        m.fs.unit.outlet_1_state[0.0]._temperature_equilibrium.setub(550)
+        m.fs.unit.outlet_1_state[0.0].pressure_sat_comp.setlb(1e4)
+        m.fs.unit.outlet_1_state[0.0].pressure_sat_comp.setub(5e6)
+
+        m.fs.unit.outlet_2_state[0.0].temperature_bubble.setlb(300)
+        m.fs.unit.outlet_2_state[0.0].temperature_bubble.setub(550)
+        m.fs.unit.outlet_2_state[0.0].temperature_dew.setlb(300)
+        m.fs.unit.outlet_2_state[0.0].temperature_dew.setub(550)
+        m.fs.unit.outlet_2_state[0.0]._temperature_equilibrium.setlb(300)
+        m.fs.unit.outlet_2_state[0.0]._temperature_equilibrium.setub(550)
+        m.fs.unit.outlet_2_state[0.0].pressure_sat_comp.setlb(1e4)
+        m.fs.unit.outlet_2_state[0.0].pressure_sat_comp.setub(5e6)
 
         return m
 
@@ -1173,12 +1208,9 @@ class TestBTXIdeal(object):
         assert number_unused_variables(btx) == 0
 
     @pytest.mark.component
-    def test_units(self, btx):
-        assert_units_consistent(btx)
-
-    @pytest.mark.unit
-    def test_dof(self, btx):
-        assert degrees_of_freedom(btx) == 0
+    def test_structural_issues(self, btx):
+        dt = DiagnosticsToolbox(btx)
+        dt.assert_no_structural_warnings()
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -1383,6 +1415,13 @@ class TestBTXIdeal(object):
             <= 1e-1
         )
 
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, btx):
+        dt = DiagnosticsToolbox(btx)
+        dt.assert_no_numerical_warnings()
+
 
 # -----------------------------------------------------------------------------
 @pytest.mark.iapws
@@ -1446,12 +1485,9 @@ class TestIAPWS(object):
         assert number_unused_variables(iapws) == 0
 
     @pytest.mark.component
-    def test_units(self, iapws):
-        assert_units_consistent(iapws)
-
-    @pytest.mark.unit
-    def test_dof(self, iapws):
-        assert degrees_of_freedom(iapws) == 0
+    def test_structural_issues(self, iapws):
+        dt = DiagnosticsToolbox(iapws)
+        dt.assert_no_structural_warnings()
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -1591,6 +1627,13 @@ class TestIAPWS(object):
             )
             <= 1e-2
         )
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, iapws):
+        dt = DiagnosticsToolbox(iapws)
+        dt.assert_no_numerical_warnings()
 
 
 # -----------------------------------------------------------------------------
@@ -2992,6 +3035,18 @@ class TestBTX_IdealSep(object):
         m.fs.unit.inlet.mole_frac_comp[0, "benzene"].fix(0.5)
         m.fs.unit.inlet.mole_frac_comp[0, "toluene"].fix(0.5)
 
+        # Legacy property package, does not bound many variables which triggers
+        # warnings for potential evaluation errors.
+        # Fixing property package is out of scope for now.
+        m.fs.unit.mixed_state[0.0].temperature_bubble.setlb(300)
+        m.fs.unit.mixed_state[0.0].temperature_bubble.setub(550)
+        m.fs.unit.mixed_state[0.0].temperature_dew.setlb(300)
+        m.fs.unit.mixed_state[0.0].temperature_dew.setub(550)
+        m.fs.unit.mixed_state[0.0]._temperature_equilibrium.setlb(300)
+        m.fs.unit.mixed_state[0.0]._temperature_equilibrium.setub(550)
+        m.fs.unit.mixed_state[0.0].pressure_sat_comp.setlb(1e4)
+        m.fs.unit.mixed_state[0.0].pressure_sat_comp.setub(5e6)
+
         return m
 
     @pytest.mark.build
@@ -3023,12 +3078,9 @@ class TestBTX_IdealSep(object):
         assert number_unused_variables(btx) == 0
 
     @pytest.mark.component
-    def test_units(self, btx):
-        assert_units_consistent(btx)
-
-    @pytest.mark.unit
-    def test_dof(self, btx):
-        assert degrees_of_freedom(btx) == 0
+    def test_structural_issues(self, btx):
+        dt = DiagnosticsToolbox(btx)
+        dt.assert_no_structural_warnings()
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -3196,6 +3248,13 @@ class TestBTX_IdealSep(object):
         )
 
         # Assume energy conservation is covered by control volume tests
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, btx):
+        dt = DiagnosticsToolbox(btx)
+        dt.assert_no_numerical_warnings()
 
 
 @pytest.mark.unit
