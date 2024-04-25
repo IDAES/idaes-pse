@@ -557,7 +557,7 @@ def _solve_flextest_decision_rule(
         config=config,
     )
     opt = config.minlp_solver
-    res = opt.solve(m, tee=True)
+    res = opt.solve(m)
     pe.assert_optimal_termination(res)
 
     results = FlexTestResults()

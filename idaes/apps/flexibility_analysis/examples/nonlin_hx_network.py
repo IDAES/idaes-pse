@@ -117,6 +117,7 @@ def main(method):
         config=config,
     )
     print(results)
+    return results
 
 
 if __name__ == "__main__":

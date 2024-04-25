@@ -22,6 +22,7 @@ import idaes.apps.flexibility_analysis as flex
 from idaes.apps.flexibility_analysis.examples import (
     linear_hx_network,
     idaes_hx_network,
+    nonlin_hx_network,
 )
 from idaes.core.util.testing import _enable_scip_solver_for_testing
 
@@ -42,6 +43,13 @@ def scip_solver():
 
 @pytest.mark.component
 class TestExamples(unittest.TestCase):
+    def test_nonlin_hx_network(self):
+        with scip_solver():
+            res = nonlin_hx_network.main(
+                method=flex.FlexTestMethod.active_constraint,
+            )
+            self.assertAlmostEqual(res, 0.1474609375, 3)
+
     def test_linear_hx_network(self):
         with scip_solver():
             res = linear_hx_network.main(
