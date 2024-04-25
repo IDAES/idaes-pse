@@ -82,7 +82,7 @@ nn.add(Dense(units=2))
 nn.compile(optimizer=Adam(), loss="mse")
 
 mcp_save = ModelCheckpoint(
-    ".mdl_wts.hdf5", save_best_only=True, monitor="val_loss", mode="min"
+    ".mdl_wts.keras", save_best_only=True, monitor="val_loss", mode="min"
 )
 history = nn.fit(
     x=x,
@@ -111,7 +111,7 @@ nn.add(Dense(units=2))
 nn.compile(optimizer=Adam(), loss="mse")
 
 mcp_save = ModelCheckpoint(
-    ".mdl_wts.hdf5", save_best_only=True, monitor="val_loss", mode="min"
+    ".mdl_wts.keras", save_best_only=True, monitor="val_loss", mode="min"
 )
 history = nn.fit(
     x=x,
@@ -161,7 +161,7 @@ nn.add(Dense(units=2))
 nn.compile(optimizer=Adam(), loss="mse")
 
 mcp_save = ModelCheckpoint(
-    ".mdl_wts.hdf5", save_best_only=True, monitor="val_loss", mode="min"
+    ".mdl_wts.keras", save_best_only=True, monitor="val_loss", mode="min"
 )
 history = nn.fit(
     x=x,
@@ -188,7 +188,7 @@ nn.add(Dense(units=2))
 nn.compile(optimizer=Adam(), loss="mse")
 
 mcp_save = ModelCheckpoint(
-    ".mdl_wts.hdf5", save_best_only=True, monitor="val_loss", mode="min"
+    ".mdl_wts.keras", save_best_only=True, monitor="val_loss", mode="min"
 )
 history = nn.fit(
     x=x,

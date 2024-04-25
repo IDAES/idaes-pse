@@ -263,7 +263,7 @@ class KerasSurrogate(SurrogateBase):
               The name of the folder to contain the Keras model and additional
               IDAES metadata
         """
-        self._keras_model.save(keras_folder_name)
+        self._keras_model.save(os.path.join(keras_folder_name, "idaes_keras_model.keras"))
         info = dict()
         info["input_scaler"] = None
         if self._input_scaler is not None:
@@ -293,7 +293,9 @@ class KerasSurrogate(SurrogateBase):
 
         Returns: an instance of KerasSurrogate
         """
-        keras_model = keras.models.load_model(keras_folder_name)
+
+        keras_model = keras.models.load_model(os.path.join(keras_folder_name, "idaes_keras_model.keras"))
+
         with open(os.path.join(keras_folder_name, "idaes_info.json")) as fd:
             info = json.load(fd)
 
@@ -319,12 +321,14 @@ def save_keras_json_hd5(nn, path, name):
     json_model = nn.to_json()
     with open(os.path.join(path, "{}.json".format(name)), "w") as json_file:
         json_file.write(json_model)
-    nn.save_weights(os.path.join(path, "{}.h5".format(name)))
+    nn.save(os.path.join(path, "{}.keras".format(name)))
+    nn.save_weights(os.path.join(path, "{}.weights.h5".format(name)))
 
 
 def load_keras_json_hd5(path, name):
     with open(os.path.join(path, "{}.json".format(name)), "r") as json_file:
         json_model = json_file.read()
         nn = keras.models.model_from_json(json_model)
-    nn.load_weights(os.path.join(path, "{}.h5".format(name)))
+    nn = keras.models.load_model(os.path.join(path, "{}.keras".format(name)))
+    nn.load_weights(os.path.join(path, "{}.weights.h5".format(name)))
     return nn
