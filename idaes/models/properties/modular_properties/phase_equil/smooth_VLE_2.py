@@ -45,6 +45,10 @@ from idaes.models.properties.modular_properties.eos.ceos import (
 import idaes.core.util.scaling as iscale
 
 
+# Small value for initializing slack variables
+EPS_INIT = 1e-8
+
+
 # -----------------------------------------------------------------------------
 class SmoothVLE2:
     """
@@ -87,7 +91,7 @@ class SmoothVLE2:
 
         s = Var(
             vl_phase_set,
-            initialize=0.0,
+            initialize=EPS_INIT,
             bounds=(0, None),
             doc="Slack variable for equilibrium temperature",
             units=pyunits.dimensionless,
@@ -116,7 +120,7 @@ class SmoothVLE2:
 
         gp = Var(
             vl_phase_set,
-            initialize=0.0,
+            initialize=EPS_INIT,
             bounds=(0, None),
             doc="Slack variable for cubic second derivative for phase p",
             units=pyunits.dimensionless,
@@ -125,7 +129,7 @@ class SmoothVLE2:
 
         gn = Var(
             vl_phase_set,
-            initialize=0.0,
+            initialize=EPS_INIT,
             bounds=(0, None),
             doc="Slack variable for cubic second derivative for phase p",
             units=pyunits.dimensionless,
@@ -264,13 +268,13 @@ def _calculate_temperature_slacks(b, phase_pair, liquid_phase, vapor_phase):
 
     if value(b._teq[phase_pair]) > value(b.temperature):
         s[vapor_phase].set_value(value(b._teq[phase_pair] - b.temperature))
-        s[liquid_phase].set_value(0)
+        s[liquid_phase].set_value(EPS_INIT)
     elif value(b._teq[phase_pair]) < value(b.temperature):
-        s[vapor_phase].set_value(0)
+        s[vapor_phase].set_value(EPS_INIT)
         s[liquid_phase].set_value(value(b.temperature - b._teq[phase_pair]))
     else:
-        s[vapor_phase].set_value(0)
-        s[liquid_phase].set_value(0)
+        s[vapor_phase].set_value(EPS_INIT)
+        s[liquid_phase].set_value(EPS_INIT)
 
 
 def _calculate_ceos_derivative_slacks(b, phase_pair, liquid_phase, vapor_phase):
@@ -281,15 +285,15 @@ def _calculate_ceos_derivative_slacks(b, phase_pair, liquid_phase, vapor_phase):
     der = getattr(b, "cubic_second_derivative" + suffix)
 
     if value(der[liquid_phase]) < 0:
-        gp[liquid_phase].set_value(0)
+        gp[liquid_phase].set_value(EPS_INIT)
         gn[liquid_phase].set_value(value(-der[liquid_phase]))
     else:
-        gp[liquid_phase].set_value(0)
-        gn[liquid_phase].set_value(0)
+        gp[liquid_phase].set_value(EPS_INIT)
+        gn[liquid_phase].set_value(EPS_INIT)
 
     if value(der[vapor_phase]) > 0:
         gp[vapor_phase].set_value(value(der[vapor_phase]))
-        gn[vapor_phase].set_value(0)
+        gn[vapor_phase].set_value(EPS_INIT)
     else:
-        gp[vapor_phase].set_value(0)
-        gn[vapor_phase].set_value(0)
+        gp[vapor_phase].set_value(EPS_INIT)
+        gn[vapor_phase].set_value(EPS_INIT)

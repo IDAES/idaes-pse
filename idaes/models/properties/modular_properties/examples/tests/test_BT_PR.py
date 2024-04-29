@@ -17,16 +17,15 @@ Author: Andrew Lee
 
 import pytest
 
+from pyomo.util.check_units import assert_units_consistent
+from pyomo.environ import check_optimal_termination, ConcreteModel, Objective, value
+
 from idaes.core import FlowsheetBlock
 from idaes.models.properties.modular_properties.eos.ceos import cubic_roots_available
 from idaes.models.properties.modular_properties.examples.BT_PR import configuration
 from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
 )
-from pyomo.util.check_units import assert_units_consistent
-
-from pyomo.environ import check_optimal_termination, ConcreteModel, Objective, value
-
 from idaes.core.solvers import get_solver
 import idaes.core.util.scaling as iscale
 from idaes.models.properties.tests.test_harness import PropertyTestHarness

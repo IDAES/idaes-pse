@@ -1481,7 +1481,7 @@ def rule_am_default(m, cname, a, p, pp=()):
 
 def rule_am_crit_default(m, cname, a_crit):
     """
-    Standard mixing rule for a term at critical point
+    Standard mixing rule for a term evaluated at critical point
     """
     k = getattr(m.params, cname + "_kappa")
     return sum(
@@ -1505,6 +1505,6 @@ def rule_bm_default(m, b, p):
 
 def rule_bm_crit_default(m, b):
     """
-    Standard mixing rule for b term at critical point
+    Standard mixing rule for b term evaluated at critical point
     """
     return sum(m.mole_frac_comp[i] * b[i] for i in m.component_list)

@@ -2082,7 +2082,11 @@ class TestInitializersModular:
 
     @pytest.mark.integration
     def test_block_triangularization(self, model):
-        initializer = BlockTriangularizationInitializer(constraint_tolerance=2e-5)
+        import logging
+
+        initializer = BlockTriangularizationInitializer(
+            constraint_tolerance=2e-5, output_level=logging.DEBUG
+        )
         initializer.initialize(model.fs.unit)
 
         assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
