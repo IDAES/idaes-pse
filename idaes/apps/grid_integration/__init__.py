@@ -19,5 +19,4 @@ from .multiperiod.price_taker_model import PriceTakerModel
 from .multiperiod.design_and_operation_models import (
     DesignModel,
     OperationModel,
-    deepgetattr,
 )

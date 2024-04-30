@@ -25,15 +25,6 @@ from idaes.models.unit_models import SkeletonUnitModelData
 from pyomo.common.config import ConfigValue, In
 
 
-def deepgetattr(obj, attr):
-    try:
-        return reduce(getattr, attr.split("."), obj)
-    except:
-        raise ValueError(
-            f"The attribute `{attr}` does not exist on the {obj.__class__.__name__} instance passed. Make sure that `{attr}` is defined for that object."
-        )
-
-
 @declare_process_block_class("DesignModel")
 class DesignModelData(SkeletonUnitModelData):
     """
