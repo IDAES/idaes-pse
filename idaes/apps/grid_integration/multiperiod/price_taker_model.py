@@ -783,11 +783,14 @@ class PriceTakerModel(ConcreteModel):
                              revenue streams coming from the model.
                              default: None
                              Coproduction Example: ::
+
                                 ['elec_revenue', 'H2_revenue', ]
+                                
             costs: List of strings representing the names of the
                    costs associated with operating at a time period.
                    default: None
                    Example: ::
+
                         ['hourly_fixed_cost', 'electricity_cost',]
 
         Returns:
