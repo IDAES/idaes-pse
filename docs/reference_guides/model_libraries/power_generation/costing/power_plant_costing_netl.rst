@@ -300,7 +300,7 @@ The function has has five arguments, self, equipment, scaled_param, temp_C, and 
 * self : an existing unit model or Pyomo Block
 * equipment : The type of equipment to be costed, see table 6
 * scaled_param : The Pyomo Variable representing the component's scaled parameter
-* temp_C : The Pyomo Variable representing the hottest temperature of the piece of equiment being costed. Some pieces of equipment do not have a temperature associated with them, so the default argument is None. This variable must have units of Celsius (Pyomo label `pyunits.C`).
+* temp_C : The Pyomo Variable representing the hottest temperature of the piece of equipment being costed. Some pieces of equipment do not have a temperature associated with them, so the default argument is None. This variable must have units of Celsius (Pyomo label `pyunits.C`).
 * n_equip : The number of pieces of equipment to be costed. The function will evenly divide the scaled parameter between the number passed.
 * CE_index_year : Chemical Engineering Cost Index base year, defaults to 2018; calling the registered Pyomo currency units dictionary of plant cost index values will allow conversion between base years within the flowsheet
 * custom_accounts : Additional accounts to cost

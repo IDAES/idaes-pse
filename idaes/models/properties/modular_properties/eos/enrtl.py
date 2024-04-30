@@ -322,8 +322,7 @@ class ENRTL(Ideal):
                 # Eqn 70
                 z = abs(cobj(b, j).config.charge)
                 return -A * (
-                    (2 * z**2 / rho)
-                    * log((1 + rho * Ix**0.5) / (1 + rho * I0**0.5))
+                    (2 * z**2 / rho) * log((1 + rho * Ix**0.5) / (1 + rho * I0**0.5))
                     + (z**2 * Ix**0.5 - 2 * Ix ** (3 / 2)) / (1 + rho * Ix**0.5)
                     - (2 * Ix * I0**-0.5)
                     / (1 + rho * I0**0.5)
