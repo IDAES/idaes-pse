@@ -32,7 +32,7 @@ from idaes.core import FlowsheetBlock
 from idaes.core.base.process_base import declare_process_block_class
 from idaes.models.unit_models import SkeletonUnitModelData
 
-from idaes.apps.grid_integration import DesignModel, OperationModel, deepgetattr
+from idaes.apps.grid_integration import DesignModel, OperationModel
 
 import idaes.logger as idaeslog
 
@@ -43,9 +43,12 @@ import matplotlib.pyplot as plt
 
 @pytest.fixture
 def excel_data():
+    # DATA_DIR = Path(__file__).parent
+    # file_path = DATA_DIR / "FLECCS.xlsx"
+    # data = pd.read_excel(file_path, sheet_name=1)
     DATA_DIR = Path(__file__).parent
-    file_path = DATA_DIR / "FLECCS.xlsx"
-    data = pd.read_excel(file_path, sheet_name=1)
+    file_path = DATA_DIR / "FLECCS_princeton.csv"
+    data = pd.read_csv(file_path)
     return data
 
 
@@ -471,7 +474,7 @@ def test_ramping_constraint_logger_messages(excel_data):
     with pytest.raises(
         NotImplementedError,
         match=(
-            f"You tried use nonlinear capcity with linearization. This is not yet supported."
+            f"You tried use nonlinear capacity with linearization. This is not yet supported."
         ),
     ):
         m = PriceTakerModel()
@@ -603,7 +606,7 @@ def test_add_capacity_limits_logger_messages(excel_data, caplog):
     with pytest.raises(
         NotImplementedError,
         match=(
-            f"You tried use nonlinear capcity with linearization. This is not yet supported."
+            f"You tried use nonlinear capacity with linearization. This is not yet supported."
         ),
     ):
         m = PriceTakerModel()
@@ -739,23 +742,6 @@ def test_cluster_lmp_data_logger_messages(excel_data):
     ):
         m = PriceTakerModel()
         _, _ = m.cluster_lmp_data(excel_data, n_clusters[0])
-
-
-@pytest.mark.unit
-def test_deepgetattr_logger_messages(excel_data):
-    class Data:
-        def __init__(self, value):
-            self.value = value
-
-    A = Data(5)
-    attr = "values"
-    with pytest.raises(
-        ValueError,
-        match=(
-            f"The attribute `{attr}` does not exist on the {A.__class__.__name__} instance passed. Make sure that `{attr}` is defined for that object."
-        ),
-    ):
-        deepgetattr(A, attr)
 
 
 @pytest.mark.unit

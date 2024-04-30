@@ -47,7 +47,6 @@ from idaes.apps.grid_integration import MultiPeriodModel
 from idaes.apps.grid_integration.multiperiod.design_and_operation_models import (
     DesignModelData,
     OperationModelData,
-    deepgetattr,
 )
 
 from sklearn.cluster import KMeans
@@ -435,15 +434,15 @@ class PriceTakerModel(ConcreteModel):
             capacity max >= 0
         """
         op_mode = {
-            t: deepgetattr(self.mp_model.period[t], op_blk + ".op_mode")
+            t: self.mp_model.period[t].find_component(op_blk + ".op_mode")
             for t in self.mp_model.period
         }
         var_commodity = {
-            t: deepgetattr(self.mp_model.period[t], op_blk + "." + commodity_var)
+            t: self.mp_model.period[t].find_component(op_blk + "." + commodity_var)
             for t in self.mp_model.period
         }
-        max_capacity = deepgetattr(self, design_blk + "." + capacity_max)
-        min_capacity = deepgetattr(self, design_blk + "." + capacity_min)
+        max_capacity = self.find_component(design_blk + "." + capacity_max)
+        min_capacity = self.find_component(design_blk + "." + capacity_min)
 
         # Importing in the necessary variables
         if not hasattr(self, "range_time_steps"):
@@ -483,7 +482,7 @@ class PriceTakerModel(ConcreteModel):
 
         elif constraint_type == "nonlinear" and linearization:
             raise NotImplementedError(
-                f"You tried use nonlinear capcity with linearization. This is not yet supported."
+                f"You tried use nonlinear capacity with linearization. This is not yet supported."
             )
         else:
             raise ValueError(
@@ -564,24 +563,24 @@ class PriceTakerModel(ConcreteModel):
             )
 
         start_up = {
-            t: deepgetattr(self.mp_model.period[t], op_blk + ".startup")
+            t: self.mp_model.period[t].find_component(op_blk + ".startup")
             for t in self.mp_model.period
         }
         op_mode = {
-            t: deepgetattr(self.mp_model.period[t], op_blk + ".op_mode")
+            t: self.mp_model.period[t].find_component(op_blk + ".op_mode")
             for t in self.mp_model.period
         }
         shut_down = {
-            t: deepgetattr(self.mp_model.period[t], op_blk + ".shutdown")
+            t: self.mp_model.period[t].find_component(op_blk + ".shutdown")
             for t in self.mp_model.period
         }
         var_ramping = {
-            t: deepgetattr(self.mp_model.period[t], op_blk + "." + ramping_var)
+            t: self.mp_model.period[t].find_component(op_blk + "." + ramping_var)
             for t in self.mp_model.period
         }
 
         if constraint_type == "linear":
-            var_capacity = deepgetattr(self, design_blk + "." + capacity_var)
+            var_capacity = self.find_component(design_blk + "." + capacity_var)
             act_startup_rate = {
                 t: var_capacity * start_up[t] for t in self.mp_model.period
             }
@@ -595,10 +594,10 @@ class PriceTakerModel(ConcreteModel):
         elif constraint_type == "nonlinear":
             if linearization == True:
                 raise NotImplementedError(
-                    f"You tried use nonlinear capcity with linearization. This is not yet supported."
+                    f"You tried use nonlinear capacity with linearization. This is not yet supported."
                 )
             elif linearization == False:
-                var_capacity = deepgetattr(self, design_blk + "." + capacity_var)
+                var_capacity = self.find_component(design_blk + "." + capacity_var)
                 act_startup_rate = {
                     t: var_capacity * start_up[t] for t in self.mp_model.period
                 }
@@ -692,20 +691,20 @@ class PriceTakerModel(ConcreteModel):
             raise ValueError(f"down_time must be >= 1, but {down_time} is not")
 
         start_up = {
-            t: deepgetattr(self.mp_model.period[t], op_blk + ".startup")
+            t: self.mp_model.period[t].find_component(op_blk + ".startup")
             for t in self.mp_model.period
         }
         op_mode = {
-            t: deepgetattr(self.mp_model.period[t], op_blk + ".op_mode")
+            t: self.mp_model.period[t].find_component(op_blk + ".op_mode")
             for t in self.mp_model.period
         }
         shut_down = {
-            t: deepgetattr(self.mp_model.period[t], op_blk + ".shutdown")
+            t: self.mp_model.period[t].find_component(op_blk + ".shutdown")
             for t in self.mp_model.period
         }
 
         if design_blk is not None:
-            build = deepgetattr(self, design_blk + "." + build_binary_var)
+            build = self.find_component(design_blk + "." + build_binary_var)
 
         if not hasattr(self, "range_time_steps"):
             self.range_time_steps = RangeSet(len(self.mp_model.set_period))
@@ -823,7 +822,7 @@ class PriceTakerModel(ConcreteModel):
                     for ind, cost in enumerate(costs):
                         curr_cost = 0
                         try:
-                            curr_cost += deepgetattr(blk, costs[ind])
+                            curr_cost += blk.find_component(costs[ind])
                         except:
                             pass
                         total_cost_expr += curr_cost
@@ -833,7 +832,7 @@ class PriceTakerModel(ConcreteModel):
                     for ind, rev in enumerate(revenue_streams):
                         curr_rev = 0
                         try:
-                            curr_rev += deepgetattr(blk, revenue_streams[ind])
+                            curr_rev += blk.find_component(revenue_streams[ind])
                         except:
                             pass
                         total_revenue_expr += curr_rev
