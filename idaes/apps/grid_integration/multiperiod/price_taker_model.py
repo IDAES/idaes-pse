@@ -785,7 +785,7 @@ class PriceTakerModel(ConcreteModel):
                              Coproduction Example: ::
 
                                 ['elec_revenue', 'H2_revenue', ]
-                                
+
             costs: List of strings representing the names of the
                    costs associated with operating at a time period.
                    default: None
