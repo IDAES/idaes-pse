@@ -779,16 +779,16 @@ class PriceTakerModel(ConcreteModel):
         for every time period in the PriceTakerModel's MultiPeriodModel
 
         Args:
-            revenue_streams:    List of strings representing the names of the
-                                revenue streams coming from the model.
-                                (default: ['elec_revenue',])
-                                Coproduction example: ['elec_revenue',
-                                                       'H2_revenue', ]
-            costs:              List of strings representing the names of the
-                                costs associated with operating at a time period.
-                                (default: None)
-                                example: ['hourly_fixed_cost',
-                                          'electricity_cost',]
+            revenue_streams: List of strings representing the names of the
+                             revenue streams coming from the model.
+                             default: None
+                             Coproduction Example: ::
+                                ['elec_revenue', 'H2_revenue', ]
+            costs: List of strings representing the names of the
+                   costs associated with operating at a time period.
+                   default: None
+                   Example: ::
+                        ['hourly_fixed_cost', 'electricity_cost',]
 
         Returns:
 
@@ -871,7 +871,6 @@ class PriceTakerModel(ConcreteModel):
             discount_rate:  Fractional rate of discount used in NPV calculations.
                             Must be between 0 and 1.
             corp_tax:       Fractional value of corporate tax used in NPV calculations.
-                            ??? What are the restrictions on tax ???
             other_costs:    Pyomo expression for other costs
             other_revenue:  Pyomo expression for other sources of revenue
             objective:      String to choose which objective form is used in the model.
