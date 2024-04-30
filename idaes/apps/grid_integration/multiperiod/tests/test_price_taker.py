@@ -471,7 +471,7 @@ def test_ramping_constraint_logger_messages(excel_data):
     with pytest.raises(
         NotImplementedError,
         match=(
-            f"You tried use nonlinear capcity with linearization. This is not yet supported."
+            f"You tried use nonlinear capacity with linearization. This is not yet supported."
         ),
     ):
         m = PriceTakerModel()
