@@ -43,9 +43,12 @@ import matplotlib.pyplot as plt
 
 @pytest.fixture
 def excel_data():
+    # DATA_DIR = Path(__file__).parent
+    # file_path = DATA_DIR / "FLECCS.xlsx"
+    # data = pd.read_excel(file_path, sheet_name=1)
     DATA_DIR = Path(__file__).parent
-    file_path = DATA_DIR / "FLECCS.xlsx"
-    data = pd.read_excel(file_path, sheet_name=1)
+    file_path = DATA_DIR / "FLECCS_princeton.csv"
+    data = pd.read_csv(file_path)
     return data
 
 
