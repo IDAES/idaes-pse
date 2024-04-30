@@ -308,10 +308,9 @@ class PriceTakerModel(ConcreteModel):
             )
 
         if column_name is None:
-            _logger.warning(
-                f"Data was provided but no column name was provided. Using the first column of the data."
+            raise ValueError(
+                f"Data was provided but no column name was provided. Please supply a value for column_name."
             )
-            column_name = full_data.columns[0]
 
         if horizon_length is not None:
             self.horizon_length = horizon_length

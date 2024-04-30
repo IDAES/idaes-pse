@@ -202,10 +202,9 @@ def test_min_up_down_time_logger_messages(excel_data):
 
         # Appending the data to the model
         DATA_DIR = Path(__file__).parent
-        file_path = DATA_DIR / "FLECCS_shortened.xlsx"
+        file_path = DATA_DIR / "FLECCS_princeton_shortened.csv"
         m.append_lmp_data(
             file_path=file_path,
-            sheet="2030 - Princeton",
             column_name="BaseCaseTax",
             n_clusters=5,
         )
@@ -481,10 +480,9 @@ def test_ramping_constraint_logger_messages(excel_data):
 
         # Appending the data to the model
         DATA_DIR = Path(__file__).parent
-        file_path = DATA_DIR / "FLECCS_shortened.xlsx"
+        file_path = DATA_DIR / "FLECCS_princeton_shortened.csv"
         m.append_lmp_data(
             file_path=file_path,
-            sheet="2030 - Princeton",
             column_name="BaseCaseTax",
         )
 
@@ -525,13 +523,11 @@ def test_ramping_constraint_logger_messages(excel_data):
 
         # Appending the data to the model
         DATA_DIR = Path(__file__).parent
-        file_path = DATA_DIR / "FLECCS_shortened.xlsx"
+        file_path = DATA_DIR / "FLECCS_princeton_shortened.csv"
         m.append_lmp_data(
             file_path=file_path,
-            sheet="2030 - Princeton",
             column_name="BaseCaseTax",
         )
-
         # m.sofc_design = DesignModel(model_func=SOFC_design_model, model_args={"min_power": 200, "max_power": 650})
         m.sofc_design = aml.Block()
         m.sofc_design.PMAX = 650
@@ -572,10 +568,9 @@ def test_add_capacity_limits_logger_messages(excel_data, caplog):
 
         # Appending the data to the model
         DATA_DIR = Path(__file__).parent
-        file_path = DATA_DIR / "FLECCS_shortened.xlsx"
+        file_path = DATA_DIR / "FLECCS_princeton_shortened.csv"
         m.append_lmp_data(
             file_path=file_path,
-            sheet="2030 - Princeton",
             column_name="BaseCaseTax",
         )
 
@@ -613,10 +608,9 @@ def test_add_capacity_limits_logger_messages(excel_data, caplog):
 
         # Appending the data to the model
         DATA_DIR = Path(__file__).parent
-        file_path = DATA_DIR / "FLECCS_shortened.xlsx"
+        file_path = DATA_DIR / "FLECCS_princeton_shortened.csv"
         m.append_lmp_data(
             file_path=file_path,
-            sheet="2030 - Princeton",
             column_name="BaseCaseTax",
         )
 
@@ -647,7 +641,7 @@ def test_add_capacity_limits_logger_messages(excel_data, caplog):
 @pytest.mark.unit
 def test_append_lmp_data_logger_messages(excel_data, caplog):
     DATA_DIR = Path(__file__).parent
-    file_path = DATA_DIR / "FLECCS.xlsx"
+    file_path = DATA_DIR / "FLECCS_princeton.csv"
     n_clusters = [-5, 1.7, 10]
     with pytest.raises(
         ValueError,
@@ -656,8 +650,7 @@ def test_append_lmp_data_logger_messages(excel_data, caplog):
         m = PriceTakerModel()
         m.append_lmp_data(
             file_path,
-            sheet="2035 - NREL",
-            column_name="MiNg_$100_CAISO",
+            column_name="BaseCaseTax",
             n_clusters=n_clusters[1],
             horizon_length=24,
         )
@@ -669,8 +662,7 @@ def test_append_lmp_data_logger_messages(excel_data, caplog):
         m = PriceTakerModel()
         m.append_lmp_data(
             file_path,
-            sheet="2035 - NREL",
-            column_name="MiNg_$100_CAISO",
+            column_name="BaseCaseTax",
             n_clusters=n_clusters[0],
             horizon_length=24,
         )
@@ -685,44 +677,19 @@ def test_append_lmp_data_logger_messages(excel_data, caplog):
         m = PriceTakerModel()
         m.append_lmp_data(
             file_path,
-            sheet="2035 - NREL",
-            column_name="MiNg_$100_CAISO",
-            n_clusters=n_clusters[2],
-            horizon_length=24,
         )
 
     DATA_DIR = Path(__file__).parent
-    file_path = DATA_DIR / "FLECCS_no_sheet.xlsx"
-    caplog.clear()
-    with caplog.at_level(idaeslog.WARNING):
+    file_path = DATA_DIR / "FLECCS_princeton.csv"
+    with pytest.raises(
+        ValueError,
+        match=(
+            f"Data was provided but no column name was provided. Please supply a value for column_name."
+        ),
+    ):
         m = PriceTakerModel()
-
         m.append_lmp_data(
             file_path,
-            column_name=1,
-            n_clusters=n_clusters[2],
-            horizon_length=24,
-        )
-
-        assert (
-            f"Excel file was provided but no sheet was specified. Using the first sheet of the excel file."
-            in caplog.text
-        )
-
-    caplog.clear()
-    with caplog.at_level(idaeslog.WARNING):
-        m = PriceTakerModel()
-
-        m.append_lmp_data(
-            file_path,
-            sheet=0,
-            n_clusters=n_clusters[2],
-            horizon_length=24,
-        )
-
-        assert (
-            f"Data was provided but no column name was provided. Using the first column of the data."
-            in caplog.text
         )
 
 
@@ -773,10 +740,9 @@ def test_build_hourly_cashflow_logger_message_no_op_blks(excel_data, caplog):
 
         # Appending the data to the model
         DATA_DIR = Path(__file__).parent
-        file_path = DATA_DIR / "FLECCS_shortened.xlsx"
+        file_path = DATA_DIR / "FLECCS_princeton_shortened.csv"
         m.append_lmp_data(
             file_path=file_path,
-            sheet="2030 - Princeton",
             column_name="BaseCaseTax",
         )
 
@@ -873,10 +839,9 @@ def test_build_hourly_cashflow_logger_message_no_des_blks(excel_data, caplog):
 
         # Appending the data to the model
         DATA_DIR = Path(__file__).parent
-        file_path = DATA_DIR / "FLECCS_shortened.xlsx"
+        file_path = DATA_DIR / "FLECCS_princeton_shortened.csv"
         m.append_lmp_data(
             file_path=file_path,
-            sheet="2030 - Princeton",
             column_name="BaseCaseTax",
         )
 
@@ -940,10 +905,9 @@ def test_build_hourly_cashflow_logger_messages_and_build_1(excel_data, caplog):
 
         # Appending the data to the model
         DATA_DIR = Path(__file__).parent
-        file_path = DATA_DIR / "FLECCS_shortened.xlsx"
+        file_path = DATA_DIR / "FLECCS_princeton_shortened.csv"
         m.append_lmp_data(
             file_path=file_path,
-            sheet="2030 - Princeton",
             column_name="BaseCaseTax",
         )
 
@@ -1018,10 +982,9 @@ def test_build_hourly_cashflow_logger_messages_and_build_2(excel_data, caplog):
 
         # Appending the data to the model
         DATA_DIR = Path(__file__).parent
-        file_path = DATA_DIR / "FLECCS_shortened.xlsx"
+        file_path = DATA_DIR / "FLECCS_princeton_shortened.csv"
         m.append_lmp_data(
             file_path=file_path,
-            sheet="2030 - Princeton",
             column_name="BaseCaseTax",
         )
 
@@ -1096,10 +1059,9 @@ def test_build_hourly_cashflow_logger_messages_and_build_3(excel_data, caplog):
 
         # Appending the data to the model
         DATA_DIR = Path(__file__).parent
-        file_path = DATA_DIR / "FLECCS_shortened.xlsx"
+        file_path = DATA_DIR / "FLECCS_princeton_shortened.csv"
         m.append_lmp_data(
             file_path=file_path,
-            sheet="2030 - Princeton",
             column_name="BaseCaseTax",
         )
 
@@ -1169,10 +1131,9 @@ def test_build_hourly_cashflow_logger_messages_and_build_4(excel_data, caplog):
 
         # Appending the data to the model
         DATA_DIR = Path(__file__).parent
-        file_path = DATA_DIR / "FLECCS_shortened.xlsx"
+        file_path = DATA_DIR / "FLECCS_princeton_shortened.csv"
         m.append_lmp_data(
             file_path=file_path,
-            sheet="2030 - Princeton",
             column_name="BaseCaseTax",
         )
 
