@@ -203,21 +203,24 @@ class PriceTakerModel(ConcreteModel):
 
     def cluster_lmp_data(self, raw_data, n_clusters):
         """
-        Clusters the given price signal in n_clusters. This method supports k-means, k-meteiod,...
-        techniques for clustering.
+        Clusters the given price signal in n_clusters. This method supports k-means,
+        k-medoids, etc., techniques for clustering.
 
         Args:
-            raw_data:   Columnar data for a given LMP signal
-            n_clusters: number of clusters desired for the data (representative days)
+            raw_data: Columnar data for a given LMP signal.
+            n_clusters: Number of clusters desired for the data (representative days).
 
         Returns:
-            lmp_data:   dict of representative day LMP data, indices are indexed
-                        by integers starting at 1 (ex: {1: {1: 4, 2: 3, 3: 5},
-                                                        2: {1: 1, 2: 7, 3: 3}})
-                                               Format: {day: {time_period: LMP}}
-            weights:    dict of weights for each representative day, indexed the
-                        same way as lmp_data      (ex: {1: 45, 2: 56})
-                                               Format: {day: weight}
+            lmp_data: A dictionary of representative day LMP data, indices are indexed
+                    by integers starting at 1. Example: ::
+
+                        {1: {1: 4, 2: 3, 3: 5},
+                        2: {1: 1, 2: 7, 3: 3}}
+
+            weights: A dictionary of weights for each representative day, indexed the
+                    same way as lmp_data. Example: ::
+
+                        {1: 45, 2: 56}
         """
         # testing if n_integers is valid
         if n_clusters is not None:
