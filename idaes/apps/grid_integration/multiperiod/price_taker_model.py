@@ -483,7 +483,7 @@ class PriceTakerModel(ConcreteModel):
 
         elif constraint_type == "nonlinear" and linearization:
             raise NotImplementedError(
-                f"You tried use nonlinear capcity with linearization. This is not yet supported."
+                f"You tried use nonlinear capacity with linearization. This is not yet supported."
             )
         else:
             raise ValueError(
