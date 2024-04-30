@@ -84,13 +84,6 @@ class OperationModelData(SkeletonUnitModelData):
     )
 
     CONFIG.declare(
-        "design_blk",
-        ConfigValue(
-            default={},
-            doc="Dictionary containing arguments needed for model_func",
-        ),
-    )
-    CONFIG.declare(
         "declare_op_vars",
         ConfigValue(
             default=True,
