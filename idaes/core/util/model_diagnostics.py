@@ -55,8 +55,8 @@ from pyomo.core.expr.numeric_expr import (
     NumericExpression,
 )
 from pyomo.core.base.block import BlockData
-from pyomo.core.base.var import _GeneralVarData, _VarData
-from pyomo.core.base.constraint import _ConstraintData
+from pyomo.core.base.var import VarData
+from pyomo.core.base.constraint import ConstraintData
 from pyomo.repn.standard_repn import (  # pylint: disable=no-name-in-module
     generate_standard_repn,
 )
@@ -1726,9 +1726,9 @@ class SVDToolbox:
             stream = sys.stdout
 
         # Validate variable argument
-        if not isinstance(variable, _VarData):
+        if not isinstance(variable, VarData):
             raise TypeError(
-                f"variable argument must be an instance of a Pyomo _VarData "
+                f"variable argument must be an instance of a Pyomo VarData "
                 f"object (got {variable})."
             )
 
@@ -1773,9 +1773,9 @@ class SVDToolbox:
             stream = sys.stdout
 
         # Validate variable argument
-        if not isinstance(constraint, _ConstraintData):
+        if not isinstance(constraint, ConstraintData):
             raise TypeError(
-                f"constraint argument must be an instance of a Pyomo _ConstraintData "
+                f"constraint argument must be an instance of a Pyomo ConstraintData "
                 f"object (got {constraint})."
             )
 
@@ -1835,7 +1835,7 @@ def _check_eval_error_pow(
 
     integer_exponent = False
     # if the exponent is an integer, there should not be any evaluation errors
-    if isinstance(arg2, _GeneralVarData) and arg2.domain in integer_domains:
+    if isinstance(arg2, VarData) and arg2.domain in integer_domains:
         # The exponent is an integer variable
         # check if the base can be zero
         integer_exponent = True

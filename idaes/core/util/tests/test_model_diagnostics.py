@@ -1831,7 +1831,7 @@ The following constraints involve v[1]:
 
         with pytest.raises(
             TypeError,
-            match="variable argument must be an instance of a Pyomo _VarData "
+            match="variable argument must be an instance of a Pyomo VarData "
             "object \(got foo\).",
         ):
             svd.display_constraints_including_variable(variable="foo")
@@ -1896,7 +1896,7 @@ The following variables are involved in c1:
 
         with pytest.raises(
             TypeError,
-            match="constraint argument must be an instance of a Pyomo _ConstraintData "
+            match="constraint argument must be an instance of a Pyomo ConstraintData "
             "object \(got foo\).",
         ):
             svd.display_variables_in_constraint(constraint="foo")
