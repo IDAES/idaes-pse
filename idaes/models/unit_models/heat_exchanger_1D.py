@@ -431,7 +431,7 @@ cold side flows from 1 to 0""",
         # Set flow directions for the control volume blocks and specify
         # discretization if not specified.
         if self.config.hot_side.transformation_method is useDefault:
-            _log.caution(
+            _log.info(
                 "Discretization method was "
                 "not specified for the hot side of the "
                 "heat exchanger. "
@@ -440,7 +440,7 @@ cold side flows from 1 to 0""",
             )
             self.config.hot_side.transformation_method = "dae.finite_difference"
         if self.config.cold_side.transformation_method is useDefault:
-            _log.caution(
+            _log.info(
                 "Discretization method was "
                 "not specified for the cold side of the "
                 "heat exchanger. "
@@ -454,8 +454,8 @@ cold side flows from 1 to 0""",
             != self.config.cold_side.transformation_method
         ):
             raise ConfigurationError(
-                "HeatExchanger1D only supports similar transformation "
-                "methods on the hot and cold side domains for "
+                "HeatExchanger1D only supports the same transformation "
+                "method on the hot and cold side domains for "
                 "both cocurrent and countercurrent flow patterns. "
                 f"Found method {self.config.hot_side.transformation_method} "
                 f"on hot side and method {self.config.cold_side.transformation_method} "
@@ -476,8 +476,8 @@ cold side flows from 1 to 0""",
             ):
                 raise ConfigurationError(
                     "If a collocation method is used, "
-                    "HeatExchanger1D only supports similar transformation "
-                    "schemes on the hot and cold side domains. Found "
+                    "HeatExchanger1D only supports the same transformation "
+                    "scheme on the hot and cold side domains. Found "
                     f"{self.config.hot_side.transformation_scheme} scheme on "
                     f"hot side and {self.config.cold_side.transformation_scheme} "
                     "scheme on cold side."
@@ -496,7 +496,7 @@ cold side flows from 1 to 0""",
                 )
 
         if self.config.hot_side.transformation_scheme is useDefault:
-            _log.caution(
+            _log.info(
                 "Discretization scheme was "
                 "not specified for the hot side of the "
                 "counter-current heat exchanger. "
@@ -505,7 +505,7 @@ cold side flows from 1 to 0""",
             )
             self.config.hot_side.transformation_scheme = "BACKWARD"
         if self.config.cold_side.transformation_scheme is useDefault:
-            _log.caution(
+            _log.info(
                 "Discretization scheme was "
                 "not specified for the cold side of the "
                 "counter-current heat exchanger. "
@@ -805,16 +805,16 @@ cold side flows from 1 to 0""",
         cold_side_units = (
             self.cold_side.config.property_package.get_metadata().get_derived_units
         )
-        # TODO What if there is more than one time point? What if t0 != 0?
+        t0 = self.flowsheet().time.first()
         if duty is None:
             duty = value(
                 0.25
-                * self.heat_transfer_coefficient[0, 0]
+                * self.heat_transfer_coefficient[t0, 0]
                 * self.area
                 * (
-                    self.hot_side.properties[0, 0].temperature
+                    self.hot_side.properties[t0, 0].temperature
                     - pyunits.convert(
-                        self.cold_side.properties[0, 0].temperature,
+                        self.cold_side.properties[t0, 0].temperature,
                         to_units=hot_side_units("temperature"),
                     )
                 )
@@ -918,6 +918,6 @@ def _log_upwinding_disclaimer(side, flow_config, bad_scheme, good_scheme):
         f"For {side}, a {bad_scheme} scheme was chosen to discretize the length domain. "
         f"However, this scheme is not an upwind scheme for {flow_config} flow, and "
         f"as a result may run into numerical stability issues. To avoid this, "
-        f"use a {good_scheme} scheme (which may result into energy conservation issues "
+        f"use a {good_scheme} scheme (which may result in energy conservation issues "
         "for coarse discretizations) or use a high-order collocation method."
     )

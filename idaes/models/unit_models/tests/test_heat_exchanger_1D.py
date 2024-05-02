@@ -273,14 +273,14 @@ def test_config():
 
 
 @pytest.mark.unit
-def test_config_validation(caplog):
+def test_config_validation_different_methods():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.properties = BTXParameterBlock(valid_phase="Liq")
 
     with pytest.raises(ConfigurationError):
-        m.fs.HX_counter_current1 = HX1D(
+        m.fs.HX_counter_current = HX1D(
             hot_side={
                 "property_package": m.fs.properties,
                 "transformation_method": "dae.finite_difference",
@@ -291,9 +291,15 @@ def test_config_validation(caplog):
             },
             flow_type=HeatExchangerFlowPattern.countercurrent,
         )
+
+@pytest.mark.unit
+def test_config_validation_default(caplog):
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = BTXParameterBlock(valid_phase="Liq")
     caplog.clear()
     with caplog.at_level(idaeslog.INFO):
-        m.fs.HX_countercurrent2 = HX1D(
+        m.fs.HX_countercurrent = HX1D(
             hot_side={
                 "property_package": m.fs.properties,
             },
@@ -310,7 +316,7 @@ def test_config_validation(caplog):
         "difference method on the hot side."
     ) in caplog.text
     assert (
-        m.fs.HX_countercurrent2.config.hot_side.transformation_method
+        m.fs.HX_countercurrent.config.hot_side.transformation_method
         == "dae.finite_difference"
     )
     assert (
@@ -321,20 +327,25 @@ def test_config_validation(caplog):
         "difference method on the cold side."
     ) in caplog.text
     assert (
-        m.fs.HX_countercurrent2.config.cold_side.transformation_method
+        m.fs.HX_countercurrent.config.cold_side.transformation_method
         == "dae.finite_difference"
     )
     assert (
         "For cold_side, a BACKWARD scheme was chosen to discretize the length domain. "
         "However, this scheme is not an upwind scheme for countercurrent flow, and "
         "as a result may run into numerical stability issues. To avoid this, "
-        "use a FORWARD scheme (which may result into energy conservation issues "
+        "use a FORWARD scheme (which may result in energy conservation issues "
         "for coarse discretizations) or use a high-order collocation method."
     ) in caplog.text
-    caplog.clear()
 
-    with caplog.at_level(idaeslog.INFO):
-        m.fs.HX_countercurrent3 = HX1D(
+@pytest.mark.unit
+def test_config_validation_upwind(caplog):
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)  
+    m.fs.properties = BTXParameterBlock(valid_phase="Liq")
+    caplog.clear()
+    with caplog.at_level(idaeslog.CAUTION):
+        m.fs.HX_countercurrent = HX1D(
             hot_side={
                 "property_package": m.fs.properties,
                 "transformation_method": "dae.finite_difference",
@@ -357,10 +368,17 @@ def test_config_validation(caplog):
         "energy conservation errors. High-order collocation methods can "
         "provide both accuracy and numerical stability."
     ) in caplog.text
+
+
+@pytest.mark.unit
+def test_config_validation_cocurrent_upwind(caplog):
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = BTXParameterBlock(valid_phase="Liq")
     caplog.clear()
 
-    with caplog.at_level(idaeslog.CAUTION):
-        m.fs.HX_cocurrent1 = HX1D(
+    with caplog.at_level(idaeslog.INFO):
+        m.fs.HX_cocurrent = HX1D(
             hot_side={
                 "property_package": m.fs.properties,
             },
@@ -377,7 +395,7 @@ def test_config_validation(caplog):
         "difference method on the hot side."
     ) in caplog.text
     assert (
-        m.fs.HX_cocurrent1.config.hot_side.transformation_method
+        m.fs.HX_cocurrent.config.hot_side.transformation_method
         == "dae.finite_difference"
     )
     assert (
@@ -388,13 +406,19 @@ def test_config_validation(caplog):
         "difference method on the cold side."
     ) in caplog.text
     assert (
-        m.fs.HX_cocurrent1.config.cold_side.transformation_method
+        m.fs.HX_cocurrent.config.cold_side.transformation_method
         == "dae.finite_difference"
     )
+
+@pytest.mark.unit
+def test_config_validation_cocurrent_downwind(caplog):
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = BTXParameterBlock(valid_phase="Liq")
     caplog.clear()
 
     with caplog.at_level(idaeslog.INFO):
-        m.fs.HX_cocurrent2 = HX1D(
+        m.fs.HX_cocurrent = HX1D(
             hot_side={
                 "property_package": m.fs.properties,
                 "transformation_method": "dae.finite_difference",
@@ -411,20 +435,26 @@ def test_config_validation(caplog):
         "For hot_side, a FORWARD scheme was chosen to discretize the length domain. "
         "However, this scheme is not an upwind scheme for cocurrent flow, and "
         "as a result may run into numerical stability issues. To avoid this, "
-        "use a BACKWARD scheme (which may result into energy conservation issues "
+        "use a BACKWARD scheme (which may result in energy conservation issues "
         "for coarse discretizations) or use a high-order collocation method."
     ) in caplog.text
     assert (
         "For cold_side, a FORWARD scheme was chosen to discretize the length domain. "
         "However, this scheme is not an upwind scheme for cocurrent flow, and "
         "as a result may run into numerical stability issues. To avoid this, "
-        "use a BACKWARD scheme (which may result into energy conservation issues "
+        "use a BACKWARD scheme (which may result in energy conservation issues "
         "for coarse discretizations) or use a high-order collocation method."
     ) in caplog.text
+
+@pytest.mark.unit
+def test_config_validation_cocurrent_forward_and_backward(caplog):
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = BTXParameterBlock(valid_phase="Liq") 
     caplog.clear()
 
     with caplog.at_level(idaeslog.INFO):
-        m.fs.HX_cocurrent3 = HX1D(
+        m.fs.HX_cocurrent = HX1D(
             hot_side={
                 "property_package": m.fs.properties,
                 "transformation_method": "dae.finite_difference",
@@ -441,7 +471,7 @@ def test_config_validation(caplog):
         "For hot_side, a FORWARD scheme was chosen to discretize the length domain. "
         "However, this scheme is not an upwind scheme for cocurrent flow, and "
         "as a result may run into numerical stability issues. To avoid this, "
-        "use a BACKWARD scheme (which may result into energy conservation issues "
+        "use a BACKWARD scheme (which may result in energy conservation issues "
         "for coarse discretizations) or use a high-order collocation method."
     ) in caplog.text
     assert (
@@ -451,10 +481,16 @@ def test_config_validation(caplog):
         "energy conservation errors. High-order collocation methods can "
         "provide both accuracy and numerical stability."
     ) in caplog.text
+
+@pytest.mark.unit
+def test_config_validation_mismatched_collocation(caplog):
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = BTXParameterBlock(valid_phase="Liq")
     caplog.clear()
 
     with pytest.raises(ConfigurationError):
-        m.fs.HX_cocurrent4 = HX1D(
+        m.fs.HX_cocurrent = HX1D(
             hot_side={
                 "property_package": m.fs.properties,
                 "transformation_method": "dae.collocation",
