@@ -1333,3 +1333,303 @@ class Bidder(StochasticProgramBidder):
         self.bids_result_list.append(pd.concat(df_list))
 
         return
+
+
+class ParametrizedBidder(AbstractBidder):
+    
+    '''
+    Create a parameterized bidder.
+    Bid the resource at different prices.
+    '''
+    def __init__(
+        self,
+        bidding_model_object,
+        day_ahead_horizon,
+        real_time_horizon,
+        solver,
+        forecaster,
+    ):
+        '''
+        Arguments:
+            bidding_model_object: the model object for bidding
+
+            day_ahead_horizon: number of time periods in the day-ahead bidding problem
+
+            real_time_horizon: number of time periods in the real-time bidding problem
+            
+            solver: a Pyomo mathematical programming solver object
+        '''
+        self.bidding_model_object = bidding_model_object
+        self.day_ahead_horizon = day_ahead_horizon
+        self.real_time_horizon = real_time_horizon
+        self.solver = solver
+        self.forecaster = forecaster
+
+        self.n_scenario = 1   # there must be a n_scenario attribute in this class
+        self._check_inputs()
+
+        self.generator = self.bidding_model_object.model_data.gen_name
+        self.bids_result_list = []
+    
+    @property
+    def generator(self):
+        return self._generator
+
+    @generator.setter
+    def generator(self, name):
+        self._generator = name
+
+
+    def formulate_DA_bidding_problem(self):
+        '''
+        No need to formulate a DA bidding problem here.
+        '''
+        pass
+
+    def formulate_RT_bidding_problem(self):
+        '''
+        No need to formulate a RT bidding problem here.
+        '''
+        pass
+
+    def compute_day_ahead_bids(self, date, hour=0):
+        raise NotImplementedError
+
+    def compute_real_time_bids(
+        self, date, hour, realized_day_ahead_prices, realized_day_ahead_dispatches, tracker_profile
+    ):
+        raise NotImplementedError
+
+    def update_day_ahead_model(self, **kwargs):
+        '''
+        No need to update the RT bidding problem here.
+        '''
+        pass
+
+    def update_real_time_model(self, **kwargs):
+        '''
+        No need to update the RT bidding problem here.
+        '''
+        pass
+
+    def record_bids(self, bids, model, date, hour, market):
+
+        """
+        This function records the bids and the details in the underlying bidding model.
+
+        Arguments:
+            bids: the obtained bids for this date.
+
+            model: bidding model
+
+            date: the date we bid into
+
+            hour: the hour we bid into
+
+        Returns:
+            None
+
+        """
+
+        # record bids
+        self._record_bids(bids, date, hour, Market=market)
+
+        # record the details of bidding model
+        for i in model.SCENARIOS:
+            self.bidding_model_object.record_results(
+                model.fs[i], date=date, hour=hour, Scenario=i, Market=market
+            )
+
+        return
+
+    def _record_bids(self, bids, date, hour, **kwargs):
+        df_list = []
+        for t in bids:
+            for gen in bids[t]:
+
+                result_dict = {}
+                result_dict["Generator"] = gen
+                result_dict["Date"] = date
+                result_dict["Hour"] = t
+
+                for k, v in kwargs.items():
+                    result_dict[k] = v
+
+                pair_cnt = len(bids[t][gen]["p_cost"])
+
+                for idx, (power, cost) in enumerate(bids[t][gen]["p_cost"]):
+                    result_dict[f"Power {idx} [MW]"] = power
+                    result_dict[f"Cost {idx} [$]"] = cost
+
+                # place holder, in case different len of bids
+                while pair_cnt < self.n_scenario:
+                    result_dict[f"Power {pair_cnt} [MW]"] = None
+                    result_dict[f"Cost {pair_cnt} [$]"] = None
+
+                    pair_cnt += 1
+
+                result_df = pd.DataFrame.from_dict(result_dict, orient="index")
+                df_list.append(result_df.T)
+
+        # save the result to object property
+        # wait to be written when simulation ends
+        self.bids_result_list.append(pd.concat(df_list))
+
+        return
+
+    def write_results(self, path):
+        """
+        This methods writes the saved operation stats into an csv file.
+
+        Arguments:
+            path: the path to write the results.
+
+        Return:
+            None
+        """
+
+        print("")
+        print("Saving bidding results to disk...")
+        pd.concat(self.bids_result_list).to_csv(
+            os.path.join(path, "bidder_detail.csv"), index=False
+        )
+        return
+
+
+class PEMParametrizedBidder(ParametrizedBidder):
+    
+    """
+    Renewable (PV or Wind) + PEM bidder that uses parameterized bid curve.
+    Every timestep for RT or DA, max energy bid is the available wind resource.
+    Please use the 
+    """
+    def __init__(
+        self,
+        bidding_model_object,
+        day_ahead_horizon,
+        real_time_horizon,
+        solver,
+        forecaster,
+        renewable_mw,
+        pem_marginal_cost,
+        pem_mw,
+        real_time_bidding_only = False
+    ):
+        
+        '''
+        Arguments:
+            renewable_mw: maximum renewable energy system capacity
+            
+            pem_marginal_cost: the cost/MW above which all available wind energy will be sold to grid;
+                below which, make hydrogen and sell remainder of wind to grid
+
+            pem_mw: maximum PEM capacity limits how much energy is bid at the `pem_marginal_cost`
+        
+        '''
+        super().__init__(bidding_model_object,
+                         day_ahead_horizon,
+                         real_time_horizon,
+                         solver,
+                         forecaster)
+        self.renewable_marginal_cost = 0
+        self.renewable_mw = renewable_mw
+        self.pem_marginal_cost = pem_marginal_cost
+        self.pem_mw = pem_mw
+        self.real_time_bidding_only = real_time_bidding_only
+
+
+    def compute_day_ahead_bids(self, date, hour=0):
+        """
+        DA Bid: from 0 MW to (Wind Resource - PEM capacity) MW, bid $0/MWh.
+        from (Wind Resource - PEM capacity) MW to Wind Resource MW, bid 'pem_marginal_cost'
+
+        If Wind resource at some time is less than PEM capacity, then reduce to available resource
+        """
+        gen = self.generator
+        # Forecast the day-ahead wind generation
+        forecast = self.forecaster.forecast_day_ahead_capacity_factor(date, hour, gen, self.day_ahead_horizon)
+
+        full_bids = {}
+
+        for t_idx in range(self.day_ahead_horizon):
+            da_wind = forecast[t_idx] * self.wind_mw
+            grid_wind = max(0, da_wind - self.pem_mw)
+            # gird wind are bidded at marginal cost = 0
+            # The rest of the power is bidded at the pem marginal cost
+            if grid_wind == 0:
+                bids = [(0, 0), (da_wind, self.pem_marginal_cost)]
+            else:
+                bids = [(0, 0), (grid_wind, 0), (da_wind, self.pem_marginal_cost)]
+            cost_curve = convert_marginal_costs_to_actual_costs(bids)
+
+            temp_curve = {
+                    "data_type": "cost_curve",
+                    "cost_curve_type": "piecewise",
+                    "values": cost_curve,
+            }
+            tx_utils.validate_and_clean_cost_curve(
+                curve=temp_curve,
+                curve_type="cost_curve",
+                p_min=0,
+                p_max=max([p[0] for p in cost_curve]),
+                gen_name=gen,
+                t=t_idx,
+            )
+
+            t = t_idx + hour
+            full_bids[t] = {}
+            full_bids[t][gen] = {}
+            full_bids[t][gen]["p_cost"] = cost_curve
+            full_bids[t][gen]["p_min"] = 0
+            full_bids[t][gen]["p_max"] = da_wind
+            full_bids[t][gen]["startup_capacity"] = da_wind
+            full_bids[t][gen]["shutdown_capacity"] = da_wind
+
+        self._record_bids(full_bids, date, hour, Market="Day-ahead")
+        return full_bids  
+
+
+    def compute_real_time_bids(
+        self, date, hour, realized_day_ahead_dispatches
+    ):
+        """
+        RT Bid: from 0 MW to (Wind Resource - PEM capacity) MW, bid $0/MWh.
+        from (Wind Resource - PEM capacity) MW to Wind Resource MW, bid 'pem_marginal_cost'
+
+        If Wind resource at some time is less than PEM capacity, then reduce to available resource
+        """
+       
+        gen = self.generator
+        forecast = self.forecaster.forecast_real_time_capacity_factor(date, hour, gen, self.real_time_horizon) 
+        full_bids = {}
+
+        for t_idx in range(self.real_time_horizon):
+            rt_wind = forecast[t_idx] * self.wind_mw
+            # if we participate in both DA and RT market
+            if not self.real_time_bidding_only:
+                da_dispatch = realized_day_ahead_dispatches[t_idx + hour]
+            # if we only participates in the RT market, then we do not consider the DA commitment
+            if self.real_time_bidding_only:
+                da_dispatch = 0
+
+            avail_rt_wind = max(0, rt_wind - da_dispatch)
+            grid_wind = max(0 , avail_rt_wind - self.pem_mw)
+            
+            if grid_wind == 0:
+                bids = [(0, 0), (rt_wind, self.pem_marginal_cost)]
+            else:
+                bids = [(0, 0), (grid_wind, 0), (rt_wind, self.pem_marginal_cost)]
+
+            t = t_idx + hour
+            full_bids[t] = {}
+            full_bids[t][gen] = {}
+            full_bids[t][gen]["p_cost"] = convert_marginal_costs_to_actual_costs(bids)
+            full_bids[t][gen]["p_min"] = 0
+            full_bids[t][gen]["p_max"] = rt_wind
+            full_bids[t][gen]["startup_capacity"] = rt_wind
+            full_bids[t][gen]["shutdown_capacity"] = rt_wind
+
+            self._record_bids(full_bids, date, hour, Market="Real-time")
+        
+
+        return full_bids

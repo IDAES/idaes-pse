@@ -705,3 +705,42 @@ class Backcaster(AbstractPrescientPriceForecaster):
                 self._historical_da_prices[b] = self._historical_da_prices[b][24:]
 
         return
+
+
+class PerfectForecaster(AbstractPrescientPriceForecaster):
+    
+    '''
+    Forecast the perfect capacity factor of renewables.
+    '''
+    
+    def __init__(self, data_path_or_df):
+        
+        """
+        Perfect forecaster that reads the data from a Dataframe containing:
+         - {bus}-DALMP
+         - {bus}-RTLMP
+         - {bus}-DACF and {bus}-RTCF for renewable plants
+        """
+        if isinstance(data_path_or_df, str):
+            self.data = pd.read_csv(data_path_or_df, index_col="Datetime", parse_dates=True)
+        elif isinstance(data_path_or_df, pd.DataFrame):
+            self.data = data_path_or_df
+        else:
+            raise ValueError
+    
+    def __getitem__(self, index):
+        return self.data[index]
+
+    def fetch_hourly_stats_from_prescient(self, prescient_hourly_stats):
+        pass
+
+    def fetch_day_ahead_stats_from_prescient(self, uc_date, uc_hour, day_ahead_result):
+        pass
+
+    def forecast_day_ahead_prices(self):
+        pass
+    
+    def forecast_real_time_prices(Self):
+        pass
+
+    
