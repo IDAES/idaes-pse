@@ -292,6 +292,7 @@ def test_config_validation_different_methods():
             flow_type=HeatExchangerFlowPattern.countercurrent,
         )
 
+
 @pytest.mark.unit
 def test_config_validation_default(caplog):
     m = ConcreteModel()
@@ -338,10 +339,11 @@ def test_config_validation_default(caplog):
         "for coarse discretizations) or use a high-order collocation method."
     ) in caplog.text
 
+
 @pytest.mark.unit
 def test_config_validation_upwind(caplog):
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(dynamic=False)  
+    m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = BTXParameterBlock(valid_phase="Liq")
     caplog.clear()
     with caplog.at_level(idaeslog.CAUTION):
@@ -410,6 +412,7 @@ def test_config_validation_cocurrent_upwind(caplog):
         == "dae.finite_difference"
     )
 
+
 @pytest.mark.unit
 def test_config_validation_cocurrent_downwind(caplog):
     m = ConcreteModel()
@@ -446,11 +449,12 @@ def test_config_validation_cocurrent_downwind(caplog):
         "for coarse discretizations) or use a high-order collocation method."
     ) in caplog.text
 
+
 @pytest.mark.unit
 def test_config_validation_cocurrent_forward_and_backward(caplog):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties = BTXParameterBlock(valid_phase="Liq") 
+    m.fs.properties = BTXParameterBlock(valid_phase="Liq")
     caplog.clear()
 
     with caplog.at_level(idaeslog.INFO):
@@ -481,6 +485,7 @@ def test_config_validation_cocurrent_forward_and_backward(caplog):
         "energy conservation errors. High-order collocation methods can "
         "provide both accuracy and numerical stability."
     ) in caplog.text
+
 
 @pytest.mark.unit
 def test_config_validation_mismatched_collocation(caplog):
