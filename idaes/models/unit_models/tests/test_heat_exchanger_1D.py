@@ -347,7 +347,7 @@ def test_config_validation(caplog):
             },
             flow_type=HeatExchangerFlowPattern.countercurrent,
         )
-    # Test to make sure that we don't get the warning for not having an upwind
+    # Test to make sure that we don't get the caution for not having an upwind
     # scheme (because this scheme is in fact upwind)
     assert "To avoid" not in caplog.text
     assert (
@@ -359,7 +359,7 @@ def test_config_validation(caplog):
     ) in caplog.text
     caplog.clear()
 
-    with caplog.at_level(idaeslog.WARNING):
+    with caplog.at_level(idaeslog.CAUTION):
         m.fs.HX_cocurrent1 = HX1D(
             hot_side={
                 "property_package": m.fs.properties,

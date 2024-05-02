@@ -431,7 +431,7 @@ cold side flows from 1 to 0""",
         # Set flow directions for the control volume blocks and specify
         # discretization if not specified.
         if self.config.hot_side.transformation_method is useDefault:
-            _log.warning(
+            _log.caution(
                 "Discretization method was "
                 "not specified for the hot side of the "
                 "heat exchanger. "
@@ -440,7 +440,7 @@ cold side flows from 1 to 0""",
             )
             self.config.hot_side.transformation_method = "dae.finite_difference"
         if self.config.cold_side.transformation_method is useDefault:
-            _log.warning(
+            _log.caution(
                 "Discretization method was "
                 "not specified for the cold side of the "
                 "heat exchanger. "
@@ -487,7 +487,7 @@ cold side flows from 1 to 0""",
                 self.config.hot_side.transformation_scheme
                 != self.config.cold_side.transformation_scheme
             ):
-                _log.warning(
+                _log.caution(
                     "The hot and cold sides are being discretized with different "
                     "discretization schemes. While this may result in better numerical "
                     "stability if an upwind scheme is used, it may also result in "
@@ -496,7 +496,7 @@ cold side flows from 1 to 0""",
                 )
 
         if self.config.hot_side.transformation_scheme is useDefault:
-            _log.warning(
+            _log.caution(
                 "Discretization scheme was "
                 "not specified for the hot side of the "
                 "counter-current heat exchanger. "
@@ -505,7 +505,7 @@ cold side flows from 1 to 0""",
             )
             self.config.hot_side.transformation_scheme = "BACKWARD"
         if self.config.cold_side.transformation_scheme is useDefault:
-            _log.warning(
+            _log.caution(
                 "Discretization scheme was "
                 "not specified for the cold side of the "
                 "counter-current heat exchanger. "
