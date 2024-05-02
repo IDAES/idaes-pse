@@ -564,9 +564,9 @@ class ProcessBlockData(_BlockData):
         # Check for any flowsheet level build arguments
         for k in self.config.property_package.config.default_arguments:
             if k not in self.config.property_package_args:
-                self.config.property_package_args[
-                    k
-                ] = self.config.property_package.config.default_arguments[k]
+                self.config.property_package_args[k] = (
+                    self.config.property_package.config.default_arguments[k]
+                )
 
     def _get_default_prop_pack(self):
         """
@@ -647,9 +647,9 @@ class ProcessBlockData(_BlockData):
             # Check for any flowsheet level build arguments
             for k in self.config.reaction_package.config.default_arguments:
                 if k not in self.config.reaction_package_args:
-                    self.config.reaction_package_args[
-                        k
-                    ] = self.config.reaction_package.config.default_arguments[k]
+                    self.config.reaction_package_args[k] = (
+                        self.config.reaction_package.config.default_arguments[k]
+                    )
 
     def calculate_scaling_factors(self):
         # This lets you call super().calculate_scaling_factors() in a unit

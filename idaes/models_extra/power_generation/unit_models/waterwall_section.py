@@ -429,11 +429,7 @@ constructed,
         def volume_eqn(b, t):
             return (
                 b.volume[t]
-                == 0.25
-                * const.pi
-                * b.tube_diameter**2
-                * b.tube_length
-                * b.number_tubes
+                == 0.25 * const.pi * b.tube_diameter**2 * b.tube_length * b.number_tubes
             )
 
     def _make_performance(self):

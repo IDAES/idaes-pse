@@ -4039,10 +4039,12 @@ class GenericStateBlockData(StateBlockData):
                 expr=sum(
                     self.phase_frac[p]
                     * sum(
-                        self.mole_frac_phase_comp[p, j]
-                        * self.params.get_component(j).mw
-                        if (p, j) in self.phase_component_set
-                        else 0
+                        (
+                            self.mole_frac_phase_comp[p, j]
+                            * self.params.get_component(j).mw
+                            if (p, j) in self.phase_component_set
+                            else 0
+                        )
                         for j in self.component_list
                     )
                     for p in self.phase_list
@@ -4162,9 +4164,11 @@ class GenericStateBlockData(StateBlockData):
 
             def rule_mw_phase(b, p):
                 return sum(
-                    b.mole_frac_phase_comp[p, j] * b.params.get_component(j).mw
-                    if (p, j) in b.phase_component_set
-                    else 0
+                    (
+                        b.mole_frac_phase_comp[p, j] * b.params.get_component(j).mw
+                        if (p, j) in b.phase_component_set
+                        else 0
+                    )
                     for j in b.component_list
                 )
 
