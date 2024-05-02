@@ -23,7 +23,6 @@ from idaes.apps.grid_integration.coordinator import prescient_avail
 
 
 class TestMissingModel:
-
     """
     A class for testing missing methods and attributes.
     """
@@ -38,7 +37,6 @@ class TestMissingModel:
     }
 
     def __init__(self, missing_method=None, missing_attr=None):
-
         """
         Constructs a model class without the specified missing methods and/or
         missing attributes.

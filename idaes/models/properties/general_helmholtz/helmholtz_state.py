@@ -520,7 +520,7 @@ class HelmholtzStateBlockData(StateBlockData):
                 self.vapor_frac = pyo.Var(
                     initialize=0.0,
                     units=pyunits.dimensionless,
-                    doc="Vapor fraction"
+                    doc="Vapor fraction",
                     # No bounds here, since it is often (usually) on it's bound
                     # and that's not the best for IPOPT
                 )

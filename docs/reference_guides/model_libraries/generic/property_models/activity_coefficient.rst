@@ -28,7 +28,7 @@ Option 1 - "FTPz":
       	<ul>
  	<li>Total molar flow rate (mol/s) - <code> <font color="red"> flow_mol </font> </code>
  	<li>Temperature (K) - <code> <font color="red"> temperature </font> </code>
-	<li>Presure (Pa) - <code> <font color="red"> pressure</font></code>
+	<li>Pressure (Pa) - <code> <font color="red"> pressure</font></code>
 	<li>Mole fraction of the mixture - <code> <font color="red"> mole_frac_comp</font></code> 
 	</ul>
 	</body>
@@ -43,7 +43,7 @@ Option 2 - "FcTP":
       	<ul>
  	<li>Component molar flow rate (mol/s) - <code> <font color="red"> flow_mol_comp </font> </code>
  	<li>Temperature (K) - <code> <font color="red"> temperature </font> </code>
-	<li>Presure (Pa) - <code> <font color="red"> pressure</font></code>
+	<li>Pressure (Pa) - <code> <font color="red"> pressure</font></code>
 	</ul>
 	</body>
 

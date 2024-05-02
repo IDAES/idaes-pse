@@ -17,7 +17,6 @@ from idaes.apps.grid_integration.tests.util import TestingModel, testing_model_d
 
 
 class TestMissingModel:
-
     """
     A class for testing missing methods and attributes.
     """
