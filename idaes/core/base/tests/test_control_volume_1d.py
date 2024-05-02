@@ -29,7 +29,7 @@ from pyomo.environ import (
 from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 from pyomo.dae import ContinuousSet, DerivativeVar
 from pyomo.common.config import ConfigBlock
-from pyomo.core.base.constraint import _GeneralConstraintData
+from pyomo.core.base.constraint import ConstraintData
 from idaes.core import (
     ControlVolume1DBlock,
     FlowsheetBlockData,
@@ -1125,7 +1125,7 @@ def test_add_material_balances_default():
         for j in m.fs.pp.component_list:
             with pytest.raises(KeyError):
                 assert m.fs.cv.material_balances[0, 0, p, j]
-            assert type(m.fs.cv.material_balances[0, 1, p, j]) is _GeneralConstraintData
+            assert type(m.fs.cv.material_balances[0, 1, p, j]) is ConstraintData
 
     assert_units_consistent(m)
 
@@ -1310,7 +1310,7 @@ def test_add_phase_component_balances_default():
         for j in m.fs.pp.component_list:
             with pytest.raises(KeyError):
                 assert m.fs.cv.material_balances[0, 0, p, j]
-            assert type(m.fs.cv.material_balances[0, 1, p, j]) is _GeneralConstraintData
+            assert type(m.fs.cv.material_balances[0, 1, p, j]) is ConstraintData
 
     assert_units_consistent(m)
 
@@ -1342,7 +1342,7 @@ def test_add_phase_component_balances_default_FFD():
         for j in m.fs.pp.component_list:
             with pytest.raises(KeyError):
                 assert m.fs.cv.material_balances[0, 1, p, j]
-            assert type(m.fs.cv.material_balances[0, 0, p, j]) is _GeneralConstraintData
+            assert type(m.fs.cv.material_balances[0, 0, p, j]) is ConstraintData
 
     assert_units_consistent(m)
 
@@ -1988,7 +1988,7 @@ def test_add_total_component_balances_default():
     for j in m.fs.pp.component_list:
         with pytest.raises(KeyError):
             assert m.fs.cv.material_balances[0, 0, j]
-        assert type(m.fs.cv.material_balances[0, 1, j]) is _GeneralConstraintData
+        assert type(m.fs.cv.material_balances[0, 1, j]) is ConstraintData
 
     assert_units_consistent(m)
 
@@ -2020,7 +2020,7 @@ def test_add_total_component_balances_default_FFD():
     for j in m.fs.pp.component_list:
         with pytest.raises(KeyError):
             assert m.fs.cv.material_balances[0, 1, j]
-        assert type(m.fs.cv.material_balances[0, 0, j]) is _GeneralConstraintData
+        assert type(m.fs.cv.material_balances[0, 0, j]) is ConstraintData
 
     assert_units_consistent(m)
 
@@ -2658,7 +2658,7 @@ def test_add_total_element_balances_default():
     for j in m.fs.pp.element_list:
         with pytest.raises(KeyError):
             assert m.fs.cv.element_balances[0, 0, j]
-        assert type(m.fs.cv.element_balances[0, 1, j]) is _GeneralConstraintData
+        assert type(m.fs.cv.element_balances[0, 1, j]) is ConstraintData
 
     assert_units_consistent(m)
 
@@ -2690,7 +2690,7 @@ def test_add_total_element_balances_default_FFD():
     for j in m.fs.pp.element_list:
         with pytest.raises(KeyError):
             assert m.fs.cv.element_balances[0, 1, j]
-        assert type(m.fs.cv.element_balances[0, 0, j]) is _GeneralConstraintData
+        assert type(m.fs.cv.element_balances[0, 0, j]) is ConstraintData
 
     assert_units_consistent(m)
 
@@ -3036,7 +3036,7 @@ def test_add_energy_balances_default():
 
     with pytest.raises(KeyError):
         assert m.fs.cv.enthalpy_balances[0, 0]
-    assert type(m.fs.cv.enthalpy_balances[0, 1]) is _GeneralConstraintData
+    assert type(m.fs.cv.enthalpy_balances[0, 1]) is ConstraintData
 
     assert_units_consistent(m)
 
@@ -3072,7 +3072,7 @@ def test_add_total_enthalpy_balances_default():
 
     with pytest.raises(KeyError):
         assert m.fs.cv.enthalpy_balances[0, 0]
-    assert type(m.fs.cv.enthalpy_balances[0, 1]) is _GeneralConstraintData
+    assert type(m.fs.cv.enthalpy_balances[0, 1]) is ConstraintData
 
     assert_units_consistent(m)
 
@@ -3106,7 +3106,7 @@ def test_add_total_enthalpy_balances_default_FFD():
 
     with pytest.raises(KeyError):
         assert m.fs.cv.enthalpy_balances[0, 1]
-    assert type(m.fs.cv.enthalpy_balances[0, 0]) is _GeneralConstraintData
+    assert type(m.fs.cv.enthalpy_balances[0, 0]) is ConstraintData
 
     assert_units_consistent(m)
 
@@ -3468,7 +3468,7 @@ def test_add_total_pressure_balances_default():
 
     with pytest.raises(KeyError):
         assert m.fs.cv.pressure_balance[0, 0]
-    assert type(m.fs.cv.pressure_balance[0, 1]) is _GeneralConstraintData
+    assert type(m.fs.cv.pressure_balance[0, 1]) is ConstraintData
 
     assert_units_consistent(m)
 
@@ -3501,7 +3501,7 @@ def test_add_total_pressure_balances_default_FFD():
 
     with pytest.raises(KeyError):
         assert m.fs.cv.pressure_balance[0, 1]
-    assert type(m.fs.cv.pressure_balance[0, 0]) is _GeneralConstraintData
+    assert type(m.fs.cv.pressure_balance[0, 0]) is ConstraintData
 
     assert_units_consistent(m)
 

@@ -46,11 +46,8 @@ from pyomo.environ import (
     Constraint,
     Block,
 )
-from pyomo.core.base.block import _BlockData
 from pyomo.common.collections import ComponentMap
-from pyomo.core.base.range import remainder
 from pyomo.dae.set_utils import deactivate_model_at
-from pyomo.dae.flatten import flatten_dae_components
 from pyomo.core.base.indexed_component import UnindexedComponent_set
 
 

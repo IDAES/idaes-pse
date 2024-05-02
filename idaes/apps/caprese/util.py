@@ -26,7 +26,7 @@ from pyomo.dae.flatten import flatten_dae_components
 from pyomo.dae.set_utils import is_in_block_indexed_by
 from pyomo.core.expr.visitor import identify_variables
 from pyomo.core.base.constraint import _ConstraintData
-from pyomo.core.base.block import _BlockData
+from pyomo.core.base.block import BlockData
 
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.dyn_utils import (
@@ -189,7 +189,7 @@ def initialize_by_element_in_range(
                     if not time_linking_vars:
                         if isinstance(comp, _ConstraintData):
                             con_list.append(comp)
-                        elif isinstance(comp, _BlockData):
+                        elif isinstance(comp, BlockData):
                             # Active here should be independent of whether block
                             # was active
                             con_list.extend(
