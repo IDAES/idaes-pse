@@ -94,7 +94,7 @@ class _ScalarProcessBlockMixin(object):
     def __init__(self, *args, **kwargs):
         # __bases__ for the ScalarProcessBlock is
         #
-        #    (_ScalarCustomBlockMixin, {process_block_data}, {process_block})
+        #    (_ScalarProcessBlockMixin, {process_block_data}, {process_block})
         #
         # Unfortunately, we cannot guarantee that this is being called
         # from the ScalarProcessBlock (someone could have inherited from
@@ -185,10 +185,10 @@ def declare_process_block_class(name, block_class=ProcessBlock, doc=""):
 
     """
 
-    def proc_dec(cls):  # Decorator function
+    def proc_dec(block_data):  # Decorator function
         # prepare the main docstring for the new class.
         try:
-            cb_doc = cls.CONFIG.generate_documentation(
+            cb_doc = block_data.CONFIG.generate_documentation(
                 format=String_ConfigFormatter(
                     block_start="%s\n",
                     block_end="",
@@ -207,17 +207,20 @@ def declare_process_block_class(name, block_class=ProcessBlock, doc=""):
             cb_doc = _config_block_keys_docstring.format(cb_doc)
         ds = "\n".join([doc, _process_block_docstring.format(cb_doc, name)])
 
+        # Declare the new Block component (derived from CustomBlock)
+        # corresponding to the BlockData that we are decorating
+        #
         # Note use of `type(block_class)` to get the metaclass that was
         # used to create the base process block class
-        c = type(block_class)(
+        comp = type(block_class)(
             name,  # name of new class
             (block_class,),  # base classes
             # class body definitions (populate the new class' __dict__)
             {
                 # ensure the created class is associated with the calling module
-                "__module__": cls.__module__,
+                "__module__": block_data.__module__,
                 # Default IndexedComponent data object is the decorated class:
-                "_ComponentDataClass": cls,
+                "_ComponentDataClass": block_data,
                 # Set the docstring
                 "__doc__": ds,
             },
@@ -227,36 +230,36 @@ def declare_process_block_class(name, block_class=ProcessBlock, doc=""):
         # will register them both with the calling module scope, and
         # with the new ProcessBlock (so that ProcessBlock.__new__ can route
         # the object creation to the correct class)
-        c._indexed_process_block = type(c)(
+        comp._indexed_process_block = type(comp)(
             "Indexed" + name,
-            (c,),
+            (comp,),
             {
                 # ensure the created class is associated with the calling module
-                "__module__": cls.__module__,
+                "__module__": block_data.__module__,
                 # flag for detecting indexed process blocks
                 "__process_block__": "indexed",
                 # provide function ``base_class_module()`` to get unit
                 # module, for visualizer
-                "base_class_module": lambda self: cls.__module__,
+                "base_class_module": lambda self: block_data.__module__,
             },
         )
-        c._scalar_process_block = type(c)(
+        comp._scalar_process_block = type(comp)(
             "Scalar" + name,
-            (_ScalarProcessBlockMixin, cls, c),
+            (_ScalarProcessBlockMixin, block_data, comp),
             {
                 # ensure the created class is associated with the calling module
-                "__module__": cls.__module__,
+                "__module__": block_data.__module__,
                 # flag for detecting scalar process blocks
                 "__process_block__": "scalar",
                 # provide function ``base_class_module()`` to get unit
                 # module, for visualizer
-                "base_class_module": lambda self: cls.__module__,
+                "base_class_module": lambda self: block_data.__module__,
             },
         )
 
         # Register the new Block types in the same module as the BlockData
-        for _cls in (c, c._indexed_process_block, c._scalar_process_block):
-            setattr(sys.modules[cls.__module__], _cls.__name__, _cls)
-        return cls
+        for _cls in (comp, comp._indexed_process_block, comp._scalar_process_block):
+            setattr(sys.modules[block_data.__module__], _cls.__name__, _cls)
+        return block_data
 
     return proc_dec  # return decorator function
