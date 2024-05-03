@@ -23,8 +23,8 @@ from pyomo.core.expr.sympy_tools import (
     _configure_sympy,
 )
 from pyomo.environ import ExternalFunction, Var, Expression, value, units as pu
-from pyomo.core.base.constraint import _ConstraintData, Constraint
-from pyomo.core.base.expression import _ExpressionData
+from pyomo.core.base.constraint import ConstraintData, Constraint
+from pyomo.core.base.expression import ExpressionData
 from pyomo.core.base.block import BlockData
 from pyomo.core.expr.visitor import StreamBasedExpressionVisitor
 from pyomo.core.expr.numeric_expr import ExternalFunctionExpression
@@ -307,7 +307,7 @@ def document_constraints(
     assuming the $$latex math$$ and $latex math$ syntax is supported.
 
     Args:
-        comp: A Pyomo component to document in {_ConstraintData, _ExpressionData,
+        comp: A Pyomo component to document in {ConstraintData, ExpressionData,
                 BlockData}.
         doc: True adds a documentation table for each constraint or expression.
                 Due to the way symbols are semi-automatiaclly generated, the
@@ -322,7 +322,7 @@ def document_constraints(
     if to_doc is None:
         to_doc = []
     s = None
-    if isinstance(comp, _ExpressionData):
+    if isinstance(comp, ExpressionData):
         d = to_latex(comp)
         to_doc.append(d["object_map"])
         try:
@@ -343,7 +343,7 @@ def document_constraints(
                 s = "$${}$$\n{}".format(d["latex_expr"], d["where"])
             else:
                 s = "$${}$$".format(d["latex_expr"])
-    elif isinstance(comp, _ConstraintData):
+    elif isinstance(comp, ConstraintData):
         d = to_latex(comp.body)
         to_doc.append(d["object_map"])
         try:
