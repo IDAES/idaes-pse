@@ -24,8 +24,9 @@ import logging
 import inspect
 
 from pyomo.common.config import ConfigBlock, String_ConfigFormatter
-from pyomo.environ import Block
 from pyomo.common.pyomo_typing import get_overloads_for
+from pyomo.core.base.global_set import UnindexedComponent_set
+from pyomo.environ import Block
 
 __author__ = "John Eslick"
 __all__ = ["ProcessBlock", "declare_process_block_class"]
@@ -87,50 +88,25 @@ def _get_pyomo_block_kwargs():
 _pyomo_block_keywords = _get_pyomo_block_kwargs()
 
 
-def _process_kwargs(o, kwargs):
-    kwargs.setdefault("rule", _rule_default)
-    o._block_data_config_initialize = ConfigBlock(implicit=True)
-    o._block_data_config_initialize.set_value(kwargs.pop("initialize", None))
-    o._idx_map = kwargs.pop("idx_map", None)
+class _ScalarProcessBlockMixin(object):
+    """Mixin class for scalar process block classes."""
 
-    _pyomo_kwargs = {}
-    for arg in _pyomo_block_keywords:
-        if arg in kwargs:
-            _pyomo_kwargs[arg] = kwargs.pop(arg)
-
-    o._block_data_config_default = kwargs
-    return _pyomo_kwargs
-
-
-class _IndexedProcessBlockMeta(type):
-    """Metaclass used to create an indexed model class."""
-
-    def __new__(mcs, name, bases, dct):
-        def __init__(self, *args, **kwargs):
-            _pyomo_kwargs = _process_kwargs(self, kwargs)
-            bases[0].__init__(self, *args, **_pyomo_kwargs)
-
-        dct["__init__"] = __init__
-        dct["__process_block__"] = "indexed"
-        # provide function ``base_class_module()`` to get unit module, for visualizer
-        dct["base_class_module"] = lambda mcs: bases[0].__module__
-        return type.__new__(mcs, name, bases, dct)
-
-
-class _ScalarProcessBlockMeta(type):
-    """Metaclass used to create a scalar model class."""
-
-    def __new__(mcs, name, bases, dct):
-        def __init__(self, *args, **kwargs):
-            _pyomo_kwargs = _process_kwargs(self, kwargs)
-            bases[0].__init__(self, component=self)
-            bases[1].__init__(self, *args, **_pyomo_kwargs)
-
-        dct["__init__"] = __init__
-        dct["__process_block__"] = "scalar"
-        # provide function ``base_class_module()`` to get unit module, for visualizer
-        dct["base_class_module"] = lambda mcs: bases[0].__module__
-        return type.__new__(mcs, name, bases, dct)
+    def __init__(self, *args, **kwargs):
+        # __bases__ for the ScalarProcessBlock is
+        #
+        #    (_ScalarCustomBlockMixin, {process_block_data}, {process_block})
+        #
+        # Unfortunately, we cannot guarantee that this is being called
+        # from the ScalarProcessBlock (someone could have inherited from
+        # that class to make another scalar class).  We will walk up the
+        # MRO to find the Scalar class (which should be the only class
+        # that has this Mixin as the first base class)
+        for cls in self.__class__.__mro__:
+            if cls.__bases__[0] is _ScalarProcessBlockMixin:
+                _mixin, _data, _block = cls.__bases__
+                _data.__init__(self, component=self)
+                _block.__init__(self, *args, **kwargs)
+                break
 
 
 class ProcessBlock(Block):
@@ -145,29 +121,45 @@ class ProcessBlock(Block):
         "", "ProcessBlock"
     )
 
-    def __new__(cls, *args, **kwds):
-        """Create a new indexed or scalar ProcessBlock subclass instance
+    def __new__(cls, *args, **kwargs):
+        """Create a new indexed or scalar Process Block subclass instance
         depending on whether there are args.  If there are args those should be
         an indexing set."""
         if hasattr(cls, "__process_block__"):
-            # __process_block__ is a class attribute created when making an
-            # indexed or scalar subclass of ProcessBlock (or subclass thereof).
-            # If cls doesn't have it, the indexed or scalar class has not been
-            # created yet.
-            #
-            # You get here after creating a new indexed or scalar class in the
-            # next if below. The first time in, cls is a ProcessBlock subclass
-            # that is neither indexed or scalar so you go to the if below and
-            # create an index or scalar subclass of cls.
-            return super(Block, cls).__new__(cls)
-        if args == ():  # no args so make scalar class
-            bname = "_Scalar{}".format(cls.__name__)
-            n = _ScalarProcessBlockMeta(bname, (cls._ComponentDataClass, cls), {})
-            return n.__new__(n)  # calls this __new__() again with scalar class
-        else:  # args so make indexed class
-            bname = "_Indexed{}".format(cls.__name__)
-            n = _IndexedProcessBlockMeta(bname, (cls,), {})
-            return n.__new__(n)  # calls this __new__() again with indexed class
+            # __process_block__ is a class attribute created when making
+            # an indexed or scalar subclass of ProcessBlock (or subclass
+            # thereof).  If it is present, then we can assume the
+            # routing of the generic "ProcessBlock" to the specific
+            # Scalar or Indexed class has already occurred and we can
+            # pass constrol up to (toward) object.__new__()
+            return super().__new__(cls, *args, **kwargs)
+        # If cls doesn't have __process_block__, the user is attempting
+        # to create the "generic" (derived) ProcessBlock.  Depending on
+        # the arguments, we need to map this to either the
+        # ScalarProcessBlock aor IndexedProcessBlock subclass.
+        if not args or (args[0] is UnindexedComponent_set and len(args) == 1):
+            return super().__new__(cls._scalar_process_block, *args, **kwargs)
+        else:
+            return super().__new__(cls._indexed_process_block, *args, **kwargs)
+
+    def __init__(self, *args, **kwargs):
+        Block.__init__(self, *args, **self._process_kwargs(kwargs))
+
+    def _process_kwargs(self, kwargs):
+        "Filter to separate IDAES __init__ arguments from core Pyomo arguments"
+
+        kwargs.setdefault("rule", _rule_default)
+        self._block_data_config_initialize = ConfigBlock(implicit=True)
+        self._block_data_config_initialize.set_value(kwargs.pop("initialize", None))
+        self._idx_map = kwargs.pop("idx_map", None)
+
+        _pyomo_kwargs = {}
+        for arg in _pyomo_block_keywords:
+            if arg in kwargs:
+                _pyomo_kwargs[arg] = kwargs.pop(arg)
+
+        self._block_data_config_default = kwargs
+        return _pyomo_kwargs
 
 
 def declare_process_block_class(name, block_class=ProcessBlock, doc=""):
@@ -194,7 +186,7 @@ def declare_process_block_class(name, block_class=ProcessBlock, doc=""):
     """
 
     def proc_dec(cls):  # Decorator function
-        # create a new class called name from block_class
+        # prepare the main docstring for the new class.
         try:
             cb_doc = cls.CONFIG.generate_documentation(
                 format=String_ConfigFormatter(
@@ -214,13 +206,57 @@ def declare_process_block_class(name, block_class=ProcessBlock, doc=""):
         if cb_doc != "":
             cb_doc = _config_block_keys_docstring.format(cb_doc)
         ds = "\n".join([doc, _process_block_docstring.format(cb_doc, name)])
-        c = type(
-            name,
-            (block_class,),
-            {"__module__": cls.__module__, "_ComponentDataClass": cls, "__doc__": ds},
-        )
-        setattr(sys.modules[cls.__module__], name, c)
 
+        # Note use of `type(block_class)` to get the metaclass that was
+        # used to create the base process block class
+        c = type(block_class)(
+            name,  # name of new class
+            (block_class,),  # base classes
+            # class body definitions (populate the new class' __dict__)
+            {
+                # ensure the created class is associated with the calling module
+                "__module__": cls.__module__,
+                # Default IndexedComponent data object is the decorated class:
+                "_ComponentDataClass": cls,
+                # Set the docstring
+                "__doc__": ds,
+            },
+        )
+
+        # Declare Indexed and Scalar versions of the process block.  We
+        # will register them both with the calling module scope, and
+        # with the new ProcessBlock (so that ProcessBlock.__new__ can route
+        # the object creation to the correct class)
+        c._indexed_process_block = type(c)(
+            "Indexed" + name,
+            (c,),
+            {
+                # ensure the created class is associated with the calling module
+                "__module__": cls.__module__,
+                # flag for detecting indexed process blocks
+                "__process_block__": "indexed",
+                # provide function ``base_class_module()`` to get unit
+                # module, for visualizer
+                "base_class_module": lambda self: cls.__module__,
+            },
+        )
+        c._scalar_process_block = type(c)(
+            "Scalar" + name,
+            (_ScalarProcessBlockMixin, cls, c),
+            {
+                # ensure the created class is associated with the calling module
+                "__module__": cls.__module__,
+                # flag for detecting scalar process blocks
+                "__process_block__": "scalar",
+                # provide function ``base_class_module()`` to get unit
+                # module, for visualizer
+                "base_class_module": lambda self: cls.__module__,
+            },
+        )
+
+        # Register the new Block types in the same module as the BlockData
+        for _cls in (c, c._indexed_process_block, c._scalar_process_block):
+            setattr(sys.modules[cls.__module__], _cls.__name__, _cls)
         return cls
 
     return proc_dec  # return decorator function
