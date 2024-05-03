@@ -1462,11 +1462,11 @@ def addConsZicFromYiLifted(m, blnConfsAreMutExc=True, blnConfsAreColExh=False):
                         for c in m.Zic[i, :].wildcard_keys()
                         if m.Confs[c][l] is None
                     )
-                    if PosZic is not 0:
+                    if PosZic != 0:
                         m.AssignZicFromYiLifted1.add(
                             index=(i, j), expr=(PosZic <= m.Yi[j])
                         )
-                    if NegZic is not 0:
+                    if NegZic != 0:
                         m.AssignZicFromYiLifted2.add(
                             index=(i, j), expr=(NegZic <= 1 - m.Yi[j])
                         )
@@ -1584,11 +1584,11 @@ def addConsZicFromYikLifted(m, blnConfsAreMutExc=True, blnConfsAreColExh=False):
                             for c in m.Zic[i, :].wildcard_keys()
                             if m.Confs[c][l] != k
                         )
-                        if PosZic is not 0:
+                        if PosZic != 0:
                             m.AssignZicFromYikLifted1.add(
                                 index=(i, j, k), expr=(PosZic <= m.Yik[j, k])
                             )
-                        if NegZic is not 0:
+                        if NegZic != 0:
                             m.AssignZicFromYikLifted2.add(
                                 index=(i, j, k), expr=(NegZic <= 1 - m.Yik[j, k])
                             )
