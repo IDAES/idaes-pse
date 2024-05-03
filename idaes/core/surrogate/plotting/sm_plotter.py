@@ -32,7 +32,7 @@ def surrogate_scatter2D(surrogate, dataframe, filename=None, show=True):
     input_data = dataframe[surrogate.input_labels()]
     output_data = dataframe[surrogate.output_labels()]
     output_surrogate = surrogate.evaluate_surrogate(input_data)
-    _scatter2D(
+    return _scatter2D(
         xdata=input_data.values,
         zdata=output_data.values,
         zfit=output_surrogate.values,
@@ -100,12 +100,14 @@ def _scatter2D(
     if filename is not None:  # place outside loop to avoid closing/reopening
         pdf.close()
 
+    return plt
+
 
 def surrogate_scatter3D(surrogate, dataframe, filename=None, show=True):
     input_data = dataframe[surrogate.input_labels()]
     output_data = dataframe[surrogate.output_labels()]
     output_surrogate = surrogate.evaluate_surrogate(input_data)
-    _scatter3D(
+    return _scatter3D(
         xdata=input_data.values,
         zdata=output_data.values,
         zfit=output_surrogate.values,
@@ -184,12 +186,14 @@ def _scatter3D(
     if filename is not None:  # place outside loop to avoid closing/reopening
         pdf.close()
 
+    return plt
+
 
 def surrogate_parity(surrogate, dataframe, filename=None, show=True):
     input_data = dataframe[surrogate.input_labels()]
     output_data = dataframe[surrogate.output_labels()]
     output_surrogate = surrogate.evaluate_surrogate(input_data)
-    _parity(
+    return _parity(
         zdata=output_data.values,
         zfit=output_surrogate.values,
         zlabels=surrogate.output_labels(),
@@ -248,6 +252,8 @@ def _parity(zdata, zfit, zlabels=None, show=True, filename=None):
     if filename is not None:  # place outside loop to avoid closing/reopening
         pdf.close()
 
+    return plt
+
 
 def surrogate_residual(
     surrogate, dataframe, filename=None, relative_error=False, show=True
@@ -258,7 +264,7 @@ def surrogate_residual(
     residual = np.abs(output_data - output_surrogate)
     if relative_error is True:
         residual = np.divide(residual, np.maximum(output_data, 1.0))
-    _residual(
+    return _residual(
         xdata=input_data.values,
         residual=residual.values,
         xlabels=surrogate.input_labels(),
@@ -319,3 +325,5 @@ def _residual(xdata, residual, xlabels=None, elabels=None, show=True, filename=N
                 pdf.savefig(fig)
     if filename is not None:  # place outside loop to avoid closing/reopening
         pdf.close()
+
+    return plt
