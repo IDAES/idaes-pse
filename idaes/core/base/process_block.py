@@ -131,7 +131,7 @@ class ProcessBlock(Block):
             # thereof).  If it is present, then we can assume the
             # routing of the generic "ProcessBlock" to the specific
             # Scalar or Indexed class has already occurred and we can
-            # pass constrol up to (toward) object.__new__()
+            # pass control up to (toward) object.__new__()
             return super().__new__(cls, *args, **kwargs)
         # If cls doesn't have __process_block__, the user is attempting
         # to create the "generic" (derived) ProcessBlock.  Depending on
