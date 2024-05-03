@@ -22,7 +22,7 @@ from idaes.apps.grid_integration.model_data import (
 )
 
 
-class TestingModel:
+class ExampleModel:
     """
     Simple model object for testing.
     """
@@ -256,7 +256,7 @@ class TestingModel:
         return ("tot_cost", 1)
 
 
-class TestingForecaster(AbstractPrescientPriceForecaster):
+class ExampleForecaster(AbstractPrescientPriceForecaster):
     """
     A fake forecaster class for testing.
     """
@@ -345,7 +345,7 @@ def make_testing_forecaster():
         forecaster: a forecaster object for testing.
     """
 
-    return TestingForecaster(prediction=30)
+    return ExampleForecaster(prediction=30)
 
 
 def make_testing_tracker():
@@ -359,7 +359,7 @@ def make_testing_tracker():
         thermal_tracker: a tracker object for testing.
     """
 
-    tracking_model_object = TestingModel(model_data=testing_model_data)
+    tracking_model_object = ExampleModel(model_data=testing_model_data)
     thermal_tracker = Tracker(
         tracking_model_object=tracking_model_object,
         tracking_horizon=tracking_horizon,
@@ -383,7 +383,7 @@ def make_testing_bidder():
 
     forecaster = make_testing_forecaster()
 
-    bidding_model_object = TestingModel(model_data=testing_model_data)
+    bidding_model_object = ExampleModel(model_data=testing_model_data)
     thermal_bidder = Bidder(
         bidding_model_object=bidding_model_object,
         day_ahead_horizon=day_ahead_bidding_horizon,
@@ -409,7 +409,7 @@ def make_testing_selfscheduler():
 
     forecaster = make_testing_forecaster()
 
-    bidding_model_object = TestingModel(model_data=testing_model_data)
+    bidding_model_object = ExampleModel(model_data=testing_model_data)
     self_scheduler = SelfScheduler(
         bidding_model_object=bidding_model_object,
         day_ahead_horizon=day_ahead_bidding_horizon,
