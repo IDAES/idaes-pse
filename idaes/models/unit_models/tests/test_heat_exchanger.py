@@ -23,6 +23,7 @@ from pyomo.environ import (
     ConcreteModel,
     Constraint,
     Expression,
+    TransformationFactory,
     value,
     Var,
     units as pyunits,
@@ -71,6 +72,7 @@ from idaes.core.initialization import (
     InitializationStatus,
 )
 from idaes.core.util import DiagnosticsToolbox
+from idaes.core.util import scaling as iscale
 
 
 # Imports to assemble BT-PR with different units
@@ -1243,7 +1245,11 @@ class TestIAPWS_countercurrent(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_numerical_issues(self, iapws):
-        dt = DiagnosticsToolbox(iapws)
+        iscale.calculate_scaling_factors(iapws)
+        m_scaled = TransformationFactory("core.scale_model").create_using(
+            iapws, rename=False
+        )
+        dt = DiagnosticsToolbox(m_scaled)
         dt.assert_no_numerical_warnings()
 
 

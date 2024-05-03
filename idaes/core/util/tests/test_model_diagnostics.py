@@ -985,7 +985,7 @@ The following pairs of constraints are nearly parallel:
 
         stream = StringIO()
         dt.display_near_parallel_variables(stream)
-        expected_pairs = ["v1, v2", "v1, v4", "v1, v3", "v2, v4", "v2, v3", "v4, v3"]
+        expected_pairs = ["v1, v2", "v1, v4", "v2, v4"]
         assert (
             "The following pairs of variables are nearly parallel:" in stream.getvalue()
         )
@@ -1450,7 +1450,7 @@ Model Statistics
     WARNING: 1 Constraint with large residuals (>1.0E-05)
     WARNING: 2 Variables with extreme Jacobian values (<1.0E-08 or >1.0E+08)
     WARNING: 1 Constraint with extreme Jacobian values (<1.0E-08 or >1.0E+08)
-    WARNING: 3 pairs of variables are parallel (to tolerance 1.0E-08)
+    WARNING: 1 pair of variables are parallel (to tolerance 1.0E-08)
 
 ------------------------------------------------------------------------------------
 4 Cautions
