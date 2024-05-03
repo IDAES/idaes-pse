@@ -81,6 +81,8 @@ def _scatter2D(
             )
         pdf = PdfPages(filename)
 
+    fig_list = []
+
     for j in range(numouts):  # loop over all outputs, zj
         for i in range(numins):  # plot every possible zj = f(xi)
             fig = plt.figure()
@@ -97,10 +99,13 @@ def _scatter2D(
                 plt.show()
             if filename is not None:
                 pdf.savefig(fig)
+
+            fig_list.append(fig)
+
     if filename is not None:  # place outside loop to avoid closing/reopening
         pdf.close()
 
-    return plt
+    return fig_list
 
 
 def surrogate_scatter3D(surrogate, dataframe, filename=None, show=True):
@@ -156,6 +161,8 @@ def _scatter3D(
             )
         pdf = PdfPages(filename)
 
+    fig_list = []
+
     for j in range(numouts):  # loop over all outputs, zj
         for pair in list(combinations(range(numins), 2)):  # pick two x vars
             a, b = pair[0], pair[1]  # indices for the x variables picked
@@ -183,10 +190,13 @@ def _scatter3D(
                 plt.show()
             if filename is not None:
                 pdf.savefig(fig)
+
+            fig_list.append(fig)
+
     if filename is not None:  # place outside loop to avoid closing/reopening
         pdf.close()
 
-    return plt
+    return fig_list
 
 
 def surrogate_parity(surrogate, dataframe, filename=None, show=True):
@@ -233,6 +243,8 @@ def _parity(zdata, zfit, zlabels=None, show=True, filename=None):
             )
         pdf = PdfPages(filename)
 
+    fig_list = []
+
     for j in range(numouts):  # loop over all outputs, zj
         fig = plt.figure()
         ax = fig.add_subplot()
@@ -249,10 +261,13 @@ def _parity(zdata, zfit, zlabels=None, show=True, filename=None):
             plt.show()
         if filename is not None:
             pdf.savefig(fig)
+
+        fig_list.append(fig)
+
     if filename is not None:  # place outside loop to avoid closing/reopening
         pdf.close()
 
-    return plt
+    return fig_list
 
 
 def surrogate_residual(
@@ -309,6 +324,8 @@ def _residual(xdata, residual, xlabels=None, elabels=None, show=True, filename=N
             )
         pdf = PdfPages(filename)
 
+    fig_list = []
+
     for i in range(numins):
         for j in range(numouts):  # loop over all outputs, zj
             fig = plt.figure()
@@ -323,7 +340,10 @@ def _residual(xdata, residual, xlabels=None, elabels=None, show=True, filename=N
                 plt.show()
             if filename is not None:
                 pdf.savefig(fig)
+
+            fig_list.append(fig)
+
     if filename is not None:  # place outside loop to avoid closing/reopening
         pdf.close()
 
-    return plt
+    return fig_list
