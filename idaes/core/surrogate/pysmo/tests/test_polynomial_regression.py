@@ -2044,7 +2044,7 @@ class TestPolynomialRegression:
         data_feed.training()
         assert data_feed.fit_status == "ok"
 
-    # TODO: THis does nto actually assert anything, and fails to run
+    # TODO: This does not actually assert anything, and fails to run
     # Leaving code in case someone has time to fix it in the future
     # @pytest.mark.unit
     # @pytest.mark.parametrize("array_type1", [pd.DataFrame])
