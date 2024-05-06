@@ -17,6 +17,7 @@ from io import StringIO
 import math
 import numpy as np
 import pytest
+import re
 import os
 from copy import deepcopy
 
@@ -457,8 +458,10 @@ class TestDiagnosticsToolbox:
     def test_invalid_model_type(self):
         with pytest.raises(
             TypeError,
-            match="model argument must be an instance of a Pyomo BlockData object "
-            "\(either a scalar Block or an element of an indexed Block\).",
+            match=re.escape(
+                "model argument must be an instance of a Pyomo BlockData object "
+                "(either a scalar Block or an element of an indexed Block)."
+            ),
         ):
             DiagnosticsToolbox(model="foo")
 
@@ -469,8 +472,10 @@ class TestDiagnosticsToolbox:
 
         with pytest.raises(
             TypeError,
-            match="model argument must be an instance of a Pyomo BlockData object "
-            "\(either a scalar Block or an element of an indexed Block\).",
+            match=re.escape(
+                "model argument must be an instance of a Pyomo BlockData object "
+                "(either a scalar Block or an element of an indexed Block)."
+            ),
         ):
             DiagnosticsToolbox(model=m.b)
 
@@ -1186,7 +1191,9 @@ The following pairs of variables are nearly parallel:
         m = model.clone()
         dt = DiagnosticsToolbox(model=m.b)
 
-        with pytest.raises(AssertionError, match="Structural issues found \(1\)."):
+        with pytest.raises(
+            AssertionError, match=re.escape("Structural issues found (1).")
+        ):
             dt.assert_no_structural_warnings()
 
         # Fix units issue
@@ -1199,7 +1206,9 @@ The following pairs of variables are nearly parallel:
         m = model.clone()
         dt = DiagnosticsToolbox(model=m.b)
 
-        with pytest.raises(AssertionError, match="Numerical issues found \(2\)."):
+        with pytest.raises(
+            AssertionError, match=re.escape("Numerical issues found (2).")
+        ):
             dt.assert_no_numerical_warnings()
 
         # Fix numerical issues
@@ -1836,8 +1845,10 @@ The following constraints involve v[1]:
 
         with pytest.raises(
             TypeError,
-            match="variable argument must be an instance of a Pyomo _VarData "
-            "object \(got foo\).",
+            match=re.escape(
+                "variable argument must be an instance of a Pyomo _VarData "
+                "object (got foo)."
+            ),
         ):
             svd.display_constraints_including_variable(variable="foo")
 
@@ -1901,8 +1912,10 @@ The following variables are involved in c1:
 
         with pytest.raises(
             TypeError,
-            match="constraint argument must be an instance of a Pyomo _ConstraintData "
-            "object \(got foo\).",
+            match=re.escape(
+                "constraint argument must be an instance of a Pyomo _ConstraintData "
+                "object (got foo)."
+            ),
         ):
             svd.display_variables_in_constraint(constraint="foo")
 
@@ -3776,8 +3789,9 @@ class TestCheckParallelJacobian:
 
         with pytest.raises(
             ValueError,
-            match="Unrecognised value for direction \(foo\). "
-            "Must be 'row' or 'column'.",
+            match=re.escape(
+                "Unrecognised value for direction (foo). " "Must be 'row' or 'column'."
+            ),
         ):
             check_parallel_jacobian(m, direction="foo")
 
@@ -3823,8 +3837,9 @@ class TestCheckIllConditioning:
 
         with pytest.raises(
             ValueError,
-            match="Unrecognised value for direction \(foo\). "
-            "Must be 'row' or 'column'.",
+            match=re.escape(
+                "Unrecognised value for direction (foo). " "Must be 'row' or 'column'."
+            ),
         ):
             compute_ill_conditioning_certificate(m, direction="foo")
 
