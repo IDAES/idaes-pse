@@ -250,7 +250,7 @@ def test_initialize_submodels_no_order():
 
     with pytest.raises(
         InitializationError,
-        match=re.sescape(
+        match=re.escape(
             "Main model (unknown) was not initialized (no results returned). "
             "This is likely due to an error in the model.initialization_order."
         ),
