@@ -1531,8 +1531,8 @@ class PEMParametrizedBidder(ParametrizedBidder):
                          real_time_horizon,
                          solver,
                          forecaster)
-        self.renewable_marginal_cost = 0
         self.renewable_mw = renewable_mw
+        self.renewable_marginal_cost = 0
         self.pem_marginal_cost = pem_marginal_cost
         self.pem_mw = pem_mw
         self.real_time_bidding_only = real_time_bidding_only
@@ -1552,7 +1552,7 @@ class PEMParametrizedBidder(ParametrizedBidder):
         full_bids = {}
 
         for t_idx in range(self.day_ahead_horizon):
-            da_wind = forecast[t_idx] * self.wind_mw
+            da_wind = forecast[t_idx] * self.renewable_mw
             grid_wind = max(0, da_wind - self.pem_mw)
             # gird wind are bidded at marginal cost = 0
             # The rest of the power is bidded at the pem marginal cost
@@ -1590,7 +1590,7 @@ class PEMParametrizedBidder(ParametrizedBidder):
 
 
     def compute_real_time_bids(
-        self, date, hour, realized_day_ahead_dispatches
+        self, date, hour, realized_day_ahead_dispatches,realized_day_ahead_prices
     ):
         """
         RT Bid: from 0 MW to (Wind Resource - PEM capacity) MW, bid $0/MWh.
@@ -1604,10 +1604,14 @@ class PEMParametrizedBidder(ParametrizedBidder):
         full_bids = {}
 
         for t_idx in range(self.real_time_horizon):
-            rt_wind = forecast[t_idx] * self.wind_mw
+            rt_wind = forecast[t_idx] * self.renewable_mw
             # if we participate in both DA and RT market
             if not self.real_time_bidding_only:
-                da_dispatch = realized_day_ahead_dispatches[t_idx + hour]
+                try:
+                    da_dispatch = realized_day_ahead_dispatches[t_idx + hour]
+                except IndexError:
+                    # When having indexerror, it must be the period that we are looking ahead. It is ok to set da_dispatch to 0 
+                    da_dispatch = 0
             # if we only participates in the RT market, then we do not consider the DA commitment
             if self.real_time_bidding_only:
                 da_dispatch = 0
@@ -1616,9 +1620,9 @@ class PEMParametrizedBidder(ParametrizedBidder):
             grid_wind = max(0 , avail_rt_wind - self.pem_mw)
             
             if grid_wind == 0:
-                bids = [(0, 0), (rt_wind, self.pem_marginal_cost)]
+                bids = [(0, 0), (avail_rt_wind, self.pem_marginal_cost)]
             else:
-                bids = [(0, 0), (grid_wind, 0), (rt_wind, self.pem_marginal_cost)]
+                bids = [(0, 0), (grid_wind, 0), (avail_rt_wind, self.pem_marginal_cost)]
 
             t = t_idx + hour
             full_bids[t] = {}
