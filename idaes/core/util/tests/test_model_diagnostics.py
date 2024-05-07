@@ -1849,7 +1849,7 @@ The following constraints involve v[1]:
         with pytest.raises(
             TypeError,
             match=re.escape(
-                "variable argument must be an instance of a Pyomo _VarData "
+                "variable argument must be an instance of a Pyomo VarData "
                 "object (got foo)."
             ),
         ):
@@ -1916,7 +1916,7 @@ The following variables are involved in c1:
         with pytest.raises(
             TypeError,
             match=re.escape(
-                "constraint argument must be an instance of a Pyomo _ConstraintData "
+                "constraint argument must be an instance of a Pyomo ConstraintData "
                 "object (got foo)."
             ),
         ):
