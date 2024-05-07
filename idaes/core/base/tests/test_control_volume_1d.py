@@ -16,6 +16,8 @@ Tests for ControlVolumeBlockData.
 Author: Andrew Lee
 """
 import pytest
+import re
+
 from pyomo.environ import (
     ConcreteModel,
     Constraint,
@@ -418,7 +420,7 @@ def test_add_geometry_length_var_indexed():
 
     with pytest.raises(
         ConfigurationError,
-        match="fs.cv length_var must be a scalar \(unindexed\) component.",
+        match=re.escape("fs.cv length_var must be a scalar (unindexed) component."),
     ):
         m.fs.cv.add_geometry(length_var=m.fs.length)
 
@@ -2310,9 +2312,11 @@ def test_add_total_component_balances_in_rxns_no_idx():
 
     with pytest.raises(
         PropertyNotSupportedError,
-        match="fs.cv Property package does not contain a "
-        "list of inherent reactions \(inherent_reaction_idx\), "
-        "but include_inherent_reactions is True.",
+        match=re.escape(
+            "fs.cv Property package does not contain a "
+            "list of inherent reactions (inherent_reaction_idx), "
+            "but include_inherent_reactions is True."
+        ),
     ):
         m.fs.cv.add_total_component_balances()
 

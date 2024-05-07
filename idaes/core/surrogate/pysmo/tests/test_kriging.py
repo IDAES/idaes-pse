@@ -96,7 +96,6 @@ class TestKrigingModel:
             KrigingClass = KrigingModel(input_array, fname=1)
 
     @pytest.mark.unit
-    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test__init__08(self, array_type):
         input_array = array_type(self.test_data)
@@ -107,7 +106,6 @@ class TestKrigingModel:
         assert KrigingClass1.filename == KrigingClass2.filename
 
     @pytest.mark.unit
-    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test__init__09(self, array_type):
         input_array = array_type(self.test_data)
@@ -403,7 +401,6 @@ class TestKrigingModel:
         assert 0.999999999999 == r_square
 
     @pytest.mark.unit
-    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test_predict_output_01(self, array_type):
         input_array = array_type(self.training_data)
@@ -414,7 +411,6 @@ class TestKrigingModel:
         assert y_pred.shape[0] == KrigingClass.x_data_scaled.shape[0]
 
     @pytest.mark.unit
-    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test_predict_output(self, array_type):
         input_array = array_type(self.training_data)
@@ -425,7 +421,6 @@ class TestKrigingModel:
         assert y_pred.shape[0] == 1
 
     @pytest.mark.unit
-    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test_training(self, array_type):
         input_array = array_type(self.training_data)
@@ -503,7 +498,6 @@ class TestKrigingModel:
         assert expected_dict == p.extract_values()
 
     @pytest.mark.unit
-    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test_kriging_generate_expression(self, array_type):
         input_array = array_type(self.training_data)
@@ -516,7 +510,6 @@ class TestKrigingModel:
         rbf_expr = results.generate_expression((lv))
 
     @pytest.mark.unit
-    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test_pickle_load01(self, array_type):
         input_array = array_type(self.training_data)
@@ -525,7 +518,6 @@ class TestKrigingModel:
         KrigingClass.pickle_load(KrigingClass.filename)
 
     @pytest.mark.unit
-    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test_pickle_load02(self, array_type):
         input_array = array_type(self.training_data)
@@ -534,7 +526,6 @@ class TestKrigingModel:
             KrigingClass.pickle_load("file_not_existing.pickle")
 
     @pytest.mark.unit
-    @pytest.fixture(scope="module")
     @patch("matplotlib.pyplot.show")
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test_parity_residual_plots(self, mock_show, array_type):

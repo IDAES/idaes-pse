@@ -286,7 +286,7 @@ CONFIG.declare(
 CONFIG.declare(
     "parallel_component_tolerance",
     ConfigValue(
-        default=1e-4,
+        default=1e-8,
         domain=float,
         description="Tolerance for identifying near-parallel Jacobian rows/columns",
     ),
@@ -1179,6 +1179,29 @@ class DiagnosticsToolbox:
                 self.display_constraints_with_extreme_jacobians.__name__ + "()"
             )
 
+        # Parallel variables and constraints
+        partol = self.config.parallel_component_tolerance
+        par_cons = check_parallel_jacobian(
+            self._model, tolerance=partol, direction="row", jac=jac, nlp=nlp
+        )
+        par_vars = check_parallel_jacobian(
+            self._model, tolerance=partol, direction="column", jac=jac, nlp=nlp
+        )
+        if par_cons:
+            p = "pair" if len(par_cons) == 1 else "pairs"
+            warnings.append(
+                f"WARNING: {len(par_cons)} {p} of constraints are parallel"
+                f" (to tolerance {partol:.1E})"
+            )
+            next_steps.append(self.display_near_parallel_constraints.__name__ + "()")
+        if par_vars:
+            p = "pair" if len(par_vars) == 1 else "pairs"
+            warnings.append(
+                f"WARNING: {len(par_vars)} {p} of variables are parallel"
+                f" (to tolerance {partol:.1E})"
+            )
+            next_steps.append(self.display_near_parallel_variables.__name__ + "()")
+
         return warnings, next_steps
 
     def _collect_numerical_cautions(self, jac=None, nlp=None):
@@ -1441,7 +1464,6 @@ class DiagnosticsToolbox:
             lines_list=next_steps,
             title="Suggested next steps:",
             line_if_empty=f"If you still have issues converging your model consider:\n"
-            f"{TAB*2}display_near_parallel_constraints()\n{TAB*2}display_near_parallel_variables()"
             f"\n{TAB*2}prepare_degeneracy_hunter()\n{TAB*2}prepare_svd_toolbox()",
             footer="=",
         )
@@ -3619,13 +3641,24 @@ def ipopt_solve_halt_on_error(model, options=None):
     )
 
 
-def check_parallel_jacobian(model, tolerance: float = 1e-4, direction: str = "row"):
+def check_parallel_jacobian(
+    model,
+    tolerance: float = 1e-4,
+    direction: str = "row",
+    jac=None,
+    nlp=None,
+):
     """
     Check for near-parallel rows or columns in the Jacobian.
 
     Near-parallel rows or columns indicate a potential degeneracy in the model,
     as this means that the associated constraints or variables are (near)
     duplicates of each other.
+
+    For efficiency, the ``jac`` and ``nlp`` arguments may be provided if they are
+    already available. If these are provided, the provided model is not used. If
+    either ``jac`` or ``nlp`` is not provided, a Jacobian and ``PyomoNLP`` are
+    computed using the model.
 
     This method is based on work published in:
 
@@ -3637,6 +3670,8 @@ def check_parallel_jacobian(model, tolerance: float = 1e-4, direction: str = "ro
         model: model to be analysed
         tolerance: tolerance to use to determine if constraints/variables are parallel
         direction: 'row' (default, constraints) or 'column' (variables)
+        jac: model Jacobian as a ``scipy.sparse.coo_matrix``, optional
+        nlp: ``PyomoNLP`` of model, optional
 
     Returns:
         list of 2-tuples containing parallel Pyomo components
@@ -3651,7 +3686,8 @@ def check_parallel_jacobian(model, tolerance: float = 1e-4, direction: str = "ro
             "Must be 'row' or 'column'."
         )
 
-    jac, nlp = get_jacobian(model, scaled=False)
+    if jac is None or nlp is None:
+        jac, nlp = get_jacobian(model, scaled=False)
 
     # Get vectors that we will check, and the Pyomo components
     # they correspond to.
