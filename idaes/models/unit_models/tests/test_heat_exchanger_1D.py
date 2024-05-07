@@ -24,7 +24,6 @@ from pyomo.environ import (
     units as pyunits,
 )
 from pyomo.common.config import ConfigBlock
-from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 import pyomo.common.unittest as unittest
 
 import idaes
@@ -55,7 +54,6 @@ from idaes.models.properties.examples.saponification_thermo import (
 
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 from idaes.core.util.model_statistics import (
-    degrees_of_freedom,
     number_variables,
     number_total_constraints,
     number_unused_variables,

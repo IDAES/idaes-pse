@@ -490,8 +490,6 @@ def test_PP_costing():
         pytest.approx(pyo.value(m.fs.costing.total_TPC), abs=1e-1) == 996662 / 1e3
     )  # 993753 / 1e3
 
-    return m
-
 
 @pytest.mark.component
 def test_PP_costing_CE_index_year():
@@ -967,8 +965,6 @@ def test_build_process_costs_emptymodel():
     assert hasattr(m.fs.costing, "total_TPC")
     assert type(m.fs.costing.total_TPC) is pyo.ScalarVar
     assert hasattr(m.fs.costing, "total_TPC_eq")
-    print(type(m.fs.costing.total_TPC_eq))
-    print(pyo.Constraint)
     assert type(m.fs.costing.total_TPC_eq) is ScalarConstraint
 
 
@@ -1000,8 +996,6 @@ def test_build_process_costs_emptymodel_nonearguments():
     assert hasattr(m.fs.costing, "total_TPC")
     assert type(m.fs.costing.total_TPC) is pyo.ScalarVar
     assert hasattr(m.fs.costing, "total_TPC_eq")
-    print(type(m.fs.costing.total_TPC_eq))
-    print(pyo.Constraint)
     assert type(m.fs.costing.total_TPC_eq) is ScalarConstraint
 
 
@@ -1942,8 +1936,6 @@ def test_power_plant_costing():
     QGESSCostingData.display_equipment_costs(m.fs.costing)
     QGESSCostingData.display_flowsheet_cost(m.fs.costing)
 
-    return m
-
 
 @pytest.mark.component
 def test_sCO2_costing():
@@ -2252,8 +2244,6 @@ def test_sCO2_costing():
     # test bound check utility
     QGESSCostingData.check_sCO2_costing_bounds(m.fs.costing)
 
-    return m
-
 
 @pytest.mark.component
 def test_ASU_costing():
@@ -2287,8 +2277,6 @@ def test_ASU_costing():
     assert results.solver.termination_condition == pyo.TerminationCondition.optimal
 
     assert pytest.approx(pyo.value(m.fs.ASU.costing.bare_erected_cost), abs=1) == 3.4725
-
-    return m
 
 
 @pytest.mark.component
