@@ -1494,5 +1494,3 @@ def test_ccs_units_costing():
             TPC += pyo.value(block.total_plant_cost[ac])
 
     assert pytest.approx(100.86, rel=1e-3) == TPC
-
-    return m
