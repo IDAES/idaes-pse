@@ -20,6 +20,7 @@ import pytest
 from pyomo.environ import (
     assert_optimal_termination,
     ConcreteModel,
+    TransformationFactory,
     value,
     units as pyunits,
 )
@@ -1144,7 +1145,10 @@ class TestBTX_lagrange_radau(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_numerical_issues(self, btx):
-        dt = DiagnosticsToolbox(btx)
+        btx_scaled = TransformationFactory("core.scale_model").create_using(
+            btx, rename=False
+        )
+        dt = DiagnosticsToolbox(btx_scaled)
         dt.assert_no_numerical_warnings()
 
 
@@ -1325,7 +1329,10 @@ class TestBTX_lagrange_legendre(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_numerical_issues(self, btx):
-        dt = DiagnosticsToolbox(btx)
+        btx_scaled = TransformationFactory("core.scale_model").create_using(
+            btx, rename=False
+        )
+        dt = DiagnosticsToolbox(btx_scaled)
         dt.assert_no_numerical_warnings()
 
 
