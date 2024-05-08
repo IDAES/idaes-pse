@@ -11,18 +11,20 @@
 # for full copyright and license information.
 #################################################################################
 import pytest
+
 import pyomo.environ as pyo
+from pyomo.common import unittest as pyo_unittest
+
 from idaes.apps.grid_integration.bidder import Bidder
 from idaes.apps.grid_integration.tests.util import (
-    TestingModel,
-    TestingForecaster,
+    ExampleModel,
+    ExampleForecaster,
     testing_model_data,
 )
-from pyomo.common import unittest as pyo_unittest
 from idaes.apps.grid_integration.coordinator import prescient_avail
 
 
-class TestMissingModel:
+class MissingModel:
     """
     A class for testing missing methods and attributes.
     """
@@ -62,14 +64,14 @@ real_time_horizon = horizon
 def test_model_object_missing_methods():
 
     solver = pyo.SolverFactory("cbc")
-    forecaster = TestingForecaster(prediction=30)
+    forecaster = ExampleForecaster(prediction=30)
 
     # By definition, the model object should contain these methods
     method_list = ["populate_model", "update_model"]
 
     # test if the correct error message is raised if a model misses necessary methods
     for m in method_list:
-        bidding_model_object = TestMissingModel(missing_method=m)
+        bidding_model_object = MissingModel(missing_method=m)
         with pytest.raises(AttributeError, match=r".*{}().*".format(m)):
             bidder_object = Bidder(
                 bidding_model_object=bidding_model_object,
@@ -85,14 +87,14 @@ def test_model_object_missing_methods():
 def test_model_object_missing_attr():
 
     solver = pyo.SolverFactory("cbc")
-    forecaster = TestingForecaster(prediction=30)
+    forecaster = ExampleForecaster(prediction=30)
 
     # By definition, the model object should contain these attributes
     attr_list = ["power_output", "total_cost", "model_data"]
 
     # test if the correct error message is raised if a model misses necessary attributes
     for attr in attr_list:
-        bidding_model_object = TestMissingModel(missing_attr=attr)
+        bidding_model_object = MissingModel(missing_attr=attr)
         with pytest.raises(AttributeError, match=r".*{}().*".format(attr)):
             bidder_object = Bidder(
                 bidding_model_object=bidding_model_object,
@@ -108,8 +110,8 @@ def test_model_object_missing_attr():
 def test_n_scenario_checker():
 
     solver = pyo.SolverFactory("cbc")
-    forecaster = TestingForecaster(prediction=30)
-    bidding_model_object = TestingModel(model_data=testing_model_data)
+    forecaster = ExampleForecaster(prediction=30)
+    bidding_model_object = ExampleModel(model_data=testing_model_data)
 
     # test if bidder raise error when negative number of scenario is given
     with pytest.raises(ValueError, match=r".*greater than zero.*"):
@@ -137,8 +139,8 @@ def test_n_scenario_checker():
 @pytest.mark.unit
 def test_solver_checker():
 
-    forecaster = TestingForecaster(prediction=30)
-    bidding_model_object = TestingModel(model_data=testing_model_data)
+    forecaster = ExampleForecaster(prediction=30)
+    bidding_model_object = ExampleModel(model_data=testing_model_data)
 
     # test if bidder raise error when invalid solver is provided
     invalid_solvers = [5, "cbc", "ipopt"]
@@ -158,10 +160,10 @@ def test_solver_checker():
 def bidder_object():
 
     solver = pyo.SolverFactory("cbc")
-    forecaster = TestingForecaster(prediction=30)
+    forecaster = ExampleForecaster(prediction=30)
 
     # create a bidder model
-    bidding_model_object = TestingModel(model_data=testing_model_data)
+    bidding_model_object = ExampleModel(model_data=testing_model_data)
     bidder_object = Bidder(
         bidding_model_object=bidding_model_object,
         day_ahead_horizon=day_ahead_horizon,
@@ -299,11 +301,11 @@ def test_compute_RT_bids(bidder_object):
 def bidder_object_pcost():
 
     solver = pyo.SolverFactory("cbc")
-    forecaster = TestingForecaster(prediction=30)
+    forecaster = ExampleForecaster(prediction=30)
 
     # create a bidder model
     testing_model_data.include_default_p_cost = False
-    bidding_model_object = TestingModel(model_data=testing_model_data)
+    bidding_model_object = ExampleModel(model_data=testing_model_data)
     bidder_object = Bidder(
         bidding_model_object=bidding_model_object,
         day_ahead_horizon=day_ahead_horizon,
