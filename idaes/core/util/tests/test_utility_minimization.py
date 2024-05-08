@@ -222,7 +222,6 @@ class TestStateBlock(object):
         # Check for optimal solution
         assert check_optimal_termination(results)
 
-    @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.unit

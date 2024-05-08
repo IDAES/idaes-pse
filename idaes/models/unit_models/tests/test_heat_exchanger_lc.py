@@ -16,6 +16,7 @@ Tests for 0D lumped capacitance heat exchanger model
 Author: Rusty Gentile, John Eslick, Andrew Lee
 """
 import pytest
+import re
 
 from pyomo.environ import (
     check_optimal_termination,
@@ -459,9 +460,11 @@ class TestHXLCGeneric(object):
 
         with pytest.raises(
             ConfigurationError,
-            match="invalid arguments for dynamic and has_holdup. "
-            "If dynamic = True, has_holdup must also be True "
-            "\(was False\)",
+            match=re.escape(
+                "invalid arguments for dynamic and has_holdup. "
+                "If dynamic = True, has_holdup must also be True "
+                "(was False)"
+            ),
         ):
             m.fs.unit = HeatExchangerLumpedCapacitance(
                 hot_side_name="shell",

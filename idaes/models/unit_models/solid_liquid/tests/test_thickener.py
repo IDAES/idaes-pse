@@ -16,6 +16,7 @@ Authors: Andrew Lee
 """
 from math import isnan
 import pytest
+import re
 
 from pyomo.environ import (
     check_optimal_termination,
@@ -538,7 +539,9 @@ class TestThickener0DBasic:
     def test_deprecate_initialize(self, model):
         with pytest.raises(
             NotImplementedError,
-            match="The Thickener0D unit model does not support the old initialization API. "
-            "Please use the new API \(InitializerObjects\) instead.",
+            match=re.escape(
+                "The Thickener0D unit model does not support the old initialization API. "
+                "Please use the new API (InitializerObjects) instead."
+            ),
         ):
             model.fs.unit.initialize()

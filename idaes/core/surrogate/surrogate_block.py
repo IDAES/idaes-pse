@@ -16,7 +16,7 @@
 
 import collections
 
-from pyomo.core.base.block import declare_custom_block, _BlockData
+from pyomo.core.base.block import declare_custom_block, BlockData
 from pyomo.environ import Var, Set
 
 import idaes.logger as idaeslog
@@ -26,7 +26,7 @@ _log = idaeslog.getLogger(__name__)
 
 
 @declare_custom_block(name="SurrogateBlock")
-class SurrogateBlockData(_BlockData):
+class SurrogateBlockData(BlockData):
     # pylint: disable=W0235
     def __init__(self, component):
         """

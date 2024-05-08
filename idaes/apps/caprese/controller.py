@@ -14,18 +14,12 @@
 """ Block-like object meant for controller models.
 """
 
-import idaes.logger as idaeslog
-from idaes.apps.caprese.util import initialize_by_element_in_range
 from idaes.apps.caprese.common.config import (
     ControlPenaltyType,
 )
 from idaes.apps.caprese.common.config import VariableCategory as VC
-from idaes.apps.caprese.categorize import (
-    categorize_dae_variables,
-    CATEGORY_TYPE_MAP,
-)
+
 from idaes.apps.caprese.nmpc_var import (
-    NmpcVar,
     DiffVar,
     AlgVar,
     InputVar,
@@ -35,10 +29,8 @@ from idaes.apps.caprese.nmpc_var import (
 )
 from idaes.apps.caprese.dynamic_block import (
     _DynamicBlockData,
-    IndexedDynamicBlock,
     DynamicBlock,
 )
-from idaes.core.util.model_statistics import degrees_of_freedom
 
 from pyomo.environ import (
     Objective,
@@ -46,11 +38,8 @@ from pyomo.environ import (
     Constraint,
     Block,
 )
-from pyomo.core.base.block import _BlockData
 from pyomo.common.collections import ComponentMap
-from pyomo.core.base.range import remainder
 from pyomo.dae.set_utils import deactivate_model_at
-from pyomo.dae.flatten import flatten_dae_components
 from pyomo.core.base.indexed_component import UnindexedComponent_set
 
 
