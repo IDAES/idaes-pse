@@ -254,7 +254,7 @@ class KerasSurrogate(SurrogateBase):
         return y
 
     def save_to_folder(
-        self, keras_folder_name, keras_model_name="idaes_keras_model.keras"
+        self, keras_folder_name, keras_model_name="idaes_keras_model"
     ):
         """
         Save the surrogate object to disk by providing the name of the
@@ -265,7 +265,7 @@ class KerasSurrogate(SurrogateBase):
               The name of the folder to contain the Keras model and additional
               IDAES metadata
         """
-        self._keras_model.save(os.path.join(keras_folder_name, keras_model_name))
+        self._keras_model.save(os.path.join(keras_folder_name, keras_model_name + ".keras"))
         info = dict()
         info["input_scaler"] = None
         if self._input_scaler is not None:
@@ -284,7 +284,7 @@ class KerasSurrogate(SurrogateBase):
 
     @classmethod
     def load_from_folder(
-        cls, keras_folder_name, keras_model_name="idaes_keras_model.keras"
+        cls, keras_folder_name, keras_model_name="idaes_keras_model"
     ):
         """
         Load the surrogate object from disk by providing the name of the
@@ -299,7 +299,7 @@ class KerasSurrogate(SurrogateBase):
         """
 
         keras_model = keras.models.load_model(
-            os.path.join(keras_folder_name, keras_model_name)
+            os.path.join(keras_folder_name, keras_model_name + ".keras")
         )
 
         with open(os.path.join(keras_folder_name, "idaes_info.json")) as fd:
