@@ -253,7 +253,9 @@ class KerasSurrogate(SurrogateBase):
             y = self._output_scaler.unscale(y)
         return y
 
-    def save_to_folder(self, keras_folder_name):
+    def save_to_folder(
+        self, keras_folder_name, keras_model_name="idaes_keras_model.keras"
+    ):
         """
         Save the surrogate object to disk by providing the name of the
         folder to contain the keras model and additional IDAES metadata
@@ -263,7 +265,7 @@ class KerasSurrogate(SurrogateBase):
               The name of the folder to contain the Keras model and additional
               IDAES metadata
         """
-        self._keras_model.save(os.path.join(keras_folder_name, "idaes_keras_model.keras"))
+        self._keras_model.save(os.path.join(keras_folder_name, keras_model_name))
         info = dict()
         info["input_scaler"] = None
         if self._input_scaler is not None:
@@ -281,7 +283,9 @@ class KerasSurrogate(SurrogateBase):
             json.dump(info, fd)
 
     @classmethod
-    def load_from_folder(cls, keras_folder_name):
+    def load_from_folder(
+        cls, keras_folder_name, keras_model_name="idaes_keras_model.keras"
+    ):
         """
         Load the surrogate object from disk by providing the name of the
         folder holding the keras model
@@ -294,7 +298,9 @@ class KerasSurrogate(SurrogateBase):
         Returns: an instance of KerasSurrogate
         """
 
-        keras_model = keras.models.load_model(os.path.join(keras_folder_name, "idaes_keras_model.keras"))
+        keras_model = keras.models.load_model(
+            os.path.join(keras_folder_name, keras_model_name)
+        )
 
         with open(os.path.join(keras_folder_name, "idaes_info.json")) as fd:
             info = json.load(fd)
@@ -328,7 +334,7 @@ def save_keras_json_hd5(nn, path, name):
 def load_keras_json_hd5(path, name):
     with open(os.path.join(path, "{}.json".format(name)), "r") as json_file:
         json_model = json_file.read()
-        nn = keras.models.model_from_json(json_model)
+        # nn = keras.models.model_from_json(json_model)
     nn = keras.models.load_model(os.path.join(path, "{}.keras".format(name)))
     nn.load_weights(os.path.join(path, "{}.weights.h5".format(name)))
     return nn
