@@ -21,17 +21,17 @@ from pyomo.environ import (
 )
 from functools import reduce
 from idaes.core.base.process_base import declare_process_block_class
-from idaes.models.unit_models import SkeletonUnitModelData
+from idaes.core.base.process_base import ProcessBlockData
 from pyomo.common.config import ConfigValue, In
 
 
 @declare_process_block_class("DesignModel")
-class DesignModelData(SkeletonUnitModelData):
+class DesignModelData(ProcessBlockData):
     """
     Class for containing design model ...
     """
 
-    CONFIG = SkeletonUnitModelData.CONFIG()
+    CONFIG = ProcessBlockData.CONFIG()
     CONFIG.declare(
         "model_func",
         ConfigValue(
@@ -54,12 +54,12 @@ class DesignModelData(SkeletonUnitModelData):
 
 
 @declare_process_block_class("OperationModel")
-class OperationModelData(SkeletonUnitModelData):
+class OperationModelData(ProcessBlockData):
     """
     Class for containing design model ...
     """
 
-    CONFIG = SkeletonUnitModelData.CONFIG()
+    CONFIG = ProcessBlockData.CONFIG()
     CONFIG.declare(
         "model_func",
         ConfigValue(
