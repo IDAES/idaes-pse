@@ -40,6 +40,17 @@ from idaes.apps.grid_integration.multiperiod.price_taker_model import PriceTaker
 
 import matplotlib.pyplot as plt
 
+have_skl = True
+have_kn = True
+try:
+    from sklearn.cluster import KMeans
+except:
+    have_skl = False
+try:
+    from kneed import KneeLocator
+except:
+    have_kn = False
+
 
 @pytest.fixture
 def excel_data():
@@ -72,6 +83,10 @@ def test_daily_data_size(excel_data):
     assert len(daily_data) == m.horizon_length
 
 
+@pytest.mark.skipif(
+    have_skl * have_kn < 1,
+    reason="optional packages 'scikit-learn' and 'kneed' not installed",
+)
 @pytest.mark.unit
 def test_determine_optimal_num_clusters(excel_data):
     # Added a range for optimal cluster values based on how the
@@ -83,23 +98,17 @@ def test_determine_optimal_num_clusters(excel_data):
     m = PriceTakerModel()
 
     daily_data = m.generate_daily_data(excel_data["BaseCaseTax"])
-    n_clusters, inertia_values = m.get_optimal_n_clusters(daily_data)
+    n_clusters, inertia_values = m.get_optimal_n_clusters(daily_data, plot=True)
+    test_fig = plt.gcf()
+    plt.close("all")
 
     assert 9 <= n_clusters <= 15
 
 
-@pytest.mark.unit
-def test_elbow_plot(excel_data):
-    m = PriceTakerModel()
-
-    daily_data = m.generate_daily_data(excel_data["BaseCaseTax"])
-    m.get_optimal_n_clusters(daily_data, plot=True)
-    test_fig = plt.gcf()
-    plt.close("all")
-
-    assert test_fig is not None
-
-
+@pytest.mark.skipif(
+    not (have_skl and have_kn),
+    reason="optional packages 'scikit-learn' and 'kneed' not installed",
+)
 @pytest.mark.unit
 def test_cluster_lmp_data(excel_data):
     # This function gets within both if statement expression in the
@@ -291,10 +300,17 @@ def test_optimal_clusters_logger_messages(excel_data):
             daily_data, kmin=kmin[2], kmax=kmax[2]
         )
 
+
+@pytest.mark.skipif(
+    have_skl and have_kn,
+    reason="optional packages 'scikit-learn' and 'kneed' are installed",
+)
+@pytest.mark.unit
+def test_failed_imports(excel_data):
     with pytest.raises(
-        ValueError,
+        ImportError,
         match=(
-            f"Could not find elbow point for given kmin, kmax. Consider increasing the range of kmin, kmax."
+            f"Optimal cluster feature requires optional imports 'scikit-learn' and 'kneed'."
         ),
     ):
         m = PriceTakerModel()
