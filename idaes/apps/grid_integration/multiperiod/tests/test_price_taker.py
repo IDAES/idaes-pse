@@ -129,8 +129,12 @@ def test_cluster_lmp_data(excel_data):
     assert len(lmp_data) == n_clusters
 
 
+@pytest.mark.skipif(
+    not (have_skl and have_kn),
+    reason="optional packages 'scikit-learn' and 'kneed' not installed",
+)
 @pytest.mark.unit
-def test_init_logger_messages(excel_data, caplog):
+def test_init_logger_messages_clusters(excel_data, caplog):
     with caplog.at_level(idaeslog.WARNING):
         m = PriceTakerModel()
 
@@ -139,6 +143,8 @@ def test_init_logger_messages(excel_data, caplog):
 
         assert f"kmax was not set - using a default value of 30." in caplog.text
 
+@pytest.mark.unit
+def test_init_logger_messages(excel_data, caplog):
     # Testing horizon_length input value errors
     value = 0
     with pytest.raises(
@@ -200,6 +206,13 @@ def test_min_up_down_time_logger_messages(excel_data):
         m = PriceTakerModel()
         m.add_startup_shutdown(des, oper, build_bin_var, up_time[0], down_time[1])
 
+
+@pytest.mark.skipif(
+    not (have_skl and have_kn),
+    reason="optional package 'scikit-learn' not installed",
+)
+@pytest.mark.unit
+def test_init_logger_messages_clusters_min_up_down_time(excel_data, caplog):
     # Test Not Implemented Error (Rep. Days used for su/sd code)
     with pytest.raises(
         NotImplementedError,
