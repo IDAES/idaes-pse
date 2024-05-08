@@ -24,8 +24,6 @@
 """
 import pandas as pd
 import numpy as np
-from functools import reduce
-from operator import attrgetter
 import os.path
 
 from importlib import resources
@@ -49,8 +47,16 @@ from idaes.apps.grid_integration.multiperiod.design_and_operation_models import 
     OperationModelData,
 )
 
-from sklearn.cluster import KMeans
-from kneed import KneeLocator
+have_skl = True
+have_kn = True
+try:
+    from sklearn.cluster import KMeans
+except:
+    have_skl = False
+try:
+    from kneed import KneeLocator
+except:
+    have_kn = False
 
 import matplotlib.pyplot as plt
 
@@ -166,6 +172,10 @@ class PriceTakerModel(ConcreteModel):
 
         np.random.seed(self._seed)
 
+        if not (have_skl and have_kn):
+            raise ImportError(
+                f"Optimal cluster feature requires optional imports 'scikit-learn' and 'kneed'."
+            )
         # Compute the inertia (SSE) for k clusters
         for k in k_values:
             kmeans = KMeans(n_clusters=k).fit(daily_data.transpose())
@@ -182,7 +192,7 @@ class PriceTakerModel(ConcreteModel):
                 f"Could not find elbow point for given kmin, kmax. Consider increasing the range of kmin, kmax."
             )
 
-        print(f"Optimal # of clusters is: {n_clusters}")
+        _logger.info(f"Optimal # of clusters is: {n_clusters}")
 
         if int(n_clusters) + 2 >= kmax:
             _logger.warning(
@@ -236,6 +246,10 @@ class PriceTakerModel(ConcreteModel):
         daily_data = self.generate_daily_data(raw_data)
 
         # KMeans clustering with the optimal number of clusters
+        if not have_skl:
+            raise ImportError(
+                f"Clustering feature requires optional import 'scikit-learn'."
+            )
         kmeans = KMeans(n_clusters=n_clusters).fit(daily_data.transpose())
         centroids = kmeans.cluster_centers_
         labels = kmeans.labels_
@@ -488,6 +502,13 @@ class PriceTakerModel(ConcreteModel):
                 f"constraint_type must be either linear, or nonliner, but {constraint_type} is not."
             )
 
+        # Logger info for where constraint is located on the model
+        _logger.info(
+            f"Created capacity limit constraints for variable ({commodity_var}) at ("
+            + str(blk)
+            + ")"
+        )
+
     def add_ramping_constraints(
         self,
         op_blk,
@@ -646,6 +667,13 @@ class PriceTakerModel(ConcreteModel):
                     + ramp_down_rate * act_op_mode_rate[self.mp_model.set_period.at(t)]
                 )
 
+        # Logger info for where constraint is located on the model
+        _logger.info(
+            f"Created ramping constraints for variable ({capacity_var}) at ("
+            + str(blk)
+            + ")"
+        )
+
     def add_startup_shutdown(
         self,
         op_blk,
@@ -765,6 +793,13 @@ class PriceTakerModel(ConcreteModel):
                         <= 1 - op_mode[self.mp_model.set_period.at(t)]
                     )
 
+        # Logger info for where constraint is located on the model
+        _logger.info(
+            f"Created startup/shutdown constraints for operating block ({op_blk}) at ("
+            + str(blk)
+            + ")"
+        )
+
     def build_hourly_cashflows(self, revenue_streams=None, costs=None):
         """
         Adds an expression for the net cash inflow for each operational
@@ -855,6 +890,11 @@ class PriceTakerModel(ConcreteModel):
             _logger.warning(
                 f"build_hourly_cashflows was called but no operation blocks were found so hourly cashflow of the model was set to 0. If you have hourly costs, please manually assign them."
             )
+
+        # Logger info for where constraint is located on the model
+        _logger.info(
+            f"Created hourly cashflow expressions at (mp_model.period[i].net_cash_inflow)"
+        )
 
     def build_cashflows(
         self,
