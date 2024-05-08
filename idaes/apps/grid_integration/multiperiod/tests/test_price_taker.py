@@ -143,6 +143,7 @@ def test_init_logger_messages_clusters(excel_data, caplog):
 
         assert f"kmax was not set - using a default value of 30." in caplog.text
 
+
 @pytest.mark.unit
 def test_init_logger_messages(excel_data, caplog):
     # Testing horizon_length input value errors
