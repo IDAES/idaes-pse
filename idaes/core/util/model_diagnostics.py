@@ -54,9 +54,9 @@ from pyomo.core.expr.numeric_expr import (
     NPV_UnaryFunctionExpression,
     NumericExpression,
 )
-from pyomo.core.base.block import _BlockData
-from pyomo.core.base.var import _GeneralVarData, _VarData
-from pyomo.core.base.constraint import _ConstraintData
+from pyomo.core.base.block import BlockData
+from pyomo.core.base.var import VarData
+from pyomo.core.base.constraint import ConstraintData
 from pyomo.repn.standard_repn import (  # pylint: disable=no-name-in-module
     generate_standard_repn,
 )
@@ -427,10 +427,10 @@ class DiagnosticsToolbox:
 
     """
 
-    def __init__(self, model: _BlockData, **kwargs):
+    def __init__(self, model: BlockData, **kwargs):
         # TODO: In future may want to generalise this to accept indexed blocks
         # However, for now some of the tools do not support indexed blocks
-        if not isinstance(model, _BlockData):
+        if not isinstance(model, BlockData):
             raise TypeError(
                 "model argument must be an instance of a Pyomo BlockData object "
                 "(either a scalar Block or an element of an indexed Block)."
@@ -1563,10 +1563,10 @@ class SVDToolbox:
 
     """
 
-    def __init__(self, model: _BlockData, **kwargs):
+    def __init__(self, model: BlockData, **kwargs):
         # TODO: In future may want to generalise this to accept indexed blocks
         # However, for now some of the tools do not support indexed blocks
-        if not isinstance(model, _BlockData):
+        if not isinstance(model, BlockData):
             raise TypeError(
                 "model argument must be an instance of a Pyomo BlockData object "
                 "(either a scalar Block or an element of an indexed Block)."
@@ -1748,9 +1748,9 @@ class SVDToolbox:
             stream = sys.stdout
 
         # Validate variable argument
-        if not isinstance(variable, _VarData):
+        if not isinstance(variable, VarData):
             raise TypeError(
-                f"variable argument must be an instance of a Pyomo _VarData "
+                f"variable argument must be an instance of a Pyomo VarData "
                 f"object (got {variable})."
             )
 
@@ -1795,9 +1795,9 @@ class SVDToolbox:
             stream = sys.stdout
 
         # Validate variable argument
-        if not isinstance(constraint, _ConstraintData):
+        if not isinstance(constraint, ConstraintData):
             raise TypeError(
-                f"constraint argument must be an instance of a Pyomo _ConstraintData "
+                f"constraint argument must be an instance of a Pyomo ConstraintData "
                 f"object (got {constraint})."
             )
 
@@ -1857,7 +1857,7 @@ def _check_eval_error_pow(
 
     integer_exponent = False
     # if the exponent is an integer, there should not be any evaluation errors
-    if isinstance(arg2, _GeneralVarData) and arg2.domain in integer_domains:
+    if isinstance(arg2, VarData) and arg2.domain in integer_domains:
         # The exponent is an integer variable
         # check if the base can be zero
         integer_exponent = True
@@ -2008,7 +2008,7 @@ class DegeneracyHunter2:
     def __init__(self, model, **kwargs):
         # TODO: In future may want to generalise this to accept indexed blocks
         # However, for now some of the tools do not support indexed blocks
-        if not isinstance(model, _BlockData):
+        if not isinstance(model, BlockData):
             raise TypeError(
                 "model argument must be an instance of a Pyomo BlockData object "
                 "(either a scalar Block or an element of an indexed Block)."
@@ -3108,7 +3108,7 @@ class IpoptConvergenceAnalysis:
     def __init__(self, model, **kwargs):
         # TODO: In future may want to generalise this to accept indexed blocks
         # However, for now some of the tools do not support indexed blocks
-        if not isinstance(model, _BlockData):
+        if not isinstance(model, BlockData):
             raise TypeError(
                 "model argument must be an instance of a Pyomo BlockData object "
                 "(either a scalar Block or an element of an indexed Block)."
@@ -3557,7 +3557,7 @@ def set_bounds_from_valid_range(component, descend_into=True):
     if component.is_indexed():
         for k in component:
             set_bounds_from_valid_range(component[k])
-    elif isinstance(component, _BlockData):
+    elif isinstance(component, BlockData):
         for i in component.component_data_objects(
             ctype=[Var, Param], descend_into=descend_into
         ):
@@ -3598,7 +3598,7 @@ def list_components_with_values_outside_valid_range(component, descend_into=True
             comp_list.extend(
                 list_components_with_values_outside_valid_range(component[k])
             )
-    elif isinstance(component, _BlockData):
+    elif isinstance(component, BlockData):
         for i in component.component_data_objects(
             ctype=[Var, Param], descend_into=descend_into
         ):
