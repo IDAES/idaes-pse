@@ -332,9 +332,6 @@ def save_keras_json_hd5(nn, path, name):
 
 
 def load_keras_json_hd5(path, name):
-    with open(os.path.join(path, "{}.json".format(name)), "r") as json_file:
-        json_model = json_file.read()
-        # nn = keras.models.model_from_json(json_model)
     nn = keras.models.load_model(os.path.join(path, "{}.keras".format(name)))
     nn.load_weights(os.path.join(path, "{}.weights.h5".format(name)))
     return nn
