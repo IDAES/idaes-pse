@@ -36,9 +36,117 @@ from idaes.models.properties.modular_properties.phase_equil.smooth_VLE_2 import 
     SmoothVLE2,
     _calculate_temperature_slacks,
     _calculate_ceos_derivative_slacks,
+    EPS_INIT,
 )
+from idaes.models.properties.modular_properties.eos.ideal import Ideal
 from idaes.models.properties.modular_properties.eos.ceos import Cubic, CubicType
 from idaes.models.properties.modular_properties.phase_equil.forms import fugacity
+from idaes.core.util.exceptions import ConfigurationError
+
+
+@pytest.mark.unit
+def test_different_cubics():
+    m = ConcreteModel()
+
+    m.params = GenericParameterBlock(
+        components={
+            "H2O": {
+                "parameter_data": {
+                    "pressure_crit": (220.6e5, pyunits.Pa),
+                    "temperature_crit": (647, pyunits.K),
+                    "omega": 0.344,
+                },
+                "phase_equilibrium_form": {("Vap", "Liq"): fugacity},
+            }
+        },
+        phases={
+            "Liq": {
+                "equation_of_state": Cubic,
+                "equation_of_state_options": {"type": CubicType.PR},
+            },
+            "Vap": {
+                "equation_of_state": Cubic,
+                "equation_of_state_options": {"type": CubicType.SRK},
+            },
+        },
+        state_definition=FTPx,
+        pressure_ref=100000.0,
+        temperature_ref=300,
+        base_units={
+            "time": pyunits.s,
+            "length": pyunits.m,
+            "mass": pyunits.kg,
+            "amount": pyunits.mol,
+            "temperature": pyunits.K,
+        },
+        phases_in_equilibrium=[("Vap", "Liq")],
+        phase_equilibrium_state={("Vap", "Liq"): SmoothVLE2},
+        parameter_data={
+            "PR_kappa": {
+                ("H2O", "H2O"): 0.000,
+            },
+            "SRK_kappa": {
+                ("H2O", "H2O"): 0.000,
+            },
+        },
+    )
+
+    with pytest.raises(
+        ConfigurationError,
+        match="params - SmoothVLE2 formulation requires that both phases use the same "
+        "type of cubic equation of state.",
+    ):
+        m.props = m.params.state_block_class([1], parameters=m.params)
+
+
+@pytest.mark.unit
+def test_non_cubic():
+    m = ConcreteModel()
+
+    m.params = GenericParameterBlock(
+        components={
+            "H2O": {
+                "parameter_data": {
+                    "pressure_crit": (220.6e5, pyunits.Pa),
+                    "temperature_crit": (647, pyunits.K),
+                    "omega": 0.344,
+                },
+                "phase_equilibrium_form": {("Vap", "Liq"): fugacity},
+            }
+        },
+        phases={
+            "Liq": {
+                "equation_of_state": Cubic,
+                "equation_of_state_options": {"type": CubicType.PR},
+            },
+            "Vap": {
+                "equation_of_state": Ideal,
+            },
+        },
+        state_definition=FTPx,
+        pressure_ref=100000.0,
+        temperature_ref=300,
+        base_units={
+            "time": pyunits.s,
+            "length": pyunits.m,
+            "mass": pyunits.kg,
+            "amount": pyunits.mol,
+            "temperature": pyunits.K,
+        },
+        phases_in_equilibrium=[("Vap", "Liq")],
+        phase_equilibrium_state={("Vap", "Liq"): SmoothVLE2},
+        parameter_data={
+            "PR_kappa": {
+                ("H2O", "H2O"): 0.000,
+            }
+        },
+    )
+
+    with pytest.raises(
+        ConfigurationError,
+        match="params - SmoothVLE2 formulation only supports cubic equations of state.",
+    ):
+        m.props = m.params.state_block_class([1], parameters=m.params)
 
 
 @pytest.fixture()
@@ -153,21 +261,21 @@ def test_calculate_temperature_slacks(frame):
     _calculate_temperature_slacks(frame.props[1], ("Vap", "Liq"), "Liq", "Vap")
 
     assert value(s["Vap"]) == pytest.approx(100, rel=1e-8)
-    assert value(s["Liq"]) == pytest.approx(0, abs=1e-8)
+    assert value(s["Liq"]) == pytest.approx(EPS_INIT, abs=1e-8)
 
     # Teq < T
     frame.props[1]._teq[("Vap", "Liq")].set_value(200)
     _calculate_temperature_slacks(frame.props[1], ("Vap", "Liq"), "Liq", "Vap")
 
     assert value(s["Liq"]) == pytest.approx(100, rel=1e-8)
-    assert value(s["Vap"]) == pytest.approx(0, abs=1e-8)
+    assert value(s["Vap"]) == pytest.approx(EPS_INIT, abs=1e-8)
 
     # Teq == T
     frame.props[1]._teq[("Vap", "Liq")].set_value(300)
     _calculate_temperature_slacks(frame.props[1], ("Vap", "Liq"), "Liq", "Vap")
 
-    assert value(s["Liq"]) == pytest.approx(0, abs=1e-8)
-    assert value(s["Vap"]) == pytest.approx(0, abs=1e-8)
+    assert value(s["Liq"]) == pytest.approx(EPS_INIT, abs=1e-8)
+    assert value(s["Vap"]) == pytest.approx(EPS_INIT, abs=1e-8)
 
 
 @pytest.mark.unit
@@ -192,11 +300,11 @@ def test_calculate_ceos_derivative_slacks(frame):
     der_l = value(6 * Z["Liq"] + 2 * -(1 + B - 2 * B))
     der_v = value(6 * Z["Vap"] + 2 * -(1 + B - 2 * B))
 
-    assert value(gp["Liq"]) == pytest.approx(0, abs=1e-8)
+    assert value(gp["Liq"]) == pytest.approx(EPS_INIT, abs=1e-8)
     assert value(gn["Liq"]) == pytest.approx(-der_l, rel=1e-8)
 
     assert value(gp["Vap"]) == pytest.approx(der_v, rel=1e-8)
-    assert value(gn["Vap"]) == pytest.approx(0, abs=1e-8)
+    assert value(gn["Vap"]) == pytest.approx(EPS_INIT, abs=1e-8)
 
     # Supercritical conditions, vapor derivative +ve, liquid +ve
     frame.props[1].pressure.set_value(250e5)
@@ -208,11 +316,11 @@ def test_calculate_ceos_derivative_slacks(frame):
     B = value(b * frame.props[1].pressure / R / frame.props[1].temperature)
     der_v = value(6 * Z["Vap"] + 2 * -(1 + B - 2 * B))
 
-    assert value(gp["Liq"]) == pytest.approx(0, abs=1e-8)
-    assert value(gn["Liq"]) == pytest.approx(0, abs=1e-8)
+    assert value(gp["Liq"]) == pytest.approx(EPS_INIT, abs=1e-8)
+    assert value(gn["Liq"]) == pytest.approx(EPS_INIT, abs=1e-8)
 
     assert value(gp["Vap"]) == pytest.approx(der_v, rel=1e-8)
-    assert value(gn["Vap"]) == pytest.approx(0, abs=1e-8)
+    assert value(gn["Vap"]) == pytest.approx(EPS_INIT, abs=1e-8)
 
     # Supercritical conditions, vapor derivative -ve, liquid -ve
     frame.props[1].pressure.set_value(250e5)
@@ -224,8 +332,8 @@ def test_calculate_ceos_derivative_slacks(frame):
     B = value(b * frame.props[1].pressure / R / frame.props[1].temperature)
     der_l = value(6 * Z["Liq"] + 2 * -(1 + B - 2 * B))
 
-    assert value(gp["Liq"]) == pytest.approx(0, abs=1e-8)
+    assert value(gp["Liq"]) == pytest.approx(EPS_INIT, abs=1e-8)
     assert value(gn["Liq"]) == pytest.approx(-der_l, rel=1e-8)
 
-    assert value(gp["Vap"]) == pytest.approx(0, abs=1e-8)
-    assert value(gn["Vap"]) == pytest.approx(0, abs=1e-8)
+    assert value(gp["Vap"]) == pytest.approx(EPS_INIT, abs=1e-8)
+    assert value(gn["Vap"]) == pytest.approx(EPS_INIT, abs=1e-8)

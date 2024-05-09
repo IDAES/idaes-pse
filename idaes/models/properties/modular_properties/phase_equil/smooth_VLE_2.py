@@ -71,13 +71,29 @@ class SmoothVLE2:
 
         if l_phase is None or v_phase is None:
             raise ConfigurationError(
-                f"{b.params.name} Generic Property Package phase pair {phase_pair[0]}-{phase_pair[1]} "
+                f"{b.params.name} - Generic Property Package phase pair {phase_pair[0]}-{phase_pair[1]} "
                 "was set to use Smooth VLE formulation, however this is not a vapor-liquid pair."
             )
 
-        lobj = b.params.get_phase(l_phase)
-        ctype = lobj._cubic_type
-        cname = lobj.config.equation_of_state_options["type"].name
+        try:
+            lobj = b.params.get_phase(l_phase)
+            ctype = lobj._cubic_type
+            cname = lobj.config.equation_of_state_options["type"].name
+            vobj = b.params.get_phase(v_phase)
+
+            if (
+                ctype != vobj._cubic_type
+                or lobj.config.equation_of_state_options
+                != vobj.config.equation_of_state_options
+            ):
+                raise ConfigurationError(
+                    f"{b.params.name} - SmoothVLE2 formulation requires that both phases use the same "
+                    "type of cubic equation of state."
+                )
+        except AttributeError:
+            raise ConfigurationError(
+                f"{b.params.name} - SmoothVLE2 formulation only supports cubic equations of state."
+            )
 
         # Definition of equilibrium temperature for smooth VLE
         uom = b.params.get_metadata().default_units
@@ -213,7 +229,7 @@ class SmoothVLE2:
 
         if v_only_comps is None:
             if blk.is_property_constructed("temperature_bubble"):
-                Tbub = value(blk.temeprature_bubble[pp])
+                Tbub = value(blk.temperature_bubble[pp])
             else:
                 Tbub = estimate_Tbub(
                     blk, T_units, raoult_comps, henry_comps, liquid_phase
