@@ -1650,14 +1650,14 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 ]
         if hasattr(self, "equilibrium_reaction_extent"):
             for r in self.config.reaction_package.equilibrium_reaction_idx:
-                var_dict[
-                    f"Equilibrium Reaction Extent [{r}]"
-                ] = self.equilibrium_reaction_extent[time_point, r]
+                var_dict[f"Equilibrium Reaction Extent [{r}]"] = (
+                    self.equilibrium_reaction_extent[time_point, r]
+                )
         if hasattr(self, "phase_equilibrium_generation"):
             for r in self.config.property_package.phase_equilibrium_idx:
-                var_dict[
-                    f"Phase Equilibrium Generation [{r}]"
-                ] = self.phase_equilibrium_generation[time_point, r]
+                var_dict[f"Phase Equilibrium Generation [{r}]"] = (
+                    self.phase_equilibrium_generation[time_point, r]
+                )
 
         e_vars = {
             "element_holdup": "Elemental Holdup",

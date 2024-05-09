@@ -485,7 +485,6 @@ class PolynomialRegression:
         self.fit_status = None
 
     def training_test_data_creation(self, additional_features=None):
-
         """
 
         The training_test_data_creation splits data into training and test data sets.
@@ -601,9 +600,7 @@ class PolynomialRegression:
         x_train_data = x_input_train_data
         # Generate the constant and pure power terms
         for i in range(2, polynomial_order + 1):
-            x_train_data = np.concatenate(
-                (x_train_data, x_input_train_data**i), axis=1
-            )
+            x_train_data = np.concatenate((x_train_data, x_input_train_data**i), axis=1)
 
         if multinomials == 1:
             # Next, generate first order multinomials
@@ -1295,7 +1292,7 @@ class PolynomialRegression:
                     # PYLINT-WHY: pylint considers self.no_adaptive_samples to be None here
                     # pylint: disable=invalid-unary-operand-type
                     -self.no_adaptive_samples :,
-                    :
+                    :,
                     # pylint: enable=invalid-unary-operand-type
                 ]
                 self.regression_data = np.concatenate(
@@ -1856,23 +1853,9 @@ class PolynomialRegression:
         # Evaluate confidence intervals, Tabulate and print results
         c_data = np.zeros((self.optimal_weights_array.shape[0], 4))
         c_data[:, 0] = self.optimal_weights_array[:, 0]
-        c_data[:, 1] = ss_reg_params[
-            :,
-        ]
-        c_data[:, 2] = (
-            self.optimal_weights_array[:, 0]
-            - t_dist
-            * ss_reg_params[
-                :,
-            ]
-        )
-        c_data[:, 3] = (
-            self.optimal_weights_array[:, 0]
-            + t_dist
-            * ss_reg_params[
-                :,
-            ]
-        )
+        c_data[:, 1] = ss_reg_params[:,]
+        c_data[:, 2] = self.optimal_weights_array[:, 0] - t_dist * ss_reg_params[:,]
+        c_data[:, 3] = self.optimal_weights_array[:, 0] + t_dist * ss_reg_params[:,]
 
         headers = [
             "Regression coeff.",

@@ -1018,7 +1018,7 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
             return b.flowrate_daf_flyash[t] + b.flowrate_ash[t]
 
     def _make_momentum_balance(self):
-        # flue gas pressure is secondary air presure
+        # flue gas pressure is secondary air pressure
         # - pressure drop through windbox
         # and burner secondary air register
         @self.Constraint(self.flowsheet().time, doc="Flue gas pressure in Pascals")

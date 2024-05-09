@@ -126,8 +126,7 @@ class TestBaseForms:
         expr = cforms._nt_sum(model.params, "pressure_sat", 42)
 
         assert str(expr) == str(
-            model.params.pressure_sat_coeff_n1
-            * 42**model.params.pressure_sat_coeff_t1
+            model.params.pressure_sat_coeff_n1 * 42**model.params.pressure_sat_coeff_t1
             + model.params.pressure_sat_coeff_n2
             * 42**model.params.pressure_sat_coeff_t2
             + model.params.pressure_sat_coeff_n3

@@ -98,9 +98,7 @@ def viscosity_rule(m):
     sigma = 5.017e-1
     NA = 6.0221408e23
     Ts = T / eok
-    eta0 = (a[0] + a[1] * T + a[2] * T**2 + a[3] * T**3) / (
-        a[4] + a[5] * T + T**2
-    )
+    eta0 = (a[0] + a[1] * T + a[2] * T**2 + a[3] * T**3) / (a[4] + a[5] * T + T**2)
     Bs = (
         sum(b[i] * Ts ** (-0.25 * i) for i in range(0, 7))
         + b[7] * Ts**-2.5

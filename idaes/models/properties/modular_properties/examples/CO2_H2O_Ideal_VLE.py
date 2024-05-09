@@ -94,31 +94,19 @@ configuration = {
                     ),  # [1] temperature range 500 K- 1700 K
                     "B": (
                         6.832514,
-                        pyunits.J
-                        * pyunits.mol**-1
-                        * pyunits.K**-1
-                        * pyunits.kiloK**-1,
+                        pyunits.J * pyunits.mol**-1 * pyunits.K**-1 * pyunits.kiloK**-1,
                     ),
                     "C": (
                         6.793435,
-                        pyunits.J
-                        * pyunits.mol**-1
-                        * pyunits.K**-1
-                        * pyunits.kiloK**-2,
+                        pyunits.J * pyunits.mol**-1 * pyunits.K**-1 * pyunits.kiloK**-2,
                     ),
                     "D": (
                         -2.534480,
-                        pyunits.J
-                        * pyunits.mol**-1
-                        * pyunits.K**-1
-                        * pyunits.kiloK**-3,
+                        pyunits.J * pyunits.mol**-1 * pyunits.K**-1 * pyunits.kiloK**-3,
                     ),
                     "E": (
                         0.082139,
-                        pyunits.J
-                        * pyunits.mol**-1
-                        * pyunits.K**-1
-                        * pyunits.kiloK**2,
+                        pyunits.J * pyunits.mol**-1 * pyunits.K**-1 * pyunits.kiloK**2,
                     ),
                     "F": (-250.8810, pyunits.kJ / pyunits.mol),
                     "G": (223.3967, pyunits.J / pyunits.mol / pyunits.K),
@@ -158,31 +146,19 @@ configuration = {
                     "A": (24.99735, pyunits.J / pyunits.mol / pyunits.K),
                     "B": (
                         55.18696,
-                        pyunits.J
-                        * pyunits.mol**-1
-                        * pyunits.K**-1
-                        * pyunits.kiloK**-1,
+                        pyunits.J * pyunits.mol**-1 * pyunits.K**-1 * pyunits.kiloK**-1,
                     ),
                     "C": (
                         -33.69137,
-                        pyunits.J
-                        * pyunits.mol**-1
-                        * pyunits.K**-1
-                        * pyunits.kiloK**-2,
+                        pyunits.J * pyunits.mol**-1 * pyunits.K**-1 * pyunits.kiloK**-2,
                     ),
                     "D": (
                         7.948387,
-                        pyunits.J
-                        * pyunits.mol**-1
-                        * pyunits.K**-1
-                        * pyunits.kiloK**-3,
+                        pyunits.J * pyunits.mol**-1 * pyunits.K**-1 * pyunits.kiloK**-3,
                     ),
                     "E": (
                         -0.136638,
-                        pyunits.J
-                        * pyunits.mol**-1
-                        * pyunits.K**-1
-                        * pyunits.kiloK**2,
+                        pyunits.J * pyunits.mol**-1 * pyunits.K**-1 * pyunits.kiloK**2,
                     ),
                     "F": (-403.6075, pyunits.kJ / pyunits.mol),
                     "G": (228.2431, pyunits.J / pyunits.mol / pyunits.K),

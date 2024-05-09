@@ -39,9 +39,9 @@ class ViscosityWilke(object):
             pobj.config.transport_property_options.get("viscosity_phi_ij_callback")
             is None
         ):
-            pobj.config.transport_property_options[
-                "viscosity_phi_ij_callback"
-            ] = wilke_phi_ij_callback
+            pobj.config.transport_property_options["viscosity_phi_ij_callback"] = (
+                wilke_phi_ij_callback
+            )
 
     @staticmethod
     def build_phi_ij(b, p):

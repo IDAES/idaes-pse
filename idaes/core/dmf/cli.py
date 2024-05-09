@@ -1250,9 +1250,9 @@ class _ShowInfo:
             if k in ("created", "modified"):
                 result[k] = dateize(v)
             elif k == "version_info":
-                result[
-                    "version"
-                ] = f"{resource.format_version(v['version'])} @ {dateize(v['created'])}"
+                result["version"] = (
+                    f"{resource.format_version(v['version'])} @ {dateize(v['created'])}"
+                )
             elif k == "relations":
                 relations = []
                 for rel in v:
