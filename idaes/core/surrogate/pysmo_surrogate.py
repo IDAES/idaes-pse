@@ -674,7 +674,7 @@ class TrainedSurrogateEncoder(JSONEncoder, TSEBase):
             return isinstance(
                 v,
                 (
-                    pc.base.param._ParamData,
+                    pc.base.param.ParamData,
                     pc.base.param.Param,
                     pc.expr.numeric_expr.NPV_ProductExpression,
                     pc.expr.numeric_expr.NPV_DivisionExpression,

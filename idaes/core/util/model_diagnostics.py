@@ -54,9 +54,9 @@ from pyomo.core.expr.numeric_expr import (
     NPV_UnaryFunctionExpression,
     NumericExpression,
 )
-from pyomo.core.base.block import _BlockData
-from pyomo.core.base.var import _GeneralVarData, _VarData
-from pyomo.core.base.constraint import _ConstraintData
+from pyomo.core.base.block import BlockData
+from pyomo.core.base.var import VarData
+from pyomo.core.base.constraint import ConstraintData
 from pyomo.repn.standard_repn import (  # pylint: disable=no-name-in-module
     generate_standard_repn,
 )
@@ -286,7 +286,7 @@ CONFIG.declare(
 CONFIG.declare(
     "parallel_component_tolerance",
     ConfigValue(
-        default=1e-4,
+        default=1e-8,
         domain=float,
         description="Tolerance for identifying near-parallel Jacobian rows/columns",
     ),
@@ -427,10 +427,10 @@ class DiagnosticsToolbox:
 
     """
 
-    def __init__(self, model: _BlockData, **kwargs):
+    def __init__(self, model: BlockData, **kwargs):
         # TODO: In future may want to generalise this to accept indexed blocks
         # However, for now some of the tools do not support indexed blocks
-        if not isinstance(model, _BlockData):
+        if not isinstance(model, BlockData):
             raise TypeError(
                 "model argument must be an instance of a Pyomo BlockData object "
                 "(either a scalar Block or an element of an indexed Block)."
@@ -1179,6 +1179,29 @@ class DiagnosticsToolbox:
                 self.display_constraints_with_extreme_jacobians.__name__ + "()"
             )
 
+        # Parallel variables and constraints
+        partol = self.config.parallel_component_tolerance
+        par_cons = check_parallel_jacobian(
+            self._model, tolerance=partol, direction="row", jac=jac, nlp=nlp
+        )
+        par_vars = check_parallel_jacobian(
+            self._model, tolerance=partol, direction="column", jac=jac, nlp=nlp
+        )
+        if par_cons:
+            p = "pair" if len(par_cons) == 1 else "pairs"
+            warnings.append(
+                f"WARNING: {len(par_cons)} {p} of constraints are parallel"
+                f" (to tolerance {partol:.1E})"
+            )
+            next_steps.append(self.display_near_parallel_constraints.__name__ + "()")
+        if par_vars:
+            p = "pair" if len(par_vars) == 1 else "pairs"
+            warnings.append(
+                f"WARNING: {len(par_vars)} {p} of variables are parallel"
+                f" (to tolerance {partol:.1E})"
+            )
+            next_steps.append(self.display_near_parallel_variables.__name__ + "()")
+
         return warnings, next_steps
 
     def _collect_numerical_cautions(self, jac=None, nlp=None):
@@ -1441,7 +1464,6 @@ class DiagnosticsToolbox:
             lines_list=next_steps,
             title="Suggested next steps:",
             line_if_empty=f"If you still have issues converging your model consider:\n"
-            f"{TAB*2}display_near_parallel_constraints()\n{TAB*2}display_near_parallel_variables()"
             f"\n{TAB*2}prepare_degeneracy_hunter()\n{TAB*2}prepare_svd_toolbox()",
             footer="=",
         )
@@ -1541,10 +1563,10 @@ class SVDToolbox:
 
     """
 
-    def __init__(self, model: _BlockData, **kwargs):
+    def __init__(self, model: BlockData, **kwargs):
         # TODO: In future may want to generalise this to accept indexed blocks
         # However, for now some of the tools do not support indexed blocks
-        if not isinstance(model, _BlockData):
+        if not isinstance(model, BlockData):
             raise TypeError(
                 "model argument must be an instance of a Pyomo BlockData object "
                 "(either a scalar Block or an element of an indexed Block)."
@@ -1726,9 +1748,9 @@ class SVDToolbox:
             stream = sys.stdout
 
         # Validate variable argument
-        if not isinstance(variable, _VarData):
+        if not isinstance(variable, VarData):
             raise TypeError(
-                f"variable argument must be an instance of a Pyomo _VarData "
+                f"variable argument must be an instance of a Pyomo VarData "
                 f"object (got {variable})."
             )
 
@@ -1773,9 +1795,9 @@ class SVDToolbox:
             stream = sys.stdout
 
         # Validate variable argument
-        if not isinstance(constraint, _ConstraintData):
+        if not isinstance(constraint, ConstraintData):
             raise TypeError(
-                f"constraint argument must be an instance of a Pyomo _ConstraintData "
+                f"constraint argument must be an instance of a Pyomo ConstraintData "
                 f"object (got {constraint})."
             )
 
@@ -1835,7 +1857,7 @@ def _check_eval_error_pow(
 
     integer_exponent = False
     # if the exponent is an integer, there should not be any evaluation errors
-    if isinstance(arg2, _GeneralVarData) and arg2.domain in integer_domains:
+    if isinstance(arg2, VarData) and arg2.domain in integer_domains:
         # The exponent is an integer variable
         # check if the base can be zero
         integer_exponent = True
@@ -1986,7 +2008,7 @@ class DegeneracyHunter2:
     def __init__(self, model, **kwargs):
         # TODO: In future may want to generalise this to accept indexed blocks
         # However, for now some of the tools do not support indexed blocks
-        if not isinstance(model, _BlockData):
+        if not isinstance(model, BlockData):
             raise TypeError(
                 "model argument must be an instance of a Pyomo BlockData object "
                 "(either a scalar Block or an element of an indexed Block)."
@@ -3086,7 +3108,7 @@ class IpoptConvergenceAnalysis:
     def __init__(self, model, **kwargs):
         # TODO: In future may want to generalise this to accept indexed blocks
         # However, for now some of the tools do not support indexed blocks
-        if not isinstance(model, _BlockData):
+        if not isinstance(model, BlockData):
             raise TypeError(
                 "model argument must be an instance of a Pyomo BlockData object "
                 "(either a scalar Block or an element of an indexed Block)."
@@ -3535,7 +3557,7 @@ def set_bounds_from_valid_range(component, descend_into=True):
     if component.is_indexed():
         for k in component:
             set_bounds_from_valid_range(component[k])
-    elif isinstance(component, _BlockData):
+    elif isinstance(component, BlockData):
         for i in component.component_data_objects(
             ctype=[Var, Param], descend_into=descend_into
         ):
@@ -3576,7 +3598,7 @@ def list_components_with_values_outside_valid_range(component, descend_into=True
             comp_list.extend(
                 list_components_with_values_outside_valid_range(component[k])
             )
-    elif isinstance(component, _BlockData):
+    elif isinstance(component, BlockData):
         for i in component.component_data_objects(
             ctype=[Var, Param], descend_into=descend_into
         ):
@@ -3619,13 +3641,24 @@ def ipopt_solve_halt_on_error(model, options=None):
     )
 
 
-def check_parallel_jacobian(model, tolerance: float = 1e-4, direction: str = "row"):
+def check_parallel_jacobian(
+    model,
+    tolerance: float = 1e-4,
+    direction: str = "row",
+    jac=None,
+    nlp=None,
+):
     """
     Check for near-parallel rows or columns in the Jacobian.
 
     Near-parallel rows or columns indicate a potential degeneracy in the model,
     as this means that the associated constraints or variables are (near)
     duplicates of each other.
+
+    For efficiency, the ``jac`` and ``nlp`` arguments may be provided if they are
+    already available. If these are provided, the provided model is not used. If
+    either ``jac`` or ``nlp`` is not provided, a Jacobian and ``PyomoNLP`` are
+    computed using the model.
 
     This method is based on work published in:
 
@@ -3637,6 +3670,8 @@ def check_parallel_jacobian(model, tolerance: float = 1e-4, direction: str = "ro
         model: model to be analysed
         tolerance: tolerance to use to determine if constraints/variables are parallel
         direction: 'row' (default, constraints) or 'column' (variables)
+        jac: model Jacobian as a ``scipy.sparse.coo_matrix``, optional
+        nlp: ``PyomoNLP`` of model, optional
 
     Returns:
         list of 2-tuples containing parallel Pyomo components
@@ -3651,7 +3686,8 @@ def check_parallel_jacobian(model, tolerance: float = 1e-4, direction: str = "ro
             "Must be 'row' or 'column'."
         )
 
-    jac, nlp = get_jacobian(model, scaled=False)
+    if jac is None or nlp is None:
+        jac, nlp = get_jacobian(model, scaled=False)
 
     # Get vectors that we will check, and the Pyomo components
     # they correspond to.
