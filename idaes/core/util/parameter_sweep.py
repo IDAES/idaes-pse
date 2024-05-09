@@ -625,13 +625,24 @@ class ParameterSweepBase:
                     )
                 comp.set_value(v)
             elif ctype is Var:
-                if not comp.is_fixed():
-                    raise ValueError(
-                        f"Convergence testing found an input of type Var that "
-                        f"was not fixed ({comp.name}). Please make sure all "
-                        f"sampled inputs are either mutable params or fixed vars."
-                    )
-                comp.set_value(float(v))
+                try:
+                    if not comp.is_fixed():
+                        raise ValueError(
+                            f"Convergence testing found an input of type Var that "
+                            f"was not fixed ({comp.name}). Please make sure all "
+                            f"sampled inputs are either mutable params or fixed vars."
+                        )
+                    comp.set_value(float(v))
+                except AttributeError:
+                    # Component might be indexed, try iterating and setting value
+                    for i, c in comp.items():
+                        if not c.is_fixed():
+                            raise ValueError(
+                                f"Convergence testing found an input of type IndexedVar that "
+                                f"was not fixed ({comp.name}, index {i}). Please make sure all "
+                                f"sampled inputs are either mutable params or fixed vars."
+                            )
+                        c.set_value(float(v))
             else:
                 raise ValueError(
                     f"Failed to find a valid input component (must be "

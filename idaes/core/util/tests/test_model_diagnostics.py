@@ -17,6 +17,7 @@ from io import StringIO
 import math
 import numpy as np
 import pytest
+import re
 import os
 from copy import deepcopy
 
@@ -457,8 +458,10 @@ class TestDiagnosticsToolbox:
     def test_invalid_model_type(self):
         with pytest.raises(
             TypeError,
-            match="model argument must be an instance of a Pyomo BlockData object "
-            "\(either a scalar Block or an element of an indexed Block\).",
+            match=re.escape(
+                "model argument must be an instance of a Pyomo BlockData object "
+                "(either a scalar Block or an element of an indexed Block)."
+            ),
         ):
             DiagnosticsToolbox(model="foo")
 
@@ -469,8 +472,10 @@ class TestDiagnosticsToolbox:
 
         with pytest.raises(
             TypeError,
-            match="model argument must be an instance of a Pyomo BlockData object "
-            "\(either a scalar Block or an element of an indexed Block\).",
+            match=re.escape(
+                "model argument must be an instance of a Pyomo BlockData object "
+                "(either a scalar Block or an element of an indexed Block)."
+            ),
         ):
             DiagnosticsToolbox(model=m.b)
 
@@ -975,10 +980,10 @@ The following pairs of constraints are nearly parallel:
         model.v3 = Var()
         model.v4 = Var()
 
-        model.c1 = Constraint(expr=model.v1 == model.v2 - 0.99999 * model.v4)
-        model.c2 = Constraint(expr=model.v1 + 1.00001 * model.v4 == 1e-8 * model.v3)
+        model.c1 = Constraint(expr=1e-8 * model.v1 == 1e-8 * model.v2 - 1e-8 * model.v4)
+        model.c2 = Constraint(expr=1e-8 * model.v1 + 1e-8 * model.v4 == model.v3)
         model.c3 = Constraint(
-            expr=1e8 * (model.v1 + model.v4) + 1e10 * model.v2 == 1e-6 * model.v3
+            expr=1e3 * (model.v1 + model.v4) + 1e3 * model.v2 == model.v3
         )
 
         dt = DiagnosticsToolbox(model=model)
@@ -1121,7 +1126,7 @@ The following pairs of variables are nearly parallel:
 
         warnings, next_steps = dt._collect_numerical_warnings()
 
-        assert len(warnings) == 3
+        assert len(warnings) == 4
         assert (
             "WARNING: 2 Variables with extreme Jacobian values (<1.0E-08 or >1.0E+08)"
             in warnings
@@ -1132,7 +1137,7 @@ The following pairs of variables are nearly parallel:
         )
         assert "WARNING: 1 Constraint with large residuals (>1.0E-05)" in warnings
 
-        assert len(next_steps) == 3
+        assert len(next_steps) == 4
         assert "display_variables_with_extreme_jacobians()" in next_steps
         assert "display_constraints_with_extreme_jacobians()" in next_steps
         assert "display_constraints_with_large_residuals()" in next_steps
@@ -1186,7 +1191,9 @@ The following pairs of variables are nearly parallel:
         m = model.clone()
         dt = DiagnosticsToolbox(model=m.b)
 
-        with pytest.raises(AssertionError, match="Structural issues found \(1\)."):
+        with pytest.raises(
+            AssertionError, match=re.escape("Structural issues found (1).")
+        ):
             dt.assert_no_structural_warnings()
 
         # Fix units issue
@@ -1199,7 +1206,9 @@ The following pairs of variables are nearly parallel:
         m = model.clone()
         dt = DiagnosticsToolbox(model=m.b)
 
-        with pytest.raises(AssertionError, match="Numerical issues found \(2\)."):
+        with pytest.raises(
+            AssertionError, match=re.escape("Numerical issues found (2).")
+        ):
             dt.assert_no_numerical_warnings()
 
         # Fix numerical issues
@@ -1338,8 +1347,7 @@ Model Statistics
 Suggested next steps:
 
     If you still have issues converging your model consider:
-        display_near_parallel_constraints()
-        display_near_parallel_variables()
+
         prepare_degeneracy_hunter()
         prepare_svd_toolbox()
 
@@ -1369,9 +1377,11 @@ Model Statistics
     Jacobian Condition Number: Undefined (Exactly Singular)
 
 ------------------------------------------------------------------------------------
-1 WARNINGS
+3 WARNINGS
 
     WARNING: 2 Constraints with large residuals (>1.0E-05)
+    WARNING: 1 pair of constraints are parallel (to tolerance 1.0E-08)
+    WARNING: 1 pair of variables are parallel (to tolerance 1.0E-08)
 
 ------------------------------------------------------------------------------------
 0 Cautions
@@ -1382,6 +1392,8 @@ Model Statistics
 Suggested next steps:
 
     display_constraints_with_large_residuals()
+    display_near_parallel_constraints()
+    display_near_parallel_variables()
 
 ====================================================================================
 """
@@ -1433,8 +1445,8 @@ Suggested next steps:
         model.v2 = Var(initialize=0)
         model.v3 = Var(initialize=0)
 
-        model.c1 = Constraint(expr=model.v1 == model.v2)
-        model.c2 = Constraint(expr=model.v1 == 1e-8 * model.v3)
+        model.c1 = Constraint(expr=1e-2 * model.v1 == model.v2)
+        model.c2 = Constraint(expr=1e-2 * model.v1 == 1e-8 * model.v3)
         model.c3 = Constraint(expr=1e8 * model.v1 + 1e10 * model.v2 == 1e-6 * model.v3)
 
         dt = DiagnosticsToolbox(model=model)
@@ -1445,14 +1457,15 @@ Suggested next steps:
         expected = """====================================================================================
 Model Statistics
 
-    Jacobian Condition Number: 1.407E+18
+    Jacobian Condition Number: 1.118E+18
 
 ------------------------------------------------------------------------------------
-3 WARNINGS
+4 WARNINGS
 
     WARNING: 1 Constraint with large residuals (>1.0E-05)
     WARNING: 2 Variables with extreme Jacobian values (<1.0E-08 or >1.0E+08)
     WARNING: 1 Constraint with extreme Jacobian values (<1.0E-08 or >1.0E+08)
+    WARNING: 3 pairs of variables are parallel (to tolerance 1.0E-08)
 
 ------------------------------------------------------------------------------------
 4 Cautions
@@ -1468,6 +1481,7 @@ Suggested next steps:
     display_constraints_with_large_residuals()
     display_variables_with_extreme_jacobians()
     display_constraints_with_extreme_jacobians()
+    display_near_parallel_variables()
 
 ====================================================================================
 """
@@ -1831,8 +1845,10 @@ The following constraints involve v[1]:
 
         with pytest.raises(
             TypeError,
-            match="variable argument must be an instance of a Pyomo _VarData "
-            "object \(got foo\).",
+            match=re.escape(
+                "variable argument must be an instance of a Pyomo VarData "
+                "object (got foo)."
+            ),
         ):
             svd.display_constraints_including_variable(variable="foo")
 
@@ -1896,8 +1912,10 @@ The following variables are involved in c1:
 
         with pytest.raises(
             TypeError,
-            match="constraint argument must be an instance of a Pyomo _ConstraintData "
-            "object \(got foo\).",
+            match=re.escape(
+                "constraint argument must be an instance of a Pyomo ConstraintData "
+                "object (got foo)."
+            ),
         ):
             svd.display_variables_in_constraint(constraint="foo")
 
@@ -3771,8 +3789,9 @@ class TestCheckParallelJacobian:
 
         with pytest.raises(
             ValueError,
-            match="Unrecognised value for direction \(foo\). "
-            "Must be 'row' or 'column'.",
+            match=re.escape(
+                "Unrecognised value for direction (foo). " "Must be 'row' or 'column'."
+            ),
         ):
             check_parallel_jacobian(m, direction="foo")
 
@@ -3818,8 +3837,9 @@ class TestCheckIllConditioning:
 
         with pytest.raises(
             ValueError,
-            match="Unrecognised value for direction \(foo\). "
-            "Must be 'row' or 'column'.",
+            match=re.escape(
+                "Unrecognised value for direction (foo). " "Must be 'row' or 'column'."
+            ),
         ):
             compute_ill_conditioning_certificate(m, direction="foo")
 

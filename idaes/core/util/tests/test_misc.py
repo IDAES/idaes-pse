@@ -11,13 +11,13 @@
 # for full copyright and license information.
 #################################################################################
 """
-This module contains miscalaneous utility functions for use in IDAES models.
+This module contains miscellaneous utility functions for use in IDAES models.
 """
 
 import pytest
+import re
 
 from pyomo.environ import ConcreteModel, Set, Block, Var, units
-from pyomo.network import Port, Arc
 from pyomo.common.config import ConfigBlock
 from pyomo.core.base.units_container import UnitsError
 
@@ -165,10 +165,12 @@ class TestSetParamFromConfig:
 
         with pytest.raises(
             AttributeError,
-            match="b - set_param_from_config method was "
-            "provided with param and index arguments "
-            "test_param 1, but no attribute with that "
-            "combination \(test_param_1\) exists.",
+            match=re.escape(
+                "b - set_param_from_config method was "
+                "provided with param and index arguments "
+                "test_param 1, but no attribute with that "
+                "combination (test_param_1) exists."
+            ),
         ):
             set_param_from_config(m.b, "test_param", index="1")
 

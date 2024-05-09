@@ -20,6 +20,6 @@ In these cases, it is possible that a user might mistake the `Expression` for a 
 .. autoclass:: IndexedVarLikeExpression
   :members:
 
-.. autoclass:: _GeneralVarLikeExpressionData
+.. autoclass:: VarLikeExpressionData
   :members:
 
