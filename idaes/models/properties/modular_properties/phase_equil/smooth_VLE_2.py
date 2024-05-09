@@ -17,8 +17,6 @@ Dabadghao, V., Ghouse, J., Eslick, J., Lee, A., Burgard, A., Miller, D., Biegler
 A complementarity-based vapor-liquid equilibrium formulation for equation-oriented simulation
 and optimization. AIChE Journal, DOI: 10.1002/aic.18029
 """
-# TODO: Pylint complains about variables with _x names as they are built by other classes
-# pylint: disable=protected-access
 
 from pyomo.environ import (
     Constraint,
@@ -46,7 +44,7 @@ import idaes.core.util.scaling as iscale
 
 
 # Small value for initializing slack variables
-EPS_INIT = 1e-8
+EPS_INIT = 1e-4
 
 
 # -----------------------------------------------------------------------------
@@ -178,7 +176,6 @@ class SmoothVLE2:
             if b.params.get_phase(p).is_vapor_phase():
                 return smooth_min(gn[p] * f_units, flow_phase, eps) == 0
             else:
-                # return smooth_min((gp[p] + s[p]) * f_units, flow_phase, eps) == 0
                 return smooth_min(gp[p] * f_units, flow_phase, eps) == 0
 
         b.add_component(

@@ -41,7 +41,7 @@ pytestmark = pytest.mark.cubic_root
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_solver()
-# Limit iterations to make sure sweeps aren;t getting out of hand
+# Limit iterations to make sure sweeps aren't getting out of hand
 solver.options["max_iter"] = 50
 
 
