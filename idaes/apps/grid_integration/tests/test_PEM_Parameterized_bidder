@@ -13,7 +13,8 @@
 
 import pytest
 import pyomo.environ as pyo
-from idaes.apps.grid_integration.bidder import Bidder
+from idaes.apps.grid_integration.bidder import PEMParametrizedBidder
+from idaes.apps.grid_integration.forecaster import PerfectForecaster
 from idaes.apps.grid_integration.tests.util import (
     TestingModel,
     TestingForecaster,
@@ -22,4 +23,39 @@ from idaes.apps.grid_integration.tests.util import (
 from pyomo.common import unittest as pyo_unittest
 from idaes.apps.grid_integration.coordinator import prescient_avail
 
-# @pytest.fixture
+day_ahead_horizon = 24
+real_time_horizon = 4
+solver = pyo.SolverFactory("cbc")
+
+
+@pytest.mark.unit
+def test_creat_PEMParametrizedBidder_with_wrong_PEM_power():
+    bidding_model_object = TestingModel(model_data=testing_model_data)
+    forecaster = TestingForecaster(prediction=30)
+    renewable_mw = 200
+    pem_mw = 300
+    pem_marginal_cost = 30
+    with pytest.raises(ValueError, match=r".*The power of PEM is greater than the renewabele power.*"):
+        PEM_bidder = PEMParametrizedBidder(bidding_model_object, day_ahead_horizon, real_time_horizon, solver, forecaster, renewable_mw, pem_marginal_cost, pem_mw)
+
+
+@pytest.fixture
+def bidder_object():
+    forecaster = TestingForecaster(prediction=30)
+    bidding_model_object = TestingModel(model_data=testing_model_data)
+    bidder_object = PEMParametrizedBidder(
+        bidding_model_object=bidding_model_object,
+        day_ahead_horizon=day_ahead_horizon,
+        real_time_horizon=real_time_horizon,
+        solver=solver,
+        forecaster=forecaster,
+        renewable_mw=400,
+        pem_marginal_cost=30,
+        pem_mw=200,
+    )
+    return bidder_object
+
+
+# @pytest.mark.unit
+# def test_compute_day_ahead_bids():
+#     return

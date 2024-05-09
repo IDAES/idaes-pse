@@ -1524,7 +1524,8 @@ class PEMParametrizedBidder(ParametrizedBidder):
                 below which, make hydrogen and sell remainder of wind to grid
 
             pem_mw: maximum PEM capacity limits how much energy is bid at the `pem_marginal_cost`
-        
+
+            real_time_bidding_only: bool, if True, do real-time bidding only.
         '''
         super().__init__(bidding_model_object,
                          day_ahead_horizon,
@@ -1536,7 +1537,16 @@ class PEMParametrizedBidder(ParametrizedBidder):
         self.pem_marginal_cost = pem_marginal_cost
         self.pem_mw = pem_mw
         self.real_time_bidding_only = real_time_bidding_only
+        self._check_power()
 
+    def _check_power(self):
+        '''
+        Check the power of PEM should not exceed the power of renewables
+        '''
+        if self.pem_mw >= self.renewable_mw:
+            raise ValueError(
+                f"The power of PEM is greater than the renewabele power."
+            )
 
     def compute_day_ahead_bids(self, date, hour=0):
         """
@@ -1619,17 +1629,34 @@ class PEMParametrizedBidder(ParametrizedBidder):
             avail_rt_wind = max(0, rt_wind - da_dispatch)
             grid_wind = max(0 , avail_rt_wind - self.pem_mw)
             
-            if grid_wind == 0:
+            if avail_rt_wind == 0:
+                bids = [(0, 0), (0, 0)]
+            if avail_rt_wind > 0 and grid_wind == 0:
                 bids = [(0, 0), (avail_rt_wind, self.pem_marginal_cost)]
-            else:
+            if avail_rt_wind > 0 and grid_wind > 0:
                 bids = [(0, 0), (grid_wind, 0), (avail_rt_wind, self.pem_marginal_cost)]
+            cost_curve = convert_marginal_costs_to_actual_costs(bids)
+            print(bids)
+            temp_curve = {
+                    "data_type": "cost_curve",
+                    "cost_curve_type": "piecewise",
+                    "values": cost_curve,
+            }
+            tx_utils.validate_and_clean_cost_curve(
+                curve=temp_curve,
+                curve_type="cost_curve",
+                p_min=0,
+                p_max=max([p[0] for p in cost_curve]),
+                gen_name=gen,
+                t=t_idx,
+            )
 
             t = t_idx + hour
             full_bids[t] = {}
             full_bids[t][gen] = {}
-            full_bids[t][gen]["p_cost"] = convert_marginal_costs_to_actual_costs(bids)
+            full_bids[t][gen]["p_cost"] = cost_curve
             full_bids[t][gen]["p_min"] = 0
-            full_bids[t][gen]["p_max"] = rt_wind
+            full_bids[t][gen]["p_max"] = max([p[0] for p in cost_curve])
             full_bids[t][gen]["startup_capacity"] = rt_wind
             full_bids[t][gen]["shutdown_capacity"] = rt_wind
 
