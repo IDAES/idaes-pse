@@ -13,6 +13,7 @@
 
 import pytest
 import pyomo.environ as pyo
+from pyomo.common import unittest as pyo_unittest
 from idaes.apps.grid_integration.bidder import PEMParametrizedBidder
 from idaes.apps.grid_integration.forecaster import PerfectForecaster
 from idaes.apps.grid_integration.tests.util import (
@@ -20,7 +21,6 @@ from idaes.apps.grid_integration.tests.util import (
     TestingForecaster,
     testing_model_data,
 )
-from pyomo.common import unittest as pyo_unittest
 from idaes.apps.grid_integration.coordinator import prescient_avail
 
 day_ahead_horizon = 24
@@ -65,8 +65,3 @@ def bidder_object():
         pem_mw=200,
     )
     return bidder_object
-
-
-# @pytest.mark.unit
-# def test_compute_day_ahead_bids():
-#     return

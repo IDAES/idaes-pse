@@ -10,12 +10,11 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+import pandas as pd
 from abc import ABC, abstractmethod
 from numbers import Real
 import numpy as np
 import idaes.logger as idaeslog
-import pandas as pd
-
 
 _logger = idaeslog.getLogger(__name__)
 
@@ -699,7 +698,9 @@ class PerfectForecaster(AbstractPrescientPriceForecaster):
         elif isinstance(data_path_or_df, pd.DataFrame):
             self.data = data_path_or_df
         else:
-            raise ValueError
+            raise ValueError(
+                "The data_path_or_df should be pandas DataFrame or a string of the csv path"
+            )
 
     def __getitem__(self, index):
         return self.data[index]

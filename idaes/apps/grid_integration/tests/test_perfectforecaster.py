@@ -12,11 +12,11 @@
 #################################################################################
 
 import pytest
+import pandas as pd
+import numpy as np
 from pyomo.common import unittest as pyo_unittest
 from idaes.apps.grid_integration.forecaster import PerfectForecaster
 import idaes.logger as idaeslog
-import pandas as pd
-import numpy as np
 
 
 @pytest.fixture
@@ -52,7 +52,7 @@ def test_create_perfectforecaster(wind_df):
 @pytest.mark.unit
 @pytest.mark.parametrize("value", [np.array([1, 2, 3, 4, 5]), [1, 2, 3, 4, 5]])
 def test_create_perfectforecaster_with_ndarray_and_list(value):
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=r".*The data_path_or_df should be pandas DataFrame or a string of the csv path.*"):
         perfectforecaster = PerfectForecaster(value)
 
 
@@ -70,7 +70,6 @@ def test_get_column_from_data(base_perfectforecaster):
     pyo_unittest.assertStructuredAlmostEqual(
         first=result_forecast.tolist(), second=expected_forecast
     )
-    return
 
 
 @pytest.mark.unit
@@ -87,7 +86,6 @@ def test_forecast_day_ahead_prices(base_perfectforecaster):
     pyo_unittest.assertStructuredAlmostEqual(
         first=result_forecast.tolist(), second=expected_forecast
     )
-    return
 
 
 @pytest.mark.unit
