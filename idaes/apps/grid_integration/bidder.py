@@ -1294,11 +1294,12 @@ class Bidder(StochasticProgramBidder):
 
 
 class ParametrizedBidder(AbstractBidder):
-    
-    '''
+
+    """
     Create a parameterized bidder.
     Bid the resource at different prices.
-    '''
+    """
+
     def __init__(
         self,
         bidding_model_object,
@@ -1307,28 +1308,28 @@ class ParametrizedBidder(AbstractBidder):
         solver,
         forecaster,
     ):
-        '''
+        """
         Arguments:
             bidding_model_object: the model object for bidding
 
             day_ahead_horizon: number of time periods in the day-ahead bidding problem
 
             real_time_horizon: number of time periods in the real-time bidding problem
-            
+
             solver: a Pyomo mathematical programming solver object
-        '''
+        """
         self.bidding_model_object = bidding_model_object
         self.day_ahead_horizon = day_ahead_horizon
         self.real_time_horizon = real_time_horizon
         self.solver = solver
         self.forecaster = forecaster
 
-        self.n_scenario = 1   # there must be a n_scenario attribute in this class
+        self.n_scenario = 1  # there must be a n_scenario attribute in this class
         self._check_inputs()
 
         self.generator = self.bidding_model_object.model_data.gen_name
         self.bids_result_list = []
-    
+
     @property
     def generator(self):
         return self._generator
@@ -1337,37 +1338,41 @@ class ParametrizedBidder(AbstractBidder):
     def generator(self, name):
         self._generator = name
 
-
     def formulate_DA_bidding_problem(self):
-        '''
+        """
         No need to formulate a DA bidding problem here.
-        '''
+        """
         pass
 
     def formulate_RT_bidding_problem(self):
-        '''
+        """
         No need to formulate a RT bidding problem here.
-        '''
+        """
         pass
 
     def compute_day_ahead_bids(self, date, hour=0):
         raise NotImplementedError
 
     def compute_real_time_bids(
-        self, date, hour, realized_day_ahead_prices, realized_day_ahead_dispatches, tracker_profile
+        self,
+        date,
+        hour,
+        realized_day_ahead_prices,
+        realized_day_ahead_dispatches,
+        tracker_profile,
     ):
         raise NotImplementedError
 
     def update_day_ahead_model(self, **kwargs):
-        '''
+        """
         No need to update the RT bidding problem here.
-        '''
+        """
         pass
 
     def update_real_time_model(self, **kwargs):
-        '''
+        """
         No need to update the RT bidding problem here.
-        '''
+        """
         pass
 
     def record_bids(self, bids, model, date, hour, market):
@@ -1455,12 +1460,13 @@ class ParametrizedBidder(AbstractBidder):
 
 
 class PEMParametrizedBidder(ParametrizedBidder):
-    
+
     """
     Renewable (PV or Wind) + PEM bidder that uses parameterized bid curve.
     Every timestep for RT or DA, max energy bid is the available wind resource.
-    Please use the 
+    Please use the
     """
+
     def __init__(
         self,
         bidding_model_object,
@@ -1471,25 +1477,27 @@ class PEMParametrizedBidder(ParametrizedBidder):
         renewable_mw,
         pem_marginal_cost,
         pem_mw,
-        real_time_bidding_only = False
+        real_time_bidding_only=False,
     ):
-        
-        '''
+
+        """
         Arguments:
             renewable_mw: maximum renewable energy system capacity
-            
+
             pem_marginal_cost: the cost/MW above which all available wind energy will be sold to grid;
                 below which, make hydrogen and sell remainder of wind to grid
 
             pem_mw: maximum PEM capacity limits how much energy is bid at the `pem_marginal_cost`
 
             real_time_bidding_only: bool, if True, do real-time bidding only.
-        '''
-        super().__init__(bidding_model_object,
-                         day_ahead_horizon,
-                         real_time_horizon,
-                         solver,
-                         forecaster)
+        """
+        super().__init__(
+            bidding_model_object,
+            day_ahead_horizon,
+            real_time_horizon,
+            solver,
+            forecaster,
+        )
         self.renewable_mw = renewable_mw
         self.renewable_marginal_cost = 0
         self.pem_marginal_cost = pem_marginal_cost
@@ -1498,13 +1506,11 @@ class PEMParametrizedBidder(ParametrizedBidder):
         self._check_power()
 
     def _check_power(self):
-        '''
+        """
         Check the power of PEM should not exceed the power of renewables
-        '''
+        """
         if self.pem_mw >= self.renewable_mw:
-            raise ValueError(
-                f"The power of PEM is greater than the renewabele power."
-            )
+            raise ValueError(f"The power of PEM is greater than the renewabele power.")
 
     def compute_day_ahead_bids(self, date, hour=0):
         """
@@ -1515,7 +1521,9 @@ class PEMParametrizedBidder(ParametrizedBidder):
         """
         gen = self.generator
         # Forecast the day-ahead wind generation
-        forecast = self.forecaster.forecast_day_ahead_capacity_factor(date, hour, gen, self.day_ahead_horizon)
+        forecast = self.forecaster.forecast_day_ahead_capacity_factor(
+            date, hour, gen, self.day_ahead_horizon
+        )
 
         full_bids = {}
 
@@ -1531,9 +1539,9 @@ class PEMParametrizedBidder(ParametrizedBidder):
             cost_curve = convert_marginal_costs_to_actual_costs(bids)
 
             temp_curve = {
-                    "data_type": "cost_curve",
-                    "cost_curve_type": "piecewise",
-                    "values": cost_curve,
+                "data_type": "cost_curve",
+                "cost_curve_type": "piecewise",
+                "values": cost_curve,
             }
             tx_utils.validate_and_clean_cost_curve(
                 curve=temp_curve,
@@ -1554,11 +1562,10 @@ class PEMParametrizedBidder(ParametrizedBidder):
             full_bids[t][gen]["shutdown_capacity"] = da_wind
 
         self._record_bids(full_bids, date, hour, Market="Day-ahead")
-        return full_bids  
-
+        return full_bids
 
     def compute_real_time_bids(
-        self, date, hour, realized_day_ahead_dispatches,realized_day_ahead_prices
+        self, date, hour, realized_day_ahead_dispatches, realized_day_ahead_prices
     ):
         """
         RT Bid: from 0 MW to (Wind Resource - PEM capacity) MW, bid $0/MWh.
@@ -1566,9 +1573,11 @@ class PEMParametrizedBidder(ParametrizedBidder):
 
         If Wind resource at some time is less than PEM capacity, then reduce to available resource
         """
-       
+
         gen = self.generator
-        forecast = self.forecaster.forecast_real_time_capacity_factor(date, hour, gen, self.real_time_horizon) 
+        forecast = self.forecaster.forecast_real_time_capacity_factor(
+            date, hour, gen, self.real_time_horizon
+        )
         full_bids = {}
 
         for t_idx in range(self.real_time_horizon):
@@ -1578,15 +1587,15 @@ class PEMParametrizedBidder(ParametrizedBidder):
                 try:
                     da_dispatch = realized_day_ahead_dispatches[t_idx + hour]
                 except IndexError:
-                    # When having indexerror, it must be the period that we are looking ahead. It is ok to set da_dispatch to 0 
+                    # When having indexerror, it must be the period that we are looking ahead. It is ok to set da_dispatch to 0
                     da_dispatch = 0
             # if we only participates in the RT market, then we do not consider the DA commitment
             if self.real_time_bidding_only:
                 da_dispatch = 0
 
             avail_rt_wind = max(0, rt_wind - da_dispatch)
-            grid_wind = max(0 , avail_rt_wind - self.pem_mw)
-            
+            grid_wind = max(0, avail_rt_wind - self.pem_mw)
+
             if avail_rt_wind == 0:
                 bids = [(0, 0), (0, 0)]
             if avail_rt_wind > 0 and grid_wind == 0:
@@ -1596,9 +1605,9 @@ class PEMParametrizedBidder(ParametrizedBidder):
             cost_curve = convert_marginal_costs_to_actual_costs(bids)
             print(bids)
             temp_curve = {
-                    "data_type": "cost_curve",
-                    "cost_curve_type": "piecewise",
-                    "values": cost_curve,
+                "data_type": "cost_curve",
+                "cost_curve_type": "piecewise",
+                "values": cost_curve,
             }
             tx_utils.validate_and_clean_cost_curve(
                 curve=temp_curve,
@@ -1619,6 +1628,5 @@ class PEMParametrizedBidder(ParametrizedBidder):
             full_bids[t][gen]["shutdown_capacity"] = rt_wind
 
             self._record_bids(full_bids, date, hour, Market="Real-time")
-        
 
         return full_bids

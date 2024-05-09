@@ -685,7 +685,6 @@ class Backcaster(AbstractPrescientPriceForecaster):
 
 
 class PerfectForecaster(AbstractPrescientPriceForecaster):
-    
     def __init__(self, data_path_or_df):
         """
         Perfect forecaster that reads the data from a Dataframe containing:
@@ -694,7 +693,9 @@ class PerfectForecaster(AbstractPrescientPriceForecaster):
          - {bus}-DACF and {bus}-RTCF for renewable plants
         """
         if isinstance(data_path_or_df, str):
-            self.data = pd.read_csv(data_path_or_df, index_col="Datetime", parse_dates=True)
+            self.data = pd.read_csv(
+                data_path_or_df, index_col="Datetime", parse_dates=True
+            )
         elif isinstance(data_path_or_df, pd.DataFrame):
             self.data = data_path_or_df
         else:
@@ -710,12 +711,8 @@ class PerfectForecaster(AbstractPrescientPriceForecaster):
         pass
 
     def forecast_day_ahead_and_real_time_prices(self, date, hour, bus, horizon, _):
-        rt_forecast = self.forecast_real_time_prices(
-            date, hour, bus, horizon, _
-        )
-        da_forecast = self.forecast_day_ahead_prices(
-            date, hour, bus, horizon, _
-        )
+        rt_forecast = self.forecast_real_time_prices(date, hour, bus, horizon, _)
+        da_forecast = self.forecast_day_ahead_prices(date, hour, bus, horizon, _)
         return da_forecast, rt_forecast
 
     def get_column_from_data(self, date, hour, horizon, col):
@@ -723,17 +720,17 @@ class PerfectForecaster(AbstractPrescientPriceForecaster):
         forecast = self.data[self.data.index >= datetime_index].head(horizon)
         values = forecast[col].values
         if len(values) < horizon:
-            values = np.append(values, self.data[col].values[:horizon - len(values)])
+            values = np.append(values, self.data[col].values[: horizon - len(values)])
         return values
 
     def forecast_day_ahead_prices(self, date, hour, bus, horizon, _):
-        return self.get_column_from_data(date, hour, horizon, f'{bus}-DALMP')
+        return self.get_column_from_data(date, hour, horizon, f"{bus}-DALMP")
 
     def forecast_real_time_prices(self, date, hour, bus, horizon, _):
-        return self.get_column_from_data(date, hour, horizon, f'{bus}-RTLMP')
+        return self.get_column_from_data(date, hour, horizon, f"{bus}-RTLMP")
 
     def forecast_day_ahead_capacity_factor(self, date, hour, gen, horizon):
-        return self.get_column_from_data(date, hour, horizon, f'{gen}-DACF')
+        return self.get_column_from_data(date, hour, horizon, f"{gen}-DACF")
 
     def forecast_real_time_capacity_factor(self, date, hour, gen, horizon):
-        return self.get_column_from_data(date, hour, horizon, f'{gen}-RTCF')
+        return self.get_column_from_data(date, hour, horizon, f"{gen}-RTCF")
