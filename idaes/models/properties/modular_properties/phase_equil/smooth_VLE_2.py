@@ -240,7 +240,7 @@ class SmoothVLE2:
 
         if v_only_comps is None:
             if blk.is_property_constructed("temperature_dew"):
-                Tdew = value(blk.temeprature_bubble[pp])
+                Tdew = value(blk.temperature_bubble[pp])
             else:
                 Tdew = estimate_Tdew(
                     blk, T_units, raoult_comps, henry_comps, liquid_phase
