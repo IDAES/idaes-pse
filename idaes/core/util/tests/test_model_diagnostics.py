@@ -1089,8 +1089,9 @@ The following pairs of variables are nearly parallel:
         assert "WARNING: 1 Constraint with large residuals (>1.0E-05)" in warnings
         assert "WARNING: 1 Variable at or outside bounds (tol=0.0E+00)" in warnings
 
-        assert len(next_steps) == 2
+        assert len(next_steps) == 3
         assert "display_constraints_with_large_residuals()" in next_steps
+        assert "compute_infeasibility_explanation(solver=)" in next_steps
         assert "display_variables_at_or_outside_bounds()" in next_steps
 
     @pytest.mark.component
@@ -1138,10 +1139,11 @@ The following pairs of variables are nearly parallel:
         )
         assert "WARNING: 1 Constraint with large residuals (>1.0E-05)" in warnings
 
-        assert len(next_steps) == 4
+        assert len(next_steps) == 5
         assert "display_variables_with_extreme_jacobians()" in next_steps
         assert "display_constraints_with_extreme_jacobians()" in next_steps
         assert "display_constraints_with_large_residuals()" in next_steps
+        assert "compute_infeasibility_explanation(solver=)" in next_steps
 
     @pytest.mark.component
     def test_collect_numerical_cautions(self, model):
@@ -1393,6 +1395,7 @@ Model Statistics
 Suggested next steps:
 
     display_constraints_with_large_residuals()
+    compute_infeasibility_explanation(solver=)
     display_near_parallel_constraints()
     display_near_parallel_variables()
 
@@ -1432,6 +1435,7 @@ Model Statistics
 Suggested next steps:
 
     display_constraints_with_large_residuals()
+    compute_infeasibility_explanation(solver=)
     display_variables_at_or_outside_bounds()
 
 ====================================================================================
@@ -1480,6 +1484,7 @@ Model Statistics
 Suggested next steps:
 
     display_constraints_with_large_residuals()
+    compute_infeasibility_explanation(solver=)
     display_variables_with_extreme_jacobians()
     display_constraints_with_extreme_jacobians()
     display_near_parallel_variables()

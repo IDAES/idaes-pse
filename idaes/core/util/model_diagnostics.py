@@ -293,6 +293,14 @@ CONFIG.declare(
         description="Tolerance for identifying near-parallel Jacobian rows/columns",
     ),
 )
+CONFIG.declare(
+    "absolute_feasibility_tolerance",
+    ConfigValue(
+        default=1e-6,
+        domain=float,
+        description="Feasiblity tolerance for idenifying infeasible constraint and bounds",
+    ),
+)
 
 
 SVDCONFIG = ConfigDict()
@@ -727,6 +735,36 @@ class DiagnosticsToolbox:
             footer="=",
         )
 
+    def compute_infeasibility_explanation(self, solver, stream=None, tee=False):
+        """
+        This function attempts to determine why a given model is infeasible. It deploys
+        two main algorithms:
+
+        1. Relaxes the constraints of the problem, and reports to the user
+           some sets of constraints and variable bounds, which when relaxed, creates a
+           feasible model.
+        2. Uses the information collected from (1) to attempt to compute a Minimal
+           Infeasible System (MIS), which is a set of constraints and variable bounds
+           which appear to be in conflict with each other. It is minimal in the sense
+           that removing any single constraint or variable bound would result in a
+           feasible subsystem.
+
+        Args:
+            solver: A pyomo solver object or a string for SolverFactory
+            stream: I/O object to write report to (default = stdout)
+            tee:  Display intermediate solves conducted (False)
+
+        Returns:
+            None
+
+        """
+        compute_infeasibility_explanation(
+            self._model,
+            solver,
+            tolerance=self.config.absolute_feasibility_tolerance,
+            stream=stream,
+        )
+
     def get_dulmage_mendelsohn_partition(self):
         """
         Performs a Dulmage-Mendelsohn partitioning on the model and returns
@@ -1124,6 +1162,9 @@ class DiagnosticsToolbox:
             )
             next_steps.append(
                 self.display_constraints_with_large_residuals.__name__ + "()"
+            )
+            next_steps.append(
+                self.compute_infeasibility_explanation.__name__ + "(solver=)"
             )
 
         # Variables outside bounds
