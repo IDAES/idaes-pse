@@ -27,7 +27,6 @@ from pyomo.environ import (
     value,
     Var,
 )
-from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 
 from idaes.core import FlowsheetBlock
 from idaes.models.unit_models.heat_exchanger_ntu import (
@@ -41,10 +40,9 @@ from idaes.models.properties.modular_properties.base.generic_property import (
 from idaes.models_extra.column_models.properties.MEA_solvent import (
     configuration as aqueous_mea,
 )
-from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.solvers import get_solver
 from idaes.core.util.testing import initialization_tester, PhysicalParameterTestBlock
-from idaes.core.util.exceptions import ConfigurationError, InitializationError
+from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.initialization import (
     BlockTriangularizationInitializer,
     InitializationStatus,

@@ -258,6 +258,7 @@ class TestMethane(object):
         # TODO: This really should be fixed in the property package, but breaks other tests
         m.fs.unit.control_volume.properties_out[0].pressure.setlb(1000)
         m.fs.unit.control_volume.properties_out[0].mole_frac_phase_comp.setlb(1e-12)
+        m.fs.unit.control_volume.properties_out[0].mole_frac_comp.setlb(1e-12)
 
         return m
 
