@@ -758,10 +758,11 @@ class ActivityCoeffStateBlockData(StateBlockData):
                 domain=NonNegativeReals,
                 doc="Total molar flowrate [mol/s]",
                 units=pyunits.mol / pyunits.s,
+                bounds=(1e-8, None),
             )
             self.mole_frac_comp = Var(
                 self.params.component_list,
-                bounds=(0, 1),
+                bounds=(1e-10, 1.1),
                 initialize=1 / len(self.params.component_list),
                 doc="Mixture mole fraction",
             )
@@ -770,12 +771,14 @@ class ActivityCoeffStateBlockData(StateBlockData):
                 domain=NonNegativeReals,
                 doc="State pressure [Pa]",
                 units=pyunits.Pa,
+                bounds=(1e4, None),
             )
             self.temperature = Var(
                 initialize=298.15,
                 domain=NonNegativeReals,
                 doc="State temperature [K]",
                 units=pyunits.K,
+                bounds=(200, None),
             )
         else:
             self.flow_mol_comp = Var(
@@ -784,18 +787,21 @@ class ActivityCoeffStateBlockData(StateBlockData):
                 domain=NonNegativeReals,
                 doc="Component molar flowrate [mol/s]",
                 units=pyunits.mol / pyunits.s,
+                bounds=(1e-8, None),
             )
             self.pressure = Var(
                 initialize=101325,
                 domain=NonNegativeReals,
                 doc="State pressure [Pa]",
                 units=pyunits.Pa,
+                bounds=(1e4, None),
             )
             self.temperature = Var(
                 initialize=298.15,
                 domain=NonNegativeReals,
                 doc="State temperature [K]",
                 units=pyunits.K,
+                bounds=(200, None),
             )
 
     def _make_vars(self):

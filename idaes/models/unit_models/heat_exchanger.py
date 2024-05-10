@@ -578,12 +578,14 @@ class HeatExchangerData(UnitModelBlockData):
             initialize=10.0,
             doc="Temperature difference at the hot inlet end",
             units=temp_units,
+            bounds=(0.1, None),
         )
         self.delta_temperature_out = Var(
             self.flowsheet().time,
             initialize=10.1,
             doc="Temperature difference at the hot outlet end",
             units=temp_units,
+            bounds=(0.1, None),
         )
         if self.config.flow_pattern == HeatExchangerFlowPattern.crossflow:
             self.crossflow_factor = Var(

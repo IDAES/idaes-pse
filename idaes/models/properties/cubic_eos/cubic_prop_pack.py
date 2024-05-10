@@ -1100,10 +1100,11 @@ class CubicStateBlockData(StateBlockData):
             domain=NonNegativeReals,
             doc="Component molar flowrate [mol/s]",
             units=pyunits.mol / pyunits.s,
+            bounds=(1e-8, None),
         )
         self.mole_frac_comp = Var(
             self.params.component_list,
-            bounds=(0, None),
+            bounds=(1e-10, None),
             initialize=1 / len(self.params.component_list),
             doc="Mixture mole fractions [-]",
         )
@@ -1112,12 +1113,14 @@ class CubicStateBlockData(StateBlockData):
             domain=NonNegativeReals,
             doc="State pressure [Pa]",
             units=pyunits.Pa,
+            bounds=(1e4, None),
         )
         self.temperature = Var(
             initialize=298.15,
             domain=NonNegativeReals,
             doc="State temperature [K]",
             units=pyunits.K,
+            bounds=(200, None),
         )
 
         # Add supporting variables
@@ -1127,13 +1130,14 @@ class CubicStateBlockData(StateBlockData):
             domain=NonNegativeReals,
             doc="Phase molar flow rates [mol/s]",
             units=pyunits.mol / pyunits.s,
+            bounds=(1e-8, None),
         )
 
         self.mole_frac_phase_comp = Var(
             self.params.phase_list,
             self.params.component_list,
             initialize=1 / len(self.params.component_list),
-            bounds=(0, None),
+            bounds=(1e-10, None),
             doc="Phase mole fractions [-]",
         )
 

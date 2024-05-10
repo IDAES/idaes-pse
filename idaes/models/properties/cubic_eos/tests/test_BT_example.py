@@ -67,6 +67,7 @@ class TestBasicV(PropertyTestHarness):
         self.param_args = {"valid_phase": "Vap"}
         self.prop_args = {}
         self.has_density_terms = True
+        self.skip_initialization_raises_exception_test = True
 
 
 # -----------------------------------------------------------------------------

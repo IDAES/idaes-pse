@@ -278,7 +278,7 @@ def initialize_model(m):
     return solver.solve(m, tee=True)
 
 
-class Test_transport_properties_ideal(object):
+class Test_transport_properties_ideal:
     @pytest.fixture(scope="class")
     def hx(self):
         return build_model(eos=EosType.IDEAL)
@@ -292,7 +292,6 @@ class Test_transport_properties_ideal(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.integration
     def test_solution(self, hx):
-        hx.fs.unit.temperature_wall.display()
         assert pytest.approx(5, rel=1e-5) == value(
             hx.fs.unit.hot_side_outlet.flow_mol[0]
         )
@@ -352,7 +351,7 @@ class Test_transport_properties_ideal(object):
         assert abs(hot_side + cold_side) <= 1e-6
 
 
-class Test_transport_properties_ideal_chung(object):
+class Test_transport_properties_ideal_chung:
     @pytest.fixture(scope="class")
     def hx(self):
         return build_model(eos=EosType.IDEAL, visc_d_phase_comp=ChungViscosityPure)
@@ -366,7 +365,6 @@ class Test_transport_properties_ideal_chung(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.integration
     def test_solution(self, hx):
-        hx.fs.unit.temperature_wall.display()
         assert pytest.approx(5, rel=1e-5) == value(
             hx.fs.unit.hot_side_outlet.flow_mol[0]
         )
@@ -427,7 +425,7 @@ class Test_transport_properties_ideal_chung(object):
 
 
 # -----------------------------------------------------------------------------
-class Test_transport_properties_PR(object):
+class Test_transport_properties_PR:
     @pytest.fixture(scope="class")
     def hx(self):
         return build_model(eos=EosType.PR)
@@ -441,7 +439,6 @@ class Test_transport_properties_PR(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.integration
     def test_solution(self, hx):
-        hx.fs.unit.temperature_wall.display()
         assert pytest.approx(5, rel=1e-5) == value(
             hx.fs.unit.hot_side_outlet.flow_mol[0]
         )
