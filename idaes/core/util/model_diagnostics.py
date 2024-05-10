@@ -79,6 +79,7 @@ from pyomo.common.deprecation import deprecation_warning
 from pyomo.common.errors import PyomoException
 from pyomo.common.tempfiles import TempfileManager
 
+from idaes.core.solvers.get_solver import get_solver
 from idaes.core.util.model_statistics import (
     activated_blocks_set,
     deactivated_blocks_set,
@@ -298,7 +299,7 @@ CONFIG.declare(
     ConfigValue(
         default=1e-6,
         domain=float,
-        description="Feasibility tolerance for identifying infeasible constraint and bounds",
+        description="Feasibility tolerance for identifying infeasible constraints and bounds",
     ),
 )
 
@@ -735,7 +736,7 @@ class DiagnosticsToolbox:
             footer="=",
         )
 
-    def compute_infeasibility_explanation(self, solver, stream=None, tee=False):
+    def compute_infeasibility_explanation(self, stream=None, solver=None, tee=False):
         """
         This function attempts to determine why a given model is infeasible. It deploys
         two main algorithms:
@@ -750,19 +751,33 @@ class DiagnosticsToolbox:
            feasible subsystem.
 
         Args:
-            solver: A pyomo solver object or a string for SolverFactory
             stream: I/O object to write report to (default = stdout)
+            solver: A pyomo solver object or a string for SolverFactory
+                (default = get_solver())
             tee:  Display intermediate solves conducted (False)
 
         Returns:
             None
 
         """
-        compute_infeasibility_explanation(
+        if solver is None:
+            solver = get_solver()
+        if stream is None:
+            stream = sys.stdout
+
+        h = logging.StreamHandler(stream)
+        h.setLevel(logging.INFO)
+
+        l = logging.Logger(name=__name__ + ".compute_infeasibility_explanation")
+        l.setLevel(logging.INFO)
+        l.addHandler(h)
+
+        mis.compute_infeasibility_explanation(
             self._model,
             solver,
+            tee=tee,
             tolerance=self.config.absolute_feasibility_tolerance,
-            stream=stream,
+            logger=l,
         )
 
     def get_dulmage_mendelsohn_partition(self):
@@ -1163,9 +1178,7 @@ class DiagnosticsToolbox:
             next_steps.append(
                 self.display_constraints_with_large_residuals.__name__ + "()"
             )
-            next_steps.append(
-                self.compute_infeasibility_explanation.__name__ + "(solver=)"
-            )
+            next_steps.append(self.compute_infeasibility_explanation.__name__ + "()")
 
         # Variables outside bounds
         violated_bounds = _vars_violating_bounds(
@@ -3928,51 +3941,6 @@ def compute_ill_conditioning_certificate(
         ill_cond.append((components[i], val))
 
     return ill_cond
-
-
-def compute_infeasibility_explanation(
-    model, solver, tee=False, tolerance=1e-6, stream=None
-):
-    """
-    This function attempts to determine why a given model is infeasible. It deploys
-    two main algorithms:
-
-    1. Relaxes the constraints of the problem, and reports to the user
-       some sets of constraints and variable bounds, which when relaxed, creates a
-       feasible model.
-    2. Uses the information collected from (1) to attempt to compute a Minimal
-       Infeasible System (MIS), which is a set of constraints and variable bounds
-       which appear to be in conflict with each other. It is minimal in the sense
-       that removing any single constraint or variable bound would result in a
-       feasible subsystem.
-
-    This function is a wrapper for the same capability in pyomo.contrib.iis.mis.
-
-    Args:
-        model: A pyomo block
-        solver: A pyomo solver object or a string for SolverFactory
-        tee:  Display intermediate solves conducted (False)
-        tolerance: The feasibility tolerance to use when declaring a
-            constraint feasible (1e-08)
-        stream: I/O object to write report to (default = stdout)
-
-    Returns:
-        None
-
-    """
-    if stream is None:
-        stream = sys.stdout
-
-    h = logging.StreamHandler(stream)
-    h.setLevel(logging.INFO)
-
-    l = logging.Logger(name=__name__ + ".compute_infeasibility_explanation")
-    l.setLevel(logging.INFO)
-    l.addHandler(h)
-
-    mis.compute_infeasibility_explanation(
-        model, solver, tee=tee, tolerance=tolerance, logger=l
-    )
 
 
 # -------------------------------------------------------------------------------------------

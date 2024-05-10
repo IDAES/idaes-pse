@@ -81,7 +81,6 @@ from idaes.core.util.model_diagnostics import (
     _collect_model_statistics,
     check_parallel_jacobian,
     compute_ill_conditioning_certificate,
-    compute_infeasibility_explanation,
 )
 from idaes.core.util.parameter_sweep import (
     SequentialSweepRunner,
@@ -1091,7 +1090,7 @@ The following pairs of variables are nearly parallel:
 
         assert len(next_steps) == 3
         assert "display_constraints_with_large_residuals()" in next_steps
-        assert "compute_infeasibility_explanation(solver=)" in next_steps
+        assert "compute_infeasibility_explanation()" in next_steps
         assert "display_variables_at_or_outside_bounds()" in next_steps
 
     @pytest.mark.component
@@ -1143,7 +1142,7 @@ The following pairs of variables are nearly parallel:
         assert "display_variables_with_extreme_jacobians()" in next_steps
         assert "display_constraints_with_extreme_jacobians()" in next_steps
         assert "display_constraints_with_large_residuals()" in next_steps
-        assert "compute_infeasibility_explanation(solver=)" in next_steps
+        assert "compute_infeasibility_explanation()" in next_steps
 
     @pytest.mark.component
     def test_collect_numerical_cautions(self, model):
@@ -1395,7 +1394,7 @@ Model Statistics
 Suggested next steps:
 
     display_constraints_with_large_residuals()
-    compute_infeasibility_explanation(solver=)
+    compute_infeasibility_explanation()
     display_near_parallel_constraints()
     display_near_parallel_variables()
 
@@ -1435,7 +1434,7 @@ Model Statistics
 Suggested next steps:
 
     display_constraints_with_large_residuals()
-    compute_infeasibility_explanation(solver=)
+    compute_infeasibility_explanation()
     display_variables_at_or_outside_bounds()
 
 ====================================================================================
@@ -1484,7 +1483,7 @@ Model Statistics
 Suggested next steps:
 
     display_constraints_with_large_residuals()
-    compute_infeasibility_explanation(solver=)
+    compute_infeasibility_explanation()
     display_variables_with_extreme_jacobians()
     display_constraints_with_extreme_jacobians()
     display_near_parallel_variables()
@@ -4037,10 +4036,11 @@ class TestComputeInfeasibilityExplanation:
     @pytest.mark.component
     @pytest.mark.solver
     def test_output(self, model):
+        dt = DiagnosticsToolbox(model)
+
         stream = StringIO()
 
-        solver = get_solver()
-        compute_infeasibility_explanation(model, solver, stream=stream)
+        dt.compute_infeasibility_explanation(stream=stream)
 
         expected = """Computed Minimal Intractable System (MIS)!
 Constraints / bounds in MIS:
