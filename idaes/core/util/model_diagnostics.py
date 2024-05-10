@@ -298,7 +298,7 @@ CONFIG.declare(
     ConfigValue(
         default=1e-6,
         domain=float,
-        description="Feasiblity tolerance for idenifying infeasible constraint and bounds",
+        description="Feasibility tolerance for identifying infeasible constraint and bounds",
     ),
 )
 
