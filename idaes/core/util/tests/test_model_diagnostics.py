@@ -81,6 +81,7 @@ from idaes.core.util.model_diagnostics import (
     _collect_model_statistics,
     check_parallel_jacobian,
     compute_ill_conditioning_certificate,
+    compute_infeasibility_explanation,
 )
 from idaes.core.util.parameter_sweep import (
     SequentialSweepRunner,
@@ -4010,3 +4011,37 @@ class TestCheckIllConditioning:
             (afiro.X15, pytest.approx(-0.042451666, rel=1e-5)),
             (afiro.X37, pytest.approx(-0.036752232, rel=1e-5)),
         ]
+
+
+class TestComputeInfeasibilityExplanation:
+
+    @pytest.fixture(scope="class")
+    def model(self):
+        # create an infeasible model for demonstration
+        m = ConcreteModel()
+
+        m.name = "test_infeas"
+        m.x = Var([1, 2], bounds=(0, 1))
+        m.y = Var(bounds=(0, 1))
+
+        m.c = Constraint(expr=m.x[1] * m.x[2] == -1)
+        m.d = Constraint(expr=m.x[1] + m.y >= 1)
+
+        return m
+
+    @pytest.mark.component
+    @pytest.mark.solver
+    def test_output(self, model):
+        stream = StringIO()
+
+        solver = get_solver()
+        compute_infeasibility_explanation(model, solver, stream=stream)
+
+        expected = """Computed Minimal Intractable System (MIS)!
+Constraints / bounds in MIS:
+	lb of var x[2]
+	lb of var x[1]
+	constraint: c
+Constraints / bounds in guards for stability:
+"""
+        assert expected in stream.getvalue()
