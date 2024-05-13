@@ -66,14 +66,15 @@ def test_config():
         dynamic=False,
         sweep_flow=True,
         flow_type=MembraneFlowPattern.COUNTERCURRENT,
-        property_package=m.fs.properties,
+        feed_side = { "property_package" :  m.fs.properties },
+        sweep_side = {"property_package" :  m.fs.properties },
     )
 
     # Check unit config arguments
-    assert len(m.fs.unit.config) == 9
+    assert len(m.fs.unit.config) == 7
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup
-    assert m.fs.unit.config.property_package is m.fs.properties
+
 
 
 class TestMembrane(object):
@@ -91,8 +92,10 @@ class TestMembrane(object):
             dynamic=False,
             sweep_flow=True,
             flow_type=MembraneFlowPattern.COUNTERCURRENT,
-            property_package=m.fs.properties,
+            feed_side = { "property_package" :  m.fs.properties },
+            sweep_side = {"property_package" :  m.fs.properties },
         )
+        
 
         m.fs.unit.permeance[:, :, "CO2"].fix(1500)
         m.fs.unit.permeance[:, :, "H2O"].fix(1500 / 25)
