@@ -134,31 +134,7 @@ class Membrane1DData(UnitModelBlockData):
                                                     sweep side flows from 1 to 0  (default)""",
         ),
     )
-    CONFIG.declare(
-        "property_package",
-        ConfigValue(
-            default=None,
-            domain=is_physical_parameter_block,
-            description="Property package to use for control volume",
-            doc="""Property parameter object used to define property
-            calculations
-            (default = 'use_parent_value')
-            - 'use_parent_value' - get package from parent (default = None)
-            - a ParameterBlock object""",
-        ),
-    )
-    CONFIG.declare(
-        "property_package_args",
-        ConfigValue(
-            default={},
-            description="Arguments for constructing property package",
-            doc="""A dict of arguments to be passed to the PropertyBlockData
-            and used when constructing these
-            (default = 'use_parent_value')
-            - 'use_parent_value' - get package from parent (default = None)
-            - a dict (see property package for documentation)""",
-        ),
-    )
+
 
     for side_name in ["feed", "sweep"]:
         CONFIG.declare(
@@ -168,12 +144,6 @@ class Membrane1DData(UnitModelBlockData):
 
     def build(self):
         super().build()
-
-        if self.config.property_package is not None:
-            if self.config.feed_side.property_package == useDefault:
-                self.config.feed_side.property_package = self.config.property_package
-            if self.config.sweep_side.property_package == useDefault:
-                self.config.sweep_side.property_package = self.config.property_package
 
         feed_dict = dict(self.config.feed_side)
         sweep_dict = dict(self.config.sweep_side)
