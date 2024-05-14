@@ -1294,7 +1294,6 @@ class Bidder(StochasticProgramBidder):
 
 
 class ParametrizedBidder(AbstractBidder):
-
     """
     Create a parameterized bidder.
     Bid the resource at different prices.
@@ -1376,7 +1375,6 @@ class ParametrizedBidder(AbstractBidder):
         pass
 
     def record_bids(self, bids, model, date, hour, market):
-
         """
         This function records the bids and the details in the underlying bidding model.
 
@@ -1460,7 +1458,6 @@ class ParametrizedBidder(AbstractBidder):
 
 
 class PEMParametrizedBidder(ParametrizedBidder):
-
     """
     Renewable (PV or Wind) + PEM bidder that uses parameterized bid curve.
     Every timestep for RT or DA, max energy bid is the available wind resource.
@@ -1479,7 +1476,6 @@ class PEMParametrizedBidder(ParametrizedBidder):
         pem_mw,
         real_time_bidding_only=False,
     ):
-
         """
         Arguments:
             renewable_mw: maximum renewable energy system capacity
