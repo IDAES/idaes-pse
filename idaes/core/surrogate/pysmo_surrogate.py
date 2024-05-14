@@ -626,7 +626,6 @@ class TrainedSurrogateEncoder(JSONEncoder, TSEBase):
         "optimal_p",
         "optimal_mean",
         "optimal_variance",
-        "regularization_parameter",
         "optimal_covariance_matrix",
         "covariance_matrix_inverse",
         "optimal_y_mu",
@@ -675,7 +674,7 @@ class TrainedSurrogateEncoder(JSONEncoder, TSEBase):
             return isinstance(
                 v,
                 (
-                    pc.base.param._ParamData,
+                    pc.base.param.ParamData,
                     pc.base.param.Param,
                     pc.expr.numeric_expr.NPV_ProductExpression,
                     pc.expr.numeric_expr.NPV_DivisionExpression,

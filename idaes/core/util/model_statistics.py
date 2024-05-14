@@ -30,6 +30,7 @@ import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
 
+
 # -------------------------------------------------------------------------
 # Generator to handle cases where the input is an indexed Block
 # Indexed blocks do not have component_data_objects, so we need to iterate

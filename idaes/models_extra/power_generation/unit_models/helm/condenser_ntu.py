@@ -285,6 +285,8 @@ class HelmNtuCondenserData(UnitModelBlockData):
 
         """
         if unfix not in {"hot_flow", "cold_flow", "pressure"}:
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception(
                 "Condenser free variable must be in 'hot_flow', "
                 "'cold_flow', or 'pressure'"

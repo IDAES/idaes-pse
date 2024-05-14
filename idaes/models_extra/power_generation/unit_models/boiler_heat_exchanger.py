@@ -289,6 +289,7 @@ class BoilerHeatExchangerData(HeatExchangerData):
         if self.config.has_holdup is True:
             add_object_reference(self, "volume_cold_side", self.cold_side.volume)
             add_object_reference(self, "volume_hot_side", self.hot_side.volume)
+
             # Total tube side valume
             def volume_cold_side_eqn(b):
                 return b.volume_cold_side == (
@@ -880,6 +881,8 @@ class BoilerHeatExchangerData(HeatExchangerData):
                 initialize=1.0, doc="Staggered tube arrangement factor"
             )
         else:
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception("tube arrangement type not supported")
         # Velocity on shell side
         self.v_shell = Var(
@@ -970,6 +973,8 @@ class BoilerHeatExchangerData(HeatExchangerData):
                     )
 
             else:
+                # PYLINT-TODO
+                # pylint: disable-next=broad-exception-raised
                 raise Exception("tube arrangement type not supported")
 
             # Pressure drop on shell side

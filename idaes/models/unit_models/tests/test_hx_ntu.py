@@ -49,6 +49,7 @@ from idaes.core.initialization import (
     BlockTriangularizationInitializer,
     InitializationStatus,
 )
+from idaes.core.util import DiagnosticsToolbox
 
 
 # -----------------------------------------------------------------------------
@@ -281,20 +282,11 @@ class TestHXNTU(object):
         assert model.fs.unit.default_initializer is HXNTUInitializer
 
     @pytest.mark.component
-    def test_units(self, model):
-        assert_units_consistent(model)
-
-        assert_units_equivalent(model.fs.unit.area, pyunits.m**2)
-        assert_units_equivalent(
-            model.fs.unit.heat_transfer_coefficient,
-            pyunits.W / pyunits.m**2 / pyunits.K,
+    def test_structural_issues(self, model):
+        dt = DiagnosticsToolbox(model)
+        dt.assert_no_structural_warnings(
+            ignore_evaluation_errors=True,
         )
-        assert_units_equivalent(model.fs.unit.effectiveness[0], pyunits.dimensionless)
-        assert_units_equivalent(model.fs.unit.NTU[0], pyunits.dimensionless)
-
-    @pytest.mark.unit
-    def test_dof(self, model):
-        assert degrees_of_freedom(model) == 0
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -504,6 +496,13 @@ class TestHXNTU(object):
             )
             <= 1e-6
         )
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, model):
+        dt = DiagnosticsToolbox(model)
+        dt.assert_no_numerical_warnings()
 
 
 class TestInitializers(object):

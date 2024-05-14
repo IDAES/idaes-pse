@@ -75,7 +75,7 @@ from idaes.core.util.model_statistics import (
 )
 from idaes.core.util.testing import (
     PhysicalParameterTestBlock,
-    TestStateBlock,
+    StateBlockForTesting,
     initialization_tester,
 )
 from idaes.models.properties.modular_properties.base.generic_property import (
@@ -89,9 +89,10 @@ from idaes.core.initialization import (
 from idaes.core.util.initialization import (
     fix_state_vars,
 )
+from idaes.core.util import DiagnosticsToolbox
 
 
-# TODO: Should have a test for this that does not requrie models_extra
+# TODO: Should have a test for this that does not require models_extra
 from idaes.models_extra.power_generation.properties.natural_gas_PR import get_prop
 import idaes.core.util.scaling as iscale
 from idaes.core.solvers import get_solver
@@ -285,7 +286,7 @@ class TestMixer(object):
 
     @pytest.mark.unit
     def test_get_mixed_state_block(self, mixer_frame):
-        mixer_frame.fs.sb = TestStateBlock(
+        mixer_frame.fs.sb = StateBlockForTesting(
             mixer_frame.fs.time, parameters=mixer_frame.fs.pp
         )
 
@@ -308,7 +309,7 @@ class TestMixer(object):
 
     @pytest.mark.unit
     def test_get_mixed_state_block_mismatch(self, mixer_frame):
-        mixer_frame.fs.sb = TestStateBlock(
+        mixer_frame.fs.sb = StateBlockForTesting(
             mixer_frame.fs.time, parameters=mixer_frame.fs.pp
         )
 
@@ -688,7 +689,7 @@ class TestMixer(object):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = PhysicalParameterTestBlock()
-        m.fs.sb = TestStateBlock(m.fs.time, parameters=m.fs.pp)
+        m.fs.sb = StateBlockForTesting(m.fs.time, parameters=m.fs.pp)
 
         m.fs.mix = Mixer(property_package=m.fs.pp)
 
@@ -741,13 +742,12 @@ class TestMixer(object):
 
         pandas.testing.assert_frame_equal(stable, expected, rtol=1e-4, atol=1e-4)
 
-    @pytest.mark.initialization
     @pytest.mark.component
     def test_initialize(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = PhysicalParameterTestBlock()
-        m.fs.sb = TestStateBlock(m.fs.time, parameters=m.fs.pp)
+        m.fs.sb = StateBlockForTesting(m.fs.time, parameters=m.fs.pp)
 
         m.fs.mix = Mixer(property_package=m.fs.pp, mixed_state_block=m.fs.sb)
 
@@ -833,12 +833,9 @@ class TestBTX(object):
         assert number_unused_variables(btx) == 0
 
     @pytest.mark.component
-    def test_units(self, btx):
-        assert_units_consistent(btx)
-
-    @pytest.mark.unit
-    def test_dof(self, btx):
-        assert degrees_of_freedom(btx) == 0
+    def test_structural_issues(self, btx):
+        dt = DiagnosticsToolbox(btx)
+        dt.assert_no_structural_warnings()
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -934,6 +931,13 @@ class TestBTX(object):
                 * btx.fs.unit.mixed_state[0].enth_mol_phase["Liq"]
             )
         )
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, btx):
+        dt = DiagnosticsToolbox(btx)
+        dt.assert_no_numerical_warnings()
 
 
 # -----------------------------------------------------------------------------
@@ -1128,12 +1132,9 @@ class TestIAPWS(object):
         assert hasattr(iapws.fs.unit.outlet, "pressure")
 
     @pytest.mark.component
-    def test_units(self, iapws):
-        assert_units_consistent(iapws)
-
-    @pytest.mark.unit
-    def test_dof(self, iapws):
-        assert degrees_of_freedom(iapws) == 0
+    def test_structural_issues(self, iapws):
+        dt = DiagnosticsToolbox(iapws)
+        dt.assert_no_structural_warnings()
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -1233,6 +1234,13 @@ class TestIAPWS(object):
             <= 1e-6
         )
 
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, iapws):
+        dt = DiagnosticsToolbox(iapws)
+        dt.assert_no_numerical_warnings()
+
 
 # -----------------------------------------------------------------------------
 class TestSaponification(object):
@@ -1251,8 +1259,8 @@ class TestSaponification(object):
         m.fs.unit.inlet_1.conc_mol_comp[0, "H2O"].fix(55388.0)
         m.fs.unit.inlet_1.conc_mol_comp[0, "NaOH"].fix(100.0)
         m.fs.unit.inlet_1.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
-        m.fs.unit.inlet_1.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
-        m.fs.unit.inlet_1.conc_mol_comp[0, "Ethanol"].fix(0.0)
+        m.fs.unit.inlet_1.conc_mol_comp[0, "SodiumAcetate"].fix(1e-8)
+        m.fs.unit.inlet_1.conc_mol_comp[0, "Ethanol"].fix(1e-8)
 
         m.fs.unit.inlet_2.flow_vol[0].fix(1e-3)
         m.fs.unit.inlet_2.temperature[0].fix(300)
@@ -1260,8 +1268,8 @@ class TestSaponification(object):
         m.fs.unit.inlet_2.conc_mol_comp[0, "H2O"].fix(55388.0)
         m.fs.unit.inlet_2.conc_mol_comp[0, "NaOH"].fix(100.0)
         m.fs.unit.inlet_2.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
-        m.fs.unit.inlet_2.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
-        m.fs.unit.inlet_2.conc_mol_comp[0, "Ethanol"].fix(0.0)
+        m.fs.unit.inlet_2.conc_mol_comp[0, "SodiumAcetate"].fix(1e-8)
+        m.fs.unit.inlet_2.conc_mol_comp[0, "Ethanol"].fix(1e-8)
 
         return m
 
@@ -1291,12 +1299,9 @@ class TestSaponification(object):
         assert number_unused_variables(sapon) == 0
 
     @pytest.mark.component
-    def test_units(self, sapon):
-        assert_units_consistent(sapon)
-
-    @pytest.mark.unit
-    def test_dof(self, sapon):
-        assert degrees_of_freedom(sapon) == 0
+    def test_structural_issues(self, sapon):
+        dt = DiagnosticsToolbox(sapon)
+        dt.assert_no_structural_warnings()
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -1451,6 +1456,13 @@ class TestSaponification(object):
             )
             <= 1e-3
         )
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, sapon):
+        dt = DiagnosticsToolbox(sapon)
+        dt.assert_no_numerical_warnings()
 
 
 @pytest.mark.skipif(not cubic_roots_available(), reason="Cubic functions not available")

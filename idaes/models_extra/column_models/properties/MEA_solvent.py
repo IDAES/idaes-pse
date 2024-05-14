@@ -281,6 +281,8 @@ class PressureSatSolvent:
     @staticmethod
     def return_expression(b, cobj, T, dT=False):
         if dT:
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception("No dT method for pressure sat")
 
         return (
@@ -627,8 +629,7 @@ class ThermalCond:
 
         x = blk.mole_frac_phase_comp_apparent
         return (
-            ((x["Liq", "H2O"] * K_H2O**-2 + x["Liq", "MEA"] * K_MEA**-2) ** -1)
-            ** 0.5
+            ((x["Liq", "H2O"] * K_H2O**-2 + x["Liq", "MEA"] * K_MEA**-2) ** -1) ** 0.5
             * pyunits.W
             / pyunits.m
             / pyunits.K

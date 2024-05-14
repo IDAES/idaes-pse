@@ -16,6 +16,7 @@ Tests for 0D lumped capacitance heat exchanger model
 Author: Rusty Gentile, John Eslick, Andrew Lee
 """
 import pytest
+import re
 
 from pyomo.environ import (
     check_optimal_termination,
@@ -31,9 +32,6 @@ from pyomo.dae import DerivativeVar
 from pyomo.common.config import ConfigBlock
 from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 
-from pyomo.core.base.units_container import InconsistentUnitsError
-
-from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.solvers import get_solver
 from idaes.core.util.exceptions import DynamicError, ConfigurationError, IdaesError
 
@@ -61,6 +59,7 @@ from idaes.models.properties.general_helmholtz import helmholtz_available
 from idaes.core.initialization import (
     InitializationStatus,
 )
+from idaes.core.util import DiagnosticsToolbox
 
 # Get default solver for testing
 solver = get_solver()
@@ -275,7 +274,7 @@ class TestHXLCGeneric(object):
 
         return m
 
-    @pytest.fixture()
+    @pytest.fixture
     def model(self, unconstrained_model):
         m = unconstrained_model
         m.discretizer = TransformationFactory("dae.finite_difference")
@@ -297,12 +296,15 @@ class TestHXLCGeneric(object):
 
         return m
 
-    @pytest.mark.unit
-    @pytest.mark.xfail(raises=InconsistentUnitsError)
-    def test_units(self, model):
-        # Note: using the discretizer makes the units of measure on the time
-        # derivative term inconsistent...
-        assert_units_consistent(model)
+    @pytest.mark.component
+    def test_structural_issues(self, model):
+        dt = DiagnosticsToolbox(model)
+        dt.display_potential_evaluation_errors()
+        # TODO: Evaluation errors due to temperature differentials
+        # TODO: Skip unit consistency due to Pyomo DAE issue
+        dt.assert_no_structural_warnings(
+            ignore_evaluation_errors=True, ignore_unit_consistency=True
+        )
 
     @pytest.mark.unit
     def test_units_unconstrained(self, unconstrained_model):
@@ -346,10 +348,6 @@ class TestHXLCGeneric(object):
         assert isinstance(model.fs.unit.thermal_fouling_hot_side, Param)
         assert isinstance(model.fs.unit.thermal_fouling_cold_side, Param)
 
-    @pytest.mark.unit
-    def test_dof(self, model):
-        assert degrees_of_freedom(model) == 0
-
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
@@ -365,6 +363,11 @@ class TestHXLCGeneric(object):
 
         # Check for optimal solution
         assert check_optimal_termination(results)
+
+        # Combine with solve test due to how fixtures are set up
+        dt = DiagnosticsToolbox(model)
+        dt.display_constraints_with_large_residuals()
+        dt.assert_no_numerical_warnings()
 
     @pytest.mark.unit
     def test_dynamic_heat_in_static_flowsheet(self):
@@ -457,9 +460,11 @@ class TestHXLCGeneric(object):
 
         with pytest.raises(
             ConfigurationError,
-            match="invalid arguments for dynamic and has_holdup. "
-            "If dynamic = True, has_holdup must also be True "
-            "\(was False\)",
+            match=re.escape(
+                "invalid arguments for dynamic and has_holdup. "
+                "If dynamic = True, has_holdup must also be True "
+                "(was False)"
+            ),
         ):
             m.fs.unit = HeatExchangerLumpedCapacitance(
                 hot_side_name="shell",
@@ -500,11 +505,11 @@ class TestHXLCGeneric(object):
                 "HX Area": model.fs.unit.area,
                 "Heat Duty": model.fs.unit.heat_duty[0],
                 "HX Coefficient": model.fs.unit.overall_heat_transfer_coefficient[0],
+                "Delta T In": model.fs.unit.delta_temperature_in[0],
+                "Delta T Out": model.fs.unit.delta_temperature_out[0],
             },
             "exprs": {
                 "Delta T Driving": model.fs.unit.delta_temperature[0],
-                "Delta T In": model.fs.unit.delta_temperature_in[0],
-                "Delta T Out": model.fs.unit.delta_temperature_out[0],
             },
         }
 

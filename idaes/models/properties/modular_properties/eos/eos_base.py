@@ -51,6 +51,30 @@ class EoSBase:
         raise NotImplementedError(_msg(b, "build_parameters"))
 
     @staticmethod
+    def build_critical_properties(b, ref_phase):
+        """
+        This method is used to define the constraints used to calculate mixture
+        critical properties.
+        """
+        raise NotImplementedError(_msg(b, "build_critical_properties"))
+
+    @staticmethod
+    def list_critical_property_constraint_names():
+        """
+        If critical properties are supported, this method is required during
+        initialization to identify the constraints that are associated
+        with calculating the critical properties.
+
+        Returns:
+            list of constraint names
+        """
+        raise NotImplementedError(
+            "Equation of State module has not implemented a method for "
+            "list_critical_property_constraint_names. Please contact the "
+            "EoS developer or use a different module."
+        )
+
+    @staticmethod
     def get_vol_mol_pure(b, phase, comp, temperature):
         try:
             vol_mol = get_method(b, "vol_mol_" + phase + "_comp", comp)(

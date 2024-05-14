@@ -215,7 +215,6 @@ def quantify_propagate_uncertainty(
 def propagate_uncertainty(
     model_uncertain, theta, cov, theta_names, tee=False, solver_options=None
 ):
-
     """This function calculates gradient vector, expectation, and variance of
     the objective function and constraints  of the model for given estimated
     optimal parameters and covariance matrix of parameters.

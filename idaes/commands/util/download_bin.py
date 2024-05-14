@@ -102,6 +102,8 @@ def _get_release_url(release, url):
 
     if url is None:
         _log.debug("No release or URL was provided.")
+        # PYLINT-TODO
+        # pylint: disable-next=broad-exception-raised
         raise Exception("Must provide a location to download binaries")
 
     if url.endswith("/"):
@@ -189,6 +191,8 @@ def _download_package(fd, name, frm, to, platform):
     try:
         fd.get_binary_file(frm)
     except urllib.error.HTTPError:
+        # PYLINT-TODO
+        # pylint: disable-next=broad-exception-raised
         raise Exception(f"{name} binaries are unavailable for {platform}")
 
 
@@ -199,6 +203,8 @@ def _verify_checksums(checksum, pname, ptar, ftar):
             hash_l = _hash(p)
             _log.debug(f"{n} Hash {hash_l}")
             if checksum.get(f, "") != hash_l:
+                # PYLINT-TODO
+                # pylint: disable-next=broad-exception-raised
                 raise Exception(f"{n} hash does not match expected")
 
 
@@ -302,6 +308,8 @@ def _verify_tar_member_targets(tar, to_path, links=None):
     for member in tar.getmembers():
         member_path = _resolve_path(os.path.join(to_path, member.name), links)
         if not member_path.startswith(to_path):
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception(
                 f"Tarball {tar.name} contained potentially unsafe member "
                 f"{member.name} that would extract to {member_path} outside "

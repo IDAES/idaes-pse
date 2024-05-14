@@ -3,6 +3,8 @@ init-hook="import sys; sys.path.append('.pylint')"
 load-plugins=idaes_transform
 ignore-patterns=test_.*,__init__.*
 ignore=alamopy_depr,grid_integration,helmet,matopt,ripe,roundingRegression
+extension-pkg-allow-list=
+    pyomo.core.expr.numeric_expr,
 
 [MESSAGES CONTROL]
 disable=no-self-argument,
@@ -13,12 +15,11 @@ disable=no-self-argument,
     fixme,
     raise-missing-from,
     logging-fstring-interpolation,  # not sure why pylint doesn't like f-strings
-    unnecessary-lambda,
     attribute-defined-outside-init,
     arguments-differ,
     abstract-method,
     arguments-renamed,
-    unused-argument,  # w have cases where a general high level method passes arguments that simpler methods do not need
+    unused-argument,  # we have cases where a general high level method passes arguments that simpler methods do not need
     redefined-outer-name,
     anomalous-backslash-in-string,
     unspecified-encoding,
@@ -28,6 +29,7 @@ disable=no-self-argument,
     too-many-lines,
     use-implicit-booleaness-not-comparison,  # implicit booleaness can be hard to follow
     consider-using-f-string,  # should fix, but a lot of effort
+    no-member,  # Triggers many false positives from Pyomo due to diamond structure
 
 [IMPORTS]
 ignored-modules=cvalsim,almsim

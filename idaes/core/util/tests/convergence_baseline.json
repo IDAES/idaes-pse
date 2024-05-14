@@ -1,0 +1,60 @@
+{
+   "specification": {
+      "inputs": {
+         "v2": {
+            "pyomo_path": "v2",
+            "lower": 2,
+            "upper": 6
+         }
+      },
+      "sampling_method": "UniformSampling",
+      "sample_size": [
+         2
+      ],
+      "samples": {
+         "index": [
+            0,
+            1
+         ],
+         "columns": [
+            "v2"
+         ],
+         "data": [
+            [
+               2.0
+            ],
+            [
+               6.0
+            ]
+         ],
+         "index_names": [
+            null
+         ],
+         "column_names": [
+            null
+         ]
+      }
+   },
+   "results": {
+      "0": {
+         "success": true,
+         "results": {
+            "iters": 7,
+            "iters_in_restoration": 4,
+            "iters_w_regularization": 0,
+            "time": 0.002,
+            "numerical_issues": true
+         }
+      },
+      "1": {
+         "success": false,
+         "results": {
+            "iters": 7,
+            "iters_in_restoration": 4,
+            "iters_w_regularization": 2,
+            "time": 0.001,
+            "numerical_issues": true
+         }
+      }
+   }
+}

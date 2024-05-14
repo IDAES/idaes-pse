@@ -34,20 +34,20 @@ import scipy.sparse.linalg as spla
 import scipy.linalg as la
 
 import pyomo.environ as pyo
-from pyomo.core.base.var import _VarData
-from pyomo.core.base.param import _ParamData
+from pyomo.core.base.var import VarData
+from pyomo.core.base.param import ParamData
 from pyomo.core.expr.visitor import identify_variables
 from pyomo.network import Arc
 from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
 from pyomo.contrib.pynumero.asl import AmplInterface
 from pyomo.common.modeling import unique_component_name
-from pyomo.core.base.constraint import _ConstraintData
+from pyomo.core.base.constraint import ConstraintData
 from pyomo.common.collections import ComponentMap, ComponentSet
 from pyomo.dae import DerivativeVar
 from pyomo.dae.flatten import slice_component_along_sets
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from pyomo.core import expr as EXPR
-from pyomo.core.expr.numvalue import native_types, pyomo_constant_types
+from pyomo.common.numeric_types import native_types
 from pyomo.core.base.units_container import _PyomoUnit
 
 import idaes.logger as idaeslog
@@ -276,7 +276,7 @@ def get_scaling_factor(c, default=None, warning=False, exception=False, hint=Non
     try:
         sf = c.parent_block().scaling_factor[c]
     except (AttributeError, KeyError):
-        if not isinstance(c, (pyo.Param, _ParamData)):
+        if not isinstance(c, (pyo.Param, ParamData)):
             if hint is None:
                 h = ""
             else:
@@ -458,7 +458,7 @@ def constraint_scaling_transform(c, s, overwrite=True):
     """
     # Want to clear away any units that may have incidentally become attached to s
     s = pyo.value(s)
-    if not isinstance(c, _ConstraintData):
+    if not isinstance(c, ConstraintData):
         raise TypeError(f"{c} is not a constraint or is an indexed constraint")
     st = get_constraint_transform_applied_scaling_factor(c, default=None)
 
@@ -484,7 +484,7 @@ def constraint_scaling_transform_undo(c):
     Returns:
         None
     """
-    if not isinstance(c, _ConstraintData):
+    if not isinstance(c, ConstraintData):
         raise TypeError(f"{c} is not a constraint or is an indexed constraint")
     v = get_constraint_transform_applied_scaling_factor(c)
     if v is None:
@@ -1179,9 +1179,15 @@ def set_scaling_from_default(
                 return
 
         parent = component.parent_block()
-        dsf = parent.get_default_scaling(
-            component.parent_component().local_name, index=component.index()
-        )
+        try:
+            dsf = parent.get_default_scaling(
+                component.parent_component().local_name, index=component.index()
+            )
+        except AttributeError:
+            dsf = None
+            _log.warning(
+                f"{component.name} block missing 'get_default_scaling()' method, no scaling factor assigned."
+            )
 
         if dsf is not None:
             set_scaling_factor(component, dsf, overwrite=overwrite)
@@ -1218,7 +1224,7 @@ def set_variable_scaling_from_current_value(
     elif component.is_indexed():
         for k in component.values():
             set_variable_scaling_from_current_value(k, overwrite=overwrite)
-    elif not isinstance(component, _VarData):
+    elif not isinstance(component, VarData):
         raise TypeError(
             f"Invalid component type {component.name} (type:{type(component)}). "
             "component argument to set_variable_scaling_from_current_value must be "
@@ -1509,7 +1515,7 @@ class NominalValueExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
         # first check if the node is a leaf
         nodetype = type(node)
 
-        if nodetype in native_types or nodetype in pyomo_constant_types:
+        if nodetype in native_types:
             return [node]
 
         node_func = self.node_type_method_map.get(nodetype, None)
