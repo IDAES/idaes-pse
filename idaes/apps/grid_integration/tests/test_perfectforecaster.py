@@ -43,7 +43,7 @@ def base_perfectforecaster(wind_df):
     return PerfectForecaster(wind_df)
 
 
-@pytest.mark.unit
+@pytest.mark.component
 def test_create_perfectforecaster(wind_df):
     perfectforecaster = PerfectForecaster(data_path_or_df=wind_df)
     assert perfectforecaster.data is wind_df
