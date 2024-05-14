@@ -52,7 +52,10 @@ def test_create_perfectforecaster(wind_df):
 @pytest.mark.unit
 @pytest.mark.parametrize("value", [np.array([1, 2, 3, 4, 5]), [1, 2, 3, 4, 5]])
 def test_create_perfectforecaster_with_ndarray_and_list(value):
-    with pytest.raises(ValueError, match=r".*The data_path_or_df should be pandas DataFrame or a string of the csv path.*"):
+    with pytest.raises(
+        ValueError,
+        match=r".*The data_path_or_df should be pandas DataFrame or a string of the csv path.*",
+    ):
         perfectforecaster = PerfectForecaster(value)
 
 
@@ -102,7 +105,6 @@ def test_forecast_real_time_prices(base_perfectforecaster):
     pyo_unittest.assertStructuredAlmostEqual(
         first=result_forecast.tolist(), second=expected_forecast
     )
-    return
 
 
 @pytest.mark.unit
@@ -118,7 +120,6 @@ def test_forecast_day_ahead_capacity_factor(base_perfectforecaster):
     pyo_unittest.assertStructuredAlmostEqual(
         first=result_forecast.tolist(), second=expected_forecast
     )
-    return
 
 
 @pytest.mark.unit
@@ -134,4 +135,3 @@ def test_forecast_real_time_capacity_factor(base_perfectforecaster):
     pyo_unittest.assertStructuredAlmostEqual(
         first=result_forecast.tolist(), second=expected_forecast
     )
-    return

@@ -10,10 +10,9 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-
 import pytest
-import pyomo.environ as pyo
 from pyomo.common import unittest as pyo_unittest
+from pyomo.opt.base.solvers import OptSolver
 from idaes.apps.grid_integration.bidder import PEMParametrizedBidder
 from idaes.apps.grid_integration.forecaster import PerfectForecaster
 from idaes.apps.grid_integration.tests.util import (
@@ -25,7 +24,8 @@ from idaes.apps.grid_integration.coordinator import prescient_avail
 
 day_ahead_horizon = 24
 real_time_horizon = 4
-solver = pyo.SolverFactory("cbc")
+# instead of using cbc, use a quasi solver to pass the _check_solver.
+solver = OptSolver(type="solver")
 
 
 @pytest.mark.unit

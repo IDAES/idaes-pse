@@ -10,14 +10,14 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+import os
+from abc import ABC, abstractmethod
+import datetime
 import pandas as pd
 import pyomo.environ as pyo
 from pyomo.opt.base.solvers import OptSolver
-import os
-from abc import ABC, abstractmethod
-from idaes.apps.grid_integration.utils import convert_marginal_costs_to_actual_costs
-import datetime
 from pyomo.common.dependencies import attempt_import
+from idaes.apps.grid_integration.utils import convert_marginal_costs_to_actual_costs
 
 egret, egret_avail = attempt_import("egret")
 if egret_avail:

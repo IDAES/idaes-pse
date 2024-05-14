@@ -10,9 +10,9 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-import pandas as pd
 from abc import ABC, abstractmethod
 from numbers import Real
+import pandas as pd
 import numpy as np
 import idaes.logger as idaeslog
 
