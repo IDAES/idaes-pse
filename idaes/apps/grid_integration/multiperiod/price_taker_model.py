@@ -255,7 +255,7 @@ class PriceTakerModel(ConcreteModel):
         labels = kmeans.labels_
 
         # Set any centroid values that are < 1e-4 to 0 to avoid noise
-        centroids = centroids * (centroids >= 1e-4)
+        centroids = centroids * (abs(centroids) >= 1e-4)
 
         # Compute weight for each cluster by counting its occurrences in the dataset
         unique_labels, weights_counter = np.unique(labels, return_counts=True)
