@@ -177,12 +177,12 @@ https://dispatches.readthedocs.io/en/main/models/renewables/index.html
 .. autoclass:: SelfScheduler
   :members:
 
-PEMParameterizedBidder
+PEMParametrizedBidder
 ============================================
-The ``PEMParameterizedBidder`` bids the renewable-PEM IES at a constant price. 
-The logic of ``PEMParameterizedBidder`` is to reserve a part of the renewable generation
+The ``PEMParametrizedBidder`` bids the renewable-PEM IES at a constant price. 
+The logic of ``PEMParametrizedBidder`` is to reserve a part of the renewable generation
 to co-prodcue the hydrogen. The reserved power can be sold at the marginal cost of the hydrogen
 price. 
 
-.. autoclass:: PEMParameterizedBidder
+.. autoclass:: PEMParametrizedBidder
   :members:
