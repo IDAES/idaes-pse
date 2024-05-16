@@ -1340,12 +1340,24 @@ class ParametrizedBidder(AbstractBidder):
     def formulate_DA_bidding_problem(self):
         """
         No need to formulate a DA bidding problem here.
+        
+        Arguments:
+            None
+
+        Returns:
+            None
         """
         pass
 
     def formulate_RT_bidding_problem(self):
         """
         No need to formulate a RT bidding problem here.
+        
+        Arguments:
+            None
+
+        Returns:
+            None
         """
         pass
 
@@ -1365,12 +1377,24 @@ class ParametrizedBidder(AbstractBidder):
     def update_day_ahead_model(self, **kwargs):
         """
         No need to update the RT bidding problem here.
+
+        Arguments:
+            None
+
+        Returns:
+            None
         """
         pass
 
     def update_real_time_model(self, **kwargs):
         """
         No need to update the RT bidding problem here.
+
+        Arguments:
+            None
+
+        Returns:
+            None
         """
         pass
 
@@ -1404,6 +1428,20 @@ class ParametrizedBidder(AbstractBidder):
         return
 
     def _record_bids(self, bids, date, hour, **kwargs):
+        """
+        Record the bis of each time perid.
+
+        Arguments:
+            bids: the obtained bids for this date.
+
+            date: the date we bid into
+
+            hour: the hour we bid into
+
+        Returns:
+            None
+
+        """
         df_list = []
         for t in bids:
             for gen in bids[t]:
@@ -1459,9 +1497,7 @@ class ParametrizedBidder(AbstractBidder):
 
 class PEMParametrizedBidder(ParametrizedBidder):
     """
-    Renewable (PV or Wind) + PEM bidder that uses parameterized bid curve.
-    Every timestep for RT or DA, max energy bid is the available wind resource.
-    Please use the
+    Renewable (PV or Wind) + PEM bidder that uses parameterized bid curves.
     """
 
     def __init__(
@@ -1514,6 +1550,15 @@ class PEMParametrizedBidder(ParametrizedBidder):
         from (Wind Resource - PEM capacity) MW to Wind Resource MW, bid 'pem_marginal_cost'
 
         If Wind resource at some time is less than PEM capacity, then reduce to available resource
+
+        Arguments:
+            
+            date: the date we bid into
+
+            hour: the hour we bid into
+        
+        Returns:
+            None
         """
         gen = self.generator
         # Forecast the day-ahead wind generation
@@ -1566,8 +1611,15 @@ class PEMParametrizedBidder(ParametrizedBidder):
         """
         RT Bid: from 0 MW to (Wind Resource - PEM capacity) MW, bid $0/MWh.
         from (Wind Resource - PEM capacity) MW to Wind Resource MW, bid 'pem_marginal_cost'
+        
+        Arguments:
+            
+            date: the date we bid into
 
-        If Wind resource at some time is less than PEM capacity, then reduce to available resource
+            hour: the hour we bid into
+        
+        Returns:
+            None
         """
 
         gen = self.generator

@@ -13,13 +13,13 @@ uncertain price scenario has a corresponding power output. As shown in the figur
 each of these uncertain price and power output pairs formulates a segment in the
 bidding curves.
 
-Here we present a stochastic bidding model for a renewable integated energy system (Wind generator + PEM).
+Here we present a stochastic bidding model for a renewable integrated energy system (Wind generator + PEM).
 
 
 Day-Ahead Bidding Problem for Wind + PEM IES
 ---------------------------------------------
 
-The objective function is the expected profit, which equals the revenue substracts the cost. 
+The objective function is the expected profit, which equals the revenue substract the cost. 
 We want to consider the revenue from the electricity market and the hydrogen market.
 
 .. math:: \max \quad \sum_{s \in S, t \in T^{DA}}\omega_{s}[{(\pi_{t,s}^{DA}P_{t,s}^{DA} + \pi_{t,s}^{RT}(P_{t,s}^{RT}-P_{t,s}^{DA}))\Delta t  + Pr^{H}m_{t,s}^{H}- c_{t,s}}] - C_{fix}
@@ -171,18 +171,18 @@ https://dispatches.readthedocs.io/en/main/models/renewables/index.html
 
 .. module:: idaes.apps.grid_integration.bidder
 
+.. autoclass:: Bidder
+  :members:
+
+.. autoclass:: SelfScheduler
+  :members:
+
 PEMParameterizedBidder
 ============================================
 The ``PEMParameterizedBidder`` bids the renewable-PEM IES at a constant price. 
 The logic of ``PEMParameterizedBidder`` is to reserve a part of the renewable generation
 to co-prodcue the hydrogen. The reserved power can be sold at the marginal cost of the hydrogen
 price. 
-
-.. autoclass:: Bidder
-  :members:
-
-.. autoclass:: SelfScheduler
-  :members:
 
 .. autoclass:: PEMParameterizedBidder
   :members:
