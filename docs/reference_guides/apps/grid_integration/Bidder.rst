@@ -19,7 +19,7 @@ Here we present a stochastic bidding model for a renewable integrated energy sys
 Day-Ahead Bidding Problem for Wind + PEM IES
 ---------------------------------------------
 
-The objective function is the expected profit, which equals the revenue substract the cost. 
+The objective function is the expected profit, which equals the revenue subtract the cost. 
 We want to consider the revenue from the electricity market and the hydrogen market.
 
 .. math:: \max \quad \sum_{s \in S, t \in T^{DA}}\omega_{s}[{(\pi_{t,s}^{DA}P_{t,s}^{DA} + \pi_{t,s}^{RT}(P_{t,s}^{RT}-P_{t,s}^{DA}))\Delta t  + Pr^{H}m_{t,s}^{H}- c_{t,s}}] - C_{fix}

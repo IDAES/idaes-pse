@@ -1340,7 +1340,7 @@ class ParametrizedBidder(AbstractBidder):
     def formulate_DA_bidding_problem(self):
         """
         No need to formulate a DA bidding problem here.
-        
+
         Arguments:
             None
 
@@ -1352,7 +1352,7 @@ class ParametrizedBidder(AbstractBidder):
     def formulate_RT_bidding_problem(self):
         """
         No need to formulate a RT bidding problem here.
-        
+
         Arguments:
             None
 
@@ -1552,11 +1552,11 @@ class PEMParametrizedBidder(ParametrizedBidder):
         If Wind resource at some time is less than PEM capacity, then reduce to available resource
 
         Arguments:
-            
+
             date: the date we bid into
 
             hour: the hour we bid into
-        
+
         Returns:
             None
         """
@@ -1611,13 +1611,13 @@ class PEMParametrizedBidder(ParametrizedBidder):
         """
         RT Bid: from 0 MW to (Wind Resource - PEM capacity) MW, bid $0/MWh.
         from (Wind Resource - PEM capacity) MW to Wind Resource MW, bid 'pem_marginal_cost'
-        
+
         Arguments:
-            
+
             date: the date we bid into
 
             hour: the hour we bid into
-        
+
         Returns:
             None
         """
