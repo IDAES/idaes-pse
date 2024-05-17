@@ -124,13 +124,21 @@ class SmoothVLE2:
 
         b.add_component("_teq_constraint" + suffix, Constraint(rule=rule_teq))
 
-        eps = Param(
-            default=1e-04,
+        eps1 = Param(
+            default=1e-4,
             mutable=True,
             doc="Smoothing parameter for complementarities",
             units=f_units,
         )
-        b.add_component("eps" + suffix, eps)
+        b.add_component("eps_1" + suffix, eps1)
+
+        eps2 = Param(
+            default=1e-5,
+            mutable=True,
+            doc="Smoothing parameter for complementarities",
+            units=f_units,
+        )
+        b.add_component("eps_2" + suffix, eps2)
 
         gp = Var(
             vl_phase_set,
@@ -153,7 +161,7 @@ class SmoothVLE2:
         def rule_temperature_slack_complementarity(b, p):
             flow_phase = b.flow_mol_phase[p]
 
-            return smooth_min(s[p] * f_units, flow_phase, eps) == 0
+            return smooth_min(s[p] * f_units, flow_phase, eps1) == 0
 
         b.add_component(
             "temperature_slack_complementarity" + suffix,
@@ -190,9 +198,9 @@ class SmoothVLE2:
         def rule_cubic_slack_complementarity(b, p):
             flow_phase = b.flow_mol_phase[p]
             if b.params.get_phase(p).is_vapor_phase():
-                return smooth_min(gn[p] * f_units, flow_phase, eps) == 0
+                return smooth_min(gn[p] * f_units, flow_phase, eps2) == 0
             else:
-                return smooth_min(gp[p] * f_units, flow_phase, eps) == 0
+                return smooth_min(gp[p] * f_units, flow_phase, eps2) == 0
 
         b.add_component(
             "cubic_slack_complementarity" + suffix,

@@ -93,7 +93,15 @@ class TestBTExample(object):
             m.fs.state[1].temperature.unfix()
             m.fs.obj.activate()
 
-            results = solver.solve(m)
+            results = solver.solve(m, tee=True)
+
+            m.fs.state.display()
+            from idaes.core.util import DiagnosticsToolbox
+
+            dt = DiagnosticsToolbox(m.fs)
+            dt.report_structural_issues()
+            dt.report_numerical_issues()
+            dt.display_variables_at_or_outside_bounds()
 
             assert check_optimal_termination(results)
             assert m.fs.state[1].flow_mol_phase["Liq"].value <= 1e-5
