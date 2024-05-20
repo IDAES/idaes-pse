@@ -18,7 +18,7 @@ Author: Andrew Lee
 import pytest
 
 from pyomo.util.check_units import assert_units_consistent
-from pyomo.environ import check_optimal_termination, ConcreteModel, Objective, value
+from pyomo.environ import assert_optimal_termination, ConcreteModel, Objective, value
 
 from idaes.core import FlowsheetBlock
 from idaes.models.properties.modular_properties.eos.ceos import cubic_roots_available
@@ -88,22 +88,26 @@ class TestBTExample(object):
             m.fs.state[1].temperature.fix(300)
             m.fs.state[1].pressure.fix(10 ** (0.5 * logP))
 
+            # For optimization sweep, use a large eps to avoid getting stuck at
+            # bubble and dew points
+            m.fs.state[1].eps_1_Vap_Liq.set_value(10)
+            m.fs.state[1].eps_2_Vap_Liq.set_value(10)
+
             m.fs.state.initialize()
 
             m.fs.state[1].temperature.unfix()
             m.fs.obj.activate()
 
-            results = solver.solve(m, tee=True)
+            results = solver.solve(m)
+            assert_optimal_termination(results)
 
-            m.fs.state.display()
-            from idaes.core.util import DiagnosticsToolbox
+            # Switch to small eps and re-solve to refine result
+            m.fs.state[1].eps_1_Vap_Liq.set_value(1e-4)
+            m.fs.state[1].eps_2_Vap_Liq.set_value(1e-4)
 
-            dt = DiagnosticsToolbox(m.fs)
-            dt.report_structural_issues()
-            dt.report_numerical_issues()
-            dt.display_variables_at_or_outside_bounds()
+            results = solver.solve(m)
 
-            assert check_optimal_termination(results)
+            assert_optimal_termination(results)
             assert m.fs.state[1].flow_mol_phase["Liq"].value <= 1e-5
 
     @pytest.mark.integration
@@ -119,12 +123,12 @@ class TestBTExample(object):
 
             results = solver.solve(m)
 
-            assert check_optimal_termination(results)
+            assert_optimal_termination(results)
 
             while m.fs.state[1].pressure.value <= 1e6:
 
                 results = solver.solve(m)
-                assert check_optimal_termination(results)
+                assert_optimal_termination(results)
 
                 m.fs.state[1].pressure.value = m.fs.state[1].pressure.value + 1e5
 
@@ -145,7 +149,7 @@ class TestBTExample(object):
         results = solver.solve(m)
 
         # Check for optimal solution
-        assert check_optimal_termination(results)
+        assert_optimal_termination(results)
 
         assert pytest.approx(value(m.fs.state[1]._teq[("Vap", "Liq")]), abs=1e-1) == 365
         assert 0.0035346 == pytest.approx(
@@ -234,7 +238,7 @@ class TestBTExample(object):
         results = solver.solve(m)
 
         # Check for optimal solution
-        assert check_optimal_termination(results)
+        assert_optimal_termination(results)
 
         assert pytest.approx(value(m.fs.state[1]._teq[("Vap", "Liq")]), 1e-5) == 431.47
         assert (
@@ -325,7 +329,7 @@ class TestBTExample(object):
         results = solver.solve(m)
 
         # Check for optimal solution
-        assert check_optimal_termination(results)
+        assert_optimal_termination(results)
 
         assert pytest.approx(value(m.fs.state[1]._teq[("Vap", "Liq")]), 1e-5) == 371.4
         assert 0.0033583 == pytest.approx(
@@ -414,7 +418,7 @@ class TestBTExample(object):
         results = solver.solve(m)
 
         # Check for optimal solution
-        assert check_optimal_termination(results)
+        assert_optimal_termination(results)
 
         assert pytest.approx(value(m.fs.state[1]._teq[("Vap", "Liq")]), 1e-5) == 436.93
         assert 0.0166181 == pytest.approx(
@@ -503,7 +507,7 @@ class TestBTExample(object):
         results = solver.solve(m)
 
         # Check for optimal solution
-        assert check_optimal_termination(results)
+        assert_optimal_termination(results)
 
         assert pytest.approx(value(m.fs.state[1]._teq[("Vap", "Liq")]), 1e-5) == 368
         assert 0.003504 == pytest.approx(
@@ -596,7 +600,7 @@ class TestBTExample(object):
         results = solver.solve(m)
 
         # Check for optimal solution
-        assert check_optimal_termination(results)
+        assert_optimal_termination(results)
 
         assert pytest.approx(value(m.fs.state[1]._teq[("Vap", "Liq")]), 1e-5) == 376
         assert 0.00361333 == pytest.approx(

@@ -133,7 +133,7 @@ class SmoothVLE2:
         b.add_component("eps_1" + suffix, eps1)
 
         eps2 = Param(
-            default=1e-5,
+            default=1e-4,
             mutable=True,
             doc="Smoothing parameter for complementarities",
             units=f_units,
