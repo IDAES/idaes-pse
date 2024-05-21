@@ -39,7 +39,7 @@ class IdealBubbleDew:
     @staticmethod
     def temperature_bubble(b):
         """
-        Rule for calculating bubble temeprature
+        Rule for calculating bubble temperature
         """
         _non_vle_phase_check(b)
         try:
