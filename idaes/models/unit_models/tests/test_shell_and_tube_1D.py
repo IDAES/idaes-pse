@@ -1625,7 +1625,9 @@ class TestBT_Generic_cocurrent(object):
     @pytest.mark.integration
     def test_numerical_issues(self, btx):
         dt = DiagnosticsToolbox(btx)
-        dt.assert_no_numerical_warnings()
+        # TODO: Complementarity formulation results in near-parallel components
+        # when unscaled
+        dt.assert_no_numerical_warnings(ignore_parallel_components=True)
 
     @pytest.mark.component
     def test_initialization_error(self, btx):

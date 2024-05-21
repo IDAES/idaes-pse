@@ -208,8 +208,10 @@ def test_build(frame):
 
     assert isinstance(frame.props[1].cubic_second_derivative_Vap_Liq, Expression)
 
-    assert isinstance(frame.props[1].eps_Vap_Liq, Param)
-    assert value(frame.props[1].eps_Vap_Liq) == pytest.approx(1e-4, rel=1e-8)
+    assert isinstance(frame.props[1].eps_1_Vap_Liq, Param)
+    assert value(frame.props[1].eps_1_Vap_Liq) == pytest.approx(1e-4, rel=1e-8)
+    assert isinstance(frame.props[1].eps_2_Vap_Liq, Param)
+    assert value(frame.props[1].eps_2_Vap_Liq) == pytest.approx(1e-4, rel=1e-8)
 
     assert isinstance(frame.props[1]._teq_constraint_Vap_Liq, Constraint)
     assert isinstance(
