@@ -514,6 +514,9 @@ class LogBubbleDew:
     # Bubble temperature methods
     @staticmethod
     def temperature_bubble(b):
+        """
+        Method for constructing bubble temperature constraint
+        """
         try:
 
             def rule_bubble_temp(b, p1, p2, j):
@@ -522,7 +525,7 @@ class LogBubbleDew:
                     v_phase,
                     vl_comps,
                     henry_comps,
-                    l_only_comps,
+                    _,
                     v_only_comps,
                 ) = identify_VL_component_list(b, (p1, p2))
 
@@ -557,7 +560,7 @@ class LogBubbleDew:
                 v_phase,
                 vl_comps,
                 henry_comps,
-                l_only_comps,
+                _,
                 v_only_comps,
             ) = identify_VL_component_list(b, (p1, p2))
 
@@ -579,6 +582,9 @@ class LogBubbleDew:
 
     @staticmethod
     def scale_temperature_bubble(b, overwrite=True):
+        """
+        Method for scaling bubble temperature
+        """
         sf_mf = iscale.get_scaling_factor(b.mole_frac_comp, default=1e3, warning=True)
 
         for pp in b.params._pe_pairs:
@@ -587,7 +593,7 @@ class LogBubbleDew:
                 v_phase,
                 vl_comps,
                 henry_comps,
-                l_only_comps,
+                _,
                 v_only_comps,
             ) = identify_VL_component_list(b, pp)
             if l_phase is None or v_phase is None:
@@ -604,6 +610,9 @@ class LogBubbleDew:
     # Dew temperature methods
     @staticmethod
     def temperature_dew(b):
+        """
+        Method for constructing dew temperature constraint
+        """
         try:
 
             def rule_dew_temp(b, p1, p2, j):
@@ -613,7 +622,7 @@ class LogBubbleDew:
                     vl_comps,
                     henry_comps,
                     l_only_comps,
-                    v_only_comps,
+                    _,
                 ) = identify_VL_component_list(b, (p1, p2))
 
                 if l_phase is None or v_phase is None:
@@ -648,7 +657,7 @@ class LogBubbleDew:
                 vl_comps,
                 henry_comps,
                 l_only_comps,
-                v_only_comps,
+                _,
             ) = identify_VL_component_list(b, (p1, p2))
 
             if l_phase is None or v_phase is None:
@@ -669,6 +678,9 @@ class LogBubbleDew:
 
     @staticmethod
     def scale_temperature_dew(b, overwrite=True):
+        """
+        Method for scaling dew temperature
+        """
         sf_mf = iscale.get_scaling_factor(b.mole_frac_comp, default=1e3, warning=True)
 
         for pp in b.params._pe_pairs:
@@ -677,7 +689,7 @@ class LogBubbleDew:
                 v_phase,
                 vl_comps,
                 henry_comps,
-                l_only_comps,
+                _,
                 v_only_comps,
             ) = identify_VL_component_list(b, pp)
             if l_phase is None or v_phase is None:
@@ -694,6 +706,9 @@ class LogBubbleDew:
     # Bubble pressure methods
     @staticmethod
     def pressure_bubble(b):
+        """
+        Method for constructing bubble pressure
+        """
         try:
 
             def rule_bubble_press(b, p1, p2, j):
@@ -702,7 +717,7 @@ class LogBubbleDew:
                     v_phase,
                     vl_comps,
                     henry_comps,
-                    l_only_comps,
+                    _,
                     v_only_comps,
                 ) = identify_VL_component_list(b, (p1, p2))
 
@@ -737,7 +752,7 @@ class LogBubbleDew:
                 v_phase,
                 vl_comps,
                 henry_comps,
-                l_only_comps,
+                _,
                 v_only_comps,
             ) = identify_VL_component_list(b, (p1, p2))
 
@@ -759,6 +774,9 @@ class LogBubbleDew:
 
     @staticmethod
     def scale_pressure_bubble(b, overwrite=True):
+        """
+        Method for scaling bubble pressure
+        """
         sf_mf = iscale.get_scaling_factor(b.mole_frac_comp, default=1e3, warning=True)
 
         for pp in b.params._pe_pairs:
@@ -767,7 +785,7 @@ class LogBubbleDew:
                 v_phase,
                 vl_comps,
                 henry_comps,
-                l_only_comps,
+                _,
                 v_only_comps,
             ) = identify_VL_component_list(b, pp)
             if l_phase is None or v_phase is None:
@@ -784,6 +802,9 @@ class LogBubbleDew:
     # Dew pressure methods
     @staticmethod
     def pressure_dew(b):
+        """
+        Method constructing dew pressure constraints
+        """
         try:
 
             def rule_dew_press(b, p1, p2, j):
@@ -792,7 +813,7 @@ class LogBubbleDew:
                     v_phase,
                     vl_comps,
                     henry_comps,
-                    l_only_comps,
+                    _,
                     v_only_comps,
                 ) = identify_VL_component_list(b, (p1, p2))
 
@@ -828,7 +849,7 @@ class LogBubbleDew:
                 vl_comps,
                 henry_comps,
                 l_only_comps,
-                v_only_comps,
+                _,
             ) = identify_VL_component_list(b, (p1, p2))
 
             if l_phase is None or v_phase is None:
@@ -849,15 +870,18 @@ class LogBubbleDew:
 
     @staticmethod
     def scale_pressure_dew(b, overwrite=True):
+        """
+        Method for scaling dew pressure
+        """
         sf_mf = iscale.get_scaling_factor(b.mole_frac_comp, default=1e3, warning=True)
 
         for pp in b.params._pe_pairs:
             (
                 l_phase,
                 v_phase,
-                vl_comps,
-                henry_comps,
-                l_only_comps,
+                _,
+                _,
+                _,
                 v_only_comps,
             ) = identify_VL_component_list(b, pp)
             if l_phase is None or v_phase is None:

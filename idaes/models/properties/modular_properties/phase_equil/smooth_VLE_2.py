@@ -220,9 +220,8 @@ class SmoothVLE2:
 
         try:
             teq_cons = getattr(b, "_teq_constraint" + suffix)
-            iscale.set_scaling_factor(
-                b._teq[phase_pair], sf_T
-            )  # pylint: disable=protected-access
+            # pylint: disable-next=protected-access
+            iscale.set_scaling_factor(b._teq[phase_pair], sf_T)
             iscale.constraint_scaling_transform(teq_cons, sf_T, overwrite=False)
         except AttributeError:
             pass
@@ -242,7 +241,7 @@ class SmoothVLE2:
             vapor_phase,
             raoult_comps,
             henry_comps,
-            l_only_comps,
+            _,
             v_only_comps,
         ) = identify_VL_component_list(blk, pp)
 
@@ -301,20 +300,16 @@ def _calculate_temperature_slacks(b, phase_pair, liquid_phase, vapor_phase):
 
     s = getattr(b, "s" + suffix)
 
-    if value(b._teq[phase_pair]) > value(
-        b.temperature
-    ):  # pylint: disable=protected-access
-        s[vapor_phase].set_value(
-            value(b._teq[phase_pair] - b.temperature)
-        )  # pylint: disable=protected-access
+    # pylint: disable-next=protected-access
+    if value(b._teq[phase_pair]) > value(b.temperature):
+        # pylint: disable-next=protected-access
+        s[vapor_phase].set_value(value(b._teq[phase_pair] - b.temperature))
         s[liquid_phase].set_value(EPS_INIT)
-    elif value(b._teq[phase_pair]) < value(
-        b.temperature
-    ):  # pylint: disable=protected-access
+    # pylint: disable-next=protected-access
+    elif value(b._teq[phase_pair]) < value(b.temperature):
         s[vapor_phase].set_value(EPS_INIT)
-        s[liquid_phase].set_value(
-            value(b.temperature - b._teq[phase_pair])
-        )  # pylint: disable=protected-access
+        # pylint: disable-next=protected-access
+        s[liquid_phase].set_value(value(b.temperature - b._teq[phase_pair]))
     else:
         s[vapor_phase].set_value(EPS_INIT)
         s[liquid_phase].set_value(EPS_INIT)

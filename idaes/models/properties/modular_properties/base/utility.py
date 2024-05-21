@@ -265,9 +265,8 @@ def get_concentration_term(blk, r_idx, log=False):
         conc_form = cfg.inherent_reactions[r_idx].concentration_form
         state = blk
 
-    if (
-        hasattr(state.params, "_electrolyte") and state.params._electrolyte
-    ):  # pylint: disable=protected-access
+    # pylint: disable-next=protected-access
+    if hasattr(state.params, "_electrolyte") and state.params._electrolyte:
         sub = "_true"
     else:
         sub = ""
