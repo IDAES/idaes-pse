@@ -35,14 +35,17 @@ class SmoothVLE(object):
 
     @staticmethod
     def phase_equil(b, phase_pair):
+        """
+        Method for constructing phase equilibrium variables and constraints
+        """
         # This method is called via StateBlock.build, thus does not need clean-up
         # try/except statements
         suffix = "_" + phase_pair[0] + "_" + phase_pair[1]
 
         # Smooth VLE assumes a liquid and a vapor phase, so validate this
         (
-            l_phase,
-            v_phase,
+            _,
+            _,
             _,
             _,
             l_only_comps,
@@ -116,6 +119,9 @@ class SmoothVLE(object):
 
     @staticmethod
     def calculate_scaling_factors(b, phase_pair):
+        """
+        Method to calculate scaling factors for phase equilibrium
+        """
         suffix = "_" + phase_pair[0] + "_" + phase_pair[1]
         sf_T = iscale.get_scaling_factor(b.temperature, default=1, warning=True)
 
@@ -132,6 +138,9 @@ class SmoothVLE(object):
 
     @staticmethod
     def phase_equil_initialization(b, phase_pair):
+        """
+        Method to initialize phase equilibrium
+        """
         suffix = "_" + phase_pair[0] + "_" + phase_pair[1]
 
         for c in b.component_objects(Constraint):
@@ -141,6 +150,9 @@ class SmoothVLE(object):
 
     @staticmethod
     def calculate_teq(b, phase_pair):
+        """
+        Method to calculate initial guess for equilibrium temperature
+        """
         suffix = "_" + phase_pair[0] + "_" + phase_pair[1]
 
         if hasattr(b, "eq_temperature_bubble"):

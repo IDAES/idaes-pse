@@ -540,6 +540,9 @@ class Cubic(EoSBase):
 
     @staticmethod
     def compress_fact_phase(b, p):
+        """
+        Compressibility factor
+        """
         pobj = b.params.get_phase(p)
         cname = pobj._cubic_type.name
         A = getattr(b, cname + "_A")
@@ -559,10 +562,16 @@ class Cubic(EoSBase):
 
     @staticmethod
     def cp_mass_phase(blk, p):
+        """
+        Phase mass-specific heat capacity at constant pressure
+        """
         return blk.cp_mol_phase[p] / blk.mw_phase[p]
 
     @staticmethod
     def cp_mol_phase(blk, p):
+        """
+        Phase molar heat capacity at constant pressure
+        """
         pobj = blk.params.get_phase(p)
         cname = pobj._cubic_type.name
 
@@ -604,10 +613,16 @@ class Cubic(EoSBase):
 
     @staticmethod
     def cv_mass_phase(blk, p):
+        """
+        Phase mass-specific heat capacity at constant volume
+        """
         return blk.cv_mol_phase[p] / blk.mw_phase[p]
 
     @staticmethod
     def cv_mol_phase(blk, p):
+        """
+        Phase molar heat capacity at constant volume
+        """
         pobj = blk.params.get_phase(p)
         cname = pobj._cubic_type.name
         am = getattr(blk, cname + "_am")[p]
@@ -632,16 +647,25 @@ class Cubic(EoSBase):
 
     @staticmethod
     def dens_mass_phase(b, p):
+        """
+        Phase density (mass basis)
+        """
         return b.dens_mol_phase[p] * b.mw_phase[p]
 
     @staticmethod
     def dens_mol_phase(b, p):
+        """
+        Phase density (mole basis)
+        """
         return b.pressure / (
             Cubic.gas_constant(b) * b.temperature * b.compress_fact_phase[p]
         )
 
     @staticmethod
     def energy_internal_mol_phase(blk, p):
+        """
+        Phase specific internal energy
+        """
         pobj = blk.params.get_phase(p)
 
         cname = pobj._cubic_type.name
@@ -671,12 +695,18 @@ class Cubic(EoSBase):
 
     @staticmethod
     def energy_internal_mol_phase_comp(blk, p, j):
+        """
+        Phase partial specific internal energy
+        """
         return (
             blk.enth_mol_phase_comp[p, j] - blk.pressure * blk.vol_mol_phase_comp[p, j]
         )
 
     @staticmethod
     def enth_mol_phase(blk, p):
+        """
+        Phase specific enthalpy
+        """
         pobj = blk.params.get_phase(p)
 
         cname = pobj._cubic_type.name
@@ -706,6 +736,9 @@ class Cubic(EoSBase):
 
     @staticmethod
     def enth_mol_phase_comp(blk, p, j):
+        """
+        Phase partial molar enthalpy
+        """
         dlogphi_j_dT = _d_log_fug_coeff_dT_phase_comp(blk, p, j)
 
         enth_ideal_gas = get_method(blk, "enth_mol_ig_comp", j)(
@@ -718,6 +751,9 @@ class Cubic(EoSBase):
 
     @staticmethod
     def entr_mol_phase(blk, p):
+        """
+        Phase specific entropy
+        """
         pobj = blk.params.get_phase(p)
 
         cname = pobj._cubic_type.name
@@ -756,6 +792,9 @@ class Cubic(EoSBase):
 
     @staticmethod
     def entr_mol_phase_comp(blk, p, j):
+        """
+        Phase partial molar entropy
+        """
         logphi_j = _log_fug_coeff_phase_comp(blk, p, j)
         dlogphi_j_dT = _d_log_fug_coeff_dT_phase_comp(blk, p, j)
 

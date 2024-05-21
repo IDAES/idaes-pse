@@ -55,6 +55,9 @@ class SmoothVLE2:
 
     @staticmethod
     def phase_equil(b, phase_pair):
+        """
+        Method for constructing phase equilibrium variables and constraints
+        """
         # This method is called via StateBlock.build, thus does not need clean-up
         # try/except statements
         suffix = "_" + phase_pair[0] + "_" + phase_pair[1]
@@ -63,10 +66,10 @@ class SmoothVLE2:
         (
             l_phase,
             v_phase,
-            vl_comps,
-            henry_comps,
-            l_only_comps,
-            v_only_comps,
+            _,
+            _,
+            _,
+            _,
         ) = identify_VL_component_list(b, phase_pair)
 
         if l_phase is None or v_phase is None:
@@ -77,12 +80,12 @@ class SmoothVLE2:
 
         try:
             lobj = b.params.get_phase(l_phase)
-            ctype = lobj._cubic_type
+            ctype = lobj._cubic_type  # pylint: disable=protected-access
             cname = lobj.config.equation_of_state_options["type"].name
             vobj = b.params.get_phase(v_phase)
 
             if (
-                ctype != vobj._cubic_type
+                ctype != vobj._cubic_type  # pylint: disable=protected-access
                 or lobj.config.equation_of_state_options
                 != vobj.config.equation_of_state_options
             ):
@@ -115,7 +118,7 @@ class SmoothVLE2:
         # Equilibrium temperature
         def rule_teq(b):
             return (
-                b._teq[phase_pair]
+                b._teq[phase_pair]  # pylint: disable=protected-access
                 - b.temperature
                 - s[v_phase] * t_units
                 + s[l_phase] * t_units
@@ -209,18 +212,26 @@ class SmoothVLE2:
 
     @staticmethod
     def calculate_scaling_factors(b, phase_pair):
+        """
+        Method to calculate scaling factors for phase equilibrium
+        """
         suffix = "_" + phase_pair[0] + "_" + phase_pair[1]
         sf_T = iscale.get_scaling_factor(b.temperature, default=1, warning=True)
 
         try:
             teq_cons = getattr(b, "_teq_constraint" + suffix)
-            iscale.set_scaling_factor(b._teq[phase_pair], sf_T)
+            iscale.set_scaling_factor(
+                b._teq[phase_pair], sf_T
+            )  # pylint: disable=protected-access
             iscale.constraint_scaling_transform(teq_cons, sf_T, overwrite=False)
         except AttributeError:
             pass
 
     @staticmethod
     def calculate_teq(blk, pp):
+        """
+        Method to calculate initial guess for equilibrium temperature
+        """
         # ---------------------------------------------------------------------
         # If present, initialize bubble and dew point calculations, and
         # equilibrium temperature _teq
@@ -257,7 +268,7 @@ class SmoothVLE2:
         else:
             t2 = t1
 
-        blk._teq[pp].set_value(t2)
+        blk._teq[pp].set_value(t2)  # pylint: disable=protected-access
 
         # ---------------------------------------------------------------------
         # Initialize sV and sL slacks
@@ -269,6 +280,9 @@ class SmoothVLE2:
 
     @staticmethod
     def phase_equil_initialization(b, phase_pair):
+        """
+        Method to initialize phase equilibrium
+        """
         suffix = "_" + phase_pair[0] + "_" + phase_pair[1]
 
         for c in b.component_objects(Constraint):
@@ -287,12 +301,20 @@ def _calculate_temperature_slacks(b, phase_pair, liquid_phase, vapor_phase):
 
     s = getattr(b, "s" + suffix)
 
-    if value(b._teq[phase_pair]) > value(b.temperature):
-        s[vapor_phase].set_value(value(b._teq[phase_pair] - b.temperature))
+    if value(b._teq[phase_pair]) > value(
+        b.temperature
+    ):  # pylint: disable=protected-access
+        s[vapor_phase].set_value(
+            value(b._teq[phase_pair] - b.temperature)
+        )  # pylint: disable=protected-access
         s[liquid_phase].set_value(EPS_INIT)
-    elif value(b._teq[phase_pair]) < value(b.temperature):
+    elif value(b._teq[phase_pair]) < value(
+        b.temperature
+    ):  # pylint: disable=protected-access
         s[vapor_phase].set_value(EPS_INIT)
-        s[liquid_phase].set_value(value(b.temperature - b._teq[phase_pair]))
+        s[liquid_phase].set_value(
+            value(b.temperature - b._teq[phase_pair])
+        )  # pylint: disable=protected-access
     else:
         s[vapor_phase].set_value(EPS_INIT)
         s[liquid_phase].set_value(EPS_INIT)

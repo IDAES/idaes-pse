@@ -38,6 +38,9 @@ class IdealBubbleDew:
     # calculate concentrations at the bubble and dew points
     @staticmethod
     def temperature_bubble(b):
+        """
+        Rule for calculating bubble temeprature
+        """
         _non_vle_phase_check(b)
         try:
 
@@ -47,7 +50,7 @@ class IdealBubbleDew:
                     v_phase,
                     vl_comps,
                     henry_comps,
-                    l_only_comps,
+                    _,
                     v_only_comps,
                 ) = identify_VL_component_list(b, (p1, p2))
 
@@ -90,7 +93,7 @@ class IdealBubbleDew:
                 v_phase,
                 vl_comps,
                 henry_comps,
-                l_only_comps,
+                _,
                 v_only_comps,
             ) = identify_VL_component_list(b, (p1, p2))
 
@@ -124,6 +127,9 @@ class IdealBubbleDew:
 
     @staticmethod
     def scale_temperature_bubble(b, overwrite=True):
+        """
+        Scaling method for bubble temperature
+        """
         sf_P = iscale.get_scaling_factor(b.pressure, default=1e-5, warning=True)
         sf_mf = iscale.get_scaling_factor(b.mole_frac_comp, default=1e3, warning=True)
 
@@ -133,8 +139,8 @@ class IdealBubbleDew:
                     l_phase,
                     v_phase,
                     vl_comps,
-                    henry_comps,
-                    l_only_comps,
+                    _,
+                    _,
                     v_only_comps,
                 ) = identify_VL_component_list(b, pp)
                 if l_phase is None or v_phase is None:
@@ -158,6 +164,9 @@ class IdealBubbleDew:
     # Dew temperature methods
     @staticmethod
     def temperature_dew(b):
+        """
+        Method for calculating dew temperature
+        """
         _non_vle_phase_check(b)
         try:
 
@@ -168,7 +177,7 @@ class IdealBubbleDew:
                     vl_comps,
                     henry_comps,
                     l_only_comps,
-                    v_only_comps,
+                    _,
                 ) = identify_VL_component_list(b, (p1, p2))
 
                 if l_phase is None or v_phase is None:
@@ -213,7 +222,7 @@ class IdealBubbleDew:
                 vl_comps,
                 henry_comps,
                 l_only_comps,
-                v_only_comps,
+                _,
             ) = identify_VL_component_list(b, (p1, p2))
 
             if l_phase is None or v_phase is None:
@@ -248,6 +257,9 @@ class IdealBubbleDew:
 
     @staticmethod
     def scale_temperature_dew(b, overwrite=True):
+        """
+        Scaling method for dew temperature
+        """
         sf_P = iscale.get_scaling_factor(b.pressure, default=1e-5, warning=True)
         sf_mf = iscale.get_scaling_factor(b.mole_frac_comp, default=1e3, warning=True)
 
@@ -257,8 +269,8 @@ class IdealBubbleDew:
                     l_phase,
                     v_phase,
                     vl_comps,
-                    henry_comps,
-                    l_only_comps,
+                    _,
+                    _,
                     v_only_comps,
                 ) = identify_VL_component_list(b, pp)
                 if l_phase is None or v_phase is None:
@@ -280,6 +292,9 @@ class IdealBubbleDew:
     # Bubble pressure methods
     @staticmethod
     def pressure_bubble(b):
+        """
+        Method for calculating bubble pressure
+        """
         _non_vle_phase_check(b)
         try:
 
@@ -289,7 +304,7 @@ class IdealBubbleDew:
                     v_phase,
                     vl_comps,
                     henry_comps,
-                    l_only_comps,
+                    _,
                     v_only_comps,
                 ) = identify_VL_component_list(b, (p1, p2))
 
@@ -321,7 +336,7 @@ class IdealBubbleDew:
                 v_phase,
                 vl_comps,
                 henry_comps,
-                l_only_comps,
+                _,
                 v_only_comps,
             ) = identify_VL_component_list(b, (p1, p2))
 
@@ -351,6 +366,9 @@ class IdealBubbleDew:
 
     @staticmethod
     def scale_pressure_bubble(b, overwrite=True):
+        """
+        Scaling method for bubble pressure
+        """
         sf_P = iscale.get_scaling_factor(b.pressure, default=1e-5, warning=True)
         sf_mf = iscale.get_scaling_factor(b.mole_frac_comp, default=1e3, warning=True)
 
@@ -360,8 +378,8 @@ class IdealBubbleDew:
                     l_phase,
                     v_phase,
                     vl_comps,
-                    henry_comps,
-                    l_only_comps,
+                    _,
+                    _,
                     v_only_comps,
                 ) = identify_VL_component_list(b, pp)
                 if l_phase is None or v_phase is None:
@@ -385,6 +403,9 @@ class IdealBubbleDew:
     # Dew pressure methods
     @staticmethod
     def pressure_dew(b):
+        """
+        Method for calculating dew pressure
+        """
         _non_vle_phase_check(b)
         try:
 
@@ -395,7 +416,7 @@ class IdealBubbleDew:
                     vl_comps,
                     henry_comps,
                     l_only_comps,
-                    v_only_comps,
+                    _,
                 ) = identify_VL_component_list(b, (p1, p2))
 
                 if l_phase is None or v_phase is None:
@@ -425,7 +446,7 @@ class IdealBubbleDew:
                 vl_comps,
                 henry_comps,
                 l_only_comps,
-                v_only_comps,
+                _,
             ) = identify_VL_component_list(b, (p1, p2))
 
             if l_phase is None or v_phase is None:
@@ -454,6 +475,9 @@ class IdealBubbleDew:
 
     @staticmethod
     def scale_pressure_dew(b, overwrite=True):
+        """
+        Scaling method for dew pressure
+        """
         sf_P = iscale.get_scaling_factor(b.pressure, default=1e-5, warning=True)
         sf_mf = iscale.get_scaling_factor(b.mole_frac_comp, default=1e3, warning=True)
 
@@ -463,8 +487,8 @@ class IdealBubbleDew:
                     l_phase,
                     v_phase,
                     vl_comps,
-                    henry_comps,
-                    l_only_comps,
+                    _,
+                    _,
                     v_only_comps,
                 ) = identify_VL_component_list(b, pp)
                 if l_phase is None or v_phase is None:
