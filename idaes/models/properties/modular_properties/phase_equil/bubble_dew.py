@@ -591,8 +591,8 @@ class LogBubbleDew:
             (
                 l_phase,
                 v_phase,
-                vl_comps,
-                henry_comps,
+                _,
+                _,
                 _,
                 v_only_comps,
             ) = identify_VL_component_list(b, pp)
@@ -687,8 +687,8 @@ class LogBubbleDew:
             (
                 l_phase,
                 v_phase,
-                vl_comps,
-                henry_comps,
+                _,
+                _,
                 _,
                 v_only_comps,
             ) = identify_VL_component_list(b, pp)
@@ -783,8 +783,8 @@ class LogBubbleDew:
             (
                 l_phase,
                 v_phase,
-                vl_comps,
-                henry_comps,
+                _,
+                _,
                 _,
                 v_only_comps,
             ) = identify_VL_component_list(b, pp)
