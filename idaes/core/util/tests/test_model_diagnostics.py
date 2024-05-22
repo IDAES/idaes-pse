@@ -1089,8 +1089,9 @@ The following pairs of variables are nearly parallel:
         assert "WARNING: 1 Constraint with large residuals (>1.0E-05)" in warnings
         assert "WARNING: 1 Variable at or outside bounds (tol=0.0E+00)" in warnings
 
-        assert len(next_steps) == 2
+        assert len(next_steps) == 3
         assert "display_constraints_with_large_residuals()" in next_steps
+        assert "compute_infeasibility_explanation()" in next_steps
         assert "display_variables_at_or_outside_bounds()" in next_steps
 
     @pytest.mark.component
@@ -1139,10 +1140,11 @@ The following pairs of variables are nearly parallel:
         )
         assert "WARNING: 1 Constraint with large residuals (>1.0E-05)" in warnings
 
-        assert len(next_steps) == 4
+        assert len(next_steps) == 5
         assert "display_variables_with_extreme_jacobians()" in next_steps
         assert "display_constraints_with_extreme_jacobians()" in next_steps
         assert "display_constraints_with_large_residuals()" in next_steps
+        assert "compute_infeasibility_explanation()" in next_steps
 
     @pytest.mark.component
     def test_collect_numerical_cautions(self, model):
@@ -1395,6 +1397,7 @@ Model Statistics
 Suggested next steps:
 
     display_constraints_with_large_residuals()
+    compute_infeasibility_explanation()
     display_near_parallel_constraints()
     display_near_parallel_variables()
 
@@ -1434,6 +1437,7 @@ Model Statistics
 Suggested next steps:
 
     display_constraints_with_large_residuals()
+    compute_infeasibility_explanation()
     display_variables_at_or_outside_bounds()
 
 ====================================================================================
@@ -1482,6 +1486,7 @@ Model Statistics
 Suggested next steps:
 
     display_constraints_with_large_residuals()
+    compute_infeasibility_explanation()
     display_variables_with_extreme_jacobians()
     display_constraints_with_extreme_jacobians()
     display_near_parallel_variables()
@@ -4013,3 +4018,38 @@ class TestCheckIllConditioning:
             (afiro.X15, pytest.approx(-0.042451666, rel=1e-5)),
             (afiro.X37, pytest.approx(-0.036752232, rel=1e-5)),
         ]
+
+
+class TestComputeInfeasibilityExplanation:
+
+    @pytest.fixture(scope="class")
+    def model(self):
+        # create an infeasible model for demonstration
+        m = ConcreteModel()
+
+        m.name = "test_infeas"
+        m.x = Var([1, 2], bounds=(0, 1))
+        m.y = Var(bounds=(0, 1))
+
+        m.c = Constraint(expr=m.x[1] * m.x[2] == -1)
+        m.d = Constraint(expr=m.x[1] + m.y >= 1)
+
+        return m
+
+    @pytest.mark.component
+    @pytest.mark.solver
+    def test_output(self, model):
+        dt = DiagnosticsToolbox(model)
+
+        stream = StringIO()
+
+        dt.compute_infeasibility_explanation(stream=stream)
+
+        expected = """Computed Minimal Intractable System (MIS)!
+Constraints / bounds in MIS:
+	lb of var x[2]
+	lb of var x[1]
+	constraint: c
+Constraints / bounds in guards for stability:
+"""
+        assert expected in stream.getvalue()
