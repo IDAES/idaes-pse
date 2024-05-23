@@ -108,7 +108,12 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
 
         # create solver
         if self.config.solver is None:
-            self.opt = get_solver(self.config.solver, self.config.solver_options)
+            # TODO: Linear presolve results in an AMPL evaluation exception in one solve step
+            self.opt = get_solver(
+                self.config.solver,
+                options=self.config.solver_options,
+                writer_config={"linear_presolve": False},
+            )
         else:
             self.opt = self.config.solver
 
