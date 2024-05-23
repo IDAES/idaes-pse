@@ -416,8 +416,14 @@ see reaction package for documentation.}""",
         # Set solver options
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
-        opt = get_solver(solver, optarg)  # create solver
-        opt.options = optarg
+        # Create solver
+        # TODO: Linear presolve causes issues in initialization, so turing it off
+        # Fixing this would require resources we do not have to dig into what is going on
+        if solver is None:
+            writer_config = {"linear_presolve": False}
+        else:
+            writer_config = None
+        opt = get_solver(solver, options=optarg, writer_config=writer_config)
 
         # ---------------------------------------------------------------------
         # Initialize control volume block

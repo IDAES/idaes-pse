@@ -1997,7 +1997,13 @@ see reaction package for documentation.}""",
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
 
         # Create solver
-        opt = get_solver(solver, optarg)
+        # TODO: Linear presolve causes issues in initialization, so turing it off
+        # Fixing this would require resources we do not have to dig into what is going on
+        if solver is None:
+            writer_config = {"linear_presolve": False}
+        else:
+            writer_config = None
+        opt = get_solver(solver, options=optarg, writer_config=writer_config)
 
         # ---------------------------------------------------------------------
         # local aliases used to shorten object names
