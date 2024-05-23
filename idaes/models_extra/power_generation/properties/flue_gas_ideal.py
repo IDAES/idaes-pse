@@ -426,7 +426,10 @@ class FlueGasParameterData(PhysicalParameterBlock):
                 "cp_mol_phase": {"method": "_heat_cap_calc", "units": "J/mol/K"},
                 "compress_fact": {"method": "_compress_fact", "units": None},
                 "dens_mol_phase": {"method": "_dens_mol_phase", "units": "mol/m^3"},
-                "pressure_sat": {"method": "_vapor_pressure", "units": "Pa"},
+                "pressure_sat": {
+                    "method": "_vapor_pressure",
+                    "units": "Pa",
+                },  # TODO: This does not appear to be a supported property
                 "flow_vol": {"method": "_flow_volume", "units": "m^3/s"},
                 "visc_d": {"method": "_therm_cond", "units": "kg/m-s"},
                 "therm_cond": {"method": "_therm_cond", "units": "W/m-K"},

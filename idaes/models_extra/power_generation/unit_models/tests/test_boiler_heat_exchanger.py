@@ -45,7 +45,6 @@ from idaes.models_extra.power_generation.unit_models.boiler_heat_exchanger impor
 )
 
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.testing import PhysicalParameterTestBlock
 from idaes.core.solvers import get_solver
 import idaes.core.util.scaling as iscale
 from idaes.models.properties.general_helmholtz import helmholtz_available
@@ -88,7 +87,6 @@ def th(
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.properties = PhysicalParameterTestBlock()
     m.fs.prop_steam = iapws95.Iapws95ParameterBlock()
     m.fs.prop_fluegas = FlueGasParameterBlock()
 
@@ -146,7 +144,10 @@ def th(
 
     assert degrees_of_freedom(m) == 0
     iscale.calculate_scaling_factors(m)
-    m.fs.unit.initialize()
+
+    import logging
+
+    m.fs.unit.initialize(outlvl=logging.DEBUG)
 
     results = solver.solve(m)
     # Check for optimal solution
@@ -163,7 +164,6 @@ def tu(delta_temperature_callback=delta_temperature_underwood_callback):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.properties = PhysicalParameterTestBlock()
     m.fs.prop_steam = iapws95.Iapws95ParameterBlock()
     m.fs.prop_fluegas = FlueGasParameterBlock()
 
