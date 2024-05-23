@@ -432,7 +432,13 @@ see property package for documentation.}""",
 
         init_log.info("Begin initialization.")
 
-        solverobj = get_solver(solver, optarg)
+        # TODO" Linear presolve causes issues in initialization, so turing it off
+        # This should be fixed if and when we have the chance to overhaul the column model
+        if solver is None:
+            writer_config = {"linear_presolve": False}
+        else:
+            writer_config = None
+        solverobj = get_solver(solver, options=optarg, writer_config=writer_config)
 
         feed_flags = self.feed_tray.initialize(
             solver=solver, optarg=optarg, outlvl=outlvl

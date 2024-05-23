@@ -322,7 +322,13 @@ see property package for documentation.}""",
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
-        solverobj = get_solver(solver, optarg)
+        # TODO" Linear presolve causes issues in initialization, so turing it off
+        # This should be fixed if and when we have the chance to overhaul the column model
+        if solver is None:
+            writer_config = {"linear_presolve": False}
+        else:
+            writer_config = None
+        solverobj = get_solver(solver, options=optarg, writer_config=writer_config)
 
         # Initialize the inlet and outlet state blocks. Calling the state
         # blocks initialize methods directly so that custom set of state args

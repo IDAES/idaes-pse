@@ -194,7 +194,7 @@ class TestStripperVaporFlow(object):
         assert pytest.approx(0.976758, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.mole_frac_comp[0, "CO2"]
         )
-        assert pytest.approx(0.0232423, rel=1e-5) == value(
+        assert pytest.approx(0.0232427, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.mole_frac_comp[0, "H2O"]
         )
         assert pytest.approx(184360, rel=1e-5) == value(
