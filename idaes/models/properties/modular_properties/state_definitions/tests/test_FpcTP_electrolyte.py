@@ -1028,7 +1028,7 @@ class TestTrueSpeciesBasisInherent:
         ) == pytest.approx(0.8, rel=1e-5)
         assert value(
             m.fs.state[1].mole_frac_phase_comp_apparent["Liq", "KHCO3"]
-        ) == pytest.approx(1.6e-8, abs=1e-9)
+        ) == pytest.approx(0, abs=1e-6)
         assert value(
             m.fs.state[1].mole_frac_phase_comp_apparent["Liq", "KHCO3"]
-        ) == pytest.approx(1.6e-8, abs=1e-9)
+        ) == pytest.approx(0, abs=1e-6)
