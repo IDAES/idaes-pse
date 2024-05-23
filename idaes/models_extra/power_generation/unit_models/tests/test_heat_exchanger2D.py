@@ -128,7 +128,6 @@ def test_initialize_unit(build_unit):
     m = build_unit
     #   Set inputs
     h = pyo.value(iapws95.htpx(773.15 * pyunits.K, 2.5449e7 * pyunits.Pa))
-    print(h)
     m.fs.unit.tube_inlet.flow_mol[0].fix(24678.26)  # mol/s
     m.fs.unit.tube_inlet.enth_mol[0].fix(h)  # J/mol
     m.fs.unit.tube_inlet.pressure[0].fix(2.5449e7)  # Pascals

@@ -413,7 +413,7 @@ def _new_idaes_config_block():
         "linear_presolve",
         pyomo.common.config.ConfigValue(
             domain=bool,
-            default=True,  # TODO: Change to true once transition complete
+            default=True,
             description="Whether to apply linear presolve in writer",
             doc="Whether to apply linear presolve in writer",
         ),
