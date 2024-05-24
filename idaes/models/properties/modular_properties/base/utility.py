@@ -592,6 +592,12 @@ def estimate_Pdew(blk, raoult_comps, henry_comps, liquid_phase):
         Estimated dew point pressure as a float.
 
     """
+    # Safety catch for cases where Psat or Henry's constant might be 0
+    # Not sure if this is meaningful, but if this is true then mathematically Pdew = 0
+    if any(value(blk.pressure_sat_comp[j]) == 0 for j in raoult_comps) or any(
+        value(blk.henry[liquid_phase, j]) == 0 for j in henry_comps
+    ):
+        return 0
     return value(
         1
         / (

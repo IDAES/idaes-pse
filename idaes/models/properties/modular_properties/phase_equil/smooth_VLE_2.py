@@ -106,6 +106,10 @@ class SmoothVLE2:
         vl_phase_set = Set(initialize=[phase_pair[0], phase_pair[1]])
         b.add_component("_vle_set" + suffix, vl_phase_set)
 
+        # Determination of "correct" units for slacks is challenging, as they are used to complement
+        # both flow and temperature. From a scaling perspective, the value (and thus units?) are
+        # based on the magnitude larger of these two, and thus hard to know a priori.
+        # This also applies to epsilon.
         s = Var(
             vl_phase_set,
             initialize=EPS_INIT,
