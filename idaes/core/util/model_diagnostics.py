@@ -1154,6 +1154,9 @@ class DiagnosticsToolbox:
         """
         Runs checks for numerical warnings and returns two lists.
 
+        Args:
+            ignore_parallel_components - ignore checks for parallel components
+
         Returns:
             warnings - list of warning messages from numerical analysis
             next_steps - list of suggested next steps to further investigate warnings
