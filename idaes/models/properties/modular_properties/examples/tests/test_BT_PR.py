@@ -90,8 +90,8 @@ class TestBTExample(object):
 
             # For optimization sweep, use a large eps to avoid getting stuck at
             # bubble and dew points
-            m.fs.state[1].eps_1_Vap_Liq.set_value(10)
-            m.fs.state[1].eps_2_Vap_Liq.set_value(10)
+            m.fs.state[1].eps_t_Vap_Liq.set_value(10)
+            m.fs.state[1].eps_z_Vap_Liq.set_value(10)
 
             m.fs.state.initialize()
 
@@ -102,8 +102,8 @@ class TestBTExample(object):
             assert_optimal_termination(results)
 
             # Switch to small eps and re-solve to refine result
-            m.fs.state[1].eps_1_Vap_Liq.set_value(1e-4)
-            m.fs.state[1].eps_2_Vap_Liq.set_value(1e-4)
+            m.fs.state[1].eps_t_Vap_Liq.set_value(1e-4)
+            m.fs.state[1].eps_z_Vap_Liq.set_value(1e-4)
 
             results = solver.solve(m)
 
