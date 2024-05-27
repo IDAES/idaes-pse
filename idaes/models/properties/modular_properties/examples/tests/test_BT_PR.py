@@ -14,8 +14,9 @@
 Author: Andrew Lee
 """
 
-
 import pytest
+
+from numpy import logspace
 
 from pyomo.util.check_units import assert_units_consistent
 from pyomo.environ import assert_optimal_termination, ConcreteModel, Objective, value
@@ -79,14 +80,13 @@ class TestBTExample(object):
         m.fs.obj = Objective(expr=(m.fs.state[1].temperature - 510) ** 2)
         m.fs.state[1].temperature.setub(600)
 
-        for logP in [9.5, 10, 10.5, 11, 11.5, 12]:
-            m.fs.obj.deactivate()
+        for P in logspace(4.8, 5.9, 8):
 
             m.fs.state[1].flow_mol.fix(100)
             m.fs.state[1].mole_frac_comp["benzene"].fix(0.5)
             m.fs.state[1].mole_frac_comp["toluene"].fix(0.5)
             m.fs.state[1].temperature.fix(300)
-            m.fs.state[1].pressure.fix(10 ** (0.5 * logP))
+            m.fs.state[1].pressure.fix(P)
 
             # For optimization sweep, use a large eps to avoid getting stuck at
             # bubble and dew points
