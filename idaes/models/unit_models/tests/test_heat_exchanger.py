@@ -1684,7 +1684,7 @@ class TestBT_Generic_cocurrent(object):
         m.fs.unit.cold_side.scaling_factor_pressure = 1
 
         # Set small values of epsilon to get sufficiently accurate results
-        # Only applies ot hot side, as cold side used the original SmoothVLE.
+        # Only applies to hot side, as cold side used the original SmoothVLE.
         m.fs.unit.hot_side.properties_in[0].eps_t_Vap_Liq.set_value(1e-4)
         m.fs.unit.hot_side.properties_in[0].eps_z_Vap_Liq.set_value(1e-4)
         m.fs.unit.hot_side.properties_out[0].eps_t_Vap_Liq.set_value(1e-4)
@@ -2063,7 +2063,7 @@ class TestInitializersModular:
         model.fs.unit.cold_side.scaling_factor_pressure = 1
 
         # Set small values of epsilon to get sufficiently accurate results
-        # Only applies ot hot side, as cold side used the original SmoothVLE.
+        # Only applies to hot side, as cold side used the original SmoothVLE.
         model.fs.unit.hot_side.properties_in[0].eps_t_Vap_Liq.set_value(1e-4)
         model.fs.unit.hot_side.properties_in[0].eps_z_Vap_Liq.set_value(1e-4)
         model.fs.unit.hot_side.properties_out[0].eps_t_Vap_Liq.set_value(1e-4)
