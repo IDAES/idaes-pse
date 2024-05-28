@@ -49,16 +49,15 @@ from pyomo.environ import (
     Suffix,
 )
 from pyomo.core.base.initializer import Initializer
-from pyomo.core.base.block import _BlockData, SubclassOf
+from pyomo.core.base.block import BlockData, SubclassOf
 from pyomo.core.base.indexed_component import UnindexedComponent_set
 from pyomo.common.collections import ComponentMap
 from pyomo.common.config import ConfigDict, ConfigValue
 from pyomo.core.base.range import remainder
-from pyomo.dae.set_utils import deactivate_model_at
 from pyomo.dae.flatten import flatten_dae_components
 
 
-class _DynamicBlockData(_BlockData):
+class _DynamicBlockData(BlockData):
     """This class adds methods and data structures that are useful
     for working with dynamic models. These include methods for
     initialization and references to time-indexed variables.
@@ -290,7 +289,7 @@ class _DynamicBlockData(_BlockData):
     # to add time in a rule without a long messy line of super().__setattr__.
     def add_time(self):
         # Do this because I can't add a reference to a set
-        super(_BlockData, self).__setattr__("time", self.time)
+        super(BlockData, self).__setattr__("time", self.time)
 
     def set_sample_time(self, sample_time, tolerance=1e-8):
         """Validates and sets sample time"""
@@ -802,7 +801,7 @@ class DynamicBlock(Block):
             block.mod = self._init_model(parent, idx)
 
         if self._init_time is not None:
-            super(_BlockData, block).__setattr__("time", self._init_time(parent, idx))
+            super(BlockData, block).__setattr__("time", self._init_time(parent, idx))
 
         if self._init_inputs is not None:
             block._inputs = self._init_inputs(parent, idx)

@@ -14,6 +14,7 @@
 Tests for InitializerBase class
 """
 import pytest
+import re
 import types
 import os
 
@@ -411,8 +412,10 @@ class TestSubMethods:
         initializer = InitializerBase()
         with pytest.raises(
             InitializationError,
-            match="Degrees of freedom for unknown were not equal to zero during "
-            "initialization \(DoF = -1\).",
+            match=re.escape(
+                "Degrees of freedom for unknown were not equal to zero during "
+                "initialization (DoF = -1)."
+            ),
         ):
             initializer.precheck(model)
         assert initializer.summary[model]["status"] == InitializationStatus.DoF
@@ -598,9 +601,11 @@ class TestSubMethods:
 
         with pytest.raises(
             InitializationError,
-            match="Attempted to change the value of fixed variable v\[b\]. "
-            "Initialization from initial guesses does not support changing the value "
-            "of fixed variables.",
+            match=re.escape(
+                "Attempted to change the value of fixed variable v[b]. "
+                "Initialization from initial guesses does not support changing the value "
+                "of fixed variables."
+            ),
         ):
             initializer._load_values_from_dict(m, {m.v: 10})
 
@@ -648,9 +653,11 @@ class TestSubMethods:
 
         with pytest.raises(
             InitializationError,
-            match="Attempted to change the value of fixed variable v\[a\]. "
-            "Initialization from initial guesses does not support changing the value "
-            "of fixed variables.",
+            match=re.escape(
+                "Attempted to change the value of fixed variable v[a]. "
+                "Initialization from initial guesses does not support changing the value "
+                "of fixed variables."
+            ),
         ):
             initializer._load_values_from_dict(m, {'v["a"]': 10})
 
