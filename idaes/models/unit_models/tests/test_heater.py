@@ -511,6 +511,12 @@ class TestBT_Generic(object):
         m.fs.unit.heat_duty.fix(-5000)
         m.fs.unit.deltaP.fix(0)
 
+        # Set small values of epsilon to get sufficiently accurate results
+        m.fs.unit.control_volume.properties_in[0].eps_t_Vap_Liq.set_value(1e-4)
+        m.fs.unit.control_volume.properties_in[0].eps_z_Vap_Liq.set_value(1e-4)
+        m.fs.unit.control_volume.properties_out[0].eps_t_Vap_Liq.set_value(1e-4)
+        m.fs.unit.control_volume.properties_out[0].eps_z_Vap_Liq.set_value(1e-4)
+
         return m
 
     @pytest.mark.build
@@ -666,6 +672,13 @@ class TestInitializersModular:
 
         m.fs.unit.heat_duty.fix(-5000)
         m.fs.unit.deltaP.fix(0)
+
+        # Set small values of epsilon to get sufficiently accurate results
+        m.fs.unit.control_volume.properties_in.display()
+        m.fs.unit.control_volume.properties_in[0].eps_t_Vap_Liq.set_value(1e-4)
+        m.fs.unit.control_volume.properties_in[0].eps_z_Vap_Liq.set_value(1e-4)
+        m.fs.unit.control_volume.properties_out[0].eps_t_Vap_Liq.set_value(1e-4)
+        m.fs.unit.control_volume.properties_out[0].eps_z_Vap_Liq.set_value(1e-4)
 
         return m
 

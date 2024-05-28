@@ -106,16 +106,12 @@ class SmoothVLE2:
         vl_phase_set = Set(initialize=[phase_pair[0], phase_pair[1]])
         b.add_component("_vle_set" + suffix, vl_phase_set)
 
-        # Determination of "correct" units for slacks is challenging, as they are used to complement
-        # both flow and temperature. From a scaling perspective, the value (and thus units?) are
-        # based on the magnitude larger of these two, and thus hard to know a priori.
-        # This also applies to epsilon.
         s = Var(
             vl_phase_set,
             initialize=EPS_INIT,
             bounds=(0, None),
             doc="Slack variable for equilibrium temperature",
-            units=pyunits.dimensionless,
+            units=t_units,
         )
         b.add_component("s" + suffix, s)
 
@@ -124,15 +120,17 @@ class SmoothVLE2:
             return (
                 b._teq[phase_pair]  # pylint: disable=protected-access
                 - b.temperature
-                - s[v_phase] * t_units
-                + s[l_phase] * t_units
+                - s[v_phase]
+                + s[l_phase]
                 == 0
             )
 
         b.add_component("_teq_constraint" + suffix, Constraint(rule=rule_teq))
 
+        # Epsilon variables will be given units of flow, as this is usually what dominates
+        # the complementarity equations.
         eps_t = Param(
-            default=1e-4,
+            default=1,
             mutable=True,
             doc="Smoothing parameter for temperature complementarity",
             units=f_units,
@@ -140,7 +138,7 @@ class SmoothVLE2:
         b.add_component("eps_t" + suffix, eps_t)
 
         eps_z = Param(
-            default=1e-4,
+            default=1,
             mutable=True,
             doc="Smoothing parameter for cubic root complementarities",
             units=f_units,
@@ -168,7 +166,7 @@ class SmoothVLE2:
         def rule_temperature_slack_complementarity(b, p):
             flow_phase = b.flow_mol_phase[p]
 
-            return smooth_min(s[p] * f_units, flow_phase, eps_t) == 0
+            return smooth_min(s[p] * f_units / t_units, flow_phase, eps_t) == 0
 
         b.add_component(
             "temperature_slack_complementarity" + suffix,

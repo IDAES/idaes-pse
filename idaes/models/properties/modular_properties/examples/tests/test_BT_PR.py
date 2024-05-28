@@ -69,6 +69,11 @@ class TestBTExample(object):
 
         m.fs.state = m.fs.props.build_state_block([1], defined_state=True)
 
+        # Set small values of epsilon to get accurate results
+        # Initialization will handle finding the correct region
+        m.fs.state[1].eps_t_Vap_Liq.set_value(1e-4)
+        m.fs.state[1].eps_z_Vap_Liq.set_value(1e-4)
+
         iscale.calculate_scaling_factors(m.fs.props)
         iscale.calculate_scaling_factors(m.fs.state[1])
         return m
