@@ -1148,9 +1148,14 @@ class DiagnosticsToolbox:
 
         return cautions
 
-    def _collect_numerical_warnings(self, jac=None, nlp=None):
+    def _collect_numerical_warnings(
+        self, jac=None, nlp=None, ignore_parallel_components=False
+    ):
         """
         Runs checks for numerical warnings and returns two lists.
+
+        Args:
+            ignore_parallel_components - ignore checks for parallel components
 
         Returns:
             warnings - list of warning messages from numerical analysis
@@ -1236,27 +1241,30 @@ class DiagnosticsToolbox:
             )
 
         # Parallel variables and constraints
-        partol = self.config.parallel_component_tolerance
-        par_cons = check_parallel_jacobian(
-            self._model, tolerance=partol, direction="row", jac=jac, nlp=nlp
-        )
-        par_vars = check_parallel_jacobian(
-            self._model, tolerance=partol, direction="column", jac=jac, nlp=nlp
-        )
-        if par_cons:
-            p = "pair" if len(par_cons) == 1 else "pairs"
-            warnings.append(
-                f"WARNING: {len(par_cons)} {p} of constraints are parallel"
-                f" (to tolerance {partol:.1E})"
+        if not ignore_parallel_components:
+            partol = self.config.parallel_component_tolerance
+            par_cons = check_parallel_jacobian(
+                self._model, tolerance=partol, direction="row", jac=jac, nlp=nlp
             )
-            next_steps.append(self.display_near_parallel_constraints.__name__ + "()")
-        if par_vars:
-            p = "pair" if len(par_vars) == 1 else "pairs"
-            warnings.append(
-                f"WARNING: {len(par_vars)} {p} of variables are parallel"
-                f" (to tolerance {partol:.1E})"
+            par_vars = check_parallel_jacobian(
+                self._model, tolerance=partol, direction="column", jac=jac, nlp=nlp
             )
-            next_steps.append(self.display_near_parallel_variables.__name__ + "()")
+            if par_cons:
+                p = "pair" if len(par_cons) == 1 else "pairs"
+                warnings.append(
+                    f"WARNING: {len(par_cons)} {p} of constraints are parallel"
+                    f" (to tolerance {partol:.1E})"
+                )
+                next_steps.append(
+                    self.display_near_parallel_constraints.__name__ + "()"
+                )
+            if par_vars:
+                p = "pair" if len(par_vars) == 1 else "pairs"
+                warnings.append(
+                    f"WARNING: {len(par_vars)} {p} of variables are parallel"
+                    f" (to tolerance {partol:.1E})"
+                )
+                next_steps.append(self.display_near_parallel_variables.__name__ + "()")
 
         return warnings, next_steps
 
@@ -1404,16 +1412,21 @@ class DiagnosticsToolbox:
         if len(warnings) > 0:
             raise AssertionError(f"Structural issues found ({len(warnings)}).")
 
-    def assert_no_numerical_warnings(self):
+    def assert_no_numerical_warnings(self, ignore_parallel_components=False):
         """
         Checks for numerical warnings in the model and raises an AssertionError
         if any are found.
+
+        Args:
+            ignore_parallel_components - ignore checks for parallel components
 
         Raises:
             AssertionError if any warnings are identified by numerical analysis.
 
         """
-        warnings, _ = self._collect_numerical_warnings()
+        warnings, _ = self._collect_numerical_warnings(
+            ignore_parallel_components=ignore_parallel_components
+        )
         if len(warnings) > 0:
             raise AssertionError(f"Numerical issues found ({len(warnings)}).")
 
