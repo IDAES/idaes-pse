@@ -326,11 +326,15 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                     self.maintenance_material_cost / 12  # 1 month materials
                     + self.non_fuel_and_waste_OC  # 1 month nonfuel consumables
                     + (
-                        self.waste_costs_OC if waste is not None else 0 * CE_index_units
+                        self.waste_costs_OC
+                        if waste is not None
+                        else 0 * CE_index_units / pyunits.year
                     )  # 1 month waste
                     # inventory capital costs
                     + (
-                        self.fuel_cost_OC if fuel is not None else 0 * CE_index_units
+                        self.fuel_cost_OC
+                        if fuel is not None
+                        else 0 * CE_index_units / pyunits.year
                     )  # 60 day fuel supply
                     # Other costs
                     + (
@@ -371,9 +375,10 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             )
 
             self.additional_cost_of_electricity = Var(
-                initialize=70.9e-6,
+                initialize=0,
                 doc="additional cost to be added to the COE calculations"
-                + " in millions",
+                + " in millions; use 70.9e-6 for NGCC baseline report, "
+                + " use 43.2 for NGCC without carbon capture.",
                 units=CE_index_units / pyunits.MWh,
             )
 
@@ -399,7 +404,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             if tonne_CO2_capture is not None:
                 if not hasattr(self, "tonne_CO2_capture"):
                     self.tonne_CO2_capture = Param(
-                        initialize=tonne_CO2_capture, mutable=True, units=pyunits.ton
+                        initialize=tonne_CO2_capture, mutable=True, units=pyunits.tonne
                     )
                 self.cost_of_capture = Expression(
                     expr=(
@@ -413,18 +418,24 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 )
 
                 if transport_cost is not None:
-                    if isinstance(transport_cost, (Expression, ScalarExpression)) or (
-                        isinstance(transport_cost, (Param, Var))
-                        and transport_cost.get_units is None
+                    if (
+                        isinstance(transport_cost, (Expression, ScalarExpression))
+                        or (isinstance(transport_cost, (Param, Var, float, int)))
+                    ) and (
+                        pyunits.get_units(transport_cost) is None
+                        or pyunits.get_units(transport_cost) == pyunits.dimensionless
                     ):
                         self.transport_cost = (
                             transport_cost
                             * CE_index_units
-                            / pyunits.ton
+                            / pyunits.tonne
                             * self.tonne_CO2_capture
                         )
                     else:
-                        self.transport_cost = transport_cost * self.tonne_CO2_capture
+                        self.transport_cost = pyunits.convert(
+                            transport_cost * self.tonne_CO2_capture,
+                            to_units=CE_index_units,
+                        )
 
             else:  # except the case where transport_cost is passed but tonne_CO2_capture is not passed
                 if transport_cost is not None:
