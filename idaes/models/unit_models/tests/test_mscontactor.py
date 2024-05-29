@@ -16,6 +16,7 @@ Authors: Andrew Lee
 """
 
 import pytest
+import re
 from types import MethodType
 
 from pyomo.environ import (
@@ -430,8 +431,10 @@ class TestBuild:
 
         with pytest.raises(
             ConfigurationError,
-            match="MSContactor models must define at least two streams; received "
-            "\['stream1'\]",
+            match=re.escape(
+                "MSContactor models must define at least two streams; received "
+                "['stream1']"
+            ),
         ):
             m.fs.unit._verify_inputs()
 
@@ -2280,8 +2283,10 @@ class TestReactions:
 
         with pytest.raises(
             PropertyNotSupportedError,
-            match="Heterogeneous reaction package does not contain a list of "
-            "reactions \(reaction_idx\).",
+            match=re.escape(
+                "Heterogeneous reaction package does not contain a list of "
+                "reactions (reaction_idx)."
+            ),
         ):
             model.fs.unit._build_heterogeneous_reaction_blocks()
 
