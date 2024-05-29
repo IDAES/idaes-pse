@@ -32,6 +32,10 @@ solver = OptSolver(type="solver")
 
 @pytest.mark.unit
 def test_creat_PEMParametrizedBidder_with_wrong_PEM_power():
+    """
+    This is to test when we creat the PEM bidder with a PEM power greater than the renewable power,
+    there will be an error.
+    """
     bidding_model_object = ExampleModel(model_data=testing_renewable_data)
     forecaster = ExampleForecaster(prediction=30)
     renewable_mw = 200
@@ -53,6 +57,10 @@ def test_creat_PEMParametrizedBidder_with_wrong_PEM_power():
 
 
 def wind_df():
+    """
+    This is to define a dataframe fed to the PerfectForecaster with example DA/RT
+    capacity factors and LMPs.
+    """
     start_year = 2020
     start_mon = 1
     start_day = 1
@@ -76,6 +84,9 @@ def wind_df():
 
 @pytest.fixture
 def bidder_object():
+    """
+    This is to define a bidder object.
+    """
     example_wind_df = wind_df()
     forecaster = PerfectForecaster(example_wind_df)
     bidding_model_object = ExampleModel(model_data=testing_renewable_data)
@@ -94,6 +105,9 @@ def bidder_object():
 
 @pytest.mark.component
 def test_compute_DA_bids(bidder_object):
+    """
+    This is to test the if the compute_DA_bids function works correctly.
+    """
     gen = bidder_object.generator
     pmin = bidder_object.bidding_model_object.pmin
     pmax = bidder_object.bidding_model_object.pmax
@@ -130,6 +144,9 @@ def test_compute_DA_bids(bidder_object):
 
 @pytest.mark.component
 def test_compute_RT_bids(bidder_object):
+    """
+    This is to test the if the compute_DA_bids function works correctly.
+    """
     gen = bidder_object.generator
     pmin = bidder_object.bidding_model_object.pmin
     pmax = bidder_object.bidding_model_object.pmax

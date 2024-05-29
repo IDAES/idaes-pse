@@ -21,6 +21,10 @@ import idaes.logger as idaeslog
 
 @pytest.fixture
 def wind_df():
+    """
+    This is to define a dataframe fed to the PerfectForecaster with example DA/RT
+    capacity factors and LMPs.
+    """
     start_year = 2020
     start_mon = 1
     start_day = 1
@@ -52,6 +56,9 @@ def test_create_perfectforecaster(wind_df):
 @pytest.mark.unit
 @pytest.mark.parametrize("value", [np.array([1, 2, 3, 4, 5]), [1, 2, 3, 4, 5]])
 def test_create_perfectforecaster_with_ndarray_and_list(value):
+    """
+    This is to test when we creat the PerfectForecaster with array or list, there will be an error.
+    """
     with pytest.raises(
         ValueError,
         match=r".*The data_path_or_df should be pandas DataFrame or a string of the csv path.*",
@@ -61,6 +68,9 @@ def test_create_perfectforecaster_with_ndarray_and_list(value):
 
 @pytest.mark.unit
 def test_get_column_from_data(base_perfectforecaster):
+    """
+    This is to test the if the dataframe can be read correctly.
+    """
     date = "2020-01-01"
     hour = 0
     horizon = 24
@@ -77,6 +87,9 @@ def test_get_column_from_data(base_perfectforecaster):
 
 @pytest.mark.unit
 def test_forecast_day_ahead_prices(base_perfectforecaster):
+    """
+    This is to test if the forecast_day_ahead_price function works correctly.
+    """
     date = "2020-01-01"
     hour = 0
     horizon = 24
@@ -93,6 +106,9 @@ def test_forecast_day_ahead_prices(base_perfectforecaster):
 
 @pytest.mark.unit
 def test_forecast_real_time_prices(base_perfectforecaster):
+    """
+    This is to test if the forecast_real_time_price function works correctly.
+    """
     date = "2020-01-01"
     hour = 0
     horizon = 4
@@ -109,6 +125,9 @@ def test_forecast_real_time_prices(base_perfectforecaster):
 
 @pytest.mark.unit
 def test_forecast_day_ahead_capacity_factor(base_perfectforecaster):
+    """
+    This is to test if the forecast_day_ahead_capacity_factor function works correctly.
+    """
     date = "2020-01-01"
     hour = 0
     horizon = 24
@@ -124,6 +143,9 @@ def test_forecast_day_ahead_capacity_factor(base_perfectforecaster):
 
 @pytest.mark.unit
 def test_forecast_real_time_capacity_factor(base_perfectforecaster):
+    """
+    This is to test if the forecast_real_time_capacity_factor function works correctly.
+    """
     date = "2020-01-01"
     hour = 0
     horizon = 4
