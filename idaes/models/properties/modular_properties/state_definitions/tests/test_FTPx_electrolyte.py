@@ -1387,24 +1387,25 @@ class TestApparentSpeciesBasisInherentIdeal:
         )
 
         # Check true species mole fractions
+        # Some values are very small and thus have looser tolerances
         assert value(
             m.fs.state[1].mole_frac_phase_comp_true["Liq", "CO3--"]
         ) == pytest.approx(0.142857, rel=1e-5)
         assert value(
             m.fs.state[1].mole_frac_phase_comp_true["Liq", "H+"]
-        ) == pytest.approx(2.90081e-16, rel=1e-5)
+        ) == pytest.approx(2.90081e-16, rel=1e-3)
         assert value(
             m.fs.state[1].mole_frac_phase_comp_true["Liq", "H2O"]
         ) == pytest.approx(0.571429, rel=1e-5)
         assert value(
             m.fs.state[1].mole_frac_phase_comp_true["Liq", "HCO3-"]
-        ) == pytest.approx(1.13961e-08, rel=1e-5)
+        ) == pytest.approx(1.13961e-08, rel=1e-3)
         assert value(
             m.fs.state[1].mole_frac_phase_comp_true["Liq", "K+"]
         ) == pytest.approx(0.285714, rel=1e-5)
         assert value(
             m.fs.state[1].mole_frac_phase_comp_true["Liq", "OH-"]
-        ) == pytest.approx(1.139606e-08, rel=1e-5)
+        ) == pytest.approx(1.139606e-08, rel=1e-3)
 
 
 # -----------------------------------------------------------------------------

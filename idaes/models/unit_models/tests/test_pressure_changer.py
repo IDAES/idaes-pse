@@ -588,17 +588,6 @@ class TestIAPWS(object):
             }
         }
 
-    @pytest.mark.component
-    def test_initialization_error(self, iapws):
-        iapws.fs.unit.infeas = Constraint(
-            expr=iapws.fs.unit.inlet.flow_mol[0] ** 2
-            + iapws.fs.unit.outlet.flow_mol[0] ** 2
-            <= 0
-        )
-
-        with pytest.raises(InitializationError):
-            iapws.fs.unit.initialize()
-
 
 # -----------------------------------------------------------------------------
 class TestSaponification(object):

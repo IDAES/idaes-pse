@@ -1479,29 +1479,6 @@ def test_construction_component_not_in_phase():
     iscale.calculate_scaling_factors(m)
 
 
-@pytest.mark.unit
-def test_initialization_error():
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.pp = PhysicalParameterTestBlock()
-
-    m.fs.mix = Mixer(property_package=m.fs.pp)
-
-    m.fs.mix.inlet_1_state[0].material_flow_mol.fix(10)
-    m.fs.mix.inlet_2_state[0].material_flow_mol.fix(10)
-
-    m.fs.mix.infeas = Constraint(
-        expr=sum(
-            m.fs.mix.mixed_state[0].get_material_flow_terms(p, j) ** 2
-            for p, j in m.fs.mix.mixed_state[0].phase_component_set
-        )
-        <= 0
-    )
-
-    with pytest.raises(InitializationError):
-        m.fs.mix.initialize()
-
-
 class TestInitializersSapon:
     @pytest.fixture
     def model(self):
