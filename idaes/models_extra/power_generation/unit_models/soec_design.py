@@ -401,9 +401,11 @@ class SoecDesignData(UnitModelBlockData):
 
         @self.h2_inlet_translator.Constraint(self.flowsheet().time, comps)
         def mole_frac_comp_eqn(b, t, c):
+            # Need to include a small delta to prevent outlet O2 concentration from
+            # going to zero
             return (
                 b.properties_out[t].mole_frac_comp[c]
-                == b.properties_in[t].mole_frac_comp[c]
+                == b.properties_in[t].mole_frac_comp[c] - 1e-16
             )
 
         self._translator_ftp_constraints(self.h2_inlet_translator)
