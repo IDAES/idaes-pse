@@ -69,9 +69,7 @@ class ExtraDependencies:
     """
 
     ui = [
-        # FIXME this must be changed to the PyPI distribution for the release
-        # "idaes-ui",
-        "idaes-ui @ git+https://github.com/IDAES/idaes-ui@main",
+        "idaes-ui",
     ]
     _ipython = [
         'ipython <= 8.12; python_version == "3.8"',
