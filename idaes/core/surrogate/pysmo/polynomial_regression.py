@@ -35,7 +35,6 @@ The Pyomo optimization approach is enabled as the default at this time.
 """
 
 import os.path
-import warnings
 import pickle
 
 # Imports from third parties
@@ -283,7 +282,9 @@ class PolynomialRegression:
         if (
             os.path.exists(fname) and overwrite is True
         ):  # Explicit overwrite done by user
-            _log.warn(f"Warning: '{fname}' exists, previous file will be overwritten")
+            _log.warning(
+                f"Warning: '{fname}' exists, previous file will be overwritten"
+            )
             self.filename = fname
         elif os.path.exists(fname) and overwrite is False:  # User is not overwriting
             self.filename = (
@@ -292,7 +293,7 @@ class PolynomialRegression:
                 + pd.Timestamp.today().strftime("%m-%d-%y_%H%M%S")
                 + ".pickle"
             )
-            _log.warn(
+            _log.warning(
                 f"Warning: '{fname}' exists, "
                 f"results will be saved to {self.filename}"
             )
@@ -349,11 +350,12 @@ class PolynomialRegression:
             num_cross = 3
             _log.info(f"Use default number of cross-validations: {num_cross}")
         elif num_cross > 10:
-            # warnings.warn(
-            _log.warn(
+            msg = (
                 f"The number of cross-validations ({num_cross}) is large. "
                 f"The simulation may take a while to run"
             )
+            # warnings.warn(msg)
+            _log.warning(msg)
         self.number_of_crossvalidations = num_cross
 
         max_poly = maximum_polynomial_order
@@ -362,18 +364,19 @@ class PolynomialRegression:
             # pylint: disable-next=broad-exception-raised
             raise Exception("Maximum polynomial order must be an integer")
         elif max_poly > self.MAX_POLY:
-            # warnings.warn(
-            _log.warn(
+            msg = (
                 f"Maximum polynomial order value ({max_poly})"
                 f"reduced maximum allowed ({self.MAX_POLY})"
             )
+            # warnings.warn(msg)
+            _log.warning(msg)
             max_poly = 10
         self.max_polynomial_order = max_poly
 
         self.number_of_x_vars = regression_data.shape[1] - 1
 
         if training_split is None:
-            print("The default training/cross-validation split of 0.75 is used.")
+            _log.warning("The default training/cross-validation split of 0.75 is used.")
             training_split = 0.75
         elif training_split >= 1 or training_split <= 0:
             # PYLINT-TODO
@@ -405,7 +408,7 @@ class PolynomialRegression:
             regression_data.shape[0] == original_data.shape[0]
             or no_adaptive_samples == 0
         ):
-            print("No iterations will be run.")
+            _log.warning("No iterations will be run.")
             max_iter = 0
         self.max_iter = max_iter
 
@@ -491,6 +494,16 @@ class PolynomialRegression:
         self.dataframe_of_optimal_weights_extra_terms = None
         self.extra_terms_feature_vector = None
         self.fit_status = None
+
+    @staticmethod
+    def _format_model_perf(order, mae_error, mse_error, r_square, r_square_adj=None):
+        s = (
+            f"Order: {order} / MAE: {mae_error:.4f}"
+            f" / MSE: {mse_error:.4f} / R^2: {r_square:.4f}"
+        )
+        if r_square_adj is not None:
+            s += f" / Adjusted R^2: {r_square_adj:.4f}"
+        return s
 
     def training_test_data_creation(self, additional_features=None):
         """
@@ -1008,7 +1021,8 @@ class PolynomialRegression:
         print("\n------------------------------------------------------------")
         print("The final coefficients of the regression terms are: \n")
         print("k               |", beta[0, 0])
-        results_df = pd.concat([results_df, pd.Series({"k": beta[0, 0]})], axis=0)
+        results_df = pd.concat([#results_df,
+                                pd.Series({"k": beta[0, 0]})], axis=0)
         if self.multinomials == 1:
             for i in range(1, order + 1):
                 for j in range(1, self.number_of_x_vars + 1):
@@ -1232,11 +1246,9 @@ class PolynomialRegression:
             ) = self.surrogate_performance(phi_best, order_best)
             _log.info(
                 "Initial Regression Model Performance:\n"
-                f"Order: {order_best} "
-                f" / MAE: {mae_error:.4f}"
-                f" / MSE: {mse_error:.4f}"
-                f" / R^2: {r_square:.4f}"
-                f" / Adjusted R^2: {r_square_adj:.4f}"
+                + self._format_model_perf(
+                    order_best, mae_error, mse_error, r_square, r_square_adj
+                )
             )
 
             # Parameters that retain the previous best solutions. They are compared
@@ -1329,10 +1341,9 @@ class PolynomialRegression:
                             phi_best = phi
                             order_best = poly_order
                             train_error_fit = train_error
-                print(
-                    "\nThe best regression model is of order",
-                    order_best,
-                    " with a cross-val error of %4f" % best_error,
+                _log.info(
+                    f"The best regression model is of order {order_best}"
+                    f"with a cross-val error of {best_error:.4f}"
                 )
 
                 (
@@ -1342,18 +1353,16 @@ class PolynomialRegression:
                     r_square,
                     r_square_adj,
                 ) = self.surrogate_performance(phi_best, order_best)
-                print(
-                    "Regression performance on full data in iteration",
-                    iteration_number,
-                    "\nOrder: ",
-                    order_best,
-                    " / MAE: %4f" % mae_error,
-                    " / MSE: %4f" % mse_error,
-                    " / R_sq: %4f" % r_square,
-                    " / Adjusted R^2: %4f" % r_square_adj,
+                _log.info(
+                    f"Regression performance on full data in iteration"
+                    f"{iteration_number} "
+                    + self._format_model_perf(
+                        order_best, mae_error, mse_error, r_square, r_square_adj
+                    )
                 )
 
-                # Determine if solution is improved. If yes, update solution. if no, retain previous best.
+                # Determine if solution is improved. If yes, update solution.
+                # If no, retain previous best.
                 if r_square_adj > r_square_adj_opt:
                     (
                         phi_opt,
@@ -1397,24 +1406,21 @@ class PolynomialRegression:
             # Round phi to 2.d.p and print results to screen
             beta_vector = np.round(phi_opt, 6)
             if r_square_adj_opt < 0.95:
-                print("\nPolynomial regression performs poorly for this dataset.")
+                _log.warning("Polynomial regression performs poorly for this dataset")
             else:
-                print(
-                    "\nPolynomial regression generates a good surrogate model for the input data."
+                _log.info(
+                    "Polynomial regression generates a good surrogate model for the input data"
                 )
             if iteration_number > 1:
                 _, _, _, _ = self.error_plotting(vector_of_results)
-            print(
-                "\n-------------------------------------------------\n-------------------------------------------------"
-            )
-            print(
-                "Best solution found: ",
-                "\nOrder: ",
-                order_opt,
-                " / MAE: %4f" % mae_error_opt,
-                " / MSE: %4f" % mse_error_opt,
-                " / R_sq: %4f" % r_square_opt,
-                " / Adjusted R^2: %4f" % r_square_adj_opt,
+            # print(
+            #     "\n-------------------------------------------------\n-------------------------------------------------"
+            # )
+            _log.info(
+                "Best solution found:\n"
+                + self._format_model_perf(
+                    order_best, mae_error, mse_error, r_square, r_square_adj
+                )
             )
             dataframe_coeffs = self.results_generation(beta_vector, order_opt)
 
@@ -1456,9 +1462,9 @@ class PolynomialRegression:
             if r_square_opt > 0.95:
                 self.fit_status = "ok"
             else:
-                warnings.warn(
-                    "Polynomial regression generates poor fit for the dataset"
-                )
+                msg = "Polynomial regression generates poor fit for the dataset"
+                _log.warning(msg)
+                # warnings.warn(msg)
                 self.fit_status = "poor"
 
             self.pickle_save({"model": self})
@@ -1489,13 +1495,13 @@ class PolynomialRegression:
                         phi_best = phi
                         order_best = poly_order
                         train_error_fit = train_error
-            print(
-                "\nBest surrogate model is of order",
-                order_best,
-                " with a cross-val S.S. Error  of %4f" % best_error,
+            _log.info(
+                f"Best surrogate model is of order {order_best} "
+                f"with a cross-val S.S. Error  of {best_error:.4f}"
             )
 
-            # KEY: Modification of self variable outside initialization. Required to make @surrogate_performance work here.
+            # KEY: Modification of self variable outside initialization.
+            # Required to make @surrogate_performance work here.
             self.original_data = self.regression_data
             _, mae_error, mse_error, r_square, _ = self.surrogate_performance(
                 phi_best, order_best, additional_features_array
@@ -1508,8 +1514,8 @@ class PolynomialRegression:
             dataframe_coeffs = self.results_generation(beta_vector, order_best)
 
             extra_terms_coeffs = pd.Series(dtype="float64")
-            print(
-                "\nThe coefficients of the extra terms in additional_regression_features are:\n"
+            _log.debug(
+                "Coefficients of the extra terms in additional_regression_features:"
             )
             for af in range(number_additional_features, 0, -1):
                 print(
@@ -1533,11 +1539,8 @@ class PolynomialRegression:
 
             # Print errors
             print(
-                "\nRegression model performance on training data:\nOrder: ",
-                order_best,
-                " / MAE: %4f" % mae_error,
-                " / MSE: %4f" % mse_error,
-                " / R^2: %4f" % r_square,
+                "\nRegression model performance on training data:\n"
+                + self._format_model_perf(order_best, mae_error, mse_error, r_square)
             )
 
             extra_terms_feature_vector = list(
@@ -1558,9 +1561,7 @@ class PolynomialRegression:
             if r_square > 0.95:
                 self.fit_status = "ok"
             else:
-                warnings.warn(
-                    "Polynomial regression generates poor fit for the dataset"
-                )
+                _log.warning("Polynomial regression generates poor fit for the dataset")
                 self.fit_status = "poor"
 
             self.pickle_save({"model": self})
@@ -1570,10 +1571,12 @@ class PolynomialRegression:
     def get_feature_vector(self):
         """
 
-        The ``get_feature_vector`` method generates the list of regression features from the column headers of the input dataset.
+        The ``get_feature_vector`` method generates the list of regression features
+        from the column headers of the input dataset.
 
         Returns:
-            Pyomo IndexedParam  : An indexed parameter list of the variables supplied in the original data
+            Pyomo IndexedParam  : An indexed parameter list of the variables
+                                  supplied in the original data
 
 
         **Example:**
@@ -1601,17 +1604,20 @@ class PolynomialRegression:
     def set_additional_terms(self, term_list):
         """
 
-        ``set_additional_terms`` accepts additional user-defined features for consideration during regression.
+        ``set_additional_terms`` accepts additional user-defined features
+        for consideration during regression.
 
         Args:
-            term_list (list) : List of additional terms to be considered as regression features. Each term in the list must be a Pyomo-supported intrinsic function.
+            term_list (list) : List of additional terms to be considered as regression features.
+            Each term in the list must be a Pyomo-supported intrinsic function.
 
 
         **Example:**
 
         .. code-block:: python
 
-            # To add the sine and cosine of a variable with header 'X1' in the dataset as additional regression features:
+            # To add the sine and cosine of a variable with header 'X1' in the dataset
+            # as additional regression features:
             >>> xy_data = pd.DataFrame.from_items([('A', [1, 2, 3]), ('B', [4, 5, 6])], orient='index', columns=['X1', 'X2', 'Y'])
             >>> A = PolynomialRegression(xy_data, xy_data, maximum_polynomial_order=5)
             >>> p = A.get_feature_vector()
@@ -1625,11 +1631,15 @@ class PolynomialRegression:
         """
 
         The ``training`` method trains a polynomial model to an input dataset.
-        It calls the core method which is called in the PolynomialRegression class (polynomial_regression_fitting).
-        It accepts no user input, inheriting the information passed in class initialization.
+        It calls the core method which is called in the PolynomialRegression class
+        (polynomial_regression_fitting).
+
+        It accepts no user input, inheriting the information passed in
+        class initialization.
 
         Returns:
-            tuple   : Python Object (**results**) containing the results of the polynomial regression process including:
+            tuple   : Python Object (**results**) containing the results of the
+            polynomial regression process, including:
                 - the polynomial order  (**self.final_polynomial_order**)
                 - polynomial coefficients (**self.optimal_weights_array**), and
                 - MAE and MSE errors as well as the :math:`R^{2}` (**results.errors**).
@@ -1724,7 +1734,7 @@ class PolynomialRegression:
         try:
             filehandler = open(self.filename, "wb")
             pickle.dump(solutions, filehandler)
-            print("\nResults saved in ", str(self.filename))
+            _log.info(f"Results saved in: {self.filename}")
         except:
             raise IOError("File could not be saved.")
 
