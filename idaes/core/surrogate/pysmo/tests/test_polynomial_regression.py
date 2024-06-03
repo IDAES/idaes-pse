@@ -13,6 +13,7 @@
 import sys, os
 from unittest.mock import patch
 
+from idaes.core.surrogate.pysmo import polynomial_regression
 from idaes.core.surrogate.pysmo.polynomial_regression import (
     PolynomialRegression,
     FeatureScaling,
@@ -20,6 +21,10 @@ from idaes.core.surrogate.pysmo.polynomial_regression import (
 import numpy as np
 import pandas as pd
 import pytest
+from idaes import logger as idaes_logger
+
+# Turn down the logging during the test
+polynomial_regression.set_log_level(idaes_logger.ERROR)
 
 
 class TestFeatureScaling:

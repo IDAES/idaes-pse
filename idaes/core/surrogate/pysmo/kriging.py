@@ -38,6 +38,7 @@ _log = getIdaesLogger(__name__, tag="surrogate")
 
 
 def set_log_level(level):
+    """Set logging level for the default logger in this module."""
     _log.setLevel(level)
 
 
