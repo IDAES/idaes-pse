@@ -819,7 +819,7 @@ def _read_component(sd, o, wts, lookup=None, suffixes=None, root_name=None):
     if isinstance(o, Suffix):
         if wts.suffix_filter is None or oname in wts.suffix_filter:
             suffixes[odict["__id__"]] = odict["data"]  # is populated
-    else:  # read non-sufix component data
+    else:  # read non-suffix component data
         _read_component_data(odict["data"], o, wts, lookup=lookup, suffixes=suffixes)
 
 
