@@ -35,7 +35,7 @@ from pyomo.environ import (
     Suffix,
     value,
 )
-from pyomo.core.base.param import _ParamData
+from pyomo.core.base.param import ParamData
 from pyomo.core.base.component import ComponentData
 
 _log = logging.getLogger(__name__)
@@ -256,7 +256,7 @@ class StoreSpec(object):
                     None,
                 ),
                 BooleanVar._ComponentDataClass: (("fixed", "stale", "value"), None),
-                _ParamData: (("value",), None),
+                ParamData: (("value",), None),
                 int: (("value",), None),
                 float: (("value",), None),
                 str: (("value",), None),
@@ -472,7 +472,7 @@ class StoreSpec(object):
                 data_classes={
                     Var._ComponentDataClass: (("value", "fixed"), _only_fixed),
                     BooleanVar._ComponentDataClass: (("value", "fixed"), _only_fixed),
-                    _ParamData: (("value",), None),
+                    ParamData: (("value",), None),
                     Constraint._ComponentDataClass: (("active",), None),
                     Block._ComponentDataClass: (("active",), None),
                 },
@@ -489,7 +489,7 @@ class StoreSpec(object):
                 data_classes={
                     Var._ComponentDataClass: (("value", "fixed"), None),
                     BooleanVar._ComponentDataClass: (("value", "fixed"), None),
-                    _ParamData: (("value",), None),
+                    ParamData: (("value",), None),
                     Constraint._ComponentDataClass: (("active",), None),
                     Block._ComponentDataClass: (("active",), None),
                 },

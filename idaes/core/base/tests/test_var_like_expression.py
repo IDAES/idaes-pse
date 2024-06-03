@@ -15,6 +15,7 @@ This module tests for the VarLikeExpression component.
 """
 
 import pytest
+import re
 
 from pyomo.environ import ConcreteModel, Expression, Var
 
@@ -36,8 +37,10 @@ def test_SimpleVarLikeExpression():
 
     with pytest.raises(
         TypeError,
-        match="e is an Expression and does not have a value "
-        "attribute. Use the 'value\(\)' method instead.",
+        match=re.escape(
+            "e is an Expression and does not have a value "
+            "attribute. Use the 'value()' method instead."
+        ),
     ):
         assert m.e.value == 42
 
@@ -115,47 +118,58 @@ def test_IndexedVarLikeExpression():
     for i in m.e:
         with pytest.raises(
             TypeError,
-            match=f"e\[{i}\] is an Expression and does not have"
-            f" a value attribute. Use the 'value\(\)' method "
-            "instead",
+            match=re.escape(
+                f"e[{i}] is an Expression and does not have"
+                f" a value attribute. Use the 'value()' method instead"
+            ),
         ):
             assert m.e[i].value == 42
 
         with pytest.raises(
             TypeError,
-            match=f"e\[{i}\] is an Expression and does not "
-            f"have a value which can be set.",
+            match=re.escape(
+                f"e[{i}] is an Expression and does not "
+                f"have a value which can be set."
+            ),
         ):
             m.e[i].set_value(10)
 
         with pytest.raises(
             TypeError,
-            match="e\[{}\] is an Expression and does not have "
-            "a value which can be set.".format(i),
+            match=re.escape(
+                f"e[{i}] is an Expression and does not have "
+                "a value which can be set."
+            ),
         ):
             m.e[i].value = 10
 
         with pytest.raises(
             TypeError,
-            match="e\[{}\] is an Expression and can not have "
-            "bounds. Use an inequality Constraint instead.".format(i),
+            match=re.escape(
+                f"e[{i}] is an Expression and can not have "
+                "bounds. Use an inequality Constraint instead."
+            ),
         ):
             m.e[i].setub(10)
         with pytest.raises(
             TypeError,
-            match="e\[{}\] is an Expression and can not have "
-            "bounds. Use an inequality Constraint instead.".format(i),
+            match=re.escape(
+                f"e[{i}] is an Expression and can not have "
+                "bounds. Use an inequality Constraint instead."
+            ),
         ):
             m.e[i].setlb(0)
         with pytest.raises(
             TypeError,
-            match="e\[{}\] is an Expression and can not be "
-            "fixed. Use an equality Constraint instead.".format(i),
+            match=re.escape(
+                f"e[{i}] is an Expression and can not be "
+                "fixed. Use an equality Constraint instead."
+            ),
         ):
             m.e[i].fix(8)
         with pytest.raises(
             TypeError,
-            match="e\[{}\] is an Expression and can not be unfixed.".format(i),
+            match=re.escape(f"e[{i}] is an Expression and can not be unfixed."),
         ):
             m.e[i].unfix()
 

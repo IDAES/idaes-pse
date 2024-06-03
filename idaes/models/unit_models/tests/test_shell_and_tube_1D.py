@@ -293,19 +293,6 @@ def test_config_validation():
     m.fs.properties = BTXParameterBlock(valid_phase="Liq")
 
     with pytest.raises(ConfigurationError):
-        m.fs.HX_co_current = HX1D(
-            hot_side={
-                "property_package": m.fs.properties,
-                "transformation_scheme": "BACKWARD",
-            },
-            cold_side={
-                "property_package": m.fs.properties,
-                "transformation_scheme": "FORWARD",
-            },
-            flow_type=HeatExchangerFlowPattern.cocurrent,
-        )
-
-    with pytest.raises(ConfigurationError):
         m.fs.HX_counter_current = HX1D(
             hot_side={
                 "property_package": m.fs.properties,

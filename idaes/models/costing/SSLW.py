@@ -1167,8 +1167,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
             return blk.base_cost_per_unit == (
                 pyo.exp(
                     alpha[1]
-                    - alpha[2]
-                    * pyo.log(Qcfm / (pyo.units.foot**3 / pyo.units.minute))
+                    - alpha[2] * pyo.log(Qcfm / (pyo.units.foot**3 / pyo.units.minute))
                     + alpha[3]
                     * pyo.log(Qcfm / (pyo.units.foot**3 / pyo.units.minute)) ** 2
                 )

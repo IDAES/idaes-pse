@@ -16,6 +16,8 @@ Tests for unit_model.
 Author: Andrew Lee
 """
 import pytest
+import re
+
 from pyomo.environ import Block, ConcreteModel, Constraint, Var, units
 from pyomo.network import Port
 
@@ -197,8 +199,10 @@ def test_add_port_invalid_block():
 
     with pytest.raises(
         ConfigurationError,
-        match="fs.u block object provided to add_port method is not an "
-        "instance of a StateBlock object \(does not have a build_port method\).",
+        match=re.escape(
+            "fs.u block object provided to add_port method is not an "
+            "instance of a StateBlock object (does not have a build_port method)."
+        ),
     ):
         m.fs.u.add_port(name="test_port", block=m.fs.u)
 
@@ -318,9 +322,11 @@ def test_add_inlet_port_CV0D_no_default_block():
 
     with pytest.raises(
         ConfigurationError,
-        match="fs.u add_inlet_port was called without a block argument"
-        " but no default ControlVolume exists \(control_volume\). "
-        "Please provide block to which the Port should be associated.",
+        match=re.escape(
+            "fs.u add_inlet_port was called without a block argument"
+            " but no default ControlVolume exists (control_volume). "
+            "Please provide block to which the Port should be associated."
+        ),
     ):
         m.fs.u.add_inlet_port()
 
@@ -525,10 +531,12 @@ def test_add_outlet_port_CV0D_no_default_block():
 
     with pytest.raises(
         ConfigurationError,
-        match="fs.u add_outlet_port was called without a block "
-        "argument but no default ControlVolume exists "
-        "\(control_volume\). Please provide block to which the "
-        "Port should be associated.",
+        match=re.escape(
+            "fs.u add_outlet_port was called without a block "
+            "argument but no default ControlVolume exists "
+            "(control_volume). Please provide block to which the "
+            "Port should be associated."
+        ),
     ):
         m.fs.u.add_outlet_port()
 

@@ -24,7 +24,6 @@ class ForecastError(Exception):
 
 
 class AbstractPriceForecaster(ABC):
-
     """
     The abstract class for price forecaster.
     """
@@ -56,7 +55,6 @@ class AbstractPriceForecaster(ABC):
 
     @abstractmethod
     def forecast_real_time_prices(self, date, hour, bus, horizon, n_samples):
-
         """
         Forecast real-time market prices.
 
@@ -78,7 +76,6 @@ class AbstractPriceForecaster(ABC):
 
     @abstractmethod
     def forecast_day_ahead_prices(self, date, hour, bus, horizon, n_samples):
-
         """
         Forecast day-ahead market prices.
 
@@ -100,14 +97,12 @@ class AbstractPriceForecaster(ABC):
 
 
 class AbstractPrescientPriceForecaster(AbstractPriceForecaster):
-
     """
     Abstract class for price forecasters that will interface with Prescient.
     """
 
     @abstractmethod
     def fetch_hourly_stats_from_prescient(self, prescient_hourly_stats):
-
         """
         This method fetches the hourly stats from Prescient to the price forecaster
         once the hourly stats are published.
@@ -121,7 +116,6 @@ class AbstractPrescientPriceForecaster(AbstractPriceForecaster):
 
     @abstractmethod
     def fetch_day_ahead_stats_from_prescient(self, uc_date, uc_hour, day_ahead_result):
-
         """
         This method fetches the day-ahead market to the price forecaster after the
         UC is solved from Prescient through the coordinator.
@@ -139,7 +133,6 @@ class AbstractPrescientPriceForecaster(AbstractPriceForecaster):
 
 
 class PlaceHolderForecaster(AbstractPrescientPriceForecaster):
-
     """
     This a placeholder for a real price forecaster. This placeholder can takes
     representative daily values and standard deviations for real-time and
@@ -208,7 +201,6 @@ class PlaceHolderForecaster(AbstractPrescientPriceForecaster):
         return da_forecast, rt_forecast
 
     def forecast_day_ahead_prices(self, date, hour, bus, horizon, n_samples):
-
         """
         Forecast day-ahead market prices.
 
@@ -237,7 +229,6 @@ class PlaceHolderForecaster(AbstractPrescientPriceForecaster):
         )
 
     def forecast_real_time_prices(self, date, hour, bus, horizon, n_samples):
-
         """
         Forecast real-time market prices.
 
@@ -266,7 +257,6 @@ class PlaceHolderForecaster(AbstractPrescientPriceForecaster):
         )
 
     def _forecast(self, means, stds, hour, horizon, n_samples):
-
         """
         Generate price forecasts.
 
@@ -296,7 +286,6 @@ class PlaceHolderForecaster(AbstractPrescientPriceForecaster):
         return {i: list(forecasts_arr[i]) for i in range(n_samples)}
 
     def fetch_hourly_stats_from_prescient(self, prescient_hourly_stats):
-
         """
         This method fetches the hourly stats from Prescient to the price forecaster
         once the hourly stats are published.
@@ -311,7 +300,6 @@ class PlaceHolderForecaster(AbstractPrescientPriceForecaster):
         return
 
     def fetch_day_ahead_stats_from_prescient(self, uc_date, uc_hour, day_ahead_result):
-
         """
         This method fetches the day-ahead market to the price forecaster after the
         UC is solved from Prescient through the coordinator.
@@ -331,7 +319,6 @@ class PlaceHolderForecaster(AbstractPrescientPriceForecaster):
 
 
 class Backcaster(AbstractPrescientPriceForecaster):
-
     """
     Generate price forecasts by directly using historical prices.
     """
@@ -359,7 +346,6 @@ class Backcaster(AbstractPrescientPriceForecaster):
         self._current_day_rt_prices = {bus: [] for bus in historical_da_prices}
 
     def _validate_input_historical_price(self, historical_price):
-
         """
         Validate input historical prices.
 
@@ -409,7 +395,6 @@ class Backcaster(AbstractPrescientPriceForecaster):
 
     @property
     def max_historical_days(self):
-
         """
         Property getter for max_historical_days.
 
@@ -421,7 +406,6 @@ class Backcaster(AbstractPrescientPriceForecaster):
 
     @max_historical_days.setter
     def max_historical_days(self, value):
-
         """
         Property setter for max_historical_days (validate before setting).
 
@@ -448,7 +432,6 @@ class Backcaster(AbstractPrescientPriceForecaster):
 
     @property
     def historical_da_prices(self):
-
         """
         Property getter for historical_da_prices.
 
@@ -460,7 +443,6 @@ class Backcaster(AbstractPrescientPriceForecaster):
 
     @historical_da_prices.setter
     def historical_da_prices(self, value):
-
         """
         Property setter for historical_da_prices (validate before setting).
 
@@ -476,7 +458,6 @@ class Backcaster(AbstractPrescientPriceForecaster):
 
     @property
     def historical_rt_prices(self):
-
         """
         Property getter for historical_rt_prices.
 
@@ -488,7 +469,6 @@ class Backcaster(AbstractPrescientPriceForecaster):
 
     @historical_rt_prices.setter
     def historical_rt_prices(self, value):
-
         """
         Property setter for historical_rt_prices (validate before setting).
 
@@ -536,7 +516,6 @@ class Backcaster(AbstractPrescientPriceForecaster):
         return da_forecast, rt_forecast
 
     def forecast_real_time_prices(self, date, hour, bus, horizon, n_samples):
-
         """
         Forecast real-time market prices.
 
@@ -567,7 +546,6 @@ class Backcaster(AbstractPrescientPriceForecaster):
         )
 
     def forecast_day_ahead_prices(self, date, hour, bus, horizon, n_samples):
-
         """
         Forecast day-ahead market prices.
 
@@ -643,7 +621,6 @@ class Backcaster(AbstractPrescientPriceForecaster):
         return forecast
 
     def fetch_hourly_stats_from_prescient(self, prescient_hourly_stats):
-
         """
         This method fetches the hourly real-time prices from Prescient and store
         them on the price forecaster, once they are published. When the stored historical
@@ -675,7 +652,6 @@ class Backcaster(AbstractPrescientPriceForecaster):
         return
 
     def fetch_day_ahead_stats_from_prescient(self, uc_date, uc_hour, day_ahead_result):
-
         """
         This method fetches the hourly day-ahead prices from Prescient and store
         them on the price forecaster, once they are published. When the stored historical
