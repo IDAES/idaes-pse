@@ -494,9 +494,9 @@ class TestGenericParameterBlock(object):
 
         assert isinstance(m.params.phase_equilibrium_list, dict)
         assert m.params.phase_equilibrium_list == {
-            "PE1": {"a": ("p1", "p2")},
-            "PE2": {"b": ("p1", "p2")},
-            "PE3": {"c": ("p1", "p2")},
+            "PE1": ["a", ("p1", "p2")],
+            "PE2": ["b", ("p1", "p2")],
+            "PE3": ["c", ("p1", "p2")],
         }
 
     @pytest.mark.unit
