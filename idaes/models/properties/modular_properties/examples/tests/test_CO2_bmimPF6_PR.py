@@ -107,7 +107,7 @@ class TestParamBlock(object):
             assert i in ["PE1"]
 
         assert model.param.phase_equilibrium_list == {
-            "PE1": {"carbon_dioxide": ("Vap", "Liq")}
+            "PE1": ["carbon_dioxide", ("Vap", "Liq")]
         }
 
         assert model.param.pressure_ref.value == 101325
