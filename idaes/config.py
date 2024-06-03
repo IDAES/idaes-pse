@@ -496,6 +496,7 @@ def _new_idaes_config_block():
                     "properties",
                     "reactions",
                     "ui",
+                    "surrogate",
                 ]
             ),
             domain=set,
@@ -515,6 +516,7 @@ def _new_idaes_config_block():
                     "control_volume",
                     "properties",
                     "reactions",
+                    "surrogate",
                 ]
             ),
             domain=set,

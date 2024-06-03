@@ -31,6 +31,14 @@ from pyomo.core import Param, exp
 
 # Imports from IDAES namespace
 from idaes.core.surrogate.pysmo.sampling import FeatureScaling as fs
+from idaes.logger import getIdaesLogger
+
+# Logging
+_log = getIdaesLogger(__name__, tag="surrogate")
+
+
+def set_log_level(level):
+    _log.setLevel(level)
 
 
 class MyBounds(object):
@@ -145,11 +153,7 @@ class KrigingModel:
         if (
             os.path.exists(fname) and overwrite is True
         ):  # Explicit overwrite done by user
-            print(
-                "Warning:",
-                fname,
-                "already exists; previous file will be overwritten.\n",
-            )
+            _log.warning(f"'{fname}' already exists; previous file will be overwritten")
             self.filename = fname
         elif os.path.exists(fname) and overwrite is False:  # User is not overwriting
             self.filename = (
@@ -158,12 +162,8 @@ class KrigingModel:
                 + pd.Timestamp.today().strftime("%m-%d-%y_%H%M%S")
                 + ".pickle"
             )
-            print(
-                "Warning:",
-                fname,
-                'already exists; results will be saved to "',
-                self.filename,
-                '".\n',
+            _log.warning(
+                f"'{fname}' already exists; results will be saved to {self.filename}"
             )
             # self.filename = 'solution.pickle'
         elif os.path.exists(fname) is False:
@@ -314,9 +314,9 @@ class KrigingModel:
         # sigma_sq = np.matmul(y_mu.transpose(), np.matmul(cov_inv, y_mu)) / ns
         return sigma_sq
 
-    @staticmethod
-    def print_fun(x, f, accepted):
-        print("at minimum %.4f accepted %d" % (f, int(accepted)))
+    # @staticmethod
+    # def print_fun(x, f, accepted):
+    #     print("at minimum %.4f accepted %d" % (f, int(accepted)))
 
     def objective_function(self, var_vector, x, y, p):
         """
@@ -421,7 +421,7 @@ class KrigingModel:
         bounds = tuple(bounds)
 
         if self.num_grads:
-            print("Optimizing kriging parameters using L-BFGS-B algorithm...")
+            _log.info("Optimizing kriging parameters using L-BFGS-B algorithm...")
             other_args = (self.x_data_scaled, self.y_data, p)
             # opt_results = opt.minimize(self.objective_function, initial_value, args=other_args, method='L-BFGS-B', jac=self.numerical_gradient, bounds=bounds, options={'gtol': 1e-7}) #, 'disp': True})
             opt_results1 = opt.minimize(
@@ -447,7 +447,7 @@ class KrigingModel:
             else:
                 opt_results = opt_results2
         else:
-            print("Optimizing Kriging parameters using Basinhopping algorithm...")
+            _log.info("Optimizing Kriging parameters using Basinhopping algorithm...")
             other_args = {
                 "args": (self.x_data_scaled, self.y_data, p),
                 "bounds": bounds,
@@ -466,7 +466,8 @@ class KrigingModel:
 
     def optimal_parameter_evaluation(self, var_vector, p):
         """
-        The optimal_parameter_evaluation method  evaluates the values of all the parameters of the final Kriging model.
+        The optimal_parameter_evaluation method  evaluates the values of all the parameters
+        of the final Kriging model.
         For an input set of Kriging parameters var_vector and p, it:
 
             (1) Generates the covariance matrix by calling covariance_matrix_generator
@@ -501,13 +502,8 @@ class KrigingModel:
         mean = self.kriging_mean(cov_inv, self.y_data)
         y_mu = self.y_mu_calculation(self.y_data, mean)
         variance = self.kriging_sd(cov_inv, y_mu, ns)
-        print(
-            "\nFinal results\n================\nTheta:",
-            theta,
-            "\nMean:",
-            mean,
-            "\nRegularization parameter:",
-            reg_param,
+        _log.info(
+            f"results: theta={theta} mean={mean} regularization-parameter={reg_param}"
         )
         return theta, reg_param, mean, variance, cov_mat, cov_inv, y_mu
 
@@ -738,9 +734,9 @@ class KrigingModel:
         try:
             filehandler = open(self.filename, "wb")
             pickle.dump(solutions, filehandler)
-            print("\nResults saved in ", str(self.filename))
+            _log.info(f"results saved in '{self.filename}'")
         except:
-            raise IOError("File could not be saved.")
+            raise IOError(f"File '{self.filename}' could not be saved.")
 
     @staticmethod
     def pickle_load(solution_file):
