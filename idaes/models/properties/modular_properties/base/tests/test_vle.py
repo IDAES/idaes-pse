@@ -209,8 +209,8 @@ class TestNoHenryComps(object):
             assert i in ["PE1", "PE2"]
 
         assert model.params.phase_equilibrium_list == {
-            "PE1": {"A": ("Vap", "Liq")},
-            "PE2": {"B": ("Vap", "Liq")},
+            "PE1": ["A", ("Vap", "Liq")],
+            "PE2": ["B", ("Vap", "Liq")],
         }
 
         assert model.params.pressure_ref.value == 1e5
@@ -513,9 +513,9 @@ class TestHenryComps0(object):
             assert i in ["PE1", "PE2", "PE3"]
 
         assert model.params.phase_equilibrium_list == {
-            "PE1": {"A": ("Vap", "Liq")},
-            "PE2": {"B": ("Vap", "Liq")},
-            "PE3": {"C": ("Vap", "Liq")},
+            "PE1": ["A", ("Vap", "Liq")],
+            "PE2": ["B", ("Vap", "Liq")],
+            "PE3": ["C", ("Vap", "Liq")],
         }
 
         assert model.params.pressure_ref.value == 1e5
@@ -692,9 +692,9 @@ class TestHenryComps(object):
             assert i in ["PE1", "PE2", "PE3"]
 
         assert model.params.phase_equilibrium_list == {
-            "PE1": {"A": ("Vap", "Liq")},
-            "PE2": {"B": ("Vap", "Liq")},
-            "PE3": {"C": ("Vap", "Liq")},
+            "PE1": ["A", ("Vap", "Liq")],
+            "PE2": ["B", ("Vap", "Liq")],
+            "PE3": ["C", ("Vap", "Liq")],
         }
 
         assert model.params.pressure_ref.value == 1e5
