@@ -700,7 +700,7 @@ class GenericParameterData(PhysicalParameterBlock):
                         j,
                     ) in self._phase_component_set:
                         # Component j is in both phases, in equilibrium
-                        pe_dict["PE" + str(counter)] = {j: (pp[0], pp[1])}
+                        pe_dict["PE" + str(counter)] = [j, (pp[0], pp[1])]
                         pe_set.append("PE" + str(counter))
                         counter += 1
 
