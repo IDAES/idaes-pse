@@ -155,7 +155,7 @@ class TestNaturalGasProps(object):
         # TODO: This test has a number of issues
         # TODO: 1. Gibbs reactor is not initialized prior to solving
         # TODO: 2. Solve fails, probably related to 1.
-        # TODO: 3. pytest.approx tolerances do not specify whether they are abd or rel
+        # TODO: 3. pytest.approx tolerances do not specify whether they are abs or rel
         # TODO: 3. Assertions have too few significant figures and tolerance is too loose
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
