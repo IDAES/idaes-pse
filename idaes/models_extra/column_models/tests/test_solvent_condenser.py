@@ -17,7 +17,7 @@ Authors: Andrew Lee
 
 import pytest
 from pyomo.environ import (
-    check_optimal_termination,
+    assert_optimal_termination,
     TransformationFactory,
     ConcreteModel,
     Constraint,
@@ -160,10 +160,14 @@ class TestStripperVaporFlow(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solve(self, model):
-        results = solver.solve(model)
+        # TODO: problems has many variables with values near lower bound of 0
+        # TODO: Without pre-solve, IPOPT could recover from bound push, but not with pre-solve
+        # TODO: Patch IPOPT options for now until someone can fix root cause.
+        solver_options = {"bound_push": 1e-8, "mu_init": 1e-8}
+        results = solver.solve(model, tee=True, solver_options=solver_options)
 
         # Check for optimal solution
-        assert check_optimal_termination(results)
+        assert_optimal_termination(results)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -194,7 +198,7 @@ class TestStripperVaporFlow(object):
         assert pytest.approx(0.976758, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.mole_frac_comp[0, "CO2"]
         )
-        assert pytest.approx(0.0232427, rel=1e-5) == value(
+        assert pytest.approx(0.0232423, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.mole_frac_comp[0, "H2O"]
         )
         assert pytest.approx(184360, rel=1e-5) == value(
@@ -367,7 +371,7 @@ class TestStripperHeatDuty(object):
         results = solver.solve(model)
 
         # Check for optimal solution
-        assert check_optimal_termination(results)
+        assert_optimal_termination(results)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
