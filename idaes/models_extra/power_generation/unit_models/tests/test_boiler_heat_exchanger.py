@@ -145,9 +145,7 @@ def th(
     assert degrees_of_freedom(m) == 0
     iscale.calculate_scaling_factors(m)
 
-    import logging
-
-    m.fs.unit.initialize(outlvl=logging.DEBUG)
+    m.fs.unit.initialize()
 
     results = solver.solve(m)
     # Check for optimal solution

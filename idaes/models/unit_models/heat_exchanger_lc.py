@@ -254,6 +254,10 @@ be included in the overall energy balance,
         self._add_wall_variables()
         self._add_wall_variable_constraints()
 
+        # TODO: Setting a lower bound on delta_temperature_out causes
+        # initialization failures. Root cause is currently not known.
+        self.delta_temperature_out.setlb(None)
+
         if self.config.dynamic_heat_balance:
 
             s1_metadata = self.hot_side.config.property_package.get_metadata()

@@ -145,8 +145,13 @@ class BoilerHeatExchangerData(HeatExchangerData):
         # Call UnitModel.build to setup dynamics
         super().build()
         self._process_config()
+        # TODO: Why are these references even necessary?
         self.deltaT_1 = Reference(self.delta_temperature_in)
         self.deltaT_2 = Reference(self.delta_temperature_out)
+
+        # TODO: Setting a lower bound on delta_temperature_out causes
+        # initialization failures. Root cause is currently not known.
+        self.deltaT_2.setlb(None)
 
         self._set_geometry()
         self.cold_side_fluid_phase = self.config.cold_side_water_phase

@@ -573,19 +573,24 @@ class HeatExchangerData(UnitModelBlockData):
             doc="Heat exchange area",
             units=a_units,
         )
+
+        # Need lower bounds on deltaT's to avoid unbounded behaviour
+        # if the presolver eliminates one of the temperatures.
+        # Too large a value can cause initialization issues however, so use
+        # a negligible value.
         self.delta_temperature_in = Var(
             self.flowsheet().time,
             initialize=10.0,
             doc="Temperature difference at the hot inlet end",
             units=temp_units,
-            bounds=(0.1, None),
+            bounds=(1e-8, None),
         )
         self.delta_temperature_out = Var(
             self.flowsheet().time,
             initialize=10.1,
             doc="Temperature difference at the hot outlet end",
             units=temp_units,
-            bounds=(0.1, None),
+            bounds=(1e-8, None),
         )
         if self.config.flow_pattern == HeatExchangerFlowPattern.crossflow:
             self.crossflow_factor = Var(
