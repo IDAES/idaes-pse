@@ -19,6 +19,10 @@ import os
 
 import pytest
 
+
+# define custom type for type hinting
+PrescientOptions = Dict[str, Union[str, bool, Number, dict]]
+
 from idaes.apps.grid_integration import DoubleLoopCoordinator
 from idaes.apps.grid_integration.tests.util import (
     make_testing_tracker,
@@ -36,9 +40,6 @@ coordinator = DoubleLoopCoordinator(
     tracker=thermal_tracker,
     projection_tracker=thermal_projection_tracker,
 )
-
-# define custom type for type hinting
-PrescientOptions = Dict[str, Union[str, bool, Number, dict]]
 
 
 class TestDoubleLoopIntegration:

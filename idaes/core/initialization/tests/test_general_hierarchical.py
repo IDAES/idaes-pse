@@ -14,7 +14,6 @@
 Tests for general hierarchical initialization routines
 """
 import pytest
-import re
 import types
 
 from pyomo.environ import Block, ConcreteModel, Constraint, value, Var
@@ -250,10 +249,8 @@ def test_initialize_submodels_no_order():
 
     with pytest.raises(
         InitializationError,
-        match=re.escape(
-            "Main model (unknown) was not initialized (no results returned). "
-            "This is likely due to an error in the model.initialization_order."
-        ),
+        match="Main model \(unknown\) was not initialized \(no results returned\). "
+        "This is likely due to an error in the model.initialization_order.",
     ):
         initializer.initialize_submodels(m, {}, {}, copy_inlet_state=False)
 

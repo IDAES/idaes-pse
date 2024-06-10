@@ -26,7 +26,7 @@ from enum import Enum
 
 from pandas import DataFrame
 
-from pyomo.core.base.block import BlockData
+from pyomo.core.base.block import _BlockData
 from pyomo.common.formatting import tabular_writer
 from pyomo.environ import Block
 from pyomo.gdp import Disjunct
@@ -75,7 +75,7 @@ class MaterialFlowBasis(Enum):
 
 
 @declare_process_block_class("ProcessBaseBlock")
-class ProcessBlockData(BlockData):
+class ProcessBlockData(_BlockData):
     """
     Base class for most IDAES process models and classes.
 
@@ -97,7 +97,7 @@ class ProcessBlockData(BlockData):
         Initialize a ProcessBlockData object.
 
         Args:
-            component(Block): container Block instance to which this BlockData
+            component(Block): container Block instance to which this _BlockData
                               belongs.
 
         Returns:

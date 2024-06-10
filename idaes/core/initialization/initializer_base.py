@@ -22,7 +22,7 @@ from pyomo.environ import (
     Constraint,
     Var,
 )
-from pyomo.core.base.var import VarData
+from pyomo.core.base.var import _VarData
 from pyomo.common.config import ConfigDict, ConfigValue, String_ConfigFormatter
 
 from idaes.core.util.model_serializer import to_json, from_json, StoreSpec, _only_fixed
@@ -492,7 +492,7 @@ class InitializerBase:
 
             if component is None:
                 raise ValueError(f"Could not find a component with name {c}.")
-            elif not isinstance(component, (Var, VarData)):
+            elif not isinstance(component, (Var, _VarData)):
                 self._update_summary(model, "status", InitializationStatus.Error)
                 raise TypeError(
                     f"Component {c} is not a Var. Initial guesses should only contain values for variables."

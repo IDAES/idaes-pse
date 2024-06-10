@@ -19,7 +19,7 @@ disable=no-self-argument,
     arguments-differ,
     abstract-method,
     arguments-renamed,
-    unused-argument,  # we have cases where a general high level method passes arguments that simpler methods do not need
+    unused-argument,  # w have cases where a general high level method passes arguments that simpler methods do not need
     redefined-outer-name,
     anomalous-backslash-in-string,
     unspecified-encoding,
@@ -29,7 +29,6 @@ disable=no-self-argument,
     too-many-lines,
     use-implicit-booleaness-not-comparison,  # implicit booleaness can be hard to follow
     consider-using-f-string,  # should fix, but a lot of effort
-    no-member,  # Triggers many false positives from Pyomo due to diamond structure
 
 [IMPORTS]
 ignored-modules=cvalsim,almsim

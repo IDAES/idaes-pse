@@ -1977,17 +1977,17 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         # b is the flowsheet-level costing block
         # initialization for power generation costs
         if hasattr(b, "variable_operating_costs"):
-            for k, v in b.variable_operating_costs.items():
+            for i in b.variable_operating_costs.keys():
                 if hasattr(b, "variable_cost_rule_power"):
                     calculate_variable_from_constraint(
-                        v,
-                        b.variable_cost_rule_power[k],
+                        b.variable_operating_costs[i],
+                        b.variable_cost_rule_power[i],
                     )
 
-            for k, v in b.total_variable_OM_cost.items():
+            for i in b.total_variable_OM_cost.keys():
                 calculate_variable_from_constraint(
-                    v,
-                    b.total_variable_cost_rule_power[k],
+                    b.total_variable_OM_cost[i],
+                    b.total_variable_cost_rule_power[i],
                 )
 
     # -----------------------------------------------------------------------------

@@ -16,7 +16,6 @@ Tests for Component objects
 Author: Andrew Lee
 """
 import pytest
-import re
 import types
 
 from pyomo.environ import ConcreteModel, Set, Param, Var, units as pyunits
@@ -85,11 +84,9 @@ class TestComponent:
     def test_is_solute(self, m):
         with pytest.raises(
             TypeError,
-            match=re.escape(
-                "comp Generic Component objects do not "
-                "support is_solute() method. Use a Solvent or "
-                "Solute Component instead."
-            ),
+            match="comp Generic Component objects do not "
+            "support is_solute\(\) method. Use a Solvent or "
+            "Solute Component instead.",
         ):
             m.comp.is_solute()
 
@@ -97,11 +94,9 @@ class TestComponent:
     def test_is_solvent(self, m):
         with pytest.raises(
             TypeError,
-            match=re.escape(
-                "comp Generic Component objects do not "
-                "support is_solvent() method. Use a Solvent or "
-                "Solute Component instead."
-            ),
+            match="comp Generic Component objects do not "
+            "support is_solvent\(\) method. Use a Solvent or "
+            "Solute Component instead.",
         ):
             m.comp.is_solvent()
 

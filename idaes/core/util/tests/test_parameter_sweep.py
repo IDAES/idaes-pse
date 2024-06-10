@@ -15,7 +15,6 @@ Tests for IDAES Parameter Sweep API and sequential workflow runner.
 """
 
 import pytest
-import re
 import os
 
 from pandas import DataFrame, Series
@@ -181,10 +180,8 @@ class TestParameterSweepSpecification:
 
         with pytest.raises(
             TypeError,
-            match=re.escape(
-                "Sampling method must be an instance of a Pysmo SamplingMethod "
-                "(received foo)"
-            ),
+            match="Sampling method must be an instance of a Pysmo SamplingMethod "
+            "\(received foo\)",
         ):
             spec.set_sampling_method("foo")
 
@@ -806,11 +803,9 @@ class TestParameterSweepBase:
 
         with pytest.raises(
             ValueError,
-            match=re.escape(
-                "Convergence testing found an input of type Param that "
-                "was not mutable (p1). Please make sure all "
-                "sampled inputs are either mutable params or fixed vars."
-            ),
+            match="Convergence testing found an input of type Param that "
+            "was not mutable \(p1\). Please make sure all "
+            "sampled inputs are either mutable params or fixed vars.",
         ):
             psweep.set_input_values(model, 0)
 
@@ -835,11 +830,9 @@ class TestParameterSweepBase:
 
         with pytest.raises(
             ValueError,
-            match=re.escape(
-                "Convergence testing found an input of type Var that "
-                "was not fixed (v1). Please make sure all "
-                "sampled inputs are either mutable params or fixed vars."
-            ),
+            match="Convergence testing found an input of type Var that "
+            "was not fixed \(v1\). Please make sure all "
+            "sampled inputs are either mutable params or fixed vars.",
         ):
             psweep.set_input_values(model, 0)
 
@@ -864,11 +857,9 @@ class TestParameterSweepBase:
 
         with pytest.raises(
             ValueError,
-            match=re.escape(
-                "Convergence testing found an input of type IndexedVar that "
-                "was not fixed (v1, index 1). Please make sure all "
-                "sampled inputs are either mutable params or fixed vars."
-            ),
+            match="Convergence testing found an input of type IndexedVar that "
+            "was not fixed \(v1, index 1\). Please make sure all "
+            "sampled inputs are either mutable params or fixed vars.",
         ):
             psweep.set_input_values(model, 0)
 
@@ -901,11 +892,9 @@ class TestParameterSweepBase:
 
         with pytest.raises(
             ValueError,
-            match=re.escape(
-                "Failed to find a valid input component (must be "
-                "a fixed Var or a mutable Param). Instead, "
-                "pyomo_path: c1 returned: c1."
-            ),
+            match="Failed to find a valid input component \(must be "
+            "a fixed Var or a mutable Param\). Instead, "
+            "pyomo_path: c1 returned: c1.",
         ):
             psweep.set_input_values(model, 0)
 

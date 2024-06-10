@@ -20,8 +20,8 @@ import sys
 
 # Import Pyomo libraries
 from pyomo.environ import Set, value, Var, Expression, Constraint, Reference
-from pyomo.core.base.var import VarData
-from pyomo.core.base.expression import ExpressionData
+from pyomo.core.base.var import _VarData
+from pyomo.core.base.expression import _ExpressionData
 from pyomo.common.config import ConfigBlock, ConfigValue, Bool
 from pyomo.common.formatting import tabular_writer
 from pyomo.network import Port
@@ -399,7 +399,7 @@ class StateBlock(ProcessBlock):
         ostream.write("\n" + "-" * max_str_length + "\n")
         ostream.write(f"{prefix}{tab}State Report")
 
-        if any(isinstance(v, VarData) for k, v in stream_attributes.items()):
+        if any(isinstance(v, _VarData) for k, v in stream_attributes.items()):
             ostream.write("\n" * 2)
             ostream.write(f"{prefix}{tab}Variables: \n\n")
             tabular_writer(
@@ -408,13 +408,13 @@ class StateBlock(ProcessBlock):
                 (
                     (k, v)
                     for k, v in stream_attributes.items()
-                    if isinstance(v, VarData)
+                    if isinstance(v, _VarData)
                 ),
                 ("Value", "Fixed", "Bounds"),
                 lambda k, v: ["{:#.5g}".format(value(v)), v.fixed, v.bounds],
             )
 
-        if any(isinstance(v, ExpressionData) for k, v in stream_attributes.items()):
+        if any(isinstance(v, _ExpressionData) for k, v in stream_attributes.items()):
             ostream.write("\n" * 2)
             ostream.write(f"{prefix}{tab}Expressions: \n\n")
             tabular_writer(
@@ -423,7 +423,7 @@ class StateBlock(ProcessBlock):
                 (
                     (k, v)
                     for k, v in stream_attributes.items()
-                    if isinstance(v, ExpressionData)
+                    if isinstance(v, _ExpressionData)
                 ),
                 ("Value",),
                 lambda k, v: ["{:#.5g}".format(value(v))],

@@ -1839,9 +1839,9 @@ objects linked the mixed state and all outlet states,
     def _get_performance_contents(self, time_point=0):
         if hasattr(self, "split_fraction"):
             var_dict = {}
-            for k, v in self.split_fraction.items():
+            for k in self.split_fraction.keys():
                 if k[0] == time_point:
-                    var_dict[f"Split Fraction [{str(k[1:])}]"] = v
+                    var_dict[f"Split Fraction [{str(k[1:])}]"] = self.split_fraction[k]
             return {"vars": var_dict}
         else:
             return None

@@ -17,7 +17,6 @@ Authors: Andrew Lee
 """
 
 import pytest
-import re
 from sys import modules
 
 from pyomo.environ import (
@@ -83,12 +82,10 @@ class TestInvalidBounds(object):
 
         with pytest.raises(
             ConfigurationError,
-            match=re.escape(
-                "props[1] - found unexpected state_bounds key foo. "
-                "Please ensure bounds are provided only for expected state "
-                "variables and that you have typed the variable names "
-                "correctly."
-            ),
+            match="props\[1\] - found unexpected state_bounds key foo. "
+            "Please ensure bounds are provided only for expected state "
+            "variables and that you have typed the variable names "
+            "correctly.",
         ):
             # Build state block
             m.props = m.params.build_state_block([1], defined_state=False)
@@ -119,12 +116,10 @@ class TestInvalidBounds(object):
 
         with pytest.raises(
             ConfigurationError,
-            match=re.escape(
-                "props[1] - found unexpected state_bounds key "
-                "mole_frac_comp. Please ensure bounds are provided only for "
-                "expected state variables and that you have typed the "
-                "variable names correctly."
-            ),
+            match="props\[1\] - found unexpected state_bounds key "
+            "mole_frac_comp. Please ensure bounds are provided only for "
+            "expected state variables and that you have typed the "
+            "variable names correctly.",
         ):
             # Build state block
             m.props = m.params.build_state_block([1], defined_state=False)

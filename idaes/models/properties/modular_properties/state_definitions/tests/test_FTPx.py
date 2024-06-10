@@ -17,7 +17,6 @@ Authors: Andrew Lee
 """
 
 import pytest
-import re
 import numpy as np
 from pytest import approx
 from sys import modules
@@ -98,12 +97,10 @@ class TestInvalidBounds(object):
 
         with pytest.raises(
             ConfigurationError,
-            match=re.escape(
-                "props[1] - found unexpected state_bounds key foo. "
-                "Please ensure bounds are provided only for expected state "
-                "variables and that you have typed the variable names "
-                "correctly."
-            ),
+            match="props\[1\] - found unexpected state_bounds key foo. "
+            "Please ensure bounds are provided only for expected state "
+            "variables and that you have typed the variable names "
+            "correctly.",
         ):
             m.props = m.params.build_state_block([1], defined_state=True)
 
@@ -1375,10 +1372,8 @@ class TestCommon(object):
         frame.props[1].mole_frac_comp["c1"].value = -0.1
         with pytest.raises(
             ValueError,
-            match=re.escape(
-                "Component c1 has a negative mole fraction "
-                "in block props[1]. Check your initialization."
-            ),
+            match="Component c1 has a negative mole fraction "
+            "in block props\[1\]. Check your initialization.",
         ):
             frame.props[1].params.config.state_definition.state_initialization(
                 frame.props[1]

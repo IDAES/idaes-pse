@@ -613,6 +613,7 @@ class TestPolynomialRegression:
             )
 
     @pytest.mark.unit
+    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type1", [np.array, pd.DataFrame])
     @pytest.mark.parametrize("array_type2", [np.array, pd.DataFrame])
     def test__init__32(self, array_type1, array_type2):
@@ -639,6 +640,7 @@ class TestPolynomialRegression:
         assert PolyClass1.filename == PolyClass2.filename
 
     @pytest.mark.unit
+    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type1", [np.array, pd.DataFrame])
     @pytest.mark.parametrize("array_type2", [np.array, pd.DataFrame])
     def test__init__33(self, array_type1, array_type2):
@@ -667,6 +669,7 @@ class TestPolynomialRegression:
         assert PolyClass2.filename == file_name2
 
     @pytest.mark.unit
+    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type1", [np.array, pd.DataFrame])
     @pytest.mark.parametrize("array_type2", [np.array, pd.DataFrame])
     def test__init__34(self, array_type1, array_type2):
@@ -1919,6 +1922,7 @@ class TestPolynomialRegression:
             data_feed.user_defined_terms(additional_terms)
 
     @pytest.mark.unit
+    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type1", [pd.DataFrame])
     @pytest.mark.parametrize("array_type2", [np.array])
     def test_polynomial_regression_fitting_01(self, array_type1, array_type2):
@@ -1932,6 +1936,7 @@ class TestPolynomialRegression:
         assert results.fit_status == "ok"
 
     @pytest.mark.unit
+    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type1", [pd.DataFrame])
     @pytest.mark.parametrize("array_type2", [np.array])
     @patch("matplotlib.pyplot.show")
@@ -1950,6 +1955,7 @@ class TestPolynomialRegression:
             assert results.fit_status == "poor"
 
     @pytest.mark.unit
+    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type1", [pd.DataFrame])
     @pytest.mark.parametrize("array_type2", [np.array])
     def test_polynomial_regression_fitting_03(self, array_type1, array_type2):
@@ -1964,6 +1970,7 @@ class TestPolynomialRegression:
         assert results.fit_status == "ok"
 
     @pytest.mark.unit
+    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type1", [pd.DataFrame])
     @pytest.mark.parametrize("array_type2", [np.array])
     def test_polynomial_regression_fitting_04(self, array_type1, array_type2):
@@ -2032,6 +2039,7 @@ class TestPolynomialRegression:
         np.testing.assert_equal(np.array([1, 2]), data_feed.additional_term_expressions)
 
     @pytest.mark.unit
+    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type1", [pd.DataFrame])
     @pytest.mark.parametrize("array_type2", [np.array])
     def test_poly_training_01(self, array_type1, array_type2):
@@ -2044,24 +2052,24 @@ class TestPolynomialRegression:
         data_feed.training()
         assert data_feed.fit_status == "ok"
 
-    # TODO: This does not actually assert anything, and fails to run
-    # Leaving code in case someone has time to fix it in the future
-    # @pytest.mark.unit
-    # @pytest.mark.parametrize("array_type1", [pd.DataFrame])
-    # @pytest.mark.parametrize("array_type2", [np.array])
-    # def test_generate_expression(self, array_type1, array_type2):
-    #     original_data_input = array_type1(self.full_data)
-    #     regression_data_input = array_type2(self.training_data)
-    #     data_feed = PolynomialRegression(
-    #         original_data_input, regression_data_input, maximum_polynomial_order=2
-    #     )
-    #
-    #     p = data_feed.get_feature_vector()
-    #     data_feed.training()
-    #
-    #     poly_expr = data_feed.generate_expression((p.keys()))
+    @pytest.mark.unit
+    @pytest.fixture(scope="module")
+    @pytest.mark.parametrize("array_type1", [pd.DataFrame])
+    @pytest.mark.parametrize("array_type2", [np.array])
+    def test_generate_expression(self, array_type1, array_type2):
+        original_data_input = array_type1(self.full_data)
+        regression_data_input = array_type2(self.training_data)
+        data_feed = PolynomialRegression(
+            original_data_input, regression_data_input, maximum_polynomial_order=2
+        )
+
+        p = data_feed.get_feature_vector()
+        data_feed.training()
+
+        poly_expr = data_feed.generate_expression((p.keys()))
 
     @pytest.mark.unit
+    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type1", [np.array])
     @pytest.mark.parametrize("array_type2", [np.array])
     def test_pickle_load01(self, array_type1, array_type2):
@@ -2075,6 +2083,7 @@ class TestPolynomialRegression:
         PolyClass.pickle_load(PolyClass.filename)
 
     @pytest.mark.unit
+    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type1", [np.array])
     @pytest.mark.parametrize("array_type2", [np.array])
     def test_pickle_load02(self, array_type1, array_type2):
@@ -2088,6 +2097,7 @@ class TestPolynomialRegression:
 
     @pytest.mark.unit
     @patch("matplotlib.pyplot.show")
+    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type1", [np.array])
     @pytest.mark.parametrize("array_type2", [np.array])
     def test_parity_residual_plots(self, mock_show, array_type1, array_type2):
@@ -2101,6 +2111,7 @@ class TestPolynomialRegression:
 
         PolyClass.parity_residual_plots()
 
+    @pytest.fixture(scope="module")
     @pytest.mark.unit
     def test_confint_regression_01(self):
         # Create x vector for ax2 + bx + c: x data supplied in x_vector
@@ -2141,6 +2152,7 @@ class TestPolynomialRegression:
             atol=1e-3,
         )
 
+    @pytest.fixture(scope="module")
     @pytest.mark.unit
     def test_confint_regression_02(self):
         # Create x vector for ax2 + bx + c: x data supplied in x_vector
@@ -2181,6 +2193,7 @@ class TestPolynomialRegression:
             atol=1e-3,
         )
 
+    @pytest.fixture(scope="module")
     @pytest.mark.unit
     def test_confint_regression_03(self):
         # Create x vector for ax2 + bx + c: x data supplied in x_vector

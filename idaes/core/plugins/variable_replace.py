@@ -22,7 +22,7 @@ from pyomo.common.config import (
     ConfigValue,
     document_kwargs_from_configdict,
 )
-from pyomo.core.base.var import VarData, Var
+from pyomo.core.base.var import _GeneralVarData, Var
 from pyomo.core.base.constraint import Constraint
 from pyomo.core.base.expression import Expression
 from pyomo.core.base.objective import Objective
@@ -32,7 +32,7 @@ __author__ = "John Eslick"
 
 
 def _is_var(v):
-    return isinstance(v, (VarData, Var))
+    return isinstance(v, (_GeneralVarData, Var))
 
 
 @TransformationFactory.register(
@@ -110,7 +110,7 @@ class ReplaceVariables(NonIsomorphicTransformation):
             instance: A block or model to apply the transformation to
             substitute: A list-like of two-element list-likes.  Each two element
                 list-like specifies a replacement of the first variable by the
-                second.  SimpleVar, IndexedVar, VarData, and Reference are
+                second.  SimpleVar, IndexedVar, _GeneralVarData, and Reference are
                 all accepted types.
 
         Returns:

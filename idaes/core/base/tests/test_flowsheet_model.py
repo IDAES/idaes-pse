@@ -16,7 +16,6 @@ Tests for flowsheet_model.
 Author: Andrew Lee
 """
 import pytest
-import re
 
 from pyomo.environ import ConcreteModel, Set, TransformationFactory, units
 from pyomo.dae import ContinuousSet
@@ -221,11 +220,9 @@ class TestBuild(object):
 
         with pytest.raises(
             DynamicError,
-            match=re.escape(
-                "Flowsheet provided with invalid "
-                "time_set attribute - must have at "
-                "least two values (start and end)."
-            ),
+            match="Flowsheet provided with invalid "
+            "time_set attribute - must have at "
+            "least two values \(start and end\).",
         ):
             m.fs = FlowsheetBlock(dynamic=True, time_set=1, time_units=units.s)
 

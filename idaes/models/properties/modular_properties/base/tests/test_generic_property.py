@@ -17,7 +17,6 @@ Author: Andrew Lee
 """
 import functools
 import pytest
-import re
 from sys import modules
 from types import MethodType
 
@@ -156,9 +155,7 @@ class TestGenericParameterBlock(object):
 
         with pytest.raises(
             PropertyPackageError,
-            match=re.escape(
-                "Unrecognized units of measurement for quantity TIME (foo)"
-            ),
+            match="Unrecognized units of measurement for quantity TIME " "\(foo\)",
         ):
             m.params = DummyParameterBlock(
                 components={"a": {}, "b": {}, "c": {}},
@@ -726,10 +723,8 @@ class TestGenericParameterBlock(object):
 
         with pytest.raises(
             ConfigurationError,
-            match=re.escape(
-                "params values in elemental_composition must "
-                "be integers (not floats): e1: 2.0."
-            ),
+            match="params values in elemental_composition must "
+            "be integers \(not floats\)\: e1\: 2.0.",
         ):
             m.params = DummyParameterBlock(
                 components={
@@ -1691,11 +1686,9 @@ class TestCriticalProps:
 
         with pytest.raises(
             NotImplementedError,
-            match=re.escape(
-                "props[1] Equation of State module has not implemented a method for "
-                "build_critical_properties. Please contact the EoS developer or use a "
-                "different module."
-            ),
+            match="props\[1\] Equation of State module has not implemented a method for "
+            "build_critical_properties. Please contact the EoS developer or use a "
+            "different module.",
         ):
             m.props[1]._critical_props()
 

@@ -20,7 +20,7 @@ from pandas import DataFrame
 
 from pyomo.environ import value
 from pyomo.network import Arc, Port
-from pyomo.core.base.var import VarData, Var
+from pyomo.core.base.var import _GeneralVarData, Var
 from pyomo.core.base.param import Param
 from pyomo.core.base.expression import Expression
 
@@ -245,7 +245,7 @@ def create_stream_table_ui(
 
                 # Identifying value's variable type
                 var_type = None
-                if isinstance(disp_dict[k][i], (VarData, Var)):
+                if isinstance(disp_dict[k][i], (_GeneralVarData, Var)):
                     if disp_dict[k][i].fixed:
                         var_type = VariableTypes.FIXED
                     else:

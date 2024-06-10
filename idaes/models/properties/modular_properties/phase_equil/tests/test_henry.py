@@ -277,5 +277,5 @@ def test_equilibrium_ratio():
         )
         assert (
             str(pyunits.get_units(henry_equilibrium_ratio(m.state[0], "Liq", "H2O")))
-            == "dimensionless"
+            is "dimensionless"
         )

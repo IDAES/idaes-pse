@@ -15,7 +15,7 @@ from idaes.logger import getModelLogger
 logging = getModelLogger("MatOptModel")
 
 from pyomo.environ import *
-from pyomo.core.base.var import VarData
+from pyomo.core.base.var import _GeneralVarData
 from pyomo.core.expr.numeric_expr import (
     MonomialTermExpression,
     SumExpression,
@@ -43,13 +43,13 @@ def getLB(e):
     """
     # Future work: use Pyomo function to achieve this functionality
     # return compute_bounds_on_expr(e)[0]
-    if isinstance(e, VarData):
+    if isinstance(e, _GeneralVarData):
         if e.is_fixed():
             return value(e)
         else:
             return e.lb
     elif isinstance(e, MonomialTermExpression):
-        assert isinstance(e.args[1], pyomo.core.base.var.VarData), (
+        assert isinstance(e.args[1], pyomo.core.base.var._GeneralVarData), (
             "This code relies on the assumption that the only variable "
             "in a monomial expression is the second argument"
         )
@@ -93,13 +93,13 @@ def getUB(e):
     """
     # Future work: use Pyomo function to achieve this functionality
     # return compute_bounds_on_expr(e)[1]
-    if isinstance(e, VarData):
+    if isinstance(e, _GeneralVarData):
         if e.is_fixed():
             return value(e)
         else:
             return e.ub
     elif isinstance(e, MonomialTermExpression):
-        assert isinstance(e.args[1], pyomo.core.base.var.VarData), (
+        assert isinstance(e.args[1], pyomo.core.base.var._GeneralVarData), (
             "This code relies on the assumption that the only variable "
             "in a monomial expression is the second argument"
         )
@@ -1462,11 +1462,11 @@ def addConsZicFromYiLifted(m, blnConfsAreMutExc=True, blnConfsAreColExh=False):
                         for c in m.Zic[i, :].wildcard_keys()
                         if m.Confs[c][l] is None
                     )
-                    if PosZic != 0:
+                    if PosZic is not 0:
                         m.AssignZicFromYiLifted1.add(
                             index=(i, j), expr=(PosZic <= m.Yi[j])
                         )
-                    if NegZic != 0:
+                    if NegZic is not 0:
                         m.AssignZicFromYiLifted2.add(
                             index=(i, j), expr=(NegZic <= 1 - m.Yi[j])
                         )
@@ -1584,11 +1584,11 @@ def addConsZicFromYikLifted(m, blnConfsAreMutExc=True, blnConfsAreColExh=False):
                             for c in m.Zic[i, :].wildcard_keys()
                             if m.Confs[c][l] != k
                         )
-                        if PosZic != 0:
+                        if PosZic is not 0:
                             m.AssignZicFromYikLifted1.add(
                                 index=(i, j, k), expr=(PosZic <= m.Yik[j, k])
                             )
-                        if NegZic != 0:
+                        if NegZic is not 0:
                             m.AssignZicFromYikLifted2.add(
                                 index=(i, j, k), expr=(NegZic <= 1 - m.Yik[j, k])
                             )

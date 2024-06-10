@@ -13,19 +13,18 @@
 import pytest
 
 import pyomo.environ as pyo
-from pyomo.common import unittest as pyo_unittest
-
 from idaes.apps.grid_integration.bidder import Bidder
 from idaes.apps.grid_integration.tracker import Tracker
 from idaes.apps.grid_integration.coordinator import DoubleLoopCoordinator
 from idaes.apps.grid_integration.tests.util import (
-    ExampleModel,
-    ExampleForecaster,
+    TestingModel,
+    TestingForecaster,
     testing_model_data,
     testing_renewable_data,
     renewable_generator_params,
     testing_generator_params,
 )
+from pyomo.common import unittest as pyo_unittest
 
 tracking_horizon = 4
 day_ahead_bidding_horizon = 48
@@ -47,7 +46,7 @@ def coordinator_object(request):
     else:
         model_data = testing_renewable_data
 
-    tracking_model_object = ExampleModel(model_data=model_data)
+    tracking_model_object = TestingModel(model_data=model_data)
     thermal_tracker = Tracker(
         tracking_model_object=tracking_model_object,
         tracking_horizon=tracking_horizon,
@@ -56,7 +55,7 @@ def coordinator_object(request):
     )
 
     # make a projection tracker
-    projection_tracking_model_object = ExampleModel(model_data=model_data)
+    projection_tracking_model_object = TestingModel(model_data=model_data)
     thermal_projection_tracker = Tracker(
         tracking_model_object=projection_tracking_model_object,
         tracking_horizon=tracking_horizon,
@@ -65,8 +64,8 @@ def coordinator_object(request):
     )
 
     ## create a bidder
-    forecaster = ExampleForecaster(prediction=30)
-    bidding_model_object = ExampleModel(model_data=model_data)
+    forecaster = TestingForecaster(prediction=30)
+    bidding_model_object = TestingModel(model_data=model_data)
     thermal_bidder = Bidder(
         bidding_model_object=bidding_model_object,
         day_ahead_horizon=day_ahead_bidding_horizon,

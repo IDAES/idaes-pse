@@ -27,6 +27,7 @@ from idaes.core import (
     ReactionParameterBlock,
     useDefault,
 )
+from idaes.core.base.phases import PhaseType as PT
 from idaes.core.util.config import (
     is_physical_parameter_block,
     is_reaction_parameter_block,
@@ -110,7 +111,7 @@ def test_is_reaction_parameter_block_fails():
         is_reaction_parameter_block(1)  # int
 
 
-@declare_process_block_class("StateBlockForTesting", block_class=StateBlock)
+@declare_process_block_class("TestStateBlock", block_class=StateBlock)
 class StateTestBlockData(StateBlockData):
     def build(self):
         pass
@@ -118,10 +119,10 @@ class StateTestBlockData(StateBlockData):
 
 @pytest.mark.unit
 def test_is_state_block_passes():
-    # Make an instance of a StateBlockForTesting
-    s = StateBlockForTesting()
+    # Make an instance of a TestStateBlock
+    s = TestStateBlock()
 
-    # Check that is_state_block returns the StateBlockForTesting
+    # Check that is_state_block returns the TestStateBlock
     assert s == is_state_block(s)
 
 

@@ -21,7 +21,7 @@ import pandas as pd
 from pyomo.common.fileutils import this_file_dir
 from pyomo.common.tempfiles import TempfileManager
 
-from idaes.core.surrogate.alamopy import AlamoSurrogate
+from idaes.core.surrogate.keras_surrogate import KerasSurrogate
 from idaes.core.surrogate.sampling.data_utils import split_training_validation
 from idaes.core.surrogate.plotting.sm_plotter import (
     surrogate_scatter2D,
@@ -30,16 +30,18 @@ from idaes.core.surrogate.plotting.sm_plotter import (
     surrogate_residual,
 )
 
+_ = pytest.importorskip("tensorflow", reason="tensorflow not installed")
+
 
 @pytest.fixture
-def alamo_surrogate():
-    # import surrogates from external JSON
+def keras_surrogate():
+    # import surrogates from external folder
 
-    alamo_surrogate = AlamoSurrogate.load_from_file(
-        os.path.join(this_file_dir(), "alamo_surrogate.json")
+    keras_surrogate = KerasSurrogate.load_from_folder(
+        os.path.join(this_file_dir(), "keras_surrogate")
     )
 
-    return alamo_surrogate
+    return keras_surrogate
 
 
 @pytest.fixture
@@ -63,7 +65,7 @@ def data_validation():
 
 
 @pytest.mark.unit
-def test_scatter2D_alamo(alamo_surrogate, data_validation):
+def test_scatter2D_keras(keras_surrogate, data_validation):
 
     with TempfileManager.new_context() as tf:
         # note - a failure 'The process cannot access the file because it is
@@ -74,14 +76,14 @@ def test_scatter2D_alamo(alamo_surrogate, data_validation):
         dname = tf.mkdtemp()
         filename = os.path.join(dname, "results.pdf")
         surrogate_scatter2D(
-            alamo_surrogate, data_validation, filename=filename, show=False
+            keras_surrogate, data_validation, filename=filename, show=False
         )
 
         assert os.path.exists(filename)  # PDF results file
 
 
 @pytest.mark.unit
-def test_scatter3D_alamo(alamo_surrogate, data_validation):
+def test_scatter3D_keras(keras_surrogate, data_validation):
 
     with TempfileManager.new_context() as tf:
         # note - a failure 'The process cannot access the file because it is
@@ -92,14 +94,14 @@ def test_scatter3D_alamo(alamo_surrogate, data_validation):
         dname = tf.mkdtemp()
         filename = os.path.join(dname, "results.pdf")
         surrogate_scatter3D(
-            alamo_surrogate, data_validation, filename=filename, show=False
+            keras_surrogate, data_validation, filename=filename, show=False
         )
 
         assert os.path.exists(filename)  # PDF results file
 
 
 @pytest.mark.unit
-def test_parity_alamo(alamo_surrogate, data_validation):
+def test_parity_keras(keras_surrogate, data_validation):
 
     with TempfileManager.new_context() as tf:
         # note - a failure 'The process cannot access the file because it is
@@ -110,14 +112,14 @@ def test_parity_alamo(alamo_surrogate, data_validation):
         dname = tf.mkdtemp()
         filename = os.path.join(dname, "results.pdf")
         surrogate_parity(
-            alamo_surrogate, data_validation, filename=filename, show=False
+            keras_surrogate, data_validation, filename=filename, show=False
         )
 
         assert os.path.exists(filename)  # PDF results file
 
 
 @pytest.mark.unit
-def test_residual_alamo(alamo_surrogate, data_validation):
+def test_residual_keras(keras_surrogate, data_validation):
 
     with TempfileManager.new_context() as tf:
         # note - a failure 'The process cannot access the file because it is
@@ -128,14 +130,14 @@ def test_residual_alamo(alamo_surrogate, data_validation):
         dname = tf.mkdtemp()
         filename = os.path.join(dname, "results.pdf")
         surrogate_residual(
-            alamo_surrogate, data_validation, filename=filename, show=False
+            keras_surrogate, data_validation, filename=filename, show=False
         )
 
         assert os.path.exists(filename)  # PDF results file
 
 
 @pytest.mark.unit
-def test_scatter2D_noPDF_alamo(alamo_surrogate, data_validation):
+def test_scatter2D_noPDF_keras(keras_surrogate, data_validation):
 
     with TempfileManager.new_context() as tf:
         # note - a failure 'The process cannot access the file because it is
@@ -144,14 +146,14 @@ def test_scatter2D_noPDF_alamo(alamo_surrogate, data_validation):
 
         # create and step into new temporary directory
         dname = tf.mkdtemp()
-        surrogate_scatter2D(alamo_surrogate, data_validation, show=False)
+        surrogate_scatter2D(keras_surrogate, data_validation, show=False)
 
         for file in list(os.walk(dname)):  # check entire temp directory
             assert file[-4:] != ".pdf"  # no PDF files should be created
 
 
 @pytest.mark.unit
-def test_scatter3D_noPDF_alamo(alamo_surrogate, data_validation):
+def test_scatter3D_noPDF_keras(keras_surrogate, data_validation):
 
     with TempfileManager.new_context() as tf:
         # note - a failure 'The process cannot access the file because it is
@@ -160,14 +162,14 @@ def test_scatter3D_noPDF_alamo(alamo_surrogate, data_validation):
 
         # create and step into new temporary directory
         dname = tf.mkdtemp()
-        surrogate_scatter3D(alamo_surrogate, data_validation, show=False)
+        surrogate_scatter3D(keras_surrogate, data_validation, show=False)
 
         for file in list(os.walk(dname)):  # check entire temp directory
             assert file[-4:] != ".pdf"  # no PDF files should be created
 
 
 @pytest.mark.unit
-def test_parity_noPDF_alamo(alamo_surrogate, data_validation):
+def test_parity_noPDF_keras(keras_surrogate, data_validation):
 
     with TempfileManager.new_context() as tf:
         # note - a failure 'The process cannot access the file because it is
@@ -176,14 +178,14 @@ def test_parity_noPDF_alamo(alamo_surrogate, data_validation):
 
         # create and step into new temporary directory
         dname = tf.mkdtemp()
-        surrogate_parity(alamo_surrogate, data_validation, show=False)
+        surrogate_parity(keras_surrogate, data_validation, show=False)
 
         for file in list(os.walk(dname)):  # check entire temp directory
             assert file[-4:] != ".pdf"  # no PDF files should be created
 
 
 @pytest.mark.unit
-def test_residual_noPDF_alamo(alamo_surrogate, data_validation):
+def test_residual_noPDF_keras(keras_surrogate, data_validation):
 
     with TempfileManager.new_context() as tf:
         # note - a failure 'The process cannot access the file because it is
@@ -192,7 +194,7 @@ def test_residual_noPDF_alamo(alamo_surrogate, data_validation):
 
         # create and step into new temporary directory
         dname = tf.mkdtemp()
-        surrogate_residual(alamo_surrogate, data_validation, show=False)
+        surrogate_residual(keras_surrogate, data_validation, show=False)
 
         for file in list(os.walk(dname)):  # check entire temp directory
             assert file[-4:] != ".pdf"  # no PDF files should be created

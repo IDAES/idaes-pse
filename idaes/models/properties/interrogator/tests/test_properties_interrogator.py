@@ -18,7 +18,6 @@ Tests for Property Interrogator Tool
 @author: alee
 """
 import pytest
-import re
 
 from pyomo.environ import ConcreteModel, units as pyunits
 from pyomo.util.check_units import assert_units_equivalent
@@ -545,10 +544,8 @@ def test_interrogator_parameter_block_custom_phase_error():
 
     with pytest.raises(
         ConfigurationError,
-        match=re.escape(
-            "fs.params invalid phase type foo (for phase "
-            "P1). Type must be a subclass of Phase."
-        ),
+        match="fs.params invalid phase type foo \(for phase "
+        "P1\). Type must be a subclass of Phase.",
     ):
         m.fs.params = PropertyInterrogatorBlock(phase_list={"P1": "foo", "P2": None})
 
@@ -560,11 +557,9 @@ def test_interrogator_parameter_block_custom_comp_error():
 
     with pytest.raises(
         ConfigurationError,
-        match=re.escape(
-            "fs.params invalid component type foo (for "
-            "component c1). Type must be a subclass of "
-            "Component."
-        ),
+        match="fs.params invalid component type foo \(for "
+        "component c1\). Type must be a subclass of "
+        "Component.",
     ):
         m.fs.params = PropertyInterrogatorBlock(
             component_list={"c1": "foo", "c2": None}

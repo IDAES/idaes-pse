@@ -179,7 +179,7 @@ class _PhysicalParameterBlock(PhysicalParameterBlock):
         self.basis_switch = 1
         self.default_balance_switch = 1
 
-        self._state_block_class = StateBlockForTesting
+        self._state_block_class = TestStateBlock
 
         self.set_default_scaling("flow_vol", 100)
         self.set_default_scaling("flow_mol", 101)
@@ -234,7 +234,7 @@ class SBlockBase(StateBlock):
             k.hold_state = not k.hold_state
 
 
-@declare_process_block_class("StateBlockForTesting", block_class=SBlockBase)
+@declare_process_block_class("TestStateBlock", block_class=SBlockBase)
 class StateTestBlockData(StateBlockData):
     CONFIG = ConfigBlock(implicit=True)
 

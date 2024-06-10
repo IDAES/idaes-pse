@@ -16,7 +16,6 @@ Tests for Alampy SurrogateModelTrainer
 import pytest
 import numpy as np
 import pandas as pd
-import re
 import io
 import os
 from math import sin, cos, log, exp
@@ -844,11 +843,9 @@ class TestAlamoTrainer:
         alamo_trainer._trcfile = os.path.join(dirpath, "alamotrace2.trc")
         with pytest.raises(
             RuntimeError,
-            match=re.escape(
-                "Mismatch when reading ALAMO trace file. "
-                "Label of output variable in expression "
-                "(z2) does not match expected label (z3)."
-            ),
+            match="Mismatch when reading ALAMO trace file. "
+            "Label of output variable in expression "
+            "\(z2\) does not match expected label \(z3\).",
         ):
             alamo_trainer._read_trace_file(alamo_trainer._trcfile)
 

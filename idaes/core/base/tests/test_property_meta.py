@@ -16,7 +16,6 @@ Tests for process_meta
 Author: Andrew Lee
 """
 import pytest
-import re
 
 from pyomo.environ import ConcreteModel, units
 from pyomo.util.check_units import assert_units_equivalent
@@ -29,7 +28,7 @@ from idaes.core.util.exceptions import PropertyPackageError
 def test_invalid_require_base_quantity():
     with pytest.raises(
         PropertyPackageError,
-        match=re.escape("Unrecognized units of measurement for quantity TIME (foo)"),
+        match="Unrecognized units of measurement for quantity TIME \(foo\)",
     ):
         us = UnitSet()
         us.set_units(time="foo")
@@ -39,10 +38,8 @@ def test_invalid_require_base_quantity():
 def test_mismatched_length_units():
     with pytest.raises(
         PropertyPackageError,
-        match=re.escape(
-            "Invalid units of measurement for quantity LENGTH (s). "
-            "Please ensure units provided are valid for this quantity and use the Pyomo unit registry."
-        ),
+        match="Invalid units of measurement for quantity LENGTH \(s\). "
+        "Please ensure units provided are valid for this quantity.",
     ):
         us = UnitSet()
         us.set_units(length=units.s)
@@ -52,10 +49,8 @@ def test_mismatched_length_units():
 def test_mismatched_mass_units():
     with pytest.raises(
         PropertyPackageError,
-        match=re.escape(
-            "Invalid units of measurement for quantity MASS (m). "
-            "Please ensure units provided are valid for this quantity and use the Pyomo unit registry."
-        ),
+        match="Invalid units of measurement for quantity MASS \(m\). "
+        "Please ensure units provided are valid for this quantity.",
     ):
         us = UnitSet()
         us.set_units(mass=units.m)
@@ -65,10 +60,8 @@ def test_mismatched_mass_units():
 def test_mismatched_amount_units():
     with pytest.raises(
         PropertyPackageError,
-        match=re.escape(
-            "Invalid units of measurement for quantity AMOUNT (m). "
-            "Please ensure units provided are valid for this quantity and use the Pyomo unit registry."
-        ),
+        match="Invalid units of measurement for quantity AMOUNT \(m\). "
+        "Please ensure units provided are valid for this quantity.",
     ):
         us = UnitSet()
         us.set_units(amount=units.m)
@@ -78,10 +71,8 @@ def test_mismatched_amount_units():
 def test_mismatched_temperature_units():
     with pytest.raises(
         PropertyPackageError,
-        match=re.escape(
-            "Invalid units of measurement for quantity TEMPERATURE (m). "
-            "Please ensure units provided are valid for this quantity and use the Pyomo unit registry."
-        ),
+        match="Invalid units of measurement for quantity TEMPERATURE \(m\). "
+        "Please ensure units provided are valid for this quantity.",
     ):
         us = UnitSet()
         us.set_units(temperature=units.m)
@@ -91,10 +82,8 @@ def test_mismatched_temperature_units():
 def test_mismatched_current_units():
     with pytest.raises(
         PropertyPackageError,
-        match=re.escape(
-            "Invalid units of measurement for quantity CURRENT (m). "
-            "Please ensure units provided are valid for this quantity and use the Pyomo unit registry."
-        ),
+        match="Invalid units of measurement for quantity CURRENT \(m\). "
+        "Please ensure units provided are valid for this quantity.",
     ):
         us = UnitSet()
         us.set_units(current=units.m)
@@ -104,10 +93,8 @@ def test_mismatched_current_units():
 def test_mismatched_luminous_intensity_units():
     with pytest.raises(
         PropertyPackageError,
-        match=re.escape(
-            "Invalid units of measurement for quantity LUMINOUS_INTENSITY (m). "
-            "Please ensure units provided are valid for this quantity and use the Pyomo unit registry."
-        ),
+        match="Invalid units of measurement for quantity LUMINOUS_INTENSITY \(m\). "
+        "Please ensure units provided are valid for this quantity.",
     ):
         us = UnitSet()
         us.set_units(luminous_intensity=units.m)
@@ -117,10 +104,8 @@ def test_mismatched_luminous_intensity_units():
 def test_mismatched_time_units():
     with pytest.raises(
         PropertyPackageError,
-        match=re.escape(
-            "Invalid units of measurement for quantity TIME (m). "
-            "Please ensure units provided are valid for this quantity and use the Pyomo unit registry."
-        ),
+        match="Invalid units of measurement for quantity TIME \(m\). "
+        "Please ensure units provided are valid for this quantity.",
     ):
         us = UnitSet()
         us.set_units(time=units.m)

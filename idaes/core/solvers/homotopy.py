@@ -19,7 +19,7 @@ __author__ = "Andrew Lee"
 import logging
 
 from pyomo.environ import Block, SolverFactory, TerminationCondition
-from pyomo.core.base.var import VarData
+from pyomo.core.base.var import _VarData
 from pyomo.contrib.parmest.utils.ipopt_solver_wrapper import ipopt_solve_with_stats
 
 from idaes.core.util.model_serializer import to_json, from_json
@@ -103,7 +103,7 @@ def homotopy(
     for i, v in enumerate(variables):
         t = targets[i]
 
-        if not isinstance(v, VarData):
+        if not isinstance(v, _VarData):
             raise TypeError(
                 "Variable provided ({}) was not a valid Pyomo Var "
                 "component.".format(v)

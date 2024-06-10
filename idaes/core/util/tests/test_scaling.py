@@ -15,9 +15,8 @@ This module contains tests for scaling.
 """
 import math
 from io import StringIO
-import pytest
-import re
 
+import pytest
 import pyomo.environ as pyo
 import pyomo.dae as dae
 from pyomo.common.collections import ComponentSet
@@ -30,6 +29,7 @@ from pyomo.network import Port, Arc
 from pyomo.contrib.pynumero.asl import AmplInterface
 
 from idaes.core.base.process_base import ProcessBaseBlock
+from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.model_statistics import number_activated_objectives
 import idaes.core.util.scaling as sc
 import logging
@@ -46,13 +46,11 @@ __author__ = "John Eslick, Tim Bartholomew"
 @pytest.mark.unit
 def test_none_left_mult():
     with pytest.raises(
-        TypeError,
-        match=re.escape("unsupported operand type(s) for *: 'int' and 'NoneType'"),
+        TypeError, match="unsupported operand type\(s\) for \*: 'int' and 'NoneType'"
     ):
         assert sc.__none_left_mult(4, None) is None
     with pytest.raises(
-        TypeError,
-        match=re.escape("unsupported operand type(s) for *: 'float' and 'NoneType'"),
+        TypeError, match="unsupported operand type\(s\) for \*: 'float' and 'NoneType'"
     ):
         assert sc.__none_left_mult(4.0, None) is None
     assert sc.__none_left_mult(None, 4) is None

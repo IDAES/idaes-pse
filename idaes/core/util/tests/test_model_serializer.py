@@ -362,7 +362,7 @@ class TestModelSerialize(unittest.TestCase):
             data_classes=(
                 (Var._ComponentDataClass, ("value", "fixed"), _only_fixed),
                 (BooleanVar._ComponentDataClass, ("value", "fixed"), _only_fixed),
-                (pyomo.core.base.param.ParamData, ("value",), None),
+                (pyomo.core.base.param._ParamData, ("value",), None),
                 (Constraint._ComponentDataClass, ("active",), None),
                 (Block._ComponentDataClass, ("active",), None),
             ),

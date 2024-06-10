@@ -16,8 +16,6 @@ Tests for ControlVolumeBlockData.
 Author: Andrew Lee
 """
 import pytest
-import re
-
 from pyomo.environ import (
     ConcreteModel,
     Constraint,
@@ -31,7 +29,7 @@ from pyomo.environ import (
 from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 from pyomo.dae import ContinuousSet, DerivativeVar
 from pyomo.common.config import ConfigBlock
-from pyomo.core.base.constraint import ConstraintData
+from pyomo.core.base.constraint import _GeneralConstraintData
 from idaes.core import (
     ControlVolume1DBlock,
     FlowsheetBlockData,
@@ -420,7 +418,7 @@ def test_add_geometry_length_var_indexed():
 
     with pytest.raises(
         ConfigurationError,
-        match=re.escape("fs.cv length_var must be a scalar (unindexed) component."),
+        match="fs.cv length_var must be a scalar \(unindexed\) component.",
     ):
         m.fs.cv.add_geometry(length_var=m.fs.length)
 
@@ -1127,7 +1125,7 @@ def test_add_material_balances_default():
         for j in m.fs.pp.component_list:
             with pytest.raises(KeyError):
                 assert m.fs.cv.material_balances[0, 0, p, j]
-            assert type(m.fs.cv.material_balances[0, 1, p, j]) is ConstraintData
+            assert type(m.fs.cv.material_balances[0, 1, p, j]) is _GeneralConstraintData
 
     assert_units_consistent(m)
 
@@ -1312,7 +1310,7 @@ def test_add_phase_component_balances_default():
         for j in m.fs.pp.component_list:
             with pytest.raises(KeyError):
                 assert m.fs.cv.material_balances[0, 0, p, j]
-            assert type(m.fs.cv.material_balances[0, 1, p, j]) is ConstraintData
+            assert type(m.fs.cv.material_balances[0, 1, p, j]) is _GeneralConstraintData
 
     assert_units_consistent(m)
 
@@ -1344,7 +1342,7 @@ def test_add_phase_component_balances_default_FFD():
         for j in m.fs.pp.component_list:
             with pytest.raises(KeyError):
                 assert m.fs.cv.material_balances[0, 1, p, j]
-            assert type(m.fs.cv.material_balances[0, 0, p, j]) is ConstraintData
+            assert type(m.fs.cv.material_balances[0, 0, p, j]) is _GeneralConstraintData
 
     assert_units_consistent(m)
 
@@ -1990,7 +1988,7 @@ def test_add_total_component_balances_default():
     for j in m.fs.pp.component_list:
         with pytest.raises(KeyError):
             assert m.fs.cv.material_balances[0, 0, j]
-        assert type(m.fs.cv.material_balances[0, 1, j]) is ConstraintData
+        assert type(m.fs.cv.material_balances[0, 1, j]) is _GeneralConstraintData
 
     assert_units_consistent(m)
 
@@ -2022,7 +2020,7 @@ def test_add_total_component_balances_default_FFD():
     for j in m.fs.pp.component_list:
         with pytest.raises(KeyError):
             assert m.fs.cv.material_balances[0, 1, j]
-        assert type(m.fs.cv.material_balances[0, 0, j]) is ConstraintData
+        assert type(m.fs.cv.material_balances[0, 0, j]) is _GeneralConstraintData
 
     assert_units_consistent(m)
 
@@ -2312,11 +2310,9 @@ def test_add_total_component_balances_in_rxns_no_idx():
 
     with pytest.raises(
         PropertyNotSupportedError,
-        match=re.escape(
-            "fs.cv Property package does not contain a "
-            "list of inherent reactions (inherent_reaction_idx), "
-            "but include_inherent_reactions is True."
-        ),
+        match="fs.cv Property package does not contain a "
+        "list of inherent reactions \(inherent_reaction_idx\), "
+        "but include_inherent_reactions is True.",
     ):
         m.fs.cv.add_total_component_balances()
 
@@ -2662,7 +2658,7 @@ def test_add_total_element_balances_default():
     for j in m.fs.pp.element_list:
         with pytest.raises(KeyError):
             assert m.fs.cv.element_balances[0, 0, j]
-        assert type(m.fs.cv.element_balances[0, 1, j]) is ConstraintData
+        assert type(m.fs.cv.element_balances[0, 1, j]) is _GeneralConstraintData
 
     assert_units_consistent(m)
 
@@ -2694,7 +2690,7 @@ def test_add_total_element_balances_default_FFD():
     for j in m.fs.pp.element_list:
         with pytest.raises(KeyError):
             assert m.fs.cv.element_balances[0, 1, j]
-        assert type(m.fs.cv.element_balances[0, 0, j]) is ConstraintData
+        assert type(m.fs.cv.element_balances[0, 0, j]) is _GeneralConstraintData
 
     assert_units_consistent(m)
 
@@ -3040,7 +3036,7 @@ def test_add_energy_balances_default():
 
     with pytest.raises(KeyError):
         assert m.fs.cv.enthalpy_balances[0, 0]
-    assert type(m.fs.cv.enthalpy_balances[0, 1]) is ConstraintData
+    assert type(m.fs.cv.enthalpy_balances[0, 1]) is _GeneralConstraintData
 
     assert_units_consistent(m)
 
@@ -3076,7 +3072,7 @@ def test_add_total_enthalpy_balances_default():
 
     with pytest.raises(KeyError):
         assert m.fs.cv.enthalpy_balances[0, 0]
-    assert type(m.fs.cv.enthalpy_balances[0, 1]) is ConstraintData
+    assert type(m.fs.cv.enthalpy_balances[0, 1]) is _GeneralConstraintData
 
     assert_units_consistent(m)
 
@@ -3110,7 +3106,7 @@ def test_add_total_enthalpy_balances_default_FFD():
 
     with pytest.raises(KeyError):
         assert m.fs.cv.enthalpy_balances[0, 1]
-    assert type(m.fs.cv.enthalpy_balances[0, 0]) is ConstraintData
+    assert type(m.fs.cv.enthalpy_balances[0, 0]) is _GeneralConstraintData
 
     assert_units_consistent(m)
 
@@ -3472,7 +3468,7 @@ def test_add_total_pressure_balances_default():
 
     with pytest.raises(KeyError):
         assert m.fs.cv.pressure_balance[0, 0]
-    assert type(m.fs.cv.pressure_balance[0, 1]) is ConstraintData
+    assert type(m.fs.cv.pressure_balance[0, 1]) is _GeneralConstraintData
 
     assert_units_consistent(m)
 
@@ -3505,7 +3501,7 @@ def test_add_total_pressure_balances_default_FFD():
 
     with pytest.raises(KeyError):
         assert m.fs.cv.pressure_balance[0, 1]
-    assert type(m.fs.cv.pressure_balance[0, 0]) is ConstraintData
+    assert type(m.fs.cv.pressure_balance[0, 0]) is _GeneralConstraintData
 
     assert_units_consistent(m)
 
