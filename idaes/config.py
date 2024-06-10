@@ -369,6 +369,9 @@ def _new_idaes_config_block():
         ),
     )
 
+    # TODO: Would be nice to make these the defaults, but too many things fail
+    # right now.
+    # TODO: Leaving these as a reminder for the future
     # cfg["ipopt_v2"]["options"].declare(
     #     "linear_solver",
     #     pyomo.common.config.ConfigValue(
