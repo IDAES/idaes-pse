@@ -10,9 +10,6 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-# TODO: Missing doc strings
-# pylint: disable=missing-module-docstring
-# pylint: disable=missing-function-docstring
 """
 The purpose of this file is to perform polynomial regression in Pyomo.
 This will be done in two stages. First, a sampling plan will
@@ -1021,8 +1018,7 @@ class PolynomialRegression:
         print("\n------------------------------------------------------------")
         print("The final coefficients of the regression terms are: \n")
         print("k               |", beta[0, 0])
-        results_df = pd.concat([#results_df,
-                                pd.Series({"k": beta[0, 0]})], axis=0)
+        results_df = pd.concat([pd.Series({"k": beta[0, 0]})], axis=0)  # results_df,
         if self.multinomials == 1:
             for i in range(1, order + 1):
                 for j in range(1, self.number_of_x_vars + 1):
@@ -1740,11 +1736,12 @@ class PolynomialRegression:
 
     @staticmethod
     def pickle_load(solution_file):
-        """
-        pickle_load loads the results of a saved run 'file.obj'. It returns an array of two elements: the setup (index[0]) and the results (index[1]).
+        """Load the results of a saved run 'file.obj'
 
-        Input arguments:
-                solution_file            : Pickle object file containing previous solution to be loaded.
+        Args:
+            solution_file: Pickle object file containing previous solution to be loaded.
+        returns:
+            An array of two elements, the setup (index[0]) and the results (index[1]).
 
         """
         try:
@@ -1821,7 +1818,8 @@ class PolynomialRegression:
         )
         return s
 
-    def print_report(self):
+    def print_report(self) -> None:
+        """Print report to standard output"""
         s = self._report()
         print(s)
 
@@ -1830,13 +1828,14 @@ class PolynomialRegression:
         s = self._report()
         p.text(s)
 
-    def confint_regression(self, confidence=0.95):
-        """
-        The ``confint_regression`` method prints the confidence intervals for the regression patamaters.
+    def confint_regression(self, confidence: float = 0.95) -> pd.DataFrame:
+        """Print the confidence intervals for the regression parameters.
 
         Args:
-            confidence      : Required confidence interval level, default = 0.95 (95%)
+            confidence: Required confidence interval level, default = 0.95 (95%)
 
+        Returns:
+            Data frame with values that were printed.
         """
 
         data = self.final_training_data
