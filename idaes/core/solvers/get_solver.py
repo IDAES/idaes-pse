@@ -41,6 +41,8 @@ def get_solver(solver=None, options=None, writer_config=None):
     Returns:
         A Pyomo solver object
     """
+    # TODO: Deprecate options argument in favour of solver_options to be more consistent
+    # with new Pyomo interfaces?
     if solver is None:
         solver = "default"
     solver_obj = idaes.core.solvers.SolverWrapper(solver, register=False)()
