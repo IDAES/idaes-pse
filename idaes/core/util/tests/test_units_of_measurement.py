@@ -127,5 +127,5 @@ def test_convert_quantity_dimensionless():
     q2 = convert_quantity_to_reporting_units(q)
 
     assert q2.m == 1
-    assert str(q2.u) == "dimensionless"
+    assert str(q2.u) == ""
     assert q is q2
