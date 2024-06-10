@@ -199,7 +199,6 @@ class FWHCondensing0DData(HeatExchangerData):
         self.extraction_rate_constraint.activate()
         self.hot_side_inlet.flow_mol.unfix()
 
-        # Create solver
         opt = get_solver(solver, optarg)
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:

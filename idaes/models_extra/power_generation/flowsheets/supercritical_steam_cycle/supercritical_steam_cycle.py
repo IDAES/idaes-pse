@@ -767,9 +767,10 @@ def initialize(m, fileinput=None, outlvl=idaeslog.NOTSET):
     iscale.set_scaling_factor(m.fs.fwh8.condense.hot_side.heat, 1e-7)
     iscale.set_scaling_factor(m.fs.fwh8.condense.cold_side.heat, 1e-7)
 
-    iscale.calculate_scaling_factors(m)
+    # iscale.calculate_scaling_factors(m)
 
-    solver = get_solver()
+    solver_options = None
+    solver_obj = get_solver("ipopt")
 
     if fileinput is not None:
         init_log.info("Loading initial values from file: {}".format(fileinput))
@@ -803,9 +804,9 @@ def initialize(m, fileinput=None, outlvl=idaeslog.NOTSET):
     m.fs.turb.ip_stages[1].inlet.pressure[:].value = ip1_pin
     # initialize turbine
     assert degrees_of_freedom(m.fs.turb) == 0
-    m.fs.turb.initialize(outlvl=outlvl, optarg=solver.options)
+    m.fs.turb.initialize(outlvl=outlvl, optarg=solver_options)
     with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-        res = solver.solve(m.fs.turb, tee=slc.tee)
+        res = solver_obj.solve(m.fs.turb, tee=slc.tee)
     init_log.info("Full turbine solve complete: {}".format(idaeslog.condition(res)))
     # The turbine outlet pressure is determined by the condenser once hooked up
     m.fs.turb.outlet_stage.control_volume.properties_out[:].pressure.unfix()
@@ -823,7 +824,7 @@ def initialize(m, fileinput=None, outlvl=idaeslog.NOTSET):
     _set_port(m.fs.bfpt.inlet, m.fs.turb.ip_split[10].outlet_3)
     m.fs.bfpt.control_volume.properties_out[:].pressure.fix(10000)
     m.fs.bfpt.efficiency_isentropic.fix()
-    m.fs.bfpt.initialize(outlvl=idaeslog.DEBUG, optarg=solver.options)
+    m.fs.bfpt.initialize(solver="ipopt", outlvl=idaeslog.DEBUG, optarg=solver_options)
     m.fs.bfpt.control_volume.properties_out[:].pressure.unfix()
     m.fs.bfpt.efficiency_isentropic.unfix()
     ############################################################################
@@ -832,21 +833,21 @@ def initialize(m, fileinput=None, outlvl=idaeslog.NOTSET):
     # initialize condenser mixer
     _set_port(m.fs.condenser_mix.main, m.fs.turb.outlet_stage.outlet)
     _set_port(m.fs.condenser_mix.bfpt, m.fs.bfpt.outlet)
-    m.fs.condenser_mix.initialize(outlvl=outlvl, optarg=solver.options)
+    m.fs.condenser_mix.initialize(solver="ipopt", outlvl=outlvl, optarg=solver_options)
     # initialize condenser hx
 
     _set_port(m.fs.condenser.hot_side_inlet, m.fs.condenser_mix.outlet)
     _set_port(m.fs.condenser.cold_side_outlet, m.fs.condenser.cold_side_inlet)
-    m.fs.condenser.initialize(outlvl=outlvl, optarg=solver.options)
+    m.fs.condenser.initialize(solver="ipopt", outlvl=outlvl, optarg=solver_options)
 
     # initialize hotwell
     _set_port(m.fs.hotwell.condensate, m.fs.condenser.hot_side_outlet)
 
-    m.fs.hotwell.initialize(outlvl=outlvl, optarg=solver.options)
+    m.fs.hotwell.initialize(solver="ipopt", outlvl=outlvl, optarg=solver_options)
     m.fs.hotwell.condensate.unfix()
     # initialize condensate pump
     _set_port(m.fs.cond_pump.inlet, m.fs.hotwell.outlet)
-    m.fs.cond_pump.initialize(outlvl=outlvl, optarg=solver.options)
+    m.fs.cond_pump.initialize(solver="ipopt", outlvl=outlvl, optarg=solver_options)
     ############################################################################
     #  Low-pressure FWH section                                                #
     ############################################################################
@@ -856,14 +857,14 @@ def initialize(m, fileinput=None, outlvl=idaeslog.NOTSET):
     m.fs.fwh1.drain_mix.drain.enth_mol[:] = 6117
     _set_port(m.fs.fwh1.condense.cold_side_inlet, m.fs.cond_pump.outlet)
     _set_port(m.fs.fwh1.drain_mix.steam, m.fs.turb.lp_split[11].outlet_2)
-    m.fs.fwh1.initialize(outlvl=outlvl, optarg=solver.options)
+    m.fs.fwh1.initialize(solver="ipopt", outlvl=outlvl, optarg=solver_options)
     # initialize fwh1 drain pump
     _set_port(m.fs.fwh1_pump.inlet, m.fs.fwh1.condense.hot_side_outlet)
-    m.fs.fwh1_pump.initialize(outlvl=5, optarg=solver.options)
+    m.fs.fwh1_pump.initialize(solver="ipopt", outlvl=5, optarg=solver_options)
     # initialize mixer to add fwh1 drain to feedwater
     _set_port(m.fs.fwh1_return.feedwater, m.fs.fwh1.condense.cold_side_outlet)
     _set_port(m.fs.fwh1_return.fwh1_drain, m.fs.fwh1.condense.hot_side_outlet)
-    m.fs.fwh1_return.initialize(outlvl=outlvl, optarg=solver.options)
+    m.fs.fwh1_return.initialize(solver="ipopt", outlvl=outlvl, optarg=solver_options)
     m.fs.fwh1_return.feedwater.unfix()
     m.fs.fwh1_return.fwh1_drain.unfix()
     # fwh2
@@ -872,18 +873,18 @@ def initialize(m, fileinput=None, outlvl=idaeslog.NOTSET):
     m.fs.fwh2.drain_mix.drain.enth_mol[:] = 7000
     _set_port(m.fs.fwh2.cooling.cold_side_inlet, m.fs.fwh1_return.outlet)
     _set_port(m.fs.fwh2.desuperheat.hot_side_inlet, m.fs.turb.lp_split[10].outlet_2)
-    m.fs.fwh2.initialize(outlvl=outlvl, optarg=solver.options)
+    m.fs.fwh2.initialize(solver="ipopt", outlvl=outlvl, optarg=solver_options)
     # fwh3
     m.fs.fwh3.drain_mix.drain.flow_mol[:] = 100
     m.fs.fwh3.drain_mix.drain.pressure[:] = 2.5e5
     m.fs.fwh3.drain_mix.drain.enth_mol[:] = 8000
     _set_port(m.fs.fwh3.cooling.cold_side_inlet, m.fs.fwh2.desuperheat.cold_side_outlet)
     _set_port(m.fs.fwh3.desuperheat.hot_side_inlet, m.fs.turb.lp_split[8].outlet_2)
-    m.fs.fwh3.initialize(outlvl=outlvl, optarg=solver.options)
+    m.fs.fwh3.initialize(solver="ipopt", outlvl=outlvl, optarg=solver_options)
     # fwh4
     _set_port(m.fs.fwh4.cooling.cold_side_inlet, m.fs.fwh3.desuperheat.cold_side_outlet)
     _set_port(m.fs.fwh4.desuperheat.hot_side_inlet, m.fs.turb.lp_split[4].outlet_2)
-    m.fs.fwh4.initialize(outlvl=outlvl, optarg=solver.options)
+    m.fs.fwh4.initialize(solver="ipopt", outlvl=outlvl, optarg=solver_options)
     ############################################################################
     #  boiler feed pump and deaerator                                          #
     ############################################################################
@@ -892,10 +893,10 @@ def initialize(m, fileinput=None, outlvl=idaeslog.NOTSET):
     m.fs.fwh5_da.drain.flow_mol[:] = 2000
     m.fs.fwh5_da.drain.pressure[:] = 3e6
     m.fs.fwh5_da.drain.enth_mol[:] = 9000
-    m.fs.fwh5_da.initialize(outlvl=outlvl, optarg=solver.options)
+    m.fs.fwh5_da.initialize(solver="ipopt", outlvl=outlvl, optarg=solver_options)
     _set_port(m.fs.bfp.inlet, m.fs.fwh5_da.outlet)
     m.fs.bfp.control_volume.properties_out[:].pressure.fix()
-    m.fs.bfp.initialize(outlvl=outlvl, optarg=solver.options)
+    m.fs.bfp.initialize(solver="ipopt", outlvl=outlvl, optarg=solver_options)
     m.fs.bfp.control_volume.properties_out[:].pressure.unfix()
     ############################################################################
     #  High-pressure feedwater heaters                                         #
@@ -906,23 +907,23 @@ def initialize(m, fileinput=None, outlvl=idaeslog.NOTSET):
     m.fs.fwh6.drain_mix.drain.enth_mol[:] = 9500
     _set_port(m.fs.fwh6.cooling.cold_side_inlet, m.fs.bfp.outlet)
     _set_port(m.fs.fwh6.desuperheat.hot_side_inlet, m.fs.turb.ip_split[5].outlet_2)
-    m.fs.fwh6.initialize(outlvl=outlvl, optarg=solver.options)
+    m.fs.fwh6.initialize(solver="ipopt", outlvl=outlvl, optarg=solver_options)
     # fwh7
     m.fs.fwh7.drain_mix.drain.flow_mol[:] = 2000
     m.fs.fwh7.drain_mix.drain.pressure[:] = 1e7
     m.fs.fwh7.drain_mix.drain.enth_mol[:] = 9500
     _set_port(m.fs.fwh7.cooling.cold_side_inlet, m.fs.fwh6.desuperheat.cold_side_outlet)
     _set_port(m.fs.fwh7.desuperheat.hot_side_inlet, m.fs.turb.hp_split[7].outlet_2)
-    m.fs.fwh7.initialize(outlvl=outlvl, optarg=solver.options)
+    m.fs.fwh7.initialize(solver="ipopt", outlvl=outlvl, optarg=solver_options)
     # fwh8
     _set_port(m.fs.fwh8.cooling.cold_side_inlet, m.fs.fwh7.desuperheat.cold_side_outlet)
     _set_port(m.fs.fwh8.desuperheat.hot_side_inlet, m.fs.turb.hp_split[4].outlet_2)
-    m.fs.fwh8.initialize(outlvl=outlvl, optarg=solver.options)
+    m.fs.fwh8.initialize(solver="ipopt", outlvl=outlvl, optarg=solver_options)
     with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-        res = solver.solve(m, tee=slc.tee)
+        res = solver_obj.solve(m, tee=slc.tee)
     init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
 
-    return solver
+    return solver_obj
 
 
 def pfd_result(m, df, svg):

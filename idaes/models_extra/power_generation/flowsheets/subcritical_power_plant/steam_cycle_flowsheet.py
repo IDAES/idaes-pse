@@ -951,7 +951,10 @@ def initialize(m):
     solve_log = idaeslog.getSolveLogger(fs.name, outlvl, tag="unit")
     _log.info("Starting steam cycle initialization...")
 
-    solver = get_solver()
+    # TODO: Something about hte steam cycle causes issues when using IPOPT_v2 for initialization
+    # TODO: For now, use old IPOPT interface during initialization
+    solver_options = None
+    solver_obj = get_solver("ipopt", options=solver_options)
 
     # Set initial condition for dynamic unit models
     t0 = 0
@@ -970,7 +973,7 @@ def initialize(m):
     if m.dynamic is False:
         fs.turb.initialize(
             outlvl=outlvl,
-            optarg=solver.options,
+            optarg=solver_options,
             calculate_outlet_cf=False,
             calculate_inlet_cf=False,
         )
@@ -978,19 +981,19 @@ def initialize(m):
     # Initialize control valve of BFPT
     _set_port(fs.bfp_turb_valve.inlet, fs.turb.ip_split[9].outlet_3)
     if m.dynamic is False:
-        fs.bfp_turb_valve.initialize(outlvl=outlvl, optarg=solver.options)
+        fs.bfp_turb_valve.initialize(outlvl=outlvl, optarg=solver_options)
 
     # Initialize BFPT front stage
     _set_port(fs.bfp_turb.inlet, fs.bfp_turb_valve.outlet)
     if m.dynamic is False:
-        fs.bfp_turb.initialize(outlvl=outlvl, optarg=solver.options)
+        fs.bfp_turb.initialize(outlvl=outlvl, optarg=solver_options)
 
     # Initialize BFPT outlet stage
     _set_port(fs.bfp_turb_os.inlet, fs.bfp_turb.outlet)
     fs.bfp_turb_os.control_volume.properties_out[:].pressure.fix(6000)
     if m.dynamic is False:
         fs.bfp_turb_os.initialize(
-            calculate_cf=False, outlvl=outlvl, optarg=solver.options
+            calculate_cf=False, outlvl=outlvl, optarg=solver_options
         )
     fs.bfp_turb_os.control_volume.properties_out[:].pressure.unfix()
 
@@ -998,12 +1001,12 @@ def initialize(m):
     _set_port(fs.condenser.hot_side_inlet, fs.turb.outlet_stage.outlet)
     fs.turb.outlet_stage.control_volume.properties_out[:].pressure.unfix()
     if m.dynamic is False:
-        fs.condenser.initialize(unfix="pressure")
+        fs.condenser.initialize(solver="ipopt", unfix="pressure")
 
     # Initialize auxiliary condenser
     _set_port(fs.aux_condenser.hot_side_inlet, fs.bfp_turb_os.outlet)
     if m.dynamic is False:
-        fs.aux_condenser.initialize(unfix="pressure")
+        fs.aux_condenser.initialize(solver="ipopt", unfix="pressure")
 
     # Initialize makeup valve
     if m.dynamic is False:
@@ -1016,20 +1019,22 @@ def initialize(m):
     _set_port(fs.condenser_hotwell.aux_condensate, fs.aux_condenser.hot_side_outlet)
     _set_port(fs.condenser_hotwell.makeup, fs.makeup_valve.outlet)
     if m.dynamic is False:
-        fs.condenser_hotwell.initialize(outlvl=outlvl, optarg=solver.options)
+        fs.condenser_hotwell.initialize(
+            solver="ipopt", outlvl=outlvl, optarg=solver_options
+        )
     fs.condenser_hotwell.main_condensate.unfix()
 
     # Initialize hotwell tank
     _set_port(fs.hotwell_tank.inlet, fs.condenser_hotwell.outlet)
     if m.dynamic is False:
-        fs.hotwell_tank.initialize()
+        fs.hotwell_tank.initialize(solver="ipopt")
 
     # Initialize condensate pump
     _set_port(fs.cond_pump.inlet, fs.hotwell_tank.outlet)
     if m.dynamic is False:
         fs.cond_pump.deltaP.fix()
         fs.cond_pump.cond_pump_curve_constraint.deactivate()
-        fs.cond_pump.initialize(outlvl=outlvl, optarg=solver.options)
+        fs.cond_pump.initialize(solver="ipopt", outlvl=outlvl, optarg=solver_options)
         fs.cond_pump.deltaP.unfix()
         fs.cond_pump.cond_pump_curve_constraint.activate()
 
@@ -1037,7 +1042,7 @@ def initialize(m):
     _set_port(fs.cond_valve.inlet, fs.cond_pump.outlet)
     if m.dynamic is False:
         fs.cond_valve.Cv.fix()
-        fs.cond_valve.initialize(outlvl=outlvl, optarg=solver.options)
+        fs.cond_valve.initialize(solver="ipopt", outlvl=outlvl, optarg=solver_options)
         fs.cond_valve.Cv.unfix()
 
     # Set some initial inlet values and initialize fwh1
@@ -1050,7 +1055,7 @@ def initialize(m):
     _set_port(fs.fwh1.drain_mix.steam, fs.turb.lp_split[5].outlet_2)
 
     if m.dynamic is False:
-        fs.fwh1.initialize(outlvl=outlvl, optarg=solver.options)
+        fs.fwh1.initialize(solver="ipopt", outlvl=outlvl, optarg=solver_options)
 
     # Initialize fwh1 drain pump
     _set_port(fs.fwh1_drain_pump.inlet, fs.fwh1.condense.hot_side_outlet)
@@ -1058,14 +1063,18 @@ def initialize(m):
         fs.fwh1.condense.cold_side.properties_out[t0].pressure.value
     )
     if m.dynamic is False:
-        fs.fwh1_drain_pump.initialize(outlvl=outlvl, optarg=solver.options)
+        fs.fwh1_drain_pump.initialize(
+            solver="ipopt", outlvl=outlvl, optarg=solver_options
+        )
     fs.fwh1_drain_pump.control_volume.properties_out[:].pressure.unfix()
 
     # Initialize mixer to add fwh1 drain to feedwater
     _set_port(fs.fwh1_drain_return.feedwater, fs.fwh1.condense.cold_side_outlet)
     _set_port(fs.fwh1_drain_return.fwh1_drain, fs.fwh1_drain_pump.outlet)
     if m.dynamic is False:
-        fs.fwh1_drain_return.initialize(outlvl=outlvl, optarg=solver.options)
+        fs.fwh1_drain_return.initialize(
+            solver="ipopt", outlvl=outlvl, optarg=solver_options
+        )
     fs.fwh1_drain_return.feedwater.unfix()
     fs.fwh1_drain_return.fwh1_drain.unfix()
 
@@ -1078,7 +1087,7 @@ def initialize(m):
     _set_port(fs.fwh2.cooling.cold_side_inlet, fs.fwh1.condense.cold_side_outlet)
     _set_port(fs.fwh2.drain_mix.steam, fs.turb.lp_split[4].outlet_2)
     if m.dynamic is False:
-        fs.fwh2.initialize(outlvl=outlvl, optarg=solver.options)
+        fs.fwh2.initialize(solver="ipopt", outlvl=outlvl, optarg=solver_options)
 
     # Initialize fwh2_valve
     _set_port(fs.fwh2_valve.inlet, fs.fwh2.cooling.hot_side_outlet)
@@ -1088,20 +1097,20 @@ def initialize(m):
             fs.fwh2_valve.inlet.flow_mol[t0].value * 0.75
         )
         fs.fwh2_valve.Cv.fix()
-        fs.fwh2_valve.initialize(outlvl=outlvl, optarg=solver.options)
+        fs.fwh2_valve.initialize(solver="ipopt", outlvl=outlvl, optarg=solver_options)
         fs.fwh2_valve.Cv.unfix()
 
     # Set some initial inlet values and initialize fwh3
     _set_port(fs.fwh3.cooling.cold_side_inlet, fs.fwh2.condense.cold_side_outlet)
     _set_port(fs.fwh3.condense.hot_side_inlet, fs.turb.lp_split[2].outlet_2)
     if m.dynamic is False:
-        fs.fwh3.initialize(outlvl=outlvl, optarg=solver.options)
+        fs.fwh3.initialize(solver="ipopt", outlvl=outlvl, optarg=solver_options)
 
     # Initialize fwh3_valve
     _set_port(fs.fwh3_valve.inlet, fs.fwh3.cooling.hot_side_outlet)
     if m.dynamic is False:
         fs.fwh3_valve.Cv.fix()
-        fs.fwh3_valve.initialize(outlvl=outlvl, optarg=solver.options)
+        fs.fwh3_valve.initialize(solver="ipopt", outlvl=outlvl, optarg=solver_options)
         fs.fwh3_valve.Cv.unfix()
 
     # Set some initial inlet values and initialize fwh4
@@ -1111,7 +1120,7 @@ def initialize(m):
     _set_port(fs.fwh4_deair.feedwater, fs.fwh3.condense.cold_side_outlet)
     _set_port(fs.fwh4_deair.steam, fs.turb.ip_split[9].outlet_2)
     if m.dynamic is False:
-        fs.fwh4_deair.initialize(outlvl=outlvl, optarg=solver.options)
+        fs.fwh4_deair.initialize(solver="ipopt", outlvl=outlvl, optarg=solver_options)
     fs.fwh4_deair.feedwater.unfix()
     fs.fwh4_deair.steam.unfix()
     fs.fwh4_deair.drain.unfix()
@@ -1119,30 +1128,30 @@ def initialize(m):
     # Initialize deaerator tank
     _set_port(fs.da_tank.inlet, fs.fwh4_deair.outlet)
     if m.dynamic is False:
-        fs.da_tank.initialize(outlvl=outlvl, optarg=solver.options)
+        fs.da_tank.initialize(solver="ipopt", outlvl=outlvl, optarg=solver_options)
 
     # Initialize booster pump
     _set_port(fs.booster.inlet, fs.da_tank.outlet)
     if m.dynamic is False:
         fs.booster.booster_pump_curve_constraint.deactivate()
-        fs.booster.initialize(outlvl=outlvl, optarg=solver.options)
+        fs.booster.initialize(solver="ipopt", outlvl=outlvl, optarg=solver_options)
         fs.booster.booster_pump_curve_constraint.activate()
 
     # Initialize main boiler feed water pump
     _set_port(fs.bfp.inlet, fs.booster.outlet)
     if m.dynamic is False:
-        fs.bfp.initialize(outlvl=outlvl, optarg=solver.options)
+        fs.bfp.initialize(solver="ipopt", outlvl=outlvl, optarg=solver_options)
 
     # Initialize split_attemp
     _set_port(fs.split_attemp.inlet, fs.bfp.outlet)
     if m.dynamic is False:
-        fs.split_attemp.initialize(outlvl=outlvl, optarg=solver.options)
+        fs.split_attemp.initialize(solver="ipopt", outlvl=outlvl, optarg=solver_options)
 
     # Initialize spray_valve
     _set_port(fs.spray_valve.inlet, fs.split_attemp.Spray)
     if m.dynamic is False:
         fs.spray_valve.Cv.fix()
-        fs.spray_valve.initialize(outlvl=outlvl, optarg=solver.options)
+        fs.spray_valve.initialize(solver="ipopt", outlvl=outlvl, optarg=solver_options)
         fs.spray_valve.Cv.unfix()
 
     # Initialize fwh5
@@ -1152,26 +1161,26 @@ def initialize(m):
     _set_port(fs.fwh5.cooling.cold_side_inlet, fs.split_attemp.FeedWater)
     _set_port(fs.fwh5.desuperheat.hot_side_inlet, fs.turb.ip_split[6].outlet_2)
     if m.dynamic is False:
-        fs.fwh5.initialize(outlvl=outlvl, optarg=solver.options)
+        fs.fwh5.initialize(solver="ipopt", outlvl=outlvl, optarg=solver_options)
 
     # Initialize fwh5_valve
     _set_port(fs.fwh5_valve.inlet, fs.fwh5.cooling.hot_side_outlet)
     if m.dynamic is False:
         fs.fwh5_valve.Cv.fix()
-        fs.fwh5_valve.initialize(outlvl=outlvl, optarg=solver.options)
+        fs.fwh5_valve.initialize(solver="ipopt", outlvl=outlvl, optarg=solver_options)
         fs.fwh5_valve.Cv.unfix()
 
     # Set some initial inlet values and initialize fwh3
     _set_port(fs.fwh6.cooling.cold_side_inlet, fs.fwh5.desuperheat.cold_side_outlet)
     _set_port(fs.fwh6.desuperheat.hot_side_inlet, fs.turb.hp_split[14].outlet_2)
     if m.dynamic is False:
-        fs.fwh6.initialize(outlvl=outlvl, optarg=solver.options)
+        fs.fwh6.initialize(solver="ipopt", outlvl=outlvl, optarg=solver_options)
 
     # Initialize fwh6_valve
     _set_port(fs.fwh6_valve.inlet, fs.fwh6.cooling.hot_side_outlet)
     if m.dynamic is False:
         fs.fwh6_valve.Cv.fix()
-        fs.fwh6_valve.initialize(outlvl=outlvl, optarg=solver.options)
+        fs.fwh6_valve.initialize(solver="ipopt", outlvl=outlvl, optarg=solver_options)
         fs.fwh6_valve.Cv.unfix()
 
     # Unfix stream connections before solving entire sub-flowsheet
@@ -1235,7 +1244,7 @@ def initialize(m):
         assert dof == 0
         # finally solve the sub-flowsheet
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = solver.solve(fs, tee=slc.tee)
+            res = solver_obj.solve(fs, tee=slc.tee)
             _log.info("Solving bounded problem: {}".format(idaeslog.condition(res)))
             _log.info(
                 "Steam cycle initialized in {:.1f}s".format(time.time() - start_time)
@@ -1829,13 +1838,13 @@ def set_scaling_factors(m):
 
 def main_steady_state():
     m_ss = get_model(dynamic=False)
-    solver = get_solver()
+    solver_obj = get_solver()
 
     dof = degrees_of_freedom(m_ss)
     print("dof of full model", dof)
     # solving dynamic model at steady-state
     print("solving dynamic model at steady-state...")
-    solver.solve(m_ss, tee=True)
+    solver_obj.solve(m_ss, tee=True)
     return m_ss
 
 
@@ -1888,7 +1897,7 @@ def main_dynamic():
 
     m_dyn.fs_main.fs_stc.spray_valve.valve_opening[0].fix()
 
-    solver = get_solver()
+    solver_obj = get_solver()
 
     outlvl = idaeslog.DEBUG
     _log = idaeslog.getLogger(m_dyn.name, outlvl, tag="flowsheet")
@@ -2099,7 +2108,7 @@ def main_dynamic():
     _log.debug("dof of full model={}".format(dof))
     # solving dynamic model
     _log.debug("solving dynamic model...")
-    solver.solve(m_dyn.fs_main, tee=True)
+    solver_obj.solve(m_dyn.fs_main, tee=True)
     _log.debug(
         "Power output of main turbine={}".format(
             pyo.value(m_dyn.fs_main.fs_stc.power_output[60])
