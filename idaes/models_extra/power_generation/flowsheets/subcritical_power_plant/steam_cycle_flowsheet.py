@@ -951,7 +951,7 @@ def initialize(m):
     solve_log = idaeslog.getSolveLogger(fs.name, outlvl, tag="unit")
     _log.info("Starting steam cycle initialization...")
 
-    # TODO: Something about hte steam cycle causes issues when using IPOPT_v2 for initialization
+    # TODO: Something about the steam cycle causes issues when using IPOPT_v2 for initialization
     # TODO: For now, use old IPOPT interface during initialization
     solver_options = None
     solver_obj = get_solver("ipopt", options=solver_options)
