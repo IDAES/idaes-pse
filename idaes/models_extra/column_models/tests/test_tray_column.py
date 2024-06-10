@@ -41,7 +41,7 @@ import idaes.core.util.scaling as iscale
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_solver()
+solver = get_solver("ipopt")
 
 
 @pytest.mark.unit
@@ -188,8 +188,6 @@ class TestBTXIdealFcTP:
     def test_solution(self, btx_fctp):
 
         # Distillate port - btx_fctp
-        btx_fctp.fs.unit.condenser.distillate.display()
-        btx_fctp.fs.unit.reboiler.bottoms.display()
         assert pytest.approx(16.856, rel=1e-2) == value(
             btx_fctp.fs.unit.condenser.distillate.flow_mol_comp[0, "benzene"]
         )
