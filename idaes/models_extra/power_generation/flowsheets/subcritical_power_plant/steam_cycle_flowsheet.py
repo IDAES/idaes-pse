@@ -1905,7 +1905,7 @@ def main_dynamic():
     _log.debug("dof full model={}".format(dof))
     # solving dynamic model at steady-state
     print("solving dynamic model at steady-state...")
-    solver.solve(m_dyn.fs_main, tee=True)
+    solver_obj.solve(m_dyn.fs_main, tee=True)
 
     _log.debug(
         "main steam enth={}".format(

@@ -775,7 +775,7 @@ def initialize(m, fileinput=None, outlvl=idaeslog.NOTSET):
     if fileinput is not None:
         init_log.info("Loading initial values from file: {}".format(fileinput))
         ms.from_json(m, fname=fileinput)
-        return solver
+        return solver_obj
 
     init_log.info("Starting initialization")
     ############################################################################
