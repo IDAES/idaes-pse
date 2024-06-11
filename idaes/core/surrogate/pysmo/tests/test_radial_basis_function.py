@@ -177,6 +177,22 @@ class TestRadialBasisFunction:
     sample_points_3d = [[i, (i + 1) ** 2, (i + 2) ** 2] for i in range(8)]
 
     @pytest.mark.unit
+    def test_constructor_nones(self):
+        """For some reason, the original interface didn't provide default values
+        for keyword arguments, but instead explicitly tested for None in the body
+        of the constructor. This may have (mis)led people to explicitly pass None
+        as a value instead of not including keywords when they wanted the default value.
+        Since there are also explicit type-checks, fixing this behavior to be more normal
+        will break such code without keeping an explicit check for None.
+
+        So, this test makes sure the old `kw=None` interface still works until
+        such time as sanity prevails.
+        """
+        input_array = pd.DataFrame(self.test_data)
+        rbf = RadialBasisFunctions(input_array, basis_function=None, solution_method=None,
+                                   regularizatio=None)
+
+    @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test__init__01(self, array_type):
         input_array = array_type(self.test_data)
