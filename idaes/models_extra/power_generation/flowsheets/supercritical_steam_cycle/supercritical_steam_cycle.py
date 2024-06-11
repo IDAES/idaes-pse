@@ -767,6 +767,8 @@ def initialize(m, fileinput=None, outlvl=idaeslog.NOTSET):
     iscale.set_scaling_factor(m.fs.fwh8.condense.hot_side.heat, 1e-7)
     iscale.set_scaling_factor(m.fs.fwh8.condense.cold_side.heat, 1e-7)
 
+    # TODO: Scaling is causing solver failures now - turning off
+    # until this can be resolved (hopefully with new scaling tools)
     # iscale.calculate_scaling_factors(m)
 
     solver_options = None

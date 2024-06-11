@@ -432,7 +432,7 @@ see property package for documentation.}""",
 
         init_log.info("Begin initialization.")
 
-        # TODO" Linear presolve causes issues in initialization, so turing it off
+        # TODO: Linear presolve causes issues in initialization, so turing it off
         # This should be fixed if and when we have the chance to overhaul the column model
         if solver is None:
             writer_config = {"linear_presolve": False}

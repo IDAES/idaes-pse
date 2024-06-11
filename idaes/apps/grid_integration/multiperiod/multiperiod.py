@@ -115,7 +115,7 @@ class MultiPeriodModel(pyo.ConcreteModel):
                 self._stochastic_model = False
 
             if solver is None:
-                # TODO: fails using linear presolve
+                # TODO: fails using linear presolve (non-descript RuntimeError)
                 solver = get_solver(writer_config={"linear_presolve": False})
 
             _logger = logging.getLogger(__name__)

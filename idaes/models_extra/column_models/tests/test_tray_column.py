@@ -41,7 +41,9 @@ import idaes.core.util.scaling as iscale
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_solver("ipopt")
+# TODO: Linear presolve fails for some reason when scaling is applied.
+# Need to investigate once new scaling tools are available.
+solver = get_solver(writer_config={"linear_presolve": False})
 
 
 @pytest.mark.unit
