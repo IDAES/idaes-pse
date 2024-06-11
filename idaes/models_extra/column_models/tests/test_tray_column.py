@@ -149,7 +149,7 @@ class TestBTXIdealFcTP:
 
         m.fs.unit.reboiler.boilup_ratio.fix(1.3)
 
-        # iscale.calculate_scaling_factors(m)
+        iscale.calculate_scaling_factors(m)
 
         return m
 
