@@ -21,7 +21,12 @@ import itertools
 import numpy as np
 import pandas as pd
 
+from idaes.logger import getIdaesLogger
+
 __author__ = "Oluwamayowa Amusat"
+
+# Logging
+_log = getIdaesLogger(__name__, tag="surrogate")
 
 
 class FeatureScaling:

@@ -190,13 +190,23 @@ class RadialBasisFunctions:
 
     """
 
+    #: known solution methods for argument 'solution_method'
+    SOLUTION_METHODS = {
+        "algebraic": "ALGEBRAIC",
+        "bfgs": "BFGS",
+        "pyomo": "Pyomo optimization",
+    }
+
+    #: known basis functions, see docs for details
+    BASIS_FUNCTIONS = {"linear", "cubic", "gaussian", "mq", "imq", "spline"}
+
     def __init__(
         self,
         XY_data,
-        basis_function=None,
-        solution_method=None,
-        regularization=None,
-        fname=None,
+        basis_function: str = "gaussian",
+        solution_method: str = "algebraic",
+        regularization: bool = True,
+        fname: str = "solution.pickle",
         overwrite=False,
     ):
         r"""
@@ -252,33 +262,24 @@ class RadialBasisFunctions:
             >>> d = RadialBasisFunctions(XY_data, basis_function='gaussian')
 
         """
+        _log.info(f"RadialBasisFunctions constructor:begin")
         if not isinstance(overwrite, bool):
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception("overwrite must be boolean.")
+            self._bad_arg(overwrite, "overwrite", "must be boolean", type_error=True)
         self.overwrite = overwrite
-        if fname is None:
-            fname = "solution.pickle"
-            self.filename = "solution.pickle"
-        elif (
-            not isinstance(fname, str)
-            or os.path.splitext(fname)[-1].lower() != ".pickle"
-        ):
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception(
-                'fname must be a string with extension ".pickle". Please correct.'
-            )
-        if (
-            os.path.exists(fname) and overwrite is True
-        ):  # Explicit overwrite done by user
-            _log.warning(f"file '{fname}' exists; "
-                         f"previous file will be overwritten")
+
+        if not isinstance(fname, str):
+            self._bad_arg(fname, "fname", "must be a string", type_error=True)
+        if not fname.endswith(".pickle"):
+            self._bad_arg(fname, "fname", "must have extension '.pickle'")
+        # Explicit overwrite done by user
+        if os.path.exists(fname) and overwrite is True:
+            _log.warning(f"file '{fname}' exists, previous file will be overwritten")
             self.filename = fname
         elif os.path.exists(fname) and overwrite is False:  # User is not overwriting
             self.filename = date_versioned_filename(fname)
-            _log.warning(f"'{fname}' exists, results will be saved "
-                         f"to '{self.filename}'")
+            _log.warning(
+                f"'{fname}' exists, results will be saved " f"to '{self.filename}'"
+            )
             # self.filename = 'solution.pickle'
         elif os.path.exists(fname) is False:
             self.filename = fname
@@ -302,65 +303,34 @@ class RadialBasisFunctions:
         self.y_data = y_data_scaled.reshape(self.y_data_unscaled.shape)
         self.centres = xy_data_scaled[:, :-1]
 
-        if solution_method is None:
-            solution_method = "algebraic"
-            self.solution_method = solution_method
-            print("Default parameter estimation method is used.")
-        elif not isinstance(solution_method, str):
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception("Invalid solution method. Must be of type <str>.")
-        elif (
-            (solution_method.lower() == "algebraic")
-            or (solution_method.lower() == "pyomo")
-            or (solution_method.lower() == "bfgs")
-        ):
-            solution_method = solution_method.lower()
-            self.solution_method = solution_method
-        else:
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception(
-                'Invalid solution method entered. Select one of ALGEBRAIC (solution_method="algebraic") , L-BFGS (solution_method="bfgs") or Pyomo optimization (solution_method="pyomo") methods. '
+        meth, aname = solution_method, "solution_method"
+        if not isinstance(meth, str):
+            self._bad_arg(meth, aname, "must be a string", type_error=True)
+        meth = meth.lower()
+        if meth not in self.SOLUTION_METHODS:
+            method_list = ", ".join(
+                [f"'{k}'={v}" for k, v in self.SOLUTION_METHODS.items()]
             )
-        print("\nParameter estimation method: ", self.solution_method)
+            self._bad_arg(meth, aname, f"not in known methods: {method_list}")
+        self.solution_method = meth
+        _log.info(f"Parameter estimation method: {self.solution_method}")
 
-        if basis_function is None:
-            basis_function = "gaussian"
-            self.basis_function = basis_function
-            print("Gaussian basis function is used.")
-        elif not isinstance(basis_function, str):
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception("Invalid basis_function. Must be of type <str>.")
-        elif (
-            (basis_function.lower() == "linear")
-            or (basis_function.lower() == "cubic")
-            or (basis_function.lower() == "gaussian")
-            or (basis_function.lower() == "mq")
-            or (basis_function.lower() == "imq")
-            or (basis_function.lower() == "spline")
-        ):
-            basis_function = basis_function.lower()
-            self.basis_function = basis_function
-        else:
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception(
-                "Invalid basis function entered. See manual for available options. "
+        bfunc, aname = basis_function, "basis_function"
+        if not isinstance(bfunc, str):
+            self._bad_arg(bfunc, aname, "must be a string", type_error=True)
+        bfunc = bfunc.lower()
+        if bfunc not in self.BASIS_FUNCTIONS:
+            bfunc_list = ", ".join(list(self.BASIS_FUNCTIONS))
+            self._bad_arg(bfunc, aname, f"not in known methods: {bfunc_list}")
+        self.basis_function = bfunc
+        _log.info(f"Basis function: {self.basis_function}")
+
+        if not isinstance(regularization, bool):
+            self._bad_arg(
+                regularization, "regularization", "must be boolean", type_error=True
             )
-        print("Basis function: ", self.basis_function)
-
-        if regularization is None:
-            regularization = True
-            self.regularization = regularization
-        elif not isinstance(regularization, bool):
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception("Invalid basis_function. Must be boolean")
-        elif (regularization is True) or (regularization is False):
-            self.regularization = regularization
-        print("Regularization done: ", self.regularization)
+        self.regularization = regularization
+        _log.info(f"Regularization done: {self.regularization}")
 
         # Results
         self.weights = None
@@ -375,6 +345,20 @@ class RadialBasisFunctions:
         self.y_data_min = None
         self.y_data_max = None
         self.solution_status = None
+
+    @staticmethod
+    def _bad_arg(arg, name: str, why: str, type_error: bool = False, show: bool = True):
+        """Utility function to normalize raising of type and value errors
+        encountered during argument validation.
+        """
+        _log.warning(
+            f"RadialBasisFunctions constructor:end "
+            f"status={'Type' if type_error else 'Value'}Error arg={name}"
+        )
+        s = f"argument '{name}' ({arg}) {why}" if show else f"argument '{name}' {why}"
+        if type_error:
+            raise TypeError(s)
+        raise ValueError(s)
 
     def r2_distance(self, c):
         """
@@ -1284,13 +1268,8 @@ class RadialBasisFunctions:
                 solution_file            : Pickle object file containing previous solution to be loaded.
 
         """
-        try:
-            filehandler = open(solution_file, "rb")
-            return pickle.load(filehandler)
-        except:
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception("File could not be loaded.")
+        filehandler = open(solution_file, "rb")
+        return pickle.load(filehandler)
 
     def parity_residual_plots(self):
         """
