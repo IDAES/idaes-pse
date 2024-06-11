@@ -13,6 +13,8 @@
 import sys
 import os
 from unittest.mock import patch
+from tempfile import TemporaryDirectory
+from pathlib import Path
 
 sys.path.append(os.path.abspath(".."))  # current folder is ~/tests\
 from idaes.core.surrogate.pysmo.radial_basis_function import (
@@ -24,6 +26,11 @@ import pandas as pd
 from scipy.spatial import distance
 import pytest
 from idaes.core.surrogate.pysmo.tests import logs_got_warning
+
+
+# Set a temporary directory for output
+_tmpdir = TemporaryDirectory()
+RadialBasisFunctions.output_dir = Path(_tmpdir.name)
 
 
 class TestFeatureScaling:
@@ -154,6 +161,7 @@ class TestFeatureScaling:
 
 
 class TestRadialBasisFunction:
+
     y = np.array(
         [
             [i, j, ((i + 1) ** 2) + ((j + 1) ** 2)]
@@ -182,15 +190,22 @@ class TestRadialBasisFunction:
         for keyword arguments, but instead explicitly tested for None in the body
         of the constructor. This may have (mis)led people to explicitly pass None
         as a value instead of not including keywords when they wanted the default value.
-        Since there are also explicit type-checks, fixing this behavior to be more normal
-        will break such code without keeping an explicit check for None.
+        Since there are also explicit type-checks, passing None for something that
+        should be a bool or string will fail with a TypeError.
 
-        So, this test makes sure the old `kw=None` interface still works until
-        such time as sanity prevails.
+        In other words, don't do this! If you want the default value, omit the keyword.
         """
         input_array = pd.DataFrame(self.test_data)
-        rbf = RadialBasisFunctions(input_array, basis_function=None, solution_method=None,
-                                   regularizatio=None)
+        with pytest.raises(TypeError):
+            RadialBasisFunctions(input_array, basis_function=None)
+        with pytest.raises(TypeError):
+            RadialBasisFunctions(input_array, solution_method=None)
+        with pytest.raises(TypeError):
+            RadialBasisFunctions(input_array, regularization=None)
+        with pytest.raises(TypeError):
+            RadialBasisFunctions(input_array, fname=None)
+        with pytest.raises(TypeError):
+            RadialBasisFunctions(input_array, overwrite=None)
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
@@ -354,8 +369,9 @@ class TestRadialBasisFunction:
             fname=file_name2,
             overwrite=True,
         )
-        assert rbf_class1.filename == file_name1
-        assert rbf_class2.filename == file_name2
+        # due to output_dir, compare basename instead of full path
+        assert os.path.basename(rbf_class1.filename) == file_name1
+        assert os.path.basename(rbf_class2.filename) == file_name2
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])

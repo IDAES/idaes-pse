@@ -14,6 +14,7 @@
 
 # Imports from the python standard library
 import os.path
+from pathlib import Path
 import pickle
 
 # Imports from third parties
@@ -200,6 +201,10 @@ class RadialBasisFunctions:
     #: known basis functions, see docs for details
     BASIS_FUNCTIONS = {"linear", "cubic", "gaussian", "mq", "imq", "spline"}
 
+    #: Set this if you want all instances producing output in a directory
+    #: other than the current working directory
+    output_dir: Path = None
+
     def __init__(
         self,
         XY_data,
@@ -217,6 +222,7 @@ class RadialBasisFunctions:
             XY_data (Numpy Array or Pandas Dataframe): The dataset for RBF training. **XY_data** is expected to contain feature and output information, with the output values (y) in the last column.
 
         Keyword Args:
+
             basis_function(str): The basis function transformation to be applied to the training data. Two classes of basis transformations are available for selection:
 
                 - Fixed basis transformations, which require no shape parameter :math:`\sigma` :
@@ -241,18 +247,9 @@ class RadialBasisFunctions:
             regularization(bool): This option determines whether or not the regularization parameter :math:`\lambda` is considered during RBF fitting. Default setting is True.
 
 
-        Returns:
-            **self** object with the input information
-
         Raises:
-            ValueError: The input dataset is of the wrong type (not a NumPy array or Pandas Dataframe)
+            TypeError or ValueError: The input dataset is of the wrong type (not a NumPy array or Pandas Dataframe)
 
-            Exception:
-                * **basis_function** entry is not valid.
-            Exception:
-                * **solution_method** is not 'algebraic', 'pyomo' or 'bfgs'.
-            Exception:
-                - :math:`\lambda` is not boolean.
 
         **Example:**
 
@@ -260,9 +257,14 @@ class RadialBasisFunctions:
 
             # Specify the gaussian basis transformation
             >>> d = RadialBasisFunctions(XY_data, basis_function='gaussian')
+            >>> e = RadialBasisFunctions(XY_data)  # equivalent to above, since gaussian is default
 
         """
         _log.info(f"RadialBasisFunctions constructor:begin")
+
+        # Use class-wide output directory or current directory if none is defined
+        output_dir = self.output_dir or Path(".")
+
         if not isinstance(overwrite, bool):
             self._bad_arg(overwrite, "overwrite", "must be boolean", type_error=True)
         self.overwrite = overwrite
@@ -272,17 +274,21 @@ class RadialBasisFunctions:
         if not fname.endswith(".pickle"):
             self._bad_arg(fname, "fname", "must have extension '.pickle'")
         # Explicit overwrite done by user
-        if os.path.exists(fname) and overwrite is True:
-            _log.warning(f"file '{fname}' exists, previous file will be overwritten")
-            self.filename = fname
-        elif os.path.exists(fname) and overwrite is False:  # User is not overwriting
-            self.filename = date_versioned_filename(fname)
-            _log.warning(
-                f"'{fname}' exists, results will be saved " f"to '{self.filename}'"
-            )
-            # self.filename = 'solution.pickle'
-        elif os.path.exists(fname) is False:
-            self.filename = fname
+        full_path = output_dir / fname
+        if full_path.exists():
+            if overwrite:
+                _log.warning(
+                    f"file '{full_path}' exists, previous file will be overwritten"
+                )
+                self.filename = str(full_path)
+            else:  # User is not overwriting
+                self.filename = date_versioned_filename(str(full_path))
+                _log.warning(
+                    f"'{full_path}' exists, results will be saved "
+                    f"to '{self.filename}'"
+                )
+        else:
+            self.filename = str(full_path)
 
         # Check data types and shapes
         if isinstance(XY_data, pd.DataFrame):
@@ -1163,7 +1169,8 @@ class RadialBasisFunctions:
 
         """
         t1 = np.array([variable_list], dtype="object")
-        # Reshaping of variable array is necessary when input variables are Pyomo scalar variables
+        # Reshaping of variable array is necessary when input variables are
+        # Pyomo scalar variables
         t1 = t1.reshape(1, len(variable_list)) if t1.ndim > 2 else t1
 
         basis_vector = []
@@ -1221,19 +1228,23 @@ class RadialBasisFunctions:
     def get_feature_vector(self):
         """
 
-        The ``get_feature_vector`` method generates the list of regression features from the column headers of the input dataset.
+        The ``get_feature_vector`` method generates the list of regression features
+        from the column headers of the input dataset.
 
         Returns:
-            Pyomo IndexedParam  : An indexed parameter list of the variables supplied in the original data
+            Pyomo IndexedParam  : An indexed parameter list of the variables supplied
+            in the original data
 
         **Example:**
 
         .. code-block:: python
 
-            # Create a small dataframe with three columns ('one', 'two', 'three') and two rows (A, B)
+            # Create a small dataframe with three columns ('one', 'two', 'three')
+            # and two rows (A, B)
             >>> xy_data = pd.DataFrame.from_items([('A', [1, 2, 3]), ('B', [4, 5, 6])], orient='index', columns=['one', 'two', 'three'])
 
-            # Initialize the **RadialBasisFunctions** class with a linear kernel and print the column headers for the variables
+            # Initialize the **RadialBasisFunctions** class with a linear kernel
+            # and print the column headers for the variables
             >>> f = RadialBasisFunctions(xy_data, basis_function='linear')
             >>> p = f.get_feature_vector()
             >>> for i in p.keys():
@@ -1261,12 +1272,11 @@ class RadialBasisFunctions:
 
     @staticmethod
     def pickle_load(solution_file):
-        """
-        pickle_load loads the results of a saved run 'file.obj'.
+        """Loads the results of a saved run 'file.obj'.
 
-        Input arguments:
-                solution_file            : Pickle object file containing previous solution to be loaded.
-
+        ArgsL
+                solution_file: Pickle object file containing previous solution
+                               to be loaded.
         """
         filehandler = open(solution_file, "rb")
         return pickle.load(filehandler)
