@@ -23,6 +23,7 @@ import numpy as np
 import pandas as pd
 from scipy.spatial import distance
 import pytest
+from idaes.core.surrogate.pysmo.tests import logs_got_warning
 
 
 class TestFeatureScaling:
@@ -1923,7 +1924,7 @@ class TestRadialBasisFunction:
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
-    def test_rbf_training_02(self, array_type):
+    def test_rbf_training_02(self, array_type, caplog):
         input_array = array_type(self.test_data)
         data_feed = RadialBasisFunctions(
             input_array,
@@ -1932,13 +1933,14 @@ class TestRadialBasisFunction:
             regularization=False,
         )
         data_feed.training()
-        with pytest.warns(Warning):
-            results = data_feed.training()
-            assert data_feed.solution_status == "unstable solution"
+
+        results = data_feed.training()
+        assert data_feed.solution_status == "unstable solution"
+        assert logs_got_warning(caplog.records)
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
-    def test_rbf_training_03(self, array_type):
+    def test_rbf_training_03(self, array_type, caplog):
         input_array = array_type(self.test_data)
         data_feed = RadialBasisFunctions(
             input_array,
@@ -1947,9 +1949,9 @@ class TestRadialBasisFunction:
             regularization=False,
         )
         data_feed.training()
-        with pytest.warns(Warning):
-            data_feed.training()
-            assert data_feed.solution_status == "unstable solution"
+        data_feed.training()
+        assert data_feed.solution_status == "unstable solution"
+        assert logs_got_warning(caplog.records)
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])

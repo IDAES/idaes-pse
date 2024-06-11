@@ -10,15 +10,10 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-# TODO: Missing doc strings
-# pylint: disable=missing-module-docstring
-# pylint: disable=missing-function-docstring
-
 # pylint: disable=consider-using-enumerate
 
 # Imports from the python standard library
 import os.path
-import warnings
 import pickle
 
 # Imports from third parties
@@ -43,8 +38,14 @@ from pyomo.environ import (
 
 # Imports from IDAES namespace
 from idaes.core.surrogate.pysmo.sampling import FeatureScaling as fs
+from idaes.core.surrogate.pysmo.utils import date_versioned_filename
+from idaes.logger import getIdaesLogger
 
 __author__ = "Oluwamayowa Amusat"
+
+# Logging
+_log = getIdaesLogger(__name__, tag="surrogate")
+
 
 """
 The purpose of this file is to perform radial basis functions in Pyomo.
@@ -271,26 +272,13 @@ class RadialBasisFunctions:
         if (
             os.path.exists(fname) and overwrite is True
         ):  # Explicit overwrite done by user
-            print(
-                "Warning:",
-                fname,
-                "already exists; previous file will be overwritten.\n",
-            )
+            _log.warning(f"file '{fname}' exists; "
+                         f"previous file will be overwritten")
             self.filename = fname
         elif os.path.exists(fname) and overwrite is False:  # User is not overwriting
-            self.filename = (
-                os.path.splitext(fname)[0]
-                + "_v_"
-                + pd.Timestamp.today().strftime("%m-%d-%y_%H%M%S")
-                + ".pickle"
-            )
-            print(
-                "Warning:",
-                fname,
-                'already exists; results will be saved to "',
-                self.filename,
-                '".\n',
-            )
+            self.filename = date_versioned_filename(fname)
+            _log.warning(f"'{fname}' exists, results will be saved "
+                         f"to '{self.filename}'")
             # self.filename = 'solution.pickle'
         elif os.path.exists(fname) is False:
             self.filename = fname
@@ -1105,7 +1093,7 @@ class RadialBasisFunctions:
         if x_condition_number < (1 / np.finfo(float).eps):
             self.solution_status = "ok"
         else:
-            warnings.warn(
+            _log.warning(
                 "The parameter matrix A in A.x=B is ill-conditioned (condition number > 1e10). The solution returned may be inaccurate or unstable - inspect rmse error. Regularization (if not already done) may improve solution"
             )
             self.solution_status = "unstable solution"

@@ -29,6 +29,9 @@
 
 __author__ = "Oluwamayowa Amusat, John Siirola"
 
+from datetime import datetime
+import os
+
 from pyomo.core import expr as EXPR, native_types
 from pyomo.core.expr.numvalue import value
 
@@ -98,3 +101,17 @@ class NumpyEvaluator(EXPR.StreamBasedExpressionVisitor):
         # Assume everything else is a constant...
         #
         return False, value(child)
+
+
+def date_versioned_filename(fname: str, usec: bool = False) -> str:
+    """Create versioned filename using current date.
+    If 'usec' is True, precision is microseconds, otherwise seconds.
+    """
+    base_fname = os.path.splitext(fname)[0]
+    now = datetime.now()
+    if usec:
+        date_str = now.isoformat("_", "microseconds").replace(".", "_")
+    else:
+        date_str = now.isoformat("_", "seconds")
+    date_str = date_str.replace(":", "")
+    return f"{base_fname}_v_{date_str}.pickle"

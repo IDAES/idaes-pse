@@ -18,13 +18,14 @@ from idaes.core.surrogate.pysmo.polynomial_regression import (
     PolynomialRegression,
     FeatureScaling,
 )
+from idaes.core.surrogate.pysmo.tests import logs_got_warning
 import numpy as np
 import pandas as pd
 import pytest
-from idaes import logger as idaes_logger
+import logging
 
-# Turn down the logging during the test
-polynomial_regression.set_log_level(idaes_logger.ERROR)
+# you're killing me, Smalls
+logging.getLogger("idaes").handlers = []
 
 
 class TestFeatureScaling:
@@ -242,7 +243,7 @@ class TestPolynomialRegression:
     def test__init__03(self, array_type1, array_type2):
         original_data_input = array_type1(self.test_data)
         regression_data_input = array_type2(self.sample_points)
-        with pytest.raises(ValueError):
+        with pytest.raises((TypeError, ValueError)):
             PolyClass = PolynomialRegression(
                 original_data_input, regression_data_input, maximum_polynomial_order=5
             )
@@ -253,8 +254,8 @@ class TestPolynomialRegression:
     def test__init__04(self, array_type1, array_type2):
         original_data_input = array_type1(self.test_data)
         regression_data_input = array_type2(self.sample_points)
-        with pytest.raises(ValueError):
-            PolyClass = PolynomialRegression(
+        with pytest.raises((TypeError, ValueError)):
+            PolynomialRegression(
                 original_data_input, regression_data_input, maximum_polynomial_order=5
             )
 
@@ -306,27 +307,19 @@ class TestPolynomialRegression:
     @pytest.mark.parametrize("array_type1", [np.array, pd.DataFrame])
     @pytest.mark.parametrize("array_type2", [np.array, pd.DataFrame])
     def test__init__09(self, array_type1, array_type2, caplog):
+        polynomial_regression.set_log_level(logging.WARNING)
         original_data_input = array_type1(self.test_data)
         regression_data_input = array_type2(self.sample_points)
-        #with pytest.warns(Warning):
-        with caplog.at_level(idaes_logger.WARNING):
-            PolyClass = PolynomialRegression(
-                original_data_input,
-                regression_data_input,
-                maximum_polynomial_order=5,
-                number_of_crossvalidations=11,
-            )
-            assert (
+        PolyClass = PolynomialRegression(
+            original_data_input,
+            regression_data_input,
+            maximum_polynomial_order=5,
+            number_of_crossvalidations=11,
+        )
+        assert (
                 PolyClass.number_of_crossvalidations == 11
             )  # Default number of cross-validations
-            got_warning = False
-            print("@@ printing records")
-            for record in caplog.records:
-                print(f"@@ record={record}")
-                if record.levelname == "WARNING" and "cross-validations" in record.message:
-                    got_warning = True
-                    break
-            assert got_warning
+        assert logs_got_warning(caplog.records, "cross-validations")
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type1", [np.array, pd.DataFrame])
@@ -342,14 +335,14 @@ class TestPolynomialRegression:
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type1", [np.array, pd.DataFrame])
     @pytest.mark.parametrize("array_type2", [np.array, pd.DataFrame])
-    def test__init__11(self, array_type1, array_type2):
+    def test__init__11(self, array_type1, array_type2, caplog):
         original_data_input = array_type1(self.test_data_large)
         regression_data_input = array_type2(self.sample_points_large)
-        with pytest.warns(Warning):
-            PolyClass = PolynomialRegression(
-                original_data_input, regression_data_input, maximum_polynomial_order=11
-            )
-            assert PolyClass.max_polynomial_order == 10
+        PolyClass = PolynomialRegression(
+            original_data_input, regression_data_input, maximum_polynomial_order=11
+        )
+        assert PolyClass.max_polynomial_order == 10
+        assert logs_got_warning(caplog.records, "polynomial order")
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type1", [np.array, pd.DataFrame])
@@ -2234,6 +2227,7 @@ class TestPolynomialRegression:
             opt_wts + tval * expected_stderror,
             atol=1e-3,
         )
+
 
 
 if __name__ == "__main__":

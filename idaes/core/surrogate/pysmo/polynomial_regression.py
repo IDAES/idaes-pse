@@ -33,6 +33,7 @@ The Pyomo optimization approach is enabled as the default at this time.
 
 import os.path
 import pickle
+from typing import Union
 
 # Imports from third parties
 from matplotlib import pyplot as plt
@@ -57,7 +58,7 @@ from pyomo.environ import (
 from pyomo.core.expr.visitor import replace_expressions
 
 # Imports from IDAES namespace
-from idaes.core.surrogate.pysmo.utils import NumpyEvaluator
+from idaes.core.surrogate.pysmo.utils import NumpyEvaluator, date_versioned_filename
 from idaes.logger import getIdaesLogger
 
 __author__ = "Oluwamayowa Amusat"
@@ -188,22 +189,30 @@ class PolynomialRegression:
 
     """
 
-    MAX_POLY = 10  # maximum polynomial order
+    #: maximum of maximum polynomial order
+    MAX_MAXPOLY = 10
+
+    #: known solution methods for argument 'solution_method'
+    SOLUTION_METHODS = {
+        "mle": "maximum likelihood",
+        "bfgs": "BFGS",
+        "pyomo": "Pyomo optimization",
+    }
 
     def __init__(
         self,
-        original_data_input,
-        regression_data_input,
-        maximum_polynomial_order,
-        number_of_crossvalidations=None,
-        no_adaptive_samples=None,
-        training_split=None,
-        max_fraction_training_samples=None,
-        max_iter=None,
-        solution_method=None,
-        multinomials=None,
-        fname=None,
-        overwrite=False,
+        original_data_input: Union[pd.DataFrame, np.ndarray],
+        regression_data_input: Union[pd.DataFrame, np.ndarray],
+        maximum_polynomial_order: int,
+        number_of_crossvalidations: int = 3,
+        no_adaptive_samples: int = 4,
+        training_split: float = 0.75,
+        max_fraction_training_samples: float = 0.5,
+        max_iter: int = None,
+        solution_method: str = "pyomo",
+        multinomials: int = 1,
+        fname: str = "solution.pickle",
+        overwrite: bool = False,
     ):
         """
         Initialization of PolynomialRegression class.
@@ -226,88 +235,53 @@ class PolynomialRegression:
 
             multinomials(bool):  This option determines whether or not multinomial terms are considered during polynomial fitting. Takes 0 for No and 1 for Yes. Default = 1.
 
-        Returns:
-            **self** object containing all the input information.
-
         Raises:
-            ValueError:
-                - The input datasets (**original_data_input** or **regression_data_input**) are of the wrong type (not Numpy arrays or Pandas Dataframes)
-
-            Exception:
-                * **maximum_polynomial_order** is not a positive, non-zero integer or **maximum_polynomial_order** is higher than the number of training samples available
-            Exception:
-                * **solution_method** is not 'mle', 'pyomo' or 'bfgs
-            Exception:
-                - **multinomials** is not binary (0 or 1)
-            Exception:
-                - **training_split** is not between 0 and 1
-            Exception:
-                - **number_of_crossvalidations** is not a positive, non-zero integer
-            Exception:
-                - **max_fraction_training_samples** is not between 0 and 1
-            Exception:
-                - **no_adaptive_samples** is not a positive, non-zero integer
-            Exception:
-                - **max_iter** is not a positive, non-zero integer
-
-            warnings.warn:
-                - When the number of cross-validations is too high, i.e. number_of_crossvalidations > 10
+            TypeError: if inputs are of the wrong type
+            ValueError: if any of the below is true
+                - The input datasets (original_data_input or regression_data_input)
+                  are of the wrong type (not Numpy arrays or Pandas Dataframes)
+                - `maximum_polynomial_order` is not a positive, non-zero integer or
+                  is more than the number of available training samples
+                - `solution_method` is not one of the keys in `SOLUTION_METHODS`
+                - `multinomials` is not binary (0 or 1)
+                - `training_split` is not between 0 and 1
+                - `number_of_crossvalidations` is not positive
+                - `max_fraction_training_samples` is not between 0 and 1
+                - `no_adaptive_samples` is not positive
+                - `max_iter` is not positive
         """
+        _log.info("PolynomialRegression constructor:begin")
 
-        # print(
-        #     "\n===========================Polynomial Regression===============================================\n"
-        # )
-        _log.info("Polynomial Regression (begin)")
-        # Checks if fname is provided or exists in the path
         if not isinstance(overwrite, bool):
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception("overwrite must be boolean.")
+            raise ValueError("overwrite must be boolean")
         self.overwrite = overwrite
-        if fname is None:
-            fname = "solution.pickle"
-            self.filename = "solution.pickle"
-        elif (
-            not isinstance(fname, str)
-            or os.path.splitext(fname)[-1].lower() != ".pickle"
-        ):
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception(
-                'fname must be a string with extension ".pickle". Please correct.'
-            )
+
+        if not isinstance(fname, str):
+            raise ValueError("'fname' argument must be a str")
+        if not fname.endswith(".pickle"):
+            raise ValueError("'fname' argument must have extension '.pickle'")
         if (
             os.path.exists(fname) and overwrite is True
         ):  # Explicit overwrite done by user
-            _log.warning(
-                f"Warning: '{fname}' exists, previous file will be overwritten"
-            )
+            _log.warning(f"'{fname}' exists, previous file will be overwritten")
             self.filename = fname
         elif os.path.exists(fname) and overwrite is False:  # User is not overwriting
-            self.filename = (
-                os.path.splitext(fname)[0]
-                + "_v_"
-                + pd.Timestamp.today().strftime("%m-%d-%y_%H%M%S")
-                + ".pickle"
-            )
-            _log.warning(
-                f"Warning: '{fname}' exists, "
-                f"results will be saved to {self.filename}"
-            )
-            # self.filename = 'solution.pickle'
+            self.filename = date_versioned_filename(fname)
+            _log.warning(f"'{fname}' exists, saving to '{self.filename}'")
         elif os.path.exists(fname) is False:
             self.filename = fname
 
         if isinstance(original_data_input, pd.DataFrame):
             original_data = original_data_input.values
-            # FIXME: if we add an option to specify the response column, this needs to change
+            # FIXME: if we add an option to specify the response column,
+            #  this needs to change
             self.regression_data_columns = list(original_data_input.columns)[:-1]
         elif isinstance(original_data_input, np.ndarray):
             original_data = original_data_input
             self.regression_data_columns = list(range(original_data_input.shape[1] - 1))
         else:
-            raise ValueError(
-                "original_data_input: Pandas dataframe or numpy array required."
+            raise TypeError(
+                "'original_data_input' must be Pandas dataframe or numpy ndarray"
             )
 
         if isinstance(regression_data_input, pd.DataFrame):
@@ -315,89 +289,82 @@ class PolynomialRegression:
         elif isinstance(regression_data_input, np.ndarray):
             regression_data = regression_data_input
         else:
-            raise ValueError(
-                "regression_data_input: Pandas dataframe or numpy array required."
+            raise TypeError(
+                "'regression_data_input' must be Pandas dataframe or numpy ndarray"
             )
 
         # Check for potential dimensionality problems in input data
         if regression_data.shape[0] > original_data.shape[0]:
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception(
-                "The sampled data has more entries than the original dataset."
+            raise ValueError(
+                "Sampled data in 'regression_data_input' has more entries "
+                "than original data in 'original_data_input'"
             )
-        elif regression_data.shape[1] != original_data.shape[1]:
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception(
-                "Dimensional discrepancies in the dimensions of the original and regression datasets."
+        if regression_data.shape[1] != original_data.shape[1]:
+            raise ValueError(
+                "Sampled data in 'regression_data_input' has different "
+                "dimensions than original data in 'original_data_input'"
             )
-        elif (regression_data.shape[1] == 1) or (original_data.shape[1] == 1):
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception(
-                "Input data requires at least two dimensions (X and Y data)."
+        if (regression_data.shape[1] == 1) or (original_data.shape[1] == 1):
+            raise ValueError(
+                "Input data requires at least two dimensions (X and Y data)"
             )
 
         self.original_data = original_data
         self.regression_data = regression_data
 
-        num_cross = number_of_crossvalidations
-        if num_cross is None:
-            num_cross = 3
-            _log.info(f"Use default number of cross-validations: {num_cross}")
-        elif num_cross > 10:
-            msg = (
-                f"The number of cross-validations ({num_cross}) is large. "
-                f"The simulation may take a while to run"
+        ncross, aname = number_of_crossvalidations, "number_of_crossvalidations"
+        if not isinstance(ncross, int):
+            self._bad_arg(ncross, aname, "must be an integer", type_error=True)
+        if ncross <= 0:
+            self._bad_arg(ncross, aname, "must be > 0")
+        if ncross > 10:
+            _log.warning(
+                f"Number of cross-validations ({ncross}) "
+                f"is large, the simulation may take a while to run"
             )
-            # warnings.warn(msg)
-            _log.warning(msg)
-        self.number_of_crossvalidations = num_cross
+        self.number_of_crossvalidations = number_of_crossvalidations
 
-        max_poly = maximum_polynomial_order
+        max_poly, aname = maximum_polynomial_order, "maximum_polynomial_order"
         if not isinstance(max_poly, int):
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception("Maximum polynomial order must be an integer")
-        elif max_poly > self.MAX_POLY:
-            msg = (
+            self._bad_arg(max_poly, aname, "must be an integer", type_error=True)
+        if max_poly <= 0:
+            self._bad_arg(max_poly, aname, "must be > 0")
+        if max_poly > self.MAX_MAXPOLY:
+            _log.warning(
                 f"Maximum polynomial order value ({max_poly})"
-                f"reduced maximum allowed ({self.MAX_POLY})"
+                f"reduced to maximum allowed ({self.MAX_MAXPOLY})"
             )
-            # warnings.warn(msg)
-            _log.warning(msg)
-            max_poly = 10
+            max_poly = self.MAX_MAXPOLY
+        if max_poly >= regression_data.shape[0]:
+            self._bad_arg(
+                max_poly, aname, "too high for the number of samples supplied"
+            )
         self.max_polynomial_order = max_poly
 
         self.number_of_x_vars = regression_data.shape[1] - 1
 
-        if training_split is None:
-            _log.warning("The default training/cross-validation split of 0.75 is used.")
-            training_split = 0.75
-        elif training_split >= 1 or training_split <= 0:
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception(
-                "Fraction of samples used for training must be between 0 and 1"
-            )
+        if not (0 < training_split < 1):
+            self._bad_arg(training_split, "training_split", "must be between 0 and 1")
         self.fraction_training = training_split
 
-        if no_adaptive_samples is None:
-            no_adaptive_samples = 4
-        self.no_adaptive_samples = no_adaptive_samples
+        samp, aname = no_adaptive_samples, "no_adaptive_samples"
+        if not isinstance(samp, int):
+            self._bad_arg(samp, aname, "must be an integer", type_error=True)
+        if samp < 0:
+            self._bad_arg(samp, aname, "must be positive")
+        self.no_adaptive_samples = samp
 
         self.number_of_samples = regression_data.shape[0]
 
-        if max_fraction_training_samples is None:
-            max_fraction_training_samples = 0.5
-        elif max_fraction_training_samples > 1 or max_fraction_training_samples < 0:
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception(
-                "The fraction for the maximum number of training samples must be between 0 and 1"
+        if not (0 <= max_fraction_training_samples <= 1):
+            self._bad_arg(
+                max_fraction_training_samples,
+                "max_fraction_training_samples",
+                "must be between 0 and 1",
             )
         self.max_fraction_training_samples = max_fraction_training_samples
+
+        aname = "max_iter"
 
         if (regression_data.shape[0] < original_data.shape[0]) and max_iter is None:
             max_iter = 10
@@ -405,76 +372,31 @@ class PolynomialRegression:
             regression_data.shape[0] == original_data.shape[0]
             or no_adaptive_samples == 0
         ):
-            _log.warning("No iterations will be run.")
+            _log.warning("No iterations will be run")
             max_iter = 0
+        if not isinstance(max_iter, int):
+            self._bad_arg(max_iter, aname, "must be an integer", type_error=True)
+        if max_iter < 0:
+            self._bad_arg(max_iter, aname, "must be positive")
         self.max_iter = max_iter
 
-        # Ensure all other key variables are integers
-        if not isinstance(self.number_of_crossvalidations, int):
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception("Number of cross-validations must be an integer")
-        elif not isinstance(self.no_adaptive_samples, int):
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception("Number of adaptive samples must be an integer")
-        elif not isinstance(self.max_iter, int):
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception("Maximum number of iterations must be an integer")
-        elif self.max_polynomial_order >= regression_data.shape[0]:
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception(
-                "max_polynomial_order too high for the number of samples supplied"
+        meth, aname = solution_method.lower(), "solution_method"
+        if not isinstance(meth, str):
+            self._bad_arg(meth, aname, "must be a string", type_error=True)
+        if meth not in self.SOLUTION_METHODS:
+            method_list = ", ".join(
+                [f"'{k}'={v}" for k, v in self.SOLUTION_METHODS.items()]
             )
-
-        if (self.max_polynomial_order <= 0) or (self.number_of_crossvalidations <= 0):
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception(
-                "maximum_polynomial_order and number_of_crossvalidations must be positive, non-zero integers"
-            )
-        elif (self.no_adaptive_samples < 0) or (self.max_iter < 0):
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception("no_adaptive_samples and max_iter must be positive")
-
-        if solution_method is None:
-            solution_method = "pyomo"
-            self.solution_method = solution_method
-            _log.warning("Using default parameter estimation method")
-        elif not isinstance(solution_method, str):
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception("Invalid solution method. Must be of type <str>.")
-        elif (
-            (solution_method.lower() == "mle")
-            or (solution_method.lower() == "pyomo")
-            or (solution_method.lower() == "bfgs")
-        ):
-            solution_method = solution_method.lower()
-            self.solution_method = solution_method
-        else:
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception(
-                'Invalid parameter estimation method entered. Select one of maximum likelihood (solution_method="mle"), Pyomo optimization (solution_method="pyomo") or BFGS (solution_method="bfgs") methods. '
-            )
+            self._bad_arg(meth, aname, f"not in known methods: {method_list}")
+        self.solution_method = meth
         _log.info(f"Parameter estimation method: {self.solution_method}")
 
-        if multinomials is None:
-            self.multinomials = 1
-        elif multinomials == 1:
-            self.multinomials = 1
-        elif multinomials == 0:
-            self.multinomials = 0
-        else:
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception(
-                'Multinomial must be binary: input "1" for "Yes" and "0" for "No". '
-            )
+        aname = "multinomials"
+        if not isinstance(multinomials, int):
+            self._bad_arg(multinomials, aname, "must be an integer", type_error=True)
+        if multinomials not in (0, 1):
+            self._bad_arg(multinomials, aname, "must be 0 (no) or 1 (yes)")
+        self.multinomials = multinomials
 
         self.feature_list = []
         self.additional_term_expressions = []
@@ -491,6 +413,23 @@ class PolynomialRegression:
         self.dataframe_of_optimal_weights_extra_terms = None
         self.extra_terms_feature_vector = None
         self.fit_status = None
+
+        _log.info("PolynomialRegression constructor:end status=OK")
+
+    @staticmethod
+    def _bad_arg(arg, name: str, why: str, type_error: bool = False, show: bool = True):
+        """Utility function to normalize raising of type and value errors
+        encountered during argument validation.
+        """
+        _log.warning(
+            f"PolynomialRegression constructor:end "
+            f"status={'Type' if type_error else 'Value'}Error arg={name}"
+        )
+        s = f"argument '{name}' ({arg}) {why}" if show else f"argument '{name}' {why}"
+        if type_error:
+            raise TypeError(s)
+        raise ValueError(s)
+
 
     @staticmethod
     def _format_model_perf(order, mae_error, mse_error, r_square, r_square_adj=None):
@@ -534,13 +473,9 @@ class PolynomialRegression:
         cross_val_data = {}
         num_training = int(np.around(self.number_of_samples * self.fraction_training))
         if num_training == 0:
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception("The inputted of fraction_training is too low.")
+            raise ValueError("The inputted of fraction_training is too low.")
         elif num_training == self.number_of_samples:
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception("The inputted of fraction_training is too high.")
+            raise ValueError("The inputted of fraction_training is too high.")
         for i in range(1, self.number_of_crossvalidations + 1):
             np.random.seed(i)
             if additional_features is None:
@@ -1153,10 +1088,11 @@ class PolynomialRegression:
                     i
                 ].values
             else:
-                # PYLINT-TODO
-                # pylint: disable-next=broad-exception-raised
-                raise Exception(
-                    "Wrong data dimensions or type - additional_regression_features contain 1-D vectors, have same number of entries as regression_data and be of type pd.Series, pd.Dataframe or np.ndarray."
+                raise ValueError(
+                    "Argument 'additional_regression_features' "
+                    "must contain 1-D vectors, have same number of entries as "
+                    "regression_data and be of type "
+                    "pd.Series, pd.Dataframe or np.ndarray."
                 )
         return additional_features_array
 
@@ -1305,11 +1241,11 @@ class PolynomialRegression:
                     )
                 ]
                 adaptive_samples = sorted_comparison_vector_unique[
-                    # pylint considers self.no_adaptive_samples to be None here
-                    # pylint: disable=invalid-unary-operand-type
+                    # pylint considers self.no_adaptive_samples to be None here ????
+                    # should-pylint: disable=invalid-unary-operand-type?
                     -self.no_adaptive_samples :,
                     :,
-                    # pylint: enable=invalid-unary-operand-type
+                    # should-pylint: enable=invalid-unary-operand-type
                 ]
                 self.regression_data = np.concatenate(
                     (self.regression_data, adaptive_samples), axis=0
@@ -1744,13 +1680,8 @@ class PolynomialRegression:
             An array of two elements, the setup (index[0]) and the results (index[1]).
 
         """
-        try:
-            filehandler = open(solution_file, "rb")
-            return pickle.load(filehandler)
-        except:
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception("File could not be loaded.")
+        filehandler = open(solution_file, "rb")
+        return pickle.load(filehandler)
 
     def parity_residual_plots(self):
         """
