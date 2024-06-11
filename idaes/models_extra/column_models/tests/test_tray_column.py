@@ -41,9 +41,9 @@ import idaes.core.util.scaling as iscale
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-# TODO: Linear presolve fails for some reason when scaling is applied.
-# Need to investigate once new scaling tools are available.
-solver = get_solver(writer_config={"linear_presolve": False})
+# TODO: Fails to converge with IPOPT_v2 for unknown reasons.
+# Column model is known to have issues, so for not use old IPOPT interface.
+solver = get_solver("ipopt")
 
 
 @pytest.mark.unit
