@@ -10,13 +10,6 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-# TODO: Missing doc strings
-# pylint: disable=missing-module-docstring
-# pylint: disable=missing-class-docstring
-# pylint: disable=missing-function-docstring
-
-# TODO: Look into protected access issues
-# pylint: disable=protected-access
 
 # stdlib
 import io
@@ -44,12 +37,11 @@ from idaes.core.util import to_json
 
 
 __author__ = "Oluwamayowa Amusat"
+
 # Logging
-# -------
 _log = idaeslog.getLogger(__name__)
 
 # Global variables
-# ----------------
 GLOBAL_FUNCS = {"sin": sin, "cos": cos, "log": log, "exp": exp}
 
 
@@ -246,7 +238,7 @@ class PysmoPolyTrainer(PysmoTrainer):
     CONFIG.declare(
         "maximum_polynomial_order",
         ConfigValue(
-            default=None,
+            default=10,
             domain=PositiveInt,
             description="Maximum order of univariate terms. Maximum value is 10.",
         ),
@@ -271,7 +263,7 @@ class PysmoPolyTrainer(PysmoTrainer):
     CONFIG.declare(
         "solution_method",
         ConfigValue(
-            default=None,
+            default="pyomo",
             domain=In(["pyomo", "mle", "bfgs"]),
             description="Method for solving regression problem. Must be one of the options ['pyomo', 'mle', 'bfgs']. ",
         ),
@@ -280,7 +272,7 @@ class PysmoPolyTrainer(PysmoTrainer):
     CONFIG.declare(
         "multinomials",
         ConfigValue(
-            default=False,
+            default=True,
             domain=Bool,
             description="Option for bi-variate pairwise terms in final polynomial",
         ),

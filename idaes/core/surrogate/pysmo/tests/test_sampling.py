@@ -28,6 +28,7 @@ from idaes.core.surrogate.pysmo.sampling import (
     SamplingMethods,
     FeatureScaling,
 )
+from idaes.core.surrogate.pysmo.tests import logs_got_warning
 
 
 class TestFeatureScaling:

@@ -10,12 +10,7 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-# TODO: Missing doc strings
-# pylint: disable=missing-module-docstring
-# pylint: disable=missing-class-docstring
-# pylint: disable=missing-function-docstring
 
-import warnings
 import itertools
 
 import numpy as np
@@ -79,9 +74,7 @@ class FeatureScaling:
 
     @staticmethod
     def data_unscaling_minmax(x_scaled, x_min, x_max):
-        """
-
-        This function performs column-wise un-scaling on the a minmax-scaled input dataset.
+        """Perform column-wise un-scaling on the a minmax-scaled input dataset.
 
             Args:
                 x_scaled(NumPy Array): The input data set to be un-scaled. Data values should be between 0 and 1.
@@ -101,27 +94,6 @@ class FeatureScaling:
             raise IndexError("Dimensionality problems with data for un-scaling.")
         unscaled_data = x_min + x_scaled * (x_max - x_min)
         return unscaled_data
-
-    # @staticmethod
-    # def data_scaling_standardization(data):
-    #     # Confirm that data type is an array or DataFrame
-    #     if isinstance(data, np.ndarray):
-    #         input_data = data
-    #     elif isinstance(data, pd.DataFrame):
-    #         input_data = data.values
-    #     else:
-    #         raise TypeError('original_data_input: Pandas dataframe or numpy array required.')
-    #
-    #     if input_data.ndim == 1:
-    #         input_data = input_data.reshape(len(input_data), 1)
-    #
-    #     data_mean = np.mean(input_data, axis=0)
-    #     data_stdev = np.std(input_data, axis=0)
-    #     scaled_data = (input_data - data_mean) / data_stdev
-    #     data_mean = data_mean.reshape(1, data_mean.shape[0])
-    #     data_stdev = data_stdev.reshape(1, data_stdev.shape[0])
-    #     return scaled_data, data_mean, data_stdev
-
 
 class SamplingMethods:
     def nearest_neighbour(self, full_data, a):
@@ -185,12 +157,14 @@ class SamplingMethods:
 
             unique_sample_points = np.unique(points_closest_unscaled, axis=0)
             if unique_sample_points.shape[0] < points_closest_unscaled.shape[0]:
-                warnings.warn(
-                    "The returned number of samples is less than the requested number due to repetitions during nearest neighbour selection."
+                _log.warning(
+                    "The returned number of samples is less than "
+                    "the requested number due to repetitions during "
+                    "nearest neighbour selection."
                 )
-            print(
-                "\nNumber of unique samples returned by sampling algorithm:",
-                unique_sample_points.shape[0],
+            _log.info(
+                f"Number of unique samples returned by sampling algorithm: "
+                f"{unique_sample_points.shape[0]}"
             )
 
         elif sampling_type == "creation":
@@ -393,7 +367,7 @@ class SamplingMethods:
                     warn_str = "The following columns were dropped: " + str(
                         dropped_cols
                     )
-                    warnings.warn(warn_str)
+                    _log.warning(warn_str)
                 self.x_data = data_input.filter(xlabels).values
                 self.data_headers = set_of_labels
                 self.data_headers_xvars = xlabels
@@ -453,7 +427,7 @@ class SamplingMethods:
                     warn_str = "The following columns were dropped: " + str(
                         dropped_cols
                     )
-                    warnings.warn(warn_str)
+                    _log.warning(warn_str)
                 self.x_data = data_input[:, xlabels]
                 self.data_headers = set_of_labels
                 self.data_headers_xvars = xlabels
@@ -1033,10 +1007,10 @@ class HaltonSampling(SamplingMethods):
             self.x_data = bounds_array  # Only x data will be present in this case
 
         if self.x_data.shape[1] > 10:
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception(
-                "Dimensionality problem: This method is not available for problems with dimensionality > 10: the performance of the method degrades substantially at higher dimensions"
+            raise ValueError(
+                "Dimensionality problem: This method is not available for problems"
+                "with dimensionality > 10: the performance of the method degrades "
+                "substantially at higher dimensions"
             )
 
     def sample_points(self):
@@ -1218,14 +1192,16 @@ class HammersleySampling(SamplingMethods):
         if self.x_data.shape[1] > 10:
             # PYLINT-TODO
             # pylint: disable-next=broad-exception-raised
-            raise Exception(
-                "Dimensionality problem: This method is not available for problems with dimensionality > 10: the performance of the method degrades substantially at higher dimensions"
+            raise ValueError(
+                "Dimensionality problem: This method is not available for problems with "
+                "dimensionality > 10: the performance of the method degrades "
+                "substantially at higher dimensions"
             )
 
     def sample_points(self):
-        """
-        The **sampling_type** method generates the Hammersley sample points. The steps followed here are:
+        """Generate the Hammersley sample points.
 
+        The steps followed here are:
             1. Determine the number of features :math:`n_{f}` in the input data.
             2. Generate the list of :math:`\\left(n_{f}-1\\right)` primes to be considered by calling prime_number_generator.
             3. Divide the space [0,**number_of_samples**-1] into **number_of_samples** places to obtain the first dimension for the Hammersley sequence.
@@ -1234,7 +1210,7 @@ class HammersleySampling(SamplingMethods):
             6. When in "selection" mode, determine the closest corresponding point in the input dataset using Euclidean distance minimization. This is done by calling the ``nearest_neighbours`` method in the sampling superclass.
 
         Returns:
-            NumPy Array or Pandas Dataframe:     A numpy array or Pandas dataframe containing **number_of_samples** Hammersley sample points.
+            NumPy Array or Pandas Dataframe: A numpy array or Pandas dataframe containing **number_of_samples** Hammersley sample points.
 
         """
         no_features = self.x_data.shape[1]
@@ -1262,8 +1238,7 @@ class HammersleySampling(SamplingMethods):
 
 
 class CVTSampling(SamplingMethods):
-    """
-    A class that constructs Centroidal Voronoi Tessellation (CVT) samples.
+    """A class that constructs Centroidal Voronoi Tessellation (CVT) samples.
 
     CVT sampling is based on the generation of samples in which the generators of the Voronoi tessellations and the mass centroids coincide.
 
@@ -1289,8 +1264,8 @@ class CVTSampling(SamplingMethods):
         ylabels=None,
         rand_seed=None,
     ):
-        """
-        Initialization of CVTSampling class. Two inputs are required, while an optional option to control the solution accuracy may be specified.
+        """Constructor. Two inputs are required, while an optional option to
+        control the solution accuracy may be specified.
 
         Args:
             data_input (NumPy Array, Pandas Dataframe or list): The input data set or range to be sampled.
@@ -1309,9 +1284,6 @@ class CVTSampling(SamplingMethods):
 
                 - The smaller the value of tolerance, the better the solution but the longer the algorithm requires to converge. Default value is :math:`10^{-7}`.
 
-        Returns:
-                **self** function containing the input information.
-
 
         Raises:
                 ValueError: The input data (**data_input**) is the wrong type/dimension, or **number_of_samples** is invalid (too large, zero, or negative)
@@ -1323,8 +1295,6 @@ class CVTSampling(SamplingMethods):
                 IndexError: When invalid column names are supplied in **xlabels** or **ylabels**
 
                 Exception: When the tolerance specified is invalid
-
-                warnings.warn: when the tolerance specified by the user is too tight (tolerance < :math:`10^{-9}`)
 
         """
         if sampling_type is None:
@@ -1340,7 +1310,9 @@ class CVTSampling(SamplingMethods):
             self.sampling_type = sampling_type
         else:
             raise ValueError(
-                'Invalid sampling type requirement entered. Enter "creation" for sampling from a range or "selection" for selecting samples from a dataset.'
+                'Invalid sampling type requirement entered. '
+                'Enter "creation" for sampling from a range or "selection" for '
+                'selecting samples from a dataset.'
             )
         print("Sampling type: ", self.sampling_type, "\n")
 
@@ -1422,7 +1394,7 @@ class CVTSampling(SamplingMethods):
         elif tolerance > 0.1:
             raise ValueError("Tolerance must be less than 0.1 to achieve good results")
         elif tolerance < 1e-9:
-            warnings.warn(
+            _log.warning(
                 "Tolerance too tight. CVT algorithm may take long time to converge."
             )
         elif (tolerance < 0.1) and (tolerance > 1e-9):
@@ -1789,8 +1761,9 @@ class CustomSampling(SamplingMethods):
                     )
                     > 0
                 ):
-                    warnings.warn(
-                        "Points adjusted to remain within specified Gaussian bounds. This may affect the underlying distribution."
+                    _log.warning(
+                        "Points adjusted to remain within specified Gaussian bounds."
+                        "This may affect the underlying distribution."
                     )
                     out_locations = [
                         i

@@ -380,9 +380,10 @@ class PolynomialRegression:
             self._bad_arg(max_iter, aname, "must be positive")
         self.max_iter = max_iter
 
-        meth, aname = solution_method.lower(), "solution_method"
+        meth, aname = solution_method, "solution_method"
         if not isinstance(meth, str):
             self._bad_arg(meth, aname, "must be a string", type_error=True)
+        meth = meth.lower()
         if meth not in self.SOLUTION_METHODS:
             method_list = ", ".join(
                 [f"'{k}'={v}" for k, v in self.SOLUTION_METHODS.items()]
