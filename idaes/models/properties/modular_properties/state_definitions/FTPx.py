@@ -469,6 +469,8 @@ def state_initialization(b):
                 K = None
                 break
 
+    # Default is no initialization of VLE
+    vap_frac = None
     if init_VLE:
         raoult_init = False
         if tdew is not None and b.temperature.value > tdew:
@@ -490,9 +492,7 @@ def state_initialization(b):
                 l_only_comps,
                 v_only_comps + henry_conc + henry_other,
             )
-        else:
-            # No way to estimate phase fraction
-            vap_frac = None
+        # else: No way to estimate phase fraction, do nothing
 
     if vap_frac is not None:
         b.phase_frac[v_phase] = vap_frac

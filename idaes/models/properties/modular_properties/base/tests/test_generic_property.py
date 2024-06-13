@@ -25,6 +25,7 @@ from pyomo.environ import value, Block, ConcreteModel, Param, Set, Var, units as
 from pyomo.util.check_units import assert_units_equivalent
 
 from idaes.models.properties.modular_properties.base.generic_property import (
+    GenericParameterBlock,
     GenericParameterData,
     GenericStateBlock,
     _initialize_critical_props,
@@ -34,9 +35,11 @@ from idaes.models.properties.modular_properties.base.tests.dummy_eos import Dumm
 from idaes.core import (
     declare_process_block_class,
     Component,
+    FlowsheetBlock,
     Phase,
     LiquidPhase,
     VaporPhase,
+    MaterialBalanceType,
     MaterialFlowBasis,
     Solvent,
     PhaseType as PT,
@@ -47,6 +50,12 @@ from idaes.models.properties.modular_properties.eos.ceos import Cubic, CubicType
 from idaes.models.properties.modular_properties.state_definitions import FTPx
 from idaes.core.base.property_meta import UnitSet
 from idaes.core.initialization import BlockTriangularizationInitializer
+
+from idaes.models.properties.modular_properties.phase_equil.henry import HenryType
+from idaes.models.properties.modular_properties.examples.BT_ideal import (
+    configuration as BTconfig,
+)
+from idaes.models.unit_models.flash import Flash
 
 import idaes.logger as idaeslog
 
@@ -496,9 +505,9 @@ class TestGenericParameterBlock(object):
 
         assert isinstance(m.params.phase_equilibrium_list, dict)
         assert m.params.phase_equilibrium_list == {
-            "PE1": {"a": ("p1", "p2")},
-            "PE2": {"b": ("p1", "p2")},
-            "PE3": {"c": ("p1", "p2")},
+            "PE1": ["a", ("p1", "p2")],
+            "PE2": ["b", ("p1", "p2")],
+            "PE3": ["c", ("p1", "p2")],
         }
 
     @pytest.mark.unit
@@ -2015,3 +2024,23 @@ configuration = {
         }
     },
 }
+
+
+@pytest.mark.integration
+def test_phase_component_flash():
+    # Regression test for issue #1423
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+
+    m.fs.props = GenericParameterBlock(**BTconfig)
+
+    m.fs.flash = Flash(
+        property_package=m.fs.props,
+        material_balance_type=MaterialBalanceType.componentPhase,
+    )
+
+    assert m.fs.props.phase_equilibrium_list == {
+        "PE1": ["benzene", ("Vap", "Liq")],
+        "PE2": ["toluene", ("Vap", "Liq")],
+    }
+    assert isinstance(m.fs.flash, Flash)
