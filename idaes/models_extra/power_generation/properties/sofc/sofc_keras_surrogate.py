@@ -36,7 +36,7 @@ class SofcSurrogateData(UnitModelBlockData):
         self.current_density = Var(
             self.flowsheet().time,
             initialize=4000,
-            units=pyunits.A / pyunits.m**2,
+            units=pyunits.A / pyunits.m ** 2,
             bounds=[1500, 6000],
         )
 
@@ -145,8 +145,9 @@ class SofcSurrogateData(UnitModelBlockData):
             os.sep.join([path, "sofc_surrogate_data"])
         )
         import keras
+
         keras.layers.TFSMLayer("", call_endpoint="serving_default")
-        
+
         self.surrogate = SurrogateBlock()
         self.surrogate.build_model(
             keras_surrogate,
