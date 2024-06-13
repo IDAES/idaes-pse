@@ -35,7 +35,7 @@ from pyomo.environ import (
     Suffix,
     value,
 )
-from pyomo.core.base.param import _ParamData
+from pyomo.core.base.param import ParamData
 from pyomo.core.base.component import ComponentData
 
 _log = logging.getLogger(__name__)
@@ -256,7 +256,7 @@ class StoreSpec(object):
                     None,
                 ),
                 BooleanVar._ComponentDataClass: (("fixed", "stale", "value"), None),
-                _ParamData: (("value",), None),
+                ParamData: (("value",), None),
                 int: (("value",), None),
                 float: (("value",), None),
                 str: (("value",), None),
@@ -472,7 +472,7 @@ class StoreSpec(object):
                 data_classes={
                     Var._ComponentDataClass: (("value", "fixed"), _only_fixed),
                     BooleanVar._ComponentDataClass: (("value", "fixed"), _only_fixed),
-                    _ParamData: (("value",), None),
+                    ParamData: (("value",), None),
                     Constraint._ComponentDataClass: (("active",), None),
                     Block._ComponentDataClass: (("active",), None),
                 },
@@ -489,7 +489,7 @@ class StoreSpec(object):
                 data_classes={
                     Var._ComponentDataClass: (("value", "fixed"), None),
                     BooleanVar._ComponentDataClass: (("value", "fixed"), None),
-                    _ParamData: (("value",), None),
+                    ParamData: (("value",), None),
                     Constraint._ComponentDataClass: (("active",), None),
                     Block._ComponentDataClass: (("active",), None),
                 },
@@ -819,7 +819,7 @@ def _read_component(sd, o, wts, lookup=None, suffixes=None, root_name=None):
     if isinstance(o, Suffix):
         if wts.suffix_filter is None or oname in wts.suffix_filter:
             suffixes[odict["__id__"]] = odict["data"]  # is populated
-    else:  # read non-sufix component data
+    else:  # read non-suffix component data
         _read_component_data(odict["data"], o, wts, lookup=lookup, suffixes=suffixes)
 
 

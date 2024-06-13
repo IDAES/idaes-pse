@@ -36,6 +36,9 @@ equil = "equil"
 astroid = "astroid"
 # delt == delta
 delt = "delt"
+# Minimal Infeasible System
+mis = "mis"
+MIS = "MIS"
 # TEMPORARY - Remove after example update
 upadate = "upadate"
 

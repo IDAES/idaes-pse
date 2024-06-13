@@ -72,6 +72,7 @@ def test_register_idaes_currency_units():
         "USD_2019": 607.5,
         "USD_2020": 596.2,
         "USD_2021": 708.0,
+        "USD_2022": 816.0,
     }
 
     for c, conv in CEI.items():
