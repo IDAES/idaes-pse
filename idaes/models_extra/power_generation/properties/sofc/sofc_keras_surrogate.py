@@ -25,6 +25,11 @@ from idaes.core.surrogate.surrogate_block import SurrogateBlock
 
 import idaes.logger as idaeslog
 
+from pyomo.common.deprecation import deprecation_warning
+
+_log = idaeslog.getLogger(__name__)
+msg = "Tests for sofc_keras_surrogate.py have started failing.  The code will be removed no early than August if it is not fixed."
+deprecation_warning(msg=msg, logger=_log)
 
 path = os.path.dirname(os.path.abspath(__file__))
 
