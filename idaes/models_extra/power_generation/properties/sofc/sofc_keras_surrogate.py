@@ -144,6 +144,9 @@ class SofcSurrogateData(UnitModelBlockData):
         keras_surrogate = KerasSurrogate.load_from_folder(
             os.sep.join([path, "sofc_surrogate_data"])
         )
+        import keras
+        keras.layers.TFSMLayer("", call_endpoint="serving_default")
+        
         self.surrogate = SurrogateBlock()
         self.surrogate.build_model(
             keras_surrogate,
