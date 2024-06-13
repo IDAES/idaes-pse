@@ -36,7 +36,7 @@ class SofcSurrogateData(UnitModelBlockData):
         self.current_density = Var(
             self.flowsheet().time,
             initialize=4000,
-            units=pyunits.A / pyunits.m ** 2,
+            units=pyunits.A / pyunits.m**2,
             bounds=[1500, 6000],
         )
 
