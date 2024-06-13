@@ -29,7 +29,7 @@ from pyomo.common.deprecation import deprecation_warning
 
 _log = idaeslog.getLogger(__name__)
 msg = "Tests for sofc_keras_surrogate.py have started failing.  The code will be removed no early than August if it is not fixed."
-deprecation_warning(msg=msg, logger=_log)
+deprecation_warning(msg=msg, logger=_log, version="2.5.0", remove_in="3.0.0")
 
 path = os.path.dirname(os.path.abspath(__file__))
 
