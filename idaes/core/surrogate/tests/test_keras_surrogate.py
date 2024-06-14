@@ -95,7 +95,8 @@ def create_keras_model(name="T_data_1_10_10_2_sigmoid", return_keras_model_only=
 
     return keras_surrogate
 
-@pytest.mark.skipif(sys.version_info[:2] == (3,8), reason="Fails on Python 3.8")
+
+@pytest.mark.skipif(sys.version_info[:2] == (3, 8), reason="Fails on Python 3.8")
 @pytest.mark.unit
 def test_KerasSurrogate_construction_exceptions():
     keras_model = create_keras_model(name="T_data_1_10_10_2_sigmoid")
@@ -159,7 +160,8 @@ def test_KerasSurrogate_construction_exceptions():
         "input_labels: ['Temperature_K']"
     )
 
-@pytest.mark.skipif(sys.version_info[:2] == (3,8), reason="Fails on Python 3.8")
+
+@pytest.mark.skipif(sys.version_info[:2] == (3, 8), reason="Fails on Python 3.8")
 @pytest.mark.unit
 def test_keras_evaluate():
     x = pd.DataFrame({"Temperature_K": [365, 370, 375]})
@@ -217,7 +219,8 @@ def test_keras_evaluate():
     )
     pd.testing.assert_frame_equal(y, expected_y, rtol=rtol, atol=atol)
 
-@pytest.mark.skipif(sys.version_info[:2] == (3,8), reason="Fails on Python 3.8")
+
+@pytest.mark.skipif(sys.version_info[:2] == (3, 8), reason="Fails on Python 3.8")
 @pytest.mark.unit
 @pytest.mark.skipif(not SolverFactory("ipopt").available(False), reason="no Ipopt")
 def test_keras_surrogate_auto_creating_variables():
@@ -386,7 +389,8 @@ def test_keras_surrogate_auto_creating_variables():
     )
     pd.testing.assert_frame_equal(y_test, y_test_pyomo, rtol=rtol, atol=atol)
 
-@pytest.mark.skipif(sys.version_info[:2] == (3,8), reason="Fails on Python 3.8")
+
+@pytest.mark.skipif(sys.version_info[:2] == (3, 8), reason="Fails on Python 3.8")
 @pytest.mark.unit
 @pytest.mark.skipif(not SolverFactory("glpk").available(False), reason="no glpk")
 def test_keras_surrogate_auto_creating_variables_glpk():
@@ -451,7 +455,8 @@ def test_keras_surrogate_auto_creating_variables_glpk():
     )
     pd.testing.assert_frame_equal(y_test, y_test_pyomo, rtol=rtol, atol=atol)
 
-@pytest.mark.skipif(sys.version_info[:2] == (3,8), reason="Fails on Python 3.8")
+
+@pytest.mark.skipif(sys.version_info[:2] == (3, 8), reason="Fails on Python 3.8")
 @pytest.mark.unit
 @pytest.mark.skipif(not SolverFactory("ipopt").available(False), reason="no Ipopt")
 def test_keras_surrogate_with_variables():
@@ -575,7 +580,8 @@ def test_keras_surrogate_with_variables():
     )
     pd.testing.assert_frame_equal(y_test, y_test_pyomo, rtol=rtol, atol=atol)
 
-@pytest.mark.skipif(sys.version_info[:2] == (3,8), reason="Fails on Python 3.8")
+
+@pytest.mark.skipif(sys.version_info[:2] == (3, 8), reason="Fails on Python 3.8")
 @pytest.mark.unit
 @pytest.mark.skipif(not SolverFactory("ipopt").available(False), reason="no Ipopt")
 def test_save_load():
@@ -673,7 +679,8 @@ def test_save_load():
     )
     pd.testing.assert_frame_equal(y_test, y_test_pyomo, rtol=rtol, atol=atol)
 
-@pytest.mark.skipif(sys.version_info[:2] == (3,8), reason="Fails on Python 3.8")
+
+@pytest.mark.skipif(sys.version_info[:2] == (3, 8), reason="Fails on Python 3.8")
 @pytest.mark.unit
 @pytest.mark.skipif(not SolverFactory("ipopt").available(False), reason="no Ipopt")
 def test_noscalers():
@@ -717,7 +724,8 @@ def test_noscalers():
         y_test, y_test_pyomo, check_dtype=False, rtol=rtol, atol=atol
     )
 
-@pytest.mark.skipif(sys.version_info[:2] == (3,8), reason="Fails on Python 3.8")
+
+@pytest.mark.skipif(sys.version_info[:2] == (3, 8), reason="Fails on Python 3.8")
 @pytest.mark.unit
 def test_invalid_formulation():
     keras_surrogate = create_keras_model(
