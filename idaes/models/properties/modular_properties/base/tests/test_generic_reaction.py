@@ -16,6 +16,7 @@ Tests for generic reaction package core code
 Author: Andrew Lee
 """
 import pytest
+import re
 from sys import modules
 from math import log
 
@@ -156,7 +157,9 @@ class TestGenericReactionParameterBlock(object):
     def test_invalid_unit(self, m):
         with pytest.raises(
             PropertyPackageError,
-            match="Unrecognized units of measurement for quantity TIME " "\(foo\)",
+            match=re.escape(
+                "Unrecognized units of measurement for quantity TIME (foo)"
+            ),
         ):
             m.rxn_params = GenericReactionParameterBlock(
                 property_package=m.params,
@@ -588,9 +591,11 @@ class TestGenericReactionBlock(object):
 
         with pytest.raises(
             ConfigurationError,
-            match="rblock\[1\] Generic Reaction r1 was not "
-            "provided with a rate_form configuration "
-            "argument.",
+            match=re.escape(
+                "rblock[1] Generic Reaction r1 was not "
+                "provided with a rate_form configuration "
+                "argument."
+            ),
         ):
             model.rblock[1].reaction_rate
 
