@@ -32,7 +32,6 @@ from idaes.core.initialization.initializer_base import StoreState
 from idaes.core.util.exceptions import InitializationError
 from idaes.core.util.model_serializer import to_json, from_json
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.solvers import get_solver
 
 from idaes.models_extra.temperature_swing_adsorption import SteamCalculationType
 
@@ -107,10 +106,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
         )
 
         # create solver
-        if self.config.solver is None:
-            self.opt = get_solver(self.config.solver, self.config.solver_options)
-        else:
-            self.opt = self.config.solver
+        solver = self._get_solver()
 
         # initialization of fixed bed TSA model unit
         init_log.info("Starting fixed bed TSA initialization")
@@ -313,7 +309,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
         if degrees_of_freedom(blk) == 0:
 
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-                res = self.opt.solve(blk, tee=slc.tee)
+                res = solver.solve(blk, tee=slc.tee)
 
             if check_optimal_termination(res):
                 init_log.info(
@@ -384,7 +380,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
 
                 # re-solve compressor model
                 with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-                    res = self.opt.solve(blk.compressor, tee=slc.tee)
+                    res = solver.solve(blk.compressor, tee=slc.tee)
 
                 if check_optimal_termination(res):
                     init_log.info(
@@ -461,7 +457,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
                     )
 
                     with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-                        res = self.opt.solve(blk.steam_heater, tee=slc.tee)
+                        res = solver.solve(blk.steam_heater, tee=slc.tee)
 
                     if check_optimal_termination(res):
                         init_log.info_high(
@@ -501,7 +497,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
                     )
 
                     with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-                        res = self.opt.solve(blk.steam_heater, tee=slc.tee)
+                        res = solver.solve(blk.steam_heater, tee=slc.tee)
 
                     if check_optimal_termination(res):
                         init_log.info_high(
@@ -570,7 +566,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
             if degrees_of_freedom(blk) == 0:
 
                 with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-                    res = self.opt.solve(blk, tee=slc.tee)
+                    res = solver.solve(blk, tee=slc.tee)
                 if (
                     blk.config.compressor
                     and blk.config.steam_calculation != SteamCalculationType.none
@@ -682,8 +678,9 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
         )
 
         # solve cycle step
+        solver = self._get_solver()
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = self.opt.solve(cycle_step, tee=slc.tee)
+            res = solver.solve(cycle_step, tee=slc.tee)
 
         if check_optimal_termination(res):
             init_log.info(
@@ -735,8 +732,9 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
         count = 1
 
         # solve model
+        solver = self._get_solver()
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = self.opt.solve(cycle_step, tee=slc.tee)
+            res = solver.solve(cycle_step, tee=slc.tee)
 
         if check_optimal_termination(res):
             init_log.info_high(
@@ -778,7 +776,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
 
             # solve model
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-                res = self.opt.solve(cycle_step, tee=slc.tee)
+                res = solver.solve(cycle_step, tee=slc.tee)
 
             if check_optimal_termination(res):
                 init_log.info_high(
@@ -843,7 +841,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
 
             # solve model
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-                res = self.opt.solve(cycle_step, tee=slc.tee)
+                res = solver.solve(cycle_step, tee=slc.tee)
 
             if check_optimal_termination(res):
                 init_log.info_high(

@@ -254,6 +254,9 @@ be included in the overall energy balance,
         self._add_wall_variables()
         self._add_wall_variable_constraints()
 
+        self.delta_temperature_in.setlb(1e-8)
+        self.delta_temperature_out.setlb(1e-8)
+
         if self.config.dynamic_heat_balance:
 
             s1_metadata = self.hot_side.config.property_package.get_metadata()
