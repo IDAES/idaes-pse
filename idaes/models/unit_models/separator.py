@@ -1789,26 +1789,19 @@ objects linked the mixed state and all outlet states,
             mb_type = mixed_state[t_ref].default_material_balance_type()
         super().calculate_scaling_factors()
 
-        if hasattr(self, "temperature_equality_eqn"):
-            for (t, i), c in self.temperature_equality_eqn.items():
-                s = iscale.get_scaling_factor(
-                    mixed_state[t].temperature, default=1, warning=True
-                )
-                iscale.constraint_scaling_transform(c, s)
-
         if hasattr(self, "pressure_equality_eqn"):
             for (t, i), c in self.pressure_equality_eqn.items():
                 s = iscale.get_scaling_factor(
                     mixed_state[t].pressure, default=1, warning=True
                 )
-                iscale.constraint_scaling_transform(c, s)
+                iscale.constraint_scaling_transform(c, s, overwrite=False)
 
         if hasattr(self, "material_splitting_eqn"):
             if mb_type == MaterialBalanceType.componentPhase:
                 for (t, _, p, j), c in self.material_splitting_eqn.items():
                     flow_term = mixed_state[t].get_material_flow_terms(p, j)
                     s = iscale.get_scaling_factor(flow_term, default=1)
-                    iscale.constraint_scaling_transform(c, s)
+                    iscale.constraint_scaling_transform(c, s, overwrite=False)
             elif mb_type == MaterialBalanceType.componentTotal:
                 for (t, _, j), c in self.material_splitting_eqn.items():
                     s = None
@@ -1823,7 +1816,7 @@ objects linked the mixed state and all outlet states,
                         else:
                             _s = iscale.get_scaling_factor(ft, default=1)
                             s = _s if _s < s else s
-                    iscale.constraint_scaling_transform(c, s)
+                    iscale.constraint_scaling_transform(c, s, overwrite=False)
             elif mb_type == MaterialBalanceType.total:
                 pc_set = mixed_state.phase_component_set
                 for (t, _), c in self.material_splitting_eqn.items():
@@ -1834,7 +1827,55 @@ objects linked the mixed state and all outlet states,
                         else:
                             _s = iscale.get_scaling_factor(ft, default=1)
                             s = _s if _s < s else s
-                    iscale.constraint_scaling_transform(c, s)
+                    iscale.constraint_scaling_transform(c, s, overwrite=False)
+
+        if self.config.energy_split_basis == EnergySplittingType.none:
+            pass
+        elif self.config.energy_split_basis == EnergySplittingType.equal_temperature:
+            for (t, i), c in self.temperature_equality_eqn.items():
+                s = iscale.get_scaling_factor(
+                    mixed_state[t].temperature, default=1, warning=True
+                )
+                iscale.constraint_scaling_transform(c, s, overwrite=False)
+
+        elif self.config.energy_split_basis == EnergySplittingType.equal_molar_enthalpy:
+            for (t, i), c in self.temperature_equality_eqn.items():
+                s_enth_mol = iscale.get_scaling_factor(
+                    mixed_state[t].enth_mol, default=1, warning=True
+                )
+                iscale.constraint_scaling_transform(c, s_enth_mol, overwrite=False)
+
+        elif self.config.energy_split_basis == EnergySplittingType.enthalpy_split:
+            # Validate split fraction type
+            if (
+                self.config.split_basis == SplittingType.phaseComponentFlow
+                or self.config.split_basis == SplittingType.componentFlow
+            ):
+                raise ConfigurationError(
+                    "{} Cannot use energy_split_basis == enthalpy_split "
+                    "with split_basis == component or phaseComponent.".format(self.name)
+                )
+
+            for (t, i), c in self.molar_enthalpy_splitting_eqn.items():
+                sf_enth = float('inf')
+                for p in mixed_state[t].phase_list:
+                    sf_enth = min(
+                        sf_enth,
+                        iscale.get_scaling_factor(
+                            mixed_state[t].get_enthalpy_flow_terms(p),
+                            default=1,
+                            warning=True
+                        )
+                    )
+                iscale.constraint_scaling_transform(c, sf_enth, overwrite=False)
+
+        else:
+            raise BurntToast(
+                "{} received unrecognised value for "
+                "energy_split_basis. This should never happen, so"
+                " please contact the IDAES developers with this "
+                "bug.".format(self.name)
+            )
 
     def _get_performance_contents(self, time_point=0):
         if hasattr(self, "split_fraction"):

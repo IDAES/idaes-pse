@@ -16,7 +16,7 @@ Standard IDAES Feed block with phase equilibrium.
 from enum import Enum
 
 # Import Pyomo libraries
-from pyomo.environ import Reference
+from pyomo.environ import exp, log, Reference
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
@@ -31,6 +31,7 @@ from idaes.core import (
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.initialization import fix_state_vars
+import idaes.core.util.scaling as iscale
 
 __author__ = "Andrew Lee"
 
@@ -214,3 +215,31 @@ see property package for documentation.}""",
             None
         """
         fix_state_vars(self.control_volume.properties_in)
+
+    def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
+        if self.config.flash_type == FlashType.isothermal:
+            for t in self.flowsheet().time:
+                sT = iscale.get_scaling_factor(
+                    self.control_volume.properties_in[t].temperature,
+                    default=1,
+                    warning=True
+                )
+                iscale.constraint_scaling_transform(self.isothermal[t], sT, overwrite=False)
+        elif self.config.flash_type == FlashType.isenthalpic:
+            cv = self.control_volume
+            for t in self.flowsheet().time:
+                s_enth = float("inf")
+                for p in cv.properties_in[t].phase_list:
+                    s_enth = min(
+                        s_enth,
+                        iscale.get_scaling_factor(
+                            cv.properties_in[t].get_enthalpy_flow_terms(p),
+                            default = 1,
+                            warning=True
+                        )
+                    )
+                iscale.constraint_scaling_transform(self.isenthalpic[t], s_enth, overwrite=False)
+                    
+
+                    

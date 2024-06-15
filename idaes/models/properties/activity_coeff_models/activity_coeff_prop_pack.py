@@ -222,7 +222,9 @@ conditions, and thus corresponding constraints  should be included,
         self.set_default_scaling("temperature_dew", 1e-1)
         self.set_default_scaling("temperature_bubble", 1e-1)
         self.set_default_scaling("flow_mol_phase", 1e-2)
-        self.set_default_scaling("density_mol", 1)
+        self.set_default_scaling("density_mol", 1/11.1e3, index="Liq")
+        self.set_default_scaling("density_mol", 0.31, index="Vap")
+
         self.set_default_scaling("pressure", 1e-6)
         self.set_default_scaling("pressure_sat", 1e-6)
         self.set_default_scaling("pressure_dew", 1e-6)
@@ -234,8 +236,8 @@ conditions, and thus corresponding constraints  should be included,
         self.set_default_scaling("enth_mol_phase", 1e-4, index="Vap")
         self.set_default_scaling("entr_mol_phase_comp", 1e-2)
         self.set_default_scaling("entr_mol_phase", 1e-2)
-        self.set_default_scaling("mw", 100)
-        self.set_default_scaling("mw_phase", 100)
+        self.set_default_scaling("mw", 1/100)
+        self.set_default_scaling("mw_phase", 1/100)
         self.set_default_scaling("gibbs_mol_phase_comp", 1e-3)
         self.set_default_scaling("fug_vap", 1e-6)
         self.set_default_scaling("fug_liq", 1e-6)
@@ -2124,8 +2126,9 @@ class ActivityCoeffStateBlockData(StateBlockData):
         if self.is_property_constructed("temperature_bubble"):
             iscale.set_scaling_factor(self.temperature_bubble, sf_T)
         if self.is_property_constructed("eq_temperature_bubble"):
+            sf_p = iscale.get_scaling_factor(self.pressure)
             iscale.constraint_scaling_transform(
-                self.eq_temperature_bubble, sf_T, overwrite=False
+                self.eq_temperature_bubble, sf_p, overwrite=False
             )
 
         if self.is_property_constructed("temperature_dew"):
@@ -2215,12 +2218,19 @@ class ActivityCoeffStateBlockData(StateBlockData):
                 )
                 iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
+        if self.is_property_constructed("pressure_sat_comp"):
+            sf_p = iscale.get_scaling_factor(self.pressure)
+            for j, c in self.pressure_sat_comp.items():
+                iscale.set_scaling_factor(c, sf_p, overwrite=False)
+
         if self.is_property_constructed("eq_phase_equilibrium"):
-            for p, c in self.eq_phase_equilibrium.items():
-                sf = iscale.get_scaling_factor(
-                    self.eq_phase_equilibrium[p], default=1, warning=True
-                )
-                iscale.constraint_scaling_transform(c, sf, overwrite=False)
+            sf_p = iscale.get_scaling_factor(self.pressure)
+            sf_x = {
+                j: iscale.get_scaling_factor(self.mole_frac_comp[j])
+                for j in self.mole_frac_comp
+            }
+            for j, c in self.eq_phase_equilibrium.items():
+                iscale.constraint_scaling_transform(c, sf_p*sf_x[j], overwrite=False)
 
         if self.is_property_constructed("eq_P_vap"):
             for p, c in self.eq_P_vap.items():
