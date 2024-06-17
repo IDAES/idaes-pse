@@ -728,9 +728,8 @@ class TestBTX_cocurrent(object):
     @pytest.mark.component
     def test_numerical_issues(self, btx):
         iscale.calculate_scaling_factors(btx)
-        btx_scaled = TransformationFactory('core.scale_model').create_using(
-            btx,
-            rename=False
+        btx_scaled = TransformationFactory("core.scale_model").create_using(
+            btx, rename=False
         )
         dt = DiagnosticsToolbox(btx_scaled)
         dt.assert_no_numerical_warnings()
@@ -978,9 +977,8 @@ class TestBTX_cocurrent_alt_name(object):
     @pytest.mark.component
     def test_numerical_issues(self, btx):
         iscale.calculate_scaling_factors(btx)
-        btx_scaled = TransformationFactory('core.scale_model').create_using(
-            btx,
-            rename=False
+        btx_scaled = TransformationFactory("core.scale_model").create_using(
+            btx, rename=False
         )
         dt = DiagnosticsToolbox(btx_scaled)
         dt.assert_no_numerical_warnings()
@@ -1940,9 +1938,8 @@ class TestBT_Generic_cocurrent(object):
     @pytest.mark.component
     def test_numerical_issues(self, btx):
         iscale.calculate_scaling_factors(btx)
-        btx_scaled = TransformationFactory('core.scale_model').create_using(
-            btx,
-            rename=False
+        btx_scaled = TransformationFactory("core.scale_model").create_using(
+            btx, rename=False
         )
         dt = DiagnosticsToolbox(btx_scaled)
 

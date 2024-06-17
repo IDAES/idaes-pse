@@ -2569,12 +2569,10 @@ argument).""",
         if hasattr(self, "pressure_length_domain_cont_eq"):
             for (t, x), c in self.pressure_length_domain_cont_eq.items():
                 sf_P = iscale.get_scaling_factor(
-                    self.properties[t, x].pressure,
-                    default=1,
-                    warning=True
+                    self.properties[t, x].pressure, default=1, warning=True
                 )
                 iscale.constraint_scaling_transform(c, sf_P, overwrite=False)
-        
+
         if hasattr(self, "_enthalpy_flow_length_domain_cont_eq"):
             for (t, x, p), c in self._enthalpy_flow_length_domain_cont_eq.items():
                 # No need for default because it should already have a scaling factor

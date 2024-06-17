@@ -1845,15 +1845,15 @@ objects linked the mixed state and all outlet states,
 
         if hasattr(self, "molar_enthalpy_splitting_eqn"):
             for (t, i), c in self.molar_enthalpy_splitting_eqn.items():
-                sf_enth = float('inf')
+                sf_enth = float("inf")
                 for p in mixed_state[t].phase_list:
                     sf_enth = min(
                         sf_enth,
                         iscale.get_scaling_factor(
                             mixed_state[t].get_enthalpy_flow_terms(p),
                             default=1,
-                            warning=True
-                        )
+                            warning=True,
+                        ),
                     )
                 iscale.constraint_scaling_transform(c, sf_enth, overwrite=False)
 

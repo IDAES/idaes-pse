@@ -223,9 +223,11 @@ see property package for documentation.}""",
                 sT = iscale.get_scaling_factor(
                     self.control_volume.properties_in[t].temperature,
                     default=1,
-                    warning=True
+                    warning=True,
                 )
-                iscale.constraint_scaling_transform(self.isothermal[t], sT, overwrite=False)
+                iscale.constraint_scaling_transform(
+                    self.isothermal[t], sT, overwrite=False
+                )
         elif self.config.flash_type == FlashType.isenthalpic:
             cv = self.control_volume
             for t in self.flowsheet().time:
@@ -235,11 +237,10 @@ see property package for documentation.}""",
                         s_enth,
                         iscale.get_scaling_factor(
                             cv.properties_in[t].get_enthalpy_flow_terms(p),
-                            default = 1,
-                            warning=True
-                        )
+                            default=1,
+                            warning=True,
+                        ),
                     )
-                iscale.constraint_scaling_transform(self.isenthalpic[t], s_enth, overwrite=False)
-                    
-
-                    
+                iscale.constraint_scaling_transform(
+                    self.isenthalpic[t], s_enth, overwrite=False
+                )

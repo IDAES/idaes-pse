@@ -504,9 +504,8 @@ class TestHXNTU(object):
     @pytest.mark.component
     def test_numerical_issues(self, model):
         iscale.calculate_scaling_factors(model)
-        model_scaled = TransformationFactory('core.scale_model').create_using(
-            model,
-            rename=False
+        model_scaled = TransformationFactory("core.scale_model").create_using(
+            model, rename=False
         )
         dt = DiagnosticsToolbox(model_scaled)
         dt.assert_no_numerical_warnings()

@@ -939,9 +939,8 @@ class TestBTX(object):
     @pytest.mark.component
     def test_numerical_issues(self, btx):
         iscale.calculate_scaling_factors(btx)
-        btx_scaled = TransformationFactory('core.scale_model').create_using(
-            btx,
-            rename=False
+        btx_scaled = TransformationFactory("core.scale_model").create_using(
+            btx, rename=False
         )
         dt = DiagnosticsToolbox(btx_scaled)
         dt.assert_no_numerical_warnings()
