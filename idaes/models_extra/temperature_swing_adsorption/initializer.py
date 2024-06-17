@@ -50,6 +50,10 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
 
     """
 
+    # TODO: Using IPOPT_v2 as the default solver causes lots of test failures
+    CONFIG = ModularInitializerBase.CONFIG()
+    CONFIG.solver = "ipopt"
+
     def initialize(
         self,
         model: Block,
