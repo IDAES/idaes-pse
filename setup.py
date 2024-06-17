@@ -133,7 +133,7 @@ kwargs = dict(
     # Concrete dependencies go in requirements[-dev].txt
     install_requires=[
         "pyomo >= 6.7.3",
-        "pint",  # required to use Pyomo units
+        "pint<0.24",  # required to use Pyomo units
         "networkx",  # required to use Pyomo network
         "numpy<2",
         # pandas constraint added on 2023-08-30 b/c bug in v2.1
