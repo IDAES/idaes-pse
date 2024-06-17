@@ -48,7 +48,7 @@ EPS_INIT = 1e-4
 
 
 # -----------------------------------------------------------------------------
-class SmoothVLE2:
+class CubicComplementarityVLE:
     """
     Improved Vapor-Liquid Equilibrium complementarity formulation for Cubic Equations of State.
     """
@@ -75,7 +75,7 @@ class SmoothVLE2:
         if l_phase is None or v_phase is None:
             raise ConfigurationError(
                 f"{b.params.name} - Generic Property Package phase pair {phase_pair[0]}-{phase_pair[1]} "
-                "was set to use Smooth VLE formulation, however this is not a vapor-liquid pair."
+                "was set to use CubicComplementarityVLE formulation, however this is not a vapor-liquid pair."
             )
 
         try:
@@ -90,12 +90,12 @@ class SmoothVLE2:
                 != vobj.config.equation_of_state_options
             ):
                 raise ConfigurationError(
-                    f"{b.params.name} - SmoothVLE2 formulation requires that both phases use the same "
-                    "type of cubic equation of state."
+                    f"{b.params.name} - CubicComplementarityVLE formulation requires that both "
+                    "phases use the same type of cubic equation of state."
                 )
         except AttributeError:
             raise ConfigurationError(
-                f"{b.params.name} - SmoothVLE2 formulation only supports cubic equations of state."
+                f"{b.params.name} - CubicComplementarityVLE formulation only supports cubic equations of state."
             )
 
         # Definition of equilibrium temperature for smooth VLE

@@ -31,7 +31,9 @@ from idaes.core import LiquidPhase, VaporPhase, Component
 
 from idaes.models.properties.modular_properties.state_definitions import FTPx
 from idaes.models.properties.modular_properties.eos.ceos import Cubic, CubicType
-from idaes.models.properties.modular_properties.phase_equil import SmoothVLE2
+from idaes.models.properties.modular_properties.phase_equil import (
+    CubicComplementarityVLE,
+)
 from idaes.models.properties.modular_properties.phase_equil.bubble_dew import (
     LogBubbleDew,
 )
@@ -148,7 +150,7 @@ configuration = {
     "temperature_ref": (298.15, pyunits.K),
     # Defining phase equilibria
     "phases_in_equilibrium": [("Vap", "Liq")],
-    "phase_equilibrium_state": {("Vap", "Liq"): SmoothVLE2},
+    "phase_equilibrium_state": {("Vap", "Liq"): CubicComplementarityVLE},
     "bubble_dew_method": LogBubbleDew,
     "parameter_data": {
         "PR_kappa": {

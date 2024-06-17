@@ -1,5 +1,5 @@
-Cubic Smooth Vapor-Liquid Equilibrium Formulation (SmoothVLE2)
-==============================================================
+Cubic Smooth Vapor-Liquid Equilibrium Formulation (CubicComplementarityVLE)
+===========================================================================
 
 .. contents:: Contents 
     :depth: 2
@@ -15,9 +15,9 @@ Dabadghao, V., Ghouse, J., Eslick, J., Lee, A., Burgard, A., Miller, D., and Bie
 Introduction
 ------------
 
-Typically, equilibrium calculations are only used when the user knows the current state is within the two-phase envelope. For simulation only studies, the user may know a priori the condition of the stream but when the same set of equations are used for optimization, there is a high probability that the specifications can transcend the phase envelope. In these situations, the equilibrium calculations become trivial, thus it is necessary to find a formulation that has non-trivial solutions at all states.
+Often, a user may not know whether a state corresponds to a liquid, gas, or coexisting mixture. Even if a user knows the phase composition of a problem's initial condition, optimization may push the stream into or out of the two-phase region. Therefore, it is necessary to formulate phase equilibrium equations that are well-behaved for both one-phase and two-phase streams.
 
-To address this, the cubic smooth vapor-liquid equilibrium (VLE) formulation always solves the equilibrium calculations at a condition where a valid two-phase solution exists. In situations where only a single phase is present, the phase equilibrium is solved at the either the bubble or dew point, where the non-existent phase exists but in negligible amounts. In this way, a non-trivial solution is guaranteed but still gives near-zero material in the non-existent phase in the single phase regions. Rather than explicitly calculate the bubble and dew points (as is done in the non-cubic formulation), this formulation leverages properties of the  cubic equation of state to identify the "equilibrium temperature".
+To address this, the cubic smooth vapor-liquid equilibrium (VLE) formulation always solves the equilibrium equations at a condition where a valid two-phase solution exists. In situations where only a single phase is present, the phase equilibrium is solved at the either the bubble or dew point, where the second phase is just beginning to form; in this way, a non-trivial solution is guaranteed. Rather than explicitly calculate the bubble and dew points (as is done in the :ref:`non-cubic formulation <explanations/components/property_package/general/pe/smooth_flash:Smooth Vapor-Liquid Equilibrium Formulation (SmoothVLE)>`), this formulation leverages properties of the  cubic equation of state to identify the "equilibrium temperature".
 
 Formulation
 -----------
@@ -39,7 +39,7 @@ In order to determine the values of :math:`s_{liq}` and :math:`s_{vap}`, the fol
 .. math:: 0 = \min(s_{liq}, F_{liq})
 .. math:: 0 = \min(s_{vap}, F_{vap})
 
-where :math:`F_{p}` is the flow rate of each phase :math:`p`. That is, for each phase (liquid and vapor), if thee is any flowrate associated with that phase (i.e., the phase exists), its slack variable must be equal to zero.
+where :math:`F_{p}` is the flow rate of each phase :math:`p`. That is, for each phase (liquid and vapor), if there is any flowrate associated with that phase (i.e., the phase exists), its slack variable must be equal to zero.
 
 Additionally, the follow complementarities are written to constraint the roots of the cubic equation of state.
 

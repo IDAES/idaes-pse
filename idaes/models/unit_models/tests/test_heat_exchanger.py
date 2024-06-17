@@ -2098,7 +2098,7 @@ class TestInitializersModular:
     def test_block_triangularization(
         self,
     ):
-        # Trying to get this to work with SmoothVLE2 is challenging, and
+        # Trying to get this to work with CubicComplementarityVLE is challenging, and
         # not necessary for this particular test
         new_config = deepcopy(configuration)
         new_config["phase_equilibrium_state"] = {("Vap", "Liq"): SmoothVLE}

@@ -11,7 +11,7 @@
 # for full copyright and license information.
 #################################################################################
 """
-Tests for SmoothVLE2 formulation
+Tests for CubicComplementarityVLE formulation
 
 Authors: Andrew Lee
 """
@@ -33,7 +33,7 @@ from idaes.models.properties.modular_properties.base.generic_property import (
 )
 from idaes.models.properties.modular_properties.state_definitions import FTPx
 from idaes.models.properties.modular_properties.phase_equil.smooth_VLE_2 import (
-    SmoothVLE2,
+    CubicComplementarityVLE,
     _calculate_temperature_slacks,
     _calculate_ceos_derivative_slacks,
     EPS_INIT,
@@ -80,7 +80,7 @@ def test_different_cubics():
             "temperature": pyunits.K,
         },
         phases_in_equilibrium=[("Vap", "Liq")],
-        phase_equilibrium_state={("Vap", "Liq"): SmoothVLE2},
+        phase_equilibrium_state={("Vap", "Liq"): CubicComplementarityVLE},
         parameter_data={
             "PR_kappa": {
                 ("H2O", "H2O"): 0.000,
@@ -93,7 +93,7 @@ def test_different_cubics():
 
     with pytest.raises(
         ConfigurationError,
-        match="params - SmoothVLE2 formulation requires that both phases use the same "
+        match="params - CubicComplementarityVLE formulation requires that both phases use the same "
         "type of cubic equation of state.",
     ):
         m.props = m.params.state_block_class([1], parameters=m.params)
@@ -134,7 +134,7 @@ def test_non_cubic():
             "temperature": pyunits.K,
         },
         phases_in_equilibrium=[("Vap", "Liq")],
-        phase_equilibrium_state={("Vap", "Liq"): SmoothVLE2},
+        phase_equilibrium_state={("Vap", "Liq"): CubicComplementarityVLE},
         parameter_data={
             "PR_kappa": {
                 ("H2O", "H2O"): 0.000,
@@ -144,7 +144,7 @@ def test_non_cubic():
 
     with pytest.raises(
         ConfigurationError,
-        match="params - SmoothVLE2 formulation only supports cubic equations of state.",
+        match="params - CubicComplementarityVLE formulation only supports cubic equations of state.",
     ):
         m.props = m.params.state_block_class([1], parameters=m.params)
 
@@ -186,7 +186,7 @@ def frame():
             "temperature": pyunits.K,
         },
         phases_in_equilibrium=[("Vap", "Liq")],
-        phase_equilibrium_state={("Vap", "Liq"): SmoothVLE2},
+        phase_equilibrium_state={("Vap", "Liq"): CubicComplementarityVLE},
         parameter_data={
             "PR_kappa": {
                 ("H2O", "H2O"): 0.000,

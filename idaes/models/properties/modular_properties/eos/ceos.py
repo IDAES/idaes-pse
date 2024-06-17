@@ -665,7 +665,7 @@ class Cubic(EoSBase):
     @staticmethod
     def energy_internal_mol_phase(blk, p):
         """
-        Phase specific internal energy
+        Phase molar internal energy
         """
         pobj = blk.params.get_phase(p)
 
@@ -697,7 +697,7 @@ class Cubic(EoSBase):
     @staticmethod
     def energy_internal_mol_phase_comp(blk, p, j):
         """
-        Phase partial specific internal energy
+        Phase partial molar internal energy
         """
         return (
             blk.enth_mol_phase_comp[p, j] - blk.pressure * blk.vol_mol_phase_comp[p, j]
@@ -706,7 +706,7 @@ class Cubic(EoSBase):
     @staticmethod
     def enth_mol_phase(blk, p):
         """
-        Phase specific enthalpy
+        Phase molar enthalpy
         """
         pobj = blk.params.get_phase(p)
 
@@ -753,7 +753,7 @@ class Cubic(EoSBase):
     @staticmethod
     def entr_mol_phase(blk, p):
         """
-        Phase specific entropy
+        Phase molar entropy
         """
         pobj = blk.params.get_phase(p)
 
@@ -1423,7 +1423,7 @@ def calculate_equilibrium_cubic_coefficients(b, cubic_name, cubic_type, p1, p2, 
 
 def func_fw_PR(cobj):
     """
-    fw function for Peng-Robinson EoS.
+    f(omega) function for Peng-Robinson EoS.
 
     Args:
         cobj: Component object
@@ -1437,7 +1437,7 @@ def func_fw_PR(cobj):
 
 def func_fw_SRK(cobj):
     """
-    fw function for SRK EoS.
+    f(omega) function for SRK EoS.
 
     Args:
         cobj: Component object
@@ -1468,7 +1468,7 @@ def func_alpha_soave(T, fw, cobj):
 
 def func_dalpha_dT_soave(T, fw, cobj):
     """
-    Function to get first derivative of Soave alpha function.
+    Function to get first partial derivative w.r.t. temperature of Soave alpha function.
 
     Args:
         fw: expression for fw
@@ -1485,7 +1485,7 @@ def func_dalpha_dT_soave(T, fw, cobj):
 
 def func_d2alpha_dT2_soave(T, fw, cobj):
     """
-    Function to get 2nd derivative of Soave alpha function.
+    Function to get 2nd partial derivative w.r.t. temperature of Soave alpha function.
 
     Args:
         fw: expression for fw
@@ -1504,7 +1504,7 @@ def func_d2alpha_dT2_soave(T, fw, cobj):
 # Mixing rules
 def rule_am_default(m, cname, a, p, pp=()):
     """
-    Standard mixing rule for a term
+    Standard Van der Waals one-fluid mixing rule for a term
     """
     k = getattr(m.params, cname + "_kappa")
     return sum(
@@ -1521,7 +1521,7 @@ def rule_am_default(m, cname, a, p, pp=()):
 
 def rule_am_crit_default(m, cname, a_crit):
     """
-    Standard mixing rule for a term evaluated at critical point
+    Standard Van der Waals one-fluid mixing rule for a term evaluated at critical point
     """
     k = getattr(m.params, cname + "_kappa")
     return sum(
@@ -1538,13 +1538,13 @@ def rule_am_crit_default(m, cname, a_crit):
 
 def rule_bm_default(m, b, p):
     """
-    Standard mixing rule for b term
+    Standard Van der Waals one-fluid mixing rule for b term
     """
     return sum(m.mole_frac_phase_comp[p, i] * b[i] for i in m.components_in_phase(p))
 
 
 def rule_bm_crit_default(m, b):
     """
-    Standard mixing rule for b term evaluated at critical point
+    Standard Van der Waals one-fluid mixing rule for b term evaluated at critical point
     """
     return sum(m.mole_frac_comp[i] * b[i] for i in m.component_list)

@@ -11,4 +11,4 @@
 # for full copyright and license information.
 #################################################################################
 from .smooth_VLE import SmoothVLE
-from .smooth_VLE_2 import SmoothVLE2
+from .smooth_VLE_2 import CubicComplementarityVLE
