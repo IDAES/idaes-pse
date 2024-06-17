@@ -2554,3 +2554,29 @@ argument).""",
                     iscale.get_scaling_factor(self.element_accumulation[t, x, e]),
                     overwrite=False,
                 )
+
+        # Collocation (Lagrange-Legendre) support
+        if hasattr(self, "_flow_terms_length_domain_cont_eq"):
+            for (t, x, p, j), c in self._flow_terms_length_domain_cont_eq.items():
+                sf = iscale.get_scaling_factor(self._flow_terms[t, x, p, j])
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
+
+        if hasattr(self, "elemental_flow_term_length_domain_cont_eq"):
+            for (t, x, e), c in self.elemental_flow_term_length_domain_cont_eq.items():
+                sf = iscale.get_scaling_factor(self.elemental_flow_term[t, x, e])
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
+
+        if hasattr(self, "pressure_length_domain_cont_eq"):
+            for (t, x), c in self.pressure_length_domain_cont_eq.items():
+                sf_P = iscale.get_scaling_factor(
+                    self.properties[t, x].pressure,
+                    default=1,
+                    warning=True
+                )
+                iscale.constraint_scaling_transform(c, sf_P, overwrite=False)
+        
+        if hasattr(self, "_enthalpy_flow_length_domain_cont_eq"):
+            for (t, x, p), c in self._enthalpy_flow_length_domain_cont_eq.items():
+                # No need for default because it should already have a scaling factor
+                sf = iscale.get_scaling_factor(self._enthalpy_flow[t, x, p])
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)

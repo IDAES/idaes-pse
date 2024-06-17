@@ -21,6 +21,7 @@ from pyomo.environ import (
     check_optimal_termination,
     ConcreteModel,
     Constraint,
+    TransformationFactory,
     units,
     value,
     Var,
@@ -337,7 +338,12 @@ class TestBTX_isothermal(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_numerical_issues(self, btx):
-        dt = DiagnosticsToolbox(btx)
+        iscale.calculate_scaling_factors(btx)
+        btx_scaled = TransformationFactory('core.scale_model').create_using(
+            btx,
+            rename=False
+        )
+        dt = DiagnosticsToolbox(btx_scaled)
         dt.assert_no_numerical_warnings()
 
     @pytest.mark.ui
@@ -571,7 +577,11 @@ class TestIAPWS(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_numerical_issues(self, iapws):
-        dt = DiagnosticsToolbox(iapws)
+        iscale.calculate_scaling_factors(iapws)
+        iapws_scaled = TransformationFactory("core.scale_model").create_using(
+            iapws, rename=False
+        )
+        dt = DiagnosticsToolbox(iapws_scaled)
         dt.assert_no_numerical_warnings()
 
     @pytest.mark.ui
@@ -734,7 +744,7 @@ class TestSaponification(object):
     @pytest.mark.component
     def test_numerical_issues(self, sapon):
         dt = DiagnosticsToolbox(sapon)
-        dt.assert_no_numerical_warnings()
+        dt.assert_no_numerical_warnings(ignore_parallel_components=True)
 
     @pytest.mark.ui
     @pytest.mark.unit

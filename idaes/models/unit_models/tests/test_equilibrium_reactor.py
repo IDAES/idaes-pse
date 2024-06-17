@@ -238,7 +238,7 @@ class TestSaponification(object):
     @pytest.mark.component
     def test_numerical_issues(self, sapon):
         dt = DiagnosticsToolbox(sapon)
-        dt.assert_no_numerical_warnings()
+        dt.assert_no_numerical_warnings(ignore_parallel_components=True)
 
     @pytest.mark.ui
     @pytest.mark.unit

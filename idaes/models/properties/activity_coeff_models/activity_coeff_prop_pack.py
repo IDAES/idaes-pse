@@ -1562,30 +1562,30 @@ class ActivityCoeffStateBlockData(StateBlockData):
 
                 def rule_enthalpy_flow_terms(b, p):
                     if p == "Vap":
-                        if self.params.config.state_vars == "FTPz":
+                        if b.params.config.state_vars == "FTPz":
                             return (
-                                self.flow_mol_phase["Vap"] * self.enth_mol_phase["Vap"]
+                                b.flow_mol_phase["Vap"] * b.enth_mol_phase["Vap"]
                             )
                         else:
                             return (
                                 sum(
-                                    self.flow_mol_phase_comp["Vap", j]
-                                    for j in self.params.component_list
+                                    b.flow_mol_phase_comp["Vap", j]
+                                    for j in b.params.component_list
                                 )
-                                * self.enth_mol_phase["Vap"]
+                                * b.enth_mol_phase["Vap"]
                             )
                     elif p == "Liq":
-                        if self.params.config.state_vars == "FTPz":
+                        if b.params.config.state_vars == "FTPz":
                             return (
-                                self.flow_mol_phase["Liq"] * self.enth_mol_phase["Liq"]
+                                b.flow_mol_phase["Liq"] * b.enth_mol_phase["Liq"]
                             )
                         else:
                             return (
                                 sum(
-                                    self.flow_mol_phase_comp["Liq", j]
-                                    for j in self.params.component_list
+                                    b.flow_mol_phase_comp["Liq", j]
+                                    for j in b.params.component_list
                                 )
-                                * self.enth_mol_phase["Liq"]
+                                * b.enth_mol_phase["Liq"]
                             )
 
                 self.enthalpy_flow_terms = Expression(
@@ -2238,3 +2238,19 @@ class ActivityCoeffStateBlockData(StateBlockData):
                     self.eq_P_vap[p], default=1, warning=True
                 )
                 iscale.constraint_scaling_transform(c, sf, overwrite=False)
+
+        if self.is_property_constructed("enthalpy_flow_terms"):
+            for p, expr  in self.enthalpy_flow_terms.items():
+                sf_enth_mol = iscale.get_scaling_factor(self.enth_mol_phase[p], default=1)
+                if self.params.config.state_vars == "FTPz":
+                    sf_flow = iscale.get_scaling_factor(self.flow_mol_phase[p], default=1)
+                else:
+                    inv_sf_flow = 0
+                    for j in self.params.component_list:
+                        inv_sf_flow += 1/iscale.get_scaling_factor(
+                            self.flow_mol_phase_comp[p,j],
+                            default=1
+                        )
+                    sf_flow = 1/inv_sf_flow
+
+                iscale.set_scaling_factor(expr, sf_enth_mol*sf_flow, overwrite=False)
