@@ -246,6 +246,7 @@ be included in the overall energy balance,
 
         Args:
             None
+
         Returns:
             None
         """
@@ -253,9 +254,6 @@ be included in the overall energy balance,
         super().build()
         self._add_wall_variables()
         self._add_wall_variable_constraints()
-
-        self.delta_temperature_in.setlb(1e-10)
-        self.delta_temperature_out.setlb(1e-10)
 
         if self.config.dynamic_heat_balance:
 

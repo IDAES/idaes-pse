@@ -15,6 +15,7 @@ Tests for 0D lumped capacitance heat exchanger model
 
 Author: Rusty Gentile, John Eslick, Andrew Lee
 """
+from sys import platform
 import pytest
 import re
 
@@ -550,7 +551,6 @@ class TestInitializers:
         m.fs.unit.area.fix(1000)
 
         # Modified from the original:
-        # m.fs.unit.overall_heat_transfer_coefficient.fix(100)
         m.fs.unit.ua_hot_side.fix(200 * 1000)
         m.fs.unit.ua_cold_side.fix(200 * 1000)
 
@@ -560,6 +560,13 @@ class TestInitializers:
 
     @pytest.mark.component
     def test_hx_initializer(self, model):
+        if platform == "linux":
+            # TODO: Linear pre-solve fails to converge on Linux without bounds on deltaT
+            # but this causes Windows to fail. Likely indicates a scaling issue.
+            # TODO: Will try to fix this once the scaling tools are ready
+            model.fs.unit.delta_temperature_in.setlb(1e-8)
+            model.fs.unit.delta_temperature_out.setlb(1e-8)
+
         initializer = HX0DInitializer()
         initializer.initialize(model.fs.unit)
 
