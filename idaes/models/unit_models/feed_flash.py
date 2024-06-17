@@ -16,7 +16,7 @@ Standard IDAES Feed block with phase equilibrium.
 from enum import Enum
 
 # Import Pyomo libraries
-from pyomo.environ import exp, log, Reference
+from pyomo.environ import Reference
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
