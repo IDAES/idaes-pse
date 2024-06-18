@@ -222,8 +222,11 @@ conditions, and thus corresponding constraints  should be included,
         self.set_default_scaling("temperature_dew", 1e-1)
         self.set_default_scaling("temperature_bubble", 1e-1)
         self.set_default_scaling("flow_mol_phase", 1e-2)
-        self.set_default_scaling("density_mol", 1 / 11.1e3, index="Liq")
-        self.set_default_scaling("density_mol", 0.31, index="Vap")
+        # Only BTX supports liquid phases, so scaling based on the molar density
+        # of toluene isn't a problem.
+        self.set_default_scaling("density_mol", 1.065e-4, index="Liq")
+        # Based on an ideal gas at 1 bar and 350 K
+        self.set_default_scaling("density_mol", 0.3, index="Vap")
 
         self.set_default_scaling("pressure", 1e-6)
         self.set_default_scaling("pressure_sat", 1e-6)
