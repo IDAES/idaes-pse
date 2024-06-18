@@ -1650,9 +1650,13 @@ class PEMParametrizedBidder(ParametrizedBidder):
                 if grid_wind == 0:
                     bids = [(0, 0), (avail_rt_wind, self.pem_marginal_cost)]
                 else:
-                    bids = [(0, 0), (grid_wind, 0), (avail_rt_wind, self.pem_marginal_cost)]
+                    bids = [
+                        (0, 0),
+                        (grid_wind, 0),
+                        (avail_rt_wind, self.pem_marginal_cost),
+                    ]
             cost_curve = convert_marginal_costs_to_actual_costs(bids)
-            
+
             temp_curve = {
                 "data_type": "cost_curve",
                 "cost_curve_type": "piecewise",

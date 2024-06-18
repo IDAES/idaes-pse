@@ -179,15 +179,9 @@ def test_compute_RT_bids(bidder_object):
                 (180, 30),
             ]
         elif t in [1, 2]:
-            expect_bids_curve = [
-                (0, 0),
-                (20, 30)
-            ]
+            expect_bids_curve = [(0, 0), (20, 30)]
         elif t in [3, 4]:
-            expect_bids_curve = [
-                (0, 0),
-                (30, 30)
-            ]
+            expect_bids_curve = [(0, 0), (30, 30)]
         else:
             expect_bids_curve = [(0, 0)]
         expect_cost_curve = convert_marginal_costs_to_actual_costs(expect_bids_curve)
