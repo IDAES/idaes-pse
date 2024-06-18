@@ -2123,6 +2123,9 @@ class ActivityCoeffStateBlockData(StateBlockData):
             iscale.set_scaling_factor(self.temperature_bubble, sf_T)
         if self.is_property_constructed("eq_temperature_bubble"):
             sf_p = iscale.get_scaling_factor(self.pressure)
+            # Constraint equates sum-of-partial-pressures at the dew
+            # temperature to equal the total pressure, therefore
+            # has pressure scale
             iscale.constraint_scaling_transform(
                 self.eq_temperature_bubble, sf_p, overwrite=False
             )
@@ -2130,8 +2133,12 @@ class ActivityCoeffStateBlockData(StateBlockData):
         if self.is_property_constructed("temperature_dew"):
             iscale.set_scaling_factor(self.temperature_dew, sf_T)
         if self.is_property_constructed("eq_temperature_dew"):
+            # Constraint has quotiant of partial pressures to
+            # total pressure (modified by activity), and everything
+            # sums to 1. Therefore, it's well-scaled by default.
+            # Leaving this here as a record of good scaling.
             iscale.constraint_scaling_transform(
-                self.eq_temperature_dew, sf_T, overwrite=False
+                self.eq_temperature_dew, 1, overwrite=False
             )
 
         if self.is_property_constructed("total_flow_balance"):

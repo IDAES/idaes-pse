@@ -85,7 +85,6 @@ class TestBTXIdeal(object):
         m.fs.properties = BTXParameterBlock(
             valid_phase=("Liq", "Vap"), activity_coeff_model="Ideal"
         )
-        params = m.fs.properties
 
         m.fs.unit = FeedFlash(property_package=m.fs.properties)
 
@@ -116,9 +115,9 @@ class TestBTXIdeal(object):
         m.fs.unit.control_volume.properties_out[0.0].pressure_sat_comp.setlb(1e4)
         m.fs.unit.control_volume.properties_out[0.0].pressure_sat_comp.setub(5e6)
 
-        params.set_default_scaling("flow_mol", 1)
-        params.set_default_scaling("flow_mol_phase", 1)
-        params.set_default_scaling("flow_mol_phase_comp", 1)
+        m.fs.properties.set_default_scaling("flow_mol", 1)
+        m.fs.properties.set_default_scaling("flow_mol_phase", 1)
+        m.fs.properties.set_default_scaling("flow_mol_phase_comp", 1)
 
         return m
 
