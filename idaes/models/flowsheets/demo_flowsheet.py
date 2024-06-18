@@ -56,15 +56,22 @@ def build_flowsheet():
 
 def set_scaling(m):
     """Set scaling for demo flowsheet"""
+    params = m.fs.BT_props
+    params.set_default_scaling("flow_mol", 1)
+    params.set_default_scaling("flow_mol_phase", 1)
+    params.set_default_scaling("flow_mol_phase_comp", 1)
+    params.set_default_scaling("mole_frac_comp", 1)
+    params.set_default_scaling("mole_frac_phase_comp", 1)
+    params.set_default_scaling("temperature", 1e-1)
+    params.set_default_scaling("pressure", 1e-5)
+    params.set_default_scaling("pressure_sat_comp", 1e-5, index="benzene")
+    params.set_default_scaling("pressure_sat_comp", 1e-4, index="toluene")
+    params.set_default_scaling("enth_mol_phase_comp", 1e-4)
 
-    iscale.set_scaling_factor(m.fs.M01.inlet_1_state[0].flow_mol_phase, 1e6)
+    # Mixer M01
     iscale.set_scaling_factor(m.fs.M01.inlet_1_state[0].flow_mol_phase["Liq"], 1e6)
-    iscale.set_scaling_factor(m.fs.M01.inlet_1_state[0].flow_mol_phase["Vap"], 1)
     iscale.set_scaling_factor(
-        m.fs.M01.inlet_1_state[0].mole_frac_phase_comp["Liq", "benzene"], 1
-    )
-    iscale.set_scaling_factor(
-        m.fs.M01.inlet_1_state[0].mole_frac_phase_comp["Vap", "benzene"], 1
+        m.fs.M01.inlet_1_state[0].mole_frac_comp["toluene"], 1e5
     )
     iscale.set_scaling_factor(
         m.fs.M01.inlet_1_state[0].mole_frac_phase_comp["Liq", "toluene"], 1e5
@@ -73,380 +80,20 @@ def set_scaling(m):
         m.fs.M01.inlet_1_state[0].mole_frac_phase_comp["Vap", "toluene"], 1e6
     )
     iscale.set_scaling_factor(
-        m.fs.M01.inlet_1_state[0].pressure_sat_comp["benzene"], 1e-5
+        m.fs.M01.inlet_2_state[0].mole_frac_comp["benzene"], 1e5
     )
-    iscale.set_scaling_factor(
-        m.fs.M01.inlet_1_state[0].pressure_sat_comp["toluene"], 1e-4
-    )
-    iscale.set_scaling_factor(
-        m.fs.M01.inlet_1_state[0].enth_mol_phase_comp["Liq", "benzene"], 1e-4
-    )
-    iscale.set_scaling_factor(
-        m.fs.M01.inlet_1_state[0].enth_mol_phase_comp["Vap", "benzene"], 1e-4
-    )
-    iscale.set_scaling_factor(
-        m.fs.M01.inlet_1_state[0].enth_mol_phase_comp["Liq", "toluene"], 1e-4
-    )
-    iscale.set_scaling_factor(
-        m.fs.M01.inlet_1_state[0].enth_mol_phase_comp["Vap", "toluene"], 1e-4
-    )
-
-    iscale.set_scaling_factor(m.fs.M01.inlet_2_state[0].flow_mol_phase, 1e1)
-    iscale.set_scaling_factor(m.fs.M01.inlet_2_state[0].flow_mol_phase["Vap"], 1e1)
-
     iscale.set_scaling_factor(
         m.fs.M01.inlet_2_state[0].mole_frac_phase_comp["Liq", "benzene"], 1e5
     )
     iscale.set_scaling_factor(
         m.fs.M01.inlet_2_state[0].mole_frac_phase_comp["Vap", "benzene"], 1e5
     )
-    iscale.set_scaling_factor(
-        m.fs.M01.inlet_2_state[0].mole_frac_phase_comp["Liq", "toluene"], 1
-    )
-    iscale.set_scaling_factor(
-        m.fs.M01.inlet_2_state[0].mole_frac_phase_comp["Vap", "toluene"], 1
-    )
 
-    iscale.set_scaling_factor(
-        m.fs.M01.inlet_2_state[0].pressure_sat_comp["benzene"], 1e-6
-    )
-    iscale.set_scaling_factor(
-        m.fs.M01.inlet_2_state[0].pressure_sat_comp["toluene"], 1e-6
-    )
+    # Heater H02
+    iscale.set_scaling_factor(m.fs.H02.control_volume.heat[0], 1e-5)    
 
-    iscale.set_scaling_factor(
-        m.fs.M01.inlet_2_state[0].enth_mol_phase_comp["Liq", "benzene"], 1e-4
-    )
-    iscale.set_scaling_factor(
-        m.fs.M01.inlet_2_state[0].enth_mol_phase_comp["Vap", "benzene"], 1e-4
-    )
-    iscale.set_scaling_factor(
-        m.fs.M01.inlet_2_state[0].enth_mol_phase_comp["Liq", "toluene"], 1e-4
-    )
-    iscale.set_scaling_factor(
-        m.fs.M01.inlet_2_state[0].enth_mol_phase_comp["Vap", "toluene"], 1e-4
-    )
-
-    iscale.set_scaling_factor(
-        m.fs.M01.mixed_state[0].enth_mol_phase_comp["Liq", "benzene"], 1e-4
-    )
-    iscale.set_scaling_factor(
-        m.fs.M01.mixed_state[0].enth_mol_phase_comp["Vap", "benzene"], 1e-4
-    )
-    iscale.set_scaling_factor(
-        m.fs.M01.mixed_state[0].enth_mol_phase_comp["Liq", "toluene"], 1e-4
-    )
-    iscale.set_scaling_factor(
-        m.fs.M01.mixed_state[0].enth_mol_phase_comp["Vap", "toluene"], 1e-4
-    )
-    iscale.set_scaling_factor(m.fs.M01.mixed_state[0].enthalpy_flow_terms["Liq"], 1)
-    iscale.set_scaling_factor(m.fs.M01.mixed_state[0].enthalpy_flow_terms["Vap"], 1)
-    iscale.set_scaling_factor(m.fs.M01.mixed_state[0].eq_total, 1)
-    iscale.set_scaling_factor(m.fs.M01.mixed_state[0].eq_sum_mol_frac, 1)
-    iscale.set_scaling_factor(m.fs.M01.mixed_state[0].eq_mol_frac_out, 1)
-    iscale.set_scaling_factor(m.fs.M01.mixed_state[0].eq_comp["benzene"], 1)
-    iscale.set_scaling_factor(m.fs.M01.mixed_state[0].eq_comp["toluene"], 1)
-    iscale.set_scaling_factor(
-        m.fs.M01.mixed_state[0].eq_phase_equilibrium["benzene"], 1
-    )
-    iscale.set_scaling_factor(
-        m.fs.M01.mixed_state[0].eq_phase_equilibrium["toluene"], 1
-    )
-    iscale.set_scaling_factor(m.fs.M01.mixed_state[0].eq_P_vap["benzene"], 1)
-    iscale.set_scaling_factor(m.fs.M01.mixed_state[0].eq_P_vap["toluene"], 1)
-
-    iscale.set_scaling_factor(m.fs.M01.mixed_state[0].pressure, 1e-5)
-    iscale.set_scaling_factor(m.fs.M01.mixed_state[0].pressure_sat_comp, 1e-5)
-    iscale.set_scaling_factor(m.fs.M01.mixed_state[0].temperature, 1e-2)
-    iscale.set_scaling_factor(m.fs.M01.mixed_state[0].flow_mol, 1)
-    iscale.set_scaling_factor(m.fs.M01.mixed_state[0].flow_mol_phase, 1)
-    iscale.set_scaling_factor(m.fs.M01.mixed_state[0].mole_frac_comp["benzene"], 1e1)
-    iscale.set_scaling_factor(m.fs.M01.mixed_state[0].mole_frac_comp["toluene"], 1e1)
-
-    iscale.set_scaling_factor(m.fs.H02.control_volume.heat, 1e-5)
-    iscale.set_scaling_factor(m.fs.H02.control_volume.properties_in[0].pressure, 1e-5)
-    iscale.set_scaling_factor(
-        m.fs.H02.control_volume.properties_in[0].pressure_sat_comp, 1e-5
-    )
-    iscale.set_scaling_factor(
-        m.fs.H02.control_volume.properties_in[0].temperature, 1e-2
-    )
-    iscale.set_scaling_factor(m.fs.H02.control_volume.properties_in[0].flow_mol, 1)
-    iscale.set_scaling_factor(
-        m.fs.H02.control_volume.properties_in[0].flow_mol_phase, 1
-    )
-    iscale.set_scaling_factor(
-        m.fs.H02.control_volume.properties_in[0].mole_frac_comp["benzene"], 1e1
-    )
-    iscale.set_scaling_factor(
-        m.fs.H02.control_volume.properties_in[0].mole_frac_comp["toluene"], 1e1
-    )
-    iscale.set_scaling_factor(m.fs.H02.control_volume.properties_out[0].flow_mol, 1)
-    iscale.set_scaling_factor(
-        m.fs.H02.control_volume.properties_out[0].flow_mol_phase, 1
-    )
-    iscale.set_scaling_factor(
-        m.fs.H02.control_volume.properties_out[0].mole_frac_comp["benzene"], 1e1
-    )
-    iscale.set_scaling_factor(
-        m.fs.H02.control_volume.properties_out[0].mole_frac_comp["toluene"], 1e1
-    )
-    iscale.set_scaling_factor(
-        m.fs.H02.control_volume.properties_out[0].temperature, 1e-2
-    )
-    iscale.set_scaling_factor(m.fs.H02.control_volume.properties_out[0].pressure, 1e-5)
-    iscale.set_scaling_factor(
-        m.fs.H02.control_volume.properties_out[0].pressure_sat_comp, 1e-5
-    )
-    iscale.set_scaling_factor(
-        m.fs.H02.control_volume.properties_in[0].enth_mol_phase_comp["Liq", "benzene"],
-        1e-4,
-    )
-    iscale.set_scaling_factor(
-        m.fs.H02.control_volume.properties_in[0].enth_mol_phase_comp["Vap", "benzene"],
-        1e-4,
-    )
-    iscale.set_scaling_factor(
-        m.fs.H02.control_volume.properties_in[0].enth_mol_phase_comp["Liq", "toluene"],
-        1e-4,
-    )
-    iscale.set_scaling_factor(
-        m.fs.H02.control_volume.properties_in[0].enth_mol_phase_comp["Vap", "toluene"],
-        1e-4,
-    )
-    iscale.set_scaling_factor(
-        m.fs.H02.control_volume.properties_in[0].eq_comp["benzene"], 1
-    )
-    iscale.set_scaling_factor(
-        m.fs.H02.control_volume.properties_in[0].eq_comp["toluene"], 1
-    )
-    iscale.set_scaling_factor(
-        m.fs.H02.control_volume.properties_out[0].eq_comp["benzene"], 1
-    )
-    iscale.set_scaling_factor(
-        m.fs.H02.control_volume.properties_out[0].eq_comp["toluene"], 1
-    )
-    iscale.set_scaling_factor(
-        m.fs.H02.control_volume.properties_in[0].eq_phase_equilibrium["benzene"], 1
-    )
-    iscale.set_scaling_factor(
-        m.fs.H02.control_volume.properties_in[0].eq_phase_equilibrium["toluene"], 1
-    )
-    iscale.set_scaling_factor(
-        m.fs.H02.control_volume.properties_out[0].eq_phase_equilibrium["benzene"], 1
-    )
-    iscale.set_scaling_factor(
-        m.fs.H02.control_volume.properties_out[0].eq_phase_equilibrium["toluene"], 1
-    )
-    iscale.set_scaling_factor(
-        m.fs.H02.control_volume.properties_in[0.0].eq_P_vap["benzene"], 1
-    )
-    iscale.set_scaling_factor(
-        m.fs.H02.control_volume.properties_in[0.0].eq_P_vap["toluene"], 1
-    )
-    iscale.set_scaling_factor(
-        m.fs.H02.control_volume.properties_out[0.0].eq_P_vap["benzene"], 1
-    )
-    iscale.set_scaling_factor(
-        m.fs.H02.control_volume.properties_out[0.0].eq_P_vap["toluene"], 1
-    )
-    iscale.set_scaling_factor(
-        m.fs.H02.control_volume.properties_out[0].enth_mol_phase_comp["Liq", "benzene"],
-        1e-4,
-    )
-    iscale.set_scaling_factor(
-        m.fs.H02.control_volume.properties_out[0].enth_mol_phase_comp["Vap", "benzene"],
-        1e-4,
-    )
-    iscale.set_scaling_factor(
-        m.fs.H02.control_volume.properties_out[0].enth_mol_phase_comp["Liq", "toluene"],
-        1e-4,
-    )
-    iscale.set_scaling_factor(
-        m.fs.H02.control_volume.properties_out[0].enth_mol_phase_comp["Vap", "toluene"],
-        1e-4,
-    )
-    iscale.set_scaling_factor(m.fs.H02.control_volume.properties_in[0.0].eq_total, 1)
-    iscale.set_scaling_factor(
-        m.fs.H02.control_volume.properties_in[0.0].eq_sum_mol_frac, 1
-    )
-    iscale.set_scaling_factor(m.fs.H02.control_volume.properties_out[0.0].eq_total, 1)
-    iscale.set_scaling_factor(
-        m.fs.H02.control_volume.properties_out[0.0].eq_sum_mol_frac, 1
-    )
-    iscale.set_scaling_factor(
-        m.fs.H02.control_volume.properties_out[0.0].eq_mol_frac_out, 1
-    )
-
-    iscale.set_scaling_factor(
-        m.fs.H02.control_volume.properties_in[0.0].material_flow_terms[
-            "Liq", "benzene"
-        ],
-        1,
-    )
-    iscale.set_scaling_factor(
-        m.fs.H02.control_volume.properties_in[0.0].material_flow_terms[
-            "Vap", "benzene"
-        ],
-        1,
-    )
-    iscale.set_scaling_factor(
-        m.fs.H02.control_volume.properties_in[0.0].material_flow_terms[
-            "Liq", "toluene"
-        ],
-        1,
-    )
-    iscale.set_scaling_factor(
-        m.fs.H02.control_volume.properties_in[0.0].material_flow_terms[
-            "Vap", "toluene"
-        ],
-        1,
-    )
-    iscale.set_scaling_factor(
-        m.fs.H02.control_volume.properties_in[0.0].enthalpy_flow_terms["Liq"], 1
-    )
-    iscale.set_scaling_factor(
-        m.fs.H02.control_volume.properties_in[0.0].enthalpy_flow_terms["Vap"], 1
-    )
-
-    iscale.set_scaling_factor(m.fs.F03.control_volume.heat, 1)
-    iscale.set_scaling_factor(m.fs.F03.control_volume.properties_in[0].pressure, 1e-5)
-    iscale.set_scaling_factor(
-        m.fs.F03.control_volume.properties_in[0].pressure_sat_comp, 1e-5
-    )
-    iscale.set_scaling_factor(m.fs.F03.control_volume.properties_out[0].pressure, 1e-5)
-    iscale.set_scaling_factor(
-        m.fs.F03.control_volume.properties_out[0].pressure_sat_comp, 1e-5
-    )
-    iscale.set_scaling_factor(
-        m.fs.F03.control_volume.properties_in[0].temperature, 1e-2
-    )
-    iscale.set_scaling_factor(m.fs.F03.control_volume.properties_in[0].flow_mol, 1)
-    iscale.set_scaling_factor(
-        m.fs.F03.control_volume.properties_in[0].flow_mol_phase, 1
-    )
-    iscale.set_scaling_factor(m.fs.F03.control_volume.properties_out[0].flow_mol, 1)
-    iscale.set_scaling_factor(
-        m.fs.F03.control_volume.properties_out[0].flow_mol_phase, 1
-    )
-    iscale.set_scaling_factor(
-        m.fs.F03.control_volume.properties_in[0].mole_frac_comp["benzene"], 1e1
-    )
-    iscale.set_scaling_factor(
-        m.fs.F03.control_volume.properties_in[0].mole_frac_comp["toluene"], 1e1
-    )
-
-    iscale.set_scaling_factor(m.fs.F03.control_volume.properties_in[0.0].eq_total, 1)
-    iscale.set_scaling_factor(
-        m.fs.F03.control_volume.properties_in[0.0].eq_sum_mol_frac, 1
-    )
-    iscale.set_scaling_factor(m.fs.F03.control_volume.properties_out[0.0].eq_total, 1)
-    iscale.set_scaling_factor(
-        m.fs.F03.control_volume.properties_out[0.0].eq_sum_mol_frac, 1
-    )
-    iscale.set_scaling_factor(
-        m.fs.F03.control_volume.properties_out[0.0].eq_mol_frac_out, 1
-    )
-
-    iscale.set_scaling_factor(
-        m.fs.F03.control_volume.properties_in[0].enth_mol_phase_comp["Liq", "benzene"],
-        1e-4,
-    )
-    iscale.set_scaling_factor(
-        m.fs.F03.control_volume.properties_in[0].enth_mol_phase_comp["Vap", "benzene"],
-        1e-4,
-    )
-    iscale.set_scaling_factor(
-        m.fs.F03.control_volume.properties_in[0].enth_mol_phase_comp["Liq", "toluene"],
-        1e-4,
-    )
-    iscale.set_scaling_factor(
-        m.fs.F03.control_volume.properties_in[0].enth_mol_phase_comp["Vap", "toluene"],
-        1e-4,
-    )
-    iscale.set_scaling_factor(
-        m.fs.F03.control_volume.properties_out[0].enth_mol_phase_comp["Liq", "benzene"],
-        1e-4,
-    )
-    iscale.set_scaling_factor(
-        m.fs.F03.control_volume.properties_out[0].enth_mol_phase_comp["Vap", "benzene"],
-        1e-4,
-    )
-    iscale.set_scaling_factor(
-        m.fs.F03.control_volume.properties_out[0].enth_mol_phase_comp["Liq", "toluene"],
-        1e-4,
-    )
-    iscale.set_scaling_factor(
-        m.fs.F03.control_volume.properties_out[0].enth_mol_phase_comp["Vap", "toluene"],
-        1e-4,
-    )
-
-    iscale.set_scaling_factor(
-        m.fs.F03.control_volume.properties_in[0].eq_comp["benzene"], 1
-    )
-    iscale.set_scaling_factor(
-        m.fs.F03.control_volume.properties_in[0].eq_comp["toluene"], 1
-    )
-    iscale.set_scaling_factor(
-        m.fs.F03.control_volume.properties_out[0].eq_comp["benzene"], 1
-    )
-    iscale.set_scaling_factor(
-        m.fs.F03.control_volume.properties_out[0].eq_comp["toluene"], 1
-    )
-    iscale.set_scaling_factor(
-        m.fs.F03.control_volume.properties_in[0].eq_phase_equilibrium["benzene"], 1
-    )
-    iscale.set_scaling_factor(
-        m.fs.F03.control_volume.properties_in[0].eq_phase_equilibrium["toluene"], 1
-    )
-    iscale.set_scaling_factor(
-        m.fs.F03.control_volume.properties_out[0].eq_phase_equilibrium["benzene"], 1
-    )
-    iscale.set_scaling_factor(
-        m.fs.F03.control_volume.properties_out[0].eq_phase_equilibrium["toluene"], 1
-    )
-    iscale.set_scaling_factor(
-        m.fs.F03.control_volume.properties_in[0.0].eq_P_vap["benzene"], 1
-    )
-    iscale.set_scaling_factor(
-        m.fs.F03.control_volume.properties_in[0.0].eq_P_vap["toluene"], 1
-    )
-    iscale.set_scaling_factor(
-        m.fs.F03.control_volume.properties_out[0.0].eq_P_vap["benzene"], 1
-    )
-    iscale.set_scaling_factor(
-        m.fs.F03.control_volume.properties_out[0.0].eq_P_vap["toluene"], 1
-    )
-    iscale.set_scaling_factor(
-        m.fs.F03.control_volume.properties_in[0.0].material_flow_terms[
-            "Liq", "benzene"
-        ],
-        1,
-    )
-    iscale.set_scaling_factor(
-        m.fs.F03.control_volume.properties_in[0.0].material_flow_terms[
-            "Vap", "benzene"
-        ],
-        1,
-    )
-    iscale.set_scaling_factor(
-        m.fs.F03.control_volume.properties_in[0.0].material_flow_terms[
-            "Liq", "toluene"
-        ],
-        1,
-    )
-    iscale.set_scaling_factor(
-        m.fs.F03.control_volume.properties_in[0.0].material_flow_terms[
-            "Vap", "toluene"
-        ],
-        1,
-    )
-    iscale.set_scaling_factor(
-        m.fs.F03.control_volume.properties_in[0.0].enthalpy_flow_terms["Liq"], 1
-    )
-    iscale.set_scaling_factor(
-        m.fs.F03.control_volume.properties_in[0.0].enthalpy_flow_terms["Vap"], 1
-    )
+    # F03
+    iscale.set_scaling_factor(m.fs.F03.control_volume.heat[0], 1)
 
     iscale.calculate_scaling_factors(m)
 

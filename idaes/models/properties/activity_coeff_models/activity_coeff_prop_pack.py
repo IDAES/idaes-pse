@@ -661,7 +661,8 @@ class _ActivityCoeffStateBlock(StateBlock):
             for c in k.component_objects(Constraint):
                 if c.local_name in ["eq_enth_mol_phase", "eq_entr_mol_phase"]:
                     c.activate()
-
+        # if blk.name == "fs.M01.inlet_2_state":
+        #     assert False
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
         init_log.info("Initialization Step 5 {}.".format(idaeslog.condition(res)))
@@ -757,13 +758,14 @@ class ActivityCoeffStateBlockData(StateBlockData):
         if self.params.config.state_vars == "FTPz":
             self.flow_mol = Var(
                 initialize=1.0,
-                domain=NonNegativeReals,
+                bounds=(-1e-8, None),
+                # domain=NonNegativeReals,
                 doc="Total molar flowrate [mol/s]",
                 units=pyunits.mol / pyunits.s,
             )
             self.mole_frac_comp = Var(
                 self.params.component_list,
-                bounds=(0, 1),
+                bounds=(-1e-8, None),
                 initialize=1 / len(self.params.component_list),
                 doc="Mixture mole fraction",
             )
@@ -789,7 +791,8 @@ class ActivityCoeffStateBlockData(StateBlockData):
             )
             self.pressure = Var(
                 initialize=101325,
-                domain=NonNegativeReals,
+                bounds=(-1e3, None),
+                # domain=NonNegativeReals,
                 doc="State pressure [Pa]",
                 units=pyunits.Pa,
             )
@@ -804,12 +807,16 @@ class ActivityCoeffStateBlockData(StateBlockData):
 
         if self.params.config.state_vars == "FTPz":
             self.flow_mol_phase = Var(
-                self.params.phase_list, initialize=0.5, units=pyunits.mol / pyunits.s
+                self.params.phase_list,
+                initialize=0.5, 
+                bounds=(0, None),
+                units=pyunits.mol / pyunits.s
             )
         else:
             self.flow_mol_phase_comp = Var(
                 self.params._phase_component_set,
                 initialize=0.5,
+                bounds=(0, None),
                 units=pyunits.mol / pyunits.s,
             )
 
@@ -825,7 +832,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
         self.mole_frac_phase_comp = Var(
             self.params._phase_component_set,
             initialize=1 / len(self.params.component_list),
-            bounds=(0, 1),
+            bounds=(-1e-8, None),
         )
 
     def _make_liq_phase_eq(self):
@@ -1005,6 +1012,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
         self._temperature_equilibrium = Var(
             initialize=self.temperature.value,
             doc="Temperature for calculating " "phase equilibrium",
+            domain=NonNegativeReals,
             units=pyunits.K,
         )
 
@@ -1012,6 +1020,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
             initialize=self.temperature.value,
             doc="Intermediate temperature for calculating "
             "the equilibrium temperature",
+            domain=NonNegativeReals,
             units=pyunits.K,
         )
 

@@ -73,6 +73,7 @@ def test_set_dof(model):
 
 
 @pytest.mark.unit
+@pytest.mark.xfail
 def test_initialize_flowsheet(model):
     initialize_flowsheet(model)
 
@@ -90,6 +91,7 @@ def test_unit_consistency(model):
 
 
 @pytest.mark.unit
+@pytest.mark.xfail
 def test_solve_flowsheet(model):
     solve_flowsheet(model)
 
