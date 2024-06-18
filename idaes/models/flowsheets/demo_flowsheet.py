@@ -70,18 +70,14 @@ def set_scaling(m):
 
     # Mixer M01
     iscale.set_scaling_factor(m.fs.M01.inlet_1_state[0].flow_mol_phase["Liq"], 1e6)
-    iscale.set_scaling_factor(
-        m.fs.M01.inlet_1_state[0].mole_frac_comp["toluene"], 1e5
-    )
+    iscale.set_scaling_factor(m.fs.M01.inlet_1_state[0].mole_frac_comp["toluene"], 1e5)
     iscale.set_scaling_factor(
         m.fs.M01.inlet_1_state[0].mole_frac_phase_comp["Liq", "toluene"], 1e5
     )
     iscale.set_scaling_factor(
         m.fs.M01.inlet_1_state[0].mole_frac_phase_comp["Vap", "toluene"], 1e6
     )
-    iscale.set_scaling_factor(
-        m.fs.M01.inlet_2_state[0].mole_frac_comp["benzene"], 1e5
-    )
+    iscale.set_scaling_factor(m.fs.M01.inlet_2_state[0].mole_frac_comp["benzene"], 1e5)
     iscale.set_scaling_factor(
         m.fs.M01.inlet_2_state[0].mole_frac_phase_comp["Liq", "benzene"], 1e5
     )
@@ -90,7 +86,7 @@ def set_scaling(m):
     )
 
     # Heater H02
-    iscale.set_scaling_factor(m.fs.H02.control_volume.heat[0], 1e-5)    
+    iscale.set_scaling_factor(m.fs.H02.control_volume.heat[0], 1e-5)
 
     # F03
     iscale.set_scaling_factor(m.fs.F03.control_volume.heat[0], 1)

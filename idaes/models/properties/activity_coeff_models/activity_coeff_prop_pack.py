@@ -808,9 +808,9 @@ class ActivityCoeffStateBlockData(StateBlockData):
         if self.params.config.state_vars == "FTPz":
             self.flow_mol_phase = Var(
                 self.params.phase_list,
-                initialize=0.5, 
+                initialize=0.5,
                 bounds=(0, None),
-                units=pyunits.mol / pyunits.s
+                units=pyunits.mol / pyunits.s,
             )
         else:
             self.flow_mol_phase_comp = Var(
