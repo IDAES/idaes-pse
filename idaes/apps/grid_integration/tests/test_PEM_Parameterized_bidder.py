@@ -42,7 +42,7 @@ def test_creat_PEMParametrizedBidder_with_wrong_PEM_power():
     pem_mw = 300
     pem_marginal_cost = 30
     with pytest.raises(
-        ValueError, match=r".*The power of PEM is greater than the renewabele power.*"
+        ValueError, match=r".*The power of PEM is greater than the renewable power.*"
     ):
         PEM_bidder = PEMParametrizedBidder(
             bidding_model_object,
@@ -122,12 +122,12 @@ def test_compute_DA_bids(bidder_object):
     for t in range(day_ahead_horizon):
         expect_da_wind = expected_DA_cf[t] * pmax
         if t <= 2:
-            expect_bids_curve = [(0, 0), (expected_DA_cf[t] * pmax, pem_marginal_cost)]
+            expect_bids_curve = [(0, 0), (20, 30)]
         else:
             expect_bids_curve = [
                 (0, 0),
-                (expected_DA_cf[t] * pmax - pem_pmax, 0),
-                (expected_DA_cf[t] * pmax, pem_marginal_cost),
+                (60, 0),
+                (160, 30),
             ]
         expect_cost_curve = convert_marginal_costs_to_actual_costs(expect_bids_curve)
         expected_bids[t] = {
@@ -175,13 +175,18 @@ def test_compute_RT_bids(bidder_object):
         if t == 0:
             expect_bids_curve = [
                 (0, 0),
-                (expect_rt_wind - realized_day_ahead_dispatches[t] - pem_pmax, 0),
-                (expect_rt_wind - realized_day_ahead_dispatches[t], pem_marginal_cost),
+                (80, 0),
+                (180, 30),
             ]
-        elif t in [1, 2, 3, 4]:
+        elif t in [1, 2]:
             expect_bids_curve = [
                 (0, 0),
-                (expect_rt_wind - realized_day_ahead_dispatches[t], pem_marginal_cost),
+                (20, 30)
+            ]
+        elif t in [3, 4]:
+            expect_bids_curve = [
+                (0, 0),
+                (30, 30)
             ]
         else:
             expect_bids_curve = [(0, 0)]

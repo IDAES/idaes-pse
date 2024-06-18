@@ -1542,7 +1542,7 @@ class PEMParametrizedBidder(ParametrizedBidder):
         Check the power of PEM should not exceed the power of renewables
         """
         if self.pem_mw >= self.renewable_mw:
-            raise ValueError(f"The power of PEM is greater than the renewabele power.")
+            raise ValueError(f"The power of PEM is greater than the renewable power.")
 
     def compute_day_ahead_bids(self, date, hour=0):
         """
@@ -1571,7 +1571,7 @@ class PEMParametrizedBidder(ParametrizedBidder):
         for t_idx in range(self.day_ahead_horizon):
             da_wind = forecast[t_idx] * self.renewable_mw
             grid_wind = max(0, da_wind - self.pem_mw)
-            # gird wind are bidded at marginal cost = 0
+            # grid wind are bidded at marginal cost = 0
             # The rest of the power is bidded at the pem marginal cost
             if grid_wind == 0:
                 bids = [(0, 0), (da_wind, self.pem_marginal_cost)]
@@ -1638,7 +1638,7 @@ class PEMParametrizedBidder(ParametrizedBidder):
                     # When having indexerror, it must be the period that we are looking ahead. It is ok to set da_dispatch to 0
                     da_dispatch = 0
             # if we only participates in the RT market, then we do not consider the DA commitment
-            if self.real_time_bidding_only:
+            else:
                 da_dispatch = 0
 
             avail_rt_wind = max(0, rt_wind - da_dispatch)
@@ -1646,12 +1646,13 @@ class PEMParametrizedBidder(ParametrizedBidder):
 
             if avail_rt_wind == 0:
                 bids = [(0, 0), (0, 0)]
-            if avail_rt_wind > 0 and grid_wind == 0:
-                bids = [(0, 0), (avail_rt_wind, self.pem_marginal_cost)]
-            if avail_rt_wind > 0 and grid_wind > 0:
-                bids = [(0, 0), (grid_wind, 0), (avail_rt_wind, self.pem_marginal_cost)]
+            else:
+                if grid_wind == 0:
+                    bids = [(0, 0), (avail_rt_wind, self.pem_marginal_cost)]
+                else:
+                    bids = [(0, 0), (grid_wind, 0), (avail_rt_wind, self.pem_marginal_cost)]
             cost_curve = convert_marginal_costs_to_actual_costs(bids)
-            print(bids)
+            
             temp_curve = {
                 "data_type": "cost_curve",
                 "cost_curve_type": "piecewise",
