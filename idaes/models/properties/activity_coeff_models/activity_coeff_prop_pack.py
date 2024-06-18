@@ -222,11 +222,8 @@ conditions, and thus corresponding constraints  should be included,
         self.set_default_scaling("temperature_dew", 1e-1)
         self.set_default_scaling("temperature_bubble", 1e-1)
         self.set_default_scaling("flow_mol_phase", 1e-2)
-        # Only BTX supports liquid phases, so scaling based on the molar density
-        # of toluene isn't a problem.
-        self.set_default_scaling("density_mol", 1.065e-4, index="Liq")
-        # Based on an ideal gas at 1 bar and 350 K
-        self.set_default_scaling("density_mol", 0.3, index="Vap")
+        self.set_default_scaling("density_mol", 1 / 11.1e3, index="Liq")
+        self.set_default_scaling("density_mol", 0.31, index="Vap")
 
         self.set_default_scaling("pressure", 1e-6)
         self.set_default_scaling("pressure_sat", 1e-6)
@@ -664,6 +661,7 @@ class _ActivityCoeffStateBlock(StateBlock):
             for c in k.component_objects(Constraint):
                 if c.local_name in ["eq_enth_mol_phase", "eq_entr_mol_phase"]:
                     c.activate()
+
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
         init_log.info("Initialization Step 5 {}.".format(idaeslog.condition(res)))
@@ -759,14 +757,13 @@ class ActivityCoeffStateBlockData(StateBlockData):
         if self.params.config.state_vars == "FTPz":
             self.flow_mol = Var(
                 initialize=1.0,
-                bounds=(-1e-8, None),
-                # domain=NonNegativeReals,
+                domain=NonNegativeReals,
                 doc="Total molar flowrate [mol/s]",
                 units=pyunits.mol / pyunits.s,
             )
             self.mole_frac_comp = Var(
                 self.params.component_list,
-                bounds=(-1e-8, None),
+                bounds=(0, 1),
                 initialize=1 / len(self.params.component_list),
                 doc="Mixture mole fraction",
             )
@@ -807,16 +804,12 @@ class ActivityCoeffStateBlockData(StateBlockData):
 
         if self.params.config.state_vars == "FTPz":
             self.flow_mol_phase = Var(
-                self.params.phase_list,
-                initialize=0.5,
-                bounds=(0, None),
-                units=pyunits.mol / pyunits.s,
+                self.params.phase_list, initialize=0.5, units=pyunits.mol / pyunits.s
             )
         else:
             self.flow_mol_phase_comp = Var(
                 self.params._phase_component_set,
                 initialize=0.5,
-                bounds=(0, None),
                 units=pyunits.mol / pyunits.s,
             )
 
@@ -832,7 +825,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
         self.mole_frac_phase_comp = Var(
             self.params._phase_component_set,
             initialize=1 / len(self.params.component_list),
-            bounds=(-1e-8, None),
+            bounds=(0, 1),
         )
 
     def _make_liq_phase_eq(self):
@@ -1012,7 +1005,6 @@ class ActivityCoeffStateBlockData(StateBlockData):
         self._temperature_equilibrium = Var(
             initialize=self.temperature.value,
             doc="Temperature for calculating " "phase equilibrium",
-            domain=NonNegativeReals,
             units=pyunits.K,
         )
 
@@ -1020,7 +1012,6 @@ class ActivityCoeffStateBlockData(StateBlockData):
             initialize=self.temperature.value,
             doc="Intermediate temperature for calculating "
             "the equilibrium temperature",
-            domain=NonNegativeReals,
             units=pyunits.K,
         )
 
