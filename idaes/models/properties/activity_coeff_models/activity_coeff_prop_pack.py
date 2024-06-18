@@ -661,8 +661,6 @@ class _ActivityCoeffStateBlock(StateBlock):
             for c in k.component_objects(Constraint):
                 if c.local_name in ["eq_enth_mol_phase", "eq_entr_mol_phase"]:
                     c.activate()
-        # if blk.name == "fs.M01.inlet_2_state":
-        #     assert False
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
         init_log.info("Initialization Step 5 {}.".format(idaeslog.condition(res)))
@@ -791,8 +789,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
             )
             self.pressure = Var(
                 initialize=101325,
-                bounds=(-1e3, None),
-                # domain=NonNegativeReals,
+                domain=NonNegativeReals,
                 doc="State pressure [Pa]",
                 units=pyunits.Pa,
             )
