@@ -152,7 +152,7 @@ def Txy_data(
 
     # Initialize flash unit model
     model.props[1].calculate_scaling_factors()
-    # TODO: This will need ot be updated at some point as we deprecate the old initialization API
+    # TODO: This will need to be updated at some point as we deprecate the old initialization API
     model.props.initialize(solver=solver, optarg=solver_op, outlvl=print_level)
 
     solver = get_solver(
