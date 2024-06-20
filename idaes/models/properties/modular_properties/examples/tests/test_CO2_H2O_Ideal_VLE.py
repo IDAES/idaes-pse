@@ -109,7 +109,7 @@ class TestParamBlock(object):
         for i in model.params.phase_equilibrium_idx:
             assert i in ["PE1"]
 
-        assert model.params.phase_equilibrium_list == {"PE1": {"H2O": ("Vap", "Liq")}}
+        assert model.params.phase_equilibrium_list == {"PE1": ["H2O", ("Vap", "Liq")]}
 
         assert model.params.pressure_ref.value == 101325
         assert model.params.temperature_ref.value == 298.15

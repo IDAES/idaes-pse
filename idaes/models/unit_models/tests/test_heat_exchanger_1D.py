@@ -2448,6 +2448,12 @@ class TestBT_Generic_cocurrent(object):
         m.fs.unit.cold_side_inlet.mole_frac_comp[0, "benzene"].fix(0.5)
         m.fs.unit.cold_side_inlet.mole_frac_comp[0, "toluene"].fix(0.5)
 
+        # Set small values of epsilon to get sufficiently accurate results
+        # Only need hot side, as cold side uses old SmoothVLE
+        for i in m.fs.unit.hot_side.properties.keys():
+            m.fs.unit.hot_side.properties[i].eps_t_Vap_Liq.set_value(1e-4)
+            m.fs.unit.hot_side.properties[i].eps_z_Vap_Liq.set_value(1e-4)
+
         return m
 
     @pytest.mark.component
@@ -2486,8 +2492,8 @@ class TestBT_Generic_cocurrent(object):
         assert hasattr(btx.fs.unit, "heat_transfer_eq")
         assert hasattr(btx.fs.unit, "heat_conservation")
 
-        assert number_variables(btx) == 1976
-        assert number_total_constraints(btx) == 1867
+        assert number_variables(btx) == 1829
+        assert number_total_constraints(btx) == 1720
         assert number_unused_variables(btx) == 36
 
     @pytest.mark.integration
@@ -2641,7 +2647,9 @@ class TestBT_Generic_cocurrent(object):
     @pytest.mark.integration
     def test_numerical_issues(self, btx):
         dt = DiagnosticsToolbox(btx)
-        dt.assert_no_numerical_warnings()
+        # TODO: Complementarity formulation results in near-parallel components
+        # when unscaled
+        dt.assert_no_numerical_warnings(ignore_parallel_components=True)
 
     @pytest.mark.component
     def test_initialization_error(self, btx):
@@ -3528,6 +3536,11 @@ class TestInitializersModularCoCurrent:
         m.fs.unit.cold_side_inlet.pressure[0].set_value(101.325)  # kPa
         m.fs.unit.cold_side_inlet.mole_frac_comp[0, "benzene"].set_value(0.5)
         m.fs.unit.cold_side_inlet.mole_frac_comp[0, "toluene"].set_value(0.5)
+
+        # Set small values of epsilon to get sufficiently accurate results
+        for i in m.fs.unit.hot_side.properties.keys():
+            m.fs.unit.hot_side.properties[i].eps_t_Vap_Liq.set_value(1e-4)
+            m.fs.unit.hot_side.properties[i].eps_z_Vap_Liq.set_value(1e-4)
 
         return m
 
