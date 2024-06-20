@@ -97,8 +97,9 @@ def Txy_data(
     num_points=20,
     temperature=298.15,
     print_level=idaeslog.NOTSET,
-    solver=None,
+    solver="ipopt_v2",
     solver_op=None,
+    solver_writer_config=None,
 ):
     """
     Function to generate T-x-y data. The function builds a state block and extracts
@@ -109,7 +110,7 @@ def Txy_data(
     Args:
         component_1: Component 1
         component_2: Component 2
-        pressure: Pressure at which the bubble and drew temperatures will be calculates
+        pressure: Pressure at which the bubble and drew temperatures will be calculated
         temperature: Temperature at which to initialize state block
         num_points: Number of data point to be calculated
         model: Model wit initialized Property package which contains data to calculate
@@ -117,6 +118,7 @@ def Txy_data(
         print_level: printing level from initialization
         solver: solver to use (default=None, use IDAES default solver)
         solver_op: solver options
+        solver_writer_config: writer_config arguments for solver
 
     Returns:
         (Class): A class containing the T-x-y data
@@ -150,14 +152,17 @@ def Txy_data(
 
     # Initialize flash unit model
     model.props[1].calculate_scaling_factors()
+    # TODO: This will need ot be updated at some point as we deprecate the old initialization API
     model.props.initialize(solver=solver, optarg=solver_op, outlvl=print_level)
 
-    solver = get_solver(solver, solver_op)
+    solver = get_solver(
+        solver, solver_options=solver_op, writer_config=solver_writer_config
+    )
 
     # Create an array of compositions with N number of points
     x_d = np.linspace(x, 1 - x - xs, num_points)
 
-    # Create emprty arrays for concentration, bubble temperature and dew temperature
+    # Create empty arrays for concentration, bubble temperature and dew temperature
     X = []
     Tbubb = []
     Tdew = []
