@@ -560,12 +560,10 @@ class TestInitializers:
 
     @pytest.mark.component
     def test_hx_initializer(self, model):
-        if platform == "linux":
-            # TODO: Linear pre-solve fails to converge on Linux without bounds on deltaT
-            # but this causes Windows to fail. Likely indicates a scaling issue.
-            # TODO: Will try to fix this once the scaling tools are ready
-            model.fs.unit.delta_temperature_in.setlb(1e-8)
-            model.fs.unit.delta_temperature_out.setlb(1e-8)
+        # Setting bounds on deltaT seems to help avoid a temperature cross-over
+        # during initialization.
+        model.fs.unit.delta_temperature_in.setlb(1e-8)
+        model.fs.unit.delta_temperature_out.setlb(1e-8)
 
         initializer = HX0DInitializer()
         initializer.initialize(model.fs.unit)

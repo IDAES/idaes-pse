@@ -3334,7 +3334,10 @@ class TestInitializersSaponCounterCurrent:
 
     @pytest.mark.integration
     def test_block_triangularization(self, model):
-        initializer = BlockTriangularizationInitializer(constraint_tolerance=2e-5)
+        initializer = BlockTriangularizationInitializer(
+            constraint_tolerance=2e-5,
+            block_solver_writer_config={"linear_presolve": False},
+        )
         # Need to ignore unused variables at inlets
         initializer.initialize(model.fs.unit, exclude_unused_vars=True)
 
