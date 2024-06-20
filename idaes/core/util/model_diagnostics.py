@@ -289,9 +289,11 @@ CONFIG.declare(
 CONFIG.declare(
     "parallel_component_tolerance",
     ConfigValue(
-        default=1e-8,
+        default=1e-15,
         domain=float,
         description="Tolerance for identifying near-parallel Jacobian rows/columns",
+        doc="Absolute tolerance for considering two Jacobian rows/columns to be considered. "
+        "parallel. A smaller value means more stringent requirements for colinearity.",
     ),
 )
 CONFIG.declare(
