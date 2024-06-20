@@ -19,6 +19,7 @@ import json
 import os
 
 import pyomo.common.config
+from pyomo.common.config import Bool
 
 _log = logging.getLogger(__name__)
 # Default release version if no options provided for get-extensions
@@ -379,17 +380,6 @@ def _new_idaes_config_block():
         ),
     )
 
-    cfg["ipopt_v2"]["options"].declare(
-        "ma57_automatic_scaling",
-        pyomo.common.config.ConfigValue(
-            domain=str,
-            default="yes",
-            description="Whether to use automatic scaling in MA57",
-            doc="Whether to use automatic scaling in MA57. "
-            "Valid values: 'yes' (default), 'no'.",
-        ),
-    )
-
     cfg["ipopt_v2"].declare(
         "writer_config",
         pyomo.common.config.ConfigBlock(
@@ -403,7 +393,7 @@ def _new_idaes_config_block():
     cfg["ipopt_v2"]["writer_config"].declare(
         "scale_model",
         pyomo.common.config.ConfigValue(
-            domain=bool,
+            domain=Bool,
             default=False,  # TODO: Change to true once transition complete
             description="Whether to apply model scaling in writer",
             doc="Whether to apply model scaling in writer",
@@ -413,7 +403,7 @@ def _new_idaes_config_block():
     cfg["ipopt_v2"]["writer_config"].declare(
         "linear_presolve",
         pyomo.common.config.ConfigValue(
-            domain=bool,
+            domain=Bool,
             default=True,
             description="Whether to apply linear presolve in writer",
             doc="Whether to apply linear presolve in writer",
