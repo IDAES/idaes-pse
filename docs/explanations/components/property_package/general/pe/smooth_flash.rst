@@ -1,8 +1,11 @@
-Smooth Vapor-Liquid Equilibrium Formulation (``smooth_VLE``)
-============================================================
+Smooth Vapor-Liquid Equilibrium Formulation (SmoothVLE)
+=======================================================
 
 .. contents:: Contents 
     :depth: 2
+
+.. note::
+  For property packages using cubic Equations of State, there is an alternative :ref:`CubicComplementarityVLE <explanations/components/property_package/general/pe/smooth_vle2:Cubic Smooth Vapor-Liquid Equilibrium Formulation (CubicComplementarityVLE)>` class that may give better performance.
 
 Source
 ------

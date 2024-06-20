@@ -15,11 +15,9 @@ Methods for cubic equations of state.
 
 Currently only supports liquid and vapor phases
 """
-# TODO: Missing docstrings
-# pylint: disable=missing-function-docstring
-
-# TODO: Look into protected access issues
+# TODO: Pylint complains about variables with _x names as they are built by other classes
 # pylint: disable=protected-access
+# pylint: disable=missing-function-docstring
 
 from enum import Enum
 from copy import deepcopy
@@ -543,6 +541,9 @@ class Cubic(EoSBase):
 
     @staticmethod
     def compress_fact_phase(b, p):
+        """
+        Compressibility factor
+        """
         pobj = b.params.get_phase(p)
         cname = pobj._cubic_type.name
         A = getattr(b, cname + "_A")
@@ -562,10 +563,16 @@ class Cubic(EoSBase):
 
     @staticmethod
     def cp_mass_phase(blk, p):
+        """
+        Phase mass-specific heat capacity at constant pressure
+        """
         return blk.cp_mol_phase[p] / blk.mw_phase[p]
 
     @staticmethod
     def cp_mol_phase(blk, p):
+        """
+        Phase molar heat capacity at constant pressure
+        """
         pobj = blk.params.get_phase(p)
         cname = pobj._cubic_type.name
 
@@ -607,10 +614,16 @@ class Cubic(EoSBase):
 
     @staticmethod
     def cv_mass_phase(blk, p):
+        """
+        Phase mass-specific heat capacity at constant volume
+        """
         return blk.cv_mol_phase[p] / blk.mw_phase[p]
 
     @staticmethod
     def cv_mol_phase(blk, p):
+        """
+        Phase molar heat capacity at constant volume
+        """
         pobj = blk.params.get_phase(p)
         cname = pobj._cubic_type.name
         am = getattr(blk, cname + "_am")[p]
@@ -635,16 +648,25 @@ class Cubic(EoSBase):
 
     @staticmethod
     def dens_mass_phase(b, p):
+        """
+        Phase density (mass basis)
+        """
         return b.dens_mol_phase[p] * b.mw_phase[p]
 
     @staticmethod
     def dens_mol_phase(b, p):
+        """
+        Phase density (mole basis)
+        """
         return b.pressure / (
             Cubic.gas_constant(b) * b.temperature * b.compress_fact_phase[p]
         )
 
     @staticmethod
     def energy_internal_mol_phase(blk, p):
+        """
+        Phase molar internal energy
+        """
         pobj = blk.params.get_phase(p)
 
         cname = pobj._cubic_type.name
@@ -674,12 +696,18 @@ class Cubic(EoSBase):
 
     @staticmethod
     def energy_internal_mol_phase_comp(blk, p, j):
+        """
+        Phase partial molar internal energy
+        """
         return (
             blk.enth_mol_phase_comp[p, j] - blk.pressure * blk.vol_mol_phase_comp[p, j]
         )
 
     @staticmethod
     def enth_mol_phase(blk, p):
+        """
+        Phase molar enthalpy
+        """
         pobj = blk.params.get_phase(p)
 
         cname = pobj._cubic_type.name
@@ -709,6 +737,9 @@ class Cubic(EoSBase):
 
     @staticmethod
     def enth_mol_phase_comp(blk, p, j):
+        """
+        Phase partial molar enthalpy
+        """
         dlogphi_j_dT = _d_log_fug_coeff_dT_phase_comp(blk, p, j)
 
         enth_ideal_gas = get_method(blk, "enth_mol_ig_comp", j)(
@@ -721,6 +752,9 @@ class Cubic(EoSBase):
 
     @staticmethod
     def entr_mol_phase(blk, p):
+        """
+        Phase molar entropy
+        """
         pobj = blk.params.get_phase(p)
 
         cname = pobj._cubic_type.name
@@ -759,6 +793,9 @@ class Cubic(EoSBase):
 
     @staticmethod
     def entr_mol_phase_comp(blk, p, j):
+        """
+        Phase partial molar entropy
+        """
         logphi_j = _log_fug_coeff_phase_comp(blk, p, j)
         dlogphi_j_dT = _d_log_fug_coeff_dT_phase_comp(blk, p, j)
 
@@ -1355,27 +1392,109 @@ def _bubble_dew_log_fug_coeff_method(blk, p, j, pp, pt_var):
 
 # -----------------------------------------------------------------------------
 # Default rules for cubic expressions
+def calculate_equilibrium_cubic_coefficients(b, cubic_name, cubic_type, p1, p2, p3):
+    """
+    Calculates the coefficients b, c, and d of the cubic 0 = z**3 + b * z**2 + c * z + d
+    at the equilibrium conditions
+
+    Args:
+        b: StateBlock of interest
+        cubic_name: Name of Cubic EoS
+        cubic_type: Type of Cubic EoS
+        p1: Phase 1
+        p2: Phase 2
+        p3; Phase 3
+
+    Returns:
+        expressions for b, c, d
+    """
+
+    A_eq = getattr(b, "_" + cubic_name + "_A_eq")[p1, p2, p3]
+    B_eq = getattr(b, "_" + cubic_name + "_B_eq")[p1, p2, p3]
+    EoS_u = EoS_param[cubic_type]["u"]
+    EoS_w = EoS_param[cubic_type]["w"]
+
+    b = -(1 + B_eq - EoS_u * B_eq)
+    c = A_eq - EoS_u * B_eq - EoS_u * B_eq**2 + EoS_w * B_eq**2
+    d = -(A_eq * B_eq + EoS_w * B_eq**2 + EoS_w * B_eq**3)
+
+    return b, c, d
+
+
 def func_fw_PR(cobj):
+    """
+    f(omega) function for Peng-Robinson EoS.
+
+    Args:
+        cobj: Component object
+
+    Returns:
+        expression for fw
+
+    """
     return 0.37464 + 1.54226 * cobj.omega - 0.26992 * cobj.omega**2
 
 
 def func_fw_SRK(cobj):
+    """
+    f(omega) function for SRK EoS.
+
+    Args:
+        cobj: Component object
+
+    Returns:
+        expression for fw
+
+    """
     return 0.48 + 1.574 * cobj.omega - 0.176 * cobj.omega**2
 
 
 def func_alpha_soave(T, fw, cobj):
+    """
+    Soave alpha function.
+
+    Args:
+        fw: expression for fw
+        cobj: Component object
+
+    Returns:
+        expression for alpha
+
+    """
     Tc = cobj.temperature_crit
     Tr = T / Tc
     return (1 + fw * (1 - sqrt(Tr))) ** 2
 
 
 def func_dalpha_dT_soave(T, fw, cobj):
+    """
+    Function to get first partial derivative w.r.t. temperature of Soave alpha function.
+
+    Args:
+        fw: expression for fw
+        cobj: Component object
+
+    Returns:
+        expression for first derivative of alpha
+
+    """
     Tc = cobj.temperature_crit
     Tr = T / Tc
     return 1 / Tc * (-fw / sqrt(Tr)) * (1 + fw * (1 - sqrt(Tr)))
 
 
 def func_d2alpha_dT2_soave(T, fw, cobj):
+    """
+    Function to get 2nd partial derivative w.r.t. temperature of Soave alpha function.
+
+    Args:
+        fw: expression for fw
+        cobj: Component object
+
+    Returns:
+        expression for 2nd derivative of alpha
+
+    """
     Tc = cobj.temperature_crit
     Tr = T / Tc
     return 1 / Tc**2 * ((fw**2 + fw) / (2 * Tr * sqrt(Tr)))
@@ -1384,6 +1503,9 @@ def func_d2alpha_dT2_soave(T, fw, cobj):
 # -----------------------------------------------------------------------------
 # Mixing rules
 def rule_am_default(m, cname, a, p, pp=()):
+    """
+    Standard Van der Waals one-fluid mixing rule for a term
+    """
     k = getattr(m.params, cname + "_kappa")
     return sum(
         sum(
@@ -1398,6 +1520,9 @@ def rule_am_default(m, cname, a, p, pp=()):
 
 
 def rule_am_crit_default(m, cname, a_crit):
+    """
+    Standard Van der Waals one-fluid mixing rule for a term evaluated at critical point
+    """
     k = getattr(m.params, cname + "_kappa")
     return sum(
         sum(
@@ -1412,8 +1537,14 @@ def rule_am_crit_default(m, cname, a_crit):
 
 
 def rule_bm_default(m, b, p):
+    """
+    Standard Van der Waals one-fluid mixing rule for b term
+    """
     return sum(m.mole_frac_phase_comp[p, i] * b[i] for i in m.components_in_phase(p))
 
 
 def rule_bm_crit_default(m, b):
+    """
+    Standard Van der Waals one-fluid mixing rule for b term evaluated at critical point
+    """
     return sum(m.mole_frac_comp[i] * b[i] for i in m.component_list)

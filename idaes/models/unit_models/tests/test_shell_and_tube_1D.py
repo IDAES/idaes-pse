@@ -1437,6 +1437,12 @@ class TestBT_Generic_cocurrent(object):
         m.fs.unit.cold_side_inlet.mole_frac_comp[0, "benzene"].fix(0.5)
         m.fs.unit.cold_side_inlet.mole_frac_comp[0, "toluene"].fix(0.5)
 
+        # Set small values of epsilon to get sufficiently accurate results
+        # Only need hot side, as cold side uses old SmoothVLE
+        for i in m.fs.unit.hot_side.properties.keys():
+            m.fs.unit.hot_side.properties[i].eps_t_Vap_Liq.set_value(1e-4)
+            m.fs.unit.hot_side.properties[i].eps_z_Vap_Liq.set_value(1e-4)
+
         return m
 
     @pytest.mark.component
@@ -1484,8 +1490,8 @@ class TestBT_Generic_cocurrent(object):
         assert hasattr(btx.fs.unit, "cold_side_heat_transfer_eq")
         assert hasattr(btx.fs.unit, "heat_conservation")
 
-        assert number_variables(btx) == 2021
-        assert number_total_constraints(btx) == 1890
+        assert number_variables(btx) == 1874
+        assert number_total_constraints(btx) == 1743
         assert number_unused_variables(btx) == 34
 
     @pytest.mark.integration
