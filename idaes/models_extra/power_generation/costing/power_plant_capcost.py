@@ -378,7 +378,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 initialize=0,
                 doc="additional cost to be added to the COE calculations"
                 + " in millions; use 70.9e-6 for NGCC baseline report, "
-                + " use 43.2 for NGCC without carbon capture.",
+                + " use 43.3e-6 for NGCC without carbon capture.",
                 units=CE_index_units / pyunits.MWh,
             )
 
