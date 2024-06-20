@@ -3747,6 +3747,7 @@ def check_parallel_jacobian(
         list of 2-tuples containing parallel Pyomo components
 
     """
+    # Thanks to Robby Parker and Doug Allan for significant performance improvements
 
     if direction not in ["row", "column"]:
         raise ValueError(
