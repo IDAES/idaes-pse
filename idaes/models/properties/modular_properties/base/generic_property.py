@@ -1239,6 +1239,13 @@ class ModularPropertiesInitializer(InitializerBase):
         ),
     )
     CONFIG.declare(
+        "solver_writer_config",
+        ConfigDict(
+            implicit=True,
+            description="Dict of writer_config arguments to pass to solver",
+        ),
+    )
+    CONFIG.declare(
         "calculate_variable_options",
         ConfigDict(
             implicit=True,
@@ -1277,7 +1284,11 @@ class ModularPropertiesInitializer(InitializerBase):
         )
 
         # Create solver object
-        solver_obj = get_solver(self.config.solver, self.config.solver_options)
+        solver_obj = get_solver(
+            solver=self.config.solver,
+            solver_options=self.config.solver_options,
+            writer_config=self.config.solver_writer_config,
+        )
 
         init_log.info("Starting initialization routine")
 

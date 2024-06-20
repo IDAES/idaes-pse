@@ -1389,7 +1389,7 @@ class TestCEOSCriticalProps:
     @pytest.mark.solver
     def test_solve_critical_props(self, model):
         # Solve model
-        solver = get_solver()
+        solver = get_solver("ipopt_v2")
         res = solver.solve(model, tee=True)
         assert_optimal_termination(res)
 

@@ -55,9 +55,8 @@ pytestmark = pytest.mark.cubic_root
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_solver()
 # Limit iterations to make sure sweeps aren't getting out of hand
-solver.options["max_iter"] = 50
+solver = get_solver(solver="ipopt_v2", solver_options={"max_iter": 50})
 
 # ---------------------------------------------------------------------
 # Configuration dictionary for an ideal Benzene-Toluene system
