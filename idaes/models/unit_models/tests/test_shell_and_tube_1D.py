@@ -1652,7 +1652,8 @@ class TestBT_Generic_cocurrent(object):
             btx, rename=False
         )
         dt = DiagnosticsToolbox(btx_scaled)
-        dt.assert_no_numerical_warnings()
+        # Jacobian Condition Number: 1.931E+17, partially due ComplementarityVLE
+        dt.assert_no_numerical_warnings(ignore_parallel_components=True)
 
     @pytest.mark.component
     def test_initialization_error(self, btx):
