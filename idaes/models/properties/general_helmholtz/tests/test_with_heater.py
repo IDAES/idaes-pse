@@ -35,7 +35,7 @@ from idaes.models.properties.general_helmholtz import helmholtz_available
 
 # -----------------------------------------------------------------------------
 # set up solver
-solver = get_solver()
+solver = get_solver("ipopt_v2")
 
 
 @pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
