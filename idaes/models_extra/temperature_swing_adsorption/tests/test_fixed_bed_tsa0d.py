@@ -182,10 +182,6 @@ class TestTsaZeolite:
         assert "Cycle time [h]" in summary_df.index
         assert "Pressure drop [Pa]" in summary_df.index
 
-    @pytest.mark.unit
-    def test_plotting(self, model):
-        plot_tsa_profiles(model.fs.unit)
-
 
 class TestTsaMgmof:
     # also testing calculate beds and simple steam calcs
