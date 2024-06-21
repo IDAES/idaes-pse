@@ -59,7 +59,8 @@ from idaes.models_extra.power_generation.properties.natural_gas_PR import get_pr
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_solver()
+# TODO: Does not solve with MA57 - check again once scaling is deployed
+solver = get_solver(solver="ipopt_v2", solver_options={"linear_solver": "ma27"})
 
 
 # -----------------------------------------------------------------------------

@@ -158,7 +158,7 @@ class MSContactorInitializer(ModularInitializerBase):
                 c.deactivate()
 
         # Call css_solver
-        solver = get_solver(self.config.solver, options=self.config.solver_options)
+        solver = self._get_solver()
         solve_strongly_connected_components(
             model,
             solver=solver,

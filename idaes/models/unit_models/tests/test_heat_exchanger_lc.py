@@ -63,7 +63,7 @@ from idaes.core.initialization import (
 from idaes.core.util import DiagnosticsToolbox
 
 # Get default solver for testing
-solver = get_solver()
+solver = get_solver("ipopt_v2")
 
 # Number of steps for transient simulations
 TIME_STEPS = 50
