@@ -564,8 +564,9 @@ class TestInitializers:
         # during initialization.
         model.fs.unit.delta_temperature_in.setlb(1e-8)
         model.fs.unit.delta_temperature_out.setlb(1e-8)
-
-        initializer = HX0DInitializer()
+        # TODO: Linear presolve appears to cause issues on Windows
+        # Hope that these will be fixed with better scaling
+        initializer = HX0DInitializer(writer_config={"linear_presolve": False})
         initializer.initialize(model.fs.unit)
 
         assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
