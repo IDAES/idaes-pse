@@ -65,8 +65,7 @@ from idaes.models_extra.power_generation.properties.natural_gas_PR import get_pr
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-# TODO: Does not solve with MA57 - check again once scaling is deployed
-solver = get_solver(solver="ipopt_v2", solver_options={"linear_solver": "ma27"})
+solver = get_solver(solver="ipopt_v2", writer_config={"scale_model": True})
 
 
 # -----------------------------------------------------------------------------
@@ -330,7 +329,7 @@ class TestMethane(object):
         scaler.variables_by_magnitude(methane)
         scaler.constraints_by_jacobian_norm(methane)
 
-        results = solver.solve(methane, writer_config={"scale_model": True})
+        results = solver.solve(methane)
 
         # Check for optimal solution
         assert_optimal_termination(results)
@@ -467,7 +466,7 @@ class TestMethane(object):
         scaler.variables_by_magnitude(methane)
         scaler.constraints_by_jacobian_norm(methane)
 
-        results = solver.solve(methane, writer_config={"scale_model": True})
+        results = solver.solve(methane)
 
         # Check for optimal solution
         assert_optimal_termination(results)
