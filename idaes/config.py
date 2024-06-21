@@ -389,7 +389,7 @@ def _new_idaes_config_block():
         ),
     )
 
-    # TODO: Remember to update BTInitializer to sue get_solver once scaling tools are deployed.
+    # TODO: Remember to update BTInitializer to use get_solver once scaling tools are deployed.
     cfg["ipopt_v2"]["writer_config"].declare(
         "scale_model",
         pyomo.common.config.ConfigValue(
