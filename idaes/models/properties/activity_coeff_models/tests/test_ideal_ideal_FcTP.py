@@ -37,7 +37,7 @@ from idaes.core.solvers import get_solver
 import idaes.core.util.scaling as iscale
 
 
-solver = get_solver()
+solver = get_solver("ipopt_v2")
 
 
 # -----------------------------------------------------------------------------
