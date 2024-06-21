@@ -104,7 +104,7 @@ def Txy_data(
     """
     Function to generate T-x-y data. The function builds a state block and extracts
     bubble and dew temperatures at P pressure for N number of compositions.
-    As N is increased increase the time of the calculation will increase and
+    As N is increased the time of the calculation will increase and
     create a smoother looking plot.
 
     Args:
@@ -113,7 +113,7 @@ def Txy_data(
         pressure: Pressure at which the bubble and drew temperatures will be calculated
         temperature: Temperature at which to initialize state block
         num_points: Number of data point to be calculated
-        model: Model wit initialized Property package which contains data to calculate
+        model: Model with initialized property package which contains data to calculate
         bubble and dew temperatures for  component 1 and component 2
         print_level: printing level from initialization
         solver: solver to use (default=None, use IDAES default solver)

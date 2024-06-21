@@ -328,7 +328,6 @@ def _new_idaes_config_block():
         pyomo.common.config.ConfigBlock(
             implicit=False,
             description="Default config for 'ipopt' solver",
-            doc="Default config for 'ipopt' solver",
         ),
     )
     cfg["ipopt_v2"].declare(
@@ -336,7 +335,6 @@ def _new_idaes_config_block():
         pyomo.common.config.ConfigBlock(
             implicit=True,
             description="Default solver options for 'ipopt'",
-            doc="Default solver options for 'ipopt' solver",
         ),
     )
 
@@ -346,7 +344,6 @@ def _new_idaes_config_block():
             domain=str,
             default="gradient-based",
             description="Ipopt NLP scaling method",
-            doc="Ipopt NLP scaling method",
         ),
     )
 
@@ -356,7 +353,6 @@ def _new_idaes_config_block():
             domain=float,
             default=1e-6,
             description="Ipopt tol option",
-            doc="Ipopt tol option",
         ),
     )
 
@@ -366,7 +362,6 @@ def _new_idaes_config_block():
             domain=int,
             default=200,
             description="Ipopt max_iter option",
-            doc="Ipopt max_iter option",
         ),
     )
 
@@ -376,7 +371,6 @@ def _new_idaes_config_block():
             domain=str,
             default="ma57",
             description="Linear solver to be used by IPOPT",
-            doc="Linear solver to be used by IPOPT",
         ),
     )
 
@@ -385,7 +379,6 @@ def _new_idaes_config_block():
         pyomo.common.config.ConfigBlock(
             implicit=True,
             description="Default writer configuration for 'ipopt'",
-            doc="Default writer configuration for 'ipopt' solver",
         ),
     )
 
@@ -396,7 +389,6 @@ def _new_idaes_config_block():
             domain=Bool,
             default=False,  # TODO: Change to true once transition complete
             description="Whether to apply model scaling in writer",
-            doc="Whether to apply model scaling in writer",
         ),
     )
 
@@ -406,7 +398,6 @@ def _new_idaes_config_block():
             domain=Bool,
             default=True,
             description="Whether to apply linear presolve in writer",
-            doc="Whether to apply linear presolve in writer",
         ),
     )
 
