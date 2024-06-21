@@ -1165,7 +1165,7 @@ class TestCEOSCriticalProps:
             },
         )
 
-        m.props = m.params.state_block_class(
+        m.props = m.params.build_state_block(
             [1], defined_state=True, parameters=m.params
         )
 
