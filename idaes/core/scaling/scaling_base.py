@@ -201,12 +201,14 @@ class ScalerBase:
 
         if scaling_factor > maxsf:
             _log.debug(
-                f"Scaling factor for {component.name} limited by maximum value (max_sf: {maxsf} < sf: {scaling_factor})"
+                f"Scaling factor for {component.name} limited by maximum value "
+                f"(max_sf: {maxsf} < sf: {scaling_factor})"
             )
             scaling_factor = maxsf
         elif scaling_factor < minsf:
             _log.debug(
-                f"Scaling factor for {component.name} limited by minimum value (min_sf: {minsf} > sf: {scaling_factor})"
+                f"Scaling factor for {component.name} limited by minimum value "
+                f"(min_sf: {minsf} > sf: {scaling_factor})"
             )
             scaling_factor = minsf
 
