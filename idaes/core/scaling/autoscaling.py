@@ -27,70 +27,18 @@ from pyomo.environ import (
 from pyomo.core.base.block import BlockData
 from pyomo.core.base.constraint import ConstraintData
 from pyomo.core.base.var import VarData
-from pyomo.common.config import (
-    Bool,
-    ConfigDict,
-    ConfigValue,
-    document_kwargs_from_configdict,
-)
+from pyomo.common.config import document_kwargs_from_configdict
 
-from idaes.core.scaling.util import get_scaling_factor, set_scaling_factor
+from idaes.core.scaling.scaling_base import CONFIG, ScalerBase
+from idaes.core.scaling.util import get_scaling_factor
 from idaes.core.util.scaling import get_jacobian
 
 
-CONFIG = ConfigDict()
-CONFIG.declare(
-    "zero_tolerance",
-    ConfigValue(
-        default=1e-12,
-        domain=float,
-        description="Value at which a variable will be considered equal to zero for scaling.",
-    ),
-)
-CONFIG.declare(
-    "max_variable_scaling_factor",
-    ConfigValue(
-        default=1e10,
-        domain=float,
-        description="Maximum value for variable scaling factors.",
-    ),
-)
-CONFIG.declare(
-    "min_variable_scaling_factor",
-    ConfigValue(
-        default=1e-10,
-        domain=float,
-        description="Minimum value for variable scaling factors.",
-    ),
-)
-CONFIG.declare(
-    "max_constraint_scaling_factor",
-    ConfigValue(
-        default=1e10,
-        domain=float,
-        description="Maximum value for constraint scaling factors.",
-    ),
-)
-CONFIG.declare(
-    "min_constraint_scaling_factor",
-    ConfigValue(
-        default=1e-10,
-        domain=float,
-        description="Minimum value for constraint scaling factors.",
-    ),
-)
-CONFIG.declare(
-    "overwrite",
-    ConfigValue(
-        default=False,
-        domain=Bool,
-        description="Whether to overwrite existing scaling factors.",
-    ),
-)
+ASCONFIG = CONFIG()
 
 
-@document_kwargs_from_configdict(CONFIG)
-class AutoScaler:
+@document_kwargs_from_configdict(ASCONFIG)
+class AutoScaler(ScalerBase):
     """
     IDAES Autoscaling Toolbox
 
@@ -102,7 +50,7 @@ class AutoScaler:
     """
 
     def __init__(self, **kwargs):
-        self.config = CONFIG(kwargs)
+        self.config = ASCONFIG(kwargs)
 
     def variables_by_magnitude(self, blk_or_var, descend_into: bool = True):
         """
@@ -225,10 +173,6 @@ class AutoScaler:
         self._con_by_norm(jblock, con_list=con_list, norm=norm)
 
     def _vardata_by_magnitude(self, vardata):
-        if vardata.fixed:
-            # Fixed var
-            return
-
         if value(vardata) is None:
             sf = 1.0
         else:
@@ -276,20 +220,3 @@ class AutoScaler:
                 sf = sf_old / n
 
             self._set_scaling_factor(c, "constraint", sf)
-
-    def _set_scaling_factor(self, component, component_type, scaling_factor):
-        if component_type == "variable":
-            maxsf = self.config.max_variable_scaling_factor
-            minsf = self.config.min_variable_scaling_factor
-        elif component_type == "constraint":
-            maxsf = self.config.max_constraint_scaling_factor
-            minsf = self.config.min_constraint_scaling_factor
-        else:
-            raise ValueError("Invalid value for component_type.")
-
-        if scaling_factor > maxsf:
-            scaling_factor = maxsf
-        elif scaling_factor < minsf:
-            scaling_factor = minsf
-
-        set_scaling_factor(component, scaling_factor, overwrite=self.config.overwrite)
