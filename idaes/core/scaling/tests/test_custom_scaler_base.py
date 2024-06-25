@@ -368,14 +368,14 @@ class TestCustomScalerBase:
 
         # overwrite = False, no change
         sb.scale_constraint_by_nominal_value(
-            model.ideal_gas, scheme="maximum_magnitude", overwrite=False
+            model.ideal_gas, scheme="inverse_maximum", overwrite=False
         )
         assert model.scaling_factor[model.ideal_gas] == 1
         # overwrite = True
         sb.scale_constraint_by_nominal_value(
-            model.ideal_gas, scheme="maximum_magnitude", overwrite=True
+            model.ideal_gas, scheme="inverse_maximum", overwrite=True
         )
-        assert model.scaling_factor[model.ideal_gas] == pytest.approx(1e6, rel=1e-5)
+        assert model.scaling_factor[model.ideal_gas] == pytest.approx(1e-6, rel=1e-5)
 
     @pytest.mark.unit
     def test_scale_constraint_by_nominal_value_min(self, model):
@@ -389,14 +389,62 @@ class TestCustomScalerBase:
 
         # overwrite = False, no change
         sb.scale_constraint_by_nominal_value(
-            model.ideal_gas, scheme="minimum_magnitude", overwrite=False
+            model.ideal_gas, scheme="inverse_minimum", overwrite=False
         )
         assert model.scaling_factor[model.ideal_gas] == 1
         # overwrite = True
         sb.scale_constraint_by_nominal_value(
-            model.ideal_gas, scheme="minimum_magnitude", overwrite=True
+            model.ideal_gas, scheme="inverse_minimum", overwrite=True
         )
-        assert model.scaling_factor[model.ideal_gas] == pytest.approx(831.446, rel=1e-5)
+        assert model.scaling_factor[model.ideal_gas] == pytest.approx(
+            1 / 831.446, rel=1e-5
+        )
+
+    @pytest.mark.unit
+    def test_scale_constraint_by_nominal_value_inv_sum(self, model):
+        sb = CustomScalerBase()
+
+        # Set variable scaling factors for testing
+        model.scaling_factor[model.pressure] = 1e-5
+        model.scaling_factor[model.temperature] = 1e-2
+        model.scaling_factor[model.volume_mol] = 1e-1
+        model.scaling_factor[model.ideal_gas] = 1
+
+        # overwrite = False, no change
+        sb.scale_constraint_by_nominal_value(
+            model.ideal_gas, scheme="inverse_sum", overwrite=False
+        )
+        assert model.scaling_factor[model.ideal_gas] == 1
+        # overwrite = True
+        sb.scale_constraint_by_nominal_value(
+            model.ideal_gas, scheme="inverse_sum", overwrite=True
+        )
+        assert model.scaling_factor[model.ideal_gas] == pytest.approx(
+            1 / (831.446 + 1e6), rel=1e-5
+        )
+
+    @pytest.mark.unit
+    def test_scale_constraint_by_nominal_value_rss(self, model):
+        sb = CustomScalerBase()
+
+        # Set variable scaling factors for testing
+        model.scaling_factor[model.pressure] = 1e-5
+        model.scaling_factor[model.temperature] = 1e-2
+        model.scaling_factor[model.volume_mol] = 1e-1
+        model.scaling_factor[model.ideal_gas] = 1
+
+        # overwrite = False, no change
+        sb.scale_constraint_by_nominal_value(
+            model.ideal_gas, scheme="inverse_root_sum_squared", overwrite=False
+        )
+        assert model.scaling_factor[model.ideal_gas] == 1
+        # overwrite = True
+        sb.scale_constraint_by_nominal_value(
+            model.ideal_gas, scheme="inverse_root_sum_squared", overwrite=True
+        )
+        assert model.scaling_factor[model.ideal_gas] == pytest.approx(
+            1 / (831.446**2 + 1e6**2) ** 0.5, rel=1e-5
+        )
 
     @pytest.mark.unit
     def test_scale_constraint_by_nominal_value_invalid_scheme(self, model):

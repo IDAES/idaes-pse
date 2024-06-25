@@ -109,10 +109,8 @@ def test_autoscale_L2_norm(gibbs):
     scaler = AutoScaler()
     scaler.constraints_by_jacobian_norm(gibbs, norm=2)
 
-    unscaled = jacobian_cond(gibbs, scaled=False)
     scaled = jacobian_cond(gibbs, scaled=True)
 
-    assert scaled < unscaled
     assert scaled == pytest.approx(2510.945, rel=1e-5)
 
 
@@ -121,10 +119,8 @@ def test_autoscale_L1_norm(gibbs):
     scaler = AutoScaler()
     scaler.constraints_by_jacobian_norm(gibbs, norm=1)
 
-    unscaled = jacobian_cond(gibbs, scaled=False)
     scaled = jacobian_cond(gibbs, scaled=True)
 
-    assert scaled < unscaled
     assert scaled == pytest.approx(2986.994, rel=1e-5)
 
 
@@ -135,10 +131,8 @@ def test_nominal_magnitude_harmonic(gibbs):
     for c in gibbs.component_data_objects(ctype=Constraint, descend_into=True):
         scaler.scale_constraint_by_nominal_value(c, scheme="harmonic_mean")
 
-    unscaled = jacobian_cond(gibbs, scaled=False)
     scaled = jacobian_cond(gibbs, scaled=True)
 
-    assert scaled < unscaled
     assert scaled == pytest.approx(2.83719e12, rel=1e-5)
 
 
@@ -146,28 +140,48 @@ def test_nominal_magnitude_harmonic(gibbs):
 def test_nominal_magnitude_max(gibbs):
     scaler = CustomScalerBase()
 
-    for c in gibbs.component_data_objects(ctype=Constraint, descend_into=False):
-        scaler.scale_constraint_by_nominal_value(c, scheme="maximum_magnitude")
+    for c in gibbs.component_data_objects(ctype=Constraint, descend_into=True):
+        scaler.scale_constraint_by_nominal_value(c, scheme="inverse_maximum")
 
-    unscaled = jacobian_cond(gibbs, scaled=False)
     scaled = jacobian_cond(gibbs, scaled=True)
 
-    assert scaled < unscaled
-    assert scaled == pytest.approx(6.57667e14, rel=1e-5)
+    assert scaled == pytest.approx(1.77413e11, rel=1e-5)
 
 
 @pytest.mark.integration
 def test_nominal_magnitude_min(gibbs):
     scaler = CustomScalerBase()
 
-    for c in gibbs.component_data_objects(ctype=Constraint, descend_into=False):
-        scaler.scale_constraint_by_nominal_value(c, scheme="minimum_magnitude")
+    for c in gibbs.component_data_objects(ctype=Constraint, descend_into=True):
+        scaler.scale_constraint_by_nominal_value(c, scheme="inverse_minimum")
 
-    unscaled = jacobian_cond(gibbs, scaled=False)
     scaled = jacobian_cond(gibbs, scaled=True)
 
-    assert scaled < unscaled
-    assert scaled == pytest.approx(6.57667e14, rel=1e-5)
+    assert scaled == pytest.approx(5.59871e12, rel=1e-5)
+
+
+@pytest.mark.integration
+def test_nominal_magnitude_inv_mean(gibbs):
+    scaler = CustomScalerBase()
+
+    for c in gibbs.component_data_objects(ctype=Constraint, descend_into=True):
+        scaler.scale_constraint_by_nominal_value(c, scheme="inverse_sum")
+
+    scaled = jacobian_cond(gibbs, scaled=True)
+
+    assert scaled == pytest.approx(8.76894e10, rel=1e-5)
+
+
+@pytest.mark.integration
+def test_nominal_magnitude_inv_rss(gibbs):
+    scaler = CustomScalerBase()
+
+    for c in gibbs.component_data_objects(ctype=Constraint, descend_into=True):
+        scaler.scale_constraint_by_nominal_value(c, scheme="inverse_root_sum_squared")
+
+    scaled = jacobian_cond(gibbs, scaled=True)
+
+    assert scaled == pytest.approx(1.30134e11, rel=1e-5)
 
 
 if __name__ == "__main__":

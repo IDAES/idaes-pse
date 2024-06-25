@@ -410,8 +410,10 @@ class CustomScalerBase(ScalerBase):
             constraint - constraint to set scaling factor for
             scheme - method to apply for determining constraint scaling
               'harmonic_mean' - (default) sum(1/abs(nominal value))
-              'maximum_magnitude' - max(abs(nominal value)
-              'minimum_magnitude' - min(abs(nominal value)
+              'inverse_sum' - 1 / sum(abs(nominal value))
+              'inverse_root_sum_squared' - 1 / sqrt(sum(abs(nominal value)**2))
+              'inverse_maximum' - 1 / max(abs(nominal value)
+              'inverse_minimum' - 1 / min(abs(nominal value)
             overwrite - whether to overwrite existing scaling factors
 
         Returns:
@@ -422,10 +424,14 @@ class CustomScalerBase(ScalerBase):
         # TODO: What other schemes might we want to support? Something similar to a 2 norm?
         if scheme == "harmonic_mean":
             sf = sum(1 / abs(i) for i in [j for j in nominal if j != 0])
-        elif scheme == "maximum_magnitude":
-            sf = max(abs(i) for i in [j for j in nominal if j != 0])
-        elif scheme == "minimum_magnitude":
-            sf = min(abs(i) for i in [j for j in nominal if j != 0])
+        elif scheme == "inverse_sum":
+            sf = 1 / sum(abs(i) for i in [j for j in nominal if j != 0])
+        elif scheme == "inverse_root_sum_squared":
+            sf = 1 / sum(abs(i) ** 2 for i in [j for j in nominal if j != 0]) ** 0.5
+        elif scheme == "inverse_maximum":
+            sf = 1 / max(abs(i) for i in [j for j in nominal if j != 0])
+        elif scheme == "inverse_minimum":
+            sf = 1 / min(abs(i) for i in [j for j in nominal if j != 0])
         else:
             raise ValueError(
                 f"Invalid value for 'scheme' argument ({scheme}) in "
