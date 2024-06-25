@@ -19,9 +19,11 @@ from copy import copy
 
 from pyomo.common.config import document_kwargs_from_configdict
 from pyomo.environ import units
+from pyomo.core.base.units_container import UnitsError
 
 from idaes.core.scaling.scaling_base import CONFIG, ScalerBase
 from idaes.core.scaling.util import get_scaling_factor
+from idaes.core.util.scaling import NominalValueExtractionVisitor
 import idaes.logger as idaeslog
 
 # Set up logger
@@ -30,8 +32,9 @@ _log = idaeslog.getLogger(__name__)
 CSCONFIG = CONFIG()
 
 DEFAULT_UNIT_SCALING = {
-    "K": 1e-2,
-    "Pa": 1e-5,
+    # "QuantityName: (reference units, scaling factor)
+    "Temperature": (units.K, 1e-2),
+    "Pressure": (units.Pa, 1e-5),
 }
 
 
@@ -285,7 +288,7 @@ class CustomScalerBase(ScalerBase):
         Set scaling factor for variable based on units of measurement.
 
         Units of measurement for variable are compared to those stored in
-        self.unit_scaling_factors, and if a mathc is found the scaling factor set
+        self.unit_scaling_factors, and if a match is found the scaling factor set
         using the associated value.
 
         Args:
@@ -295,17 +298,34 @@ class CustomScalerBase(ScalerBase):
         Returns:
             None
         """
-        uom = variable.units
+        uom = units.get_units(variable)
 
-        if uom in self.unit_scaling_factors:
+        sf = None
+        # Keys in self.unit_scaling_factors are not used - only required because Pyomo
+        # units are non-hashable and thus cannot be keys
+        for refunits, unit_scale in self.unit_scaling_factors.values():
+            try:
+                # Try convert the reference scaling factor to variable units
+                # TODO: Have not found a more efficient way to do this, as Pyomo basically
+                # TODO: involves a try/except anyway
+                # Need to invert reference scaling factor, and then invert result
+                sf = 1 / units.convert_value(
+                    1 / unit_scale, from_units=refunits, to_units=uom
+                )
+                # Break once we have a match - no need to continue
+                break
+            except UnitsError:
+                pass
+
+        if sf is not None:
             self.set_variable_scaling_factor(
                 variable=variable,
-                scaling_factor=self.unit_scaling_factors[uom],
+                scaling_factor=sf,
                 overwrite=overwrite,
             )
         else:
             _log.debug(
-                f"No scaling factor set for {variable.name}; no match for units {uom} found"
+                f"No scaling factor set for {variable.name}; no match for units {uom} found "
                 "in self.unit_scaling_factors"
             )
 
@@ -357,4 +377,61 @@ class CustomScalerBase(ScalerBase):
                 f"no default scaling factor set."
             )
 
-    # by magnitude of terms - harmonic mean, max, min, 1-norm, 2-norm, ...
+    def get_expression_nominal_values(self, expression):
+        """
+        Calculate nominal values for each additive term in a Pyomo expression.
+
+        The nominal value of any Var is defined as the inverse of its scaling factor
+        (if assigned, else 1).
+
+        Args:
+            expression - Pyomo expression to collect nominal values for
+
+        Returns:
+            list of nominal values for each additive term
+        """
+        # TODO: Expand to support different ways of determining nominal value
+        # For convenience, if expression is a Pyomo component wit han expr attribute,
+        # redirect to the expr attribute
+        if hasattr(expression, "expr"):
+            expression = expression.expr
+
+        return NominalValueExtractionVisitor(warning=True).walk_expression(expression)
+
+    def scale_constraint_by_nominal_value(
+        self, constraint, scheme="harmonic_mean", overwrite: bool = False
+    ):
+        """
+        Set scaling factor for constraint based on default scaling factor.
+
+        Terms with expected magnitudes of 0 will be ignored.
+
+        Args:
+            constraint - constraint to set scaling factor for
+            scheme - method to apply for determining constraint scaling
+              'harmonic_mean' - (default) sum(1/abs(nominal value))
+              'maximum_magnitude' - max(abs(nominal value)
+              'minimum_magnitude' - min(abs(nominal value)
+            overwrite - whether to overwrite existing scaling factors
+
+        Returns:
+            None
+        """
+        nominal = self.get_expression_nominal_values(constraint.expr)
+
+        # TODO: What other schemes might we want to support? Something similar to a 2 norm?
+        if scheme == "harmonic_mean":
+            sf = sum(1 / abs(i) for i in [j for j in nominal if j != 0])
+        elif scheme == "maximum_magnitude":
+            sf = max(abs(i) for i in [j for j in nominal if j != 0])
+        elif scheme == "minimum_magnitude":
+            sf = min(abs(i) for i in [j for j in nominal if j != 0])
+        else:
+            raise ValueError(
+                f"Invalid value for 'scheme' argument ({scheme}) in "
+                "scale_constraint_by_nominal_value."
+            )
+
+        self.set_constraint_scaling_factor(
+            constraint=constraint, scaling_factor=sf, overwrite=overwrite
+        )

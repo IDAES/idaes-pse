@@ -16,6 +16,7 @@ Tests for ScalerBase.
 Author: Andrew Lee
 """
 import pytest
+import re
 
 from pyomo.environ import ConcreteModel, Constraint, Set, Suffix, units, Var
 from pyomo.common.config import ConfigDict
@@ -86,8 +87,8 @@ class TestCustomScalerBase:
 
         assert sb.default_scaling_factors == {}
         assert sb.unit_scaling_factors == {
-            "K": 1e-2,
-            "Pa": 1e-5,
+            "Temperature": (units.K, 1e-2),
+            "Pressure": (units.Pa, 1e-5),
         }
 
     @pytest.mark.unit
@@ -257,3 +258,155 @@ class TestCustomScalerBase:
         assert model.scaling_factor[model.pressure] == 1e-4
         sb.scale_variable_by_default(model.pressure, overwrite=True)
         assert model.scaling_factor[model.pressure] == 1e-5
+
+    @pytest.mark.unit
+    def test_scale_variable_by_units(self, model, caplog):
+        caplog.set_level(idaeslog.DEBUG, logger="idaes")
+        sb = CustomScalerBase()
+
+        # Units in dict, no conversion required
+        sb.scale_variable_by_units(model.pressure)
+        assert model.scaling_factor[model.pressure] == 1e-5
+
+        # Equivalent units in dict, need conversion
+        model.p2 = Var(units=units.bar)
+        sb.scale_variable_by_units(model.p2)
+        assert model.scaling_factor[model.p2] == pytest.approx(1, rel=1e-8)
+
+        # No match - no sf assigned
+        sb.scale_variable_by_units(model.enth_mol)
+        assert model.enth_mol not in model.scaling_factor
+        assert (
+            "No scaling factor set for enth_mol; no match for units J/mol found "
+            "in self.unit_scaling_factors" in caplog.text
+        )
+
+        # Test for overwrite
+        model.scaling_factor[model.temperature] = 42
+        sb.scale_variable_by_units(model.temperature, overwrite=False)
+        assert model.scaling_factor[model.temperature] == 42
+        sb.scale_variable_by_units(model.temperature, overwrite=True)
+        assert model.scaling_factor[model.temperature] == 1e-2
+
+    @pytest.mark.unit
+    def test_scale_constraint_by_default(self, model, caplog):
+        caplog.set_level(idaeslog.DEBUG, logger="idaes")
+        sb = CustomScalerBase()
+
+        # No defaults defined yet
+        sb.scale_constraint_by_default(model.ideal_gas)
+        assert model.ideal_gas not in model.scaling_factor
+        assert (
+            "Could not set scaling factor for ideal_gas, no default scaling factor set."
+            in caplog.text
+        )
+
+        # Set a default
+        sb.default_scaling_factors["ideal_gas"] = 1e-3
+        sb.scale_constraint_by_default(model.ideal_gas)
+        assert model.scaling_factor[model.ideal_gas] == 1e-3
+
+        # Change default to check overwrite
+        sb.default_scaling_factors["ideal_gas"] = 1e-5
+        sb.scale_constraint_by_default(model.ideal_gas, overwrite=False)
+        assert model.scaling_factor[model.ideal_gas] == 1e-3
+        sb.scale_constraint_by_default(model.ideal_gas, overwrite=True)
+        assert model.scaling_factor[model.ideal_gas] == 1e-5
+
+    @pytest.mark.unit
+    def test_get_expression_nominal_values(self, model):
+        sb = CustomScalerBase()
+
+        # Set variable scaling factors for testing
+        model.scaling_factor[model.pressure] = 1e-5
+        model.scaling_factor[model.temperature] = 1e-2
+        model.scaling_factor[model.volume_mol] = 1e-1
+
+        nominal_values = sb.get_expression_nominal_values(model.ideal_gas.expr)
+
+        # Nominal values will be (R*T, P*V)
+        assert nominal_values == [
+            pytest.approx(831.446, rel=1e-5),
+            pytest.approx(1e6, rel=1e-5),
+        ]
+
+        # Check redirection for ConstraintData objects
+        nominal_values = sb.get_expression_nominal_values(model.ideal_gas)
+        assert nominal_values == [
+            pytest.approx(831.446, rel=1e-5),
+            pytest.approx(1e6, rel=1e-5),
+        ]
+
+    @pytest.mark.unit
+    def test_scale_constraint_by_nominal_value_harmonic(self, model):
+        sb = CustomScalerBase()
+
+        # Set variable scaling factors for testing
+        model.scaling_factor[model.pressure] = 1e-5
+        model.scaling_factor[model.temperature] = 1e-2
+        model.scaling_factor[model.volume_mol] = 1e-1
+        model.scaling_factor[model.ideal_gas] = 1
+
+        # overwrite = False, no change
+        sb.scale_constraint_by_nominal_value(model.ideal_gas, overwrite=False)
+        assert model.scaling_factor[model.ideal_gas] == 1
+        # overwrite = True
+        sb.scale_constraint_by_nominal_value(model.ideal_gas, overwrite=True)
+        assert model.scaling_factor[model.ideal_gas] == pytest.approx(
+            (1 / 831.446 + 1e-6), rel=1e-5
+        )
+
+    @pytest.mark.unit
+    def test_scale_constraint_by_nominal_value_max(self, model):
+        sb = CustomScalerBase()
+
+        # Set variable scaling factors for testing
+        model.scaling_factor[model.pressure] = 1e-5
+        model.scaling_factor[model.temperature] = 1e-2
+        model.scaling_factor[model.volume_mol] = 1e-1
+        model.scaling_factor[model.ideal_gas] = 1
+
+        # overwrite = False, no change
+        sb.scale_constraint_by_nominal_value(
+            model.ideal_gas, scheme="maximum_magnitude", overwrite=False
+        )
+        assert model.scaling_factor[model.ideal_gas] == 1
+        # overwrite = True
+        sb.scale_constraint_by_nominal_value(
+            model.ideal_gas, scheme="maximum_magnitude", overwrite=True
+        )
+        assert model.scaling_factor[model.ideal_gas] == pytest.approx(1e6, rel=1e-5)
+
+    @pytest.mark.unit
+    def test_scale_constraint_by_nominal_value_min(self, model):
+        sb = CustomScalerBase()
+
+        # Set variable scaling factors for testing
+        model.scaling_factor[model.pressure] = 1e-5
+        model.scaling_factor[model.temperature] = 1e-2
+        model.scaling_factor[model.volume_mol] = 1e-1
+        model.scaling_factor[model.ideal_gas] = 1
+
+        # overwrite = False, no change
+        sb.scale_constraint_by_nominal_value(
+            model.ideal_gas, scheme="minimum_magnitude", overwrite=False
+        )
+        assert model.scaling_factor[model.ideal_gas] == 1
+        # overwrite = True
+        sb.scale_constraint_by_nominal_value(
+            model.ideal_gas, scheme="minimum_magnitude", overwrite=True
+        )
+        assert model.scaling_factor[model.ideal_gas] == pytest.approx(831.446, rel=1e-5)
+
+    @pytest.mark.unit
+    def test_scale_constraint_by_nominal_value_invalid_scheme(self, model):
+        sb = CustomScalerBase()
+
+        with pytest.raises(
+            ValueError,
+            match=re.escape(
+                "Invalid value for 'scheme' argument (foo) in "
+                "scale_constraint_by_nominal_value."
+            ),
+        ):
+            sb.scale_constraint_by_nominal_value(model.ideal_gas, scheme="foo")

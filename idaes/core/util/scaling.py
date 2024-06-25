@@ -1372,7 +1372,7 @@ class NominalValueExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
                     # Either a positive value or no value, assume positive
                     sign = 1
         else:
-            # No ideal, assume positive
+            # No idea, assume positive
             sign = 1
 
         try:
