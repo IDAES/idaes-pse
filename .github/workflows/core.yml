@@ -152,9 +152,9 @@ jobs:
           # but does require token for other workflows e.g. merge to `main`
           # see https://github.com/codecov/codecov-action/issues/1274#issuecomment-1934437359
           token: ${{ secrets.CODECOV_TOKEN }}
-          # downgrading after v0.7.0 broke tokenless upload
+          # pinning version after v0.7.0 broke tokenless upload
           # see codecov/codecov-action#1487
-          version: v0.6.0
+          version: v0.7.1
 
   build-docs:
     name: Build Sphinx docs
