@@ -180,8 +180,9 @@ class TestAutoscaleVarMagnitude:
         scaler.variables_by_magnitude(model.v1)
         scaler.variables_by_magnitude(model.v2[1])
 
+        assert model.scaling_factor[model.v1] == pytest.approx(1 / 2, rel=1e-8)
         assert model.scaling_factor[model.v2[1]] == pytest.approx(1 / 10, rel=1e-8)
-        assert len(model.scaling_factor) == 1
+        assert len(model.scaling_factor) == 2
 
     @pytest.mark.unit
     def test_not_block_or_var(self, model):

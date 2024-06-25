@@ -1,0 +1,2443 @@
+{
+  "__metadata__": {
+    "format_version": 4,
+    "date": "2024-06-25",
+    "time": "13:21:29.894222",
+    "other": {},
+    "__performance__": {
+      "n_components": 354,
+      "etime_make_dict": 0.001676797866821289
+    }
+  },
+  "unknown": {
+    "__type__": "<class 'pyomo.core.base.PyomoModel.ConcreteModel'>",
+    "__id__": 0,
+    "active": true,
+    "data": {
+      "None": {
+        "__type__": "<class 'pyomo.core.base.PyomoModel.ConcreteModel'>",
+        "__id__": 1,
+        "active": true,
+        "__pyomo_components__": {
+          "fs": {
+            "__type__": "<class 'idaes.core.base.process_block._ScalarFlowsheetBlock'>",
+            "__id__": 2,
+            "active": true,
+            "data": {
+              "None": {
+                "__type__": "<class 'idaes.core.base.process_block._ScalarFlowsheetBlock'>",
+                "__id__": 3,
+                "active": true,
+                "__pyomo_components__": {
+                  "properties": {
+                    "__type__": "<class 'idaes.core.base.process_block._ScalarMethaneParameterBlock'>",
+                    "__id__": 4,
+                    "active": true,
+                    "data": {
+                      "None": {
+                        "__type__": "<class 'idaes.core.base.process_block._ScalarMethaneParameterBlock'>",
+                        "__id__": 5,
+                        "active": true,
+                        "__pyomo_components__": {
+                          "Vap": {
+                            "__type__": "<class 'idaes.core.base.process_block._ScalarVaporPhase'>",
+                            "__id__": 6,
+                            "active": true,
+                            "data": {
+                              "None": {
+                                "__type__": "<class 'idaes.core.base.process_block._ScalarVaporPhase'>",
+                                "__id__": 7,
+                                "active": true
+                              }
+                            }
+                          },
+                          "H2": {
+                            "__type__": "<class 'idaes.core.base.process_block._ScalarComponent'>",
+                            "__id__": 8,
+                            "active": true,
+                            "data": {
+                              "None": {
+                                "__type__": "<class 'idaes.core.base.process_block._ScalarComponent'>",
+                                "__id__": 9,
+                                "active": true
+                              }
+                            }
+                          },
+                          "N2": {
+                            "__type__": "<class 'idaes.core.base.process_block._ScalarComponent'>",
+                            "__id__": 10,
+                            "active": true,
+                            "data": {
+                              "None": {
+                                "__type__": "<class 'idaes.core.base.process_block._ScalarComponent'>",
+                                "__id__": 11,
+                                "active": true
+                              }
+                            }
+                          },
+                          "O2": {
+                            "__type__": "<class 'idaes.core.base.process_block._ScalarComponent'>",
+                            "__id__": 12,
+                            "active": true,
+                            "data": {
+                              "None": {
+                                "__type__": "<class 'idaes.core.base.process_block._ScalarComponent'>",
+                                "__id__": 13,
+                                "active": true
+                              }
+                            }
+                          },
+                          "CH4": {
+                            "__type__": "<class 'idaes.core.base.process_block._ScalarComponent'>",
+                            "__id__": 14,
+                            "active": true,
+                            "data": {
+                              "None": {
+                                "__type__": "<class 'idaes.core.base.process_block._ScalarComponent'>",
+                                "__id__": 15,
+                                "active": true
+                              }
+                            }
+                          },
+                          "CO": {
+                            "__type__": "<class 'idaes.core.base.process_block._ScalarComponent'>",
+                            "__id__": 16,
+                            "active": true,
+                            "data": {
+                              "None": {
+                                "__type__": "<class 'idaes.core.base.process_block._ScalarComponent'>",
+                                "__id__": 17,
+                                "active": true
+                              }
+                            }
+                          },
+                          "CO2": {
+                            "__type__": "<class 'idaes.core.base.process_block._ScalarComponent'>",
+                            "__id__": 18,
+                            "active": true,
+                            "data": {
+                              "None": {
+                                "__type__": "<class 'idaes.core.base.process_block._ScalarComponent'>",
+                                "__id__": 19,
+                                "active": true
+                              }
+                            }
+                          },
+                          "H2O": {
+                            "__type__": "<class 'idaes.core.base.process_block._ScalarComponent'>",
+                            "__id__": 20,
+                            "active": true,
+                            "data": {
+                              "None": {
+                                "__type__": "<class 'idaes.core.base.process_block._ScalarComponent'>",
+                                "__id__": 21,
+                                "active": true
+                              }
+                            }
+                          },
+                          "NH3": {
+                            "__type__": "<class 'idaes.core.base.process_block._ScalarComponent'>",
+                            "__id__": 22,
+                            "active": true,
+                            "data": {
+                              "None": {
+                                "__type__": "<class 'idaes.core.base.process_block._ScalarComponent'>",
+                                "__id__": 23,
+                                "active": true
+                              }
+                            }
+                          },
+                          "pressure_reference": {
+                            "__type__": "<class 'pyomo.core.base.param.ScalarParam'>",
+                            "__id__": 24,
+                            "_mutable": true,
+                            "data": {
+                              "None": {
+                                "__type__": "<class 'pyomo.core.base.param.ScalarParam'>",
+                                "__id__": 25,
+                                "value": 101325
+                              }
+                            }
+                          },
+                          "temperature_reference": {
+                            "__type__": "<class 'pyomo.core.base.param.ScalarParam'>",
+                            "__id__": 26,
+                            "_mutable": true,
+                            "data": {
+                              "None": {
+                                "__type__": "<class 'pyomo.core.base.param.ScalarParam'>",
+                                "__id__": 27,
+                                "value": 1500
+                              }
+                            }
+                          },
+                          "cp_mol_vap_comp_coeff_A": {
+                            "__type__": "<class 'pyomo.core.base.param.IndexedParam'>",
+                            "__id__": 28,
+                            "_mutable": true,
+                            "data": {
+                              "'H2'": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 29,
+                                "value": 27.14
+                              },
+                              "'N2'": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 30,
+                                "value": 31.15
+                              },
+                              "'O2'": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 31,
+                                "value": 28.11
+                              },
+                              "'CH4'": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 32,
+                                "value": 19.25
+                              },
+                              "'CO'": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 33,
+                                "value": 30.87
+                              },
+                              "'CO2'": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 34,
+                                "value": 19.8
+                              },
+                              "'H2O'": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 35,
+                                "value": 32.24
+                              },
+                              "'NH3'": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 36,
+                                "value": 27.31
+                              }
+                            }
+                          },
+                          "cp_mol_vap_comp_coeff_B": {
+                            "__type__": "<class 'pyomo.core.base.param.IndexedParam'>",
+                            "__id__": 37,
+                            "_mutable": true,
+                            "data": {
+                              "'H2'": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 38,
+                                "value": 0.009274
+                              },
+                              "'N2'": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 39,
+                                "value": -0.01357
+                              },
+                              "'O2'": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 40,
+                                "value": -3.68e-06
+                              },
+                              "'CH4'": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 41,
+                                "value": 0.05213
+                              },
+                              "'CO'": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 42,
+                                "value": -0.01285
+                              },
+                              "'CO2'": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 43,
+                                "value": 0.07344
+                              },
+                              "'H2O'": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 44,
+                                "value": 0.001924
+                              },
+                              "'NH3'": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 45,
+                                "value": 0.02383
+                              }
+                            }
+                          },
+                          "cp_mol_vap_comp_coeff_C": {
+                            "__type__": "<class 'pyomo.core.base.param.IndexedParam'>",
+                            "__id__": 46,
+                            "_mutable": true,
+                            "data": {
+                              "'H2'": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 47,
+                                "value": -1.381e-05
+                              },
+                              "'N2'": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 48,
+                                "value": 2.68e-05
+                              },
+                              "'O2'": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 49,
+                                "value": 1.746e-05
+                              },
+                              "'CH4'": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 50,
+                                "value": 1.197e-05
+                              },
+                              "'CO'": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 51,
+                                "value": 2.789e-05
+                              },
+                              "'CO2'": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 52,
+                                "value": -5.602e-05
+                              },
+                              "'H2O'": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 53,
+                                "value": 1.055e-05
+                              },
+                              "'NH3'": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 54,
+                                "value": 1.707e-05
+                              }
+                            }
+                          },
+                          "cp_mol_vap_comp_coeff_D": {
+                            "__type__": "<class 'pyomo.core.base.param.IndexedParam'>",
+                            "__id__": 55,
+                            "_mutable": true,
+                            "data": {
+                              "'H2'": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 56,
+                                "value": 7.645e-09
+                              },
+                              "'N2'": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 57,
+                                "value": -1.168e-08
+                              },
+                              "'O2'": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 58,
+                                "value": -1.065e-08
+                              },
+                              "'CH4'": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 59,
+                                "value": -1.132e-08
+                              },
+                              "'CO'": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 60,
+                                "value": -1.272e-08
+                              },
+                              "'CO2'": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 61,
+                                "value": 1.715e-08
+                              },
+                              "'H2O'": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 62,
+                                "value": -3.596e-09
+                              },
+                              "'NH3'": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 63,
+                                "value": -1.185e-08
+                              }
+                            }
+                          },
+                          "cp_mol_vap_comp_coeff_E": {
+                            "__type__": "<class 'pyomo.core.base.param.IndexedParam'>",
+                            "__id__": 64,
+                            "_mutable": true,
+                            "data": {
+                              "'H2'": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 65,
+                                "value": 0
+                              },
+                              "'N2'": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 66,
+                                "value": 0
+                              },
+                              "'O2'": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 67,
+                                "value": 0
+                              },
+                              "'CH4'": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 68,
+                                "value": 0
+                              },
+                              "'CO'": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 69,
+                                "value": 0
+                              },
+                              "'CO2'": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 70,
+                                "value": 0
+                              },
+                              "'H2O'": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 71,
+                                "value": 0
+                              },
+                              "'NH3'": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 72,
+                                "value": 0
+                              }
+                            }
+                          },
+                          "dh_form": {
+                            "__type__": "<class 'pyomo.core.base.param.IndexedParam'>",
+                            "__id__": 73,
+                            "_mutable": true,
+                            "data": {
+                              "('Vap', 'H2')": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 74,
+                                "value": 0
+                              },
+                              "('Vap', 'N2')": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 75,
+                                "value": 0
+                              },
+                              "('Vap', 'O2')": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 76,
+                                "value": 0
+                              },
+                              "('Vap', 'CH4')": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 77,
+                                "value": -74600
+                              },
+                              "('Vap', 'CO')": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 78,
+                                "value": -110530
+                              },
+                              "('Vap', 'CO2')": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 79,
+                                "value": -393520
+                              },
+                              "('Vap', 'H2O')": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 80,
+                                "value": -241830
+                              },
+                              "('Vap', 'NH3')": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 81,
+                                "value": -45900
+                              }
+                            }
+                          },
+                          "ds_form": {
+                            "__type__": "<class 'pyomo.core.base.param.IndexedParam'>",
+                            "__id__": 82,
+                            "_mutable": true,
+                            "data": {
+                              "('Vap', 'H2')": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 83,
+                                "value": 130.68
+                              },
+                              "('Vap', 'N2')": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 84,
+                                "value": 191.61
+                              },
+                              "('Vap', 'O2')": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 85,
+                                "value": 205.15
+                              },
+                              "('Vap', 'CH4')": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 86,
+                                "value": 186.25
+                              },
+                              "('Vap', 'CO')": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 87,
+                                "value": 197.66
+                              },
+                              "('Vap', 'CO2')": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 88,
+                                "value": 213.79
+                              },
+                              "('Vap', 'H2O')": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 89,
+                                "value": 188.84
+                              },
+                              "('Vap', 'NH3')": {
+                                "__type__": "<class 'pyomo.core.base.param.ParamData'>",
+                                "__id__": 90,
+                                "value": 192.77
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "unit": {
+                    "__type__": "<class 'idaes.core.base.process_block._ScalarGibbsReactor'>",
+                    "__id__": 91,
+                    "active": true,
+                    "data": {
+                      "None": {
+                        "__type__": "<class 'idaes.core.base.process_block._ScalarGibbsReactor'>",
+                        "__id__": 92,
+                        "active": true,
+                        "__pyomo_components__": {
+                          "control_volume": {
+                            "__type__": "<class 'idaes.core.base.process_block._ScalarControlVolume0DBlock'>",
+                            "__id__": 93,
+                            "active": true,
+                            "data": {
+                              "None": {
+                                "__type__": "<class 'idaes.core.base.process_block._ScalarControlVolume0DBlock'>",
+                                "__id__": 94,
+                                "active": true,
+                                "__pyomo_components__": {
+                                  "properties_in": {
+                                    "__type__": "<class 'idaes.core.base.process_block._IndexedActivityCoeffStateBlock'>",
+                                    "__id__": 95,
+                                    "active": true,
+                                    "data": {
+                                      "0.0": {
+                                        "__type__": "<class 'idaes.models.properties.activity_coeff_models.activity_coeff_prop_pack.ActivityCoeffStateBlockData'>",
+                                        "__id__": 96,
+                                        "active": true,
+                                        "__pyomo_components__": {
+                                          "flow_mol": {
+                                            "__type__": "<class 'pyomo.core.base.var.ScalarVar'>",
+                                            "__id__": 97,
+                                            "data": {
+                                              "None": {
+                                                "__type__": "<class 'pyomo.core.base.var.ScalarVar'>",
+                                                "__id__": 98,
+                                                "fixed": true,
+                                                "stale": true,
+                                                "value": 230.0,
+                                                "lb": 0,
+                                                "ub": null
+                                              }
+                                            }
+                                          },
+                                          "mole_frac_comp": {
+                                            "__type__": "<class 'pyomo.core.base.var.IndexedVar'>",
+                                            "__id__": 99,
+                                            "data": {
+                                              "'H2'": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 100,
+                                                "fixed": true,
+                                                "stale": true,
+                                                "value": 0.0435,
+                                                "lb": 0,
+                                                "ub": 1
+                                              },
+                                              "'N2'": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 101,
+                                                "fixed": true,
+                                                "stale": true,
+                                                "value": 0.6522,
+                                                "lb": 0,
+                                                "ub": 1
+                                              },
+                                              "'O2'": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 102,
+                                                "fixed": true,
+                                                "stale": true,
+                                                "value": 0.1739,
+                                                "lb": 0,
+                                                "ub": 1
+                                              },
+                                              "'CH4'": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 103,
+                                                "fixed": true,
+                                                "stale": true,
+                                                "value": 0.1304,
+                                                "lb": 0,
+                                                "ub": 1
+                                              },
+                                              "'CO'": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 104,
+                                                "fixed": true,
+                                                "stale": true,
+                                                "value": 1e-05,
+                                                "lb": 0,
+                                                "ub": 1
+                                              },
+                                              "'CO2'": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 105,
+                                                "fixed": true,
+                                                "stale": true,
+                                                "value": 1e-05,
+                                                "lb": 0,
+                                                "ub": 1
+                                              },
+                                              "'H2O'": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 106,
+                                                "fixed": true,
+                                                "stale": true,
+                                                "value": 1e-05,
+                                                "lb": 0,
+                                                "ub": 1
+                                              },
+                                              "'NH3'": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 107,
+                                                "fixed": true,
+                                                "stale": true,
+                                                "value": 1e-05,
+                                                "lb": 0,
+                                                "ub": 1
+                                              }
+                                            }
+                                          },
+                                          "pressure": {
+                                            "__type__": "<class 'pyomo.core.base.var.ScalarVar'>",
+                                            "__id__": 108,
+                                            "data": {
+                                              "None": {
+                                                "__type__": "<class 'pyomo.core.base.var.ScalarVar'>",
+                                                "__id__": 109,
+                                                "fixed": true,
+                                                "stale": true,
+                                                "value": 101325.0,
+                                                "lb": 0,
+                                                "ub": null
+                                              }
+                                            }
+                                          },
+                                          "temperature": {
+                                            "__type__": "<class 'pyomo.core.base.var.ScalarVar'>",
+                                            "__id__": 110,
+                                            "data": {
+                                              "None": {
+                                                "__type__": "<class 'pyomo.core.base.var.ScalarVar'>",
+                                                "__id__": 111,
+                                                "fixed": true,
+                                                "stale": true,
+                                                "value": 1500.0,
+                                                "lb": 0,
+                                                "ub": null
+                                              }
+                                            }
+                                          },
+                                          "flow_mol_phase": {
+                                            "__type__": "<class 'pyomo.core.base.var.IndexedVar'>",
+                                            "__id__": 112,
+                                            "data": {
+                                              "'Vap'": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 113,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": 230.0,
+                                                "lb": null,
+                                                "ub": null
+                                              }
+                                            }
+                                          },
+                                          "mole_frac_phase_comp": {
+                                            "__type__": "<class 'pyomo.core.base.var.IndexedVar'>",
+                                            "__id__": 114,
+                                            "data": {
+                                              "('Vap', 'H2')": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 115,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": 0.0435,
+                                                "lb": 0,
+                                                "ub": 1
+                                              },
+                                              "('Vap', 'N2')": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 116,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": 0.6522,
+                                                "lb": 0,
+                                                "ub": 1
+                                              },
+                                              "('Vap', 'O2')": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 117,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": 0.1739,
+                                                "lb": 0,
+                                                "ub": 1
+                                              },
+                                              "('Vap', 'CH4')": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 118,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": 0.1304,
+                                                "lb": 0,
+                                                "ub": 1
+                                              },
+                                              "('Vap', 'CO')": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 119,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": 1e-05,
+                                                "lb": 0,
+                                                "ub": 1
+                                              },
+                                              "('Vap', 'CO2')": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 120,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": 1e-05,
+                                                "lb": 0,
+                                                "ub": 1
+                                              },
+                                              "('Vap', 'H2O')": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 121,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": 1e-05,
+                                                "lb": 0,
+                                                "ub": 1
+                                              },
+                                              "('Vap', 'NH3')": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 122,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": 1e-05,
+                                                "lb": 0,
+                                                "ub": 1
+                                              }
+                                            }
+                                          },
+                                          "eq_total": {
+                                            "__type__": "<class 'pyomo.core.base.constraint.ScalarConstraint'>",
+                                            "__id__": 123,
+                                            "active": true,
+                                            "data": {
+                                              "None": {
+                                                "__type__": "<class 'pyomo.core.base.constraint.ScalarConstraint'>",
+                                                "__id__": 124,
+                                                "active": true
+                                              }
+                                            }
+                                          },
+                                          "eq_comp": {
+                                            "__type__": "<class 'pyomo.core.base.constraint.IndexedConstraint'>",
+                                            "__id__": 125,
+                                            "active": true,
+                                            "data": {
+                                              "'H2'": {
+                                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                                "__id__": 126,
+                                                "active": true
+                                              },
+                                              "'N2'": {
+                                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                                "__id__": 127,
+                                                "active": true
+                                              },
+                                              "'O2'": {
+                                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                                "__id__": 128,
+                                                "active": true
+                                              },
+                                              "'CH4'": {
+                                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                                "__id__": 129,
+                                                "active": true
+                                              },
+                                              "'CO'": {
+                                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                                "__id__": 130,
+                                                "active": true
+                                              },
+                                              "'CO2'": {
+                                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                                "__id__": 131,
+                                                "active": true
+                                              },
+                                              "'H2O'": {
+                                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                                "__id__": 132,
+                                                "active": true
+                                              },
+                                              "'NH3'": {
+                                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                                "__id__": 133,
+                                                "active": true
+                                              }
+                                            }
+                                          },
+                                          "material_flow_terms": {
+                                            "__type__": "<class 'pyomo.core.base.expression.IndexedExpression'>",
+                                            "__id__": 134,
+                                            "data": {
+                                              "('Vap', 'H2')": {
+                                                "__type__": "<class 'pyomo.core.base.expression.ExpressionData'>",
+                                                "__id__": 135
+                                              },
+                                              "('Vap', 'N2')": {
+                                                "__type__": "<class 'pyomo.core.base.expression.ExpressionData'>",
+                                                "__id__": 136
+                                              },
+                                              "('Vap', 'O2')": {
+                                                "__type__": "<class 'pyomo.core.base.expression.ExpressionData'>",
+                                                "__id__": 137
+                                              },
+                                              "('Vap', 'CH4')": {
+                                                "__type__": "<class 'pyomo.core.base.expression.ExpressionData'>",
+                                                "__id__": 138
+                                              },
+                                              "('Vap', 'CO')": {
+                                                "__type__": "<class 'pyomo.core.base.expression.ExpressionData'>",
+                                                "__id__": 139
+                                              },
+                                              "('Vap', 'CO2')": {
+                                                "__type__": "<class 'pyomo.core.base.expression.ExpressionData'>",
+                                                "__id__": 140
+                                              },
+                                              "('Vap', 'H2O')": {
+                                                "__type__": "<class 'pyomo.core.base.expression.ExpressionData'>",
+                                                "__id__": 141
+                                              },
+                                              "('Vap', 'NH3')": {
+                                                "__type__": "<class 'pyomo.core.base.expression.ExpressionData'>",
+                                                "__id__": 142
+                                              }
+                                            }
+                                          },
+                                          "enthalpy_flow_terms": {
+                                            "__type__": "<class 'pyomo.core.base.expression.IndexedExpression'>",
+                                            "__id__": 143,
+                                            "data": {
+                                              "'Vap'": {
+                                                "__type__": "<class 'pyomo.core.base.expression.ExpressionData'>",
+                                                "__id__": 144
+                                              }
+                                            }
+                                          },
+                                          "enth_mol_phase": {
+                                            "__type__": "<class 'pyomo.core.base.var.IndexedVar'>",
+                                            "__id__": 145,
+                                            "data": {
+                                              "'Vap'": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 146,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": -9735.757799999998,
+                                                "lb": null,
+                                                "ub": null
+                                              }
+                                            }
+                                          },
+                                          "eq_enth_mol_phase": {
+                                            "__type__": "<class 'pyomo.core.base.constraint.IndexedConstraint'>",
+                                            "__id__": 147,
+                                            "active": true,
+                                            "data": {
+                                              "'Vap'": {
+                                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                                "__id__": 148,
+                                                "active": true
+                                              }
+                                            }
+                                          },
+                                          "enth_mol_phase_comp": {
+                                            "__type__": "<class 'pyomo.core.base.var.IndexedVar'>",
+                                            "__id__": 149,
+                                            "data": {
+                                              "('Vap', 'H2')": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 150,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": 0.0,
+                                                "lb": null,
+                                                "ub": null
+                                              },
+                                              "('Vap', 'N2')": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 151,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": 0.0,
+                                                "lb": null,
+                                                "ub": null
+                                              },
+                                              "('Vap', 'O2')": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 152,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": 0.0,
+                                                "lb": null,
+                                                "ub": null
+                                              },
+                                              "('Vap', 'CH4')": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 153,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": -74600.0,
+                                                "lb": null,
+                                                "ub": null
+                                              },
+                                              "('Vap', 'CO')": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 154,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": -110530.0,
+                                                "lb": null,
+                                                "ub": null
+                                              },
+                                              "('Vap', 'CO2')": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 155,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": -393520.0,
+                                                "lb": null,
+                                                "ub": null
+                                              },
+                                              "('Vap', 'H2O')": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 156,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": -241830.0,
+                                                "lb": null,
+                                                "ub": null
+                                              },
+                                              "('Vap', 'NH3')": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 157,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": -45900.0,
+                                                "lb": null,
+                                                "ub": null
+                                              }
+                                            }
+                                          },
+                                          "eq_enth_mol_phase_comp": {
+                                            "__type__": "<class 'pyomo.core.base.constraint.IndexedConstraint'>",
+                                            "__id__": 158,
+                                            "active": true,
+                                            "data": {
+                                              "('Vap', 'H2')": {
+                                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                                "__id__": 159,
+                                                "active": true
+                                              },
+                                              "('Vap', 'N2')": {
+                                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                                "__id__": 160,
+                                                "active": true
+                                              },
+                                              "('Vap', 'O2')": {
+                                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                                "__id__": 161,
+                                                "active": true
+                                              },
+                                              "('Vap', 'CH4')": {
+                                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                                "__id__": 162,
+                                                "active": true
+                                              },
+                                              "('Vap', 'CO')": {
+                                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                                "__id__": 163,
+                                                "active": true
+                                              },
+                                              "('Vap', 'CO2')": {
+                                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                                "__id__": 164,
+                                                "active": true
+                                              },
+                                              "('Vap', 'H2O')": {
+                                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                                "__id__": 165,
+                                                "active": true
+                                              },
+                                              "('Vap', 'NH3')": {
+                                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                                "__id__": 166,
+                                                "active": true
+                                              }
+                                            }
+                                          },
+                                          "scaling_factor": {
+                                            "__type__": "<class 'pyomo.core.base.suffix.Suffix'>",
+                                            "__id__": 167,
+                                            "data": {
+                                              "113": 0.004347826086956522,
+                                              "115": 22.98850574712644,
+                                              "116": 1.5332720024532351,
+                                              "117": 5.750431282346176,
+                                              "118": 7.668711656441719,
+                                              "119": 99999.99999999999,
+                                              "120": 99999.99999999999,
+                                              "121": 99999.99999999999,
+                                              "122": 99999.99999999999,
+                                              "146": 0.00010271414106049353,
+                                              "150": 1.0,
+                                              "151": 1.0,
+                                              "152": 1.0,
+                                              "153": 1.3404825737265415e-05,
+                                              "154": 9.047317470370035e-06,
+                                              "155": 2.5411669038422445e-06,
+                                              "156": 4.135136252739528e-06,
+                                              "157": 2.1786492374727668e-05,
+                                              "126": 0.09995002498750626,
+                                              "127": 0.00666640001066624,
+                                              "128": 0.025001875140635548,
+                                              "129": 0.03334222459322486,
+                                              "130": 434.7826086956521,
+                                              "131": 434.7826086956521,
+                                              "132": 434.7826086956521,
+                                              "133": 434.7826086956521,
+                                              "148": 5.9334197643529735e-05,
+                                              "124": 0.004347826086956522,
+                                              "159": 1.0,
+                                              "160": 1.0,
+                                              "161": 1.0,
+                                              "162": 1.3404825737265415e-05,
+                                              "163": 9.047317470370035e-06,
+                                              "164": 2.5411669038422445e-06,
+                                              "165": 4.135136252739528e-06,
+                                              "166": 2.1786492374727668e-05
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "properties_out": {
+                                    "__type__": "<class 'idaes.core.base.process_block._IndexedActivityCoeffStateBlock'>",
+                                    "__id__": 168,
+                                    "active": true,
+                                    "data": {
+                                      "0.0": {
+                                        "__type__": "<class 'idaes.models.properties.activity_coeff_models.activity_coeff_prop_pack.ActivityCoeffStateBlockData'>",
+                                        "__id__": 169,
+                                        "active": true,
+                                        "__pyomo_components__": {
+                                          "flow_mol": {
+                                            "__type__": "<class 'pyomo.core.base.var.ScalarVar'>",
+                                            "__id__": 170,
+                                            "data": {
+                                              "None": {
+                                                "__type__": "<class 'pyomo.core.base.var.ScalarVar'>",
+                                                "__id__": 171,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": 250.0586841391117,
+                                                "lb": 0,
+                                                "ub": null
+                                              }
+                                            }
+                                          },
+                                          "mole_frac_comp": {
+                                            "__type__": "<class 'pyomo.core.base.var.IndexedVar'>",
+                                            "__id__": 172,
+                                            "data": {
+                                              "'H2'": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 173,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": 0.10300593038593893,
+                                                "lb": 0,
+                                                "ub": 1
+                                              },
+                                              "'N2'": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 174,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": 0.5998874968259134,
+                                                "lb": 0,
+                                                "ub": 1
+                                              },
+                                              "'O2'": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 175,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": 0.00024125524310241033,
+                                                "lb": 0,
+                                                "ub": 1
+                                              },
+                                              "'CH4'": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 176,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": 1.0211647371506291e-11,
+                                                "lb": 0,
+                                                "ub": 1
+                                              },
+                                              "'CO'": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 177,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": 0.09736779533740232,
+                                                "lb": 0,
+                                                "ub": 1
+                                              },
+                                              "'CO2'": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 178,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": 0.02259044606787874,
+                                                "lb": 0,
+                                                "ub": 1
+                                              },
+                                              "'H2O'": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 179,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": 0.17690650096691196,
+                                                "lb": 0,
+                                                "ub": 1
+                                              },
+                                              "'NH3'": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 180,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": 5.75162640685755e-07,
+                                                "lb": 0,
+                                                "ub": 1
+                                              }
+                                            }
+                                          },
+                                          "pressure": {
+                                            "__type__": "<class 'pyomo.core.base.var.ScalarVar'>",
+                                            "__id__": 181,
+                                            "data": {
+                                              "None": {
+                                                "__type__": "<class 'pyomo.core.base.var.ScalarVar'>",
+                                                "__id__": 182,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": 101325.0,
+                                                "lb": 0,
+                                                "ub": null
+                                              }
+                                            }
+                                          },
+                                          "temperature": {
+                                            "__type__": "<class 'pyomo.core.base.var.ScalarVar'>",
+                                            "__id__": 183,
+                                            "data": {
+                                              "None": {
+                                                "__type__": "<class 'pyomo.core.base.var.ScalarVar'>",
+                                                "__id__": 184,
+                                                "fixed": true,
+                                                "stale": true,
+                                                "value": 2844.38,
+                                                "lb": 0,
+                                                "ub": null
+                                              }
+                                            }
+                                          },
+                                          "flow_mol_phase": {
+                                            "__type__": "<class 'pyomo.core.base.var.IndexedVar'>",
+                                            "__id__": 185,
+                                            "data": {
+                                              "'Vap'": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 186,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": 250.0586841391117,
+                                                "lb": null,
+                                                "ub": null
+                                              }
+                                            }
+                                          },
+                                          "mole_frac_phase_comp": {
+                                            "__type__": "<class 'pyomo.core.base.var.IndexedVar'>",
+                                            "__id__": 187,
+                                            "data": {
+                                              "('Vap', 'H2')": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 188,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": 0.10300593038593893,
+                                                "lb": 0,
+                                                "ub": 1
+                                              },
+                                              "('Vap', 'N2')": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 189,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": 0.5998874968259134,
+                                                "lb": 0,
+                                                "ub": 1
+                                              },
+                                              "('Vap', 'O2')": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 190,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": 0.00024125524310241033,
+                                                "lb": 0,
+                                                "ub": 1
+                                              },
+                                              "('Vap', 'CH4')": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 191,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": 1.0211647371506291e-11,
+                                                "lb": 0,
+                                                "ub": 1
+                                              },
+                                              "('Vap', 'CO')": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 192,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": 0.09736779533740232,
+                                                "lb": 0,
+                                                "ub": 1
+                                              },
+                                              "('Vap', 'CO2')": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 193,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": 0.02259044606787874,
+                                                "lb": 0,
+                                                "ub": 1
+                                              },
+                                              "('Vap', 'H2O')": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 194,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": 0.17690650096691196,
+                                                "lb": 0,
+                                                "ub": 1
+                                              },
+                                              "('Vap', 'NH3')": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 195,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": 5.75162640685755e-07,
+                                                "lb": 0,
+                                                "ub": 1
+                                              }
+                                            }
+                                          },
+                                          "eq_total": {
+                                            "__type__": "<class 'pyomo.core.base.constraint.ScalarConstraint'>",
+                                            "__id__": 196,
+                                            "active": true,
+                                            "data": {
+                                              "None": {
+                                                "__type__": "<class 'pyomo.core.base.constraint.ScalarConstraint'>",
+                                                "__id__": 197,
+                                                "active": true
+                                              }
+                                            }
+                                          },
+                                          "eq_comp": {
+                                            "__type__": "<class 'pyomo.core.base.constraint.IndexedConstraint'>",
+                                            "__id__": 198,
+                                            "active": true,
+                                            "data": {
+                                              "'H2'": {
+                                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                                "__id__": 199,
+                                                "active": true
+                                              },
+                                              "'N2'": {
+                                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                                "__id__": 200,
+                                                "active": true
+                                              },
+                                              "'O2'": {
+                                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                                "__id__": 201,
+                                                "active": true
+                                              },
+                                              "'CH4'": {
+                                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                                "__id__": 202,
+                                                "active": true
+                                              },
+                                              "'CO'": {
+                                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                                "__id__": 203,
+                                                "active": true
+                                              },
+                                              "'CO2'": {
+                                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                                "__id__": 204,
+                                                "active": true
+                                              },
+                                              "'H2O'": {
+                                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                                "__id__": 205,
+                                                "active": true
+                                              },
+                                              "'NH3'": {
+                                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                                "__id__": 206,
+                                                "active": true
+                                              }
+                                            }
+                                          },
+                                          "eq_mol_frac_out": {
+                                            "__type__": "<class 'pyomo.core.base.constraint.ScalarConstraint'>",
+                                            "__id__": 207,
+                                            "active": true,
+                                            "data": {
+                                              "None": {
+                                                "__type__": "<class 'pyomo.core.base.constraint.ScalarConstraint'>",
+                                                "__id__": 208,
+                                                "active": true
+                                              }
+                                            }
+                                          },
+                                          "material_flow_terms": {
+                                            "__type__": "<class 'pyomo.core.base.expression.IndexedExpression'>",
+                                            "__id__": 209,
+                                            "data": {
+                                              "('Vap', 'H2')": {
+                                                "__type__": "<class 'pyomo.core.base.expression.ExpressionData'>",
+                                                "__id__": 210
+                                              },
+                                              "('Vap', 'N2')": {
+                                                "__type__": "<class 'pyomo.core.base.expression.ExpressionData'>",
+                                                "__id__": 211
+                                              },
+                                              "('Vap', 'O2')": {
+                                                "__type__": "<class 'pyomo.core.base.expression.ExpressionData'>",
+                                                "__id__": 212
+                                              },
+                                              "('Vap', 'CH4')": {
+                                                "__type__": "<class 'pyomo.core.base.expression.ExpressionData'>",
+                                                "__id__": 213
+                                              },
+                                              "('Vap', 'CO')": {
+                                                "__type__": "<class 'pyomo.core.base.expression.ExpressionData'>",
+                                                "__id__": 214
+                                              },
+                                              "('Vap', 'CO2')": {
+                                                "__type__": "<class 'pyomo.core.base.expression.ExpressionData'>",
+                                                "__id__": 215
+                                              },
+                                              "('Vap', 'H2O')": {
+                                                "__type__": "<class 'pyomo.core.base.expression.ExpressionData'>",
+                                                "__id__": 216
+                                              },
+                                              "('Vap', 'NH3')": {
+                                                "__type__": "<class 'pyomo.core.base.expression.ExpressionData'>",
+                                                "__id__": 217
+                                              }
+                                            }
+                                          },
+                                          "enthalpy_flow_terms": {
+                                            "__type__": "<class 'pyomo.core.base.expression.IndexedExpression'>",
+                                            "__id__": 218,
+                                            "data": {
+                                              "'Vap'": {
+                                                "__type__": "<class 'pyomo.core.base.expression.ExpressionData'>",
+                                                "__id__": 219
+                                              }
+                                            }
+                                          },
+                                          "enth_mol_phase": {
+                                            "__type__": "<class 'pyomo.core.base.var.IndexedVar'>",
+                                            "__id__": 220,
+                                            "data": {
+                                              "'Vap'": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 221,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": -38763.85833692704,
+                                                "lb": null,
+                                                "ub": null
+                                              }
+                                            }
+                                          },
+                                          "eq_enth_mol_phase": {
+                                            "__type__": "<class 'pyomo.core.base.constraint.IndexedConstraint'>",
+                                            "__id__": 222,
+                                            "active": true,
+                                            "data": {
+                                              "'Vap'": {
+                                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                                "__id__": 223,
+                                                "active": true
+                                              }
+                                            }
+                                          },
+                                          "enth_mol_phase_comp": {
+                                            "__type__": "<class 'pyomo.core.base.var.IndexedVar'>",
+                                            "__id__": 224,
+                                            "data": {
+                                              "('Vap', 'H2')": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 225,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": 88598.50033149906,
+                                                "lb": null,
+                                                "ub": null
+                                              },
+                                              "('Vap', 'N2')": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 226,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": 1328.0818641205042,
+                                                "lb": null,
+                                                "ub": null
+                                              },
+                                              "('Vap', 'O2')": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 227,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": -8728.364736274816,
+                                                "lb": null,
+                                                "ub": null
+                                              },
+                                              "('Vap', 'CH4')": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 228,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": 10951.275326851828,
+                                                "lb": null,
+                                                "ub": null
+                                              },
+                                              "('Vap', 'CO')": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 229,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": -116043.17471597753,
+                                                "lb": null,
+                                                "ub": null
+                                              },
+                                              "('Vap', 'CO2')": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 230,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": -260197.0660256414,
+                                                "lb": null,
+                                                "ub": null
+                                              },
+                                              "('Vap', 'H2O')": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 231,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": -178104.1583772846,
+                                                "lb": null,
+                                                "ub": null
+                                              },
+                                              "('Vap', 'NH3')": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 232,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": -6774.557289033196,
+                                                "lb": null,
+                                                "ub": null
+                                              }
+                                            }
+                                          },
+                                          "eq_enth_mol_phase_comp": {
+                                            "__type__": "<class 'pyomo.core.base.constraint.IndexedConstraint'>",
+                                            "__id__": 233,
+                                            "active": true,
+                                            "data": {
+                                              "('Vap', 'H2')": {
+                                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                                "__id__": 234,
+                                                "active": true
+                                              },
+                                              "('Vap', 'N2')": {
+                                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                                "__id__": 235,
+                                                "active": true
+                                              },
+                                              "('Vap', 'O2')": {
+                                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                                "__id__": 236,
+                                                "active": true
+                                              },
+                                              "('Vap', 'CH4')": {
+                                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                                "__id__": 237,
+                                                "active": true
+                                              },
+                                              "('Vap', 'CO')": {
+                                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                                "__id__": 238,
+                                                "active": true
+                                              },
+                                              "('Vap', 'CO2')": {
+                                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                                "__id__": 239,
+                                                "active": true
+                                              },
+                                              "('Vap', 'H2O')": {
+                                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                                "__id__": 240,
+                                                "active": true
+                                              },
+                                              "('Vap', 'NH3')": {
+                                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                                "__id__": 241,
+                                                "active": true
+                                              }
+                                            }
+                                          },
+                                          "gibbs_mol_phase_comp": {
+                                            "__type__": "<class 'pyomo.core.base.var.IndexedVar'>",
+                                            "__id__": 242,
+                                            "data": {
+                                              "('Vap', 'H2')": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 243,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": -449349.89708332205,
+                                                "lb": null,
+                                                "ub": null
+                                              },
+                                              "('Vap', 'N2')": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 244,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": -565714.3063137117,
+                                                "lb": null,
+                                                "ub": null
+                                              },
+                                              "('Vap', 'O2')": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 245,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": -787130.7356067412,
+                                                "lb": null,
+                                                "ub": null
+                                              },
+                                              "('Vap', 'CH4')": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 246,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": -1240363.0290605212,
+                                                "lb": null,
+                                                "ub": null
+                                              },
+                                              "('Vap', 'CO')": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 247,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": -735228.6026972476,
+                                                "lb": null,
+                                                "ub": null
+                                              },
+                                              "('Vap', 'CO2')": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 248,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": -1128793.9705006182,
+                                                "lb": null,
+                                                "ub": null
+                                              },
+                                              "('Vap', 'H2O')": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 249,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": -842915.2648866929,
+                                                "lb": null,
+                                                "ub": null
+                                              },
+                                              "('Vap', 'NH3')": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 250,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": -956881.9987818388,
+                                                "lb": null,
+                                                "ub": null
+                                              }
+                                            }
+                                          },
+                                          "eq_gibbs_mol_phase_comp": {
+                                            "__type__": "<class 'pyomo.core.base.constraint.IndexedConstraint'>",
+                                            "__id__": 251,
+                                            "active": true,
+                                            "data": {
+                                              "('Vap', 'H2')": {
+                                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                                "__id__": 252,
+                                                "active": true
+                                              },
+                                              "('Vap', 'N2')": {
+                                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                                "__id__": 253,
+                                                "active": true
+                                              },
+                                              "('Vap', 'O2')": {
+                                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                                "__id__": 254,
+                                                "active": true
+                                              },
+                                              "('Vap', 'CH4')": {
+                                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                                "__id__": 255,
+                                                "active": true
+                                              },
+                                              "('Vap', 'CO')": {
+                                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                                "__id__": 256,
+                                                "active": true
+                                              },
+                                              "('Vap', 'CO2')": {
+                                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                                "__id__": 257,
+                                                "active": true
+                                              },
+                                              "('Vap', 'H2O')": {
+                                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                                "__id__": 258,
+                                                "active": true
+                                              },
+                                              "('Vap', 'NH3')": {
+                                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                                "__id__": 259,
+                                                "active": true
+                                              }
+                                            }
+                                          },
+                                          "entr_mol_phase_comp": {
+                                            "__type__": "<class 'pyomo.core.base.var.IndexedVar'>",
+                                            "__id__": 260,
+                                            "data": {
+                                              "('Vap', 'H2')": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 261,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": 189.1267683694939,
+                                                "lb": null,
+                                                "ub": null
+                                              },
+                                              "('Vap', 'N2')": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 262,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": 199.35535623855893,
+                                                "lb": null,
+                                                "ub": null
+                                              },
+                                              "('Vap', 'O2')": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 263,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": 273.6632836929195,
+                                                "lb": null,
+                                                "ub": null
+                                              },
+                                              "('Vap', 'CH4')": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 264,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": 439.9251521904151,
+                                                "lb": null,
+                                                "ub": null
+                                              },
+                                              "('Vap', 'CO')": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 265,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": 217.68730900275983,
+                                                "lb": null,
+                                                "ub": null
+                                              },
+                                              "('Vap', 'CO2')": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 266,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": 305.3730178369193,
+                                                "lb": null,
+                                                "ub": null
+                                              },
+                                              "('Vap', 'H2O')": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 267,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": 233.7279500310817,
+                                                "lb": null,
+                                                "ub": null
+                                              },
+                                              "('Vap', 'NH3')": {
+                                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                                "__id__": 268,
+                                                "fixed": false,
+                                                "stale": false,
+                                                "value": 334.02971526055074,
+                                                "lb": null,
+                                                "ub": null
+                                              }
+                                            }
+                                          },
+                                          "eq_entr_mol_phase_comp": {
+                                            "__type__": "<class 'pyomo.core.base.constraint.IndexedConstraint'>",
+                                            "__id__": 269,
+                                            "active": true,
+                                            "data": {
+                                              "('Vap', 'H2')": {
+                                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                                "__id__": 270,
+                                                "active": true
+                                              },
+                                              "('Vap', 'N2')": {
+                                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                                "__id__": 271,
+                                                "active": true
+                                              },
+                                              "('Vap', 'O2')": {
+                                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                                "__id__": 272,
+                                                "active": true
+                                              },
+                                              "('Vap', 'CH4')": {
+                                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                                "__id__": 273,
+                                                "active": true
+                                              },
+                                              "('Vap', 'CO')": {
+                                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                                "__id__": 274,
+                                                "active": true
+                                              },
+                                              "('Vap', 'CO2')": {
+                                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                                "__id__": 275,
+                                                "active": true
+                                              },
+                                              "('Vap', 'H2O')": {
+                                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                                "__id__": 276,
+                                                "active": true
+                                              },
+                                              "('Vap', 'NH3')": {
+                                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                                "__id__": 277,
+                                                "active": true
+                                              }
+                                            }
+                                          },
+                                          "scaling_factor": {
+                                            "__type__": "<class 'pyomo.core.base.suffix.Suffix'>",
+                                            "__id__": 278,
+                                            "data": {
+                                              "319": 0.0039990612741274915,
+                                              "321": 9.708178900508308,
+                                              "322": 1.6669792340916196,
+                                              "323": 4144.987636913285,
+                                              "324": 10000000000.0,
+                                              "325": 10.270336270167817,
+                                              "326": 44.26650084709464,
+                                              "327": 5.652703515893047,
+                                              "328": 1738638.6549858658,
+                                              "332": 9.869232667160129e-06,
+                                              "186": 0.0039990612741274915,
+                                              "188": 9.708178900508308,
+                                              "189": 1.6669792340916196,
+                                              "190": 4144.987636913285,
+                                              "191": 10000000000.0,
+                                              "192": 10.270336270167817,
+                                              "193": 44.26650084709464,
+                                              "194": 5.652703515893047,
+                                              "195": 1738638.6549858658,
+                                              "221": 2.579722563497723e-05,
+                                              "225": 1.1286872760356127e-05,
+                                              "226": 0.0007529656318755848,
+                                              "227": 0.00011456899776931075,
+                                              "228": 9.131356578608373e-05,
+                                              "229": 8.617482264231038e-06,
+                                              "230": 3.8432408761344524e-06,
+                                              "231": 5.614692038136825e-06,
+                                              "232": 0.000147611121632822,
+                                              "243": 2.2254372516626437e-06,
+                                              "244": 1.7676767033101323e-06,
+                                              "245": 1.270436986848409e-06,
+                                              "246": 8.06215580899265e-07,
+                                              "247": 1.3601211872489949e-06,
+                                              "248": 8.859012593383199e-07,
+                                              "249": 1.1863588686277061e-06,
+                                              "250": 1.0450609388336834e-06,
+                                              "261": 0.005287458822572995,
+                                              "262": 0.005016168207707188,
+                                              "263": 0.003654125560819151,
+                                              "264": 0.0022731139490909692,
+                                              "265": 0.004593745058364068,
+                                              "266": 0.003274683556141942,
+                                              "267": 0.0042784784612495755,
+                                              "268": 0.0029937456289479427,
+                                              "199": 0.019411801141662192,
+                                              "200": 0.0033331760499152514,
+                                              "201": 8.288029770258571,
+                                              "202": 28131340.21042005,
+                                              "203": 0.02053585202514755,
+                                              "204": 0.08851222463937398,
+                                              "205": 0.011302753862266101,
+                                              "206": 3476.4612574275425,
+                                              "223": 1.585028733769172e-05,
+                                              "270": 0.00527726933006194,
+                                              "271": 0.0050074655220904195,
+                                              "272": 0.0036507572050971646,
+                                              "273": 0.002234768232118989,
+                                              "274": 0.004587058233184422,
+                                              "275": 0.0032722586564033346,
+                                              "276": 0.004273074490321413,
+                                              "277": 0.0029918924828129315,
+                                              "197": 0.002827763345316064,
+                                              "208": 1.5583925376587882,
+                                              "234": 1.1286872760356127e-05,
+                                              "235": 0.0007529656318755848,
+                                              "236": 0.00011456899776931075,
+                                              "237": 9.131356578608373e-05,
+                                              "238": 8.617482264231038e-06,
+                                              "239": 3.8432408761344524e-06,
+                                              "240": 5.614692038136825e-06,
+                                              "241": 0.000147611121632822,
+                                              "252": 1.4154122127426735e-06,
+                                              "253": 1.2484681426221354e-06,
+                                              "254": 9.033010042075796e-07,
+                                              "255": 5.675584743853476e-07,
+                                              "256": 1.032840888837923e-06,
+                                              "257": 6.906678667100186e-07,
+                                              "258": 9.189402632308871e-07,
+                                              "259": 7.415808194001598e-07
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "elemental_flow_in": {
+                                    "__type__": "<class 'pyomo.core.base.expression.IndexedExpression'>",
+                                    "__id__": 279,
+                                    "data": {
+                                      "(0.0, 'Vap', 'H')": {
+                                        "__type__": "<class 'pyomo.core.base.expression.ExpressionData'>",
+                                        "__id__": 280
+                                      },
+                                      "(0.0, 'Vap', 'N')": {
+                                        "__type__": "<class 'pyomo.core.base.expression.ExpressionData'>",
+                                        "__id__": 281
+                                      },
+                                      "(0.0, 'Vap', 'O')": {
+                                        "__type__": "<class 'pyomo.core.base.expression.ExpressionData'>",
+                                        "__id__": 282
+                                      },
+                                      "(0.0, 'Vap', 'C')": {
+                                        "__type__": "<class 'pyomo.core.base.expression.ExpressionData'>",
+                                        "__id__": 283
+                                      }
+                                    }
+                                  },
+                                  "elemental_flow_out": {
+                                    "__type__": "<class 'pyomo.core.base.expression.IndexedExpression'>",
+                                    "__id__": 284,
+                                    "data": {
+                                      "(0.0, 'Vap', 'H')": {
+                                        "__type__": "<class 'pyomo.core.base.expression.ExpressionData'>",
+                                        "__id__": 285
+                                      },
+                                      "(0.0, 'Vap', 'N')": {
+                                        "__type__": "<class 'pyomo.core.base.expression.ExpressionData'>",
+                                        "__id__": 286
+                                      },
+                                      "(0.0, 'Vap', 'O')": {
+                                        "__type__": "<class 'pyomo.core.base.expression.ExpressionData'>",
+                                        "__id__": 287
+                                      },
+                                      "(0.0, 'Vap', 'C')": {
+                                        "__type__": "<class 'pyomo.core.base.expression.ExpressionData'>",
+                                        "__id__": 288
+                                      }
+                                    }
+                                  },
+                                  "element_balances": {
+                                    "__type__": "<class 'pyomo.core.base.constraint.IndexedConstraint'>",
+                                    "__id__": 289,
+                                    "active": true,
+                                    "data": {
+                                      "(0.0, 'H')": {
+                                        "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                        "__id__": 290,
+                                        "active": true
+                                      },
+                                      "(0.0, 'N')": {
+                                        "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                        "__id__": 291,
+                                        "active": true
+                                      },
+                                      "(0.0, 'O')": {
+                                        "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                        "__id__": 292,
+                                        "active": true
+                                      },
+                                      "(0.0, 'C')": {
+                                        "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                        "__id__": 293,
+                                        "active": true
+                                      }
+                                    }
+                                  },
+                                  "heat": {
+                                    "__type__": "<class 'pyomo.core.base.var.IndexedVar'>",
+                                    "__id__": 294,
+                                    "data": {
+                                      "0.0": {
+                                        "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                        "__id__": 295,
+                                        "fixed": false,
+                                        "stale": false,
+                                        "value": -7454015.1138869105,
+                                        "lb": null,
+                                        "ub": null
+                                      }
+                                    }
+                                  },
+                                  "enthalpy_balances": {
+                                    "__type__": "<class 'pyomo.core.base.constraint.IndexedConstraint'>",
+                                    "__id__": 296,
+                                    "active": true,
+                                    "data": {
+                                      "0.0": {
+                                        "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                        "__id__": 297,
+                                        "active": true
+                                      }
+                                    }
+                                  },
+                                  "deltaP": {
+                                    "__type__": "<class 'pyomo.core.base.var.IndexedVar'>",
+                                    "__id__": 298,
+                                    "data": {
+                                      "0.0": {
+                                        "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                        "__id__": 299,
+                                        "fixed": true,
+                                        "stale": true,
+                                        "value": 0,
+                                        "lb": null,
+                                        "ub": null
+                                      }
+                                    }
+                                  },
+                                  "pressure_balance": {
+                                    "__type__": "<class 'pyomo.core.base.constraint.IndexedConstraint'>",
+                                    "__id__": 300,
+                                    "active": true,
+                                    "data": {
+                                      "0.0": {
+                                        "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                        "__id__": 301,
+                                        "active": true
+                                      }
+                                    }
+                                  },
+                                  "scaling_factor": {
+                                    "__type__": "<class 'pyomo.core.base.suffix.Suffix'>",
+                                    "__id__": 302,
+                                    "data": {
+                                      "350": 1.3415588575035073e-07,
+                                      "290": 0.003938464299887138,
+                                      "291": 0.001666590619871694,
+                                      "292": 0.006760856665764694,
+                                      "293": 0.017345248060398968,
+                                      "297": 6.34368822596588e-08,
+                                      "301": 9.869232667160129e-06
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "_flow_mol_inlet_ref": {
+                            "__type__": "<class 'pyomo.core.base.var.IndexedVar'>",
+                            "__id__": 303,
+                            "data": {
+                              "0.0": {
+                                "__type__": "<class 'pyomo.core.base.var.ScalarVar'>",
+                                "__id__": 304,
+                                "fixed": true,
+                                "stale": true,
+                                "value": 230.0,
+                                "lb": 0,
+                                "ub": null
+                              }
+                            }
+                          },
+                          "_mole_frac_comp_inlet_ref": {
+                            "__type__": "<class 'pyomo.core.base.var.IndexedVar'>",
+                            "__id__": 305,
+                            "data": {
+                              "(0.0, 'H2')": {
+                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                "__id__": 306,
+                                "fixed": true,
+                                "stale": true,
+                                "value": 0.0435,
+                                "lb": 0,
+                                "ub": 1
+                              },
+                              "(0.0, 'N2')": {
+                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                "__id__": 307,
+                                "fixed": true,
+                                "stale": true,
+                                "value": 0.6522,
+                                "lb": 0,
+                                "ub": 1
+                              },
+                              "(0.0, 'O2')": {
+                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                "__id__": 308,
+                                "fixed": true,
+                                "stale": true,
+                                "value": 0.1739,
+                                "lb": 0,
+                                "ub": 1
+                              },
+                              "(0.0, 'CH4')": {
+                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                "__id__": 309,
+                                "fixed": true,
+                                "stale": true,
+                                "value": 0.1304,
+                                "lb": 0,
+                                "ub": 1
+                              },
+                              "(0.0, 'CO')": {
+                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                "__id__": 310,
+                                "fixed": true,
+                                "stale": true,
+                                "value": 1e-05,
+                                "lb": 0,
+                                "ub": 1
+                              },
+                              "(0.0, 'CO2')": {
+                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                "__id__": 311,
+                                "fixed": true,
+                                "stale": true,
+                                "value": 1e-05,
+                                "lb": 0,
+                                "ub": 1
+                              },
+                              "(0.0, 'H2O')": {
+                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                "__id__": 312,
+                                "fixed": true,
+                                "stale": true,
+                                "value": 1e-05,
+                                "lb": 0,
+                                "ub": 1
+                              },
+                              "(0.0, 'NH3')": {
+                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                "__id__": 313,
+                                "fixed": true,
+                                "stale": true,
+                                "value": 1e-05,
+                                "lb": 0,
+                                "ub": 1
+                              }
+                            }
+                          },
+                          "_temperature_inlet_ref": {
+                            "__type__": "<class 'pyomo.core.base.var.IndexedVar'>",
+                            "__id__": 314,
+                            "data": {
+                              "0.0": {
+                                "__type__": "<class 'pyomo.core.base.var.ScalarVar'>",
+                                "__id__": 315,
+                                "fixed": true,
+                                "stale": true,
+                                "value": 1500.0,
+                                "lb": 0,
+                                "ub": null
+                              }
+                            }
+                          },
+                          "_pressure_inlet_ref": {
+                            "__type__": "<class 'pyomo.core.base.var.IndexedVar'>",
+                            "__id__": 316,
+                            "data": {
+                              "0.0": {
+                                "__type__": "<class 'pyomo.core.base.var.ScalarVar'>",
+                                "__id__": 317,
+                                "fixed": true,
+                                "stale": true,
+                                "value": 101325.0,
+                                "lb": 0,
+                                "ub": null
+                              }
+                            }
+                          },
+                          "_flow_mol_outlet_ref": {
+                            "__type__": "<class 'pyomo.core.base.var.IndexedVar'>",
+                            "__id__": 318,
+                            "data": {
+                              "0.0": {
+                                "__type__": "<class 'pyomo.core.base.var.ScalarVar'>",
+                                "__id__": 319,
+                                "fixed": false,
+                                "stale": false,
+                                "value": 250.0586841391117,
+                                "lb": 0,
+                                "ub": null
+                              }
+                            }
+                          },
+                          "_mole_frac_comp_outlet_ref": {
+                            "__type__": "<class 'pyomo.core.base.var.IndexedVar'>",
+                            "__id__": 320,
+                            "data": {
+                              "(0.0, 'H2')": {
+                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                "__id__": 321,
+                                "fixed": false,
+                                "stale": false,
+                                "value": 0.10300593038593893,
+                                "lb": 0,
+                                "ub": 1
+                              },
+                              "(0.0, 'N2')": {
+                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                "__id__": 322,
+                                "fixed": false,
+                                "stale": false,
+                                "value": 0.5998874968259134,
+                                "lb": 0,
+                                "ub": 1
+                              },
+                              "(0.0, 'O2')": {
+                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                "__id__": 323,
+                                "fixed": false,
+                                "stale": false,
+                                "value": 0.00024125524310241033,
+                                "lb": 0,
+                                "ub": 1
+                              },
+                              "(0.0, 'CH4')": {
+                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                "__id__": 324,
+                                "fixed": false,
+                                "stale": false,
+                                "value": 1.0211647371506291e-11,
+                                "lb": 0,
+                                "ub": 1
+                              },
+                              "(0.0, 'CO')": {
+                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                "__id__": 325,
+                                "fixed": false,
+                                "stale": false,
+                                "value": 0.09736779533740232,
+                                "lb": 0,
+                                "ub": 1
+                              },
+                              "(0.0, 'CO2')": {
+                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                "__id__": 326,
+                                "fixed": false,
+                                "stale": false,
+                                "value": 0.02259044606787874,
+                                "lb": 0,
+                                "ub": 1
+                              },
+                              "(0.0, 'H2O')": {
+                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                "__id__": 327,
+                                "fixed": false,
+                                "stale": false,
+                                "value": 0.17690650096691196,
+                                "lb": 0,
+                                "ub": 1
+                              },
+                              "(0.0, 'NH3')": {
+                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                "__id__": 328,
+                                "fixed": false,
+                                "stale": false,
+                                "value": 5.75162640685755e-07,
+                                "lb": 0,
+                                "ub": 1
+                              }
+                            }
+                          },
+                          "_temperature_outlet_ref": {
+                            "__type__": "<class 'pyomo.core.base.var.IndexedVar'>",
+                            "__id__": 329,
+                            "data": {
+                              "0.0": {
+                                "__type__": "<class 'pyomo.core.base.var.ScalarVar'>",
+                                "__id__": 330,
+                                "fixed": true,
+                                "stale": true,
+                                "value": 2844.38,
+                                "lb": 0,
+                                "ub": null
+                              }
+                            }
+                          },
+                          "_pressure_outlet_ref": {
+                            "__type__": "<class 'pyomo.core.base.var.IndexedVar'>",
+                            "__id__": 331,
+                            "data": {
+                              "0.0": {
+                                "__type__": "<class 'pyomo.core.base.var.ScalarVar'>",
+                                "__id__": 332,
+                                "fixed": false,
+                                "stale": false,
+                                "value": 101325.0,
+                                "lb": 0,
+                                "ub": null
+                              }
+                            }
+                          },
+                          "lagrange_mult": {
+                            "__type__": "<class 'pyomo.core.base.var.IndexedVar'>",
+                            "__id__": 333,
+                            "data": {
+                              "(0.0, 'H')": {
+                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                "__id__": 334,
+                                "fixed": false,
+                                "stale": false,
+                                "value": 224674.94854166103,
+                                "lb": null,
+                                "ub": null
+                              },
+                              "(0.0, 'N')": {
+                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                "__id__": 335,
+                                "fixed": false,
+                                "stale": false,
+                                "value": 282857.15315685584,
+                                "lb": null,
+                                "ub": null
+                              },
+                              "(0.0, 'O')": {
+                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                "__id__": 336,
+                                "fixed": false,
+                                "stale": false,
+                                "value": 393565.3678033706,
+                                "lb": null,
+                                "ub": null
+                              },
+                              "(0.0, 'C')": {
+                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                "__id__": 337,
+                                "fixed": false,
+                                "stale": false,
+                                "value": 341663.234893877,
+                                "lb": null,
+                                "ub": null
+                              }
+                            }
+                          },
+                          "gibbs_scaling": {
+                            "__type__": "<class 'pyomo.core.base.param.ScalarParam'>",
+                            "__id__": 338,
+                            "_mutable": true,
+                            "data": {
+                              "None": {
+                                "__type__": "<class 'pyomo.core.base.param.ScalarParam'>",
+                                "__id__": 339,
+                                "value": 1
+                              }
+                            }
+                          },
+                          "gibbs_minimization": {
+                            "__type__": "<class 'pyomo.core.base.constraint.IndexedConstraint'>",
+                            "__id__": 340,
+                            "active": true,
+                            "data": {
+                              "(0.0, 'Vap', 'H2')": {
+                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                "__id__": 341,
+                                "active": true
+                              },
+                              "(0.0, 'Vap', 'N2')": {
+                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                "__id__": 342,
+                                "active": true
+                              },
+                              "(0.0, 'Vap', 'O2')": {
+                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                "__id__": 343,
+                                "active": true
+                              },
+                              "(0.0, 'Vap', 'CH4')": {
+                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                "__id__": 344,
+                                "active": true
+                              },
+                              "(0.0, 'Vap', 'CO')": {
+                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                "__id__": 345,
+                                "active": true
+                              },
+                              "(0.0, 'Vap', 'CO2')": {
+                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                "__id__": 346,
+                                "active": true
+                              },
+                              "(0.0, 'Vap', 'H2O')": {
+                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                "__id__": 347,
+                                "active": true
+                              },
+                              "(0.0, 'Vap', 'NH3')": {
+                                "__type__": "<class 'pyomo.core.base.constraint.ConstraintData'>",
+                                "__id__": 348,
+                                "active": true
+                              }
+                            }
+                          },
+                          "heat_duty": {
+                            "__type__": "<class 'pyomo.core.base.var.IndexedVar'>",
+                            "__id__": 349,
+                            "data": {
+                              "0.0": {
+                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                "__id__": 350,
+                                "fixed": false,
+                                "stale": false,
+                                "value": -7454015.1138869105,
+                                "lb": null,
+                                "ub": null
+                              }
+                            }
+                          },
+                          "deltaP": {
+                            "__type__": "<class 'pyomo.core.base.var.IndexedVar'>",
+                            "__id__": 351,
+                            "data": {
+                              "0.0": {
+                                "__type__": "<class 'pyomo.core.base.var.VarData'>",
+                                "__id__": 352,
+                                "fixed": true,
+                                "stale": true,
+                                "value": 0,
+                                "lb": null,
+                                "ub": null
+                              }
+                            }
+                          },
+                          "scaling_factor": {
+                            "__type__": "<class 'pyomo.core.base.suffix.Suffix'>",
+                            "__id__": 353,
+                            "data": {
+                              "334": 4.450874503325287e-06,
+                              "335": 3.5353534066202647e-06,
+                              "336": 2.540873973696818e-06,
+                              "337": 2.9268586662846734e-06,
+                              "341": 1.5736217717558087e-06,
+                              "342": 1.2499361838560754e-06,
+                              "343": 8.983346084707149e-07,
+                              "344": 6.372018158370227e-07,
+                              "345": 1.1096130740800509e-06,
+                              "346": 7.052606407804983e-07,
+                              "347": 9.679516364316285e-07,
+                              "348": 8.304717457163864e-07
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

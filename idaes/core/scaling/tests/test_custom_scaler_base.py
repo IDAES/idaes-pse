@@ -11,7 +11,7 @@
 # for full copyright and license information.
 #################################################################################
 """
-Tests for ScalerBase.
+Tests for CustomScalerBase.
 
 Author: Andrew Lee
 """
