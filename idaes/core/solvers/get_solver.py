@@ -14,7 +14,6 @@
 """
 This module contains the IDAES get_solver method.
 """
-from pyomo.contrib.solver.base import LegacySolverWrapper
 
 import idaes.logger as idaeslog
 import idaes.core.solvers
@@ -58,23 +57,11 @@ def get_solver(
         solver = "default"
     solver_obj = idaes.core.solvers.SolverWrapper(solver, register=False)()
 
-    if isinstance(solver_obj, LegacySolverWrapper):
-        # New solver interface.
-        # LegacySolverWrapper is a wrapper for the new solver interface that makes it
-        # backward compatible.
-        if options is not None:
-            for k, v in options.items():
-                solver_obj.options[k] = v
-        if writer_config is not None:
-            for k, v in writer_config.items():
-                solver_obj.config.writer_config[k] = v
-    else:
-        # Old solver interface
-        if options is not None:
-            solver_obj.options.update(options)
-        if writer_config is not None:
-            _log.info(
-                "Older Pyomo solver interface does not support writer_config argument: ignoring."
-            )
+    if options is not None:
+        for k, v in options.items():
+            solver_obj.options[k] = v
+    if writer_config is not None:
+        for k, v in writer_config.items():
+            solver_obj.config.writer_config[k] = v
 
     return solver_obj

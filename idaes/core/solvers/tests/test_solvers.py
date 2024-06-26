@@ -278,24 +278,12 @@ def test_get_solver_default():
 
 @pytest.mark.skipif(not pyo.SolverFactory("ipopt").available(False), reason="no Ipopt")
 @pytest.mark.unit
-def test_get_solver_default_solver_w_options(caplog):
-    solver = get_solver(
-        options={"foo": "bar", "tol": 1e-5}, writer_config={"foo": "bar"}
-    )
-
-    assert not isinstance(solver, LegacySolverWrapper)
-
-    assert solver.options == {
-        "nlp_scaling_method": "gradient-based",
-        "tol": 1e-5,
-        "max_iter": 200,
-        "foo": "bar",
-    }
-
-    assert (
-        "Older Pyomo solver interface does not support writer_config argument: ignoring."
-        in caplog.text
-    )
+def test_get_solver_default_solver_w_options():
+    with pytest.raises(
+        AttributeError,
+        match="'IPOPT' object has no attribute 'config'",
+    ):
+        get_solver(options={"foo": "bar", "tol": 1e-5}, writer_config={"foo": "bar"})
 
 
 @pytest.mark.skipif(not pyo.SolverFactory("ipopt").available(False), reason="no Ipopt")
