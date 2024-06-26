@@ -812,6 +812,68 @@ def test_petsc_skip_initial_solve():
     assert pytest.approx(y5, rel=1e-3) == pyo.value(m.y[m.t.last(), 5])
     assert pytest.approx(y6, rel=1e-3) == pyo.value(m.y[m.t.last(), 6])
 
+@pytest.mark.unit
+@pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
+def test_petsc_collocation_lagrange_radau():
+    """
+    Ensure that PETSc works with Lagrange-Radau collocation
+    """
+    m, y1, y2, y3, y4, y5, y6 = dae_with_non_time_indexed_constraint(
+        transformation_method="dae.collocation",
+        scheme="LAGRANGE-RADAU",
+        ncp=3
+    )
+
+    res = petsc.petsc_dae_by_time_element(
+        m,
+        time=m.t,
+        ts_options={
+            "--ts_type": "cn",  # Crank–Nicolson
+            "--ts_adapt_type": "basic",
+            "--ts_dt": 0.01,
+            "--ts_save_trajectory": 1,
+            "--ts_trajectory_type": "visualization",
+        },
+    )
+
+    assert pytest.approx(y1, rel=1e-3) == pyo.value(m.y[m.t.last(), 1])
+    assert pytest.approx(y2, rel=1e-3) == pyo.value(m.y[m.t.last(), 2])
+    assert pytest.approx(y3, rel=1e-3) == pyo.value(m.y[m.t.last(), 3])
+    assert pytest.approx(y4, rel=1e-3) == pyo.value(m.y[m.t.last(), 4])
+    assert pytest.approx(y5, rel=1e-3) == pyo.value(m.y[m.t.last(), 5])
+    assert pytest.approx(y6, rel=1e-3) == pyo.value(m.y[m.t.last(), 6])
+
+@pytest.mark.unit
+@pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
+def test_petsc_collocation_lagrange_legendre():
+    """
+    Ensure that PETSc works with Lagrange-Legendre collocation
+    """
+    m, y1, y2, y3, y4, y5, y6 = dae_with_non_time_indexed_constraint(
+        transformation_method="dae.collocation",
+        scheme="LAGRANGE-LEGENDRE",
+        ncp=3
+    )
+
+    res = petsc.petsc_dae_by_time_element(
+        m,
+        time=m.t,
+        ts_options={
+            "--ts_type": "cn",  # Crank–Nicolson
+            "--ts_adapt_type": "basic",
+            "--ts_dt": 0.01,
+            "--ts_save_trajectory": 1,
+            "--ts_trajectory_type": "visualization",
+        },
+    )
+
+    assert pytest.approx(y1, rel=1e-3) == pyo.value(m.y[m.t.last(), 1])
+    assert pytest.approx(y2, rel=1e-3) == pyo.value(m.y[m.t.last(), 2])
+    assert pytest.approx(y3, rel=1e-3) == pyo.value(m.y[m.t.last(), 3])
+    assert pytest.approx(y4, rel=1e-3) == pyo.value(m.y[m.t.last(), 4])
+    assert pytest.approx(y5, rel=1e-3) == pyo.value(m.y[m.t.last(), 5])
+    assert pytest.approx(y6, rel=1e-3) == pyo.value(m.y[m.t.last(), 6])
+
 
 @pytest.mark.unit
 @pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
@@ -1315,7 +1377,7 @@ def test_get_initial_condition_problem_no_active_constraints():
     init_subsystem = petsc.get_initial_condition_problem(
         model=m,
         time=m.time,
-        t_initial=m.time.at(1),
+        initial_time=m.time.at(1),
         representative_time=m.time.at(2)
     )
     assert mstat.number_variables_in_activated_constraints(init_subsystem) == 0
@@ -1350,7 +1412,7 @@ def test_get_initial_condition_problem_no_active_constraints_not_t0():
     init_subsystem = petsc.get_initial_condition_problem(
         model=m,
         time=m.time,
-        t_initial=m.time.at(2),
+        initial_time=m.time.at(2),
         representative_time=m.time.at(3)
     )
     assert mstat.number_variables_in_activated_constraints(init_subsystem) == 0
@@ -1382,7 +1444,7 @@ def test_get_initial_condition_problem_at_time_no_active_constraints():
     init_subsystem = petsc.get_initial_condition_problem(
         model=m,
         time=m.time,
-        t_initial=m.time.at(1),
+        initial_time=m.time.at(1),
         representative_time=m.time.at(2)
     )
     assert mstat.number_variables_in_activated_constraints(init_subsystem) == 0
@@ -1397,7 +1459,7 @@ def test_get_initial_condition_problem_at_time_no_active_constraints():
 def test_get_initial_condition_problem_non_time_indexed_constraint():
     m, y1, y2, y3, y4, y5, y6 = dae_with_non_time_indexed_constraint(nfe=10)
     init_subsystem = petsc.get_initial_condition_problem(
-        model=m, time=m.t, t_initial=m.t.at(1), representative_time=m.t.at(2)
+        model=m, time=m.t, initial_time=m.t.at(1), representative_time=m.t.at(2)
     )
     
     unfixed_var_name_set = set(var.name for var in mstat.unfixed_variables_set(init_subsystem))
@@ -1416,7 +1478,7 @@ def test_get_initial_condition_problem_non_time_indexed_constraint():
 def test_get_initial_condition_problem_non_time_indexed_constraint_not_t0():
     m, y1, y2, y3, y4, y5, y6 = dae_with_non_time_indexed_constraint(nfe=10)
     init_subsystem = petsc.get_initial_condition_problem(
-        model=m, time=m.t, t_initial=m.t.at(4), representative_time=m.t.at(5)
+        model=m, time=m.t, initial_time=m.t.at(4), representative_time=m.t.at(5)
     )
     t4 = m.t.at(4)
     for j in range(1, 6):
@@ -1456,8 +1518,7 @@ if __name__ == "__main__":
     m.eq_ydot3[t4].deactivate()
     m.eq_ydot4[t4].deactivate()
     m.eq_ydot5[t4].deactivate()
-    init_subsystem = petsc.get_initial_condition_problem(model=m, time=m.t, t_initial=m.t.at(4), representative_time=m.t.at(5))
+    init_subsystem = petsc.get_initial_condition_problem(model=m, time=m.t, initial_time=m.t.at(4), representative_time=m.t.at(5))
     from idaes.core.util.model_diagnostics import DiagnosticsToolbox
     dt=DiagnosticsToolbox(init_subsystem)
     dt.report_structural_issues()
-    print("ok, boomer")
