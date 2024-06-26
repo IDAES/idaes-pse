@@ -907,7 +907,7 @@ class TestLatinHypercubeSampling:
             )
             np.testing.assert_array_equal(expected_testing, out_testing)
 
-    @pytest.mark.unit
+    @pytest.mark.integration
     @pytest.mark.parametrize("array_type", [list])
     def test_sample_points_equality_fixed_seed(self, array_type):
         rand_seed = 1000
@@ -2707,7 +2707,7 @@ class TestCVTSampling:
                 unique_sample_points.shape,
             )
 
-    @pytest.mark.unit
+    @pytest.mark.integration
     @pytest.mark.parametrize("array_type", [list])
     def test_sample_points_equality_fixed_seed(self, array_type):
         rand_seed = 1000
@@ -3567,7 +3567,7 @@ class TestCustomSampling:
             assert unique_sample_points.shape[1] == input_array.shape[1]
             assert type(unique_sample_points) == np.ndarray
 
-    @pytest.mark.unit
+    @pytest.mark.integration
     @pytest.mark.parametrize("array_type", [list])
     def test_sample_points_equality_fixed_seed(self, array_type):
         rand_seed = 1000
