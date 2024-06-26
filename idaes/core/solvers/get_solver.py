@@ -14,7 +14,6 @@
 """
 This module contains the IDAES get_solver method.
 """
-from pyomo.contrib.solver.base import LegacySolverWrapper
 
 import idaes.logger as idaeslog
 import idaes.core.solvers
