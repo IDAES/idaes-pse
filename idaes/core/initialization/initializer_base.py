@@ -551,7 +551,7 @@ class ModularInitializerBase(InitializerBase):
     CONFIG.declare(
         "solver",
         ConfigValue(
-            default=None,  # TODO: Can we add a square problem solver as the default here?
+            default="ipopt_v2",  # TODO: Can we add a square problem solver as the default here?
             # At the moment there is an issue with the scipy solvers not supporting the tee argument.
             description="Solver to use for initialization",
         ),
@@ -561,6 +561,13 @@ class ModularInitializerBase(InitializerBase):
         ConfigDict(
             implicit=True,
             description="Dict of options to pass to solver",
+        ),
+    )
+    CONFIG.declare(
+        "writer_config",
+        ConfigDict(
+            implicit=True,
+            description="Dict of writer_config arguments to pass to solver",
         ),
     )
     CONFIG.declare(
@@ -820,6 +827,10 @@ class ModularInitializerBase(InitializerBase):
 
     def _get_solver(self):
         if self._solver is None:
-            self._solver = get_solver(self.config.solver, self.config.solver_options)
+            self._solver = get_solver(
+                self.config.solver,
+                solver_options=self.config.solver_options,
+                writer_config=self.config.writer_config,
+            )
 
         return self._solver

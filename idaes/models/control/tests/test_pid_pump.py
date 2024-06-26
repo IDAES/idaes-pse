@@ -164,14 +164,16 @@ def get_model(dynamic=False):
         m.fs.valve.valve_opening.unfix()
         dof = degrees_of_freedom(m)
         assert dof == 0
-        solver = get_solver()
+        # TODO: MA27 works better than MA57
+        solver = get_solver(solver="ipopt_v2", solver_options={"linear_solver": "ma27"})
         solver.solve(m, tee=True)
 
     return m
 
 
 def run_dynamic(m):
-    solver = get_solver()
+    # TODO: MA27 works better than MA57
+    solver = get_solver(solver="ipopt_v2", solver_options={"linear_solver": "ma27"})
 
     # add step change
     for t in m.fs.time:

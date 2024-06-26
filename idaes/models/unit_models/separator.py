@@ -128,7 +128,7 @@ class SeparatorInitializer(ModularInitializerBase):
         )
 
         # Create solver
-        solver = get_solver(self.config.solver, self.config.solver_options)
+        solver = self._get_solver()
 
         # Initialize mixed state block
         if model.config.mixed_state_block is not None:
