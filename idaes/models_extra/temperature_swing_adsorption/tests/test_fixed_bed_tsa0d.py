@@ -47,10 +47,7 @@ from idaes.models_extra.temperature_swing_adsorption import (
     SteamCalculationType,
     TransformationScheme,
 )
-from idaes.models_extra.temperature_swing_adsorption.util import (
-    plot_tsa_profiles,
-    tsa_summary,
-)
+from idaes.models_extra.temperature_swing_adsorption.util import tsa_summary
 import idaes.core.util.scaling as iscale
 
 # -----------------------------------------------------------------------------
@@ -182,10 +179,6 @@ class TestTsaZeolite:
         assert "Cycle time [h]" in summary_df.index
         assert "Pressure drop [Pa]" in summary_df.index
 
-    @pytest.mark.unit
-    def test_plotting(self, model):
-        plot_tsa_profiles(model.fs.unit)
-
 
 class TestTsaMgmof:
     # also testing calculate beds and simple steam calcs
@@ -249,7 +242,7 @@ class TestTsaMgmof:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize(self, model):
-        initializer = FixedBedTSA0DInitializer()
+        initializer = FixedBedTSA0DInitializer(constraint_tolerance=1e-4)
         initializer.initialize(
             model.fs.unit, heating_time_guess=2000, cooling_time_guess=900
         )

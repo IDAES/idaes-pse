@@ -1165,7 +1165,7 @@ class TestCEOSCriticalProps:
             },
         )
 
-        m.props = m.params.state_block_class(
+        m.props = m.params.build_state_block(
             [1], defined_state=True, parameters=m.params
         )
 
@@ -1389,7 +1389,7 @@ class TestCEOSCriticalProps:
     @pytest.mark.solver
     def test_solve_critical_props(self, model):
         # Solve model
-        solver = get_solver()
+        solver = get_solver("ipopt_v2")
         res = solver.solve(model, tee=True)
         assert_optimal_termination(res)
 
