@@ -42,7 +42,10 @@ from pyomo.common.deprecation import deprecation_warning
 import idaes
 import idaes.logger as idaeslog
 import idaes.config as icfg
-from idaes.core.util.model_statistics import degrees_of_freedom, number_activated_constraints
+from idaes.core.util.model_statistics import (
+    degrees_of_freedom,
+    number_activated_constraints,
+)
 
 
 # Importing a few things here so that they are cached
@@ -252,7 +255,7 @@ def _copy_time(time_vars, t_from, t_to):
 def find_discretization_equations(m, time):
     """
     This returns a list of continuity equations (if Lagrange-Legendre collocation is used)
-    and time discretization equations. Since we aren't solving the whole time period 
+    and time discretization equations. Since we aren't solving the whole time period
     simultaneously, we'll want to deactivate these constraints.
 
     Args:
@@ -289,6 +292,7 @@ def find_discretization_equations(m, time):
                     disc_eqns.append(cont_eqn)
 
     return disc_eqns
+
 
 def get_discretization_constraint_data(m, time):
     """
@@ -567,10 +571,8 @@ def petsc_dae_by_time_element(
     elif representative_time not in between:
         raise RuntimeError("representative_time is not element of between.")
 
-    flattened_problem  = _get_flattened_problem(
-        model=m,
-        time=time,
-        representative_time=representative_time
+    flattened_problem = _get_flattened_problem(
+        model=m, time=time, representative_time=representative_time
     )
 
     solver_dae = pyo.SolverFactory("petsc_ts", options=ts_options)
@@ -604,10 +606,13 @@ def petsc_dae_by_time_element(
             )
         except RuntimeError as err:
             if "Zero constraints" in err.message:
-                init_subsystem=None
+                init_subsystem = None
             else:
                 raise err
-        if init_subsystem is not None and number_activated_constraints(init_subsystem) > 0:
+        if (
+            init_subsystem is not None
+            and number_activated_constraints(init_subsystem) > 0
+        ):
             dof = degrees_of_freedom(init_subsystem)
             if dof > 0:
                 raise RuntimeError(
@@ -639,7 +644,9 @@ def petsc_dae_by_time_element(
             if t == between.first():
                 # t == between.first() was handled above
                 continue
-            constraints = [con[t] for con in flattened_problem["time_constraints"] if t in con]
+            constraints = [
+                con[t] for con in flattened_problem["time_constraints"] if t in con
+            ]
             variables = [var[t] for var in flattened_problem["time_variables"]]
             # Create a temporary block with references to original constraints
             # and variables so we can integrate this "subsystem" without
@@ -1057,6 +1064,7 @@ class PetscTrajectory(object):
                 self.vecs = json.load(fp)
         self.time = self.vecs["_time"]
 
+
 def _get_flattened_problem(model, time, representative_time):
     """
     Helper function for petsc_dae_by_time_element and get_initial_condition_problem.
@@ -1067,11 +1075,11 @@ def _get_flattened_problem(model, time, representative_time):
         time (ContinuousSet): Time set
         representative_time (Element of time): A timepoint at which the DAE system is at its "normal" state
             after the constraints and variables associated with the initial time point
-            have passed. 
+            have passed.
 
     Returns (dictionary):
         Dictionary containing lists of variables and constraints indexed by times and lists
-        of those unindexed by time. Also a list of discretization equations so they can be 
+        of those unindexed by time. Also a list of discretization equations so they can be
         deactivated in the problem passed to PETSc.
     """
     regular_vars, time_vars = flatten_dae_components(
@@ -1092,15 +1100,15 @@ def _get_flattened_problem(model, time, representative_time):
 
 
 def get_initial_condition_problem(
-        model,
-        time,
-        initial_time,
-        representative_time=None,
-        initial_constraints=None,
-        initial_variables=None,
-        detect_initial=True,
-        flattened_problem=None,
-    ):
+    model,
+    time,
+    initial_time,
+    representative_time=None,
+    initial_constraints=None,
+    initial_variables=None,
+    detect_initial=True,
+    flattened_problem=None,
+):
     """
     Solve a DAE problem step by step using the PETSc DAE solver.  This
     integrates from one time point to the next.
@@ -1139,11 +1147,11 @@ def get_initial_condition_problem(
 
     if flattened_problem is None:
         if representative_time is None:
-            raise RuntimeError("The user must supply either the flattened problem or a representative time.")
+            raise RuntimeError(
+                "The user must supply either the flattened problem or a representative time."
+            )
         flattened_problem = _get_flattened_problem(
-            model=model,
-            time=time,
-            representative_time=representative_time
+            model=model, time=time, representative_time=representative_time
         )
 
     if detect_initial:
@@ -1156,17 +1164,14 @@ def get_initial_condition_problem(
         const_init_set = ComponentSet(initial_constraints)
         initial_constraints = list(const_no_t_set | const_init_set)
 
-
-
     constraints = [
-        con[initial_time] 
+        con[initial_time]
         for con in flattened_problem["time_constraints"]
         if initial_time in con
         and con[initial_time] not in flattened_problem["discretization_equations"]
     ] + initial_constraints
     variables = [
-        var[initial_time] 
-        for var in flattened_problem["time_variables"]
+        var[initial_time] for var in flattened_problem["time_variables"]
     ] + initial_variables
 
     if len(constraints) <= 0:

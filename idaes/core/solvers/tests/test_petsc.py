@@ -812,6 +812,7 @@ def test_petsc_skip_initial_solve():
     assert pytest.approx(y5, rel=1e-3) == pyo.value(m.y[m.t.last(), 5])
     assert pytest.approx(y6, rel=1e-3) == pyo.value(m.y[m.t.last(), 6])
 
+
 @pytest.mark.unit
 @pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
 def test_petsc_collocation_lagrange_radau():
@@ -819,9 +820,7 @@ def test_petsc_collocation_lagrange_radau():
     Ensure that PETSc works with Lagrange-Radau collocation
     """
     m, y1, y2, y3, y4, y5, y6 = dae_with_non_time_indexed_constraint(
-        transformation_method="dae.collocation",
-        scheme="LAGRANGE-RADAU",
-        ncp=3
+        transformation_method="dae.collocation", scheme="LAGRANGE-RADAU", ncp=3
     )
 
     res = petsc.petsc_dae_by_time_element(
@@ -843,6 +842,7 @@ def test_petsc_collocation_lagrange_radau():
     assert pytest.approx(y5, rel=1e-3) == pyo.value(m.y[m.t.last(), 5])
     assert pytest.approx(y6, rel=1e-3) == pyo.value(m.y[m.t.last(), 6])
 
+
 @pytest.mark.unit
 @pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
 def test_petsc_collocation_lagrange_legendre():
@@ -850,9 +850,7 @@ def test_petsc_collocation_lagrange_legendre():
     Ensure that PETSc works with Lagrange-Legendre collocation
     """
     m, y1, y2, y3, y4, y5, y6 = dae_with_non_time_indexed_constraint(
-        transformation_method="dae.collocation",
-        scheme="LAGRANGE-LEGENDRE",
-        ncp=3
+        transformation_method="dae.collocation", scheme="LAGRANGE-LEGENDRE", ncp=3
     )
 
     res = petsc.petsc_dae_by_time_element(
@@ -932,11 +930,11 @@ def test_petsc_traj_previous():
         initial_solver="ipopt",
         initial_solver_options={
             # 'bound_push' : 1e-22,
-            'linear_solver': 'ma57',
-            'OF_ma57_automatic_scaling': 'yes',
-            'max_iter': 300,
-            'tol': 1e-6,
-            'halt_on_ampl_error': 'yes',
+            "linear_solver": "ma57",
+            "OF_ma57_automatic_scaling": "yes",
+            "max_iter": 300,
+            "tol": 1e-6,
+            "halt_on_ampl_error": "yes",
             # 'mu_strategy': 'monotone',
         },
         # skip_initial=True,
@@ -1353,6 +1351,7 @@ def test_calculate_derivatives_collocation_ll():
             calculate_derivatives=True,
         )
 
+
 @pytest.mark.unit
 def test_get_initial_condition_problem_no_active_constraints():
     m = pyo.ConcreteModel()
@@ -1378,15 +1377,20 @@ def test_get_initial_condition_problem_no_active_constraints():
         model=m,
         time=m.time,
         initial_time=m.time.at(1),
-        representative_time=m.time.at(2)
+        representative_time=m.time.at(2),
     )
     assert mstat.number_variables_in_activated_constraints(init_subsystem) == 0
-    local_var_name_list = [var.name for var in init_subsystem.component_data_objects(ctype=pyo.Var)]
-    assert set(local_var_name_list) == {'x[0.0]', 'u[0.0]', 'dxdt[0.0]'}
+    local_var_name_list = [
+        var.name for var in init_subsystem.component_data_objects(ctype=pyo.Var)
+    ]
+    assert set(local_var_name_list) == {"x[0.0]", "u[0.0]", "dxdt[0.0]"}
 
     assert mstat.number_activated_constraints(init_subsystem) == 0
-    local_con_name_list = [con.name for con in init_subsystem.component_data_objects(ctype=pyo.Constraint)]
+    local_con_name_list = [
+        con.name for con in init_subsystem.component_data_objects(ctype=pyo.Constraint)
+    ]
     assert local_con_name_list[0] == "diff_eq[0.0]"
+
 
 @pytest.mark.unit
 def test_get_initial_condition_problem_no_active_constraints_not_t0():
@@ -1413,15 +1417,20 @@ def test_get_initial_condition_problem_no_active_constraints_not_t0():
         model=m,
         time=m.time,
         initial_time=m.time.at(2),
-        representative_time=m.time.at(3)
+        representative_time=m.time.at(3),
     )
     assert mstat.number_variables_in_activated_constraints(init_subsystem) == 0
-    local_var_name_list = [var.name for var in init_subsystem.component_data_objects(ctype=pyo.Var)]
-    assert set(local_var_name_list) == {'x[1.0]', 'u[1.0]', 'dxdt[1.0]'}
+    local_var_name_list = [
+        var.name for var in init_subsystem.component_data_objects(ctype=pyo.Var)
+    ]
+    assert set(local_var_name_list) == {"x[1.0]", "u[1.0]", "dxdt[1.0]"}
 
     assert mstat.number_activated_constraints(init_subsystem) == 0
-    local_con_name_list = [con.name for con in init_subsystem.component_data_objects(ctype=pyo.Constraint)]
+    local_con_name_list = [
+        con.name for con in init_subsystem.component_data_objects(ctype=pyo.Constraint)
+    ]
     assert local_con_name_list[0] == "diff_eq[1.0]"
+
 
 @pytest.mark.unit
 def test_get_initial_condition_problem_at_time_no_active_constraints():
@@ -1445,15 +1454,20 @@ def test_get_initial_condition_problem_at_time_no_active_constraints():
         model=m,
         time=m.time,
         initial_time=m.time.at(1),
-        representative_time=m.time.at(2)
+        representative_time=m.time.at(2),
     )
     assert mstat.number_variables_in_activated_constraints(init_subsystem) == 0
-    local_var_name_list = [var.name for var in init_subsystem.component_data_objects(ctype=pyo.Var)]
-    assert set(local_var_name_list) == {'x[0.0]', 'u[0.0]', 'dxdt[0.0]'}
+    local_var_name_list = [
+        var.name for var in init_subsystem.component_data_objects(ctype=pyo.Var)
+    ]
+    assert set(local_var_name_list) == {"x[0.0]", "u[0.0]", "dxdt[0.0]"}
 
     assert mstat.number_activated_constraints(init_subsystem) == 0
-    local_con_name_list = [con.name for con in init_subsystem.component_data_objects(ctype=pyo.Constraint)]
+    local_con_name_list = [
+        con.name for con in init_subsystem.component_data_objects(ctype=pyo.Constraint)
+    ]
     assert local_con_name_list[0] == "diff_eq[0.0]"
+
 
 @pytest.mark.unit
 def test_get_initial_condition_problem_non_time_indexed_constraint():
@@ -1461,18 +1475,82 @@ def test_get_initial_condition_problem_non_time_indexed_constraint():
     init_subsystem = petsc.get_initial_condition_problem(
         model=m, time=m.t, initial_time=m.t.at(1), representative_time=m.t.at(2)
     )
-    
-    unfixed_var_name_set = set(var.name for var in mstat.unfixed_variables_set(init_subsystem))
-    assert unfixed_var_name_set == {'y[0,6]', 'ydot[0,1]', 'ydot[0,2]', 'ydot[0,3]', 'ydot[0,4]', 'ydot[0,5]', 'r[0,1]', 'r[0,2]', 'r[0,3]', 'r[0,4]', 'r[0,5]', 'Fin[0]', 'H'}
+
+    unfixed_var_name_set = set(
+        var.name for var in mstat.unfixed_variables_set(init_subsystem)
+    )
+    assert unfixed_var_name_set == {
+        "y[0,6]",
+        "ydot[0,1]",
+        "ydot[0,2]",
+        "ydot[0,3]",
+        "ydot[0,4]",
+        "ydot[0,5]",
+        "r[0,1]",
+        "r[0,2]",
+        "r[0,3]",
+        "r[0,4]",
+        "r[0,5]",
+        "Fin[0]",
+        "H",
+    }
 
     total_var_name_set = set(var.name for var in mstat.variables_set(init_subsystem))
-    assert total_var_name_set == {'r[0,1]', 'r[0,2]', 'ydot[0,1]', 'ydot[0,4]', 'H', 'y[0,2]', 'ydot[0,3]', 'y[0,3]', 'y[0,5]', 'r[0,3]', 'r[0,5]', 'Fin[0]', 'y[0,1]', 'ydot[0,2]', 'ydot[0,6]', 'r[0,4]', 'y[0,4]', 'y[0,6]', 'ydot[0,5]'}
+    assert total_var_name_set == {
+        "r[0,1]",
+        "r[0,2]",
+        "ydot[0,1]",
+        "ydot[0,4]",
+        "H",
+        "y[0,2]",
+        "ydot[0,3]",
+        "y[0,3]",
+        "y[0,5]",
+        "r[0,3]",
+        "r[0,5]",
+        "Fin[0]",
+        "y[0,1]",
+        "ydot[0,2]",
+        "ydot[0,6]",
+        "r[0,4]",
+        "y[0,4]",
+        "y[0,6]",
+        "ydot[0,5]",
+    }
 
-    active_con_name_set = set(con.name for con in mstat.activated_constraints_set(init_subsystem))
-    assert active_con_name_set == {'eq_y6[0]', 'eq_r1[0]', 'eq_r2[0]', 'eq_r3[0]', 'eq_r4[0]', 'eq_r5[0]', 'eq_Fin[0]', 'H_eqn'}
+    active_con_name_set = set(
+        con.name for con in mstat.activated_constraints_set(init_subsystem)
+    )
+    assert active_con_name_set == {
+        "eq_y6[0]",
+        "eq_r1[0]",
+        "eq_r2[0]",
+        "eq_r3[0]",
+        "eq_r4[0]",
+        "eq_r5[0]",
+        "eq_Fin[0]",
+        "H_eqn",
+    }
 
-    total_con_name_set = set(con.name for con in mstat.total_constraints_set(init_subsystem))
-    assert total_con_name_set == {'eq_r5[0]', 'eq_y6[0]', 'eq_r4[0]', 'eq_Fin[0]', 'H_eqn', 'eq_ydot5[0]', 'eq_ydot1[0]', 'eq_r1[0]', 'eq_ydot4[0]', 'eq_r3[0]', 'eq_r2[0]', 'eq_ydot2[0]', 'eq_ydot3[0]'}
+    total_con_name_set = set(
+        con.name for con in mstat.total_constraints_set(init_subsystem)
+    )
+    assert total_con_name_set == {
+        "eq_r5[0]",
+        "eq_y6[0]",
+        "eq_r4[0]",
+        "eq_Fin[0]",
+        "H_eqn",
+        "eq_ydot5[0]",
+        "eq_ydot1[0]",
+        "eq_r1[0]",
+        "eq_ydot4[0]",
+        "eq_r3[0]",
+        "eq_r2[0]",
+        "eq_ydot2[0]",
+        "eq_ydot3[0]",
+    }
+
 
 @pytest.mark.unit
 def test_get_initial_condition_problem_non_time_indexed_constraint_not_t0():
@@ -1489,17 +1567,80 @@ def test_get_initial_condition_problem_non_time_indexed_constraint_not_t0():
     m.eq_ydot4[t4].deactivate()
     m.eq_ydot5[t4].deactivate()
 
-    unfixed_var_name_set = set(var.name for var in mstat.unfixed_variables_set(init_subsystem))
-    assert unfixed_var_name_set == {'y[54.0,6]', 'ydot[54.0,1]', 'ydot[54.0,2]', 'ydot[54.0,3]', 'ydot[54.0,4]', 'ydot[54.0,5]', 'r[54.0,1]', 'r[54.0,2]', 'r[54.0,3]', 'r[54.0,4]', 'r[54.0,5]', 'Fin[54.0]', 'H'}
+    unfixed_var_name_set = set(
+        var.name for var in mstat.unfixed_variables_set(init_subsystem)
+    )
+    assert unfixed_var_name_set == {
+        "y[54.0,6]",
+        "ydot[54.0,1]",
+        "ydot[54.0,2]",
+        "ydot[54.0,3]",
+        "ydot[54.0,4]",
+        "ydot[54.0,5]",
+        "r[54.0,1]",
+        "r[54.0,2]",
+        "r[54.0,3]",
+        "r[54.0,4]",
+        "r[54.0,5]",
+        "Fin[54.0]",
+        "H",
+    }
 
     total_var_name_set = set(var.name for var in mstat.variables_set(init_subsystem))
-    assert total_var_name_set == {'r[54.0,1]', 'r[54.0,2]', 'ydot[54.0,1]', 'ydot[54.0,4]', 'H', 'y[54.0,2]', 'ydot[54.0,3]', 'y[54.0,3]', 'y[54.0,5]', 'r[54.0,3]', 'r[54.0,5]', 'Fin[54.0]', 'y[54.0,1]', 'ydot[54.0,2]', 'ydot[54.0,6]', 'r[54.0,4]', 'y[54.0,4]', 'y[54.0,6]', 'ydot[54.0,5]'}
+    assert total_var_name_set == {
+        "r[54.0,1]",
+        "r[54.0,2]",
+        "ydot[54.0,1]",
+        "ydot[54.0,4]",
+        "H",
+        "y[54.0,2]",
+        "ydot[54.0,3]",
+        "y[54.0,3]",
+        "y[54.0,5]",
+        "r[54.0,3]",
+        "r[54.0,5]",
+        "Fin[54.0]",
+        "y[54.0,1]",
+        "ydot[54.0,2]",
+        "ydot[54.0,6]",
+        "r[54.0,4]",
+        "y[54.0,4]",
+        "y[54.0,6]",
+        "ydot[54.0,5]",
+    }
 
-    active_con_name_set = set(con.name for con in mstat.activated_constraints_set(init_subsystem))
-    assert active_con_name_set == {'eq_y6[54.0]', 'eq_r1[54.0]', 'eq_r2[54.0]', 'eq_r3[54.0]', 'eq_r4[54.0]', 'eq_r5[54.0]', 'eq_Fin[54.0]', 'H_eqn'}
+    active_con_name_set = set(
+        con.name for con in mstat.activated_constraints_set(init_subsystem)
+    )
+    assert active_con_name_set == {
+        "eq_y6[54.0]",
+        "eq_r1[54.0]",
+        "eq_r2[54.0]",
+        "eq_r3[54.0]",
+        "eq_r4[54.0]",
+        "eq_r5[54.0]",
+        "eq_Fin[54.0]",
+        "H_eqn",
+    }
 
-    total_con_name_set = set(con.name for con in mstat.total_constraints_set(init_subsystem))
-    assert total_con_name_set == {'eq_r5[54.0]', 'eq_y6[54.0]', 'eq_r4[54.0]', 'eq_Fin[54.0]', 'H_eqn', 'eq_ydot5[54.0]', 'eq_ydot1[54.0]', 'eq_r1[54.0]', 'eq_ydot4[54.0]', 'eq_r3[54.0]', 'eq_r2[54.0]', 'eq_ydot2[54.0]', 'eq_ydot3[54.0]'}
+    total_con_name_set = set(
+        con.name for con in mstat.total_constraints_set(init_subsystem)
+    )
+    assert total_con_name_set == {
+        "eq_r5[54.0]",
+        "eq_y6[54.0]",
+        "eq_r4[54.0]",
+        "eq_Fin[54.0]",
+        "H_eqn",
+        "eq_ydot5[54.0]",
+        "eq_ydot1[54.0]",
+        "eq_r1[54.0]",
+        "eq_ydot4[54.0]",
+        "eq_r3[54.0]",
+        "eq_r2[54.0]",
+        "eq_ydot2[54.0]",
+        "eq_ydot3[54.0]",
+    }
 
 
 if __name__ == "__main__":
@@ -1518,7 +1659,10 @@ if __name__ == "__main__":
     m.eq_ydot3[t4].deactivate()
     m.eq_ydot4[t4].deactivate()
     m.eq_ydot5[t4].deactivate()
-    init_subsystem = petsc.get_initial_condition_problem(model=m, time=m.t, initial_time=m.t.at(4), representative_time=m.t.at(5))
+    init_subsystem = petsc.get_initial_condition_problem(
+        model=m, time=m.t, initial_time=m.t.at(4), representative_time=m.t.at(5)
+    )
     from idaes.core.util.model_diagnostics import DiagnosticsToolbox
-    dt=DiagnosticsToolbox(init_subsystem)
+
+    dt = DiagnosticsToolbox(init_subsystem)
     dt.report_structural_issues()
