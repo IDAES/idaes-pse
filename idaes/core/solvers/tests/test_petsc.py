@@ -21,6 +21,7 @@ import pyomo.environ as pyo
 import pyomo.dae as pyodae
 from pyomo.util.subsystems import create_subsystem_block
 from idaes.core.solvers import petsc
+import idaes.core.util.model_statistics as mstat
 import idaes.logger as idaeslog
 
 
@@ -835,10 +836,11 @@ def test_petsc_traj_previous():
     tj0 = res0.trajectory
 
     # Next do it in two steps
+    t4 = m.t.at(4)
     res = petsc.petsc_dae_by_time_element(
         m,
         time=m.t,
-        between=[m.t.first(), m.t.at(4)],
+        between=[m.t.first(), t4],
         ts_options={
             "--ts_type": "cn",  # Crank–Nicolson
             "--ts_adapt_type": "basic",
@@ -848,11 +850,16 @@ def test_petsc_traj_previous():
     )
     # Fix initial condition for second leg of trajectory
     for j in range(1, 6):
-        m.y[m.t.at(4), j].fix()
+        m.y[t4, j].fix()
+    m.eq_ydot1[t4].deactivate()
+    m.eq_ydot2[t4].deactivate()
+    m.eq_ydot3[t4].deactivate()
+    m.eq_ydot4[t4].deactivate()
+    m.eq_ydot5[t4].deactivate()
     res = petsc.petsc_dae_by_time_element(
         m,
         time=m.t,
-        between=[m.t.at(4), m.t.last()],
+        between=[t4, m.t.last()],
         ts_options={
             "--ts_type": "cn",  # Crank–Nicolson
             "--ts_adapt_type": "basic",
@@ -860,6 +867,17 @@ def test_petsc_traj_previous():
             "--ts_save_trajectory": 1,
         },
         previous_trajectory=res.trajectory,
+        initial_solver="ipopt",
+        initial_solver_options={
+            # 'bound_push' : 1e-22,
+            'linear_solver': 'ma57',
+            'OF_ma57_automatic_scaling': 'yes',
+            'max_iter': 300,
+            'tol': 1e-6,
+            'halt_on_ampl_error': 'yes',
+            # 'mu_strategy': 'monotone',
+        },
+        # skip_initial=True,
         # interpolate=False
     )
 
@@ -1232,40 +1250,214 @@ def test_calculate_derivatives_collocation_lr():
 
 
 # This test fails because the PETSc interface doesn't work with Lagrange-Legendre collocation
-# @pytest.mark.unit
-# @pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
-# def test_calculate_derivatives_collocation_ll():
-#     m = pyo.ConcreteModel()
+@pytest.mark.unit
+@pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
+def test_calculate_derivatives_collocation_ll():
+    m = pyo.ConcreteModel()
 
-#     m.time = pyodae.ContinuousSet(initialize=(0.0, 1.0, 2.0))
-#     m.x = pyo.Var(m.time)
-#     m.u = pyo.Var(m.time)
-#     m.dxdt = pyodae.DerivativeVar(m.x, wrt=m.time)
+    m.time = pyodae.ContinuousSet(initialize=(0.0, 1.0, 2.0))
+    m.x = pyo.Var(m.time)
+    m.u = pyo.Var(m.time)
+    m.dxdt = pyodae.DerivativeVar(m.x, wrt=m.time)
 
-#     def diff_eq_rule(m, t):
-#         return m.dxdt[t] == m.x[t] ** 2 - m.u[t]
+    def diff_eq_rule(m, t):
+        return m.dxdt[t] == m.x[t] ** 2 - m.u[t]
 
-#     m.diff_eq = pyo.Constraint(m.time, rule=diff_eq_rule)
+    m.diff_eq = pyo.Constraint(m.time, rule=diff_eq_rule)
 
-#     discretizer = pyo.TransformationFactory("dae.collocation")
-#     discretizer.apply_to(m, nfe=2, scheme="LAGRANGE-LEGENDRE")
+    discretizer = pyo.TransformationFactory("dae.collocation")
+    discretizer.apply_to(m, nfe=2, scheme="LAGRANGE-LEGENDRE")
 
-#     m.u.fix(1.0)
-#     m.x[0].fix(0.0)
+    m.u.fix(1.0)
+    m.x[0].fix(0.0)
+    with pytest.raises(
+        RuntimeError,
+        match=re.escape(
+            "Discretization equation corresponding to dxdt[1.0] does not exist at time 1.0, "
+            "so derivative values cannot be calculated. Check to see if it if it is supposed "
+            "to exist. For certain collocation methods (for example, Lagrange-Legendre) "
+            "it does not."
+        ),
+    ):
+        res = petsc.petsc_dae_by_time_element(
+            m,
+            time=m.time,
+            between=[0.0, 2.0],
+            ts_options={
+                "--ts_type": "beuler",
+                "--ts_dt": 3e-2,
+            },
+            skip_initial=True,  # With u and x fixed, no variables to solve for at t0
+            calculate_derivatives=True,
+        )
 
-#     res = petsc.petsc_dae_by_time_element(
-#         m,
-#         time=m.time,
-#         between=[0.0, 2.0],
-#         ts_options={
-#             "--ts_type": "beuler",
-#             "--ts_dt": 3e-2,
-#         },
-#         skip_initial=True,  # With u and x fixed, no variables to solve for at t0
-#         calculate_derivatives=True,
-#     )
+@pytest.mark.unit
+def test_get_initial_condition_problem_no_active_constraints():
+    m = pyo.ConcreteModel()
 
-#     assert m.dxdt[0].value is None
-#     # It should backfill values for interpolated points like t=1
-#     assert pyo.value(m.dxdt[1]) == pytest.approx(-0.3787483909827891, rel=1e-3)
-#     assert pyo.value(m.dxdt[2]) == pytest.approx(-0.07952012649572815, rel=1e-3)
+    m.time = pyodae.ContinuousSet(initialize=(0.0, 1.0, 2.0))
+    m.x = pyo.Var(m.time)
+    m.u = pyo.Var(m.time)
+    m.dxdt = pyodae.DerivativeVar(m.x, wrt=m.time)
+
+    def diff_eq_rule(m, t):
+        return m.dxdt[t] == m.x[t] ** 2 - m.u[t]
+
+    m.diff_eq = pyo.Constraint(m.time, rule=diff_eq_rule)
+    m.diff_eq[0].deactivate()
+
+    m.u.fix(1.0)
+    m.x[0].fix(0.0)
+
+    discretizer = pyo.TransformationFactory("dae.finite_difference")
+    discretizer.apply_to(m, nfe=2, scheme="BACKWARD")
+
+    init_subsystem = petsc.get_initial_condition_problem(
+        model=m,
+        time=m.time,
+        t_initial=m.time.at(1),
+        representative_time=m.time.at(2)
+    )
+    assert mstat.number_variables_in_activated_constraints(init_subsystem) == 0
+    local_var_name_list = [var.name for var in init_subsystem.component_data_objects(ctype=pyo.Var)]
+    assert set(local_var_name_list) == {'x[0.0]', 'u[0.0]', 'dxdt[0.0]'}
+
+    assert mstat.number_activated_constraints(init_subsystem) == 0
+    local_con_name_list = [con.name for con in init_subsystem.component_data_objects(ctype=pyo.Constraint)]
+    assert local_con_name_list[0] == "diff_eq[0.0]"
+
+@pytest.mark.unit
+def test_get_initial_condition_problem_no_active_constraints_not_t0():
+    m = pyo.ConcreteModel()
+
+    m.time = pyodae.ContinuousSet(initialize=(0.0, 1.0, 2.0))
+    m.x = pyo.Var(m.time)
+    m.u = pyo.Var(m.time)
+    m.dxdt = pyodae.DerivativeVar(m.x, wrt=m.time)
+
+    def diff_eq_rule(m, t):
+        return m.dxdt[t] == m.x[t] ** 2 - m.u[t]
+
+    m.diff_eq = pyo.Constraint(m.time, rule=diff_eq_rule)
+    m.diff_eq[1].deactivate()
+
+    m.u.fix(1.0)
+    m.x[1].fix(0.0)
+
+    discretizer = pyo.TransformationFactory("dae.finite_difference")
+    discretizer.apply_to(m, nfe=2, scheme="BACKWARD")
+
+    init_subsystem = petsc.get_initial_condition_problem(
+        model=m,
+        time=m.time,
+        t_initial=m.time.at(2),
+        representative_time=m.time.at(3)
+    )
+    assert mstat.number_variables_in_activated_constraints(init_subsystem) == 0
+    local_var_name_list = [var.name for var in init_subsystem.component_data_objects(ctype=pyo.Var)]
+    assert set(local_var_name_list) == {'x[1.0]', 'u[1.0]', 'dxdt[1.0]'}
+
+    assert mstat.number_activated_constraints(init_subsystem) == 0
+    local_con_name_list = [con.name for con in init_subsystem.component_data_objects(ctype=pyo.Constraint)]
+    assert local_con_name_list[0] == "diff_eq[1.0]"
+
+@pytest.mark.unit
+def test_get_initial_condition_problem_at_time_no_active_constraints():
+    m = pyo.ConcreteModel()
+
+    m.time = pyodae.ContinuousSet(initialize=(0.0, 1.0, 2.0))
+    m.x = pyo.Var(m.time)
+    m.u = pyo.Var(m.time)
+    m.dxdt = pyodae.DerivativeVar(m.x, wrt=m.time)
+
+    def diff_eq_rule(m, t):
+        return m.dxdt[t] == m.x[t] ** 2 - m.u[t]
+
+    m.diff_eq = pyo.Constraint(m.time, rule=diff_eq_rule)
+    m.diff_eq[0].deactivate()
+
+    discretizer = pyo.TransformationFactory("dae.finite_difference")
+    discretizer.apply_to(m, nfe=2, scheme="BACKWARD")
+
+    init_subsystem = petsc.get_initial_condition_problem(
+        model=m,
+        time=m.time,
+        t_initial=m.time.at(1),
+        representative_time=m.time.at(2)
+    )
+    assert mstat.number_variables_in_activated_constraints(init_subsystem) == 0
+    local_var_name_list = [var.name for var in init_subsystem.component_data_objects(ctype=pyo.Var)]
+    assert set(local_var_name_list) == {'x[0.0]', 'u[0.0]', 'dxdt[0.0]'}
+
+    assert mstat.number_activated_constraints(init_subsystem) == 0
+    local_con_name_list = [con.name for con in init_subsystem.component_data_objects(ctype=pyo.Constraint)]
+    assert local_con_name_list[0] == "diff_eq[0.0]"
+
+@pytest.mark.unit
+def test_get_initial_condition_problem_non_time_indexed_constraint():
+    m, y1, y2, y3, y4, y5, y6 = dae_with_non_time_indexed_constraint(nfe=10)
+    init_subsystem = petsc.get_initial_condition_problem(
+        model=m, time=m.t, t_initial=m.t.at(1), representative_time=m.t.at(2)
+    )
+    
+    unfixed_var_name_set = set(var.name for var in mstat.unfixed_variables_set(init_subsystem))
+    assert unfixed_var_name_set == {'y[0,6]', 'ydot[0,1]', 'ydot[0,2]', 'ydot[0,3]', 'ydot[0,4]', 'ydot[0,5]', 'r[0,1]', 'r[0,2]', 'r[0,3]', 'r[0,4]', 'r[0,5]', 'Fin[0]', 'H'}
+
+    total_var_name_set = set(var.name for var in mstat.variables_set(init_subsystem))
+    assert total_var_name_set == {'r[0,1]', 'r[0,2]', 'ydot[0,1]', 'ydot[0,4]', 'H', 'y[0,2]', 'ydot[0,3]', 'y[0,3]', 'y[0,5]', 'r[0,3]', 'r[0,5]', 'Fin[0]', 'y[0,1]', 'ydot[0,2]', 'ydot[0,6]', 'r[0,4]', 'y[0,4]', 'y[0,6]', 'ydot[0,5]'}
+
+    active_con_name_set = set(con.name for con in mstat.activated_constraints_set(init_subsystem))
+    assert active_con_name_set == {'eq_y6[0]', 'eq_r1[0]', 'eq_r2[0]', 'eq_r3[0]', 'eq_r4[0]', 'eq_r5[0]', 'eq_Fin[0]', 'H_eqn'}
+
+    total_con_name_set = set(con.name for con in mstat.total_constraints_set(init_subsystem))
+    assert total_con_name_set == {'eq_r5[0]', 'eq_y6[0]', 'eq_r4[0]', 'eq_Fin[0]', 'H_eqn', 'eq_ydot5[0]', 'eq_ydot1[0]', 'eq_r1[0]', 'eq_ydot4[0]', 'eq_r3[0]', 'eq_r2[0]', 'eq_ydot2[0]', 'eq_ydot3[0]'}
+
+@pytest.mark.unit
+def test_get_initial_condition_problem_non_time_indexed_constraint_not_t0():
+    m, y1, y2, y3, y4, y5, y6 = dae_with_non_time_indexed_constraint(nfe=10)
+    init_subsystem = petsc.get_initial_condition_problem(
+        model=m, time=m.t, t_initial=m.t.at(4), representative_time=m.t.at(5)
+    )
+    t4 = m.t.at(4)
+    for j in range(1, 6):
+        m.y[t4, j].fix()
+    m.eq_ydot1[t4].deactivate()
+    m.eq_ydot2[t4].deactivate()
+    m.eq_ydot3[t4].deactivate()
+    m.eq_ydot4[t4].deactivate()
+    m.eq_ydot5[t4].deactivate()
+
+    unfixed_var_name_set = set(var.name for var in mstat.unfixed_variables_set(init_subsystem))
+    assert unfixed_var_name_set == {'y[54.0,6]', 'ydot[54.0,1]', 'ydot[54.0,2]', 'ydot[54.0,3]', 'ydot[54.0,4]', 'ydot[54.0,5]', 'r[54.0,1]', 'r[54.0,2]', 'r[54.0,3]', 'r[54.0,4]', 'r[54.0,5]', 'Fin[54.0]', 'H'}
+
+    total_var_name_set = set(var.name for var in mstat.variables_set(init_subsystem))
+    assert total_var_name_set == {'r[54.0,1]', 'r[54.0,2]', 'ydot[54.0,1]', 'ydot[54.0,4]', 'H', 'y[54.0,2]', 'ydot[54.0,3]', 'y[54.0,3]', 'y[54.0,5]', 'r[54.0,3]', 'r[54.0,5]', 'Fin[54.0]', 'y[54.0,1]', 'ydot[54.0,2]', 'ydot[54.0,6]', 'r[54.0,4]', 'y[54.0,4]', 'y[54.0,6]', 'ydot[54.0,5]'}
+
+    active_con_name_set = set(con.name for con in mstat.activated_constraints_set(init_subsystem))
+    assert active_con_name_set == {'eq_y6[54.0]', 'eq_r1[54.0]', 'eq_r2[54.0]', 'eq_r3[54.0]', 'eq_r4[54.0]', 'eq_r5[54.0]', 'eq_Fin[54.0]', 'H_eqn'}
+
+    total_con_name_set = set(con.name for con in mstat.total_constraints_set(init_subsystem))
+    assert total_con_name_set == {'eq_r5[54.0]', 'eq_y6[54.0]', 'eq_r4[54.0]', 'eq_Fin[54.0]', 'H_eqn', 'eq_ydot5[54.0]', 'eq_ydot1[54.0]', 'eq_r1[54.0]', 'eq_ydot4[54.0]', 'eq_r3[54.0]', 'eq_r2[54.0]', 'eq_ydot2[54.0]', 'eq_ydot3[54.0]'}
+
+
+if __name__ == "__main__":
+    # Will clean this up after review
+    m, y1, y2, y3, y4, y5, y6 = dae_with_non_time_indexed_constraint(nfe=10)
+
+    # init_subsystem = petsc.get_initial_condition_problem_at_time(
+    #     model=m, time=m.t, t_initial=m.t.at(1), representative_time=m.t.at(2)
+    # )
+
+    t4 = m.t.at(4)
+    for j in range(1, 6):
+        m.y[t4, j].fix()
+    m.eq_ydot1[t4].deactivate()
+    m.eq_ydot2[t4].deactivate()
+    m.eq_ydot3[t4].deactivate()
+    m.eq_ydot4[t4].deactivate()
+    m.eq_ydot5[t4].deactivate()
+    init_subsystem = petsc.get_initial_condition_problem(model=m, time=m.t, t_initial=m.t.at(4), representative_time=m.t.at(5))
+    from idaes.core.util.model_diagnostics import DiagnosticsToolbox
+    dt=DiagnosticsToolbox(init_subsystem)
+    dt.report_structural_issues()
+    print("ok, boomer")
