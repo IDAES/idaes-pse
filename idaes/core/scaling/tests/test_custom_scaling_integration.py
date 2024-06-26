@@ -186,10 +186,34 @@ def test_nominal_magnitude_inv_rss(gibbs):
 
 @pytest.mark.integration
 def test_scale_constraint_by_nominal_jacobian_norm(gibbs):
-    scaler = CustomScalerBase()
-
+    # scaler = CustomScalerBase()
+    #
     for c in gibbs.component_data_objects(ctype=Constraint, descend_into=True):
-        scaler.scale_constraint_by_nominal_jacobian_norm(c)
+        print(c.name)
+        # scaler.scale_constraint_by_nominal_jacobian_norm(c)
+        break
+    #
+    # print(gibbs.fs.unit.scaling_factor[gibbs.fs.unit.gibbs_minimization[0.0,"Vap","H2"]])
+
+    from idaes.core.scaling import AutoScaler
+
+    print(c.name)
+    s2 = AutoScaler(overwrite=True)
+    s2._con_by_norm(gibbs, con_list=[c], norm=2)
+    print(
+        gibbs.fs.unit.scaling_factor[gibbs.fs.unit.gibbs_minimization[0.0, "Vap", "H2"]]
+    )
+
+    # Autoscaling:
+    # fs.unit.control_volume.properties_out[0.0].enth_mol_phase_comp[Vap,NH3]
+    # fs.unit.control_volume.properties_out[0.0].gibbs_mol_phase_comp[Vap,H2]
+    # (0, 46): 449349.89708332205
+    # (0, 50): 449349.89708332205
+    #
+    # norm: 635476.7187061885
+    # sf: 1.5736217717558087e-06
+
+    assert False
 
     scaled = jacobian_cond(gibbs, scaled=True)
     print(scaled)

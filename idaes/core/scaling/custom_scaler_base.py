@@ -451,31 +451,47 @@ class CustomScalerBase(ScalerBase):
         # Cast norm to int to make sure it is valid
         norm = int(norm)
 
-        original_values = []
+        var_data = []
         try:
             # Iterate over all variables in constraint
             for v in identify_variables(constraint.body):
                 # Store current value for restoration
-                original_values.append((v, v.value))
+                ov = v.value  # original value
+                nv = self._get_magnitude_base_type(v)  # nominal value
+                sf = self.get_scaling_factor(v)  # scaling factor
 
-                # Set value to nominal
-                v.value = self._get_magnitude_base_type(v)
+                print(v.name, ov, nv, sf, 1 / sf)
+
+                var_data.append((v, ov, nv, sf))
 
             # Get partial derivatives
             pjac = []
-            for v in original_values:
+            for v in var_data:
+                # Iterate over all variable and set values
+                for w in var_data:
+                    if w is not v:
+                        # Set all other variables to their nominal magnitude
+                        # Even with variable scaling, sf*scaled_value = nominal_value
+                        w[0].value = w[2]
+                    else:
+                        # Set derivative var to scaled value sv = nv*sf
+                        w[0].value = w[2] * w[3]
+
                 pjac.append(
                     pyo.value(
-                        differentiate(
+                        (1 / w[3])  # Need to divide by variable scaling factor
+                        * differentiate(
                             expr=constraint.body, wrt=v[0], mode=Modes.reverse_symbolic
                         )
                     )
                 )
 
         finally:
-            # Restore values
-            for v in original_values:
+            # Restore all values for clean up
+            for v in var_data:
                 v[0].value = v[1]
+
+        print("Jac:", pjac)
 
         # Calculate norm
         sf = 1 / sum(abs(j) ** norm for j in pjac) ** (1 / norm)

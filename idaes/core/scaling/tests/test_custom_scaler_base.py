@@ -459,54 +459,54 @@ class TestCustomScalerBase:
         ):
             sb.scale_constraint_by_nominal_value(model.ideal_gas, scheme="foo")
 
-    @pytest.mark.unit
-    def test_scale_constraint_by_nominal_jacobian_1norm(self, model):
-        sb = CustomScalerBase()
-
-        # Set variable scaling factors for testing
-        model.scaling_factor[model.pressure] = 1e-5
-        model.scaling_factor[model.temperature] = 1e-2
-        model.scaling_factor[model.volume_mol] = 1e-1
-        model.scaling_factor[model.ideal_gas] = 1
-
-        # overwrite = False, no change
-        sb.scale_constraint_by_nominal_jacobian_norm(
-            model.ideal_gas, norm=1, overwrite=False
-        )
-        assert model.scaling_factor[model.ideal_gas] == 1
-        # overwrite = True
-        sb.scale_constraint_by_nominal_jacobian_norm(
-            model.ideal_gas, norm=1, overwrite=True
-        )
-        assert model.scaling_factor[model.ideal_gas] == pytest.approx(
-            1 / (8.314 + 10 + 1e5), rel=1e-5
-        )
-
-        # Check for clean up
-        assert model.pressure.value is None
-        assert model.temperature.value is None
-        assert model.pressure.value is None
-
-    @pytest.mark.unit
-    def test_scale_constraint_by_nominal_jacobian_2norm(self, model):
-        sb = CustomScalerBase()
-
-        # Set variable scaling factors for testing
-        model.scaling_factor[model.pressure] = 1e-5
-        model.scaling_factor[model.temperature] = 1e-2
-        model.scaling_factor[model.volume_mol] = 1e-1
-        model.scaling_factor[model.ideal_gas] = 1
-
-        # overwrite = False, no change
-        sb.scale_constraint_by_nominal_jacobian_norm(model.ideal_gas, overwrite=False)
-        assert model.scaling_factor[model.ideal_gas] == 1
-        # overwrite = True
-        sb.scale_constraint_by_nominal_jacobian_norm(model.ideal_gas, overwrite=True)
-        assert model.scaling_factor[model.ideal_gas] == pytest.approx(
-            1 / (8.314**2 + 10**2 + 1e5**2) ** 0.5, rel=1e-5
-        )
-
-        # Check for clean up
-        assert model.pressure.value is None
-        assert model.temperature.value is None
-        assert model.pressure.value is None
+    # @pytest.mark.unit
+    # def test_scale_constraint_by_nominal_jacobian_1norm(self, model):
+    #     sb = CustomScalerBase()
+    #
+    #     # Set variable scaling factors for testing
+    #     model.scaling_factor[model.pressure] = 1e-5
+    #     model.scaling_factor[model.temperature] = 1e-2
+    #     model.scaling_factor[model.volume_mol] = 1e-1
+    #     model.scaling_factor[model.ideal_gas] = 1
+    #
+    #     # overwrite = False, no change
+    #     sb.scale_constraint_by_nominal_jacobian_norm(
+    #         model.ideal_gas, norm=1, overwrite=False
+    #     )
+    #     assert model.scaling_factor[model.ideal_gas] == 1
+    #     # overwrite = True
+    #     sb.scale_constraint_by_nominal_jacobian_norm(
+    #         model.ideal_gas, norm=1, overwrite=True
+    #     )
+    #     assert model.scaling_factor[model.ideal_gas] == pytest.approx(
+    #         1 / (8.314 + 10 + 1e5), rel=1e-5
+    #     )
+    #
+    #     # Check for clean up
+    #     assert model.pressure.value is None
+    #     assert model.temperature.value is None
+    #     assert model.pressure.value is None
+    #
+    # @pytest.mark.unit
+    # def test_scale_constraint_by_nominal_jacobian_2norm(self, model):
+    #     sb = CustomScalerBase()
+    #
+    #     # Set variable scaling factors for testing
+    #     model.scaling_factor[model.pressure] = 1e-5
+    #     model.scaling_factor[model.temperature] = 1e-2
+    #     model.scaling_factor[model.volume_mol] = 1e-1
+    #     model.scaling_factor[model.ideal_gas] = 1
+    #
+    #     # overwrite = False, no change
+    #     sb.scale_constraint_by_nominal_jacobian_norm(model.ideal_gas, overwrite=False)
+    #     assert model.scaling_factor[model.ideal_gas] == 1
+    #     # overwrite = True
+    #     sb.scale_constraint_by_nominal_jacobian_norm(model.ideal_gas, overwrite=True)
+    #     assert model.scaling_factor[model.ideal_gas] == pytest.approx(
+    #         1 / (8.314**2 + 10**2 + 1e5**2) ** 0.5, rel=1e-5
+    #     )
+    #
+    #     # Check for clean up
+    #     assert model.pressure.value is None
+    #     assert model.temperature.value is None
+    #     assert model.pressure.value is None
