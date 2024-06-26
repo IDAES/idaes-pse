@@ -3547,7 +3547,7 @@ class TestInitializersModularCoCurrent:
 
         return m
 
-    @pytest.mark.component
+    @pytest.mark.integration
     def test_general_hx1d_initializer(self, model):
         initializer = HX1DInitializer()
         initializer.initialize(model.fs.unit)
