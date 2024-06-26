@@ -48,6 +48,8 @@ class CustomScalerBase(ScalerBase):
 
     """
 
+    CONFIG = CSCONFIG()
+
     # Common data structures for default scaling
     # DEFAULT_SCALING_FACTORS = {"component_local_name": DEFAULT_SCALING}
     DEFAULT_SCALING_FACTORS = None
@@ -56,7 +58,7 @@ class CustomScalerBase(ScalerBase):
     UNIT_SCALING_FACTORS = copy(DEFAULT_UNIT_SCALING)
 
     def __init__(self, **kwargs):
-        self.config = CSCONFIG(kwargs)
+        super().__init__(**kwargs)
 
         if self.DEFAULT_SCALING_FACTORS is not None:
             self.default_scaling_factors = copy(self.DEFAULT_SCALING_FACTORS)

@@ -97,8 +97,10 @@ class ScalerBase:
 
     """
 
+    CONFIG = CONFIG()
+
     def __init__(self, **kwargs):
-        self.config = CONFIG(kwargs)
+        self.config = self.CONFIG(kwargs)
 
     def get_scaling_factor(self, component):
         """
