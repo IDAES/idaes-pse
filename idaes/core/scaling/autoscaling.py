@@ -49,8 +49,7 @@ class AutoScaler(ScalerBase):
 
     """
 
-    def __init__(self, **kwargs):
-        self.config = ASCONFIG(kwargs)
+    CONFIG = ASCONFIG()
 
     def variables_by_magnitude(self, blk_or_var, descend_into: bool = True):
         """
