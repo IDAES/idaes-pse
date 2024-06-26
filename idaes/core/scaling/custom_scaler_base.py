@@ -17,9 +17,12 @@ Author: Andrew Lee
 """
 from copy import copy
 
+import pyomo.environ as pyo
 from pyomo.common.config import document_kwargs_from_configdict
 from pyomo.environ import units
 from pyomo.core.base.units_container import UnitsError
+from pyomo.core.expr import identify_variables
+from pyomo.core.expr.calculus.derivatives import Modes, differentiate
 
 from idaes.core.scaling.scaling_base import CONFIG, ScalerBase
 from idaes.core.scaling.util import get_scaling_factor
@@ -441,3 +444,89 @@ class CustomScalerBase(ScalerBase):
         self.set_constraint_scaling_factor(
             constraint=constraint, scaling_factor=sf, overwrite=overwrite
         )
+
+    def scale_constraint_by_nominal_jacobian_norm(
+        self, constraint, norm=2, overwrite: bool = False
+    ):
+        # Cast norm to int to make sure it is valid
+        norm = int(norm)
+
+        original_values = []
+        try:
+            # Iterate over all variables in constraint
+            for v in identify_variables(constraint.body):
+                # Store current value for restoration
+                original_values.append((v, v.value))
+
+                # Set value to nominal
+                v.value = self._get_magnitude_base_type(v)
+
+            # Get partial derivatives
+            pjac = []
+            for v in original_values:
+                pjac.append(
+                    pyo.value(
+                        differentiate(
+                            expr=constraint.body, wrt=v[0], mode=Modes.reverse_symbolic
+                        )
+                    )
+                )
+
+        finally:
+            # Restore values
+            for v in original_values:
+                v[0].value = v[1]
+
+        # Calculate norm
+        sf = 1 / sum(abs(j) ** norm for j in pjac) ** (1 / norm)
+        self.set_constraint_scaling_factor(constraint, sf, overwrite=overwrite)
+
+    def _get_magnitude_base_type(self, node):
+        # Get scaling factor for node
+        sf = get_scaling_factor(node)
+
+        ub = node.ub
+        lb = node.lb
+        domain = node.domain
+
+        # To avoid NoneType errors, assign dummy values in place of None
+        if ub is None:
+            # No upper bound, take a positive value
+            ub = 1000
+        if lb is None:
+            # No lower bound, take a negative value
+            lb = -1000
+
+        if lb >= 0 or domain in [
+            pyo.NonNegativeReals,
+            pyo.PositiveReals,
+            pyo.PositiveIntegers,
+            pyo.NonNegativeIntegers,
+            pyo.Boolean,
+            pyo.Binary,
+        ]:
+            # Strictly positive
+            sign = 1
+        elif ub <= 0 or domain in [
+            pyo.NegativeReals,
+            pyo.NonPositiveReals,
+            pyo.NegativeIntegers,
+            pyo.NonPositiveIntegers,
+        ]:
+            # Strictly negative
+            sign = -1
+        else:
+            # Unbounded, see if there is a current value
+            try:
+                value = pyo.value(node)
+            except ValueError:
+                value = None
+
+            if value is not None and value < 0:
+                # Assigned negative value, assume value will remain negative
+                sign = -1
+            else:
+                # Either a positive value or no value, assume positive
+                sign = 1
+
+        return sign / sf

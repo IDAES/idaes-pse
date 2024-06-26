@@ -184,6 +184,19 @@ def test_nominal_magnitude_inv_rss(gibbs):
     assert scaled == pytest.approx(1.30134e11, rel=1e-5)
 
 
+@pytest.mark.integration
+def test_scale_constraint_by_nominal_jacobian_norm(gibbs):
+    scaler = CustomScalerBase()
+
+    for c in gibbs.component_data_objects(ctype=Constraint, descend_into=True):
+        scaler.scale_constraint_by_nominal_jacobian_norm(c)
+
+    scaled = jacobian_cond(gibbs, scaled=True)
+    print(scaled)
+    assert scaled == pytest.approx(1.73937e16, rel=1e-5)
+    assert False
+
+
 if __name__ == "__main__":
     # Run file to regenerate solution json
     m = build_model()
