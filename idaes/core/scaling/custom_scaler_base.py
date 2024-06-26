@@ -447,9 +447,26 @@ class CustomScalerBase(ScalerBase):
             constraint=constraint, scaling_factor=sf, overwrite=overwrite
         )
 
-    def scale_constraint_by_nominal_jacobian_norm(
-        self, constraint, norm=2, overwrite: bool = False
+    def scale_constraint_by_nominal_derivative_norm(
+        self, constraint, norm: int = 2, overwrite: bool = False
     ):
+        """
+        Scale constraint by norm of partial derivatives.
+
+        Calculates partial derivatives of constraint at nominal variable values,
+        and then scaled the constraint by the user-selected norm of these derivatives.
+        Given perfect variable scaling, this should provide a similar result to
+        applying scaling based on the Jacobian norm, however this approach does not
+        require an initial solution for the problem (relying on nominal values instead).
+
+        Args:
+            constraint - constraint to be scaled
+            norm - type of norm to use for scaling. Must be a positive integer.
+            overwrite - whether to overwrite existing scaling factors
+
+        Returns:
+            None
+        """
         # Cast norm to int to make sure it is valid
         norm = int(norm)
 
@@ -459,12 +476,12 @@ class CustomScalerBase(ScalerBase):
             for v in identify_variables(constraint.body):
                 # Store current value for restoration
                 ov = v.value  # original value
-                nv = self._get_magnitude_base_type(v)  # nominal value
                 sf = self.get_scaling_factor(v)  # scaling factor
+                if sf is None:
+                    # If no scaling factor set, use nominal value of 1
+                    sf = 1
 
-                print(v.name, ov, nv, sf, 1 / sf)
-
-                var_data.append((v, ov, nv, sf))
+                var_data.append((v, ov, sf))
 
             # Get partial derivatives
             pjac = []
@@ -473,18 +490,19 @@ class CustomScalerBase(ScalerBase):
                 for w in var_data:
                     if w is not v:
                         # Set all other variables to their nominal magnitude
-                        # Even with variable scaling, sf*scaled_value = nominal_value
-                        w[0].value = w[2]
+                        # nominal_value = 1/ scaling_factor
+                        w[0].value = 1 / w[2]
                     else:
-                        # Set derivative var to scaled value sv = nv*sf
-                        w[0].value = w[2] * w[3]
+                        # Set derivative var to scaled value of 1
+                        # With perfect scaling, scaling_factor * value = 1
+                        w[0].value = 1
 
                 pjac.append(
                     pyo.value(
-                        (1 / w[3])  # Need to divide by variable scaling factor
-                        * differentiate(
+                        differentiate(
                             expr=constraint.body, wrt=v[0], mode=Modes.reverse_symbolic
                         )
+                        * (1 / v[2])  # Need to divide by scaling_factor
                     )
                 )
 
@@ -493,58 +511,6 @@ class CustomScalerBase(ScalerBase):
             for v in var_data:
                 v[0].value = v[1]
 
-        print("Jac:", pjac)
-
         # Calculate norm
         sf = 1 / sum(abs(j) ** norm for j in pjac) ** (1 / norm)
         self.set_constraint_scaling_factor(constraint, sf, overwrite=overwrite)
-
-    def _get_magnitude_base_type(self, node):
-        # Get scaling factor for node
-        sf = get_scaling_factor(node)
-
-        ub = node.ub
-        lb = node.lb
-        domain = node.domain
-
-        # To avoid NoneType errors, assign dummy values in place of None
-        if ub is None:
-            # No upper bound, take a positive value
-            ub = 1000
-        if lb is None:
-            # No lower bound, take a negative value
-            lb = -1000
-
-        if lb >= 0 or domain in [
-            pyo.NonNegativeReals,
-            pyo.PositiveReals,
-            pyo.PositiveIntegers,
-            pyo.NonNegativeIntegers,
-            pyo.Boolean,
-            pyo.Binary,
-        ]:
-            # Strictly positive
-            sign = 1
-        elif ub <= 0 or domain in [
-            pyo.NegativeReals,
-            pyo.NonPositiveReals,
-            pyo.NegativeIntegers,
-            pyo.NonPositiveIntegers,
-        ]:
-            # Strictly negative
-            sign = -1
-        else:
-            # Unbounded, see if there is a current value
-            try:
-                value = pyo.value(node)
-            except ValueError:
-                value = None
-
-            if value is not None and value < 0:
-                # Assigned negative value, assume value will remain negative
-                sign = -1
-            else:
-                # Either a positive value or no value, assume positive
-                sign = 1
-
-        return sign / sf

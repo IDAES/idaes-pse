@@ -42,8 +42,7 @@ from idaes.core.util.testing import PhysicalParameterTestBlock, initialization_t
 from idaes.core.solvers import get_solver
 from idaes.core.util import to_json, from_json
 from idaes.core.util.scaling import jacobian_cond
-from idaes.core.scaling import AutoScaler
-from idaes.core.scaling import CustomScalerBase
+from idaes.core.scaling import AutoScaler, CustomScalerBase, set_scaling_factor
 
 
 FILENAME = "gibbs_solution.json"
@@ -185,40 +184,115 @@ def test_nominal_magnitude_inv_rss(gibbs):
 
 
 @pytest.mark.integration
-def test_scale_constraint_by_nominal_jacobian_norm(gibbs):
-    # scaler = CustomScalerBase()
-    #
+def test_scale_constraint_by_nominal_derivative_2norm_perfect_information(gibbs):
+    scaler = CustomScalerBase()
+
     for c in gibbs.component_data_objects(ctype=Constraint, descend_into=True):
-        print(c.name)
-        # scaler.scale_constraint_by_nominal_jacobian_norm(c)
-        break
-    #
-    # print(gibbs.fs.unit.scaling_factor[gibbs.fs.unit.gibbs_minimization[0.0,"Vap","H2"]])
-
-    from idaes.core.scaling import AutoScaler
-
-    print(c.name)
-    s2 = AutoScaler(overwrite=True)
-    s2._con_by_norm(gibbs, con_list=[c], norm=2)
-    print(
-        gibbs.fs.unit.scaling_factor[gibbs.fs.unit.gibbs_minimization[0.0, "Vap", "H2"]]
-    )
-
-    # Autoscaling:
-    # fs.unit.control_volume.properties_out[0.0].enth_mol_phase_comp[Vap,NH3]
-    # fs.unit.control_volume.properties_out[0.0].gibbs_mol_phase_comp[Vap,H2]
-    # (0, 46): 449349.89708332205
-    # (0, 50): 449349.89708332205
-    #
-    # norm: 635476.7187061885
-    # sf: 1.5736217717558087e-06
-
-    assert False
+        scaler.scale_constraint_by_nominal_derivative_norm(c)
 
     scaled = jacobian_cond(gibbs, scaled=True)
-    print(scaled)
-    assert scaled == pytest.approx(1.73937e16, rel=1e-5)
-    assert False
+    assert scaled == pytest.approx(3.07419e06, rel=1e-5)
+
+
+@pytest.mark.integration
+def test_scale_constraint_by_nominal_derivative_2norm_imperfect_information():
+    # Build a fresh model with no scaling factors
+    gibbs = build_model()
+
+    # Set imperfect scaling factors for all variables, representing an initial "best-guess"
+    # Feed states are known exactly - set scaling based on these
+    set_scaling_factor(
+        gibbs.fs.unit.control_volume.properties_in[0.0].flow_mol, 1 / 230
+    )
+    set_scaling_factor(
+        gibbs.fs.unit.control_volume.properties_in[0.0].flow_mol_phase, 1 / 230
+    )  # Only 1 phase, so we "know" this
+    set_scaling_factor(
+        gibbs.fs.unit.control_volume.properties_in[0.0].mole_frac_comp["H2"], 1 / 0.0435
+    )
+    set_scaling_factor(
+        gibbs.fs.unit.control_volume.properties_in[0.0].mole_frac_comp["N2"], 1 / 0.6522
+    )
+    set_scaling_factor(
+        gibbs.fs.unit.control_volume.properties_in[0.0].mole_frac_comp["O2"], 1 / 0.1739
+    )
+    set_scaling_factor(
+        gibbs.fs.unit.control_volume.properties_in[0.0].mole_frac_comp["CO2"], 1e5
+    )
+    set_scaling_factor(
+        gibbs.fs.unit.control_volume.properties_in[0.0].mole_frac_comp["CH4"],
+        1 / 0.1304,
+    )
+    set_scaling_factor(
+        gibbs.fs.unit.control_volume.properties_in[0.0].mole_frac_comp["CO"], 1e5
+    )
+    set_scaling_factor(
+        gibbs.fs.unit.control_volume.properties_in[0.0].mole_frac_comp["H2O"], 1e5
+    )
+    set_scaling_factor(
+        gibbs.fs.unit.control_volume.properties_in[0.0].mole_frac_comp["NH3"], 1e5
+    )
+    set_scaling_factor(
+        gibbs.fs.unit.control_volume.properties_in[0.0].temperature, 1 / 1500
+    )
+    set_scaling_factor(gibbs.fs.unit.control_volume.properties_in[0.0].pressure, 1e-5)
+    # Assume user does not know anything about enthalpy
+
+    # Best guesses for unit model and outlet state conditions
+    set_scaling_factor(gibbs.fs.unit.control_volume.heat[0.0], 1e-6)
+
+    set_scaling_factor(gibbs.fs.unit.control_volume.properties_out[0.0].flow_mol, 1e-2)
+    set_scaling_factor(
+        gibbs.fs.unit.control_volume.properties_out[0.0].flow_mol_phase, 1e-2
+    )  # Only 1 phase, so we "know" this
+    # N2 is inert, so will be order 0.1, assume CH4 and H2 are near-totally consumed, assume most O2 consumed
+    # Assume moderate amounts of CO2 and H2O, small amounts of CO, trace NH3 NH3
+    set_scaling_factor(
+        gibbs.fs.unit.control_volume.properties_out[0.0].mole_frac_comp["H2"], 1e4
+    )
+    set_scaling_factor(
+        gibbs.fs.unit.control_volume.properties_out[0.0].mole_frac_comp["N2"], 10
+    )
+    set_scaling_factor(
+        gibbs.fs.unit.control_volume.properties_out[0.0].mole_frac_comp["O2"], 1e2
+    )
+    set_scaling_factor(
+        gibbs.fs.unit.control_volume.properties_out[0.0].mole_frac_comp["CO2"], 10
+    )
+    set_scaling_factor(
+        gibbs.fs.unit.control_volume.properties_out[0.0].mole_frac_comp["CH4"], 1e4
+    )
+    set_scaling_factor(
+        gibbs.fs.unit.control_volume.properties_out[0.0].mole_frac_comp["CO"], 1e3
+    )
+    set_scaling_factor(
+        gibbs.fs.unit.control_volume.properties_out[0.0].mole_frac_comp["H2O"], 10
+    )
+    set_scaling_factor(
+        gibbs.fs.unit.control_volume.properties_out[0.0].mole_frac_comp["NH3"], 1e4
+    )
+    set_scaling_factor(
+        gibbs.fs.unit.control_volume.properties_out[0.0].temperature, 1e-3
+    )
+    set_scaling_factor(gibbs.fs.unit.control_volume.properties_out[0.0].pressure, 1e-5)
+
+    scaler = CustomScalerBase()
+    for c in gibbs.component_data_objects(ctype=Constraint, descend_into=True):
+        scaler.scale_constraint_by_nominal_derivative_norm(c)
+
+    scaled = jacobian_cond(gibbs, scaled=True)
+    assert scaled == pytest.approx(1.06128e11, rel=1e-5)
+
+
+@pytest.mark.integration
+def test_scale_constraint_by_nominal_derivative_1norm_perfect_information(gibbs):
+    scaler = CustomScalerBase()
+
+    for c in gibbs.component_data_objects(ctype=Constraint, descend_into=True):
+        scaler.scale_constraint_by_nominal_derivative_norm(c, norm=1)
+
+    scaled = jacobian_cond(gibbs, scaled=True)
+    assert scaled == pytest.approx(2.060153e06, rel=1e-5)
 
 
 if __name__ == "__main__":
