@@ -90,7 +90,7 @@ from pyomo.common.log import LoggingIntercept
 __author__ = "Andrew Lee"
 
 
-solver = get_solver()
+solver = get_solver("ipopt_v2")
 
 
 @pytest.fixture

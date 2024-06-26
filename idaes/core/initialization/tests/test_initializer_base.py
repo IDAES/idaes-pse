@@ -706,8 +706,9 @@ class TestModularInitializerBase:
         assert initializer.config.default_submodel_initializer is None
 
         assert initializer._solver is None
-        assert initializer.config.solver is None
+        assert initializer.config.solver == "ipopt_v2"
         assert initializer.config.solver_options == {}
+        assert initializer.config.writer_config == {}
 
     @pytest.mark.unit
     def test_get_submodel_initializer_specific_model(self):

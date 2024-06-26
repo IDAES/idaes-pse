@@ -52,7 +52,7 @@ from idaes.models.properties.modular_properties.reactions.equilibrium_constant i
 )
 
 
-solver = get_solver()
+solver = get_solver("ipopt_v2")
 
 
 def dummy_h(b, *args, **kwargs):
