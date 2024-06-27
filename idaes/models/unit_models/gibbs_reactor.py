@@ -66,7 +66,7 @@ class GibbsReactorScaler(CustomScalerBase):
             submodel_scalers - dict of Scalers to use for sub-models, keyed by submodel local name
 
         Returns:
-            dict of additional scaling information
+            None
         """
         if submodel_scalers is None:
             submodel_scalers = {}
@@ -131,6 +131,63 @@ class GibbsReactorScaler(CustomScalerBase):
                 )
             )
             self.set_variable_scaling_factor(v, lsf, overwrite=overwrite)
+
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        """
+        Routine to apply scaling factors to constraints in model.
+
+        Constraints will be scaled based on nominal Jacobian norms, and thus will
+        be heavily dependent on variable scaling.
+
+        Args:
+            model - model to be scaled
+            overwrite - whether to overwrite existing scaling factors
+            submodel_scalers - dict of Scalers to use for sub-models, keyed by submodel local name
+
+        Returns:
+            None
+        """
+        # Step 1: Call Scalers for state blocks
+        # Inlet properties
+        self.call_submodel_scaler_method(
+            model=model,
+            submodel="control_volume.properties_in",
+            submodel_scalers=submodel_scalers,
+            method="constraint_scaling_routine",
+            overwrite=overwrite,
+        )
+        # Outlet properties
+        self.call_submodel_scaler_method(
+            model=model,
+            submodel="control_volume.properties_out",
+            submodel_scalers=submodel_scalers,
+            method="constraint_scaling_routine",
+            overwrite=overwrite,
+        )
+
+        # Step 2: Scale all the control volume constraints
+        for cd in model.control_volume.component_data_objects(
+            ctype=Constraint, descend_into=False
+        ):
+            self.scale_constraint_by_nominal_derivative_norm(
+                cd, norm=1, overwrite=overwrite
+            )
+
+        # Step 3: Scale local constraints
+        # Scale Gibbs minimization constraints
+        for cd in model.gibbs_minimization.values():
+            self.scale_constraint_by_nominal_derivative_norm(
+                cd, norm=1, overwrite=overwrite
+            )
+
+        # Scale inert species balance if they are present
+        if hasattr(model, "inert_species_balance"):
+            for cd in model.inert_species_balance.values():
+                self.scale_constraint_by_nominal_derivative_norm(
+                    cd, norm=1, overwrite=overwrite
+                )
 
 
 @declare_process_block_class("GibbsReactor")

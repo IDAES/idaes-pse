@@ -92,7 +92,7 @@ class CustomScalerBase(ScalerBase):
             submodel_scalers - dict of Scalers to use for sub-models, keyed by submodel local name
 
         Returns:
-            dict of additional scaling information
+            None
         """
         # Step 1: Call variable scaling routine
         var_scaling = self.variable_scaling_routine(
@@ -113,13 +113,14 @@ class CustomScalerBase(ScalerBase):
             for i in second_stage_fill_in:
                 i(model)
 
+        # TODO: Consider how to make this work
         # Step 5: Return scaling information for parent model
-        scaling_data = {}
-        if var_scaling is not None:
-            scaling_data.update(var_scaling)
-        if cons_scaling is not None:
-            scaling_data.update(cons_scaling)
-        return scaling_data
+        # scaling_data = {}
+        # if var_scaling is not None:
+        #     scaling_data.update(var_scaling)
+        # if cons_scaling is not None:
+        #     scaling_data.update(cons_scaling)
+        # return scaling_data
 
     def variable_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: dict = None
@@ -135,7 +136,7 @@ class CustomScalerBase(ScalerBase):
             submodel_scalers - dict of Scalers to use for sub-models, keyed by submodel local name
 
         Returns:
-            dict of additional scaling information
+            None
         """
         raise NotImplementedError(
             "Custom Scaler has not implemented a variable_scaling_routine method."
@@ -155,7 +156,7 @@ class CustomScalerBase(ScalerBase):
             submodel_scalers - dict of Scalers to use for sub-models, keyed by submodel local name
 
         Returns:
-            dict of additional scaling information
+            None
         """
         raise NotImplementedError(
             "Custom Scaler has not implemented a constraint_scaling_routine method."
@@ -541,7 +542,7 @@ class CustomScalerBase(ScalerBase):
             model - parent model of submodel
             submodel - name of submodel to be scaled as str
             submodel_scalers - user provided dict of Scalers to use for submodels
-            method - name of method ot call from submodel (as string)
+            method - name of method to call from submodel (as string)
 
         Returns:
             None
