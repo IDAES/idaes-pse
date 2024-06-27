@@ -18,23 +18,35 @@ Author: Andrew Lee
 import pytest
 import re
 
-from pyomo.environ import ConcreteModel, Constraint, Set, Suffix, units, value, Var
+from pyomo.environ import (
+    Block,
+    ConcreteModel,
+    Constraint,
+    Set,
+    Suffix,
+    units,
+    value,
+    Var,
+)
 from pyomo.common.config import ConfigDict
 
 from idaes.core.scaling.custom_scaler_base import CustomScalerBase
 from idaes.core.util.constants import Constants
+from idaes.core.util.testing import PhysicalParameterTestBlock
 import idaes.logger as idaeslog
 
 
 class DummyScaler(CustomScalerBase):
-    # Create some dummy methods that will record that they ran in lists
-    # We can then check the lists to makesure each method was run in order
-    def verify_model(self, model):
-        model._verification = ["verify"]
+    """
+    Create some dummy methods that will record that they ran in lists
+    """
+
+    def variable_scaling_routine(self, model, overwrite, submodel_scalers):
+        # Create some lists to show that each method was run
+        model._verification = []
         model._subscalers = {}
         model.overwrite = []
 
-    def variable_scaling_routine(self, model, overwrite, submodel_scalers):
         model._verification.append("variables")
         model._subscalers["variables"] = submodel_scalers
         model.overwrite.append(overwrite)
@@ -49,6 +61,9 @@ class DummyScaler(CustomScalerBase):
 
     def fill_in_2(self, model):
         model._verification.append("fill_in_2")
+
+    def dummy_method(self, model, overwrite):
+        model._dummy_scaler_test = overwrite
 
 
 @pytest.fixture
@@ -92,16 +107,6 @@ class TestCustomScalerBase:
         }
 
     @pytest.mark.unit
-    def test_verify_model(self):
-        sb = CustomScalerBase()
-
-        with pytest.raises(
-            NotImplementedError,
-            match="Custom Scaler has not implemented a verify_model method.",
-        ):
-            sb.verify_model("foo")
-
-    @pytest.mark.unit
     def test_variable_scaling_routine(self):
         sb = CustomScalerBase()
 
@@ -136,7 +141,6 @@ class TestCustomScalerBase:
 
         # Check order methods were run in
         assert model._verification == [
-            "verify",
             "variables",
             "fill_in_1",
             "constraints",
@@ -459,54 +463,209 @@ class TestCustomScalerBase:
         ):
             sb.scale_constraint_by_nominal_value(model.ideal_gas, scheme="foo")
 
-    # @pytest.mark.unit
-    # def test_scale_constraint_by_nominal_jacobian_1norm(self, model):
-    #     sb = CustomScalerBase()
-    #
-    #     # Set variable scaling factors for testing
-    #     model.scaling_factor[model.pressure] = 1e-5
-    #     model.scaling_factor[model.temperature] = 1e-2
-    #     model.scaling_factor[model.volume_mol] = 1e-1
-    #     model.scaling_factor[model.ideal_gas] = 1
-    #
-    #     # overwrite = False, no change
-    #     sb.scale_constraint_by_nominal_jacobian_norm(
-    #         model.ideal_gas, norm=1, overwrite=False
-    #     )
-    #     assert model.scaling_factor[model.ideal_gas] == 1
-    #     # overwrite = True
-    #     sb.scale_constraint_by_nominal_jacobian_norm(
-    #         model.ideal_gas, norm=1, overwrite=True
-    #     )
-    #     assert model.scaling_factor[model.ideal_gas] == pytest.approx(
-    #         1 / (8.314 + 10 + 1e5), rel=1e-5
-    #     )
-    #
-    #     # Check for clean up
-    #     assert model.pressure.value is None
-    #     assert model.temperature.value is None
-    #     assert model.pressure.value is None
-    #
-    # @pytest.mark.unit
-    # def test_scale_constraint_by_nominal_jacobian_2norm(self, model):
-    #     sb = CustomScalerBase()
-    #
-    #     # Set variable scaling factors for testing
-    #     model.scaling_factor[model.pressure] = 1e-5
-    #     model.scaling_factor[model.temperature] = 1e-2
-    #     model.scaling_factor[model.volume_mol] = 1e-1
-    #     model.scaling_factor[model.ideal_gas] = 1
-    #
-    #     # overwrite = False, no change
-    #     sb.scale_constraint_by_nominal_jacobian_norm(model.ideal_gas, overwrite=False)
-    #     assert model.scaling_factor[model.ideal_gas] == 1
-    #     # overwrite = True
-    #     sb.scale_constraint_by_nominal_jacobian_norm(model.ideal_gas, overwrite=True)
-    #     assert model.scaling_factor[model.ideal_gas] == pytest.approx(
-    #         1 / (8.314**2 + 10**2 + 1e5**2) ** 0.5, rel=1e-5
-    #     )
-    #
-    #     # Check for clean up
-    #     assert model.pressure.value is None
-    #     assert model.temperature.value is None
-    #     assert model.pressure.value is None
+    @pytest.mark.unit
+    def test_scale_constraint_by_nominal_derivative_1norm(self, model):
+        sb = CustomScalerBase()
+
+        # Set variable scaling factors for testing
+        model.scaling_factor[model.pressure] = 1e-5
+        model.scaling_factor[model.temperature] = 1e-2
+        model.scaling_factor[model.volume_mol] = 1e-1
+        model.scaling_factor[model.ideal_gas] = 1
+
+        # overwrite = False, no change
+        sb.scale_constraint_by_nominal_derivative_norm(
+            model.ideal_gas, norm=1, overwrite=False
+        )
+        assert model.scaling_factor[model.ideal_gas] == 1
+        # overwrite = True
+        sb.scale_constraint_by_nominal_derivative_norm(
+            model.ideal_gas, norm=1, overwrite=True
+        )
+        assert model.scaling_factor[model.ideal_gas] == pytest.approx(
+            4.99792e-7, rel=1e-5  # (1/(8.314+1e6+1e6)
+        )
+
+        # Check for clean up
+        assert model.pressure.value is None
+        assert model.temperature.value is None
+        assert model.pressure.value is None
+
+    @pytest.mark.unit
+    def test_scale_constraint_by_nominal_derivative_2norm(self, model):
+        sb = CustomScalerBase()
+
+        # Set variable scaling factors for testing
+        model.scaling_factor[model.pressure] = 1e-5
+        model.scaling_factor[model.temperature] = 1e-2
+        model.scaling_factor[model.volume_mol] = 1e-1
+        model.scaling_factor[model.ideal_gas] = 1
+
+        # overwrite = False, no change
+        sb.scale_constraint_by_nominal_derivative_norm(model.ideal_gas, overwrite=False)
+        assert model.scaling_factor[model.ideal_gas] == 1
+        # overwrite = True
+        sb.scale_constraint_by_nominal_derivative_norm(model.ideal_gas, overwrite=True)
+        assert model.scaling_factor[model.ideal_gas] == pytest.approx(
+            1 / (8.314**2 + 1e6**2 + 1e6**2) ** 0.5, rel=1e-5
+        )
+
+        # Check for clean up
+        assert model.pressure.value is None
+        assert model.temperature.value is None
+        assert model.pressure.value is None
+
+    @pytest.mark.unit
+    def test_propagate_state_scaling(self):
+        # Dummy up two state blocks
+        m = ConcreteModel()
+
+        m.properties = PhysicalParameterTestBlock()
+
+        m.state1 = m.properties.build_state_block([1, 2, 3])
+        m.state2 = m.properties.build_state_block([1, 2, 3])
+
+        # Set scaling factors on state1
+        for t, sd in m.state1.items():
+            sd.scaling_factor = Suffix(direction=Suffix.EXPORT)
+            sd.scaling_factor[sd.temperature] = 100 * t
+            sd.scaling_factor[sd.pressure] = 1e5 * t
+
+            count = 1
+            for j in sd.flow_mol_phase_comp.values():
+                sd.scaling_factor[j] = 10 * t * count
+                count += 1
+
+        sb = CustomScalerBase()
+        sb.propagate_state_scaling(m.state2, m.state1)
+
+        for t, sd in m.state2.items():
+            assert sd.scaling_factor[sd.temperature] == 100 * t
+            assert sd.scaling_factor[sd.pressure] == 1e5 * t
+
+            count = 1
+            for j in sd.flow_mol_phase_comp.values():
+                assert sd.scaling_factor[j] == 10 * t * count
+                count += 1
+
+        # Test for overwrite
+        for t, sd in m.state1.items():
+            sd.scaling_factor[sd.temperature] = 200 * t
+            sd.scaling_factor[sd.pressure] = 2e5 * t
+
+            count = 1
+            for j in sd.flow_mol_phase_comp.values():
+                sd.scaling_factor[j] = 20 * t * count
+                count += 1
+
+        sb.propagate_state_scaling(m.state2, m.state1, overwrite=False)
+
+        for t, sd in m.state2.items():
+            assert sd.scaling_factor[sd.temperature] == 100 * t
+            assert sd.scaling_factor[sd.pressure] == 1e5 * t
+
+            count = 1
+            for j in sd.flow_mol_phase_comp.values():
+                assert sd.scaling_factor[j] == 10 * t * count
+                count += 1
+
+    @pytest.mark.unit
+    def test_call_submodel_scaler_method_no_scaler(self, caplog):
+        caplog.set_level(idaeslog.DEBUG, logger="idaes")
+
+        # Dummy up a nested model
+        m = ConcreteModel()
+        m.b = Block([1, 2, 3])
+
+        sb = CustomScalerBase()
+        sb.call_submodel_scaler_method(m, "b", method="dummy_method", overwrite=True)
+
+        for bd in m.b.values():
+            assert not hasattr(bd, "_dummy_scaler_test")
+
+        assert (
+            "No default Scaler set for unknown.b. Cannot call dummy_method."
+            in caplog.text
+        )
+
+    @pytest.mark.unit
+    def test_call_submodel_scaler_method_default_scaler(self, caplog):
+        caplog.set_level(idaeslog.DEBUG, logger="idaes")
+
+        # Dummy up a nested model
+        m = ConcreteModel()
+        m.b = Block([1, 2, 3])
+        for bd in m.b.values():
+            bd.default_scaler = DummyScaler
+
+        sb = CustomScalerBase()
+        sb.call_submodel_scaler_method(m, "b", method="dummy_method", overwrite=True)
+
+        for bd in m.b.values():
+            assert bd._dummy_scaler_test
+
+        assert "Using default Scaler for unknown.b." in caplog.text
+
+    @pytest.mark.unit
+    def test_call_submodel_scaler_method_user_scaler(self, caplog):
+        caplog.set_level(idaeslog.DEBUG, logger="idaes")
+
+        # Dummy up a nested model
+        m = ConcreteModel()
+        m.b = Block([1, 2, 3])
+
+        sb = CustomScalerBase()
+        sb.call_submodel_scaler_method(
+            m,
+            "b",
+            method="dummy_method",
+            submodel_scalers={"b": DummyScaler()},
+            overwrite=False,
+        )
+
+        for bd in m.b.values():
+            assert not bd._dummy_scaler_test
+
+        assert "Using user-defined Scaler for unknown.b." in caplog.text
+
+    @pytest.mark.unit
+    def test_call_submodel_scaler_method_user_scaler_class(self, caplog):
+        caplog.set_level(idaeslog.DEBUG, logger="idaes")
+
+        # Dummy up a nested model
+        m = ConcreteModel()
+        m.b = Block([1, 2, 3])
+
+        sb = CustomScalerBase()
+        sb.call_submodel_scaler_method(
+            m,
+            "b",
+            method="dummy_method",
+            submodel_scalers={"b": DummyScaler},
+            overwrite=False,
+        )
+
+        for bd in m.b.values():
+            assert not bd._dummy_scaler_test
+
+        assert "Using user-defined Scaler for unknown.b." in caplog.text
+
+    @pytest.mark.unit
+    def test_call_submodel_scaler_method_invalid_method(self):
+        # Dummy up a nested model
+        m = ConcreteModel()
+        m.b = Block([1, 2, 3])
+
+        sb = CustomScalerBase()
+
+        with pytest.raises(
+            AttributeError,
+            match="Scaler for unknown.b does not have a method named foo.",
+        ):
+            sb.call_submodel_scaler_method(
+                m,
+                "b",
+                method="foo",
+                submodel_scalers={"b": DummyScaler()},
+                overwrite=False,
+            )

@@ -27,17 +27,12 @@ from pyomo.environ import (
 from pyomo.core.base.block import BlockData
 from pyomo.core.base.constraint import ConstraintData
 from pyomo.core.base.var import VarData
-from pyomo.common.config import document_kwargs_from_configdict
 
 from idaes.core.scaling.scaling_base import CONFIG, ScalerBase
 from idaes.core.scaling.util import get_scaling_factor
 from idaes.core.util.scaling import get_jacobian
 
 
-ASCONFIG = CONFIG()
-
-
-@document_kwargs_from_configdict(ASCONFIG)
 class AutoScaler(ScalerBase):
     """
     IDAES Autoscaling Toolbox
@@ -49,7 +44,7 @@ class AutoScaler(ScalerBase):
 
     """
 
-    CONFIG = ASCONFIG()
+    CONFIG = ScalerBase.CONFIG()
 
     def variables_by_magnitude(self, blk_or_var, descend_into: bool = True):
         """

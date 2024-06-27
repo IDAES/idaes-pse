@@ -20,7 +20,7 @@ from pyomo.common.config import (
     Bool,
     ConfigDict,
     ConfigValue,
-    document_kwargs_from_configdict,
+    String_ConfigFormatter,
 )
 from pyomo.core.base.constraint import ConstraintData
 from pyomo.core.base.var import VarData
@@ -88,7 +88,6 @@ CONFIG.declare(
 )
 
 
-@document_kwargs_from_configdict(CONFIG)
 class ScalerBase:
     """
     Base class for IDAES Scaler objects
@@ -101,6 +100,20 @@ class ScalerBase:
 
     def __init__(self, **kwargs):
         self.config = self.CONFIG(kwargs)
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        cls.__doc__ = cls.__doc__ + cls.CONFIG.generate_documentation(
+            format=String_ConfigFormatter(
+                block_start="%s\n",
+                block_end="",
+                item_start="%s\n",
+                item_body="%s",
+                item_end="\n",
+            ),
+            indent_spacing=4,
+            width=66,
+        )
 
     def get_scaling_factor(self, component):
         """

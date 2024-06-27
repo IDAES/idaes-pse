@@ -197,90 +197,90 @@ def test_scale_constraint_by_nominal_derivative_2norm_perfect_information(gibbs)
 @pytest.mark.integration
 def test_scale_constraint_by_nominal_derivative_2norm_imperfect_information():
     # Build a fresh model with no scaling factors
-    gibbs = build_model()
+    model = build_model()
 
     # Set imperfect scaling factors for all variables, representing an initial "best-guess"
     # Feed states are known exactly - set scaling based on these
     set_scaling_factor(
-        gibbs.fs.unit.control_volume.properties_in[0.0].flow_mol, 1 / 230
+        model.fs.unit.control_volume.properties_in[0.0].flow_mol, 1 / 230
     )
     set_scaling_factor(
-        gibbs.fs.unit.control_volume.properties_in[0.0].flow_mol_phase, 1 / 230
+        model.fs.unit.control_volume.properties_in[0.0].flow_mol_phase, 1 / 230
     )  # Only 1 phase, so we "know" this
     set_scaling_factor(
-        gibbs.fs.unit.control_volume.properties_in[0.0].mole_frac_comp["H2"], 1 / 0.0435
+        model.fs.unit.control_volume.properties_in[0.0].mole_frac_comp["H2"], 1 / 0.0435
     )
     set_scaling_factor(
-        gibbs.fs.unit.control_volume.properties_in[0.0].mole_frac_comp["N2"], 1 / 0.6522
+        model.fs.unit.control_volume.properties_in[0.0].mole_frac_comp["N2"], 1 / 0.6522
     )
     set_scaling_factor(
-        gibbs.fs.unit.control_volume.properties_in[0.0].mole_frac_comp["O2"], 1 / 0.1739
+        model.fs.unit.control_volume.properties_in[0.0].mole_frac_comp["O2"], 1 / 0.1739
     )
     set_scaling_factor(
-        gibbs.fs.unit.control_volume.properties_in[0.0].mole_frac_comp["CO2"], 1e5
+        model.fs.unit.control_volume.properties_in[0.0].mole_frac_comp["CO2"], 1e5
     )
     set_scaling_factor(
-        gibbs.fs.unit.control_volume.properties_in[0.0].mole_frac_comp["CH4"],
+        model.fs.unit.control_volume.properties_in[0.0].mole_frac_comp["CH4"],
         1 / 0.1304,
     )
     set_scaling_factor(
-        gibbs.fs.unit.control_volume.properties_in[0.0].mole_frac_comp["CO"], 1e5
+        model.fs.unit.control_volume.properties_in[0.0].mole_frac_comp["CO"], 1e5
     )
     set_scaling_factor(
-        gibbs.fs.unit.control_volume.properties_in[0.0].mole_frac_comp["H2O"], 1e5
+        model.fs.unit.control_volume.properties_in[0.0].mole_frac_comp["H2O"], 1e5
     )
     set_scaling_factor(
-        gibbs.fs.unit.control_volume.properties_in[0.0].mole_frac_comp["NH3"], 1e5
+        model.fs.unit.control_volume.properties_in[0.0].mole_frac_comp["NH3"], 1e5
     )
     set_scaling_factor(
-        gibbs.fs.unit.control_volume.properties_in[0.0].temperature, 1 / 1500
+        model.fs.unit.control_volume.properties_in[0.0].temperature, 1 / 1500
     )
-    set_scaling_factor(gibbs.fs.unit.control_volume.properties_in[0.0].pressure, 1e-5)
+    set_scaling_factor(model.fs.unit.control_volume.properties_in[0.0].pressure, 1e-5)
     # Assume user does not know anything about enthalpy
 
     # Best guesses for unit model and outlet state conditions
-    set_scaling_factor(gibbs.fs.unit.control_volume.heat[0.0], 1e-6)
+    set_scaling_factor(model.fs.unit.control_volume.heat[0.0], 1e-6)
 
-    set_scaling_factor(gibbs.fs.unit.control_volume.properties_out[0.0].flow_mol, 1e-2)
+    set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].flow_mol, 1e-2)
     set_scaling_factor(
-        gibbs.fs.unit.control_volume.properties_out[0.0].flow_mol_phase, 1e-2
+        model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase, 1e-2
     )  # Only 1 phase, so we "know" this
     # N2 is inert, so will be order 0.1, assume CH4 and H2 are near-totally consumed, assume most O2 consumed
     # Assume moderate amounts of CO2 and H2O, small amounts of CO, trace NH3 NH3
     set_scaling_factor(
-        gibbs.fs.unit.control_volume.properties_out[0.0].mole_frac_comp["H2"], 1e4
+        model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp["H2"], 1e4
     )
     set_scaling_factor(
-        gibbs.fs.unit.control_volume.properties_out[0.0].mole_frac_comp["N2"], 10
+        model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp["N2"], 10
     )
     set_scaling_factor(
-        gibbs.fs.unit.control_volume.properties_out[0.0].mole_frac_comp["O2"], 1e2
+        model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp["O2"], 1e2
     )
     set_scaling_factor(
-        gibbs.fs.unit.control_volume.properties_out[0.0].mole_frac_comp["CO2"], 10
+        model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp["CO2"], 10
     )
     set_scaling_factor(
-        gibbs.fs.unit.control_volume.properties_out[0.0].mole_frac_comp["CH4"], 1e4
+        model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp["CH4"], 1e4
     )
     set_scaling_factor(
-        gibbs.fs.unit.control_volume.properties_out[0.0].mole_frac_comp["CO"], 1e3
+        model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp["CO"], 1e3
     )
     set_scaling_factor(
-        gibbs.fs.unit.control_volume.properties_out[0.0].mole_frac_comp["H2O"], 10
+        model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp["H2O"], 10
     )
     set_scaling_factor(
-        gibbs.fs.unit.control_volume.properties_out[0.0].mole_frac_comp["NH3"], 1e4
+        model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp["NH3"], 1e4
     )
     set_scaling_factor(
-        gibbs.fs.unit.control_volume.properties_out[0.0].temperature, 1e-3
+        model.fs.unit.control_volume.properties_out[0.0].temperature, 1e-3
     )
-    set_scaling_factor(gibbs.fs.unit.control_volume.properties_out[0.0].pressure, 1e-5)
+    set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].pressure, 1e-5)
 
     scaler = CustomScalerBase()
-    for c in gibbs.component_data_objects(ctype=Constraint, descend_into=True):
+    for c in model.component_data_objects(ctype=Constraint, descend_into=True):
         scaler.scale_constraint_by_nominal_derivative_norm(c)
 
-    scaled = jacobian_cond(gibbs, scaled=True)
+    scaled = jacobian_cond(model, scaled=True)
     assert scaled == pytest.approx(1.06128e11, rel=1e-5)
 
 
@@ -293,6 +293,102 @@ def test_scale_constraint_by_nominal_derivative_1norm_perfect_information(gibbs)
 
     scaled = jacobian_cond(gibbs, scaled=True)
     assert scaled == pytest.approx(2.060153e06, rel=1e-5)
+
+
+@pytest.mark.integration
+def test_scale_constraint_by_nominal_derivative_clean_up(gibbs):
+    # Confirm that the scaler did not change any values in the model
+    # Build a fresh model with no scaling factors or initial values
+    model = build_model()
+    # Clone the model to use as a reference case
+    refmodel = model.clone()
+
+    # Set imperfect scaling factors for all variables, representing an initial "best-guess"
+    # Feed states are known exactly - set scaling based on these
+    set_scaling_factor(
+        model.fs.unit.control_volume.properties_in[0.0].flow_mol, 1 / 230
+    )
+    set_scaling_factor(
+        model.fs.unit.control_volume.properties_in[0.0].flow_mol_phase, 1 / 230
+    )  # Only 1 phase, so we "know" this
+    set_scaling_factor(
+        model.fs.unit.control_volume.properties_in[0.0].mole_frac_comp["H2"], 1 / 0.0435
+    )
+    set_scaling_factor(
+        model.fs.unit.control_volume.properties_in[0.0].mole_frac_comp["N2"], 1 / 0.6522
+    )
+    set_scaling_factor(
+        model.fs.unit.control_volume.properties_in[0.0].mole_frac_comp["O2"], 1 / 0.1739
+    )
+    set_scaling_factor(
+        model.fs.unit.control_volume.properties_in[0.0].mole_frac_comp["CO2"], 1e5
+    )
+    set_scaling_factor(
+        model.fs.unit.control_volume.properties_in[0.0].mole_frac_comp["CH4"],
+        1 / 0.1304,
+    )
+    set_scaling_factor(
+        model.fs.unit.control_volume.properties_in[0.0].mole_frac_comp["CO"], 1e5
+    )
+    set_scaling_factor(
+        model.fs.unit.control_volume.properties_in[0.0].mole_frac_comp["H2O"], 1e5
+    )
+    set_scaling_factor(
+        model.fs.unit.control_volume.properties_in[0.0].mole_frac_comp["NH3"], 1e5
+    )
+    set_scaling_factor(
+        model.fs.unit.control_volume.properties_in[0.0].temperature, 1 / 1500
+    )
+    set_scaling_factor(model.fs.unit.control_volume.properties_in[0.0].pressure, 1e-5)
+    # Assume user does not know anything about enthalpy
+
+    # Best guesses for unit model and outlet state conditions
+    set_scaling_factor(model.fs.unit.control_volume.heat[0.0], 1e-6)
+
+    set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].flow_mol, 1e-2)
+    set_scaling_factor(
+        model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase, 1e-2
+    )  # Only 1 phase, so we "know" this
+    # N2 is inert, so will be order 0.1, assume CH4 and H2 are near-totally consumed, assume most O2 consumed
+    # Assume moderate amounts of CO2 and H2O, small amounts of CO, trace NH3 NH3
+    set_scaling_factor(
+        model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp["H2"], 1e4
+    )
+    set_scaling_factor(
+        model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp["N2"], 10
+    )
+    set_scaling_factor(
+        model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp["O2"], 1e2
+    )
+    set_scaling_factor(
+        model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp["CO2"], 10
+    )
+    set_scaling_factor(
+        model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp["CH4"], 1e4
+    )
+    set_scaling_factor(
+        model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp["CO"], 1e3
+    )
+    set_scaling_factor(
+        model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp["H2O"], 10
+    )
+    set_scaling_factor(
+        model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp["NH3"], 1e4
+    )
+    set_scaling_factor(
+        model.fs.unit.control_volume.properties_out[0.0].temperature, 1e-3
+    )
+    set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].pressure, 1e-5)
+
+    scaler = CustomScalerBase()
+    for c in model.component_data_objects(ctype=Constraint, descend_into=True):
+        scaler.scale_constraint_by_nominal_derivative_norm(c)
+
+    # Iterate overall all variables in model and compare value to reference model
+    for v in model.component_data_objects(ctype=Var, descend_into=True):
+        refv = refmodel.find_component(v.name)
+
+        assert v.value == refv.value
 
 
 if __name__ == "__main__":

@@ -18,7 +18,6 @@ Author: Andrew Lee
 from copy import copy
 
 import pyomo.environ as pyo
-from pyomo.common.config import document_kwargs_from_configdict
 from pyomo.environ import units
 from pyomo.core.base.units_container import UnitsError
 from pyomo.core.expr import identify_variables
@@ -41,14 +40,13 @@ DEFAULT_UNIT_SCALING = {
 }
 
 
-@document_kwargs_from_configdict(CSCONFIG)
 class CustomScalerBase(ScalerBase):
     """
     Base class for custom scaling routines.
 
     """
 
-    CONFIG = CSCONFIG()
+    CONFIG = ScalerBase.CONFIG()
 
     # Common data structures for default scaling
     # DEFAULT_SCALING_FACTORS = {"component_local_name": DEFAULT_SCALING}
@@ -96,9 +94,6 @@ class CustomScalerBase(ScalerBase):
         Returns:
             dict of additional scaling information
         """
-        # Step 0: Verify model
-        self.verify_model(model)
-
         # Step 1: Call variable scaling routine
         var_scaling = self.variable_scaling_routine(
             model, overwrite=self.config.overwrite, submodel_scalers=submodel_scalers
@@ -125,22 +120,6 @@ class CustomScalerBase(ScalerBase):
         if cons_scaling is not None:
             scaling_data.update(cons_scaling)
         return scaling_data
-
-    def verify_model(self, model):
-        """
-        Verify that model to be scaled meets expectations.
-
-        Derived classes must overload this method.
-
-        Args:
-            model - model to be scaled
-
-        Raises:
-            Exception if model does not match expected form
-        """
-        raise NotImplementedError(
-            "Custom Scaler has not implemented a verify_model method."
-        )
 
     def variable_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: dict = None
@@ -460,9 +439,9 @@ class CustomScalerBase(ScalerBase):
         require an initial solution for the problem (relying on nominal values instead).
 
         Args:
-            constraint - constraint to be scaled
+            constraint - constraint to be scaled.
             norm - type of norm to use for scaling. Must be a positive integer.
-            overwrite - whether to overwrite existing scaling factors
+            overwrite - whether to overwrite existing scaling factors.
 
         Returns:
             None
@@ -514,3 +493,97 @@ class CustomScalerBase(ScalerBase):
         # Calculate norm
         sf = 1 / sum(abs(j) ** norm for j in pjac) ** (1 / norm)
         self.set_constraint_scaling_factor(constraint, sf, overwrite=overwrite)
+
+    # Other methods
+    def propagate_state_scaling(
+        self, target_state, source_state, overwrite: bool = False
+    ):
+        """
+        Propagate scaling of state variables from on StateBlock to another.
+
+        Indexing of target and source StateBlocks must match.
+
+        Args:
+            target_state - StateBlock to set scaling factors on
+            source_state - StateBlock to use as source for scaling factors
+            overwrite - whether to overwrite existing scaling factors
+
+        Returns:
+            None
+        """
+        for bidx, target_data in target_state.items():
+            target_vars = target_data.define_state_vars()
+            source_vars = source_state[bidx].define_state_vars()
+
+            for state, var in target_vars.items():
+                for vidx, vardata in var.items():
+                    self.scale_variable_by_component(
+                        target_variable=vardata,
+                        scaling_component=source_vars[state][vidx],
+                        overwrite=overwrite,
+                    )
+
+    def call_submodel_scaler_method(
+        self,
+        model,
+        submodel: str,
+        method: str,
+        submodel_scalers: dict = None,
+        overwrite: bool = False,
+    ):
+        """
+        Call scaling method for submodel.
+
+        Scaler for submodel is taken from submodel_scalers dict if present, otherwise the
+        default scaler for the submodel is used.
+
+        Args:
+            model - parent model of submodel
+            submodel - name of submodel to be scaled as str
+            submodel_scalers - user provided dict of Scalers to use for submodels
+            method - name of method ot call from submodel (as string)
+
+        Returns:
+            None
+        """
+        # Get actual submodel object from name
+        sm_obj = model.find_component(submodel)
+
+        if submodel_scalers is None:
+            submodel_scalers = {}
+
+        # Iterate over indices of submodel
+        for idx, smdata in sm_obj.items():
+            # Get Scaler for submodel
+            if submodel in submodel_scalers:
+                scaler = submodel_scalers[submodel]
+                if callable(scaler):
+                    # Check to see if Scaler is callable - this implies it is a class and not an instance
+                    # Call the class to create an instance
+                    scaler = scaler()
+                _log.debug(f"Using user-defined Scaler for {model}.{submodel}.")
+            else:
+                try:
+                    scaler = smdata.default_scaler
+                    _log.debug(f"Using default Scaler for {model}.{submodel}.")
+                except AttributeError:
+                    _log.debug(
+                        f"No default Scaler set for {model}.{submodel}. Cannot call {method}."
+                    )
+                    return
+                if scaler is not None:
+                    scaler = scaler()
+                else:
+                    _log.debug(
+                        f"No Scaler found for {model}.{submodel}. Cannot call {method}."
+                    )
+
+            # If a Scaler is found, call desired method
+            if scaler is not None:
+                try:
+                    smeth = getattr(scaler, method)
+                except AttributeError:
+                    raise AttributeError(
+                        f"Scaler for {model}.{submodel} does not have a method named {method}."
+                    )
+                smeth(smdata, overwrite=overwrite)
