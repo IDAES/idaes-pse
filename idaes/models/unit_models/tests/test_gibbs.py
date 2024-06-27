@@ -28,7 +28,7 @@ from pyomo.environ import (
 )
 
 from idaes.core import FlowsheetBlock, EnergyBalanceType, MomentumBalanceType
-from idaes.models.unit_models.gibbs_reactor import GibbsReactor
+from idaes.models.unit_models.gibbs_reactor import GibbsReactor, GibbsReactorScaler
 from idaes.models.properties.activity_coeff_models.methane_combustion_ideal import (
     MethaneParameterBlock as MethaneCombustionParameterBlock,
 )
@@ -94,6 +94,8 @@ def test_config():
     assert len(m.fs.unit.gibbs_minimization) == 4
 
     assert not hasattr(m.fs.unit, "inert_species_balance")
+
+    assert m.fs.unit.default_scaler is GibbsReactorScaler
 
 
 class TestGibbsInerts:
