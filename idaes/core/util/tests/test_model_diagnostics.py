@@ -504,7 +504,8 @@ class TestDiagnosticsToolbox:
         m.b.v5.fix(2)
         m.b.v6.fix(0)
 
-        solver = get_solver()
+        # Presolver identifies problem as trivially infeasible (correctly). Turn off presolve.
+        solver = get_solver("ipopt_v2", writer_config={"linear_presolve": False})
         solver.solve(m)
 
         return m
@@ -1101,7 +1102,8 @@ The following pairs of variables are nearly parallel:
         m.b.v3.setlb(-5)
         m.b.v5.setub(10)
 
-        solver = get_solver()
+        # Presolver identifies problem as trivially infeasible (correctly). Turn off presolve.
+        solver = get_solver("ipopt_v2", writer_config={"linear_presolve": False})
         solver.solve(m)
 
         dt = DiagnosticsToolbox(model=m.b)
@@ -1216,7 +1218,8 @@ The following pairs of variables are nearly parallel:
         # Fix numerical issues
         m.b.v3.setlb(-5)
 
-        solver = get_solver()
+        # Presolver identifies problem as trivially infeasible (correctly). Turn off presolve.
+        solver = get_solver("ipopt_v2", writer_config={"linear_presolve": False})
         solver.solve(m)
 
         dt = DiagnosticsToolbox(model=m.b)

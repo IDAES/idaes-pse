@@ -93,7 +93,7 @@ def add_derivative_components(comp_dict, nt):
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_solver()
+solver = get_solver("ipopt_v2")
 
 
 # -----------------------------------------------------------------------------
