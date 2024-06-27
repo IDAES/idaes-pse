@@ -174,7 +174,7 @@ class TestDoubleLoopIntegration:
     ):
         return self_scheduler_output_dir
 
-    @pytest.mark.unit
+    @pytest.mark.integration
     def test_prescient_outputs_exist(
         self, simulation_results_dir, self_scheduler_simulation_results_dir
     ):
