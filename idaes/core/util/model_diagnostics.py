@@ -289,7 +289,7 @@ CONFIG.declare(
 CONFIG.declare(
     "parallel_component_tolerance",
     ConfigValue(
-        default=1e-15,
+        default=1e-10,
         domain=float,
         description="Tolerance for identifying near-parallel Jacobian rows/columns",
         doc="Absolute tolerance for considering two Jacobian rows/columns to be considered. "
@@ -3793,15 +3793,15 @@ def check_parallel_jacobian(
     scaling = diags(inv_norms)
     outer = scaling * outer * scaling
 
-    # Get rid of duplicate values by only taking upper triangular part of
+    # Get rid of duplicate values by only taking (strictly) upper triangular part of
     # resulting matrix
-    upper_tri = triu(outer)
+    upper_tri = triu(outer, k=1)
 
     # Set diagonal elements to zero
     # Subtracting diags(upper_tri.diagonal()) is a more reliable
     # method of getting the entries to exactly zero than subtracting
     # an identity matrix, where one can encounter values of 1e-16
-    upper_tri = upper_tri - diags(upper_tri.diagonal())
+    # upper_tri = upper_tri - diags(upper_tri.diagonal())
 
     # Get the nonzero entries of upper_tri in three arrays,
     # corresponding to row indices, column indices, and values

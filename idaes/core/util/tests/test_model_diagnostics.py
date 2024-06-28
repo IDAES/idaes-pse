@@ -1376,8 +1376,8 @@ Model Statistics
 3 WARNINGS
 
     WARNING: 2 Constraints with large residuals (>1.0E-05)
-    WARNING: 1 pair of constraints are parallel (to tolerance 1.0E-08)
-    WARNING: 1 pair of variables are parallel (to tolerance 1.0E-08)
+    WARNING: 1 pair of constraints are parallel (to tolerance 1.0E-10)
+    WARNING: 1 pair of variables are parallel (to tolerance 1.0E-10)
 
 ------------------------------------------------------------------------------------
 0 Cautions
@@ -1463,7 +1463,7 @@ Model Statistics
     WARNING: 1 Constraint with large residuals (>1.0E-05)
     WARNING: 2 Variables with extreme Jacobian values (<1.0E-08 or >1.0E+08)
     WARNING: 1 Constraint with extreme Jacobian values (<1.0E-08 or >1.0E+08)
-    WARNING: 1 pair of variables are parallel (to tolerance 1.0E-08)
+    WARNING: 1 pair of variables are parallel (to tolerance 1.0E-10)
 
 ------------------------------------------------------------------------------------
 4 Cautions
