@@ -720,14 +720,14 @@ class PerfectForecaster(AbstractPrescientPriceForecaster):
     def fetch_hourly_stats_from_prescient(self, prescient_hourly_stats):
         """
         Fetch the hourly stats from prescient.
-        No need to have it here but forecaster should have this function to aviod an error from Coordinator.
+        No need to have it here but forecaster should have this function to avoid an error from Coordinator.
         """
         pass
 
     def fetch_day_ahead_stats_from_prescient(self, uc_date, uc_hour, day_ahead_result):
         """
         Fetch the day-ahead stats from prescient.
-        No need to have it here but forecaster should have this function to aviod an error from Coordinator.
+        No need to have it here but forecaster should have this function to avoid an error from Coordinator.
         """
         pass
 
