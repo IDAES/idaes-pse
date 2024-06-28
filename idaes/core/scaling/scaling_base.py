@@ -103,6 +103,11 @@ class ScalerBase:
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
+
+        # Handle cases where a class doc string was not set
+        if cls.__doc__ is None:
+            cls.__doc__ = ""
+
         cls.__doc__ = cls.__doc__ + cls.CONFIG.generate_documentation(
             format=String_ConfigFormatter(
                 block_start="%s\n",

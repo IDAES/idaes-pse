@@ -28,7 +28,7 @@ from pyomo.core.base.block import BlockData
 from pyomo.core.base.constraint import ConstraintData
 from pyomo.core.base.var import VarData
 
-from idaes.core.scaling.scaling_base import CONFIG, ScalerBase
+from idaes.core.scaling.scaling_base import ScalerBase
 from idaes.core.scaling.util import get_scaling_factor
 from idaes.core.util.scaling import get_jacobian
 

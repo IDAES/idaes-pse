@@ -15,6 +15,7 @@ Tests for Gibbs reactor Scaler.
 
 Author: Andrew Lee
 """
+import os
 import pytest
 
 from pyomo.environ import (
@@ -23,8 +24,9 @@ from pyomo.environ import (
     Constraint,
     Suffix,
     TransformationFactory,
-    value,
     units,
+    value,
+    Var,
 )
 
 from idaes.core import FlowsheetBlock
@@ -33,15 +35,17 @@ from idaes.models.properties.activity_coeff_models.methane_combustion_ideal impo
     MethaneParameterBlock as MethaneCombustionParameterBlock,
 )
 from idaes.core.util.testing import PhysicalParameterTestBlock
-from idaes.core.solvers import get_solver
 from idaes.core.util.scaling import (
     jacobian_cond,
 )
+from idaes.core.util import from_json, StoreSpec
+from idaes.core.scaling import CustomScalerBase, get_scaling_factor, set_scaling_factor
 
 
-# -----------------------------------------------------------------------------
-# Get default solver for testing
-solver = get_solver(solver="ipopt_v2", writer_config={"scale_model": True})
+# Get solution json from scaling tests
+FILENAME = "gibbs_solution.json"
+local_path = os.path.dirname(os.path.realpath(__file__))
+fname = os.path.join(local_path, "..", "..", "..", "core", "scaling", "tests", FILENAME)
 
 
 # -----------------------------------------------------------------------------
@@ -69,8 +73,9 @@ class DummyScaler:
         model._dummy_scaler_test = overwrite
 
 
+@pytest.mark.unit
 class TestVariableScaling:
-    @pytest.mark.unit
+
     def test_variable_scaling_no_input(self, test_model):
         scaler = GibbsReactorScaler()
 
@@ -92,7 +97,6 @@ class TestVariableScaling:
                 1e-3, rel=1e-4
             )
 
-    @pytest.mark.unit
     def test_variable_scaling_no_heat_deltaP(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
@@ -114,7 +118,6 @@ class TestVariableScaling:
                 1 / (8.314 * 500), rel=1e-4
             )
 
-    @pytest.mark.unit
     def test_variable_scaling_inlet_state(self, test_model):
         prop_in = test_model.fs.unit.control_volume.properties_in[0]
         sfx = prop_in.scaling_factor = Suffix(direction=Suffix.EXPORT)
@@ -149,7 +152,6 @@ class TestVariableScaling:
                 1e-3, rel=1e-4
             )
 
-    @pytest.mark.unit
     def test_variable_scaling_submodel_scalers(self, test_model):
         scaler = GibbsReactorScaler()
 
@@ -168,8 +170,9 @@ class TestVariableScaling:
         ]._dummy_scaler_test
 
 
+@pytest.mark.unit
 class TestConstraintScaling:
-    @pytest.mark.unit
+
     def test_constraint_scaling_no_inputs(self, test_model):
         scaler = GibbsReactorScaler()
 
@@ -203,7 +206,6 @@ class TestConstraintScaling:
                     0.0625, rel=1e-5
                 )
 
-    @pytest.mark.unit
     def test_constraint_scaling_inerts(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
@@ -248,7 +250,6 @@ class TestConstraintScaling:
         for k, v in m.fs.unit.inert_species_balance.items():
             assert m.fs.unit.scaling_factor[v] == pytest.approx(0.5, rel=1e-5)
 
-    @pytest.mark.unit
     def test_constraint_scaling_submodel_scalers(self, test_model):
         scaler = GibbsReactorScaler()
 
@@ -268,33 +269,210 @@ class TestConstraintScaling:
 
 
 # -----------------------------------------------------------------------------
-class TestMethane(object):
-    @pytest.fixture(scope="class")
+class SMScaler(CustomScalerBase):
+    def variable_scaling_routine(self, model, overwrite):
+        pass
+
+    def constraint_scaling_routine(self, model, overwrite):
+        for c in model.component_data_objects(ctype=Constraint, descend_into=True):
+            self.scale_constraint_by_nominal_derivative_norm(
+                c, norm=2, overwrite=overwrite
+            )
+
+
+@pytest.mark.integration
+class TestMethaneScaling(object):
+    @pytest.fixture
     def methane(self):
-        m = ConcreteModel()
-        m.fs = FlowsheetBlock(dynamic=False)
+        model = ConcreteModel()
+        model.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.properties = MethaneCombustionParameterBlock()
+        model.fs.properties = MethaneCombustionParameterBlock()
 
-        m.fs.unit = GibbsReactor(
-            property_package=m.fs.properties,
+        model.fs.unit = GibbsReactor(
+            property_package=model.fs.properties,
             has_heat_transfer=True,
             has_pressure_change=True,
         )
 
-        m.fs.unit.inlet.flow_mol[0].fix(230.0)
-        m.fs.unit.inlet.mole_frac_comp[0, "H2"].fix(0.0435)
-        m.fs.unit.inlet.mole_frac_comp[0, "N2"].fix(0.6522)
-        m.fs.unit.inlet.mole_frac_comp[0, "O2"].fix(0.1739)
-        m.fs.unit.inlet.mole_frac_comp[0, "CO2"].fix(1e-5)
-        m.fs.unit.inlet.mole_frac_comp[0, "CH4"].fix(0.1304)
-        m.fs.unit.inlet.mole_frac_comp[0, "CO"].fix(1e-5)
-        m.fs.unit.inlet.mole_frac_comp[0, "H2O"].fix(1e-5)
-        m.fs.unit.inlet.mole_frac_comp[0, "NH3"].fix(1e-5)
-        m.fs.unit.inlet.temperature[0].fix(1500.0)
-        m.fs.unit.inlet.pressure[0].fix(101325.0)
+        model.fs.unit.inlet.flow_mol[0].fix(230.0)
+        model.fs.unit.inlet.mole_frac_comp[0, "H2"].fix(0.0435)
+        model.fs.unit.inlet.mole_frac_comp[0, "N2"].fix(0.6522)
+        model.fs.unit.inlet.mole_frac_comp[0, "O2"].fix(0.1739)
+        model.fs.unit.inlet.mole_frac_comp[0, "CO2"].fix(1e-5)
+        model.fs.unit.inlet.mole_frac_comp[0, "CH4"].fix(0.1304)
+        model.fs.unit.inlet.mole_frac_comp[0, "CO"].fix(1e-5)
+        model.fs.unit.inlet.mole_frac_comp[0, "H2O"].fix(1e-5)
+        model.fs.unit.inlet.mole_frac_comp[0, "NH3"].fix(1e-5)
+        model.fs.unit.inlet.temperature[0].fix(1500.0)
+        model.fs.unit.inlet.pressure[0].fix(101325.0)
 
-        m.fs.unit.outlet.temperature[0].fix(2844.38)
-        m.fs.unit.deltaP.fix(0)
+        model.fs.unit.outlet.temperature[0].fix(2844.38)
+        model.fs.unit.deltaP.fix(0)
 
-        return m
+        # Set imperfect scaling factors for all variables, representing an initial "best-guess"
+        # Feed states are known exactly - set scaling based on these
+        set_scaling_factor(
+            model.fs.unit.control_volume.properties_in[0.0].flow_mol, 1 / 230
+        )
+        set_scaling_factor(
+            model.fs.unit.control_volume.properties_in[0.0].flow_mol_phase, 1 / 230
+        )  # Only 1 phase, so we "know" this
+        set_scaling_factor(
+            model.fs.unit.control_volume.properties_in[0.0].mole_frac_comp["H2"],
+            1 / 0.0435,
+        )
+        set_scaling_factor(
+            model.fs.unit.control_volume.properties_in[0.0].mole_frac_comp["N2"],
+            1 / 0.6522,
+        )
+        set_scaling_factor(
+            model.fs.unit.control_volume.properties_in[0.0].mole_frac_comp["O2"],
+            1 / 0.1739,
+        )
+        set_scaling_factor(
+            model.fs.unit.control_volume.properties_in[0.0].mole_frac_comp["CO2"], 1e5
+        )
+        set_scaling_factor(
+            model.fs.unit.control_volume.properties_in[0.0].mole_frac_comp["CH4"],
+            1 / 0.1304,
+        )
+        set_scaling_factor(
+            model.fs.unit.control_volume.properties_in[0.0].mole_frac_comp["CO"], 1e5
+        )
+        set_scaling_factor(
+            model.fs.unit.control_volume.properties_in[0.0].mole_frac_comp["H2O"], 1e5
+        )
+        set_scaling_factor(
+            model.fs.unit.control_volume.properties_in[0.0].mole_frac_comp["NH3"], 1e5
+        )
+        set_scaling_factor(
+            model.fs.unit.control_volume.properties_in[0.0].temperature, 1 / 1500
+        )
+        set_scaling_factor(
+            model.fs.unit.control_volume.properties_in[0.0].pressure, 1e-5
+        )
+        # Assume user does not know anything about enthalpy
+
+        # Best guesses for unit model and outlet state conditions
+        set_scaling_factor(model.fs.unit.control_volume.heat[0.0], 1e-6)
+
+        set_scaling_factor(
+            model.fs.unit.control_volume.properties_out[0.0].flow_mol, 1e-2
+        )
+        set_scaling_factor(
+            model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase, 1e-2
+        )  # Only 1 phase, so we "know" this
+        # N2 is inert, so will be order 0.1, assume CH4 and H2 are near-totally consumed, assume most O2 consumed
+        # Assume moderate amounts of CO2 and H2O, small amounts of CO, trace NH3 NH3
+        set_scaling_factor(
+            model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp["H2"], 1e4
+        )
+        set_scaling_factor(
+            model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp["N2"], 10
+        )
+        set_scaling_factor(
+            model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp["O2"], 1e2
+        )
+        set_scaling_factor(
+            model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp["CO2"], 10
+        )
+        set_scaling_factor(
+            model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp["CH4"], 1e4
+        )
+        set_scaling_factor(
+            model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp["CO"], 1e3
+        )
+        set_scaling_factor(
+            model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp["H2O"], 10
+        )
+        set_scaling_factor(
+            model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp["NH3"], 1e4
+        )
+        set_scaling_factor(
+            model.fs.unit.control_volume.properties_out[0.0].temperature, 1e-3
+        )
+        set_scaling_factor(
+            model.fs.unit.control_volume.properties_out[0.0].pressure, 1e-5
+        )
+
+        from_json(model, fname=fname, wts=StoreSpec.value())
+
+        return model
+
+    def test_variable_scaling_only(self, methane):
+        unscaled = jacobian_cond(methane, scaled=False)
+
+        scaler = GibbsReactorScaler()
+        scaler.variable_scaling_routine(
+            methane.fs.unit,
+            submodel_scalers={
+                "control_volume.properties_in": SMScaler,
+                "control_volume.properties_out": SMScaler,
+            },
+        )
+
+        scaled = jacobian_cond(methane, scaled=True)
+
+        count = 0
+        for c in methane.component_data_objects(ctype=[Var], descend_into=True):
+            sf = get_scaling_factor(c)
+            if sf is None:
+                count += 1
+        assert count == 52
+
+        assert scaled < unscaled
+
+    def test_constraint_scaling_only(self, methane):
+        unscaled = jacobian_cond(methane, scaled=False)
+
+        scaler = GibbsReactorScaler()
+        scaler.constraint_scaling_routine(
+            methane.fs.unit,
+            submodel_scalers={
+                "control_volume.properties_in": SMScaler,
+                "control_volume.properties_out": SMScaler,
+            },
+        )
+
+        scaled = jacobian_cond(methane, scaled=True)
+
+        count = 0
+        for c in methane.component_data_objects(ctype=[Constraint], descend_into=True):
+            sf = get_scaling_factor(c)
+            if sf is None:
+                count += 1
+        assert count == 0
+
+        assert scaled < unscaled
+
+    def test_full_scaling(self, methane):
+        unscaled = jacobian_cond(methane, scaled=False)
+
+        scaler = GibbsReactorScaler()
+        scaler.scale_model(
+            methane.fs.unit,
+            submodel_scalers={
+                "control_volume.properties_in": SMScaler,
+                "control_volume.properties_out": SMScaler,
+            },
+        )
+
+        scaled = jacobian_cond(methane, scaled=True)
+
+        assert scaled < unscaled
+        print(scaled, unscaled)
+
+        scaler2 = CustomScalerBase()
+        for c in methane.component_data_objects(ctype=Constraint, descend_into=True):
+            scaler2.scale_constraint_by_nominal_derivative_norm(c, overwrite=True)
+        print(jacobian_cond(methane, scaled=True))
+
+        from idaes.core.scaling import AutoScaler
+
+        scaler3 = AutoScaler(overwrite=True)
+        scaler3.variables_by_magnitude(methane)
+        scaler3.constraints_by_jacobian_norm(methane)
+        print(jacobian_cond(methane, scaled=True))
+
+        assert False

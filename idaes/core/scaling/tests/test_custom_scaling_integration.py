@@ -40,7 +40,7 @@ from idaes.models.properties.activity_coeff_models.methane_combustion_ideal impo
 )
 from idaes.core.util.testing import PhysicalParameterTestBlock, initialization_tester
 from idaes.core.solvers import get_solver
-from idaes.core.util import to_json, from_json
+from idaes.core.util import to_json, from_json, StoreSpec
 from idaes.core.util.scaling import jacobian_cond
 from idaes.core.scaling import AutoScaler, CustomScalerBase, set_scaling_factor
 
@@ -85,7 +85,7 @@ def gibbs():
     m = build_model()
 
     # Load solution
-    from_json(m, fname=fname)
+    from_json(m, fname=fname, wts=StoreSpec().value())
     # Make sure we have no suffixes loaded
     assert not hasattr(m.fs.unit, "scaling_factor")
 
@@ -350,7 +350,7 @@ def test_scale_constraint_by_nominal_derivative_clean_up(gibbs):
         model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase, 1e-2
     )  # Only 1 phase, so we "know" this
     # N2 is inert, so will be order 0.1, assume CH4 and H2 are near-totally consumed, assume most O2 consumed
-    # Assume moderate amounts of CO2 and H2O, small amounts of CO, trace NH3 NH3
+    # Assume moderate amounts of CO2 and H2O, small amounts of CO, trace NH3
     set_scaling_factor(
         model.fs.unit.control_volume.properties_out[0.0].mole_frac_comp["H2"], 1e4
     )
@@ -425,4 +425,4 @@ if __name__ == "__main__":
     # Check for optimal solution
     assert_optimal_termination(results)
 
-    to_json(m, fname=fname, human_read=True)
+    to_json(m, fname=fname, human_read=True, wts=StoreSpec().value())

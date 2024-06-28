@@ -95,7 +95,7 @@ class CustomScalerBase(ScalerBase):
             None
         """
         # Step 1: Call variable scaling routine
-        var_scaling = self.variable_scaling_routine(
+        self.variable_scaling_routine(
             model, overwrite=self.config.overwrite, submodel_scalers=submodel_scalers
         )
         # Step 2: Call variable fill in
@@ -104,7 +104,7 @@ class CustomScalerBase(ScalerBase):
                 i(model)
 
         # Step 3: Call constraint scaling routine
-        cons_scaling = self.constraint_scaling_routine(
+        self.constraint_scaling_routine(
             model, overwrite=self.config.overwrite, submodel_scalers=submodel_scalers
         )
 
@@ -449,6 +449,8 @@ class CustomScalerBase(ScalerBase):
         """
         # Cast norm to int to make sure it is valid
         norm = int(norm)
+        if norm < 1:
+            raise ValueError(f"norm must be a positive integer (received {norm})")
 
         var_data = []
         try:
@@ -492,7 +494,11 @@ class CustomScalerBase(ScalerBase):
                 v[0].value = v[1]
 
         # Calculate norm
-        sf = 1 / sum(abs(j) ** norm for j in pjac) ** (1 / norm)
+        cnorm = sum(abs(j) ** norm for j in pjac) ** (1 / norm)
+        if cnorm != 0:
+            sf = 1 / cnorm
+        else:
+            sf = 1
         self.set_constraint_scaling_factor(constraint, sf, overwrite=overwrite)
 
     # Other methods
@@ -554,7 +560,7 @@ class CustomScalerBase(ScalerBase):
             submodel_scalers = {}
 
         # Iterate over indices of submodel
-        for idx, smdata in sm_obj.items():
+        for smdata in sm_obj.values():
             # Get Scaler for submodel
             if submodel in submodel_scalers:
                 scaler = submodel_scalers[submodel]
