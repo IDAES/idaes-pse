@@ -763,7 +763,7 @@ class DiagnosticsToolbox:
 
         """
         if solver is None:
-            solver = get_solver()
+            solver = get_solver("ipopt_v2")
         if stream is None:
             stream = sys.stdout
 

@@ -14,7 +14,7 @@
 Initializer class for implementing Block Triangularization initialization
 """
 from pyomo.environ import SolverFactory
-from pyomo.common.config import ConfigDict, ConfigValue
+from pyomo.common.config import Bool, ConfigDict, ConfigValue
 from pyomo.contrib.incidence_analysis import (
     IncidenceGraphInterface,
     solve_strongly_connected_components,
@@ -25,7 +25,6 @@ from idaes.core.initialization.initializer_base import (
     InitializationStatus,
 )
 from idaes.core.util.exceptions import InitializationError
-from idaes.core.solvers import get_solver
 
 __author__ = "Andrew Lee"
 
@@ -47,7 +46,7 @@ class BlockTriangularizationInitializer(InitializerBase):
     CONFIG.declare(
         "block_solver",
         ConfigValue(
-            default="ipopt",
+            default="ipopt_v2",
             description="Solver to use for NxN blocks",
         ),
     )
@@ -59,13 +58,52 @@ class BlockTriangularizationInitializer(InitializerBase):
             doc="Dict of options to use to set solver.options.",
         ),
     )
+    CONFIG.block_solver_options.declare(
+        "tol",
+        ConfigValue(
+            default=1e-8,
+            domain=float,
+            description="Convergence tolerance for block solver",
+        ),
+    )
+    CONFIG.block_solver_options.declare(
+        "max_iter",
+        ConfigValue(
+            default=200,
+            domain=int,
+            description="Iteration limit for block solver",
+        ),
+    )
+    CONFIG.declare(
+        "block_solver_writer_config",
+        ConfigDict(
+            implicit=True,
+            description="Dict of writer_config arguments to pass to block solver",
+        ),
+    )
+    CONFIG.block_solver_writer_config.declare(
+        "linear_presolve",
+        ConfigValue(
+            default=True,
+            domain=Bool,
+            description="Whether to use linear presolver with block solver",
+        ),
+    )
+    CONFIG.block_solver_writer_config.declare(
+        "scale_model",
+        ConfigValue(
+            default=False,
+            domain=Bool,
+            description="Whether to apply model scaling with block solver",
+        ),
+    )
     CONFIG.declare(
         "block_solver_call_options",
         ConfigDict(
             implicit=True,
             description="Dict of arguments to pass to solver.solve call",
             doc="Dict of arguments to be passed as part of the solver.solve "
-            "call, such as tee=True/",
+            "call, such as tee=True.",
         ),
     )
     CONFIG.declare(
@@ -111,11 +149,14 @@ class BlockTriangularizationInitializer(InitializerBase):
         """
         Call Block Triangularization solver on model.
         """
-        if self.config.block_solver is not None:
-            solver = SolverFactory(self.config.block_solver)
-            solver.options.update(self.config.block_solver_options)
-        else:
-            solver = get_solver(options=self.config.block_solver_options)
+        # TODO: For now, go directly through solver factory as default solver
+        # options cause failures. Most of these appear to be due to scaling,
+        # so hopefully we can fix these later.
+        solver = SolverFactory(
+            self.config.block_solver,
+            options=self.config.block_solver_options,
+            writer_config=self.config.block_solver_writer_config,
+        )
 
         if model.is_indexed():
             for d in model.values():

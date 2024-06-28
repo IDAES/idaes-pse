@@ -92,7 +92,7 @@ from idaes.core.util import DiagnosticsToolbox
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_solver()
+solver = get_solver("ipopt_v2")
 
 
 # -----------------------------------------------------------------------------
@@ -4025,7 +4025,7 @@ def test_total_flow_w_inherent_rxns():
     initializer = BlockTriangularizationInitializer()
     initializer.initialize(m.fs.sep)
 
-    results = get_solver().solve(m)
+    results = solver.solve(m)
     assert check_optimal_termination(results)
 
     assert initializer.summary[m.fs.sep]["status"] == InitializationStatus.Ok
@@ -4100,7 +4100,7 @@ def test_component_flow_w_inherent_rxns():
     initializer = BlockTriangularizationInitializer()
     initializer.initialize(m.fs.sep)
 
-    results = get_solver().solve(m)
+    results = solver.solve(m)
     assert check_optimal_termination(results)
 
     assert initializer.summary[m.fs.sep]["status"] == InitializationStatus.Ok
@@ -4175,7 +4175,7 @@ def test_phase_flow_w_inherent_rxns():
     initializer = BlockTriangularizationInitializer()
     initializer.initialize(m.fs.sep)
 
-    results = get_solver().solve(m)
+    results = solver.solve(m)
     assert check_optimal_termination(results)
 
     assert initializer.summary[m.fs.sep]["status"] == InitializationStatus.Ok
@@ -4250,7 +4250,7 @@ def test_phase_component_flow_w_inherent_rxns():
     initializer = BlockTriangularizationInitializer()
     initializer.initialize(m.fs.sep)
 
-    results = get_solver().solve(m)
+    results = solver.solve(m)
     assert check_optimal_termination(results)
 
     assert initializer.summary[m.fs.sep]["status"] == InitializationStatus.Ok

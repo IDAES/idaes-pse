@@ -127,7 +127,7 @@ def initialize_flowsheet(m):
 
 def solve_flowsheet(m, stee=False):
     """Solve demo flowsheet"""
-    solver = get_solver()
+    solver = get_solver("ipopt_v2")
     solver.solve(m, tee=stee)
 
 

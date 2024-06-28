@@ -85,7 +85,7 @@ from idaes.models.properties.modular_properties.eos.ceos import cubic_roots_avai
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_solver()
+solver = get_solver("ipopt_v2")
 
 
 # -----------------------------------------------------------------------------
@@ -3361,7 +3361,10 @@ class TestInitializersSaponCounterCurrent:
 
     @pytest.mark.integration
     def test_block_triangularization(self, model):
-        initializer = BlockTriangularizationInitializer(constraint_tolerance=2e-5)
+        initializer = BlockTriangularizationInitializer(
+            constraint_tolerance=2e-5,
+            block_solver_writer_config={"linear_presolve": False},
+        )
         # Need to ignore unused variables at inlets
         initializer.initialize(model.fs.unit, exclude_unused_vars=True)
 
@@ -3563,7 +3566,7 @@ class TestInitializersModularCoCurrent:
 
         return m
 
-    @pytest.mark.component
+    @pytest.mark.integration
     def test_general_hx1d_initializer(self, model):
         initializer = HX1DInitializer()
         initializer.initialize(model.fs.unit)

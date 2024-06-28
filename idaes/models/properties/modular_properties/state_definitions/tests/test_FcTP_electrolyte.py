@@ -53,6 +53,8 @@ from idaes.models.properties.modular_properties.base.generic_property import (
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.solvers import get_solver
 
+solver = get_solver("ipopt_v2")
+
 
 # -----------------------------------------------------------------------------
 class TestApparentSpeciesBasisNoInherent:
@@ -226,7 +228,6 @@ class TestApparentSpeciesBasisNoInherent:
 
         assert degrees_of_freedom(m.fs) == 0
 
-        solver = get_solver()
         res = solver.solve(m.fs, tee=True)
 
         # Check for optimal solution
@@ -510,7 +511,6 @@ class TestApparentSpeciesBasisInherent:
 
         m.fs.state.initialize()
 
-        solver = get_solver()
         res = solver.solve(m.fs)
 
         # Check for optimal solution
@@ -997,7 +997,6 @@ class TestTrueSpeciesBasisInherent:
 
         m.fs.state.initialize()
 
-        solver = get_solver()
         res = solver.solve(m.fs)
 
         # Check for optimal solution

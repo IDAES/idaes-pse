@@ -324,7 +324,7 @@ class ActivityCoeffInitializer(InitializerBase):
     CONFIG.declare(
         "solver",
         ConfigValue(
-            default=None,
+            default="ipopt_v2",
             description="Solver to use for initialization",
         ),
     )
@@ -333,6 +333,13 @@ class ActivityCoeffInitializer(InitializerBase):
         ConfigDict(
             implicit=True,
             description="Dict of options to pass to solver",
+        ),
+    )
+    CONFIG.declare(
+        "solver_writer_config",
+        ConfigDict(
+            implicit=True,
+            description="Dict of writer_config arguments to pass to solver",
         ),
     )
     CONFIG.declare(
@@ -381,7 +388,11 @@ class ActivityCoeffInitializer(InitializerBase):
                 k.eq_mol_frac_out.deactivate()
 
         # Create solver
-        solver = get_solver(self.config.solver, self.config.solver_options)
+        solver = get_solver(
+            solver=self.config.solver,
+            solver_options=self.config.solver_options,
+            writer_config=self.config.solver_writer_config,
+        )
 
         # ---------------------------------------------------------------------
         # Initialization sequence: Deactivating certain constraints
