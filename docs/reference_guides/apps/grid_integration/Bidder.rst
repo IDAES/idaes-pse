@@ -13,7 +13,7 @@ uncertain price scenario has a corresponding power output. As shown in the figur
 each of these uncertain price and power output pairs formulates a segment in the
 bidding curves.
 
-Here we present a stochastic bidding model for a renewable integrated energy system (Wind generator + PEM).
+Here we present a stochastic bidding model for a renewable integrated energy system (wind generator +  polymer electrolyte membrane (PEM) electrolyzer).
 
 
 Day-Ahead Bidding Problem for Wind + PEM IES
@@ -42,7 +42,7 @@ Equation (1) requires the day-ahead offering power is less or equal to the real-
 in order to avoid underbidding. Equation (2) states that the RT offering power is the same as the 
 IES power output to the grid. In the bidding mode, the market rules require the offering power is 
 non-decreasing (convex) with its marginal cost in an energy bid. This rule is represented by equation (3).
-Equation (4) to equation (9) are process model constraints. Equation (10) calculates the operation costs for IES
+Equation (4) to (9) are process model constraints. Equation (10) calculates the operation costs for IES
 and equation (11) calculate the fixed cost for IES.
 
 **Parameters**
