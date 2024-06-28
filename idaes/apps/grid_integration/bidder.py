@@ -1309,21 +1309,28 @@ class ParametrizedBidder(AbstractBidder):
     ):
         """
         Arguments:
-            bidding_model_object: the model object for bidding
+            bidding_model_object: pyomo model object,
+                the IES model object for bidding.
+            day_ahead_horizon: int,
+                number of time periods in the day-ahead bidding problem.
+            real_time_horizon: int,
+                number of time periods in the real-time bidding problem.
+            solver: a Pyomo mathematical programming solver object,
+                solver for solving the bidding problem. In this class we do not need a solver.
+            forecaster: forecaster object,
+                the forecaster to predict the generator/IES capacity factor.
 
-            day_ahead_horizon: number of time periods in the day-ahead bidding problem
-
-            real_time_horizon: number of time periods in the real-time bidding problem
-
-            solver: a Pyomo mathematical programming solver object
         """
         self.bidding_model_object = bidding_model_object
         self.day_ahead_horizon = day_ahead_horizon
         self.real_time_horizon = real_time_horizon
         self.solver = solver
         self.forecaster = forecaster
-
-        self.n_scenario = 1  # there must be a n_scenario attribute in this class
+        # Because ParameterizedBidder is inherited from the AbstractBidder, and we want to
+        # use the _check_inputs() function to check the solver and bidding_model_object.
+        # We must have the self.scenario attribute. In this case, I set the self.n_scenario = 1 when initializing.
+        # However, self.n_scenario will never be used in this class. 
+        self.n_scenario = 1 
         self._check_inputs()
 
         self.generator = self.bidding_model_object.model_data.gen_name
@@ -1398,18 +1405,22 @@ class ParametrizedBidder(AbstractBidder):
         """
         pass
 
-    def record_bids(self, bids, model, date, hour, market):
+    def record_bids(self, bids: dict, model, date: str, hour: int, market):
         """
         This function records the bids and the details in the underlying bidding model.
 
         Arguments:
-            bids: the obtained bids for this date.
-
-            model: bidding model
-
-            date: the date we bid into
-
-            hour: the hour we bid into
+            bids: dictionary, 
+                the obtained bids for this date. Keys are time step t, example as following:
+                bids = {t: {gen: {p_cost: float, p_max: float, p_min: float, startup_capacity: float, shutdown_capacity: float}}}
+            model: pyomo model object,
+                our bidding model.
+            date: str,
+                the date we bid into.
+            hour: int,
+                the hour we bid into.
+            market: str,
+                the market we participate.
 
         Returns:
             None
@@ -1427,16 +1438,18 @@ class ParametrizedBidder(AbstractBidder):
 
         return
 
-    def _record_bids(self, bids, date, hour, **kwargs):
+    def _record_bids(self, bids: dict, date: str, hour: int, **kwargs):
         """
         Record the bis of each time perid.
 
         Arguments:
-            bids: the obtained bids for this date.
-
-            date: the date we bid into
-
-            hour: the hour we bid into
+            bids: dictionary, 
+                the obtained bids for this date. Keys are time step t, example as following:
+                bids = {t: {gen: {p_cost: float, p_max: float, p_min: float, startup_capacity: float, shutdown_capacity: float}}}
+            date: str, 
+                the date we bid into.
+            hour: int, 
+                the hour we bid into.
 
         Returns:
             None
@@ -1454,18 +1467,11 @@ class ParametrizedBidder(AbstractBidder):
                 for k, v in kwargs.items():
                     result_dict[k] = v
 
-                pair_cnt = len(bids[t][gen]["p_cost"])
+                num_bid_pairs = len(bids[t][gen]["p_cost"])
 
                 for idx, (power, cost) in enumerate(bids[t][gen]["p_cost"]):
                     result_dict[f"Power {idx} [MW]"] = power
                     result_dict[f"Cost {idx} [$]"] = cost
-
-                # place holder, in case different len of bids
-                while pair_cnt < self.n_scenario:
-                    result_dict[f"Power {pair_cnt} [MW]"] = None
-                    result_dict[f"Cost {pair_cnt} [$]"] = None
-
-                    pair_cnt += 1
 
                 result_df = pd.DataFrame.from_dict(result_dict, orient="index")
                 df_list.append(result_df.T)
@@ -1481,7 +1487,8 @@ class ParametrizedBidder(AbstractBidder):
         This methods writes the saved operation stats into an csv file.
 
         Arguments:
-            path: the path to write the results.
+            path: str or Pathlib object, 
+                the path to write the results.
 
         Return:
             None
@@ -1514,14 +1521,25 @@ class PEMParametrizedBidder(ParametrizedBidder):
     ):
         """
         Arguments:
-            renewable_mw: maximum renewable energy system capacity
-
-            pem_marginal_cost: the cost/MW above which all available wind energy will be sold to grid;
-                below which, make hydrogen and sell remainder of wind to grid
-
-            pem_mw: maximum PEM capacity limits how much energy is bid at the `pem_marginal_cost`
-
-            real_time_bidding_only: bool, if True, do real-time bidding only.
+            bidding_model_object: pyomo model object,
+                the IES model object for bidding.
+            day_ahead_horizon: int,
+                number of time periods in the day-ahead bidding problem.
+            real_time_horizon: int,
+                number of time periods in the real-time bidding problem.
+            solver: a Pyomo mathematical programming solver object,
+                solver for solving the bidding problem. In this class we do not need a solver.
+            forecaster: forecaster object,
+                the forecaster to predict the generator/IES capacity factor.
+            renewable_mw: int or float,
+                maximum renewable energy system capacity.
+            pem_marginal_cost: int or float,
+                cost/MW, above which all available wind energy will be sold to grid;
+                below which, make hydrogen and sell remainder of wind to grid.
+            pem_mw: int or float,
+                maximum PEM capacity limits how much energy is bid at the `pem_marginal_cost`.
+            real_time_bidding_only: bool, 
+                if True, do real-time bidding only.
         """
         super().__init__(
             bidding_model_object,
@@ -1544,7 +1562,7 @@ class PEMParametrizedBidder(ParametrizedBidder):
         if self.pem_mw >= self.renewable_mw:
             raise ValueError(f"The power of PEM is greater than the renewable power.")
 
-    def compute_day_ahead_bids(self, date, hour=0):
+    def compute_day_ahead_bids(self, date: str, hour=0):
         """
         DA Bid: from 0 MW to (Wind Resource - PEM capacity) MW, bid $0/MWh.
         from (Wind Resource - PEM capacity) MW to Wind Resource MW, bid 'pem_marginal_cost'
@@ -1552,13 +1570,15 @@ class PEMParametrizedBidder(ParametrizedBidder):
         If Wind resource at some time is less than PEM capacity, then reduce to available resource
 
         Arguments:
-
-            date: the date we bid into
-
-            hour: the hour we bid into
+            date: str,
+                the date we bid into.
+            hour: int,
+                the hour we bid into.
 
         Returns:
-            None
+            full_bids: dictionary,
+                the obtained bids. Keys are time step t, example as following:
+                bids = {t: {gen: {p_cost: float, p_max: float, p_min: float, startup_capacity: float, shutdown_capacity: float}}}
         """
         gen = self.generator
         # Forecast the day-ahead wind generation
@@ -1613,13 +1633,15 @@ class PEMParametrizedBidder(ParametrizedBidder):
         from (Wind Resource - PEM capacity) MW to Wind Resource MW, bid 'pem_marginal_cost'
 
         Arguments:
-
-            date: the date we bid into
-
-            hour: the hour we bid into
+            date: str,
+                the date we bid into
+            hour: int,
+                the hour we bid into
 
         Returns:
-            None
+            full_bids: dictionary,
+                the obtained bids. Keys are time step t, example as following:
+                bids = {t: {gen: {p_cost: float, p_max: float, p_min: float, startup_capacity: float, shutdown_capacity: float}}}
         """
 
         gen = self.generator
