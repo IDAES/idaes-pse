@@ -1329,8 +1329,8 @@ class ParametrizedBidder(AbstractBidder):
         # Because ParameterizedBidder is inherited from the AbstractBidder, and we want to
         # use the _check_inputs() function to check the solver and bidding_model_object.
         # We must have the self.scenario attribute. In this case, I set the self.n_scenario = 1 when initializing.
-        # However, self.n_scenario will never be used in this class. 
-        self.n_scenario = 1 
+        # However, self.n_scenario will never be used in this class.
+        self.n_scenario = 1
         self._check_inputs()
 
         self.generator = self.bidding_model_object.model_data.gen_name
@@ -1410,7 +1410,7 @@ class ParametrizedBidder(AbstractBidder):
         This function records the bids and the details in the underlying bidding model.
 
         Arguments:
-            bids: dictionary, 
+            bids: dictionary,
                 the obtained bids for this date. Keys are time step t, example as following:
                 bids = {t: {gen: {p_cost: float, p_max: float, p_min: float, startup_capacity: float, shutdown_capacity: float}}}
             model: pyomo model object,
@@ -1443,12 +1443,12 @@ class ParametrizedBidder(AbstractBidder):
         Record the bis of each time perid.
 
         Arguments:
-            bids: dictionary, 
+            bids: dictionary,
                 the obtained bids for this date. Keys are time step t, example as following:
                 bids = {t: {gen: {p_cost: float, p_max: float, p_min: float, startup_capacity: float, shutdown_capacity: float}}}
-            date: str, 
+            date: str,
                 the date we bid into.
-            hour: int, 
+            hour: int,
                 the hour we bid into.
 
         Returns:
@@ -1487,7 +1487,7 @@ class ParametrizedBidder(AbstractBidder):
         This methods writes the saved operation stats into an csv file.
 
         Arguments:
-            path: str or Pathlib object, 
+            path: str or Pathlib object,
                 the path to write the results.
 
         Return:
@@ -1538,7 +1538,7 @@ class PEMParametrizedBidder(ParametrizedBidder):
                 below which, make hydrogen and sell remainder of wind to grid.
             pem_mw: int or float,
                 maximum PEM capacity limits how much energy is bid at the `pem_marginal_cost`.
-            real_time_bidding_only: bool, 
+            real_time_bidding_only: bool,
                 if True, do real-time bidding only.
         """
         super().__init__(
