@@ -191,19 +191,19 @@ class TestConstraintScaling:
         ] == pytest.approx(0.0277778, rel=1e-5)
         assert sfx[
             test_model.fs.unit.control_volume.enthalpy_balances[0.0]
-        ] == pytest.approx(0.2, rel=1e-5)
+        ] == pytest.approx(0.25, rel=1e-5)
         assert sfx[
             test_model.fs.unit.control_volume.pressure_balance[0.0]
-        ] == pytest.approx(0.333333, rel=1e-5)
+        ] == pytest.approx(5e-6, rel=1e-5)
 
         for k, v in test_model.fs.unit.gibbs_minimization.items():
             if k[2] == "c1":
                 assert test_model.fs.unit.scaling_factor[v] == pytest.approx(
-                    0.142857, rel=1e-5
+                    1.53846e-3, rel=1e-5
                 )
             else:
                 assert test_model.fs.unit.scaling_factor[v] == pytest.approx(
-                    0.0625, rel=1e-5
+                    6.45161e-4, rel=1e-5
                 )
 
     def test_constraint_scaling_inerts(self):
@@ -235,17 +235,14 @@ class TestConstraintScaling:
             m.fs.unit.control_volume.element_balances[0.0, "Li"]
         ] == pytest.approx(0.0277778, rel=1e-5)
         assert sfx[m.fs.unit.control_volume.enthalpy_balances[0.0]] == pytest.approx(
-            0.2, rel=1e-5
+            0.25, rel=1e-5
         )
         assert sfx[m.fs.unit.control_volume.pressure_balance[0.0]] == pytest.approx(
-            0.333333, rel=1e-5
+            5e-6, rel=1e-5
         )
 
         for k, v in m.fs.unit.gibbs_minimization.items():
-            if k[2] == "c1":
-                assert m.fs.unit.scaling_factor[v] == pytest.approx(0.142857, rel=1e-5)
-            else:
-                assert m.fs.unit.scaling_factor[v] == pytest.approx(0.0625, rel=1e-5)
+            assert m.fs.unit.scaling_factor[v] == pytest.approx(6.45161e-4, rel=1e-5)
 
         for k, v in m.fs.unit.inert_species_balance.items():
             assert m.fs.unit.scaling_factor[v] == pytest.approx(0.5, rel=1e-5)
@@ -275,11 +272,12 @@ class SMScaler(CustomScalerBase):
 
     def constraint_scaling_routine(self, model, overwrite):
         for c in model.component_data_objects(ctype=Constraint, descend_into=True):
-            self.scale_constraint_by_nominal_derivative_norm(
-                c, norm=2, overwrite=overwrite
+            self.scale_constraint_by_nominal_value(
+                c, scheme="inverse_sum", overwrite=overwrite
             )
 
 
+# TODO: Turn this into a testing harness?
 @pytest.mark.integration
 class TestMethaneScaling(object):
     @pytest.fixture
@@ -422,6 +420,7 @@ class TestMethaneScaling(object):
         assert count == 52
 
         assert scaled < unscaled
+        assert scaled == pytest.approx(8.908989e16, rel=1e-5)
 
     def test_constraint_scaling_only(self, methane):
         unscaled = jacobian_cond(methane, scaled=False)
@@ -445,6 +444,7 @@ class TestMethaneScaling(object):
         assert count == 0
 
         assert scaled < unscaled
+        assert scaled == pytest.approx(9.093003e15, rel=1e-5)
 
     def test_full_scaling(self, methane):
         unscaled = jacobian_cond(methane, scaled=False)
@@ -461,18 +461,4 @@ class TestMethaneScaling(object):
         scaled = jacobian_cond(methane, scaled=True)
 
         assert scaled < unscaled
-        print(scaled, unscaled)
-
-        scaler2 = CustomScalerBase()
-        for c in methane.component_data_objects(ctype=Constraint, descend_into=True):
-            scaler2.scale_constraint_by_nominal_derivative_norm(c, overwrite=True)
-        print(jacobian_cond(methane, scaled=True))
-
-        from idaes.core.scaling import AutoScaler
-
-        scaler3 = AutoScaler(overwrite=True)
-        scaler3.variables_by_magnitude(methane)
-        scaler3.constraints_by_jacobian_norm(methane)
-        print(jacobian_cond(methane, scaled=True))
-
-        assert False
+        assert scaled == pytest.approx(6.96238e15, rel=1e-5)

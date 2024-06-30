@@ -171,22 +171,22 @@ class GibbsReactorScaler(CustomScalerBase):
         for cd in model.control_volume.component_data_objects(
             ctype=Constraint, descend_into=False
         ):
-            self.scale_constraint_by_nominal_derivative_norm(
-                cd, norm=1, overwrite=overwrite
+            self.scale_constraint_by_nominal_value(
+                cd, scheme="inverse_sum", overwrite=overwrite
             )
 
         # Step 3: Scale local constraints
         # Scale Gibbs minimization constraints
         for cd in model.gibbs_minimization.values():
-            self.scale_constraint_by_nominal_derivative_norm(
-                cd, norm=1, overwrite=overwrite
+            self.scale_constraint_by_nominal_value(
+                cd, scheme="inverse_sum", overwrite=overwrite
             )
 
         # Scale inert species balance if they are present
         if hasattr(model, "inert_species_balance"):
             for cd in model.inert_species_balance.values():
-                self.scale_constraint_by_nominal_derivative_norm(
-                    cd, norm=1, overwrite=overwrite
+                self.scale_constraint_by_nominal_value(
+                    cd, scheme="inverse_sum", overwrite=overwrite
                 )
 
 
