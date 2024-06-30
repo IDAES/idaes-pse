@@ -130,45 +130,37 @@ def test_nominal_magnitude_harmonic(gibbs):
     for c in gibbs.component_data_objects(ctype=Constraint, descend_into=True):
         scaler.scale_constraint_by_nominal_value(c, scheme="harmonic_mean")
 
-    scaled = jacobian_cond(gibbs, scaled=True)
-
-    assert scaled == pytest.approx(2.83719e12, rel=1e-5)
+    assert jacobian_cond(gibbs, scaled=True) == pytest.approx(2.83944e12, rel=1e-5)
 
 
 @pytest.mark.integration
-def test_nominal_magnitude_max(gibbs):
+def test_nominal_magnitude_inv_max(gibbs):
     scaler = CustomScalerBase()
 
     for c in gibbs.component_data_objects(ctype=Constraint, descend_into=True):
         scaler.scale_constraint_by_nominal_value(c, scheme="inverse_maximum")
 
-    scaled = jacobian_cond(gibbs, scaled=True)
-
-    assert scaled == pytest.approx(1.77413e11, rel=1e-5)
+    assert jacobian_cond(gibbs, scaled=True) == pytest.approx(784576, rel=1e-5)
 
 
 @pytest.mark.integration
-def test_nominal_magnitude_min(gibbs):
+def test_nominal_magnitude_inv_min(gibbs):
     scaler = CustomScalerBase()
 
     for c in gibbs.component_data_objects(ctype=Constraint, descend_into=True):
         scaler.scale_constraint_by_nominal_value(c, scheme="inverse_minimum")
 
-    scaled = jacobian_cond(gibbs, scaled=True)
-
-    assert scaled == pytest.approx(5.59871e12, rel=1e-5)
+    assert jacobian_cond(gibbs, scaled=True) == pytest.approx(5.601e12, rel=1e-5)
 
 
 @pytest.mark.integration
-def test_nominal_magnitude_inv_mean(gibbs):
+def test_nominal_magnitude_inv_sum(gibbs):
     scaler = CustomScalerBase()
 
     for c in gibbs.component_data_objects(ctype=Constraint, descend_into=True):
         scaler.scale_constraint_by_nominal_value(c, scheme="inverse_sum")
 
-    scaled = jacobian_cond(gibbs, scaled=True)
-
-    assert scaled == pytest.approx(8.76894e10, rel=1e-5)
+    assert jacobian_cond(gibbs, scaled=True) == pytest.approx(1501632, rel=1e-5)
 
 
 @pytest.mark.integration
@@ -178,9 +170,7 @@ def test_nominal_magnitude_inv_rss(gibbs):
     for c in gibbs.component_data_objects(ctype=Constraint, descend_into=True):
         scaler.scale_constraint_by_nominal_value(c, scheme="inverse_root_sum_squared")
 
-    scaled = jacobian_cond(gibbs, scaled=True)
-
-    assert scaled == pytest.approx(1.30134e11, rel=1e-5)
+    assert jacobian_cond(gibbs, scaled=True) == pytest.approx(959994, rel=1e-5)
 
 
 @pytest.mark.integration

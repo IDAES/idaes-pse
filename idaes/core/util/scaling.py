@@ -48,7 +48,6 @@ from pyomo.dae.flatten import slice_component_along_sets
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from pyomo.core import expr as EXPR
 from pyomo.common.numeric_types import native_types
-from pyomo.core.base.units_container import _PyomoUnit
 
 import idaes.logger as idaeslog
 

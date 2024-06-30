@@ -24,8 +24,7 @@ from pyomo.core.expr import identify_variables
 from pyomo.core.expr.calculus.derivatives import Modes, differentiate
 
 from idaes.core.scaling.scaling_base import CONFIG, ScalerBase
-from idaes.core.scaling.util import get_scaling_factor
-from idaes.core.util.scaling import NominalValueExtractionVisitor
+from idaes.core.scaling.util import get_scaling_factor, NominalValueExtractionVisitor
 import idaes.logger as idaeslog
 
 # Set up logger
@@ -375,13 +374,12 @@ class CustomScalerBase(ScalerBase):
         Returns:
             list of nominal values for each additive term
         """
-        # TODO: Expand to support different ways of determining nominal value
-        # For convenience, if expression is a Pyomo component wit han expr attribute,
+        # For convenience, if expression is a Pyomo component with an expr attribute,
         # redirect to the expr attribute
         if hasattr(expression, "expr"):
             expression = expression.expr
 
-        return NominalValueExtractionVisitor(warning=True).walk_expression(expression)
+        return NominalValueExtractionVisitor().walk_expression(expression)
 
     def scale_constraint_by_nominal_value(
         self, constraint, scheme="harmonic_mean", overwrite: bool = False
@@ -406,7 +404,6 @@ class CustomScalerBase(ScalerBase):
         """
         nominal = self.get_expression_nominal_values(constraint.expr)
 
-        # TODO: What other schemes might we want to support? Something similar to a 2 norm?
         if scheme == "harmonic_mean":
             sf = sum(1 / abs(i) for i in [j for j in nominal if j != 0])
         elif scheme == "inverse_sum":

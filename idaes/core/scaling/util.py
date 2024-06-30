@@ -17,13 +17,37 @@ Author: Andrew Lee
 """
 
 from copy import deepcopy
+import math
 import sys
 
 import json
 
-from pyomo.environ import Block, Constraint, Suffix, value, Var
+from pyomo.environ import (
+    Binary,
+    Block,
+    Boolean,
+    Constraint,
+    NegativeIntegers,
+    NegativeReals,
+    NonNegativeIntegers,
+    NonNegativeReals,
+    NonPositiveIntegers,
+    NonPositiveReals,
+    Param,
+    PositiveIntegers,
+    PositiveReals,
+    Suffix,
+    value,
+    Var,
+)
 from pyomo.core.base.block import BlockData
+from pyomo.core.base.var import VarData
+from pyomo.core.base.param import ParamData
+from pyomo.core import expr as EXPR
+from pyomo.common.numeric_types import native_types
+from pyomo.core.base.units_container import _PyomoUnit
 
+from idaes.core.util.exceptions import BurntToast
 import idaes.logger as idaeslog
 
 
@@ -502,3 +526,305 @@ def report_scaling_factors(
             for n, i in cdict.items():
                 # Pad name to length
                 stream.write(f"{n + ' ' * (maxname - len(n))}{TAB}{i}\n")
+
+
+def get_nominal_value(component):
+    """
+    Get the signed nominal value for a VarData or ParamData component.
+
+    For fixed Vars and Params, the current value of the component will be returned.
+
+    For unfixed Vars, the nominal value is determined using the assigned scaling factor
+    and the sign determined based on the bounds and domain of the variable (defaulting to
+    positive). If no scaling factor is set, then the current value will be used if set,
+    otherwise the absolute nominal value will be equal to 1.
+
+    Args:
+        component - component to determine nominal value for
+
+    Returns:
+        signed float with nominal value
+
+    Raises:
+        TypeError if component is not instance of VarData or ParamData
+    """
+    # Determine if Var or Param
+    if isinstance(component, VarData):
+        if component.fixed:
+            # Nominal lvalue of a fixed Var is its value
+            return value(component)
+
+        # Get scaling factor for Var
+        sf = get_scaling_factor(component)
+        if sf is None:
+            # No scaling factor - see if Var has a value
+            if component.value is not None:
+                # If it has a value, use that as the nominal value
+                # As we are using the actual value, do not need to determine sign
+                return value(component)
+            else:
+                # Otherwise assign a nominal value of 1
+                sf = 1
+
+        # Try to determine expected sign of node
+        ub = component.ub
+        lb = component.lb
+        domain = component.domain
+
+        # To avoid NoneType errors, assign dummy values in place of None
+        if ub is None:
+            # No upper bound, take a positive value
+            ub = 1000
+        if lb is None:
+            # No lower bound, take a negative value
+            lb = -1000
+
+        if lb >= 0 or domain in [
+            NonNegativeReals,
+            PositiveReals,
+            PositiveIntegers,
+            NonNegativeIntegers,
+            Boolean,
+            Binary,
+        ]:
+            # Strictly positive
+            sign = 1
+        elif ub <= 0 or domain in [
+            NegativeReals,
+            NonPositiveReals,
+            NegativeIntegers,
+            NonPositiveIntegers,
+        ]:
+            # Strictly negative
+            sign = -1
+        else:
+            # Unbounded, see if there is a current value
+            try:
+                val = value(component)
+            except ValueError:
+                val = None
+
+            if val is not None and val < 0:
+                # Assigned negative value, assume value will remain negative
+                sign = -1
+            else:
+                # Either a positive value or no value, assume positive
+                sign = 1
+
+        return sign / sf
+
+    elif isinstance(component, ParamData):
+        # Nominal value of a parameter is always its value
+        return value(component)
+    else:
+        # Not a Var or Param - invalid component type
+        raise TypeError(
+            f"get_nominal_value - {component.name} is not an instance of a Var or Param."
+        )
+
+
+# TODO: Needs tests
+class NominalValueExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
+    """
+    Expression walker for collecting scaling factors in an expression and determining the
+    expected value of the expression using the scaling factors as nominal inputs.
+
+    By default, the get_nominal_value method is used to determine the nominal value for
+    all Vars and Params in the expression, however this can be changed by setting the
+    nominal_value_callback argument.
+
+    Returns a list of expected values for each additive term in the expression.
+
+    In order to properly assess the expected value of terms within functions, the sign
+    of each term is maintained throughout thus returned values may be negative. Functions
+    using this walker should handle these appropriately.
+    """
+
+    def __init__(self, nominal_value_callback=get_nominal_value):
+        """
+        Visitor class used to determine nominal values of all terms in an expression based on
+        scaling factors assigned to the associated variables. Do not use this class directly.
+
+        Args:
+            nominal_value_callback - method to use to get nominal value of root nodes.
+
+        Notes
+        -----
+        This class inherits from the :class:`StreamBasedExpressionVisitor` to implement
+        a walker that returns the nominal value corresponding to all additive terms in an
+        expression.
+        There are class attributes (dicts) that map the expression node type to the
+        particular method that should be called to return the nominal value of the node based
+        on the nominal value of its child arguments. This map is used in exitNode.
+        """
+        super().__init__()
+
+        self._nominal_value_callback = nominal_value_callback
+
+    def _get_magnitude_base_type(self, node):
+        try:
+            return [self._nominal_value_callback(node)]
+        except TypeError:
+            # Not a Var or Param - something went wrong
+            raise BurntToast(
+                "NominalValueExtractionVisitor found root node that was not a Var or Param. "
+                "This should never happen - please contact the developers with this bug."
+            )
+
+    def _get_nominal_value_for_sum_subexpression(self, child_nominal_values):
+        return sum(i for i in child_nominal_values)
+
+    def _get_nominal_value_for_sum(self, node, child_nominal_values):
+        # For sums, collect all child values into a list
+        sf = []
+        for i in child_nominal_values:
+            for j in i:
+                sf.append(j)
+        return sf
+
+    def _get_nominal_value_for_product(self, node, child_nominal_values):
+        assert len(child_nominal_values) == 2
+
+        mag = []
+        for i in child_nominal_values[0]:
+            for j in child_nominal_values[1]:
+                mag.append(i * j)
+        return mag
+
+    def _get_nominal_value_for_division(self, node, child_nominal_values):
+        assert len(child_nominal_values) == 2
+
+        numerator = self._get_nominal_value_for_sum_subexpression(
+            child_nominal_values[0]
+        )
+        denominator = self._get_nominal_value_for_sum_subexpression(
+            child_nominal_values[1]
+        )
+        if denominator == 0:
+            # Assign a nominal value of 1 so that we can continue
+            denominator = 1
+            # Log a warning for the user
+            _log.debug(
+                "Nominal value of 0 found in denominator of division expression. "
+                "Assigning a value of 1. You should check you scaling factors and models to "
+                "ensure there are no values of 0 that can appear in these functions."
+            )
+        return [numerator / denominator]
+
+    def _get_nominal_value_for_power(self, node, child_nominal_values):
+        assert len(child_nominal_values) == 2
+
+        # Use the absolute value of the base term to avoid possible complex numbers
+        base = abs(
+            self._get_nominal_value_for_sum_subexpression(child_nominal_values[0])
+        )
+        exponent = self._get_nominal_value_for_sum_subexpression(
+            child_nominal_values[1]
+        )
+
+        return [base**exponent]
+
+    def _get_nominal_value_single_child(self, node, child_nominal_values):
+        assert len(child_nominal_values) == 1
+        return child_nominal_values[0]
+
+    def _get_nominal_value_abs(self, node, child_nominal_values):
+        assert len(child_nominal_values) == 1
+        return [abs(i) for i in child_nominal_values[0]]
+
+    def _get_nominal_value_negation(self, node, child_nominal_values):
+        assert len(child_nominal_values) == 1
+        return [-i for i in child_nominal_values[0]]
+
+    def _get_nominal_value_for_unary_function(self, node, child_nominal_values):
+        assert len(child_nominal_values) == 1
+        func_name = node.getname()
+        # TODO: Some of these need the absolute value of the nominal value (e.g. sqrt)
+        func_nominal = self._get_nominal_value_for_sum_subexpression(
+            child_nominal_values[0]
+        )
+        func = getattr(math, func_name)
+        try:
+            return [func(func_nominal)]
+        except ValueError:
+            raise ValueError(
+                f"Evaluation error occurred when getting nominal value in {func_name} "
+                f"expression with input {func_nominal}. You should check you scaling factors "
+                f"and model to address any numerical issues or scale this constraint manually."
+            )
+
+    def _get_nominal_value_expr_if(self, node, child_nominal_values):
+        assert len(child_nominal_values) == 3
+        return child_nominal_values[1] + child_nominal_values[2]
+
+    def _get_nominal_value_external_function(self, node, child_nominal_values):
+        # First, need to get expected magnitudes of input terms, which may be sub-expressions
+        input_mag = [
+            self._get_nominal_value_for_sum_subexpression(i)
+            for i in child_nominal_values
+        ]
+
+        # Next, create a copy of the external function with expected magnitudes as inputs
+        newfunc = node.create_node_with_local_data(input_mag)
+
+        # Evaluate new function and return the absolute value
+        return [value(newfunc)]
+
+    node_type_method_map = {
+        EXPR.EqualityExpression: _get_nominal_value_for_sum,
+        EXPR.InequalityExpression: _get_nominal_value_for_sum,
+        EXPR.RangedExpression: _get_nominal_value_for_sum,
+        EXPR.SumExpression: _get_nominal_value_for_sum,
+        EXPR.NPV_SumExpression: _get_nominal_value_for_sum,
+        EXPR.ProductExpression: _get_nominal_value_for_product,
+        EXPR.MonomialTermExpression: _get_nominal_value_for_product,
+        EXPR.NPV_ProductExpression: _get_nominal_value_for_product,
+        EXPR.DivisionExpression: _get_nominal_value_for_division,
+        EXPR.NPV_DivisionExpression: _get_nominal_value_for_division,
+        EXPR.PowExpression: _get_nominal_value_for_power,
+        EXPR.NPV_PowExpression: _get_nominal_value_for_power,
+        EXPR.NegationExpression: _get_nominal_value_negation,
+        EXPR.NPV_NegationExpression: _get_nominal_value_negation,
+        EXPR.AbsExpression: _get_nominal_value_abs,
+        EXPR.NPV_AbsExpression: _get_nominal_value_abs,
+        EXPR.UnaryFunctionExpression: _get_nominal_value_for_unary_function,
+        EXPR.NPV_UnaryFunctionExpression: _get_nominal_value_for_unary_function,
+        EXPR.Expr_ifExpression: _get_nominal_value_expr_if,
+        EXPR.ExternalFunctionExpression: _get_nominal_value_external_function,
+        EXPR.NPV_ExternalFunctionExpression: _get_nominal_value_external_function,
+        EXPR.LinearExpression: _get_nominal_value_for_sum,
+    }
+
+    def exitNode(self, node, data):
+        """Callback for :class:`pyomo.core.current.StreamBasedExpressionVisitor`. This
+        method is called when moving back up the tree in a depth first search."""
+
+        # first check if the node is a leaf
+        nodetype = type(node)
+
+        if nodetype in native_types:
+            return [node]
+
+        node_func = self.node_type_method_map.get(nodetype, None)
+        if node_func is not None:
+            return node_func(self, node, data)
+
+        elif not node.is_expression_type():
+            # this is a leaf, but not a native type
+            if nodetype is _PyomoUnit:
+                return [1]
+            else:
+                return self._get_magnitude_base_type(node)
+                # might want to add other common types here
+
+        # not a leaf - check if it is a named expression
+        if (
+            hasattr(node, "is_named_expression_type")
+            and node.is_named_expression_type()
+        ):
+            return self._get_nominal_value_single_child(node, data)
+
+        raise TypeError(
+            f"An unhandled expression node type: {str(nodetype)} was encountered while "
+            f"retrieving the scaling factor of expression {str(node)}"
+        )
