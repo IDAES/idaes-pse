@@ -1408,6 +1408,8 @@ class ParametrizedBidder(AbstractBidder):
     def record_bids(self, bids: dict, model, date: str, hour: int, market):
         """
         This function records the bids and the details in the underlying bidding model.
+        The detailed bids of each time step at day-ahead and real-time planning horizon will
+        be recorded at bidder_detail.csv
 
         Arguments:
             bids: dictionary,
@@ -1430,17 +1432,11 @@ class ParametrizedBidder(AbstractBidder):
         # record bids
         self._record_bids(bids, date, hour, Market=market)
 
-        # record the details of bidding model
-        for i in model.SCENARIOS:
-            self.bidding_model_object.record_results(
-                model.fs[i], date=date, hour=hour, Scenario=i, Market=market
-            )
-
         return
 
     def _record_bids(self, bids: dict, date: str, hour: int, **kwargs):
         """
-        Record the bis of each time perid.
+        Record the bis of each time period.
 
         Arguments:
             bids: dictionary,
