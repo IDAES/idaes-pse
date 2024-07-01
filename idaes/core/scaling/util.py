@@ -551,7 +551,7 @@ def get_nominal_value(component):
     # Determine if Var or Param
     if isinstance(component, VarData):
         if component.fixed:
-            # Nominal lvalue of a fixed Var is its value
+            # Nominal value of a fixed Var is its value
             return value(component)
 
         # Get scaling factor for Var
@@ -599,17 +599,13 @@ def get_nominal_value(component):
             sign = -1
         else:
             # Unbounded, see if there is a current value
-            try:
+            # Assume positive until proven otherwise
+            sign = 1
+            if component.value is not None:
                 val = value(component)
-            except ValueError:
-                val = None
-
-            if val is not None and val < 0:
-                # Assigned negative value, assume value will remain negative
-                sign = -1
-            else:
-                # Either a positive value or no value, assume positive
-                sign = 1
+                if val < 0:
+                    # Assigned negative value, assume value will remain negative
+                    sign = -1
 
         return sign / sf
 
@@ -623,7 +619,6 @@ def get_nominal_value(component):
         )
 
 
-# TODO: Needs tests
 class NominalValueExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
     """
     Expression walker for collecting scaling factors in an expression and determining the

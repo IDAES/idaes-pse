@@ -49,7 +49,7 @@ from idaes.core.initialization import (
     InitializationStatus,
 )
 from idaes.core.util import DiagnosticsToolbox
-from idaes.core.scaling import AutoScaler
+from idaes.core.scaling import AutoScaler, CustomScalerBase, set_scaling_factor
 from idaes.core.util.scaling import (
     jacobian_cond,
     extreme_jacobian_rows,
@@ -553,6 +553,18 @@ class TestMethane(object):
         }
 
 
+# TODO: Replace once scaling deployed to property package
+class PropertyScaler(CustomScalerBase):
+    def variable_scaling_routine(self, model, overwrite):
+        pass
+
+    def constraint_scaling_routine(self, model, overwrite):
+        for c in model.component_data_objects(ctype=Constraint, descend_into=True):
+            self.scale_constraint_by_nominal_value(
+                c, scheme="inverse_sum", overwrite=overwrite
+            )
+
+
 class TestInitializers:
     @pytest.fixture
     def model(self):
@@ -582,25 +594,62 @@ class TestInitializers:
         m.fs.unit.outlet.temperature[0].fix(2844.38)
         m.fs.unit.deltaP.fix(0)
 
+        # Apply scaling - Best guesses for unit model and outlet state conditions
+        set_scaling_factor(m.fs.unit.control_volume.heat[0.0], 1e-6)
+
+        set_scaling_factor(m.fs.unit.control_volume.properties_out[0.0].flow_mol, 1e-2)
+        set_scaling_factor(
+            m.fs.unit.control_volume.properties_out[0.0].flow_mol_phase, 1e-2
+        )  # Only 1 phase, so we "know" this
+        # N2 is inert, so will be order 0.1, assume CH4 and H2 are near-totally consumed, assume most O2 consumed
+        # Assume moderate amounts of CO2 and H2O, small amounts of CO, trace NH3 NH3
+        set_scaling_factor(
+            m.fs.unit.control_volume.properties_out[0.0].mole_frac_comp["H2"], 1e4
+        )
+        set_scaling_factor(
+            m.fs.unit.control_volume.properties_out[0.0].mole_frac_comp["N2"], 10
+        )
+        set_scaling_factor(
+            m.fs.unit.control_volume.properties_out[0.0].mole_frac_comp["O2"], 1e2
+        )
+        set_scaling_factor(
+            m.fs.unit.control_volume.properties_out[0.0].mole_frac_comp["CO2"], 10
+        )
+        set_scaling_factor(
+            m.fs.unit.control_volume.properties_out[0.0].mole_frac_comp["CH4"], 1e4
+        )
+        set_scaling_factor(
+            m.fs.unit.control_volume.properties_out[0.0].mole_frac_comp["CO"], 1e3
+        )
+        set_scaling_factor(
+            m.fs.unit.control_volume.properties_out[0.0].mole_frac_comp["H2O"], 10
+        )
+        set_scaling_factor(
+            m.fs.unit.control_volume.properties_out[0.0].mole_frac_comp["NH3"], 1e4
+        )
+        set_scaling_factor(
+            m.fs.unit.control_volume.properties_out[0.0].temperature, 1e-3
+        )
+        set_scaling_factor(m.fs.unit.control_volume.properties_out[0.0].pressure, 1e-5)
+
+        scaler = GibbsReactorScaler()
+        scaler.scale_model(
+            m.fs.unit,
+            submodel_scalers={
+                "control_volume.properties_in": PropertyScaler,
+                "control_volume.properties_out": PropertyScaler,
+            },
+        )
+
         return m
 
     @pytest.mark.component
     def test_general_hierarchical(self, model):
-        initializer = SingleControlVolumeUnitInitializer()
+        initializer = SingleControlVolumeUnitInitializer(
+            writer_config={"scale_model": True}
+        )
         initializer.initialize(
             model.fs.unit,
-            initial_guesses={
-                "control_volume.properties_out[0].pressure": 101325.0,
-                "control_volume.properties_out[0].flow_mol": 251.05,
-                "control_volume.properties_out[0].mole_frac_comp[CH4]": 1e-5,
-                "control_volume.properties_out[0].mole_frac_comp[CO]": 0.0916,
-                "control_volume.properties_out[0].mole_frac_comp[CO2]": 0.0281,
-                "control_volume.properties_out[0].mole_frac_comp[H2]": 0.1155,
-                "control_volume.properties_out[0].mole_frac_comp[H2O]": 0.1633,
-                "control_volume.properties_out[0].mole_frac_comp[N2]": 0.59478,
-                "control_volume.properties_out[0].mole_frac_comp[NH3]": 1e-5,
-                "control_volume.properties_out[0].mole_frac_comp[O2]": 0.0067,
-            },
         )
 
         assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
@@ -653,7 +702,7 @@ class TestInitializers:
     def test_block_triangularization(self, model):
         initializer = BlockTriangularizationInitializer(
             constraint_tolerance=2e-5,
-            block_solver_writer_config={"linear_presolve": False},
+            block_solver_writer_config={"linear_presolve": False, "scale_model": True},
         )
         initializer.initialize(
             model.fs.unit,
