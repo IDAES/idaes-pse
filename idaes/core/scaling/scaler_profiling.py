@@ -109,7 +109,7 @@ class ScalingProfiler:
 
         stats = self._solved_perturbed_state(m)
 
-        return {"condition_numer": cond, **stats}
+        return {"condition_number": cond, **stats}
 
     def run_case(self, scaling_method, **kwargs):
         auto = kwargs.pop("auto", False)
@@ -158,7 +158,7 @@ class ScalingProfiler:
         stats = self._solved_perturbed_state(m)
 
         results = {
-            "Unscaled": {"Manual": {"condition_numer": unscaled, **stats}},
+            "Unscaled": {"Manual": {"condition_number": unscaled, **stats}},
         }
 
         # Run other cases

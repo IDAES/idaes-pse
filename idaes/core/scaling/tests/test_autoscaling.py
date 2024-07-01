@@ -212,6 +212,18 @@ class TestConstraintsByNorm:
         assert len(model.b[1].scaling_factor) == 1
 
     @pytest.mark.unit
+    def test_block_data_L2_block_data(self, model):
+        scaler = AutoScaler()
+
+        scaler.constraints_by_jacobian_norm(model.b)
+
+        for bd in model.b.values():
+            assert bd.scaling_factor[bd.c3] == pytest.approx(
+                1 / sqrt(20**2 + 1**2), rel=1e-8
+            )
+            assert len(bd.scaling_factor) == 1
+
+    @pytest.mark.unit
     def test_nested_blocks_L2(self, model):
         scaler = AutoScaler()
 

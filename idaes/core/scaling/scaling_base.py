@@ -31,8 +31,6 @@ import idaes.logger as idaeslog
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
-# TODO: Test logging for max and min limiters
-# TODO: Move testing of common methods from autoscaler tests
 # TODO: Tests for new common methods
 
 

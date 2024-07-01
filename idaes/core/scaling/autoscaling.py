@@ -138,16 +138,15 @@ class AutoScaler(ScalerBase):
 
         elif isinstance(blk_or_cons, Block):
             # Indexed Block
-            if descend_into:
-                # Scale all constraints, so pass con_list=None
-                con_list = None
-            else:
-                # Otherwise, get all constraints on block datas
-                con_list = []
-                for b in blk_or_cons.values():
-                    for c in b.component_data_objects(Constraint, descend_into=False):
-                        con_list.append(c)
-            jblock = blk_or_cons
+            # Underlying tools do not work for Indexed blocks, so
+            # use parent block instead and collect constraints of interest
+            con_list = []
+            for b in blk_or_cons.values():
+                for c in b.component_data_objects(
+                    Constraint, descend_into=descend_into
+                ):
+                    con_list.append(c)
+            jblock = blk_or_cons.parent_block()
 
         elif isinstance(blk_or_cons, ConstraintData):
             # Scalar Constraint or element of Indexed Constraint
