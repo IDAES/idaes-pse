@@ -71,86 +71,36 @@ class TestNominalValueExtractionVisitor:
 
     @pytest.mark.unit
     def test_scalar_param_w_scale(self, m):
-        set_scaling_factor(m.scalar_param, 1 / 12)
+        m.scalar_param = pyo.Param(default=12, mutable=True)
+        set_scaling_factor(m.scalar_param, 1 / 10)
         assert NominalValueExtractionVisitor().walk_expression(expr=m.scalar_param) == [
             12
         ]
 
     @pytest.mark.unit
-    def test_indexed_param_no_scale(self, m):
-        m.indexed_param = pyo.Param(m.set, initialize=1, mutable=True)
-        assert NominalValueExtractionVisitor().walk_expression(
-            expr=m.indexed_param["a"]
-        ) == [1]
-        assert NominalValueExtractionVisitor().walk_expression(
-            expr=m.indexed_param["b"]
-        ) == [1]
-        assert NominalValueExtractionVisitor().walk_expression(
-            expr=m.indexed_param["c"]
-        ) == [1]
-
-    @pytest.mark.unit
     def test_indexed_param_w_scale(self, m):
+        m.indexed_param = pyo.Param(m.set, initialize=1, mutable=True)
         set_scaling_factor(m.indexed_param["a"], 1 / 13)
         set_scaling_factor(m.indexed_param["b"], 1 / 14)
         set_scaling_factor(m.indexed_param["c"], 1 / 15)
 
         assert NominalValueExtractionVisitor().walk_expression(
             expr=m.indexed_param["a"]
-        ) == [13]
+        ) == [1]
         assert NominalValueExtractionVisitor().walk_expression(
             expr=m.indexed_param["b"]
-        ) == [14]
+        ) == [1]
         assert NominalValueExtractionVisitor().walk_expression(
             expr=m.indexed_param["c"]
-        ) == [15]
-
-    @pytest.mark.unit
-    def test_param_neg_domain(self):
-        m = pyo.ConcreteModel()
-        m.param = pyo.Param(mutable=True, domain=pyo.NegativeReals)
-
-        # Sign of nominal value should be opposite of scaling factor
-        set_scaling_factor(m.param, 1 / 4)
-        # Expect nominal value to be negative
-        assert NominalValueExtractionVisitor().walk_expression(expr=m.param) == [-4]
-
-        set_scaling_factor(m.param, -1 / 4)
-        # Expect nominal value to be positive
-        assert NominalValueExtractionVisitor().walk_expression(expr=m.param) == [4]
-
-    @pytest.mark.unit
-    def test_param_pos_domain(self):
-        m = pyo.ConcreteModel()
-        m.param = pyo.Param(mutable=True, domain=pyo.PositiveReals)
-
-        # Sign of nominal value should be same as scaling factor
-        set_scaling_factor(m.param, 1 / 4)
-        # Expect nominal value to be negative
-        assert NominalValueExtractionVisitor().walk_expression(expr=m.param) == [4]
-
-        set_scaling_factor(m.param, -1 / 4)
-        # Expect nominal value to be positive
-        assert NominalValueExtractionVisitor().walk_expression(expr=m.param) == [-4]
-
-    @pytest.mark.unit
-    def test_param_neg_value(self):
-        m = pyo.ConcreteModel()
-        m.param = pyo.Param(initialize=-1, mutable=True, domain=pyo.Reals)
-
-        # Sign of nominal value should be opposite of scaling factor
-        set_scaling_factor(m.param, 1 / 4)
-        # Expect nominal value to be negative
-        assert NominalValueExtractionVisitor().walk_expression(expr=m.param) == [-4]
-
-        set_scaling_factor(m.param, -1 / 4)
-        # Expect nominal value to be positive
-        assert NominalValueExtractionVisitor().walk_expression(expr=m.param) == [4]
+        ) == [1]
 
     @pytest.mark.unit
     def test_scalar_var_no_scale(self, m):
-        m.scalar_var = pyo.Var(initialize=1)
-        assert NominalValueExtractionVisitor().walk_expression(expr=m.scalar_var) == [1]
+        m.scalar_var = pyo.Var(initialize=10)
+        # Should use current value
+        assert NominalValueExtractionVisitor().walk_expression(expr=m.scalar_var) == [
+            10
+        ]
 
     @pytest.mark.unit
     def test_scalar_var_w_scale(self, m):
@@ -163,113 +113,83 @@ class TestNominalValueExtractionVisitor:
     def test_var_neg_bounds(self):
         m = pyo.ConcreteModel()
         m.var = pyo.Var(bounds=(-1000, 0))
-
-        # Sign of nominal value should be opposite of scaling factor
         set_scaling_factor(m.var, 1 / 4)
+
         # Expect nominal value to be negative
         assert NominalValueExtractionVisitor().walk_expression(expr=m.var) == [-4]
-
-        set_scaling_factor(m.var, -1 / 4)
-        # Expect nominal value to be positive
-        assert NominalValueExtractionVisitor().walk_expression(expr=m.var) == [4]
 
     @pytest.mark.unit
     def test_var_neg_upper_bound(self):
         m = pyo.ConcreteModel()
         m.var = pyo.Var(bounds=(None, -2000))
-
-        # Sign of nominal value should be opposite of scaling factor
         set_scaling_factor(m.var, 1 / 4)
+
         # Expect nominal value to be negative
         assert NominalValueExtractionVisitor().walk_expression(expr=m.var) == [-4]
-
-        set_scaling_factor(m.var, -1 / 4)
-        # Expect nominal value to be positive
-        assert NominalValueExtractionVisitor().walk_expression(expr=m.var) == [4]
 
     @pytest.mark.unit
     def test_var_neg_domain(self):
         m = pyo.ConcreteModel()
         m.var = pyo.Var(domain=pyo.NegativeReals)
 
-        # Sign of nominal value should be opposite of scaling factor
         set_scaling_factor(m.var, 1 / 4)
         # Expect nominal value to be negative
         assert NominalValueExtractionVisitor().walk_expression(expr=m.var) == [-4]
-
-        set_scaling_factor(m.var, -1 / 4)
-        # Expect nominal value to be positive
-        assert NominalValueExtractionVisitor().walk_expression(expr=m.var) == [4]
 
     @pytest.mark.unit
     def test_var_neg_value(self):
         m = pyo.ConcreteModel()
         m.var = pyo.Var(initialize=-1)
-
-        # Sign of nominal value should be opposite of scaling factor
         set_scaling_factor(m.var, 1 / 4)
+
         # Expect nominal value to be negative
         assert NominalValueExtractionVisitor().walk_expression(expr=m.var) == [-4]
 
-        set_scaling_factor(m.var, -1 / 4)
-        # Expect nominal value to be positive
-        assert NominalValueExtractionVisitor().walk_expression(expr=m.var) == [4]
+    @pytest.mark.unit
+    def test_var_fixed_value(self):
+        m = pyo.ConcreteModel()
+        m.var = pyo.Var(initialize=-1)
+        m.var.fix()
+        set_scaling_factor(m.var, 1 / 4)
+
+        # Nominal value should be value
+        assert NominalValueExtractionVisitor().walk_expression(expr=m.var) == [-1]
 
     @pytest.mark.unit
     def test_var_pos_bounds(self):
         m = pyo.ConcreteModel()
         m.var = pyo.Var(bounds=(0, 1000))
-
-        # Sign of nominal value should be same as scaling factor
         set_scaling_factor(m.var, 1 / 4)
-        # Expect nominal value to be negative
-        assert NominalValueExtractionVisitor().walk_expression(expr=m.var) == [4]
 
-        set_scaling_factor(m.var, -1 / 4)
         # Expect nominal value to be positive
-        assert NominalValueExtractionVisitor().walk_expression(expr=m.var) == [-4]
+        assert NominalValueExtractionVisitor().walk_expression(expr=m.var) == [4]
 
     @pytest.mark.unit
     def test_var_pos_lower_bound(self):
         m = pyo.ConcreteModel()
         m.var = pyo.Var(bounds=(1000, None))
-
-        # Sign of nominal value should be same as scaling factor
         set_scaling_factor(m.var, 1 / 4)
-        # Expect nominal value to be negative
-        assert NominalValueExtractionVisitor().walk_expression(expr=m.var) == [4]
 
-        set_scaling_factor(m.var, -1 / 4)
         # Expect nominal value to be positive
-        assert NominalValueExtractionVisitor().walk_expression(expr=m.var) == [-4]
+        assert NominalValueExtractionVisitor().walk_expression(expr=m.var) == [4]
 
     @pytest.mark.unit
     def test_var_pos_domain(self):
         m = pyo.ConcreteModel()
         m.var = pyo.Var(domain=pyo.PositiveReals)
-
-        # Sign of nominal value should be same as scaling factor
         set_scaling_factor(m.var, 1 / 4)
-        # Expect nominal value to be negative
-        assert NominalValueExtractionVisitor().walk_expression(expr=m.var) == [4]
 
-        set_scaling_factor(m.var, -1 / 4)
         # Expect nominal value to be positive
-        assert NominalValueExtractionVisitor().walk_expression(expr=m.var) == [-4]
+        assert NominalValueExtractionVisitor().walk_expression(expr=m.var) == [4]
 
     @pytest.mark.unit
     def test_var_pos_value(self):
         m = pyo.ConcreteModel()
         m.var = pyo.Var(initialize=1)
-
-        # Sign of nominal value should be same as scaling factor
         set_scaling_factor(m.var, 1 / 4)
-        # Expect nominal value to be negative
-        assert NominalValueExtractionVisitor().walk_expression(expr=m.var) == [4]
 
-        set_scaling_factor(m.var, -1 / 4)
         # Expect nominal value to be positive
-        assert NominalValueExtractionVisitor().walk_expression(expr=m.var) == [-4]
+        assert NominalValueExtractionVisitor().walk_expression(expr=m.var) == [4]
 
     @pytest.mark.unit
     def test_indexed_var_no_scale(self, m):
@@ -299,6 +219,26 @@ class TestNominalValueExtractionVisitor:
         assert NominalValueExtractionVisitor().walk_expression(
             expr=m.indexed_var["c"]
         ) == [24]
+
+    @pytest.mark.unit
+    def test_indexed_var_w_scale_partial_fixed(self, m):
+        m.indexed_var["a"].fix(20)
+        set_scaling_factor(m.indexed_var["a"], 1 / 22)
+        set_scaling_factor(m.indexed_var["b"], 1 / 23)
+        set_scaling_factor(m.indexed_var["c"], 1 / 24)
+
+        assert NominalValueExtractionVisitor().walk_expression(
+            expr=m.indexed_var["a"]
+        ) == [20]
+        assert NominalValueExtractionVisitor().walk_expression(
+            expr=m.indexed_var["b"]
+        ) == [23]
+        assert NominalValueExtractionVisitor().walk_expression(
+            expr=m.indexed_var["c"]
+        ) == [24]
+
+        # Clean up for future tests
+        m.indexed_var["a"].unfix()
 
     @pytest.mark.unit
     def test_equality_expr(self, m):
@@ -372,8 +312,10 @@ class TestNominalValueExtractionVisitor:
 
     @pytest.mark.unit
     def test_division_expr_error(self, m, caplog):
-        caplog.set_level(logging.DEBUG, logger="idaes.core.util.scaling")
-        NominalValueExtractionVisitor().walk_expression(expr=1 / (m.scalar_var - 21))
+        caplog.set_level(logging.DEBUG, logger="idaes.core.scaling")
+        assert NominalValueExtractionVisitor().walk_expression(
+            expr=1 / (m.scalar_var - 21)
+        ) == [1]
 
         expected = "Nominal value of 0 found in denominator of division expression. "
         "Assigning a value of 1. You should check you scaling factors and models to "
@@ -623,14 +565,13 @@ class TestNominalValueExtractionVisitor:
 
     @pytest.mark.unit
     def test_asin_sum_expr(self, m):
-        set_scaling_factor(m.scalar_param, 2)
+        m.scalar_param.set_value(0.5)
         assert NominalValueExtractionVisitor().walk_expression(
             expr=pyo.asin(0.5 + m.scalar_param)
         ) == [pytest.approx(math.asin(1), rel=1e-12)]
 
     @pytest.mark.unit
     def test_asin_sum_expr_negation(self, m):
-        set_scaling_factor(m.scalar_param, 2)
         assert NominalValueExtractionVisitor().walk_expression(
             expr=pyo.asin(0.5 - m.scalar_param)
         ) == [pytest.approx(math.asin(0), rel=1e-12)]
