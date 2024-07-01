@@ -1490,7 +1490,7 @@ class ParametrizedBidder(AbstractBidder):
             None
         """
 
-        print("")
+        print("\n")
         print("Saving bidding results to disk...")
         pd.concat(self.bids_result_list).to_csv(
             os.path.join(path, "bidder_detail.csv"), index=False
