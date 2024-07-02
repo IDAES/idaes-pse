@@ -54,8 +54,8 @@ class ScalingProfiler:
         defined by the AutoScaler and CustomScalerBase classes.
 
         **NOTE** methods from the AutoScaler class are applied to Pyomo Blocks, whilst those from
-        CustomScalerBase are applied ot individual ConstraintDatas. The profiling tool assumes that
-        methods will be applied ot ConstraintDatas unless the `block_based` keyword argument is set to True
+        CustomScalerBase are applied to individual ConstraintDatas. The profiling tool assumes that
+        methods will be applied to ConstraintDatas unless the `block_based` keyword argument is set to True
         for the scaling method.
 
         Args:
