@@ -33,7 +33,6 @@ from pyomo.environ import (
     NonNegativeReals,
     NonPositiveIntegers,
     NonPositiveReals,
-    Param,
     PositiveIntegers,
     PositiveReals,
     Suffix,
