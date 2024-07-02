@@ -231,8 +231,8 @@ class ScalingProfiler:
         if not check_optimal_termination(status_obj):
             solved = False
 
-        iters, iters_in_restoration, iters_w_regularization, time = (
-            self._parse_ipopt_output(tempfile)
+        iters, iters_in_restoration, iters_w_regularization = self._parse_ipopt_output(
+            tempfile
         )
 
         return {
@@ -260,7 +260,6 @@ class ScalingProfiler:
         iters = 0
         iters_in_restoration = 0
         iters_w_regularization = 0
-        time = 0
         # parse the output file to get the iteration count, solver times, etc.
         with open(ipopt_file, "r") as f:
             parseline = False
@@ -286,15 +285,5 @@ class ScalingProfiler:
                     except IndexError:
                         # Blank line at end of iteration list, so assume we hit this
                         pass
-                elif line.startswith(
-                    "Total CPU secs in IPOPT (w/o function evaluations)   ="
-                ):
-                    tokens = line.split()
-                    time += float(tokens[9])
-                elif line.startswith(
-                    "Total CPU secs in NLP function evaluations           ="
-                ):
-                    tokens = line.split()
-                    time += float(tokens[8])
 
-        return iters, iters_in_restoration, iters_w_regularization, time
+        return iters, iters_in_restoration, iters_w_regularization
