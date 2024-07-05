@@ -1482,7 +1482,7 @@ class TestIronOC_conservation_with_reaction(object):
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.component
+    @pytest.mark.integration
     def test_conservation(self, iron_oc):
         # Calculate scaling factors
         iscale.calculate_scaling_factors(iron_oc)

@@ -36,8 +36,8 @@ from idaes.models.properties.modular_properties.base.utility import (
     get_method,
     GenericPropertyPackageError,
 )
-from idaes.models.properties.modular_properties.phase_equil.bubble_dew import (
-    _valid_VL_component_list,
+from idaes.models.properties.modular_properties.base.utility import (
+    identify_VL_component_list,
 )
 from idaes.models.properties.modular_properties.phase_equil.henry import (
     HenryType,
@@ -420,7 +420,7 @@ def state_initialization(b):
                 henry_comps,
                 l_only_comps,
                 v_only_comps,
-            ) = _valid_VL_component_list(b, pp)
+            ) = identify_VL_component_list(b, pp)
             pp_VLE = pp
 
     if init_VLE:

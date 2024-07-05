@@ -45,6 +45,9 @@ from idaes.core import (
     PhaseType as PT,
 )
 from idaes.core.util.exceptions import ConfigurationError, PropertyPackageError
+from idaes.models.properties.modular_properties.phase_equil.henry import HenryType
+from idaes.models.properties.modular_properties.eos.ceos import Cubic, CubicType
+from idaes.models.properties.modular_properties.state_definitions import FTPx
 from idaes.core.base.property_meta import UnitSet
 from idaes.core.initialization import BlockTriangularizationInitializer
 
@@ -1970,6 +1973,57 @@ class TestCriticalProps:
             "Component declarations.",
         ):
             _initialize_critical_props(m.props[1])
+
+
+# Invalid property configuration to trigger configuration error
+configuration = {
+    # Specifying components
+    "components": {
+        "H2O": {
+            "type": Component,
+            "parameter_data": {
+                "pressure_crit": (220.6e5, pyunits.Pa),
+                "temperature_crit": (647, pyunits.K),
+                "omega": 0.344,
+            },
+        },
+    },
+    # Specifying phases
+    "phases": {
+        "Liq": {
+            "type": LiquidPhase,
+            "equation_of_state": Cubic,
+            "equation_of_state_options": {"type": CubicType.PR},
+        },
+        "Vap": {
+            "type": VaporPhase,
+            "equation_of_state": Cubic,
+            "equation_of_state_options": {"type": CubicType.PR},
+        },
+    },
+    # Set base units of measurement
+    "base_units": {
+        "time": pyunits.s,
+        "length": pyunits.m,
+        "mass": pyunits.kg,
+        "amount": pyunits.mol,
+        "temperature": pyunits.K,
+    },
+    # Specifying state definition
+    "state_definition": FTPx,
+    "state_bounds": {
+        "flow_mol": (0, 100, 1000, pyunits.mol / pyunits.s),
+        "temperature": (273.15, 300, 500, pyunits.K),
+        "pressure": (5e4, 1e5, 1e6, pyunits.Pa),
+    },
+    "pressure_ref": (101325, pyunits.Pa),
+    "temperature_ref": (298.15, pyunits.K),
+    "parameter_data": {
+        "PR_kappa": {
+            ("foo", "bar"): 0.000,
+        }
+    },
+}
 
 
 @pytest.mark.integration
