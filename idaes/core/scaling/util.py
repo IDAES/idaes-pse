@@ -670,15 +670,13 @@ class NominalValueExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
 
     def _get_nominal_value_for_sum(self, node, child_nominal_values):
         # For sums, collect all child values into a list
-        sf = []
+        mag = []
         for i in child_nominal_values:
             for j in i:
-                sf.append(j)
-        return sf
+                mag.append(j)
+        return mag
 
     def _get_nominal_value_for_product(self, node, child_nominal_values):
-        assert len(child_nominal_values) == 2
-
         mag = []
         for i in child_nominal_values[0]:
             for j in child_nominal_values[1]:
@@ -686,8 +684,6 @@ class NominalValueExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
         return mag
 
     def _get_nominal_value_for_division(self, node, child_nominal_values):
-        assert len(child_nominal_values) == 2
-
         numerator = self._get_nominal_value_for_sum_subexpression(
             child_nominal_values[0]
         )
@@ -706,8 +702,6 @@ class NominalValueExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
         return [numerator / denominator]
 
     def _get_nominal_value_for_power(self, node, child_nominal_values):
-        assert len(child_nominal_values) == 2
-
         # Use the absolute value of the base term to avoid possible complex numbers
         base = abs(
             self._get_nominal_value_for_sum_subexpression(child_nominal_values[0])
@@ -719,21 +713,16 @@ class NominalValueExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
         return [base**exponent]
 
     def _get_nominal_value_single_child(self, node, child_nominal_values):
-        assert len(child_nominal_values) == 1
         return child_nominal_values[0]
 
     def _get_nominal_value_abs(self, node, child_nominal_values):
-        assert len(child_nominal_values) == 1
         return [abs(i) for i in child_nominal_values[0]]
 
     def _get_nominal_value_negation(self, node, child_nominal_values):
-        assert len(child_nominal_values) == 1
         return [-i for i in child_nominal_values[0]]
 
     def _get_nominal_value_for_unary_function(self, node, child_nominal_values):
-        assert len(child_nominal_values) == 1
         func_name = node.getname()
-        # TODO: Some of these need the absolute value of the nominal value (e.g. sqrt)
         func_nominal = self._get_nominal_value_for_sum_subexpression(
             child_nominal_values[0]
         )
@@ -748,7 +737,6 @@ class NominalValueExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
             )
 
     def _get_nominal_value_expr_if(self, node, child_nominal_values):
-        assert len(child_nominal_values) == 3
         return child_nominal_values[1] + child_nominal_values[2]
 
     def _get_nominal_value_external_function(self, node, child_nominal_values):
@@ -820,5 +808,5 @@ class NominalValueExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
 
         raise TypeError(
             f"An unhandled expression node type: {str(nodetype)} was encountered while "
-            f"retrieving the scaling factor of expression {str(node)}"
+            f"retrieving the nominal value of expression {str(node)}"
         )
