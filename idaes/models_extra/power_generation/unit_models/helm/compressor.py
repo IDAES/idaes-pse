@@ -180,7 +180,7 @@ class HelmIsentropicCompressorData(BalanceBlockData):
                     (self.control_volume.deltaP[t] + self.inlet.pressure[t])
                     / self.inlet.pressure[t]
                 )
-        # Fix the variables we base the initializtion on and free the rest.
+        # Fix the variables we base the initialization on and free the rest.
         # This requires good values to be provided for pressure, efficiency,
         # and inlet conditions, but it is simple and reliable.
         self.inlet.fix()

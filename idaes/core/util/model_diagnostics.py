@@ -3167,7 +3167,7 @@ CACONFIG.declare(
 
 class IpoptConvergenceAnalysis:
     """
-    Tool to performa a parameter sweep of model checking for numerical issues and
+    Tool to perform a parameter sweep of model checking for numerical issues and
     convergence characteristics. Users may specify an IDAES ParameterSweep class to
     perform the sweep (default is SequentialSweepRunner).
     """
