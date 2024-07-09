@@ -11,6 +11,7 @@
 # for full copyright and license information.
 #################################################################################
 import os
+import logging
 from abc import ABC, abstractmethod
 import datetime
 import pandas as pd
@@ -22,6 +23,9 @@ from idaes.apps.grid_integration.utils import convert_marginal_costs_to_actual_c
 egret, egret_avail = attempt_import("egret")
 if egret_avail:
     from egret.model_library.transmission import tx_utils
+
+_logger = logging.getLogger(__name__)
+_logger.setLevel(logging.INFO)
 
 
 class AbstractBidder(ABC):
@@ -755,8 +759,8 @@ class StochasticProgramBidder(AbstractBidder):
             None
         """
 
-        print("")
-        print("Saving bidding results to disk...")
+        _logger.info("\n")
+        _logger.info("Saving bidding results to disk...")
         pd.concat(self.bids_result_list).to_csv(
             os.path.join(path, "bidder_detail.csv"), index=False
         )
@@ -1490,8 +1494,8 @@ class ParametrizedBidder(AbstractBidder):
             None
         """
 
-        print("\n")
-        print("Saving bidding results to disk...")
+        _logger.info("\n")
+        _logger.info("Saving bidding results to disk...")
         pd.concat(self.bids_result_list).to_csv(
             os.path.join(path, "bidder_detail.csv"), index=False
         )
