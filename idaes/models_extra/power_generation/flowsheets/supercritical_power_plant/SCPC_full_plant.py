@@ -105,7 +105,7 @@ def main():
     # pylint: disable-next=import-outside-toplevel
     import idaes.models_extra.power_generation.flowsheets.supercritical_power_plant.boiler_subflowsheet_build as blr
 
-    # import the models (ECON, WW, PrSH, PlSH, FSH, Spliter, Mixer, Reheater)
+    # import the models (ECON, WW, PrSH, PlSH, FSH, Splitter, Mixer, Reheater)
     # see boiler_subflowhseet_build.py for a better description
     blr.build_boiler(m.fs)
     # initialize boiler network models (one by one)

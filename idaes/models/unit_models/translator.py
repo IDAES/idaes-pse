@@ -73,7 +73,7 @@ of mole fractions and phase equilibrium.
 **default** - True.
 **Valid values:** {
 **True** - outlet state will be fully defined,
-**False** - outlet property package should enforce sumation and equilibrium
+**False** - outlet property package should enforce summation and equilibrium
 constraints.}""",
         ),
     )
