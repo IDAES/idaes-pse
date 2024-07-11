@@ -830,7 +830,7 @@ def set_inputs(m):
     fs.bfp.efficiency_isentropic.fix(0.8)
     fs.bfp.outlet.pressure.fix(1.45e7)
 
-    # Set input for spliter for main steam attemperator spray
+    # Set input for splitter for main steam attemperator spray
     fs.split_attemp.split_fraction[:, "Spray"].fix(0.0007)
 
     # Set inputs for water spray control valve
