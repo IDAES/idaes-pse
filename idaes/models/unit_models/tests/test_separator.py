@@ -77,7 +77,7 @@ from idaes.core.util.model_statistics import (
 )
 from idaes.core.util.testing import (
     PhysicalParameterTestBlock,
-    TestStateBlock,
+    StateBlockForTesting,
     initialization_tester,
 )
 from idaes.core.solvers import get_solver
@@ -91,7 +91,7 @@ from idaes.core.util import DiagnosticsToolbox
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_solver()
+solver = get_solver("ipopt_v2")
 
 
 # -----------------------------------------------------------------------------
@@ -279,7 +279,7 @@ class TestBaseConstruction(object):
 
     @pytest.mark.unit
     def test_get_mixed_state_block(self, build):
-        build.fs.sb = TestStateBlock(build.fs.time, parameters=build.fs.pp)
+        build.fs.sb = StateBlockForTesting(build.fs.time, parameters=build.fs.pp)
 
         build.fs.sep.config.mixed_state_block = build.fs.sb
 
@@ -300,7 +300,7 @@ class TestBaseConstruction(object):
 
     @pytest.mark.unit
     def test_get_mixed_state_block_mismatch(self, build):
-        build.fs.sb = TestStateBlock(build.fs.time, parameters=build.fs.pp)
+        build.fs.sb = StateBlockForTesting(build.fs.time, parameters=build.fs.pp)
 
         # Change parameters arg to create mismatch
         build.fs.sb[0].config.parameters = None
@@ -330,7 +330,7 @@ class TestBaseScaling(object):
         return b
 
     def test_no_exception_scaling_calc_external_mixed_state(self, m):
-        m.fs.sb = TestStateBlock(m.fs.time, parameters=m.fs.pp)
+        m.fs.sb = StateBlockForTesting(m.fs.time, parameters=m.fs.pp)
         m.fs.sep1 = Separator(property_package=m.fs.pp, mixed_state_block=m.fs.sb)
         iscale.calculate_scaling_factors(m)
 
@@ -4012,7 +4012,7 @@ def test_total_flow_w_inherent_rxns():
     initializer = BlockTriangularizationInitializer()
     initializer.initialize(m.fs.sep)
 
-    results = get_solver().solve(m)
+    results = solver.solve(m)
     assert check_optimal_termination(results)
 
     assert initializer.summary[m.fs.sep]["status"] == InitializationStatus.Ok
@@ -4087,7 +4087,7 @@ def test_component_flow_w_inherent_rxns():
     initializer = BlockTriangularizationInitializer()
     initializer.initialize(m.fs.sep)
 
-    results = get_solver().solve(m)
+    results = solver.solve(m)
     assert check_optimal_termination(results)
 
     assert initializer.summary[m.fs.sep]["status"] == InitializationStatus.Ok
@@ -4162,7 +4162,7 @@ def test_phase_flow_w_inherent_rxns():
     initializer = BlockTriangularizationInitializer()
     initializer.initialize(m.fs.sep)
 
-    results = get_solver().solve(m)
+    results = solver.solve(m)
     assert check_optimal_termination(results)
 
     assert initializer.summary[m.fs.sep]["status"] == InitializationStatus.Ok
@@ -4237,7 +4237,7 @@ def test_phase_component_flow_w_inherent_rxns():
     initializer = BlockTriangularizationInitializer()
     initializer.initialize(m.fs.sep)
 
-    results = get_solver().solve(m)
+    results = solver.solve(m)
     assert check_optimal_termination(results)
 
     assert initializer.summary[m.fs.sep]["status"] == InitializationStatus.Ok

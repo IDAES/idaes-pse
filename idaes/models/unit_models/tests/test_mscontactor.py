@@ -16,6 +16,7 @@ Authors: Andrew Lee
 """
 
 import pytest
+import re
 from types import MethodType
 
 from pyomo.environ import (
@@ -74,6 +75,8 @@ from idaes.core.initialization import InitializationStatus
 from idaes.models.properties.examples.saponification_thermo import (
     SaponificationParameterBlock,
 )
+
+solver = get_solver("ipopt_v2")
 
 
 # -----------------------------------------------------------------------------
@@ -430,8 +433,10 @@ class TestBuild:
 
         with pytest.raises(
             ConfigurationError,
-            match="MSContactor models must define at least two streams; received "
-            "\['stream1'\]",
+            match=re.escape(
+                "MSContactor models must define at least two streams; received "
+                "['stream1']"
+            ),
         ):
             m.fs.unit._verify_inputs()
 
@@ -2280,8 +2285,10 @@ class TestReactions:
 
         with pytest.raises(
             PropertyNotSupportedError,
-            match="Heterogeneous reaction package does not contain a list of "
-            "reactions \(reaction_idx\).",
+            match=re.escape(
+                "Heterogeneous reaction package does not contain a list of "
+                "reactions (reaction_idx)."
+            ),
         ):
             model.fs.unit._build_heterogeneous_reaction_blocks()
 
@@ -2782,7 +2789,6 @@ class TestToyProblem:
 
         assert (degrees_of_freedom(model)) == 0
 
-        solver = get_solver()
         results = solver.solve(model)
 
         assert_optimal_termination(results)
@@ -3451,7 +3457,6 @@ class TestLiCODiafiltration:
         # Solve the full model
         assert degrees_of_freedom(model) == 0
 
-        solver = get_solver()
         res = solver.solve(model, tee=True)
         assert_optimal_termination(res)
 

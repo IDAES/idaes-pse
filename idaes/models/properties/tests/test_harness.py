@@ -30,18 +30,18 @@ import idaes.core.util.scaling as iscale
 from idaes.core.util.exceptions import InitializationError
 
 
-from pyomo.core.base.var import _VarData
-from pyomo.core.base.param import _ParamData
-from pyomo.core.base.expression import _ExpressionData
+from pyomo.core.base.var import VarData
+from pyomo.core.base.param import ParamData
+from pyomo.core.base.expression import ExpressionData
 from idaes.core.initialization.initializer_base import (
     InitializationStatus,
 )
 
-_scalable = (_VarData, _ParamData, _ExpressionData)
+_scalable = (VarData, ParamData, ExpressionData)
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_solver()
+solver = get_solver("ipopt_v2")
 
 
 # -----------------------------------------------------------------------------

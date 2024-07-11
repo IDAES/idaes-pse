@@ -46,7 +46,7 @@ from idaes.models.properties.modular_properties.eos.ceos import cubic_roots_avai
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_solver()
+solver = get_solver("ipopt_v2")
 
 
 def _as_quantity(x):
@@ -107,7 +107,7 @@ class TestParamBlock(object):
             assert i in ["PE1"]
 
         assert model.param.phase_equilibrium_list == {
-            "PE1": {"carbon_dioxide": ("Vap", "Liq")}
+            "PE1": ["carbon_dioxide", ("Vap", "Liq")]
         }
 
         assert model.param.pressure_ref.value == 101325

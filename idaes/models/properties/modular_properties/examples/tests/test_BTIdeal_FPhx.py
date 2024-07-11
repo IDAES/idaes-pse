@@ -55,7 +55,7 @@ from idaes.models.properties.tests.test_harness import PropertyTestHarness
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_solver()
+solver = get_solver("ipopt_v2")
 
 
 def _as_quantity(x):
@@ -236,8 +236,8 @@ class TestParamBlock(object):
             assert i in ["PE1", "PE2"]
 
         assert model.params.phase_equilibrium_list == {
-            "PE1": {"benzene": ("Vap", "Liq")},
-            "PE2": {"toluene": ("Vap", "Liq")},
+            "PE1": ["benzene", ("Vap", "Liq")],
+            "PE2": ["toluene", ("Vap", "Liq")],
         }
 
         assert model.params.pressure_ref.value == 1e5

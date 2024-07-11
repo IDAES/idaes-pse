@@ -227,7 +227,8 @@ def create_model(
         m.fs.ctrl.mv_ub = 1.0
 
     # Initialize the model
-    solver = get_solver(options={"max_iter": 50})
+    # TODO: MA27 works better than MA57
+    solver = get_solver(solver="ipopt_v2", solver_options={"linear_solver": "ma27"})
 
     for t in m.fs.time:
         m.fs.valve_1.inlet.flow_mol[t] = 100  # initial guess on flow

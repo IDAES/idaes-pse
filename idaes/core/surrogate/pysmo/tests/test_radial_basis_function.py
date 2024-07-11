@@ -301,7 +301,6 @@ class TestRadialBasisFunction:
             )
 
     @pytest.mark.unit
-    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test__init__12(self, array_type):
         file_name = "test_filename.pickle"
@@ -315,7 +314,7 @@ class TestRadialBasisFunction:
             overwrite=True,
         )
         p = RbfClass1.get_feature_vector()
-        results = RbfClass1.rbf_training()
+        results = RbfClass1.training()
         RbfClass2 = RadialBasisFunctions(
             input_array,
             basis_function="LineaR",
@@ -327,7 +326,6 @@ class TestRadialBasisFunction:
         assert RbfClass1.filename == RbfClass2.filename
 
     @pytest.mark.unit
-    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test__init__14(self, array_type):
         input_array = array_type(self.test_data)
@@ -1863,7 +1861,6 @@ class TestRadialBasisFunction:
         assert error_best == expected_errors
 
     @pytest.mark.unit
-    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test_rbf_training_01(self, array_type):
         input_array = array_type(self.test_data)
@@ -1925,7 +1922,6 @@ class TestRadialBasisFunction:
         assert results.solution_status == "ok"
 
     @pytest.mark.unit
-    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test_rbf_training_02(self, array_type):
         input_array = array_type(self.test_data)
@@ -1941,7 +1937,6 @@ class TestRadialBasisFunction:
             assert data_feed.solution_status == "unstable solution"
 
     @pytest.mark.unit
-    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test_rbf_training_03(self, array_type):
         input_array = array_type(self.test_data)
@@ -1957,7 +1952,6 @@ class TestRadialBasisFunction:
             assert data_feed.solution_status == "unstable solution"
 
     @pytest.mark.unit
-    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test_rbf_predict_output_01(self, array_type):
         input_array = array_type(self.training_data)
@@ -1981,7 +1975,6 @@ class TestRadialBasisFunction:
         assert expected_output == output
 
     @pytest.mark.unit
-    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test_rbf_predict_output_02(self, array_type):
         input_array = array_type(self.training_data)
@@ -2005,7 +1998,6 @@ class TestRadialBasisFunction:
         assert expected_output == output
 
     @pytest.mark.unit
-    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test_rbf_predict_output_03(self, array_type):
         input_array = array_type(self.training_data)
@@ -2031,7 +2023,6 @@ class TestRadialBasisFunction:
         assert expected_output == output
 
     @pytest.mark.unit
-    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test_rbf_predict_output_04(self, array_type):
         input_array = array_type(self.training_data)
@@ -2057,7 +2048,6 @@ class TestRadialBasisFunction:
         assert expected_output == output
 
     @pytest.mark.unit
-    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test_rbf_predict_output_05(self, array_type):
         input_array = array_type(self.training_data)
@@ -2083,7 +2073,6 @@ class TestRadialBasisFunction:
         assert expected_output == output
 
     @pytest.mark.unit
-    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test_rbf_predict_output_06(self, array_type):
         input_array = array_type(self.training_data)
@@ -2127,7 +2116,6 @@ class TestRadialBasisFunction:
         assert expected_dict == output.extract_values()
 
     @pytest.mark.unit
-    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test_rbf_generate_expression_01(self, array_type):
         input_array = array_type(self.training_data)
@@ -2145,7 +2133,6 @@ class TestRadialBasisFunction:
         rbf_expr = data_feed.generate_expression((lv))
 
     @pytest.mark.unit
-    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test_rbf_generate_expression_02(self, array_type):
         input_array = array_type(self.training_data)
@@ -2163,7 +2150,6 @@ class TestRadialBasisFunction:
         rbf_expr = data_feed.generate_expression((lv))
 
     @pytest.mark.unit
-    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test_rbf_generate_expression_03(self, array_type):
         input_array = array_type(self.training_data)
@@ -2181,7 +2167,6 @@ class TestRadialBasisFunction:
         rbf_expr = results.generate_expression((lv))
 
     @pytest.mark.unit
-    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test_rbf_generate_expression_04(self, array_type):
         input_array = array_type(self.training_data)
@@ -2196,7 +2181,6 @@ class TestRadialBasisFunction:
         rbf_expr = results.generate_expression((lv))
 
     @pytest.mark.unit
-    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test_rbf_generate_expression_05(self, array_type):
         input_array = array_type(self.training_data)
@@ -2214,7 +2198,6 @@ class TestRadialBasisFunction:
         rbf_expr = results.generate_expression((lv))
 
     @pytest.mark.unit
-    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test_rbf_generate_expression_06(self, array_type):
         input_array = array_type(self.training_data)
@@ -2232,7 +2215,6 @@ class TestRadialBasisFunction:
         rbf_expr = results.generate_expression((lv))
 
     @pytest.mark.unit
-    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test_pickle_load01(self, array_type):
         input_array = array_type(self.training_data)
@@ -2247,7 +2229,6 @@ class TestRadialBasisFunction:
         data_feed.pickle_load(data_feed.filename)
 
     @pytest.mark.unit
-    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test_pickle_load02(self, array_type):
         input_array = array_type(self.training_data)
@@ -2263,7 +2244,6 @@ class TestRadialBasisFunction:
             data_feed.pickle_load("file_not_existing.pickle")
 
     @pytest.mark.unit
-    @pytest.fixture(scope="module")
     @patch("matplotlib.pyplot.show")
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test_parity_residual_plots(self, mock_show, array_type):

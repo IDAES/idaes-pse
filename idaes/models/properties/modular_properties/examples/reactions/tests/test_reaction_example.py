@@ -39,7 +39,7 @@ from idaes.models.properties.modular_properties.examples.reactions.reaction_exam
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_solver()
+solver = get_solver("ipopt_v2")
 
 
 class TestParamBlock(object):
@@ -117,7 +117,6 @@ class TestStateBlock(object):
 
         assert degrees_of_freedom(model) == 0
 
-    @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.unit
@@ -150,7 +149,6 @@ class TestStateBlock(object):
         # Check for optimal solution
         assert check_optimal_termination(results)
 
-    @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.unit

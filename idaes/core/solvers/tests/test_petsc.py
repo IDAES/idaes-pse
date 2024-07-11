@@ -13,6 +13,7 @@
 
 """Basic unit tests for PETSc solver utilities"""
 import pytest
+import re
 import numpy as np
 import json
 import os
@@ -753,9 +754,11 @@ def test_mixed_derivative_exception():
 
     with pytest.raises(
         NotImplementedError,
-        match="IDAES presently does not support PETSc for second order or higher derivatives like d2T_dtdx "
-        "that are differentiated at least once with respect to time. Please reformulate your model so "
-        "it does not contain such a derivative \(such as by introducing intermediate variables\)\.",
+        match=re.escape(
+            "IDAES presently does not support PETSc for second order or higher derivatives like d2T_dtdx "
+            "that are differentiated at least once with respect to time. Please reformulate your model so "
+            "it does not contain such a derivative (such as by introducing intermediate variables)."
+        ),
     ):
         petsc.petsc_dae_by_time_element(
             m,

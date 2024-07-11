@@ -75,7 +75,7 @@ from idaes.core.util.model_statistics import (
 )
 from idaes.core.util.testing import (
     PhysicalParameterTestBlock,
-    TestStateBlock,
+    StateBlockForTesting,
     initialization_tester,
 )
 from idaes.models.properties.modular_properties.base.generic_property import (
@@ -100,7 +100,7 @@ from idaes.core.solvers import get_solver
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_solver()
+solver = get_solver("ipopt_v2")
 
 
 # -----------------------------------------------------------------------------
@@ -286,7 +286,7 @@ class TestMixer(object):
 
     @pytest.mark.unit
     def test_get_mixed_state_block(self, mixer_frame):
-        mixer_frame.fs.sb = TestStateBlock(
+        mixer_frame.fs.sb = StateBlockForTesting(
             mixer_frame.fs.time, parameters=mixer_frame.fs.pp
         )
 
@@ -309,7 +309,7 @@ class TestMixer(object):
 
     @pytest.mark.unit
     def test_get_mixed_state_block_mismatch(self, mixer_frame):
-        mixer_frame.fs.sb = TestStateBlock(
+        mixer_frame.fs.sb = StateBlockForTesting(
             mixer_frame.fs.time, parameters=mixer_frame.fs.pp
         )
 
@@ -689,7 +689,7 @@ class TestMixer(object):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = PhysicalParameterTestBlock()
-        m.fs.sb = TestStateBlock(m.fs.time, parameters=m.fs.pp)
+        m.fs.sb = StateBlockForTesting(m.fs.time, parameters=m.fs.pp)
 
         m.fs.mix = Mixer(property_package=m.fs.pp)
 
@@ -742,13 +742,12 @@ class TestMixer(object):
 
         pandas.testing.assert_frame_equal(stable, expected, rtol=1e-4, atol=1e-4)
 
-    @pytest.mark.initialization
     @pytest.mark.component
     def test_initialize(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
         m.fs.pp = PhysicalParameterTestBlock()
-        m.fs.sb = TestStateBlock(m.fs.time, parameters=m.fs.pp)
+        m.fs.sb = StateBlockForTesting(m.fs.time, parameters=m.fs.pp)
 
         m.fs.mix = Mixer(property_package=m.fs.pp, mixed_state_block=m.fs.sb)
 
@@ -1843,7 +1842,7 @@ def test_component_phase_w_inherent_rxns():
     initializer = BlockTriangularizationInitializer()
     initializer.initialize(m.fs.unit)
 
-    results = get_solver().solve(m)
+    results = solver.solve(m)
     assert check_optimal_termination(results)
 
     assert initializer.summary[m.fs.unit]["status"] == InitializationStatus.Ok
@@ -1901,7 +1900,7 @@ def test_component_total_w_inherent_rxns():
     initializer = BlockTriangularizationInitializer()
     initializer.initialize(m.fs.unit)
 
-    results = get_solver().solve(m)
+    results = solver.solve(m)
     assert check_optimal_termination(results)
 
     assert initializer.summary[m.fs.unit]["status"] == InitializationStatus.Ok

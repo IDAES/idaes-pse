@@ -49,7 +49,7 @@ from idaes.models.properties.modular_properties.coolprop.coolprop_wrapper import
     CoolPropPropertyError,
 )
 
-solver = get_solver()
+solver = get_solver("ipopt_v2")
 
 
 class TestWrapper:

@@ -41,7 +41,11 @@ from idaes.models.properties.modular_properties.base.generic_property import (
 )
 from idaes.core.util.exceptions import PropertyNotSupportedError, ConfigurationError
 from idaes.core.util.constants import Constants as const
-from idaes.models.properties.modular_properties.eos.ceos import cubic_roots_available
+from idaes.models.properties.modular_properties.eos.ceos import (
+    cubic_roots_available,
+    calculate_equilibrium_cubic_coefficients,
+    EoS_param,
+)
 from idaes.core.solvers import get_solver
 from idaes.core.initialization.initializer_base import InitializationStatus
 from idaes.models.properties.modular_properties.state_definitions import FTPx
@@ -1076,6 +1080,23 @@ def test_vol_mol_phase_comp(m):
     )
 
 
+@pytest.mark.skipif(not cubic_roots_available(), reason="Cubic functions not available")
+@pytest.mark.unit
+def test_calculate_equilibrium_cubic_coefficients(m):
+    b, c, d = calculate_equilibrium_cubic_coefficients(
+        m.props[1], "PR", CubicType.PR, "Vap", "Liq", "Liq"
+    )
+
+    A_eq = m.props[1]._PR_A_eq["Vap", "Liq", "Liq"]
+    B_eq = m.props[1]._PR_B_eq["Vap", "Liq", "Liq"]
+    EoS_u = EoS_param[CubicType.PR]["u"]
+    EoS_w = EoS_param[CubicType.PR]["w"]
+
+    assert str(b) == str(-(1 + B_eq - EoS_u * B_eq))
+    assert str(c) == str(A_eq - EoS_u * B_eq - EoS_u * B_eq**2 + EoS_w * B_eq**2)
+    assert str(d) == str(-(A_eq * B_eq + EoS_w * B_eq**2 + EoS_w * B_eq**3))
+
+
 class TestCEOSCriticalProps:
     @pytest.fixture(scope="class")
     def model(self):
@@ -1144,7 +1165,7 @@ class TestCEOSCriticalProps:
             },
         )
 
-        m.props = m.params.state_block_class(
+        m.props = m.params.build_state_block(
             [1], defined_state=True, parameters=m.params
         )
 
@@ -1368,7 +1389,7 @@ class TestCEOSCriticalProps:
     @pytest.mark.solver
     def test_solve_critical_props(self, model):
         # Solve model
-        solver = get_solver()
+        solver = get_solver("ipopt_v2")
         res = solver.solve(model, tee=True)
         assert_optimal_termination(res)
 

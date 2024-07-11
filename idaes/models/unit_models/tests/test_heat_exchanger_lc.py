@@ -15,7 +15,9 @@ Tests for 0D lumped capacitance heat exchanger model
 
 Author: Rusty Gentile, John Eslick, Andrew Lee
 """
+from sys import platform
 import pytest
+import re
 
 from pyomo.environ import (
     check_optimal_termination,
@@ -61,7 +63,7 @@ from idaes.core.initialization import (
 from idaes.core.util import DiagnosticsToolbox
 
 # Get default solver for testing
-solver = get_solver()
+solver = get_solver("ipopt_v2")
 
 # Number of steps for transient simulations
 TIME_STEPS = 50
@@ -459,9 +461,11 @@ class TestHXLCGeneric(object):
 
         with pytest.raises(
             ConfigurationError,
-            match="invalid arguments for dynamic and has_holdup. "
-            "If dynamic = True, has_holdup must also be True "
-            "\(was False\)",
+            match=re.escape(
+                "invalid arguments for dynamic and has_holdup. "
+                "If dynamic = True, has_holdup must also be True "
+                "(was False)"
+            ),
         ):
             m.fs.unit = HeatExchangerLumpedCapacitance(
                 hot_side_name="shell",
@@ -547,7 +551,6 @@ class TestInitializers:
         m.fs.unit.area.fix(1000)
 
         # Modified from the original:
-        # m.fs.unit.overall_heat_transfer_coefficient.fix(100)
         m.fs.unit.ua_hot_side.fix(200 * 1000)
         m.fs.unit.ua_cold_side.fix(200 * 1000)
 
@@ -557,7 +560,13 @@ class TestInitializers:
 
     @pytest.mark.component
     def test_hx_initializer(self, model):
-        initializer = HX0DInitializer()
+        # Setting bounds on deltaT seems to help avoid a temperature cross-over
+        # during initialization.
+        model.fs.unit.delta_temperature_in.setlb(1e-8)
+        model.fs.unit.delta_temperature_out.setlb(1e-8)
+        # TODO: Linear presolve appears to cause issues on Windows
+        # Hope that these will be fixed with better scaling
+        initializer = HX0DInitializer(writer_config={"linear_presolve": False})
         initializer.initialize(model.fs.unit)
 
         assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok

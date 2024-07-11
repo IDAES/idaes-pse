@@ -52,7 +52,7 @@ from idaes.core.util.utility_minimization import (
 #     Chemical Engineering Series - L. T. Biegler, I. E. Grossmann,
 #     A. W. Westerberg, page 529, Example 16.1
 # Get default solver for testing
-solver = get_solver()
+solver = get_solver("ipopt_v2")
 
 
 @pytest.mark.unit
@@ -222,7 +222,6 @@ class TestStateBlock(object):
         # Check for optimal solution
         assert check_optimal_termination(results)
 
-    @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.unit

@@ -246,6 +246,7 @@ be included in the overall energy balance,
 
         Args:
             None
+
         Returns:
             None
         """
