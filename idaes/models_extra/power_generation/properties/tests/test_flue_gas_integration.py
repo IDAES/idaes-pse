@@ -166,7 +166,6 @@ class TestHXLCTransientSCO2(object):
 
         self.check_temperatures(model, times, sco2_exp, air_exp, wall_exp)
 
-    @pytest.mark.static
     def check_temperatures(
         self,
         model,

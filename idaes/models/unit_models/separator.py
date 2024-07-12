@@ -128,7 +128,7 @@ class SeparatorInitializer(ModularInitializerBase):
         )
 
         # Create solver
-        solver = get_solver(self.config.solver, self.config.solver_options)
+        solver = self._get_solver()
 
         # Initialize mixed state block
         if model.config.mixed_state_block is not None:
@@ -1839,9 +1839,9 @@ objects linked the mixed state and all outlet states,
     def _get_performance_contents(self, time_point=0):
         if hasattr(self, "split_fraction"):
             var_dict = {}
-            for k in self.split_fraction.keys():
+            for k, v in self.split_fraction.items():
                 if k[0] == time_point:
-                    var_dict[f"Split Fraction [{str(k[1:])}]"] = self.split_fraction[k]
+                    var_dict[f"Split Fraction [{str(k[1:])}]"] = v
             return {"vars": var_dict}
         else:
             return None

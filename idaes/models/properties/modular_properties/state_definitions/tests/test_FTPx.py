@@ -17,8 +17,8 @@ Authors: Andrew Lee
 """
 
 import pytest
+import re
 import numpy as np
-from pytest import approx
 from sys import modules
 
 from pyomo.environ import (
@@ -44,6 +44,8 @@ from idaes.core import (
     MaterialBalanceType,
     EnergyBalanceType,
     declare_process_block_class,
+    LiquidPhase,
+    SolidPhase,
 )
 from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterData,
@@ -97,10 +99,12 @@ class TestInvalidBounds(object):
 
         with pytest.raises(
             ConfigurationError,
-            match="props\[1\] - found unexpected state_bounds key foo. "
-            "Please ensure bounds are provided only for expected state "
-            "variables and that you have typed the variable names "
-            "correctly.",
+            match=re.escape(
+                "props[1] - found unexpected state_bounds key foo. "
+                "Please ensure bounds are provided only for expected state "
+                "variables and that you have typed the variable names "
+                "correctly."
+            ),
         ):
             m.props = m.params.build_state_block([1], defined_state=True)
 
@@ -399,15 +403,78 @@ class Test1PhaseDefinedStateTrueWithBounds(object):
         assert isinstance(frame.props[1].phase_frac, Var)
         assert isinstance(frame.props[1].mole_frac_phase_comp, Var)
 
-        assert frame.props[1].temperature.value == approx(345)
-        assert frame.props[1].pressure.value == approx(3e5)
-        assert frame.props[1].flow_mol.value == approx(100)
-        assert frame.props[1].phase_frac["p1"].value == approx(1)
-        assert frame.props[1].flow_mol_phase["p1"].value == approx(100)
+        assert frame.props[1].temperature.value == pytest.approx(345, rel=1e-5)
+        assert frame.props[1].pressure.value == pytest.approx(3e5, rel=1e-5)
+        assert frame.props[1].flow_mol.value == pytest.approx(100, rel=1e-5)
+        assert frame.props[1].phase_frac["p1"].value == pytest.approx(1, rel=1e-5)
+        assert frame.props[1].flow_mol_phase["p1"].value == pytest.approx(100, rel=1e-5)
         for j in frame.props[1].component_list:
-            assert frame.props[1].mole_frac_comp[j].value == approx(1 / 3)
-            assert frame.props[1].mole_frac_phase_comp["p1", j].value == approx(1 / 3)
-            assert approx(100 / 3) == value(frame.props[1].flow_mol_phase_comp["p1", j])
+            assert frame.props[1].mole_frac_comp[j].value == pytest.approx(
+                1 / 3, rel=1e-5
+            )
+            assert frame.props[1].mole_frac_phase_comp["p1", j].value == pytest.approx(
+                1 / 3, rel=1e-5
+            )
+            assert pytest.approx(100 / 3, rel=1e-5) == value(
+                frame.props[1].flow_mol_phase_comp["p1", j]
+            )
+
+
+@pytest.mark.unit
+def test_state_initialization_no_vle():
+    # Regression test for issue #1424
+    m = ConcreteModel()
+
+    # Create a dummy parameter block
+    m.params = DummyParameterBlock(
+        components={"c1": {}, "c2": {}, "c3": {}},
+        phases={
+            "p1": {"type": LiquidPhase, "equation_of_state": DummyEoS},
+            "p2": {"type": SolidPhase, "equation_of_state": DummyEoS},
+        },
+        state_definition=modules[__name__],
+        pressure_ref=100000.0,
+        temperature_ref=300,
+        state_bounds={
+            "flow_mol": (0, 100, 200),
+            "temperature": (290, 345, 400),
+            "pressure": (100000.0, 300000.0, 500000.0),
+        },
+        base_units={
+            "time": pyunits.s,
+            "length": pyunits.m,
+            "mass": pyunits.kg,
+            "amount": pyunits.mol,
+            "temperature": pyunits.K,
+        },
+    )
+
+    # Create state block
+    m.props = m.params.build_state_block([1], defined_state=True)
+
+    state_initialization(m.props[1])
+    assert isinstance(m.props[1].temperature, Var)
+    assert isinstance(m.props[1].pressure, Var)
+    assert isinstance(m.props[1].flow_mol, Var)
+
+    assert isinstance(m.props[1].mole_frac_comp, Var)
+    assert isinstance(m.props[1].flow_mol_phase, Var)
+    assert isinstance(m.props[1].flow_mol_phase_comp, Expression)
+    assert isinstance(m.props[1].phase_frac, Var)
+    assert isinstance(m.props[1].mole_frac_phase_comp, Var)
+
+    assert m.props[1].temperature.value == pytest.approx(345, rel=1e-5)
+    assert m.props[1].pressure.value == pytest.approx(3e5, rel=1e-5)
+    assert m.props[1].flow_mol.value == pytest.approx(100, rel=1e-5)
+
+    for p in m.props[1].phase_list:
+        assert value(m.props[1].phase_frac[p]) == pytest.approx(0.5, rel=1e-5)
+        assert value(m.props[1].flow_mol_phase[p]) == pytest.approx(50, rel=1e-5)
+        for j in m.props[1].component_list:
+            assert m.props[1].mole_frac_comp[j].value == pytest.approx(1 / 3, rel=1e-5)
+            assert m.props[1].mole_frac_phase_comp[p, j].value == pytest.approx(
+                1 / 3, rel=1e-5
+            )
 
 
 class Test2PhaseDefinedStateFalseNoBounds(object):
@@ -742,33 +809,49 @@ class Test2PhaseDefinedStateTrueWithBounds(object):
         assert isinstance(frame.props[1].phase_frac, Var)
         assert isinstance(frame.props[1].mole_frac_phase_comp, Var)
 
-        assert frame.props[1].temperature.value == approx(345)
-        assert frame.props[1].pressure.value == approx(3e5)
-        assert frame.props[1].flow_mol.value == approx(100)
+        assert frame.props[1].temperature.value == pytest.approx(345, rel=1e-5)
+        assert frame.props[1].pressure.value == pytest.approx(3e5, rel=1e-5)
+        assert frame.props[1].flow_mol.value == pytest.approx(100, rel=1e-5)
 
         for p in frame.props[1].phase_list:
-            assert frame.props[1].phase_frac[p].value == approx(0.5)
-            assert frame.props[1].flow_mol_phase[p].value == approx(50)
+            assert frame.props[1].phase_frac[p].value == pytest.approx(0.5, rel=1e-5)
+            assert frame.props[1].flow_mol_phase[p].value == pytest.approx(50, rel=1e-5)
 
             for j in frame.props[1].component_list:
-                assert frame.props[1].mole_frac_comp[j].value == approx(1 / 3)
-                assert frame.props[1].mole_frac_phase_comp[p, j].value == approx(1 / 3)
-                assert approx(50 / 3) == value(frame.props[1].flow_mol_phase_comp[p, j])
+                assert frame.props[1].mole_frac_comp[j].value == pytest.approx(
+                    1 / 3, rel=1e-5
+                )
+                assert frame.props[1].mole_frac_phase_comp[p, j].value == pytest.approx(
+                    1 / 3, rel=1e-5
+                )
+                assert pytest.approx(50 / 3, rel=1e-5) == value(
+                    frame.props[1].flow_mol_phase_comp[p, j]
+                )
 
         frame.props[1].phase_frac["p1"].value = 0.4
         state_initialization(frame.props[1])
-        assert frame.props[1].phase_frac["p1"].value == approx(0.4)
-        assert frame.props[1].flow_mol_phase["p1"].value == approx(40)
+        assert frame.props[1].phase_frac["p1"].value == pytest.approx(0.4, rel=1e-5)
+        assert frame.props[1].flow_mol_phase["p1"].value == pytest.approx(40, rel=1e-5)
         for j in frame.props[1].component_list:
-            assert frame.props[1].mole_frac_comp[j].value == approx(1 / 3)
-            assert frame.props[1].mole_frac_phase_comp["p1", j].value == approx(1 / 3)
-            assert approx(40 / 3) == value(frame.props[1].flow_mol_phase_comp["p1", j])
+            assert frame.props[1].mole_frac_comp[j].value == pytest.approx(
+                1 / 3, rel=1e-5
+            )
+            assert frame.props[1].mole_frac_phase_comp["p1", j].value == pytest.approx(
+                1 / 3, rel=1e-5
+            )
+            assert pytest.approx(40 / 3, rel=1e-5) == value(
+                frame.props[1].flow_mol_phase_comp["p1", j]
+            )
 
-        assert frame.props[1].phase_frac["p2"].value == approx(0.5)
-        assert frame.props[1].flow_mol_phase["p2"].value == approx(50)
+        assert frame.props[1].phase_frac["p2"].value == pytest.approx(0.5, rel=1e-5)
+        assert frame.props[1].flow_mol_phase["p2"].value == pytest.approx(50, rel=1e-5)
         for j in frame.props[1].component_list:
-            assert frame.props[1].mole_frac_phase_comp["p2", j].value == approx(1 / 3)
-            assert approx(50 / 3) == value(frame.props[1].flow_mol_phase_comp["p2", j])
+            assert frame.props[1].mole_frac_phase_comp["p2", j].value == pytest.approx(
+                1 / 3, rel=1e-5
+            )
+            assert pytest.approx(50 / 3, rel=1e-5) == value(
+                frame.props[1].flow_mol_phase_comp["p2", j]
+            )
         # To avoid side effects
         frame.props[1].phase_frac["p1"].value = 0.5
         state_initialization(frame.props[1])
@@ -1082,18 +1165,24 @@ class Test3PhaseDefinedStateTrueWithBounds(object):
         assert isinstance(frame.props[1].phase_frac, Var)
         assert isinstance(frame.props[1].mole_frac_phase_comp, Var)
 
-        assert frame.props[1].temperature.value == approx(345)
-        assert frame.props[1].pressure.value == approx(3e5)
-        assert frame.props[1].flow_mol.value == approx(100)
+        assert frame.props[1].temperature.value == pytest.approx(345, rel=1e-5)
+        assert frame.props[1].pressure.value == pytest.approx(3e5, rel=1e-5)
+        assert frame.props[1].flow_mol.value == pytest.approx(100, rel=1e-5)
 
         for p in frame.props[1].phase_list:
-            assert frame.props[1].phase_frac[p].value == approx(1 / 3)
-            assert frame.props[1].flow_mol_phase[p].value == approx(100 / 3)
+            assert frame.props[1].phase_frac[p].value == pytest.approx(1 / 3, rel=1e-5)
+            assert frame.props[1].flow_mol_phase[p].value == pytest.approx(
+                100 / 3, rel=1e-5
+            )
 
             for j in frame.props[1].component_list:
-                assert frame.props[1].mole_frac_comp[j].value == approx(1 / 3)
-                assert frame.props[1].mole_frac_phase_comp[p, j].value == approx(1 / 3)
-                assert approx(100 / 9) == value(
+                assert frame.props[1].mole_frac_comp[j].value == pytest.approx(
+                    1 / 3, rel=1e-5
+                )
+                assert frame.props[1].mole_frac_phase_comp[p, j].value == pytest.approx(
+                    1 / 3, rel=1e-5
+                )
+                assert pytest.approx(100 / 9, rel=1e-5) == value(
                     frame.props[1].flow_mol_phase_comp[p, j]
                 )
 
@@ -1101,25 +1190,41 @@ class Test3PhaseDefinedStateTrueWithBounds(object):
         frame.props[1].phase_frac["p2"].value = 0.5
         frame.props[1].phase_frac["p3"].value = 0.3
         state_initialization(frame.props[1])
-        assert frame.props[1].phase_frac["p1"].value == approx(0.2)
-        assert frame.props[1].flow_mol_phase["p1"].value == approx(20)
+        assert frame.props[1].phase_frac["p1"].value == pytest.approx(0.2, rel=1e-5)
+        assert frame.props[1].flow_mol_phase["p1"].value == pytest.approx(20, rel=1e-5)
         for j in frame.props[1].component_list:
-            assert frame.props[1].mole_frac_comp[j].value == approx(1 / 3)
-            assert frame.props[1].mole_frac_phase_comp["p1", j].value == approx(1 / 3)
-            assert approx(20 / 3) == value(frame.props[1].flow_mol_phase_comp["p1", j])
+            assert frame.props[1].mole_frac_comp[j].value == pytest.approx(
+                1 / 3, rel=1e-5
+            )
+            assert frame.props[1].mole_frac_phase_comp["p1", j].value == pytest.approx(
+                1 / 3, rel=1e-5
+            )
+            assert pytest.approx(20 / 3, rel=1e-5) == value(
+                frame.props[1].flow_mol_phase_comp["p1", j]
+            )
 
-        assert frame.props[1].phase_frac["p2"].value == approx(0.5)
-        assert frame.props[1].flow_mol_phase["p2"].value == approx(50)
+        assert frame.props[1].phase_frac["p2"].value == pytest.approx(0.5, rel=1e-5)
+        assert frame.props[1].flow_mol_phase["p2"].value == pytest.approx(50, rel=1e-5)
         for j in frame.props[1].component_list:
-            assert frame.props[1].mole_frac_phase_comp["p2", j].value == approx(1 / 3)
-            assert approx(50 / 3) == value(frame.props[1].flow_mol_phase_comp["p2", j])
+            assert frame.props[1].mole_frac_phase_comp["p2", j].value == pytest.approx(
+                1 / 3, rel=1e-5
+            )
+            assert pytest.approx(50 / 3, rel=1e-5) == value(
+                frame.props[1].flow_mol_phase_comp["p2", j]
+            )
 
-        assert frame.props[1].phase_frac["p3"].value == approx(0.3)
-        assert frame.props[1].flow_mol_phase["p3"].value == approx(30)
+        assert frame.props[1].phase_frac["p3"].value == pytest.approx(0.3, rel=1e-5)
+        assert frame.props[1].flow_mol_phase["p3"].value == pytest.approx(30, rel=1e-5)
         for j in frame.props[1].component_list:
-            assert frame.props[1].mole_frac_comp[j].value == approx(1 / 3)
-            assert frame.props[1].mole_frac_phase_comp["p3", j].value == approx(1 / 3)
-            assert approx(30 / 3) == value(frame.props[1].flow_mol_phase_comp["p3", j])
+            assert frame.props[1].mole_frac_comp[j].value == pytest.approx(
+                1 / 3, rel=1e-5
+            )
+            assert frame.props[1].mole_frac_phase_comp["p3", j].value == pytest.approx(
+                1 / 3, rel=1e-5
+            )
+            assert pytest.approx(30 / 3, rel=1e-5) == value(
+                frame.props[1].flow_mol_phase_comp["p3", j]
+            )
 
         # To avoid side effects
         for p in frame.props[1].phase_list:
@@ -1372,8 +1477,10 @@ class TestCommon(object):
         frame.props[1].mole_frac_comp["c1"].value = -0.1
         with pytest.raises(
             ValueError,
-            match="Component c1 has a negative mole fraction "
-            "in block props\[1\]. Check your initialization.",
+            match=re.escape(
+                "Component c1 has a negative mole fraction "
+                "in block props[1]. Check your initialization."
+            ),
         ):
             frame.props[1].params.config.state_definition.state_initialization(
                 frame.props[1]
@@ -1470,7 +1577,7 @@ class TestModifiedRachfordRice(object):
                 # Convergence criterion for Newton's method is 1e-6 (because
                 # we expect to pass it of to IPOPT later). We cannot expect
                 # machine precision here.
-                assert expected_output[j, i] == approx(vap_frac, rel=5e-5)
+                assert expected_output[j, i] == pytest.approx(vap_frac, rel=5e-5)
 
     @pytest.mark.unit
     def test_negative_K(self, model, caplog):

@@ -8,6 +8,7 @@ idaes = "idaes"
 IDAE = "IDAE"
 # HELMET - HELMholtz
 HEL = "HEL"
+gam = "gam"
 # Datas
 Datas = "Datas"
 # ba triggers in docs
@@ -39,6 +40,9 @@ delt = "delt"
 # FOM for fixed operating and maintenance for DISPATCHES
 FOM = "FOM"
 fom = "fom"
+# Minimal Infeasible System
+mis = "mis"
+MIS = "MIS"
 # TEMPORARY - Remove after example update
 upadate = "upadate"
 
