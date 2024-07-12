@@ -23,13 +23,13 @@ The following equations represent the multi-period price taker model, where :mat
 
        max_{d,u, δ} = \sum_{s ∈ S} \sum_{t ∈ T} w_{s}[R(d,u_{s,t},δ_{s,t},π_{s,t}) - C(d,u_{s,t},δ_{s,t})]
 
-       g(d,u_{s,t},δ_{s,t}) = 0
+    .. math::
 
-       ∀_{s} ∈ S, t ∈ T
+       g(d,u_{s,t},δ_{s,t}) = 0; ∀_{s} ∈ S, t ∈ T
 
-       h(d,u_{s,t},δ_{s,t},u_{s,t+1},δ_{s,t+1}) = 0
+    .. math::
 
-       ∀_{s} ∈ S, t ∈ T
+       h(d,u_{s,t},δ_{s,t},u_{s,t+1},δ_{s,t+1}) = 0; ∀_{s} ∈ S, t ∈ T
 
 
 The price taker multi-period modeling workflow involves the integration of multiple software platforms into the IDAES optimization model
