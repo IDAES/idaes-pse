@@ -20,6 +20,7 @@ wholesale electricity markets. For more information, please look at the introduc
    Bidder
    Tracker
    Coordinator
+   multiperiod/index
 
 Cite us
 ^^^^^^^
