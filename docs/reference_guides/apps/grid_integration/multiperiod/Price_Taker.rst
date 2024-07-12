@@ -15,18 +15,20 @@ depicted in figure below.
 |pricetaker|
 
 The following equations represent the multi-period price taker model, where :math:`d` are design decisions,
-:math:`u` are operating decisions, :math:`δ`: are power decisions ,:math:`s` are scenarios (timeseries/representative days),
+:math:`u` are operating decisions, :math:`δ` are power decisions, :math:`s` are scenarios (timeseries/representative days),
 :math:`w` is weight/frequency, :math:`R` is revenue, :math:`π` is price data,
 :math:`C` is capital and operating costs, :math:`g` is the process model, and :math:`h` is the temporal constraint.
 
     .. math::
 
-       max_{d,u, δ} = \sum_{s ∈ S} \sum{t ∈ T} w_{s}[R(d,u_{s,t},δ_{s,t},π_{s,t}) - C(d,u_{s,t},δ_{s,t})]
+       max_{d,u, δ} = \sum_{s ∈ S} \sum_{t ∈ T} w_{s}[R(d,u_{s,t},δ_{s,t},π_{s,t}) - C(d,u_{s,t},δ_{s,t})]
 
        g(d,u_{s,t},δ_{s,t}) = 0
+
        ∀_{s} ∈ S, t ∈ T
 
        h(d,u_{s,t},δ_{s,t},u_{s,t+1},δ_{s,t+1}) = 0
+
        ∀_{s} ∈ S, t ∈ T
 
 
