@@ -748,7 +748,7 @@ class PriceTakerModel(ConcreteModel):
                 return op_mode[self.mp_model.set_period.at(t)] <= build
 
         @blk.Constraint(self.range_time_steps)
-        def Binary_relationhsip_con(b, t):
+        def binary_relationship_con(b, t):
             if t == 1 or t > number_time_steps:
                 return Constraint.Skip
             return (
@@ -873,6 +873,24 @@ class PriceTakerModel(ConcreteModel):
                         except:
                             pass
                         total_revenue_expr += curr_rev
+
+            for cost in costs:
+                curr_cost = 0
+                try:
+                    curr_cost += period[p].find_component(cost)
+                except:
+                    pass
+
+                total_cost_expr += curr_cost
+
+            for rev in revenue_streams:
+                curr_rev = 0
+                try:
+                    curr_rev += period[p].find_component(rev)
+                except:
+                    pass
+
+                total_revenue_expr += curr_rev
 
             # Set total cost expression
             self.mp_model.period[p].total_cost = Expression(expr=total_cost_expr)
