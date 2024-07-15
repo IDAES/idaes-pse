@@ -105,7 +105,7 @@ class IsentropicPressureChangerInitializer(SingleControlVolumeUnitInitializer):
         )
 
         # Create solver
-        solver = get_solver(self.config.solver, self.config.solver_options)
+        solver = self._get_solver()
 
         cv = model.control_volume
 

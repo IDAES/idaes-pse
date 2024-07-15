@@ -761,7 +761,7 @@ class DiagnosticsToolbox:
 
         """
         if solver is None:
-            solver = get_solver()
+            solver = get_solver("ipopt_v2")
         if stream is None:
             stream = sys.stdout
 
@@ -3167,7 +3167,7 @@ CACONFIG.declare(
 
 class IpoptConvergenceAnalysis:
     """
-    Tool to performa a parameter sweep of model checking for numerical issues and
+    Tool to perform a parameter sweep of model checking for numerical issues and
     convergence characteristics. Users may specify an IDAES ParameterSweep class to
     perform the sweep (default is SequentialSweepRunner).
     """

@@ -39,7 +39,7 @@ from idaes.models.properties.modular_properties.examples.reactions.reaction_exam
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_solver()
+solver = get_solver("ipopt_v2")
 
 
 class TestParamBlock(object):

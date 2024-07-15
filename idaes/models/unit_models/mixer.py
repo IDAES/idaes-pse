@@ -110,7 +110,7 @@ class MixerInitializer(ModularInitializerBase):
         )
 
         # Create solver
-        solver = get_solver(self.config.solver, self.config.solver_options)
+        solver = self._get_solver()
 
         # Initialize inlet state blocks
         inlet_list = model.create_inlet_list()
