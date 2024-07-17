@@ -36,7 +36,7 @@ from idaes.core.util.model_statistics import (
 from idaes.core.solvers import get_solver
 from idaes.core.initialization import InitializationStatus
 
-solver = get_solver()
+solver = get_solver("ipopt_v2")
 
 
 # -----------------------------------------------------------------------------
