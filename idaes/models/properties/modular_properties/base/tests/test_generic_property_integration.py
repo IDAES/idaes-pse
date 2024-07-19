@@ -57,6 +57,8 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 
 from idaes.core.solvers import get_solver
 
+solver = get_solver("ipopt_v2")
+
 
 configuration = {
     # Specifying components
@@ -197,8 +199,6 @@ class TestInherentReactions(object):
 
         frame.fs.H101.initialize()
 
-        solver = get_solver()
-
         results = solver.solve(frame)
 
         assert check_optimal_termination(results)
@@ -255,8 +255,6 @@ class TestInherentReactions(object):
         assert (degrees_of_freedom(frame)) == 0
 
         frame.fs.H101.initialize()
-
-        solver = get_solver()
 
         results = solver.solve(frame)
 
@@ -330,8 +328,6 @@ class TestInherentReactions(object):
 
         frame.fs.cv.initialize()
 
-        solver = get_solver()
-
         results = solver.solve(frame)
 
         assert check_optimal_termination(results)
@@ -403,8 +399,6 @@ class TestInherentReactions(object):
         assert (degrees_of_freedom(frame)) == 0
 
         frame.fs.cv.initialize()
-
-        solver = get_solver()
 
         results = solver.solve(frame)
 

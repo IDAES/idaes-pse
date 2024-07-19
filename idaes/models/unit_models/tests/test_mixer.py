@@ -100,7 +100,7 @@ from idaes.core.solvers import get_solver
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_solver()
+solver = get_solver("ipopt_v2")
 
 
 # -----------------------------------------------------------------------------
@@ -1842,7 +1842,7 @@ def test_component_phase_w_inherent_rxns():
     initializer = BlockTriangularizationInitializer()
     initializer.initialize(m.fs.unit)
 
-    results = get_solver().solve(m)
+    results = solver.solve(m)
     assert check_optimal_termination(results)
 
     assert initializer.summary[m.fs.unit]["status"] == InitializationStatus.Ok
@@ -1900,7 +1900,7 @@ def test_component_total_w_inherent_rxns():
     initializer = BlockTriangularizationInitializer()
     initializer.initialize(m.fs.unit)
 
-    results = get_solver().solve(m)
+    results = solver.solve(m)
     assert check_optimal_termination(results)
 
     assert initializer.summary[m.fs.unit]["status"] == InitializationStatus.Ok

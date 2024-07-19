@@ -76,6 +76,8 @@ from idaes.models.properties.examples.saponification_thermo import (
     SaponificationParameterBlock,
 )
 
+solver = get_solver("ipopt_v2")
+
 
 # -----------------------------------------------------------------------------
 # Property packages for testing
@@ -2787,7 +2789,6 @@ class TestToyProblem:
 
         assert (degrees_of_freedom(model)) == 0
 
-        solver = get_solver()
         results = solver.solve(model)
 
         assert_optimal_termination(results)
@@ -3456,7 +3457,6 @@ class TestLiCODiafiltration:
         # Solve the full model
         assert degrees_of_freedom(model) == 0
 
-        solver = get_solver()
         res = solver.solve(model, tee=True)
         assert_optimal_termination(res)
 

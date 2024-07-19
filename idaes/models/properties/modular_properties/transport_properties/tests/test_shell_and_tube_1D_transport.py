@@ -52,7 +52,7 @@ from idaes.core.util.performance import PerformanceBaseClass
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_solver()
+solver = get_solver("ipopt_v2")
 
 # -----------------------------------------------------------------------------
 

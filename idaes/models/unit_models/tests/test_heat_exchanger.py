@@ -89,7 +89,9 @@ from idaes.models.properties.modular_properties.eos.ceos import cubic_roots_avai
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_solver()
+# TODO: Using MA57 causes a numerical diagnostics check to fail for some reason
+# TODO: Instance of model is poorly scaled, so hopefully can be resolved with scaling tools
+solver = get_solver(solver="ipopt_v2", solver_options={"linear_solver": "ma27"})
 
 
 # -----------------------------------------------------------------------------
@@ -1527,8 +1529,9 @@ class TestSaponification_crossflow(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_numerical_issues(self, sapon):
-        # Heat transfer constraint has a a residual of ~1e-3
+        # TODO: Heat transfer constraint has a residual of ~1e-3
         # Model could be better scaled
+        # TODO: Using MA57 results in extreme Jacobian and aprallel constraints?
         dt = DiagnosticsToolbox(sapon, constraint_residual_tolerance=1e-2)
         dt.assert_no_numerical_warnings()
 

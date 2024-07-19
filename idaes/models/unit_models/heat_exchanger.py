@@ -136,7 +136,7 @@ class HX0DInitializer(SingleControlVolumeUnitInitializer):
         )
 
         # Create solver
-        solver = get_solver(self.config.solver, self.config.solver_options)
+        solver = self._get_solver()
 
         self.initialize_control_volume(model.hot_side, copy_inlet_state)
         init_log.info_high("Initialization Step 1a (hot side) Complete.")

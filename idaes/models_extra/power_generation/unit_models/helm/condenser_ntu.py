@@ -298,7 +298,7 @@ class HelmNtuCondenserData(UnitModelBlockData):
         hot_side = getattr(self, self.config.hot_side_name)
         cold_side = getattr(self, self.config.cold_side_name)
 
-        # Store initial model specs, restored at the end of initializtion, so
+        # Store initial model specs, restored at the end of initialization, so
         # the problem is not altered.  This can restore fixed/free vars,
         # active/inactive constraints, and fixed variable values.
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)

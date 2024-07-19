@@ -115,7 +115,7 @@ class HX1DInitializer(SingleControlVolumeUnitInitializer):
         )
 
         # Create solver
-        solver = get_solver(self.config.solver, self.config.solver_options)
+        solver = self._get_solver()
 
         # ---------------------------------------------------------------------
         # Get length values

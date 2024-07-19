@@ -142,7 +142,7 @@ def test_subc_power_plant():
 
 
 @pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
-@pytest.mark.component
+@pytest.mark.integration
 def test_dynamic_power_plant_build():
     # constructing and initializing dynamic power plant
     # not solving due to simulation time >20 min
@@ -164,7 +164,7 @@ def test_steadystate_power_plant_build():
 
 
 @pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
-@pytest.mark.component
+@pytest.mark.integration
 def test_dynamic_steam_cycle():
     # constructing and initializing dynamic steam cycle flowsheet
     m = steam_cycle.get_model(dynamic=True)

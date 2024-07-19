@@ -53,7 +53,7 @@ import idaes.logger as idaeslog
 __author__ = "Robert Parker"
 
 
-solver = get_solver()
+solver = get_solver("ipopt_v2")
 
 
 def make_model(horizon=6, ntfe=60, ntcp=2, inlet_E=11.91, inlet_S=12.92):

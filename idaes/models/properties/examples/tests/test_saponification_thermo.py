@@ -33,7 +33,7 @@ from idaes.core.initialization import (
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_solver()
+solver = get_solver("ipopt_v2")
 
 
 class TestParamBlock(object):

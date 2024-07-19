@@ -61,7 +61,7 @@ from idaes.core.util.model_statistics import (
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_solver()
+solver = get_solver("ipopt_v2")
 
 
 @declare_process_block_class("SolidParameterBlock")

@@ -242,11 +242,12 @@ def create_model(
     # Initialize the model
 
     solver = get_solver(
-        options={
+        solver="ipopt_v2",
+        solver_options={
             "max_iter": 300,
             "nlp_scaling_method": "user-scaling",
             "linear_solver": "ma57",
-        }
+        },
     )
 
     for t in m.fs.time:

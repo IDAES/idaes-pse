@@ -385,7 +385,7 @@ between flow and pressure driven simulations.}""",
         # Create solver
         opt = get_solver(solver, optarg)
 
-        # This shouldn't require too much initializtion, just fixing inlets
+        # This shouldn't require too much initialization, just fixing inlets
         # and solving should always work.
 
         # sp is what to save to make sure state after init is same as the start

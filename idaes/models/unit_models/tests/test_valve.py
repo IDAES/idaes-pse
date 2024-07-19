@@ -38,7 +38,10 @@ from idaes.core.util import DiagnosticsToolbox
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_solver(options={"nlp_scaling_method": "user-scaling"})
+# TODO: Will need to switch this to not use user-scaling once scaling tools are ready
+solver = get_solver(
+    solver="ipopt_v2", solver_options={"nlp_scaling_method": "user-scaling"}
+)
 
 
 @pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")

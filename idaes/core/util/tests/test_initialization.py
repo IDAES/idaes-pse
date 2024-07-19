@@ -65,7 +65,7 @@ __author__ = "Andrew Lee"
 
 
 # Set up solver
-solver = get_solver()
+solver = get_solver("ipopt_v2")
 
 
 @declare_process_block_class("AqueousEnzymeParameterBlock")

@@ -356,7 +356,7 @@ def initialize_by_time_element(fs, time, **kwargs):
     solver_log = idaeslog.getSolveLogger(__name__, level=outlvl)
 
     ignore_dof = kwargs.pop("ignore_dof", False)
-    solver = kwargs.pop("solver", get_solver())
+    solver = kwargs.pop("solver", get_solver("ipopt_v2"))
     fix_diff_only = kwargs.pop("fix_diff_only", True)
     # This option makes the assumption that the only variables that
     # link constraints to previous points in time (which must be fixed)
