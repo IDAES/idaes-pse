@@ -4059,7 +4059,7 @@ Constraints / bounds in guards for stability:
 class TestConstraintTermAnalysisVisitor:
     @pytest.mark.unit
     def test_sum_combinations(self):
-        # Check method ot generate sums of all combinations of terms
+        # Check method to generate sums of all combinations of terms
         # excludes single term sums
         terms = [1, 2, 3, 4, 5]
         visitor = ConstraintTermAnalysisVisitor()
