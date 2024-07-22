@@ -81,6 +81,7 @@ from idaes.core.util.model_diagnostics import (
     _collect_model_statistics,
     check_parallel_jacobian,
     compute_ill_conditioning_certificate,
+    ConstraintTermAnalysisVisitor,
 )
 from idaes.core.util.parameter_sweep import (
     SequentialSweepRunner,
@@ -4053,3 +4054,877 @@ Constraints / bounds in MIS:
 Constraints / bounds in guards for stability:
 """
         assert expected in stream.getvalue()
+
+
+class TestConstraintTermAnalysisVisitor:
+    @pytest.mark.unit
+    def test_sum_combinations(self):
+        # Check method ot generate sums of all combinations of terms
+        # excludes single term sums
+        terms = [1, 2, 3, 4, 5]
+        visitor = ConstraintTermAnalysisVisitor()
+        sums = visitor._sum_combinations(terms)
+
+        expected = [
+            3,
+            4,
+            5,
+            6,
+            5,
+            6,
+            7,
+            7,
+            8,
+            9,  # 2-term sums
+            6,
+            7,
+            8,
+            8,
+            9,
+            10,  # 3-term sums starting with 1
+            9,
+            10,
+            11,  # 3-term sums starting with 2
+            12,  # 3-term sum starting with 3
+            10,
+            11,
+            12,
+            13,
+            14,  # 4-term sums
+            15,  # 5-term sum
+        ]
+
+        assert sums == expected
+
+    @pytest.mark.unit
+    def test_int(self):
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=7)
+
+        assert vv == [7]
+        assert mm == []
+        assert cc == []
+        assert k
+
+    @pytest.mark.unit
+    def test_float(self):
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=7.7)
+
+        assert vv == [7.7]
+        assert mm == []
+        assert cc == []
+        assert k
+
+    @pytest.mark.unit
+    def test_scalar_param(self):
+        m = ConcreteModel()
+        m.scalar_param = Param(initialize=1, mutable=True)
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
+            expr=m.scalar_param
+        )
+
+        assert vv == [1]
+        assert mm == []
+        assert cc == []
+        assert k
+
+    @pytest.mark.unit
+    def test_indexed_param(self):
+        m = ConcreteModel()
+        m.indexed_param = Param(["a", "b"], initialize=1, mutable=True)
+
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
+            expr=m.indexed_param["a"]
+        )
+        assert vv == [1]
+        assert mm == []
+        assert cc == []
+        assert k
+
+    @pytest.mark.unit
+    def test_scalar_var(self):
+        m = ConcreteModel()
+        m.scalar_var = Var(initialize=1)
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
+            expr=m.scalar_var
+        )
+
+        assert vv == [1]
+        assert mm == []
+        assert cc == []
+        assert not k
+
+    @pytest.mark.unit
+    def test_indexed_var(self):
+        m = ConcreteModel()
+        m.indexed_var = Var(["a", "b"], initialize=1)
+
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
+            expr=m.indexed_var["a"]
+        )
+        assert vv == [1]
+        assert mm == []
+        assert cc == []
+        assert not k
+
+    @pytest.mark.unit
+    def test_scalar_var_fixed(self):
+        m = ConcreteModel()
+        m.scalar_var = Var(initialize=1)
+        m.scalar_var.fix()
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
+            expr=m.scalar_var
+        )
+
+        assert vv == [1]
+        assert mm == []
+        assert cc == []
+        assert k
+
+    @pytest.mark.unit
+    def test_indexed_var_fixed(self):
+        m = ConcreteModel()
+        m.indexed_var = Var(["a", "b"], initialize=1)
+        m.indexed_var.fix()
+
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
+            expr=m.indexed_var["a"]
+        )
+        assert vv == [1]
+        assert mm == []
+        assert cc == []
+        assert k
+
+    @pytest.mark.unit
+    def test_equality_expr(self):
+        m = ConcreteModel()
+        m.v1 = Var(initialize=1e-7)
+        m.v2 = Var(initialize=1e7)
+
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
+            expr=m.v1 == m.v2
+        )
+
+        assert vv == [1e-7, 1e7]
+        assert mm == ["v1  ==  v2"]
+        assert cc == []
+        assert not k
+
+    @pytest.mark.unit
+    def test_equality_expr_constant(self):
+        m = ConcreteModel()
+        m.v1 = Var(initialize=1e-7)
+        m.v2 = Var(initialize=1e7)
+
+        # Fix v1, not constant yet as v2 still free
+        m.v1.fix()
+
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
+            expr=m.v1 == m.v2
+        )
+
+        assert vv == [1e-7, 1e7]
+        assert mm == ["v1  ==  v2"]
+        assert cc == []
+        assert not k
+
+        # Fix v2, now constant
+        m.v2.fix()
+
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
+            expr=m.v1 == m.v2
+        )
+
+        assert vv == [1e-7, 1e7]
+        assert mm == ["v1  ==  v2"]
+        assert cc == []
+        assert k
+
+    @pytest.mark.unit
+    def test_sum_expr(self):
+        m = ConcreteModel()
+        m.v1 = Var(["a", "b", "c"], initialize=1e7)
+        m.v1["a"].set_value(1e-7)
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
+            expr=sum(m.v1[i] for i in m.v1)
+        )
+
+        assert vv == [1e-7, 1e7, 1e7]
+        assert mm == ["v1[a] + v1[b] + v1[c]"]
+        assert cc == []
+        assert not k
+
+    @pytest.mark.unit
+    def test_sum_expr_constant(self):
+        m = ConcreteModel()
+        m.v1 = Var(["a", "b", "c"], initialize=1e7)
+        m.v1["a"].set_value(1e-7)
+        m.v1.fix()
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
+            expr=sum(m.v1[i] for i in m.v1)
+        )
+
+        assert vv == [1e-7, 1e7, 1e7]
+        assert mm == ["v1[a] + v1[b] + v1[c]"]
+        assert cc == []
+        assert k
+
+    # @pytest.mark.unit
+    # def test_inequality_expr(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=m.scalar_var <= m.indexed_var["a"]
+    #     ) == [21, 22]
+    #
+    # @pytest.mark.unit
+    # def test_sum_expr(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=sum(m.indexed_var[i] for i in m.set)
+    #     ) == [22, 23, 24]
+    #
+    # @pytest.mark.unit
+    # def test_additive_expr(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=m.scalar_var + m.indexed_var["a"] + m.scalar_param
+    #     ) == [21, 22, 12]
+    #
+    # @pytest.mark.unit
+    # def test_additive_expr_w_negation(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=m.scalar_var + m.indexed_var["a"] - m.scalar_param
+    #     ) == [21, 22, -12]
+    #
+    # @pytest.mark.unit
+    # def test_product_expr(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=m.scalar_var * m.indexed_var["a"] * m.scalar_param
+    #     ) == [21 * 22 * 12]
+    #
+    # @pytest.mark.unit
+    # def test_product_sum_expr(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=(m.scalar_var + m.indexed_var["a"])
+    #              * (m.scalar_param + m.indexed_var["b"])
+    #     ) == [21 * 12, 21 * 23, 22 * 12, 22 * 23]
+    #
+    # @pytest.mark.unit
+    # def test_product_sum_expr_w_negation(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=(m.scalar_var - m.indexed_var["a"])
+    #              * (m.scalar_param - m.indexed_var["b"])
+    #     ) == [21 * 12, -21 * 23, -22 * 12, 22 * 23]
+    #
+    # @pytest.mark.unit
+    # def test_division_expr(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=m.scalar_var / m.indexed_var["a"] / m.scalar_param
+    #     ) == [21 / 22 / 12]
+    #
+    # @pytest.mark.unit
+    # def test_division_sum_expr(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=(m.scalar_var + m.indexed_var["a"])
+    #              / (m.scalar_param + m.indexed_var["b"])
+    #     ) == [(21 + 22) / (12 + 23)]
+    #
+    # @pytest.mark.unit
+    # def test_division_sum_expr_w_negation(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=(m.scalar_var - m.indexed_var["a"])
+    #              / (m.scalar_param - m.indexed_var["b"])
+    #     ) == [(21 - 22) / (12 - 23)]
+    #
+    # @pytest.mark.unit
+    # def test_division_expr_error(self, m, caplog):
+    #     caplog.set_level(logging.DEBUG, logger="idaes.core.util.scaling")
+    #     sc.NominalValueExtractionVisitor().walk_expression(expr=1 / (m.scalar_var - 21))
+    #
+    #     expected = "Nominal value of 0 found in denominator of division expression. "
+    #     "Assigning a value of 1. You should check you scaling factors and models to "
+    #     "ensure there are no values of 0 that can appear in these functions."
+    #
+    #     assert expected in caplog.text
+    #
+    # @pytest.mark.unit
+    # def test_pow_expr(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=m.scalar_var ** m.indexed_var["a"]
+    #     ) == pytest.approx([21 ** 22], rel=1e-12)
+    #
+    # @pytest.mark.unit
+    # def test_pow_sum_expr(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=(m.scalar_var + m.indexed_var["a"])
+    #              ** (m.scalar_param + m.indexed_var["b"])
+    #     ) == [
+    #                pytest.approx((21 + 22) ** (12 + 23), rel=1e-12),
+    #            ]
+    #
+    # @pytest.mark.unit
+    # def test_pow_sum_expr_w_negation(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=(m.scalar_var - m.indexed_var["a"])
+    #              ** (m.scalar_param - m.indexed_var["b"])
+    #     ) == [
+    #                pytest.approx(abs(21 - 22) ** (12 - 23), rel=1e-12),
+    #            ]
+    #
+    # @pytest.mark.unit
+    # def test_negation_expr(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=-m.scalar_var
+    #     ) == [-21]
+    #
+    # @pytest.mark.unit
+    # def test_negation_sum_expr(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=-(m.scalar_var + m.indexed_var["a"])
+    #     ) == [-21, -22]
+    #
+    # @pytest.mark.unit
+    # def test_log_expr(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=pyo.log(m.scalar_var)
+    #     ) == [pytest.approx(math.log(21), rel=1e-12)]
+    #
+    # @pytest.mark.unit
+    # def test_log_expr_error(self, m):
+    #     with pytest.raises(
+    #             ValueError,
+    #             match="Evaluation error occurred when getting nominal value in log expression "
+    #                   "with input 0.0. You should check you scaling factors and model to "
+    #                   "address any numerical issues or scale this constraint manually.",
+    #     ):
+    #         assert sc.NominalValueExtractionVisitor().walk_expression(
+    #             expr=pyo.log(m.scalar_var - 21)
+    #         )
+    #
+    # @pytest.mark.unit
+    # def test_log_sum_expr(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=pyo.log(m.scalar_var + m.indexed_var["a"])
+    #     ) == [pytest.approx(math.log(21 + 22), rel=1e-12)]
+    #
+    # @pytest.mark.unit
+    # def test_log_sum_expr_w_negation(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=pyo.log(-m.scalar_var + m.indexed_var["a"])
+    #     ) == [pytest.approx(math.log(-21 + 22), rel=1e-12)]
+    #
+    # @pytest.mark.unit
+    # def test_log10_expr(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=pyo.log10(m.scalar_var)
+    #     ) == [pytest.approx(math.log10(21), rel=1e-12)]
+    #
+    # @pytest.mark.unit
+    # def test_log10_sum_expr(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=pyo.log10(m.scalar_var + m.indexed_var["a"])
+    #     ) == [pytest.approx(math.log10(21 + 22), rel=1e-12)]
+    #
+    # @pytest.mark.unit
+    # def test_log10_sum_expr_w_negation(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=pyo.log10(-m.scalar_var + m.indexed_var["a"])
+    #     ) == [pytest.approx(math.log10(-21 + 22), rel=1e-12)]
+    #
+    # @pytest.mark.unit
+    # def test_log10_expr_error(self, m):
+    #     with pytest.raises(
+    #             ValueError,
+    #             match="Evaluation error occurred when getting nominal value in log10 expression "
+    #                   "with input 0.0. You should check you scaling factors and model to "
+    #                   "address any numerical issues or scale this constraint manually.",
+    #     ):
+    #         assert sc.NominalValueExtractionVisitor().walk_expression(
+    #             expr=pyo.log10(m.scalar_var - 21)
+    #         )
+    #
+    # @pytest.mark.unit
+    # def test_sqrt_expr(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=pyo.sqrt(m.scalar_var)
+    #     ) == [pytest.approx(21 ** 0.5, rel=1e-12)]
+    #
+    # @pytest.mark.unit
+    # def test_sqrt_sum_expr(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=pyo.sqrt(m.scalar_var + m.indexed_var["a"])
+    #     ) == [pytest.approx((21 + 22) ** 0.5, rel=1e-12)]
+    #
+    # @pytest.mark.unit
+    # def test_sqrt_sum_expr_w_negation(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=pyo.sqrt(-m.scalar_var + m.indexed_var["a"])
+    #     ) == [pytest.approx((-21 + 22) ** 0.5, rel=1e-12)]
+    #
+    # @pytest.mark.unit
+    # def test_sqrt_expr_error(self, m):
+    #     with pytest.raises(
+    #             ValueError,
+    #             match="Evaluation error occurred when getting nominal value in sqrt expression "
+    #                   "with input -21.0. You should check you scaling factors and model to "
+    #                   "address any numerical issues or scale this constraint manually.",
+    #     ):
+    #         assert sc.NominalValueExtractionVisitor().walk_expression(
+    #             expr=pyo.sqrt(-m.scalar_var)
+    #         )
+    #
+    # @pytest.mark.unit
+    # def test_sin_expr(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=pyo.sin(m.scalar_var)
+    #     ) == [pytest.approx(math.sin(21), rel=1e-12)]
+    #
+    # @pytest.mark.unit
+    # def test_sin_sum_expr(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=pyo.sin(m.scalar_var + m.indexed_var["a"])
+    #     ) == [pytest.approx(math.sin(21 + 22), rel=1e-12)]
+    #
+    # @pytest.mark.unit
+    # def test_sin_sum_expr_w_negation(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=pyo.sin(m.scalar_var - m.indexed_var["a"])
+    #     ) == [pytest.approx(math.sin(21 - 22), rel=1e-12)]
+    #
+    # @pytest.mark.unit
+    # def test_cos_expr(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=pyo.cos(m.scalar_var)
+    #     ) == [pytest.approx(math.cos(21), rel=1e-12)]
+    #
+    # @pytest.mark.unit
+    # def test_cos_sum_expr(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=pyo.cos(m.scalar_var + m.indexed_var["a"])
+    #     ) == [pytest.approx(math.cos(21 + 22), rel=1e-12)]
+    #
+    # @pytest.mark.unit
+    # def test_cos_sum_expr_w_negation(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=pyo.cos(m.scalar_var - m.indexed_var["a"])
+    #     ) == [pytest.approx(math.cos(21 - 22), rel=1e-12)]
+    #
+    # @pytest.mark.unit
+    # def test_tan_expr(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=pyo.tan(m.scalar_var)
+    #     ) == [pytest.approx(math.tan(21), rel=1e-12)]
+    #
+    # @pytest.mark.unit
+    # def test_tan_sum_expr(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=pyo.tan(m.scalar_var + m.indexed_var["a"])
+    #     ) == [pytest.approx(math.tan(21 + 22), rel=1e-12)]
+    #
+    # @pytest.mark.unit
+    # def test_tan_sum_expr_w_negation(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=pyo.tan(m.scalar_var - m.indexed_var["a"])
+    #     ) == [pytest.approx(math.tan(21 - 22), rel=1e-12)]
+    #
+    # @pytest.mark.unit
+    # def test_sinh_expr(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=pyo.sinh(m.scalar_var)
+    #     ) == [pytest.approx(math.sinh(21), rel=1e-12)]
+    #
+    # @pytest.mark.unit
+    # def test_sinh_sum_expr(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=pyo.sinh(m.scalar_var + m.indexed_var["a"])
+    #     ) == [pytest.approx(math.sinh(21 + 22), rel=1e-12)]
+    #
+    # @pytest.mark.unit
+    # def test_sinh_sum_expr_w_negation(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=pyo.sinh(m.scalar_var - m.indexed_var["a"])
+    #     ) == [pytest.approx(math.sinh(21 - 22), rel=1e-12)]
+    #
+    # @pytest.mark.unit
+    # def test_cosh_expr(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=pyo.cosh(m.scalar_var)
+    #     ) == [pytest.approx(math.cosh(21), rel=1e-12)]
+    #
+    # @pytest.mark.unit
+    # def test_cosh_sum_expr(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=pyo.cosh(m.scalar_var + m.indexed_var["a"])
+    #     ) == [pytest.approx(math.cosh(21 + 22), rel=1e-12)]
+    #
+    # @pytest.mark.unit
+    # def test_cosh_sum_expr_w_negation(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=pyo.cosh(m.scalar_var - m.indexed_var["a"])
+    #     ) == [pytest.approx(math.cosh(21 - 22), rel=1e-12)]
+    #
+    # @pytest.mark.unit
+    # def test_tanh_expr(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=pyo.tanh(m.scalar_var)
+    #     ) == [pytest.approx(math.tanh(21), rel=1e-12)]
+    #
+    # @pytest.mark.unit
+    # def test_tanh_sum_expr(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=pyo.tanh(m.scalar_var + m.indexed_var["a"])
+    #     ) == [pytest.approx(math.tanh(21 + 22), rel=1e-12)]
+    #
+    # @pytest.mark.unit
+    # def test_tanh_sum_expr_w_negation(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=pyo.tanh(m.scalar_var - m.indexed_var["a"])
+    #     ) == [pytest.approx(math.tanh(21 - 22), rel=1e-12)]
+    #
+    # @pytest.mark.unit
+    # def test_asin_expr(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(expr=pyo.asin(1)) == [
+    #         pytest.approx(math.asin(1), rel=1e-12)
+    #     ]
+    #
+    # @pytest.mark.unit
+    # def test_asin_sum_expr(self, m):
+    #     sc.set_scaling_factor(m.scalar_param, 2)
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=pyo.asin(0.5 + m.scalar_param)
+    #     ) == [pytest.approx(math.asin(1), rel=1e-12)]
+    #
+    # @pytest.mark.unit
+    # def test_asin_sum_expr_negation(self, m):
+    #     sc.set_scaling_factor(m.scalar_param, 2)
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=pyo.asin(0.5 - m.scalar_param)
+    #     ) == [pytest.approx(math.asin(0), rel=1e-12)]
+    #
+    # @pytest.mark.unit
+    # def test_acos_expr(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=pyo.acos(m.scalar_param)
+    #     ) == [pytest.approx(math.acos(0.5), rel=1e-12)]
+    #
+    # @pytest.mark.unit
+    # def test_acos_sum_expr(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=pyo.acos(0.5 + m.scalar_param)
+    #     ) == [pytest.approx(math.acos(1), rel=1e-12)]
+    #
+    # @pytest.mark.unit
+    # def test_acos_sum_expr_w_negation(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=pyo.acos(0.5 - m.scalar_param)
+    #     ) == [pytest.approx(math.acos(0), rel=1e-12)]
+    #
+    # @pytest.mark.unit
+    # def test_asinh_expr(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=pyo.asinh(m.scalar_var)
+    #     ) == [pytest.approx(math.asinh(21), rel=1e-12)]
+    #
+    # @pytest.mark.unit
+    # def test_asinh_sum_expr(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=pyo.asinh(m.scalar_var + m.indexed_var["a"])
+    #     ) == [pytest.approx(math.asinh(21 + 22), rel=1e-12)]
+    #
+    # @pytest.mark.unit
+    # def test_asinh_sum_expr_w_negation(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=pyo.asinh(m.scalar_var - m.indexed_var["a"])
+    #     ) == [pytest.approx(math.asinh(21 - 22), rel=1e-12)]
+    #
+    # @pytest.mark.unit
+    # def test_acosh_expr(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=pyo.acosh(m.scalar_var)
+    #     ) == [pytest.approx(math.acosh(21), rel=1e-12)]
+    #
+    # @pytest.mark.unit
+    # def test_acosh_sum_expr(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=pyo.acosh(m.scalar_var + m.indexed_var["a"])
+    #     ) == [pytest.approx(math.acosh(21 + 22), rel=1e-12)]
+    #
+    # @pytest.mark.unit
+    # def test_acosh_sum_expr_w_negation(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=pyo.acosh(-m.scalar_var + m.indexed_var["a"])
+    #     ) == [pytest.approx(math.acosh(-21 + 22), rel=1e-12)]
+    #
+    # @pytest.mark.unit
+    # def test_atanh_expr(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=pyo.atanh(m.scalar_param)
+    #     ) == [pytest.approx(math.atanh(0.5), rel=1e-12)]
+    #
+    # @pytest.mark.unit
+    # def test_atanh_sum_expr(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=pyo.atanh(0.4 + m.scalar_param)
+    #     ) == [pytest.approx(math.atanh(0.9), rel=1e-12)]
+    #
+    # @pytest.mark.unit
+    # def test_atanh_sum_expr_w_negation(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=pyo.atanh(0.4 - m.scalar_param)
+    #     ) == [pytest.approx(math.atanh(-0.1), rel=1e-12)]
+    #
+    # @pytest.mark.unit
+    # def test_exp_expr(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=pyo.exp(m.scalar_param)
+    #     ) == [pytest.approx(math.exp(0.5), rel=1e-12)]
+    #
+    # @pytest.mark.unit
+    # def test_exp_sum_expr(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=pyo.exp(0.4 + m.scalar_param)
+    #     ) == [pytest.approx(math.exp(0.9), rel=1e-12)]
+    #
+    # @pytest.mark.unit
+    # def test_exp_sum_expr_w_negation(self, m):
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=pyo.exp(-0.4 + m.scalar_param)
+    #     ) == [pytest.approx(math.exp(0.1), rel=1e-12)]
+    #
+    # @pytest.mark.unit
+    # def test_expr_if(self, m):
+    #     m.exprif = pyo.Expr_if(
+    #         IF=m.scalar_param,
+    #         THEN=m.indexed_var["a"],
+    #         ELSE=m.indexed_var["b"] + m.indexed_var["c"],
+    #     )
+    #
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(expr=m.exprif) == [
+    #         22,
+    #         23,
+    #         24,
+    #     ]
+    #
+    # @pytest.mark.unit
+    # def test_expr_if_w_negation(self, m):
+    #     m.exprif = pyo.Expr_if(
+    #         IF=m.scalar_param,
+    #         THEN=m.indexed_var["a"],
+    #         ELSE=m.indexed_var["b"] - m.indexed_var["c"],
+    #     )
+    #
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(expr=m.exprif) == [
+    #         22,
+    #         23,
+    #         -24,
+    #     ]
+    #
+    # @pytest.mark.unit
+    # @pytest.mark.skipif(
+    #     not AmplInterface.available(), reason="pynumero_ASL is not available"
+    # )
+    # @pytest.mark.skipif(not cubic_roots_available, reason="Cubic roots not available")
+    # def test_ext_func(self):
+    #     # Use the cubic root external function to test
+    #     m = pyo.ConcreteModel()
+    #     m.a = pyo.Var(initialize=1)
+    #     m.b = pyo.Var(initialize=1)
+    #
+    #     sc.set_scaling_factor(m.a, 1 / 2)
+    #     sc.set_scaling_factor(m.b, 1 / 4)
+    #
+    #     m.expr_write = CubicThermoExpressions(m)
+    #     Z = m.expr_write.z_liq(eos=CubicEoS.PR, A=m.a, B=m.b)
+    #
+    #     expected_mag = -9.489811292072448
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(expr=Z) == [
+    #         pytest.approx(expected_mag, rel=1e-8)
+    #     ]
+    #
+    #     # Check that model state did not change
+    #     assert pyo.value(m.a) == 1
+    #     assert pyo.value(m.b) == 1
+    #     assert pyo.value(Z) == pytest.approx(-2.1149075414767577, rel=1e-8)
+    #
+    #     # Now, change the actual state to the expected magnitudes and confirm result
+    #     m.a.set_value(2)
+    #     m.b.set_value(4)
+    #     assert pyo.value(Z) == pytest.approx(expected_mag, rel=1e-8)
+    #
+    # @pytest.mark.unit
+    # def test_Expression(self, m):
+    #     m.expression = pyo.Expression(
+    #         expr=m.scalar_param ** (sum(m.indexed_var[i] for i in m.set))
+    #     )
+    #
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=m.expression
+    #     ) == [0.5 ** (22 + 23 + 24)]
+    #
+    # @pytest.mark.unit
+    # def test_constraint(self, m):
+    #     m.constraint = pyo.Constraint(expr=m.scalar_var == m.expression)
+    #
+    #     assert sc.NominalValueExtractionVisitor().walk_expression(
+    #         expr=m.constraint.expr
+    #     ) == [21, 0.5 ** (22 + 23 + 24)]
+
+    @pytest.mark.unit
+    def test_equality_sum_expr(self):
+        m = ConcreteModel()
+        m.v1 = Var(["a", "b", "c"], initialize=1e7)
+        m.v2 = Var(initialize=1e-7)
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
+            expr=m.v2 == sum(m.v1[i] for i in m.v1)
+        )
+
+        assert vv == [1e-7, 3e7]
+        assert mm == ["v2  ==  v1[a] + v1[b] + v1[c]"]
+        assert cc == []
+        assert not k
+
+    @pytest.mark.unit
+    def test_compound_equality_expr_1(self):
+        m = ConcreteModel()
+        m.v1 = Var(["a", "b", "c"], initialize=1e7)
+        m.v2 = Var(initialize=1e-7)
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
+            expr=6 * m.v2 == 8 * sum(m.v1[i] for i in m.v1)
+        )
+
+        assert vv == [6e-7, 2.4e8]
+        assert mm == ["6*v2  ==  8*(v1[a] + v1[b] + v1[c])"]
+        assert cc == []
+        assert not k
+
+    @pytest.mark.unit
+    def test_compound_equality_expr_2(self):
+        m = ConcreteModel()
+        m.v1 = Var(["a", "b", "c"], initialize=1e7)
+        m.v2 = Var(initialize=1e-7)
+        m.v3 = Var(initialize=1e3)
+
+        # Set this small so we get two mismatched warnings
+        m.v1["a"].set_value(1e-7)
+
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
+            expr=6 * m.v2 == 8 * sum(m.v1[i] for i in m.v1) + m.v3
+        )
+
+        assert vv == [6e-7, pytest.approx(8 * (2e7 + 1e-7) + 1000, rel=1e-8)]
+        assert mm == [
+            "v1[a] + v1[b] + v1[c]",
+            "6*v2  ==  8*(v1[a] + v1[b] + v1[c]) + v3",
+        ]
+        assert cc == []
+        assert not k
+
+    @pytest.mark.unit
+    def test_cancelling_sum_expr(self):
+        m = ConcreteModel()
+        m.v1 = Var(initialize=2)
+        m.v2 = Var(initialize=2)
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
+            expr=m.v1 - m.v2
+        )
+
+        assert vv == [2, -2]
+        assert mm == []
+        # We do not check cancellation at the sum, so this should be empty
+        assert cc == []
+        assert not k
+
+    @pytest.mark.unit
+    def test_expr_w_cancelling_sum(self):
+        m = ConcreteModel()
+        m.v1 = Var(initialize=2)
+        m.v2 = Var(initialize=2)
+        m.v3 = Var(initialize=3)
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
+            expr=m.v3 * (m.v1 - m.v2)
+        )
+
+        assert vv == [0]
+        assert mm == []
+        # We should get a warning about cancelling sums here
+        assert cc == ["v3*(v1 - v2)"]
+        assert not k
+
+        # Check for tolerance of sum cancellation
+        m.v2.set_value(2.00022)
+
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor(
+            term_cancellation_tolerance=1e-4
+        ).walk_expression(expr=m.v3 * (m.v1 - m.v2))
+
+        assert vv == [pytest.approx(3 * -0.00022, rel=1e-8)]
+        assert mm == []
+        # This should pass as the difference is greater than tol
+        assert cc == []
+        assert not k
+
+        # Change tolerance so it should identify cancellation
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor(
+            term_cancellation_tolerance=1e-3
+        ).walk_expression(expr=m.v3 * (m.v1 - m.v2))
+
+        assert vv == [pytest.approx(3 * -0.00022, rel=1e-8)]
+        assert mm == []
+        assert cc == ["v3*(v1 - v2)"]
+        assert not k
+
+    @pytest.mark.unit
+    def test_cancelling_equality_expr_safe(self):
+        m = ConcreteModel()
+        m.v1 = Var(initialize=1e7)
+        m.v2 = Var(initialize=1e7)
+
+        # This is a standard constraint form, so should have no issues despite cancellation
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
+            expr=0 == m.v1 - m.v2
+        )
+
+        assert vv == [0, pytest.approx(0, abs=1e-12)]
+        assert mm == []
+        assert cc == []
+        assert not k
+
+    @pytest.mark.unit
+    def test_cancelling_equality_expr_issue(self):
+        m = ConcreteModel()
+        m.v1 = Var(initialize=1e7)
+        m.v2 = Var(initialize=1e7)
+        m.v3 = Var(initialize=0)
+
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
+            expr=m.v3 == m.v1 - m.v2
+        )
+
+        assert vv == [0, pytest.approx(0, abs=1e-12)]
+        assert mm == []
+        assert cc == ["v3  ==  v1 - v2"]
+        assert not k
+
+    @pytest.mark.unit
+    def test_cancelling_equality_expr_compound(self):
+        m = ConcreteModel()
+        m.v1 = Var(["a", "b"], initialize=5e6)
+        m.v2 = Var(initialize=1e7)
+        m.v3 = Var(initialize=0)
+
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
+            expr=m.v3 == sum(v for v in m.v1.values()) - m.v2
+        )
+
+        assert vv == [0, pytest.approx(0, abs=1e-12)]
+        assert mm == []
+        assert cc == ["v3  ==  v1[a] + v1[b] - v2"]
+        assert not k
+
+        # If we fix v3, this should be OK
+        m.v3.fix()
+
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
+            expr=m.v3 == sum(v for v in m.v1.values()) - m.v2
+        )
+
+        assert vv == [0, pytest.approx(0, abs=1e-12)]
+        assert mm == []
+        assert cc == []
+        assert not k
