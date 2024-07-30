@@ -287,6 +287,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
             if f_time_units is None:
                 acc_units = None
+                holdup_units = None
             elif (
                 self.properties_in[
                     self.flowsheet().time.first()
