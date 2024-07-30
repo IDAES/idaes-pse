@@ -690,7 +690,7 @@ def test_add_phase_component_balances_dynamic():
 
     assert_units_consistent(m)
     assert_units_equivalent(m.fs.cv.material_holdup, units.mol)
-    assert_units_equivalent(m.fs.cv.material_accumulation, units.mol/units.s)
+    assert_units_equivalent(m.fs.cv.material_accumulation, units.mol / units.s)
 
 
 @pytest.mark.unit
@@ -2654,6 +2654,7 @@ def test_reports():
 
     m.fs.cv.report()
 
+
 @pytest.mark.unit
 def test_dynamic_mass_basis():
     m = ConcreteModel()
@@ -2679,4 +2680,4 @@ def test_dynamic_mass_basis():
 
     assert_units_consistent(m)
     assert_units_equivalent(m.fs.cv.material_holdup, units.kg)
-    assert_units_equivalent(m.fs.cv.material_accumulation, units.kg/units.s)
+    assert_units_equivalent(m.fs.cv.material_accumulation, units.kg / units.s)
