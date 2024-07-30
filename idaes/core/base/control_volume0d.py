@@ -294,6 +294,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 == MaterialFlowBasis.molar
             ):
                 acc_units = units("amount") / f_time_units
+                holdup_units = units("amount")
             elif (
                 self.properties_in[
                     self.flowsheet().time.first()
@@ -301,8 +302,10 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 == MaterialFlowBasis.mass
             ):
                 acc_units = units("mass") / f_time_units
+                holdup_units = units("mass")
             else:
                 acc_units = None
+                holdup_units = None
 
         # Check if reaction package exists, and get units
         if hasattr(self.config, "reaction_package"):
@@ -347,7 +350,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 domain=Reals,
                 initialize=1.0,
                 doc="Material holdup in control volume",
-                units=units("amount"),
+                units=holdup_units,
             )
         if dynamic:
             self.material_accumulation = DerivativeVar(
