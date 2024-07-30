@@ -348,10 +348,10 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 == MaterialFlowBasis.mass
             ):
                 holdup_units = units("mass")
-              # TODO: Revisit the following: Preserving the original implementation and assigning units("amount") for molar flow and any other
+            # TODO: Revisit the following: Preserving the original implementation and assigning units("amount") for molar flow and any other
             else:
                 holdup_units = units("amount")
-         
+
             self.material_holdup = Var(
                 self.flowsheet().time,
                 pc_set,
