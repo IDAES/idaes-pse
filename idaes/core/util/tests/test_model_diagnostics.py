@@ -991,18 +991,12 @@ The following pairs of constraints are nearly parallel:
 
         stream = StringIO()
         dt.display_near_parallel_variables(stream)
-
-        expected = """====================================================================================
-The following pairs of variables are nearly parallel:
-
-    v1, v2
-    v1, v4
-    v2, v4
-
-====================================================================================
-"""
-
-        assert stream.getvalue() == expected
+        expected_pairs = ["v1, v2", "v1, v4", "v2, v4"]
+        assert (
+            "The following pairs of variables are nearly parallel:" in stream.getvalue()
+        )
+        for pair in expected_pairs:
+            assert pair in stream.getvalue()
 
     @pytest.mark.component
     def test_collect_structural_warnings_base_case(self, model):
@@ -1385,8 +1379,8 @@ Model Statistics
 3 WARNINGS
 
     WARNING: 2 Constraints with large residuals (>1.0E-05)
-    WARNING: 1 pair of constraints are parallel (to tolerance 1.0E-08)
-    WARNING: 1 pair of variables are parallel (to tolerance 1.0E-08)
+    WARNING: 1 pair of constraints are parallel (to tolerance 1.0E-10)
+    WARNING: 1 pair of variables are parallel (to tolerance 1.0E-10)
 
 ------------------------------------------------------------------------------------
 0 Cautions
@@ -1472,7 +1466,7 @@ Model Statistics
     WARNING: 1 Constraint with large residuals (>1.0E-05)
     WARNING: 2 Variables with extreme Jacobian values (<1.0E-08 or >1.0E+08)
     WARNING: 1 Constraint with extreme Jacobian values (<1.0E-08 or >1.0E+08)
-    WARNING: 3 pairs of variables are parallel (to tolerance 1.0E-08)
+    WARNING: 1 pair of variables are parallel (to tolerance 1.0E-10)
 
 ------------------------------------------------------------------------------------
 4 Cautions

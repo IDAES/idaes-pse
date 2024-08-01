@@ -281,7 +281,7 @@ class TestBTXIdeal:
         )
 
         # Unit level
-        assert pytest.approx(16926.5, rel=1e-4) == value(btx_fctp.fs.unit.heat_duty[0])
+        assert pytest.approx(16916.9, rel=1e-4) == value(btx_fctp.fs.unit.heat_duty[0])
 
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component

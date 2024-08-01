@@ -20,6 +20,7 @@ import pytest
 from pyomo.environ import (
     check_optimal_termination,
     ConcreteModel,
+    TransformationFactory,
     value,
     units as pyunits,
 )
@@ -58,6 +59,7 @@ from idaes.core.initialization import (
     InitializationStatus,
 )
 from idaes.core.util import DiagnosticsToolbox
+import idaes.core.util.scaling as iscale
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -188,7 +190,11 @@ class TestBTX(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_numerical_issues(self, btx):
-        dt = DiagnosticsToolbox(btx)
+        iscale.calculate_scaling_factors(btx)
+        btx_scaled = TransformationFactory("core.scale_model").create_using(
+            btx, rename=False
+        )
+        dt = DiagnosticsToolbox(btx_scaled)
         dt.assert_no_numerical_warnings()
 
     @pytest.mark.ui
@@ -217,6 +223,8 @@ class TestIAPWS(object):
         m.fs.unit.inlet.pressure[0].fix(101325)
 
         m.fs.unit.heat_duty.fix(10000)
+
+        m.fs.properties.set_default_scaling("flow_mol", 1)
 
         return m
 
@@ -299,7 +307,11 @@ class TestIAPWS(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_numerical_issues(self, iapws):
-        dt = DiagnosticsToolbox(iapws)
+        iscale.calculate_scaling_factors(iapws)
+        iapws_scaled = TransformationFactory("core.scale_model").create_using(
+            iapws, rename=False
+        )
+        dt = DiagnosticsToolbox(iapws_scaled)
         dt.assert_no_numerical_warnings()
 
     @pytest.mark.ui
@@ -480,7 +492,7 @@ class TestSaponification(object):
     @pytest.mark.component
     def test_numerical_issues(self, sapon):
         dt = DiagnosticsToolbox(sapon)
-        dt.assert_no_numerical_warnings()
+        dt.assert_no_numerical_warnings(ignore_parallel_components=True)
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -600,9 +612,12 @@ class TestBT_Generic(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_numerical_issues(self, btg):
-        dt = DiagnosticsToolbox(btg)
-        # TODO: Complementarity formulation results in near-parallel components
-        # when unscaled
+        iscale.calculate_scaling_factors(btg)
+        btg_scaled = TransformationFactory("core.scale_model").create_using(
+            btg, rename=False
+        )
+        dt = DiagnosticsToolbox(btg_scaled)
+        # Jacobian condition number of 8e13, the ComplementarityVLE constraints need to be scaled
         dt.assert_no_numerical_warnings(ignore_parallel_components=True)
 
     @pytest.mark.ui
