@@ -10,13 +10,30 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-# TODO: Missing doc strings
-# pylint: disable=missing-module-docstring
-# pylint: disable=missing-function-docstring
+"""
+The purpose of this file is to perform polynomial regression in Pyomo.
+This will be done in two stages. First, a sampling plan will
+be used to select samples for generating a surrogate model.
+In the second stage, the surrogate model is constructed by fitting to
+different order polynomials. Long term, an iterative adaptive sampling
+approach will be incorporated for model improvement.
+Cross-validation is used to select the best model.
+
+
+FeatureScaling:
+Simple script for scaling and un-scaling the input data
+
+Polynomial Regression:
+Three approaches are implemented for evaluating polynomial coefficients -
+a. Moore-Penrose maximum likelihood method (Forrester et al.)
+b. Optimization using the BFGS algorithm.
+c. Optimization with Pyomo
+The Pyomo optimization approach is enabled as the default at this time.
+"""
 
 import os.path
-import warnings
 import pickle
+from typing import Union
 
 # Imports from third parties
 from matplotlib import pyplot as plt
@@ -41,37 +58,23 @@ from pyomo.environ import (
 from pyomo.core.expr.visitor import replace_expressions
 
 # Imports from IDAES namespace
-from idaes.core.surrogate.pysmo.utils import NumpyEvaluator
-
+from idaes.core.surrogate.pysmo.utils import NumpyEvaluator, date_versioned_filename
+from idaes.logger import getIdaesLogger
 
 __author__ = "Oluwamayowa Amusat"
 
-"""
-The purpose of this file is to perform polynomial regression in Pyomo.
-This will be done in two stages. First, a sampling plan will
-be used to select samples for generating a surrogate model.
-In the second stage, the surrogate model is constructed by fitting to
-different order polynomials. Long term, an iterative adaptive sampling
-approach will be incorporated for model improvement.
-Cross-validation is used to select the best model.
+# Logging
+_log = getIdaesLogger(__name__, tag="surrogate")
 
 
-FeatureScaling:
-Simple script for scaling and un-scaling the input data
-
-Polynomial Regression:
-Three approaches are implemented for evaluating polynomial coefficients -
-a. Moore-Penrose maximum likelihood method (Forrester et al.)
-b. Optimization using the BFGS algorithm.
-c. Optimization with Pyomo
-The Pyomo optimization approach is enabled as the default at this time.
-"""
+def set_log_level(level):
+    """Set logging level for the default logger in this module."""
+    _log.setLevel(level)
 
 
 class FeatureScaling:
-    """
-
-    A class for scaling and unscaling input and output data. The class contains two main methods: ``data_scaling`` and ``data_unscaling``
+    """Scale and unscale input and output data.
+    The class contains two main methods: ``data_scaling`` and ``data_unscaling``
     """
 
     def __init__(self):
@@ -186,20 +189,30 @@ class PolynomialRegression:
 
     """
 
+    #: maximum of maximum polynomial order
+    MAX_MAXPOLY = 10
+
+    #: known solution methods for argument 'solution_method'
+    SOLUTION_METHODS = {
+        "mle": "maximum likelihood",
+        "bfgs": "BFGS",
+        "pyomo": "Pyomo optimization",
+    }
+
     def __init__(
         self,
-        original_data_input,
-        regression_data_input,
-        maximum_polynomial_order,
-        number_of_crossvalidations=None,
-        no_adaptive_samples=None,
-        training_split=None,
-        max_fraction_training_samples=None,
-        max_iter=None,
-        solution_method=None,
-        multinomials=None,
-        fname=None,
-        overwrite=False,
+        original_data_input: Union[pd.DataFrame, np.ndarray],
+        regression_data_input: Union[pd.DataFrame, np.ndarray],
+        maximum_polynomial_order: int,
+        number_of_crossvalidations: int = 3,
+        no_adaptive_samples: int = 4,
+        training_split: float = 0.75,
+        max_fraction_training_samples: float = 0.5,
+        max_iter: int = None,
+        solution_method: str = "pyomo",
+        multinomials: int = 1,
+        fname: str = "solution.pickle",
+        overwrite: bool = False,
     ):
         """
         Initialization of PolynomialRegression class.
@@ -222,92 +235,53 @@ class PolynomialRegression:
 
             multinomials(bool):  This option determines whether or not multinomial terms are considered during polynomial fitting. Takes 0 for No and 1 for Yes. Default = 1.
 
-        Returns:
-            **self** object containing all the input information.
-
         Raises:
-            ValueError:
-                - The input datasets (**original_data_input** or **regression_data_input**) are of the wrong type (not Numpy arrays or Pandas Dataframes)
-
-            Exception:
-                * **maximum_polynomial_order** is not a positive, non-zero integer or **maximum_polynomial_order** is higher than the number of training samples available
-            Exception:
-                * **solution_method** is not 'mle', 'pyomo' or 'bfgs
-            Exception:
-                - **multinomials** is not binary (0 or 1)
-            Exception:
-                - **training_split** is not between 0 and 1
-            Exception:
-                - **number_of_crossvalidations** is not a positive, non-zero integer
-            Exception:
-                - **max_fraction_training_samples** is not between 0 and 1
-            Exception:
-                - **no_adaptive_samples** is not a positive, non-zero integer
-            Exception:
-                - **max_iter** is not a positive, non-zero integer
-
-            warnings.warn:
-                - When the number of cross-validations is too high, i.e. number_of_crossvalidations > 10
+            TypeError: if inputs are of the wrong type
+            ValueError: if any of the below is true
+                - The input datasets (original_data_input or regression_data_input)
+                  are of the wrong type (not Numpy arrays or Pandas Dataframes)
+                - `maximum_polynomial_order` is not a positive, non-zero integer or
+                  is more than the number of available training samples
+                - `solution_method` is not one of the keys in `SOLUTION_METHODS`
+                - `multinomials` is not binary (0 or 1)
+                - `training_split` is not between 0 and 1
+                - `number_of_crossvalidations` is not positive
+                - `max_fraction_training_samples` is not between 0 and 1
+                - `no_adaptive_samples` is not positive
+                - `max_iter` is not positive
         """
+        _log.info("PolynomialRegression constructor:begin")
 
-        print(
-            "\n===========================Polynomial Regression===============================================\n"
-        )
-        # Checks if fname is provided or exists in the path
         if not isinstance(overwrite, bool):
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception("overwrite must be boolean.")
+            raise ValueError("overwrite must be boolean")
         self.overwrite = overwrite
-        if fname is None:
-            fname = "solution.pickle"
-            self.filename = "solution.pickle"
-        elif (
-            not isinstance(fname, str)
-            or os.path.splitext(fname)[-1].lower() != ".pickle"
-        ):
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception(
-                'fname must be a string with extension ".pickle". Please correct.'
-            )
+
+        if not isinstance(fname, str):
+            raise ValueError("'fname' argument must be a str")
+        if not fname.endswith(".pickle"):
+            raise ValueError("'fname' argument must have extension '.pickle'")
         if (
             os.path.exists(fname) and overwrite is True
         ):  # Explicit overwrite done by user
-            print(
-                "Warning:",
-                fname,
-                "already exists; previous file will be overwritten.\n",
-            )
+            _log.warning(f"'{fname}' exists, previous file will be overwritten")
             self.filename = fname
         elif os.path.exists(fname) and overwrite is False:  # User is not overwriting
-            self.filename = (
-                os.path.splitext(fname)[0]
-                + "_v_"
-                + pd.Timestamp.today().strftime("%m-%d-%y_%H%M%S")
-                + ".pickle"
-            )
-            print(
-                "Warning:",
-                fname,
-                'already exists; results will be saved to "',
-                self.filename,
-                '".\n',
-            )
-            # self.filename = 'solution.pickle'
+            self.filename = date_versioned_filename(fname)
+            _log.warning(f"'{fname}' exists, saving to '{self.filename}'")
         elif os.path.exists(fname) is False:
             self.filename = fname
 
         if isinstance(original_data_input, pd.DataFrame):
             original_data = original_data_input.values
-            # FIXME: if we add an option to specify the response column, this needs to change
+            # FIXME: if we add an option to specify the response column,
+            #  this needs to change
             self.regression_data_columns = list(original_data_input.columns)[:-1]
         elif isinstance(original_data_input, np.ndarray):
             original_data = original_data_input
             self.regression_data_columns = list(range(original_data_input.shape[1] - 1))
         else:
-            raise ValueError(
-                "original_data_input: Pandas dataframe or numpy array required."
+            raise TypeError(
+                "'original_data_input' must be Pandas dataframe or numpy ndarray"
             )
 
         if isinstance(regression_data_input, pd.DataFrame):
@@ -315,81 +289,82 @@ class PolynomialRegression:
         elif isinstance(regression_data_input, np.ndarray):
             regression_data = regression_data_input
         else:
-            raise ValueError(
-                "regression_data_input: Pandas dataframe or numpy array required."
+            raise TypeError(
+                "'regression_data_input' must be Pandas dataframe or numpy ndarray"
             )
 
         # Check for potential dimensionality problems in input data
         if regression_data.shape[0] > original_data.shape[0]:
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception(
-                "The sampled data has more entries than the original dataset."
+            raise ValueError(
+                "Sampled data in 'regression_data_input' has more entries "
+                "than original data in 'original_data_input'"
             )
-        elif regression_data.shape[1] != original_data.shape[1]:
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception(
-                "Dimensional discrepancies in the dimensions of the original and regression datasets."
+        if regression_data.shape[1] != original_data.shape[1]:
+            raise ValueError(
+                "Sampled data in 'regression_data_input' has different "
+                "dimensions than original data in 'original_data_input'"
             )
-        elif (regression_data.shape[1] == 1) or (original_data.shape[1] == 1):
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception(
-                "Input data requires at least two dimensions (X and Y data)."
+        if (regression_data.shape[1] == 1) or (original_data.shape[1] == 1):
+            raise ValueError(
+                "Input data requires at least two dimensions (X and Y data)"
             )
 
         self.original_data = original_data
         self.regression_data = regression_data
 
-        if number_of_crossvalidations is None:
-            print("The number of cross-validation cases (3) is used.")
-            number_of_crossvalidations = 3
-        elif number_of_crossvalidations > 10:
-            warnings.warn(
-                "The number of cross-validations entered is large. The simulation may take a while to run"
+        ncross, aname = number_of_crossvalidations, "number_of_crossvalidations"
+        if not isinstance(ncross, int):
+            self._bad_arg(ncross, aname, "must be an integer", type_error=True)
+        if ncross <= 0:
+            self._bad_arg(ncross, aname, "must be > 0")
+        if ncross > 10:
+            _log.warning(
+                f"Number of cross-validations ({ncross}) "
+                f"is large, the simulation may take a while to run"
             )
         self.number_of_crossvalidations = number_of_crossvalidations
 
-        if not isinstance(maximum_polynomial_order, int):
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception("Maximum polynomial order must be an integer")
-        elif maximum_polynomial_order > 10:
-            warnings.warn(
-                "The maximum allowed polynomial order is 10. Value has been adjusted to 10."
+        max_poly, aname = maximum_polynomial_order, "maximum_polynomial_order"
+        if not isinstance(max_poly, int):
+            self._bad_arg(max_poly, aname, "must be an integer", type_error=True)
+        if max_poly <= 0:
+            self._bad_arg(max_poly, aname, "must be > 0")
+        if max_poly > self.MAX_MAXPOLY:
+            _log.warning(
+                f"Maximum polynomial order value ({max_poly})"
+                f"reduced to maximum allowed ({self.MAX_MAXPOLY})"
             )
-            maximum_polynomial_order = 10
-        self.max_polynomial_order = maximum_polynomial_order
+            max_poly = self.MAX_MAXPOLY
+        if max_poly >= regression_data.shape[0]:
+            self._bad_arg(
+                max_poly, aname, "too high for the number of samples supplied"
+            )
+        self.max_polynomial_order = max_poly
 
         self.number_of_x_vars = regression_data.shape[1] - 1
 
-        if training_split is None:
-            print("The default training/cross-validation split of 0.75 is used.")
-            training_split = 0.75
-        elif training_split >= 1 or training_split <= 0:
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception(
-                "Fraction of samples used for training must be between 0 and 1"
-            )
+        if not (0 < training_split < 1):
+            self._bad_arg(training_split, "training_split", "must be between 0 and 1")
         self.fraction_training = training_split
 
-        if no_adaptive_samples is None:
-            no_adaptive_samples = 4
-        self.no_adaptive_samples = no_adaptive_samples
+        samp, aname = no_adaptive_samples, "no_adaptive_samples"
+        if not isinstance(samp, int):
+            self._bad_arg(samp, aname, "must be an integer", type_error=True)
+        if samp < 0:
+            self._bad_arg(samp, aname, "must be positive")
+        self.no_adaptive_samples = samp
 
         self.number_of_samples = regression_data.shape[0]
 
-        if max_fraction_training_samples is None:
-            max_fraction_training_samples = 0.5
-        elif max_fraction_training_samples > 1 or max_fraction_training_samples < 0:
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception(
-                "The fraction for the maximum number of training samples must be between 0 and 1"
+        if not (0 <= max_fraction_training_samples <= 1):
+            self._bad_arg(
+                max_fraction_training_samples,
+                "max_fraction_training_samples",
+                "must be between 0 and 1",
             )
         self.max_fraction_training_samples = max_fraction_training_samples
+
+        aname = "max_iter"
 
         if (regression_data.shape[0] < original_data.shape[0]) and max_iter is None:
             max_iter = 10
@@ -397,76 +372,32 @@ class PolynomialRegression:
             regression_data.shape[0] == original_data.shape[0]
             or no_adaptive_samples == 0
         ):
-            print("No iterations will be run.")
+            _log.warning("No iterations will be run")
             max_iter = 0
+        if not isinstance(max_iter, int):
+            self._bad_arg(max_iter, aname, "must be an integer", type_error=True)
+        if max_iter < 0:
+            self._bad_arg(max_iter, aname, "must be positive")
         self.max_iter = max_iter
 
-        # Ensure all other key variables are integers
-        if not isinstance(self.number_of_crossvalidations, int):
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception("Number of cross-validations must be an integer")
-        elif not isinstance(self.no_adaptive_samples, int):
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception("Number of adaptive samples must be an integer")
-        elif not isinstance(self.max_iter, int):
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception("Maximum number of iterations must be an integer")
-        elif self.max_polynomial_order >= regression_data.shape[0]:
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception(
-                "max_polynomial_order too high for the number of samples supplied"
+        meth, aname = solution_method, "solution_method"
+        if not isinstance(meth, str):
+            self._bad_arg(meth, aname, "must be a string", type_error=True)
+        meth = meth.lower()
+        if meth not in self.SOLUTION_METHODS:
+            method_list = ", ".join(
+                [f"'{k}'={v}" for k, v in self.SOLUTION_METHODS.items()]
             )
+            self._bad_arg(meth, aname, f"not in known methods: {method_list}")
+        self.solution_method = meth
+        _log.info(f"Parameter estimation method: {self.solution_method}")
 
-        if (self.max_polynomial_order <= 0) or (self.number_of_crossvalidations <= 0):
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception(
-                "maximum_polynomial_order and number_of_crossvalidations must be positive, non-zero integers"
-            )
-        elif (self.no_adaptive_samples < 0) or (self.max_iter < 0):
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception("no_adaptive_samples and max_iter must be positive")
-
-        if solution_method is None:
-            solution_method = "pyomo"
-            self.solution_method = solution_method
-            print("Default parameter estimation method is used.")
-        elif not isinstance(solution_method, str):
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception("Invalid solution method. Must be of type <str>.")
-        elif (
-            (solution_method.lower() == "mle")
-            or (solution_method.lower() == "pyomo")
-            or (solution_method.lower() == "bfgs")
-        ):
-            solution_method = solution_method.lower()
-            self.solution_method = solution_method
-        else:
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception(
-                'Invalid parameter estimation method entered. Select one of maximum likelihood (solution_method="mle"), Pyomo optimization (solution_method="pyomo") or BFGS (solution_method="bfgs") methods. '
-            )
-        print("Parameter estimation method: ", self.solution_method, "\n")
-
-        if multinomials is None:
-            self.multinomials = 1
-        elif multinomials == 1:
-            self.multinomials = 1
-        elif multinomials == 0:
-            self.multinomials = 0
-        else:
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception(
-                'Multinomial must be binary: input "1" for "Yes" and "0" for "No". '
-            )
+        aname = "multinomials"
+        if not isinstance(multinomials, int):
+            self._bad_arg(multinomials, aname, "must be an integer", type_error=True)
+        if multinomials not in (0, 1):
+            self._bad_arg(multinomials, aname, "must be 0 (no) or 1 (yes)")
+        self.multinomials = multinomials
 
         self.feature_list = []
         self.additional_term_expressions = []
@@ -483,6 +414,33 @@ class PolynomialRegression:
         self.dataframe_of_optimal_weights_extra_terms = None
         self.extra_terms_feature_vector = None
         self.fit_status = None
+
+        _log.info("PolynomialRegression constructor:end status=OK")
+
+    @staticmethod
+    def _bad_arg(arg, name: str, why: str, type_error: bool = False, show: bool = True):
+        """Utility function to normalize raising of type and value errors
+        encountered during argument validation.
+        """
+        _log.warning(
+            f"PolynomialRegression constructor:end "
+            f"status={'Type' if type_error else 'Value'}Error arg={name}"
+        )
+        s = f"argument '{name}' ({arg}) {why}" if show else f"argument '{name}' {why}"
+        if type_error:
+            raise TypeError(s)
+        raise ValueError(s)
+
+
+    @staticmethod
+    def _format_model_perf(order, mae_error, mse_error, r_square, r_square_adj=None):
+        s = (
+            f"Order: {order} / MAE: {mae_error:.4f}"
+            f" / MSE: {mse_error:.4f} / R^2: {r_square:.4f}"
+        )
+        if r_square_adj is not None:
+            s += f" / Adjusted R^2: {r_square_adj:.4f}"
+        return s
 
     def training_test_data_creation(self, additional_features=None):
         """
@@ -516,13 +474,9 @@ class PolynomialRegression:
         cross_val_data = {}
         num_training = int(np.around(self.number_of_samples * self.fraction_training))
         if num_training == 0:
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception("The inputted of fraction_training is too low.")
+            raise ValueError("The inputted of fraction_training is too low.")
         elif num_training == self.number_of_samples:
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception("The inputted of fraction_training is too high.")
+            raise ValueError("The inputted of fraction_training is too high.")
         for i in range(1, self.number_of_crossvalidations + 1):
             np.random.seed(i)
             if additional_features is None:
@@ -1000,7 +954,7 @@ class PolynomialRegression:
         print("\n------------------------------------------------------------")
         print("The final coefficients of the regression terms are: \n")
         print("k               |", beta[0, 0])
-        results_df = pd.concat([results_df, pd.Series({"k": beta[0, 0]})], axis=0)
+        results_df = pd.concat([pd.Series({"k": beta[0, 0]})], axis=0)  # results_df,
         if self.multinomials == 1:
             for i in range(1, order + 1):
                 for j in range(1, self.number_of_x_vars + 1):
@@ -1135,10 +1089,11 @@ class PolynomialRegression:
                     i
                 ].values
             else:
-                # PYLINT-TODO
-                # pylint: disable-next=broad-exception-raised
-                raise Exception(
-                    "Wrong data dimensions or type - additional_regression_features contain 1-D vectors, have same number of entries as regression_data and be of type pd.Series, pd.Dataframe or np.ndarray."
+                raise ValueError(
+                    "Argument 'additional_regression_features' "
+                    "must contain 1-D vectors, have same number of entries as "
+                    "regression_data and be of type "
+                    "pd.Series, pd.Dataframe or np.ndarray."
                 )
         return additional_features_array
 
@@ -1179,7 +1134,8 @@ class PolynomialRegression:
                                                         See information on ResultReport class for details on contents.
 
         """
-        # Parameters that represent the best solution found at each iteration based on the cross-validation error
+        # Parameters that represent the best solution found at each iteration,
+        # based on the cross-validation error
         best_error = 1e20
         train_error_fit = 1e20
         phi_best = 0
@@ -1188,15 +1144,13 @@ class PolynomialRegression:
         if (additional_regression_features is None) or (
             len(additional_regression_features) == 0
         ):
-            print(
-                "max_fraction_training_samples set at ",
-                self.max_fraction_training_samples,
+            _log.info(
+                f"max_fraction_training_samples="
+                f"{self.max_fraction_training_samples}, "
+                f"number of adaptive samples (no_adaptive_samples)="
+                f"{self.no_adaptive_samples}, "
+                f"maximum number of iterations (Max_iter)={self.max_iter}"
             )
-            print(
-                "Number of adaptive samples (no_adaptive_samples) set at ",
-                self.no_adaptive_samples,
-            )
-            print("Maximum number of iterations (Max_iter) set at: ", self.max_iter)
 
             training_data, cross_val_data = self.training_test_data_creation()
             for poly_order in range(1, self.max_polynomial_order + 1):
@@ -1211,10 +1165,9 @@ class PolynomialRegression:
                         phi_best = phi
                         order_best = poly_order
                         train_error_fit = train_error
-            print(
-                "\nInitial surrogate model is of order",
-                order_best,
-                " with a cross-val error of %4f" % best_error,
+            _log.info(
+                f"Initial surrogate model is of order {order_best}"
+                f"with a cross-validation error of {best_error:.4f}"
             )
             # Next, Calculate and report errors.
             (
@@ -1224,16 +1177,15 @@ class PolynomialRegression:
                 r_square,
                 r_square_adj,
             ) = self.surrogate_performance(phi_best, order_best)
-            print(
-                "Initial Regression Model Performance:\nOrder: ",
-                order_best,
-                " / MAE: %4f" % mae_error,
-                " / MSE: %4f" % mse_error,
-                " / R^2: %4f" % r_square,
-                " / Adjusted R^2: %4f" % r_square_adj,
+            _log.info(
+                "Initial Regression Model Performance:\n"
+                + self._format_model_perf(
+                    order_best, mae_error, mse_error, r_square, r_square_adj
+                )
             )
 
-            # Parameters that retain the previous best solutions. They are compared to the best solution at each iteration based on the R-square coefficient.
+            # Parameters that retain the previous best solutions. They are compared
+            # to the best solution at each iteration based on the R-square coefficient.
             (
                 order_opt,
                 train_error_opt,
@@ -1274,11 +1226,12 @@ class PolynomialRegression:
                     < self.original_data.shape[0]
                 )
             ):
-                print("\n-------------------------------------------------")
-                print("\nIteration ", iteration_number)
+                # print("\n-------------------------------------------------")
+                _log.debug(f"<< iteration={iteration_number} >>")
                 best_error = 1e20
 
-                # Select n_adaptive_samples worst fitting points to be added to the dataset used in the previous evaluation.
+                # Select n_adaptive_samples worst fitting points to be added to the
+                # dataset used in the previous evaluation.
                 scv_input_data = sorted_comparison_vector[:, :-2]
                 sorted_comparison_vector_unique = scv_input_data[
                     np.all(
@@ -1289,11 +1242,11 @@ class PolynomialRegression:
                     )
                 ]
                 adaptive_samples = sorted_comparison_vector_unique[
-                    # PYLINT-WHY: pylint considers self.no_adaptive_samples to be None here
-                    # pylint: disable=invalid-unary-operand-type
+                    # pylint considers self.no_adaptive_samples to be None here ????
+                    # should-pylint: disable=invalid-unary-operand-type?
                     -self.no_adaptive_samples :,
                     :,
-                    # pylint: enable=invalid-unary-operand-type
+                    # should-pylint: enable=invalid-unary-operand-type
                 ]
                 self.regression_data = np.concatenate(
                     (self.regression_data, adaptive_samples), axis=0
@@ -1301,11 +1254,10 @@ class PolynomialRegression:
                 self.number_of_samples = self.regression_data.shape[
                     0
                 ]  # Never forget to update
-                print(
-                    "\n",
-                    self.no_adaptive_samples,
-                    " additional points added to training data. New number of training samples: ",
-                    self.regression_data.shape[0],
+                _log.debug(
+                    f"{self.no_adaptive_samples} "
+                    f" additional points added to training data. "
+                    f"New number of training samples: {self.regression_data.shape[0]}"
                 )
 
                 training_data, cross_val_data = self.training_test_data_creation()
@@ -1322,10 +1274,9 @@ class PolynomialRegression:
                             phi_best = phi
                             order_best = poly_order
                             train_error_fit = train_error
-                print(
-                    "\nThe best regression model is of order",
-                    order_best,
-                    " with a cross-val error of %4f" % best_error,
+                _log.info(
+                    f"The best regression model is of order {order_best}"
+                    f"with a cross-val error of {best_error:.4f}"
                 )
 
                 (
@@ -1335,18 +1286,16 @@ class PolynomialRegression:
                     r_square,
                     r_square_adj,
                 ) = self.surrogate_performance(phi_best, order_best)
-                print(
-                    "Regression performance on full data in iteration",
-                    iteration_number,
-                    "\nOrder: ",
-                    order_best,
-                    " / MAE: %4f" % mae_error,
-                    " / MSE: %4f" % mse_error,
-                    " / R_sq: %4f" % r_square,
-                    " / Adjusted R^2: %4f" % r_square_adj,
+                _log.info(
+                    f"Regression performance on full data in iteration"
+                    f"{iteration_number} "
+                    + self._format_model_perf(
+                        order_best, mae_error, mse_error, r_square, r_square_adj
+                    )
                 )
 
-                # Determine if solution is improved. If yes, update solution. if no, retain previous best.
+                # Determine if solution is improved. If yes, update solution.
+                # If no, retain previous best.
                 if r_square_adj > r_square_adj_opt:
                     (
                         phi_opt,
@@ -1390,24 +1339,21 @@ class PolynomialRegression:
             # Round phi to 2.d.p and print results to screen
             beta_vector = np.round(phi_opt, 6)
             if r_square_adj_opt < 0.95:
-                print("\nPolynomial regression performs poorly for this dataset.")
+                _log.warning("Polynomial regression performs poorly for this dataset")
             else:
-                print(
-                    "\nPolynomial regression generates a good surrogate model for the input data."
+                _log.info(
+                    "Polynomial regression generates a good surrogate model for the input data"
                 )
             if iteration_number > 1:
                 _, _, _, _ = self.error_plotting(vector_of_results)
-            print(
-                "\n-------------------------------------------------\n-------------------------------------------------"
-            )
-            print(
-                "Best solution found: ",
-                "\nOrder: ",
-                order_opt,
-                " / MAE: %4f" % mae_error_opt,
-                " / MSE: %4f" % mse_error_opt,
-                " / R_sq: %4f" % r_square_opt,
-                " / Adjusted R^2: %4f" % r_square_adj_opt,
+            # print(
+            #     "\n-------------------------------------------------\n-------------------------------------------------"
+            # )
+            _log.info(
+                "Best solution found:\n"
+                + self._format_model_perf(
+                    order_best, mae_error, mse_error, r_square, r_square_adj
+                )
             )
             dataframe_coeffs = self.results_generation(beta_vector, order_opt)
 
@@ -1449,9 +1395,9 @@ class PolynomialRegression:
             if r_square_opt > 0.95:
                 self.fit_status = "ok"
             else:
-                warnings.warn(
-                    "Polynomial regression generates poor fit for the dataset"
-                )
+                msg = "Polynomial regression generates poor fit for the dataset"
+                _log.warning(msg)
+                # warnings.warn(msg)
                 self.fit_status = "poor"
 
             self.pickle_save({"model": self})
@@ -1482,13 +1428,13 @@ class PolynomialRegression:
                         phi_best = phi
                         order_best = poly_order
                         train_error_fit = train_error
-            print(
-                "\nBest surrogate model is of order",
-                order_best,
-                " with a cross-val S.S. Error  of %4f" % best_error,
+            _log.info(
+                f"Best surrogate model is of order {order_best} "
+                f"with a cross-val S.S. Error  of {best_error:.4f}"
             )
 
-            # KEY: Modification of self variable outside initialization. Required to make @surrogate_performance work here.
+            # KEY: Modification of self variable outside initialization.
+            # Required to make @surrogate_performance work here.
             self.original_data = self.regression_data
             _, mae_error, mse_error, r_square, _ = self.surrogate_performance(
                 phi_best, order_best, additional_features_array
@@ -1501,8 +1447,8 @@ class PolynomialRegression:
             dataframe_coeffs = self.results_generation(beta_vector, order_best)
 
             extra_terms_coeffs = pd.Series(dtype="float64")
-            print(
-                "\nThe coefficients of the extra terms in additional_regression_features are:\n"
+            _log.debug(
+                "Coefficients of the extra terms in additional_regression_features:"
             )
             for af in range(number_additional_features, 0, -1):
                 print(
@@ -1526,11 +1472,8 @@ class PolynomialRegression:
 
             # Print errors
             print(
-                "\nRegression model performance on training data:\nOrder: ",
-                order_best,
-                " / MAE: %4f" % mae_error,
-                " / MSE: %4f" % mse_error,
-                " / R^2: %4f" % r_square,
+                "\nRegression model performance on training data:\n"
+                + self._format_model_perf(order_best, mae_error, mse_error, r_square)
             )
 
             extra_terms_feature_vector = list(
@@ -1551,9 +1494,7 @@ class PolynomialRegression:
             if r_square > 0.95:
                 self.fit_status = "ok"
             else:
-                warnings.warn(
-                    "Polynomial regression generates poor fit for the dataset"
-                )
+                _log.warning("Polynomial regression generates poor fit for the dataset")
                 self.fit_status = "poor"
 
             self.pickle_save({"model": self})
@@ -1563,10 +1504,12 @@ class PolynomialRegression:
     def get_feature_vector(self):
         """
 
-        The ``get_feature_vector`` method generates the list of regression features from the column headers of the input dataset.
+        The ``get_feature_vector`` method generates the list of regression features
+        from the column headers of the input dataset.
 
         Returns:
-            Pyomo IndexedParam  : An indexed parameter list of the variables supplied in the original data
+            Pyomo IndexedParam  : An indexed parameter list of the variables
+                                  supplied in the original data
 
 
         **Example:**
@@ -1594,17 +1537,20 @@ class PolynomialRegression:
     def set_additional_terms(self, term_list):
         """
 
-        ``set_additional_terms`` accepts additional user-defined features for consideration during regression.
+        ``set_additional_terms`` accepts additional user-defined features
+        for consideration during regression.
 
         Args:
-            term_list (list) : List of additional terms to be considered as regression features. Each term in the list must be a Pyomo-supported intrinsic function.
+            term_list (list) : List of additional terms to be considered as regression features.
+            Each term in the list must be a Pyomo-supported intrinsic function.
 
 
         **Example:**
 
         .. code-block:: python
 
-            # To add the sine and cosine of a variable with header 'X1' in the dataset as additional regression features:
+            # To add the sine and cosine of a variable with header 'X1' in the dataset
+            # as additional regression features:
             >>> xy_data = pd.DataFrame.from_items([('A', [1, 2, 3]), ('B', [4, 5, 6])], orient='index', columns=['X1', 'X2', 'Y'])
             >>> A = PolynomialRegression(xy_data, xy_data, maximum_polynomial_order=5)
             >>> p = A.get_feature_vector()
@@ -1618,11 +1564,15 @@ class PolynomialRegression:
         """
 
         The ``training`` method trains a polynomial model to an input dataset.
-        It calls the core method which is called in the PolynomialRegression class (polynomial_regression_fitting).
-        It accepts no user input, inheriting the information passed in class initialization.
+        It calls the core method which is called in the PolynomialRegression class
+        (polynomial_regression_fitting).
+
+        It accepts no user input, inheriting the information passed in
+        class initialization.
 
         Returns:
-            tuple   : Python Object (**results**) containing the results of the polynomial regression process including:
+            tuple   : Python Object (**results**) containing the results of the
+            polynomial regression process, including:
                 - the polynomial order  (**self.final_polynomial_order**)
                 - polynomial coefficients (**self.optimal_weights_array**), and
                 - MAE and MSE errors as well as the :math:`R^{2}` (**results.errors**).
@@ -1717,26 +1667,22 @@ class PolynomialRegression:
         try:
             filehandler = open(self.filename, "wb")
             pickle.dump(solutions, filehandler)
-            print("\nResults saved in ", str(self.filename))
+            _log.info(f"Results saved in: {self.filename}")
         except:
             raise IOError("File could not be saved.")
 
     @staticmethod
     def pickle_load(solution_file):
-        """
-        pickle_load loads the results of a saved run 'file.obj'. It returns an array of two elements: the setup (index[0]) and the results (index[1]).
+        """Load the results of a saved run 'file.obj'
 
-        Input arguments:
-                solution_file            : Pickle object file containing previous solution to be loaded.
+        Args:
+            solution_file: Pickle object file containing previous solution to be loaded.
+        returns:
+            An array of two elements, the setup (index[0]) and the results (index[1]).
 
         """
-        try:
-            filehandler = open(solution_file, "rb")
-            return pickle.load(filehandler)
-        except:
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception("File could not be loaded.")
+        filehandler = open(solution_file, "rb")
+        return pickle.load(filehandler)
 
     def parity_residual_plots(self):
         """
@@ -1804,7 +1750,8 @@ class PolynomialRegression:
         )
         return s
 
-    def print_report(self):
+    def print_report(self) -> None:
+        """Print report to standard output"""
         s = self._report()
         print(s)
 
@@ -1813,13 +1760,14 @@ class PolynomialRegression:
         s = self._report()
         p.text(s)
 
-    def confint_regression(self, confidence=0.95):
-        """
-        The ``confint_regression`` method prints the confidence intervals for the regression patamaters.
+    def confint_regression(self, confidence: float = 0.95) -> pd.DataFrame:
+        """Print the confidence intervals for the regression parameters.
 
         Args:
-            confidence      : Required confidence interval level, default = 0.95 (95%)
+            confidence: Required confidence interval level, default = 0.95 (95%)
 
+        Returns:
+            Data frame with values that were printed.
         """
 
         data = self.final_training_data

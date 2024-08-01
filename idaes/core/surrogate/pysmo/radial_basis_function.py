@@ -10,15 +10,11 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-# TODO: Missing doc strings
-# pylint: disable=missing-module-docstring
-# pylint: disable=missing-function-docstring
-
 # pylint: disable=consider-using-enumerate
 
 # Imports from the python standard library
 import os.path
-import warnings
+from pathlib import Path
 import pickle
 
 # Imports from third parties
@@ -43,8 +39,14 @@ from pyomo.environ import (
 
 # Imports from IDAES namespace
 from idaes.core.surrogate.pysmo.sampling import FeatureScaling as fs
+from idaes.core.surrogate.pysmo.utils import date_versioned_filename
+from idaes.logger import getIdaesLogger
 
 __author__ = "Oluwamayowa Amusat"
+
+# Logging
+_log = getIdaesLogger(__name__, tag="surrogate")
+
 
 """
 The purpose of this file is to perform radial basis functions in Pyomo.
@@ -189,13 +191,27 @@ class RadialBasisFunctions:
 
     """
 
+    #: known solution methods for argument 'solution_method'
+    SOLUTION_METHODS = {
+        "algebraic": "ALGEBRAIC",
+        "bfgs": "BFGS",
+        "pyomo": "Pyomo optimization",
+    }
+
+    #: known basis functions, see docs for details
+    BASIS_FUNCTIONS = {"linear", "cubic", "gaussian", "mq", "imq", "spline"}
+
+    #: Set this if you want all instances producing output in a directory
+    #: other than the current working directory
+    output_dir: Path = None
+
     def __init__(
         self,
         XY_data,
-        basis_function=None,
-        solution_method=None,
-        regularization=None,
-        fname=None,
+        basis_function: str = "gaussian",
+        solution_method: str = "algebraic",
+        regularization: bool = True,
+        fname: str = "solution.pickle",
         overwrite=False,
     ):
         r"""
@@ -206,6 +222,7 @@ class RadialBasisFunctions:
             XY_data (Numpy Array or Pandas Dataframe): The dataset for RBF training. **XY_data** is expected to contain feature and output information, with the output values (y) in the last column.
 
         Keyword Args:
+
             basis_function(str): The basis function transformation to be applied to the training data. Two classes of basis transformations are available for selection:
 
                 - Fixed basis transformations, which require no shape parameter :math:`\sigma` :
@@ -230,18 +247,9 @@ class RadialBasisFunctions:
             regularization(bool): This option determines whether or not the regularization parameter :math:`\lambda` is considered during RBF fitting. Default setting is True.
 
 
-        Returns:
-            **self** object with the input information
-
         Raises:
-            ValueError: The input dataset is of the wrong type (not a NumPy array or Pandas Dataframe)
+            TypeError or ValueError: The input dataset is of the wrong type (not a NumPy array or Pandas Dataframe)
 
-            Exception:
-                * **basis_function** entry is not valid.
-            Exception:
-                * **solution_method** is not 'algebraic', 'pyomo' or 'bfgs'.
-            Exception:
-                - :math:`\lambda` is not boolean.
 
         **Example:**
 
@@ -249,51 +257,38 @@ class RadialBasisFunctions:
 
             # Specify the gaussian basis transformation
             >>> d = RadialBasisFunctions(XY_data, basis_function='gaussian')
+            >>> e = RadialBasisFunctions(XY_data)  # equivalent to above, since gaussian is default
 
         """
+        _log.info(f"RadialBasisFunctions constructor:begin")
+
+        # Use class-wide output directory or current directory if none is defined
+        output_dir = self.output_dir or Path(".")
+
         if not isinstance(overwrite, bool):
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception("overwrite must be boolean.")
+            self._bad_arg(overwrite, "overwrite", "must be boolean", type_error=True)
         self.overwrite = overwrite
-        if fname is None:
-            fname = "solution.pickle"
-            self.filename = "solution.pickle"
-        elif (
-            not isinstance(fname, str)
-            or os.path.splitext(fname)[-1].lower() != ".pickle"
-        ):
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception(
-                'fname must be a string with extension ".pickle". Please correct.'
-            )
-        if (
-            os.path.exists(fname) and overwrite is True
-        ):  # Explicit overwrite done by user
-            print(
-                "Warning:",
-                fname,
-                "already exists; previous file will be overwritten.\n",
-            )
-            self.filename = fname
-        elif os.path.exists(fname) and overwrite is False:  # User is not overwriting
-            self.filename = (
-                os.path.splitext(fname)[0]
-                + "_v_"
-                + pd.Timestamp.today().strftime("%m-%d-%y_%H%M%S")
-                + ".pickle"
-            )
-            print(
-                "Warning:",
-                fname,
-                'already exists; results will be saved to "',
-                self.filename,
-                '".\n',
-            )
-            # self.filename = 'solution.pickle'
-        elif os.path.exists(fname) is False:
-            self.filename = fname
+
+        if not isinstance(fname, str):
+            self._bad_arg(fname, "fname", "must be a string", type_error=True)
+        if not fname.endswith(".pickle"):
+            self._bad_arg(fname, "fname", "must have extension '.pickle'")
+        # Explicit overwrite done by user
+        full_path = output_dir / fname
+        if full_path.exists():
+            if overwrite:
+                _log.warning(
+                    f"file '{full_path}' exists, previous file will be overwritten"
+                )
+                self.filename = str(full_path)
+            else:  # User is not overwriting
+                self.filename = date_versioned_filename(str(full_path))
+                _log.warning(
+                    f"'{full_path}' exists, results will be saved "
+                    f"to '{self.filename}'"
+                )
+        else:
+            self.filename = str(full_path)
 
         # Check data types and shapes
         if isinstance(XY_data, pd.DataFrame):
@@ -314,65 +309,34 @@ class RadialBasisFunctions:
         self.y_data = y_data_scaled.reshape(self.y_data_unscaled.shape)
         self.centres = xy_data_scaled[:, :-1]
 
-        if solution_method is None:
-            solution_method = "algebraic"
-            self.solution_method = solution_method
-            print("Default parameter estimation method is used.")
-        elif not isinstance(solution_method, str):
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception("Invalid solution method. Must be of type <str>.")
-        elif (
-            (solution_method.lower() == "algebraic")
-            or (solution_method.lower() == "pyomo")
-            or (solution_method.lower() == "bfgs")
-        ):
-            solution_method = solution_method.lower()
-            self.solution_method = solution_method
-        else:
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception(
-                'Invalid solution method entered. Select one of ALGEBRAIC (solution_method="algebraic") , L-BFGS (solution_method="bfgs") or Pyomo optimization (solution_method="pyomo") methods. '
+        meth, aname = solution_method, "solution_method"
+        if not isinstance(meth, str):
+            self._bad_arg(meth, aname, "must be a string", type_error=True)
+        meth = meth.lower()
+        if meth not in self.SOLUTION_METHODS:
+            method_list = ", ".join(
+                [f"'{k}'={v}" for k, v in self.SOLUTION_METHODS.items()]
             )
-        print("\nParameter estimation method: ", self.solution_method)
+            self._bad_arg(meth, aname, f"not in known methods: {method_list}")
+        self.solution_method = meth
+        _log.info(f"Parameter estimation method: {self.solution_method}")
 
-        if basis_function is None:
-            basis_function = "gaussian"
-            self.basis_function = basis_function
-            print("Gaussian basis function is used.")
-        elif not isinstance(basis_function, str):
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception("Invalid basis_function. Must be of type <str>.")
-        elif (
-            (basis_function.lower() == "linear")
-            or (basis_function.lower() == "cubic")
-            or (basis_function.lower() == "gaussian")
-            or (basis_function.lower() == "mq")
-            or (basis_function.lower() == "imq")
-            or (basis_function.lower() == "spline")
-        ):
-            basis_function = basis_function.lower()
-            self.basis_function = basis_function
-        else:
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception(
-                "Invalid basis function entered. See manual for available options. "
+        bfunc, aname = basis_function, "basis_function"
+        if not isinstance(bfunc, str):
+            self._bad_arg(bfunc, aname, "must be a string", type_error=True)
+        bfunc = bfunc.lower()
+        if bfunc not in self.BASIS_FUNCTIONS:
+            bfunc_list = ", ".join(list(self.BASIS_FUNCTIONS))
+            self._bad_arg(bfunc, aname, f"not in known methods: {bfunc_list}")
+        self.basis_function = bfunc
+        _log.info(f"Basis function: {self.basis_function}")
+
+        if not isinstance(regularization, bool):
+            self._bad_arg(
+                regularization, "regularization", "must be boolean", type_error=True
             )
-        print("Basis function: ", self.basis_function)
-
-        if regularization is None:
-            regularization = True
-            self.regularization = regularization
-        elif not isinstance(regularization, bool):
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception("Invalid basis_function. Must be boolean")
-        elif (regularization is True) or (regularization is False):
-            self.regularization = regularization
-        print("Regularization done: ", self.regularization)
+        self.regularization = regularization
+        _log.info(f"Regularization done: {self.regularization}")
 
         # Results
         self.weights = None
@@ -387,6 +351,20 @@ class RadialBasisFunctions:
         self.y_data_min = None
         self.y_data_max = None
         self.solution_status = None
+
+    @staticmethod
+    def _bad_arg(arg, name: str, why: str, type_error: bool = False, show: bool = True):
+        """Utility function to normalize raising of type and value errors
+        encountered during argument validation.
+        """
+        _log.warning(
+            f"RadialBasisFunctions constructor:end "
+            f"status={'Type' if type_error else 'Value'}Error arg={name}"
+        )
+        s = f"argument '{name}' ({arg}) {why}" if show else f"argument '{name}' {why}"
+        if type_error:
+            raise TypeError(s)
+        raise ValueError(s)
 
     def r2_distance(self, c):
         """
@@ -1105,7 +1083,7 @@ class RadialBasisFunctions:
         if x_condition_number < (1 / np.finfo(float).eps):
             self.solution_status = "ok"
         else:
-            warnings.warn(
+            _log.warning(
                 "The parameter matrix A in A.x=B is ill-conditioned (condition number > 1e10). The solution returned may be inaccurate or unstable - inspect rmse error. Regularization (if not already done) may improve solution"
             )
             self.solution_status = "unstable solution"
@@ -1191,7 +1169,8 @@ class RadialBasisFunctions:
 
         """
         t1 = np.array([variable_list], dtype="object")
-        # Reshaping of variable array is necessary when input variables are Pyomo scalar variables
+        # Reshaping of variable array is necessary when input variables are
+        # Pyomo scalar variables
         t1 = t1.reshape(1, len(variable_list)) if t1.ndim > 2 else t1
 
         basis_vector = []
@@ -1249,19 +1228,23 @@ class RadialBasisFunctions:
     def get_feature_vector(self):
         """
 
-        The ``get_feature_vector`` method generates the list of regression features from the column headers of the input dataset.
+        The ``get_feature_vector`` method generates the list of regression features
+        from the column headers of the input dataset.
 
         Returns:
-            Pyomo IndexedParam  : An indexed parameter list of the variables supplied in the original data
+            Pyomo IndexedParam  : An indexed parameter list of the variables supplied
+            in the original data
 
         **Example:**
 
         .. code-block:: python
 
-            # Create a small dataframe with three columns ('one', 'two', 'three') and two rows (A, B)
+            # Create a small dataframe with three columns ('one', 'two', 'three')
+            # and two rows (A, B)
             >>> xy_data = pd.DataFrame.from_items([('A', [1, 2, 3]), ('B', [4, 5, 6])], orient='index', columns=['one', 'two', 'three'])
 
-            # Initialize the **RadialBasisFunctions** class with a linear kernel and print the column headers for the variables
+            # Initialize the **RadialBasisFunctions** class with a linear kernel
+            # and print the column headers for the variables
             >>> f = RadialBasisFunctions(xy_data, basis_function='linear')
             >>> p = f.get_feature_vector()
             >>> for i in p.keys():
@@ -1289,20 +1272,14 @@ class RadialBasisFunctions:
 
     @staticmethod
     def pickle_load(solution_file):
-        """
-        pickle_load loads the results of a saved run 'file.obj'.
+        """Loads the results of a saved run 'file.obj'.
 
-        Input arguments:
-                solution_file            : Pickle object file containing previous solution to be loaded.
-
+        ArgsL
+                solution_file: Pickle object file containing previous solution
+                               to be loaded.
         """
-        try:
-            filehandler = open(solution_file, "rb")
-            return pickle.load(filehandler)
-        except:
-            # PYLINT-TODO
-            # pylint: disable-next=broad-exception-raised
-            raise Exception("File could not be loaded.")
+        filehandler = open(solution_file, "rb")
+        return pickle.load(filehandler)
 
     def parity_residual_plots(self):
         """

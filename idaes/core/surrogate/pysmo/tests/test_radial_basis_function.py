@@ -13,6 +13,8 @@
 import sys
 import os
 from unittest.mock import patch
+from tempfile import TemporaryDirectory
+from pathlib import Path
 
 sys.path.append(os.path.abspath(".."))  # current folder is ~/tests\
 from idaes.core.surrogate.pysmo.radial_basis_function import (
@@ -23,6 +25,12 @@ import numpy as np
 import pandas as pd
 from scipy.spatial import distance
 import pytest
+from idaes.core.surrogate.pysmo.tests import logs_got_warning
+
+
+# Set a temporary directory for output
+_tmpdir = TemporaryDirectory()
+RadialBasisFunctions.output_dir = Path(_tmpdir.name)
 
 
 class TestFeatureScaling:
@@ -153,6 +161,7 @@ class TestFeatureScaling:
 
 
 class TestRadialBasisFunction:
+
     y = np.array(
         [
             [i, j, ((i + 1) ** 2) + ((j + 1) ** 2)]
@@ -176,34 +185,55 @@ class TestRadialBasisFunction:
     sample_points_3d = [[i, (i + 1) ** 2, (i + 2) ** 2] for i in range(8)]
 
     @pytest.mark.unit
+    def test_constructor_nones(self):
+        """For some reason, the original interface didn't provide default values
+        for keyword arguments, but instead explicitly tested for None in the body
+        of the constructor. This may have (mis)led people to explicitly pass None
+        as a value instead of not including keywords when they wanted the default value.
+        Since there are also explicit type-checks, passing None for something that
+        should be a bool or string will fail with a TypeError.
+
+        In other words, don't do this! If you want the default value, omit the keyword.
+        """
+        input_array = pd.DataFrame(self.test_data)
+        with pytest.raises(TypeError):
+            RadialBasisFunctions(input_array, basis_function=None)
+        with pytest.raises(TypeError):
+            RadialBasisFunctions(input_array, solution_method=None)
+        with pytest.raises(TypeError):
+            RadialBasisFunctions(input_array, regularization=None)
+        with pytest.raises(TypeError):
+            RadialBasisFunctions(input_array, fname=None)
+        with pytest.raises(TypeError):
+            RadialBasisFunctions(input_array, overwrite=None)
+
+    @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test__init__01(self, array_type):
         input_array = array_type(self.test_data)
-        RbfClass = RadialBasisFunctions(
-            input_array, basis_function=None, solution_method=None, regularization=None
-        )
-        assert RbfClass.solution_method == "algebraic"
-        assert RbfClass.basis_function == "gaussian"
-        assert RbfClass.regularization == True
+        rbf_class = RadialBasisFunctions(input_array)
+        assert rbf_class.solution_method == "algebraic"
+        assert rbf_class.basis_function == "gaussian"
+        assert rbf_class.regularization is True
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test__init__02(self, array_type):
         input_array = array_type(self.test_data)
-        RbfClass = RadialBasisFunctions(
+        rbf_class = RadialBasisFunctions(
             input_array,
             basis_function="LineaR",
             solution_method="PyoMo",
             regularization=False,
         )
-        assert RbfClass.solution_method == "pyomo"
-        assert RbfClass.basis_function == "linear"
-        assert RbfClass.regularization == False
+        assert rbf_class.solution_method == "pyomo"
+        assert rbf_class.basis_function == "linear"
+        assert rbf_class.regularization == False
 
     @pytest.mark.unit
     def test__init__03(self):
-        with pytest.raises(Exception):
-            RbfClass = RadialBasisFunctions(
+        with pytest.raises((TypeError, ValueError)):
+            rbf_class = RadialBasisFunctions(
                 [1, 2, 3, 4],
                 basis_function="LineaR",
                 solution_method="PyoMo",
@@ -213,60 +243,50 @@ class TestRadialBasisFunction:
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test__init__04(self, array_type):
-        with pytest.raises(Exception):
+        with pytest.raises((TypeError, ValueError)):
             input_array = array_type(self.test_data)
-            RbfClass = RadialBasisFunctions(
-                input_array, basis_function=None, solution_method=1, regularization=None
-            )
+            rbf_class = RadialBasisFunctions(input_array, solution_method=1)
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test__init__05(self, array_type):
-        with pytest.raises(Exception):
+        with pytest.raises((TypeError, ValueError)):
             input_array = array_type(self.test_data)
-            RbfClass = RadialBasisFunctions(
+            rbf_class = RadialBasisFunctions(
                 input_array,
-                basis_function=None,
                 solution_method="idaes",
-                regularization=None,
             )
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test__init__06(self, array_type):
-        with pytest.raises(Exception):
+        with pytest.raises((TypeError, ValueError)):
             input_array = array_type(self.test_data)
-            RbfClass = RadialBasisFunctions(
-                input_array, basis_function=1, solution_method=None, regularization=None
-            )
+            rbf_class = RadialBasisFunctions(input_array, basis_function=1)
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test__init__07(self, array_type):
-        with pytest.raises(Exception):
+        with pytest.raises((TypeError, ValueError)):
             input_array = array_type(self.test_data)
-            RbfClass = RadialBasisFunctions(
+            RadialBasisFunctions(
                 input_array,
                 basis_function="idaes",
-                solution_method=None,
-                regularization=None,
             )
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test__init__08(self, array_type):
-        with pytest.raises(Exception):
+        with pytest.raises((TypeError, ValueError)):
             input_array = array_type(self.test_data)
-            RbfClass = RadialBasisFunctions(
-                input_array, basis_function=None, solution_method=None, regularization=1
-            )
+            RadialBasisFunctions(input_array, regularization=1)
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test__init__09(self, array_type):
-        with pytest.raises(Exception):
+        with pytest.raises((TypeError, ValueError)):
             input_array = array_type(self.test_data)
-            RbfClass = RadialBasisFunctions(
+            RadialBasisFunctions(
                 input_array,
                 basis_function="LineaR",
                 solution_method="PyoMo",
@@ -277,9 +297,9 @@ class TestRadialBasisFunction:
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test__init__10(self, array_type):
-        with pytest.raises(Exception):
+        with pytest.raises((TypeError, ValueError)):
             input_array = array_type(self.test_data)
-            RbfClass = RadialBasisFunctions(
+            rbf_class = RadialBasisFunctions(
                 input_array,
                 basis_function="LineaR",
                 solution_method="PyoMo",
@@ -290,9 +310,9 @@ class TestRadialBasisFunction:
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test__init__11(self, array_type):
-        with pytest.raises(Exception):
+        with pytest.raises((TypeError, ValueError)):
             input_array = array_type(self.test_data)
-            RbfClass = RadialBasisFunctions(
+            rbf_class = RadialBasisFunctions(
                 input_array,
                 basis_function="LineaR",
                 solution_method="PyoMo",
@@ -305,7 +325,7 @@ class TestRadialBasisFunction:
     def test__init__12(self, array_type):
         file_name = "test_filename.pickle"
         input_array = array_type(self.test_data)
-        RbfClass1 = RadialBasisFunctions(
+        rbf_class1 = RadialBasisFunctions(
             input_array,
             basis_function="LineaR",
             solution_method="PyoMo",
@@ -313,9 +333,9 @@ class TestRadialBasisFunction:
             fname=file_name,
             overwrite=True,
         )
-        p = RbfClass1.get_feature_vector()
-        results = RbfClass1.training()
-        RbfClass2 = RadialBasisFunctions(
+        p = rbf_class1.get_feature_vector()
+        results = rbf_class1.training()
+        rbf_class2 = RadialBasisFunctions(
             input_array,
             basis_function="LineaR",
             solution_method="PyoMo",
@@ -323,7 +343,7 @@ class TestRadialBasisFunction:
             fname=file_name,
             overwrite=True,
         )
-        assert RbfClass1.filename == RbfClass2.filename
+        assert rbf_class1.filename == rbf_class2.filename
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
@@ -331,7 +351,7 @@ class TestRadialBasisFunction:
         input_array = array_type(self.test_data)
         file_name1 = "test_filename1.pickle"
         file_name2 = "test_filename2.pickle"
-        RbfClass1 = RadialBasisFunctions(
+        rbf_class1 = RadialBasisFunctions(
             input_array,
             basis_function="LineaR",
             solution_method="PyoMo",
@@ -339,9 +359,9 @@ class TestRadialBasisFunction:
             fname=file_name1,
             overwrite=True,
         )
-        p = RbfClass1.get_feature_vector()
-        RbfClass1.training()
-        RbfClass2 = RadialBasisFunctions(
+        p = rbf_class1.get_feature_vector()
+        rbf_class1.training()
+        rbf_class2 = RadialBasisFunctions(
             input_array,
             basis_function="LineaR",
             solution_method="PyoMo",
@@ -349,8 +369,9 @@ class TestRadialBasisFunction:
             fname=file_name2,
             overwrite=True,
         )
-        assert RbfClass1.filename == file_name1
-        assert RbfClass2.filename == file_name2
+        # due to output_dir, compare basename instead of full path
+        assert os.path.basename(rbf_class1.filename) == file_name1
+        assert os.path.basename(rbf_class2.filename) == file_name2
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
@@ -526,27 +547,27 @@ class TestRadialBasisFunction:
         output_2 = data_feed_02.basis_generation(2)
         np.testing.assert_array_equal(expected_output_2, output_2)
 
-        # # Spline
+        # Spline
         data_feed_03 = RadialBasisFunctions(input_array[0:3], basis_function="spline")
         expected_output_3 = np.nan_to_num(distance_array**2 * np.log(distance_array))
         output_3 = data_feed_03.basis_generation(2)
         np.testing.assert_array_equal(expected_output_3, output_3)
 
-        # # Gaussian
+        # Gaussian
         data_feed_04 = RadialBasisFunctions(input_array[0:3], basis_function="gaussian")
         shape_value = 2
         expected_output_4 = np.exp(-1 * ((distance_array * shape_value) ** 2))
         output_4 = data_feed_04.basis_generation(shape_value)
         np.testing.assert_array_equal(expected_output_4, output_4)
 
-        # # Multiquadric
+        # Multiquadric
         data_feed_05 = RadialBasisFunctions(input_array[0:3], basis_function="mq")
         shape_value = 2
         expected_output_5 = np.sqrt(((distance_array * shape_value) ** 2) + 1)
         output_5 = data_feed_05.basis_generation(shape_value)
         np.testing.assert_array_equal(expected_output_5, output_5)
 
-        # # Inverse multiquadric
+        # Inverse multiquadric
         data_feed_06 = RadialBasisFunctions(input_array[0:3], basis_function="imq")
         shape_value = 2
         expected_output_6 = 1 / np.sqrt(((distance_array * shape_value) ** 2) + 1)
@@ -556,124 +577,59 @@ class TestRadialBasisFunction:
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array])
     def test_cost_function_01(self, array_type):
-        input_array = array_type(self.training_data)
-        x = input_array[:, :-1]
-        y = input_array[:, -1]
-        x_data_nr = x.shape[0]
-        x_data_nc = 6
-        x_vector = np.zeros((x_data_nr, x_data_nc))
-        x_vector[:, 0] = 1
-        x_vector[:, 1] = x[:, 0]
-        x_vector[:, 2] = x[:, 1]
-        x_vector[:, 3] = x[:, 0] ** 2
-        x_vector[:, 4] = x[:, 1] ** 2
-        x_vector[:, 5] = x[:, 0] * x[:, 1]
+        x_vector, y, x_data_nc = self.cost_function_common(array_type)
         theta = np.zeros((x_data_nc, 1))
-        expected_value = 6613.875
-        output_1 = RadialBasisFunctions.cost_function(theta, x_vector, y)
-        assert output_1 == expected_value
+        assert 6613.875 == RadialBasisFunctions.cost_function(theta, x_vector, y)
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array])
     def test_cost_function_02(self, array_type):
-        input_array = array_type(self.training_data)
-        x = input_array[:, :-1]
-        y = input_array[:, -1]
-        x_data_nr = x.shape[0]
-        x_data_nc = 6
-        x_vector = np.zeros((x_data_nr, x_data_nc))
-        x_vector[:, 0] = 1
-        x_vector[:, 1] = x[:, 0]
-        x_vector[:, 2] = x[:, 1]
-        x_vector[:, 3] = x[:, 0] ** 2
-        x_vector[:, 4] = x[:, 1] ** 2
-        x_vector[:, 5] = x[:, 0] * x[:, 1]
+        x_vector, y, x_data_nc = self.cost_function_common(array_type)
         theta = np.array([[4.5], [3], [3], [1], [1], [0]])
-        expected_value = 90.625  # Calculated externally as sum(dy^2) / 2m
-        output_1 = RadialBasisFunctions.cost_function(theta, x_vector, y)
-        assert output_1 == expected_value
+        # Calculated externally as sum(dy^2) / 2m
+        assert 90.625 == RadialBasisFunctions.cost_function(theta, x_vector, y)
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array])
     def test_cost_function_03(self, array_type):
-        input_array = array_type(self.training_data)
-        x = input_array[:, :-1]
-        y = input_array[:, -1]
-        x_data_nr = x.shape[0]
-        x_data_nc = 6
-        x_vector = np.zeros((x_data_nr, x_data_nc))
-        x_vector[:, 0] = 1
-        x_vector[:, 1] = x[:, 0]
-        x_vector[:, 2] = x[:, 1]
-        x_vector[:, 3] = x[:, 0] ** 2
-        x_vector[:, 4] = x[:, 1] ** 2
-        x_vector[:, 5] = x[:, 0] * x[:, 1]
+        x_vector, y, x_data_nc = self.cost_function_common(array_type)
         theta = np.array([[2], [2], [2], [1], [1], [0]])
-        expected_value = 0
-        output_1 = RadialBasisFunctions.cost_function(theta, x_vector, y)
-        assert output_1 == expected_value
+        assert 0 == RadialBasisFunctions.cost_function(theta, x_vector, y)
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array])
     def test_gradient_function_01(self, array_type):
-        input_array = array_type(self.training_data)
-        x = input_array[:, :-1]
-        y = input_array[:, -1]
-        x_data_nr = x.shape[0]
-        x_data_nc = 6
-        x_vector = np.zeros((x_data_nr, x_data_nc))
-        x_vector[:, 0] = 1
-        x_vector[:, 1] = x[:, 0]
-        x_vector[:, 2] = x[:, 1]
-        x_vector[:, 3] = x[:, 0] ** 2
-        x_vector[:, 4] = x[:, 1] ** 2
-        x_vector[:, 5] = x[:, 0] * x[:, 1]
+        x_vector, y, x_data_nc = self.gradient_function_common(array_type)
         theta = np.zeros((x_data_nc,))
-        expected_value = np.array(
-            [[-97], [-635], [-635], [-5246.875], [-5246.875], [-3925]]
-        )
-        expected_value = expected_value.reshape(
-            expected_value.shape[0],
-        )
-        output_1 = RadialBasisFunctions.gradient_function(theta, x_vector, y)
-        np.testing.assert_equal(output_1, expected_value)
+        ev = np.array([[-97], [-635], [-635], [-5246.875], [-5246.875], [-3925]])
+        self.gradient_function_compare(ev, theta, x_vector, y)
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array])
     def test_gradient_function_02(self, array_type):
-        input_array = array_type(self.training_data)
-        x = input_array[:, :-1]
-        y = input_array[:, -1]
-        x_data_nr = x.shape[0]
-        x_data_nc = 6
-        x_vector = np.zeros((x_data_nr, x_data_nc))
-        x_vector[:, 0] = 1
-        x_vector[:, 1] = x[:, 0]
-        x_vector[:, 2] = x[:, 1]
-        x_vector[:, 3] = x[:, 0] ** 2
-        x_vector[:, 4] = x[:, 1] ** 2
-        x_vector[:, 5] = x[:, 0] * x[:, 1]
-        theta = np.array(
-            [[4.5], [3], [3], [1], [1], [0]]
-        )  # coefficients in (x1 + 1.5)^2 + (x2 + 1.5) ^ 2
-        theta = theta.reshape(
-            theta.shape[0],
-        )
-        expected_value = np.array(
-            [[12.5], [75], [75], [593.75], [593.75], [437.5]]
-        )  # Calculated externally: see Excel sheet
-        expected_value = expected_value.reshape(
-            expected_value.shape[0],
-        )
-        output_1 = RadialBasisFunctions.gradient_function(theta, x_vector, y)
-        np.testing.assert_equal(output_1, expected_value)
+        x_vector, y, _ = self.gradient_function_common(array_type)
+        # coefficients in (x1 + 1.5)^2 + (x2 + 1.5) ^ 2
+        theta = np.array([[4.5], [3], [3], [1], [1], [0]])
+        theta = theta.reshape(theta.shape[0])
+        # Calculated externally: see Excel sheet
+        ev = np.array([[12.5], [75], [75], [593.75], [593.75], [437.5]])
+        self.gradient_function_compare(ev, theta, x_vector, y)
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array])
     def test_gradient_function_03(self, array_type):
-        input_array = array_type(self.training_data)
-        x = input_array[:, :-1]
-        y = input_array[:, -1]
+        x_vector, y, _ = self.gradient_function_common(array_type)
+        # Actual coefficients in (x1 + 1)^2 + (x2 + 1) ^ 2
+        theta = np.array([[2], [2], [2], [1], [1], [0]])
+        theta = theta.reshape(theta.shape[0])
+        ev = np.array([[0], [0], [0], [0], [0], [0]])
+        self.gradient_function_compare(ev, theta, x_vector, y)
+
+    @classmethod
+    def gradient_function_common(cls, arr_type):
+        arr = arr_type(cls.training_data)
+        x = arr[:, :-1]
+        y = arr[:, -1]
         x_data_nr = x.shape[0]
         x_data_nc = 6
         x_vector = np.zeros((x_data_nr, x_data_nc))
@@ -683,20 +639,17 @@ class TestRadialBasisFunction:
         x_vector[:, 3] = x[:, 0] ** 2
         x_vector[:, 4] = x[:, 1] ** 2
         x_vector[:, 5] = x[:, 0] * x[:, 1]
-        theta = np.array(
-            [[2], [2], [2], [1], [1], [0]]
-        )  # Actual coefficients in (x1 + 1)^2 + (x2 + 1) ^ 2
-        theta = theta.reshape(
-            theta.shape[0],
-        )
-        expected_value = np.array(
-            [[0], [0], [0], [0], [0], [0]]
-        )  # Calculated externally: see Excel sheet
-        expected_value = expected_value.reshape(
-            expected_value.shape[0],
-        )
-        output_1 = RadialBasisFunctions.gradient_function(theta, x_vector, y)
-        np.testing.assert_equal(output_1, expected_value)
+        return x_vector, y, x_data_nc
+
+    @classmethod
+    def cost_function_common(cls, arr_type):
+        return cls.gradient_function_common(arr_type)
+
+    @staticmethod
+    def gradient_function_compare(expected_value, *args):
+        expected_value = expected_value.reshape(expected_value.shape[0])
+        result = RadialBasisFunctions.gradient_function(*args)
+        np.testing.assert_equal(result, expected_value)
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
@@ -1026,9 +979,7 @@ class TestRadialBasisFunction:
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test_leave_one_out_crossvalidation_01(self, array_type):
         input_array = array_type(self.training_data)
-        data_feed = RadialBasisFunctions(
-            input_array, basis_function=None, solution_method=None, regularization=False
-        )
+        data_feed = RadialBasisFunctions(input_array, regularization=False)
         r_best, lambda_best, error_best = data_feed.leave_one_out_crossvalidation()
         if (
             (data_feed.basis_function == "gaussian")
@@ -1103,7 +1054,6 @@ class TestRadialBasisFunction:
         data_feed = RadialBasisFunctions(
             input_array,
             basis_function="cubic",
-            solution_method=None,
             regularization=False,
         )
         r_best, lambda_best, error_best = data_feed.leave_one_out_crossvalidation()
@@ -1180,7 +1130,6 @@ class TestRadialBasisFunction:
         data_feed = RadialBasisFunctions(
             input_array,
             basis_function="linear",
-            solution_method=None,
             regularization=False,
         )
         r_best, lambda_best, error_best = data_feed.leave_one_out_crossvalidation()
@@ -1257,7 +1206,6 @@ class TestRadialBasisFunction:
         data_feed = RadialBasisFunctions(
             input_array,
             basis_function="spline",
-            solution_method=None,
             regularization=False,
         )
         r_best, lambda_best, error_best = data_feed.leave_one_out_crossvalidation()
@@ -1334,7 +1282,6 @@ class TestRadialBasisFunction:
         data_feed = RadialBasisFunctions(
             input_array,
             basis_function="gaussian",
-            solution_method=None,
             regularization=False,
         )
         r_best, lambda_best, error_best = data_feed.leave_one_out_crossvalidation()
@@ -1409,7 +1356,7 @@ class TestRadialBasisFunction:
     def test_leave_one_out_crossvalidation_06(self, array_type):
         input_array = array_type(self.training_data)
         data_feed = RadialBasisFunctions(
-            input_array, basis_function="mq", solution_method=None, regularization=False
+            input_array, basis_function="mq", regularization=False
         )
         r_best, lambda_best, error_best = data_feed.leave_one_out_crossvalidation()
         if (
@@ -1485,7 +1432,6 @@ class TestRadialBasisFunction:
         data_feed = RadialBasisFunctions(
             input_array,
             basis_function="imq",
-            solution_method=None,
             regularization=False,
         )
         r_best, lambda_best, error_best = data_feed.leave_one_out_crossvalidation()
@@ -1561,7 +1507,6 @@ class TestRadialBasisFunction:
         input_array = array_type(self.training_data)
         data_feed = RadialBasisFunctions(
             input_array,
-            basis_function=None,
             solution_method="algebraic",
             regularization=False,
         )
@@ -1638,7 +1583,6 @@ class TestRadialBasisFunction:
         input_array = array_type(self.training_data)
         data_feed = RadialBasisFunctions(
             input_array,
-            basis_function=None,
             solution_method="BFGS",
             regularization=False,
         )
@@ -1715,7 +1659,6 @@ class TestRadialBasisFunction:
         input_array = array_type(self.training_data)
         data_feed = RadialBasisFunctions(
             input_array,
-            basis_function=None,
             solution_method="pyomo",
             regularization=False,
         )
@@ -1790,9 +1733,7 @@ class TestRadialBasisFunction:
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test_leave_one_out_crossvalidation_11(self, array_type):
         input_array = array_type(self.training_data)
-        data_feed = RadialBasisFunctions(
-            input_array, basis_function=None, solution_method=None, regularization=True
-        )
+        data_feed = RadialBasisFunctions(input_array, regularization=True)
         r_best, lambda_best, error_best = data_feed.leave_one_out_crossvalidation()
         if (
             (data_feed.basis_function == "gaussian")
@@ -1866,7 +1807,6 @@ class TestRadialBasisFunction:
         input_array = array_type(self.test_data)
         data_feed = RadialBasisFunctions(
             input_array,
-            basis_function=None,
             solution_method="algebraic",
             regularization=False,
         )
@@ -1923,33 +1863,32 @@ class TestRadialBasisFunction:
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
-    def test_rbf_training_02(self, array_type):
+    def test_rbf_training_02(self, array_type, caplog):
         input_array = array_type(self.test_data)
         data_feed = RadialBasisFunctions(
             input_array,
-            basis_function=None,
             solution_method="pyomo",
             regularization=False,
         )
         data_feed.training()
-        with pytest.warns(Warning):
-            results = data_feed.training()
-            assert data_feed.solution_status == "unstable solution"
+
+        results = data_feed.training()
+        assert data_feed.solution_status == "unstable solution"
+        assert logs_got_warning(caplog.records)
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
-    def test_rbf_training_03(self, array_type):
+    def test_rbf_training_03(self, array_type, caplog):
         input_array = array_type(self.test_data)
         data_feed = RadialBasisFunctions(
             input_array,
-            basis_function=None,
             solution_method="bfgs",
             regularization=False,
         )
         data_feed.training()
-        with pytest.warns(Warning):
-            data_feed.training()
-            assert data_feed.solution_status == "unstable solution"
+        data_feed.training()
+        assert data_feed.solution_status == "unstable solution"
+        assert logs_got_warning(caplog.records)
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
@@ -2122,7 +2061,6 @@ class TestRadialBasisFunction:
         data_feed = RadialBasisFunctions(
             input_array,
             basis_function="linear",
-            solution_method=None,
             regularization=False,
         )
         p = data_feed.get_feature_vector()
@@ -2139,7 +2077,6 @@ class TestRadialBasisFunction:
         data_feed = RadialBasisFunctions(
             input_array,
             basis_function="cubic",
-            solution_method=None,
             regularization=False,
         )
         p = data_feed.get_feature_vector()
@@ -2156,7 +2093,6 @@ class TestRadialBasisFunction:
         data_feed = RadialBasisFunctions(
             input_array,
             basis_function="gaussian",
-            solution_method=None,
             regularization=False,
         )
         p = data_feed.get_feature_vector()
@@ -2171,7 +2107,7 @@ class TestRadialBasisFunction:
     def test_rbf_generate_expression_04(self, array_type):
         input_array = array_type(self.training_data)
         data_feed = RadialBasisFunctions(
-            input_array, basis_function="mq", solution_method=None, regularization=False
+            input_array, basis_function="mq", regularization=False
         )
         p = data_feed.get_feature_vector()
         results = data_feed.training()
@@ -2187,7 +2123,6 @@ class TestRadialBasisFunction:
         data_feed = RadialBasisFunctions(
             input_array,
             basis_function="imq",
-            solution_method=None,
             regularization=False,
         )
         p = data_feed.get_feature_vector()
@@ -2204,7 +2139,6 @@ class TestRadialBasisFunction:
         data_feed = RadialBasisFunctions(
             input_array,
             basis_function="spline",
-            solution_method=None,
             regularization=False,
         )
         p = data_feed.get_feature_vector()
@@ -2221,7 +2155,6 @@ class TestRadialBasisFunction:
         data_feed = RadialBasisFunctions(
             input_array,
             basis_function="spline",
-            solution_method=None,
             regularization=False,
         )
         p = data_feed.get_feature_vector()
@@ -2235,7 +2168,6 @@ class TestRadialBasisFunction:
         data_feed = RadialBasisFunctions(
             input_array,
             basis_function="spline",
-            solution_method=None,
             regularization=False,
         )
         p = data_feed.get_feature_vector()
@@ -2251,7 +2183,6 @@ class TestRadialBasisFunction:
         data_feed = RadialBasisFunctions(
             input_array,
             basis_function="spline",
-            solution_method=None,
             regularization=False,
         )
         p = data_feed.get_feature_vector()
