@@ -114,6 +114,8 @@ class _IndexedProcessBlockMeta(type):
         dct["__process_block__"] = "indexed"
         # provide function ``base_class_module()`` to get unit module, for visualizer
         dct["base_class_module"] = lambda mcs: bases[0].__module__
+        # provide function ``process_block_class()`` to get the constructing class
+        dct["process_block_class"] = lambda mcs: bases[0]
         return type.__new__(mcs, name, bases, dct)
 
 
@@ -130,6 +132,8 @@ class _ScalarProcessBlockMeta(type):
         dct["__process_block__"] = "scalar"
         # provide function ``base_class_module()`` to get unit module, for visualizer
         dct["base_class_module"] = lambda mcs: bases[0].__module__
+        # provide function ``process_block_class()`` to get the constructing class
+        dct["process_block_class"] = lambda mcs: bases[1]
         return type.__new__(mcs, name, bases, dct)
 
 
