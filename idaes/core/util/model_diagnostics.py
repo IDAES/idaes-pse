@@ -59,7 +59,6 @@ from pyomo.core.expr.numeric_expr import (
 from pyomo.core.base.block import BlockData
 from pyomo.core.base.var import VarData
 from pyomo.core.base.constraint import ConstraintData
-from pyomo.core.base.param import ParamData
 from pyomo.repn.standard_repn import (  # pylint: disable=no-name-in-module
     generate_standard_repn,
 )
@@ -4130,7 +4129,30 @@ def _collect_model_statistics(model):
 
 
 class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
-    def __init__(self, term_mismatch_tolerance=1e6, term_cancellation_tolerance=1e-4):
+    """
+    Expression walker for checking Constraints for problematic terms.
+
+    This walker will walk the expression and look for summation terms
+    with mismatched magnitudes or potential cancellations.
+
+    Args:
+        term_mismatch_tolerance - tolerance to use when determining mismatched
+            terms
+        term_cancellation_tolerance - tolerance to use when identifying
+            possible cancellation of terms
+
+    Returns:
+        list of values for top-level summation terms
+        list of terms with mismatched magnitudes
+        list of terms with potential cancellations
+        bool indicating whether expression is a constant
+    """
+
+    def __init__(
+        self,
+        term_mismatch_tolerance: float = 1e6,
+        term_cancellation_tolerance: float = 1e-4,
+    ):
         super().__init__()
 
         self._mm_tol = log10(term_mismatch_tolerance)
@@ -4144,7 +4166,11 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
             const = True
         return [value(node)], [], [], const
 
+    def _get_value_for_sum_subexpression(self, child_data):
+        return sum(i for i in child_data[0])
+
     def _check_sum_expression(self, node, child_data):
+        # Sum expressions need special handling
         # For sums, collect all child values into a list
         vals = []
         mismatch = []
@@ -4154,7 +4180,7 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
         const = True
         # Collect data from child nodes
         for d in child_data:
-            vals.append(sum(i for i in d[0]))
+            vals.append(self._get_value_for_sum_subexpression(d))
             mismatch += d[1]
             cancelling += d[2]
 
@@ -4170,10 +4196,94 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
             if vl != vs and log10(vl / vs) > self._mm_tol:
                 mismatch.append(str(node))
 
-        # [value], [mismatched terms], [canceling terms]
         return vals, mismatch, cancelling, const
 
+    def _check_product(self, node, child_data):
+        mismatch, cancelling, const = self._perform_checks(node, child_data)
+
+        val = self._get_value_for_sum_subexpression(
+            child_data[0]
+        ) * self._get_value_for_sum_subexpression(child_data[1])
+
+        return [val], mismatch, cancelling, const
+
+    def _check_division(self, node, child_data):
+        mismatch, cancelling, const = self._perform_checks(node, child_data)
+
+        numerator = self._get_value_for_sum_subexpression(child_data[0])
+        denominator = self._get_value_for_sum_subexpression(child_data[1])
+        # TODO: should we look at mismatched magnitudes in num and denom?
+        if denominator == 0:
+            raise ValueError(
+                f"Error in ConstraintTermAnalysisVisitor: found division with denominator of 0 "
+                f"({str(node)})."
+            )
+
+        return [numerator / denominator], mismatch, cancelling, const
+
+    def _check_power(self, node, child_data):
+        mismatch, cancelling, const = self._perform_checks(node, child_data)
+
+        base = self._get_value_for_sum_subexpression(child_data[0])
+        exponent = self._get_value_for_sum_subexpression(child_data[1])
+
+        return [base**exponent], mismatch, cancelling, const
+
+    # def _get_nominal_value_single_child(self, node, child_nominal_values):
+    #     assert len(child_nominal_values) == 1
+    #     return child_nominal_values[0]
+    #
+    # def _get_nominal_value_abs(self, node, child_nominal_values):
+    #     assert len(child_nominal_values) == 1
+    #     return [abs(i) for i in child_nominal_values[0]]
+    #
+    # def _get_nominal_value_negation(self, node, child_nominal_values):
+    #     assert len(child_nominal_values) == 1
+    #     return [-i for i in child_nominal_values[0]]
+    #
+    # def _get_nominal_value_for_unary_function(self, node, child_nominal_values):
+    #     assert len(child_nominal_values) == 1
+    #     func_name = node.getname()
+    #     # TODO: Some of these need the absolute value of the nominal value (e.g. sqrt)
+    #     func_nominal = self._get_nominal_value_for_sum_subexpression(
+    #         child_nominal_values[0]
+    #     )
+    #     func = getattr(math, func_name)
+    #     try:
+    #         return [func(func_nominal)]
+    #     except ValueError:
+    #         raise ValueError(
+    #             f"Evaluation error occurred when getting nominal value in {func_name} "
+    #             f"expression with input {func_nominal}. You should check you scaling factors "
+    #             f"and model to address any numerical issues or scale this constraint manually."
+    #         )
+    #
+    # def _get_nominal_value_expr_if(self, node, child_nominal_values):
+    #     assert len(child_nominal_values) == 3
+    #     return child_nominal_values[1] + child_nominal_values[2]
+    #
+    # def _get_nominal_value_external_function(self, node, child_nominal_values):
+    #     # First, need to get expected magnitudes of input terms, which may be sub-expressions
+    #     input_mag = [
+    #         self._get_nominal_value_for_sum_subexpression(i)
+    #         for i in child_nominal_values
+    #     ]
+    #
+    #     # Next, create a copy of the external function with expected magnitudes as inputs
+    #     newfunc = node.create_node_with_local_data(input_mag)
+    #
+    #     # Evaluate new function and return the absolute value
+    #     return [pyo.value(newfunc)]
+
     def _check_other_expression(self, node, child_data):
+        mismatch, cancelling, const = self._perform_checks(node, child_data)
+
+        # TODO: See if we can be more efficient about getting the value - might need node specific methods
+        # [value], [mismatched terms], [canceling terms], constant
+        return [value(node)], mismatch, cancelling, const
+
+    def _perform_checks(self, node, child_data):
+        # Perform checks for problematic expressions
         # First, need to check to see if any child data is a list
         # This indicates a sum expression
         mismatch = []
@@ -4196,9 +4306,8 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
             if not d[3]:
                 const = False
 
-        # TODO: See if we can be more efficient about getting the value - might need node specific methods
-        # [value], [mismatched terms], [canceling terms], constant
-        return [value(node)], mismatch, cancelling, const
+        # Return any problematic terms found
+        return mismatch, cancelling, const
 
     def _check_equality_expression(self, node, child_data):
         # (In)equality expressions are a special case of sum expressions
@@ -4236,13 +4345,13 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
         EXPR.RangedExpression: _check_sum_expression,
         EXPR.SumExpression: _check_sum_expression,
         EXPR.NPV_SumExpression: _check_sum_expression,
-        EXPR.ProductExpression: _check_other_expression,
-        EXPR.MonomialTermExpression: _check_other_expression,
-        EXPR.NPV_ProductExpression: _check_other_expression,
-        EXPR.DivisionExpression: _check_other_expression,
-        EXPR.NPV_DivisionExpression: _check_other_expression,
-        EXPR.PowExpression: _check_other_expression,
-        EXPR.NPV_PowExpression: _check_other_expression,
+        EXPR.ProductExpression: _check_product,
+        EXPR.MonomialTermExpression: _check_product,
+        EXPR.NPV_ProductExpression: _check_product,
+        EXPR.DivisionExpression: _check_division,
+        EXPR.NPV_DivisionExpression: _check_division,
+        EXPR.PowExpression: _check_power,
+        EXPR.NPV_PowExpression: _check_power,
         EXPR.NegationExpression: _check_other_expression,
         EXPR.NPV_NegationExpression: _check_other_expression,
         EXPR.AbsExpression: _check_other_expression,
@@ -4256,6 +4365,9 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
     }
 
     def exitNode(self, node, data):
+        """
+        Method to call when exiting node to check for potential issues.
+        """
         # Return [node values], [mismatched terms], [cancelling terms], constant
         # first check if the node is a leaf
         nodetype = type(node)

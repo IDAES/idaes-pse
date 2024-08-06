@@ -4291,82 +4291,169 @@ class TestConstraintTermAnalysisVisitor:
     #     assert sc.NominalValueExtractionVisitor().walk_expression(
     #         expr=m.scalar_var + m.indexed_var["a"] - m.scalar_param
     #     ) == [21, 22, -12]
-    #
-    # @pytest.mark.unit
-    # def test_product_expr(self, m):
-    #     assert sc.NominalValueExtractionVisitor().walk_expression(
-    #         expr=m.scalar_var * m.indexed_var["a"] * m.scalar_param
-    #     ) == [21 * 22 * 12]
-    #
-    # @pytest.mark.unit
-    # def test_product_sum_expr(self, m):
-    #     assert sc.NominalValueExtractionVisitor().walk_expression(
-    #         expr=(m.scalar_var + m.indexed_var["a"])
-    #              * (m.scalar_param + m.indexed_var["b"])
-    #     ) == [21 * 12, 21 * 23, 22 * 12, 22 * 23]
-    #
-    # @pytest.mark.unit
-    # def test_product_sum_expr_w_negation(self, m):
-    #     assert sc.NominalValueExtractionVisitor().walk_expression(
-    #         expr=(m.scalar_var - m.indexed_var["a"])
-    #              * (m.scalar_param - m.indexed_var["b"])
-    #     ) == [21 * 12, -21 * 23, -22 * 12, 22 * 23]
-    #
-    # @pytest.mark.unit
-    # def test_division_expr(self, m):
-    #     assert sc.NominalValueExtractionVisitor().walk_expression(
-    #         expr=m.scalar_var / m.indexed_var["a"] / m.scalar_param
-    #     ) == [21 / 22 / 12]
-    #
-    # @pytest.mark.unit
-    # def test_division_sum_expr(self, m):
-    #     assert sc.NominalValueExtractionVisitor().walk_expression(
-    #         expr=(m.scalar_var + m.indexed_var["a"])
-    #              / (m.scalar_param + m.indexed_var["b"])
-    #     ) == [(21 + 22) / (12 + 23)]
-    #
-    # @pytest.mark.unit
-    # def test_division_sum_expr_w_negation(self, m):
-    #     assert sc.NominalValueExtractionVisitor().walk_expression(
-    #         expr=(m.scalar_var - m.indexed_var["a"])
-    #              / (m.scalar_param - m.indexed_var["b"])
-    #     ) == [(21 - 22) / (12 - 23)]
-    #
-    # @pytest.mark.unit
-    # def test_division_expr_error(self, m, caplog):
-    #     caplog.set_level(logging.DEBUG, logger="idaes.core.util.scaling")
-    #     sc.NominalValueExtractionVisitor().walk_expression(expr=1 / (m.scalar_var - 21))
-    #
-    #     expected = "Nominal value of 0 found in denominator of division expression. "
-    #     "Assigning a value of 1. You should check you scaling factors and models to "
-    #     "ensure there are no values of 0 that can appear in these functions."
-    #
-    #     assert expected in caplog.text
-    #
-    # @pytest.mark.unit
-    # def test_pow_expr(self, m):
-    #     assert sc.NominalValueExtractionVisitor().walk_expression(
-    #         expr=m.scalar_var ** m.indexed_var["a"]
-    #     ) == pytest.approx([21 ** 22], rel=1e-12)
-    #
-    # @pytest.mark.unit
-    # def test_pow_sum_expr(self, m):
-    #     assert sc.NominalValueExtractionVisitor().walk_expression(
-    #         expr=(m.scalar_var + m.indexed_var["a"])
-    #              ** (m.scalar_param + m.indexed_var["b"])
-    #     ) == [
-    #                pytest.approx((21 + 22) ** (12 + 23), rel=1e-12),
-    #            ]
-    #
-    # @pytest.mark.unit
-    # def test_pow_sum_expr_w_negation(self, m):
-    #     assert sc.NominalValueExtractionVisitor().walk_expression(
-    #         expr=(m.scalar_var - m.indexed_var["a"])
-    #              ** (m.scalar_param - m.indexed_var["b"])
-    #     ) == [
-    #                pytest.approx(abs(21 - 22) ** (12 - 23), rel=1e-12),
-    #            ]
-    #
+
+    @pytest.mark.unit
+    def test_product_expr(self):
+        m = ConcreteModel()
+        m.v1 = Var(initialize=2)
+        m.v2 = Var(initialize=3)
+        m.v3 = Var(initialize=5)
+
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
+            expr=m.v1 * m.v2 * m.v3
+        )
+
+        assert vv == [30]
+        assert mm == []
+        assert cc == []
+        assert not k
+
+    @pytest.mark.unit
+    def test_product_sum_expr(self):
+        m = ConcreteModel()
+        m.v1 = Var(initialize=2)
+        m.v2 = Var(initialize=3)
+        m.v3 = Var(initialize=5)
+        m.v4 = Var(initialize=6)
+
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
+            expr=(m.v1 + m.v2) * (m.v3 + m.v4)
+        )
+
+        assert vv == [(2 + 3) * (5 + 6)]
+        assert mm == []
+        assert cc == []
+        assert not k
+
+    @pytest.mark.unit
+    def test_product_sum_expr_w_negation(self):
+        m = ConcreteModel()
+        m.v1 = Var(initialize=2)
+        m.v2 = Var(initialize=3)
+        m.v3 = Var(initialize=5)
+        m.v4 = Var(initialize=5)
+
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
+            expr=(m.v1 + m.v2) * (m.v3 - m.v4)
+        )
+
+        assert vv == [0]
+        assert mm == []
+        assert cc == ["(v1 + v2)*(v3 - v4)"]
+        assert not k
+
+    @pytest.mark.unit
+    def test_division_expr(self):
+        m = ConcreteModel()
+        m.v1 = Var(initialize=2)
+        m.v2 = Var(initialize=3)
+        m.v3 = Var(initialize=5)
+
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
+            expr=m.v1 / m.v2 / m.v3
+        )
+
+        assert vv == [pytest.approx(2 / 3 / 5, rel=1e-8)]
+        assert mm == []
+        assert cc == []
+        assert not k
+
+    @pytest.mark.unit
+    def test_division_sum_expr(self):
+        m = ConcreteModel()
+        m.v1 = Var(initialize=2)
+        m.v2 = Var(initialize=3)
+        m.v3 = Var(initialize=5)
+        m.v4 = Var(initialize=6)
+
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
+            expr=(m.v1 + m.v2) / (m.v3 + m.v4)
+        )
+
+        assert vv == [pytest.approx((2 + 3) / (5 + 6), rel=1e-8)]
+        assert mm == []
+        assert cc == []
+        assert not k
+
+    @pytest.mark.unit
+    def test_division_sum_expr_w_negation(self):
+        m = ConcreteModel()
+        m.v1 = Var(initialize=2)
+        m.v2 = Var(initialize=3)
+        m.v3 = Var(initialize=5.0000001)
+        m.v4 = Var(initialize=5)
+
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
+            expr=(m.v1 + m.v2) / (m.v3 - m.v4)
+        )
+
+        assert vv == [pytest.approx((2 + 3) / (0.0000001), rel=1e-8)]
+        assert mm == []
+        assert cc == ["(v1 + v2)/(v3 - v4)"]
+        assert not k
+
+    @pytest.mark.unit
+    def test_division_expr_error(self):
+        m = ConcreteModel()
+        m.v1 = Var(initialize=2)
+        m.v2 = Var(initialize=0)
+
+        with pytest.raises(
+            ValueError,
+            match=re.escape(
+                "Error in ConstraintTermAnalysisVisitor: found division with "
+                "denominator of 0 (v1/v2)."
+            ),
+        ):
+            ConstraintTermAnalysisVisitor().walk_expression(expr=m.v1 / m.v2)
+
+    @pytest.mark.unit
+    def test_pow_expr(self):
+        m = ConcreteModel()
+        m.v1 = Var(initialize=2)
+        m.v2 = Var(initialize=3)
+
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=m.v1**m.v2)
+
+        assert vv == [8]
+        assert mm == []
+        assert cc == []
+        assert not k
+
+    @pytest.mark.unit
+    def test_pow_sum_expr(self):
+        m = ConcreteModel()
+        m.v1 = Var(initialize=2)
+        m.v2 = Var(initialize=3)
+        m.v3 = Var(initialize=5)
+        m.v4 = Var(initialize=6)
+
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
+            expr=(m.v1 + m.v2) ** (m.v3 + m.v4)
+        )
+
+        assert vv == [5**11]
+        assert mm == []
+        assert cc == []
+        assert not k
+
+    @pytest.mark.unit
+    def test_pow_sum_expr_w_negation(self):
+        m = ConcreteModel()
+        m.v1 = Var(initialize=2)
+        m.v2 = Var(initialize=3)
+        m.v3 = Var(initialize=5.0000001)
+        m.v4 = Var(initialize=5)
+
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
+            expr=(m.v1 + m.v2) ** (m.v3 - m.v4)
+        )
+
+        assert vv == [pytest.approx((2 + 3) ** (0.0000001), rel=1e-8)]
+        assert mm == []
+        assert cc == ["(v1 + v2)**(v3 - v4)"]
+        assert not k
+
     # @pytest.mark.unit
     # def test_negation_expr(self, m):
     #     assert sc.NominalValueExtractionVisitor().walk_expression(
