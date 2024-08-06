@@ -40,7 +40,7 @@ class ScalingProfiler:
         """
         Sets up a framework for applying different scaling methods to a model and compiling a
         report of their effects on the Jacobian condition number and how easily the scaled
-        model can be solver for a perturbed state.
+        model can be solved for a perturbed state.
 
         Users should call the profile_scaling_methods method to generate a dict of results.
 

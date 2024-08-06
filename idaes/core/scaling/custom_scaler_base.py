@@ -385,7 +385,7 @@ class CustomScalerBase(ScalerBase):
         self, constraint, scheme="harmonic_mean", overwrite: bool = False
     ):
         """
-        Set scaling factor for constraint based on default scaling factor.
+        Set scaling factor for constraint based on the nominal value(s).
 
         Terms with expected magnitudes of 0 will be ignored.
 
@@ -503,7 +503,7 @@ class CustomScalerBase(ScalerBase):
         self, target_state, source_state, overwrite: bool = False
     ):
         """
-        Propagate scaling of state variables from on StateBlock to another.
+        Propagate scaling of state variables from one StateBlock to another.
 
         Indexing of target and source StateBlocks must match.
 
