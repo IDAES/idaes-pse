@@ -17,6 +17,7 @@ This module contains a collection of tools for diagnosing modeling issues.
 
 __author__ = "Alexander Dowling, Douglas Allan, Andrew Lee, Robby Parker, Ben Knueven"
 
+import math
 from operator import itemgetter
 import sys
 from inspect import signature
@@ -4229,35 +4230,34 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
 
         return [base**exponent], mismatch, cancelling, const
 
-    # def _get_nominal_value_single_child(self, node, child_nominal_values):
-    #     assert len(child_nominal_values) == 1
-    #     return child_nominal_values[0]
-    #
-    # def _get_nominal_value_abs(self, node, child_nominal_values):
-    #     assert len(child_nominal_values) == 1
-    #     return [abs(i) for i in child_nominal_values[0]]
-    #
-    # def _get_nominal_value_negation(self, node, child_nominal_values):
-    #     assert len(child_nominal_values) == 1
-    #     return [-i for i in child_nominal_values[0]]
-    #
-    # def _get_nominal_value_for_unary_function(self, node, child_nominal_values):
-    #     assert len(child_nominal_values) == 1
-    #     func_name = node.getname()
-    #     # TODO: Some of these need the absolute value of the nominal value (e.g. sqrt)
-    #     func_nominal = self._get_nominal_value_for_sum_subexpression(
-    #         child_nominal_values[0]
-    #     )
-    #     func = getattr(math, func_name)
-    #     try:
-    #         return [func(func_nominal)]
-    #     except ValueError:
-    #         raise ValueError(
-    #             f"Evaluation error occurred when getting nominal value in {func_name} "
-    #             f"expression with input {func_nominal}. You should check you scaling factors "
-    #             f"and model to address any numerical issues or scale this constraint manually."
-    #         )
-    #
+    def _check_negation(self, node, child_data):
+        mismatch, cancelling, const = self._perform_checks(node, child_data)
+        val = -self._get_value_for_sum_subexpression(child_data[0])
+
+        return [val], mismatch, cancelling, const
+
+    def _check_abs(self, node, child_data):
+        mismatch, cancelling, const = self._perform_checks(node, child_data)
+        val = abs(self._get_value_for_sum_subexpression(child_data[0]))
+
+        return [val], mismatch, cancelling, const
+
+    def _check_unary_function(self, node, child_data):
+        mismatch, cancelling, const = self._perform_checks(node, child_data)
+
+        func_name = node.getname()
+        func = getattr(math, func_name)
+        func_val = self._get_value_for_sum_subexpression(child_data[0])
+
+        try:
+            val = func(func_val)
+        except ValueError:
+            raise ValueError(
+                f"Error in ConstraintTermAnalysisVisitor: error evaluating {str(node)}."
+            )
+
+        return [val], mismatch, cancelling, const
+
     # def _get_nominal_value_expr_if(self, node, child_nominal_values):
     #     assert len(child_nominal_values) == 3
     #     return child_nominal_values[1] + child_nominal_values[2]
@@ -4352,12 +4352,12 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
         EXPR.NPV_DivisionExpression: _check_division,
         EXPR.PowExpression: _check_power,
         EXPR.NPV_PowExpression: _check_power,
-        EXPR.NegationExpression: _check_other_expression,
-        EXPR.NPV_NegationExpression: _check_other_expression,
-        EXPR.AbsExpression: _check_other_expression,
-        EXPR.NPV_AbsExpression: _check_other_expression,
-        EXPR.UnaryFunctionExpression: _check_other_expression,
-        EXPR.NPV_UnaryFunctionExpression: _check_other_expression,
+        EXPR.NegationExpression: _check_negation,
+        EXPR.NPV_NegationExpression: _check_negation,
+        EXPR.AbsExpression: _check_abs,
+        EXPR.NPV_AbsExpression: _check_abs,
+        EXPR.UnaryFunctionExpression: _check_unary_function,
+        EXPR.NPV_UnaryFunctionExpression: _check_unary_function,
         EXPR.Expr_ifExpression: _check_other_expression,
         EXPR.ExternalFunctionExpression: _check_other_expression,
         EXPR.NPV_ExternalFunctionExpression: _check_other_expression,
