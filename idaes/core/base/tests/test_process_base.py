@@ -41,6 +41,7 @@ def test_base_attributes():
 
     assert m.a.initialization_order == [m.a]
     assert m.a.default_initializer is BlockTriangularizationInitializer
+    assert m.a.default_scaler is None
 
 
 @pytest.mark.unit

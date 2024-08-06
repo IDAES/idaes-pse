@@ -1,0 +1,29 @@
+{
+   "v[1]": 50,
+   "c[1]": 50,
+   "v[2]": 100,
+   "c[2]": 250,
+   "v[3]": 150,
+   "c[3]": 1250,
+   "v[4]": 200,
+   "c[4]": 6250,
+   "subblock_suffixes": {
+      "b[1]": {
+         "v2": 100,
+         "subblock_suffixes": {}
+      },
+      "b[2]": {
+         "v2": 100,
+         "subblock_suffixes": {}
+      },
+      "b[3]": {
+         "v2": 100,
+         "subblock_suffixes": {}
+      },
+      "b[4]": {
+         "v2": 100,
+         "subblock_suffixes": {}
+      }
+   },
+   "block_name": "unknown"
+}
