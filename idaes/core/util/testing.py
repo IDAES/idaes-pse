@@ -200,7 +200,6 @@ class _PhysicalParameterBlock(PhysicalParameterBlock):
         self.set_default_scaling("material_flow_dimensionless", 116)
         self.set_default_scaling("material_dens_dimensionless", 117)
 
-
     @classmethod
     def define_metadata(cls, obj):
         obj.add_properties(
