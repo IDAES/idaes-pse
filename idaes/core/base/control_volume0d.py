@@ -357,7 +357,8 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 holdup_units = units("amount")
             else:
                 holdup_units = None
-
+                # volume units will need to be updated to None for unit consistency in material_holdup_calculation
+                self.volume._units = None
             self.material_holdup = Var(
                 self.flowsheet().time,
                 pc_set,
