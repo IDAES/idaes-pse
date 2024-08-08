@@ -263,7 +263,7 @@ within this flowsheet if not otherwise specified,
             dict_arcs, time_point=time_point, orient=orient, true_state=true_state
         )
 
-    def visualize(self, model_name, **kwargs):
+    def visualize(self, model_name, **kwargs) -> "VisualizeResult":
         """
         Starts up a flask server that serializes the model and pops up a
         webpage with the visualization
@@ -275,9 +275,10 @@ within this flowsheet if not otherwise specified,
             **kwargs: Additional keywords for :func:`idaes.core.ui.fv.visualize()`
 
         Returns:
-            None
+            VisualizeResult : The return from UI, namedtuple("VisualizeResult", ["store", "port", "server", "save_diagram"]) etc...
         """
-        UI().visualize(self, model_name, **kwargs)
+        VisualizeResult = UI().visualize(self, model_name, **kwargs)
+        return VisualizeResult
 
     def _get_stream_table_contents(self, time_point=0):
         """
