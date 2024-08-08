@@ -263,7 +263,7 @@ within this flowsheet if not otherwise specified,
             dict_arcs, time_point=time_point, orient=orient, true_state=true_state
         )
 
-    def visualize(self, model_name, **kwargs):
+    def visualize(self, model_name, **kwargs) -> "VisualizeResult":
         """
         Starts up a flask server that serializes the model and pops up a
         webpage with the visualization
