@@ -11,7 +11,6 @@
 # for full copyright and license information.
 #################################################################################
 import os
-import logging
 from abc import ABC, abstractmethod
 import datetime
 import pandas as pd
@@ -19,13 +18,13 @@ import pyomo.environ as pyo
 from pyomo.opt.base.solvers import OptSolver
 from pyomo.common.dependencies import attempt_import
 from idaes.apps.grid_integration.utils import convert_marginal_costs_to_actual_costs
+import idaes.logger as idaeslog
 
 egret, egret_avail = attempt_import("egret")
 if egret_avail:
     from egret.model_library.transmission import tx_utils
 
-_logger = logging.getLogger(__name__)
-_logger.setLevel(logging.INFO)
+_logger = idaeslog.getLogger(__name__)
 
 
 class AbstractBidder(ABC):
@@ -759,8 +758,7 @@ class StochasticProgramBidder(AbstractBidder):
             None
         """
 
-        _logger.info("\n")
-        _logger.info("Saving bidding results to disk...")
+        _logger.info("Saving bidding results to disk.")
         pd.concat(self.bids_result_list).to_csv(
             os.path.join(path, "bidder_detail.csv"), index=False
         )
@@ -1494,8 +1492,7 @@ class ParametrizedBidder(AbstractBidder):
             None
         """
 
-        _logger.info("\n")
-        _logger.info("Saving bidding results to disk...")
+        _logger.info("Saving bidding results to disk.")
         pd.concat(self.bids_result_list).to_csv(
             os.path.join(path, "bidder_detail.csv"), index=False
         )
