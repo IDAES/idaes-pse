@@ -104,6 +104,9 @@ def bidder_object():
 
 
 @pytest.mark.component
+@pytest.mark.skipif(
+    not prescient_avail, reason="Prescient (optional dependency) not available"
+)
 def test_compute_DA_bids(bidder_object):
     """
     This is to test the if the compute_DA_bids function works correctly.
@@ -143,6 +146,9 @@ def test_compute_DA_bids(bidder_object):
 
 
 @pytest.mark.component
+@pytest.mark.skipif(
+    not prescient_avail, reason="Prescient (optional dependency) not available"
+)
 def test_compute_RT_bids(bidder_object):
     """
     This is to test the if the compute_DA_bids function works correctly.
