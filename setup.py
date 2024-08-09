@@ -74,7 +74,7 @@ class ExtraDependencies:
         "idaes-ui @ git+https://github.com/IDAES/idaes-ui@main",
     ]
     _ipython = [
-        'ipython <= 8.12; python_version == "3.8"',
+        'ipython',
     ]
     dmf = [
         # all modules relative to idaes.core.dmf
@@ -200,7 +200,6 @@ kwargs = dict(
         "Operating System :: Unix",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
