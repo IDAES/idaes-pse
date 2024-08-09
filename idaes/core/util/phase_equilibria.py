@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -97,26 +97,28 @@ def Txy_data(
     num_points=20,
     temperature=298.15,
     print_level=idaeslog.NOTSET,
-    solver=None,
+    solver="ipopt_v2",
     solver_op=None,
+    solver_writer_config=None,
 ):
     """
     Function to generate T-x-y data. The function builds a state block and extracts
     bubble and dew temperatures at P pressure for N number of compositions.
-    As N is increased increase the time of the calculation will increase and
+    As N is increased the time of the calculation will increase and
     create a smoother looking plot.
 
     Args:
         component_1: Component 1
         component_2: Component 2
-        pressure: Pressure at which the bubble and drew temperatures will be calculates
+        pressure: Pressure at which the bubble and drew temperatures will be calculated
         temperature: Temperature at which to initialize state block
         num_points: Number of data point to be calculated
-        model: Model wit initialized Property package which contains data to calculate
+        model: Model with initialized property package which contains data to calculate
         bubble and dew temperatures for  component 1 and component 2
         print_level: printing level from initialization
         solver: solver to use (default=None, use IDAES default solver)
         solver_op: solver options
+        solver_writer_config: writer_config arguments for solver
 
     Returns:
         (Class): A class containing the T-x-y data
@@ -150,14 +152,17 @@ def Txy_data(
 
     # Initialize flash unit model
     model.props[1].calculate_scaling_factors()
+    # TODO: This will need to be updated at some point as we deprecate the old initialization API
     model.props.initialize(solver=solver, optarg=solver_op, outlvl=print_level)
 
-    solver = get_solver(solver, solver_op)
+    solver = get_solver(
+        solver, solver_options=solver_op, writer_config=solver_writer_config
+    )
 
     # Create an array of compositions with N number of points
     x_d = np.linspace(x, 1 - x - xs, num_points)
 
-    # Create emprty arrays for concentration, bubble temperature and dew temperature
+    # Create empty arrays for concentration, bubble temperature and dew temperature
     X = []
     Tbubb = []
     Tdew = []

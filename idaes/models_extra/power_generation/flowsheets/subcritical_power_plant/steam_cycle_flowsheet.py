@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -830,7 +830,7 @@ def set_inputs(m):
     fs.bfp.efficiency_isentropic.fix(0.8)
     fs.bfp.outlet.pressure.fix(1.45e7)
 
-    # Set input for spliter for main steam attemperator spray
+    # Set input for splitter for main steam attemperator spray
     fs.split_attemp.split_fraction[:, "Spray"].fix(0.0007)
 
     # Set inputs for water spray control valve
