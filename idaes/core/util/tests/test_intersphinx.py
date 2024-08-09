@@ -14,17 +14,18 @@
 Tests for the idaes.core.util.intersphinx module
 """
 import pytest
-from typing import Dict, Union
+from typing import Dict
 from collections import namedtuple
 from idaes.core.util import intersphinx
 
 Item = namedtuple("Item", ("key", "value", "url"))
+null_item = Item("", "", "")
 
 
-def _first_item(m: Dict) -> Union[Item, None]:
+def _first_item(m: Dict) -> Item:
     for key, value in m.items():
         return Item(key, value, value[0])
-    return None
+    return null_item
 
 
 @pytest.mark.unit
@@ -38,13 +39,16 @@ def test_get_intersphinx_mapping():
 def test_get_intersphinx_mapping_args():
     mapping = intersphinx.get_intersphinx_mapping("1.2.3")
     item = _first_item(mapping)
+    assert item is not null_item
     assert "/1.2.3" in item.url
 
     mapping = intersphinx.get_intersphinx_mapping(language="jp")
     item = _first_item(mapping)
+    assert item is not null_item
     assert "/jp/" in item.url
 
     mapping = intersphinx.get_intersphinx_mapping(language="jp", version="1.2.3")
     item = _first_item(mapping)
+    assert item is not null_item
     assert "/jp/" in item.url
     assert "/1.2.3" in item.url
