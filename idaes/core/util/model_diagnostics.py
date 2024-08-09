@@ -17,13 +17,15 @@ This module contains a collection of tools for diagnosing modeling issues.
 
 __author__ = "Alexander Dowling, Douglas Allan, Andrew Lee, Robby Parker, Ben Knueven"
 
+import math
 from operator import itemgetter
 import sys
 from inspect import signature
-from math import log, isclose, inf, isfinite
+from math import log, log10, isclose, inf, isfinite
 import json
 from typing import List
 import logging
+from itertools import combinations, chain
 
 import numpy as np
 from scipy.linalg import svd
@@ -78,6 +80,9 @@ from pyomo.contrib.iis import mis
 from pyomo.common.deprecation import deprecation_warning
 from pyomo.common.errors import PyomoException
 from pyomo.common.tempfiles import TempfileManager
+from pyomo.core import expr as EXPR
+from pyomo.common.numeric_types import native_types
+from pyomo.core.base.units_container import _PyomoUnit
 
 from idaes.core.solvers.get_solver import get_solver
 from idaes.core.util.model_statistics import (
@@ -4122,3 +4127,263 @@ def _collect_model_statistics(model):
     )
 
     return stats
+
+
+class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
+    """
+    Expression walker for checking Constraints for problematic terms.
+
+    This walker will walk the expression and look for summation terms
+    with mismatched magnitudes or potential cancellations.
+
+    Args:
+        term_mismatch_tolerance - tolerance to use when determining mismatched
+            terms
+        term_cancellation_tolerance - tolerance to use when identifying
+            possible cancellation of terms
+
+    Returns:
+        list of values for top-level summation terms
+        list of terms with mismatched magnitudes
+        list of terms with potential cancellations
+        bool indicating whether expression is a constant
+    """
+
+    def __init__(
+        self,
+        term_mismatch_tolerance: float = 1e6,
+        term_cancellation_tolerance: float = 1e-4,
+    ):
+        super().__init__()
+
+        self._mm_tol = log10(term_mismatch_tolerance)
+        self._sum_tol = term_cancellation_tolerance
+
+    def _check_base_type(self, node):
+        # [value], [mismatched terms], [canceling terms], constant
+        if isinstance(node, VarData):
+            const = node.fixed
+        else:
+            const = True
+        return [value(node)], [], [], const
+
+    def _get_value_for_sum_subexpression(self, child_data):
+        return sum(i for i in child_data[0])
+
+    def _check_sum_expression(self, node, child_data):
+        # Sum expressions need special handling
+        # For sums, collect all child values into a list
+        vals = []
+        mismatch = []
+        # We will check for cancellation in this node at the next level
+        # Pyomo is generally good at simplifying compound sums
+        cancelling = []
+        const = True
+        # Collect data from child nodes
+        for d in child_data:
+            vals.append(self._get_value_for_sum_subexpression(d))
+            mismatch += d[1]
+            cancelling += d[2]
+
+            # Expression is not constant if any child is not constant
+            if not d[3]:
+                const = False
+
+        # Check for mismatched terms
+        if len(vals) > 1:
+            absvals = [abs(v) for v in vals]
+            vl = max(absvals)
+            vs = min(absvals)
+            if vl != vs and log10(vl / vs) > self._mm_tol:
+                mismatch.append(str(node))
+
+        return vals, mismatch, cancelling, const
+
+    def _check_product(self, node, child_data):
+        mismatch, cancelling, const = self._perform_checks(node, child_data)
+
+        val = self._get_value_for_sum_subexpression(
+            child_data[0]
+        ) * self._get_value_for_sum_subexpression(child_data[1])
+
+        return [val], mismatch, cancelling, const
+
+    def _check_division(self, node, child_data):
+        mismatch, cancelling, const = self._perform_checks(node, child_data)
+
+        numerator = self._get_value_for_sum_subexpression(child_data[0])
+        denominator = self._get_value_for_sum_subexpression(child_data[1])
+        # TODO: should we look at mismatched magnitudes in num and denom?
+        if denominator == 0:
+            raise ValueError(
+                f"Error in ConstraintTermAnalysisVisitor: found division with denominator of 0 "
+                f"({str(node)})."
+            )
+
+        return [numerator / denominator], mismatch, cancelling, const
+
+    def _check_power(self, node, child_data):
+        mismatch, cancelling, const = self._perform_checks(node, child_data)
+
+        base = self._get_value_for_sum_subexpression(child_data[0])
+        exponent = self._get_value_for_sum_subexpression(child_data[1])
+
+        return [base**exponent], mismatch, cancelling, const
+
+    def _check_negation(self, node, child_data):
+        mismatch, cancelling, const = self._perform_checks(node, child_data)
+        val = -self._get_value_for_sum_subexpression(child_data[0])
+
+        return [val], mismatch, cancelling, const
+
+    def _check_abs(self, node, child_data):
+        mismatch, cancelling, const = self._perform_checks(node, child_data)
+        val = abs(self._get_value_for_sum_subexpression(child_data[0]))
+
+        return [val], mismatch, cancelling, const
+
+    def _check_unary_function(self, node, child_data):
+        mismatch, cancelling, const = self._perform_checks(node, child_data)
+
+        func_name = node.getname()
+        func = getattr(math, func_name)
+        func_val = self._get_value_for_sum_subexpression(child_data[0])
+
+        try:
+            val = func(func_val)
+        except ValueError:
+            raise ValueError(
+                f"Error in ConstraintTermAnalysisVisitor: error evaluating {str(node)}."
+            )
+
+        return [val], mismatch, cancelling, const
+
+    def _check_other_expression(self, node, child_data):
+        mismatch, cancelling, const = self._perform_checks(node, child_data)
+
+        # First, need to get value of input terms, which may be sub-expressions
+        input_mag = [self._get_value_for_sum_subexpression(i) for i in child_data]
+
+        # Next, create a copy of the external function with expected magnitudes as inputs
+        newfunc = node.create_node_with_local_data(input_mag)
+
+        # Evaluate new function and return the absolute value
+        return [value(newfunc)], mismatch, cancelling, const
+
+    def _perform_checks(self, node, child_data):
+        # Perform checks for problematic expressions
+        # First, need to check to see if any child data is a list
+        # This indicates a sum expression
+        mismatch = []
+        cancelling = []
+        const = True
+
+        for d in child_data:
+            # Collect all warnings about mismatched terms from child nodes
+            mismatch += d[1]
+            cancelling += d[2]
+
+            # We will check for cancelling terms here, rather than the sum itself, to handle special cases
+            # We want to look for cases where a sum term results in a value much smaller
+            # than the terms of the sum
+            sums = self._sum_combinations(d[0])
+            if any(i <= self._sum_tol * max(d[0]) for i in sums):
+                cancelling.append(str(node))
+
+            # Expression is not constant if any child is not constant
+            if not d[3]:
+                const = False
+
+        # Return any problematic terms found
+        return mismatch, cancelling, const
+
+    def _check_equality_expression(self, node, child_data):
+        # (In)equality expressions are a special case of sum expressions
+        # We can start by just calling the method to check the sum expression
+        vals, mismatch, cancelling, const = self._check_sum_expression(node, child_data)
+
+        # Next, we need to check for canceling terms.
+        # In this case, we can safely ignore expressions of the form constant = sum()
+        # We can also ignore any constraint that is already flagged as mismatched
+        if str(node) not in mismatch and not any(d[3] for d in child_data):
+            # No constant terms, check for cancellation
+            # First, collect terms from both sides
+            t = []
+            for d in child_data:
+                t += d[0]
+
+            # Then check for cancellations
+            sums = self._sum_combinations(t)
+            if any(i <= self._sum_tol * max(t) for i in sums):
+                cancelling.append(str(node))
+
+        return vals, mismatch, cancelling, const
+
+    def _sum_combinations(self, values_list):
+        sums = []
+        for i in chain.from_iterable(
+            combinations(values_list, r) for r in range(2, len(values_list) + 1)
+        ):
+            sums.append(abs(sum(i)))
+        return sums
+
+    node_type_method_map = {
+        EXPR.EqualityExpression: _check_equality_expression,
+        EXPR.InequalityExpression: _check_equality_expression,
+        EXPR.RangedExpression: _check_sum_expression,
+        EXPR.SumExpression: _check_sum_expression,
+        EXPR.NPV_SumExpression: _check_sum_expression,
+        EXPR.ProductExpression: _check_product,
+        EXPR.MonomialTermExpression: _check_product,
+        EXPR.NPV_ProductExpression: _check_product,
+        EXPR.DivisionExpression: _check_division,
+        EXPR.NPV_DivisionExpression: _check_division,
+        EXPR.PowExpression: _check_power,
+        EXPR.NPV_PowExpression: _check_power,
+        EXPR.NegationExpression: _check_negation,
+        EXPR.NPV_NegationExpression: _check_negation,
+        EXPR.AbsExpression: _check_abs,
+        EXPR.NPV_AbsExpression: _check_abs,
+        EXPR.UnaryFunctionExpression: _check_unary_function,
+        EXPR.NPV_UnaryFunctionExpression: _check_unary_function,
+        EXPR.Expr_ifExpression: _check_other_expression,
+        EXPR.ExternalFunctionExpression: _check_other_expression,
+        EXPR.NPV_ExternalFunctionExpression: _check_other_expression,
+        EXPR.LinearExpression: _check_sum_expression,
+    }
+
+    def exitNode(self, node, data):
+        """
+        Method to call when exiting node to check for potential issues.
+        """
+        # Return [node values], [mismatched terms], [cancelling terms], constant
+        # first check if the node is a leaf
+        nodetype = type(node)
+
+        if nodetype in native_types:
+            return [node], [], [], True
+
+        node_func = self.node_type_method_map.get(nodetype, None)
+        if node_func is not None:
+            return node_func(self, node, data)
+
+        if not node.is_expression_type():
+            # this is a leaf, but not a native type
+            if nodetype is _PyomoUnit:
+                return [1], [], [], True
+
+            # Var or Param
+            return self._check_base_type(node)
+            # might want to add other common types here
+
+        # not a leaf - check if it is a named expression
+        if (
+            hasattr(node, "is_named_expression_type")
+            and node.is_named_expression_type()
+        ):
+            return self._check_other_expression(node, data)
+
+        raise TypeError(
+            f"An unhandled expression node type: {str(nodetype)} was encountered while "
+            f"analyzing constraint terms {str(node)}"
+        )
