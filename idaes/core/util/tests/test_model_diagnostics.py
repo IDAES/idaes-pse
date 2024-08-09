@@ -4282,30 +4282,6 @@ class TestConstraintTermAnalysisVisitor:
         assert cc == []
         assert k
 
-    # @pytest.mark.unit
-    # def test_inequality_expr(self, m):
-    #     assert sc.NominalValueExtractionVisitor().walk_expression(
-    #         expr=m.scalar_var <= m.indexed_var["a"]
-    #     ) == [21, 22]
-    #
-    # @pytest.mark.unit
-    # def test_sum_expr(self, m):
-    #     assert sc.NominalValueExtractionVisitor().walk_expression(
-    #         expr=sum(m.indexed_var[i] for i in m.set)
-    #     ) == [22, 23, 24]
-    #
-    # @pytest.mark.unit
-    # def test_additive_expr(self, m):
-    #     assert sc.NominalValueExtractionVisitor().walk_expression(
-    #         expr=m.scalar_var + m.indexed_var["a"] + m.scalar_param
-    #     ) == [21, 22, 12]
-    #
-    # @pytest.mark.unit
-    # def test_additive_expr_w_negation(self, m):
-    #     assert sc.NominalValueExtractionVisitor().walk_expression(
-    #         expr=m.scalar_var + m.indexed_var["a"] - m.scalar_param
-    #     ) == [21, 22, -12]
-
     @pytest.fixture(scope="class")
     def model(self):
         m = ConcreteModel()
@@ -4593,6 +4569,20 @@ class TestConstraintTermAnalysisVisitor:
         assert not k
 
     @pytest.mark.unit
+    def test_inequality_sum_expr(self):
+        m = ConcreteModel()
+        m.v1 = Var(["a", "b", "c"], initialize=1e7)
+        m.v2 = Var(initialize=1e-7)
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
+            expr=m.v2 <= sum(m.v1[i] for i in m.v1)
+        )
+
+        assert vv == [1e-7, 3e7]
+        assert mm == ["v2  <=  v1[a] + v1[b] + v1[c]"]
+        assert cc == []
+        assert not k
+
+    @pytest.mark.unit
     def test_compound_equality_expr_1(self):
         m = ConcreteModel()
         m.v1 = Var(["a", "b", "c"], initialize=1e7)
@@ -4742,4 +4732,19 @@ class TestConstraintTermAnalysisVisitor:
         assert cc == []
         assert not k
 
-    # TODO: Check for a+eps=c forms
+    # Double check for a+eps=c form gets flagged in some way
+    @pytest.mark.unit
+    def test_cancelling_equality_expr_canceling_sides(self):
+        m = ConcreteModel()
+        m.v1 = Var(initialize=1)
+        m.v2 = Var(initialize=1)
+        m.v3 = Var(initialize=1e-8)
+
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
+            expr=m.v2 == m.v1 + m.v3
+        )
+
+        assert vv == [1, pytest.approx(1 + 1e-8, abs=1e-8)]
+        assert mm == ["v1 + v3"]
+        assert cc == []
+        assert not k
