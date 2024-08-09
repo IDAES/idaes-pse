@@ -74,7 +74,7 @@ class ExtraDependencies:
         "idaes-ui @ git+https://github.com/IDAES/idaes-ui@main",
     ]
     _ipython = [
-        'ipython',
+        "ipython",
     ]
     dmf = [
         # all modules relative to idaes.core.dmf
