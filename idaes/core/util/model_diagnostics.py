@@ -4258,29 +4258,17 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
 
         return [val], mismatch, cancelling, const
 
-    # def _get_nominal_value_expr_if(self, node, child_nominal_values):
-    #     assert len(child_nominal_values) == 3
-    #     return child_nominal_values[1] + child_nominal_values[2]
-    #
-    # def _get_nominal_value_external_function(self, node, child_nominal_values):
-    #     # First, need to get expected magnitudes of input terms, which may be sub-expressions
-    #     input_mag = [
-    #         self._get_nominal_value_for_sum_subexpression(i)
-    #         for i in child_nominal_values
-    #     ]
-    #
-    #     # Next, create a copy of the external function with expected magnitudes as inputs
-    #     newfunc = node.create_node_with_local_data(input_mag)
-    #
-    #     # Evaluate new function and return the absolute value
-    #     return [pyo.value(newfunc)]
-
-    def _check_other_expression(self, node, child_data):
+    def _check_other_function(self, node, child_data):
         mismatch, cancelling, const = self._perform_checks(node, child_data)
 
-        # TODO: See if we can be more efficient about getting the value - might need node specific methods
-        # [value], [mismatched terms], [canceling terms], constant
-        return [value(node)], mismatch, cancelling, const
+        # First, need to get value of input terms, which may be sub-expressions
+        input_mag = [self._get_value_for_sum_subexpression(i) for i in child_data]
+
+        # Next, create a copy of the external function with expected magnitudes as inputs
+        newfunc = node.create_node_with_local_data(input_mag)
+
+        # Evaluate new function and return the absolute value
+        return [value(newfunc)], mismatch, cancelling, const
 
     def _perform_checks(self, node, child_data):
         # Perform checks for problematic expressions
@@ -4358,9 +4346,9 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
         EXPR.NPV_AbsExpression: _check_abs,
         EXPR.UnaryFunctionExpression: _check_unary_function,
         EXPR.NPV_UnaryFunctionExpression: _check_unary_function,
-        EXPR.Expr_ifExpression: _check_other_expression,
-        EXPR.ExternalFunctionExpression: _check_other_expression,
-        EXPR.NPV_ExternalFunctionExpression: _check_other_expression,
+        EXPR.Expr_ifExpression: _check_other_function,
+        EXPR.ExternalFunctionExpression: _check_other_function,
+        EXPR.NPV_ExternalFunctionExpression: _check_other_function,
         EXPR.LinearExpression: _check_sum_expression,
     }
 
