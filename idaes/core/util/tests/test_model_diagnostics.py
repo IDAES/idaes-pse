@@ -1020,6 +1020,111 @@ The following pairs of variables are nearly parallel:
         assert stream.getvalue() == expected
 
     @pytest.mark.component
+    def test_collect_constraint_mismatches(self):
+        m = ConcreteModel()
+        m.v1 = Var(initialize=2)
+        m.v2 = Var(initialize=3)
+
+        # Constraint with no free variables
+        m.c1 = Constraint(expr=m.v1 == m.v2)
+        m.v1.fix()
+        m.v2.fix()
+
+        # Constraint with mismatched terms
+        m.v3 = Var(initialize=10)
+        m.v4 = Var(initialize=10)
+        m.v5 = Var(initialize=1e-6)
+        m.c2 = Constraint(expr=m.v3 == m.v4 + m.v5)
+
+        # Constraint with cancellation
+        m.v6 = Var(initialize=10)
+        m.c3 = Constraint(expr=m.v6 == 10 + m.v3 - m.v4)
+
+        dt = DiagnosticsToolbox(model=m)
+
+        mismatch, cancellation, constant = dt._collect_constraint_mismatches()
+
+        assert mismatch == ["c2: v4 + v5"]
+        assert cancellation == ["c3: v6  ==  10 + v3 - v4"]
+        assert constant == ["c1"]
+
+    @pytest.mark.component
+    def test_display_constraints_with_mismatched_terms(self):
+        m = ConcreteModel()
+        # Constraint with mismatched terms
+        m.v3 = Var(initialize=10)
+        m.v4 = Var(initialize=10)
+        m.v5 = Var(initialize=1e-6)
+        m.c2 = Constraint(expr=m.v3 == m.v4 + m.v5)
+
+        dt = DiagnosticsToolbox(model=m)
+
+        stream = StringIO()
+        dt.display_constraints_with_mismatched_terms(stream=stream)
+
+        expected = """====================================================================================
+The following constraints have mismatched terms:
+
+    c2: v4 + v5
+
+====================================================================================
+"""
+
+        assert stream.getvalue() == expected
+
+    @pytest.mark.component
+    def test_display_constraints_with_cancelling_terms(self):
+        m = ConcreteModel()
+        # Constraint with mismatched terms
+        m.v3 = Var(initialize=10)
+        m.v4 = Var(initialize=10)
+
+        # Constraint with cancellation
+        m.v6 = Var(initialize=10)
+        m.c3 = Constraint(expr=m.v6 == 10 + m.v3 - m.v4)
+
+        dt = DiagnosticsToolbox(model=m)
+
+        stream = StringIO()
+        dt.display_constraints_with_cancelling_terms(stream=stream)
+
+        expected = """====================================================================================
+The following constraints have cancelling terms:
+
+    c3: v6  ==  10 + v3 - v4
+
+====================================================================================
+"""
+
+        assert stream.getvalue() == expected
+
+    @pytest.mark.component
+    def test_display_constraints_with_no_free_variables(self):
+        m = ConcreteModel()
+        m.v1 = Var(initialize=2)
+        m.v2 = Var(initialize=3)
+
+        # Constraint with no free variables
+        m.c1 = Constraint(expr=m.v1 == m.v2)
+        m.v1.fix()
+        m.v2.fix()
+
+        dt = DiagnosticsToolbox(model=m)
+
+        stream = StringIO()
+        dt.display_constraints_with_no_free_variables(stream=stream)
+
+        expected = """====================================================================================
+The following constraints have no free variables:
+
+    c1
+
+====================================================================================
+"""
+
+        assert stream.getvalue() == expected
+
+    @pytest.mark.component
     def test_collect_structural_warnings_base_case(self, model):
         dt = DiagnosticsToolbox(model=model.b)
 
@@ -1166,7 +1271,7 @@ The following pairs of variables are nearly parallel:
         dt = DiagnosticsToolbox(model=model.b)
 
         cautions = dt._collect_numerical_cautions()
-        assert len(cautions) == 5
+        assert len(cautions) == 6
         assert (
             "Caution: 2 Variables with value close to their bounds (abs=1.0E-04, rel=1.0E-04)"
             in cautions
@@ -1177,6 +1282,7 @@ The following pairs of variables are nearly parallel:
         assert (
             "Caution: 1 Variable with extreme value (<1.0E-04 or >1.0E+04)" in cautions
         )
+        assert "Caution: 1 Constraint with potential cancellation of terms" in cautions
 
     @pytest.mark.component
     def test_collect_numerical_cautions_jacobian(self):
@@ -1193,7 +1299,7 @@ The following pairs of variables are nearly parallel:
 
         cautions = dt._collect_numerical_cautions()
 
-        assert len(cautions) == 4
+        assert len(cautions) == 5
         assert "Caution: 3 Variables with value close to zero (tol=1.0E-08)" in cautions
         assert (
             "Caution: 3 Variables with extreme Jacobian values (<1.0E-04 or >1.0E+04)"
@@ -1204,6 +1310,7 @@ The following pairs of variables are nearly parallel:
             in cautions
         )
         assert "Caution: 4 extreme Jacobian Entries (<1.0E-04 or >1.0E+04)" in cautions
+        assert "Caution: 1 Constraint with potential cancellation of terms" in cautions
 
     @pytest.mark.component
     def test_assert_no_structural_warnings(self, model):
@@ -1440,12 +1547,13 @@ Model Statistics
     WARNING: 1 Variable at or outside bounds (tol=0.0E+00)
 
 ------------------------------------------------------------------------------------
-5 Cautions
+6 Cautions
 
     Caution: 2 Variables with value close to their bounds (abs=1.0E-04, rel=1.0E-04)
     Caution: 2 Variables with value close to zero (tol=1.0E-08)
     Caution: 1 Variable with extreme value (<1.0E-04 or >1.0E+04)
     Caution: 1 Variable with None value
+    Caution: 1 Constraint with potential cancellation of terms
     Caution: 1 extreme Jacobian Entry (<1.0E-04 or >1.0E+04)
 
 ------------------------------------------------------------------------------------
@@ -1490,9 +1598,10 @@ Model Statistics
     WARNING: 3 pairs of variables are parallel (to tolerance 1.0E-08)
 
 ------------------------------------------------------------------------------------
-4 Cautions
+5 Cautions
 
     Caution: 3 Variables with value close to zero (tol=1.0E-08)
+    Caution: 1 Constraint with potential cancellation of terms
     Caution: 3 Variables with extreme Jacobian values (<1.0E-04 or >1.0E+04)
     Caution: 1 Constraint with extreme Jacobian values (<1.0E-04 or >1.0E+04)
     Caution: 4 extreme Jacobian Entries (<1.0E-04 or >1.0E+04)

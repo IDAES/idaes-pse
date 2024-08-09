@@ -228,6 +228,22 @@ CONFIG.declare(
     ),
 )
 CONFIG.declare(
+    "constraint_term_mismatch_tolerance",
+    ConfigValue(
+        default=1e6,
+        domain=float,
+        description="Magnitude difference to use when checking for mismatched additive terms in constraints.",
+    ),
+)
+CONFIG.declare(
+    "constraint_term_cancellation_tolerance",
+    ConfigValue(
+        default=1e-4,
+        domain=float,
+        description="Absolute tolerance to use when checking for cancelling additive terms in constraints.",
+    ),
+)
+CONFIG.declare(
     "variable_large_value_tolerance",
     ConfigValue(
         default=1e4,
@@ -1057,6 +1073,105 @@ class DiagnosticsToolbox:
     # TODO: Block triangularization analysis
     # Number and size of blocks, polynomial degree of 1x1 blocks, simple pivot check of moderate sized sub-blocks?
 
+    def _collect_constraint_mismatches(self, descend_into=True):
+        walker = ConstraintTermAnalysisVisitor(
+            term_mismatch_tolerance=self.config.constraint_term_mismatch_tolerance,
+            term_cancellation_tolerance=self.config.constraint_term_cancellation_tolerance,
+        )
+
+        mismatch = []
+        cancellation = []
+        constant = []
+
+        for c in self._model.component_data_objects(
+            Constraint, descend_into=descend_into
+        ):
+            _, mm, cc, k = walker.walk_expression(c.expr)
+
+            for i in mm:
+                mismatch.append(f"{c.name}: {i}")
+            for i in cc:
+                cancellation.append(f"{c.name}: {i}")
+            if k:
+                constant.append(c.name)
+
+        return mismatch, cancellation, constant
+
+    def display_constraints_with_mismatched_terms(self, stream=None):
+        """
+        Display constraints in model which contain additive terms of significantly different magnitude.
+
+        Args:
+            stream: I/O object to write report to (default = stdout)
+
+        Returns:
+            None
+
+        """
+        if stream is None:
+            stream = sys.stdout
+
+        mismatch, _, _ = self._collect_constraint_mismatches()
+
+        # Write the output
+        _write_report_section(
+            stream=stream,
+            lines_list=mismatch,
+            title="The following constraints have mismatched terms:",
+            header="=",
+            footer="=",
+        )
+
+    def display_constraints_with_cancelling_terms(self, stream=None):
+        """
+        Display constraints in model which contain additive terms which potentially cancel each other.
+
+        Args:
+            stream: I/O object to write report to (default = stdout)
+
+        Returns:
+            None
+
+        """
+        if stream is None:
+            stream = sys.stdout
+
+        _, cancelling, _ = self._collect_constraint_mismatches()
+
+        # Write the output
+        _write_report_section(
+            stream=stream,
+            lines_list=cancelling,
+            title="The following constraints have cancelling terms:",
+            header="=",
+            footer="=",
+        )
+
+    def display_constraints_with_no_free_variables(self, stream=None):
+        """
+        Display constraints in model which contain no free variables.
+
+        Args:
+            stream: I/O object to write report to (default = stdout)
+
+        Returns:
+            None
+
+        """
+        if stream is None:
+            stream = sys.stdout
+
+        _, _, constant = self._collect_constraint_mismatches()
+
+        # Write the output
+        _write_report_section(
+            stream=stream,
+            lines_list=constant,
+            title="The following constraints have no free variables:",
+            header="=",
+            footer="=",
+        )
+
     def _collect_structural_warnings(
         self, ignore_evaluation_errors=False, ignore_unit_consistency=False
     ):
@@ -1339,6 +1454,28 @@ class DiagnosticsToolbox:
             if len(none_value) == 1:
                 cstring = "Variable"
             cautions.append(f"Caution: {len(none_value)} {cstring} with None value")
+
+        # Constraints with possible ill-posed terms
+        mismatch, cancellation, constant = self._collect_constraint_mismatches()
+        if len(mismatch) > 0:
+            cstring = "Constraints"
+            if len(mismatch) == 1:
+                cstring = "Constraint"
+            cautions.append(f"Caution: {len(mismatch)} {cstring} with mismatched terms")
+        if len(cancellation) > 0:
+            cstring = "Constraints"
+            if len(cancellation) == 1:
+                cstring = "Constraint"
+            cautions.append(
+                f"Caution: {len(cancellation)} {cstring} with potential cancellation of terms"
+            )
+        if len(constant) > 0:
+            cstring = "Constraints"
+            if len(constant) == 1:
+                cstring = "Constraint"
+            cautions.append(
+                f"Caution: {len(constant)} {cstring} with no free variables"
+            )
 
         # Extreme Jacobian rows and columns
         jac_col = extreme_jacobian_columns(
@@ -4194,8 +4331,14 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
             absvals = [abs(v) for v in vals]
             vl = max(absvals)
             vs = min(absvals)
-            if vl != vs and log10(vl / vs) > self._mm_tol:
-                mismatch.append(str(node))
+            if vl != vs:
+                if vs == 0:
+                    diff = log10(vl)
+                else:
+                    diff = log10(vl / vs)
+
+                if diff >= self._mm_tol:
+                    mismatch.append(str(node))
 
         return vals, mismatch, cancelling, const
 
