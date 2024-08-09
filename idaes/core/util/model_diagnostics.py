@@ -4258,7 +4258,7 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
 
         return [val], mismatch, cancelling, const
 
-    def _check_other_function(self, node, child_data):
+    def _check_other_expression(self, node, child_data):
         mismatch, cancelling, const = self._perform_checks(node, child_data)
 
         # First, need to get value of input terms, which may be sub-expressions
@@ -4346,9 +4346,9 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
         EXPR.NPV_AbsExpression: _check_abs,
         EXPR.UnaryFunctionExpression: _check_unary_function,
         EXPR.NPV_UnaryFunctionExpression: _check_unary_function,
-        EXPR.Expr_ifExpression: _check_other_function,
-        EXPR.ExternalFunctionExpression: _check_other_function,
-        EXPR.NPV_ExternalFunctionExpression: _check_other_function,
+        EXPR.Expr_ifExpression: _check_other_expression,
+        EXPR.ExternalFunctionExpression: _check_other_expression,
+        EXPR.NPV_ExternalFunctionExpression: _check_other_expression,
         EXPR.LinearExpression: _check_sum_expression,
     }
 
@@ -4367,14 +4367,14 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
         if node_func is not None:
             return node_func(self, node, data)
 
-        elif not node.is_expression_type():
+        if not node.is_expression_type():
             # this is a leaf, but not a native type
             if nodetype is _PyomoUnit:
                 return [1], [], [], True
-            else:
-                # Var or Param
-                return self._check_base_type(node)
-                # might want to add other common types here
+
+            # Var or Param
+            return self._check_base_type(node)
+            # might want to add other common types here
 
         # not a leaf - check if it is a named expression
         if (

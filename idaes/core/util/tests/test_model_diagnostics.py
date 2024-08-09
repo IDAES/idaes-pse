@@ -13,16 +13,16 @@
 """
 This module contains model diagnostic utility functions for use in IDAES (Pyomo) models.
 """
+from copy import deepcopy
 from io import StringIO
 import math
-import numpy as np
-import pytest
-import re
 import os
-from copy import deepcopy
-
+import re
 from unittest import TestCase
+
+import numpy as np
 from pandas import DataFrame
+import pytest
 
 from pyomo.environ import (
     Block,
