@@ -14,41 +14,37 @@
 Tests for the idaes.core.util.intersphinx module
 """
 import pytest
-from typing import Dict
-from collections import namedtuple
-from idaes.core.util import intersphinx
-
-Item = namedtuple("Item", ("key", "value", "url"))
-null_item = Item("", "", "")
-
-
-def _first_item(m: Dict) -> Item:
-    for key, value in m.items():
-        return Item(key, value, value[0])
-    return null_item
+from idaes.core.util import intersphinx as ix
 
 
 @pytest.mark.unit
 def test_get_intersphinx_mapping():
-    mapping = intersphinx.get_intersphinx_mapping()
+    mapping = ix.get_intersphinx_mapping()
     assert mapping
     assert mapping.get("idaes", None)
 
 
 @pytest.mark.unit
-def test_get_intersphinx_mapping_args():
-    mapping = intersphinx.get_intersphinx_mapping("1.2.3")
-    item = _first_item(mapping)
-    assert item is not null_item
-    assert "/1.2.3" in item.url
+def test_modify_url():
+    m = ix.get_intersphinx_mapping()
+    key = "idaes"
+    assert key in m.keys()
 
-    mapping = intersphinx.get_intersphinx_mapping(language="jp")
-    item = _first_item(mapping)
-    assert item is not null_item
-    assert "/jp/" in item.url
+    # modify one, version
+    ix.modify_url(m, key, version="1.2.3")
+    url = m[key][0]
+    assert "/1.2.3" in url
 
-    mapping = intersphinx.get_intersphinx_mapping(language="jp", version="1.2.3")
-    item = _first_item(mapping)
-    assert item is not null_item
-    assert "/jp/" in item.url
-    assert "/1.2.3" in item.url
+    # modify one, language
+    ix.modify_url(m, key, language="jp")
+    url = m[key][0]
+    assert "/jp" in url
+
+    # modify all, language and version
+    ix.modify_url(m, None, version="future", language="klingon")
+    url = m[key][0]
+    assert "/klingon/future" in url
+
+    # bad key
+    with pytest.raises(KeyError):
+        ix.modify_url(m, "foobar!", version="x")

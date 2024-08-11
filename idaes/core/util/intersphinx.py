@@ -16,50 +16,87 @@ in the `conf.py` for Sphinx documentation in any IDAES-dependent project.
 
 Usage (in conf.py)::
 
-    from idaes.util.intersphinx import get_intersphinx_mapping
+    from idaes.util.intersphinx import get_intersphinx_mapping, modify_url
     # ...
-    intersphinx_mapping = get_intersphinx_mapping("latest", language="en")
-    intersphinx_mapping.update({}) # add local mappings here
+    # get mapping
+    intersphinx_mapping = get_intersphinx_mapping()
+    # set version a/o language for individual URLs (or all, with None for key)
+    modify_url(intersphinx_mapping, "idaes", version="latest") # etc.
 
 .. _Intersphinx: https://www.sphinx-doc.org/en/master/usage/extensions/intersphinx.html
 
 """
-from typing import Dict
+from typing import Dict, Optional
 
 __author__ = "Dan Gunter (LBNL)"
 
 
-# IDAES-PSE project documentation URLs
+# PSE project documentation URLs
 _base_mapping = {
-    "idaes": ("https://idaes-pse.readthedocs.io/", None),
-    "idaes-examples": ("https://idaes-examples.readthedocs.io/", None),
-    "watertap": ("https://watertap.readthedocs.io/", None),
-    "prommis": ("https://prommis.readthedocs.io/", None),
+    "idaes": ("https://idaes-pse.readthedocs.io/en/stable/", None),
+    "idaes-examples": ("https://idaes-examples.readthedocs.io/en/stable/", None),
+    "watertap": ("https://watertap.readthedocs.io/en/stable/", None),
+    "prommis": ("https://prommis.readthedocs.io/en/stable/", None),
 }
 
 
-def get_intersphinx_mapping(version: str = "stable", language: str = "en") -> Dict:
-    """Get the dictionary expected by the Intersphinx extension, with values
-    pre-processed to produce URLs corresponding to the desired documentation
-    version and language. Note that the 'objects.inv' file that Intersphinx is
-    looking for is only available at the full, not base, URL.
+def get_intersphinx_mapping() -> Dict:
+    """Get the dictionary expected by the Intersphinx extension.
 
     Note that the mapping returned is whatever the current version of Intersphinx
     used in the IDAES projects expects, and would change if this changed.
 
-    Args:
-        version: Version of the docs, e.g. 'stable' or 'latest'
-        language: Language, e.g. "en" for English
-
     Returns:
         Mapping for Intersphinx
     """
-    return {
-        key: (_preprocess_url(v[0], version, language), v[1])
-        for key, v in _base_mapping.items()
-    }
+    return _base_mapping.copy()
 
 
-def _preprocess_url(base_url: str, version: str, language: str) -> str:
-    """Modify URL with the provided version and language."""
-    return f"{base_url}/{language}/{version}/"
+def modify_url(
+    mapping: Dict,
+    key: Optional[str] = None,
+    version: Optional[str] = None,
+    language: Optional[str] = None,
+) -> None:
+    """Modify the URL of an entry in the mapping.
+
+    URLs are of the form: `http[s]://{site}/{language}/{version}/`
+
+    Args:
+        mapping: The mapping to modify
+        key: The name of the entry to modify, e.g. 'idaes', or None for all
+        version: New value for version of the docs, e.g. 'stable' or 'latest'
+        language: New value for language, e.g. "en" for English
+
+    Raises:
+        KeyError: If entry 'key' is not found
+
+    Returns:
+        None (modified in place)
+    """
+
+    def _modify(k):
+        entry = mapping[k]
+        url = entry[0]
+        new_url = _modify_url(url, version=version, language=language)
+        mapping[k] = (new_url, entry[1])
+
+    if key is None:
+        for key in mapping:
+            _modify(key)
+    else:
+        _modify(key)
+
+
+def _modify_url(
+    url: str, version: Optional[str] = None, language: Optional[str] = None
+) -> str:
+    """Modify a URL in a mapping."""
+    parts = url.split("/")
+    trailing_slash_offset = -1 if parts[-1] == "" else 0
+    if version is not None:
+        parts[trailing_slash_offset - 1] = version
+    if language is not None:
+        parts[trailing_slash_offset - 2] = language
+    modified_url = "/".join(parts)
+    return modified_url
