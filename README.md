@@ -87,6 +87,9 @@ for Python 3. The following sub-versions are supported:
 * Python 3.11
 * Python 3.12
 
+> [!IMPORTANT]
+> Note that Python 3.8 is no longer officially supported.
+
 ## Contacts and more information
 
 General, background and overview information is available at the [IDAES main website](https://www.idaes.org).
