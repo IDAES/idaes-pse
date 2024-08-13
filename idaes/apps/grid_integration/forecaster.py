@@ -12,9 +12,9 @@
 #################################################################################
 from abc import ABC, abstractmethod
 from numbers import Real
+import pandas as pd
 import numpy as np
 import idaes.logger as idaeslog
-
 
 _logger = idaeslog.getLogger(__name__)
 
@@ -681,3 +681,114 @@ class Backcaster(AbstractPrescientPriceForecaster):
                 self._historical_da_prices[b] = self._historical_da_prices[b][24:]
 
         return
+
+
+class PerfectForecaster(AbstractPrescientPriceForecaster):
+    """
+    PerfectForecaster is designed for the renewable-PEM Parameterized Bidder.
+    To bid into the renewable-PEM, user need to forecaster the renewable generation at each time period.
+    """
+
+    def __init__(self, data_path_or_df):
+        """
+        Perfect forecaster that reads the data from a Dataframe containing:
+         - {bus}-DALMP
+         - {bus}-RTLMP
+         - {bus}-DACF and {bus}-RTCF for renewable plants
+         Perfect forecaster has no forecaster errors when forecasting the capacity factors
+         unless the user add errors in the data_path_or_df
+
+         Argument:
+            data_path_or_df: str or pandas DataFrame,
+                if it is a str, it is the path of the file that stores the data of capacity factors;
+                if it is a DataFrame, that df should store the data of capacity factors.
+        """
+        if isinstance(data_path_or_df, str):
+            self.data = pd.read_csv(
+                data_path_or_df, index_col="Datetime", parse_dates=True
+            )
+        elif isinstance(data_path_or_df, pd.DataFrame):
+            self.data = data_path_or_df
+        else:
+            raise ValueError(
+                "The data_path_or_df should be pandas DataFrame or a string of the csv path"
+            )
+
+    def __getitem__(self, index):
+        return self.data[index]
+
+    def fetch_hourly_stats_from_prescient(self, prescient_hourly_stats):
+        """
+        Fetch the hourly stats from prescient.
+        No need to have it here but forecaster should have this function to avoid an error from Coordinator.
+        """
+        pass
+
+    def fetch_day_ahead_stats_from_prescient(self, uc_date, uc_hour, day_ahead_result):
+        """
+        Fetch the day-ahead stats from prescient.
+        No need to have it here but forecaster should have this function to avoid an error from Coordinator.
+        """
+        pass
+
+    def forecast_day_ahead_and_real_time_prices(
+        self, date: str, hour: int, bus: str, horizon: int, _
+    ):
+        """
+        Forecast day-ahead and real-time prices.
+        Not necessary to forecast prices when using PEMParameterized bidder.
+        But we build a function here for the future development.
+
+        Arguments
+            date: str,
+                intended date of the forecasts.
+            hour: int,
+                intended hour of the forecasts.
+            bus: str,
+                intended bus of the forecasts.
+            horizon: int,
+                number of the time periods of the forecasts.
+
+        Returns:
+            da_forecast: numpyp array,
+                the day-ahead price forecasts.
+            rt_forecast: numpyp array,
+                the real-time price forecasts.
+        """
+        rt_forecast = self.forecast_real_time_prices(date, hour, bus, horizon, _)
+        da_forecast = self.forecast_day_ahead_prices(date, hour, bus, horizon, _)
+        return da_forecast, rt_forecast
+
+    def get_column_from_data(self, date: str, hour: int, horizon: int, col: str):
+        """
+        Get the data from the dataframe.
+
+        Arguments
+            date: str,
+                intended date of the forecasts.
+            hour: int,
+                intended hour of the forecasts.
+            horizon: int,
+                number of the time periods of the forecasts.
+            col: str,
+                the name of the column.
+
+        """
+        datetime_index = pd.to_datetime(date) + pd.Timedelta(hours=hour)
+        forecast = self.data[self.data.index >= datetime_index].head(horizon)
+        values = forecast[col].values
+        if len(values) < horizon:
+            values = np.append(values, self.data[col].values[: horizon - len(values)])
+        return values
+
+    def forecast_day_ahead_prices(self, date, hour, bus, horizon, _):
+        return self.get_column_from_data(date, hour, horizon, f"{bus}-DALMP")
+
+    def forecast_real_time_prices(self, date, hour, bus, horizon, _):
+        return self.get_column_from_data(date, hour, horizon, f"{bus}-RTLMP")
+
+    def forecast_day_ahead_capacity_factor(self, date, hour, gen, horizon):
+        return self.get_column_from_data(date, hour, horizon, f"{gen}-DACF")
+
+    def forecast_real_time_capacity_factor(self, date, hour, gen, horizon):
+        return self.get_column_from_data(date, hour, horizon, f"{gen}-RTCF")
