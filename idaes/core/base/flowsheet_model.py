@@ -277,8 +277,8 @@ within this flowsheet if not otherwise specified,
         Returns:
             VisualizeResult : The return from UI, namedtuple("VisualizeResult", ["store", "port", "server", "save_diagram"]) etc...
         """
-        VisualizeResult = UI().visualize(self, model_name, **kwargs)
-        return VisualizeResult
+        visualize_result = UI().visualize(self, model_name, **kwargs)
+        return visualize_result
 
     def _get_stream_table_contents(self, time_point=0):
         """
