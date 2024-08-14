@@ -275,7 +275,7 @@ within this flowsheet if not otherwise specified,
             **kwargs: Additional keywords for :func:`idaes.core.ui.fv.visualize()`
 
         Returns:
-            VisualizeResult : The return from UI, namedtuple("VisualizeResult", ["store", "port", "server", "save_diagram"]) etc...
+            visualize_result: The :class:`idaes_ui.fv.fsvis.VisualizeResult` instance returned by :meth:`UI.visualize`
         """
         visualize_result = UI().visualize(self, model_name, **kwargs)
         return visualize_result
