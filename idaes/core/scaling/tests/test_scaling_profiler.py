@@ -405,7 +405,7 @@ def test_case_study_profiling():
                 "iters_w_regularization": 0,
             },
         },
-        "Root Sum Squares": {
+        "Inverse Root Sum Squares": {
             "Manual": {
                 "condition_number": 1.15511e16,
                 "solved": False,

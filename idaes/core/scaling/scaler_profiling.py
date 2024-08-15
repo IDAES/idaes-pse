@@ -89,7 +89,7 @@ class ScalingProfiler:
                     cscaler.scale_constraint_by_nominal_value,
                     {"scheme": "inverse_sum"},
                 ),
-                "Root Sum Squares": (
+                "Inverse Root Sum Squares": (
                     cscaler.scale_constraint_by_nominal_value,
                     {"scheme": "inverse_root_sum_squared"},
                 ),
