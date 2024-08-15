@@ -2663,7 +2663,9 @@ def test_dynamic_mass_basis():
     m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
     m.fs.pp.basis_switch = 2
     m.fs.cv = ControlVolume0DBlock(
-        property_package=m.fs.pp, reaction_package=m.fs.rp, dynamic=True
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        dynamic=True,
     )
 
     m.fs.cv.add_geometry()
