@@ -147,7 +147,6 @@ def test_full_auto_scaling():
     # rate_reaction_extent (2 reactions)
     # equilibrium_reaction_extent  (2 reactions)
     # cp at inlet and outlet
-    [print(i) for i in unscaled_var_list]
     assert len(unscaled_var_list) == 6
     # check that all constraints have been scaled
     unscaled_constraint_list = list(iscale.unscaled_constraints_generator(m))
