@@ -166,7 +166,7 @@ class AutoScaler(ScalerBase):
         self._con_by_norm(jblock, con_list=con_list, norm=norm)
 
     def _vardata_by_magnitude(self, vardata):
-        if value(vardata) is None:
+        if vardata.value is None:
             sf = 1.0
         else:
             val = abs(value(vardata))

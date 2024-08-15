@@ -68,6 +68,16 @@ class TestAutoscaleVarMagnitude:
         assert len(model.scaling_factor) == 2
 
     @pytest.mark.unit
+    def test_var_data_no_value(self):
+        model = ConcreteModel()
+        model.v1 = Var()
+
+        scaler = AutoScaler()
+        scaler.variables_by_magnitude(model.v1)
+
+        assert model.scaling_factor[model.v1] == 1
+
+    @pytest.mark.unit
     def test_indexed_var(self, model):
         scaler = AutoScaler()
         scaler.variables_by_magnitude(model.v2)
