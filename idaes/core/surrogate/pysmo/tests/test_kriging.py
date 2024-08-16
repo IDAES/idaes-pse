@@ -343,9 +343,10 @@ class TestKrigingModel:
                 )
             ).transpose()
             cov_matrix_tests = np.exp(-1 * cmt)
-            y_prediction_exp[i, 0] = mean + np.matmul(
+            y_prediction_val = mean + np.matmul(
                 np.matmul(cov_matrix_tests.transpose(), cov_inv), y_mu
             )
+            y_prediction_exp[i, 0] = y_prediction_val.item()
 
         ss_error, rmse_error, y_prediction = KrigingClass.error_calculation(
             theta,
