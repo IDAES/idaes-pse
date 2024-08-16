@@ -28,6 +28,7 @@ from idaes.core.surrogate.pysmo.sampling import (
     SamplingMethods,
     FeatureScaling,
 )
+import idaes.logger as idaeslog
 
 
 class TestFeatureScaling:
@@ -2229,18 +2230,19 @@ class TestCVTSampling:
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
-    def test__init__selection_tolerance_too_tight(self, array_type):
+    def test__init__selection_tolerance_too_tight(self, array_type, caplog):
+        caplog.set_level(idaeslog.WARNING)
+        warning_msg = "Tolerance too tight. CVT algorithm may take long time to converge."
         input_array = array_type(self.input_array)
-        with pytest.warns(
-            Warning,
-            match="Tolerance too tight. CVT algorithm may take long time to converge.",
-        ):
-            CVTClass = CVTSampling(
+        CVTClass = CVTSampling(
                 input_array,
                 number_of_samples=None,
                 tolerance=1e-10,
                 sampling_type="selection",
             )
+        assert warning_msg in caplog.text
+        for record in caplog.records:
+            assert record.levelno == idaeslog.WARNING
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
@@ -2414,18 +2416,19 @@ class TestCVTSampling:
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [list])
-    def test__init__creation_tolerance_too_tight(self, array_type):
+    def test__init__creation_tolerance_too_tight(self, array_type, caplog):
+        caplog.set_level(idaeslog.WARNING)
         input_array = array_type(self.input_array_list)
-        with pytest.warns(
-            Warning,
-            match="Tolerance too tight. CVT algorithm may take long time to converge.",
-        ):
-            CVTClass = CVTSampling(
+        warning_msg = "Tolerance too tight. CVT algorithm may take long time to converge."
+        CVTClass = CVTSampling(
                 input_array,
                 number_of_samples=None,
                 tolerance=1e-10,
                 sampling_type="creation",
             )
+        assert warning_msg in caplog.text
+        for record in caplog.records:
+            assert record.levelno == idaeslog.WARNING
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [list])

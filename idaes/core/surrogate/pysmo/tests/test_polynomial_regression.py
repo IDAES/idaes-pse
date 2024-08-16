@@ -301,17 +301,21 @@ class TestPolynomialRegression:
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type1", [np.array, pd.DataFrame])
     @pytest.mark.parametrize("array_type2", [np.array, pd.DataFrame])
-    def test__init__09(self, array_type1, array_type2):
+    def test__init__09(self, array_type1, array_type2, caplog):
+        caplog.set_level(idaeslog.WARNING)
+        warning_msg = 'The number of cross-validations entered is large. The simulation may take a while to run'
         original_data_input = array_type1(self.test_data)
         regression_data_input = array_type2(self.sample_points)
-        with pytest.warns(Warning):
-            PolyClass = PolynomialRegression(
+        PolyClass = PolynomialRegression(
                 original_data_input,
                 regression_data_input,
                 maximum_polynomial_order=5,
                 number_of_crossvalidations=11,
             )
-            assert (
+        assert warning_msg in caplog.text
+        for record in caplog.records:
+            assert record.levelno == idaeslog.WARNING
+        assert (
                 PolyClass.number_of_crossvalidations == 11
             )  # Default number of cross-validations
 
