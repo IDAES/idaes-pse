@@ -176,6 +176,7 @@ kwargs = dict(
             "*.trc",
             "*.xlsx",  # idaes/dmf/tests/data_files - tabular import test files
             "*.nl",
+            "*.keras",  # idaes/core/surrogate/tests/data/keras_models
         ]
     },
     include_package_data=True,
