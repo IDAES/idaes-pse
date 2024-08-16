@@ -20,6 +20,7 @@ from idaes.core.surrogate.pysmo.polynomial_regression import (
 import numpy as np
 import pandas as pd
 import pytest
+import idaes.logger as idaeslog
 
 
 class TestFeatureScaling:
@@ -328,14 +329,17 @@ class TestPolynomialRegression:
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type1", [np.array, pd.DataFrame])
     @pytest.mark.parametrize("array_type2", [np.array, pd.DataFrame])
-    def test__init__11(self, array_type1, array_type2):
+    def test__init__11(self, array_type1, array_type2, caplog):
+        caplog.set_level(idaeslog.WARNING)
+        warning_msg = 'The maximum allowed polynomial order is 10. Value has been adjusted to 10.'
         original_data_input = array_type1(self.test_data_large)
         regression_data_input = array_type2(self.sample_points_large)
-        with pytest.warns(Warning):
-            PolyClass = PolynomialRegression(
-                original_data_input, regression_data_input, maximum_polynomial_order=11
-            )
-            assert PolyClass.max_polynomial_order == 10
+        PolyClass = PolynomialRegression(original_data_input, regression_data_input, maximum_polynomial_order=11)
+        warning_msg = 'The maximum allowed polynomial order is 10. Value has been adjusted to 10.'
+        assert warning_msg in caplog.text
+        for record in caplog.records:
+            assert record.levelno == idaeslog.WARNING
+        assert PolyClass.max_polynomial_order == 10
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type1", [np.array, pd.DataFrame])
@@ -1645,18 +1649,13 @@ class TestPolynomialRegression:
         beta = np.array([[0], [0], [0]])
         expected_df = pd.Series()
         row_list = np.array([["k"], ["(x_1)^1"], ["(x_2)^1"]])
-        expected_df = pd.concat(
-            [
-                expected_df,
-                pd.Series(
+        expected_df = pd.Series(
                     {
                         row_list[0, 0]: beta[0, 0],
                         row_list[1, 0]: beta[1, 0],
                         row_list[2, 0]: beta[2, 0],
                     }
-                ),
-            ]
-        )
+                )
         output_df = data_feed.results_generation(beta, order)
         assert output_df.index.to_list() == expected_df.index.to_list()
         assert expected_df.all() == output_df.all()
@@ -1687,10 +1686,7 @@ class TestPolynomialRegression:
                 ["(x_2)^3"],
             ]
         )
-        expected_df = pd.concat(
-            [
-                expected_df,
-                pd.Series(
+        expected_df = pd.Series(
                     {
                         row_list[0, 0]: beta[0, 0],
                         row_list[1, 0]: beta[1, 0],
@@ -1700,9 +1696,7 @@ class TestPolynomialRegression:
                         row_list[5, 0]: beta[5, 0],
                         row_list[6, 0]: beta[6, 0],
                     }
-                ),
-            ]
-        )
+                )
         output_df = data_feed.results_generation(beta, order)
         assert output_df.index.to_list() == expected_df.index.to_list()
         assert expected_df.all() == output_df.all()
@@ -1725,10 +1719,7 @@ class TestPolynomialRegression:
         row_list = np.array(
             [["k"], ["(x_1)^1"], ["(x_2)^1"], ["(x_1)^2"], ["(x_2)^2"], ["(x_1).(x_2)"]]
         )
-        expected_df = pd.concat(
-            [
-                expected_df,
-                pd.Series(
+        expected_df = pd.Series(
                     {
                         row_list[0, 0]: beta[0, 0],
                         row_list[1, 0]: beta[1, 0],
@@ -1737,9 +1728,7 @@ class TestPolynomialRegression:
                         row_list[4, 0]: beta[4, 0],
                         row_list[5, 0]: beta[5, 0],
                     }
-                ),
-            ]
-        )
+                )
         output_df = data_feed.results_generation(beta, order)
         assert output_df.index.to_list() == expected_df.index.to_list()
         assert expected_df.all() == output_df.all()
