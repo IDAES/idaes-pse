@@ -53,7 +53,7 @@ def build_rom():
 
 
 @pytest.mark.unit
-@pytest.mark.xfail
+@pytest.mark.xfail  # test xfailed due to out-of-date, incompatible Keras surrogates
 def test_basic_build(build_rom):
 
     m = build_rom
@@ -79,7 +79,7 @@ def test_basic_build(build_rom):
 
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.component
-@pytest.mark.xfail
+@pytest.mark.xfail  # test xfailed due to out-of-date, incompatible Keras surrogates
 def test_initialize(build_rom):
 
     m = build_rom
@@ -99,7 +99,7 @@ def test_initialize(build_rom):
 
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.component
-@pytest.mark.xfail
+@pytest.mark.xfail  # test xfailed due to out-of-date, incompatible Keras surrogates
 def test_solve(build_rom):
     m = build_rom
 
