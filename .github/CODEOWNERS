@@ -13,19 +13,21 @@ requirements*.txt @lbianchi-lbl @ksbeattie
 # testing
 pytest*.ini @lbianchi-lbl
 conftest.py @lbianchi-lbl
-# Docs - need to identify owner(s)
+
+# Docs
+/docs @dangunter @bpaul4
 
 # Commands
-/idaes/commands/ @eslickj @dangunter
+/idaes/commands/ @dangunter
 
 # Core
-/idaes/core/ @andrewlee94 @eslickj @lbianchi-lbl
+/idaes/core/ @andrewlee94 @dallan-keylogic @lbianchi-lbl
 /idaes/core/dmf/ @dangunter
-/idaes/core/surrogate/ @andrewlee94 @carldlaird @bpaul4
+/idaes/core/surrogate/ @andrewlee94 @bpaul4 @avdudchenko @rundxdi
 /idaes/core/ui/ @dangunter
 
 # Models
-/idaes/models/ @andrewlee94 @eslickj
+/idaes/models/ @andrewlee94 @bpaul4
 
 # Apps - each package needs a maintainer
 /idaes/apps/caprese/ @Robbybp
@@ -39,10 +41,10 @@ conftest.py @lbianchi-lbl
 /idaes/models_extra/column_models/ @aostace01 @agarciadiego
 /idaes/models_extra/gas_distribution/ @Robbybp
 /idaes/models_extra/gas_solids_contactors/ @aostace01
-/idaes/models_extra/power_generation/ @eslickj @MAZamarripa
+/idaes/models_extra/power_generation/ @bpaul4 @MAZamarripa
 /idaes/models_extra/power_generation/costing/ @MAZamarripa @AlexNoring
-/idaes/models_extra/power_generation/properties/ @eslickj @AlexNoring
-/idaes/models_extra/power_generation/unit_models/soc_submodels/ @eslickj @dallan-keylogic
+/idaes/models_extra/power_generation/properties/ @bpaul4 @AlexNoring
+/idaes/models_extra/power_generation/unit_models/soc_submodels/ @bpaul4 @dallan-keylogic
 
 # Scripts
 /scripts/colab_helper.py @adowling2

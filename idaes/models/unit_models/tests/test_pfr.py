@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -18,7 +18,6 @@ Author: Andrew Lee
 import pytest
 
 from pyomo.environ import check_optimal_termination, ConcreteModel, value, Var, units
-from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 from idaes.core import (
     FlowsheetBlock,
     MaterialBalanceType,
@@ -34,7 +33,6 @@ from idaes.models.properties.examples.saponification_reactions import (
     SaponificationReactionParameterBlock,
 )
 from idaes.core.util.model_statistics import (
-    degrees_of_freedom,
     number_variables,
     number_total_constraints,
     number_unused_variables,
@@ -51,11 +49,12 @@ from idaes.core.initialization import (
     SingleControlVolumeUnitInitializer,
     InitializationStatus,
 )
+from idaes.core.util import DiagnosticsToolbox
 
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_solver()
+solver = get_solver("ipopt_v2")
 
 
 # -----------------------------------------------------------------------------
@@ -115,8 +114,8 @@ class TestSaponification(object):
         m.fs.unit.inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
         m.fs.unit.inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
         m.fs.unit.inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
-        m.fs.unit.inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
-        m.fs.unit.inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "SodiumAcetate"].fix(1e-8)
+        m.fs.unit.inlet.conc_mol_comp[0, "Ethanol"].fix(1e-8)
 
         m.fs.unit.inlet.temperature.fix(303.15)
         m.fs.unit.inlet.pressure.fix(101325.0)
@@ -160,17 +159,9 @@ class TestSaponification(object):
         assert number_derivative_variables(sapon) == 0
 
     @pytest.mark.component
-    def test_units(self, sapon):
-        assert_units_consistent(sapon)
-        assert_units_equivalent(sapon.fs.unit.volume, units.m**3)
-        assert_units_equivalent(sapon.fs.unit.length, units.m)
-        assert_units_equivalent(sapon.fs.unit.area, units.m**2)
-        assert_units_equivalent(sapon.fs.unit.heat_duty[0, 0], units.W / units.m)
-        assert_units_equivalent(sapon.fs.unit.deltaP[0, 0], units.Pa / units.m)
-
-    @pytest.mark.unit
-    def test_dof(self, sapon):
-        assert degrees_of_freedom(sapon) == 0
+    def test_structural_issues(self, sapon):
+        dt = DiagnosticsToolbox(sapon)
+        dt.assert_no_structural_warnings()
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -266,6 +257,13 @@ class TestSaponification(object):
             )
             <= 1e-6
         )
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, sapon):
+        dt = DiagnosticsToolbox(sapon)
+        dt.assert_no_numerical_warnings()
 
     @pytest.mark.ui
     @pytest.mark.unit

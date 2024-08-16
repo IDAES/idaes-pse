@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -264,9 +264,7 @@ def test_arrhenius_partial_pressure(model):
     )
 
     assert value(rform) == pytest.approx(0.81836, rel=1e-3)
-    assert_units_equivalent(
-        rform, pyunits.mol / pyunits.m**3 / pyunits.s / pyunits.Pa
-    )
+    assert_units_equivalent(rform, pyunits.mol / pyunits.m**3 / pyunits.s / pyunits.Pa)
 
 
 @pytest.mark.unit
@@ -299,6 +297,4 @@ def test_arrhenius_partial_pressure_convert(model):
     )
 
     assert value(rform) == pytest.approx(0.81836, rel=1e-3)
-    assert_units_equivalent(
-        rform, pyunits.mol / pyunits.m**3 / pyunits.s / pyunits.Pa
-    )
+    assert_units_equivalent(rform, pyunits.mol / pyunits.m**3 / pyunits.s / pyunits.Pa)

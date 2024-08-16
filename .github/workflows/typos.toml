@@ -8,6 +8,7 @@ idaes = "idaes"
 IDAE = "IDAE"
 # HELMET - HELMholtz
 HEL = "HEL"
+gam = "gam"
 # Datas
 Datas = "Datas"
 # ba triggers in docs
@@ -36,5 +37,15 @@ equil = "equil"
 astroid = "astroid"
 # delt == delta
 delt = "delt"
+# Minimal Infeasible System
+mis = "mis"
+MIS = "MIS"
 # TEMPORARY - Remove after example update
 upadate = "upadate"
+
+# false positive from 1.20.3
+RTO = "RTO"
+PN = "PN"
+hd = "hd"
+Tge = "Tge"
+iy = "iy"

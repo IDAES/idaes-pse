@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -12,9 +12,9 @@
 #################################################################################
 from abc import ABC, abstractmethod
 from numbers import Real
+import pandas as pd
 import numpy as np
 import idaes.logger as idaeslog
-
 
 _logger = idaeslog.getLogger(__name__)
 
@@ -24,7 +24,6 @@ class ForecastError(Exception):
 
 
 class AbstractPriceForecaster(ABC):
-
     """
     The abstract class for price forecaster.
     """
@@ -56,7 +55,6 @@ class AbstractPriceForecaster(ABC):
 
     @abstractmethod
     def forecast_real_time_prices(self, date, hour, bus, horizon, n_samples):
-
         """
         Forecast real-time market prices.
 
@@ -78,7 +76,6 @@ class AbstractPriceForecaster(ABC):
 
     @abstractmethod
     def forecast_day_ahead_prices(self, date, hour, bus, horizon, n_samples):
-
         """
         Forecast day-ahead market prices.
 
@@ -100,14 +97,12 @@ class AbstractPriceForecaster(ABC):
 
 
 class AbstractPrescientPriceForecaster(AbstractPriceForecaster):
-
     """
     Abstract class for price forecasters that will interface with Prescient.
     """
 
     @abstractmethod
     def fetch_hourly_stats_from_prescient(self, prescient_hourly_stats):
-
         """
         This method fetches the hourly stats from Prescient to the price forecaster
         once the hourly stats are published.
@@ -121,7 +116,6 @@ class AbstractPrescientPriceForecaster(AbstractPriceForecaster):
 
     @abstractmethod
     def fetch_day_ahead_stats_from_prescient(self, uc_date, uc_hour, day_ahead_result):
-
         """
         This method fetches the day-ahead market to the price forecaster after the
         UC is solved from Prescient through the coordinator.
@@ -139,7 +133,6 @@ class AbstractPrescientPriceForecaster(AbstractPriceForecaster):
 
 
 class PlaceHolderForecaster(AbstractPrescientPriceForecaster):
-
     """
     This a placeholder for a real price forecaster. This placeholder can takes
     representative daily values and standard deviations for real-time and
@@ -208,7 +201,6 @@ class PlaceHolderForecaster(AbstractPrescientPriceForecaster):
         return da_forecast, rt_forecast
 
     def forecast_day_ahead_prices(self, date, hour, bus, horizon, n_samples):
-
         """
         Forecast day-ahead market prices.
 
@@ -237,7 +229,6 @@ class PlaceHolderForecaster(AbstractPrescientPriceForecaster):
         )
 
     def forecast_real_time_prices(self, date, hour, bus, horizon, n_samples):
-
         """
         Forecast real-time market prices.
 
@@ -266,7 +257,6 @@ class PlaceHolderForecaster(AbstractPrescientPriceForecaster):
         )
 
     def _forecast(self, means, stds, hour, horizon, n_samples):
-
         """
         Generate price forecasts.
 
@@ -296,7 +286,6 @@ class PlaceHolderForecaster(AbstractPrescientPriceForecaster):
         return {i: list(forecasts_arr[i]) for i in range(n_samples)}
 
     def fetch_hourly_stats_from_prescient(self, prescient_hourly_stats):
-
         """
         This method fetches the hourly stats from Prescient to the price forecaster
         once the hourly stats are published.
@@ -311,7 +300,6 @@ class PlaceHolderForecaster(AbstractPrescientPriceForecaster):
         return
 
     def fetch_day_ahead_stats_from_prescient(self, uc_date, uc_hour, day_ahead_result):
-
         """
         This method fetches the day-ahead market to the price forecaster after the
         UC is solved from Prescient through the coordinator.
@@ -331,7 +319,6 @@ class PlaceHolderForecaster(AbstractPrescientPriceForecaster):
 
 
 class Backcaster(AbstractPrescientPriceForecaster):
-
     """
     Generate price forecasts by directly using historical prices.
     """
@@ -359,7 +346,6 @@ class Backcaster(AbstractPrescientPriceForecaster):
         self._current_day_rt_prices = {bus: [] for bus in historical_da_prices}
 
     def _validate_input_historical_price(self, historical_price):
-
         """
         Validate input historical prices.
 
@@ -409,7 +395,6 @@ class Backcaster(AbstractPrescientPriceForecaster):
 
     @property
     def max_historical_days(self):
-
         """
         Property getter for max_historical_days.
 
@@ -421,7 +406,6 @@ class Backcaster(AbstractPrescientPriceForecaster):
 
     @max_historical_days.setter
     def max_historical_days(self, value):
-
         """
         Property setter for max_historical_days (validate before setting).
 
@@ -448,7 +432,6 @@ class Backcaster(AbstractPrescientPriceForecaster):
 
     @property
     def historical_da_prices(self):
-
         """
         Property getter for historical_da_prices.
 
@@ -460,7 +443,6 @@ class Backcaster(AbstractPrescientPriceForecaster):
 
     @historical_da_prices.setter
     def historical_da_prices(self, value):
-
         """
         Property setter for historical_da_prices (validate before setting).
 
@@ -476,7 +458,6 @@ class Backcaster(AbstractPrescientPriceForecaster):
 
     @property
     def historical_rt_prices(self):
-
         """
         Property getter for historical_rt_prices.
 
@@ -488,7 +469,6 @@ class Backcaster(AbstractPrescientPriceForecaster):
 
     @historical_rt_prices.setter
     def historical_rt_prices(self, value):
-
         """
         Property setter for historical_rt_prices (validate before setting).
 
@@ -536,7 +516,6 @@ class Backcaster(AbstractPrescientPriceForecaster):
         return da_forecast, rt_forecast
 
     def forecast_real_time_prices(self, date, hour, bus, horizon, n_samples):
-
         """
         Forecast real-time market prices.
 
@@ -567,7 +546,6 @@ class Backcaster(AbstractPrescientPriceForecaster):
         )
 
     def forecast_day_ahead_prices(self, date, hour, bus, horizon, n_samples):
-
         """
         Forecast day-ahead market prices.
 
@@ -643,7 +621,6 @@ class Backcaster(AbstractPrescientPriceForecaster):
         return forecast
 
     def fetch_hourly_stats_from_prescient(self, prescient_hourly_stats):
-
         """
         This method fetches the hourly real-time prices from Prescient and store
         them on the price forecaster, once they are published. When the stored historical
@@ -675,7 +652,6 @@ class Backcaster(AbstractPrescientPriceForecaster):
         return
 
     def fetch_day_ahead_stats_from_prescient(self, uc_date, uc_hour, day_ahead_result):
-
         """
         This method fetches the hourly day-ahead prices from Prescient and store
         them on the price forecaster, once they are published. When the stored historical
@@ -705,3 +681,114 @@ class Backcaster(AbstractPrescientPriceForecaster):
                 self._historical_da_prices[b] = self._historical_da_prices[b][24:]
 
         return
+
+
+class PerfectForecaster(AbstractPrescientPriceForecaster):
+    """
+    PerfectForecaster is designed for the renewable-PEM Parameterized Bidder.
+    To bid into the renewable-PEM, user need to forecaster the renewable generation at each time period.
+    """
+
+    def __init__(self, data_path_or_df):
+        """
+        Perfect forecaster that reads the data from a Dataframe containing:
+         - {bus}-DALMP
+         - {bus}-RTLMP
+         - {bus}-DACF and {bus}-RTCF for renewable plants
+         Perfect forecaster has no forecaster errors when forecasting the capacity factors
+         unless the user add errors in the data_path_or_df
+
+         Argument:
+            data_path_or_df: str or pandas DataFrame,
+                if it is a str, it is the path of the file that stores the data of capacity factors;
+                if it is a DataFrame, that df should store the data of capacity factors.
+        """
+        if isinstance(data_path_or_df, str):
+            self.data = pd.read_csv(
+                data_path_or_df, index_col="Datetime", parse_dates=True
+            )
+        elif isinstance(data_path_or_df, pd.DataFrame):
+            self.data = data_path_or_df
+        else:
+            raise ValueError(
+                "The data_path_or_df should be pandas DataFrame or a string of the csv path"
+            )
+
+    def __getitem__(self, index):
+        return self.data[index]
+
+    def fetch_hourly_stats_from_prescient(self, prescient_hourly_stats):
+        """
+        Fetch the hourly stats from prescient.
+        No need to have it here but forecaster should have this function to avoid an error from Coordinator.
+        """
+        pass
+
+    def fetch_day_ahead_stats_from_prescient(self, uc_date, uc_hour, day_ahead_result):
+        """
+        Fetch the day-ahead stats from prescient.
+        No need to have it here but forecaster should have this function to avoid an error from Coordinator.
+        """
+        pass
+
+    def forecast_day_ahead_and_real_time_prices(
+        self, date: str, hour: int, bus: str, horizon: int, _
+    ):
+        """
+        Forecast day-ahead and real-time prices.
+        Not necessary to forecast prices when using PEMParameterized bidder.
+        But we build a function here for the future development.
+
+        Arguments
+            date: str,
+                intended date of the forecasts.
+            hour: int,
+                intended hour of the forecasts.
+            bus: str,
+                intended bus of the forecasts.
+            horizon: int,
+                number of the time periods of the forecasts.
+
+        Returns:
+            da_forecast: numpyp array,
+                the day-ahead price forecasts.
+            rt_forecast: numpyp array,
+                the real-time price forecasts.
+        """
+        rt_forecast = self.forecast_real_time_prices(date, hour, bus, horizon, _)
+        da_forecast = self.forecast_day_ahead_prices(date, hour, bus, horizon, _)
+        return da_forecast, rt_forecast
+
+    def get_column_from_data(self, date: str, hour: int, horizon: int, col: str):
+        """
+        Get the data from the dataframe.
+
+        Arguments
+            date: str,
+                intended date of the forecasts.
+            hour: int,
+                intended hour of the forecasts.
+            horizon: int,
+                number of the time periods of the forecasts.
+            col: str,
+                the name of the column.
+
+        """
+        datetime_index = pd.to_datetime(date) + pd.Timedelta(hours=hour)
+        forecast = self.data[self.data.index >= datetime_index].head(horizon)
+        values = forecast[col].values
+        if len(values) < horizon:
+            values = np.append(values, self.data[col].values[: horizon - len(values)])
+        return values
+
+    def forecast_day_ahead_prices(self, date, hour, bus, horizon, _):
+        return self.get_column_from_data(date, hour, horizon, f"{bus}-DALMP")
+
+    def forecast_real_time_prices(self, date, hour, bus, horizon, _):
+        return self.get_column_from_data(date, hour, horizon, f"{bus}-RTLMP")
+
+    def forecast_day_ahead_capacity_factor(self, date, hour, gen, horizon):
+        return self.get_column_from_data(date, hour, horizon, f"{gen}-DACF")
+
+    def forecast_real_time_capacity_factor(self, date, hour, gen, horizon):
+        return self.get_column_from_data(date, hour, horizon, f"{gen}-RTCF")

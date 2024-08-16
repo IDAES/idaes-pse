@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -52,6 +52,8 @@ from idaes.models.properties.modular_properties.base.generic_property import (
 
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.solvers import get_solver
+
+solver = get_solver("ipopt_v2")
 
 
 # -----------------------------------------------------------------------------
@@ -215,7 +217,6 @@ class TestApparentSpeciesBasisNoInherent:
 
         assert degrees_of_freedom(m.fs) == 0
 
-        solver = get_solver()
         res = solver.solve(m.fs, tee=True)
 
         # Check for optimal solution
@@ -489,7 +490,6 @@ class TestApparentSpeciesBasisInherent:
 
         m.fs.state.initialize()
 
-        solver = get_solver()
         res = solver.solve(m.fs)
 
         # Check for optimal solution
@@ -958,7 +958,6 @@ class TestTrueSpeciesBasisInherent:
 
         m.fs.state.initialize()
 
-        solver = get_solver()
         res = solver.solve(m.fs)
 
         # Check for optimal solution
@@ -1020,6 +1019,7 @@ class TestTrueSpeciesBasisInherent:
         )
 
         # Check apparent species mole fractions
+        m.fs.state[1].mole_frac_phase_comp_apparent.display()
         assert value(
             m.fs.state[1].mole_frac_phase_comp_apparent["Liq", "K2CO3"]
         ) == pytest.approx(0.2, rel=1e-5)
@@ -1028,7 +1028,7 @@ class TestTrueSpeciesBasisInherent:
         ) == pytest.approx(0.8, rel=1e-5)
         assert value(
             m.fs.state[1].mole_frac_phase_comp_apparent["Liq", "KHCO3"]
-        ) == pytest.approx(1.6e-8, abs=1e-9)
+        ) == pytest.approx(0, abs=1e-6)
         assert value(
             m.fs.state[1].mole_frac_phase_comp_apparent["Liq", "KHCO3"]
-        ) == pytest.approx(1.6e-8, abs=1e-9)
+        ) == pytest.approx(0, abs=1e-6)

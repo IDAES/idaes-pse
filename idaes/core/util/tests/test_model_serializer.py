@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -362,7 +362,7 @@ class TestModelSerialize(unittest.TestCase):
             data_classes=(
                 (Var._ComponentDataClass, ("value", "fixed"), _only_fixed),
                 (BooleanVar._ComponentDataClass, ("value", "fixed"), _only_fixed),
-                (pyomo.core.base.param._ParamData, ("value",), None),
+                (pyomo.core.base.param.ParamData, ("value",), None),
                 (Constraint._ComponentDataClass, ("active",), None),
                 (Block._ComponentDataClass, ("active",), None),
             ),

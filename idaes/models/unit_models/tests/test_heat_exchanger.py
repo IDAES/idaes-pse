@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -15,6 +15,7 @@ Tests for 0D heat exchanger models.
 
 Author: John Eslick
 """
+from copy import deepcopy
 import pytest
 import pandas
 
@@ -28,7 +29,6 @@ from pyomo.environ import (
     units as pyunits,
 )
 from pyomo.common.config import ConfigBlock
-from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 
 from idaes.core import (
     FlowsheetBlock,
@@ -71,6 +71,7 @@ from idaes.core.initialization import (
     BlockTriangularizationInitializer,
     InitializationStatus,
 )
+from idaes.core.util import DiagnosticsToolbox
 
 
 # Imports to assemble BT-PR with different units
@@ -88,7 +89,9 @@ from idaes.models.properties.modular_properties.eos.ceos import cubic_roots_avai
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_solver()
+# TODO: Using MA57 causes a numerical diagnostics check to fail for some reason
+# TODO: Instance of model is poorly scaled, so hopefully can be resolved with scaling tools
+solver = get_solver(solver="ipopt_v2", solver_options={"linear_solver": "ma27"})
 
 
 # -----------------------------------------------------------------------------
@@ -501,6 +504,13 @@ class TestBTX_cocurrent(object):
         m.fs.unit.area.fix(1)
         m.fs.unit.overall_heat_transfer_coefficient.fix(100)
 
+        # Bound temperature differences to avoid division by zero
+        m.fs.unit.delta_temperature_in[0.0].setlb(40)
+        m.fs.unit.delta_temperature_out[0.0].setlb(0.1)
+
+        m.fs.unit.delta_temperature_in[0.0].setub(80)
+        m.fs.unit.delta_temperature_out[0.0].setub(35)
+
         return m
 
     @pytest.mark.build
@@ -548,21 +558,11 @@ class TestBTX_cocurrent(object):
         assert number_total_constraints(btx) == 38
         assert number_unused_variables(btx) == 0
 
-    @pytest.mark.integration
-    def test_units(self, btx):
-        assert_units_equivalent(
-            btx.fs.unit.overall_heat_transfer_coefficient,
-            pyunits.W / pyunits.m**2 / pyunits.K,
-        )
-        assert_units_equivalent(btx.fs.unit.area, pyunits.m**2)
-        assert_units_equivalent(btx.fs.unit.delta_temperature_in, pyunits.K)
-        assert_units_equivalent(btx.fs.unit.delta_temperature_out, pyunits.K)
-
-        assert_units_consistent(btx)
-
-    @pytest.mark.unit
-    def test_dof(self, btx):
-        assert degrees_of_freedom(btx) == 0
+    @pytest.mark.component
+    def test_structural_issues(self, btx):
+        dt = DiagnosticsToolbox(btx)
+        dt.display_potential_evaluation_errors()
+        dt.assert_no_structural_warnings()
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -574,11 +574,11 @@ class TestBTX_cocurrent(object):
                 "HX Area": btx.fs.unit.area,
                 "Heat Duty": btx.fs.unit.heat_duty[0],
                 "HX Coefficient": btx.fs.unit.overall_heat_transfer_coefficient[0],
+                "Delta T In": btx.fs.unit.delta_temperature_in[0],
+                "Delta T Out": btx.fs.unit.delta_temperature_out[0],
             },
             "exprs": {
                 "Delta T Driving": btx.fs.unit.delta_temperature[0],
-                "Delta T In": btx.fs.unit.delta_temperature_in[0],
-                "Delta T Out": btx.fs.unit.delta_temperature_out[0],
             },
         }
 
@@ -711,6 +711,13 @@ class TestBTX_cocurrent(object):
         )
         assert abs(hot_side + cold_side) <= 1e-6
 
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, btx):
+        dt = DiagnosticsToolbox(btx)
+        dt.assert_no_numerical_warnings()
+
 
 # -----------------------------------------------------------------------------
 class TestBTX_cocurrent_alt_name(object):
@@ -743,6 +750,13 @@ class TestBTX_cocurrent_alt_name(object):
 
         m.fs.unit.area.fix(1)
         m.fs.unit.overall_heat_transfer_coefficient.fix(100)
+
+        # Bound temperature differences to avoid division by zero
+        m.fs.unit.delta_temperature_in[0.0].setlb(40)
+        m.fs.unit.delta_temperature_out[0.0].setlb(0.1)
+
+        m.fs.unit.delta_temperature_in[0.0].setub(80)
+        m.fs.unit.delta_temperature_out[0.0].setub(35)
 
         return m
 
@@ -791,21 +805,10 @@ class TestBTX_cocurrent_alt_name(object):
         assert number_total_constraints(btx) == 38
         assert number_unused_variables(btx) == 0
 
-    @pytest.mark.integration
-    def test_units(self, btx):
-        assert_units_equivalent(
-            btx.fs.unit.overall_heat_transfer_coefficient,
-            pyunits.W / pyunits.m**2 / pyunits.K,
-        )
-        assert_units_equivalent(btx.fs.unit.area, pyunits.m**2)
-        assert_units_equivalent(btx.fs.unit.delta_temperature_in, pyunits.K)
-        assert_units_equivalent(btx.fs.unit.delta_temperature_out, pyunits.K)
-
-        assert_units_consistent(btx)
-
-    @pytest.mark.unit
-    def test_dof(self, btx):
-        assert degrees_of_freedom(btx) == 0
+    @pytest.mark.component
+    def test_structural_issues(self, btx):
+        dt = DiagnosticsToolbox(btx)
+        dt.assert_no_structural_warnings()
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -817,11 +820,11 @@ class TestBTX_cocurrent_alt_name(object):
                 "HX Area": btx.fs.unit.area,
                 "Heat Duty": btx.fs.unit.heat_duty[0],
                 "HX Coefficient": btx.fs.unit.overall_heat_transfer_coefficient[0],
+                "Delta T In": btx.fs.unit.delta_temperature_in[0],
+                "Delta T Out": btx.fs.unit.delta_temperature_out[0],
             },
             "exprs": {
                 "Delta T Driving": btx.fs.unit.delta_temperature[0],
-                "Delta T In": btx.fs.unit.delta_temperature_in[0],
-                "Delta T Out": btx.fs.unit.delta_temperature_out[0],
             },
         }
 
@@ -950,6 +953,13 @@ class TestBTX_cocurrent_alt_name(object):
         )
         assert abs(hot_side + cold_side) <= 1e-6
 
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, btx):
+        dt = DiagnosticsToolbox(btx)
+        dt.assert_no_numerical_warnings()
+
 
 # -----------------------------------------------------------------------------
 @pytest.mark.iapws
@@ -1047,21 +1057,11 @@ class TestIAPWS_countercurrent(object):
         assert number_total_constraints(iapws) == 10
         assert number_unused_variables(iapws) == 0
 
-    @pytest.mark.integration
-    def test_units(self, iapws):
-        assert_units_equivalent(
-            iapws.fs.unit.overall_heat_transfer_coefficient,
-            pyunits.W / pyunits.m**2 / pyunits.K,
-        )
-        assert_units_equivalent(iapws.fs.unit.area, pyunits.m**2)
-        assert_units_equivalent(iapws.fs.unit.delta_temperature_in, pyunits.K)
-        assert_units_equivalent(iapws.fs.unit.delta_temperature_out, pyunits.K)
-
-        assert_units_consistent(iapws)
-
-    @pytest.mark.unit
-    def test_dof(self, iapws):
-        assert degrees_of_freedom(iapws) == 0
+    @pytest.mark.component
+    def test_structural_issues(self, iapws):
+        dt = DiagnosticsToolbox(iapws)
+        # Delta T calculations cause potential evaluation errors that are hard to bound
+        dt.assert_no_structural_warnings(ignore_evaluation_errors=True)
 
     @pytest.mark.unit
     def test_dof_alt_name1(self, iapws):
@@ -1088,11 +1088,11 @@ class TestIAPWS_countercurrent(object):
                 "HX Area": iapws.fs.unit.area,
                 "Heat Duty": iapws.fs.unit.heat_duty[0],
                 "HX Coefficient": iapws.fs.unit.overall_heat_transfer_coefficient[0],
+                "Delta T In": iapws.fs.unit.delta_temperature_in[0],
+                "Delta T Out": iapws.fs.unit.delta_temperature_out[0],
             },
             "exprs": {
                 "Delta T Driving": iapws.fs.unit.delta_temperature[0],
-                "Delta T In": iapws.fs.unit.delta_temperature_in[0],
-                "Delta T Out": iapws.fs.unit.delta_temperature_out[0],
             },
         }
 
@@ -1242,6 +1242,13 @@ class TestIAPWS_countercurrent(object):
         )
         assert abs(hot_side + cold_side) <= 1e-6
 
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, iapws):
+        dt = DiagnosticsToolbox(iapws)
+        dt.assert_no_numerical_warnings()
+
 
 # -----------------------------------------------------------------------------
 class TestSaponification_crossflow(object):
@@ -1264,8 +1271,8 @@ class TestSaponification_crossflow(object):
         m.fs.unit.hot_side_inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
         m.fs.unit.hot_side_inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
         m.fs.unit.hot_side_inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
-        m.fs.unit.hot_side_inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
-        m.fs.unit.hot_side_inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
+        m.fs.unit.hot_side_inlet.conc_mol_comp[0, "SodiumAcetate"].fix(1e-12)
+        m.fs.unit.hot_side_inlet.conc_mol_comp[0, "Ethanol"].fix(1e-12)
 
         m.fs.unit.cold_side_inlet.flow_vol[0].fix(1e-3)
         m.fs.unit.cold_side_inlet.temperature[0].fix(300)
@@ -1273,8 +1280,8 @@ class TestSaponification_crossflow(object):
         m.fs.unit.cold_side_inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
         m.fs.unit.cold_side_inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
         m.fs.unit.cold_side_inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
-        m.fs.unit.cold_side_inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
-        m.fs.unit.cold_side_inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
+        m.fs.unit.cold_side_inlet.conc_mol_comp[0, "SodiumAcetate"].fix(1e-12)
+        m.fs.unit.cold_side_inlet.conc_mol_comp[0, "Ethanol"].fix(1e-12)
 
         m.fs.unit.area.fix(1000)
         m.fs.unit.overall_heat_transfer_coefficient.fix(100)
@@ -1323,21 +1330,11 @@ class TestSaponification_crossflow(object):
         assert number_total_constraints(sapon) == 20
         assert number_unused_variables(sapon) == 0
 
-    @pytest.mark.integration
-    def test_units(self, sapon):
-        assert_units_equivalent(
-            sapon.fs.unit.overall_heat_transfer_coefficient,
-            pyunits.W / pyunits.m**2 / pyunits.K,
-        )
-        assert_units_equivalent(sapon.fs.unit.area, pyunits.m**2)
-        assert_units_equivalent(sapon.fs.unit.delta_temperature_in, pyunits.K)
-        assert_units_equivalent(sapon.fs.unit.delta_temperature_out, pyunits.K)
-
-        assert_units_consistent(sapon)
-
-    @pytest.mark.unit
-    def test_dof(self, sapon):
-        assert degrees_of_freedom(sapon) == 0
+    @pytest.mark.component
+    def test_structural_issues(self, sapon):
+        dt = DiagnosticsToolbox(sapon)
+        # Delta T calculations cause potential evaluation errors that are hard to bound
+        dt.assert_no_structural_warnings(ignore_evaluation_errors=True)
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -1350,11 +1347,11 @@ class TestSaponification_crossflow(object):
                 "Heat Duty": sapon.fs.unit.heat_duty[0],
                 "HX Coefficient": sapon.fs.unit.overall_heat_transfer_coefficient[0],
                 "Crossflow Factor": sapon.fs.unit.crossflow_factor[0],
+                "Delta T In": sapon.fs.unit.delta_temperature_in[0],
+                "Delta T Out": sapon.fs.unit.delta_temperature_out[0],
             },
             "exprs": {
                 "Delta T Driving": sapon.fs.unit.delta_temperature[0],
-                "Delta T In": sapon.fs.unit.delta_temperature_in[0],
-                "Delta T Out": sapon.fs.unit.delta_temperature_out[0],
             },
         }
 
@@ -1528,6 +1525,16 @@ class TestSaponification_crossflow(object):
         )
         assert abs(hot_side + cold_side) <= 1e0
 
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, sapon):
+        # TODO: Heat transfer constraint has a residual of ~1e-3
+        # Model could be better scaled
+        # TODO: Using MA57 results in extreme Jacobian and aprallel constraints?
+        dt = DiagnosticsToolbox(sapon, constraint_residual_tolerance=1e-2)
+        dt.assert_no_numerical_warnings()
+
 
 # -----------------------------------------------------------------------------
 @pytest.mark.skipif(not cubic_roots_available(), reason="Cubic functions not available")
@@ -1679,6 +1686,13 @@ class TestBT_Generic_cocurrent(object):
 
         m.fs.unit.cold_side.scaling_factor_pressure = 1
 
+        # Set small values of epsilon to get sufficiently accurate results
+        # Only applies to hot side, as cold side used the original SmoothVLE.
+        m.fs.unit.hot_side.properties_in[0].eps_t_Vap_Liq.set_value(1e-4)
+        m.fs.unit.hot_side.properties_in[0].eps_z_Vap_Liq.set_value(1e-4)
+        m.fs.unit.hot_side.properties_out[0].eps_t_Vap_Liq.set_value(1e-4)
+        m.fs.unit.hot_side.properties_out[0].eps_z_Vap_Liq.set_value(1e-4)
+
         return m
 
     @pytest.mark.build
@@ -1722,25 +1736,15 @@ class TestBT_Generic_cocurrent(object):
         assert isinstance(btx.fs.unit.delta_temperature, (Var, Expression))
         assert isinstance(btx.fs.unit.heat_transfer_equation, Constraint)
 
-        assert number_variables(btx) == 190
-        assert number_total_constraints(btx) == 118
+        assert number_variables(btx) == 176
+        assert number_total_constraints(btx) == 104
         assert number_unused_variables(btx) == 20
 
-    @pytest.mark.integration
-    def test_units(self, btx):
-        assert_units_equivalent(
-            btx.fs.unit.overall_heat_transfer_coefficient,
-            pyunits.W / pyunits.m**2 / pyunits.K,
-        )
-        assert_units_equivalent(btx.fs.unit.area, pyunits.m**2)
-        assert_units_equivalent(btx.fs.unit.delta_temperature_in, pyunits.K)
-        assert_units_equivalent(btx.fs.unit.delta_temperature_out, pyunits.K)
-
-        assert_units_consistent(btx)
-
-    @pytest.mark.unit
-    def test_dof(self, btx):
-        assert degrees_of_freedom(btx) == 0
+    @pytest.mark.component
+    def test_structural_issues(self, btx):
+        dt = DiagnosticsToolbox(btx)
+        # Delta T calculations cause potential evaluation errors that are hard to bound
+        dt.assert_no_structural_warnings(ignore_evaluation_errors=True)
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -1752,11 +1756,11 @@ class TestBT_Generic_cocurrent(object):
                 "HX Area": btx.fs.unit.area,
                 "Heat Duty": btx.fs.unit.heat_duty[0],
                 "HX Coefficient": btx.fs.unit.overall_heat_transfer_coefficient[0],
+                "Delta T In": btx.fs.unit.delta_temperature_in[0],
+                "Delta T Out": btx.fs.unit.delta_temperature_out[0],
             },
             "exprs": {
                 "Delta T Driving": btx.fs.unit.delta_temperature[0],
-                "Delta T In": btx.fs.unit.delta_temperature_in[0],
-                "Delta T Out": btx.fs.unit.delta_temperature_out[0],
             },
         }
 
@@ -1895,6 +1899,15 @@ class TestBT_Generic_cocurrent(object):
         )
         assert abs(hot_side + cold_side) <= 1e-6
 
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, btx):
+        dt = DiagnosticsToolbox(btx)
+        # TODO: Complementarity formulation results in near-parallel components
+        # when unscaled
+        dt.assert_no_numerical_warnings(ignore_parallel_components=True)
+
     @pytest.mark.component
     def test_initialization_error(self, btx):
         btx.fs.unit.hot_side_outlet.flow_mol[0].fix(20)
@@ -1903,158 +1916,162 @@ class TestBT_Generic_cocurrent(object):
             btx.fs.unit.initialize()
 
 
-class TestInitializersModular:
-    @pytest.fixture
-    def model(self):
-        m = ConcreteModel()
-        m.fs = FlowsheetBlock(dynamic=False)
-
-        # As we lack other example prop packs with units, take the generic
-        # BT-PR package and change the base units
-        configuration2 = {
-            # Specifying components
-            "components": {
-                "benzene": {
-                    "type": Component,
-                    "enth_mol_ig_comp": RPP,
-                    "entr_mol_ig_comp": RPP,
-                    "pressure_sat_comp": RPP,
-                    "phase_equilibrium_form": {("Vap", "Liq"): log_fugacity},
-                    "parameter_data": {
-                        "mw": (78.1136e-3, pyunits.kg / pyunits.mol),  # [1]
-                        "pressure_crit": (48.9e5, pyunits.Pa),  # [1]
-                        "temperature_crit": (562.2, pyunits.K),  # [1]
-                        "omega": 0.212,  # [1]
-                        "cp_mol_ig_comp_coeff": {
-                            "A": (-3.392e1, pyunits.J / pyunits.mol / pyunits.K),  # [1]
-                            "B": (4.739e-1, pyunits.J / pyunits.mol / pyunits.K**2),
-                            "C": (-3.017e-4, pyunits.J / pyunits.mol / pyunits.K**3),
-                            "D": (7.130e-8, pyunits.J / pyunits.mol / pyunits.K**4),
-                        },
-                        "enth_mol_form_vap_comp_ref": (
-                            82.9e3,
-                            pyunits.J / pyunits.mol,
-                        ),  # [3]
-                        "entr_mol_form_vap_comp_ref": (
-                            -269,
-                            pyunits.J / pyunits.mol / pyunits.K,
-                        ),  # [3]
-                        "pressure_sat_comp_coeff": {
-                            "A": (-6.98273, None),  # [1]
-                            "B": (1.33213, None),
-                            "C": (-2.62863, None),
-                            "D": (-3.33399, None),
-                        },
-                    },
-                },
-                "toluene": {
-                    "type": Component,
-                    "enth_mol_ig_comp": RPP,
-                    "entr_mol_ig_comp": RPP,
-                    "pressure_sat_comp": RPP,
-                    "phase_equilibrium_form": {("Vap", "Liq"): log_fugacity},
-                    "parameter_data": {
-                        "mw": (92.1405e-3, pyunits.kg / pyunits.mol),  # [1]
-                        "pressure_crit": (41e5, pyunits.Pa),  # [1]
-                        "temperature_crit": (591.8, pyunits.K),  # [1]
-                        "omega": 0.263,  # [1]
-                        "cp_mol_ig_comp_coeff": {
-                            "A": (-2.435e1, pyunits.J / pyunits.mol / pyunits.K),  # [1]
-                            "B": (5.125e-1, pyunits.J / pyunits.mol / pyunits.K**2),
-                            "C": (-2.765e-4, pyunits.J / pyunits.mol / pyunits.K**3),
-                            "D": (4.911e-8, pyunits.J / pyunits.mol / pyunits.K**4),
-                        },
-                        "enth_mol_form_vap_comp_ref": (
-                            50.1e3,
-                            pyunits.J / pyunits.mol,
-                        ),  # [3]
-                        "entr_mol_form_vap_comp_ref": (
-                            -321,
-                            pyunits.J / pyunits.mol / pyunits.K,
-                        ),  # [3]
-                        "pressure_sat_comp_coeff": {
-                            "A": (-7.28607, None),  # [1]
-                            "B": (1.38091, None),
-                            "C": (-2.83433, None),
-                            "D": (-2.79168, None),
-                        },
-                    },
-                },
-            },
-            # Specifying phases
-            "phases": {
-                "Liq": {
-                    "type": LiquidPhase,
-                    "equation_of_state": Cubic,
-                    "equation_of_state_options": {"type": CubicType.PR},
-                },
-                "Vap": {
-                    "type": VaporPhase,
-                    "equation_of_state": Cubic,
-                    "equation_of_state_options": {"type": CubicType.PR},
-                },
-            },
-            # Set base units of measurement
-            "base_units": {
-                "time": pyunits.s,
-                "length": pyunits.m,
-                "mass": pyunits.t,
-                "amount": pyunits.mol,
-                "temperature": pyunits.degR,
-            },
-            # Specifying state definition
-            "state_definition": FTPx,
-            "state_bounds": {
-                "flow_mol": (0, 100, 1000, pyunits.mol / pyunits.s),
-                "temperature": (273.15, 300, 500, pyunits.K),
-                "pressure": (5e4, 1e5, 1e6, pyunits.Pa),
-            },
-            "pressure_ref": (101325, pyunits.Pa),
-            "temperature_ref": (298.15, pyunits.K),
-            # Defining phase equilibria
-            "phases_in_equilibrium": [("Vap", "Liq")],
-            "phase_equilibrium_state": {("Vap", "Liq"): SmoothVLE},
-            "bubble_dew_method": LogBubbleDew,
+# As we lack other example prop packs with units, take the generic
+# BT-PR package and change the base units
+configuration2 = {
+    # Specifying components
+    "components": {
+        "benzene": {
+            "type": Component,
+            "enth_mol_ig_comp": RPP,
+            "entr_mol_ig_comp": RPP,
+            "pressure_sat_comp": RPP,
+            "phase_equilibrium_form": {("Vap", "Liq"): log_fugacity},
             "parameter_data": {
-                "PR_kappa": {
-                    ("benzene", "benzene"): 0.000,
-                    ("benzene", "toluene"): 0.000,
-                    ("toluene", "benzene"): 0.000,
-                    ("toluene", "toluene"): 0.000,
-                }
+                "mw": (78.1136e-3, pyunits.kg / pyunits.mol),  # [1]
+                "pressure_crit": (48.9e5, pyunits.Pa),  # [1]
+                "temperature_crit": (562.2, pyunits.K),  # [1]
+                "omega": 0.212,  # [1]
+                "cp_mol_ig_comp_coeff": {
+                    "A": (-3.392e1, pyunits.J / pyunits.mol / pyunits.K),  # [1]
+                    "B": (4.739e-1, pyunits.J / pyunits.mol / pyunits.K**2),
+                    "C": (-3.017e-4, pyunits.J / pyunits.mol / pyunits.K**3),
+                    "D": (7.130e-8, pyunits.J / pyunits.mol / pyunits.K**4),
+                },
+                "enth_mol_form_vap_comp_ref": (
+                    82.9e3,
+                    pyunits.J / pyunits.mol,
+                ),  # [3]
+                "entr_mol_form_vap_comp_ref": (
+                    -269,
+                    pyunits.J / pyunits.mol / pyunits.K,
+                ),  # [3]
+                "pressure_sat_comp_coeff": {
+                    "A": (-6.98273, None),  # [1]
+                    "B": (1.33213, None),
+                    "C": (-2.62863, None),
+                    "D": (-3.33399, None),
+                },
             },
+        },
+        "toluene": {
+            "type": Component,
+            "enth_mol_ig_comp": RPP,
+            "entr_mol_ig_comp": RPP,
+            "pressure_sat_comp": RPP,
+            "phase_equilibrium_form": {("Vap", "Liq"): log_fugacity},
+            "parameter_data": {
+                "mw": (92.1405e-3, pyunits.kg / pyunits.mol),  # [1]
+                "pressure_crit": (41e5, pyunits.Pa),  # [1]
+                "temperature_crit": (591.8, pyunits.K),  # [1]
+                "omega": 0.263,  # [1]
+                "cp_mol_ig_comp_coeff": {
+                    "A": (-2.435e1, pyunits.J / pyunits.mol / pyunits.K),  # [1]
+                    "B": (5.125e-1, pyunits.J / pyunits.mol / pyunits.K**2),
+                    "C": (-2.765e-4, pyunits.J / pyunits.mol / pyunits.K**3),
+                    "D": (4.911e-8, pyunits.J / pyunits.mol / pyunits.K**4),
+                },
+                "enth_mol_form_vap_comp_ref": (
+                    50.1e3,
+                    pyunits.J / pyunits.mol,
+                ),  # [3]
+                "entr_mol_form_vap_comp_ref": (
+                    -321,
+                    pyunits.J / pyunits.mol / pyunits.K,
+                ),  # [3]
+                "pressure_sat_comp_coeff": {
+                    "A": (-7.28607, None),  # [1]
+                    "B": (1.38091, None),
+                    "C": (-2.83433, None),
+                    "D": (-2.79168, None),
+                },
+            },
+        },
+    },
+    # Specifying phases
+    "phases": {
+        "Liq": {
+            "type": LiquidPhase,
+            "equation_of_state": Cubic,
+            "equation_of_state_options": {"type": CubicType.PR},
+        },
+        "Vap": {
+            "type": VaporPhase,
+            "equation_of_state": Cubic,
+            "equation_of_state_options": {"type": CubicType.PR},
+        },
+    },
+    # Set base units of measurement
+    "base_units": {
+        "time": pyunits.s,
+        "length": pyunits.m,
+        "mass": pyunits.t,
+        "amount": pyunits.mol,
+        "temperature": pyunits.degR,
+    },
+    # Specifying state definition
+    "state_definition": FTPx,
+    "state_bounds": {
+        "flow_mol": (0, 100, 1000, pyunits.mol / pyunits.s),
+        "temperature": (273.15, 300, 500, pyunits.K),
+        "pressure": (5e4, 1e5, 1e6, pyunits.Pa),
+    },
+    "pressure_ref": (101325, pyunits.Pa),
+    "temperature_ref": (298.15, pyunits.K),
+    # Defining phase equilibria
+    "phases_in_equilibrium": [("Vap", "Liq")],
+    "phase_equilibrium_state": {("Vap", "Liq"): SmoothVLE},
+    "bubble_dew_method": LogBubbleDew,
+    "parameter_data": {
+        "PR_kappa": {
+            ("benzene", "benzene"): 0.000,
+            ("benzene", "toluene"): 0.000,
+            ("toluene", "benzene"): 0.000,
+            ("toluene", "toluene"): 0.000,
         }
+    },
+}
 
-        m.fs.properties = GenericParameterBlock(**configuration)
-        m.fs.properties2 = GenericParameterBlock(**configuration2)
 
-        m.fs.unit = HeatExchanger(
-            hot_side={"property_package": m.fs.properties},
-            cold_side={"property_package": m.fs.properties2},
+class TestInitializersModular:
+    @pytest.mark.integration
+    def test_hx0d_initializer(self):
+        model = ConcreteModel()
+        model.fs = FlowsheetBlock(dynamic=False)
+
+        model.fs.properties = GenericParameterBlock(**configuration)
+        model.fs.properties2 = GenericParameterBlock(**configuration2)
+
+        model.fs.unit = HeatExchanger(
+            hot_side={"property_package": model.fs.properties},
+            cold_side={"property_package": model.fs.properties2},
             flow_pattern=HeatExchangerFlowPattern.cocurrent,
         )
 
-        m.fs.unit.hot_side_inlet.flow_mol[0].fix(5)  # mol/s
-        m.fs.unit.hot_side_inlet.temperature[0].fix(365)  # K
-        m.fs.unit.hot_side_inlet.pressure[0].fix(101325)  # Pa
-        m.fs.unit.hot_side_inlet.mole_frac_comp[0, "benzene"].fix(0.5)
-        m.fs.unit.hot_side_inlet.mole_frac_comp[0, "toluene"].fix(0.5)
+        model.fs.unit.hot_side_inlet.flow_mol[0].fix(5)  # mol/s
+        model.fs.unit.hot_side_inlet.temperature[0].fix(365)  # K
+        model.fs.unit.hot_side_inlet.pressure[0].fix(101325)  # Pa
+        model.fs.unit.hot_side_inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+        model.fs.unit.hot_side_inlet.mole_frac_comp[0, "toluene"].fix(0.5)
 
-        m.fs.unit.cold_side_inlet.flow_mol[0].fix(1)  # mol/s
-        m.fs.unit.cold_side_inlet.temperature[0].fix(540)  # degR
-        m.fs.unit.cold_side_inlet.pressure[0].fix(101.325)  # kPa
-        m.fs.unit.cold_side_inlet.mole_frac_comp[0, "benzene"].fix(0.5)
-        m.fs.unit.cold_side_inlet.mole_frac_comp[0, "toluene"].fix(0.5)
+        model.fs.unit.cold_side_inlet.flow_mol[0].fix(1)  # mol/s
+        model.fs.unit.cold_side_inlet.temperature[0].fix(540)  # degR
+        model.fs.unit.cold_side_inlet.pressure[0].fix(101.325)  # kPa
+        model.fs.unit.cold_side_inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+        model.fs.unit.cold_side_inlet.mole_frac_comp[0, "toluene"].fix(0.5)
 
-        m.fs.unit.area.fix(1)
-        m.fs.unit.overall_heat_transfer_coefficient.fix(100)
+        model.fs.unit.area.fix(1)
+        model.fs.unit.overall_heat_transfer_coefficient.fix(100)
 
-        m.fs.unit.cold_side.scaling_factor_pressure = 1
+        model.fs.unit.cold_side.scaling_factor_pressure = 1
 
-        return m
+        # Set small values of epsilon to get sufficiently accurate results
+        # Only applies to hot side, as cold side used the original SmoothVLE.
+        model.fs.unit.hot_side.properties_in[0].eps_t_Vap_Liq.set_value(1e-4)
+        model.fs.unit.hot_side.properties_in[0].eps_z_Vap_Liq.set_value(1e-4)
+        model.fs.unit.hot_side.properties_out[0].eps_t_Vap_Liq.set_value(1e-4)
+        model.fs.unit.hot_side.properties_out[0].eps_z_Vap_Liq.set_value(1e-4)
 
-    @pytest.mark.integration
-    def test_hx0d_initializer(self, model):
         initializer = HX0DInitializer()
         initializer.initialize(model.fs.unit)
 
@@ -2081,8 +2098,46 @@ class TestInitializersModular:
         )
 
     @pytest.mark.integration
-    def test_block_triangularization(self, model):
-        initializer = BlockTriangularizationInitializer(constraint_tolerance=2e-5)
+    def test_block_triangularization(
+        self,
+    ):
+        # Trying to get this to work with CubicComplementarityVLE is challenging, and
+        # not necessary for this particular test
+        new_config = deepcopy(configuration)
+        new_config["phase_equilibrium_state"] = {("Vap", "Liq"): SmoothVLE}
+
+        model = ConcreteModel()
+        model.fs = FlowsheetBlock(dynamic=False)
+
+        model.fs.properties = GenericParameterBlock(**new_config)
+        model.fs.properties2 = GenericParameterBlock(**configuration2)
+
+        model.fs.unit = HeatExchanger(
+            hot_side={"property_package": model.fs.properties},
+            cold_side={"property_package": model.fs.properties2},
+            flow_pattern=HeatExchangerFlowPattern.cocurrent,
+        )
+
+        model.fs.unit.hot_side_inlet.flow_mol[0].fix(5)  # mol/s
+        model.fs.unit.hot_side_inlet.temperature[0].fix(365)  # K
+        model.fs.unit.hot_side_inlet.pressure[0].fix(101325)  # Pa
+        model.fs.unit.hot_side_inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+        model.fs.unit.hot_side_inlet.mole_frac_comp[0, "toluene"].fix(0.5)
+
+        model.fs.unit.cold_side_inlet.flow_mol[0].fix(1)  # mol/s
+        model.fs.unit.cold_side_inlet.temperature[0].fix(540)  # degR
+        model.fs.unit.cold_side_inlet.pressure[0].fix(101.325)  # kPa
+        model.fs.unit.cold_side_inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+        model.fs.unit.cold_side_inlet.mole_frac_comp[0, "toluene"].fix(0.5)
+
+        model.fs.unit.area.fix(1)
+        model.fs.unit.overall_heat_transfer_coefficient.fix(100)
+
+        model.fs.unit.cold_side.scaling_factor_pressure = 1
+
+        initializer = BlockTriangularizationInitializer(
+            constraint_tolerance=2e-5,
+        )
         initializer.initialize(model.fs.unit)
 
         assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok

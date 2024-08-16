@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -63,6 +63,7 @@ https://doi.org/10.1016/j.ijhydene.2013.12.010.
 __author__ = "Douglas Allan"
 
 import os
+from copy import deepcopy
 import numpy as np
 from scipy.interpolate import interp1d
 import pytest
@@ -644,9 +645,187 @@ def test_model_replication(model):
         )
 
 
+def model_func_voltage_drop_custom():
+    m = pyo.ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False, time_set=[0], time_units=pyo.units.s)
+
+    config = deepcopy(cell_config)
+    config["voltage_drop_custom"] = True
+
+    m.fs.propertiesIapws95 = iapws95.Iapws95ParameterBlock()
+    m.fs.prop_Iapws95 = iapws95.Iapws95StateBlock(parameters=m.fs.propertiesIapws95)
+
+    m.fs.cell = SolidOxideCell(**config)
+
+    fix_cell_parameters(m.fs.cell)
+
+    m.fs.cell.oxygen_inlet.flow_mol[0].fix(cccm_to_mps(3500) / N_cell)
+    m.fs.cell.oxygen_inlet.mole_frac_comp[0, "O2"].fix(0.21)
+    m.fs.cell.oxygen_inlet.mole_frac_comp[0, "N2"].fix(0.79)
+
+    m.fs.cell.fuel_electrode.voltage_drop_custom.fix(0)
+    m.fs.cell.oxygen_electrode.voltage_drop_custom.fix(0)
+    m.fs.cell.electrolyte.voltage_drop_custom.fix(0)
+    m.fs.cell.interconnect.voltage_drop_custom.fix(0)
+    m.fs.cell.fuel_triple_phase_boundary.voltage_drop_custom.fix(0)
+    m.fs.cell.oxygen_triple_phase_boundary.voltage_drop_custom.fix(0)
+
+    m.fs.cell.recursive_scaling()
+
+    return m
+
+
+@pytest.fixture
+def model_vdc():
+    # Want to be able to call model_func when calling this test directly
+    # so that the reference dataset can be recreated if necessary
+    return model_func_voltage_drop_custom()
+
+
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
+@pytest.mark.component
+def test_initialization_cell_voltage_drop_custom(model_vdc):
+    m = model_vdc
+    cell = m.fs.cell
+
+    cell.potential.fix(1.288)
+    cell.fuel_inlet.temperature[0].fix(1103.15)
+    cell.fuel_inlet.pressure.fix(85910)
+    cell.fuel_inlet.flow_mol[0].fix(0.000484863)
+    cell.fuel_inlet.mole_frac_comp[0, "H2"].fix(0.0630491)
+    cell.fuel_inlet.mole_frac_comp[0, "H2O"].fix(0.6273812)
+    cell.fuel_inlet.mole_frac_comp[0, "N2"].fix(0.3095697)
+
+    cell.oxygen_inlet.temperature[0].fix(1103.15)
+    cell.oxygen_inlet.pressure.fix(85910)
+
+    cell.recursive_scaling()
+
+    cell.initialize_build(
+        optarg={"nlp_scaling_method": "user-scaling"},
+        current_density_guess=0,
+        temperature_guess=1103.15,
+    )
+    cell.model_check()
+    # Test whether fixed degrees of freedom remain fixed
+    assert degrees_of_freedom(m.fs.cell) == 0
+
+    approx = lambda x: pytest.approx(x, 5e-3)
+    assert cell.current_density[0, 1].value == approx(-2394.77)
+    assert cell.current_density[0, 3].value == approx(-2326.71)
+    assert cell.current_density[0, 5].value == approx(-2268.31)
+    assert cell.current_density[0, 8].value == approx(-2191.66)
+    assert cell.current_density[0, 10].value == approx(-2145.27)
+
+    assert cell.fuel_outlet.temperature[0].value == approx(1103.40)
+    assert pyo.value(cell.fuel_outlet.pressure[0]) == approx(85910)
+    assert approx(484.863e-6) == pyo.value(cell.fuel_outlet.flow_mol[0])
+    assert approx(0.472735) == pyo.value(cell.fuel_outlet.mole_frac_comp[0, "H2O"])
+    assert approx(0.217695) == pyo.value(cell.fuel_outlet.mole_frac_comp[0, "H2"])
+    assert approx(0.309570) == pyo.value(cell.fuel_outlet.mole_frac_comp[0, "N2"])
+
+    assert cell.oxygen_outlet.temperature[0].value == approx(1103.42)
+    assert pyo.value(cell.oxygen_outlet.pressure[0]) == approx(85910)
+    assert approx(297.821e-6) == pyo.value(cell.oxygen_outlet.flow_mol[0])
+    assert approx(0.3094487) == pyo.value(cell.oxygen_outlet.mole_frac_comp[0, "O2"])
+    assert approx(0.690551) == pyo.value(cell.oxygen_outlet.mole_frac_comp[0, "N2"])
+
+    for iz in cell.iznodes:
+        # H2O is consumed at fuel electrode, concentration at electrode surface
+        # should be less than that in channel, and concentration at TPB should
+        # be less than that at the surface
+        assert pyo.value(cell.fuel_channel.conc_mol_comp_deviation_x1[0, iz, "H2O"]) < 0
+        assert (
+            pyo.value(
+                cell.fuel_electrode.conc_mol_comp_deviation_x1[0, iz, "H2O"]
+                - cell.fuel_channel.conc_mol_comp_deviation_x1[0, iz, "H2O"]
+            )
+            < 0
+        )
+        # H2 is produced at fuel electrode, concentration at electrode surface
+        # should be greater than that in channel, and concentration at TPB should
+        # be greater than that at the surface
+        assert pyo.value(cell.fuel_channel.conc_mol_comp_deviation_x1[0, iz, "H2"]) > 0
+        assert (
+            pyo.value(
+                cell.fuel_electrode.conc_mol_comp_deviation_x1[0, iz, "H2"]
+                - cell.fuel_channel.conc_mol_comp_deviation_x1[0, iz, "H2"]
+            )
+            > 0
+        )
+        # O2 is produced at oxygen electrode, concentration at electrode surface
+        # should be greater than that in channel, and concentration at TPB should
+        # be greater than that at the surface
+        assert (
+            pyo.value(cell.oxygen_channel.conc_mol_comp_deviation_x0[0, iz, "O2"]) > 0
+        )
+        assert (
+            pyo.value(
+                cell.oxygen_electrode.conc_mol_comp_deviation_x0[0, iz, "O2"]
+                - cell.oxygen_channel.conc_mol_comp_deviation_x0[0, iz, "O2"]
+            )
+            > 0
+        )
+
+    # Test whether unfixed degrees of freedom remain unfixed
+    cell.potential.unfix()
+    cell.fuel_inlet.temperature[0].unfix()
+    cell.fuel_inlet.pressure.unfix()
+    cell.fuel_inlet.flow_mol[0].unfix()
+    cell.fuel_inlet.mole_frac_comp[0, "H2"].unfix()
+    cell.fuel_inlet.mole_frac_comp[0, "H2O"].unfix()
+    cell.fuel_inlet.mole_frac_comp[0, "N2"].unfix()
+
+    cell.oxygen_inlet.temperature[0].unfix()
+    cell.oxygen_inlet.pressure.unfix()
+    cell.oxygen_inlet.mole_frac_comp[0, "O2"].unfix()
+    cell.oxygen_inlet.mole_frac_comp[0, "N2"].unfix()
+
+    assert degrees_of_freedom(cell) == 11
+
+    cell.initialize(current_density_guess=0, temperature_guess=1103.15)
+
+    assert degrees_of_freedom(cell) == 11
+
+    # Clean up side effects for other tests
+    cell.oxygen_inlet.mole_frac_comp[0, "O2"].fix()
+    cell.oxygen_inlet.mole_frac_comp[0, "N2"].fix()
+
+
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
+@pytest.mark.integration
+def test_model_replication_voltage_drop_custom(model_vdc):
+    out = kazempoor_braun_replication(model_vdc)
+    cached_results = []
+    for i in range(len(out)):
+        cached_results.append(
+            pd.read_csv(
+                os.sep.join([data_cache, f"case_{i+1}_interconnect.csv"]), index_col=0
+            )
+        )
+
+    for df, cached_df in zip(out, cached_results):
+        pd.testing.assert_frame_equal(
+            df, cached_df, check_dtype=False, check_exact=False, rtol=3e-3
+        )
+
+    df = out[4]
+    data = pd.read_csv(
+        os.sep.join([data_cache, "sweep_5_kazempoor_replication.csv"]),
+        names=["average_current_density", "voltage"],
+    )
+    intr = interp1d(
+        x=data["voltage"].to_numpy(), y=data["average_current_density"].to_numpy()
+    )
+    for row in df.iterrows():
+        assert intr(row[1]["voltage"]) == pytest.approx(
+            -row[1]["average_current_density"], rel=3e-2, abs=50
+        )
+
+
 if __name__ == "__main__":
     m = model_func()
     out = kazempoor_braun_replication(m)
     # Uncomment to recreate cached data
-    # for i, df in enumerate(out):
-    #     df.to_csv(os.sep.join([data_cache, f"case_{i+1}_interconnect.csv"]))
+    for i, df in enumerate(out):
+        df.to_csv(os.sep.join([data_cache, f"case_{i+1}_interconnect.csv"]))

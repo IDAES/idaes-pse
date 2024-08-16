@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -14,27 +14,11 @@
 """
 
 import pyomo.environ as pyo
-import pyomo.dae as dae
-import pyomo.network as pyn
 from pyomo.common.collections import ComponentSet
 from pyomo.core.expr.visitor import identify_variables
-from pyomo.util.calc_var_value import calculate_variable_from_constraint
-from pyomo.core.base.block import _BlockData, SubclassOf
+from pyomo.core.base.block import BlockData, SubclassOf
 from pyomo.dae.flatten import flatten_dae_components
 
-from idaes.core import (
-    FlowsheetBlock,
-    MaterialBalanceType,
-    EnergyBalanceType,
-    MomentumBalanceType,
-)
-from idaes.core.util.model_statistics import (
-    degrees_of_freedom,
-    activated_equalities_generator,
-    unfixed_variables_generator,
-)
-from idaes.core.util.initialization import initialize_by_time_element
-from idaes.core.util.exceptions import ConfigurationError
 from idaes.apps.caprese.tests.test_simple_model import (
     make_model,
     make_small_model,
@@ -62,10 +46,7 @@ from idaes.apps.caprese.nmpc_var import (
     AlgVar,
     InputVar,
     FixedVar,
-    MeasuredVar,
 )
-import idaes.logger as idaeslog
-import random
 import pytest
 
 __author__ = "Robert Parker"
@@ -234,7 +215,7 @@ class TestDynamicBlock(object):
             # Won't be obvious that these attrs need to be set if
             # constructing from a rule
             b.mod = model
-            super(_BlockData, b).__setattr__("time", time)
+            super(BlockData, b).__setattr__("time", time)
             b._inputs = inputs
             b._measurements = measurements
 

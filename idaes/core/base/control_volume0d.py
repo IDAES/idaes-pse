@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -341,13 +341,30 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
         # Material holdup and accumulation
         if has_holdup:
+            if (
+                self.properties_in[
+                    self.flowsheet().time.first()
+                ].get_material_flow_basis()
+                == MaterialFlowBasis.mass
+            ):
+                holdup_units = units("mass")
+            elif (
+                self.properties_in[
+                    self.flowsheet().time.first()
+                ].get_material_flow_basis()
+                == MaterialFlowBasis.molar
+            ):
+                holdup_units = units("amount")
+            else:
+                holdup_units = None
+
             self.material_holdup = Var(
                 self.flowsheet().time,
                 pc_set,
                 domain=Reals,
                 initialize=1.0,
                 doc="Material holdup in control volume",
-                units=units("amount"),
+                units=holdup_units,
             )
         if dynamic:
             self.material_accumulation = DerivativeVar(
@@ -1650,14 +1667,14 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 ]
         if hasattr(self, "equilibrium_reaction_extent"):
             for r in self.config.reaction_package.equilibrium_reaction_idx:
-                var_dict[
-                    f"Equilibrium Reaction Extent [{r}]"
-                ] = self.equilibrium_reaction_extent[time_point, r]
+                var_dict[f"Equilibrium Reaction Extent [{r}]"] = (
+                    self.equilibrium_reaction_extent[time_point, r]
+                )
         if hasattr(self, "phase_equilibrium_generation"):
             for r in self.config.property_package.phase_equilibrium_idx:
-                var_dict[
-                    f"Phase Equilibrium Generation [{r}]"
-                ] = self.phase_equilibrium_generation[time_point, r]
+                var_dict[f"Phase Equilibrium Generation [{r}]"] = (
+                    self.phase_equilibrium_generation[time_point, r]
+                )
 
         e_vars = {
             "element_holdup": "Elemental Holdup",

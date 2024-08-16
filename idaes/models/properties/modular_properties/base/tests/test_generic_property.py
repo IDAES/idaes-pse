@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -15,7 +15,9 @@ Tests for generic property package core code
 
 Author: Andrew Lee
 """
+import functools
 import pytest
+import re
 from sys import modules
 from types import MethodType
 
@@ -23,25 +25,37 @@ from pyomo.environ import value, Block, ConcreteModel, Param, Set, Var, units as
 from pyomo.util.check_units import assert_units_equivalent
 
 from idaes.models.properties.modular_properties.base.generic_property import (
+    GenericParameterBlock,
     GenericParameterData,
     GenericStateBlock,
+    _initialize_critical_props,
 )
 from idaes.models.properties.modular_properties.base.tests.dummy_eos import DummyEoS
 
 from idaes.core import (
     declare_process_block_class,
     Component,
+    FlowsheetBlock,
     Phase,
     LiquidPhase,
     VaporPhase,
+    MaterialBalanceType,
     MaterialFlowBasis,
     Solvent,
     PhaseType as PT,
 )
 from idaes.core.util.exceptions import ConfigurationError, PropertyPackageError
 from idaes.models.properties.modular_properties.phase_equil.henry import HenryType
+from idaes.models.properties.modular_properties.eos.ceos import Cubic, CubicType
+from idaes.models.properties.modular_properties.state_definitions import FTPx
 from idaes.core.base.property_meta import UnitSet
 from idaes.core.initialization import BlockTriangularizationInitializer
+
+from idaes.models.properties.modular_properties.phase_equil.henry import HenryType
+from idaes.models.properties.modular_properties.examples.BT_ideal import (
+    configuration as BTconfig,
+)
+from idaes.models.unit_models.flash import Flash
 
 import idaes.logger as idaeslog
 
@@ -153,7 +167,9 @@ class TestGenericParameterBlock(object):
 
         with pytest.raises(
             PropertyPackageError,
-            match="Unrecognized units of measurement for quantity TIME " "\(foo\)",
+            match=re.escape(
+                "Unrecognized units of measurement for quantity TIME (foo)"
+            ),
         ):
             m.params = DummyParameterBlock(
                 components={"a": {}, "b": {}, "c": {}},
@@ -489,9 +505,9 @@ class TestGenericParameterBlock(object):
 
         assert isinstance(m.params.phase_equilibrium_list, dict)
         assert m.params.phase_equilibrium_list == {
-            "PE1": {"a": ("p1", "p2")},
-            "PE2": {"b": ("p1", "p2")},
-            "PE3": {"c": ("p1", "p2")},
+            "PE1": ["a", ("p1", "p2")],
+            "PE2": ["b", ("p1", "p2")],
+            "PE3": ["c", ("p1", "p2")],
         }
 
     @pytest.mark.unit
@@ -721,8 +737,10 @@ class TestGenericParameterBlock(object):
 
         with pytest.raises(
             ConfigurationError,
-            match="params values in elemental_composition must "
-            "be integers \(not floats\)\: e1\: 2.0.",
+            match=re.escape(
+                "params values in elemental_composition must "
+                "be integers (not floats): e1: 2.0."
+            ),
         ):
             m.params = DummyParameterBlock(
                 components={
@@ -1125,6 +1143,7 @@ class TestGenericParameterBlock(object):
 # Dummy methods for testing build calls to sub-modules
 def define_state(b):
     b.state_defined = True
+    b.temperature = Var(initialize=100)
 
 
 def get_material_flow_basis(self, *args, **kwargs):
@@ -1275,6 +1294,13 @@ class TestGenericStateBlock(object):
                         frame.props[1],
                         frame.params.get_metadata().properties[p.name].method,
                     )
+                continue
+            elif p.name.endswith(("_crit")):
+                # Critical properties will be tested elsewhere
+                assert hasattr(
+                    frame.props[1],
+                    frame.params.get_metadata().properties[p.name].method,
+                )
                 continue
             elif p.name.endswith(("bubble", "bub", "dew")):
                 # Bubble and dew properties require phase equilibria, which are
@@ -1461,3 +1487,560 @@ class TestGenericStateBlock(object):
 
         for p in frame.props[1].phase_list:
             assert value(frame.props[1].visc_d_phase[p]) == 4
+
+
+class TestCriticalProps:
+    @pytest.mark.unit
+    def test_get_critical_ref_phase_exception(self):
+        # No vapor or liquid phases
+        m = ConcreteModel()
+        m.params = DummyParameterBlock(
+            components={
+                "a": {},
+            },
+            phases={
+                "p1": {
+                    "equation_of_state": DummyEoS,
+                },
+                "p2": {
+                    "equation_of_state": DummyEoS,
+                },
+            },
+            state_definition=modules[__name__],
+            pressure_ref=100000.0,
+            temperature_ref=300,
+            base_units=base_units,
+        )
+
+        m.props = m.params.build_state_block([1], defined_state=False)
+
+        with pytest.raises(
+            AttributeError,
+            match="No liquid or vapor phase found to use as reference phase "
+            "for calculating critical properties.",
+        ):
+            m.props[1]._get_critical_ref_phase()
+
+    @pytest.mark.unit
+    def test_get_critical_ref_phase_exception(self):
+        # No vapor or liquid phases
+        m = ConcreteModel()
+        m.params = DummyParameterBlock(
+            components={
+                "a": {},
+            },
+            phases={
+                "p1": {
+                    "equation_of_state": DummyEoS,
+                },
+                "p2": {
+                    "equation_of_state": DummyEoS,
+                },
+            },
+            state_definition=modules[__name__],
+            pressure_ref=100000.0,
+            temperature_ref=300,
+            base_units=base_units,
+        )
+
+        m.props = m.params.build_state_block([1], defined_state=False)
+
+        with pytest.raises(
+            PropertyPackageError,
+            match="No liquid or vapor phase found to use as reference phase "
+            "for calculating critical properties.",
+        ):
+            m.props[1]._get_critical_ref_phase()
+
+    @pytest.mark.unit
+    def test_get_critical_ref_phase_VL(self):
+        # No vapor or liquid phases
+        m = ConcreteModel()
+        m.params = DummyParameterBlock(
+            components={
+                "a": {},
+            },
+            phases={
+                "p1": {
+                    "type": LiquidPhase,
+                    "equation_of_state": DummyEoS,
+                },
+                "p2": {
+                    "type": VaporPhase,
+                    "equation_of_state": DummyEoS,
+                },
+            },
+            state_definition=modules[__name__],
+            pressure_ref=100000.0,
+            temperature_ref=300,
+            base_units=base_units,
+        )
+
+        m.props = m.params.build_state_block([1], defined_state=False)
+
+        assert m.props[1]._get_critical_ref_phase() == "p1"
+
+    @pytest.mark.unit
+    def test_get_critical_ref_phase_LL(self):
+        # No vapor or liquid phases
+        m = ConcreteModel()
+        m.params = DummyParameterBlock(
+            components={
+                "a": {},
+            },
+            phases={
+                "p1": {
+                    "type": LiquidPhase,
+                    "equation_of_state": DummyEoS,
+                },
+                "p2": {
+                    "type": LiquidPhase,
+                    "equation_of_state": DummyEoS,
+                },
+            },
+            state_definition=modules[__name__],
+            pressure_ref=100000.0,
+            temperature_ref=300,
+            base_units=base_units,
+        )
+
+        m.props = m.params.build_state_block([1], defined_state=False)
+
+        assert m.props[1]._get_critical_ref_phase() == "p1"
+
+    @pytest.mark.unit
+    def test_get_critical_ref_phase_VLL(self):
+        class DummyPE:
+            def phase_equil(self, *args, **kwargs):
+                pass
+
+            @staticmethod
+            def return_expression(b, *args, **kwargs):
+                return b.temperature == 42
+
+        # No vapor or liquid phases
+        m = ConcreteModel()
+        m.params = DummyParameterBlock(
+            components={
+                "a": {
+                    "phase_equilibrium_form": {("p2", "p3"): DummyPE},
+                },
+            },
+            phases={
+                "p1": {
+                    "type": LiquidPhase,
+                    "equation_of_state": DummyEoS,
+                },
+                "p2": {
+                    "type": VaporPhase,
+                    "equation_of_state": DummyEoS,
+                },
+                "p3": {
+                    "type": LiquidPhase,
+                    "equation_of_state": DummyEoS,
+                },
+            },
+            state_definition=modules[__name__],
+            pressure_ref=100000.0,
+            temperature_ref=300,
+            base_units=base_units,
+            phases_in_equilibrium=[("p2", "p3")],
+            phase_equilibrium_state={("p2", "p3"): DummyPE},
+        )
+
+        m.props = m.params.build_state_block([1], defined_state=False)
+
+        assert m.props[1]._get_critical_ref_phase() == "p3"
+
+    @pytest.mark.unit
+    def test_get_critical_ref_phase_VX(self):
+        # No vapor or liquid phases
+        m = ConcreteModel()
+        m.params = DummyParameterBlock(
+            components={
+                "a": {},
+            },
+            phases={
+                "p1": {
+                    "type": VaporPhase,
+                    "equation_of_state": DummyEoS,
+                },
+                "p2": {
+                    "equation_of_state": DummyEoS,
+                },
+            },
+            state_definition=modules[__name__],
+            pressure_ref=100000.0,
+            temperature_ref=300,
+            base_units=base_units,
+        )
+
+        m.props = m.params.build_state_block([1], defined_state=False)
+
+        assert m.props[1]._get_critical_ref_phase() == "p1"
+
+    @pytest.mark.unit
+    def test_critical_props_not_implemented(self):
+        m = ConcreteModel()
+        m.params = DummyParameterBlock(
+            components={
+                "a": {},
+            },
+            phases={
+                "p1": {
+                    "type": LiquidPhase,
+                    "equation_of_state": DummyEoS,
+                },
+            },
+            state_definition=modules[__name__],
+            pressure_ref=100000.0,
+            temperature_ref=300,
+            base_units=base_units,
+        )
+
+        m.props = m.params.build_state_block([1], defined_state=False)
+
+        with pytest.raises(
+            NotImplementedError,
+            match=re.escape(
+                "props[1] Equation of State module has not implemented a method for "
+                "build_critical_properties. Please contact the EoS developer or use a "
+                "different module."
+            ),
+        ):
+            m.props[1]._critical_props()
+
+    @pytest.mark.unit
+    def test_critical_props_dummy_method(self):
+        class DummyEoS2(DummyEoS):
+            @staticmethod
+            def build_critical_properties(b, *args, **kwargs):
+                b._dummy_crit_executed = True
+
+        m = ConcreteModel()
+        m.params = DummyParameterBlock(
+            components={
+                "a": {},
+            },
+            phases={
+                "p1": {
+                    "type": LiquidPhase,
+                    "equation_of_state": DummyEoS2,
+                },
+            },
+            state_definition=modules[__name__],
+            pressure_ref=100000.0,
+            temperature_ref=300,
+            base_units=base_units,
+        )
+
+        m.props = m.params.build_state_block([1], defined_state=False)
+        m.props[1]._critical_props()
+
+        assert m.props[1]._dummy_crit_executed
+
+        assert isinstance(m.props[1].compress_fact_crit, Var)
+        assert isinstance(m.props[1].dens_mol_crit, Var)
+        assert isinstance(m.props[1].pressure_crit, Var)
+        assert isinstance(m.props[1].temperature_crit, Var)
+
+    @pytest.mark.unit
+    def test_critical_props_attribute_error(self):
+        class DummyEoS2(DummyEoS):
+            @staticmethod
+            def build_critical_properties(b, *args, **kwargs):
+                raise AttributeError()
+
+        m = ConcreteModel()
+        m.params = DummyParameterBlock(
+            components={
+                "a": {},
+            },
+            phases={
+                "p1": {
+                    "type": LiquidPhase,
+                    "equation_of_state": DummyEoS2,
+                },
+            },
+            state_definition=modules[__name__],
+            pressure_ref=100000.0,
+            temperature_ref=300,
+            base_units=base_units,
+        )
+
+        m.props = m.params.build_state_block([1], defined_state=False)
+        try:
+            m.props[1]._critical_props()
+        except AttributeError:
+            assert not hasattr(m.props[1], "compress_fact_crit")
+            assert not hasattr(m.props[1], "dens_mol_crit")
+            assert not hasattr(m.props[1], "pressure_crit")
+            assert not hasattr(m.props[1], "temperature_crit")
+
+    @pytest.mark.unit
+    def test_initialize_critical_props(self):
+        m = ConcreteModel()
+
+        class DummyEoS2(DummyEoS):
+            @staticmethod
+            def build_critical_properties(b, *args, **kwargs):
+                b._dummy_crit_executed = True
+
+        # Dummy params block
+        m.params = DummyParameterBlock(
+            components={
+                "a": {
+                    "parameter_data": {
+                        "compress_fact_crit": 0.1,
+                        "dens_mol_crit": 1,
+                        "pressure_crit": 1e5,
+                        "temperature_crit": 100,
+                    }
+                },
+                "b": {
+                    "parameter_data": {
+                        "compress_fact_crit": 0.2,
+                        "dens_mol_crit": 2,
+                        "pressure_crit": 2e5,
+                        "temperature_crit": 200,
+                    }
+                },
+                "c": {
+                    "parameter_data": {
+                        "compress_fact_crit": 0.3,
+                        "dens_mol_crit": 3,
+                        "pressure_crit": 3e5,
+                        "temperature_crit": 300,
+                    }
+                },
+            },
+            phases={
+                "Vap": {
+                    "type": LiquidPhase,
+                    "equation_of_state": DummyEoS2,
+                },
+                "Liq": {
+                    "type": LiquidPhase,
+                    "equation_of_state": DummyEoS2,
+                },
+            },
+            base_units={
+                "time": pyunits.s,
+                "length": pyunits.m,
+                "mass": pyunits.kg,
+                "amount": pyunits.mol,
+                "temperature": pyunits.K,
+            },
+            state_definition=modules[__name__],
+            pressure_ref=100000.0,
+            temperature_ref=300,
+            parameter_data={
+                "PR_kappa": {
+                    ("a", "a"): 0.0,
+                    ("a", "b"): 0.0,
+                    ("a", "c"): 0.0,
+                    ("b", "a"): 0.0,
+                    ("b", "b"): 0.0,
+                    ("b", "c"): 0.0,
+                    ("c", "a"): 0.0,
+                    ("c", "b"): 0.0,
+                    ("c", "c"): 0.0,
+                },
+            },
+        )
+
+        m.props = m.params.build_state_block([1], defined_state=False)
+
+        # Add common variables
+        m.props[1].mole_frac_comp = Var(
+            m.params.component_list, initialize=0.5, bounds=(1e-12, 1)
+        )
+        m.props[1].mole_frac_comp["a"].fix(0.4)
+        m.props[1].mole_frac_comp["b"].fix(0.6)
+        m.props[1].mole_frac_comp["c"].fix(1e-8)
+
+        # Build critical props
+        m.props[1]._critical_props()
+
+        # Initialize critical props
+        _initialize_critical_props(m.props[1])
+
+        # these equalities are expected to be as exact as possible,
+        # i.e. very small tolerances
+        almost_exactly = functools.partial(pytest.approx, rel=1e-12)
+        assert value(m.props[1].compress_fact_crit) == almost_exactly(
+            0.4 * 0.1 + 0.6 * 0.2 + 1e-8 * 0.3
+        )
+        assert value(m.props[1].dens_mol_crit) == almost_exactly(
+            0.4 * 1 + 0.6 * 2 + 1e-8 * 3
+        )
+        assert value(m.props[1].pressure_crit) == almost_exactly(
+            0.4 * 1e5 + 0.6 * 2e5 + 1e-8 * 3e5
+        )
+        assert value(m.props[1].temperature_crit) == almost_exactly(
+            0.4 * 1e2 + 0.6 * 2e2 + 1e-8 * 3e2
+        )
+
+    @pytest.mark.unit
+    def test_initialize_critical_props_missing_value(self):
+        m = ConcreteModel()
+
+        class DummyEoS2(DummyEoS):
+            @staticmethod
+            def build_critical_properties(b, *args, **kwargs):
+                b._dummy_crit_executed = True
+
+        # Dummy params block
+        m.params = DummyParameterBlock(
+            components={
+                "a": {
+                    "parameter_data": {
+                        "dens_mol_crit": 1,  # Missing Z_crit
+                        "pressure_crit": 1e5,
+                        "temperature_crit": 100,
+                    }
+                },
+                "b": {
+                    "parameter_data": {
+                        "compress_fact_crit": 0.2,
+                        "dens_mol_crit": 2,
+                        "pressure_crit": 2e5,
+                        "temperature_crit": 200,
+                    }
+                },
+                "c": {
+                    "parameter_data": {
+                        "compress_fact_crit": 0.3,
+                        "dens_mol_crit": 3,
+                        "pressure_crit": 3e5,
+                        "temperature_crit": 300,
+                    }
+                },
+            },
+            phases={
+                "Vap": {
+                    "type": LiquidPhase,
+                    "equation_of_state": DummyEoS2,
+                },
+                "Liq": {
+                    "type": LiquidPhase,
+                    "equation_of_state": DummyEoS2,
+                },
+            },
+            base_units={
+                "time": pyunits.s,
+                "length": pyunits.m,
+                "mass": pyunits.kg,
+                "amount": pyunits.mol,
+                "temperature": pyunits.K,
+            },
+            state_definition=modules[__name__],
+            pressure_ref=100000.0,
+            temperature_ref=300,
+            parameter_data={
+                "PR_kappa": {
+                    ("a", "a"): 0.0,
+                    ("a", "b"): 0.0,
+                    ("a", "c"): 0.0,
+                    ("b", "a"): 0.0,
+                    ("b", "b"): 0.0,
+                    ("b", "c"): 0.0,
+                    ("c", "a"): 0.0,
+                    ("c", "b"): 0.0,
+                    ("c", "c"): 0.0,
+                },
+            },
+        )
+
+        m.props = m.params.build_state_block([1], defined_state=False)
+
+        # Add common variables
+        m.props[1].mole_frac_comp = Var(
+            m.params.component_list, initialize=0.5, bounds=(1e-12, 1)
+        )
+        m.props[1].mole_frac_comp["a"].fix(0.4)
+        m.props[1].mole_frac_comp["b"].fix(0.6)
+        m.props[1].mole_frac_comp["c"].fix(1e-8)
+
+        # Build critical props
+        m.props[1]._critical_props()
+
+        # Initialize critical props
+        with pytest.raises(
+            AttributeError,
+            match="Missing attribute found when initializing compress_fact_crit. "
+            "Make sure you have provided values for compress_fact_crit in all "
+            "Component declarations.",
+        ):
+            _initialize_critical_props(m.props[1])
+
+
+# Invalid property configuration to trigger configuration error
+configuration = {
+    # Specifying components
+    "components": {
+        "H2O": {
+            "type": Component,
+            "parameter_data": {
+                "pressure_crit": (220.6e5, pyunits.Pa),
+                "temperature_crit": (647, pyunits.K),
+                "omega": 0.344,
+            },
+        },
+    },
+    # Specifying phases
+    "phases": {
+        "Liq": {
+            "type": LiquidPhase,
+            "equation_of_state": Cubic,
+            "equation_of_state_options": {"type": CubicType.PR},
+        },
+        "Vap": {
+            "type": VaporPhase,
+            "equation_of_state": Cubic,
+            "equation_of_state_options": {"type": CubicType.PR},
+        },
+    },
+    # Set base units of measurement
+    "base_units": {
+        "time": pyunits.s,
+        "length": pyunits.m,
+        "mass": pyunits.kg,
+        "amount": pyunits.mol,
+        "temperature": pyunits.K,
+    },
+    # Specifying state definition
+    "state_definition": FTPx,
+    "state_bounds": {
+        "flow_mol": (0, 100, 1000, pyunits.mol / pyunits.s),
+        "temperature": (273.15, 300, 500, pyunits.K),
+        "pressure": (5e4, 1e5, 1e6, pyunits.Pa),
+    },
+    "pressure_ref": (101325, pyunits.Pa),
+    "temperature_ref": (298.15, pyunits.K),
+    "parameter_data": {
+        "PR_kappa": {
+            ("foo", "bar"): 0.000,
+        }
+    },
+}
+
+
+@pytest.mark.integration
+def test_phase_component_flash():
+    # Regression test for issue #1423
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+
+    m.fs.props = GenericParameterBlock(**BTconfig)
+
+    m.fs.flash = Flash(
+        property_package=m.fs.props,
+        material_balance_type=MaterialBalanceType.componentPhase,
+    )
+
+    assert m.fs.props.phase_equilibrium_list == {
+        "PE1": ["benzene", ("Vap", "Liq")],
+        "PE2": ["toluene", ("Vap", "Liq")],
+    }
+    assert isinstance(m.fs.flash, Flash)

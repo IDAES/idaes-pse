@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -25,7 +25,7 @@ from pyomo.environ import (
     value,
     Var,
 )
-from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
+from pyomo.util.check_units import assert_units_consistent
 from pyomo.core.expr.calculus.derivatives import differentiate
 
 from idaes.core import (
@@ -68,11 +68,12 @@ from idaes.core.initialization import (
     SingleControlVolumeUnitInitializer,
     InitializationStatus,
 )
+from idaes.core.util import DiagnosticsToolbox
 
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_solver()
+solver = get_solver("ipopt_v2")
 
 
 # -----------------------------------------------------------------------------
@@ -278,14 +279,9 @@ class TestBTX_isothermal(object):
         assert number_unused_variables(btx) == 0
 
     @pytest.mark.component
-    def test_units(self, btx):
-        assert_units_consistent(btx)
-        assert_units_equivalent(btx.fs.unit.work_mechanical[0], units.W)
-        assert_units_equivalent(btx.fs.unit.deltaP[0], units.Pa)
-
-    @pytest.mark.unit
-    def test_dof(self, btx):
-        assert degrees_of_freedom(btx) == 0
+    def test_structural_issues(self, btx):
+        dt = DiagnosticsToolbox(btx)
+        dt.assert_no_structural_warnings()
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -336,6 +332,13 @@ class TestBTX_isothermal(object):
             )
             <= 1e-6
         )
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, btx):
+        dt = DiagnosticsToolbox(btx)
+        dt.assert_no_numerical_warnings()
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -427,14 +430,9 @@ class TestIAPWS(object):
         assert number_unused_variables(iapws) == 0
 
     @pytest.mark.component
-    def test_units(self, iapws):
-        assert_units_consistent(iapws)
-        assert_units_equivalent(iapws.fs.unit.work_mechanical[0], units.W)
-        assert_units_equivalent(iapws.fs.unit.deltaP[0], units.Pa)
-
-    @pytest.mark.unit
-    def test_dof(self, iapws):
-        assert degrees_of_freedom(iapws) == 0
+    def test_structural_issues(self, iapws):
+        dt = DiagnosticsToolbox(iapws)
+        dt.assert_no_structural_warnings()
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -569,6 +567,13 @@ class TestIAPWS(object):
             assert value(prop_out.temperature) == Tout
             assert value(prop_out.vapor_frac) == xout
 
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, iapws):
+        dt = DiagnosticsToolbox(iapws)
+        dt.assert_no_numerical_warnings()
+
     @pytest.mark.ui
     @pytest.mark.unit
     def test_get_performance_contents(self, iapws):
@@ -612,8 +617,8 @@ class TestSaponification(object):
         m.fs.unit.inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
         m.fs.unit.inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
         m.fs.unit.inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
-        m.fs.unit.inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
-        m.fs.unit.inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "SodiumAcetate"].fix(1e-8)
+        m.fs.unit.inlet.conc_mol_comp[0, "Ethanol"].fix(1e-8)
 
         m.fs.unit.deltaP.fix(-20000)
         m.fs.unit.efficiency_pump.fix(0.9)
@@ -651,14 +656,9 @@ class TestSaponification(object):
         assert number_unused_variables(sapon) == 0
 
     @pytest.mark.component
-    def test_units(self, sapon):
-        assert_units_consistent(sapon)
-        assert_units_equivalent(sapon.fs.unit.work_mechanical[0], units.W)
-        assert_units_equivalent(sapon.fs.unit.deltaP[0], units.Pa)
-
-    @pytest.mark.unit
-    def test_dof(self, sapon):
-        assert degrees_of_freedom(sapon) == 0
+    def test_structural_issues(self, sapon):
+        dt = DiagnosticsToolbox(sapon)
+        dt.assert_no_structural_warnings()
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -728,6 +728,13 @@ class TestSaponification(object):
             )
             <= 1e-4
         )
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, sapon):
+        dt = DiagnosticsToolbox(sapon)
+        dt.assert_no_numerical_warnings()
 
     @pytest.mark.ui
     @pytest.mark.unit

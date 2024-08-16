@@ -34,7 +34,7 @@ def rglob(path, glob):
 
 
 # For included DMF data
-DMF_DATA_ROOT = "data"
+DMF_DATA_ROOT = "dmf_data"
 
 
 def dmf_data_files(root: str = DMF_DATA_ROOT) -> List[Tuple[str, List[str]]]:
@@ -74,7 +74,7 @@ class ExtraDependencies:
         "idaes-ui @ git+https://github.com/IDAES/idaes-ui@main",
     ]
     _ipython = [
-        'ipython <= 8.12; python_version == "3.8"',
+        "ipython",
     ]
     dmf = [
         # all modules relative to idaes.core.dmf
@@ -93,7 +93,7 @@ class ExtraDependencies:
     ]
     omlt = [
         "omlt==1.1",  # fix the version for now as package evolves
-        "tensorflow",
+        'tensorflow < 2.16.1 ; python_version < "3.12"',
     ]
     grid = [
         "gridx-prescient>=2.2.1",  # idaes.tests.prescient
@@ -123,17 +123,22 @@ kwargs = dict(
     zip_safe=False,
     name=NAME,
     version=VERSION,
-    packages=find_namespace_packages(),
+    packages=find_namespace_packages(
+        include=[
+            "idaes*",
+            "dmf_data*",
+        ]
+    ),
     # Put abstract (non-versioned) deps here.
     # Concrete dependencies go in requirements[-dev].txt
     install_requires=[
-        "pyomo>=6.6.2",
-        "pint",  # required to use Pyomo units
+        "pyomo >= 6.7.3",
+        "pint<0.24",  # required to use Pyomo units. Pint 0.24 only supported on Python >=3.10
         "networkx",  # required to use Pyomo network
-        "numpy",
-        # pandas constraint added on 2023-08-30 b/c Pysmo test failures with 2.1
+        "numpy<2",
+        # pandas constraint added on 2023-08-30 b/c bug in v2.1
         # see IDAES/idaes-pse#1253
-        "pandas<2.1",
+        "pandas!=2.1.0,<3",
         "scipy",
         "sympy",  # idaes.core.util.expr_doc
         "matplotlib",
@@ -195,10 +200,10 @@ kwargs = dict(
         "Operating System :: Unix",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
         "Programming Language :: Python :: Implementation :: CPython",
         "Topic :: Scientific/Engineering :: Mathematics",
         "Topic :: Scientific/Engineering :: Chemistry",

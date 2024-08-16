@@ -4,7 +4,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -168,7 +168,7 @@ def propagate_state(
     if arc is not None:
         if destination is not None or source is not None:
             raise RuntimeError(
-                "In propagate_state(), provide only arc or " "source and destination"
+                "In propagate_state(), provide only arc or source and destination"
             )
         try:
             source = arc.src
@@ -267,6 +267,8 @@ def solve_indexed_blocks(solver, blocks, **kwds):
                     (b, i + 1 if i < nBlocks - 1 else None)
                 )
             except Exception:
+                # PYLINT-TODO
+                # pylint: disable-next=broad-exception-raised
                 raise Exception(
                     "solve_indexed_blocks method failed adding "
                     "components to temporary block."
@@ -354,7 +356,7 @@ def initialize_by_time_element(fs, time, **kwargs):
     solver_log = idaeslog.getSolveLogger(__name__, level=outlvl)
 
     ignore_dof = kwargs.pop("ignore_dof", False)
-    solver = kwargs.pop("solver", get_solver())
+    solver = kwargs.pop("solver", get_solver("ipopt_v2"))
     fix_diff_only = kwargs.pop("fix_diff_only", True)
     # This option makes the assumption that the only variables that
     # link constraints to previous points in time (which must be fixed)

@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -627,6 +627,11 @@ class StandardPropertySet(PropertySetBase):
         doc="Compressiblity Factor",
         units=pyunits.dimensionless,
     )
+    compress_fact_crit = PropertyMetadata(
+        name="compress_fact_crit",
+        doc="Compressiblity Factor at Critical Point",
+        units=pyunits.dimensionless,
+    )
     conc_mass = PropertyMetadata(
         name="conc_mass",
         doc="Concentration on a Mass Basis",
@@ -890,12 +895,12 @@ class StandardPropertySet(PropertySetBase):
     vol_mol = PropertyMetadata(
         name="vol_mol",
         doc="Molar Volume",
-        units="MOLAR_VOLUME",
+        units="VOLUME_MOLE",
     )
     vol_mol_crit = PropertyMetadata(
         name="vol_mol",
         doc="Molar Volume at Critical Point",
-        units="MOLAR_VOLUME",
+        units="VOLUME_MOLE",
     )
     # Log terms
     log_act = PropertyMetadata(

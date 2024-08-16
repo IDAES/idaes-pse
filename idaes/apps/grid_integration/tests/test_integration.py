@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -18,10 +18,6 @@ from typing import Dict, Union
 import os
 
 import pytest
-
-
-# define custom type for type hinting
-PrescientOptions = Dict[str, Union[str, bool, Number, dict]]
 
 from idaes.apps.grid_integration import DoubleLoopCoordinator
 from idaes.apps.grid_integration.tests.util import (
@@ -40,6 +36,9 @@ coordinator = DoubleLoopCoordinator(
     tracker=thermal_tracker,
     projection_tracker=thermal_projection_tracker,
 )
+
+# define custom type for type hinting
+PrescientOptions = Dict[str, Union[str, bool, Number, dict]]
 
 
 class TestDoubleLoopIntegration:
@@ -175,7 +174,7 @@ class TestDoubleLoopIntegration:
     ):
         return self_scheduler_output_dir
 
-    @pytest.mark.unit
+    @pytest.mark.integration
     def test_prescient_outputs_exist(
         self, simulation_results_dir, self_scheduler_simulation_results_dir
     ):

@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -77,7 +77,7 @@ class ReactionParameterBlock(ProcessBlockData, property_meta.HasPropertyClassMet
     CONFIG.declare(
         "property_package",
         ConfigValue(
-            description="Reference to associated PropertyPackageParameter " "object",
+            description="Reference to associated PropertyPackageParameter object",
             domain=is_physical_parameter_block,
         ),
     )

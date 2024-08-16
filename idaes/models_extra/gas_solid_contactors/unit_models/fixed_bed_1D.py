@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -1335,7 +1335,7 @@ should be constructed,
 
         init_log.info("Initialize Mass Balances")
         init_log.info_high(
-            "initialize mass balances - no reactions " "and no pressure drop"
+            "initialize mass balances - no reactions and no pressure drop"
         )
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             results = opt.solve(blk, tee=slc.tee, symbolic_solver_labels=True)
@@ -1427,7 +1427,7 @@ should be constructed,
             or solid_phase.reaction_package is not None
         ):
             init_log.info_high(
-                "initialize mass balances - with reactions " "and no pressure drop"
+                "initialize mass balances - with reactions and no pressure drop"
             )
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 results = opt.solve(blk, tee=slc.tee, symbolic_solver_labels=True)
@@ -1458,7 +1458,7 @@ should be constructed,
                     )
 
             init_log.info_high(
-                "initialize mass balances - with reactions " "and pressure drop"
+                "initialize mass balances - with reactions and pressure drop"
             )
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 results = opt.solve(blk, tee=slc.tee, symbolic_solver_labels=True)

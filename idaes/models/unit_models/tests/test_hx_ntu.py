@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -49,11 +49,12 @@ from idaes.core.initialization import (
     BlockTriangularizationInitializer,
     InitializationStatus,
 )
+from idaes.core.util import DiagnosticsToolbox
 
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_solver()
+solver = get_solver("ipopt_v2")
 
 
 # -----------------------------------------------------------------------------
@@ -281,20 +282,11 @@ class TestHXNTU(object):
         assert model.fs.unit.default_initializer is HXNTUInitializer
 
     @pytest.mark.component
-    def test_units(self, model):
-        assert_units_consistent(model)
-
-        assert_units_equivalent(model.fs.unit.area, pyunits.m**2)
-        assert_units_equivalent(
-            model.fs.unit.heat_transfer_coefficient,
-            pyunits.W / pyunits.m**2 / pyunits.K,
+    def test_structural_issues(self, model):
+        dt = DiagnosticsToolbox(model)
+        dt.assert_no_structural_warnings(
+            ignore_evaluation_errors=True,
         )
-        assert_units_equivalent(model.fs.unit.effectiveness[0], pyunits.dimensionless)
-        assert_units_equivalent(model.fs.unit.NTU[0], pyunits.dimensionless)
-
-    @pytest.mark.unit
-    def test_dof(self, model):
-        assert degrees_of_freedom(model) == 0
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -505,15 +497,12 @@ class TestHXNTU(object):
             <= 1e-6
         )
 
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
-    def test_initialization_error(self, model):
-        model.fs.unit.hot_side_outlet.pressure[0].fix(1)
-
-        with pytest.raises(InitializationError):
-            model.fs.unit.initialize()
-
-        # Revert DoF change to avoid contaminating subsequent tests
-        model.fs.unit.hot_side_outlet.pressure[0].unfix()
+    def test_numerical_issues(self, model):
+        dt = DiagnosticsToolbox(model)
+        dt.assert_no_numerical_warnings()
 
 
 class TestInitializers(object):

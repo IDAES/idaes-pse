@@ -4,6 +4,7 @@ dynamically created through the `declare_process_block_class()` decorator.
 
 See #1159 for more information.
 """
+
 from dataclasses import dataclass
 import sys
 import functools
@@ -50,12 +51,12 @@ def _check_version_compatibility() -> None:
     to_check = [
         VersionCompat(
             distr_name="pylint",
-            expected="2.12.2",
+            expected="3.0.3",
             actual=pylint.__version__,
         ),
         VersionCompat(
             distr_name="astroid",
-            expected="2.9.3",
+            expected="3.0.3",
             actual=astroid.__version__,
         ),
     ]
@@ -126,9 +127,11 @@ def create_declared_class_node(decorated_cls_node: astroid.ClassDef):
         decl_class_name,
         # TODO the real doc should be available as the "doc" kwarg of the decorator
         # but it's not clear if we're going to need it anyway
-        doc=f"Declared from {decorated_cls_node.name}",
+        col_offset=decorated_cls_node.col_offset,
         parent=decorated_cls_node.parent,
         lineno=decorated_cls_node.lineno,
+        end_lineno=decorated_cls_node.end_lineno,
+        end_col_offset=decorated_cls_node.end_col_offset,
     )
     decl_class_node.bases.extend(
         [

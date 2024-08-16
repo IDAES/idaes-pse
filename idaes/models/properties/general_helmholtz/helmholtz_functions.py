@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -20,11 +20,15 @@ import ctypes
 import os
 
 from matplotlib import pyplot as plt
-import numpy as np
 
 import pyomo.environ as pyo
 from pyomo.common.fileutils import find_library
 from pyomo.common.config import ConfigValue, In
+
+# importing numpy from pyomo forces proper handling of numpy types in Pyomo
+# this is a workaround for a lingering issue after Pyomo/pyomo@cfa6ff49
+# (see IDAES/idaes-pse#1348) until this is addressed in Pyomo
+from pyomo.common.dependencies import numpy as np
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core import declare_process_block_class
 from idaes.core import (

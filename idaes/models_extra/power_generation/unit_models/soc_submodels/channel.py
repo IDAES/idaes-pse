@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -437,7 +437,7 @@ class SocChannelData(UnitModelBlockData):
             @self.Constraint(tset, iznodes, comps)
             def material_flux_x0_eqn(b, t, iz, i):
                 return (
-                    -b.material_flux_x0[t, iz, i] / b.mass_transfer_coeff[t, iz, i]
+                    b.material_flux_x0[t, iz, i] / b.mass_transfer_coeff[t, iz, i]
                     == b.conc_mol_comp_deviation_x0[t, iz, i]
                 )
 
@@ -587,7 +587,9 @@ class SocChannelData(UnitModelBlockData):
                 * (b.material_flux_z_enth[t, iz] - b.material_flux_z_enth[t, iz + 1])
                 + b.xface_area[iz]
                 * sum(
-                    (b.material_flux_x0[t, iz, i] - b.material_flux_x1[t, iz, i])
+                    b.material_flux_x0[t, iz, i]
+                    * common._comp_enthalpy_expr(b.temperature_x0[t, iz], i)
+                    - b.material_flux_x1[t, iz, i]
                     * common._comp_enthalpy_expr(b.temperature_x1[t, iz], i)
                     for i in comps
                 )

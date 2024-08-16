@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -30,18 +30,18 @@ import idaes.core.util.scaling as iscale
 from idaes.core.util.exceptions import InitializationError
 
 
-from pyomo.core.base.var import _VarData
-from pyomo.core.base.param import _ParamData
-from pyomo.core.base.expression import _ExpressionData
+from pyomo.core.base.var import VarData
+from pyomo.core.base.param import ParamData
+from pyomo.core.base.expression import ExpressionData
 from idaes.core.initialization.initializer_base import (
     InitializationStatus,
 )
 
-_scalable = (_VarData, _ParamData, _ExpressionData)
+_scalable = (VarData, ParamData, ExpressionData)
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_solver()
+solver = get_solver("ipopt_v2")
 
 
 # -----------------------------------------------------------------------------
@@ -291,6 +291,8 @@ class PropertyTestHarness(object):
         frame._flags = frame.fs.props.initialize(hold_state=True)
 
         if degrees_of_freedom(frame.fs.props[1]) != 0:
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception(
                 "initialize did not result in a State Block with 0 "
                 "degrees of freedom."
@@ -308,6 +310,8 @@ class PropertyTestHarness(object):
         frame.fs.props.release_state(frame._flags)
 
         if degrees_of_freedom(frame.fs.props[1]) != frame._init_dof:
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception(
                 "release state did not restore State Block to original "
                 "degrees of freedom."

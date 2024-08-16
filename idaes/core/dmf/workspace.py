@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -205,7 +205,7 @@ class Workspace(object):
                     self._create_new_config(add_defaults)
                 except OSError as err:
                     raise WorkspaceError(
-                        "while creating new workspace " "configuration: {}".format(err)
+                        "while creating new workspace configuration: {}".format(err)
                     )
         else:
             # assert that the workspace exists

@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -140,7 +140,7 @@ not used for when ideal_separation == True.
 **default** - EnergySplittingType.equal_temperature.
 **Valid values:** {
 **EnergySplittingType.equal_temperature** - outlet temperatures equal inlet
-**EnergySplittingType.equal_molar_enthalpy** - oulet molar enthalpies equal
+**EnergySplittingType.equal_molar_enthalpy** - outlet molar enthalpies equal
 inlet,
 **EnergySplittingType.enthalpy_split** - apply split fractions to enthalpy
 flows.}""",

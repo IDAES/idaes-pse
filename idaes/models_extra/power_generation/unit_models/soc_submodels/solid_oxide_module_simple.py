@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -254,6 +254,20 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
 
         self.potential_cell = pyo.Reference(self.solid_oxide_cell.potential)
 
+        self.total_current = pyo.Var(
+            tset,
+            units=pyo.units.ampere,
+            doc="Total current through module",
+            initialize=0,
+        )
+
+        @self.Constraint(tset)
+        def total_current_eqn(b, t):
+            return (
+                b.total_current[t]
+                == b.solid_oxide_cell.total_current[t] * b.number_cells
+            )
+
     def initialize_build(
         self,
         state_args_fuel=None,
@@ -387,6 +401,11 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
                             cst(absent_comp_eqn[t, j], sflow * sx)
 
         self.solid_oxide_cell.recursive_scaling()
+        for t in self.flowsheet().time:
+            sf_tot_current = gsf(self.solid_oxide_cell.total_current[t])
+            ssf(self.total_current[t], sf_tot_current * s_num_cells)
+            sf_tot_current = gsf(self.total_current[t])
+            cst(self.total_current_eqn[t], sf_tot_current)
 
     def model_check(self):
         pass

@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -83,7 +83,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
 
         # Heat capacity of water
         self.cp_mol = Param(
-            mutable=False,
+            mutable=True,
             initialize=75.327,
             doc="Molar heat capacity of water [J/mol.K]",
             units=units.J / units.mol / units.K,
@@ -91,7 +91,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
 
         # Density of water
         self.dens_mol = Param(
-            mutable=False,
+            mutable=True,
             initialize=55388.0,
             doc="Molar density of water [mol/m^3]",
             units=units.mol / units.m**3,
@@ -226,6 +226,8 @@ class _StateBlock(StateBlock):
             # Check when the state vars are fixed already result in dof 0
             for k in blk.values():
                 if degrees_of_freedom(k) != 0:
+                    # PYLINT-TODO
+                    # pylint: disable-next=broad-exception-raised
                     raise Exception(
                         "State vars fixed but degrees of freedom "
                         "for state block is not zero during "
