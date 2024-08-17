@@ -303,21 +303,21 @@ class TestPolynomialRegression:
     @pytest.mark.parametrize("array_type2", [np.array, pd.DataFrame])
     def test__init__09(self, array_type1, array_type2, caplog):
         caplog.set_level(idaeslog.WARNING)
-        warning_msg = 'The number of cross-validations entered is large. The simulation may take a while to run'
+        warning_msg = "The number of cross-validations entered is large. The simulation may take a while to run"
         original_data_input = array_type1(self.test_data)
         regression_data_input = array_type2(self.sample_points)
         PolyClass = PolynomialRegression(
-                original_data_input,
-                regression_data_input,
-                maximum_polynomial_order=5,
-                number_of_crossvalidations=11,
-            )
+            original_data_input,
+            regression_data_input,
+            maximum_polynomial_order=5,
+            number_of_crossvalidations=11,
+        )
         assert warning_msg in caplog.text
         for record in caplog.records:
             assert record.levelno == idaeslog.WARNING
         assert (
-                PolyClass.number_of_crossvalidations == 11
-            )  # Default number of cross-validations
+            PolyClass.number_of_crossvalidations == 11
+        )  # Default number of cross-validations
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type1", [np.array, pd.DataFrame])
@@ -335,11 +335,17 @@ class TestPolynomialRegression:
     @pytest.mark.parametrize("array_type2", [np.array, pd.DataFrame])
     def test__init__11(self, array_type1, array_type2, caplog):
         caplog.set_level(idaeslog.WARNING)
-        warning_msg = 'The maximum allowed polynomial order is 10. Value has been adjusted to 10.'
+        warning_msg = (
+            "The maximum allowed polynomial order is 10. Value has been adjusted to 10."
+        )
         original_data_input = array_type1(self.test_data_large)
         regression_data_input = array_type2(self.sample_points_large)
-        PolyClass = PolynomialRegression(original_data_input, regression_data_input, maximum_polynomial_order=11)
-        warning_msg = 'The maximum allowed polynomial order is 10. Value has been adjusted to 10.'
+        PolyClass = PolynomialRegression(
+            original_data_input, regression_data_input, maximum_polynomial_order=11
+        )
+        warning_msg = (
+            "The maximum allowed polynomial order is 10. Value has been adjusted to 10."
+        )
         assert warning_msg in caplog.text
         for record in caplog.records:
             assert record.levelno == idaeslog.WARNING
@@ -1654,12 +1660,12 @@ class TestPolynomialRegression:
         expected_df = pd.Series()
         row_list = np.array([["k"], ["(x_1)^1"], ["(x_2)^1"]])
         expected_df = pd.Series(
-                    {
-                        row_list[0, 0]: beta[0, 0],
-                        row_list[1, 0]: beta[1, 0],
-                        row_list[2, 0]: beta[2, 0],
-                    }
-                )
+            {
+                row_list[0, 0]: beta[0, 0],
+                row_list[1, 0]: beta[1, 0],
+                row_list[2, 0]: beta[2, 0],
+            }
+        )
         output_df = data_feed.results_generation(beta, order)
         assert output_df.index.to_list() == expected_df.index.to_list()
         assert expected_df.all() == output_df.all()
@@ -1691,16 +1697,16 @@ class TestPolynomialRegression:
             ]
         )
         expected_df = pd.Series(
-                    {
-                        row_list[0, 0]: beta[0, 0],
-                        row_list[1, 0]: beta[1, 0],
-                        row_list[2, 0]: beta[2, 0],
-                        row_list[3, 0]: beta[3, 0],
-                        row_list[4, 0]: beta[4, 0],
-                        row_list[5, 0]: beta[5, 0],
-                        row_list[6, 0]: beta[6, 0],
-                    }
-                )
+            {
+                row_list[0, 0]: beta[0, 0],
+                row_list[1, 0]: beta[1, 0],
+                row_list[2, 0]: beta[2, 0],
+                row_list[3, 0]: beta[3, 0],
+                row_list[4, 0]: beta[4, 0],
+                row_list[5, 0]: beta[5, 0],
+                row_list[6, 0]: beta[6, 0],
+            }
+        )
         output_df = data_feed.results_generation(beta, order)
         assert output_df.index.to_list() == expected_df.index.to_list()
         assert expected_df.all() == output_df.all()
@@ -1724,15 +1730,15 @@ class TestPolynomialRegression:
             [["k"], ["(x_1)^1"], ["(x_2)^1"], ["(x_1)^2"], ["(x_2)^2"], ["(x_1).(x_2)"]]
         )
         expected_df = pd.Series(
-                    {
-                        row_list[0, 0]: beta[0, 0],
-                        row_list[1, 0]: beta[1, 0],
-                        row_list[2, 0]: beta[2, 0],
-                        row_list[3, 0]: beta[3, 0],
-                        row_list[4, 0]: beta[4, 0],
-                        row_list[5, 0]: beta[5, 0],
-                    }
-                )
+            {
+                row_list[0, 0]: beta[0, 0],
+                row_list[1, 0]: beta[1, 0],
+                row_list[2, 0]: beta[2, 0],
+                row_list[3, 0]: beta[3, 0],
+                row_list[4, 0]: beta[4, 0],
+                row_list[5, 0]: beta[5, 0],
+            }
+        )
         output_df = data_feed.results_generation(beta, order)
         assert output_df.index.to_list() == expected_df.index.to_list()
         assert expected_df.all() == output_df.all()

@@ -2232,14 +2232,16 @@ class TestCVTSampling:
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test__init__selection_tolerance_too_tight(self, array_type, caplog):
         caplog.set_level(idaeslog.WARNING)
-        warning_msg = "Tolerance too tight. CVT algorithm may take long time to converge."
+        warning_msg = (
+            "Tolerance too tight. CVT algorithm may take long time to converge."
+        )
         input_array = array_type(self.input_array)
         CVTClass = CVTSampling(
-                input_array,
-                number_of_samples=None,
-                tolerance=1e-10,
-                sampling_type="selection",
-            )
+            input_array,
+            number_of_samples=None,
+            tolerance=1e-10,
+            sampling_type="selection",
+        )
         assert warning_msg in caplog.text
         for record in caplog.records:
             assert record.levelno == idaeslog.WARNING
@@ -2419,13 +2421,15 @@ class TestCVTSampling:
     def test__init__creation_tolerance_too_tight(self, array_type, caplog):
         caplog.set_level(idaeslog.WARNING)
         input_array = array_type(self.input_array_list)
-        warning_msg = "Tolerance too tight. CVT algorithm may take long time to converge."
+        warning_msg = (
+            "Tolerance too tight. CVT algorithm may take long time to converge."
+        )
         CVTClass = CVTSampling(
-                input_array,
-                number_of_samples=None,
-                tolerance=1e-10,
-                sampling_type="creation",
-            )
+            input_array,
+            number_of_samples=None,
+            tolerance=1e-10,
+            sampling_type="creation",
+        )
         assert warning_msg in caplog.text
         for record in caplog.records:
             assert record.levelno == idaeslog.WARNING

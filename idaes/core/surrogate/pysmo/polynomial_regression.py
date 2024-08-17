@@ -360,7 +360,7 @@ class PolynomialRegression:
         elif maximum_polynomial_order > 10:
             _log.warning(
                 "The maximum allowed polynomial order is 10. Value has been adjusted to 10."
-                )
+            )
             maximum_polynomial_order = 10
         self.max_polynomial_order = maximum_polynomial_order
 
@@ -1002,7 +1002,7 @@ class PolynomialRegression:
         print("\n------------------------------------------------------------")
         print("The final coefficients of the regression terms are: \n")
         print("k               |", beta[0, 0])
-        results_df = pd.Series({"k": beta[0, 0]}) 
+        results_df = pd.Series({"k": beta[0, 0]})
         if self.multinomials == 1:
             for i in range(1, order + 1):
                 for j in range(1, self.number_of_x_vars + 1):
@@ -1451,9 +1451,7 @@ class PolynomialRegression:
             if r_square_opt > 0.95:
                 self.fit_status = "ok"
             else:
-                _log.warning(
-                    "Polynomial regression generates poor fit for the dataset"
-                )
+                _log.warning("Polynomial regression generates poor fit for the dataset")
                 self.fit_status = "poor"
 
             self.pickle_save({"model": self})
@@ -1553,9 +1551,7 @@ class PolynomialRegression:
             if r_square > 0.95:
                 self.fit_status = "ok"
             else:
-                _log.warning(
-                    "Polynomial regression generates poor fit for the dataset"
-                )
+                _log.warning("Polynomial regression generates poor fit for the dataset")
                 self.fit_status = "poor"
 
             self.pickle_save({"model": self})
