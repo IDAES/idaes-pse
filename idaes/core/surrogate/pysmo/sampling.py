@@ -15,7 +15,6 @@
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 
-import warnings
 import itertools
 
 import numpy as np

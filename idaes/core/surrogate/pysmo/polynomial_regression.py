@@ -15,7 +15,6 @@
 # pylint: disable=missing-function-docstring
 
 import os.path
-import warnings
 import pickle
 
 # Imports from third parties

@@ -18,7 +18,6 @@
 
 # Imports from the python standard library
 import os.path
-import warnings
 import pickle
 
 # Imports from third parties
