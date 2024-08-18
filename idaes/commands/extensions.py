@@ -31,19 +31,21 @@ from idaes.commands import cb
 _log = logging.getLogger("idaes.commands.extensions")
 
 
-def print_extensions_version(library_only=False):
+def print_extensions_version(library_only=False, bin_directory=None):
     click.echo("---------------------------------------------------")
     click.echo("IDAES Extensions Build Versions")
     click.echo("===================================================")
+    if bin_directory is None:
+        bin_directory = idaes.bin_directory
     if not library_only:
-        v = os.path.join(idaes.bin_directory, "version_solvers.txt")
+        v = os.path.join(bin_directory, "version_solvers.txt")
         try:
             with open(v, "r") as f:
                 v = f.readline().strip()
         except FileNotFoundError:
             v = "no version file found"
         click.echo("Solvers:  v{}".format(v))
-    v = os.path.join(idaes.bin_directory, "version_lib.txt")
+    v = os.path.join(bin_directory, "version_lib.txt")
     try:
         with open(v, "r") as f:
             v = f.readline().strip()
@@ -150,7 +152,8 @@ def get_extensions(
             for k, i in d.items():
                 click.echo(f"{k:14}: {i}")
         else:
-            print_extensions_version(library_only)
+            # If `to` is None, we default to idaes.bin_directory.
+            print_extensions_version(library_only=library_only, bin_directory=to)
     else:
         click.echo("\n* You must provide a download URL for IDAES binary files.")
 
