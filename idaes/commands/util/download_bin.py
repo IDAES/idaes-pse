@@ -402,8 +402,21 @@ def download_binaries(
     _verify_checksums(checksum, pname, ptar, ftar)
 
     # Extract solvers
+    tars_to_unpack = list(ptar)
+    idaes_local_tarname = f"idaes-local-{platform}.tar.gz"
+    if "darwin" in idaes_local_tarname:
+        # We neglected to change the name of the idaes-local tar.gz file from *aarch64
+        # to *arm64 on ARM Mac, so we have to manually patch the name here. I believe
+        # this is fixed in the idaes-ext main branch, so this can be removed when
+        # we update to binaries compiled from this branch. -RBP
+        idaes_local_tarname = idaes_local_tarname.replace("aarch64", "arm64")
+    idaes_local_tarname = os.path.join(to_path, idaes_local_tarname)
+    # In addition to the tar.gz files we downloaded, we want to unpack the idaes-local
+    # tar.gz file. This is included in idaes-solvers, so we can unpack it in the same
+    # directory after we've unpacked idaes-solvers.
+    tars_to_unpack.append(idaes_local_tarname)
     links = {}
-    for n, p in zip(pname, ptar):
+    for p in tars_to_unpack:
         _log.debug(f"Extracting files in {p} to {to_path}")
         with tarfile.open(p, "r") as f:
             _verify_tar_member_targets(f, to_path, links)
