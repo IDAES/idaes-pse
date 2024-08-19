@@ -20,13 +20,16 @@
 __author__ = "John Eslick"
 
 import os
+import sys
 import logging
+import subprocess
 
 import click
 
 import idaes
 import idaes.commands.util.download_bin
 from idaes.commands import cb
+from pyomo.common.dependencies import attempt_import
 
 _log = logging.getLogger("idaes.commands.extensions")
 
@@ -211,3 +214,93 @@ def extensions_license():
 @cb.command(name="extensions-version", help="show license info for binary extensions")
 def extensions_version():
     print_extensions_version()
+
+
+@cb.command(
+    name="install-cyipopt",
+    help="[BETA] Install CyIpopt and link to IDAES IPOPT library",
+)
+def install_cyipopt():
+    _, cyipopt_available = attempt_import("cyipopt")
+    click.echo(
+        "WARNING: The install-cyipopt command is beta functionality and may not work"
+        " on all platforms."
+    )
+    if cyipopt_available:
+        click.echo(
+            "CyIpopt is already available in the current Python environment."
+            " Please uninstall CyIpopt before running this command. Note that"
+            " you may need to clear your pip cache to re-install with IDAES"
+            " binaries."
+        )
+        return
+    pkgconfig_path = os.pathsep.join(
+        [
+            # Prepend IDAES's pkgconfig directory to this path so we always
+            # build cyipopt against IDAES binaries (if they exist) when using this
+            # command.
+            os.path.join(idaes.bin_directory, "lib", "pkgconfig"),
+            os.getenv("PKG_CONFIG_PATH", ""),
+        ]
+    )
+    subprocess_environ = dict(os.environ, PKG_CONFIG_PATH=pkgconfig_path)
+    # TODO: Possibly set IPOPTWINDIR on Windows? I haven't been able to get this to
+    # work on GHA, so I'd like some advice from somebody who has built CyIpopt
+    # on Windows before staring to make assumptions. -RBP
+    ret = subprocess.run(
+        ["pip", "install", "cyipopt"],
+        env=subprocess_environ,
+    )
+    if ret.returncode == 1:
+        # CyIpopt wheels don't build on Python 3.9 (see
+        # https://github.com/mechmotum/cyipopt/issues/225), so we have this workaround
+        # in place as an alternative. If #225 gets resolved or we stop supporting 3.9,
+        # and no other cases come up where `pip install cyipopt` fails, we can remove
+        # this code. -RBP
+        click.echo(
+            "WARNING: Command `pip install cyipopt` returned 1. Attempting to install"
+            " from source"
+        )
+        orig_cwd = os.getcwd()
+        try:
+            os.chdir(idaes.bin_directory)
+            cyipopt_dir = os.path.join(idaes.bin_directory, "cyipopt")
+            if os.path.exists(cyipopt_dir):
+                raise RuntimeError(
+                    f"{cyipopt_dir} already exists. Please remove and try again."
+                )
+            subprocess.run(
+                [
+                    "git",
+                    "clone",
+                    "https://github.com/mechmotum/cyipopt.git",
+                    "--branch=v1.4.1",
+                ],
+            )
+            os.chdir(cyipopt_dir)
+            ret = subprocess.run(
+                ["python", "setup.py", "develop"], env=subprocess_environ
+            )
+        finally:
+            os.chdir(orig_cwd)
+        if ret.returncode == 1:
+            raise RuntimeError("Error installing CyIpopt from source.")
+    click.echo("Installed CyIpopt in the current Python environment.")
+    libdir = os.path.join(idaes.bin_directory, "lib")
+    if sys.platform == "nt":
+        lib_envvar = "PATH"
+    elif sys.platform == "darwin":
+        lib_envvar = "DYLD_LIBRARY_PATH"
+    else:
+        lib_envvar = "LD_LIBRARY_PATH"
+    homedir = os.getenv("HOME", "")
+    bashrc_file = os.path.join(homedir, ".bashrc")
+    zshrc_file = os.path.join(homedir, ".zshrc")
+    click.echo(
+        f"Note: To use CyIpopt, you may need to add {libdir} to your {lib_envvar}"
+        " environment variable. That is, add the following line to your shell"
+        f" configuration file (e.g. {bashrc_file} for Bash or {zshrc_file} for Zsh):"
+        # Or $PROFILE for PowerShell?
+    )
+    export_rhs = os.pathsep.join(["$"+lib_envvar, libdir])
+    click.echo(f"\n    export {lib_envvar}={export_rhs}\n")
