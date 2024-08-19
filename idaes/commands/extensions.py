@@ -247,7 +247,9 @@ def install_cyipopt():
     # TODO: Possibly set IPOPTWINDIR on Windows? I haven't been able to get this to
     # work on GHA, so I'd like some advice from somebody who has built CyIpopt
     # on Windows before staring to make assumptions. -RBP
-    ret = subprocess.run(["pip", "install", "cyipopt"], env=subprocess_environ)
+    ret = subprocess.run(
+        ["pip", "install", "cyipopt"], env=subprocess_environ, check=False
+    )
     if ret.returncode == 1:
         # CyIpopt wheels don't build on Python 3.9 (see
         # https://github.com/mechmotum/cyipopt/issues/225), so we have this workaround
@@ -272,11 +274,12 @@ def install_cyipopt():
                     "clone",
                     "https://github.com/mechmotum/cyipopt.git",
                     "--branch=v1.4.1",
-                ]
+                ],
+                check=False,
             )
             os.chdir(cyipopt_dir)
             ret = subprocess.run(
-                ["python", "setup.py", "develop"], env=subprocess_environ
+                ["python", "setup.py", "develop"], env=subprocess_environ, check=False
             )
         finally:
             os.chdir(orig_cwd)
