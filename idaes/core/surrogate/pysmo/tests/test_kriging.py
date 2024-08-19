@@ -97,7 +97,9 @@ class TestKrigingModel:
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
-    @pytest.mark.filterwarnings("ignore:invalid value encountered in log:RuntimeWarning")
+    @pytest.mark.filterwarnings(
+        "ignore:invalid value encountered in log:RuntimeWarning"
+    )
     def test__init__08(self, array_type):
         input_array = array_type(self.test_data)
         file_name = "test_filename.pickle"
@@ -108,7 +110,9 @@ class TestKrigingModel:
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
-    @pytest.mark.filterwarnings("ignore:invalid value encountered in log:RuntimeWarning")
+    @pytest.mark.filterwarnings(
+        "ignore:invalid value encountered in log:RuntimeWarning"
+    )
     def test__init__09(self, array_type):
         input_array = array_type(self.test_data)
         file_name1 = "test_filename1.pickle"
@@ -405,7 +409,9 @@ class TestKrigingModel:
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
-    @pytest.mark.filterwarnings("ignore:invalid value encountered in log:RuntimeWarning")
+    @pytest.mark.filterwarnings(
+        "ignore:invalid value encountered in log:RuntimeWarning"
+    )
     def test_predict_output_01(self, array_type):
         input_array = array_type(self.training_data)
         np.random.seed(0)
@@ -416,7 +422,9 @@ class TestKrigingModel:
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
-    @pytest.mark.filterwarnings("ignore:invalid value encountered in log:RuntimeWarning")
+    @pytest.mark.filterwarnings(
+        "ignore:invalid value encountered in log:RuntimeWarning"
+    )
     def test_predict_output(self, array_type):
         input_array = array_type(self.training_data)
         np.random.seed(0)
