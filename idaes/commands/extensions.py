@@ -26,10 +26,11 @@ import subprocess
 
 import click
 
+from pyomo.common.dependencies import attempt_import
 import idaes
 import idaes.commands.util.download_bin
 from idaes.commands import cb
-from pyomo.common.dependencies import attempt_import
+
 
 _log = logging.getLogger("idaes.commands.extensions")
 
