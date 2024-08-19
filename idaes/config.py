@@ -78,9 +78,7 @@ binary_arch_map = {
     "arm64": "aarch64",
 }
 # Set of extra binary packages and basic build platform where available
-extra_binaries = {
-    "petsc": base_platforms,
-}
+extra_binaries = {"petsc": base_platforms}
 # Store the original environment variable values so we can revert changes
 orig_environ = {
     "PATH": os.environ.get("PATH", ""),
@@ -199,8 +197,7 @@ def _new_idaes_config_block():
         "blank_format", pyomo.common.config.ConfigBlock(implicit=True)
     )
     cfg["logging"]["formatters"]["blank_format"].declare(
-        "format",
-        pyomo.common.config.ConfigValue(domain=str, default="%(message)s"),
+        "format", pyomo.common.config.ConfigValue(domain=str, default="%(message)s")
     )
     cfg["logging"].declare("handlers", pyomo.common.config.ConfigBlock(implicit=True))
     cfg["logging"]["handlers"].declare(
@@ -226,8 +223,7 @@ def _new_idaes_config_block():
         pyomo.common.config.ConfigValue(domain=str, default="logging.StreamHandler"),
     )
     cfg["logging"]["handlers"]["console_blank"].declare(
-        "formatter",
-        pyomo.common.config.ConfigValue(domain=str, default="blank_format"),
+        "formatter", pyomo.common.config.ConfigValue(domain=str, default="blank_format")
     )
     cfg["logging"]["handlers"]["console_blank"].declare(
         "stream",
@@ -326,59 +322,48 @@ def _new_idaes_config_block():
     cfg.declare(
         "ipopt_v2",
         pyomo.common.config.ConfigBlock(
-            implicit=False,
-            description="Default config for 'ipopt' solver",
+            implicit=False, description="Default config for 'ipopt' solver"
         ),
     )
     cfg["ipopt_v2"].declare(
         "options",
         pyomo.common.config.ConfigBlock(
-            implicit=True,
-            description="Default solver options for 'ipopt'",
+            implicit=True, description="Default solver options for 'ipopt'"
         ),
     )
 
     cfg["ipopt_v2"]["options"].declare(
         "nlp_scaling_method",
         pyomo.common.config.ConfigValue(
-            domain=str,
-            default="gradient-based",
-            description="Ipopt NLP scaling method",
+            domain=str, default="gradient-based", description="Ipopt NLP scaling method"
         ),
     )
 
     cfg["ipopt_v2"]["options"].declare(
         "tol",
         pyomo.common.config.ConfigValue(
-            domain=float,
-            default=1e-6,
-            description="Ipopt tol option",
+            domain=float, default=1e-6, description="Ipopt tol option"
         ),
     )
 
     cfg["ipopt_v2"]["options"].declare(
         "max_iter",
         pyomo.common.config.ConfigValue(
-            domain=int,
-            default=200,
-            description="Ipopt max_iter option",
+            domain=int, default=200, description="Ipopt max_iter option"
         ),
     )
 
     cfg["ipopt_v2"]["options"].declare(
         "linear_solver",
         pyomo.common.config.ConfigValue(
-            domain=str,
-            default="ma57",
-            description="Linear solver to be used by IPOPT",
+            domain=str, default="ma57", description="Linear solver to be used by IPOPT"
         ),
     )
 
     cfg["ipopt_v2"].declare(
         "writer_config",
         pyomo.common.config.ConfigBlock(
-            implicit=True,
-            description="Default writer configuration for 'ipopt'",
+            implicit=True, description="Default writer configuration for 'ipopt'"
         ),
     )
 
@@ -604,8 +589,7 @@ def _new_idaes_config_block():
     cfg.declare(
         "logger_capture_solver",
         pyomo.common.config.ConfigValue(
-            default=True,
-            description="Solver output captured by logger?",
+            default=True, description="Solver output captured by logger?"
         ),
     )
 
@@ -768,7 +752,7 @@ def setup_environment(bin_directory, use_idaes_solvers):
                 bin_directory,
                 # We add .idaes/bin/lib to LD_LIBRARY_PATH to pick up any libraries
                 # we introduced by unpacking the idaes-local tar.gz file. This
-                # directory should be changed when/if the IDAES extensions directory 
+                # directory should be changed when/if the IDAES extensions directory
                 # structure changes (e.g. to .idaes/lib). -RBP
                 os.path.join(bin_directory, "lib"),
             ]
