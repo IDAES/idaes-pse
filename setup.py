@@ -93,7 +93,7 @@ class ExtraDependencies:
     ]
     omlt = [
         "omlt==1.1",  # fix the version for now as package evolves
-        'tensorflow < 2.16.1 ; python_version < "3.12"',
+        "tensorflow",
     ]
     grid = [
         "gridx-prescient>=2.2.1",  # idaes.tests.prescient
@@ -176,6 +176,7 @@ kwargs = dict(
             "*.trc",
             "*.xlsx",  # idaes/dmf/tests/data_files - tabular import test files
             "*.nl",
+            "*.keras",  # idaes/core/surrogate/tests/data/keras_models
         ]
     },
     include_package_data=True,
