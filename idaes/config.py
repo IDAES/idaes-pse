@@ -752,14 +752,33 @@ def setup_environment(bin_directory, use_idaes_solvers):
         return
     oe = orig_environ
     if use_idaes_solvers:
-        os.environ["PATH"] = os.pathsep.join([bin_directory, oe.get("PATH", "")])
+        os.environ["PATH"] = os.pathsep.join(
+            # As below, we add idaes/bin/lib to the path so we can (hopefully)
+            # pick up the ipopt libraries on Windows.
+            [bin_directory, os.path.join(bin_directory, "lib"), oe.get("PATH", "")]
+        )
     else:
-        os.environ["PATH"] = os.pathsep.join([oe.get("PATH", ""), bin_directory])
+        os.environ["PATH"] = os.pathsep.join(
+            [oe.get("PATH", ""), bin_directory, os.path.join(bin_directory, "lib")]
+        )
     if os.name != "nt":  # If not Windows set lib search path, Windows uses PATH
         os.environ["LD_LIBRARY_PATH"] = os.pathsep.join(
-            [oe.get("LD_LIBRARY_PATH", ""), bin_directory]
+            [
+                oe.get("LD_LIBRARY_PATH", ""),
+                bin_directory,
+                # We add .idaes/bin/lib to LD_LIBRARY_PATH to pick up any libraries
+                # we introduced by unpacking the idaes-local tar.gz file. This
+                # directory should be changed when/if the IDAES extensions directory 
+                # structure changes (e.g. to .idaes/lib). -RBP
+                os.path.join(bin_directory, "lib"),
+            ]
         )
         # This is for macOS, but won't hurt other UNIX
         os.environ["DYLD_LIBRARY_PATH"] = os.pathsep.join(
-            [oe.get("DYLD_LIBRARY_PATH", ""), bin_directory]
+            [
+                oe.get("DYLD_LIBRARY_PATH", ""),
+                bin_directory,
+                # As above, we are picking up the unpacked idaes-local file here.
+                os.path.join(bin_directory, "lib"),
+            ]
         )
