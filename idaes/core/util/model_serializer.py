@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -819,7 +819,7 @@ def _read_component(sd, o, wts, lookup=None, suffixes=None, root_name=None):
     if isinstance(o, Suffix):
         if wts.suffix_filter is None or oname in wts.suffix_filter:
             suffixes[odict["__id__"]] = odict["data"]  # is populated
-    else:  # read non-sufix component data
+    else:  # read non-suffix component data
         _read_component_data(odict["data"], o, wts, lookup=lookup, suffixes=suffixes)
 
 

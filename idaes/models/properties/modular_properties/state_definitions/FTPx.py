@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -36,8 +36,8 @@ from idaes.models.properties.modular_properties.base.utility import (
     get_method,
     GenericPropertyPackageError,
 )
-from idaes.models.properties.modular_properties.phase_equil.bubble_dew import (
-    _valid_VL_component_list,
+from idaes.models.properties.modular_properties.base.utility import (
+    identify_VL_component_list,
 )
 from idaes.models.properties.modular_properties.phase_equil.henry import (
     HenryType,
@@ -420,7 +420,7 @@ def state_initialization(b):
                 henry_comps,
                 l_only_comps,
                 v_only_comps,
-            ) = _valid_VL_component_list(b, pp)
+            ) = identify_VL_component_list(b, pp)
             pp_VLE = pp
 
     if init_VLE:
@@ -469,6 +469,8 @@ def state_initialization(b):
                 K = None
                 break
 
+    # Default is no initialization of VLE
+    vap_frac = None
     if init_VLE:
         raoult_init = False
         if tdew is not None and b.temperature.value > tdew:
@@ -490,9 +492,7 @@ def state_initialization(b):
                 l_only_comps,
                 v_only_comps + henry_conc + henry_other,
             )
-        else:
-            # No way to estimate phase fraction
-            vap_frac = None
+        # else: No way to estimate phase fraction, do nothing
 
     if vap_frac is not None:
         b.phase_frac[v_phase] = vap_frac

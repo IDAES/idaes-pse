@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -51,7 +51,6 @@ from idaes.core.util.exceptions import (
 )
 from idaes.core.initialization import ModularInitializerBase
 from idaes.core.initialization.initializer_base import StoreState
-from idaes.core.solvers import get_solver
 from idaes.core.util.model_serializer import to_json, from_json
 import idaes.logger as idaeslog
 from idaes.core.util.units_of_measurement import report_quantity
@@ -158,7 +157,7 @@ class MSContactorInitializer(ModularInitializerBase):
                 c.deactivate()
 
         # Call css_solver
-        solver = get_solver(self.config.solver, options=self.config.solver_options)
+        solver = self._get_solver()
         solve_strongly_connected_components(
             model,
             solver=solver,
