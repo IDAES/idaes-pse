@@ -53,6 +53,7 @@ def build_rom():
 
 
 @pytest.mark.unit
+@pytest.mark.xfail  # test xfailed due to out-of-date, incompatible Keras surrogates
 def test_basic_build(build_rom):
 
     m = build_rom
@@ -78,6 +79,7 @@ def test_basic_build(build_rom):
 
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.component
+@pytest.mark.xfail  # test xfailed due to out-of-date, incompatible Keras surrogates
 def test_initialize(build_rom):
 
     m = build_rom
@@ -97,8 +99,19 @@ def test_initialize(build_rom):
 
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.component
+@pytest.mark.xfail  # test xfailed due to out-of-date, incompatible Keras surrogates
 def test_solve(build_rom):
     m = build_rom
+
+    m.fs.sofc.current_density.fix(4000)
+    m.fs.sofc.fuel_temperature.fix(621.45)
+    m.fs.sofc.internal_reforming.fix(0.6)
+    m.fs.sofc.air_temperature.fix(890.45)
+    m.fs.sofc.air_recirculation.fix(0.5)
+    m.fs.sofc.otc_ratio.fix(2.1)
+    m.fs.sofc.fuel_utilization.fix(0.8)
+    m.fs.sofc.air_utilization.fix(0.449)
+    m.fs.sofc.pressure.fix(1)
 
     assert degrees_of_freedom(m) == 0
 
