@@ -4224,8 +4224,8 @@ class TestConstraintTermAnalysisVisitor:
         vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=7)
 
         assert vv == [7]
-        assert mm == []
-        assert cc == []
+        assert len(mm) == 0
+        assert len(cc) == 0
         assert k
 
     @pytest.mark.unit
@@ -4233,8 +4233,8 @@ class TestConstraintTermAnalysisVisitor:
         vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=7.7)
 
         assert vv == [7.7]
-        assert mm == []
-        assert cc == []
+        assert len(mm) == 0
+        assert len(cc) == 0
         assert k
 
     @pytest.mark.unit
@@ -4246,8 +4246,8 @@ class TestConstraintTermAnalysisVisitor:
         )
 
         assert vv == [1]
-        assert mm == []
-        assert cc == []
+        assert len(mm) == 0
+        assert len(cc) == 0
         assert k
 
     @pytest.mark.unit
@@ -4259,8 +4259,8 @@ class TestConstraintTermAnalysisVisitor:
             expr=m.indexed_param["a"]
         )
         assert vv == [1]
-        assert mm == []
-        assert cc == []
+        assert len(mm) == 0
+        assert len(cc) == 0
         assert k
 
     @pytest.mark.unit
@@ -4272,8 +4272,8 @@ class TestConstraintTermAnalysisVisitor:
         )
 
         assert vv == [1]
-        assert mm == []
-        assert cc == []
+        assert len(mm) == 0
+        assert len(cc) == 0
         assert not k
 
     @pytest.mark.unit
@@ -4285,8 +4285,8 @@ class TestConstraintTermAnalysisVisitor:
             expr=m.indexed_var["a"]
         )
         assert vv == [1]
-        assert mm == []
-        assert cc == []
+        assert len(mm) == 0
+        assert len(cc) == 0
         assert not k
 
     @pytest.mark.unit
@@ -4299,8 +4299,8 @@ class TestConstraintTermAnalysisVisitor:
         )
 
         assert vv == [1]
-        assert mm == []
-        assert cc == []
+        assert len(mm) == 0
+        assert len(cc) == 0
         assert k
 
     @pytest.mark.unit
@@ -4313,8 +4313,8 @@ class TestConstraintTermAnalysisVisitor:
             expr=m.indexed_var["a"]
         )
         assert vv == [1]
-        assert mm == []
-        assert cc == []
+        assert len(mm) == 0
+        assert len(cc) == 0
         assert k
 
     @pytest.mark.unit
@@ -4323,13 +4323,13 @@ class TestConstraintTermAnalysisVisitor:
         m.v1 = Var(initialize=1e-7)
         m.v2 = Var(initialize=1e7)
 
-        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
-            expr=m.v1 == m.v2
-        )
+        expr = m.v1 == m.v2
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
 
         assert vv == [1e-7, 1e7]
-        assert mm == ["v1  ==  v2"]
-        assert cc == []
+        assert expr in mm
+        assert len(mm) == 1
+        assert len(cc) == 0
         assert not k
 
     @pytest.mark.unit
@@ -4341,25 +4341,24 @@ class TestConstraintTermAnalysisVisitor:
         # Fix v1, not constant yet as v2 still free
         m.v1.fix()
 
-        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
-            expr=m.v1 == m.v2
-        )
+        expr = m.v1 == m.v2
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
 
         assert vv == [1e-7, 1e7]
-        assert mm == ["v1  ==  v2"]
-        assert cc == []
+        assert expr in mm
+        assert len(mm) == 1
+        assert len(cc) == 0
         assert not k
 
         # Fix v2, now constant
         m.v2.fix()
 
-        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
-            expr=m.v1 == m.v2
-        )
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
 
         assert vv == [1e-7, 1e7]
-        assert mm == ["v1  ==  v2"]
-        assert cc == []
+        assert expr in mm
+        assert len(mm) == 1
+        assert len(cc) == 0
         assert k
 
     @pytest.mark.unit
@@ -4367,13 +4366,14 @@ class TestConstraintTermAnalysisVisitor:
         m = ConcreteModel()
         m.v1 = Var(["a", "b", "c"], initialize=1e7)
         m.v1["a"].set_value(1e-7)
-        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
-            expr=sum(m.v1[i] for i in m.v1)
-        )
+
+        expr = sum(m.v1[i] for i in m.v1)
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
 
         assert vv == [1e-7, 1e7, 1e7]
-        assert mm == ["v1[a] + v1[b] + v1[c]"]
-        assert cc == []
+        assert expr in mm
+        assert len(mm) == 1
+        assert len(cc) == 0
         assert not k
 
     @pytest.mark.unit
@@ -4382,13 +4382,14 @@ class TestConstraintTermAnalysisVisitor:
         m.v1 = Var(["a", "b", "c"], initialize=1e7)
         m.v1["a"].set_value(1e-7)
         m.v1.fix()
-        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
-            expr=sum(m.v1[i] for i in m.v1)
-        )
+
+        expr = sum(m.v1[i] for i in m.v1)
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
 
         assert vv == [1e-7, 1e7, 1e7]
-        assert mm == ["v1[a] + v1[b] + v1[c]"]
-        assert cc == []
+        assert expr in mm
+        assert len(mm) == 1
+        assert len(cc) == 0
         assert k
 
     @pytest.fixture(scope="class")
@@ -4404,46 +4405,43 @@ class TestConstraintTermAnalysisVisitor:
     @pytest.mark.unit
     def test_product_expr(self, model):
         m = ConcreteModel()
-        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
-            expr=model.v1 * model.v2 * model.v3
-        )
+        expr = model.v1 * model.v2 * model.v3
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
 
         assert vv == [pytest.approx(30.0000006, rel=1e-8)]
-        assert mm == []
-        assert cc == []
+        assert len(mm) == 0
+        assert len(cc) == 0
         assert not k
 
     @pytest.mark.unit
     def test_product_sum_expr(self, model):
-        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
-            expr=(model.v1 + model.v2) * (model.v3 + model.v4)
-        )
+        expr = (model.v1 + model.v2) * (model.v3 + model.v4)
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
 
         assert vv == [pytest.approx((2 + 3) * (5.0000001 + 5), rel=1e-8)]
-        assert mm == []
-        assert cc == []
+        assert len(mm) == 0
+        assert len(cc) == 0
         assert not k
 
     @pytest.mark.unit
     def test_product_sum_expr_w_negation(self, model):
-        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
-            expr=(model.v1 + model.v2) * (model.v3 - model.v4)
-        )
+        expr = (model.v1 + model.v2) * (model.v3 - model.v4)
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
 
         assert vv == [pytest.approx(0.0000005, rel=1e-8)]
-        assert mm == []
-        assert cc == ["(v1 + v2)*(v3 - v4)"]
+        assert len(mm) == 0
+        assert expr in cc
+        assert len(cc) == 1
         assert not k
 
     @pytest.mark.unit
     def test_division_expr(self, model):
-        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
-            expr=model.v1 / model.v2 / model.v3
-        )
+        expr = model.v1 / model.v2 / model.v3
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
 
         assert vv == [pytest.approx(2 / 3 / 5.0000001, rel=1e-8)]
-        assert mm == []
-        assert cc == []
+        assert len(mm) == 0
+        assert len(cc) == 0
         assert not k
 
     @pytest.mark.unit
@@ -4453,19 +4451,19 @@ class TestConstraintTermAnalysisVisitor:
         )
 
         assert vv == [pytest.approx((2 + 3) / (5.0000001 + 5), rel=1e-8)]
-        assert mm == []
-        assert cc == []
+        assert len(mm) == 0
+        assert len(cc) == 0
         assert not k
 
     @pytest.mark.unit
     def test_division_sum_expr_w_negation(self, model):
-        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
-            expr=(model.v1 + model.v2) / (model.v3 - model.v4)
-        )
+        expr = (model.v1 + model.v2) / (model.v3 - model.v4)
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
 
         assert vv == [pytest.approx((2 + 3) / (0.0000001), rel=1e-8)]
-        assert mm == []
-        assert cc == ["(v1 + v2)/(v3 - v4)"]
+        assert len(mm) == 0
+        assert expr in cc
+        assert len(cc) == 1
         assert not k
 
     @pytest.mark.unit
@@ -4490,8 +4488,8 @@ class TestConstraintTermAnalysisVisitor:
         )
 
         assert vv == [8]
-        assert mm == []
-        assert cc == []
+        assert len(mm) == 0
+        assert len(cc) == 0
         assert not k
 
     @pytest.mark.unit
@@ -4501,19 +4499,19 @@ class TestConstraintTermAnalysisVisitor:
         )
 
         assert vv == [pytest.approx(5**10.0000001, rel=1e-8)]
-        assert mm == []
-        assert cc == []
+        assert len(mm) == 0
+        assert len(cc) == 0
         assert not k
 
     @pytest.mark.unit
     def test_pow_sum_expr_w_negation(self, model):
-        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
-            expr=(model.v1 + model.v2) ** (model.v3 - model.v4)
-        )
+        expr = (model.v1 + model.v2) ** (model.v3 - model.v4)
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
 
         assert vv == [pytest.approx((2 + 3) ** (0.0000001), rel=1e-8)]
-        assert mm == []
-        assert cc == ["(v1 + v2)**(v3 - v4)"]
+        assert len(mm) == 0
+        assert expr in cc
+        assert len(cc) == 1
         assert not k
 
     @pytest.fixture(scope="class")
@@ -4534,19 +4532,19 @@ class TestConstraintTermAnalysisVisitor:
         )
 
         assert vv == [-1]
-        assert mm == []
-        assert cc == []
+        assert len(mm) == 0
+        assert len(cc) == 0
         assert not k
 
     @pytest.mark.unit
     def test_negation_sum_expr(self, func_model):
-        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
-            expr=-(func_model.v1 - func_model.v2)
-        )
+        expr = -(func_model.v1 - func_model.v2)
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
 
         assert vv == [pytest.approx(-0.00001, rel=1e-8)]
-        assert mm == []
-        assert cc == ["- (v1 - v2)"]
+        assert len(mm) == 0
+        assert expr in cc
+        assert len(cc) == 1
         assert not k
 
     # acosh has bounds that don't fit with other functions - we will assume we caught enough
@@ -4577,32 +4575,32 @@ class TestConstraintTermAnalysisVisitor:
         )
 
         assert vv == [pytest.approx(value(func(0.99999)), rel=1e-8)]
-        assert mm == []
-        assert cc == []
+        assert len(mm) == 0
+        assert len(cc) == 0
         assert k
 
     @pytest.mark.unit
     @pytest.mark.parametrize("func", func_list)
     def test_func_sum_expr(self, func_model, func):
-        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
-            expr=func(func_model.v1 - func_model.v2)
-        )
+        expr = func(func_model.v1 - func_model.v2)
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
 
         assert vv == [pytest.approx(value(func(0.00001)), rel=1e-8)]
-        assert mm == []
-        assert cc == [str(func(func_model.v1 - func_model.v2))]
+        assert len(mm) == 0
+        assert expr in cc
+        assert len(cc) == 1
         assert not k
 
     @pytest.mark.unit
     @pytest.mark.parametrize("func", func_list)
     def test_func_sum_expr_w_negation(self, func_model, func):
-        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
-            expr=func(func_model.v1 - func_model.v2)
-        )
+        expr = func(func_model.v1 - func_model.v2)
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
 
         assert vv == [pytest.approx(value(func(0.00001)), rel=1e-8)]
-        assert mm == []
-        assert cc == [str(func(func_model.v1 - func_model.v2))]
+        assert len(mm) == 0
+        assert expr in cc
+        assert len(cc) == 1
         assert not k
 
     @pytest.mark.unit
@@ -4629,8 +4627,9 @@ class TestConstraintTermAnalysisVisitor:
         )
 
         assert vv == [pytest.approx(5, rel=1e-8)]
-        assert mm == []
-        assert cc == ["Expr_if( ( v1 ), then=( v1 + v2 ), else=( v3 - v4 ) )"]
+        assert len(mm) == 0
+        assert model.exprif in cc
+        assert len(cc) == 1
         assert not k
 
     @pytest.mark.unit
@@ -4650,12 +4649,10 @@ class TestConstraintTermAnalysisVisitor:
         vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=Z)
 
         assert vv == [pytest.approx(-2.1149075414767577, rel=1e-8)]
-        assert mm == []
-        assert cc == [
-            "- (1.0 + b - 2*b)",
-            "compress_fact_liq_func(- (1.0 + b - 2*b), a - b**2 - 2*b - 2*b**2, - a*b + b**2 + b**3)",
-            "compress_fact_liq_func(- (1.0 + b - 2*b), a - b**2 - 2*b - 2*b**2, - a*b + b**2 + b**3)",
-        ]
+        assert len(mm) == 0
+        assert Z in cc
+        # We actually get two issues here, as one of the input expressions also cancels
+        assert len(cc) == 2
         assert not k
 
         # Check that model state did not change
@@ -4668,13 +4665,14 @@ class TestConstraintTermAnalysisVisitor:
         m = ConcreteModel()
         m.v1 = Var(["a", "b", "c"], initialize=1e7)
         m.v2 = Var(initialize=1e-7)
-        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
-            expr=m.v2 == sum(m.v1[i] for i in m.v1)
-        )
+
+        expr = m.v2 == sum(m.v1[i] for i in m.v1)
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
 
         assert vv == [1e-7, 3e7]
-        assert mm == ["v2  ==  v1[a] + v1[b] + v1[c]"]
-        assert cc == []
+        assert expr in mm
+        assert len(mm) == 1
+        assert len(cc) == 0
         assert not k
 
     @pytest.mark.unit
@@ -4682,13 +4680,14 @@ class TestConstraintTermAnalysisVisitor:
         m = ConcreteModel()
         m.v1 = Var(["a", "b", "c"], initialize=1e7)
         m.v2 = Var(initialize=1e-7)
-        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
-            expr=m.v2 <= sum(m.v1[i] for i in m.v1)
-        )
+
+        expr = m.v2 <= sum(m.v1[i] for i in m.v1)
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
 
         assert vv == [1e-7, 3e7]
-        assert mm == ["v2  <=  v1[a] + v1[b] + v1[c]"]
-        assert cc == []
+        assert expr in mm
+        assert len(mm) == 1
+        assert len(cc) == 0
         assert not k
 
     @pytest.mark.unit
@@ -4696,13 +4695,14 @@ class TestConstraintTermAnalysisVisitor:
         m = ConcreteModel()
         m.v1 = Var(["a", "b", "c"], initialize=1e7)
         m.v2 = Var(initialize=1e-7)
-        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
-            expr=6 * m.v2 == 8 * sum(m.v1[i] for i in m.v1)
-        )
+
+        expr = 6 * m.v2 == 8 * sum(m.v1[i] for i in m.v1)
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
 
         assert vv == [6e-7, 2.4e8]
-        assert mm == ["6*v2  ==  8*(v1[a] + v1[b] + v1[c])"]
-        assert cc == []
+        assert expr in mm
+        assert len(mm) == 1
+        assert len(cc) == 0
         assert not k
 
     @pytest.mark.unit
@@ -4715,16 +4715,15 @@ class TestConstraintTermAnalysisVisitor:
         # Set this small so we get two mismatched warnings
         m.v1["a"].set_value(1e-7)
 
-        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
-            expr=6 * m.v2 == 8 * sum(m.v1[i] for i in m.v1) + m.v3
-        )
+        expr1 = sum(m.v1[i] for i in m.v1)
+        expr = 6 * m.v2 == 8 * expr1 + m.v3
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
 
         assert vv == [6e-7, pytest.approx(8 * (2e7 + 1e-7) + 1000, rel=1e-8)]
-        assert mm == [
-            "v1[a] + v1[b] + v1[c]",
-            "6*v2  ==  8*(v1[a] + v1[b] + v1[c]) + v3",
-        ]
-        assert cc == []
+        assert expr in mm
+        assert expr1 in mm
+        assert len(mm) == 2
+        assert len(cc) == 0
         assert not k
 
     @pytest.mark.unit
@@ -4737,9 +4736,9 @@ class TestConstraintTermAnalysisVisitor:
         )
 
         assert vv == [2, -2]
-        assert mm == []
+        assert len(mm) == 0
         # We do not check cancellation at the sum, so this should be empty
-        assert cc == []
+        assert len(cc) == 0
         assert not k
 
     @pytest.mark.unit
@@ -4748,14 +4747,15 @@ class TestConstraintTermAnalysisVisitor:
         m.v1 = Var(initialize=2)
         m.v2 = Var(initialize=2)
         m.v3 = Var(initialize=3)
-        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
-            expr=m.v3 * (m.v1 - m.v2)
-        )
+
+        expr = m.v3 * (m.v1 - m.v2)
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
 
         assert vv == [0]
-        assert mm == []
+        assert len(mm) == 0
         # We should get a warning about cancelling sums here
-        assert cc == ["v3*(v1 - v2)"]
+        assert expr in cc
+        assert len(cc) == 1
         assert not k
 
         # Check for tolerance of sum cancellation
@@ -4763,22 +4763,23 @@ class TestConstraintTermAnalysisVisitor:
 
         vv, mm, cc, k = ConstraintTermAnalysisVisitor(
             term_cancellation_tolerance=1e-4
-        ).walk_expression(expr=m.v3 * (m.v1 - m.v2))
+        ).walk_expression(expr=expr)
 
         assert vv == [pytest.approx(3 * -0.00022, rel=1e-8)]
-        assert mm == []
+        assert len(mm) == 0
         # This should pass as the difference is greater than tol
-        assert cc == []
+        assert len(cc) == 0
         assert not k
 
         # Change tolerance so it should identify cancellation
         vv, mm, cc, k = ConstraintTermAnalysisVisitor(
             term_cancellation_tolerance=1e-3
-        ).walk_expression(expr=m.v3 * (m.v1 - m.v2))
+        ).walk_expression(expr=expr)
 
         assert vv == [pytest.approx(3 * -0.00022, rel=1e-8)]
-        assert mm == []
-        assert cc == ["v3*(v1 - v2)"]
+        assert len(mm) == 0
+        assert expr in cc
+        assert len(cc) == 1
         assert not k
 
     @pytest.mark.unit
@@ -4793,8 +4794,8 @@ class TestConstraintTermAnalysisVisitor:
         )
 
         assert vv == [0, pytest.approx(0, abs=1e-12)]
-        assert mm == []
-        assert cc == []
+        assert len(mm) == 0
+        assert len(cc) == 0
         assert not k
 
     @pytest.mark.unit
@@ -4804,13 +4805,13 @@ class TestConstraintTermAnalysisVisitor:
         m.v2 = Var(initialize=1e7)
         m.v3 = Var(initialize=0)
 
-        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
-            expr=m.v3 == m.v1 - m.v2
-        )
+        expr = m.v3 == m.v1 - m.v2
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
 
         assert vv == [0, pytest.approx(0, abs=1e-12)]
-        assert mm == []
-        assert cc == ["v3  ==  v1 - v2"]
+        assert len(mm) == 0
+        assert expr in cc
+        assert len(cc) == 1
         assert not k
 
     @pytest.mark.unit
@@ -4820,25 +4821,24 @@ class TestConstraintTermAnalysisVisitor:
         m.v2 = Var(initialize=1e7)
         m.v3 = Var(initialize=0)
 
-        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
-            expr=m.v3 == sum(v for v in m.v1.values()) - m.v2
-        )
+        expr = m.v3 == sum(v for v in m.v1.values()) - m.v2
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
 
         assert vv == [0, pytest.approx(0, abs=1e-12)]
-        assert mm == []
-        assert cc == ["v3  ==  v1[a] + v1[b] - v2"]
+        assert len(mm) == 0
+        print(cc)
+        assert expr in cc
+        assert len(cc) == 1
         assert not k
 
         # If we fix v3, this should be OK
         m.v3.fix()
 
-        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
-            expr=m.v3 == sum(v for v in m.v1.values()) - m.v2
-        )
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
 
         assert vv == [0, pytest.approx(0, abs=1e-12)]
-        assert mm == []
-        assert cc == []
+        assert len(mm) == 0
+        assert len(cc) == 0
         assert not k
 
     # Double check for a+eps=c form gets flagged in some way
@@ -4849,11 +4849,12 @@ class TestConstraintTermAnalysisVisitor:
         m.v2 = Var(initialize=1)
         m.v3 = Var(initialize=1e-8)
 
-        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
-            expr=m.v2 == m.v1 + m.v3
-        )
+        expr1 = m.v1 + m.v3
+        expr = m.v2 == expr1
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
 
         assert vv == [1, pytest.approx(1 + 1e-8, abs=1e-8)]
-        assert mm == ["v1 + v3"]
-        assert cc == []
+        assert expr1 in mm
+        assert len(mm) == 1
+        assert len(cc) == 0
         assert not k

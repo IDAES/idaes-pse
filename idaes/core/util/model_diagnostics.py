@@ -241,7 +241,7 @@ CONFIG.declare(
     ConfigValue(
         default=1e-4,
         domain=NonNegativeFloat,
-        description="Absolute tolerance to use when checking for cancelling additive terms in constraints.",
+        description="Absolute tolerance to use when checking for canceling additive terms in constraints.",
     ),
 )
 CONFIG.declare(
@@ -1123,7 +1123,7 @@ class DiagnosticsToolbox:
             footer="=",
         )
 
-    def display_constraints_with_cancelling_terms(self, stream=None):
+    def display_constraints_with_canceling_terms(self, stream=None):
         """
         Display constraints in model which contain additive terms which potentially cancel each other.
 
@@ -1137,13 +1137,13 @@ class DiagnosticsToolbox:
         if stream is None:
             stream = sys.stdout
 
-        _, cancelling, _ = self._collect_constraint_mismatches()
+        _, canceling, _ = self._collect_constraint_mismatches()
 
         # Write the output
         _write_report_section(
             stream=stream,
-            lines_list=cancelling,
-            title="The following constraints have cancelling terms:",
+            lines_list=canceling,
+            title="The following constraints have canceling terms:",
             header="=",
             footer="=",
         )
@@ -4294,16 +4294,21 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
     ):
         super().__init__()
 
+        # Tolerance attributes
         self._log_mm_tol = log10(term_mismatch_tolerance)
         self._sum_tol = term_cancellation_tolerance
 
+        # Placeholders for collecting results
+        self.canceling_terms = ComponentSet()
+        self.mismatched_terms = ComponentSet()
+
     def _check_base_type(self, node):
-        # [value], [mismatched terms], [canceling terms], constant
+        # [value], constant
         if isinstance(node, VarData):
             const = node.fixed
         else:
             const = True
-        return [value(node)], [], [], const
+        return [value(node)], const
 
     def _get_value_for_sum_subexpression(self, child_data):
         return sum(i for i in child_data[0])
@@ -4312,19 +4317,15 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
         # Sum expressions need special handling
         # For sums, collect all child values into a list
         vals = []
-        mismatch = []
         # We will check for cancellation in this node at the next level
         # Pyomo is generally good at simplifying compound sums
-        cancelling = []
         const = True
         # Collect data from child nodes
         for d in child_data:
             vals.append(self._get_value_for_sum_subexpression(d))
-            mismatch += d[1]
-            cancelling += d[2]
 
             # Expression is not constant if any child is not constant
-            if not d[3]:
+            if not d[1]:
                 const = False
 
         # Check for mismatched terms
@@ -4339,12 +4340,12 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
                     diff = log10(vl / vs)
 
                 if diff >= self._log_mm_tol:
-                    mismatch.append(str(node))
+                    self.mismatched_terms.add(node)
 
-        return vals, mismatch, cancelling, const
+        return vals, const
 
     def _check_general_expr(self, node, child_data):
-        mismatch, cancelling, const = self._perform_checks(node, child_data)
+        const = self._perform_checks(node, child_data)
 
         try:
             val = node._apply_operation(
@@ -4360,10 +4361,10 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
                 f"({str(node)})."
             )
 
-        return [val], mismatch, cancelling, const
+        return [val], const
 
     def _check_other_expression(self, node, child_data):
-        mismatch, cancelling, const = self._perform_checks(node, child_data)
+        const = self._perform_checks(node, child_data)
 
         # First, need to get value of input terms, which may be sub-expressions
         input_mag = [self._get_value_for_sum_subexpression(i) for i in child_data]
@@ -4372,44 +4373,38 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
         newfunc = node.create_node_with_local_data(input_mag)
 
         # Evaluate new function and return the value along with check results
-        return [value(newfunc)], mismatch, cancelling, const
+        return [value(newfunc)], const
 
     def _perform_checks(self, node, child_data):
         # Perform checks for problematic expressions
         # First, need to check to see if any child data is a list
         # This indicates a sum expression
-        mismatch = []
-        cancelling = []
         const = True
 
         for d in child_data:
-            # Collect all warnings about mismatched terms from child nodes
-            mismatch += d[1]
-            cancelling += d[2]
-
-            # We will check for cancelling terms here, rather than the sum itself, to handle special cases
+            # We will check for canceling terms here, rather than the sum itself, to handle special cases
             # We want to look for cases where a sum term results in a value much smaller
             # than the terms of the sum
             sums = self._sum_combinations(d[0])
             if any(i <= self._sum_tol * max(d[0]) for i in sums):
-                cancelling.append(str(node))
+                self.canceling_terms.add(node)
 
             # Expression is not constant if any child is not constant
-            if not d[3]:
+            if not d[1]:
                 const = False
 
         # Return any problematic terms found
-        return mismatch, cancelling, const
+        return const
 
     def _check_equality_expression(self, node, child_data):
         # (In)equality expressions are a special case of sum expressions
         # We can start by just calling the method to check the sum expression
-        vals, mismatch, cancelling, const = self._check_sum_expression(node, child_data)
+        vals, const = self._check_sum_expression(node, child_data)
 
         # Next, we need to check for canceling terms.
         # In this case, we can safely ignore expressions of the form constant = sum()
         # We can also ignore any constraint that is already flagged as mismatched
-        if str(node) not in mismatch and not any(d[3] for d in child_data):
+        if node not in self.mismatched_terms and not any(d[1] for d in child_data):
             # No constant terms, check for cancellation
             # First, collect terms from both sides
             t = []
@@ -4419,9 +4414,9 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
             # Then check for cancellations
             sums = self._sum_combinations(t)
             if any(i <= self._sum_tol * max(t) for i in sums):
-                cancelling.append(str(node))
+                self.canceling_terms.add(node)
 
-        return vals, mismatch, cancelling, const
+        return vals, const
 
     def _sum_combinations(self, values_list):
         sums = []
@@ -4429,6 +4424,7 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
             combinations(values_list, r) for r in range(2, len(values_list) + 1)
         ):
             sums.append(abs(sum(i)))
+
         return sums
 
     node_type_method_map = {
@@ -4460,12 +4456,12 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
         """
         Method to call when exiting node to check for potential issues.
         """
-        # Return [node values], [mismatched terms], [cancelling terms], constant
+        # Return [node values], [constant
         # first check if the node is a leaf
         nodetype = type(node)
 
         if nodetype in native_types:
-            return [node], [], [], True
+            return [node], True
 
         node_func = self.node_type_method_map.get(nodetype, None)
         if node_func is not None:
@@ -4474,7 +4470,7 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
         if not node.is_expression_type():
             # this is a leaf, but not a native type
             if nodetype is _PyomoUnit:
-                return [1], [], [], True
+                return [1], True
 
             # Var or Param
             return self._check_base_type(node)
@@ -4491,3 +4487,26 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
             f"An unhandled expression node type: {str(nodetype)} was encountered while "
             f"analyzing constraint terms {str(node)}"
         )
+
+    def walk_expression(self, expr):
+        """
+        Main method ot call to walk an expression and return analysis.
+
+        Args:
+            expr - expression ot be analysed
+
+        Returns:
+            list of values of top-level additive terms
+            ComponentSet containing any mismatched terms
+            ComponentSet containing any canceling terms
+            Bool indicating whether expression is a constant
+        """
+        # Create new holders for collected terms
+        self.canceling_terms = ComponentSet()
+        self.mismatched_terms = ComponentSet()
+
+        # Call parent walk_expression method
+        vals, const = super().walk_expression(expr)
+
+        # Return results
+        return vals, self.mismatched_terms, self.canceling_terms, const
