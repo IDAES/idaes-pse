@@ -4515,10 +4515,10 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
 
     def walk_expression(self, expr):
         """
-        Main method ot call to walk an expression and return analysis.
+        Main method to call to walk an expression and return analysis.
 
         Args:
-            expr - expression ot be analysed
+            expr - expression to be analyzed
 
         Returns:
             list of values of top-level additive terms
