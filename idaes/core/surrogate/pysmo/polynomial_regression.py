@@ -915,9 +915,9 @@ class PolynomialRegression:
 
         else:
             phi_vector = np.zeros((x_polynomial_data.shape[1], 1))
-            phi_vector[:, 0] = np.Inf
-            training_error = np.Inf
-            crossval_error = np.Inf
+            phi_vector[:, 0] = np.inf
+            training_error = np.inf
+            crossval_error = np.inf
 
         # print(poly_order, x_polynomial_data.shape[0], x_polynomial_data.shape[1], training_error, crossval_error)
 
