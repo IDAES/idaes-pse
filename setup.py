@@ -71,7 +71,7 @@ class ExtraDependencies:
     ui = [
         # FIXME this must be changed to the PyPI distribution for the release
         # "idaes-ui",
-        "idaes-ui @ git+https://github.com/IDAES/idaes-ui@refs/pull/52/merge",
+        "idaes-ui @ git+https://github.com/IDAES/idaes-ui@main",
     ]
     _ipython = [
         "ipython",
