@@ -1073,7 +1073,7 @@ The following constraints have mismatched terms:
         assert stream.getvalue() == expected
 
     @pytest.mark.component
-    def test_display_constraints_with_cancelling_terms(self):
+    def test_display_constraints_with_canceling_terms(self):
         m = ConcreteModel()
         # Constraint with mismatched terms
         m.v3 = Var(initialize=10)
@@ -1086,10 +1086,10 @@ The following constraints have mismatched terms:
         dt = DiagnosticsToolbox(model=m)
 
         stream = StringIO()
-        dt.display_constraints_with_cancelling_terms(stream=stream)
+        dt.display_constraints_with_canceling_terms(stream=stream)
 
         expected = """====================================================================================
-The following constraints have cancelling terms:
+The following constraints have canceling terms:
 
     c3: v6  ==  10 + v3 - v4
 
@@ -4727,7 +4727,7 @@ class TestConstraintTermAnalysisVisitor:
         assert not k
 
     @pytest.mark.unit
-    def test_cancelling_sum_expr(self):
+    def test_canceling_sum_expr(self):
         m = ConcreteModel()
         m.v1 = Var(initialize=2)
         m.v2 = Var(initialize=2)
@@ -4742,7 +4742,7 @@ class TestConstraintTermAnalysisVisitor:
         assert not k
 
     @pytest.mark.unit
-    def test_expr_w_cancelling_sum(self):
+    def test_expr_w_canceling_sum(self):
         m = ConcreteModel()
         m.v1 = Var(initialize=2)
         m.v2 = Var(initialize=2)
@@ -4753,7 +4753,7 @@ class TestConstraintTermAnalysisVisitor:
 
         assert vv == [0]
         assert len(mm) == 0
-        # We should get a warning about cancelling sums here
+        # We should get a warning about canceling sums here
         assert expr in cc
         assert len(cc) == 1
         assert not k
@@ -4783,7 +4783,7 @@ class TestConstraintTermAnalysisVisitor:
         assert not k
 
     @pytest.mark.unit
-    def test_cancelling_equality_expr_safe(self):
+    def test_canceling_equality_expr_safe(self):
         m = ConcreteModel()
         m.v1 = Var(initialize=1e7)
         m.v2 = Var(initialize=1e7)
@@ -4799,7 +4799,7 @@ class TestConstraintTermAnalysisVisitor:
         assert not k
 
     @pytest.mark.unit
-    def test_cancelling_equality_expr_issue(self):
+    def test_canceling_equality_expr_issue(self):
         m = ConcreteModel()
         m.v1 = Var(initialize=1e7)
         m.v2 = Var(initialize=1e7)
@@ -4815,7 +4815,7 @@ class TestConstraintTermAnalysisVisitor:
         assert not k
 
     @pytest.mark.unit
-    def test_cancelling_equality_expr_compound(self):
+    def test_canceling_equality_expr_compound(self):
         m = ConcreteModel()
         m.v1 = Var(["a", "b"], initialize=5e6)
         m.v2 = Var(initialize=1e7)
@@ -4843,7 +4843,7 @@ class TestConstraintTermAnalysisVisitor:
 
     # Double check for a+eps=c form gets flagged in some way
     @pytest.mark.unit
-    def test_cancelling_equality_expr_canceling_sides(self):
+    def test_canceling_equality_expr_canceling_sides(self):
         m = ConcreteModel()
         m.v1 = Var(initialize=1)
         m.v2 = Var(initialize=1)
