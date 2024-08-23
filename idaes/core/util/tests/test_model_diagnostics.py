@@ -62,6 +62,7 @@ from pyomo.contrib.pynumero.asl import AmplInterface
 from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
 from pyomo.common.fileutils import this_file_dir
 from pyomo.common.tempfiles import TempfileManager
+from pyomo.core import expr as EXPR
 
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
@@ -1045,7 +1046,7 @@ The following pairs of variables are nearly parallel:
         mismatch, cancellation, constant = dt._collect_constraint_mismatches()
 
         assert mismatch == ["c2: v4 + v5"]
-        assert cancellation == ["c3: v6  ==  10 + v3 - v4"]
+        assert cancellation == ["c2: v3  ==  v4 + v5", "c3: v6  ==  10 + v3 - v4"]
         assert constant == ["c1"]
 
     @pytest.mark.component
@@ -1271,6 +1272,7 @@ The following constraints have no free variables:
         dt = DiagnosticsToolbox(model=model.b)
 
         cautions = dt._collect_numerical_cautions()
+
         assert len(cautions) == 6
         assert (
             "Caution: 2 Variables with value close to their bounds (abs=1.0E-04, rel=1.0E-04)"
@@ -1282,7 +1284,7 @@ The following constraints have no free variables:
         assert (
             "Caution: 1 Variable with extreme value (<1.0E-04 or >1.0E+04)" in cautions
         )
-        assert "Caution: 1 Constraint with potential cancellation of terms" in cautions
+        assert "Caution: 2 Constraints with potential cancellation of terms" in cautions
 
     @pytest.mark.component
     def test_collect_numerical_cautions_jacobian(self):
@@ -1466,9 +1468,9 @@ Model Statistics
     No warnings found!
 
 ------------------------------------------------------------------------------------
-0 Cautions
+1 Cautions
 
-    No cautions found!
+    Caution: 2 Constraints with potential cancellation of terms
 
 ------------------------------------------------------------------------------------
 Suggested next steps:
@@ -1553,7 +1555,7 @@ Model Statistics
     Caution: 2 Variables with value close to zero (tol=1.0E-08)
     Caution: 1 Variable with extreme value (<1.0E-04 or >1.0E+04)
     Caution: 1 Variable with None value
-    Caution: 1 Constraint with potential cancellation of terms
+    Caution: 2 Constraints with potential cancellation of terms
     Caution: 1 extreme Jacobian Entry (<1.0E-04 or >1.0E+04)
 
 ------------------------------------------------------------------------------------
@@ -4326,7 +4328,7 @@ class TestConstraintTermAnalysisVisitor:
         expr = m.v1 == m.v2
         vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
 
-        assert vv == [1e-7, 1e7]
+        assert vv == [-1e-7, 1e7]
         assert expr in mm
         assert len(mm) == 1
         assert len(cc) == 0
@@ -4344,7 +4346,7 @@ class TestConstraintTermAnalysisVisitor:
         expr = m.v1 == m.v2
         vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
 
-        assert vv == [1e-7, 1e7]
+        assert vv == [-1e-7, 1e7]
         assert expr in mm
         assert len(mm) == 1
         assert len(cc) == 0
@@ -4355,7 +4357,7 @@ class TestConstraintTermAnalysisVisitor:
 
         vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
 
-        assert vv == [1e-7, 1e7]
+        assert vv == [-1e-7, 1e7]
         assert expr in mm
         assert len(mm) == 1
         assert len(cc) == 0
@@ -4669,7 +4671,7 @@ class TestConstraintTermAnalysisVisitor:
         expr = m.v2 == sum(m.v1[i] for i in m.v1)
         vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
 
-        assert vv == [1e-7, 3e7]
+        assert vv == [-1e-7, 3e7]
         assert expr in mm
         assert len(mm) == 1
         assert len(cc) == 0
@@ -4684,7 +4686,7 @@ class TestConstraintTermAnalysisVisitor:
         expr = m.v2 <= sum(m.v1[i] for i in m.v1)
         vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
 
-        assert vv == [1e-7, 3e7]
+        assert vv == [-1e-7, 3e7]
         assert expr in mm
         assert len(mm) == 1
         assert len(cc) == 0
@@ -4699,11 +4701,50 @@ class TestConstraintTermAnalysisVisitor:
         expr = 6 * m.v2 == 8 * sum(m.v1[i] for i in m.v1)
         vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
 
-        assert vv == [6e-7, 2.4e8]
+        assert vv == [-6e-7, 2.4e8]
         assert expr in mm
         assert len(mm) == 1
         assert len(cc) == 0
         assert not k
+
+    @pytest.mark.unit
+    def test_ranged_expr(self):
+        m = ConcreteModel()
+        m.v1 = Var(initialize=1e7)
+        m.v2 = Var(initialize=1e-7)
+        m.v3 = Var(initialize=1e7)
+
+        m.expr = EXPR.RangedExpression(args=(m.v1, m.v2, m.v3), strict=True)
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=m.expr)
+
+        assert vv == [-1e7, 1e-7, -1e7]
+        assert m.expr in mm
+        assert len(mm) == 1
+        assert len(cc) == 0
+        assert not k
+
+        # Fix v1 and v2 to make first two terms constant
+        m.v1.fix()
+        m.v2.fix()
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=m.expr)
+
+        # Should not be flagged as constant due to v3
+        assert vv == [-1e7, 1e-7, -1e7]
+        assert m.expr in mm
+        assert len(mm) == 1
+        assert len(cc) == 0
+        assert not k
+
+        # Fix v3 to make all terms constant
+        m.v3.fix()
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=m.expr)
+
+        # Should now be constant
+        assert vv == [-1e7, 1e-7, -1e7]
+        assert m.expr in mm
+        assert len(mm) == 1
+        assert len(cc) == 0
+        assert k
 
     @pytest.mark.unit
     def test_compound_equality_expr_2(self):
@@ -4719,7 +4760,7 @@ class TestConstraintTermAnalysisVisitor:
         expr = 6 * m.v2 == 8 * expr1 + m.v3
         vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
 
-        assert vv == [6e-7, pytest.approx(8 * (2e7 + 1e-7) + 1000, rel=1e-8)]
+        assert vv == [-6e-7, pytest.approx(8 * (2e7 + 1e-7) + 1000, rel=1e-8)]
         assert expr in mm
         assert expr1 in mm
         assert len(mm) == 2
@@ -4853,8 +4894,9 @@ class TestConstraintTermAnalysisVisitor:
         expr = m.v2 == expr1
         vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
 
-        assert vv == [1, pytest.approx(1 + 1e-8, abs=1e-8)]
+        assert vv == [-1, pytest.approx(1 + 1e-8, abs=1e-8)]
         assert expr1 in mm
         assert len(mm) == 1
-        assert len(cc) == 0
+        assert expr in cc
+        assert len(cc) == 1
         assert not k

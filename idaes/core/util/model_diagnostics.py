@@ -4398,23 +4398,48 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
 
     def _check_equality_expression(self, node, child_data):
         # (In)equality expressions are a special case of sum expressions
-        # We can start by just calling the method to check the sum expression
-        vals, const = self._check_sum_expression(node, child_data)
+        # First, need to negate one side of the expression
+        mdata = []
+        for i in [0, 1]:
+            if i == 0:
+                vals = []
+                for j in child_data[i][0]:
+                    vals.append(-j)
+                mdata.append((vals, child_data[i][1]))
+            else:
+                mdata.append(child_data[i])
+
+        # Next, call the method to check the sum expression
+        vals, const = self._check_sum_expression(node, mdata)
 
         # Next, we need to check for canceling terms.
         # In this case, we can safely ignore expressions of the form constant = sum()
         # We can also ignore any constraint that is already flagged as mismatched
-        if node not in self.mismatched_terms and not any(d[1] for d in child_data):
+        if node not in self.mismatched_terms and not any(d[1] for d in mdata):
             # No constant terms, check for cancellation
             # First, collect terms from both sides
             t = []
-            for d in child_data:
+            for d in mdata:
                 t += d[0]
 
             # Then check for cancellations
             sums = self._sum_combinations(t)
             if any(i <= self._sum_tol * max(t) for i in sums):
                 self.canceling_terms.add(node)
+
+        return vals, const
+
+    def _check_ranged(self, node, child_data):
+        lhs_vals, lhs_const = self._check_equality_expression(node, child_data[:2])
+        rhs_vals, rhs_const = self._check_equality_expression(node, child_data[1:])
+
+        # Constant is a bit vague in terms ranged expressions.
+        # We will call the term constant only if all parts are constant
+        const = lhs_const and rhs_const
+
+        # For values, we need to avoid double counting the middle term
+        # Also for sign convention, we will negate the outer terms
+        vals = lhs_vals + [-rhs_vals[1]]
 
         return vals, const
 
@@ -4430,7 +4455,7 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
     node_type_method_map = {
         EXPR.EqualityExpression: _check_equality_expression,
         EXPR.InequalityExpression: _check_equality_expression,
-        EXPR.RangedExpression: _check_sum_expression,
+        EXPR.RangedExpression: _check_ranged,
         EXPR.SumExpression: _check_sum_expression,
         EXPR.NPV_SumExpression: _check_sum_expression,
         EXPR.ProductExpression: _check_general_expr,
