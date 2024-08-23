@@ -498,7 +498,7 @@ class TestRadialBasisFunction:
                 [0.5, 0.7],
                 [5, 7],
                 [50, 70],
-                [50, np.NaN],
+                [50, np.nan],
             ]
         )
         expected_output = np.nan_to_num(d_vec**2 * np.log(d_vec))

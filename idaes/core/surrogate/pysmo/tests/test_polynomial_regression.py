@@ -1530,7 +1530,7 @@ class TestPolynomialRegression:
         poly_order = 10
         training_data = regression_data_input[0:20, :]
         test_data = regression_data_input[20:, :]
-        expected_output = np.Inf
+        expected_output = np.inf
         output_1, output_2, output_3 = data_feed.polyregression(
             poly_order, training_data, test_data
         )

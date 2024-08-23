@@ -71,7 +71,7 @@ class ExtraDependencies:
     ui = [
         # FIXME this must be changed to the PyPI distribution for the release
         # "idaes-ui",
-        "idaes-ui @ git+https://github.com/IDAES/idaes-ui@main",
+        "idaes-ui @ git+https://github.com/IDAES/idaes-ui@refs/pull/52/merge",
     ]
     _ipython = [
         "ipython",
@@ -132,10 +132,10 @@ kwargs = dict(
     # Put abstract (non-versioned) deps here.
     # Concrete dependencies go in requirements[-dev].txt
     install_requires=[
-        "pyomo >= 6.7.3",
-        "pint<0.24",  # required to use Pyomo units. Pint 0.24 only supported on Python >=3.10
+        "pyomo >= 6.8.0",
+        "pint >= 0.24.1",  # required to use Pyomo units. Pint 0.24.1 needed for Python 3.9 support
         "networkx",  # required to use Pyomo network
-        "numpy<2",
+        "numpy>=1,<3",
         # pandas constraint added on 2023-08-30 b/c bug in v2.1
         # see IDAES/idaes-pse#1253
         "pandas!=2.1.0,<3",
