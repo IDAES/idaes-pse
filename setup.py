@@ -74,7 +74,7 @@ class ExtraDependencies:
         "idaes-ui @ git+https://github.com/IDAES/idaes-ui@main",
     ]
     _ipython = [
-        'ipython <= 8.12; python_version == "3.8"',
+        "ipython",
     ]
     dmf = [
         # all modules relative to idaes.core.dmf
@@ -93,7 +93,7 @@ class ExtraDependencies:
     ]
     omlt = [
         "omlt==1.1",  # fix the version for now as package evolves
-        'tensorflow < 2.16.1 ; python_version < "3.12"',
+        "tensorflow",
     ]
     grid = [
         "gridx-prescient>=2.2.1",  # idaes.tests.prescient
@@ -176,6 +176,7 @@ kwargs = dict(
             "*.trc",
             "*.xlsx",  # idaes/dmf/tests/data_files - tabular import test files
             "*.nl",
+            "*.keras",  # idaes/core/surrogate/tests/data/keras_models
         ]
     },
     include_package_data=True,
@@ -200,7 +201,6 @@ kwargs = dict(
         "Operating System :: Unix",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
