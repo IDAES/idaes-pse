@@ -4475,7 +4475,7 @@ class TestConstraintTermAnalysisVisitor:
         m.v2 = Var(initialize=0)
 
         with pytest.raises(
-            ValueError,
+            ZeroDivisionError,
             match=re.escape(
                 "Error in ConstraintTermAnalysisVisitor: found division with "
                 "denominator of 0 (v1/v2)."

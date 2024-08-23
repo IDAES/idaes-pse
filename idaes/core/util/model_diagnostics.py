@@ -69,6 +69,7 @@ from pyomo.common.config import (
     ConfigValue,
     document_kwargs_from_configdict,
     PositiveInt,
+    NonNegativeFloat,
 )
 from pyomo.util.check_units import identify_inconsistent_units
 from pyomo.contrib.incidence_analysis import IncidenceGraphInterface
@@ -194,7 +195,7 @@ CONFIG.declare(
     "variable_bounds_absolute_tolerance",
     ConfigValue(
         default=1e-4,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Absolute tolerance for considering a variable to be close "
         "to its bounds.",
     ),
@@ -203,7 +204,7 @@ CONFIG.declare(
     "variable_bounds_relative_tolerance",
     ConfigValue(
         default=1e-4,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Relative tolerance for considering a variable to be close "
         "to its bounds.",
     ),
@@ -212,7 +213,7 @@ CONFIG.declare(
     "variable_bounds_violation_tolerance",
     ConfigValue(
         default=0,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Absolute tolerance for considering a variable to violate its bounds.",
         doc="Absolute tolerance for considering a variable to violate its bounds. "
         "Some solvers relax bounds on variables thus allowing a small violation to be "
@@ -223,7 +224,7 @@ CONFIG.declare(
     "constraint_residual_tolerance",
     ConfigValue(
         default=1e-5,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Absolute tolerance to use when checking constraint residuals.",
     ),
 )
@@ -231,7 +232,7 @@ CONFIG.declare(
     "constraint_term_mismatch_tolerance",
     ConfigValue(
         default=1e6,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Magnitude difference to use when checking for mismatched additive terms in constraints.",
     ),
 )
@@ -239,7 +240,7 @@ CONFIG.declare(
     "constraint_term_cancellation_tolerance",
     ConfigValue(
         default=1e-4,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Absolute tolerance to use when checking for cancelling additive terms in constraints.",
     ),
 )
@@ -247,7 +248,7 @@ CONFIG.declare(
     "variable_large_value_tolerance",
     ConfigValue(
         default=1e4,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Absolute tolerance for considering a value to be large.",
     ),
 )
@@ -255,7 +256,7 @@ CONFIG.declare(
     "variable_small_value_tolerance",
     ConfigValue(
         default=1e-4,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Absolute tolerance for considering a value to be small.",
     ),
 )
@@ -263,7 +264,7 @@ CONFIG.declare(
     "variable_zero_value_tolerance",
     ConfigValue(
         default=1e-8,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Absolute tolerance for considering a value to be near to zero.",
     ),
 )
@@ -271,7 +272,7 @@ CONFIG.declare(
     "jacobian_large_value_caution",
     ConfigValue(
         default=1e4,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Tolerance for raising a caution for large Jacobian values.",
     ),
 )
@@ -279,7 +280,7 @@ CONFIG.declare(
     "jacobian_large_value_warning",
     ConfigValue(
         default=1e8,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Tolerance for raising a warning for large Jacobian values.",
     ),
 )
@@ -287,7 +288,7 @@ CONFIG.declare(
     "jacobian_small_value_caution",
     ConfigValue(
         default=1e-4,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Tolerance for raising a caution for small Jacobian values.",
     ),
 )
@@ -295,7 +296,7 @@ CONFIG.declare(
     "jacobian_small_value_warning",
     ConfigValue(
         default=1e-8,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Tolerance for raising a warning for small Jacobian values.",
     ),
 )
@@ -311,7 +312,7 @@ CONFIG.declare(
     "parallel_component_tolerance",
     ConfigValue(
         default=1e-8,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Tolerance for identifying near-parallel Jacobian rows/columns",
     ),
 )
@@ -319,7 +320,7 @@ CONFIG.declare(
     "absolute_feasibility_tolerance",
     ConfigValue(
         default=1e-6,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Feasibility tolerance for identifying infeasible constraints and bounds",
     ),
 )
@@ -357,7 +358,7 @@ SVDCONFIG.declare(
     "singular_value_tolerance",
     ConfigValue(
         default=1e-6,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Tolerance for defining a small singular value",
     ),
 )
@@ -365,7 +366,7 @@ SVDCONFIG.declare(
     "size_cutoff_in_singular_vector",
     ConfigValue(
         default=0.1,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Size below which to ignore constraints and variables in "
         "the singular vector",
     ),
@@ -392,7 +393,7 @@ DHCONFIG.declare(
     "M",  # TODO: Need better name
     ConfigValue(
         default=1e5,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Maximum value for nu in MILP models.",
     ),
 )
@@ -400,7 +401,7 @@ DHCONFIG.declare(
     "m_small",  # TODO: Need better name
     ConfigValue(
         default=1e-5,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Smallest value for nu to be considered non-zero in MILP models.",
     ),
 )
@@ -408,7 +409,7 @@ DHCONFIG.declare(
     "trivial_constraint_tolerance",
     ConfigValue(
         default=1e-6,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Tolerance for identifying non-zero rows in Jacobian.",
     ),
 )
@@ -4293,7 +4294,7 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
     ):
         super().__init__()
 
-        self._mm_tol = log10(term_mismatch_tolerance)
+        self._log_mm_tol = log10(term_mismatch_tolerance)
         self._sum_tol = term_cancellation_tolerance
 
     def _check_base_type(self, node):
@@ -4337,66 +4338,26 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
                 else:
                     diff = log10(vl / vs)
 
-                if diff >= self._mm_tol:
+                if diff >= self._log_mm_tol:
                     mismatch.append(str(node))
 
         return vals, mismatch, cancelling, const
 
-    def _check_product(self, node, child_data):
+    def _check_general_expr(self, node, child_data):
         mismatch, cancelling, const = self._perform_checks(node, child_data)
-
-        val = self._get_value_for_sum_subexpression(
-            child_data[0]
-        ) * self._get_value_for_sum_subexpression(child_data[1])
-
-        return [val], mismatch, cancelling, const
-
-    def _check_division(self, node, child_data):
-        mismatch, cancelling, const = self._perform_checks(node, child_data)
-
-        numerator = self._get_value_for_sum_subexpression(child_data[0])
-        denominator = self._get_value_for_sum_subexpression(child_data[1])
-        # TODO: should we look at mismatched magnitudes in num and denom?
-        if denominator == 0:
-            raise ValueError(
-                f"Error in ConstraintTermAnalysisVisitor: found division with denominator of 0 "
-                f"({str(node)})."
-            )
-
-        return [numerator / denominator], mismatch, cancelling, const
-
-    def _check_power(self, node, child_data):
-        mismatch, cancelling, const = self._perform_checks(node, child_data)
-
-        base = self._get_value_for_sum_subexpression(child_data[0])
-        exponent = self._get_value_for_sum_subexpression(child_data[1])
-
-        return [base**exponent], mismatch, cancelling, const
-
-    def _check_negation(self, node, child_data):
-        mismatch, cancelling, const = self._perform_checks(node, child_data)
-        val = -self._get_value_for_sum_subexpression(child_data[0])
-
-        return [val], mismatch, cancelling, const
-
-    def _check_abs(self, node, child_data):
-        mismatch, cancelling, const = self._perform_checks(node, child_data)
-        val = abs(self._get_value_for_sum_subexpression(child_data[0]))
-
-        return [val], mismatch, cancelling, const
-
-    def _check_unary_function(self, node, child_data):
-        mismatch, cancelling, const = self._perform_checks(node, child_data)
-
-        func_name = node.getname()
-        func = getattr(math, func_name)
-        func_val = self._get_value_for_sum_subexpression(child_data[0])
 
         try:
-            val = func(func_val)
+            val = node._apply_operation(
+                list(map(self._get_value_for_sum_subexpression, child_data))
+            )
         except ValueError:
             raise ValueError(
                 f"Error in ConstraintTermAnalysisVisitor: error evaluating {str(node)}."
+            )
+        except ZeroDivisionError:
+            raise ZeroDivisionError(
+                f"Error in ConstraintTermAnalysisVisitor: found division with denominator of 0 "
+                f"({str(node)})."
             )
 
         return [val], mismatch, cancelling, const
@@ -4407,10 +4368,10 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
         # First, need to get value of input terms, which may be sub-expressions
         input_mag = [self._get_value_for_sum_subexpression(i) for i in child_data]
 
-        # Next, create a copy of the external function with expected magnitudes as inputs
+        # Next, create a copy of the function with expected magnitudes as inputs
         newfunc = node.create_node_with_local_data(input_mag)
 
-        # Evaluate new function and return the absolute value
+        # Evaluate new function and return the value along with check results
         return [value(newfunc)], mismatch, cancelling, const
 
     def _perform_checks(self, node, child_data):
@@ -4476,19 +4437,19 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
         EXPR.RangedExpression: _check_sum_expression,
         EXPR.SumExpression: _check_sum_expression,
         EXPR.NPV_SumExpression: _check_sum_expression,
-        EXPR.ProductExpression: _check_product,
-        EXPR.MonomialTermExpression: _check_product,
-        EXPR.NPV_ProductExpression: _check_product,
-        EXPR.DivisionExpression: _check_division,
-        EXPR.NPV_DivisionExpression: _check_division,
-        EXPR.PowExpression: _check_power,
-        EXPR.NPV_PowExpression: _check_power,
-        EXPR.NegationExpression: _check_negation,
-        EXPR.NPV_NegationExpression: _check_negation,
-        EXPR.AbsExpression: _check_abs,
-        EXPR.NPV_AbsExpression: _check_abs,
-        EXPR.UnaryFunctionExpression: _check_unary_function,
-        EXPR.NPV_UnaryFunctionExpression: _check_unary_function,
+        EXPR.ProductExpression: _check_general_expr,
+        EXPR.MonomialTermExpression: _check_general_expr,
+        EXPR.NPV_ProductExpression: _check_general_expr,
+        EXPR.DivisionExpression: _check_general_expr,
+        EXPR.NPV_DivisionExpression: _check_general_expr,
+        EXPR.PowExpression: _check_general_expr,
+        EXPR.NPV_PowExpression: _check_general_expr,
+        EXPR.NegationExpression: _check_general_expr,
+        EXPR.NPV_NegationExpression: _check_general_expr,
+        EXPR.AbsExpression: _check_general_expr,
+        EXPR.NPV_AbsExpression: _check_general_expr,
+        EXPR.UnaryFunctionExpression: _check_general_expr,
+        EXPR.NPV_UnaryFunctionExpression: _check_general_expr,
         EXPR.Expr_ifExpression: _check_other_expression,
         EXPR.ExternalFunctionExpression: _check_other_expression,
         EXPR.NPV_ExternalFunctionExpression: _check_other_expression,
