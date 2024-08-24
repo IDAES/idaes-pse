@@ -323,10 +323,10 @@ within this flowsheet if not otherwise specified,
         elif self.config.time_units is None and self.config.dynamic:
             raise ConfigurationError(
                 f"{self.name} - no units were specified for the time domain. "
-                f"Units must be be specified for dynamic models."
+                f"Units must be specified for dynamic models."
             )
         elif self.config.time_units is None and not self.config.dynamic:
-            _log.debug("No units specified for stady-state time domain.")
+            _log.debug("No units specified for steady-state time domain.")
         elif not isinstance(self.config.time_units, _PyomoUnit):
             raise ConfigurationError(
                 "{} unrecognised value for time_units argument. This must be "
