@@ -498,7 +498,7 @@ class TestRadialBasisFunction:
                 [0.5, 0.7],
                 [5, 7],
                 [50, 70],
-                [50, np.NaN],
+                [50, np.nan],
             ]
         )
         expected_output = np.nan_to_num(d_vec**2 * np.log(d_vec))
@@ -507,6 +507,9 @@ class TestRadialBasisFunction:
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    @pytest.mark.filterwarnings(
+        "ignore:(invalid value|divide by zero) encountered in (multiply|log):RuntimeWarning"
+    )
     def test_basis_generation(self, array_type):
         input_array = array_type(self.training_data)
         scaled = FeatureScaling.data_scaling_minmax(input_array[0:3])
@@ -2074,6 +2077,9 @@ class TestRadialBasisFunction:
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    @pytest.mark.filterwarnings(
+        "ignore:(invalid value|divide by zero) encountered in (multiply|log):RuntimeWarning"
+    )
     def test_rbf_predict_output_06(self, array_type):
         input_array = array_type(self.training_data)
         data_feed = RadialBasisFunctions(

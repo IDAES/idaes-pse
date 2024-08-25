@@ -513,7 +513,8 @@ class PysmoSurrogate(SurrogateBase):
             row_data = inputdata[i, :].reshape(1, len(self._input_labels))
             for j, output_label in enumerate(self._output_labels):
                 result = self._trained.get_result(output_label)
-                outputs[i, j] = result.model.predict_output(row_data)
+                res_vec = result.model.predict_output(row_data)
+                outputs[i, j] = res_vec.item()
 
         return pd.DataFrame(
             data=outputs, index=inputs.index, columns=self._output_labels

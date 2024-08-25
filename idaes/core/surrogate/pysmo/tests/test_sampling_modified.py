@@ -19,6 +19,7 @@ from idaes.core.surrogate.pysmo.sampling import (
     SamplingMethods,
     FeatureScaling,
 )
+import idaes.logger as idaeslog
 import numpy as np
 import pandas as pd
 import pyomo.common.unittest as unittest
@@ -2187,13 +2188,19 @@ class CVTSamplingTestCases(unittest.TestCase):
     @pytest.mark.unit
     def test__init__selection_11(self):
         input_array = self.test_data_numpy
-        with pytest.warns(Warning):
+        warning_msg = (
+            "Tolerance too tight. CVT algorithm may take long time to converge."
+        )
+        with self.assertLogs(level="WARNING") as cm:
             CVTClass = CVTSampling(
                 input_array,
                 number_of_samples=None,
                 tolerance=1e-10,
                 sampling_type="selection",
             )
+        self.assertIn(warning_msg, "\n".join(cm.output))
+        for record in cm.records:
+            self.assertEqual(record.levelno, idaeslog.WARNING)
 
     @pytest.mark.unit
     def test__init__selection_12(self):
@@ -2315,14 +2322,20 @@ class CVTSamplingTestCases(unittest.TestCase):
 
     @pytest.mark.unit
     def test__init__creation_10(self):
+        warning_msg = (
+            "Tolerance too tight. CVT algorithm may take long time to converge."
+        )
         input_array = self.test_data_list
-        with pytest.warns(Warning):
+        with self.assertLogs(level="WARNING") as cm:
             CVTClass = CVTSampling(
                 input_array,
                 number_of_samples=None,
                 tolerance=1e-10,
                 sampling_type="creation",
             )
+        self.assertIn(warning_msg, "\n".join(cm.output))
+        for record in cm.records:
+            assert record.levelno == idaeslog.WARNING
 
     @pytest.mark.unit
     def test__init__creation_11(self):
