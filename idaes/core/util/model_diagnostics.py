@@ -4355,7 +4355,7 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
                 mdata.append(child_data[i])
 
         # Next, call the method to check the sum expression
-        vals, const, sum_expr = self._check_sum_expression(node, mdata)
+        vals, const, _ = self._check_sum_expression(node, mdata)
 
         # Next, we need to check for canceling terms.
         # In this case, we can safely ignore expressions of the form constant = sum()
