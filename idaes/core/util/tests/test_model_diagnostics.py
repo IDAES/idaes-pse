@@ -1284,7 +1284,7 @@ The following constraints have no free variables:
         assert (
             "Caution: 1 Variable with extreme value (<1.0E-04 or >1.0E+04)" in cautions
         )
-        assert "Caution: 2 Constraints with potential cancellation of terms" in cautions
+        assert "Caution: 1 Constraint with potential cancellation of terms" in cautions
 
     @pytest.mark.component
     def test_collect_numerical_cautions_jacobian(self):
@@ -1470,7 +1470,7 @@ Model Statistics
 ------------------------------------------------------------------------------------
 1 Cautions
 
-    Caution: 2 Constraints with potential cancellation of terms
+    Caution: 1 Constraint with potential cancellation of terms
 
 ------------------------------------------------------------------------------------
 Suggested next steps:
@@ -1482,7 +1482,7 @@ Suggested next steps:
 
 ====================================================================================
 """
-
+        print(stream.getvalue())
         assert stream.getvalue() == expected
 
     @pytest.mark.component
@@ -1555,7 +1555,7 @@ Model Statistics
     Caution: 2 Variables with value close to zero (tol=1.0E-08)
     Caution: 1 Variable with extreme value (<1.0E-04 or >1.0E+04)
     Caution: 1 Variable with None value
-    Caution: 2 Constraints with potential cancellation of terms
+    Caution: 1 Constraint with potential cancellation of terms
     Caution: 1 extreme Jacobian Entry (<1.0E-04 or >1.0E+04)
 
 ------------------------------------------------------------------------------------
@@ -4899,4 +4899,34 @@ class TestConstraintTermAnalysisVisitor:
         assert len(mm) == 1
         assert expr in cc
         assert len(cc) == 1
+        assert not k
+
+    # Check to make sure simple linking constraints are not flagged as cancelling
+    @pytest.mark.unit
+    def test_linking_equality_expr(self):
+        m = ConcreteModel()
+        m.v1 = Var(initialize=1)
+        m.v2 = Var(initialize=1)
+
+        expr = m.v1 == m.v2
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
+
+        assert vv == [-1, 1]
+        assert len(mm) == 0
+        assert len(cc) == 0
+        assert not k
+
+    @pytest.mark.unit
+    def test_linking_equality_expr_compound(self):
+        m = ConcreteModel()
+        m.v1 = Var(initialize=1)
+        m.v2 = Var(initialize=1)
+        m.v3 = Var(initialize=1)
+
+        expr = m.v1 == m.v2 * m.v3
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
+
+        assert vv == [-1, 1]
+        assert len(mm) == 0
+        assert len(cc) == 0
         assert not k

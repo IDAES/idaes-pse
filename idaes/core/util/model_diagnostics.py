@@ -4301,14 +4301,6 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
         self.canceling_terms = ComponentSet()
         self.mismatched_terms = ComponentSet()
 
-    def _check_base_type(self, node):
-        # [value], constant
-        if isinstance(node, VarData):
-            const = node.fixed
-        else:
-            const = True
-        return [value(node)], const
-
     def _get_value_for_sum_subexpression(self, child_data):
         return sum(i for i in child_data[0])
 
@@ -4342,6 +4334,13 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
         # Return any problematic terms found
         return const
 
+    def _check_base_type(self, node):
+        if isinstance(node, VarData):
+            const = node.fixed
+        else:
+            const = True
+        return [value(node)], const, False
+
     def _check_equality_expression(self, node, child_data):
         # (In)equality expressions are a special case of sum expressions
         # First, need to negate one side of the expression
@@ -4356,12 +4355,16 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
                 mdata.append(child_data[i])
 
         # Next, call the method to check the sum expression
-        vals, const = self._check_sum_expression(node, mdata)
+        vals, const, sum_expr = self._check_sum_expression(node, mdata)
 
         # Next, we need to check for canceling terms.
         # In this case, we can safely ignore expressions of the form constant = sum()
         # We can also ignore any constraint that is already flagged as mismatched
-        if node not in self.mismatched_terms and not any(d[1] for d in mdata):
+        # We will also ignore any constraints where a == b and neither a nor b are sum expressions
+        if not child_data[0][2] and not child_data[1][2]:
+            # Linking constraint, skip checks
+            pass
+        elif node not in self.mismatched_terms and not any(d[1] for d in mdata):
             # No constant terms, check for cancellation
             # First, collect terms from both sides
             t = []
@@ -4373,7 +4376,7 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
             if any(i <= self._sum_tol * max(t) for i in sums):
                 self.canceling_terms.add(node)
 
-        return vals, const
+        return vals, const, False
 
     def _check_general_expr(self, node, child_data):
         const = self._perform_checks(node, child_data)
@@ -4393,7 +4396,7 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
                 f"({str(node)})."
             )
 
-        return [val], const
+        return [val], const, False
 
     def _check_other_expression(self, node, child_data):
         const = self._perform_checks(node, child_data)
@@ -4405,11 +4408,11 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
         newfunc = node.create_node_with_local_data(input_mag)
 
         # Evaluate new function and return the value along with check results
-        return [value(newfunc)], const
+        return [value(newfunc)], const, False
 
     def _check_ranged_expression(self, node, child_data):
-        lhs_vals, lhs_const = self._check_equality_expression(node, child_data[:2])
-        rhs_vals, rhs_const = self._check_equality_expression(node, child_data[1:])
+        lhs_vals, lhs_const, _ = self._check_equality_expression(node, child_data[:2])
+        rhs_vals, rhs_const, _ = self._check_equality_expression(node, child_data[1:])
 
         # Constant is a bit vague in terms ranged expressions.
         # We will call the term constant only if all parts are constant
@@ -4419,7 +4422,7 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
         # Also for sign convention, we will negate the outer terms
         vals = lhs_vals + [-rhs_vals[1]]
 
-        return vals, const
+        return vals, const, False
 
     def _check_sum_expression(self, node, child_data):
         # Sum expressions need special handling
@@ -4450,7 +4453,7 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
                 if diff >= self._log_mm_tol:
                     self.mismatched_terms.add(node)
 
-        return vals, const
+        return vals, const, True
 
     node_type_method_map = {
         EXPR.EqualityExpression: _check_equality_expression,
@@ -4481,12 +4484,12 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
         """
         Method to call when exiting node to check for potential issues.
         """
-        # Return [node values], constant
+        # Return [node values], constant (bool), sum expression (bool)
         # first check if the node is a leaf
         nodetype = type(node)
 
         if nodetype in native_types:
-            return [node], True
+            return [node], True, False
 
         node_func = self.node_type_method_map.get(nodetype, None)
         if node_func is not None:
@@ -4495,7 +4498,7 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
         if not node.is_expression_type():
             # this is a leaf, but not a native type
             if nodetype is _PyomoUnit:
-                return [1], True
+                return [1], True, False
 
             # Var or Param
             return self._check_base_type(node)
@@ -4531,7 +4534,7 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
         self.mismatched_terms = ComponentSet()
 
         # Call parent walk_expression method
-        vals, const = super().walk_expression(expr)
+        vals, const, _ = super().walk_expression(expr)
 
         # Return results
         return vals, self.mismatched_terms, self.canceling_terms, const
