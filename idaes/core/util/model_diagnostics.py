@@ -17,7 +17,6 @@ This module contains a collection of tools for diagnosing modeling issues.
 
 __author__ = "Alexander Dowling, Douglas Allan, Andrew Lee, Robby Parker, Ben Knueven"
 
-import math
 from operator import itemgetter
 import sys
 from inspect import signature
@@ -4313,67 +4312,14 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
     def _get_value_for_sum_subexpression(self, child_data):
         return sum(i for i in child_data[0])
 
-    def _check_sum_expression(self, node, child_data):
-        # Sum expressions need special handling
-        # For sums, collect all child values into a list
-        vals = []
-        # We will check for cancellation in this node at the next level
-        # Pyomo is generally good at simplifying compound sums
-        const = True
-        # Collect data from child nodes
-        for d in child_data:
-            vals.append(self._get_value_for_sum_subexpression(d))
+    def _sum_combinations(self, values_list):
+        sums = []
+        for i in chain.from_iterable(
+            combinations(values_list, r) for r in range(2, len(values_list) + 1)
+        ):
+            sums.append(abs(sum(i)))
 
-            # Expression is not constant if any child is not constant
-            if not d[1]:
-                const = False
-
-        # Check for mismatched terms
-        if len(vals) > 1:
-            absvals = [abs(v) for v in vals]
-            vl = max(absvals)
-            vs = min(absvals)
-            if vl != vs:
-                if vs == 0:
-                    diff = log10(vl)
-                else:
-                    diff = log10(vl / vs)
-
-                if diff >= self._log_mm_tol:
-                    self.mismatched_terms.add(node)
-
-        return vals, const
-
-    def _check_general_expr(self, node, child_data):
-        const = self._perform_checks(node, child_data)
-
-        try:
-            val = node._apply_operation(
-                list(map(self._get_value_for_sum_subexpression, child_data))
-            )
-        except ValueError:
-            raise ValueError(
-                f"Error in ConstraintTermAnalysisVisitor: error evaluating {str(node)}."
-            )
-        except ZeroDivisionError:
-            raise ZeroDivisionError(
-                f"Error in ConstraintTermAnalysisVisitor: found division with denominator of 0 "
-                f"({str(node)})."
-            )
-
-        return [val], const
-
-    def _check_other_expression(self, node, child_data):
-        const = self._perform_checks(node, child_data)
-
-        # First, need to get value of input terms, which may be sub-expressions
-        input_mag = [self._get_value_for_sum_subexpression(i) for i in child_data]
-
-        # Next, create a copy of the function with expected magnitudes as inputs
-        newfunc = node.create_node_with_local_data(input_mag)
-
-        # Evaluate new function and return the value along with check results
-        return [value(newfunc)], const
+        return sums
 
     def _perform_checks(self, node, child_data):
         # Perform checks for problematic expressions
@@ -4429,7 +4375,39 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
 
         return vals, const
 
-    def _check_ranged(self, node, child_data):
+    def _check_general_expr(self, node, child_data):
+        const = self._perform_checks(node, child_data)
+
+        try:
+            # pylint: disable-next=protected-access
+            val = node._apply_operation(
+                list(map(self._get_value_for_sum_subexpression, child_data))
+            )
+        except ValueError:
+            raise ValueError(
+                f"Error in ConstraintTermAnalysisVisitor: error evaluating {str(node)}."
+            )
+        except ZeroDivisionError:
+            raise ZeroDivisionError(
+                f"Error in ConstraintTermAnalysisVisitor: found division with denominator of 0 "
+                f"({str(node)})."
+            )
+
+        return [val], const
+
+    def _check_other_expression(self, node, child_data):
+        const = self._perform_checks(node, child_data)
+
+        # First, need to get value of input terms, which may be sub-expressions
+        input_mag = [self._get_value_for_sum_subexpression(i) for i in child_data]
+
+        # Next, create a copy of the function with expected magnitudes as inputs
+        newfunc = node.create_node_with_local_data(input_mag)
+
+        # Evaluate new function and return the value along with check results
+        return [value(newfunc)], const
+
+    def _check_ranged_expression(self, node, child_data):
         lhs_vals, lhs_const = self._check_equality_expression(node, child_data[:2])
         rhs_vals, rhs_const = self._check_equality_expression(node, child_data[1:])
 
@@ -4443,19 +4421,41 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
 
         return vals, const
 
-    def _sum_combinations(self, values_list):
-        sums = []
-        for i in chain.from_iterable(
-            combinations(values_list, r) for r in range(2, len(values_list) + 1)
-        ):
-            sums.append(abs(sum(i)))
+    def _check_sum_expression(self, node, child_data):
+        # Sum expressions need special handling
+        # For sums, collect all child values into a list
+        vals = []
+        # We will check for cancellation in this node at the next level
+        # Pyomo is generally good at simplifying compound sums
+        const = True
+        # Collect data from child nodes
+        for d in child_data:
+            vals.append(self._get_value_for_sum_subexpression(d))
 
-        return sums
+            # Expression is not constant if any child is not constant
+            if not d[1]:
+                const = False
+
+        # Check for mismatched terms
+        if len(vals) > 1:
+            absvals = [abs(v) for v in vals]
+            vl = max(absvals)
+            vs = min(absvals)
+            if vl != vs:
+                if vs == 0:
+                    diff = log10(vl)
+                else:
+                    diff = log10(vl / vs)
+
+                if diff >= self._log_mm_tol:
+                    self.mismatched_terms.add(node)
+
+        return vals, const
 
     node_type_method_map = {
         EXPR.EqualityExpression: _check_equality_expression,
         EXPR.InequalityExpression: _check_equality_expression,
-        EXPR.RangedExpression: _check_ranged,
+        EXPR.RangedExpression: _check_ranged_expression,
         EXPR.SumExpression: _check_sum_expression,
         EXPR.NPV_SumExpression: _check_sum_expression,
         EXPR.ProductExpression: _check_general_expr,
@@ -4481,7 +4481,7 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
         """
         Method to call when exiting node to check for potential issues.
         """
-        # Return [node values], [constant
+        # Return [node values], constant
         # first check if the node is a leaf
         nodetype = type(node)
 
