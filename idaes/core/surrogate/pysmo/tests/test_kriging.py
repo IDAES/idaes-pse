@@ -97,6 +97,9 @@ class TestKrigingModel:
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    @pytest.mark.filterwarnings(
+        "ignore:invalid value encountered in log:RuntimeWarning"
+    )
     def test__init__08(self, array_type):
         input_array = array_type(self.test_data)
         file_name = "test_filename.pickle"
@@ -107,6 +110,9 @@ class TestKrigingModel:
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    @pytest.mark.filterwarnings(
+        "ignore:invalid value encountered in log:RuntimeWarning"
+    )
     def test__init__09(self, array_type):
         input_array = array_type(self.test_data)
         file_name1 = "test_filename1.pickle"
@@ -343,9 +349,10 @@ class TestKrigingModel:
                 )
             ).transpose()
             cov_matrix_tests = np.exp(-1 * cmt)
-            y_prediction_exp[i, 0] = mean + np.matmul(
+            y_prediction_val = mean + np.matmul(
                 np.matmul(cov_matrix_tests.transpose(), cov_inv), y_mu
             )
+            y_prediction_exp[i, 0] = y_prediction_val.item()
 
         ss_error, rmse_error, y_prediction = KrigingClass.error_calculation(
             theta,
@@ -402,6 +409,9 @@ class TestKrigingModel:
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    @pytest.mark.filterwarnings(
+        "ignore:invalid value encountered in log:RuntimeWarning"
+    )
     def test_predict_output_01(self, array_type):
         input_array = array_type(self.training_data)
         np.random.seed(0)
@@ -412,6 +422,9 @@ class TestKrigingModel:
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    @pytest.mark.filterwarnings(
+        "ignore:invalid value encountered in log:RuntimeWarning"
+    )
     def test_predict_output(self, array_type):
         input_array = array_type(self.training_data)
         np.random.seed(0)
