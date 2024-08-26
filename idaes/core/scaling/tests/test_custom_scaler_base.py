@@ -170,6 +170,26 @@ class TestCustomScalerBase:
         assert sb.get_default_scaling_factor(model.pressure) == 1e-4
 
     @pytest.mark.unit
+    def test_get_default_scaling_factor_indexed(self, caplog):
+        caplog.set_level(idaeslog.DEBUG, logger="idaes")
+        m = ConcreteModel()
+        m.v = Var([1, 2, 3, 4])
+
+        sb = CustomScalerBase()
+
+        # No defaults defined yet
+        assert sb.get_default_scaling_factor(m.v[1]) is None
+        assert "No default scaling factor found for v[1]" in caplog.text
+
+        # Set a default for the indexed var
+        sb.default_scaling_factors["v"] = 1e-4
+        assert sb.get_default_scaling_factor(m.v[1]) == 1e-4
+
+        # Set a default for the specific element
+        sb.default_scaling_factors["v[1]"] = 1e-8
+        assert sb.get_default_scaling_factor(m.v[1]) == 1e-8
+
+    @pytest.mark.unit
     def test_scale_variable_by_component(self, model, caplog):
         caplog.set_level(idaeslog.DEBUG, logger="idaes")
         sb = CustomScalerBase()

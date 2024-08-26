@@ -174,6 +174,15 @@ class CustomScalerBase(ScalerBase):
         try:
             return self.default_scaling_factors[component.local_name]
         except KeyError:
+            # Might be indexed, see if parent component has default scaling
+            parent = component.parent_component()
+            try:
+                return self.default_scaling_factors[parent.local_name]
+            except KeyError:
+                # No default scaling found, give up
+                pass
+
+            # Log a message and return nothing
             _log.debug(f"No default scaling factor found for {component.name}")
             return None
 
@@ -404,16 +413,22 @@ class CustomScalerBase(ScalerBase):
         """
         nominal = self.get_expression_nominal_values(constraint.expr)
 
-        if scheme == "harmonic_mean":
-            sf = sum(1 / abs(i) for i in [j for j in nominal if j != 0])
+        # Remove any 0 terms
+        nominal = [j for j in nominal if j != 0]
+
+        if len(nominal) == 0:
+            # No non-zero terms...
+            sf = 1
+        elif scheme == "harmonic_mean":
+            sf = sum(1 / abs(i) for i in nominal)
         elif scheme == "inverse_sum":
-            sf = 1 / sum(abs(i) for i in [j for j in nominal if j != 0])
+            sf = 1 / sum(abs(i) for i in nominal)
         elif scheme == "inverse_root_sum_squared":
-            sf = 1 / sum(abs(i) ** 2 for i in [j for j in nominal if j != 0]) ** 0.5
+            sf = 1 / sum(abs(i) ** 2 for i in nominal) ** 0.5
         elif scheme == "inverse_maximum":
-            sf = 1 / max(abs(i) for i in [j for j in nominal if j != 0])
+            sf = 1 / max(abs(i) for i in nominal)
         elif scheme == "inverse_minimum":
-            sf = 1 / min(abs(i) for i in [j for j in nominal if j != 0])
+            sf = 1 / min(abs(i) for i in nominal)
         else:
             raise ValueError(
                 f"Invalid value for 'scheme' argument ({scheme}) in "
