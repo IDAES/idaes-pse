@@ -17,7 +17,7 @@ Author: Andrew Lee
 """
 from copy import copy
 
-import pyomo.environ as pyo
+from pyomo.environ import value
 from pyomo.environ import units
 from pyomo.core.base.units_container import UnitsError
 from pyomo.core.expr import identify_variables
@@ -477,7 +477,7 @@ class CustomScalerBase(ScalerBase):
                         w[0].value = 1
 
                 pjac.append(
-                    pyo.value(
+                    value(
                         differentiate(
                             expr=constraint.body, wrt=v[0], mode=Modes.reverse_symbolic
                         )
