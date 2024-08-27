@@ -226,22 +226,32 @@ class ScalingProfiler:
         tempfile = TempfileManager.create_tempfile(suffix="ipopt_out", text=True)
         opts = {"output_file": tempfile}
 
-        status_obj = self._solver.solve(model, options=opts, tee=True)
-        solved = True
-        if not check_optimal_termination(status_obj):
-            solved = False
+        try:
+            status_obj = self._solver.solve(model, options=opts, tee=True)
+            solved = True
+            if not check_optimal_termination(status_obj):
+                solved = False
 
-        iters, iters_in_restoration, iters_w_regularization = self._parse_ipopt_output(
-            tempfile
-        )
+            iters, iters_in_restoration, iters_w_regularization = (
+                self._parse_ipopt_output(tempfile)
+            )
 
-        return {
-            "solved": solved,
-            "termination_message": status_obj.solver.termination_message,
-            "iterations": iters,
-            "iters_in_restoration": iters_in_restoration,
-            "iters_w_regularization": iters_w_regularization,
-        }
+            return {
+                "solved": solved,
+                "termination_message": status_obj.solver.termination_message,
+                "iterations": iters,
+                "iters_in_restoration": iters_in_restoration,
+                "iters_w_regularization": iters_w_regularization,
+            }
+        except RuntimeError as err:
+            # Likely a critical solver failure
+            return {
+                "solved": False,
+                "termination_message": str(err),
+                "iterations": -1,
+                "iters_in_restoration": -1,
+                "iters_w_regularization": -1,
+            }
 
     def _parse_ipopt_output(self, ipopt_file):
         """
