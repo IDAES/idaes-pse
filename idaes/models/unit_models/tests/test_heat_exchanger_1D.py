@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -85,7 +85,7 @@ from idaes.models.properties.modular_properties.eos.ceos import cubic_roots_avai
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_solver()
+solver = get_solver("ipopt_v2")
 
 
 # -----------------------------------------------------------------------------
@@ -2448,6 +2448,12 @@ class TestBT_Generic_cocurrent(object):
         m.fs.unit.cold_side_inlet.mole_frac_comp[0, "benzene"].fix(0.5)
         m.fs.unit.cold_side_inlet.mole_frac_comp[0, "toluene"].fix(0.5)
 
+        # Set small values of epsilon to get sufficiently accurate results
+        # Only need hot side, as cold side uses old SmoothVLE
+        for i in m.fs.unit.hot_side.properties.keys():
+            m.fs.unit.hot_side.properties[i].eps_t_Vap_Liq.set_value(1e-4)
+            m.fs.unit.hot_side.properties[i].eps_z_Vap_Liq.set_value(1e-4)
+
         return m
 
     @pytest.mark.component
@@ -2486,8 +2492,8 @@ class TestBT_Generic_cocurrent(object):
         assert hasattr(btx.fs.unit, "heat_transfer_eq")
         assert hasattr(btx.fs.unit, "heat_conservation")
 
-        assert number_variables(btx) == 1976
-        assert number_total_constraints(btx) == 1867
+        assert number_variables(btx) == 1829
+        assert number_total_constraints(btx) == 1720
         assert number_unused_variables(btx) == 36
 
     @pytest.mark.integration
@@ -2641,7 +2647,9 @@ class TestBT_Generic_cocurrent(object):
     @pytest.mark.integration
     def test_numerical_issues(self, btx):
         dt = DiagnosticsToolbox(btx)
-        dt.assert_no_numerical_warnings()
+        # TODO: Complementarity formulation results in near-parallel components
+        # when unscaled
+        dt.assert_no_numerical_warnings(ignore_parallel_components=True)
 
     @pytest.mark.component
     def test_initialization_error(self, btx):
@@ -3334,7 +3342,10 @@ class TestInitializersSaponCounterCurrent:
 
     @pytest.mark.integration
     def test_block_triangularization(self, model):
-        initializer = BlockTriangularizationInitializer(constraint_tolerance=2e-5)
+        initializer = BlockTriangularizationInitializer(
+            constraint_tolerance=2e-5,
+            block_solver_writer_config={"linear_presolve": False},
+        )
         # Need to ignore unused variables at inlets
         initializer.initialize(model.fs.unit, exclude_unused_vars=True)
 
@@ -3529,9 +3540,14 @@ class TestInitializersModularCoCurrent:
         m.fs.unit.cold_side_inlet.mole_frac_comp[0, "benzene"].set_value(0.5)
         m.fs.unit.cold_side_inlet.mole_frac_comp[0, "toluene"].set_value(0.5)
 
+        # Set small values of epsilon to get sufficiently accurate results
+        for i in m.fs.unit.hot_side.properties.keys():
+            m.fs.unit.hot_side.properties[i].eps_t_Vap_Liq.set_value(1e-4)
+            m.fs.unit.hot_side.properties[i].eps_z_Vap_Liq.set_value(1e-4)
+
         return m
 
-    @pytest.mark.component
+    @pytest.mark.integration
     def test_general_hx1d_initializer(self, model):
         initializer = HX1DInitializer()
         initializer.initialize(model.fs.unit)

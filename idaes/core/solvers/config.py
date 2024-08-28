@@ -3,22 +3,29 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-# TODO: Missing doc strings
-# pylint: disable=missing-module-docstring
-# pylint: disable=missing-class-docstring
+"""
+Wrapper for Pyomo solvers to allow us to define default solver options
+"""
+
+from copy import deepcopy
 
 from pyomo.environ import SolverFactory
+
 import idaes
 
 
 class SolverWrapper(object):
+    """
+    Wrapper for Pyomo solvers to allow us to define default solver options
+    """
+
     def __init__(self, name, register=True):
         if name is None:
             name = "default"
@@ -43,13 +50,11 @@ class SolverWrapper(object):
             name = self.name
             solver = self.solver
         if name in idaes.cfg and (
-            idaes.cfg.use_idaes_solver_config
-            or name == "default"
-            or not self.registered
+            idaes.cfg.use_idaes_solver_config or not self.registered
         ):
             for k, v in idaes.cfg[name].items():
                 if k not in kwargs:
-                    kwargs[k] = v
+                    kwargs[k] = deepcopy(v)
                 elif k == "options":
                     # options is in ConfigBlock and in kwargs, treat "options"
                     # special so individual options can have defaults not just
@@ -57,6 +62,14 @@ class SolverWrapper(object):
                     for opk, opv in v.items():
                         if opk not in kwargs["options"]:
                             kwargs["options"][opk] = opv
+                elif k == "writer_config":
+                    # writer_config is in ConfigBlock and in kwargs, treat "writer_config"
+                    # special so individual options can have defaults not just
+                    # the whole options block
+                    for opk, opv in v.items():
+                        if opk not in kwargs["writer_config"]:
+                            kwargs["writer_config"][opk] = opv
+
         return solver(*args, **kwargs)
 
 

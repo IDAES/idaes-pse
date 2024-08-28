@@ -4,7 +4,13 @@ Fixed Bed 1D Reactor
 The IDAES Fixed Bed 1D Reactor (FixedBed1D) model represents a unit operation where a gas stream  
 passes through a solid phase bed in a linear reactor vessel.
 The FixedBed1D mathematical model is a 1-D time variant model with two phases (gas and solid). The model captures the
-gas-solid interaction between both phases through reaction/adsorption, mass and heat transfer. 
+gas-solid interaction between both phases through reaction/adsorption, mass and heat transfer.
+
+The model code is located in the `main unit model module <https://github.com/IDAES/idaes-pse/blob/main/idaes/models_extra/gas_solid_contactors/unit_models/fixed_bed_1D.py>`_ and may be imported as:
+
+.. code:: python
+
+  >>> from idaes.models_extra.gas_solid_contactors.unit_models.fixed_bed_1D import FixedBed1D
 
 **Assumptions:**
 

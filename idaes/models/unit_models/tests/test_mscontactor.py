@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -75,6 +75,8 @@ from idaes.core.initialization import InitializationStatus
 from idaes.models.properties.examples.saponification_thermo import (
     SaponificationParameterBlock,
 )
+
+solver = get_solver("ipopt_v2")
 
 
 # -----------------------------------------------------------------------------
@@ -2787,7 +2789,6 @@ class TestToyProblem:
 
         assert (degrees_of_freedom(model)) == 0
 
-        solver = get_solver()
         results = solver.solve(model)
 
         assert_optimal_termination(results)
@@ -3456,7 +3457,6 @@ class TestLiCODiafiltration:
         # Solve the full model
         assert degrees_of_freedom(model) == 0
 
-        solver = get_solver()
         res = solver.solve(model, tee=True)
         assert_optimal_termination(res)
 
