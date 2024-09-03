@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -522,10 +522,7 @@ The property package must be iapws95.
         @self.Constraint(doc="Kunii and Levenspiel equation")
         def velocity_mf_eq(b):
             return (
-                1.75
-                / b.particle_sphericity
-                / b.bed_voidage_mf**3
-                * b.Reynolds_mf**2
+                1.75 / b.particle_sphericity / b.bed_voidage_mf**3 * b.Reynolds_mf**2
                 + 150
                 * (1 - b.bed_voidage_mf)
                 / b.particle_sphericity**2
@@ -2802,29 +2799,29 @@ The property package must be iapws95.
         var_dict["Pressure drop [Pa]"] = -self.pressure_drop
         var_dict["Number of beds"] = self.number_beds
 
-        var_dict[
-            "CO2 captured in one cycle per bed [kg/cycle]"
-        ] = self.CO2_captured_bed_cycle
+        var_dict["CO2 captured in one cycle per bed [kg/cycle]"] = (
+            self.CO2_captured_bed_cycle
+        )
 
         var_dict["Cycles per year"] = self.cycles_year
 
-        var_dict[
-            "Total CO2 captured per year [tonne/year]"
-        ] = self.total_CO2_captured_year
+        var_dict["Total CO2 captured per year [tonne/year]"] = (
+            self.total_CO2_captured_year
+        )
 
-        var_dict[
-            "Amount of flue gas processed per year [Gmol/year]"
-        ] = self.flue_gas_processed_year
+        var_dict["Amount of flue gas processed per year [Gmol/year]"] = (
+            self.flue_gas_processed_year
+        )
 
-        var_dict[
-            "Amount of flue gas processed per year (target) [Gmol/year]"
-        ] = self.flue_gas_processed_year_target
+        var_dict["Amount of flue gas processed per year (target) [Gmol/year]"] = (
+            self.flue_gas_processed_year_target
+        )
 
         var_dict["Amount of CO2 to atmosphere [mol/s]"] = self.emissions_co2
 
-        var_dict[
-            "Concentration of CO2 emitted to atmosphere [ppm]"
-        ] = self.emissions_co2_ppm
+        var_dict["Concentration of CO2 emitted to atmosphere [ppm]"] = (
+            self.emissions_co2_ppm
+        )
 
         return var_dict
 

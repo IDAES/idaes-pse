@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -164,14 +164,16 @@ def get_model(dynamic=False):
         m.fs.valve.valve_opening.unfix()
         dof = degrees_of_freedom(m)
         assert dof == 0
-        solver = get_solver()
+        # TODO: MA27 works better than MA57
+        solver = get_solver(solver="ipopt_v2", solver_options={"linear_solver": "ma27"})
         solver.solve(m, tee=True)
 
     return m
 
 
 def run_dynamic(m):
-    solver = get_solver()
+    # TODO: MA27 works better than MA57
+    solver = get_solver(solver="ipopt_v2", solver_options={"linear_solver": "ma27"})
 
     # add step change
     for t in m.fs.time:

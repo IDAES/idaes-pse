@@ -4,7 +4,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -20,9 +20,10 @@ __author__ = "Alexander Dowling, Douglas Allan, Andrew Lee, Robby Parker, Ben Kn
 from operator import itemgetter
 import sys
 from inspect import signature
-import math
-from math import log
+from math import log, isclose, inf, isfinite
+import json
 from typing import List
+import logging
 
 import numpy as np
 from scipy.linalg import svd
@@ -54,9 +55,9 @@ from pyomo.core.expr.numeric_expr import (
     NPV_UnaryFunctionExpression,
     NumericExpression,
 )
-from pyomo.core.base.block import _BlockData
-from pyomo.core.base.var import _GeneralVarData, _VarData
-from pyomo.core.base.constraint import _ConstraintData
+from pyomo.core.base.block import BlockData
+from pyomo.core.base.var import VarData
+from pyomo.core.base.constraint import ConstraintData
 from pyomo.repn.standard_repn import (  # pylint: disable=no-name-in-module
     generate_standard_repn,
 )
@@ -73,9 +74,12 @@ from pyomo.core.expr.visitor import identify_variables, StreamBasedExpressionVis
 from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
 from pyomo.contrib.pynumero.asl import AmplInterface
 from pyomo.contrib.fbbt.fbbt import compute_bounds_on_expr
+from pyomo.contrib.iis import mis
 from pyomo.common.deprecation import deprecation_warning
 from pyomo.common.errors import PyomoException
+from pyomo.common.tempfiles import TempfileManager
 
+from idaes.core.solvers.get_solver import get_solver
 from idaes.core.util.model_statistics import (
     activated_blocks_set,
     deactivated_blocks_set,
@@ -97,6 +101,11 @@ from idaes.core.util.scaling import (
     extreme_jacobian_rows,
     extreme_jacobian_entries,
     jacobian_cond,
+)
+from idaes.core.util.parameter_sweep import (
+    SequentialSweepRunner,
+    ParameterSweepBase,
+    is_psweepspec,
 )
 import idaes.logger as idaeslog
 
@@ -280,9 +289,17 @@ CONFIG.declare(
 CONFIG.declare(
     "parallel_component_tolerance",
     ConfigValue(
-        default=1e-4,
+        default=1e-8,
         domain=float,
         description="Tolerance for identifying near-parallel Jacobian rows/columns",
+    ),
+)
+CONFIG.declare(
+    "absolute_feasibility_tolerance",
+    ConfigValue(
+        default=1e-6,
+        domain=float,
+        description="Feasibility tolerance for identifying infeasible constraints and bounds",
     ),
 )
 
@@ -421,10 +438,10 @@ class DiagnosticsToolbox:
 
     """
 
-    def __init__(self, model: _BlockData, **kwargs):
+    def __init__(self, model: BlockData, **kwargs):
         # TODO: In future may want to generalise this to accept indexed blocks
         # However, for now some of the tools do not support indexed blocks
-        if not isinstance(model, _BlockData):
+        if not isinstance(model, BlockData):
             raise TypeError(
                 "model argument must be an instance of a Pyomo BlockData object "
                 "(either a scalar Block or an element of an indexed Block)."
@@ -719,6 +736,50 @@ class DiagnosticsToolbox:
             footer="=",
         )
 
+    def compute_infeasibility_explanation(self, stream=None, solver=None, tee=False):
+        """
+        This function attempts to determine why a given model is infeasible. It deploys
+        two main algorithms:
+
+        1. Relaxes the constraints of the problem, and reports to the user
+           some sets of constraints and variable bounds, which when relaxed, creates a
+           feasible model.
+        2. Uses the information collected from (1) to attempt to compute a Minimal
+           Infeasible System (MIS), which is a set of constraints and variable bounds
+           which appear to be in conflict with each other. It is minimal in the sense
+           that removing any single constraint or variable bound would result in a
+           feasible subsystem.
+
+        Args:
+            stream: I/O object to write report to (default = stdout)
+            solver: A pyomo solver object or a string for SolverFactory
+                (default = get_solver())
+            tee:  Display intermediate solves conducted (False)
+
+        Returns:
+            None
+
+        """
+        if solver is None:
+            solver = get_solver("ipopt_v2")
+        if stream is None:
+            stream = sys.stdout
+
+        h = logging.StreamHandler(stream)
+        h.setLevel(logging.INFO)
+
+        l = logging.Logger(name=__name__ + ".compute_infeasibility_explanation")
+        l.setLevel(logging.INFO)
+        l.addHandler(h)
+
+        mis.compute_infeasibility_explanation(
+            self._model,
+            solver,
+            tee=tee,
+            tolerance=self.config.absolute_feasibility_tolerance,
+            logger=l,
+        )
+
     def get_dulmage_mendelsohn_partition(self):
         """
         Performs a Dulmage-Mendelsohn partitioning on the model and returns
@@ -991,16 +1052,25 @@ class DiagnosticsToolbox:
     # TODO: Block triangularization analysis
     # Number and size of blocks, polynomial degree of 1x1 blocks, simple pivot check of moderate sized sub-blocks?
 
-    def _collect_structural_warnings(self):
+    def _collect_structural_warnings(
+        self, ignore_evaluation_errors=False, ignore_unit_consistency=False
+    ):
         """
         Runs checks for structural warnings and returns two lists.
+
+        Args:
+            ignore_evaluation_errors - ignore potential evaluation error warnings
+            ignore_unit_consistency - ignore unit consistency warnings
 
         Returns:
             warnings - list of warning messages from structural analysis
             next_steps - list of suggested next steps to further investigate warnings
 
         """
-        uc = identify_inconsistent_units(self._model)
+        if not ignore_unit_consistency:
+            uc = identify_inconsistent_units(self._model)
+        else:
+            uc = []
         uc_var, uc_con, oc_var, oc_con = self.get_dulmage_mendelsohn_partition()
 
         # Collect warnings
@@ -1034,12 +1104,15 @@ class DiagnosticsToolbox:
         if any(len(x) > 0 for x in [oc_var, oc_con]):
             next_steps.append(self.display_overconstrained_set.__name__ + "()")
 
-        eval_warnings = self._collect_potential_eval_errors()
-        if len(eval_warnings) > 0:
-            warnings.append(
-                f"WARNING: Found {len(eval_warnings)} potential evaluation errors."
-            )
-            next_steps.append(self.display_potential_evaluation_errors.__name__ + "()")
+        if not ignore_evaluation_errors:
+            eval_warnings = self._collect_potential_eval_errors()
+            if len(eval_warnings) > 0:
+                warnings.append(
+                    f"WARNING: Found {len(eval_warnings)} potential evaluation errors."
+                )
+                next_steps.append(
+                    self.display_potential_evaluation_errors.__name__ + "()"
+                )
 
         return warnings, next_steps
 
@@ -1075,9 +1148,14 @@ class DiagnosticsToolbox:
 
         return cautions
 
-    def _collect_numerical_warnings(self, jac=None, nlp=None):
+    def _collect_numerical_warnings(
+        self, jac=None, nlp=None, ignore_parallel_components=False
+    ):
         """
         Runs checks for numerical warnings and returns two lists.
+
+        Args:
+            ignore_parallel_components - ignore checks for parallel components
 
         Returns:
             warnings - list of warning messages from numerical analysis
@@ -1105,6 +1183,7 @@ class DiagnosticsToolbox:
             next_steps.append(
                 self.display_constraints_with_large_residuals.__name__ + "()"
             )
+            next_steps.append(self.compute_infeasibility_explanation.__name__ + "()")
 
         # Variables outside bounds
         violated_bounds = _vars_violating_bounds(
@@ -1160,6 +1239,32 @@ class DiagnosticsToolbox:
             next_steps.append(
                 self.display_constraints_with_extreme_jacobians.__name__ + "()"
             )
+
+        # Parallel variables and constraints
+        if not ignore_parallel_components:
+            partol = self.config.parallel_component_tolerance
+            par_cons = check_parallel_jacobian(
+                self._model, tolerance=partol, direction="row", jac=jac, nlp=nlp
+            )
+            par_vars = check_parallel_jacobian(
+                self._model, tolerance=partol, direction="column", jac=jac, nlp=nlp
+            )
+            if par_cons:
+                p = "pair" if len(par_cons) == 1 else "pairs"
+                warnings.append(
+                    f"WARNING: {len(par_cons)} {p} of constraints are parallel"
+                    f" (to tolerance {partol:.1E})"
+                )
+                next_steps.append(
+                    self.display_near_parallel_constraints.__name__ + "()"
+                )
+            if par_vars:
+                p = "pair" if len(par_vars) == 1 else "pairs"
+                warnings.append(
+                    f"WARNING: {len(par_vars)} {p} of variables are parallel"
+                    f" (to tolerance {partol:.1E})"
+                )
+                next_steps.append(self.display_near_parallel_variables.__name__ + "()")
 
         return warnings, next_steps
 
@@ -1283,29 +1388,45 @@ class DiagnosticsToolbox:
 
         return cautions
 
-    def assert_no_structural_warnings(self):
+    def assert_no_structural_warnings(
+        self,
+        ignore_evaluation_errors: bool = False,
+        ignore_unit_consistency: bool = False,
+    ):
         """
         Checks for structural warnings in the model and raises an AssertionError
         if any are found.
+
+        Args:
+            ignore_evaluation_errors - ignore potential evaluation error warnings
+            ignore_unit_consistency - ignore unit consistency warnings
 
         Raises:
             AssertionError if any warnings are identified by structural analysis.
 
         """
-        warnings, _ = self._collect_structural_warnings()
+        warnings, _ = self._collect_structural_warnings(
+            ignore_evaluation_errors=ignore_evaluation_errors,
+            ignore_unit_consistency=ignore_unit_consistency,
+        )
         if len(warnings) > 0:
             raise AssertionError(f"Structural issues found ({len(warnings)}).")
 
-    def assert_no_numerical_warnings(self):
+    def assert_no_numerical_warnings(self, ignore_parallel_components=False):
         """
         Checks for numerical warnings in the model and raises an AssertionError
         if any are found.
+
+        Args:
+            ignore_parallel_components - ignore checks for parallel components
 
         Raises:
             AssertionError if any warnings are identified by numerical analysis.
 
         """
-        warnings, _ = self._collect_numerical_warnings()
+        warnings, _ = self._collect_numerical_warnings(
+            ignore_parallel_components=ignore_parallel_components
+        )
         if len(warnings) > 0:
             raise AssertionError(f"Numerical issues found ({len(warnings)}).")
 
@@ -1381,9 +1502,17 @@ class DiagnosticsToolbox:
         cautions = self._collect_numerical_cautions(jac=jac, nlp=nlp)
 
         stats = []
-        stats.append(
-            f"Jacobian Condition Number: {jacobian_cond(jac=jac, scaled=False):.3E}"
-        )
+        try:
+            stats.append(
+                f"Jacobian Condition Number: {jacobian_cond(jac=jac, scaled=False):.3E}"
+            )
+        except RuntimeError as err:
+            if "Factor is exactly singular" in str(err):
+                _log.info(err)
+                stats.append("Jacobian Condition Number: Undefined (Exactly Singular)")
+            else:
+                raise
+
         _write_report_section(
             stream=stream, lines_list=stats, title="Model Statistics", header="="
         )
@@ -1404,7 +1533,6 @@ class DiagnosticsToolbox:
             lines_list=next_steps,
             title="Suggested next steps:",
             line_if_empty=f"If you still have issues converging your model consider:\n"
-            f"{TAB*2}display_near_parallel_constraints()\n{TAB*2}display_near_parallel_variables()"
             f"\n{TAB*2}prepare_degeneracy_hunter()\n{TAB*2}prepare_svd_toolbox()",
             footer="=",
         )
@@ -1504,10 +1632,10 @@ class SVDToolbox:
 
     """
 
-    def __init__(self, model: _BlockData, **kwargs):
+    def __init__(self, model: BlockData, **kwargs):
         # TODO: In future may want to generalise this to accept indexed blocks
         # However, for now some of the tools do not support indexed blocks
-        if not isinstance(model, _BlockData):
+        if not isinstance(model, BlockData):
             raise TypeError(
                 "model argument must be an instance of a Pyomo BlockData object "
                 "(either a scalar Block or an element of an indexed Block)."
@@ -1689,9 +1817,9 @@ class SVDToolbox:
             stream = sys.stdout
 
         # Validate variable argument
-        if not isinstance(variable, _VarData):
+        if not isinstance(variable, VarData):
             raise TypeError(
-                f"variable argument must be an instance of a Pyomo _VarData "
+                f"variable argument must be an instance of a Pyomo VarData "
                 f"object (got {variable})."
             )
 
@@ -1736,9 +1864,9 @@ class SVDToolbox:
             stream = sys.stdout
 
         # Validate variable argument
-        if not isinstance(constraint, _ConstraintData):
+        if not isinstance(constraint, ConstraintData):
             raise TypeError(
-                f"constraint argument must be an instance of a Pyomo _ConstraintData "
+                f"constraint argument must be an instance of a Pyomo ConstraintData "
                 f"object (got {constraint})."
             )
 
@@ -1770,9 +1898,9 @@ class SVDToolbox:
 def _get_bounds_with_inf(node: NumericExpression):
     lb, ub = compute_bounds_on_expr(node)
     if lb is None:
-        lb = -math.inf
+        lb = -inf
     if ub is None:
-        ub = math.inf
+        ub = inf
     return lb, ub
 
 
@@ -1798,7 +1926,7 @@ def _check_eval_error_pow(
 
     integer_exponent = False
     # if the exponent is an integer, there should not be any evaluation errors
-    if isinstance(arg2, _GeneralVarData) and arg2.domain in integer_domains:
+    if isinstance(arg2, VarData) and arg2.domain in integer_domains:
         # The exponent is an integer variable
         # check if the base can be zero
         integer_exponent = True
@@ -1854,7 +1982,7 @@ def _check_eval_error_tan(
     node: NumericExpression, warn_list: List[str], config: ConfigDict
 ):
     lb, ub = _get_bounds_with_inf(node)
-    if not (math.isfinite(lb) and math.isfinite(ub)):
+    if not (isfinite(lb) and isfinite(ub)):
         msg = f"{node} may evaluate to -inf or inf; Argument bounds are {_get_bounds_with_inf(node.args[0])}"
         warn_list.append(msg)
 
@@ -1949,7 +2077,7 @@ class DegeneracyHunter2:
     def __init__(self, model, **kwargs):
         # TODO: In future may want to generalise this to accept indexed blocks
         # However, for now some of the tools do not support indexed blocks
-        if not isinstance(model, _BlockData):
+        if not isinstance(model, BlockData):
             raise TypeError(
                 "model argument must be an instance of a Pyomo BlockData object "
                 "(either a scalar Block or an element of an indexed Block)."
@@ -2989,6 +3117,459 @@ class DegeneracyHunter:
         print(v, "\t\t", v.lb, "\t", v.value, "\t", v.ub)
 
 
+def psweep_runner_validator(val):
+    """Domain validator for Parameter Sweep runners
+
+    Args:
+        val : value to be checked
+
+    Returns:
+        TypeError if val is not a valid callback
+    """
+    if issubclass(val, ParameterSweepBase):
+        return val
+
+    raise ValueError("Workflow runner must be a subclass of ParameterSweepBase.")
+
+
+CACONFIG = ConfigDict()
+CACONFIG.declare(
+    "input_specification",
+    ConfigValue(
+        domain=is_psweepspec,
+        doc="ParameterSweepSpecification object defining inputs to be sampled",
+    ),
+)
+CACONFIG.declare(
+    "workflow_runner",
+    ConfigValue(
+        default=SequentialSweepRunner,
+        domain=psweep_runner_validator,
+        doc="Parameter sweep workflow runner",
+    ),
+)
+CACONFIG.declare(
+    "solver_options",
+    ConfigValue(
+        domain=None,
+        description="Options to pass to IPOPT.",
+    ),
+)
+CACONFIG.declare(
+    "halt_on_error",
+    ConfigValue(
+        default=False,
+        domain=bool,
+        doc="Whether to halt execution of parameter sweep on encountering a solver error (default=False).",
+    ),
+)
+
+
+class IpoptConvergenceAnalysis:
+    """
+    Tool to perform a parameter sweep of model checking for numerical issues and
+    convergence characteristics. Users may specify an IDAES ParameterSweep class to
+    perform the sweep (default is SequentialSweepRunner).
+    """
+
+    CONFIG = CACONFIG()
+
+    def __init__(self, model, **kwargs):
+        # TODO: In future may want to generalise this to accept indexed blocks
+        # However, for now some of the tools do not support indexed blocks
+        if not isinstance(model, BlockData):
+            raise TypeError(
+                "model argument must be an instance of a Pyomo BlockData object "
+                "(either a scalar Block or an element of an indexed Block)."
+            )
+
+        self.config = self.CONFIG(kwargs)
+
+        self._model = model
+
+        solver = SolverFactory("ipopt")
+        if self.config.solver_options is not None:
+            solver.options = self.config.solver_options
+
+        self._psweep = self.config.workflow_runner(
+            input_specification=self.config.input_specification,
+            build_model=self._build_model,
+            rebuild_model=True,
+            run_model=self._run_model,
+            build_outputs=self._build_outputs,
+            halt_on_error=self.config.halt_on_error,
+            handle_solver_error=self._recourse,
+            solver=solver,
+        )
+
+    @property
+    def results(self):
+        """
+        Returns the results of the IpoptConvergenceAnalysis run
+        """
+        return self._psweep.results
+
+    @property
+    def samples(self):
+        """
+        Returns the set of input samples for convergence analysis (pandas DataFrame)
+        """
+        return self._psweep.get_input_samples()
+
+    def run_convergence_analysis(self):
+        """
+        Execute convergence analysis sweep by calling execute_parameter_sweep
+        method in specified runner.
+
+        Returns:
+            dict of results from parameter sweep
+        """
+        return self._psweep.execute_parameter_sweep()
+
+    def run_convergence_analysis_from_dict(self, input_dict: dict):
+        """
+        Execute convergence analysis sweep using specification defined in dict.
+
+        Args:
+            input_dict: dict to load specification from
+
+        Returns:
+            dict of results from parameter sweep
+        """
+        self.from_dict(input_dict)
+        return self.run_convergence_analysis()
+
+    def run_convergence_analysis_from_file(self, filename: str):
+        """
+        Execute convergence analysis sweep using specification defined in json file.
+
+        Args:
+            filename: name of file to load specification from as string
+
+        Returns:
+            dict of results from parameter sweep
+        """
+        self.from_json_file(filename)
+        return self.run_convergence_analysis()
+
+    def compare_convergence_to_baseline(
+        self, filename: str, rel_tol: float = 0.1, abs_tol: float = 1
+    ):
+        """
+        Run convergence analysis and compare results to those defined in baseline file.
+
+        Args:
+            filename: name of baseline file to load specification from as string
+            rel_tol: relative tolerance to use for comparing number of iterations
+            abs_tol: absolute tolerance to use for comparing number of iterations
+
+        Returns:
+            dict containing lists of differences between convergence analysis run and baseline
+        """
+        with open(filename, "r") as f:
+            # Load file manually so we have saved results
+            jdict = json.load(f)
+        f.close()
+
+        # Run convergence analysis from dict
+        self.run_convergence_analysis_from_dict(jdict)
+
+        # Compare results
+        return self._compare_results_to_dict(jdict, rel_tol=rel_tol, abs_tol=abs_tol)
+
+    def assert_baseline_comparison(
+        self, filename: str, rel_tol: float = 0.1, abs_tol: float = 1
+    ):
+        """
+        Run convergence analysis and assert no differences in results to those defined
+        in baseline file.
+
+        Args:
+            filename: name of baseline file to load specification from as string
+            rel_tol: relative tolerance to use for comparing number of iterations
+            abs_tol: absolute tolerance to use for comparing number of iterations
+
+        Raises:
+            AssertionError if results of convergence analysis do not match baseline
+        """
+        diffs = self.compare_convergence_to_baseline(
+            filename, rel_tol=rel_tol, abs_tol=abs_tol
+        )
+
+        if any(len(v) != 0 for v in diffs.values()):
+            raise AssertionError("Convergence analysis does not match baseline")
+
+    def report_convergence_summary(self, stream=None):
+        """
+        Reports a brief summary of the model convergence run.
+
+        Args:
+            stream: Optional output stream to print results to.
+
+        Returns:
+            None
+
+        """
+        if stream is None:
+            stream = sys.stdout
+
+        successes = 0
+        failures = 0
+        runs_w_restoration = 0
+        runs_w_regulariztion = 0
+        runs_w_num_iss = 0
+
+        for v in self.results.values():
+            # Check for differences
+            if v["success"]:
+                successes += 1
+            else:
+                failures += 1
+
+            if v["results"]["iters_in_restoration"] > 0:
+                runs_w_restoration += 1
+            if v["results"]["iters_w_regularization"] > 0:
+                runs_w_regulariztion += 1
+            if v["results"]["numerical_issues"] > 0:
+                runs_w_num_iss += 1
+
+        stream.write(
+            f"Successes: {successes}, Failures {failures} ({100*successes/(successes+failures)}%)\n"
+        )
+        stream.write(f"Runs with Restoration: {runs_w_restoration}\n")
+        stream.write(f"Runs with Regularization: {runs_w_regulariztion}\n")
+        stream.write(f"Runs with Numerical Issues: {runs_w_num_iss}\n")
+
+    def to_dict(self):
+        """
+        Serialize specification and current results to dict form
+
+        Returns:
+            dict
+        """
+        return self._psweep.to_dict()
+
+    def from_dict(self, input_dict):
+        """
+        Load specification and results from dict.
+
+        Args:
+            input_dict: dict to load from
+
+        Returns:
+            None
+        """
+        return self._psweep.from_dict(input_dict)
+
+    def to_json_file(self, filename):
+        """
+        Write specification and results to json file.
+
+        Args:
+            filename: name of file to write to as string
+
+        Returns:
+            None
+        """
+        return self._psweep.to_json_file(filename)
+
+    def from_json_file(self, filename):
+        """
+        Load specification and results from json file.
+
+        Args:
+            filename: name of file to load from as string
+
+        Returns:
+            None
+        """
+        return self._psweep.from_json_file(filename)
+
+    def _build_model(self):
+        # Create new instance of model by cloning
+        return self._model.clone()
+
+    def _run_model(self, model, solver):
+        # Run model using IPOPT and collect stats
+        (
+            status,
+            iters,
+            iters_in_restoration,
+            iters_w_regularization,
+            time,
+        ) = self._run_ipopt_with_stats(model, solver)
+
+        run_stats = [
+            iters,
+            iters_in_restoration,
+            iters_w_regularization,
+            time,
+        ]
+
+        success = check_optimal_termination(status)
+
+        return success, run_stats
+
+    @staticmethod
+    def _build_outputs(model, run_stats):
+        # Run model diagnostics numerical checks
+        dt = DiagnosticsToolbox(model=model)
+
+        warnings = False
+        try:
+            dt.assert_no_numerical_warnings()
+        except AssertionError:
+            warnings = True
+
+        # Compile Results
+        return {
+            "iters": run_stats[0],
+            "iters_in_restoration": run_stats[1],
+            "iters_w_regularization": run_stats[2],
+            "time": run_stats[3],
+            "numerical_issues": warnings,
+        }
+
+    @staticmethod
+    def _recourse(model):
+        # Return a default dict indicating no results
+        return {
+            "iters": -1,
+            "iters_in_restoration": -1,
+            "iters_w_regularization": -1,
+            "time": -1,
+            "numerical_issues": -1,
+        }
+
+    @staticmethod
+    def _parse_ipopt_output(ipopt_file):
+        # PArse IPOPT logs and return key metrics
+        # ToDO: Check for final iteration with regularization or restoration
+
+        iters = 0
+        iters_in_restoration = 0
+        iters_w_regularization = 0
+        time = 0
+        # parse the output file to get the iteration count, solver times, etc.
+        with open(ipopt_file, "r") as f:
+            parseline = False
+            for line in f:
+                if line.startswith("iter"):
+                    # This marks the start of the iteration logging, set parseline True
+                    parseline = True
+                elif line.startswith("Number of Iterations....:"):
+                    # Marks end of iteration logging, set parseline False
+                    parseline = False
+                    tokens = line.split()
+                    iters = int(tokens[3])
+                elif parseline:
+                    # Line contains details of an iteration, look for restoration or regularization
+                    tokens = line.split()
+                    try:
+                        if not tokens[6] == "-":
+                            # Iteration with regularization
+                            iters_w_regularization += 1
+                        if tokens[0].endswith("r"):
+                            # Iteration in restoration
+                            iters_in_restoration += 1
+                    except IndexError:
+                        # Blank line at end of iteration list, so assume we hit this
+                        pass
+                elif line.startswith(
+                    "Total CPU secs in IPOPT (w/o function evaluations)   ="
+                ):
+                    tokens = line.split()
+                    time += float(tokens[9])
+                elif line.startswith(
+                    "Total CPU secs in NLP function evaluations           ="
+                ):
+                    tokens = line.split()
+                    time += float(tokens[8])
+
+        return iters, iters_in_restoration, iters_w_regularization, time
+
+    def _run_ipopt_with_stats(self, model, solver, max_iter=500, max_cpu_time=120):
+        # Solve model using provided solver (assumed to be IPOPT) and parse logs
+        # ToDo: Check that the "solver" is, in fact, IPOPT
+
+        TempfileManager.push()
+        tempfile = TempfileManager.create_tempfile(suffix="ipopt_out", text=True)
+        opts = {
+            "output_file": tempfile,
+            "max_iter": max_iter,
+            "max_cpu_time": max_cpu_time,
+        }
+
+        status_obj = solver.solve(model, options=opts, tee=True)
+
+        (
+            iters,
+            iters_in_restoration,
+            iters_w_regularization,
+            time,
+        ) = self._parse_ipopt_output(tempfile)
+
+        TempfileManager.pop(remove=True)
+        return status_obj, iters, iters_in_restoration, iters_w_regularization, time
+
+    def _compare_results_to_dict(
+        self,
+        compare_dict: dict,
+        rel_tol: float = 0.1,
+        abs_tol: float = 1,
+    ):
+        # Compare results
+        success_diff = []
+        iters_diff = []
+        restore_diff = []
+        reg_diff = []
+        num_iss_diff = []
+
+        for k, v in self.results.items():
+            # Get sample result from compare dict
+            try:
+                comp = compare_dict["results"][k]
+            except KeyError:
+                # Reading from json often converts ints to strings
+                # Check to see if the index as a string works
+                comp = compare_dict["results"][str(k)]
+
+            # Check for differences
+            if v["success"] != comp["success"]:
+                success_diff.append(k)
+            if not isclose(
+                v["results"]["iters"],
+                comp["results"]["iters"],
+                rel_tol=rel_tol,
+                abs_tol=abs_tol,
+            ):
+                iters_diff.append(k)
+            if not isclose(
+                v["results"]["iters_in_restoration"],
+                comp["results"]["iters_in_restoration"],
+                rel_tol=rel_tol,
+                abs_tol=abs_tol,
+            ):
+                restore_diff.append(k)
+            if not isclose(
+                v["results"]["iters_w_regularization"],
+                comp["results"]["iters_w_regularization"],
+                rel_tol=rel_tol,
+                abs_tol=abs_tol,
+            ):
+                reg_diff.append(k)
+            if v["results"]["numerical_issues"] != comp["results"]["numerical_issues"]:
+                num_iss_diff.append(k)
+
+        return {
+            "success": success_diff,
+            "iters": iters_diff,
+            "iters_in_restoration": restore_diff,
+            "iters_w_regularization": reg_diff,
+            "numerical_issues": num_iss_diff,
+        }
+
+
 def get_valid_range_of_component(component):
     """
     Return the valid range for a component as specified in the model metadata.
@@ -3045,7 +3626,7 @@ def set_bounds_from_valid_range(component, descend_into=True):
     if component.is_indexed():
         for k in component:
             set_bounds_from_valid_range(component[k])
-    elif isinstance(component, _BlockData):
+    elif isinstance(component, BlockData):
         for i in component.component_data_objects(
             ctype=[Var, Param], descend_into=descend_into
         ):
@@ -3086,7 +3667,7 @@ def list_components_with_values_outside_valid_range(component, descend_into=True
             comp_list.extend(
                 list_components_with_values_outside_valid_range(component[k])
             )
-    elif isinstance(component, _BlockData):
+    elif isinstance(component, BlockData):
         for i in component.component_data_objects(
             ctype=[Var, Param], descend_into=descend_into
         ):
@@ -3129,13 +3710,24 @@ def ipopt_solve_halt_on_error(model, options=None):
     )
 
 
-def check_parallel_jacobian(model, tolerance: float = 1e-4, direction: str = "row"):
+def check_parallel_jacobian(
+    model,
+    tolerance: float = 1e-4,
+    direction: str = "row",
+    jac=None,
+    nlp=None,
+):
     """
     Check for near-parallel rows or columns in the Jacobian.
 
     Near-parallel rows or columns indicate a potential degeneracy in the model,
     as this means that the associated constraints or variables are (near)
     duplicates of each other.
+
+    For efficiency, the ``jac`` and ``nlp`` arguments may be provided if they are
+    already available. If these are provided, the provided model is not used. If
+    either ``jac`` or ``nlp`` is not provided, a Jacobian and ``PyomoNLP`` are
+    computed using the model.
 
     This method is based on work published in:
 
@@ -3147,6 +3739,8 @@ def check_parallel_jacobian(model, tolerance: float = 1e-4, direction: str = "ro
         model: model to be analysed
         tolerance: tolerance to use to determine if constraints/variables are parallel
         direction: 'row' (default, constraints) or 'column' (variables)
+        jac: model Jacobian as a ``scipy.sparse.coo_matrix``, optional
+        nlp: ``PyomoNLP`` of model, optional
 
     Returns:
         list of 2-tuples containing parallel Pyomo components
@@ -3161,7 +3755,8 @@ def check_parallel_jacobian(model, tolerance: float = 1e-4, direction: str = "ro
             "Must be 'row' or 'column'."
         )
 
-    jac, nlp = get_jacobian(model, scaled=False)
+    if jac is None or nlp is None:
+        jac, nlp = get_jacobian(model, scaled=False)
 
     # Get vectors that we will check, and the Pyomo components
     # they correspond to.

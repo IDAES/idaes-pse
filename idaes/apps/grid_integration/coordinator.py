@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -28,13 +28,11 @@ class PrescientPluginModule(ModuleType):
 
 
 class DoubleLoopCoordinator:
-
     """
     Coordinate Prescient, tracker and bidder.
     """
 
     def __init__(self, bidder, tracker, projection_tracker):
-
         """
         Initializes the DoubleLoopCoordinator object and registers functionalities
         in Prescient's plugin system.
@@ -58,7 +56,6 @@ class DoubleLoopCoordinator:
         self.projection_tracker = projection_tracker
 
     def register_plugins(self, context, options, plugin_config):
-
         """
         Register functionalities in Prescient's plugin system.
 
@@ -101,7 +98,6 @@ class DoubleLoopCoordinator:
         return
 
     def get_configuration(self, key):
-
         """
         Register customized commandline options.
 
@@ -131,7 +127,6 @@ class DoubleLoopCoordinator:
         return PrescientPluginModule(self.get_configuration, self.register_plugins)
 
     def initialize_customized_results(self, options, simulator):
-
         """
         This method is outdated.
         """
@@ -150,7 +145,6 @@ class DoubleLoopCoordinator:
         return
 
     def push_hourly_stats_to_forecaster(self, prescient_hourly_stats):
-
         """
         This method pushes the hourly stats from Prescient to the price forecaster
         once the hourly stats are published.
@@ -191,7 +185,6 @@ class DoubleLoopCoordinator:
         )
 
     def _update_bids(self, gen_dict, bids, start_hour, horizon):
-
         """
         This method takes bids and pass the information in the bids to generator
         dictionary from Prescient.
@@ -277,7 +270,6 @@ class DoubleLoopCoordinator:
         return
 
     def _pass_DA_bid_to_prescient(self, options, ruc_instance, bids):
-
         """
         This method passes the bids into the RUC model for day-ahead market clearing.
 
@@ -302,7 +294,6 @@ class DoubleLoopCoordinator:
         return
 
     def assemble_project_tracking_signal(self, options, simulator, hour):
-
         """
         This function assembles the signals for the tracking model to estimate the
         state of the bidding model at the beginning of next RUC.
@@ -328,7 +319,6 @@ class DoubleLoopCoordinator:
         return market_signals
 
     def project_tracking_trajectory(self, options, simulator, ruc_hour):
-
         """
         This function projects the full power dispatch trajectory from the
         tracking model so we can use it to update the bidding model, i.e. advance
@@ -407,7 +397,6 @@ class DoubleLoopCoordinator:
         return
 
     def _update_static_params(self, gen_dict):
-
         """
         Update static parameters in the Prescient generator parameter data dictionary depending on generator type.
 
@@ -477,7 +466,6 @@ class DoubleLoopCoordinator:
         return
 
     def bid_into_DAM(self, options, simulator, ruc_instance, ruc_date, ruc_hour):
-
         """
         This function uses the bidding objects to bid into the day-ahead market
         (DAM).
@@ -522,7 +510,6 @@ class DoubleLoopCoordinator:
         return
 
     def fetch_DA_prices(self, options, simulator, result, uc_date, uc_hour):
-
         """
         This method fetches the day-ahead market prices from unit commitment results,
         and save it as a coordinator attribute.
@@ -556,7 +543,6 @@ class DoubleLoopCoordinator:
         self.next_DA_prices = DA_prices
 
     def fetch_DA_dispatches(self, options, simulator, result, uc_date, uc_hour):
-
         """
         This method fetches the day-ahead dispatches from unit commitment results,
         and save it as a coordinator attribute.
@@ -599,7 +585,6 @@ class DoubleLoopCoordinator:
         self.next_DA_dispatches = DA_dispatches
 
     def _pass_RT_bid_to_prescient(self, options, simulator, sced_instance, bids, hour):
-
         """
         This method passes the bids into the SCED model for real-time market
         clearing.
@@ -629,7 +614,6 @@ class DoubleLoopCoordinator:
         return
 
     def bid_into_RTM(self, options, simulator, sced_instance):
-
         """
         This function bids into the real-time market. At this moment I just copy the
         corresponding day-ahead bid here.
@@ -664,7 +648,6 @@ class DoubleLoopCoordinator:
     def assemble_sced_tracking_market_signals(
         self, options, simulator, sced_instance, hour
     ):
-
         """
         This function assembles the signals for the tracking model.
 
@@ -700,7 +683,6 @@ class DoubleLoopCoordinator:
     def _assemble_sced_tracking_market_signals(
         self, hour, sced_dispatch, tracking_horizon
     ):
-
         """
         This function assembles the signals for the tracking model.
 
@@ -734,7 +716,6 @@ class DoubleLoopCoordinator:
         return market_signals
 
     def track_sced_signal(self, options, simulator, sced_instance, lmp_sced):
-
         """
         This methods uses the tracking object to track the current real-time market
         signals.
@@ -776,7 +757,6 @@ class DoubleLoopCoordinator:
         return
 
     def update_observed_dispatch(self, options, simulator, ops_stats):
-
         """
         This methods extract the actual power delivered by the tracking model and
         inform Prescient, so Prescient can use this data to calculate the settlement
@@ -809,7 +789,6 @@ class DoubleLoopCoordinator:
         return
 
     def activate_pending_DA_data(self, options, simulator):
-
         """
         This function puts the day-ahead data computed in the day before into effect,
         i.e. the data for the next day become the data for the current day.
@@ -835,7 +814,6 @@ class DoubleLoopCoordinator:
         self.current_avail_DA_dispatches = self.current_DA_dispatches
 
     def write_plugin_results(self, options, simulator):
-
         """
         After the simulation is completed, the plugins can write their own customized
         results. Each plugin will have to have a method named 'write_results'.

@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -1250,9 +1250,9 @@ class _ShowInfo:
             if k in ("created", "modified"):
                 result[k] = dateize(v)
             elif k == "version_info":
-                result[
-                    "version"
-                ] = f"{resource.format_version(v['version'])} @ {dateize(v['created'])}"
+                result["version"] = (
+                    f"{resource.format_version(v['version'])} @ {dateize(v['created'])}"
+                )
             elif k == "relations":
                 relations = []
                 for rel in v:

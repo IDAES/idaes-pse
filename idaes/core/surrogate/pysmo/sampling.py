@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -15,11 +15,13 @@
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 
-import warnings
 import itertools
 
 import numpy as np
 import pandas as pd
+import idaes.logger as idaeslog
+
+_log = idaeslog.getLogger(__name__)
 
 __author__ = "Oluwamayowa Amusat"
 
@@ -180,7 +182,7 @@ class SamplingMethods:
 
             unique_sample_points = np.unique(points_closest_unscaled, axis=0)
             if unique_sample_points.shape[0] < points_closest_unscaled.shape[0]:
-                warnings.warn(
+                _log.warning(
                     "The returned number of samples is less than the requested number due to repetitions during nearest neighbour selection."
                 )
             print(
@@ -388,7 +390,7 @@ class SamplingMethods:
                     warn_str = "The following columns were dropped: " + str(
                         dropped_cols
                     )
-                    warnings.warn(warn_str)
+                    _log.warning(warn_str)
                 self.x_data = data_input.filter(xlabels).values
                 self.data_headers = set_of_labels
                 self.data_headers_xvars = xlabels
@@ -448,7 +450,7 @@ class SamplingMethods:
                     warn_str = "The following columns were dropped: " + str(
                         dropped_cols
                     )
-                    warnings.warn(warn_str)
+                    _log.warning(warn_str)
                 self.x_data = data_input[:, xlabels]
                 self.data_headers = set_of_labels
                 self.data_headers_xvars = xlabels
@@ -1028,6 +1030,8 @@ class HaltonSampling(SamplingMethods):
             self.x_data = bounds_array  # Only x data will be present in this case
 
         if self.x_data.shape[1] > 10:
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception(
                 "Dimensionality problem: This method is not available for problems with dimensionality > 10: the performance of the method degrades substantially at higher dimensions"
             )
@@ -1066,12 +1070,12 @@ class HaltonSampling(SamplingMethods):
 
 
 class HammersleySampling(SamplingMethods):
-    """
+    r"""
     A class that performs Hammersley Sampling.
 
     Hammersley samples are generated in a similar way to Halton samples - based on the reversing/flipping the base conversion of numbers using primes.
 
-    To generate :math:`n` samples in a :math:`p`-dimensional space, the first :math:`\\left(p-1\\right)` prime numbers are used to generate the samples. The first dimension is obtained by uniformly dividing the region into **no_samples points**.
+    To generate :math:`n` samples in a :math:`p`-dimensional space, the first :math:`\left(p-1\right)` prime numbers are used to generate the samples. The first dimension is obtained by uniformly dividing the region into **no_samples points**.
 
     Note:
         Use of this method is limited to use in low-dimensionality problems (less than 10 variables). At higher dimensionalities, the performance of the sampling method has been shown to degrade.
@@ -1209,6 +1213,8 @@ class HammersleySampling(SamplingMethods):
             self.x_data = bounds_array  # Only x data will be present in this case
 
         if self.x_data.shape[1] > 10:
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception(
                 "Dimensionality problem: This method is not available for problems with dimensionality > 10: the performance of the method degrades substantially at higher dimensions"
             )
@@ -1413,13 +1419,15 @@ class CVTSampling(SamplingMethods):
         elif tolerance > 0.1:
             raise ValueError("Tolerance must be less than 0.1 to achieve good results")
         elif tolerance < 1e-9:
-            warnings.warn(
+            _log.warning(
                 "Tolerance too tight. CVT algorithm may take long time to converge."
             )
         elif (tolerance < 0.1) and (tolerance > 1e-9):
             # valid tolerance
             pass
         else:
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception("Invalid tolerance input")
         self.eps = tolerance
 
@@ -1778,7 +1786,7 @@ class CustomSampling(SamplingMethods):
                     )
                     > 0
                 ):
-                    warnings.warn(
+                    _log.warning(
                         "Points adjusted to remain within specified Gaussian bounds. This may affect the underlying distribution."
                     )
                     out_locations = [
@@ -1790,7 +1798,7 @@ class CustomSampling(SamplingMethods):
                         rep_value = var_values[k]
                         while (rep_value < 0) or (rep_value > 1):
                             rep_value = dist(loc=0.5, scale=1 / 6, size=1)
-                        var_values[k] = rep_value
+                        var_values[k] = rep_value[0]
                 assert (
                     sum([1 for i in range(0, var_values.shape[0]) if var_values[i] > 1])
                     + sum(

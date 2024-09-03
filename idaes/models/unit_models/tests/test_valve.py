@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -34,10 +34,14 @@ from pyomo.util.check_units import assert_units_consistent, assert_units_equival
 from idaes.models.properties import iapws95
 import idaes.core.util.scaling as iscale
 from idaes.models.properties.general_helmholtz import helmholtz_available
+from idaes.core.util import DiagnosticsToolbox
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_solver(options={"nlp_scaling_method": "user-scaling"})
+# TODO: Will need to switch this to not use user-scaling once scaling tools are ready
+solver = get_solver(
+    solver="ipopt_v2", solver_options={"nlp_scaling_method": "user-scaling"}
+)
 
 
 @pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
@@ -102,13 +106,9 @@ class GenericValve(object):
         assert number_unused_variables(valve_model) == 0
 
     @pytest.mark.component
-    def test_units(self, valve_model):
-        assert_units_consistent(valve_model)
-        assert_units_equivalent(valve_model.fs.valve.flow_var[0], units.mol / units.s)
-
-    @pytest.mark.unit
-    def test_dof(self, valve_model):
-        assert degrees_of_freedom(valve_model) == 0
+    def test_structural_issues(self, valve_model):
+        dt = DiagnosticsToolbox(valve_model)
+        dt.assert_no_structural_warnings()
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -133,6 +133,13 @@ class GenericValve(object):
         assert pytest.approx(1000, rel=1e-3) == value(
             valve_model.fs.valve.outlet.flow_mol[0]
         )
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, valve_model):
+        dt = DiagnosticsToolbox(valve_model)
+        dt.assert_no_numerical_warnings()
 
 
 class TestLinearValve(GenericValve):

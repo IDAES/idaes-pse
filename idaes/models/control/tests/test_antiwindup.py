@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -242,11 +242,12 @@ def create_model(
     # Initialize the model
 
     solver = get_solver(
-        options={
+        solver="ipopt_v2",
+        solver_options={
             "max_iter": 300,
             "nlp_scaling_method": "user-scaling",
             "linear_solver": "ma57",
-        }
+        },
     )
 
     for t in m.fs.time:
@@ -362,8 +363,6 @@ def test_setpoint_change_windup():
     assert tj2.get_vec(m_dynamic.fs.valve_1.valve_opening[tf])[19] >= 0.82
     assert tj2.get_vec(m_dynamic.fs.valve_1.valve_opening[tf])[23] <= 0.56
 
-    return m_dynamic, solver, tj2
-
 
 @pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
 @pytest.mark.component
@@ -421,8 +420,6 @@ def test_setpoint_change_conditional_integration():
     assert tj2.get_vec(m_dynamic.fs.valve_1.valve_opening[tf])[28] == pytest.approx(
         s2_valve, abs=1e-3
     )
-
-    return m_dynamic, solver, tj2
 
 
 @pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
@@ -485,30 +482,3 @@ def test_setpoint_change_back_calculation():
     assert tj2.get_vec(m_dynamic.fs.valve_1.valve_opening[tf])[40] == pytest.approx(
         s2_valve, abs=1e-3
     )
-
-    return m_dynamic, solver, tj2
-
-
-if __name__ == "__main__":
-    m, solver, tj2 = test_setpoint_change_windup()
-
-    fig = plt.figure(figsize=(4, 5.5))
-    axes = fig.subplots(nrows=3, ncols=1)
-    time = tj2.get_vec("_time")
-    tf = m.fs.time.last()
-
-    axes[0].plot(time, tj2.get_vec(m.fs.valve_1.valve_opening[tf]))
-    axes[0].set_xlabel("time (s)")
-    axes[0].set_ylabel("opening (fraction open)")
-
-    axes[1].plot(
-        time, tj2.get_vec(m.fs.tank_2.control_volume.properties_out[tf].pressure) / 1000
-    )
-    axes[1].set_xlabel("time (s)")
-    axes[1].set_ylabel("tank pressure (kPa)")
-
-    axes[2].plot(time, tj2.get_vec(m.fs.ctrl.mv_integral_component[tf]))
-    axes[2].set_xlabel("time (s)")
-    axes[2].set_ylabel("integral component (fraction open)")
-
-    fig.tight_layout()

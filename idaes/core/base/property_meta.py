@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -257,8 +257,19 @@ class UnitSet(object):
         return self._length**3
 
     @property
-    def MOLAR_VOLUME(self):
+    def VOLUME_MASS(self):
+        return self._length**3 * self._mass**-1
+
+    @property
+    def VOLUME_MOLE(self):
         return self._length**3 * self._amount**-1
+
+    # Backward compatibility name
+    @property
+    def MOLAR_VOLUME(self):
+        msg = "The unit name MOLAR_VOLUME is being deprecated in favor of VOLUME_MOL."
+        deprecation_warning(msg=msg, logger=_log, version="2.3.0", remove_in="3.0.0")
+        return self.VOLUME_MOLE
 
     # Flows
     @property
@@ -373,9 +384,7 @@ class UnitSet(object):
     # Entropy
     @property
     def ENTROPY(self):
-        return (
-            self._mass * self._length**2 * self._time**-2 * self._temperature**-1
-        )
+        return self._mass * self._length**2 * self._time**-2 * self._temperature**-1
 
     @property
     def ENTROPY_MASS(self):

@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -292,7 +292,7 @@ def test_stream_table_dataframe_to_string(m):
 ###
 # Create a dummy StateBlock class
 ##
-@declare_process_block_class("TestStateBlock", block_class=StateBlock)
+@declare_process_block_class("StateBlockForTesting", block_class=StateBlock)
 class StateTestBlockData(StateBlockData):
     def build(self):
         self.x = Var(initialize=0)
@@ -303,7 +303,7 @@ class StateTestBlockData(StateBlockData):
         self.flow_mol = Var(["CO2", "H2O"])
 
 
-@declare_process_block_class("TestStateBlock2", block_class=StateBlock)
+@declare_process_block_class("StateBlockForTesting2", block_class=StateBlock)
 class StateTestBlockData(StateBlockData):
     def build(self):
         self.pressure = Var()
@@ -316,9 +316,9 @@ class StateTestBlockData(StateBlockData):
 def gtmodel():
     time_set = set([0, 1])
     m = ConcreteModel()
-    m.state_a = TestStateBlock(time_set)
-    m.state_b = TestStateBlock(time_set, [1, 2, 3])
-    m.state_c = TestStateBlock2(time_set)
+    m.state_a = StateBlockForTesting(time_set)
+    m.state_b = StateBlockForTesting(time_set, [1, 2, 3])
+    m.state_c = StateBlockForTesting2(time_set)
 
     m.state_a[0].pressure = 11000
     m.state_a[0].enth_mol = 1100

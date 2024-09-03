@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -429,11 +429,7 @@ constructed,
         def volume_eqn(b, t):
             return (
                 b.volume[t]
-                == 0.25
-                * const.pi
-                * b.tube_diameter**2
-                * b.tube_length
-                * b.number_tubes
+                == 0.25 * const.pi * b.tube_diameter**2 * b.tube_length * b.number_tubes
             )
 
     def _make_performance(self):

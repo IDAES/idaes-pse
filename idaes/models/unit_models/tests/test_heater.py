@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -23,7 +23,6 @@ from pyomo.environ import (
     value,
     units as pyunits,
 )
-from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 
 from idaes.core import (
     FlowsheetBlock,
@@ -43,7 +42,6 @@ from idaes.models.properties.examples.saponification_thermo import (
 from idaes.models.properties.modular_properties.examples.BT_PR import configuration
 
 from idaes.core.util.model_statistics import (
-    degrees_of_freedom,
     number_variables,
     number_total_constraints,
     number_unused_variables,
@@ -59,10 +57,11 @@ from idaes.core.initialization import (
     SingleControlVolumeUnitInitializer,
     InitializationStatus,
 )
+from idaes.core.util import DiagnosticsToolbox
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_solver()
+solver = get_solver("ipopt_v2")
 
 
 # -----------------------------------------------------------------------------
@@ -133,16 +132,10 @@ class TestBTX(object):
         assert number_total_constraints(btx) == 17
         assert number_unused_variables(btx) == 0
 
-    @pytest.mark.integration
-    def test_units(self, btx):
-        assert_units_equivalent(btx.fs.unit.control_volume.heat, pyunits.J / pyunits.s)
-        assert_units_equivalent(btx.fs.unit.heat_duty[0], pyunits.J / pyunits.s)
-        assert_units_equivalent(btx.fs.unit.deltaP[0], pyunits.Pa)
-        assert_units_consistent(btx)
-
-    @pytest.mark.unit
-    def test_dof(self, btx):
-        assert degrees_of_freedom(btx) == 0
+    @pytest.mark.component
+    def test_structural_issues(self, btx):
+        dt = DiagnosticsToolbox(btx)
+        dt.assert_no_structural_warnings()
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -190,6 +183,13 @@ class TestBTX(object):
             )
             <= 1e-6
         )
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, btx):
+        dt = DiagnosticsToolbox(btx)
+        dt.assert_no_numerical_warnings()
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -240,18 +240,10 @@ class TestIAPWS(object):
         assert number_total_constraints(iapws) == 3
         assert number_unused_variables(iapws) == 0
 
-    @pytest.mark.integration
-    def test_units(self, iapws):
-        assert_units_equivalent(
-            iapws.fs.unit.control_volume.heat, pyunits.J / pyunits.s
-        )
-        assert_units_equivalent(iapws.fs.unit.heat_duty[0], pyunits.J / pyunits.s)
-        assert_units_equivalent(iapws.fs.unit.deltaP[0], pyunits.Pa)
-        assert_units_consistent(iapws)
-
-    @pytest.mark.unit
-    def test_dof(self, iapws):
-        assert degrees_of_freedom(iapws) == 0
+    @pytest.mark.component
+    def test_structural_issues(self, iapws):
+        dt = DiagnosticsToolbox(iapws)
+        dt.assert_no_structural_warnings()
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -302,6 +294,13 @@ class TestIAPWS(object):
             )
             <= 1e-6
         )
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, iapws):
+        dt = DiagnosticsToolbox(iapws)
+        dt.assert_no_numerical_warnings()
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -371,8 +370,8 @@ class TestSaponification(object):
         m.fs.unit.inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
         m.fs.unit.inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
         m.fs.unit.inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
-        m.fs.unit.inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
-        m.fs.unit.inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "SodiumAcetate"].fix(1e-8)
+        m.fs.unit.inlet.conc_mol_comp[0, "Ethanol"].fix(1e-8)
 
         m.fs.unit.heat_duty.fix(1000)
 
@@ -399,17 +398,10 @@ class TestSaponification(object):
         assert number_total_constraints(sapon) == 8
         assert number_unused_variables(sapon) == 0
 
-    @pytest.mark.integration
-    def test_units(self, sapon):
-        assert_units_equivalent(
-            sapon.fs.unit.control_volume.heat, pyunits.J / pyunits.s
-        )
-        assert_units_equivalent(sapon.fs.unit.heat_duty[0], pyunits.J / pyunits.s)
-        assert_units_consistent(sapon)
-
-    @pytest.mark.unit
-    def test_dof(self, sapon):
-        assert degrees_of_freedom(sapon) == 0
+    @pytest.mark.component
+    def test_structural_issues(self, sapon):
+        dt = DiagnosticsToolbox(sapon)
+        dt.assert_no_structural_warnings()
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -432,11 +424,21 @@ class TestSaponification(object):
     def test_solution(self, sapon):
         assert pytest.approx(1e-3, abs=1e-6) == value(sapon.fs.unit.outlet.flow_vol[0])
 
-        assert 55388.0 == value(sapon.fs.unit.inlet.conc_mol_comp[0, "H2O"])
-        assert 100.0 == value(sapon.fs.unit.inlet.conc_mol_comp[0, "NaOH"])
-        assert 100.0 == value(sapon.fs.unit.inlet.conc_mol_comp[0, "EthylAcetate"])
-        assert 0.0 == value(sapon.fs.unit.inlet.conc_mol_comp[0, "SodiumAcetate"])
-        assert 0.0 == value(sapon.fs.unit.inlet.conc_mol_comp[0, "Ethanol"])
+        assert pytest.approx(55388.0, rel=1e-5) == value(
+            sapon.fs.unit.inlet.conc_mol_comp[0, "H2O"]
+        )
+        assert pytest.approx(100.0, rel=1e-5) == value(
+            sapon.fs.unit.inlet.conc_mol_comp[0, "NaOH"]
+        )
+        assert pytest.approx(100.0, rel=1e-5) == value(
+            sapon.fs.unit.inlet.conc_mol_comp[0, "EthylAcetate"]
+        )
+        assert pytest.approx(0.0, abs=1e-5) == value(
+            sapon.fs.unit.inlet.conc_mol_comp[0, "SodiumAcetate"]
+        )
+        assert pytest.approx(0.0, abs=1e-5) == value(
+            sapon.fs.unit.inlet.conc_mol_comp[0, "Ethanol"]
+        )
 
         assert pytest.approx(320.2, abs=1e-1) == value(
             sapon.fs.unit.outlet.temperature[0]
@@ -473,6 +475,13 @@ class TestSaponification(object):
             <= 1e-3
         )
 
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, sapon):
+        dt = DiagnosticsToolbox(sapon)
+        dt.assert_no_numerical_warnings()
+
     @pytest.mark.ui
     @pytest.mark.unit
     def test_get_performance_contents(self, sapon):
@@ -502,6 +511,12 @@ class TestBT_Generic(object):
         m.fs.unit.heat_duty.fix(-5000)
         m.fs.unit.deltaP.fix(0)
 
+        # Set small values of epsilon to get sufficiently accurate results
+        m.fs.unit.control_volume.properties_in[0].eps_t_Vap_Liq.set_value(1e-4)
+        m.fs.unit.control_volume.properties_in[0].eps_z_Vap_Liq.set_value(1e-4)
+        m.fs.unit.control_volume.properties_out[0].eps_t_Vap_Liq.set_value(1e-4)
+        m.fs.unit.control_volume.properties_out[0].eps_z_Vap_Liq.set_value(1e-4)
+
         return m
 
     @pytest.mark.build
@@ -524,21 +539,15 @@ class TestBT_Generic(object):
         assert hasattr(btg.fs.unit, "heat_duty")
         assert hasattr(btg.fs.unit, "deltaP")
 
-        assert number_variables(btg) == 94
-        assert number_total_constraints(btg) == 57
+        assert number_variables(btg) == 80
+        assert number_total_constraints(btg) == 43
         # Unused vars are density parameters
         assert number_unused_variables(btg) == 10
 
-    @pytest.mark.integration
-    def test_units(self, btg):
-        assert_units_equivalent(btg.fs.unit.control_volume.heat, pyunits.J / pyunits.s)
-        assert_units_equivalent(btg.fs.unit.heat_duty[0], pyunits.J / pyunits.s)
-        assert_units_equivalent(btg.fs.unit.deltaP[0], pyunits.Pa)
-        assert_units_consistent(btg)
-
-    @pytest.mark.unit
-    def test_dof(self, btg):
-        assert degrees_of_freedom(btg) == 0
+    @pytest.mark.component
+    def test_structural_issues(self, btg):
+        dt = DiagnosticsToolbox(btg)
+        dt.assert_no_structural_warnings(ignore_evaluation_errors=True)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -586,6 +595,15 @@ class TestBT_Generic(object):
             )
             <= 1e-6
         )
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, btg):
+        dt = DiagnosticsToolbox(btg)
+        # TODO: Complementarity formulation results in near-parallel components
+        # when unscaled
+        dt.assert_no_numerical_warnings(ignore_parallel_components=True)
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -654,6 +672,13 @@ class TestInitializersModular:
 
         m.fs.unit.heat_duty.fix(-5000)
         m.fs.unit.deltaP.fix(0)
+
+        # Set small values of epsilon to get sufficiently accurate results
+        m.fs.unit.control_volume.properties_in.display()
+        m.fs.unit.control_volume.properties_in[0].eps_t_Vap_Liq.set_value(1e-4)
+        m.fs.unit.control_volume.properties_in[0].eps_z_Vap_Liq.set_value(1e-4)
+        m.fs.unit.control_volume.properties_out[0].eps_t_Vap_Liq.set_value(1e-4)
+        m.fs.unit.control_volume.properties_out[0].eps_z_Vap_Liq.set_value(1e-4)
 
         return m
 

@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -109,9 +109,9 @@ class PlateHeatExchangerData(HeatExchangerNTUData):
     CONFIG.hot_side.has_pressure_change = True
     CONFIG.hot_side.get("has_pressure_change").set_domain(In([True]))
     # pylint: disable-next=protected-access
-    CONFIG.hot_side.get(
-        "has_pressure_change"
-    )._description = "Pressure change term construction flag - must be True"
+    CONFIG.hot_side.get("has_pressure_change")._description = (
+        "Pressure change term construction flag - must be True"
+    )
     # pylint: disable-next=protected-access
     CONFIG.hot_side.get("has_pressure_change")._doc = (
         "Plate Heat Exchanger model includes correlations for pressure drop "
@@ -121,9 +121,9 @@ class PlateHeatExchangerData(HeatExchangerNTUData):
     CONFIG.cold_side.has_pressure_change = True
     CONFIG.cold_side.get("has_pressure_change").set_domain(In([True]))
     # pylint: disable-next=protected-access
-    CONFIG.cold_side.get(
-        "has_pressure_change"
-    )._description = "Pressure change term construction flag - must be True"
+    CONFIG.cold_side.get("has_pressure_change")._description = (
+        "Pressure change term construction flag - must be True"
+    )
     # pylint: disable-next=protected-access
     CONFIG.cold_side.get("has_pressure_change")._doc = (
         "Plate Heat Exchanger model includes correlations for pressure drop "

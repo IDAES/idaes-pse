@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -179,7 +179,7 @@ class _PhysicalParameterBlock(PhysicalParameterBlock):
         self.basis_switch = 1
         self.default_balance_switch = 1
 
-        self._state_block_class = TestStateBlock
+        self._state_block_class = StateBlockForTesting
 
         self.set_default_scaling("flow_vol", 100)
         self.set_default_scaling("flow_mol", 101)
@@ -197,6 +197,8 @@ class _PhysicalParameterBlock(PhysicalParameterBlock):
         self.set_default_scaling("material_dens_mol", 113)
         self.set_default_scaling("material_flow_mass", 114)
         self.set_default_scaling("material_dens_mass", 115)
+        self.set_default_scaling("material_flow_dimensionless", 116)
+        self.set_default_scaling("material_dens_dimensionless", 117)
 
     @classmethod
     def define_metadata(cls, obj):
@@ -234,7 +236,7 @@ class SBlockBase(StateBlock):
             k.hold_state = not k.hold_state
 
 
-@declare_process_block_class("TestStateBlock", block_class=SBlockBase)
+@declare_process_block_class("StateBlockForTesting", block_class=SBlockBase)
 class StateTestBlockData(StateBlockData):
     CONFIG = ConfigBlock(implicit=True)
 
@@ -259,6 +261,8 @@ class StateTestBlockData(StateBlockData):
         self.material_dens_mol = Var(initialize=1, units=units.mol / units.m**3)
         self.material_flow_mass = Var(initialize=1, units=units.kg / units.s)
         self.material_dens_mass = Var(initialize=1, units=units.kg / units.m**3)
+        self.material_flow_dimensionless = Var(initialize=1, units=units.dimensionless)
+        self.material_dens_dimensionless = Var(initialize=1, units=units.dimensionless)
         self.pressure = Var(initialize=1e5, units=units.Pa)
         self.temperature = Var(initialize=300, units=units.K)
 
@@ -280,14 +284,18 @@ class StateTestBlockData(StateBlockData):
     def get_material_flow_terms(b, p, j):
         if b.config.parameters.basis_switch == 2:
             return b.material_flow_mass
-        else:
+        elif b.config.parameters.basis_switch == 1:
             return b.material_flow_mol
+        else:
+            return b.material_flow_dimensionless
 
     def get_material_density_terms(b, p, j):
         if b.config.parameters.basis_switch == 2:
             return b.material_dens_mass
-        else:
+        elif b.config.parameters.basis_switch == 1:
             return b.material_dens_mol
+        else:
+            return b.material_dens_dimensionless
 
     def get_enthalpy_flow_terms(b, p):
         return b.enthalpy_flow

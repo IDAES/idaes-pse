@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -19,7 +19,6 @@ from pyomo.common.fileutils import this_file_dir
 
 
 def load_generic_ccs_costing_dictionary(path=None):
-
     """
     Custom dictionaries have been added as a way to add new scaling equations
     that are not based on the Bituminous Baseline report.
@@ -669,9 +668,9 @@ def load_generic_ccs_costing_dictionary(path=None):
                         for accountkey in generic_ccs_costing_exponents[tech][
                             account
                         ].keys():  # get one " exponents"account property at a time
-                            accounts_dict[account][
-                                accountkey
-                            ] = generic_ccs_costing_exponents[tech][account][accountkey]
+                            accounts_dict[account][accountkey] = (
+                                generic_ccs_costing_exponents[tech][account][accountkey]
+                            )
                         sorted_accountkeys = sorted(
                             accounts_dict[account]
                         )  # now, sort the accountkeys alphabetically within each account
@@ -679,9 +678,9 @@ def load_generic_ccs_costing_dictionary(path=None):
                             key: accounts_dict[account][key]
                             for key in sorted_accountkeys
                         }  # re-add the keys in alphabetical order
-                    gccsd[
-                        ccs
-                    ] = accounts_dict  # use the alias to update the original dictionary
+                    gccsd[ccs] = (
+                        accounts_dict  # use the alias to update the original dictionary
+                    )
 
         with open(
             os.path.join(directory, "generic_ccs_costing_data.json"), "w"

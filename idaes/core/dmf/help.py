@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -88,7 +88,8 @@ def get_html_docs(dmf, module_, name, sphinx_version=(1, 5, 5)):
             url = p + "/genindex.html"
             _log.debug(f"(Help) reading index file: {url}")
             try:
-                response = requests.get(url)
+                # arbitrarily add 10 s timeout b/c Pylint's missing-timeout
+                response = requests.get(url, timeout=10)
                 if response.status_code == 200:
                     html_content = response.text
                 else:

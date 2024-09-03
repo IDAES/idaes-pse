@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -24,7 +24,6 @@ prescient_simulator, prescient_avail = attempt_import("prescient.simulator")
 
 
 class ThermalGenerator:
-
     """
     Simple thermal generator model (MIP). Equations models are from Gao, Knueven,
     Siirola, Miller, Dowling (2022). Multiscale Simulation of Integrated Energy
@@ -40,7 +39,6 @@ class ThermalGenerator:
         rts_gmlc_bus_dataframe,
         generator="102_STEAM_3",
     ):
-
         """
         Initializes the class object by building the thermal generator model.
 
@@ -66,7 +64,6 @@ class ThermalGenerator:
         self.result_list = []
 
     def assemble_model_data(self, generator_name, gen_params):
-
         """
         This function assembles the parameter data to build the thermal generator
         model, given a list of generator names and the RTS-GMLC data directory.
@@ -175,7 +172,6 @@ class ThermalGenerator:
 
     @staticmethod
     def _add_UT_DT_constraints(b):
-
         """
         This function adds the minimum up/down time constraints using eq. 4 - 5
         in "On mixed-integer programming formulations for the unit commitment
@@ -255,7 +251,6 @@ class ThermalGenerator:
         return
 
     def populate_model(self, b, horizon):
-
         """
         This function builds the model for a thermal generator.
 
@@ -550,7 +545,6 @@ class ThermalGenerator:
     def update_model(
         self, b, implemented_shut_down, implemented_start_up, implemented_power_output
     ):
-
         """
         This method updates the parameters in the model based on
         the implemented power outputs, shut down and start up events.
@@ -572,7 +566,6 @@ class ThermalGenerator:
 
     @staticmethod
     def get_implemented_profile(b, last_implemented_time_step):
-
         """
         This method gets the implemented variable profiles in the last optimization
         solve.
@@ -605,7 +598,6 @@ class ThermalGenerator:
 
     @staticmethod
     def get_last_delivered_power(b, last_implemented_time_step):
-
         """
         Returns the last delivered power output.
 
@@ -619,7 +611,6 @@ class ThermalGenerator:
         return pyo.value(b.P_T[last_implemented_time_step])
 
     def record_results(self, b, date=None, hour=None, **kwargs):
-
         """
         Record the operations stats for the model.
 
@@ -685,7 +676,6 @@ class ThermalGenerator:
         return
 
     def write_results(self, path):
-
         """
         This methods writes the saved operation stats into an csv file.
 

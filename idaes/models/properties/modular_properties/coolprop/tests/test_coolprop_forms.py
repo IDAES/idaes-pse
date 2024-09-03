@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -126,8 +126,7 @@ class TestBaseForms:
         expr = cforms._nt_sum(model.params, "pressure_sat", 42)
 
         assert str(expr) == str(
-            model.params.pressure_sat_coeff_n1
-            * 42**model.params.pressure_sat_coeff_t1
+            model.params.pressure_sat_coeff_n1 * 42**model.params.pressure_sat_coeff_t1
             + model.params.pressure_sat_coeff_n2
             * 42**model.params.pressure_sat_coeff_t2
             + model.params.pressure_sat_coeff_n3

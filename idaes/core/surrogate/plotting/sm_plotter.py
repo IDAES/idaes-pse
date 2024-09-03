@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -32,7 +32,7 @@ def surrogate_scatter2D(surrogate, dataframe, filename=None, show=True):
     input_data = dataframe[surrogate.input_labels()]
     output_data = dataframe[surrogate.output_labels()]
     output_surrogate = surrogate.evaluate_surrogate(input_data)
-    _scatter2D(
+    return _scatter2D(
         xdata=input_data.values,
         zdata=output_data.values,
         zfit=output_surrogate.values,
@@ -73,11 +73,15 @@ def _scatter2D(
 
     if filename is not None:
         if filename[-4:] != ".pdf":  # checking if extension is present
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception(
                 "Filename does not end in .pdf, please amend "
                 "filename with the proper extension."
             )
         pdf = PdfPages(filename)
+
+    fig_list = []
 
     for j in range(numouts):  # loop over all outputs, zj
         for i in range(numins):  # plot every possible zj = f(xi)
@@ -95,15 +99,20 @@ def _scatter2D(
                 plt.show()
             if filename is not None:
                 pdf.savefig(fig)
+
+            fig_list.append(fig)
+
     if filename is not None:  # place outside loop to avoid closing/reopening
         pdf.close()
+
+    return fig_list
 
 
 def surrogate_scatter3D(surrogate, dataframe, filename=None, show=True):
     input_data = dataframe[surrogate.input_labels()]
     output_data = dataframe[surrogate.output_labels()]
     output_surrogate = surrogate.evaluate_surrogate(input_data)
-    _scatter3D(
+    return _scatter3D(
         xdata=input_data.values,
         zdata=output_data.values,
         zfit=output_surrogate.values,
@@ -144,11 +153,15 @@ def _scatter3D(
 
     if filename is not None:
         if filename[-4:] != ".pdf":  # checking if extension is present
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception(
                 "Filename does not end in .pdf, please amend "
                 "filename with the proper extension."
             )
         pdf = PdfPages(filename)
+
+    fig_list = []
 
     for j in range(numouts):  # loop over all outputs, zj
         for pair in list(combinations(range(numins), 2)):  # pick two x vars
@@ -177,15 +190,20 @@ def _scatter3D(
                 plt.show()
             if filename is not None:
                 pdf.savefig(fig)
+
+            fig_list.append(fig)
+
     if filename is not None:  # place outside loop to avoid closing/reopening
         pdf.close()
+
+    return fig_list
 
 
 def surrogate_parity(surrogate, dataframe, filename=None, show=True):
     input_data = dataframe[surrogate.input_labels()]
     output_data = dataframe[surrogate.output_labels()]
     output_surrogate = surrogate.evaluate_surrogate(input_data)
-    _parity(
+    return _parity(
         zdata=output_data.values,
         zfit=output_surrogate.values,
         zlabels=surrogate.output_labels(),
@@ -217,11 +235,15 @@ def _parity(zdata, zfit, zlabels=None, show=True, filename=None):
 
     if filename is not None:
         if filename[-4:] != ".pdf":  # checking if extension is present
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception(
                 "Filename does not end in .pdf, please amend "
                 "filename with the proper extension."
             )
         pdf = PdfPages(filename)
+
+    fig_list = []
 
     for j in range(numouts):  # loop over all outputs, zj
         fig = plt.figure()
@@ -239,8 +261,13 @@ def _parity(zdata, zfit, zlabels=None, show=True, filename=None):
             plt.show()
         if filename is not None:
             pdf.savefig(fig)
+
+        fig_list.append(fig)
+
     if filename is not None:  # place outside loop to avoid closing/reopening
         pdf.close()
+
+    return fig_list
 
 
 def surrogate_residual(
@@ -252,7 +279,7 @@ def surrogate_residual(
     residual = np.abs(output_data - output_surrogate)
     if relative_error is True:
         residual = np.divide(residual, np.maximum(output_data, 1.0))
-    _residual(
+    return _residual(
         xdata=input_data.values,
         residual=residual.values,
         xlabels=surrogate.input_labels(),
@@ -289,11 +316,15 @@ def _residual(xdata, residual, xlabels=None, elabels=None, show=True, filename=N
 
     if filename is not None:
         if filename[-4:] != ".pdf":  # checking if extension is present
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception(
                 "Filename does not end in .pdf, please amend "
                 "filename with the proper extension."
             )
         pdf = PdfPages(filename)
+
+    fig_list = []
 
     for i in range(numins):
         for j in range(numouts):  # loop over all outputs, zj
@@ -309,5 +340,10 @@ def _residual(xdata, residual, xlabels=None, elabels=None, show=True, filename=N
                 plt.show()
             if filename is not None:
                 pdf.savefig(fig)
+
+            fig_list.append(fig)
+
     if filename is not None:  # place outside loop to avoid closing/reopening
         pdf.close()
+
+    return fig_list

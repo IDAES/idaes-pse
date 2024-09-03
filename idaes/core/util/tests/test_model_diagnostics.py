@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -17,6 +17,11 @@ from io import StringIO
 import math
 import numpy as np
 import pytest
+import re
+import os
+from copy import deepcopy
+
+from pandas import DataFrame
 
 from pyomo.environ import (
     Block,
@@ -29,6 +34,7 @@ from pyomo.environ import (
     acos,
     sqrt,
     Objective,
+    PositiveIntegers,
     Set,
     SolverFactory,
     Suffix,
@@ -36,12 +42,15 @@ from pyomo.environ import (
     units,
     value,
     Var,
+    assert_optimal_termination,
     Param,
     Integers,
 )
 from pyomo.common.collections import ComponentSet
 from pyomo.contrib.pynumero.asl import AmplInterface
 from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
+from pyomo.common.fileutils import this_file_dir
+from pyomo.common.tempfiles import TempfileManager
 
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
@@ -50,17 +59,11 @@ from idaes.core import FlowsheetBlock
 from idaes.core.util.testing import PhysicalParameterTestBlock
 from unittest import TestCase
 
-# TODO: Add pyomo.dae test case
-"""
-from pyomo.environ import TransformationFactory
-from pyomo.dae import ContinuousSet, DerivativeVar
-"""
-
-# Need to update
 from idaes.core.util.model_diagnostics import (
     DiagnosticsToolbox,
     SVDToolbox,
     DegeneracyHunter,
+    IpoptConvergenceAnalysis,
     DegeneracyHunter2,
     svd_dense,
     svd_sparse,
@@ -79,10 +82,22 @@ from idaes.core.util.model_diagnostics import (
     check_parallel_jacobian,
     compute_ill_conditioning_certificate,
 )
+from idaes.core.util.parameter_sweep import (
+    SequentialSweepRunner,
+    ParameterSweepSpecification,
+)
+from idaes.core.surrogate.pysmo.sampling import (
+    UniformSampling,
+)
 from idaes.core.util.testing import _enable_scip_solver_for_testing
 
 
 __author__ = "Alex Dowling, Douglas Allan, Andrew Lee"
+
+
+# TODO: Add pyomo.dae test cases
+solver_available = SolverFactory("scip").available()
+currdir = this_file_dir()
 
 
 @pytest.fixture(scope="module")
@@ -443,8 +458,10 @@ class TestDiagnosticsToolbox:
     def test_invalid_model_type(self):
         with pytest.raises(
             TypeError,
-            match="model argument must be an instance of a Pyomo BlockData object "
-            "\(either a scalar Block or an element of an indexed Block\).",
+            match=re.escape(
+                "model argument must be an instance of a Pyomo BlockData object "
+                "(either a scalar Block or an element of an indexed Block)."
+            ),
         ):
             DiagnosticsToolbox(model="foo")
 
@@ -455,8 +472,10 @@ class TestDiagnosticsToolbox:
 
         with pytest.raises(
             TypeError,
-            match="model argument must be an instance of a Pyomo BlockData object "
-            "\(either a scalar Block or an element of an indexed Block\).",
+            match=re.escape(
+                "model argument must be an instance of a Pyomo BlockData object "
+                "(either a scalar Block or an element of an indexed Block)."
+            ),
         ):
             DiagnosticsToolbox(model=m.b)
 
@@ -485,7 +504,8 @@ class TestDiagnosticsToolbox:
         m.b.v5.fix(2)
         m.b.v6.fix(0)
 
-        solver = get_solver()
+        # Presolver identifies problem as trivially infeasible (correctly). Turn off presolve.
+        solver = get_solver("ipopt_v2", writer_config={"linear_presolve": False})
         solver.solve(m)
 
         return m
@@ -961,10 +981,10 @@ The following pairs of constraints are nearly parallel:
         model.v3 = Var()
         model.v4 = Var()
 
-        model.c1 = Constraint(expr=model.v1 == model.v2 - 0.99999 * model.v4)
-        model.c2 = Constraint(expr=model.v1 + 1.00001 * model.v4 == 1e-8 * model.v3)
+        model.c1 = Constraint(expr=1e-8 * model.v1 == 1e-8 * model.v2 - 1e-8 * model.v4)
+        model.c2 = Constraint(expr=1e-8 * model.v1 + 1e-8 * model.v4 == model.v3)
         model.c3 = Constraint(
-            expr=1e8 * (model.v1 + model.v4) + 1e10 * model.v2 == 1e-6 * model.v3
+            expr=1e3 * (model.v1 + model.v4) + 1e3 * model.v2 == model.v3
         )
 
         dt = DiagnosticsToolbox(model=model)
@@ -1069,8 +1089,9 @@ The following pairs of variables are nearly parallel:
         assert "WARNING: 1 Constraint with large residuals (>1.0E-05)" in warnings
         assert "WARNING: 1 Variable at or outside bounds (tol=0.0E+00)" in warnings
 
-        assert len(next_steps) == 2
+        assert len(next_steps) == 3
         assert "display_constraints_with_large_residuals()" in next_steps
+        assert "compute_infeasibility_explanation()" in next_steps
         assert "display_variables_at_or_outside_bounds()" in next_steps
 
     @pytest.mark.component
@@ -1081,7 +1102,8 @@ The following pairs of variables are nearly parallel:
         m.b.v3.setlb(-5)
         m.b.v5.setub(10)
 
-        solver = get_solver()
+        # Presolver identifies problem as trivially infeasible (correctly). Turn off presolve.
+        solver = get_solver("ipopt_v2", writer_config={"linear_presolve": False})
         solver.solve(m)
 
         dt = DiagnosticsToolbox(model=m.b)
@@ -1107,7 +1129,7 @@ The following pairs of variables are nearly parallel:
 
         warnings, next_steps = dt._collect_numerical_warnings()
 
-        assert len(warnings) == 3
+        assert len(warnings) == 4
         assert (
             "WARNING: 2 Variables with extreme Jacobian values (<1.0E-08 or >1.0E+08)"
             in warnings
@@ -1118,10 +1140,11 @@ The following pairs of variables are nearly parallel:
         )
         assert "WARNING: 1 Constraint with large residuals (>1.0E-05)" in warnings
 
-        assert len(next_steps) == 3
+        assert len(next_steps) == 5
         assert "display_variables_with_extreme_jacobians()" in next_steps
         assert "display_constraints_with_extreme_jacobians()" in next_steps
         assert "display_constraints_with_large_residuals()" in next_steps
+        assert "compute_infeasibility_explanation()" in next_steps
 
     @pytest.mark.component
     def test_collect_numerical_cautions(self, model):
@@ -1172,7 +1195,9 @@ The following pairs of variables are nearly parallel:
         m = model.clone()
         dt = DiagnosticsToolbox(model=m.b)
 
-        with pytest.raises(AssertionError, match="Structural issues found \(1\)."):
+        with pytest.raises(
+            AssertionError, match=re.escape("Structural issues found (1).")
+        ):
             dt.assert_no_structural_warnings()
 
         # Fix units issue
@@ -1185,13 +1210,16 @@ The following pairs of variables are nearly parallel:
         m = model.clone()
         dt = DiagnosticsToolbox(model=m.b)
 
-        with pytest.raises(AssertionError, match="Numerical issues found \(2\)."):
+        with pytest.raises(
+            AssertionError, match=re.escape("Numerical issues found (2).")
+        ):
             dt.assert_no_numerical_warnings()
 
         # Fix numerical issues
         m.b.v3.setlb(-5)
 
-        solver = get_solver()
+        # Presolver identifies problem as trivially infeasible (correctly). Turn off presolve.
+        solver = get_solver("ipopt_v2", writer_config={"linear_presolve": False})
         solver.solve(m)
 
         dt = DiagnosticsToolbox(model=m.b)
@@ -1324,10 +1352,54 @@ Model Statistics
 Suggested next steps:
 
     If you still have issues converging your model consider:
-        display_near_parallel_constraints()
-        display_near_parallel_variables()
+
         prepare_degeneracy_hunter()
         prepare_svd_toolbox()
+
+====================================================================================
+"""
+
+        assert stream.getvalue() == expected
+
+    @pytest.mark.component
+    def test_report_numerical_issues_exactly_singular(self):
+        m = ConcreteModel()
+        m.x = Var([1, 2], initialize=1.0)
+        m.eq = Constraint(PositiveIntegers)
+        m.eq[1] = m.x[1] * m.x[2] == 1.5
+        m.eq[2] = m.x[2] * m.x[1] == 1.5
+        m.obj = Objective(expr=m.x[1] ** 2 + 2 * m.x[2] ** 2)
+
+        dt = DiagnosticsToolbox(m)
+        dt.report_numerical_issues()
+
+        stream = StringIO()
+        dt.report_numerical_issues(stream)
+
+        expected = """====================================================================================
+Model Statistics
+
+    Jacobian Condition Number: Undefined (Exactly Singular)
+
+------------------------------------------------------------------------------------
+3 WARNINGS
+
+    WARNING: 2 Constraints with large residuals (>1.0E-05)
+    WARNING: 1 pair of constraints are parallel (to tolerance 1.0E-08)
+    WARNING: 1 pair of variables are parallel (to tolerance 1.0E-08)
+
+------------------------------------------------------------------------------------
+0 Cautions
+
+    No cautions found!
+
+------------------------------------------------------------------------------------
+Suggested next steps:
+
+    display_constraints_with_large_residuals()
+    compute_infeasibility_explanation()
+    display_near_parallel_constraints()
+    display_near_parallel_variables()
 
 ====================================================================================
 """
@@ -1365,6 +1437,7 @@ Model Statistics
 Suggested next steps:
 
     display_constraints_with_large_residuals()
+    compute_infeasibility_explanation()
     display_variables_at_or_outside_bounds()
 
 ====================================================================================
@@ -1379,8 +1452,8 @@ Suggested next steps:
         model.v2 = Var(initialize=0)
         model.v3 = Var(initialize=0)
 
-        model.c1 = Constraint(expr=model.v1 == model.v2)
-        model.c2 = Constraint(expr=model.v1 == 1e-8 * model.v3)
+        model.c1 = Constraint(expr=1e-2 * model.v1 == model.v2)
+        model.c2 = Constraint(expr=1e-2 * model.v1 == 1e-8 * model.v3)
         model.c3 = Constraint(expr=1e8 * model.v1 + 1e10 * model.v2 == 1e-6 * model.v3)
 
         dt = DiagnosticsToolbox(model=model)
@@ -1391,14 +1464,15 @@ Suggested next steps:
         expected = """====================================================================================
 Model Statistics
 
-    Jacobian Condition Number: 1.407E+18
+    Jacobian Condition Number: 1.118E+18
 
 ------------------------------------------------------------------------------------
-3 WARNINGS
+4 WARNINGS
 
     WARNING: 1 Constraint with large residuals (>1.0E-05)
     WARNING: 2 Variables with extreme Jacobian values (<1.0E-08 or >1.0E+08)
     WARNING: 1 Constraint with extreme Jacobian values (<1.0E-08 or >1.0E+08)
+    WARNING: 3 pairs of variables are parallel (to tolerance 1.0E-08)
 
 ------------------------------------------------------------------------------------
 4 Cautions
@@ -1412,8 +1486,10 @@ Model Statistics
 Suggested next steps:
 
     display_constraints_with_large_residuals()
+    compute_infeasibility_explanation()
     display_variables_with_extreme_jacobians()
     display_constraints_with_extreme_jacobians()
+    display_near_parallel_variables()
 
 ====================================================================================
 """
@@ -1777,8 +1853,10 @@ The following constraints involve v[1]:
 
         with pytest.raises(
             TypeError,
-            match="variable argument must be an instance of a Pyomo _VarData "
-            "object \(got foo\).",
+            match=re.escape(
+                "variable argument must be an instance of a Pyomo VarData "
+                "object (got foo)."
+            ),
         ):
             svd.display_constraints_including_variable(variable="foo")
 
@@ -1842,8 +1920,10 @@ The following variables are involved in c1:
 
         with pytest.raises(
             TypeError,
-            match="constraint argument must be an instance of a Pyomo _ConstraintData "
-            "object \(got foo\).",
+            match=re.escape(
+                "constraint argument must be an instance of a Pyomo ConstraintData "
+                "object (got foo)."
+            ),
         ):
             svd.display_variables_in_constraint(constraint="foo")
 
@@ -1961,22 +2041,31 @@ class TestDegeneracyHunter:
         dh._prepare_candidates_milp()
         dh._solve_candidates_milp()
 
-        assert value(dh.candidates_milp.nu[0]) == pytest.approx(1e-05, rel=1e-5)
-        assert value(dh.candidates_milp.nu[1]) == pytest.approx(-1e-05, rel=1e-5)
-
-        assert value(dh.candidates_milp.y_pos[0]) == pytest.approx(0, abs=1e-5)
-        assert value(dh.candidates_milp.y_pos[1]) == pytest.approx(0, rel=1e-5)
-
-        assert value(dh.candidates_milp.y_neg[0]) == pytest.approx(0, abs=1e-5)
-        assert value(dh.candidates_milp.y_neg[1]) == pytest.approx(1, abs=1e-5)
-
-        assert value(dh.candidates_milp.abs_nu[0]) == pytest.approx(1e-05, rel=1e-5)
-        assert value(dh.candidates_milp.abs_nu[1]) == pytest.approx(1e-05, rel=1e-5)
-
         assert dh.degenerate_set == {
             model.con2: value(dh.candidates_milp.nu[0]),
             model.con5: value(dh.candidates_milp.nu[1]),
         }
+
+        assert abs(value(dh.candidates_milp.nu[0])) == pytest.approx(1e-05, rel=1e-5)
+        assert abs(value(dh.candidates_milp.nu[1])) == pytest.approx(1e-05, rel=1e-5)
+
+        # One must be positive and one must be negative, so produce will be negative
+        assert value(
+            dh.candidates_milp.nu[0] * dh.candidates_milp.nu[1]
+        ) == pytest.approx(-1e-10, rel=1e-5)
+
+        assert (
+            value(
+                dh.candidates_milp.y_pos[0]
+                + dh.candidates_milp.y_pos[1]
+                + dh.candidates_milp.y_neg[0]
+                + dh.candidates_milp.y_neg[1]
+            )
+            >= 1
+        )
+
+        assert value(dh.candidates_milp.abs_nu[0]) == pytest.approx(1e-05, rel=1e-5)
+        assert value(dh.candidates_milp.abs_nu[1]) == pytest.approx(1e-05, rel=1e-5)
 
     @pytest.mark.unit
     def test_prepare_ids_milp(self, model):
@@ -2079,6 +2168,665 @@ Irreducible Degenerate Sets
 """
 
         assert stream.getvalue() == expected
+
+
+ca_dict = {
+    "specification": {
+        "inputs": {
+            "v2": {
+                "pyomo_path": "v2",
+                "lower": 2,
+                "upper": 6,
+            },
+        },
+        "sampling_method": "UniformSampling",
+        "sample_size": [2],
+        "samples": {
+            "index": [0, 1],
+            "columns": ["v2"],
+            "data": [[2.0], [6.0]],
+            "index_names": [None],
+            "column_names": [None],
+        },
+    },
+    "results": {
+        0: {
+            "success": True,
+            "results": 2,
+        },
+        1: {
+            "success": True,
+            "results": 6,
+        },
+    },
+}
+
+ca_res = {
+    "specification": {
+        "inputs": {"v2": {"pyomo_path": "v2", "lower": 2, "upper": 6}},
+        "sampling_method": "UniformSampling",
+        "sample_size": [2],
+        "samples": {
+            "index": [0, 1],
+            "columns": ["v2"],
+            "data": [[2.0], [6.0]],
+            "index_names": [None],
+            "column_names": [None],
+        },
+    },
+    "results": {
+        0: {
+            "success": False,
+            "results": {
+                "iters": 7,
+                "iters_in_restoration": 4,
+                "iters_w_regularization": 0,
+                "time": 0.0,
+                "numerical_issues": True,
+            },
+        },
+        1: {
+            "success": False,
+            "results": {
+                "iters": 7,
+                "iters_in_restoration": 4,
+                "iters_w_regularization": 0,
+                "time": 0.0,
+                "numerical_issues": True,
+            },
+        },
+    },
+}
+
+
+class TestIpoptConvergenceAnalysis:
+    @pytest.fixture
+    def model(self):
+        m = ConcreteModel()
+
+        m.v1 = Var(bounds=(None, 1))
+        m.v2 = Var()
+        m.c = Constraint(expr=m.v1 == m.v2)
+
+        m.v2.fix(0)
+
+        return m
+
+    @pytest.mark.unit
+    def test_init(self, model):
+        ca = IpoptConvergenceAnalysis(model)
+
+        assert ca._model is model
+        assert isinstance(ca._psweep, SequentialSweepRunner)
+        assert isinstance(ca.results, dict)
+        assert ca.config.input_specification is None
+        assert ca.config.solver_options is None
+
+    @pytest.mark.unit
+    def test_build_model(self, model):
+        ca = IpoptConvergenceAnalysis(model)
+
+        clone = ca._build_model()
+        clone.pprint()
+
+        assert clone is not model
+        assert isinstance(clone.v1, Var)
+        assert isinstance(clone.v2, Var)
+        assert isinstance(clone.c, Constraint)
+
+    @pytest.mark.unit
+    def test_parse_ipopt_output(self, model):
+        ca = IpoptConvergenceAnalysis(model)
+
+        fname = os.path.join(currdir, "ipopt_output.txt")
+        iters, restoration, regularization, time = ca._parse_ipopt_output(fname)
+
+        assert iters == 43
+        assert restoration == 39
+        assert regularization == 4
+        assert time == 0.016 + 0.035
+
+    @pytest.mark.component
+    @pytest.mark.solver
+    def test_run_ipopt_with_stats(self):
+        m = ConcreteModel()
+        m.v1 = Var(initialize=1)
+        m.c1 = Constraint(expr=m.v1 == 4)
+
+        ca = IpoptConvergenceAnalysis(m)
+        solver = SolverFactory("ipopt")
+
+        (
+            status,
+            iters,
+            iters_in_restoration,
+            iters_w_regularization,
+            time,
+        ) = ca._run_ipopt_with_stats(m, solver)
+
+        assert_optimal_termination(status)
+        assert iters == 1
+        assert iters_in_restoration == 0
+        assert iters_w_regularization == 0
+        assert isinstance(time, float)
+
+    @pytest.mark.component
+    @pytest.mark.solver
+    def test_run_model(self, model):
+        ca = IpoptConvergenceAnalysis(model)
+
+        model.v2.fix(0.5)
+
+        solver = SolverFactory("ipopt")
+
+        success, run_stats = ca._run_model(model, solver)
+
+        assert success
+        assert value(model.v1) == pytest.approx(0.5, rel=1e-8)
+
+        assert len(run_stats) == 4
+        assert run_stats[0] == 1
+        assert run_stats[1] == 0
+        assert run_stats[2] == 0
+
+    @pytest.mark.unit
+    def test_build_outputs(self, model):
+        ca = IpoptConvergenceAnalysis(model)
+
+        model.v1.set_value(0.5)
+        model.v2.fix(0.5)
+
+        results = ca._build_outputs(model, (1, 2, 3, 4))
+
+        assert results == {
+            "iters": 1,
+            "iters_in_restoration": 2,
+            "iters_w_regularization": 3,
+            "time": 4,
+            "numerical_issues": False,
+        }
+
+    @pytest.mark.unit
+    def test_build_outputs_with_warnings(self, model):
+        ca = IpoptConvergenceAnalysis(model)
+
+        model.v1.set_value(4)
+        model.v2.fix(0.5)
+
+        results = ca._build_outputs(model, (1, 2, 3, 4))
+
+        assert results == {
+            "iters": 1,
+            "iters_in_restoration": 2,
+            "iters_w_regularization": 3,
+            "time": 4,
+            "numerical_issues": True,
+        }
+
+    @pytest.mark.unit
+    def test_recourse(self, model):
+        ca = IpoptConvergenceAnalysis(model)
+
+        assert ca._recourse(model) == {
+            "iters": -1,
+            "iters_in_restoration": -1,
+            "iters_w_regularization": -1,
+            "time": -1,
+            "numerical_issues": -1,
+        }
+
+    @pytest.mark.integration
+    @pytest.mark.solver
+    def test_run_convergence_analysis(self, model):
+        spec = ParameterSweepSpecification()
+        spec.add_sampled_input("v2", lower=0, upper=3)
+        spec.set_sampling_method(UniformSampling)
+        spec.set_sample_size([4])
+
+        ca = IpoptConvergenceAnalysis(model, input_specification=spec)
+
+        ca.run_convergence_analysis()
+
+        assert isinstance(ca.results, dict)
+        assert len(ca.results) == 4
+
+        # Ignore time, as it is too noisy to test
+        # Sample 0 should solve cleanly
+        assert ca.results[0]["success"]
+        assert ca.results[0]["results"]["iters"] == 0
+        assert ca.results[0]["results"]["iters_in_restoration"] == 0
+        assert ca.results[0]["results"]["iters_w_regularization"] == 0
+        assert not ca.results[0]["results"]["numerical_issues"]
+
+        # Sample 1 should solve, but have issues due to bound on v1
+        assert ca.results[1]["success"]
+        assert ca.results[1]["results"]["iters"] == pytest.approx(3, abs=1)
+        assert ca.results[1]["results"]["iters_in_restoration"] == 0
+        assert ca.results[1]["results"]["iters_w_regularization"] == 0
+        assert ca.results[1]["results"]["numerical_issues"]
+
+        # Other iterations should fail due to bound
+        assert not ca.results[2]["success"]
+        assert ca.results[2]["results"]["iters"] == pytest.approx(7, abs=1)
+        assert ca.results[2]["results"]["iters_in_restoration"] == pytest.approx(
+            4, abs=1
+        )
+        assert ca.results[2]["results"]["iters_w_regularization"] == 0
+        assert ca.results[2]["results"]["numerical_issues"]
+
+        assert not ca.results[3]["success"]
+        assert ca.results[3]["results"]["iters"] == pytest.approx(8, abs=1)
+        assert ca.results[3]["results"]["iters_in_restoration"] == pytest.approx(
+            5, abs=1
+        )
+        assert ca.results[3]["results"]["iters_w_regularization"] == 0
+        assert ca.results[3]["results"]["numerical_issues"]
+
+    @pytest.fixture(scope="class")
+    def ca_with_results(self):
+        spec = ParameterSweepSpecification()
+        spec.set_sampling_method(UniformSampling)
+        spec.add_sampled_input("v2", 2, 6)
+        spec.set_sample_size([2])
+        spec.generate_samples()
+
+        ca = IpoptConvergenceAnalysis(
+            model=ConcreteModel(),
+            input_specification=spec,
+        )
+
+        ca._psweep._results = {
+            0: {"success": True, "results": 2},
+            1: {"success": True, "results": 6},
+        }
+
+        return ca
+
+    @pytest.mark.unit
+    def test_report_convergence_summary(self):
+        stream = StringIO()
+
+        ca = IpoptConvergenceAnalysis(
+            model=ConcreteModel(),
+        )
+
+        ca._psweep._results = {
+            0: {
+                "success": True,
+                "results": {
+                    "iters_in_restoration": 1,
+                    "iters_w_regularization": 0,
+                    "numerical_issues": 10,
+                },
+            },
+            1: {
+                "success": True,
+                "results": {
+                    "iters_in_restoration": 0,
+                    "iters_w_regularization": 5,
+                    "numerical_issues": 5,
+                },
+            },
+            2: {
+                "success": False,
+                "results": {
+                    "iters_in_restoration": 0,
+                    "iters_w_regularization": 0,
+                    "numerical_issues": 0,
+                },
+            },
+        }
+
+        ca.report_convergence_summary(stream)
+
+        expected = """Successes: 2, Failures 1 (66.66666666666667%)
+Runs with Restoration: 1
+Runs with Regularization: 1
+Runs with Numerical Issues: 2
+"""
+
+        assert stream.getvalue() == expected
+
+    @pytest.mark.component
+    def test_to_dict(self, ca_with_results):
+        outdict = ca_with_results.to_dict()
+        assert outdict == ca_dict
+
+    @pytest.mark.unit
+    def test_from_dict(self):
+        ca = IpoptConvergenceAnalysis(
+            model=ConcreteModel(),
+        )
+
+        ca.from_dict(ca_dict)
+
+        input_spec = ca._psweep.get_input_specification()
+
+        assert isinstance(input_spec, ParameterSweepSpecification)
+        assert len(input_spec.inputs) == 1
+
+        assert input_spec.sampling_method is UniformSampling
+        assert isinstance(input_spec.samples, DataFrame)
+        assert input_spec.sample_size == [2]
+
+        assert isinstance(ca.results, dict)
+        assert len(ca.results) == 2
+
+        for i in [0, 1]:
+            assert ca.results[i]["success"]
+            assert ca.results[i]["results"] == 2 + i * 4
+
+    @pytest.mark.component
+    def test_to_json_file(self, ca_with_results):
+        temp_context = TempfileManager.new_context()
+        tmpfile = temp_context.create_tempfile(suffix=".json")
+
+        ca_with_results.to_json_file(tmpfile)
+
+        with open(tmpfile, "r") as f:
+            lines = f.read()
+        f.close()
+
+        expected = """{
+   "specification": {
+      "inputs": {
+         "v2": {
+            "pyomo_path": "v2",
+            "lower": 2,
+            "upper": 6
+         }
+      },
+      "sampling_method": "UniformSampling",
+      "sample_size": [
+         2
+      ],
+      "samples": {
+         "index": [
+            0,
+            1
+         ],
+         "columns": [
+            "v2"
+         ],
+         "data": [
+            [
+               2.0
+            ],
+            [
+               6.0
+            ]
+         ],
+         "index_names": [
+            null
+         ],
+         "column_names": [
+            null
+         ]
+      }
+   },
+   "results": {
+      "0": {
+         "success": true,
+         "results": 2
+      },
+      "1": {
+         "success": true,
+         "results": 6
+      }
+   }
+}"""
+
+        assert lines == expected
+
+        # Check for clean up
+        temp_context.release(remove=True)
+        assert not os.path.exists(tmpfile)
+
+    @pytest.mark.unit
+    def test_load_from_json_file(self):
+        fname = os.path.join(currdir, "load_psweep.json")
+
+        ca = IpoptConvergenceAnalysis(
+            model=ConcreteModel(),
+        )
+        ca.from_json_file(fname)
+
+        input_spec = ca._psweep.get_input_specification()
+
+        assert isinstance(input_spec, ParameterSweepSpecification)
+        assert len(input_spec.inputs) == 1
+
+        assert input_spec.sampling_method is UniformSampling
+        assert isinstance(input_spec.samples, DataFrame)
+        assert input_spec.sample_size == [2]
+
+        assert isinstance(ca.results, dict)
+        assert len(ca.results) == 2
+
+        for i in [0, 1]:
+            assert ca.results[i]["success"]
+            assert ca.results[i]["results"] == 2 + i * 4
+
+    @pytest.mark.integration
+    @pytest.mark.solver
+    def test_run_convergence_analysis_from_dict(self, model):
+        ca = IpoptConvergenceAnalysis(
+            model=model,
+        )
+        ca.run_convergence_analysis_from_dict(ca_dict)
+
+        input_spec = ca._psweep.get_input_specification()
+
+        assert isinstance(input_spec, ParameterSweepSpecification)
+        assert len(input_spec.inputs) == 1
+
+        assert input_spec.sampling_method is UniformSampling
+        assert isinstance(input_spec.samples, DataFrame)
+        assert input_spec.sample_size == [2]
+
+        assert isinstance(ca.results, dict)
+        assert len(ca.results) == 2
+
+        assert not ca.results[0]["success"]
+        assert ca.results[0]["results"]["iters"] == pytest.approx(7, abs=1)
+        assert ca.results[0]["results"]["iters_in_restoration"] == pytest.approx(
+            4, abs=1
+        )
+        assert ca.results[0]["results"]["iters_w_regularization"] == 0
+        assert ca.results[0]["results"]["numerical_issues"]
+
+        assert not ca.results[1]["success"]
+        assert ca.results[1]["results"]["iters"] == pytest.approx(7, abs=1)
+        assert ca.results[1]["results"]["iters_in_restoration"] == pytest.approx(
+            4, abs=1
+        )
+        assert ca.results[1]["results"]["iters_w_regularization"] == 0
+        assert ca.results[1]["results"]["numerical_issues"]
+
+    @pytest.mark.integration
+    @pytest.mark.solver
+    def test_run_convergence_analysis_from_file(self, model):
+        fname = os.path.join(currdir, "load_psweep.json")
+
+        ca = IpoptConvergenceAnalysis(
+            model=model,
+        )
+        ca.run_convergence_analysis_from_file(fname)
+
+        input_spec = ca._psweep.get_input_specification()
+
+        assert isinstance(input_spec, ParameterSweepSpecification)
+        assert len(input_spec.inputs) == 1
+
+        assert input_spec.sampling_method is UniformSampling
+        assert isinstance(input_spec.samples, DataFrame)
+        assert input_spec.sample_size == [2]
+
+        assert isinstance(ca.results, dict)
+        assert len(ca.results) == 2
+
+        assert not ca.results[0]["success"]
+        assert ca.results[0]["results"]["iters"] == pytest.approx(7, abs=1)
+        assert ca.results[0]["results"]["iters_in_restoration"] == pytest.approx(
+            4, abs=1
+        )
+        assert ca.results[0]["results"]["iters_w_regularization"] == 0
+        assert ca.results[0]["results"]["numerical_issues"]
+
+        assert not ca.results[1]["success"]
+        assert ca.results[1]["results"]["iters"] == pytest.approx(7, abs=1)
+        assert ca.results[1]["results"]["iters_in_restoration"] == pytest.approx(
+            4, abs=1
+        )
+        assert ca.results[1]["results"]["iters_w_regularization"] == 0
+        assert ca.results[1]["results"]["numerical_issues"]
+
+    @pytest.fixture(scope="class")
+    def conv_anal(self):
+        ca = IpoptConvergenceAnalysis(
+            model=ConcreteModel(),
+        )
+        ca.from_dict(ca_res)
+
+        return ca
+
+    @pytest.mark.unit
+    def test_compare_results_to_dict_ok(self, conv_anal):
+        diffs = conv_anal._compare_results_to_dict(ca_res)
+
+        assert diffs["success"] == []
+        assert diffs["iters"] == []
+        assert diffs["iters_in_restoration"] == []
+        assert diffs["iters_w_regularization"] == []
+        assert diffs["numerical_issues"] == []
+
+    @pytest.mark.unit
+    def test_compare_results_to_dict_success(self, conv_anal):
+        ca_copy = deepcopy(ca_res)
+        ca_copy["results"][0]["success"] = True
+
+        diffs = conv_anal._compare_results_to_dict(ca_copy)
+
+        assert diffs["success"] == [0]
+        assert diffs["iters"] == []
+        assert diffs["iters_in_restoration"] == []
+        assert diffs["iters_w_regularization"] == []
+        assert diffs["numerical_issues"] == []
+
+    @pytest.mark.unit
+    def test_compare_results_to_dict_iters(self, conv_anal):
+        ca_copy = deepcopy(ca_res)
+        ca_copy["results"][0]["results"]["iters"] = 8
+        ca_copy["results"][1]["results"]["iters"] = 9
+
+        diffs = conv_anal._compare_results_to_dict(ca_copy)
+
+        assert diffs["success"] == []
+        assert diffs["iters"] == [1]
+        assert diffs["iters_in_restoration"] == []
+        assert diffs["iters_w_regularization"] == []
+        assert diffs["numerical_issues"] == []
+
+        diffs = conv_anal._compare_results_to_dict(ca_copy, abs_tol=0, rel_tol=0)
+
+        assert diffs["success"] == []
+        assert diffs["iters"] == [0, 1]
+        assert diffs["iters_in_restoration"] == []
+        assert diffs["iters_w_regularization"] == []
+        assert diffs["numerical_issues"] == []
+
+    @pytest.mark.unit
+    def test_compare_results_to_dict_restoration(self, conv_anal):
+        ca_copy = deepcopy(ca_res)
+        ca_copy["results"][0]["results"]["iters_in_restoration"] = 5
+        ca_copy["results"][1]["results"]["iters_in_restoration"] = 6
+
+        diffs = conv_anal._compare_results_to_dict(ca_copy)
+
+        assert diffs["success"] == []
+        assert diffs["iters"] == []
+        assert diffs["iters_in_restoration"] == [1]
+        assert diffs["iters_w_regularization"] == []
+        assert diffs["numerical_issues"] == []
+
+        diffs = conv_anal._compare_results_to_dict(ca_copy, abs_tol=0, rel_tol=0)
+
+        assert diffs["success"] == []
+        assert diffs["iters"] == []
+        assert diffs["iters_in_restoration"] == [0, 1]
+        assert diffs["iters_w_regularization"] == []
+        assert diffs["numerical_issues"] == []
+
+    @pytest.mark.unit
+    def test_compare_results_to_dict_regularization(self, conv_anal):
+        ca_copy = deepcopy(ca_res)
+        ca_copy["results"][0]["results"]["iters_w_regularization"] = 1
+        ca_copy["results"][1]["results"]["iters_w_regularization"] = 2
+
+        diffs = conv_anal._compare_results_to_dict(ca_copy)
+
+        assert diffs["success"] == []
+        assert diffs["iters"] == []
+        assert diffs["iters_in_restoration"] == []
+        assert diffs["iters_w_regularization"] == [1]
+        assert diffs["numerical_issues"] == []
+
+        diffs = conv_anal._compare_results_to_dict(ca_copy, abs_tol=0, rel_tol=0)
+
+        assert diffs["success"] == []
+        assert diffs["iters"] == []
+        assert diffs["iters_in_restoration"] == []
+        assert diffs["iters_w_regularization"] == [0, 1]
+        assert diffs["numerical_issues"] == []
+
+    @pytest.mark.unit
+    def test_compare_results_to_dict_numerical_issues(self, conv_anal):
+        ca_copy = deepcopy(ca_res)
+        ca_copy["results"][1]["results"]["numerical_issues"] = False
+
+        diffs = conv_anal._compare_results_to_dict(ca_copy)
+
+        assert diffs["success"] == []
+        assert diffs["iters"] == []
+        assert diffs["iters_in_restoration"] == []
+        assert diffs["iters_w_regularization"] == []
+        assert diffs["numerical_issues"] == [1]
+
+    @pytest.mark.integration
+    @pytest.mark.solver
+    def test_compare_convergence_to_baseline(self, model):
+        fname = os.path.join(currdir, "convergence_baseline.json")
+
+        ca = IpoptConvergenceAnalysis(
+            model=model,
+        )
+
+        diffs = ca.compare_convergence_to_baseline(fname)
+
+        # Baseline has incorrect values
+        assert diffs == {
+            "success": [0],
+            "iters": [],
+            "iters_in_restoration": [],
+            "iters_w_regularization": [1],
+            "numerical_issues": [],
+        }
+
+    @pytest.mark.integration
+    @pytest.mark.solver
+    def test_assert_baseline_comparison(self, model):
+        fname = os.path.join(currdir, "convergence_baseline.json")
+
+        ca = IpoptConvergenceAnalysis(
+            model=model,
+        )
+
+        # Baseline has incorrect values
+        with pytest.raises(
+            AssertionError,
+            match="Convergence analysis does not match baseline",
+        ):
+            ca.assert_baseline_comparison(fname)
 
 
 @pytest.fixture()
@@ -3049,8 +3797,9 @@ class TestCheckParallelJacobian:
 
         with pytest.raises(
             ValueError,
-            match="Unrecognised value for direction \(foo\). "
-            "Must be 'row' or 'column'.",
+            match=re.escape(
+                "Unrecognised value for direction (foo). " "Must be 'row' or 'column'."
+            ),
         ):
             check_parallel_jacobian(m, direction="foo")
 
@@ -3096,8 +3845,9 @@ class TestCheckIllConditioning:
 
         with pytest.raises(
             ValueError,
-            match="Unrecognised value for direction \(foo\). "
-            "Must be 'row' or 'column'.",
+            match=re.escape(
+                "Unrecognised value for direction (foo). " "Must be 'row' or 'column'."
+            ),
         ):
             compute_ill_conditioning_certificate(m, direction="foo")
 
@@ -3268,3 +4018,38 @@ class TestCheckIllConditioning:
             (afiro.X15, pytest.approx(-0.042451666, rel=1e-5)),
             (afiro.X37, pytest.approx(-0.036752232, rel=1e-5)),
         ]
+
+
+class TestComputeInfeasibilityExplanation:
+
+    @pytest.fixture(scope="class")
+    def model(self):
+        # create an infeasible model for demonstration
+        m = ConcreteModel()
+
+        m.name = "test_infeas"
+        m.x = Var([1, 2], bounds=(0, 1))
+        m.y = Var(bounds=(0, 1))
+
+        m.c = Constraint(expr=m.x[1] * m.x[2] == -1)
+        m.d = Constraint(expr=m.x[1] + m.y >= 1)
+
+        return m
+
+    @pytest.mark.component
+    @pytest.mark.solver
+    def test_output(self, model):
+        dt = DiagnosticsToolbox(model)
+
+        stream = StringIO()
+
+        dt.compute_infeasibility_explanation(stream=stream)
+
+        expected = """Computed Minimal Intractable System (MIS)!
+Constraints / bounds in MIS:
+	lb of var x[2]
+	lb of var x[1]
+	constraint: c
+Constraints / bounds in guards for stability:
+"""
+        assert expected in stream.getvalue()

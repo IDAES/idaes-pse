@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -246,6 +246,7 @@ class ComponentData(ProcessBlockData):
 
         # Create Vars for common parameters
         var_dict = {
+            "compress_fact_crit": pyunits.dimensionless,
             "dens_mol_crit": base_units.DENSITY_MOLE,
             "omega": pyunits.dimensionless,
             "pressure_crit": base_units.PRESSURE,
@@ -438,7 +439,7 @@ class IonData(SoluteData):
     CONFIG = SoluteData.CONFIG()
 
     # Remove valid_phase_types argument, as ions are aqueous phase only
-    CONFIG.__delitem__("valid_phase_types")
+    del CONFIG["valid_phase_types"]
     # Set as not having a vapor pressure
     has_psat = CONFIG.get("has_vapor_pressure")
     has_psat.set_value(False)

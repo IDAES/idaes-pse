@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -514,9 +514,7 @@ def _binary_diffusion_coefficient_expr(temperature, p, c1, c2):
     f = 1.52996
     g = 1.76474
     h = 3.89411
-    omega = (
-        a / tr**b + c / pyo.exp(d * tr) + e / pyo.exp(f * tr) + g / pyo.exp(h * tr)
-    )
+    omega = a / tr**b + c / pyo.exp(d * tr) + e / pyo.exp(f * tr) + g / pyo.exp(h * tr)
     cm2_to_m2 = 0.01 * 0.01
     Pa_to_bar = 1e-5
     return (

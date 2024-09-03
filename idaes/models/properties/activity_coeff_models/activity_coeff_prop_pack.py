@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -322,7 +322,7 @@ class ActivityCoeffInitializer(InitializerBase):
     CONFIG.declare(
         "solver",
         ConfigValue(
-            default=None,
+            default="ipopt_v2",
             description="Solver to use for initialization",
         ),
     )
@@ -331,6 +331,13 @@ class ActivityCoeffInitializer(InitializerBase):
         ConfigDict(
             implicit=True,
             description="Dict of options to pass to solver",
+        ),
+    )
+    CONFIG.declare(
+        "solver_writer_config",
+        ConfigDict(
+            implicit=True,
+            description="Dict of writer_config arguments to pass to solver",
         ),
     )
     CONFIG.declare(
@@ -379,7 +386,11 @@ class ActivityCoeffInitializer(InitializerBase):
                 k.eq_mol_frac_out.deactivate()
 
         # Create solver
-        solver = get_solver(self.config.solver, self.config.solver_options)
+        solver = get_solver(
+            solver=self.config.solver,
+            solver_options=self.config.solver_options,
+            writer_config=self.config.solver_writer_config,
+        )
 
         # ---------------------------------------------------------------------
         # Initialization sequence: Deactivating certain constraints
@@ -569,6 +580,8 @@ class _ActivityCoeffStateBlock(StateBlock):
             # Check when the state vars are fixed already result in dof 0
             for k in blk.values():
                 if degrees_of_freedom(k) != 0:
+                    # PYLINT-TODO
+                    # pylint: disable-next=broad-exception-raised
                     raise Exception(
                         "State vars fixed but degrees of freedom "
                         "for state block is not zero during "

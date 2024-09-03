@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -37,7 +37,7 @@ prop_available = cubic_roots_available()
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_solver()
+solver = get_solver("ipopt_v2")
 
 
 # -----------------------------------------------------------------------------
@@ -115,6 +115,10 @@ class TestBTExample(object):
 
     @pytest.mark.integration
     def test_T_sweep(self):
+        # TODO: This test fails if using MA57 with the linear_presolve
+        # This model is known to have some formulation issues.
+        solver = get_solver(solver="ipopt_v2", solver_options={"linear_solver": "ma27"})
+
         m = ConcreteModel()
 
         m.fs = FlowsheetBlock(dynamic=False)

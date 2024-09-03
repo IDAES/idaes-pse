@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -216,7 +216,7 @@ class GenericReactionParameterData(ReactionParameterBlock):
         ppack = self.config.property_package
 
         if not hasattr(ppack, "_electrolyte") or not ppack._electrolyte:
-            pc_set = ppack._phase_component_set
+            pc_set = ppack.get_phase_component_set()
         elif ppack.config.state_components.name == "true":
             pc_set = ppack.true_phase_component_set
         elif ppack.config.state_components.name == "apparent":

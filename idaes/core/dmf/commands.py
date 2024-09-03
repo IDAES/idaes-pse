@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -391,7 +391,9 @@ def cat_resources(path, objects=(), color=True):
     # get all resources,
     # display any that match an object as a prefix
     for r in d.find():
-        for oid in unmatched:
+        # iterate on a copy of the set to avoid
+        # mutating an object being iterated on
+        for oid in set(unmatched):
             if r.uuid.startswith(oid):
                 unmatched.remove(oid)  # don't show twice
                 if not first:

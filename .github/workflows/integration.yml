@@ -33,6 +33,7 @@ concurrency:
 env:
   IDAES_CONDA_ENV_NAME_DEV: idaes-pse-dev
   PYTEST_ADDOPTS: "--color=yes"
+  DEFAULT_PYTHON_VERSION: '3.10'
 
 defaults:
   run:
@@ -131,7 +132,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11']
+        python-version: ['3.9', '3.10', '3.11', '3.12']
         os:
           - linux
           - win64
@@ -153,7 +154,7 @@ jobs:
         with:
           install-target: -r requirements-dev.txt
       - name: Run pytest (integration)
-        run: pytest -m integration
+        run: pytest --pyargs idaes -m integration
 
   examples:
     name: Run examples (py${{ matrix.python-version }}/${{ matrix.os }})
@@ -168,7 +169,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11']
+        python-version: ['3.9', '3.10', '3.11', '3.12']
         os:
           - linux
           - win64
@@ -237,7 +238,7 @@ jobs:
         uses: conda-incubator/setup-miniconda@v3
         with:
           activate-environment: idaes-env
-          python-version: '3.8'
+          python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
       - name: Set up idaes (non-editable installation)
         uses: ./.github/actions/setup-idaes
         with:

@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -184,7 +184,7 @@ except NameError:  # eg, if invoked from setup.py
     pass
 
 #: Package's version as an object
-package_version = Version(2, 4, 0, "development", 0, gh)
+package_version = Version(2, 6, 0, "development", 0, gh)
 
 #: Package's version as a simple string
 __version__ = str(package_version)

@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -39,6 +39,47 @@ import pytest
 ####
 
 ####
+
+
+def pytest_addoption(parser):
+    parser.addoption(
+        "--performance",
+        action="store_true",
+        dest="performance",
+        default=False,
+        help="enable performance decorated tests",
+    )
+
+
+MARKERS = {
+    "build": "test of model build methods",
+    "cubic_root": "test requires the compiled cubic root finder",
+    "iapws": "test requires the compiled IAPWS95 property package",
+    "initialization": "test of initialization methods. These generally require a solver as well",
+    "solver": "test requires a solver",
+    "ui": "tests of an aspect of the ui",
+    "unit": "quick tests that do not require a solver, must run in <2s",
+    "component": "quick tests that may require a solver",
+    "integration": "long duration tests",
+    "performance": "tests for the IDAES performance testing suite",
+}
+
+
+def pytest_configure(config: pytest.Config):
+    for name, description in MARKERS.items():
+        config.addinivalue_line("markers", f"{name}: {description}")
+
+    if not config.option.performance:
+        if len(config.option.markexpr) > 0:
+            setattr(
+                config.option,
+                "markexpr",
+                f"{config.option.markexpr} and not performance",
+            )
+        else:
+            setattr(config.option, "markexpr", "not performance")
+    else:
+        setattr(config.option, "markexpr", "performance")
 
 
 REQUIRED_MARKERS = {"unit", "component", "integration", "performance"}
@@ -113,30 +154,6 @@ def _validate_required_markers(item, required_markers=None, expected_count=1):
             f"found: {required_markers_on_item or required_count}"
         )
         pytest.fail(msg)
-
-
-def pytest_addoption(parser):
-    parser.addoption(
-        "--performance",
-        action="store_true",
-        dest="performance",
-        default=False,
-        help="enable performance decorated tests",
-    )
-
-
-def pytest_configure(config):
-    if not config.option.performance:
-        if len(config.option.markexpr) > 0:
-            setattr(
-                config.option,
-                "markexpr",
-                f"{config.option.markexpr} and not performance",
-            )
-        else:
-            setattr(config.option, "markexpr", "not performance")
-    else:
-        setattr(config.option, "markexpr", "performance")
 
 
 ModuleName = str

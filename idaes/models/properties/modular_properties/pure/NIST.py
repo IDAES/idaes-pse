@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -43,37 +43,25 @@ class NIST(object):
 
             cobj.cp_mol_ig_comp_coeff_B = Var(
                 doc="Shomate B parameter for ideal gas molar heat capacity",
-                units=pyunits.J
-                * pyunits.mol**-1
-                * pyunits.K**-1
-                * pyunits.kiloK**-1,
+                units=pyunits.J * pyunits.mol**-1 * pyunits.K**-1 * pyunits.kiloK**-1,
             )
             set_param_from_config(cobj, param="cp_mol_ig_comp_coeff", index="B")
 
             cobj.cp_mol_ig_comp_coeff_C = Var(
                 doc="Shomate C parameter for ideal gas molar heat capacity",
-                units=pyunits.J
-                * pyunits.mol**-1
-                * pyunits.K**-1
-                * pyunits.kiloK**-2,
+                units=pyunits.J * pyunits.mol**-1 * pyunits.K**-1 * pyunits.kiloK**-2,
             )
             set_param_from_config(cobj, param="cp_mol_ig_comp_coeff", index="C")
 
             cobj.cp_mol_ig_comp_coeff_D = Var(
                 doc="Shomate D parameter for ideal gas molar heat capacity",
-                units=pyunits.J
-                * pyunits.mol**-1
-                * pyunits.K**-1
-                * pyunits.kiloK**-3,
+                units=pyunits.J * pyunits.mol**-1 * pyunits.K**-1 * pyunits.kiloK**-3,
             )
             set_param_from_config(cobj, param="cp_mol_ig_comp_coeff", index="D")
 
             cobj.cp_mol_ig_comp_coeff_E = Var(
                 doc="Shomate E parameter for ideal gas molar heat capacity",
-                units=pyunits.J
-                * pyunits.mol**-1
-                * pyunits.K**-1
-                * pyunits.kiloK**2,
+                units=pyunits.J * pyunits.mol**-1 * pyunits.K**-1 * pyunits.kiloK**2,
             )
             set_param_from_config(cobj, param="cp_mol_ig_comp_coeff", index="E")
 

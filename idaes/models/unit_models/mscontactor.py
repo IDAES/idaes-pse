@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -51,7 +51,6 @@ from idaes.core.util.exceptions import (
 )
 from idaes.core.initialization import ModularInitializerBase
 from idaes.core.initialization.initializer_base import StoreState
-from idaes.core.solvers import get_solver
 from idaes.core.util.model_serializer import to_json, from_json
 import idaes.logger as idaeslog
 from idaes.core.util.units_of_measurement import report_quantity
@@ -158,7 +157,7 @@ class MSContactorInitializer(ModularInitializerBase):
                 c.deactivate()
 
         # Call css_solver
-        solver = get_solver(self.config.solver, options=self.config.solver_options)
+        solver = self._get_solver()
         solve_strongly_connected_components(
             model,
             solver=solver,
@@ -385,17 +384,21 @@ class MSContactorData(UnitModelBlockData):
         # Call UnitModel.build
         super().build()
 
+        # Placeholders for things we will get from first StateBlock
+        self.flow_basis = None
+        self.uom = None
+
         self._verify_inputs()
-        flow_basis, uom = self._build_state_blocks()
+        self._build_state_blocks()
 
         if self.config.heterogeneous_reactions is not None:
             self._build_heterogeneous_reaction_blocks()
 
-        self._add_geometry(uom)
+        self._add_geometry()
 
-        self._build_material_balance_constraints(flow_basis, uom)
-        self._build_energy_balance_constraints(uom)
-        self._build_pressure_balance_constraints(uom)
+        self._build_material_balance_constraints()
+        self._build_energy_balance_constraints()
+        self._build_pressure_balance_constraints()
         self._build_ports()
 
     def _verify_inputs(self):
@@ -432,7 +435,7 @@ class MSContactorData(UnitModelBlockData):
         self.stream_component_interactions = Set(
             doc="Set of interacting components between streams."
         )
-        for (stream1, stream2) in self.stream_interactions:
+        for stream1, stream2 in self.stream_interactions:
             for j in self.config.streams[stream1].property_package.component_list:
                 if (
                     j in self.config.streams[stream2].property_package.component_list
@@ -461,10 +464,6 @@ class MSContactorData(UnitModelBlockData):
 
     def _build_state_blocks(self):
         # Build state blocks
-        # Placeholders for things we will get from first StateBlock
-        flow_basis = None
-        uom = None
-
         for stream, pconfig in self.config.streams.items():
             ppack = pconfig.property_package
 
@@ -514,19 +513,19 @@ class MSContactorData(UnitModelBlockData):
 
             tref = self.flowsheet().time.first()
             sref = self.elements.first()
-            if flow_basis is None:
+            if self.flow_basis is None:
                 # Set unit level flow basis and units from first stream
 
-                flow_basis = state[tref, sref].get_material_flow_basis()
-                uom = state[tref, sref].params.get_metadata().derived_units
+                self.flow_basis = state[tref, sref].get_material_flow_basis()
+                self.uom = state[tref, sref].params.get_metadata().derived_units
             else:
                 # Check that flow bases are consistent
-                if not state[tref, sref].get_material_flow_basis() == flow_basis:
+                if not state[tref, sref].get_material_flow_basis() == self.flow_basis:
                     raise ConfigurationError(
                         f"Property packages use different flow bases: ExtractionCascade "
                         f"requires all property packages to use the same basis. "
                         f"{stream} uses {state[tref, sref].get_material_flow_basis()}, "
-                        f"whilst first stream uses {flow_basis}."
+                        f"whilst first stream uses {self.flow_basis}."
                     )
 
             # Build reactions blocks if provided
@@ -542,8 +541,6 @@ class MSContactorData(UnitModelBlockData):
                     **tmp_dict,
                 )
                 self.add_component(stream + "_reactions", reactions)
-
-        return flow_basis, uom
 
     def _build_heterogeneous_reaction_blocks(self):
         rpack = self.config.heterogeneous_reactions
@@ -569,14 +566,14 @@ class MSContactorData(UnitModelBlockData):
                 "reactions (reaction_idx)."
             )
 
-    def _add_geometry(self, uom):
+    def _add_geometry(self):
         if self.config.has_holdup:
             # Add volume for each element
             # TODO: Assuming constant volume for now
             self.volume = Var(
                 self.elements,
                 initialize=1,
-                units=uom.VOLUME,
+                units=self.uom.VOLUME,
                 doc="Volume of element",
             )
             self.volume_frac_stream = Var(
@@ -600,14 +597,14 @@ class MSContactorData(UnitModelBlockData):
                 phase_list = getattr(self, stream).phase_list
                 _add_phase_fractions(self, stream, phase_list)
 
-    def _build_material_balance_constraints(self, flow_basis, uom):
+    def _build_material_balance_constraints(self):
         # Get units for transfer terms
-        if flow_basis is MaterialFlowBasis.molar:
-            mb_units = uom.FLOW_MOLE
-            hu_units = uom.AMOUNT
-        elif flow_basis is MaterialFlowBasis.mass:
-            mb_units = uom.FLOW_MASS
-            hu_units = uom.MASS
+        if self.flow_basis is MaterialFlowBasis.molar:
+            mb_units = self.uom.FLOW_MOLE
+            hu_units = self.uom.AMOUNT
+        elif self.flow_basis is MaterialFlowBasis.mass:
+            mb_units = self.uom.FLOW_MASS
+            hu_units = self.uom.MASS
         else:
             # Flow type other, so cannot determine units
             mb_units = None
@@ -895,9 +892,8 @@ class MSContactorData(UnitModelBlockData):
             )
             self.add_component(stream + "_material_balance", mbal)
 
-    def _build_energy_balance_constraints(self, uom):
+    def _build_energy_balance_constraints(self):
         # Energy Balances
-
         for stream, pconfig in self.config.streams.items():
             if pconfig.has_energy_balance:
                 state_block = getattr(self, stream)
@@ -912,7 +908,7 @@ class MSContactorData(UnitModelBlockData):
                         domain=Reals,
                         initialize=1.0,
                         doc="Energy holdup of stream in element",
-                        units=uom.ENERGY,
+                        units=self.uom.ENERGY,
                     )
                     self.add_component(
                         stream + "_energy_holdup",
@@ -939,7 +935,7 @@ class MSContactorData(UnitModelBlockData):
                         energy_holdup,
                         wrt=self.flowsheet().time,
                         doc="Energy accumulation for in element",
-                        units=uom.POWER,
+                        units=self.uom.POWER,
                     )
                     self.add_component(
                         stream + "_energy_accumulation",
@@ -951,7 +947,7 @@ class MSContactorData(UnitModelBlockData):
                         self.flowsheet().time,
                         self.elements,
                         initialize=0,
-                        units=uom.POWER,
+                        units=self.uom.POWER,
                         doc=f"External heat transfer term for stream {stream}",
                     )
                     self.add_component(stream + "_heat", heat)
@@ -962,12 +958,12 @@ class MSContactorData(UnitModelBlockData):
                     rule=partial(
                         _energy_balance_rule,
                         stream=stream,
-                        uom=uom,
+                        uom=self.uom,
                     ),
                 )
                 self.add_component(stream + "_energy_balance", ebal)
 
-    def _build_pressure_balance_constraints(self, uom):
+    def _build_pressure_balance_constraints(self):
         # Pressure Balances
         for stream, pconfig in self.config.streams.items():
             if pconfig.has_pressure_balance:
@@ -977,7 +973,7 @@ class MSContactorData(UnitModelBlockData):
                         self.flowsheet().time,
                         self.elements,
                         initialize=0,
-                        units=uom.PRESSURE,
+                        units=self.uom.PRESSURE,
                         doc=f"DeltaP term for stream {stream}",
                     )
                     self.add_component(stream + "_deltaP", deltaP)
@@ -988,7 +984,7 @@ class MSContactorData(UnitModelBlockData):
                     rule=partial(
                         _pressure_balance_rule,
                         stream=stream,
-                        uom=uom,
+                        uom=self.uom,
                     ),
                 )
                 self.add_component(stream + "_pressure_balance", pbal)

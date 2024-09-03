@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -96,8 +96,10 @@ class TestKrigingModel:
             KrigingClass = KrigingModel(input_array, fname=1)
 
     @pytest.mark.unit
-    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    @pytest.mark.filterwarnings(
+        "ignore:invalid value encountered in log:RuntimeWarning"
+    )
     def test__init__08(self, array_type):
         input_array = array_type(self.test_data)
         file_name = "test_filename.pickle"
@@ -107,8 +109,10 @@ class TestKrigingModel:
         assert KrigingClass1.filename == KrigingClass2.filename
 
     @pytest.mark.unit
-    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    @pytest.mark.filterwarnings(
+        "ignore:invalid value encountered in log:RuntimeWarning"
+    )
     def test__init__09(self, array_type):
         input_array = array_type(self.test_data)
         file_name1 = "test_filename1.pickle"
@@ -345,9 +349,10 @@ class TestKrigingModel:
                 )
             ).transpose()
             cov_matrix_tests = np.exp(-1 * cmt)
-            y_prediction_exp[i, 0] = mean + np.matmul(
+            y_prediction_val = mean + np.matmul(
                 np.matmul(cov_matrix_tests.transpose(), cov_inv), y_mu
             )
+            y_prediction_exp[i, 0] = y_prediction_val.item()
 
         ss_error, rmse_error, y_prediction = KrigingClass.error_calculation(
             theta,
@@ -403,8 +408,10 @@ class TestKrigingModel:
         assert 0.999999999999 == r_square
 
     @pytest.mark.unit
-    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    @pytest.mark.filterwarnings(
+        "ignore:invalid value encountered in log:RuntimeWarning"
+    )
     def test_predict_output_01(self, array_type):
         input_array = array_type(self.training_data)
         np.random.seed(0)
@@ -414,8 +421,10 @@ class TestKrigingModel:
         assert y_pred.shape[0] == KrigingClass.x_data_scaled.shape[0]
 
     @pytest.mark.unit
-    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    @pytest.mark.filterwarnings(
+        "ignore:invalid value encountered in log:RuntimeWarning"
+    )
     def test_predict_output(self, array_type):
         input_array = array_type(self.training_data)
         np.random.seed(0)
@@ -425,7 +434,6 @@ class TestKrigingModel:
         assert y_pred.shape[0] == 1
 
     @pytest.mark.unit
-    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test_training(self, array_type):
         input_array = array_type(self.training_data)
@@ -503,7 +511,6 @@ class TestKrigingModel:
         assert expected_dict == p.extract_values()
 
     @pytest.mark.unit
-    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test_kriging_generate_expression(self, array_type):
         input_array = array_type(self.training_data)
@@ -516,7 +523,6 @@ class TestKrigingModel:
         rbf_expr = results.generate_expression((lv))
 
     @pytest.mark.unit
-    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test_pickle_load01(self, array_type):
         input_array = array_type(self.training_data)
@@ -525,7 +531,6 @@ class TestKrigingModel:
         KrigingClass.pickle_load(KrigingClass.filename)
 
     @pytest.mark.unit
-    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test_pickle_load02(self, array_type):
         input_array = array_type(self.training_data)
@@ -534,7 +539,6 @@ class TestKrigingModel:
             KrigingClass.pickle_load("file_not_existing.pickle")
 
     @pytest.mark.unit
-    @pytest.fixture(scope="module")
     @patch("matplotlib.pyplot.show")
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test_parity_residual_plots(self, mock_show, array_type):

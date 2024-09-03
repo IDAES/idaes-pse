@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -20,14 +20,15 @@ import pytest
 from pyomo.environ import (
     assert_optimal_termination,
     ConcreteModel,
+    TransformationFactory,
     value,
     units as pyunits,
 )
 from pyomo.common.config import ConfigBlock
-from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 import pyomo.common.unittest as unittest
 
 import idaes
+import idaes.logger as idaeslog
 from idaes.core import (
     FlowsheetBlock,
     MaterialBalanceType,
@@ -55,7 +56,6 @@ from idaes.models.properties.examples.saponification_thermo import (
 
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 from idaes.core.util.model_statistics import (
-    degrees_of_freedom,
     number_variables,
     number_total_constraints,
     number_unused_variables,
@@ -68,6 +68,7 @@ from idaes.core.initialization import (
     BlockTriangularizationInitializer,
     InitializationStatus,
 )
+from idaes.core.util import DiagnosticsToolbox
 
 # Imports to assemble BT-PR with different units
 from idaes.core import LiquidPhase, VaporPhase, Component
@@ -84,7 +85,7 @@ from idaes.models.properties.modular_properties.eos.ceos import cubic_roots_avai
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_solver()
+solver = get_solver("ipopt_v2")
 
 
 # -----------------------------------------------------------------------------
@@ -273,24 +274,11 @@ def test_config():
 
 
 @pytest.mark.unit
-def test_config_validation():
+def test_config_validation_different_methods():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
     m.fs.properties = BTXParameterBlock(valid_phase="Liq")
-
-    with pytest.raises(ConfigurationError):
-        m.fs.HX_co_current = HX1D(
-            hot_side={
-                "property_package": m.fs.properties,
-                "transformation_scheme": "BACKWARD",
-            },
-            cold_side={
-                "property_package": m.fs.properties,
-                "transformation_scheme": "FORWARD",
-            },
-            flow_type=HeatExchangerFlowPattern.cocurrent,
-        )
 
     with pytest.raises(ConfigurationError):
         m.fs.HX_counter_current = HX1D(
@@ -303,6 +291,223 @@ def test_config_validation():
                 "transformation_method": "dae.collocation",
             },
             flow_type=HeatExchangerFlowPattern.countercurrent,
+        )
+
+
+@pytest.mark.unit
+def test_config_validation_default(caplog):
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = BTXParameterBlock(valid_phase="Liq")
+    caplog.clear()
+    with caplog.at_level(idaeslog.INFO):
+        m.fs.HX_countercurrent = HX1D(
+            hot_side={
+                "property_package": m.fs.properties,
+            },
+            cold_side={
+                "property_package": m.fs.properties,
+            },
+            flow_type=HeatExchangerFlowPattern.countercurrent,
+        )
+    assert (
+        "Discretization method was "
+        "not specified for the hot side of the "
+        "heat exchanger. "
+        "Defaulting to finite "
+        "difference method on the hot side."
+    ) in caplog.text
+    assert (
+        m.fs.HX_countercurrent.config.hot_side.transformation_method
+        == "dae.finite_difference"
+    )
+    assert (
+        "Discretization method was "
+        "not specified for the cold side of the "
+        "heat exchanger. "
+        "Defaulting to finite "
+        "difference method on the cold side."
+    ) in caplog.text
+    assert (
+        m.fs.HX_countercurrent.config.cold_side.transformation_method
+        == "dae.finite_difference"
+    )
+    assert (
+        "For cold_side, a BACKWARD scheme was chosen to discretize the length domain. "
+        "However, this scheme is not an upwind scheme for countercurrent flow, and "
+        "as a result may run into numerical stability issues. To avoid this, "
+        "use a FORWARD scheme (which may result in energy conservation issues "
+        "for coarse discretizations) or use a high-order collocation method."
+    ) in caplog.text
+
+
+@pytest.mark.unit
+def test_config_validation_upwind(caplog):
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = BTXParameterBlock(valid_phase="Liq")
+    caplog.clear()
+    with caplog.at_level(idaeslog.CAUTION):
+        m.fs.HX_countercurrent = HX1D(
+            hot_side={
+                "property_package": m.fs.properties,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+            },
+            cold_side={
+                "property_package": m.fs.properties,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "FORWARD",
+            },
+            flow_type=HeatExchangerFlowPattern.countercurrent,
+        )
+    # Test to make sure that we don't get the caution for not having an upwind
+    # scheme (because this scheme is in fact upwind)
+    assert "To avoid" not in caplog.text
+    assert (
+        "The hot and cold sides are being discretized with different "
+        "discretization schemes. While this may result in better numerical "
+        "stability if an upwind scheme is used, it may also result in "
+        "energy conservation errors. High-order collocation methods can "
+        "provide both accuracy and numerical stability."
+    ) in caplog.text
+
+
+@pytest.mark.unit
+def test_config_validation_cocurrent_upwind(caplog):
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = BTXParameterBlock(valid_phase="Liq")
+    caplog.clear()
+
+    with caplog.at_level(idaeslog.INFO):
+        m.fs.HX_cocurrent = HX1D(
+            hot_side={
+                "property_package": m.fs.properties,
+            },
+            cold_side={
+                "property_package": m.fs.properties,
+            },
+            flow_type=HeatExchangerFlowPattern.cocurrent,
+        )
+    assert (
+        "Discretization method was "
+        "not specified for the hot side of the "
+        "heat exchanger. "
+        "Defaulting to finite "
+        "difference method on the hot side."
+    ) in caplog.text
+    assert (
+        m.fs.HX_cocurrent.config.hot_side.transformation_method
+        == "dae.finite_difference"
+    )
+    assert (
+        "Discretization method was "
+        "not specified for the cold side of the "
+        "heat exchanger. "
+        "Defaulting to finite "
+        "difference method on the cold side."
+    ) in caplog.text
+    assert (
+        m.fs.HX_cocurrent.config.cold_side.transformation_method
+        == "dae.finite_difference"
+    )
+
+
+@pytest.mark.unit
+def test_config_validation_cocurrent_downwind(caplog):
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = BTXParameterBlock(valid_phase="Liq")
+    caplog.clear()
+
+    with caplog.at_level(idaeslog.INFO):
+        m.fs.HX_cocurrent = HX1D(
+            hot_side={
+                "property_package": m.fs.properties,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "FORWARD",
+            },
+            cold_side={
+                "property_package": m.fs.properties,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "FORWARD",
+            },
+            flow_type=HeatExchangerFlowPattern.cocurrent,
+        )
+    assert (
+        "For hot_side, a FORWARD scheme was chosen to discretize the length domain. "
+        "However, this scheme is not an upwind scheme for cocurrent flow, and "
+        "as a result may run into numerical stability issues. To avoid this, "
+        "use a BACKWARD scheme (which may result in energy conservation issues "
+        "for coarse discretizations) or use a high-order collocation method."
+    ) in caplog.text
+    assert (
+        "For cold_side, a FORWARD scheme was chosen to discretize the length domain. "
+        "However, this scheme is not an upwind scheme for cocurrent flow, and "
+        "as a result may run into numerical stability issues. To avoid this, "
+        "use a BACKWARD scheme (which may result in energy conservation issues "
+        "for coarse discretizations) or use a high-order collocation method."
+    ) in caplog.text
+
+
+@pytest.mark.unit
+def test_config_validation_cocurrent_forward_and_backward(caplog):
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = BTXParameterBlock(valid_phase="Liq")
+    caplog.clear()
+
+    with caplog.at_level(idaeslog.INFO):
+        m.fs.HX_cocurrent = HX1D(
+            hot_side={
+                "property_package": m.fs.properties,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "FORWARD",
+            },
+            cold_side={
+                "property_package": m.fs.properties,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+            },
+            flow_type=HeatExchangerFlowPattern.cocurrent,
+        )
+    assert (
+        "For hot_side, a FORWARD scheme was chosen to discretize the length domain. "
+        "However, this scheme is not an upwind scheme for cocurrent flow, and "
+        "as a result may run into numerical stability issues. To avoid this, "
+        "use a BACKWARD scheme (which may result in energy conservation issues "
+        "for coarse discretizations) or use a high-order collocation method."
+    ) in caplog.text
+    assert (
+        "The hot and cold sides are being discretized with different "
+        "discretization schemes. While this may result in better numerical "
+        "stability if an upwind scheme is used, it may also result in "
+        "energy conservation errors. High-order collocation methods can "
+        "provide both accuracy and numerical stability."
+    ) in caplog.text
+
+
+@pytest.mark.unit
+def test_config_validation_mismatched_collocation(caplog):
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = BTXParameterBlock(valid_phase="Liq")
+    caplog.clear()
+
+    with pytest.raises(ConfigurationError):
+        m.fs.HX_cocurrent = HX1D(
+            hot_side={
+                "property_package": m.fs.properties,
+                "transformation_method": "dae.collocation",
+                "transformation_scheme": "LAGRANGE-RADAU",
+            },
+            cold_side={
+                "property_package": m.fs.properties,
+                "transformation_method": "dae.collocation",
+                "transformation_scheme": "LAGRANGE-LEGENDRE",
+            },
+            flow_type=HeatExchangerFlowPattern.cocurrent,
         )
 
 
@@ -384,15 +589,9 @@ class TestBTX_cocurrent(object):
         assert number_unused_variables(btx) == 10
 
     @pytest.mark.integration
-    def test_units(self, btx):
-        assert_units_equivalent(btx.fs.unit.area, pyunits.m**2)
-        assert_units_equivalent(btx.fs.unit.length, pyunits.m)
-
-        assert_units_consistent(btx)
-
-    @pytest.mark.unit
-    def test_dof(self, btx):
-        assert degrees_of_freedom(btx) == 0
+    def test_structural_issues(self, btx):
+        dt = DiagnosticsToolbox(btx)
+        dt.assert_no_structural_warnings()
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -529,6 +728,13 @@ class TestBTX_cocurrent(object):
         )
         assert abs(hot_side - cold_side) <= 1e-6
 
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, btx):
+        dt = DiagnosticsToolbox(btx)
+        dt.assert_no_numerical_warnings()
+
 
 # -----------------------------------------------------------------------------
 class TestBTX_countercurrent(object):
@@ -606,19 +812,9 @@ class TestBTX_countercurrent(object):
         assert number_unused_variables(btx) == 10
 
     @pytest.mark.integration
-    def test_units(self, btx):
-        assert_units_equivalent(btx.fs.unit.area, pyunits.m**2)
-        assert_units_equivalent(btx.fs.unit.length, pyunits.m)
-        assert_units_equivalent(
-            btx.fs.unit.heat_transfer_coefficient,
-            pyunits.W / pyunits.m**2 / pyunits.K,
-        )
-
-        assert_units_consistent(btx)
-
-    @pytest.mark.unit
-    def test_dof(self, btx):
-        assert degrees_of_freedom(btx) == 0
+    def test_structural_issues(self, btx):
+        dt = DiagnosticsToolbox(btx)
+        dt.assert_no_structural_warnings()
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -764,6 +960,381 @@ class TestBTX_countercurrent(object):
         )
         assert abs(hot_side - cold_side) <= 1e-6
 
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, btx):
+        dt = DiagnosticsToolbox(btx)
+        dt.assert_no_numerical_warnings()
+
+
+# -----------------------------------------------------------------------------
+class TestBTX_lagrange_radau(object):
+    @pytest.fixture(scope="class")
+    def btx(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.properties = BTXParameterBlock(valid_phase="Liq")
+
+        m.fs.unit = HX1D(
+            hot_side={
+                "property_package": m.fs.properties,
+                "transformation_method": "dae.collocation",
+                "transformation_scheme": "LAGRANGE-RADAU",
+            },
+            cold_side={
+                "property_package": m.fs.properties,
+                "transformation_method": "dae.collocation",
+                "transformation_scheme": "LAGRANGE-RADAU",
+            },
+            flow_type=HeatExchangerFlowPattern.countercurrent,
+            finite_elements=2,
+            collocation_points=5,
+        )
+
+        m.fs.unit.length.fix(4.85)
+        m.fs.unit.area.fix(0.5)
+        m.fs.unit.heat_transfer_coefficient.fix(500)
+
+        m.fs.unit.hot_side_inlet.flow_mol[0].fix(5)  # mol/s
+        m.fs.unit.hot_side_inlet.temperature[0].fix(365)  # K
+        m.fs.unit.hot_side_inlet.pressure[0].fix(101325)  # Pa
+        m.fs.unit.hot_side_inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+        m.fs.unit.hot_side_inlet.mole_frac_comp[0, "toluene"].fix(0.5)
+
+        m.fs.unit.cold_side_inlet.flow_mol[0].fix(1)  # mol/s
+        m.fs.unit.cold_side_inlet.temperature[0].fix(300)  # K
+        m.fs.unit.cold_side_inlet.pressure[0].fix(101325)  # Pa
+        m.fs.unit.cold_side_inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+        m.fs.unit.cold_side_inlet.mole_frac_comp[0, "toluene"].fix(0.5)
+
+        iscale.calculate_scaling_factors(m.fs.unit)
+
+        return m
+
+    @pytest.mark.unit
+    def test_build(self, btx):
+        assert hasattr(btx.fs.unit, "hot_side_inlet")
+        assert len(btx.fs.unit.hot_side_inlet.vars) == 4
+        assert hasattr(btx.fs.unit.hot_side_inlet, "flow_mol")
+        assert hasattr(btx.fs.unit.hot_side_inlet, "mole_frac_comp")
+        assert hasattr(btx.fs.unit.hot_side_inlet, "temperature")
+        assert hasattr(btx.fs.unit.hot_side_inlet, "pressure")
+
+        assert hasattr(btx.fs.unit, "cold_side_inlet")
+        assert len(btx.fs.unit.cold_side_inlet.vars) == 4
+        assert hasattr(btx.fs.unit.cold_side_inlet, "flow_mol")
+        assert hasattr(btx.fs.unit.cold_side_inlet, "mole_frac_comp")
+        assert hasattr(btx.fs.unit.cold_side_inlet, "temperature")
+        assert hasattr(btx.fs.unit.cold_side_inlet, "pressure")
+
+        assert hasattr(btx.fs.unit, "hot_side_outlet")
+        assert len(btx.fs.unit.hot_side_outlet.vars) == 4
+        assert hasattr(btx.fs.unit.hot_side_outlet, "flow_mol")
+        assert hasattr(btx.fs.unit.hot_side_outlet, "mole_frac_comp")
+        assert hasattr(btx.fs.unit.hot_side_outlet, "temperature")
+        assert hasattr(btx.fs.unit.hot_side_outlet, "pressure")
+
+        assert hasattr(btx.fs.unit, "cold_side_outlet")
+        assert len(btx.fs.unit.cold_side_outlet.vars) == 4
+        assert hasattr(btx.fs.unit.cold_side_outlet, "flow_mol")
+        assert hasattr(btx.fs.unit.cold_side_outlet, "mole_frac_comp")
+        assert hasattr(btx.fs.unit.cold_side_outlet, "temperature")
+        assert hasattr(btx.fs.unit.cold_side_outlet, "pressure")
+
+        assert hasattr(btx.fs.unit, "area")
+        assert hasattr(btx.fs.unit, "length")
+        assert hasattr(btx.fs.unit, "heat_transfer_coefficient")
+        assert hasattr(btx.fs.unit, "heat_transfer_eq")
+        assert hasattr(btx.fs.unit, "heat_conservation")
+
+        assert number_variables(btx) == 434
+        assert number_total_constraints(btx) == 401
+        assert number_unused_variables(btx) == 10
+
+    @pytest.mark.integration
+    def test_structural_issues(self, btx):
+        dt = DiagnosticsToolbox(btx)
+        dt.assert_no_structural_warnings()
+
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_initialize(self, btx):
+        initialization_tester(
+            btx,
+            optarg={"tol": 1e-6},
+            hot_side_state_args={"flow_mol": 5, "temperature": 304, "pressure": 101325},
+            cold_side_state_args={
+                "flow_mol": 1,
+                "temperature": 331.5,
+                "pressure": 101325,
+            },
+        )
+
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solve(self, btx):
+        results = solver.solve(btx)
+
+        # Check for optimal solution
+        assert_optimal_termination(results)
+
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solution(self, btx):
+        assert pytest.approx(5, rel=1e-5) == value(
+            btx.fs.unit.hot_side_outlet.flow_mol[0]
+        )
+        assert pytest.approx(355.637, rel=1e-5) == value(
+            btx.fs.unit.hot_side_outlet.temperature[0]
+        )
+        assert pytest.approx(101325, rel=1e-5) == value(
+            btx.fs.unit.hot_side_outlet.pressure[0]
+        )
+
+        assert pytest.approx(1, rel=1e-5) == value(
+            btx.fs.unit.cold_side_outlet.flow_mol[0]
+        )
+        assert pytest.approx(350.002, rel=1e-5) == value(
+            btx.fs.unit.cold_side_outlet.temperature[0]
+        )
+        assert pytest.approx(101325, rel=1e-5) == value(
+            btx.fs.unit.cold_side_outlet.pressure[0]
+        )
+
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_conservation(self, btx):
+        assert (
+            abs(
+                value(
+                    btx.fs.unit.hot_side_inlet.flow_mol[0]
+                    - btx.fs.unit.hot_side_outlet.flow_mol[0]
+                )
+            )
+            <= 1e-6
+        )
+        assert (
+            abs(
+                value(
+                    btx.fs.unit.cold_side_inlet.flow_mol[0]
+                    - btx.fs.unit.cold_side_outlet.flow_mol[0]
+                )
+            )
+            <= 1e-6
+        )
+
+        hot_side = value(
+            btx.fs.unit.hot_side_outlet.flow_mol[0]
+            * (
+                btx.fs.unit.hot_side.properties[0, 0].enth_mol_phase["Liq"]
+                - btx.fs.unit.hot_side.properties[0, 1].enth_mol_phase["Liq"]
+            )
+        )
+        cold_side = value(
+            btx.fs.unit.cold_side_outlet.flow_mol[0]
+            * (
+                btx.fs.unit.cold_side.properties[0, 0].enth_mol_phase["Liq"]
+                - btx.fs.unit.cold_side.properties[0, 1].enth_mol_phase["Liq"]
+            )
+        )
+        assert abs(hot_side - cold_side) <= 1e-6
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, btx):
+        btx_scaled = TransformationFactory("core.scale_model").create_using(
+            btx, rename=False
+        )
+        dt = DiagnosticsToolbox(btx_scaled)
+        dt.assert_no_numerical_warnings()
+
+
+# -----------------------------------------------------------------------------
+class TestBTX_lagrange_legendre(object):
+    @pytest.fixture(scope="class")
+    def btx(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.properties = BTXParameterBlock(valid_phase="Liq")
+
+        m.fs.unit = HX1D(
+            hot_side={
+                "property_package": m.fs.properties,
+                "transformation_method": "dae.collocation",
+                "transformation_scheme": "LAGRANGE-LEGENDRE",
+            },
+            cold_side={
+                "property_package": m.fs.properties,
+                "transformation_method": "dae.collocation",
+                "transformation_scheme": "LAGRANGE-LEGENDRE",
+            },
+            flow_type=HeatExchangerFlowPattern.countercurrent,
+            finite_elements=2,
+            collocation_points=5,
+        )
+
+        m.fs.unit.length.fix(4.85)
+        m.fs.unit.area.fix(0.5)
+        m.fs.unit.heat_transfer_coefficient.fix(500)
+
+        m.fs.unit.hot_side_inlet.flow_mol[0].fix(5)  # mol/s
+        m.fs.unit.hot_side_inlet.temperature[0].fix(365)  # K
+        m.fs.unit.hot_side_inlet.pressure[0].fix(101325)  # Pa
+        m.fs.unit.hot_side_inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+        m.fs.unit.hot_side_inlet.mole_frac_comp[0, "toluene"].fix(0.5)
+
+        m.fs.unit.cold_side_inlet.flow_mol[0].fix(1)  # mol/s
+        m.fs.unit.cold_side_inlet.temperature[0].fix(300)  # K
+        m.fs.unit.cold_side_inlet.pressure[0].fix(101325)  # Pa
+        m.fs.unit.cold_side_inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+        m.fs.unit.cold_side_inlet.mole_frac_comp[0, "toluene"].fix(0.5)
+
+        iscale.calculate_scaling_factors(m.fs.unit)
+
+        return m
+
+    @pytest.mark.unit
+    def test_build(self, btx):
+        assert hasattr(btx.fs.unit, "hot_side_inlet")
+        assert len(btx.fs.unit.hot_side_inlet.vars) == 4
+        assert hasattr(btx.fs.unit.hot_side_inlet, "flow_mol")
+        assert hasattr(btx.fs.unit.hot_side_inlet, "mole_frac_comp")
+        assert hasattr(btx.fs.unit.hot_side_inlet, "temperature")
+        assert hasattr(btx.fs.unit.hot_side_inlet, "pressure")
+
+        assert hasattr(btx.fs.unit, "cold_side_inlet")
+        assert len(btx.fs.unit.cold_side_inlet.vars) == 4
+        assert hasattr(btx.fs.unit.cold_side_inlet, "flow_mol")
+        assert hasattr(btx.fs.unit.cold_side_inlet, "mole_frac_comp")
+        assert hasattr(btx.fs.unit.cold_side_inlet, "temperature")
+        assert hasattr(btx.fs.unit.cold_side_inlet, "pressure")
+
+        assert hasattr(btx.fs.unit, "hot_side_outlet")
+        assert len(btx.fs.unit.hot_side_outlet.vars) == 4
+        assert hasattr(btx.fs.unit.hot_side_outlet, "flow_mol")
+        assert hasattr(btx.fs.unit.hot_side_outlet, "mole_frac_comp")
+        assert hasattr(btx.fs.unit.hot_side_outlet, "temperature")
+        assert hasattr(btx.fs.unit.hot_side_outlet, "pressure")
+
+        assert hasattr(btx.fs.unit, "cold_side_outlet")
+        assert len(btx.fs.unit.cold_side_outlet.vars) == 4
+        assert hasattr(btx.fs.unit.cold_side_outlet, "flow_mol")
+        assert hasattr(btx.fs.unit.cold_side_outlet, "mole_frac_comp")
+        assert hasattr(btx.fs.unit.cold_side_outlet, "temperature")
+        assert hasattr(btx.fs.unit.cold_side_outlet, "pressure")
+
+        assert hasattr(btx.fs.unit, "area")
+        assert hasattr(btx.fs.unit, "length")
+        assert hasattr(btx.fs.unit, "heat_transfer_coefficient")
+        assert hasattr(btx.fs.unit, "heat_transfer_eq")
+        assert hasattr(btx.fs.unit, "heat_conservation")
+
+        assert number_variables(btx) == 512
+        assert number_total_constraints(btx) == 477
+        assert number_unused_variables(btx) == 10
+
+    @pytest.mark.integration
+    def test_structural_issues(self, btx):
+        dt = DiagnosticsToolbox(btx)
+        dt.assert_no_structural_warnings()
+
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_initialize(self, btx):
+        initialization_tester(
+            btx,
+            optarg={"tol": 1e-6},
+            hot_side_state_args={"flow_mol": 5, "temperature": 304, "pressure": 101325},
+            cold_side_state_args={
+                "flow_mol": 1,
+                "temperature": 331.5,
+                "pressure": 101325,
+            },
+        )
+
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solve(self, btx):
+        results = solver.solve(btx)
+
+        # Check for optimal solution
+        assert_optimal_termination(results)
+
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solution(self, btx):
+        assert pytest.approx(5, rel=1e-5) == value(
+            btx.fs.unit.hot_side_outlet.flow_mol[0]
+        )
+        assert pytest.approx(355.637, rel=1e-5) == value(
+            btx.fs.unit.hot_side_outlet.temperature[0]
+        )
+        assert pytest.approx(101325, rel=1e-5) == value(
+            btx.fs.unit.hot_side_outlet.pressure[0]
+        )
+
+        assert pytest.approx(1, rel=1e-5) == value(
+            btx.fs.unit.cold_side_outlet.flow_mol[0]
+        )
+        assert pytest.approx(350.002, rel=1e-5) == value(
+            btx.fs.unit.cold_side_outlet.temperature[0]
+        )
+        assert pytest.approx(101325, rel=1e-5) == value(
+            btx.fs.unit.cold_side_outlet.pressure[0]
+        )
+
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_conservation(self, btx):
+        assert (
+            abs(
+                value(
+                    btx.fs.unit.hot_side_inlet.flow_mol[0]
+                    - btx.fs.unit.hot_side_outlet.flow_mol[0]
+                )
+            )
+            <= 1e-6
+        )
+        assert (
+            abs(
+                value(
+                    btx.fs.unit.cold_side_inlet.flow_mol[0]
+                    - btx.fs.unit.cold_side_outlet.flow_mol[0]
+                )
+            )
+            <= 1e-6
+        )
+
+        hot_side = value(
+            btx.fs.unit.hot_side_outlet.flow_mol[0]
+            * (
+                btx.fs.unit.hot_side.properties[0, 0].enth_mol_phase["Liq"]
+                - btx.fs.unit.hot_side.properties[0, 1].enth_mol_phase["Liq"]
+            )
+        )
+        cold_side = value(
+            btx.fs.unit.cold_side_outlet.flow_mol[0]
+            * (
+                btx.fs.unit.cold_side.properties[0, 0].enth_mol_phase["Liq"]
+                - btx.fs.unit.cold_side.properties[0, 1].enth_mol_phase["Liq"]
+            )
+        )
+        assert abs(hot_side - cold_side) <= 1e-6
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, btx):
+        btx_scaled = TransformationFactory("core.scale_model").create_using(
+            btx, rename=False
+        )
+        dt = DiagnosticsToolbox(btx_scaled)
+        dt.assert_no_numerical_warnings()
+
 
 # -----------------------------------------------------------------------------
 def build_model():
@@ -846,19 +1417,9 @@ class TestIAPWS_cocurrent(object):
         assert number_unused_variables(iapws) == 12
 
     @pytest.mark.integration
-    def test_units(self, iapws):
-        assert_units_equivalent(iapws.fs.unit.area, pyunits.m**2)
-        assert_units_equivalent(iapws.fs.unit.length, pyunits.m)
-        assert_units_equivalent(
-            iapws.fs.unit.heat_transfer_coefficient,
-            pyunits.W / pyunits.m**2 / pyunits.K,
-        )
-
-        assert_units_consistent(iapws)
-
-    @pytest.mark.unit
-    def test_dof(self, iapws):
-        assert degrees_of_freedom(iapws) == 0
+    def test_structural_issues(self, iapws):
+        dt = DiagnosticsToolbox(iapws)
+        dt.assert_no_structural_warnings()
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -997,6 +1558,13 @@ class TestIAPWS_cocurrent(object):
         )
         assert abs(hot_side + cold_side) <= 1e-6
 
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, iapws):
+        dt = DiagnosticsToolbox(iapws)
+        dt.assert_no_numerical_warnings()
+
 
 # # -----------------------------------------------------------------------------
 @pytest.mark.iapws
@@ -1066,19 +1634,9 @@ class TestIAPWS_countercurrent(object):
         assert number_unused_variables(iapws) == 12
 
     @pytest.mark.integration
-    def test_units(self, iapws):
-        assert_units_equivalent(iapws.fs.unit.area, pyunits.m**2)
-        assert_units_equivalent(iapws.fs.unit.length, pyunits.m)
-        assert_units_equivalent(
-            iapws.fs.unit.heat_transfer_coefficient,
-            pyunits.W / pyunits.m**2 / pyunits.K,
-        )
-
-        assert_units_consistent(iapws)
-
-    @pytest.mark.unit
-    def test_dof(self, iapws):
-        assert degrees_of_freedom(iapws) == 0
+    def test_structural_issues(self, iapws):
+        dt = DiagnosticsToolbox(iapws)
+        dt.assert_no_structural_warnings()
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -1217,6 +1775,13 @@ class TestIAPWS_countercurrent(object):
         )
         assert abs(hot_side + cold_side) <= 1e-6
 
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, iapws):
+        dt = DiagnosticsToolbox(iapws)
+        dt.assert_no_numerical_warnings()
+
 
 # # -----------------------------------------------------------------------------
 class TestSaponification_cocurrent(object):
@@ -1243,8 +1808,8 @@ class TestSaponification_cocurrent(object):
         m.fs.unit.hot_side_inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
         m.fs.unit.hot_side_inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
         m.fs.unit.hot_side_inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
-        m.fs.unit.hot_side_inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
-        m.fs.unit.hot_side_inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
+        m.fs.unit.hot_side_inlet.conc_mol_comp[0, "SodiumAcetate"].fix(1e-8)
+        m.fs.unit.hot_side_inlet.conc_mol_comp[0, "Ethanol"].fix(1e-8)
 
         m.fs.unit.cold_side_inlet.flow_vol[0].fix(1e-3)
         m.fs.unit.cold_side_inlet.temperature[0].fix(300)
@@ -1252,8 +1817,8 @@ class TestSaponification_cocurrent(object):
         m.fs.unit.cold_side_inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
         m.fs.unit.cold_side_inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
         m.fs.unit.cold_side_inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
-        m.fs.unit.cold_side_inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
-        m.fs.unit.cold_side_inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
+        m.fs.unit.cold_side_inlet.conc_mol_comp[0, "SodiumAcetate"].fix(1e-8)
+        m.fs.unit.cold_side_inlet.conc_mol_comp[0, "Ethanol"].fix(1e-8)
 
         return m
 
@@ -1294,19 +1859,9 @@ class TestSaponification_cocurrent(object):
         assert number_unused_variables(sapon) == 16
 
     @pytest.mark.integration
-    def test_units(self, sapon):
-        assert_units_equivalent(sapon.fs.unit.area, pyunits.m**2)
-        assert_units_equivalent(sapon.fs.unit.length, pyunits.m)
-        assert_units_equivalent(
-            sapon.fs.unit.heat_transfer_coefficient,
-            pyunits.W / pyunits.m**2 / pyunits.K,
-        )
-
-        assert_units_consistent(sapon)
-
-    @pytest.mark.unit
-    def test_dof(self, sapon):
-        assert degrees_of_freedom(sapon) == 0
+    def test_structural_issues(self, sapon):
+        dt = DiagnosticsToolbox(sapon)
+        dt.assert_no_structural_warnings()
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -1409,25 +1964,37 @@ class TestSaponification_cocurrent(object):
             sapon.fs.unit.cold_side_outlet.flow_vol[0]
         )
 
-        assert 55388.0 == value(sapon.fs.unit.hot_side_inlet.conc_mol_comp[0, "H2O"])
-        assert 100.0 == value(sapon.fs.unit.hot_side_inlet.conc_mol_comp[0, "NaOH"])
-        assert 100.0 == value(
+        assert pytest.approx(55388.0, rel=1e-5) == value(
+            sapon.fs.unit.hot_side_inlet.conc_mol_comp[0, "H2O"]
+        )
+        assert pytest.approx(100.0, rel=1e-5) == value(
+            sapon.fs.unit.hot_side_inlet.conc_mol_comp[0, "NaOH"]
+        )
+        assert pytest.approx(100.0, rel=1e-5) == value(
             sapon.fs.unit.hot_side_inlet.conc_mol_comp[0, "EthylAcetate"]
         )
-        assert 0.0 == value(
+        assert pytest.approx(0.0, abs=1e-5) == value(
             sapon.fs.unit.hot_side_inlet.conc_mol_comp[0, "SodiumAcetate"]
         )
-        assert 0.0 == value(sapon.fs.unit.hot_side_inlet.conc_mol_comp[0, "Ethanol"])
+        assert pytest.approx(0.0, abs=1e-5) == value(
+            sapon.fs.unit.hot_side_inlet.conc_mol_comp[0, "Ethanol"]
+        )
 
-        assert 55388.0 == value(sapon.fs.unit.cold_side_inlet.conc_mol_comp[0, "H2O"])
-        assert 100.0 == value(sapon.fs.unit.cold_side_inlet.conc_mol_comp[0, "NaOH"])
-        assert 100.0 == value(
+        assert pytest.approx(55388.0, rel=1e-5) == value(
+            sapon.fs.unit.cold_side_inlet.conc_mol_comp[0, "H2O"]
+        )
+        assert pytest.approx(100.0, rel=1e-5) == value(
+            sapon.fs.unit.cold_side_inlet.conc_mol_comp[0, "NaOH"]
+        )
+        assert pytest.approx(100.0, rel=1e-5) == value(
             sapon.fs.unit.cold_side_inlet.conc_mol_comp[0, "EthylAcetate"]
         )
-        assert 0.0 == value(
+        assert pytest.approx(0.0, abs=1e-5) == value(
             sapon.fs.unit.cold_side_inlet.conc_mol_comp[0, "SodiumAcetate"]
         )
-        assert 0.0 == value(sapon.fs.unit.cold_side_inlet.conc_mol_comp[0, "Ethanol"])
+        assert pytest.approx(0.0, abs=1e-5) == value(
+            sapon.fs.unit.cold_side_inlet.conc_mol_comp[0, "Ethanol"]
+        )
 
         assert pytest.approx(318.873, rel=1e-5) == value(
             sapon.fs.unit.hot_side_outlet.temperature[0]
@@ -1466,6 +2033,13 @@ class TestSaponification_cocurrent(object):
         )
         assert abs(hot_side + cold_side) <= 1e-6
 
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, sapon):
+        dt = DiagnosticsToolbox(sapon)
+        dt.assert_no_numerical_warnings()
+
 
 # # -----------------------------------------------------------------------------
 class TestSaponification_countercurrent(object):
@@ -1492,8 +2066,8 @@ class TestSaponification_countercurrent(object):
         m.fs.unit.hot_side_inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
         m.fs.unit.hot_side_inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
         m.fs.unit.hot_side_inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
-        m.fs.unit.hot_side_inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
-        m.fs.unit.hot_side_inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
+        m.fs.unit.hot_side_inlet.conc_mol_comp[0, "SodiumAcetate"].fix(1e-8)
+        m.fs.unit.hot_side_inlet.conc_mol_comp[0, "Ethanol"].fix(1e-8)
 
         m.fs.unit.cold_side_inlet.flow_vol[0].fix(1e-3)
         m.fs.unit.cold_side_inlet.temperature[0].fix(300)
@@ -1501,8 +2075,8 @@ class TestSaponification_countercurrent(object):
         m.fs.unit.cold_side_inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
         m.fs.unit.cold_side_inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
         m.fs.unit.cold_side_inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
-        m.fs.unit.cold_side_inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
-        m.fs.unit.cold_side_inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
+        m.fs.unit.cold_side_inlet.conc_mol_comp[0, "SodiumAcetate"].fix(1e-8)
+        m.fs.unit.cold_side_inlet.conc_mol_comp[0, "Ethanol"].fix(1e-8)
 
         return m
 
@@ -1543,19 +2117,9 @@ class TestSaponification_countercurrent(object):
         assert number_unused_variables(sapon) == 16
 
     @pytest.mark.integration
-    def test_units(self, sapon):
-        assert_units_equivalent(sapon.fs.unit.area, pyunits.m**2)
-        assert_units_equivalent(sapon.fs.unit.length, pyunits.m)
-        assert_units_equivalent(
-            sapon.fs.unit.heat_transfer_coefficient,
-            pyunits.W / pyunits.m**2 / pyunits.K,
-        )
-
-        assert_units_consistent(sapon)
-
-    @pytest.mark.unit
-    def test_dof(self, sapon):
-        assert degrees_of_freedom(sapon) == 0
+    def test_structural_issues(self, sapon):
+        dt = DiagnosticsToolbox(sapon)
+        dt.assert_no_structural_warnings()
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -1658,25 +2222,37 @@ class TestSaponification_countercurrent(object):
             sapon.fs.unit.cold_side_outlet.flow_vol[0]
         )
 
-        assert 55388.0 == value(sapon.fs.unit.hot_side_inlet.conc_mol_comp[0, "H2O"])
-        assert 100.0 == value(sapon.fs.unit.hot_side_inlet.conc_mol_comp[0, "NaOH"])
-        assert 100.0 == value(
+        assert pytest.approx(55388.0, rel=1e-5) == value(
+            sapon.fs.unit.hot_side_inlet.conc_mol_comp[0, "H2O"]
+        )
+        assert pytest.approx(100.0, rel=1e-5) == value(
+            sapon.fs.unit.hot_side_inlet.conc_mol_comp[0, "NaOH"]
+        )
+        assert pytest.approx(100.0, rel=1e-5) == value(
             sapon.fs.unit.hot_side_inlet.conc_mol_comp[0, "EthylAcetate"]
         )
-        assert 0.0 == value(
+        assert pytest.approx(0.0, abs=1e-5) == value(
             sapon.fs.unit.hot_side_inlet.conc_mol_comp[0, "SodiumAcetate"]
         )
-        assert 0.0 == value(sapon.fs.unit.hot_side_inlet.conc_mol_comp[0, "Ethanol"])
+        assert pytest.approx(0.0, abs=1e-5) == value(
+            sapon.fs.unit.hot_side_inlet.conc_mol_comp[0, "Ethanol"]
+        )
 
-        assert 55388.0 == value(sapon.fs.unit.cold_side_inlet.conc_mol_comp[0, "H2O"])
-        assert 100.0 == value(sapon.fs.unit.cold_side_inlet.conc_mol_comp[0, "NaOH"])
-        assert 100.0 == value(
+        assert pytest.approx(55388.0, rel=1e-5) == value(
+            sapon.fs.unit.cold_side_inlet.conc_mol_comp[0, "H2O"]
+        )
+        assert pytest.approx(100.0, rel=1e-5) == value(
+            sapon.fs.unit.cold_side_inlet.conc_mol_comp[0, "NaOH"]
+        )
+        assert pytest.approx(100.0, rel=1e-5) == value(
             sapon.fs.unit.cold_side_inlet.conc_mol_comp[0, "EthylAcetate"]
         )
-        assert 0.0 == value(
+        assert pytest.approx(0.0, abs=1e-5) == value(
             sapon.fs.unit.cold_side_inlet.conc_mol_comp[0, "SodiumAcetate"]
         )
-        assert 0.0 == value(sapon.fs.unit.cold_side_inlet.conc_mol_comp[0, "Ethanol"])
+        assert pytest.approx(0.0, abs=1e-5) == value(
+            sapon.fs.unit.cold_side_inlet.conc_mol_comp[0, "Ethanol"]
+        )
 
         assert pytest.approx(318.869, rel=1e-5) == value(
             sapon.fs.unit.hot_side_outlet.temperature[0]
@@ -1714,6 +2290,13 @@ class TestSaponification_countercurrent(object):
             )
         )
         assert abs(hot_side + cold_side) <= 1e-6
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, sapon):
+        dt = DiagnosticsToolbox(sapon)
+        dt.assert_no_numerical_warnings()
 
 
 # # -----------------------------------------------------------------------------
@@ -1865,6 +2448,12 @@ class TestBT_Generic_cocurrent(object):
         m.fs.unit.cold_side_inlet.mole_frac_comp[0, "benzene"].fix(0.5)
         m.fs.unit.cold_side_inlet.mole_frac_comp[0, "toluene"].fix(0.5)
 
+        # Set small values of epsilon to get sufficiently accurate results
+        # Only need hot side, as cold side uses old SmoothVLE
+        for i in m.fs.unit.hot_side.properties.keys():
+            m.fs.unit.hot_side.properties[i].eps_t_Vap_Liq.set_value(1e-4)
+            m.fs.unit.hot_side.properties[i].eps_z_Vap_Liq.set_value(1e-4)
+
         return m
 
     @pytest.mark.component
@@ -1903,24 +2492,16 @@ class TestBT_Generic_cocurrent(object):
         assert hasattr(btx.fs.unit, "heat_transfer_eq")
         assert hasattr(btx.fs.unit, "heat_conservation")
 
-        assert number_variables(btx) == 1976
-        assert number_total_constraints(btx) == 1867
+        assert number_variables(btx) == 1829
+        assert number_total_constraints(btx) == 1720
         assert number_unused_variables(btx) == 36
 
     @pytest.mark.integration
-    def test_units(self, btx):
-        assert_units_equivalent(btx.fs.unit.area, pyunits.m**2)
-        assert_units_equivalent(btx.fs.unit.length, pyunits.m)
-        assert_units_equivalent(
-            btx.fs.unit.heat_transfer_coefficient,
-            pyunits.W / pyunits.m**2 / pyunits.K,
+    def test_structural_issues(self, btx):
+        dt = DiagnosticsToolbox(btx)
+        dt.assert_no_structural_warnings(
+            ignore_evaluation_errors=True,
         )
-
-        assert_units_consistent(btx)
-
-    @pytest.mark.component
-    def test_dof(self, btx):
-        assert degrees_of_freedom(btx) == 0
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -2060,6 +2641,15 @@ class TestBT_Generic_cocurrent(object):
             )
         )
         assert abs((hot_side - cold_side) / hot_side) <= 3e-4
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.integration
+    def test_numerical_issues(self, btx):
+        dt = DiagnosticsToolbox(btx)
+        # TODO: Complementarity formulation results in near-parallel components
+        # when unscaled
+        dt.assert_no_numerical_warnings(ignore_parallel_components=True)
 
     @pytest.mark.component
     def test_initialization_error(self, btx):
@@ -2245,6 +2835,106 @@ class TestInitializersBTXCounterCurrent:
             model.fs.unit.cold_side_outlet.flow_mol[0]
         )
         assert pytest.approx(350.67, rel=1e-5) == value(
+            model.fs.unit.cold_side_outlet.temperature[0]
+        )
+        assert pytest.approx(101325, rel=1e-5) == value(
+            model.fs.unit.cold_side_outlet.pressure[0]
+        )
+
+
+class TestInitializersBTXCounterCurrentCollocation:
+    @pytest.fixture
+    def model(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.properties = BTXParameterBlock(valid_phase="Liq")
+
+        m.fs.unit = HX1D(
+            hot_side={
+                "property_package": m.fs.properties,
+                "transformation_method": "dae.collocation",
+                "transformation_scheme": "LAGRANGE-LEGENDRE",
+            },
+            cold_side={
+                "property_package": m.fs.properties,
+                "transformation_method": "dae.collocation",
+                "transformation_scheme": "LAGRANGE-LEGENDRE",
+            },
+            flow_type=HeatExchangerFlowPattern.countercurrent,
+            finite_elements=2,
+            collocation_points=5,
+        )
+
+        m.fs.unit.length.fix(4.85)
+        m.fs.unit.area.fix(0.5)
+        m.fs.unit.heat_transfer_coefficient.fix(500)
+
+        m.fs.unit.hot_side_inlet.flow_mol[0].fix(5)  # mol/s
+        m.fs.unit.hot_side_inlet.temperature[0].fix(365)  # K
+        m.fs.unit.hot_side_inlet.pressure[0].fix(101325)  # Pa
+        m.fs.unit.hot_side_inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+        m.fs.unit.hot_side_inlet.mole_frac_comp[0, "toluene"].fix(0.5)
+
+        m.fs.unit.cold_side_inlet.flow_mol[0].fix(1)  # mol/s
+        m.fs.unit.cold_side_inlet.temperature[0].fix(300)  # K
+        m.fs.unit.cold_side_inlet.pressure[0].fix(101325)  # Pa
+        m.fs.unit.cold_side_inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+        m.fs.unit.cold_side_inlet.mole_frac_comp[0, "toluene"].fix(0.5)
+
+        iscale.calculate_scaling_factors(m.fs.unit)
+
+        return m
+
+    @pytest.mark.integration
+    def test_general_hx1d_initializer(self, model):
+        initializer = HX1DInitializer()
+        initializer.initialize(model.fs.unit)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert pytest.approx(5, rel=1e-5) == value(
+            model.fs.unit.hot_side_outlet.flow_mol[0]
+        )
+        assert pytest.approx(355.637, rel=1e-5) == value(
+            model.fs.unit.hot_side_outlet.temperature[0]
+        )
+        assert pytest.approx(101325, rel=1e-5) == value(
+            model.fs.unit.hot_side_outlet.pressure[0]
+        )
+
+        assert pytest.approx(1, rel=1e-5) == value(
+            model.fs.unit.cold_side_outlet.flow_mol[0]
+        )
+        assert pytest.approx(350.002, rel=1e-5) == value(
+            model.fs.unit.cold_side_outlet.temperature[0]
+        )
+        assert pytest.approx(101325, rel=1e-5) == value(
+            model.fs.unit.cold_side_outlet.pressure[0]
+        )
+
+    @pytest.mark.integration
+    def test_block_triangularization(self, model):
+        initializer = BlockTriangularizationInitializer(constraint_tolerance=2e-5)
+        # Need to ignore unused variables at inlets
+        initializer.initialize(model.fs.unit, exclude_unused_vars=True)
+
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+        assert pytest.approx(5, rel=1e-5) == value(
+            model.fs.unit.hot_side_outlet.flow_mol[0]
+        )
+        assert pytest.approx(355.637, rel=1e-5) == value(
+            model.fs.unit.hot_side_outlet.temperature[0]
+        )
+        assert pytest.approx(101325, rel=1e-5) == value(
+            model.fs.unit.hot_side_outlet.pressure[0]
+        )
+
+        assert pytest.approx(1, rel=1e-5) == value(
+            model.fs.unit.cold_side_outlet.flow_mol[0]
+        )
+        assert pytest.approx(350.002, rel=1e-5) == value(
             model.fs.unit.cold_side_outlet.temperature[0]
         )
         assert pytest.approx(101325, rel=1e-5) == value(
@@ -2652,7 +3342,10 @@ class TestInitializersSaponCounterCurrent:
 
     @pytest.mark.integration
     def test_block_triangularization(self, model):
-        initializer = BlockTriangularizationInitializer(constraint_tolerance=2e-5)
+        initializer = BlockTriangularizationInitializer(
+            constraint_tolerance=2e-5,
+            block_solver_writer_config={"linear_presolve": False},
+        )
         # Need to ignore unused variables at inlets
         initializer.initialize(model.fs.unit, exclude_unused_vars=True)
 
@@ -2847,9 +3540,14 @@ class TestInitializersModularCoCurrent:
         m.fs.unit.cold_side_inlet.mole_frac_comp[0, "benzene"].set_value(0.5)
         m.fs.unit.cold_side_inlet.mole_frac_comp[0, "toluene"].set_value(0.5)
 
+        # Set small values of epsilon to get sufficiently accurate results
+        for i in m.fs.unit.hot_side.properties.keys():
+            m.fs.unit.hot_side.properties[i].eps_t_Vap_Liq.set_value(1e-4)
+            m.fs.unit.hot_side.properties[i].eps_z_Vap_Liq.set_value(1e-4)
+
         return m
 
-    @pytest.mark.component
+    @pytest.mark.integration
     def test_general_hx1d_initializer(self, model):
         initializer = HX1DInitializer()
         initializer.initialize(model.fs.unit)

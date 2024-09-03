@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -182,7 +182,8 @@ def dummy_package():
     # build a bad module in a temporary package
     d = mkdtemp()
     sys.path.append(d)
-    foo = os.path.join(d, "foo{}".format(random.randint(1e6, 1e7 - 1)))
+    generated_suffix = str(random.randint(1_000_000, 9_999_999))
+    foo = os.path.join(d, f"foo{generated_suffix}")
     os.mkdir(foo)
     open(os.path.join(foo, "__init__.py"), "w")
     # create some modules

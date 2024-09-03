@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -513,7 +513,8 @@ class PysmoSurrogate(SurrogateBase):
             row_data = inputdata[i, :].reshape(1, len(self._input_labels))
             for j, output_label in enumerate(self._output_labels):
                 result = self._trained.get_result(output_label)
-                outputs[i, j] = result.model.predict_output(row_data)
+                res_vec = result.model.predict_output(row_data)
+                outputs[i, j] = res_vec.item()
 
         return pd.DataFrame(
             data=outputs, index=inputs.index, columns=self._output_labels
@@ -626,7 +627,6 @@ class TrainedSurrogateEncoder(JSONEncoder, TSEBase):
         "optimal_p",
         "optimal_mean",
         "optimal_variance",
-        "regularization_parameter",
         "optimal_covariance_matrix",
         "covariance_matrix_inverse",
         "optimal_y_mu",
@@ -675,7 +675,7 @@ class TrainedSurrogateEncoder(JSONEncoder, TSEBase):
             return isinstance(
                 v,
                 (
-                    pc.base.param._ParamData,
+                    pc.base.param.ParamData,
                     pc.base.param.Param,
                     pc.expr.numeric_expr.NPV_ProductExpression,
                     pc.expr.numeric_expr.NPV_DivisionExpression,

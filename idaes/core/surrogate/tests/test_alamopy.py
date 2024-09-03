@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -16,6 +16,7 @@ Tests for Alampy SurrogateModelTrainer
 import pytest
 import numpy as np
 import pandas as pd
+import re
 import io
 import os
 from math import sin, cos, log, exp
@@ -843,9 +844,11 @@ class TestAlamoTrainer:
         alamo_trainer._trcfile = os.path.join(dirpath, "alamotrace2.trc")
         with pytest.raises(
             RuntimeError,
-            match="Mismatch when reading ALAMO trace file. "
-            "Label of output variable in expression "
-            "\(z2\) does not match expected label \(z3\).",
+            match=re.escape(
+                "Mismatch when reading ALAMO trace file. "
+                "Label of output variable in expression "
+                "(z2) does not match expected label (z3)."
+            ),
         ):
             alamo_trainer._read_trace_file(alamo_trainer._trcfile)
 

@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -28,6 +28,7 @@ from idaes.core.surrogate.pysmo.sampling import (
     SamplingMethods,
     FeatureScaling,
 )
+import idaes.logger as idaeslog
 
 
 class TestFeatureScaling:
@@ -907,7 +908,7 @@ class TestLatinHypercubeSampling:
             )
             np.testing.assert_array_equal(expected_testing, out_testing)
 
-    @pytest.mark.unit
+    @pytest.mark.integration
     @pytest.mark.parametrize("array_type", [list])
     def test_sample_points_equality_fixed_seed(self, array_type):
         rand_seed = 1000
@@ -2229,18 +2230,21 @@ class TestCVTSampling:
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
-    def test__init__selection_tolerance_too_tight(self, array_type):
+    def test__init__selection_tolerance_too_tight(self, array_type, caplog):
+        caplog.set_level(idaeslog.WARNING)
+        warning_msg = (
+            "Tolerance too tight. CVT algorithm may take long time to converge."
+        )
         input_array = array_type(self.input_array)
-        with pytest.warns(
-            Warning,
-            match="Tolerance too tight. CVT algorithm may take long time to converge.",
-        ):
-            CVTClass = CVTSampling(
-                input_array,
-                number_of_samples=None,
-                tolerance=1e-10,
-                sampling_type="selection",
-            )
+        CVTClass = CVTSampling(
+            input_array,
+            number_of_samples=None,
+            tolerance=1e-10,
+            sampling_type="selection",
+        )
+        assert warning_msg in caplog.text
+        for record in caplog.records:
+            assert record.levelno == idaeslog.WARNING
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
@@ -2414,18 +2418,21 @@ class TestCVTSampling:
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [list])
-    def test__init__creation_tolerance_too_tight(self, array_type):
+    def test__init__creation_tolerance_too_tight(self, array_type, caplog):
+        caplog.set_level(idaeslog.WARNING)
         input_array = array_type(self.input_array_list)
-        with pytest.warns(
-            Warning,
-            match="Tolerance too tight. CVT algorithm may take long time to converge.",
-        ):
-            CVTClass = CVTSampling(
-                input_array,
-                number_of_samples=None,
-                tolerance=1e-10,
-                sampling_type="creation",
-            )
+        warning_msg = (
+            "Tolerance too tight. CVT algorithm may take long time to converge."
+        )
+        CVTClass = CVTSampling(
+            input_array,
+            number_of_samples=None,
+            tolerance=1e-10,
+            sampling_type="creation",
+        )
+        assert warning_msg in caplog.text
+        for record in caplog.records:
+            assert record.levelno == idaeslog.WARNING
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [list])
@@ -2707,7 +2714,7 @@ class TestCVTSampling:
                 unique_sample_points.shape,
             )
 
-    @pytest.mark.unit
+    @pytest.mark.integration
     @pytest.mark.parametrize("array_type", [list])
     def test_sample_points_equality_fixed_seed(self, array_type):
         rand_seed = 1000
@@ -3567,7 +3574,7 @@ class TestCustomSampling:
             assert unique_sample_points.shape[1] == input_array.shape[1]
             assert type(unique_sample_points) == np.ndarray
 
-    @pytest.mark.unit
+    @pytest.mark.integration
     @pytest.mark.parametrize("array_type", [list])
     def test_sample_points_equality_fixed_seed(self, array_type):
         rand_seed = 1000

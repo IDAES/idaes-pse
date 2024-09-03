@@ -4,7 +4,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -36,9 +36,7 @@ def smooth_abs(a, eps=1e-4):
     """
     # Check type of eps
     if not isinstance(eps, (float, int, Param)):
-        raise TypeError(
-            "smooth_abs eps argument must be a float, int or " "Pyomo Param"
-        )
+        raise TypeError("smooth_abs eps argument must be a float, int or Pyomo Param")
 
     # Create expression
     try:
@@ -81,7 +79,7 @@ def smooth_minmax(a, b, eps=1e-4, sense="max"):
         mm = -1
     else:
         raise ValueError(
-            "Unrecognised sense argument to smooth_minmax. " "Must be 'min' or 'max'."
+            "Unrecognised sense argument to smooth_minmax. Must be 'min' or 'max'."
         )
 
     # Create expression

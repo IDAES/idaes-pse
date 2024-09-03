@@ -74,7 +74,7 @@ class ExtraDependencies:
         "idaes-ui @ git+https://github.com/IDAES/idaes-ui@main",
     ]
     _ipython = [
-        'ipython <= 8.12; python_version == "3.8"',
+        "ipython",
     ]
     dmf = [
         # all modules relative to idaes.core.dmf
@@ -133,13 +133,13 @@ kwargs = dict(
     # Put abstract (non-versioned) deps here.
     # Concrete dependencies go in requirements[-dev].txt
     install_requires=[
-        "pyomo >= 6.7.0",
-        "pint",  # required to use Pyomo units
+        "pyomo >= 6.8.0",
+        "pint >= 0.24.1",  # required to use Pyomo units. Pint 0.24.1 needed for Python 3.9 support
         "networkx",  # required to use Pyomo network
-        "numpy",
+        "numpy>=1,<3",
         # pandas constraint added on 2023-08-30 b/c bug in v2.1
         # see IDAES/idaes-pse#1253
-        "pandas!=2.1.0",
+        "pandas!=2.1.0,<3",
         "scipy",
         "sympy",  # idaes.core.util.expr_doc
         "matplotlib",
@@ -177,6 +177,7 @@ kwargs = dict(
             "*.trc",
             "*.xlsx",  # idaes/dmf/tests/data_files - tabular import test files
             "*.nl",
+            "*.keras",  # idaes/core/surrogate/tests/data/keras_models
         ]
     },
     include_package_data=True,
@@ -201,10 +202,10 @@ kwargs = dict(
         "Operating System :: Unix",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
         "Programming Language :: Python :: Implementation :: CPython",
         "Topic :: Scientific/Engineering :: Mathematics",
         "Topic :: Scientific/Engineering :: Chemistry",

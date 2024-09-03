@@ -66,3 +66,6 @@ missing the win32api DLL. There is a relatively easy fix::
 
   pip uninstall pywin32
   pip install pywin32==225
+
+.. IMPORTANT::
+   Python 3.8 is no longer officially supported.
