@@ -9,10 +9,6 @@ from setuptools import setup, find_namespace_packages
 from typing import List, Tuple
 
 
-def warn(s):
-    sys.stderr.write("*** WARNING *** {}\n".format(s))
-
-
 def get_version():
     code_file = os.path.join("idaes", "ver.py")
     code = open(code_file).read()
@@ -27,69 +23,23 @@ README = open("README.md").read()
 README = README[README.find("#") :]  # ignore everything before title
 
 
-def rglob(path, glob):
-    """Return list of paths from `path` matching `glob`."""
-    p = Path(path)
-    return list(map(str, p.rglob(glob)))
-
-
-# For included DMF data
-DMF_DATA_ROOT = "dmf_data"
-
-
-def dmf_data_files(root: str = DMF_DATA_ROOT) -> List[Tuple[str, List[str]]]:
-    """Generate a list of pairs (directory, [files..]), covering all the DMF data
-    files, for the `data_files` option to :func:`setup()`.
-    """
-    file_list = [
-        (
-            root,
-            [f"{root}/config.yaml", f"{root}/resourcedb.json"],
-        )
-    ]
-    files_root = Path(root) / "files"
-    for files_subdir in files_root.glob("*"):
-        file_names = [f.as_posix() for f in files_subdir.glob("*")]
-        if file_names:  # empty for non-directories and empty directories
-            file_list.append((files_subdir.as_posix(), file_names))
-    return file_list
-
-
 class ExtraDependencies:
     """
     A convenience shorthand to define and combine dependencies for ``extras_require``.
 
     >>> extras = ExtraDependencies()
-    >>> extras["ui"]
-    ['requests', 'pint']
+    >>> extras["testing"]
+    ['pytest', 'addheader', 'pyyaml']
     >>> list(extras)
-    ['ui', 'dmf', 'omlt', 'grid', 'coolprop', 'testing']
+    ['ui', 'omlt', 'grid', 'coolprop', 'testing']
     >>> dict(extras)
-    {'ui': ['requests', 'pint'], 'dmf': ['jsonschema', 'setuptools', 'traitlets', ...], ...}
+    {'testing': ['pytest', 'addheader', 'pyyaml'], 'omlt': ['omlt==1.1', 'tensorflow', ...], ...}
     """
 
     ui = [
         # FIXME this must be changed to the PyPI distribution for the release
         # "idaes-ui",
         "idaes-ui @ git+https://github.com/IDAES/idaes-ui@main",
-    ]
-    _ipython = [
-        "ipython",
-    ]
-    dmf = [
-        # all modules relative to idaes.core.dmf
-        "jsonschema",  # commands, resource, workspace
-        "setuptools",  # provides pkg_resources?
-        "traitlets",  # dmfbase
-        "lxml",  # help
-        "seaborn",  # model_data (optional^2)
-        "PyPDF2",  # model_data (optional^2)
-        "colorama",  # util
-        *_ipython,  # magics
-        "pyyaml",  # workspace
-        "tinydb",  # resourcedb
-        "xlrd",  # tables (implicitly by pandas.read_excel())
-        "openpyxl",  # tables (implicitly by pandas.read_excel())
     ]
     omlt = [
         "omlt==1.1",  # fix the version for now as package evolves
@@ -126,7 +76,6 @@ kwargs = dict(
     packages=find_namespace_packages(
         include=[
             "idaes*",
-            "dmf_data*",
         ]
     ),
     # Put abstract (non-versioned) deps here.
@@ -180,7 +129,6 @@ kwargs = dict(
         ]
     },
     include_package_data=True,
-    data_files=dmf_data_files(),
     maintainer="Keith Beattie",
     maintainer_email="ksbeattie@lbl.gov",
     url="https://idaes.org",
