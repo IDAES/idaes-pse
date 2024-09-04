@@ -223,7 +223,7 @@ Variable Name                  Meaning
 enth                           Specific enthalpy of the entire mixture (across all phases)
 flow_comp["H2O"]               Total flow of H2O (across all phases)
 entr_phase["liq"]              Specific entropy of the liquid phase mixture
-conc_phase_comp["liq", "H2O"]  Concentration of H2O in the liquid phase
+conc_mass_phase_comp["liq", "H2O"]  Concentration of H2O in the liquid phase on a mass basis
 temperature_red                Reduced temperature
 pressure_crit                  Critical pressure
 ============================== ===========================================================
