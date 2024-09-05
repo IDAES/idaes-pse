@@ -64,12 +64,21 @@ def excel_data():
 
 
 @pytest.mark.unit
-def test_seed_value():
+def test_seed():
     m = PriceTakerModel()
+    assert isinstance(m._seed, int)
 
-    m.seed = 50
 
-    assert m.seed == 50
+@pytest.mark.unit
+def test_seed_value():
+    value = "fifty"
+    with pytest.raises(
+        ValueError,
+        match=("seed must be an integer, but fifty is not an integer"),
+    ):
+
+        m = PriceTakerModel()
+        m.seed = value
 
 
 @pytest.mark.unit
