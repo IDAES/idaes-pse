@@ -63,7 +63,6 @@ See the documentation in convergence.py for more information.
 
 # stdlib
 from collections import OrderedDict
-import getpass
 import importlib as il
 import json
 import logging
@@ -882,6 +881,7 @@ def save_convergence_statistics(
             s.to_json(f)
     if dmf is not None:
         # this import will trigger the DMF deprecation message
+        # pylint: ignore-next=import-outside-toplevel,unused-import
         import idaes.core.dmf
 
         # this block should be removed once idaes.core.dmf is removed completely
