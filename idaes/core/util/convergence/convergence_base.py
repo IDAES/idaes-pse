@@ -881,7 +881,7 @@ def save_convergence_statistics(
             s.to_json(f)
     if dmf is not None:
         # this import will trigger the DMF deprecation message
-        # pylint: ignore-next=import-outside-toplevel,unused-import
+        # pylint: disable-next-next=import-outside-toplevel,unused-import
         import idaes.core.dmf
 
         # this block should be removed once idaes.core.dmf is removed completely
