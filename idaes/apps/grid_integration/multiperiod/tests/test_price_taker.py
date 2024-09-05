@@ -150,7 +150,7 @@ def test_init_logger_messages_clusters(excel_data, caplog):
         daily_data = m.generate_daily_data(excel_data["BaseCaseTax"])
         m.get_optimal_n_clusters(daily_data)
 
-        assert f"kmax was not set - using a default value of 30." in caplog.text
+        assert "kmax was not set - using a default value of 30." in caplog.text
 
 
 @pytest.mark.unit
@@ -159,14 +159,14 @@ def test_init_logger_messages(excel_data, caplog):
     value = 0
     with pytest.raises(
         ValueError,
-        match=(f"horizon_length must be > 0, but {value} is provided."),
+        match=("horizon_length must be > 0, but 0 is provided."),
     ):
         m = PriceTakerModel()
         m.horizon_length = value
     value = 12.34
     with pytest.raises(
         ValueError,
-        match=(f"horizon_length must be an integer, but {value} is not an integer"),
+        match=("horizon_length must be an integer, but 12.34 is not an integer"),
     ):
         m = PriceTakerModel()
         m.horizon_length = value
@@ -175,7 +175,7 @@ def test_init_logger_messages(excel_data, caplog):
     value = 12.34
     with pytest.raises(
         ValueError,
-        match=(f"seed must be an integer, but {value} is not an integer"),
+        match=("seed must be an integer, but 12.34 is not an integer"),
     ):
         m = PriceTakerModel()
         m.seed = value
@@ -190,28 +190,28 @@ def test_min_up_down_time_logger_messages(excel_data):
     down_time = [10, -5, 2.2]
     with pytest.raises(
         ValueError,
-        match=(f"up_time must be an integer, but {up_time[2]} is not an integer"),
+        match=("up_time must be an integer, but 2.2 is not an integer"),
     ):
         m = PriceTakerModel()
         m.add_startup_shutdown(des, oper, build_bin_var, up_time[2], down_time[0])
 
     with pytest.raises(
         ValueError,
-        match=(f"down_time must be an integer, but {down_time[2]} is not an integer"),
+        match=("down_time must be an integer, but 2.2 is not an integer"),
     ):
         m = PriceTakerModel()
         m.add_startup_shutdown(des, oper, build_bin_var, up_time[0], down_time[2])
 
     with pytest.raises(
         ValueError,
-        match=(f"up_time must be >= 1, but {up_time[1]} is not"),
+        match=("up_time must be >= 1, but -5 is not"),
     ):
         m = PriceTakerModel()
         m.add_startup_shutdown(des, oper, build_bin_var, up_time[1], down_time[0])
 
     with pytest.raises(
         ValueError,
-        match=(f"down_time must be >= 1, but {down_time[1]} is not"),
+        match=("down_time must be >= 1, but -5 is not"),
     ):
         m = PriceTakerModel()
         m.add_startup_shutdown(des, oper, build_bin_var, up_time[0], down_time[1])
@@ -227,7 +227,7 @@ def test_init_logger_messages_clusters_min_up_down_time(excel_data, caplog):
     with pytest.raises(
         NotImplementedError,
         match=(
-            f"You tried to use representative days with minimum up or minimum downtime constraints. This is not yet supported."
+            "You tried to use representative days with minimum up or minimum downtime constraints. This is not yet supported."
         ),
     ):
         m = PriceTakerModel()
@@ -269,7 +269,7 @@ def test_optimal_clusters_logger_messages(excel_data):
     kmax = [-5, 10.2, 8]
     with pytest.raises(
         ValueError,
-        match=(f"kmin must be an integer, but {kmin[1]} is not an integer"),
+        match=("kmin must be an integer, but 10.2 is not an integer"),
     ):
         m = PriceTakerModel()
 
@@ -280,7 +280,7 @@ def test_optimal_clusters_logger_messages(excel_data):
 
     with pytest.raises(
         ValueError,
-        match=(f"kmax must be an integer, but {kmax[1]} is not an integer"),
+        match=("kmax must be an integer, but 10.2 is not an integer"),
     ):
         m = PriceTakerModel()
 
@@ -291,7 +291,7 @@ def test_optimal_clusters_logger_messages(excel_data):
 
     with pytest.raises(
         ValueError,
-        match=(f"kmin must be > 0, but {kmin[0]} is provided."),
+        match=("kmin must be > 0, but -5 is provided."),
     ):
         m = PriceTakerModel()
 
@@ -302,7 +302,7 @@ def test_optimal_clusters_logger_messages(excel_data):
 
     with pytest.raises(
         ValueError,
-        match=(f"kmax must be > 0, but {kmax[0]} is provided."),
+        match=("kmax must be > 0, but -5 is provided."),
     ):
         m = PriceTakerModel()
 
@@ -314,7 +314,7 @@ def test_optimal_clusters_logger_messages(excel_data):
 
     with pytest.raises(
         ValueError,
-        match=(f"kmin must be less than kmax, but {kmin[2]} >= {kmax[2]}"),
+        match=("kmin must be less than kmax, but 9 >= 8"),
     ):
         m = PriceTakerModel()
 
@@ -333,7 +333,7 @@ def test_failed_imports(excel_data):
     with pytest.raises(
         ImportError,
         match=(
-            f"Optimal cluster feature requires optional imports 'scikit-learn' and 'kneed'."
+            "Optimal cluster feature requires optional imports 'scikit-learn' and 'kneed'."
         ),
     ):
         m = PriceTakerModel()
@@ -347,7 +347,7 @@ def test_failed_imports(excel_data):
         )
 
 
-# The following test doesn't pass on all systems, so the warning for n_clusters being close
+# The following test doesn't pass on all systems, so the warning for n_clusters being
 # too close to kmax will be uncovered.
 # @pytest.mark.unit
 # def test_optimal_clusters_close_to_kmax(excel_data, caplog):
@@ -384,9 +384,7 @@ def test_ramping_constraint_logger_messages(excel_data):
     op_rd_rate = [-0.1, 0.5]
     with pytest.raises(
         ValueError,
-        match=(
-            f"startup_rate fraction must be between 0 and 1, but {su_rate[0]} is not."
-        ),
+        match=("startup_rate fraction must be between 0 and 1, but -0.1 is not."),
     ):
         m = PriceTakerModel()
         m.add_ramping_constraints(
@@ -405,9 +403,7 @@ def test_ramping_constraint_logger_messages(excel_data):
 
     with pytest.raises(
         ValueError,
-        match=(
-            f"shutdown_rate fraction must be between 0 and 1, but {sd_rate[0]} is not."
-        ),
+        match=("shutdown_rate fraction must be between 0 and 1, but -0.1 is not."),
     ):
         m = PriceTakerModel()
         m.add_ramping_constraints(
@@ -426,9 +422,7 @@ def test_ramping_constraint_logger_messages(excel_data):
 
     with pytest.raises(
         ValueError,
-        match=(
-            f"ramp_up_rate fraction must be between 0 and 1, but {op_ru_rate[0]} is not."
-        ),
+        match=("ramp_up_rate fraction must be between 0 and 1, but -0.1 is not."),
     ):
         m = PriceTakerModel()
         m.add_ramping_constraints(
@@ -447,9 +441,7 @@ def test_ramping_constraint_logger_messages(excel_data):
 
     with pytest.raises(
         ValueError,
-        match=(
-            f"ramp_down_rate fraction must be between 0 and 1, but {op_rd_rate[0]} is not."
-        ),
+        match=("ramp_down_rate fraction must be between 0 and 1, but -0.1 is not."),
     ):
         m = PriceTakerModel()
         m.add_ramping_constraints(
@@ -468,9 +460,7 @@ def test_ramping_constraint_logger_messages(excel_data):
 
     with pytest.raises(
         ValueError,
-        match=(
-            f"op_range_lb fraction must be between 0 and 1, but {op_range_lb[0]} is not."
-        ),
+        match=("op_range_lb fraction must be between 0 and 1, but -0.1 is not."),
     ):
         m = PriceTakerModel()
         m.add_ramping_constraints(
@@ -490,7 +480,7 @@ def test_ramping_constraint_logger_messages(excel_data):
     with pytest.raises(
         ValueError,
         match=(
-            f"op_range_lb fraction must be <= shut_down_rate, otherwise the system cannot reach the off state."
+            "op_range_lb fraction must be <= shut_down_rate, otherwise the system cannot reach the off state."
         ),
     ):
         m = PriceTakerModel()
@@ -512,7 +502,7 @@ def test_ramping_constraint_logger_messages(excel_data):
     with pytest.raises(
         NotImplementedError,
         match=(
-            f"You tried use nonlinear capacity with linearization. This is not yet supported."
+            "You tried use nonlinear capacity with linearization. This is not yet supported."
         ),
     ):
         m = PriceTakerModel()
@@ -555,7 +545,7 @@ def test_ramping_constraint_logger_messages(excel_data):
     with pytest.raises(
         ValueError,
         match=(
-            f"constraint_type must be either linear, or nonliner, but garbage is not."
+            "constraint_type must be either linear, or nonliner, but garbage is not."
         ),
     ):
         m = PriceTakerModel()
@@ -600,7 +590,7 @@ def test_add_capacity_limits_logger_messages(excel_data, caplog):
     with pytest.raises(
         ValueError,
         match=(
-            f"constraint_type must be either linear, or nonliner, but garbage is not."
+            "constraint_type must be either linear, or nonliner, but garbage is not."
         ),
     ):
         m = PriceTakerModel()
@@ -640,7 +630,7 @@ def test_add_capacity_limits_logger_messages(excel_data, caplog):
     with pytest.raises(
         NotImplementedError,
         match=(
-            f"You tried use nonlinear capacity with linearization. This is not yet supported."
+            "You tried use nonlinear capacity with linearization. This is not yet supported."
         ),
     ):
         m = PriceTakerModel()
@@ -684,7 +674,7 @@ def test_append_lmp_data_logger_messages(excel_data, caplog):
     n_clusters = [-5, 1.7, 10]
     with pytest.raises(
         ValueError,
-        match=(f"n_clusters must be an integer, but {n_clusters[1]} is not an integer"),
+        match=("n_clusters must be an integer, but 1.7 is not an integer"),
     ):
         m = PriceTakerModel()
         m.append_lmp_data(
@@ -696,7 +686,7 @@ def test_append_lmp_data_logger_messages(excel_data, caplog):
 
     with pytest.raises(
         ValueError,
-        match=(f"n_clusters must be > 0, but {n_clusters[0]} is provided."),
+        match=("n_clusters must be > 0, but -5 is provided."),
     ):
         m = PriceTakerModel()
         m.append_lmp_data(
@@ -709,9 +699,7 @@ def test_append_lmp_data_logger_messages(excel_data, caplog):
     file_path = "trash"
     with pytest.raises(
         ValueError,
-        match=(
-            f"The file path {file_path} does not exist. Please check your file path."
-        ),
+        match=("The file path trash does not exist. Please check your file path."),
     ):
         m = PriceTakerModel()
         m.append_lmp_data(
@@ -723,7 +711,7 @@ def test_append_lmp_data_logger_messages(excel_data, caplog):
     with pytest.raises(
         ValueError,
         match=(
-            f"Data was provided but no column name was provided. Please supply a value for column_name."
+            "Data was provided but no column name was provided. Please supply a value for column_name."
         ),
     ):
         m = PriceTakerModel()
@@ -737,14 +725,14 @@ def test_cluster_lmp_data_logger_messages(excel_data):
     n_clusters = [-5, 1.7, 10]
     with pytest.raises(
         ValueError,
-        match=(f"n_clusters must be an integer, but {n_clusters[1]} is not an integer"),
+        match=("n_clusters must be an integer, but 1.7 is not an integer"),
     ):
         m = PriceTakerModel()
         _, _ = m.cluster_lmp_data(excel_data, n_clusters[1])
 
     with pytest.raises(
         ValueError,
-        match=(f"n_clusters must be > 0, but {n_clusters[0]} is provided."),
+        match=("n_clusters must be > 0, but -5 is provided."),
     ):
         m = PriceTakerModel()
         _, _ = m.cluster_lmp_data(excel_data, n_clusters[0])
@@ -830,7 +818,7 @@ def test_build_hourly_cashflow_logger_message_no_op_blks(excel_data, caplog):
         )
 
         assert (
-            f"build_hourly_cashflows was called but no operation blocks were found so hourly cashflow of the model was set to 0. If you have hourly costs, please manually assign them."
+            "build_hourly_cashflows was called but no operation blocks were found so hourly cashflow of the model was set to 0. If you have hourly costs, please manually assign them."
             in caplog.text
         )
 
@@ -841,11 +829,11 @@ def test_build_multiperiod_model_no_LMP_logger_message(excel_data):
     with pytest.raises(
         ValueError,
         match=(
-            f"OperationModelData has been defined to automatically "
-            + f"populate LMP data. However, m.LMP does not exist. "
-            + f"Please run the append_lmp_data function first or set the "
-            + f"append_lmp_data attribute to False when configuring "
-            + f"your OperationModelData object."
+            "OperationModelData has been defined to automatically "
+            + "populate LMP data. However, m.LMP does not exist. "
+            + "Please run the append_lmp_data function first or set the "
+            + "append_lmp_data attribute to False when configuring "
+            + "your OperationModelData object."
         ),
     ):
         # Create an instance of the Pricetrackermodel class
@@ -929,7 +917,7 @@ def test_build_hourly_cashflow_logger_message_no_des_blks(excel_data, caplog):
         )
 
         assert (
-            f"build_cashflows was called, but no design blocks were found so capex and FOM are 0. Please manually add your cost objective if you require one."
+            "build_cashflows was called, but no design blocks were found so capex and FOM are 0. Please manually add your cost objective if you require one."
             in caplog.text
         )
 
@@ -1006,7 +994,7 @@ def test_build_hourly_cashflow_logger_messages_and_build_1(excel_data, caplog):
         )
 
         assert (
-            f"No revenues were provided while building the hourly cashflow. Revenues will be set to 0."
+            "No revenues were provided while building the hourly cashflow. Revenues will be set to 0."
             in caplog.text
         )
 
@@ -1083,7 +1071,7 @@ def test_build_hourly_cashflow_logger_messages_and_build_2(excel_data, caplog):
         )
 
         assert (
-            f"No costs were provided while building the hourly cashflow. Costs will be set to 0."
+            "No costs were provided while building the hourly cashflow. Costs will be set to 0."
             in caplog.text
         )
 
@@ -1233,7 +1221,7 @@ def test_build_hourly_cashflow_logger_messages_and_build_4(excel_data, caplog):
         )
 
         assert (
-            f"build_cashflows was called, but the objective type provided, {bad_obj}, is invalid. The objective has been set to 0. Please manually add your cost objective if you require one."
+            "build_cashflows was called, but the objective type provided, Garbage, is invalid. The objective has been set to 0. Please manually add your cost objective if you require one."
             in caplog.text
         )
 
