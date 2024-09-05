@@ -154,7 +154,7 @@ def test_init_logger_messages_clusters(excel_data, caplog):
 
 
 @pytest.mark.unit
-def test_init_logger_messages(excel_data, caplog):
+def test_init_logger_message1(excel_data, caplog):
     # Testing horizon_length input value errors
     value = 0
     with pytest.raises(
@@ -163,6 +163,10 @@ def test_init_logger_messages(excel_data, caplog):
     ):
         m = PriceTakerModel()
         m.horizon_length = value
+
+
+@pytest.mark.unit
+def test_init_logger_message2(excel_data, caplog):
     value = 12.34
     with pytest.raises(
         ValueError,
@@ -171,6 +175,9 @@ def test_init_logger_messages(excel_data, caplog):
         m = PriceTakerModel()
         m.horizon_length = value
 
+
+@pytest.mark.unit
+def test_init_logger_message3(excel_data, caplog):
     # Testing seed errors
     value = 12.34
     with pytest.raises(
@@ -182,7 +189,7 @@ def test_init_logger_messages(excel_data, caplog):
 
 
 @pytest.mark.unit
-def test_min_up_down_time_logger_messages(excel_data):
+def test_min_up_time_logger_message1(excel_data):
     des = DesignModel()
     oper = OperationModel()
     build_bin_var = "build"
@@ -195,13 +202,14 @@ def test_min_up_down_time_logger_messages(excel_data):
         m = PriceTakerModel()
         m.add_startup_shutdown(des, oper, build_bin_var, up_time[2], down_time[0])
 
-    with pytest.raises(
-        ValueError,
-        match=("down_time must be an integer, but 2.2 is not an integer"),
-    ):
-        m = PriceTakerModel()
-        m.add_startup_shutdown(des, oper, build_bin_var, up_time[0], down_time[2])
 
+@pytest.mark.unit
+def test_min_up_time_logger_message2(excel_data):
+    des = DesignModel()
+    oper = OperationModel()
+    build_bin_var = "build"
+    up_time = [10, -5, 2.2]
+    down_time = [10, -5, 2.2]
     with pytest.raises(
         ValueError,
         match=("up_time must be >= 1, but -5 is not"),
@@ -209,6 +217,29 @@ def test_min_up_down_time_logger_messages(excel_data):
         m = PriceTakerModel()
         m.add_startup_shutdown(des, oper, build_bin_var, up_time[1], down_time[0])
 
+
+@pytest.mark.unit
+def test_min_down_time_logger_message1(excel_data):
+    des = DesignModel()
+    oper = OperationModel()
+    build_bin_var = "build"
+    up_time = [10, -5, 2.2]
+    down_time = [10, -5, 2.2]
+    with pytest.raises(
+        ValueError,
+        match=("down_time must be an integer, but 2.2 is not an integer"),
+    ):
+        m = PriceTakerModel()
+        m.add_startup_shutdown(des, oper, build_bin_var, up_time[0], down_time[2])
+
+
+@pytest.mark.unit
+def test_min_down_time_logger_message2(excel_data):
+    des = DesignModel()
+    oper = OperationModel()
+    build_bin_var = "build"
+    up_time = [10, -5, 2.2]
+    down_time = [10, -5, 2.2]
     with pytest.raises(
         ValueError,
         match=("down_time must be >= 1, but -5 is not"),
@@ -264,7 +295,7 @@ def test_init_logger_messages_clusters_min_up_down_time(excel_data, caplog):
 
 
 @pytest.mark.unit
-def test_optimal_clusters_logger_messages(excel_data):
+def test_optimal_clusters_kmin_logger_message1(excel_data):
     kmin = [-5, 10.2, 9]
     kmax = [-5, 10.2, 8]
     with pytest.raises(
@@ -278,17 +309,11 @@ def test_optimal_clusters_logger_messages(excel_data):
             daily_data, kmin=kmin[1], kmax=kmax[2]
         )
 
-    with pytest.raises(
-        ValueError,
-        match=("kmax must be an integer, but 10.2 is not an integer"),
-    ):
-        m = PriceTakerModel()
 
-        daily_data = m.generate_daily_data(excel_data["BaseCaseTax"])
-        n_clusters, inertia_values = m.get_optimal_n_clusters(
-            daily_data, kmin=kmin[2], kmax=kmax[1]
-        )
-
+@pytest.mark.unit
+def test_optimal_clusters_kmin_logger_message2(excel_data):
+    kmin = [-5, 10.2, 9]
+    kmax = [-5, 10.2, 8]
     with pytest.raises(
         ValueError,
         match=("kmin must be > 0, but -5 is provided."),
@@ -300,6 +325,43 @@ def test_optimal_clusters_logger_messages(excel_data):
             daily_data, kmin=kmin[0], kmax=kmax[2]
         )
 
+
+@pytest.mark.unit
+def test_optimal_clusters_kmin_logger_message3(excel_data):
+    kmin = [-5, 10.2, 9]
+    kmax = [-5, 10.2, 8]
+    with pytest.raises(
+        ValueError,
+        match=("kmin must be less than kmax, but 9 >= 8"),
+    ):
+        m = PriceTakerModel()
+
+        daily_data = m.generate_daily_data(excel_data["BaseCaseTax"])
+        n_clusters, inertia_values = m.get_optimal_n_clusters(
+            daily_data, kmin=kmin[2], kmax=kmax[2]
+        )
+
+
+@pytest.mark.unit
+def test_optimal_clusters_kmax_logger_message1(excel_data):
+    kmin = [-5, 10.2, 9]
+    kmax = [-5, 10.2, 8]
+    with pytest.raises(
+        ValueError,
+        match=("kmax must be an integer, but 10.2 is not an integer"),
+    ):
+        m = PriceTakerModel()
+
+        daily_data = m.generate_daily_data(excel_data["BaseCaseTax"])
+        n_clusters, inertia_values = m.get_optimal_n_clusters(
+            daily_data, kmin=kmin[2], kmax=kmax[1]
+        )
+
+
+@pytest.mark.unit
+def test_optimal_clusters_kmax_logger_message2(excel_data):
+    kmin = [-5, 10.2, 9]
+    kmax = [-5, 10.2, 8]
     with pytest.raises(
         ValueError,
         match=("kmax must be > 0, but -5 is provided."),
@@ -311,17 +373,6 @@ def test_optimal_clusters_logger_messages(excel_data):
             daily_data, kmin=kmin[2], kmax=kmax[0]
         )
         m.cluster_lmp_data(excel_data, n_clusters)
-
-    with pytest.raises(
-        ValueError,
-        match=("kmin must be less than kmax, but 9 >= 8"),
-    ):
-        m = PriceTakerModel()
-
-        daily_data = m.generate_daily_data(excel_data["BaseCaseTax"])
-        n_clusters, inertia_values = m.get_optimal_n_clusters(
-            daily_data, kmin=kmin[2], kmax=kmax[2]
-        )
 
 
 @pytest.mark.skipif(
@@ -370,7 +421,7 @@ def test_failed_imports(excel_data):
 
 
 @pytest.mark.unit
-def test_ramping_constraint_logger_messages(excel_data):
+def test_ramping_constraint_logger_message1(excel_data):
     des = DesignModel()
     oper = OperationModel()
     ramping_var = "power"
@@ -401,6 +452,20 @@ def test_ramping_constraint_logger_messages(excel_data):
             op_rd_rate[1],
         )
 
+
+@pytest.mark.unit
+def test_ramping_constraint_logger_message2(excel_data):
+    des = DesignModel()
+    oper = OperationModel()
+    ramping_var = "power"
+    capac_var = "power_max"
+    constraint_type = "linear"
+    linearization = False
+    op_range_lb = [-0.1, 0.5, 1.0]
+    su_rate = [-0.1, 0.5]
+    sd_rate = [-0.1, 0.5]
+    op_ru_rate = [-0.1, 0.5]
+    op_rd_rate = [-0.1, 0.5]
     with pytest.raises(
         ValueError,
         match=("shutdown_rate fraction must be between 0 and 1, but -0.1 is not."),
@@ -420,6 +485,20 @@ def test_ramping_constraint_logger_messages(excel_data):
             op_rd_rate[1],
         )
 
+
+@pytest.mark.unit
+def test_ramping_constraint_logger_message3(excel_data):
+    des = DesignModel()
+    oper = OperationModel()
+    ramping_var = "power"
+    capac_var = "power_max"
+    constraint_type = "linear"
+    linearization = False
+    op_range_lb = [-0.1, 0.5, 1.0]
+    su_rate = [-0.1, 0.5]
+    sd_rate = [-0.1, 0.5]
+    op_ru_rate = [-0.1, 0.5]
+    op_rd_rate = [-0.1, 0.5]
     with pytest.raises(
         ValueError,
         match=("ramp_up_rate fraction must be between 0 and 1, but -0.1 is not."),
@@ -439,6 +518,20 @@ def test_ramping_constraint_logger_messages(excel_data):
             op_rd_rate[1],
         )
 
+
+@pytest.mark.unit
+def test_ramping_constraint_logger_message4(excel_data):
+    des = DesignModel()
+    oper = OperationModel()
+    ramping_var = "power"
+    capac_var = "power_max"
+    constraint_type = "linear"
+    linearization = False
+    op_range_lb = [-0.1, 0.5, 1.0]
+    su_rate = [-0.1, 0.5]
+    sd_rate = [-0.1, 0.5]
+    op_ru_rate = [-0.1, 0.5]
+    op_rd_rate = [-0.1, 0.5]
     with pytest.raises(
         ValueError,
         match=("ramp_down_rate fraction must be between 0 and 1, but -0.1 is not."),
@@ -458,6 +551,20 @@ def test_ramping_constraint_logger_messages(excel_data):
             op_rd_rate[0],
         )
 
+
+@pytest.mark.unit
+def test_ramping_constraint_logger_message5(excel_data):
+    des = DesignModel()
+    oper = OperationModel()
+    ramping_var = "power"
+    capac_var = "power_max"
+    constraint_type = "linear"
+    linearization = False
+    op_range_lb = [-0.1, 0.5, 1.0]
+    su_rate = [-0.1, 0.5]
+    sd_rate = [-0.1, 0.5]
+    op_ru_rate = [-0.1, 0.5]
+    op_rd_rate = [-0.1, 0.5]
     with pytest.raises(
         ValueError,
         match=("op_range_lb fraction must be between 0 and 1, but -0.1 is not."),
@@ -477,6 +584,20 @@ def test_ramping_constraint_logger_messages(excel_data):
             op_rd_rate[1],
         )
 
+
+@pytest.mark.unit
+def test_ramping_constraint_logger_message6(excel_data):
+    des = DesignModel()
+    oper = OperationModel()
+    ramping_var = "power"
+    capac_var = "power_max"
+    constraint_type = "linear"
+    linearization = False
+    op_range_lb = [-0.1, 0.5, 1.0]
+    su_rate = [-0.1, 0.5]
+    sd_rate = [-0.1, 0.5]
+    op_ru_rate = [-0.1, 0.5]
+    op_rd_rate = [-0.1, 0.5]
     with pytest.raises(
         ValueError,
         match=(
@@ -498,6 +619,20 @@ def test_ramping_constraint_logger_messages(excel_data):
             op_rd_rate[1],
         )
 
+
+@pytest.mark.unit
+def test_ramping_constraint_logger_message1(excel_data):
+    des = DesignModel()
+    oper = OperationModel()
+    ramping_var = "power"
+    capac_var = "power_max"
+    constraint_type = "linear"
+    linearization = False
+    op_range_lb = [-0.1, 0.5, 1.0]
+    su_rate = [-0.1, 0.5]
+    sd_rate = [-0.1, 0.5]
+    op_ru_rate = [-0.1, 0.5]
+    op_rd_rate = [-0.1, 0.5]
     # Test NotImplementedError (linearization = True)
     with pytest.raises(
         NotImplementedError,
@@ -541,6 +676,20 @@ def test_ramping_constraint_logger_messages(excel_data):
             op_rd_rate[1],
         )
 
+
+@pytest.mark.unit
+def test_ramping_constraint_logger_message1(excel_data):
+    des = DesignModel()
+    oper = OperationModel()
+    ramping_var = "power"
+    capac_var = "power_max"
+    constraint_type = "linear"
+    linearization = False
+    op_range_lb = [-0.1, 0.5, 1.0]
+    su_rate = [-0.1, 0.5]
+    sd_rate = [-0.1, 0.5]
+    op_ru_rate = [-0.1, 0.5]
+    op_rd_rate = [-0.1, 0.5]
     # Test Value Error (wrong constraint type)
     with pytest.raises(
         ValueError,
@@ -585,7 +734,7 @@ def test_ramping_constraint_logger_messages(excel_data):
 
 
 @pytest.mark.unit
-def test_add_capacity_limits_logger_messages(excel_data, caplog):
+def test_add_capacity_limits_logger_message1(excel_data, caplog):
     # Test Value Error (wrong constraint type)
     with pytest.raises(
         ValueError,
@@ -626,6 +775,9 @@ def test_add_capacity_limits_logger_messages(excel_data, caplog):
             linearization=False,
         )
 
+
+@pytest.mark.unit
+def test_add_capacity_limits_logger_message2(excel_data, caplog):
     # Test Not Implemented Error (linearization is True when nonlinear is chosen)
     with pytest.raises(
         NotImplementedError,
@@ -668,7 +820,7 @@ def test_add_capacity_limits_logger_messages(excel_data, caplog):
 
 
 @pytest.mark.unit
-def test_append_lmp_data_logger_messages(excel_data, caplog):
+def test_append_lmp_data_logger_message1(excel_data, caplog):
     DATA_DIR = Path(__file__).parent
     file_path = DATA_DIR / "FLECCS_princeton.csv"
     n_clusters = [-5, 1.7, 10]
@@ -684,6 +836,12 @@ def test_append_lmp_data_logger_messages(excel_data, caplog):
             horizon_length=24,
         )
 
+
+@pytest.mark.unit
+def test_append_lmp_data_logger_message1(excel_data, caplog):
+    DATA_DIR = Path(__file__).parent
+    file_path = DATA_DIR / "FLECCS_princeton.csv"
+    n_clusters = [-5, 1.7, 10]
     with pytest.raises(
         ValueError,
         match=("n_clusters must be > 0, but -5 is provided."),
@@ -696,6 +854,9 @@ def test_append_lmp_data_logger_messages(excel_data, caplog):
             horizon_length=24,
         )
 
+
+@pytest.mark.unit
+def test_append_lmp_data_logger_message1(excel_data, caplog):
     file_path = "trash"
     with pytest.raises(
         ValueError,
@@ -706,6 +867,9 @@ def test_append_lmp_data_logger_messages(excel_data, caplog):
             file_path,
         )
 
+
+@pytest.mark.unit
+def test_append_lmp_data_logger_message1(excel_data, caplog):
     DATA_DIR = Path(__file__).parent
     file_path = DATA_DIR / "FLECCS_princeton.csv"
     with pytest.raises(
@@ -721,7 +885,7 @@ def test_append_lmp_data_logger_messages(excel_data, caplog):
 
 
 @pytest.mark.unit
-def test_cluster_lmp_data_logger_messages(excel_data):
+def test_cluster_lmp_data_logger_message1(excel_data):
     n_clusters = [-5, 1.7, 10]
     with pytest.raises(
         ValueError,
@@ -730,6 +894,10 @@ def test_cluster_lmp_data_logger_messages(excel_data):
         m = PriceTakerModel()
         _, _ = m.cluster_lmp_data(excel_data, n_clusters[1])
 
+
+@pytest.mark.unit
+def test_cluster_lmp_data_logger_message2(excel_data):
+    n_clusters = [-5, 1.7, 10]
     with pytest.raises(
         ValueError,
         match=("n_clusters must be > 0, but -5 is provided."),
