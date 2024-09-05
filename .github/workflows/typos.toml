@@ -42,6 +42,8 @@ mis = "mis"
 MIS = "MIS"
 # TEMPORARY - Remove after example update
 upadate = "upadate"
+# docs/how_to_guides/data_management_framework/index.rst:14:8
+workpace = "workpace"
 
 # false positive from 1.20.3
 RTO = "RTO"
