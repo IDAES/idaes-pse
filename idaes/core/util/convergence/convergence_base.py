@@ -881,7 +881,10 @@ def save_convergence_statistics(
         with open(json_path, "w") as f:
             s.to_json(f)
     if dmf is not None:
-        s.to_dmf(dmf)
+        # this import will trigger the DMF deprecation message
+        import idaes.core.dmf
+
+        # this block should be removed once idaes.core.dmf is removed completely
     return s
 
 
@@ -984,29 +987,6 @@ class Stats(object):
 
     def to_json(self, fp):
         json.dump(self.to_dict(), fp, indent=4)
-
-    def to_dmf(self, dmf) -> None:
-        try:
-            # pylint: disable-next=import-outside-toplevel
-            from idaes.core.dmf import resource
-        except ImportError as err:
-            _log.error(
-                "Stats.to_dmf() failed because DMF is not available: %s", str(err)
-            )
-            return None
-        # PYLINT-TODO-FIX fix error due to undefined variable "stats"
-        rsrc = resource.Resource(
-            value={
-                "name": "convergence_results",
-                "desc": "statistics returned from run_convergence_evaluation",
-                "creator": {"name": getpass.getuser()},
-                # pylint: disable=undefined-variable
-                "data": stats.to_dict(),
-            },
-            type_=resource.ResourceTypes.data,
-        )
-        # pylint: enable=undefined-variable
-        dmf.add(rsrc)
 
     def report(self, fp=sys.stdout):
         s = self
