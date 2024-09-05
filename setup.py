@@ -122,7 +122,6 @@ kwargs = dict(
             "*.data-00000-of-00001",  # for Keras Surrogate folder
             "*.index",  # for Keras Surrogate folder
             "*.trc",
-            "*.xlsx",  # idaes/dmf/tests/data_files - tabular import test files
             "*.nl",
             "*.keras",  # idaes/core/surrogate/tests/data/keras_models
         ]
