@@ -76,7 +76,7 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
       - name: Run Spell Checker
-        uses: crate-ci/typos@master
+        uses: crate-ci/typos@v1.24.2
         with: 
           config: ./.github/workflows/typos.toml
 
