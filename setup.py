@@ -95,7 +95,6 @@ kwargs = dict(
     ],
     entry_points={
         "console_scripts": [
-            "dmf = idaes.dmf.cli:base_command",
             "idaes = idaes.commands.base:command_base",
         ]
     },
