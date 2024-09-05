@@ -54,7 +54,7 @@ The following terms are used in the diagram above, and throughout this documenta
     Python programming environments
         Jupyter Notebook examples and extensions for interactive scripting in Python
 
-    Data Management (IDAES-DMF)
+    Data Management (IDAES-DMF) (no longer supported)
         Data Management Framework (DMF) supporting provenance for IDAES workflows
 
     Pyomo
