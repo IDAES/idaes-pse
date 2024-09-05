@@ -41,6 +41,7 @@ delt = "delt"
 mis = "mis"
 MIS = "MIS"
 # TEMPORARY - Remove after example update
+# used in docs/how_to_guides/workflow/data_rec_parmest.rst
 upadate = "upadate"
 
 # false positive from 1.20.3
