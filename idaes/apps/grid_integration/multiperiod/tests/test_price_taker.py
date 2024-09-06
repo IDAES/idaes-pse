@@ -13,6 +13,7 @@
 
 from pathlib import Path
 import pytest
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
@@ -37,8 +38,6 @@ from idaes.apps.grid_integration import DesignModel, OperationModel
 import idaes.logger as idaeslog
 
 from idaes.apps.grid_integration.multiperiod.price_taker_model import PriceTakerModel
-
-import matplotlib.pyplot as plt
 
 have_skl = True
 have_kn = True
@@ -168,11 +167,11 @@ def test_init_logger_message1(excel_data, caplog):
 @pytest.mark.unit
 def test_init_logger_message2(excel_data, caplog):
     value = 12.34
+    m = PriceTakerModel()
     with pytest.raises(
         ValueError,
         match=("horizon_length must be an integer, but 12.34 is not an integer"),
     ):
-        m = PriceTakerModel()
         m.horizon_length = value
 
 
@@ -180,11 +179,11 @@ def test_init_logger_message2(excel_data, caplog):
 def test_init_logger_message3(excel_data, caplog):
     # Testing seed errors
     value = 12.34
+    m = PriceTakerModel()
     with pytest.raises(
         ValueError,
         match=("seed must be an integer, but 12.34 is not an integer"),
     ):
-        m = PriceTakerModel()
         m.seed = value
 
 
@@ -195,11 +194,11 @@ def test_min_up_time_logger_message1(excel_data):
     build_bin_var = "build"
     up_time = [10, -5, 2.2]
     down_time = [10, -5, 2.2]
+    m = PriceTakerModel()
     with pytest.raises(
         ValueError,
         match=("up_time must be an integer, but 2.2 is not an integer"),
     ):
-        m = PriceTakerModel()
         m.add_startup_shutdown(des, oper, build_bin_var, up_time[2], down_time[0])
 
 
@@ -210,11 +209,11 @@ def test_min_up_time_logger_message2(excel_data):
     build_bin_var = "build"
     up_time = [10, -5, 2.2]
     down_time = [10, -5, 2.2]
+    m = PriceTakerModel()
     with pytest.raises(
         ValueError,
         match=("up_time must be >= 1, but -5 is not"),
     ):
-        m = PriceTakerModel()
         m.add_startup_shutdown(des, oper, build_bin_var, up_time[1], down_time[0])
 
 
@@ -225,11 +224,11 @@ def test_min_down_time_logger_message1(excel_data):
     build_bin_var = "build"
     up_time = [10, -5, 2.2]
     down_time = [10, -5, 2.2]
+    m = PriceTakerModel()
     with pytest.raises(
         ValueError,
         match=("down_time must be an integer, but 2.2 is not an integer"),
     ):
-        m = PriceTakerModel()
         m.add_startup_shutdown(des, oper, build_bin_var, up_time[0], down_time[2])
 
 
@@ -240,11 +239,11 @@ def test_min_down_time_logger_message2(excel_data):
     build_bin_var = "build"
     up_time = [10, -5, 2.2]
     down_time = [10, -5, 2.2]
+    m = PriceTakerModel()
     with pytest.raises(
         ValueError,
         match=("down_time must be >= 1, but -5 is not"),
     ):
-        m = PriceTakerModel()
         m.add_startup_shutdown(des, oper, build_bin_var, up_time[0], down_time[1])
 
 
@@ -255,35 +254,35 @@ def test_min_down_time_logger_message2(excel_data):
 @pytest.mark.unit
 def test_init_logger_messages_clusters_min_up_down_time(excel_data, caplog):
     # Test Not Implemented Error (Rep. Days used for su/sd code)
+    m = PriceTakerModel()
+
+    # Appending the data to the model
+    DATA_DIR = Path(__file__).parent
+    file_path = DATA_DIR / "FLECCS_princeton_shortened.csv"
+    m.append_lmp_data(
+        file_path=file_path,
+        column_name="BaseCaseTax",
+        n_clusters=5,
+    )
+
+    m.sofc_design = DesignModel(
+        model_func=SOFC_design_model,
+        model_args={"min_power": 200, "max_power": 650},
+    )
+
+    # Build the multiperiod model
+    m.build_multiperiod_model(
+        process_model_func=build_sofc_flowsheet,
+        linking_variable_func=None,
+        flowsheet_options={"sofc_design": None},
+    )
+
     with pytest.raises(
         NotImplementedError,
         match=(
             "You tried to use representative days with minimum up or minimum downtime constraints. This is not yet supported."
         ),
     ):
-        m = PriceTakerModel()
-
-        # Appending the data to the model
-        DATA_DIR = Path(__file__).parent
-        file_path = DATA_DIR / "FLECCS_princeton_shortened.csv"
-        m.append_lmp_data(
-            file_path=file_path,
-            column_name="BaseCaseTax",
-            n_clusters=5,
-        )
-
-        m.sofc_design = DesignModel(
-            model_func=SOFC_design_model,
-            model_args={"min_power": 200, "max_power": 650},
-        )
-
-        # Build the multiperiod model
-        m.build_multiperiod_model(
-            process_model_func=build_sofc_flowsheet,
-            linking_variable_func=None,
-            flowsheet_options={"sofc_design": None},
-        )
-
         # add capacity limit constraints
         m.add_startup_shutdown(
             op_blk="fs.sofc_operation",
@@ -298,13 +297,12 @@ def test_init_logger_messages_clusters_min_up_down_time(excel_data, caplog):
 def test_optimal_clusters_kmin_logger_message1(excel_data):
     kmin = [-5, 10.2, 9]
     kmax = [-5, 10.2, 8]
+    m = PriceTakerModel()
+    daily_data = m.generate_daily_data(excel_data["BaseCaseTax"])
     with pytest.raises(
         ValueError,
         match=("kmin must be an integer, but 10.2 is not an integer"),
     ):
-        m = PriceTakerModel()
-
-        daily_data = m.generate_daily_data(excel_data["BaseCaseTax"])
         n_clusters, inertia_values = m.get_optimal_n_clusters(
             daily_data, kmin=kmin[1], kmax=kmax[2]
         )
@@ -314,13 +312,12 @@ def test_optimal_clusters_kmin_logger_message1(excel_data):
 def test_optimal_clusters_kmin_logger_message2(excel_data):
     kmin = [-5, 10.2, 9]
     kmax = [-5, 10.2, 8]
+    m = PriceTakerModel()
+    daily_data = m.generate_daily_data(excel_data["BaseCaseTax"])
     with pytest.raises(
         ValueError,
         match=("kmin must be > 0, but -5 is provided."),
     ):
-        m = PriceTakerModel()
-
-        daily_data = m.generate_daily_data(excel_data["BaseCaseTax"])
         n_clusters, inertia_values = m.get_optimal_n_clusters(
             daily_data, kmin=kmin[0], kmax=kmax[2]
         )
@@ -330,13 +327,12 @@ def test_optimal_clusters_kmin_logger_message2(excel_data):
 def test_optimal_clusters_kmin_logger_message3(excel_data):
     kmin = [-5, 10.2, 9]
     kmax = [-5, 10.2, 8]
+    m = PriceTakerModel()
+    daily_data = m.generate_daily_data(excel_data["BaseCaseTax"])
     with pytest.raises(
         ValueError,
         match=("kmin must be less than kmax, but 9 >= 8"),
     ):
-        m = PriceTakerModel()
-
-        daily_data = m.generate_daily_data(excel_data["BaseCaseTax"])
         n_clusters, inertia_values = m.get_optimal_n_clusters(
             daily_data, kmin=kmin[2], kmax=kmax[2]
         )
@@ -346,13 +342,12 @@ def test_optimal_clusters_kmin_logger_message3(excel_data):
 def test_optimal_clusters_kmax_logger_message1(excel_data):
     kmin = [-5, 10.2, 9]
     kmax = [-5, 10.2, 8]
+    m = PriceTakerModel()
+    daily_data = m.generate_daily_data(excel_data["BaseCaseTax"])
     with pytest.raises(
         ValueError,
         match=("kmax must be an integer, but 10.2 is not an integer"),
     ):
-        m = PriceTakerModel()
-
-        daily_data = m.generate_daily_data(excel_data["BaseCaseTax"])
         n_clusters, inertia_values = m.get_optimal_n_clusters(
             daily_data, kmin=kmin[2], kmax=kmax[1]
         )
@@ -362,13 +357,12 @@ def test_optimal_clusters_kmax_logger_message1(excel_data):
 def test_optimal_clusters_kmax_logger_message2(excel_data):
     kmin = [-5, 10.2, 9]
     kmax = [-5, 10.2, 8]
+    m = PriceTakerModel()
+    daily_data = m.generate_daily_data(excel_data["BaseCaseTax"])
     with pytest.raises(
         ValueError,
         match=("kmax must be > 0, but -5 is provided."),
     ):
-        m = PriceTakerModel()
-
-        daily_data = m.generate_daily_data(excel_data["BaseCaseTax"])
         n_clusters, inertia_values = m.get_optimal_n_clusters(
             daily_data, kmin=kmin[2], kmax=kmax[0]
         )
@@ -381,18 +375,16 @@ def test_optimal_clusters_kmax_logger_message2(excel_data):
 )
 @pytest.mark.unit
 def test_failed_imports(excel_data):
+    m = PriceTakerModel()
+    kmin = 9
+    kmax = 10
+    daily_data = m.generate_daily_data(excel_data["BaseCaseTax"])
     with pytest.raises(
         ImportError,
         match=(
             "Optimal cluster feature requires optional imports 'scikit-learn' and 'kneed'."
         ),
     ):
-        m = PriceTakerModel()
-
-        kmin = 9
-        kmax = 10
-
-        daily_data = m.generate_daily_data(excel_data["BaseCaseTax"])
         n_clusters, inertia_values = m.get_optimal_n_clusters(
             daily_data, kmin=kmin, kmax=kmax
         )
@@ -433,11 +425,11 @@ def test_ramping_constraint_logger_message1(excel_data):
     sd_rate = [-0.1, 0.5]
     op_ru_rate = [-0.1, 0.5]
     op_rd_rate = [-0.1, 0.5]
+    m = PriceTakerModel()
     with pytest.raises(
         ValueError,
         match=("startup_rate fraction must be between 0 and 1, but -0.1 is not."),
     ):
-        m = PriceTakerModel()
         m.add_ramping_constraints(
             des,
             oper,
@@ -466,11 +458,11 @@ def test_ramping_constraint_logger_message2(excel_data):
     sd_rate = [-0.1, 0.5]
     op_ru_rate = [-0.1, 0.5]
     op_rd_rate = [-0.1, 0.5]
+    m = PriceTakerModel()
     with pytest.raises(
         ValueError,
         match=("shutdown_rate fraction must be between 0 and 1, but -0.1 is not."),
     ):
-        m = PriceTakerModel()
         m.add_ramping_constraints(
             des,
             oper,
@@ -499,11 +491,11 @@ def test_ramping_constraint_logger_message3(excel_data):
     sd_rate = [-0.1, 0.5]
     op_ru_rate = [-0.1, 0.5]
     op_rd_rate = [-0.1, 0.5]
+    m = PriceTakerModel()
     with pytest.raises(
         ValueError,
         match=("ramp_up_rate fraction must be between 0 and 1, but -0.1 is not."),
     ):
-        m = PriceTakerModel()
         m.add_ramping_constraints(
             des,
             oper,
@@ -532,11 +524,11 @@ def test_ramping_constraint_logger_message4(excel_data):
     sd_rate = [-0.1, 0.5]
     op_ru_rate = [-0.1, 0.5]
     op_rd_rate = [-0.1, 0.5]
+    m = PriceTakerModel()
     with pytest.raises(
         ValueError,
         match=("ramp_down_rate fraction must be between 0 and 1, but -0.1 is not."),
     ):
-        m = PriceTakerModel()
         m.add_ramping_constraints(
             des,
             oper,
@@ -565,11 +557,11 @@ def test_ramping_constraint_logger_message5(excel_data):
     sd_rate = [-0.1, 0.5]
     op_ru_rate = [-0.1, 0.5]
     op_rd_rate = [-0.1, 0.5]
+    m = PriceTakerModel()
     with pytest.raises(
         ValueError,
         match=("op_range_lb fraction must be between 0 and 1, but -0.1 is not."),
     ):
-        m = PriceTakerModel()
         m.add_ramping_constraints(
             des,
             oper,
@@ -598,13 +590,13 @@ def test_ramping_constraint_logger_message6(excel_data):
     sd_rate = [-0.1, 0.5]
     op_ru_rate = [-0.1, 0.5]
     op_rd_rate = [-0.1, 0.5]
+    m = PriceTakerModel()
     with pytest.raises(
         ValueError,
         match=(
             "op_range_lb fraction must be <= shut_down_rate, otherwise the system cannot reach the off state."
         ),
     ):
-        m = PriceTakerModel()
         m.add_ramping_constraints(
             des,
             oper,
@@ -633,6 +625,29 @@ def test_ramping_constraint_logger_message1(excel_data):
     sd_rate = [-0.1, 0.5]
     op_ru_rate = [-0.1, 0.5]
     op_rd_rate = [-0.1, 0.5]
+
+    m = PriceTakerModel()
+
+    # Appending the data to the model
+    DATA_DIR = Path(__file__).parent
+    file_path = DATA_DIR / "FLECCS_princeton_shortened.csv"
+    m.append_lmp_data(
+        file_path=file_path,
+        column_name="BaseCaseTax",
+    )
+
+    # m.sofc_design = DesignModel(model_func=SOFC_design_model, model_args={"min_power": 200, "max_power": 650})
+    m.sofc_design = aml.Block()
+    m.sofc_design.PMAX = 650
+    m.sofc_design.PMIN = 200
+    m.sofc_design.build_unit = 1
+    # Build the multiperiod model
+    m.build_multiperiod_model(
+        process_model_func=build_sofc_flowsheet,
+        linking_variable_func=None,
+        flowsheet_options={"sofc_design": None},
+    )
+
     # Test NotImplementedError (linearization = True)
     with pytest.raises(
         NotImplementedError,
@@ -640,27 +655,6 @@ def test_ramping_constraint_logger_message1(excel_data):
             "You tried use nonlinear capacity with linearization. This is not yet supported."
         ),
     ):
-        m = PriceTakerModel()
-
-        # Appending the data to the model
-        DATA_DIR = Path(__file__).parent
-        file_path = DATA_DIR / "FLECCS_princeton_shortened.csv"
-        m.append_lmp_data(
-            file_path=file_path,
-            column_name="BaseCaseTax",
-        )
-
-        # m.sofc_design = DesignModel(model_func=SOFC_design_model, model_args={"min_power": 200, "max_power": 650})
-        m.sofc_design = aml.Block()
-        m.sofc_design.PMAX = 650
-        m.sofc_design.PMIN = 200
-        m.sofc_design.build_unit = 1
-        # Build the multiperiod model
-        m.build_multiperiod_model(
-            process_model_func=build_sofc_flowsheet,
-            linking_variable_func=None,
-            flowsheet_options={"sofc_design": None},
-        )
 
         m.add_ramping_constraints(
             "fs.sofc_operation",
@@ -690,6 +684,28 @@ def test_ramping_constraint_logger_message1(excel_data):
     sd_rate = [-0.1, 0.5]
     op_ru_rate = [-0.1, 0.5]
     op_rd_rate = [-0.1, 0.5]
+
+    m = PriceTakerModel()
+
+    # Appending the data to the model
+    DATA_DIR = Path(__file__).parent
+    file_path = DATA_DIR / "FLECCS_princeton_shortened.csv"
+    m.append_lmp_data(
+        file_path=file_path,
+        column_name="BaseCaseTax",
+    )
+    # m.sofc_design = DesignModel(model_func=SOFC_design_model, model_args={"min_power": 200, "max_power": 650})
+    m.sofc_design = aml.Block()
+    m.sofc_design.PMAX = 650
+    m.sofc_design.PMIN = 200
+    m.sofc_design.build_unit = 1
+    # Build the multiperiod model
+    m.build_multiperiod_model(
+        process_model_func=build_sofc_flowsheet,
+        linking_variable_func=None,
+        flowsheet_options={"sofc_design": None},
+    )
+
     # Test Value Error (wrong constraint type)
     with pytest.raises(
         ValueError,
@@ -697,26 +713,6 @@ def test_ramping_constraint_logger_message1(excel_data):
             "constraint_type must be either linear, or nonliner, but garbage is not."
         ),
     ):
-        m = PriceTakerModel()
-
-        # Appending the data to the model
-        DATA_DIR = Path(__file__).parent
-        file_path = DATA_DIR / "FLECCS_princeton_shortened.csv"
-        m.append_lmp_data(
-            file_path=file_path,
-            column_name="BaseCaseTax",
-        )
-        # m.sofc_design = DesignModel(model_func=SOFC_design_model, model_args={"min_power": 200, "max_power": 650})
-        m.sofc_design = aml.Block()
-        m.sofc_design.PMAX = 650
-        m.sofc_design.PMIN = 200
-        m.sofc_design.build_unit = 1
-        # Build the multiperiod model
-        m.build_multiperiod_model(
-            process_model_func=build_sofc_flowsheet,
-            linking_variable_func=None,
-            flowsheet_options={"sofc_design": None},
-        )
 
         m.add_ramping_constraints(
             "fs.sofc_operation",
@@ -735,6 +731,28 @@ def test_ramping_constraint_logger_message1(excel_data):
 
 @pytest.mark.unit
 def test_add_capacity_limits_logger_message1(excel_data, caplog):
+    m = PriceTakerModel()
+
+    # Appending the data to the model
+    DATA_DIR = Path(__file__).parent
+    file_path = DATA_DIR / "FLECCS_princeton_shortened.csv"
+    m.append_lmp_data(
+        file_path=file_path,
+        column_name="BaseCaseTax",
+    )
+
+    m.sofc_design = DesignModel(
+        model_func=SOFC_design_model,
+        model_args={"min_power": 200, "max_power": 650},
+    )
+
+    # Build the multiperiod model
+    m.build_multiperiod_model(
+        process_model_func=build_sofc_flowsheet,
+        linking_variable_func=None,
+        flowsheet_options={"sofc_design": None},
+    )
+
     # Test Value Error (wrong constraint type)
     with pytest.raises(
         ValueError,
@@ -742,28 +760,6 @@ def test_add_capacity_limits_logger_message1(excel_data, caplog):
             "constraint_type must be either linear, or nonliner, but garbage is not."
         ),
     ):
-        m = PriceTakerModel()
-
-        # Appending the data to the model
-        DATA_DIR = Path(__file__).parent
-        file_path = DATA_DIR / "FLECCS_princeton_shortened.csv"
-        m.append_lmp_data(
-            file_path=file_path,
-            column_name="BaseCaseTax",
-        )
-
-        m.sofc_design = DesignModel(
-            model_func=SOFC_design_model,
-            model_args={"min_power": 200, "max_power": 650},
-        )
-
-        # Build the multiperiod model
-        m.build_multiperiod_model(
-            process_model_func=build_sofc_flowsheet,
-            linking_variable_func=None,
-            flowsheet_options={"sofc_design": None},
-        )
-
         # add capacity limit constraints
         m.add_capacity_limits(
             op_blk="fs.sofc_operation",
@@ -778,6 +774,28 @@ def test_add_capacity_limits_logger_message1(excel_data, caplog):
 
 @pytest.mark.unit
 def test_add_capacity_limits_logger_message2(excel_data, caplog):
+    m = PriceTakerModel()
+
+    # Appending the data to the model
+    DATA_DIR = Path(__file__).parent
+    file_path = DATA_DIR / "FLECCS_princeton_shortened.csv"
+    m.append_lmp_data(
+        file_path=file_path,
+        column_name="BaseCaseTax",
+    )
+
+    m.sofc_design = DesignModel(
+        model_func=SOFC_design_model,
+        model_args={"min_power": 200, "max_power": 650},
+    )
+
+    # Build the multiperiod model
+    m.build_multiperiod_model(
+        process_model_func=build_sofc_flowsheet,
+        linking_variable_func=None,
+        flowsheet_options={"sofc_design": None},
+    )
+
     # Test Not Implemented Error (linearization is True when nonlinear is chosen)
     with pytest.raises(
         NotImplementedError,
@@ -785,28 +803,6 @@ def test_add_capacity_limits_logger_message2(excel_data, caplog):
             "You tried use nonlinear capacity with linearization. This is not yet supported."
         ),
     ):
-        m = PriceTakerModel()
-
-        # Appending the data to the model
-        DATA_DIR = Path(__file__).parent
-        file_path = DATA_DIR / "FLECCS_princeton_shortened.csv"
-        m.append_lmp_data(
-            file_path=file_path,
-            column_name="BaseCaseTax",
-        )
-
-        m.sofc_design = DesignModel(
-            model_func=SOFC_design_model,
-            model_args={"min_power": 200, "max_power": 650},
-        )
-
-        # Build the multiperiod model
-        m.build_multiperiod_model(
-            process_model_func=build_sofc_flowsheet,
-            linking_variable_func=None,
-            flowsheet_options={"sofc_design": None},
-        )
-
         # add capacity limit constraints
         m.add_capacity_limits(
             op_blk="fs.sofc_operation",
@@ -842,11 +838,11 @@ def test_append_lmp_data_logger_message1(excel_data, caplog):
     DATA_DIR = Path(__file__).parent
     file_path = DATA_DIR / "FLECCS_princeton.csv"
     n_clusters = [-5, 1.7, 10]
+    m = PriceTakerModel()
     with pytest.raises(
         ValueError,
         match=("n_clusters must be > 0, but -5 is provided."),
     ):
-        m = PriceTakerModel()
         m.append_lmp_data(
             file_path,
             column_name="BaseCaseTax",
@@ -858,11 +854,11 @@ def test_append_lmp_data_logger_message1(excel_data, caplog):
 @pytest.mark.unit
 def test_append_lmp_data_logger_message1(excel_data, caplog):
     file_path = "trash"
+    m = PriceTakerModel()
     with pytest.raises(
         ValueError,
         match=("The file path trash does not exist. Please check your file path."),
     ):
-        m = PriceTakerModel()
         m.append_lmp_data(
             file_path,
         )
@@ -872,13 +868,13 @@ def test_append_lmp_data_logger_message1(excel_data, caplog):
 def test_append_lmp_data_logger_message1(excel_data, caplog):
     DATA_DIR = Path(__file__).parent
     file_path = DATA_DIR / "FLECCS_princeton.csv"
+    m = PriceTakerModel()
     with pytest.raises(
         ValueError,
         match=(
             "Data was provided but no column name was provided. Please supply a value for column_name."
         ),
     ):
-        m = PriceTakerModel()
         m.append_lmp_data(
             file_path,
         )
@@ -887,22 +883,22 @@ def test_append_lmp_data_logger_message1(excel_data, caplog):
 @pytest.mark.unit
 def test_cluster_lmp_data_logger_message1(excel_data):
     n_clusters = [-5, 1.7, 10]
+    m = PriceTakerModel()
     with pytest.raises(
         ValueError,
         match=("n_clusters must be an integer, but 1.7 is not an integer"),
     ):
-        m = PriceTakerModel()
         _, _ = m.cluster_lmp_data(excel_data, n_clusters[1])
 
 
 @pytest.mark.unit
 def test_cluster_lmp_data_logger_message2(excel_data):
     n_clusters = [-5, 1.7, 10]
+    m = PriceTakerModel()
     with pytest.raises(
         ValueError,
         match=("n_clusters must be > 0, but -5 is provided."),
     ):
-        m = PriceTakerModel()
         _, _ = m.cluster_lmp_data(excel_data, n_clusters[0])
 
 
@@ -911,13 +907,13 @@ def test_generate_daily_data_logger_messages():
     DATA_DIR = Path(__file__).parent
     file_path = DATA_DIR / "FLECCS_princeton.csv"
     raw_data = pd.read_csv(file_path)
+    m = PriceTakerModel(horizon_length=9000)
     with pytest.raises(
         ValueError,
         match=(
             f"tried to generate daily data, but horizon length of {9000} exceeds raw_data length of {len(raw_data['BaseCaseTax'])}"
         ),
     ):
-        m = PriceTakerModel(horizon_length=9000)
         m.append_lmp_data(
             file_path,
             column_name="BaseCaseTax",
@@ -929,53 +925,52 @@ def test_generate_daily_data_logger_messages():
 def test_build_hourly_cashflow_logger_message_no_op_blks(excel_data, caplog):
     # Tests building the model with startup/shutdown then ramping rate with LMP as a single year with all time points
     caplog.clear()
+    m = PriceTakerModel()
+
+    # Appending the data to the model
+    DATA_DIR = Path(__file__).parent
+    file_path = DATA_DIR / "FLECCS_princeton_shortened.csv"
+    m.append_lmp_data(
+        file_path=file_path,
+        column_name="BaseCaseTax",
+    )
+
+    m.sofc_design = DesignModel(
+        model_func=SOFC_design_model,
+        model_args={"min_power": 200, "max_power": 650},
+    )
+
+    # Build the multiperiod model
+    m.build_multiperiod_model(
+        process_model_func=build_sofc_flowsheet_no_op_blk,
+        linking_variable_func=None,
+        flowsheet_options={"sofc_design": None},
+    )
+
+    # ramping and startup constraints
+    m.add_startup_shutdown(
+        op_blk="fs.sofc_operation",
+        design_blk="sofc_design",
+        build_binary_var="build_unit",
+        up_time=4,
+        down_time=4,
+    )
+
+    m.add_ramping_constraints(
+        op_blk="fs.sofc_operation",
+        design_blk="sofc_design",
+        capacity_var="PMAX",
+        ramping_var="power",
+        constraint_type="linear",
+        linearization=True,
+        op_range_lb=200 / 650,
+        startup_rate=1.0,
+        shutdown_rate=1.0,
+        ramp_up_rate=1.0,
+        ramp_down_rate=1.0,
+    )
+
     with caplog.at_level(idaeslog.WARNING):
-        # Create an instance of the Pricetrackermodel class
-        m = PriceTakerModel()
-
-        # Appending the data to the model
-        DATA_DIR = Path(__file__).parent
-        file_path = DATA_DIR / "FLECCS_princeton_shortened.csv"
-        m.append_lmp_data(
-            file_path=file_path,
-            column_name="BaseCaseTax",
-        )
-
-        m.sofc_design = DesignModel(
-            model_func=SOFC_design_model,
-            model_args={"min_power": 200, "max_power": 650},
-        )
-
-        # Build the multiperiod model
-        m.build_multiperiod_model(
-            process_model_func=build_sofc_flowsheet_no_op_blk,
-            linking_variable_func=None,
-            flowsheet_options={"sofc_design": None},
-        )
-
-        # ramping and startup constraints
-        m.add_startup_shutdown(
-            op_blk="fs.sofc_operation",
-            design_blk="sofc_design",
-            build_binary_var="build_unit",
-            up_time=4,
-            down_time=4,
-        )
-
-        m.add_ramping_constraints(
-            op_blk="fs.sofc_operation",
-            design_blk="sofc_design",
-            capacity_var="PMAX",
-            ramping_var="power",
-            constraint_type="linear",
-            linearization=True,
-            op_range_lb=200 / 650,
-            startup_rate=1.0,
-            shutdown_rate=1.0,
-            ramp_up_rate=1.0,
-            ramp_down_rate=1.0,
-        )
-
         m.build_hourly_cashflows(
             revenue_streams=None,
             costs=["fuel_cost", "hourly_fixed_costs"],
@@ -994,6 +989,18 @@ def test_build_hourly_cashflow_logger_message_no_op_blks(excel_data, caplog):
 @pytest.mark.unit
 def test_build_multiperiod_model_no_LMP_logger_message(excel_data):
     # Tests building the model with startup/shutdown then ramping rate with LMP as a single year with all time points
+    # Create an instance of the Pricetrackermodel class
+    m = PriceTakerModel()
+
+    m._n_time_points = 240
+    m.set_days = None
+    m.set_years = None
+
+    # m.sofc_design = DesignModel(model_func=SOFC_design_model, model_args={"min_power": 200, "max_power": 650})
+    m.sofc_design = aml.Block()
+    m.sofc_design.PMAX = 650
+    m.sofc_design.PMIN = 200
+    m.sofc_design.build_unit = 1
     with pytest.raises(
         ValueError,
         match=(
@@ -1004,18 +1011,6 @@ def test_build_multiperiod_model_no_LMP_logger_message(excel_data):
             + "your OperationModelData object."
         ),
     ):
-        # Create an instance of the Pricetrackermodel class
-        m = PriceTakerModel()
-
-        m._n_time_points = 240
-        m.set_days = None
-        m.set_years = None
-
-        # m.sofc_design = DesignModel(model_func=SOFC_design_model, model_args={"min_power": 200, "max_power": 650})
-        m.sofc_design = aml.Block()
-        m.sofc_design.PMAX = 650
-        m.sofc_design.PMIN = 200
-        m.sofc_design.build_unit = 1
         # Build the multiperiod model
         m.build_multiperiod_model(
             process_model_func=build_sofc_flowsheet_no_LMP,
@@ -1028,53 +1023,53 @@ def test_build_multiperiod_model_no_LMP_logger_message(excel_data):
 def test_build_hourly_cashflow_logger_message_no_des_blks(excel_data, caplog):
     # Tests building the model with startup/shutdown then ramping rate with LMP as a single year with all time points
     caplog.clear()
+    # Create an instance of the Pricetrackermodel class
+    m = PriceTakerModel()
+
+    # Appending the data to the model
+    DATA_DIR = Path(__file__).parent
+    file_path = DATA_DIR / "FLECCS_princeton_shortened.csv"
+    m.append_lmp_data(
+        file_path=file_path,
+        column_name="BaseCaseTax",
+    )
+
+    # m.sofc_design = DesignModel(model_func=SOFC_design_model, model_args={"min_power": 200, "max_power": 650})
+    m.sofc_design = aml.Block()
+    m.sofc_design.PMAX = 650
+    m.sofc_design.PMIN = 200
+    m.sofc_design.build_unit = 1
+    # Build the multiperiod model
+    m.build_multiperiod_model(
+        process_model_func=build_sofc_flowsheet,
+        linking_variable_func=None,
+        flowsheet_options={"sofc_design": None},
+    )
+
+    # ramping and startup constraints
+    m.add_startup_shutdown(
+        op_blk="fs.sofc_operation",
+        design_blk="sofc_design",
+        build_binary_var="build_unit",
+        up_time=4,
+        down_time=4,
+    )
+
+    m.add_ramping_constraints(
+        op_blk="fs.sofc_operation",
+        design_blk="sofc_design",
+        capacity_var="PMAX",
+        ramping_var="power",
+        constraint_type="linear",
+        linearization=True,
+        op_range_lb=200 / 650,
+        startup_rate=1.0,
+        shutdown_rate=1.0,
+        ramp_up_rate=1.0,
+        ramp_down_rate=1.0,
+    )
+
     with caplog.at_level(idaeslog.WARNING):
-        # Create an instance of the Pricetrackermodel class
-        m = PriceTakerModel()
-
-        # Appending the data to the model
-        DATA_DIR = Path(__file__).parent
-        file_path = DATA_DIR / "FLECCS_princeton_shortened.csv"
-        m.append_lmp_data(
-            file_path=file_path,
-            column_name="BaseCaseTax",
-        )
-
-        # m.sofc_design = DesignModel(model_func=SOFC_design_model, model_args={"min_power": 200, "max_power": 650})
-        m.sofc_design = aml.Block()
-        m.sofc_design.PMAX = 650
-        m.sofc_design.PMIN = 200
-        m.sofc_design.build_unit = 1
-        # Build the multiperiod model
-        m.build_multiperiod_model(
-            process_model_func=build_sofc_flowsheet,
-            linking_variable_func=None,
-            flowsheet_options={"sofc_design": None},
-        )
-
-        # ramping and startup constraints
-        m.add_startup_shutdown(
-            op_blk="fs.sofc_operation",
-            design_blk="sofc_design",
-            build_binary_var="build_unit",
-            up_time=4,
-            down_time=4,
-        )
-
-        m.add_ramping_constraints(
-            op_blk="fs.sofc_operation",
-            design_blk="sofc_design",
-            capacity_var="PMAX",
-            ramping_var="power",
-            constraint_type="linear",
-            linearization=True,
-            op_range_lb=200 / 650,
-            startup_rate=1.0,
-            shutdown_rate=1.0,
-            ramp_up_rate=1.0,
-            ramp_down_rate=1.0,
-        )
-
         m.build_hourly_cashflows(
             revenue_streams=None,
             costs=["fuel_cost", "hourly_fixed_costs"],
@@ -1094,64 +1089,64 @@ def test_build_hourly_cashflow_logger_message_no_des_blks(excel_data, caplog):
 def test_build_hourly_cashflow_logger_messages_and_build_1(excel_data, caplog):
     # Tests building the model with startup/shutdown then ramping rate with LMP as a single year with all time points
     caplog.clear()
+    # Create an instance of the Pricetrackermodel class
+    m = PriceTakerModel()
+
+    # Appending the data to the model
+    DATA_DIR = Path(__file__).parent
+    file_path = DATA_DIR / "FLECCS_princeton_shortened.csv"
+    m.append_lmp_data(
+        file_path=file_path,
+        column_name="BaseCaseTax",
+    )
+
+    m.sofc_design = DesignModel(
+        model_func=SOFC_design_model,
+        model_args={"min_power": 200, "max_power": 650},
+    )
+
+    # Build the multiperiod model
+    m.build_multiperiod_model(
+        process_model_func=build_sofc_flowsheet,
+        linking_variable_func=None,
+        flowsheet_options={"sofc_design": None},
+    )
+
+    # ramping and startup constraints
+    m.add_startup_shutdown(
+        op_blk="fs.sofc_operation",
+        design_blk="sofc_design",
+        build_binary_var="build_unit",
+        up_time=4,
+        down_time=4,
+    )
+
+    m.add_ramping_constraints(
+        op_blk="fs.sofc_operation",
+        design_blk="sofc_design",
+        capacity_var="PMAX",
+        ramping_var="power",
+        constraint_type="linear",
+        linearization=True,
+        op_range_lb=200 / 650,
+        startup_rate=1.0,
+        shutdown_rate=1.0,
+        ramp_up_rate=1.0,
+        ramp_down_rate=1.0,
+    )
+
+    # add capacity limit constraints
+    m.add_capacity_limits(
+        op_blk="fs.sofc_operation",
+        design_blk="sofc_design",
+        commodity_var="power",
+        capacity_max="PMAX",
+        capacity_min="PMIN",
+        constraint_type="nonlinear",
+        linearization=False,
+    )
+
     with caplog.at_level(idaeslog.WARNING):
-        # Create an instance of the Pricetrackermodel class
-        m = PriceTakerModel()
-
-        # Appending the data to the model
-        DATA_DIR = Path(__file__).parent
-        file_path = DATA_DIR / "FLECCS_princeton_shortened.csv"
-        m.append_lmp_data(
-            file_path=file_path,
-            column_name="BaseCaseTax",
-        )
-
-        m.sofc_design = DesignModel(
-            model_func=SOFC_design_model,
-            model_args={"min_power": 200, "max_power": 650},
-        )
-
-        # Build the multiperiod model
-        m.build_multiperiod_model(
-            process_model_func=build_sofc_flowsheet,
-            linking_variable_func=None,
-            flowsheet_options={"sofc_design": None},
-        )
-
-        # ramping and startup constraints
-        m.add_startup_shutdown(
-            op_blk="fs.sofc_operation",
-            design_blk="sofc_design",
-            build_binary_var="build_unit",
-            up_time=4,
-            down_time=4,
-        )
-
-        m.add_ramping_constraints(
-            op_blk="fs.sofc_operation",
-            design_blk="sofc_design",
-            capacity_var="PMAX",
-            ramping_var="power",
-            constraint_type="linear",
-            linearization=True,
-            op_range_lb=200 / 650,
-            startup_rate=1.0,
-            shutdown_rate=1.0,
-            ramp_up_rate=1.0,
-            ramp_down_rate=1.0,
-        )
-
-        # add capacity limit constraints
-        m.add_capacity_limits(
-            op_blk="fs.sofc_operation",
-            design_blk="sofc_design",
-            commodity_var="power",
-            capacity_max="PMAX",
-            capacity_min="PMIN",
-            constraint_type="nonlinear",
-            linearization=False,
-        )
-
         m.build_hourly_cashflows(
             revenue_streams=None,
             costs=["fuel_cost", "hourly_fixed_costs"],
@@ -1171,64 +1166,64 @@ def test_build_hourly_cashflow_logger_messages_and_build_1(excel_data, caplog):
 def test_build_hourly_cashflow_logger_messages_and_build_2(excel_data, caplog):
     # Tests building the model with ramping rate then startup/shutdown with LMP as a single year with representative days
     caplog.clear()
+    # Create an instance of the Pricetrackermodel class
+    m = PriceTakerModel()
+
+    # Appending the data to the model
+    DATA_DIR = Path(__file__).parent
+    file_path = DATA_DIR / "FLECCS_princeton_shortened.csv"
+    m.append_lmp_data(
+        file_path=file_path,
+        column_name="BaseCaseTax",
+    )
+
+    m.sofc_design = DesignModel(
+        model_func=SOFC_design_model,
+        model_args={"min_power": 200, "max_power": 650},
+    )
+
+    # Build the multiperiod model
+    m.build_multiperiod_model(
+        process_model_func=build_sofc_flowsheet,
+        linking_variable_func=None,
+        flowsheet_options={"sofc_design": None},
+    )
+
+    # ramping and startup constraints
+    m.add_ramping_constraints(
+        op_blk="fs.sofc_operation",
+        design_blk="sofc_design",
+        capacity_var="PMAX",
+        ramping_var="power",
+        constraint_type="linear",
+        linearization=True,
+        op_range_lb=200 / 650,
+        startup_rate=1.0,
+        shutdown_rate=1.0,
+        ramp_up_rate=1.0,
+        ramp_down_rate=1.0,
+    )
+
+    m.add_startup_shutdown(
+        op_blk="fs.sofc_operation",
+        design_blk="sofc_design",
+        build_binary_var="build_unit",
+        up_time=4,
+        down_time=4,
+    )
+
+    # add capacity limit constraints
+    m.add_capacity_limits(
+        op_blk="fs.sofc_operation",
+        design_blk="sofc_design",
+        commodity_var="power",
+        capacity_max="PMAX",
+        capacity_min="PMIN",
+        constraint_type="nonlinear",
+        linearization=False,
+    )
+
     with caplog.at_level(idaeslog.WARNING):
-        # Create an instance of the Pricetrackermodel class
-        m = PriceTakerModel()
-
-        # Appending the data to the model
-        DATA_DIR = Path(__file__).parent
-        file_path = DATA_DIR / "FLECCS_princeton_shortened.csv"
-        m.append_lmp_data(
-            file_path=file_path,
-            column_name="BaseCaseTax",
-        )
-
-        m.sofc_design = DesignModel(
-            model_func=SOFC_design_model,
-            model_args={"min_power": 200, "max_power": 650},
-        )
-
-        # Build the multiperiod model
-        m.build_multiperiod_model(
-            process_model_func=build_sofc_flowsheet,
-            linking_variable_func=None,
-            flowsheet_options={"sofc_design": None},
-        )
-
-        # ramping and startup constraints
-        m.add_ramping_constraints(
-            op_blk="fs.sofc_operation",
-            design_blk="sofc_design",
-            capacity_var="PMAX",
-            ramping_var="power",
-            constraint_type="linear",
-            linearization=True,
-            op_range_lb=200 / 650,
-            startup_rate=1.0,
-            shutdown_rate=1.0,
-            ramp_up_rate=1.0,
-            ramp_down_rate=1.0,
-        )
-
-        m.add_startup_shutdown(
-            op_blk="fs.sofc_operation",
-            design_blk="sofc_design",
-            build_binary_var="build_unit",
-            up_time=4,
-            down_time=4,
-        )
-
-        # add capacity limit constraints
-        m.add_capacity_limits(
-            op_blk="fs.sofc_operation",
-            design_blk="sofc_design",
-            commodity_var="power",
-            capacity_max="PMAX",
-            capacity_min="PMIN",
-            constraint_type="nonlinear",
-            linearization=False,
-        )
-
         m.build_hourly_cashflows(
             revenue_streams=["elec_revenue", "H2_revenue"],
             costs=None,
@@ -1248,64 +1243,64 @@ def test_build_hourly_cashflow_logger_messages_and_build_2(excel_data, caplog):
 def test_build_hourly_cashflow_logger_messages_and_build_3(excel_data, caplog):
     # Tests building the model with ramping rate then startup/shutdown with LMP as a single year with representative days
     caplog.clear()
+    # Create an instance of the Pricetrackermodel class
+    m = PriceTakerModel()
+
+    # Appending the data to the model
+    DATA_DIR = Path(__file__).parent
+    file_path = DATA_DIR / "FLECCS_princeton_shortened.csv"
+    m.append_lmp_data(
+        file_path=file_path,
+        column_name="BaseCaseTax",
+    )
+
+    m.sofc_design = DesignModel(
+        model_func=SOFC_design_model,
+        model_args={"min_power": 200, "max_power": 650},
+    )
+
+    # Build the multiperiod model
+    m.build_multiperiod_model(
+        process_model_func=build_sofc_flowsheet,
+        linking_variable_func=None,
+        flowsheet_options={"sofc_design": None},
+    )
+
+    # add capacity limit constraints
+    m.add_capacity_limits(
+        op_blk="fs.sofc_operation",
+        design_blk="sofc_design",
+        commodity_var="power",
+        capacity_max="PMAX",
+        capacity_min="PMIN",
+        constraint_type="nonlinear",
+        linearization=False,
+    )
+
+    # ramping and startup constraints
+    m.add_ramping_constraints(
+        op_blk="fs.sofc_operation",
+        design_blk="sofc_design",
+        capacity_var="PMAX",
+        ramping_var="power",
+        constraint_type="linear",
+        linearization=True,
+        op_range_lb=200 / 650,
+        startup_rate=1.0,
+        shutdown_rate=1.0,
+        ramp_up_rate=1.0,
+        ramp_down_rate=1.0,
+    )
+
+    m.add_startup_shutdown(
+        op_blk="fs.sofc_operation",
+        design_blk="sofc_design",
+        build_binary_var="build_unit",
+        up_time=4,
+        down_time=4,
+    )
+
     with caplog.at_level(idaeslog.WARNING):
-        # Create an instance of the Pricetrackermodel class
-        m = PriceTakerModel()
-
-        # Appending the data to the model
-        DATA_DIR = Path(__file__).parent
-        file_path = DATA_DIR / "FLECCS_princeton_shortened.csv"
-        m.append_lmp_data(
-            file_path=file_path,
-            column_name="BaseCaseTax",
-        )
-
-        m.sofc_design = DesignModel(
-            model_func=SOFC_design_model,
-            model_args={"min_power": 200, "max_power": 650},
-        )
-
-        # Build the multiperiod model
-        m.build_multiperiod_model(
-            process_model_func=build_sofc_flowsheet,
-            linking_variable_func=None,
-            flowsheet_options={"sofc_design": None},
-        )
-
-        # add capacity limit constraints
-        m.add_capacity_limits(
-            op_blk="fs.sofc_operation",
-            design_blk="sofc_design",
-            commodity_var="power",
-            capacity_max="PMAX",
-            capacity_min="PMIN",
-            constraint_type="nonlinear",
-            linearization=False,
-        )
-
-        # ramping and startup constraints
-        m.add_ramping_constraints(
-            op_blk="fs.sofc_operation",
-            design_blk="sofc_design",
-            capacity_var="PMAX",
-            ramping_var="power",
-            constraint_type="linear",
-            linearization=True,
-            op_range_lb=200 / 650,
-            startup_rate=1.0,
-            shutdown_rate=1.0,
-            ramp_up_rate=1.0,
-            ramp_down_rate=1.0,
-        )
-
-        m.add_startup_shutdown(
-            op_blk="fs.sofc_operation",
-            design_blk="sofc_design",
-            build_binary_var="build_unit",
-            up_time=4,
-            down_time=4,
-        )
-
         m.build_hourly_cashflows(
             revenue_streams=["elec_revenue", "H2_revenue"],
             costs=["fuel_cost", "hourly_fixed_costs"],
@@ -1320,64 +1315,64 @@ def test_build_hourly_cashflow_logger_messages_and_build_3(excel_data, caplog):
 def test_build_hourly_cashflow_logger_messages_and_build_4(excel_data, caplog):
     # Tests building the model with ramping rate then startup/shutdown with LMP as a single year with representative days
     caplog.clear()
+    # Create an instance of the Pricetrackermodel class
+    m = PriceTakerModel()
+
+    # Appending the data to the model
+    DATA_DIR = Path(__file__).parent
+    file_path = DATA_DIR / "FLECCS_princeton_shortened.csv"
+    m.append_lmp_data(
+        file_path=file_path,
+        column_name="BaseCaseTax",
+    )
+
+    m.sofc_design = DesignModel(
+        model_func=SOFC_design_model,
+        model_args={"min_power": 200, "max_power": 650},
+    )
+
+    # Build the multiperiod model
+    m.build_multiperiod_model(
+        process_model_func=build_sofc_flowsheet,
+        linking_variable_func=None,
+        flowsheet_options={"sofc_design": None},
+    )
+
+    # add capacity limit constraints
+    m.add_capacity_limits(
+        op_blk="fs.sofc_operation",
+        design_blk="sofc_design",
+        commodity_var="power",
+        capacity_max="PMAX",
+        capacity_min="PMIN",
+        constraint_type="nonlinear",
+        linearization=False,
+    )
+
+    # ramping and startup constraints
+    m.add_ramping_constraints(
+        op_blk="fs.sofc_operation",
+        design_blk="sofc_design",
+        capacity_var="PMAX",
+        ramping_var="power",
+        constraint_type="linear",
+        linearization=True,
+        op_range_lb=200 / 650,
+        startup_rate=1.0,
+        shutdown_rate=1.0,
+        ramp_up_rate=1.0,
+        ramp_down_rate=1.0,
+    )
+
+    m.add_startup_shutdown(
+        op_blk="fs.sofc_operation",
+        design_blk="sofc_design",
+        build_binary_var="build_unit",
+        up_time=4,
+        down_time=4,
+    )
+
     with caplog.at_level(idaeslog.WARNING):
-        # Create an instance of the Pricetrackermodel class
-        m = PriceTakerModel()
-
-        # Appending the data to the model
-        DATA_DIR = Path(__file__).parent
-        file_path = DATA_DIR / "FLECCS_princeton_shortened.csv"
-        m.append_lmp_data(
-            file_path=file_path,
-            column_name="BaseCaseTax",
-        )
-
-        m.sofc_design = DesignModel(
-            model_func=SOFC_design_model,
-            model_args={"min_power": 200, "max_power": 650},
-        )
-
-        # Build the multiperiod model
-        m.build_multiperiod_model(
-            process_model_func=build_sofc_flowsheet,
-            linking_variable_func=None,
-            flowsheet_options={"sofc_design": None},
-        )
-
-        # add capacity limit constraints
-        m.add_capacity_limits(
-            op_blk="fs.sofc_operation",
-            design_blk="sofc_design",
-            commodity_var="power",
-            capacity_max="PMAX",
-            capacity_min="PMIN",
-            constraint_type="nonlinear",
-            linearization=False,
-        )
-
-        # ramping and startup constraints
-        m.add_ramping_constraints(
-            op_blk="fs.sofc_operation",
-            design_blk="sofc_design",
-            capacity_var="PMAX",
-            ramping_var="power",
-            constraint_type="linear",
-            linearization=True,
-            op_range_lb=200 / 650,
-            startup_rate=1.0,
-            shutdown_rate=1.0,
-            ramp_up_rate=1.0,
-            ramp_down_rate=1.0,
-        )
-
-        m.add_startup_shutdown(
-            op_blk="fs.sofc_operation",
-            design_blk="sofc_design",
-            build_binary_var="build_unit",
-            up_time=4,
-            down_time=4,
-        )
-
         m.build_hourly_cashflows(
             revenue_streams=["elec_revenue", "H2_revenue"],
             costs=["fuel_cost", "hourly_fixed_costs"],

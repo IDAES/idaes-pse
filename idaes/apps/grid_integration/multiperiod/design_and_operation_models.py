@@ -10,7 +10,7 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-
+from functools import reduce
 from pyomo.environ import (
     Var,
     Param,
@@ -19,10 +19,9 @@ from pyomo.environ import (
     NonNegativeReals,
     Constraint,
 )
-from functools import reduce
+from pyomo.common.config import ConfigValue, In
 from idaes.core.base.process_base import declare_process_block_class
 from idaes.core.base.process_base import ProcessBlockData
-from pyomo.common.config import ConfigValue, In
 
 
 @declare_process_block_class("DesignModel")
