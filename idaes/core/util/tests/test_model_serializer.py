@@ -16,11 +16,11 @@ Test for functions to save/load Pyomo model state to a dict or json
 
 import unittest
 import os
+from tempfile import mkdtemp
 
 from pyomo.environ import *
 from idaes.core.util import to_json, from_json, StoreSpec
 from idaes.core.util.model_serializer import _only_fixed
-from idaes.core.dmf.util import mkdtemp
 import shutil
 import pytest
 

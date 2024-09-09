@@ -243,15 +243,7 @@ class Importorskipper:
 def pytest_addhooks(pluginmanager: pytest.PytestPluginManager):
     skipper_plugin = Importorskipper(
         {
-            "idaes.core.dmf": ["traitlets", "tinydb"],
-            # idaes.tests.test_import must be specified instead of idaes.core.dmf.util
-            # since colorama is not imported at the module level in idaes.core.dmf.util,
-            # but it is imported at the module level in idaes.tests.test_import
-            # when instantiating ColorTerm()
-            "idaes.tests.test_import": ["colorama"],
             "idaes.core.surrogate.keras_surrogate": ["omlt"],
-            "idaes.core.ui.fsvis.tests.test_fsvis": ["requests"],
-            "idaes.core.ui.fsvis.tests.test_model_server": ["requests"],
         }
     )
 

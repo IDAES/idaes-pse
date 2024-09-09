@@ -6,6 +6,12 @@ solid phase bed.
 The FixedBed0D mathematical model is a 0-D time variant model with two phases (gas and solid). The model captures the
 gas-solid interaction between both phases through reaction, mass and heat transfer.
 
+The model code is located in the `main unit model module <https://github.com/IDAES/idaes-pse/blob/main/idaes/models_extra/gas_solid_contactors/unit_models/fixed_bed_0D.py>`_ and may be imported as:
+
+.. code:: python
+
+  >>> from idaes.models_extra.gas_solid_contactors.unit_models.fixed_bed_0D import FixedBed0D
+
 **Assumptions:**
 
 * There is assumed to be no axial or radial variation in solid composition. 
