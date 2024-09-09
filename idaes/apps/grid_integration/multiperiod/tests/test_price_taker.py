@@ -42,6 +42,7 @@ from idaes.apps.grid_integration.multiperiod.price_taker_model import PriceTaker
 have_skl = True
 have_kn = True
 try:
+    import sklearn as skl
     from sklearn.cluster import KMeans
 except:
     have_skl = False
@@ -89,6 +90,16 @@ def test_daily_data_size(excel_data):
 
     # Check that there is a row for each horizon length in a representative day
     assert len(daily_data) == m.horizon_length
+
+
+@pytest.mark.skipif(
+    not have_skl,
+    reason="optional package 'scikit-learn' not installed",
+)
+@pytest.mark.unit
+def skl_version():
+    # Only versions above 1.1 support python 3.12
+    assert skl.__version__ >= 1.1
 
 
 @pytest.mark.skipif(
