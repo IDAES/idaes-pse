@@ -24,6 +24,20 @@
 """
 import pandas as pd
 import numpy as np
+
+have_skl = True
+have_kn = True
+try:
+    from sklearn.cluster import KMeans
+except:
+    have_skl = False
+try:
+    from kneed import KneeLocator
+except:
+    have_kn = False
+
+import matplotlib.pyplot as plt
+
 import os.path
 
 from importlib import resources
@@ -47,22 +61,10 @@ from idaes.apps.grid_integration.multiperiod.design_and_operation_models import 
     OperationModelData,
 )
 
-have_skl = True
-have_kn = True
-try:
-    from sklearn.cluster import KMeans
-except:
-    have_skl = False
-try:
-    from kneed import KneeLocator
-except:
-    have_kn = False
 
-import matplotlib.pyplot as plt
+import idaes.logger as idaeslog
 
-import logging
-
-_logger = logging.getLogger(__name__)
+_logger = idaeslog.getLogger(__name__)
 
 
 class PriceTakerModel(ConcreteModel):
