@@ -93,8 +93,8 @@ def test_daily_data_size(excel_data):
 
 
 @pytest.mark.skipif(
-    not have_skl,
-    reason="optional package 'scikit-learn' not installed",
+    have_skl * have_kn < 1,
+    reason="optional packages 'scikit-learn' and 'kneed' not installed",
 )
 @pytest.mark.unit
 def skl_version():
@@ -117,11 +117,31 @@ def test_determine_optimal_num_clusters(excel_data):
     m = PriceTakerModel()
 
     daily_data = m.generate_daily_data(excel_data["BaseCaseTax"])
-    n_clusters, inertia_values = m.get_optimal_n_clusters(daily_data, plot=True)
-    test_fig = plt.gcf()
-    plt.close("all")
+    n_clusters, inertia_values = m.get_optimal_n_clusters(daily_data)
 
     assert 9 <= n_clusters <= 15
+
+
+@pytest.mark.skipif(
+    have_skl * have_kn < 1,
+    reason="optional packages 'scikit-learn' and 'kneed' not installed",
+)
+@pytest.mark.unit
+def test_generate_elbow_plot(excel_data):
+    m = PriceTakerModel()
+
+    daily_data = m.generate_daily_data(excel_data["BaseCaseTax"])
+    n_clusters, inertia_values = m.get_optimal_n_clusters(daily_data)
+    m.generate_elbow_plot(daily_data)
+
+    # Test that a figure was created
+    assert plt.gcf() is not None
+    # Test that axes were created
+    assert plt.gca() is not None
+    # Test that the plot has data
+    assert plt.gca().has_data()
+
+    plt.close("all")
 
 
 @pytest.mark.skipif(

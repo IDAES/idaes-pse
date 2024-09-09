@@ -135,7 +135,6 @@ class PriceTakerModel(ConcreteModel):
         daily_data,
         kmin=None,
         kmax=None,
-        plot=False,
     ):
         """
         Determines the appropriate number of clusters needed for a
@@ -145,7 +144,6 @@ class PriceTakerModel(ConcreteModel):
             daily_data: LMP signal grouped by days (output of generate_daily_data function)
             kmin:       minimum number of clusters
             kmax:       maximum number of clusters
-            plot:       flag to determine if an elbow plot should be displayed
 
         Returns:
             n_clusters:     the optimal number of clusters for the given data
@@ -201,16 +199,45 @@ class PriceTakerModel(ConcreteModel):
                 f"Optimal number of clusters is close to kmax: {kmax}. Consider increasing kmax."
             )
 
-        if plot == True:
-            plt.plot(k_values, inertia_values)
-            plt.axvline(x=n_clusters, color="red", linestyle="--", label="Elbow")
-            plt.xlabel("Number of clusters")
-            plt.ylabel("Inertia")
-            plt.title("Elbow Method")
-            plt.xlim(kmin, kmax)
-            plt.grid()
-
         return int(n_clusters), inertia_values
+
+    def generate_elbow_plot(
+        self,
+        daily_data,
+        kmin=None,
+        kmax=None,
+    ):
+
+        if kmin is None:
+            kmin = 4
+        if kmax is None:
+            kmax = 30
+            _logger.warning(f"kmax was not set - using a default value of 30.")
+
+        if not isinstance(kmin, int):
+            raise ValueError(f"kmin must be an integer, but {kmin} is not an integer")
+        if not isinstance(kmax, int):
+            raise ValueError(f"kmax must be an integer, but {kmax} is not an integer")
+        if kmin < 1:
+            raise ValueError(f"kmin must be > 0, but {kmin} is provided.")
+        if kmax < 1:
+            raise ValueError(f"kmax must be > 0, but {kmax} is provided.")
+        if kmin >= kmax:
+            raise ValueError(f"kmin must be less than kmax, but {kmin} >= {kmax}")
+
+        k_values = range(kmin, kmax + 1)
+
+        n_clusters, inertia_values = self.get_optimal_n_clusters(
+            daily_data=daily_data, kmin=kmin, kmax=kmax
+        )
+
+        plt.plot(k_values, inertia_values)
+        plt.axvline(x=n_clusters, color="red", linestyle="--", label="Elbow")
+        plt.xlabel("Number of clusters")
+        plt.ylabel("Inertia")
+        plt.title("Elbow Method")
+        plt.xlim(kmin, kmax)
+        plt.grid()
 
     def cluster_lmp_data(self, raw_data, n_clusters):
         """
