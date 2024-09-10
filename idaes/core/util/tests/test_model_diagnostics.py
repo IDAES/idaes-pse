@@ -68,6 +68,7 @@ import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 from idaes.core.solvers import get_solver
 from idaes.core import FlowsheetBlock
+from idaes.core.util.scaling import set_scaling_factor
 from idaes.core.util.testing import PhysicalParameterTestBlock
 from idaes.models.properties.modular_properties.eos.ceos_common import (
     cubic_roots_available,
@@ -106,6 +107,7 @@ from idaes.core.surrogate.pysmo.sampling import (
     UniformSampling,
 )
 from idaes.core.util.testing import _enable_scip_solver_for_testing
+from idaes.models.properties import iapws95
 
 
 __author__ = "Alex Dowling, Douglas Allan, Andrew Lee"
@@ -1301,7 +1303,7 @@ The following constraints have no free variables:
 
         cautions = dt._collect_numerical_cautions()
 
-        assert len(cautions) == 5
+        assert len(cautions) == 4
         assert "Caution: 3 Variables with value close to zero (tol=1.0E-08)" in cautions
         assert (
             "Caution: 3 Variables with extreme Jacobian values (<1.0E-04 or >1.0E+04)"
@@ -1312,7 +1314,6 @@ The following constraints have no free variables:
             in cautions
         )
         assert "Caution: 4 extreme Jacobian Entries (<1.0E-04 or >1.0E+04)" in cautions
-        assert "Caution: 1 Constraint with potential cancellation of terms" in cautions
 
     @pytest.mark.component
     def test_assert_no_structural_warnings(self, model):
@@ -1600,10 +1601,9 @@ Model Statistics
     WARNING: 3 pairs of variables are parallel (to tolerance 1.0E-08)
 
 ------------------------------------------------------------------------------------
-5 Cautions
+4 Cautions
 
     Caution: 3 Variables with value close to zero (tol=1.0E-08)
-    Caution: 1 Constraint with potential cancellation of terms
     Caution: 3 Variables with extreme Jacobian values (<1.0E-04 or >1.0E+04)
     Caution: 1 Constraint with extreme Jacobian values (<1.0E-04 or >1.0E+04)
     Caution: 4 extreme Jacobian Entries (<1.0E-04 or >1.0E+04)
@@ -4188,7 +4188,7 @@ class TestConstraintTermAnalysisVisitor:
         # excludes single term sums
         terms = [1, 2, 3, 4, 5]
         visitor = ConstraintTermAnalysisVisitor()
-        sums = visitor._sum_combinations(terms)
+        sums = [i for i in visitor._generate_sum_combinations(terms)]
 
         expected = [
             3,
@@ -4218,7 +4218,7 @@ class TestConstraintTermAnalysisVisitor:
             14,  # 4-term sums
             15,  # 5-term sum
         ]
-
+        print(sums)
         assert sums == expected
 
     @pytest.mark.unit
@@ -4927,6 +4927,23 @@ class TestConstraintTermAnalysisVisitor:
         vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
 
         assert vv == [-1, 1]
+        assert len(mm) == 0
+        assert len(cc) == 0
+        assert not k
+
+    @pytest.mark.component
+    def test_external_function_w_string_argument(self):
+        m = ConcreteModel()
+        m.properties = iapws95.Iapws95ParameterBlock()
+        m.state = m.properties.build_state_block([0])
+
+        # This is triggering an unexpected exception
+        # Still working to debug this
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
+            expr=m.state[0].temperature
+        )
+
+        assert vv == [pytest.approx(235.0, rel=1e-8)]
         assert len(mm) == 0
         assert len(cc) == 0
         assert not k
