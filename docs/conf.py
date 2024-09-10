@@ -185,7 +185,7 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [("dmf/cli", "dmf", "Data Management Framework", [author], 1)]
+man_pages = []
 
 # If true, show URL addresses after external links.
 #
