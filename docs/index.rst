@@ -43,7 +43,6 @@ Contents
      - How-To Guides
          | :doc:`Setting up IDAES Models <how_to_guides/workflow/index>`
          | :doc:`Developing Custom Models <how_to_guides/custom_models/general_model_development>`
-         | :doc:`Using the Data Management Framework <how_to_guides/data_management_framework/index>`
          | :doc:`Installing Specific IDAES Versions <how_to_guides/versioned_idaes_install>`
    * - Explanations
          | :doc:`Why IDAES <explanations/why_idaes>`
