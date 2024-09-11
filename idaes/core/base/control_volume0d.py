@@ -341,13 +341,30 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
         # Material holdup and accumulation
         if has_holdup:
+            if (
+                self.properties_in[
+                    self.flowsheet().time.first()
+                ].get_material_flow_basis()
+                == MaterialFlowBasis.mass
+            ):
+                holdup_units = units("mass")
+            elif (
+                self.properties_in[
+                    self.flowsheet().time.first()
+                ].get_material_flow_basis()
+                == MaterialFlowBasis.molar
+            ):
+                holdup_units = units("amount")
+            else:
+                holdup_units = None
+
             self.material_holdup = Var(
                 self.flowsheet().time,
                 pc_set,
                 domain=Reals,
                 initialize=1.0,
                 doc="Material holdup in control volume",
-                units=units("amount"),
+                units=holdup_units,
             )
         if dynamic:
             self.material_accumulation = DerivativeVar(

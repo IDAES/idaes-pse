@@ -132,7 +132,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+        python-version: ['3.9', '3.10', '3.11', '3.12']
         os:
           - linux
           - win64
@@ -169,7 +169,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+        python-version: ['3.9', '3.10', '3.11', '3.12']
         os:
           - linux
           - win64
@@ -226,9 +226,9 @@ jobs:
           - install-mode: pip-default
             pip-install-target: '.'
           - install-mode: pip-complete
-            pip-install-target: .[ui,dmf,grid]
+            pip-install-target: .[ui,grid]
           - install-mode: pip-all
-            pip-install-target: .[ui,dmf,grid,omlt,coolprop]
+            pip-install-target: .[ui,grid,omlt,coolprop]
           - install-mode: conda-like
             pip-install-target: '.'
             dependencies-to-uninstall: omlt
