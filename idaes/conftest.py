@@ -18,7 +18,6 @@ import importlib.abc
 import importlib.machinery
 import subprocess
 import sys
-from pathlib import Path
 from typing import Dict
 from typing import Iterable
 from typing import List
@@ -248,9 +247,15 @@ class VerifyCleanup:
 
     def _get_files(self):
         try:
-            text = subprocess.check_output([
-                "git", "ls-files", "--others", "--exclude-standard",
-            ], text=True).strip()
+            text = subprocess.check_output(
+                [
+                    "git",
+                    "ls-files",
+                    "--others",
+                    "--exclude-standard",
+                ],
+                text=True,
+            ).strip()
         except subprocess.CalledProcessError as e:
             text = str(e)
         return text.splitlines()
@@ -274,7 +279,9 @@ class VerifyCleanup:
             for file in files:
                 tr.write_line(f"\t{file}")
         if self._added_by_mod:
-            tr.write_line(f"{len(self._added_by_mod)} test modules did not clean up after themselves")
+            tr.write_line(
+                f"{len(self._added_by_mod)} test modules did not clean up after themselves"
+            )
             tr.write_line("The exit status of the test session will be set to failed")
 
     @pytest.hookimpl(trylast=True)
