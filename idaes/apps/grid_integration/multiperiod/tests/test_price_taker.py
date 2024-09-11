@@ -54,11 +54,16 @@ except:
 
 @pytest.fixture
 def excel_data():
-    # DATA_DIR = Path(__file__).parent
-    # file_path = DATA_DIR / "FLECCS.xlsx"
-    # data = pd.read_excel(file_path, sheet_name=1)
     DATA_DIR = Path(__file__).parent
     file_path = DATA_DIR / "FLECCS_princeton.csv"
+    data = pd.read_csv(file_path)
+    return data
+
+
+@pytest.fixture
+def sample_data():
+    DATA_DIR = Path(__file__).parent
+    file_path = DATA_DIR / "sample_data.csv"
     data = pd.read_csv(file_path)
     return data
 
@@ -97,9 +102,13 @@ def test_daily_data_size(excel_data):
     reason="optional packages 'scikit-learn' and 'kneed' not installed",
 )
 @pytest.mark.unit
-def skl_version():
-    # Only versions above 1.1 support python 3.12
-    assert skl.__version__ >= 1.1
+def test_skl_version(excel_data):
+    skl_version = skl.__version__
+    major, minor, *_ = map(int, skl_version.split("."))
+
+    # Checks that the version is 2.0+ or greater than 1.1
+    # Only versions at or above 1.1 support python 3.12
+    assert major > 1 or (major == 1 and minor >= 1)
 
 
 @pytest.mark.skipif(
@@ -107,19 +116,15 @@ def skl_version():
     reason="optional packages 'scikit-learn' and 'kneed' not installed",
 )
 @pytest.mark.unit
-def test_determine_optimal_num_clusters(excel_data):
-    # Added a range for optimal cluster values based on how the
-    # plot appears visually. Test can be removed in the future if
-    # failure occurs. This may depend on scikit-learn and kneed and
-    # the interaction thereof.
-
-    # Older versions get n_clusters = 10, Newer versions n_clusters = 11
+def test_determine_optimal_num_clusters(sample_data):
+    # Uses the smaller sample_data dataset so that the solution
+    # reliably converges to 9 clusters, instead of a range of clusters
     m = PriceTakerModel()
 
-    daily_data = m.generate_daily_data(excel_data["BaseCaseTax"])
-    n_clusters, inertia_values = m.get_optimal_n_clusters(daily_data)
+    daily_data = m.generate_daily_data(sample_data["BaseCaseTax"])
+    n_clusters, inertia_values = m.get_optimal_n_clusters(daily_data, kmax=15)
 
-    assert 9 <= n_clusters <= 15
+    assert n_clusters == 9
 
 
 @pytest.mark.skipif(

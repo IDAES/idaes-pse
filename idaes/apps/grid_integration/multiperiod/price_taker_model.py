@@ -331,6 +331,24 @@ class PriceTakerModel(ConcreteModel):
         Returns:
 
         """
+        if column_name is None:
+            raise ValueError(
+                f"Data was provided but no column name was provided. Please supply a value for column_name."
+            )
+
+        if horizon_length is not None:
+            self.horizon_length = horizon_length
+
+        if n_clusters is not None:
+            if not isinstance(n_clusters, int):
+                raise ValueError(
+                    f"n_clusters must be an integer, but {n_clusters} is not an integer"
+                )
+            if n_clusters < 1:
+                raise ValueError(
+                    f"n_clusters must be > 0, but {n_clusters} is provided."
+                )
+
         if os.path.exists(file_path):
             path_to_file = file_path
         else:
@@ -349,24 +367,6 @@ class PriceTakerModel(ConcreteModel):
             full_data = pd.read_csv(
                 path_to_file,
             )
-
-        if column_name is None:
-            raise ValueError(
-                f"Data was provided but no column name was provided. Please supply a value for column_name."
-            )
-
-        if horizon_length is not None:
-            self.horizon_length = horizon_length
-
-        if n_clusters is not None:
-            if not isinstance(n_clusters, int):
-                raise ValueError(
-                    f"n_clusters must be an integer, but {n_clusters} is not an integer"
-                )
-            if n_clusters < 1:
-                raise ValueError(
-                    f"n_clusters must be > 0, but {n_clusters} is provided."
-                )
 
         if n_clusters is not None:
             # Single price signal, use reprentative days
