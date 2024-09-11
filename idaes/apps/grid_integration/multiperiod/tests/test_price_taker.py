@@ -14,19 +14,16 @@
 from pathlib import Path
 import pytest
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 
 from pyomo.environ import (
     Var,
     Binary,
     NonNegativeReals,
-    Constraint,
-    Expression,
 )
 
 import pyomo.environ as aml
-from pyomo.common.config import ConfigValue, In
+from pyomo.common.config import ConfigValue
 
 from idaes.core import FlowsheetBlock
 
@@ -136,7 +133,6 @@ def test_generate_elbow_plot(excel_data):
     m = PriceTakerModel()
 
     daily_data = m.generate_daily_data(excel_data["BaseCaseTax"])
-    n_clusters, inertia_values = m.get_optimal_n_clusters(daily_data)
     m.generate_elbow_plot(daily_data)
 
     # Test that a figure was created

@@ -40,8 +40,6 @@ import matplotlib.pyplot as plt
 
 import os.path
 
-from importlib import resources
-from pathlib import Path
 from pyomo.environ import (
     ConcreteModel,
     Block,
