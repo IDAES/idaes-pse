@@ -1483,7 +1483,7 @@ Suggested next steps:
 
 ====================================================================================
 """
-        print(stream.getvalue())
+
         assert stream.getvalue() == expected
 
     @pytest.mark.component
@@ -4218,7 +4218,7 @@ class TestConstraintTermAnalysisVisitor:
             14,  # 4-term sums
             15,  # 5-term sum
         ]
-        print(sums)
+
         assert sums == expected
 
     @pytest.mark.unit
@@ -4867,7 +4867,6 @@ class TestConstraintTermAnalysisVisitor:
 
         assert vv == [0, pytest.approx(0, abs=1e-12)]
         assert len(mm) == 0
-        print(cc)
         assert expr in cc
         assert len(cc) == 1
         assert not k
