@@ -16,7 +16,9 @@
 
 import importlib.abc
 import importlib.machinery
+import subprocess
 import sys
+from pathlib import Path
 from typing import Dict
 from typing import Iterable
 from typing import List
@@ -240,6 +242,47 @@ class Importorskipper:
         return lines
 
 
+class VerifyCleanup:
+    def __init__(self):
+        self._added_by_mod = {}
+
+    def _get_files(self):
+        try:
+            text = subprocess.check_output([
+                "git", "ls-files", "--others", "--exclude-standard",
+            ], text=True).strip()
+        except subprocess.CalledProcessError as e:
+            text = str(e)
+        return text.splitlines()
+
+    @pytest.fixture(scope="module", autouse=True)
+    def _inspect_generated_files(self, request):
+        mod = request.module.__name__
+        before = set(self._get_files())
+        yield
+        after = set(self._get_files())
+        added = after - before
+        if added:
+            self._added_by_mod[mod] = sorted(added)
+
+    @pytest.hookimpl(trylast=True)
+    def pytest_terminal_summary(self, terminalreporter):
+        tr = terminalreporter
+        tr.section("Files added (and not cleaned up) by test modules")
+        for mod, files in self._added_by_mod.items():
+            tr.write_line(mod)
+            for file in files:
+                tr.write_line(f"\t{file}")
+        if self._added_by_mod:
+            tr.write_line(f"{len(self._added_by_mod)} test modules did not clean up after themselves")
+            tr.write_line("The exit status of the test session will be set to failed")
+
+    @pytest.hookimpl(trylast=True)
+    def pytest_sessionfinish(self, session, exitstatus):
+        if self._added_by_mod:
+            session.exitstatus = pytest.ExitCode.TESTS_FAILED
+
+
 def pytest_addhooks(pluginmanager: pytest.PytestPluginManager):
     skipper_plugin = Importorskipper(
         {
@@ -248,6 +291,7 @@ def pytest_addhooks(pluginmanager: pytest.PytestPluginManager):
     )
 
     pluginmanager.register(skipper_plugin, name="importorskipper")
+    pluginmanager.register(VerifyCleanup())
 
 
 ####
