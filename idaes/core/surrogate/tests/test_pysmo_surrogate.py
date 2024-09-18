@@ -285,6 +285,7 @@ class TestSurrogateTrainingResult:
         assert init_func._model == None
         assert init_func.expression_str == ""
 
+    @pytest.mark.usefixtures("run_in_tmp_path")
     @pytest.mark.unit
     def test_model_poly(self, pysmo_output_pr):
         out1, vars = pysmo_output_pr

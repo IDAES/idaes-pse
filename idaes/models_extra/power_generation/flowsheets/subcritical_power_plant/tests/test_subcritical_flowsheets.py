@@ -174,6 +174,7 @@ def test_dynamic_steam_cycle():
     assert degrees_of_freedom(m) == 0
 
 
+@pytest.mark.usefixtures("run_in_tmp_path")
 @pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.component
 def test_subcritical_recirculation_system():
