@@ -40,6 +40,7 @@ def model():
     return main()
 
 
+@pytest.mark.usefixtures("run_in_tmp_path")
 @pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.component
 def test_basic_build(model):
