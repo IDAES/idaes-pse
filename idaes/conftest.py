@@ -270,6 +270,22 @@ def run_class_in_tmp_path(
         os.chdir(prev_workdir)
 
 
+@pytest.fixture(scope="module")
+def run_module_in_tmp_path(
+    request: pytest.FixtureRequest, tmp_path_factory: pytest.TempPathFactory
+):
+    prev_workdir = os.getcwd()
+
+    modname = request.module.__name__
+
+    tmp_path = tmp_path_factory.mktemp(modname, numbered=True)
+    try:
+        os.chdir(tmp_path)
+        yield
+    finally:
+        os.chdir(prev_workdir)
+
+
 def _get_repo_root_dir() -> Union[Path, None]:
     try:
         text = subprocess.check_output(
