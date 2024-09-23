@@ -4304,6 +4304,7 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
         self.mismatched_terms = ComponentSet()
 
     def _get_value_for_sum_subexpression(self, child_data):
+        # child_data is a tuple, with the 0-th element being the node values
         return sum(i for i in child_data[0])
 
     def _generate_sum_combinations(self, inputs):
@@ -4346,10 +4347,12 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
             # We will check for canceling terms here, rather than the sum itself, to handle special cases
             # We want to look for cases where a sum term results in a value much smaller
             # than the terms of the sum
+            # Each element of child_data is a tuple where the 0-th element is the node values
             if self._check_sum_cancellations(d[0]):
                 self.canceling_terms.add(node)
 
             # Expression is not constant if any child is not constant
+            # Element 1 is a bool indicating if the child node is constant
             if not d[1]:
                 const = False
 
@@ -4365,27 +4368,41 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
 
     def _check_equality_expression(self, node, child_data):
         # (In)equality expressions are a special case of sum expressions
-        # First, need to negate one side of the expression
-        mdata = []
+        # child_data has two elements; 0 is the LHS of the (in)equality and 1 is the RHS
+        # Each of these then contains three elements; 0 is a list of values for the sum components,
+        # 1 is a bool indicating if the child node term is constant, and 2 is a bool indicating if
+        # the child ode is a sum expression.
 
+        # First, to check for cancellation we need to negate one side of the expression
+        # mdata will contain the new set of child_data with negated values
+        mdata = []
+        # child_data[0][0] has the values of the LHS of the (in)equality, and we will negate these
         vals = []
         for j in child_data[0][0]:
             vals.append(-j)
+        # Append the negated values along with whether the node is constant to mdata
         mdata.append((vals, child_data[0][1]))
+        # child_data[1] is the RHS, so we take this as it appears and append to mdata
         mdata.append(child_data[1])
 
         # Next, call the method to check the sum expression
         vals, const, _ = self._check_sum_expression(node, mdata)
 
         # Next, we need to check for canceling terms.
-        # In this case, we can safely ignore expressions of the form constant = sum()
-        # We can also ignore any constraint that is already flagged as mismatched
-        # We will also ignore any constraints where a == b and neither a nor b are sum expressions
+        # child_data[x][2] indicates if a node is a sum expression or not
         if not child_data[0][2] and not child_data[1][2]:
-            # Linking constraint, skip checks
+            # If both sides are not sum expressions, we have the form a == b
+            # Simple lLinking constraints do not need to be checked
             pass
-        elif node not in self.mismatched_terms and not any(d[1] for d in mdata):
-            # No constant terms, check for cancellation
+        # Next, we can ignore any term that has already been flagged as mismatched
+        elif node in self.mismatched_terms:
+            pass
+        # We can also ignore any case where one side of the (in)equality if constant
+        # I.e. if either child_node[x][1] is True
+        elif any(d[1] for d in mdata):
+            pass
+        else:
+            # Check for cancellation
             # First, collect terms from both sides
             # Note: outer loop comes first in list comprehension
             t = [i for d in mdata for i in d[0]]
@@ -4424,7 +4441,16 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
         const = self._perform_checks(node, child_data)
 
         # First, need to get value of input terms, which may be sub-expressions
-        input_mag = [self._get_value_for_sum_subexpression(i) for i in child_data]
+        input_mag = []
+        for i in child_data:
+            # Sometimes external functions might have string arguments
+            # 0-th element is value
+            if isinstance(i[0], str):
+                # If value is a string, just append value to input_mag
+                input_mag.append(i[0])
+            else:
+                # Otherwise, assume if is a list of values that need to be summed
+                input_mag.append(self._get_value_for_sum_subexpression(i))
 
         # Next, create a copy of the function with expected magnitudes as inputs
         newfunc = node.create_node_with_local_data(input_mag)
@@ -4433,6 +4459,7 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
         return [value(newfunc)], const, False
 
     def _check_ranged_expression(self, node, child_data):
+        # child_data should have 3 elements, LHS, middle term, and RHS
         lhs_vals, lhs_const, _ = self._check_equality_expression(node, child_data[:2])
         rhs_vals, rhs_const, _ = self._check_equality_expression(node, child_data[1:])
 
@@ -4458,6 +4485,7 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
             vals.append(self._get_value_for_sum_subexpression(d))
 
             # Expression is not constant if any child is not constant
+            # Element 1 is a bool indicating of bode is constant
             if not d[1]:
                 const = False
 
@@ -4520,6 +4548,7 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
         if not node.is_expression_type():
             # this is a leaf, but not a native type
             if nodetype is _PyomoUnit:
+                # Unit have no value, so return 1 as a placeholder
                 return [1], True, False
 
             # Var or Param
