@@ -4945,7 +4945,7 @@ class TestConstraintTermAnalysisVisitor:
         assert len(cc) == 0
         assert not k
 
-        # Trying to do this for nested ExternalFunctions raises an unexpected
+        # TODO: Trying to do this for nested ExternalFunctions raises an unexpected
         # exception. The reason for this is still unknown.
         # vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
         #     expr=m.state[0].temperature

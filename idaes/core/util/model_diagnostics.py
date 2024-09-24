@@ -4446,6 +4446,9 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
             input_mag.append(self._get_value_for_sum_subexpression(i))
 
         # Next, create a copy of the function with expected magnitudes as inputs
+        # TODO: Unexpected exceptions have been observed with external functions,
+        # which are suspected to be due to nesting of external functions. This
+        # has not yet been resolved.
         newfunc = node.create_node_with_local_data(input_mag)
 
         # Evaluate new function and return the value along with check results
