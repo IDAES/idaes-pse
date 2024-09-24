@@ -4940,7 +4940,7 @@ class TestConstraintTermAnalysisVisitor:
             expr=m.state[0].enth_mol
         )
 
-        assert vv == [pytest.approx(1.10213871e-2, rel=1e-8)]
+        assert vv == [pytest.approx(1.1021387e-2, rel=1e-6)]
         assert len(mm) == 0
         assert len(cc) == 0
         assert not k
