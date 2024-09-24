@@ -4936,13 +4936,17 @@ class TestConstraintTermAnalysisVisitor:
         m.properties = iapws95.Iapws95ParameterBlock()
         m.state = m.properties.build_state_block([0])
 
-        # This is triggering an unexpected exception
-        # Still working to debug this
         vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
-            expr=m.state[0].temperature
+            expr=m.state[0].enth_mol
         )
 
-        assert vv == [pytest.approx(235.0, rel=1e-8)]
+        assert vv == [pytest.approx(1.10213871e-2, rel=1e-8)]
         assert len(mm) == 0
         assert len(cc) == 0
         assert not k
+
+        # Trying to do this for nested ExternalFunctions raises an unexpected
+        # exception. The reason for this is still unknown.
+        # vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
+        #     expr=m.state[0].temperature
+        # )

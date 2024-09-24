@@ -4443,14 +4443,7 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
         # First, need to get value of input terms, which may be sub-expressions
         input_mag = []
         for i in child_data:
-            # Sometimes external functions might have string arguments
-            # 0-th element is value
-            if isinstance(i[0], str):
-                # If value is a string, just append value to input_mag
-                input_mag.append(i[0])
-            else:
-                # Otherwise, assume if is a list of values that need to be summed
-                input_mag.append(self._get_value_for_sum_subexpression(i))
+            input_mag.append(self._get_value_for_sum_subexpression(i))
 
         # Next, create a copy of the function with expected magnitudes as inputs
         newfunc = node.create_node_with_local_data(input_mag)
