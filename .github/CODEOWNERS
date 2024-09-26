@@ -9,6 +9,8 @@ requirements*.txt @lbianchi-lbl @ksbeattie
 
 # CI infra
 .github/ @lbianchi-lbl @ksbeattie 
+# spellchecker configuration
+.github/workflows/typos.toml @bpaul4 @lbianchi-lbl
 
 # testing
 pytest*.ini @lbianchi-lbl

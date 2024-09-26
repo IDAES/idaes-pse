@@ -782,7 +782,7 @@ class TestModularInitializerBase:
         )
 
     @pytest.mark.unit
-    def test_get_submodel_initializer_priorit(self):
+    def test_get_submodel_initializer_priority(self):
         # Progressively add higher priority initializers and ensure they are returned
         class DummyParam:
             def __init__(self):
