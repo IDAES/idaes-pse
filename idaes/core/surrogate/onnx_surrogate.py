@@ -208,13 +208,15 @@ class ONNXSurrogate(OMLTSurrogate):
         folder holding the onnx model and its name, including accompanying json file that includes following
         structure
 
-                "input_scaler":{'expected_columns:[list of input_keys],
-                    'offset:{input_key:offset_value,etc.},
-                    'factor:{input_key:factor_value (e.g. multiplier),etc.}}
-                "output_scaler":{'expected_columns:[list of output_keys],
-                                'offset:{output_key:offset_value,etc.},
-                                'factor:{output_key:factor_value (e.g. multiplier),etc.}}
-                "input_bounds":{input_key:[low_bound,high_bound],etc.}
+                "input_scaler":{
+                    "expected_columns":[list of input_keys],
+                    "offset":{"input_key":offset_value,etc.},
+                    "factor":{"input_key":factor_value (e.g. multiplier),etc.}}
+                "output_scaler":{
+                    "expected_columns":[list of output_keys],
+                    "offset":{"output_key":offset_value,etc.},
+                    "factor":{"output_key":factor_value (e.g. multiplier),etc.}}
+                "input_bounds":{"input_key":[low_bound,high_bound],etc.}
                 "input_labels":[list of input_keys]
                 "output_labels":[list of output_keys]
 
