@@ -121,8 +121,8 @@ class ONNXSurrogate(OMLTSurrogate):
 
         # TODO: remove this once new OMLT 1.2 is made available and includes tanh support
         # overrides default available activation functions for ONNX, tanh is not listed in 1.1 but is supported
-        # pylint: disable=W0123
-        omltio.onnx_parser._ACTIVATION_OP_TYPES = [
+
+        omltio.onnx_parser._ACTIVATION_OP_TYPES = [  # pylint: disable=protected-access
             "Relu",
             "Sigmoid",
             "LogSoftmax",
@@ -215,8 +215,8 @@ class ONNXSurrogate(OMLTSurrogate):
                                 'offset:{output_key:offset_value,etc.},
                                 'factor:{output_key:factor_value (e.g. multiplier),etc.}}
                 "input_bounds":{input_key:[low_bound,high_bound],etc.}
-                "input_labels":['list of input_keys]
-                "output_labels":['list of output_keys]
+                "input_labels":[list of input_keys]
+                "output_labels":[list of output_keys]
 
         Args:
            folder_name: str
