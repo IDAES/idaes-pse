@@ -55,8 +55,8 @@ class ONNXSurrogate(OMLTSurrogate):
         output_scaler=None,
     ):
         """
-        Standard SurrogateObject for surrogates based on Keras models.
-        Utilizes the OMLT framework for importing Keras models to IDAES.
+        Standard SurrogateObject for surrogates based on ONNX models.
+        Utilizes the OMLT framework for importing ONNX models to IDAES.
 
         Contains methods to both populate a Pyomo Block with constraints
         representing the surrogate and to evaluate the surrogate a set of user
@@ -98,7 +98,7 @@ class ONNXSurrogate(OMLTSurrogate):
 
     def populate_block(self, block, additional_options=None):
         """
-        Method to populate a Pyomo Block with the keras model constraints.
+        Method to populate a Pyomo Block with the onnx model constraints.
 
         Args:
            block: Pyomo Block component
@@ -153,7 +153,7 @@ class ONNXSurrogate(OMLTSurrogate):
 
     def evaluate_surrogate(self, inputs):
         """
-        Method to evaluate Keras model at a set of input values.
+        Method to evaluate ONNX model at a set of input values.
 
         Args:
             inputs: numpy array of input values. First dimension of array
@@ -206,19 +206,21 @@ class ONNXSurrogate(OMLTSurrogate):
         """
         Load the surrogate object from disk by providing the name of the
         folder holding the onnx model and its name, including accompanying json file that includes following
-        structure
+        structure:
 
-                "input_scaler":{
-                    "expected_columns":[list of input_keys],
-                    "offset":{"input_key":offset_value,etc.},
-                    "factor":{"input_key":factor_value (e.g. multiplier),etc.}}
-                "output_scaler":{
-                    "expected_columns":[list of output_keys],
-                    "offset":{"output_key":offset_value,etc.},
-                    "factor":{"output_key":factor_value (e.g. multiplier),etc.}}
-                "input_bounds":{"input_key":[low_bound,high_bound],etc.}
-                "input_labels":[list of input_keys]
-                "output_labels":[list of output_keys]
+            "input_scaler":{
+                "expected_columns":[list of input_keys],
+                "offset":{"input_key":offset_value,etc.},
+                "factor":{"input_key":factor_value (e.g. multiplier),etc.}}
+
+            "output_scaler":{
+                "expected_columns":[list of output_keys],
+                "offset":{"output_key":offset_value,etc.},
+                "factor":{"output_key":factor_value (e.g. multiplier),etc.}}
+
+            "input_bounds":{"input_key":[low_bound,high_bound],etc.}
+            "input_labels":[list of input_keys]
+            "output_labels":[list of output_keys]
 
         Args:
            folder_name: str
