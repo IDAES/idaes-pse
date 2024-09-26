@@ -19,7 +19,6 @@ Interface for importing ONNX models into IDAES
 
 from enum import Enum
 import numpy as np
-import pandas as pd
 
 from pyomo.common.dependencies import attempt_import
 

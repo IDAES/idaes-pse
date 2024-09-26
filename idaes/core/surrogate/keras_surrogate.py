@@ -32,7 +32,6 @@ keras, keras_available = attempt_import("tensorflow.keras")
 omlt, omlt_available = attempt_import("omlt")
 
 if omlt_available:
-    from omlt import OmltBlock, OffsetScaling
     from omlt.neuralnet.nn_formulation import (
         FullSpaceSmoothNNFormulation,
         ReducedSpaceSmoothNNFormulation,

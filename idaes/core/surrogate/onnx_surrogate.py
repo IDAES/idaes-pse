@@ -16,7 +16,8 @@ Interface for importing ONNX models into IDAES
 # TODO: Missing docstrings
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
-
+# TODO: Importing protected  _ACTIVATION_OP_TYPES as not exposed in distributed version
+# pylint: disable=W0123
 from enum import Enum
 import json
 import os.path
@@ -120,6 +121,7 @@ class ONNXSurrogate(OMLTSurrogate):
 
         # TODO: remove this once new OMLT 1.2 is made available and includes tanh support
         # overrides default available activation functions for ONNX, tanh is not listed in 1.1 but is supported
+        # pylint: disable=W0123
         omltio.onnx_parser._ACTIVATION_OP_TYPES = [
             "Relu",
             "Sigmoid",
@@ -205,15 +207,16 @@ class ONNXSurrogate(OMLTSurrogate):
         Load the surrogate object from disk by providing the name of the
         folder holding the onnx model and its name, including accompanying json file that includes following
         structure
-            "input_scaler":{'expected_columns:[list of input_keys],
-                        'offset:{input_key:offset_value,etc.},
-                        'factor:{input_key:factor_value (e.g. multiplier),etc.}}
-            "output_scaler":{'expected_columns:[list of output_keys],
-                            'offset:{output_key:offset_value,etc.},
-                            'factor:{output_key:factor_value (e.g. multiplier),etc.}}
-            "input_bounds":{input_key:[low_bound,high_bound],etc.}
-            "input_labels":['list of input_keys]
-            "output_labels":['list of output_keys]
+
+                "input_scaler":{'expected_columns:[list of input_keys],
+                    'offset:{input_key:offset_value,etc.},
+                    'factor:{input_key:factor_value (e.g. multiplier),etc.}}
+                "output_scaler":{'expected_columns:[list of output_keys],
+                                'offset:{output_key:offset_value,etc.},
+                                'factor:{output_key:factor_value (e.g. multiplier),etc.}}
+                "input_bounds":{input_key:[low_bound,high_bound],etc.}
+                "input_labels":['list of input_keys]
+                "output_labels":['list of output_keys]
 
         Args:
            folder_name: str
@@ -222,7 +225,7 @@ class ONNXSurrogate(OMLTSurrogate):
             model_name: str
               The name of the model to load in the folder
 
-        Returns: an instance of KerasSurrogate
+        Returns: an instance of ONNXSurrogate
         """
         onnx_model = onnx.load(
             os.path.join(onnx_model_location, "{}.onnx".format(model_name))

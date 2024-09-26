@@ -134,3 +134,23 @@ docs/apidoc/
 # Mac OSX
 .DS_Store
 
+pytest.ini
+pytest-dev.ini
+idaes/core/surrogate/test_filename1.pickle
+idaes/core/surrogate/test_filename.pickle
+idaes/core/surrogate/solution_v_09-05-24_112040.pickle
+idaes/core/surrogate/solution_v_09-05-24_112039.pickle
+idaes/core/surrogate/solution_v_09-05-24_112038.pickle
+idaes/core/surrogate/solution_v_09-05-24_112035.pickle
+idaes/core/surrogate/solution_v_09-05-24_112032.pickle
+idaes/core/surrogate/solution_v_09-05-24_112024.pickle
+idaes/core/surrogate/solution_v_09-05-24_112023.pickle
+idaes/core/surrogate/solution_v_09-05-24_112021.pickle
+idaes/core/surrogate/solution_v_09-05-24_112015.pickle
+idaes/core/surrogate/solution_v_09-05-24_112014.pickle
+idaes/core/surrogate/solution_v_09-05-24_112013.pickle
+idaes/core/surrogate/solution_v_09-05-24_112012.pickle
+idaes/core/surrogate/solution_v_09-05-24_112011.pickle
+idaes/core/surrogate/solution.pickle
+idaes/core/surrogate/sol_check1.pickle
+idaes/core/surrogate/sol_check.pickle
