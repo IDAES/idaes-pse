@@ -35,6 +35,9 @@ from idaes.models.properties.general_helmholtz import helmholtz_available
 solver = get_solver()
 
 
+pytestmark = pytest.mark.usefixtures("run_module_in_tmp_path")
+
+
 @pytest.fixture(scope="module")
 def model():
     return main()

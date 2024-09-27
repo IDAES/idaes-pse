@@ -109,6 +109,7 @@ def _have_sphinx():
     return have_sphinx
 
 
+@pytest.mark.usefixtures("run_in_tmp_path")
 @pytest.mark.component
 def test_doctests(docs_path):
     if _have_sphinx():
