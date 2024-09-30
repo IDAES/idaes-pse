@@ -4305,6 +4305,10 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
 
     def _get_value_for_sum_subexpression(self, child_data):
         # child_data is a tuple, with the 0-th element being the node values
+        if isinstance(child_data[0][0], str):
+            # Values may be a list containing a string in some cases (e.g. external functions)
+            # Skip if this is the case
+            return child_data
         return sum(i for i in child_data[0])
 
     def _generate_sum_combinations(self, inputs):
@@ -4348,7 +4352,11 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
             # We want to look for cases where a sum term results in a value much smaller
             # than the terms of the sum
             # Each element of child_data is a tuple where the 0-th element is the node values
-            if self._check_sum_cancellations(d[0]):
+            if isinstance(d[0][0], str):
+                # Values may be a list containing a string in some cases (e.g. external functions)
+                # Skip if this is the case
+                pass
+            elif self._check_sum_cancellations(d[0]):
                 self.canceling_terms.add(node)
 
             # Expression is not constant if any child is not constant
