@@ -85,10 +85,10 @@ class CustomScalerBase(ScalerBase):
         4. Perform second-stage scaling factor fill in using user provided method(s), called in order declared
 
         Args:
-            model - model to be scaled
-            first_stage_fill_in - list of methods to use for first-stage scaling factor fill in
-            second_stage_fill_in - list of methods to use for second-stage scaling factor fill in
-            submodel_scalers - dict of Scalers to use for sub-models, keyed by submodel local name
+            model: model to be scaled
+            first_stage_fill_in: list of methods to use for first-stage scaling factor fill in
+            second_stage_fill_in: list of methods to use for second-stage scaling factor fill in
+            submodel_scalers: dict of Scalers to use for sub-models, keyed by submodel local name
 
         Returns:
             None
@@ -130,9 +130,9 @@ class CustomScalerBase(ScalerBase):
         Derived classes must overload this method.
 
         Args:
-            model - model to be scaled
-            overwrite - whether to overwrite existing scaling factors
-            submodel_scalers - dict of Scalers to use for sub-models, keyed by submodel local name
+            model: model to be scaled
+            overwrite: whether to overwrite existing scaling factors
+            submodel_scalers: dict of Scalers to use for sub-models, keyed by submodel local name
 
         Returns:
             None
@@ -150,9 +150,9 @@ class CustomScalerBase(ScalerBase):
         Derived classes must overload this method.
 
         Args:
-            model - model to be scaled
-            overwrite - whether to overwrite existing scaling factors
-            submodel_scalers - dict of Scalers to use for sub-models, keyed by submodel local name
+            model: model to be scaled
+            overwrite: whether to overwrite existing scaling factors
+            submodel_scalers: dict of Scalers to use for sub-models, keyed by submodel local name
 
         Returns:
             None
@@ -166,7 +166,7 @@ class CustomScalerBase(ScalerBase):
         Get scaling factor for component from dict of default values.
 
         Args:
-            component - component to get default scaling factor for
+            component: component to get default scaling factor for
 
         Returns:
             default scaling factor if it exists, else None
@@ -194,9 +194,9 @@ class CustomScalerBase(ScalerBase):
         Set scaling factor for target_variable equal to that of scaling_component.
 
         Args:
-            target_variable - variable to set scaling factor for
-            scaling_component - component to use for scaling factor
-            overwrite - whether to overwrite existing scaling factors
+            target_variable: variable to set scaling factor for
+            scaling_component: component to use for scaling factor
+            overwrite: whether to overwrite existing scaling factors
 
         Returns:
             None
@@ -222,8 +222,8 @@ class CustomScalerBase(ScalerBase):
         on that bound. If variable has no bounds, scaling factor will not be set.
 
         Args:
-            variable - variable to set scaling factor for
-            overwrite - whether to overwrite existing scaling factors
+            variable: variable to set scaling factor for
+            overwrite: whether to overwrite existing scaling factors
 
         Returns:
             None
@@ -259,8 +259,8 @@ class CustomScalerBase(ScalerBase):
         Set scaling factor for variable based on default scaling factor.
 
         Args:
-            variable - variable to set scaling factor for
-            overwrite - whether to overwrite existing scaling factors
+            variable: variable to set scaling factor for
+            overwrite: whether to overwrite existing scaling factors
 
         Returns:
             None
@@ -285,8 +285,8 @@ class CustomScalerBase(ScalerBase):
         using the associated value.
 
         Args:
-            variable - variable to set scaling factor for
-            overwrite - whether to overwrite existing scaling factors
+            variable: variable to set scaling factor for
+            overwrite: whether to overwrite existing scaling factors
 
         Returns:
             None
@@ -330,9 +330,9 @@ class CustomScalerBase(ScalerBase):
         Set scaling factor for target_constraint equal to that of scaling_component.
 
         Args:
-            target_constraint - constraint to set scaling factor for
-            scaling_component - component to use for scaling factor
-            overwrite - whether to overwrite existing scaling factors
+            target_constraint: constraint to set scaling factor for
+            scaling_component: component to use for scaling factor
+            overwrite: whether to overwrite existing scaling factors
 
         Returns:
             None
@@ -353,8 +353,8 @@ class CustomScalerBase(ScalerBase):
         Set scaling factor for constraint based on default scaling factor.
 
         Args:
-            constraint - constraint to set scaling factor for
-            overwrite - whether to overwrite existing scaling factors
+            constraint: constraint to set scaling factor for
+            overwrite: whether to overwrite existing scaling factors
 
         Returns:
             None
@@ -378,7 +378,7 @@ class CustomScalerBase(ScalerBase):
         (if assigned, else 1).
 
         Args:
-            expression - Pyomo expression to collect nominal values for
+            expression: Pyomo expression to collect nominal values for
 
         Returns:
             list of nominal values for each additive term
@@ -399,14 +399,14 @@ class CustomScalerBase(ScalerBase):
         Terms with expected magnitudes of 0 will be ignored.
 
         Args:
-            constraint - constraint to set scaling factor for
-            scheme - method to apply for determining constraint scaling
-              'harmonic_mean' - (default) sum(1/abs(nominal value))
-              'inverse_sum' - 1 / sum(abs(nominal value))
-              'inverse_root_sum_squared' - 1 / sqrt(sum(abs(nominal value)**2))
-              'inverse_maximum' - 1 / max(abs(nominal value)
-              'inverse_minimum' - 1 / min(abs(nominal value)
-            overwrite - whether to overwrite existing scaling factors
+            constraint: constraint to set scaling factor for
+            scheme: method to apply for determining constraint scaling
+              'harmonic_mean': (default) sum(1/abs(nominal value))
+              'inverse_sum': 1 / sum(abs(nominal value))
+              'inverse_root_sum_squared': 1 / sqrt(sum(abs(nominal value)**2))
+              'inverse_maximum': 1 / max(abs(nominal value)
+              'inverse_minimum': 1 / min(abs(nominal value)
+            overwrite: whether to overwrite existing scaling factors
 
         Returns:
             None
@@ -452,9 +452,9 @@ class CustomScalerBase(ScalerBase):
         require an initial solution for the problem (relying on nominal values instead).
 
         Args:
-            constraint - constraint to be scaled.
-            norm - type of norm to use for scaling. Must be a positive integer.
-            overwrite - whether to overwrite existing scaling factors.
+            constraint: constraint to be scaled.
+            norm: type of norm to use for scaling. Must be a positive integer.
+            overwrite: whether to overwrite existing scaling factors.
 
         Returns:
             None
@@ -523,9 +523,9 @@ class CustomScalerBase(ScalerBase):
         Indexing of target and source StateBlocks must match.
 
         Args:
-            target_state - StateBlock to set scaling factors on
-            source_state - StateBlock to use as source for scaling factors
-            overwrite - whether to overwrite existing scaling factors
+            target_state: StateBlock to set scaling factors on
+            source_state: StateBlock to use as source for scaling factors
+            overwrite: whether to overwrite existing scaling factors
 
         Returns:
             None
@@ -557,10 +557,10 @@ class CustomScalerBase(ScalerBase):
         default scaler for the submodel is used.
 
         Args:
-            model - parent model of submodel
-            submodel - name of submodel to be scaled as str
-            submodel_scalers - user provided dict of Scalers to use for submodels
-            method - name of method to call from submodel (as string)
+            model: parent model of submodel
+            submodel: name of submodel to be scaled as str
+            submodel_scalers: user provided dict of Scalers to use for submodels
+            method: name of method to call from submodel (as string)
 
         Returns:
             None

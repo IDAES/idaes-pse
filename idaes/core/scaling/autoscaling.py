@@ -52,8 +52,8 @@ class AutoScaler(ScalerBase):
         current magnitude. Variables with no value are assigned a scaling factor of 1.
 
         Args:
-            blk_or_var - block or variable object to calculate scaling factors for
-            descend_into - if blk_or_var is a Block, whether to descend into any sub-Blocks
+            blk_or_var: block or variable object to calculate scaling factors for
+            descend_into: if blk_or_var is a Block, whether to descend into any sub-Blocks
               (default=True)
 
         Returns:
@@ -99,9 +99,9 @@ class AutoScaler(ScalerBase):
         the Jacobian matrix, accounting for any variable scaling factors.
 
         Args:
-            blk_or_cons - block or constraint to calculate scaling factors for
-            norm - type of norm to use for scaling. Must be a positive integer.
-            descend_into - if blk_or_cons is a Block, whether to descend into any sub-Blocks
+            blk_or_cons: block or constraint to calculate scaling factors for
+            norm: type of norm to use for scaling. Must be a positive integer.
+            descend_into: if blk_or_cons is a Block, whether to descend into any sub-Blocks
               (default=True)
 
         Returns:
