@@ -18,22 +18,14 @@ to your models.
 """
 __author__ = "Dan Gunter"
 
-import logging
-
-# DMF version is the same as IDAES version
-from idaes import __version__  # noqa
-
-from .dmfbase import DMF, DMFConfig  # noqa: F401
-from .dmfbase import create_configuration  # noqa: F401
-from .getver import get_version_info  # noqa: F401
-from .userapi import get_workspace  # noqa: F401
-from . import resource  # noqa: F401
+from pyomo.common.deprecation import deprecation_warning
 
 
-# default log format
-h = logging.StreamHandler()
-h.setFormatter(
-    logging.Formatter("%(asctime)s [%(levelname)s] " "%(name)s: %(message)s")
+deprecation_warning(
+    msg=(
+        "idaes.core.dmf is no longer supported and has been moved into a dedicated repository for archival."
+        " Visit https://github.com/IDAES/dmf for more information."
+    ),
+    version="2.6.0dev0",
+    remove_in="2.6.0rc0",
 )
-logging.getLogger("idaes.core.dmf").addHandler(h)
-logging.getLogger("idaes.core.dmf").propagate = False

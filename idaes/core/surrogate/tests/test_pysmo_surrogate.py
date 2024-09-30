@@ -46,7 +46,7 @@ from idaes.core.surrogate.surrogate_block import SurrogateBlock
 from idaes.core.surrogate.metrics import compute_fit_metrics
 
 
-dirpath = Path(__file__).parent.resolve()
+pytestmark = pytest.mark.usefixtures("run_module_in_tmp_path")
 
 
 # String representation of json output for testing
