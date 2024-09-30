@@ -153,6 +153,7 @@ class TestFeatureScaling:
             FeatureScaling.data_unscaling(output_1, min_array, max_array)
 
 
+@pytest.mark.usefixtures("run_class_in_tmp_path")
 class TestPolynomialRegression:
     y = np.array(
         [
