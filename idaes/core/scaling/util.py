@@ -99,8 +99,8 @@ def scaling_factors_to_dict(blk_or_suffix, descend_into: bool = True):
     serialized.
 
     Args:
-        blk_or_suffix - Pyomo Block or Suffix object to covert to dict
-        descend_into - for Blocks, whether to descend into any child blocks
+        blk_or_suffix: Pyomo Block or Suffix object to covert to dict
+        descend_into: for Blocks, whether to descend into any child blocks
 
     Returns
         dict containing scaling factors indexed by component names
@@ -148,10 +148,10 @@ def scaling_factors_from_dict(
     This method expects components to be referenced by their local names.
 
     Args:
-        blk_or_suffix - Pyomo Block or Suffix object to set scaling factors on
-        json_dict - dict of scaling factors to load into model
-        overwrite - (bool) whether to overwrite existing scaling factors or not
-        verify_names - (bool) whether to verify that all names in dict exist on block
+        blk_or_suffix: Pyomo Block or Suffix object to set scaling factors on
+        json_dict: dict of scaling factors to load into model
+        overwrite: (bool) whether to overwrite existing scaling factors or not
+        verify_names: (bool) whether to verify that all names in dict exist on block
 
     Returns
         None
@@ -210,8 +210,8 @@ def scaling_factors_to_json_file(blk_or_suffix, filename: str):
     Serialize scaling factors to file in json format.
 
     Args:
-        blk_of_suffix - Block or Suffix to save scaling factors for
-        filename - name of file to write to as string
+        blk_of_suffix: Block or Suffix to save scaling factors for
+        filename: name of file to write to as string
 
     Returns:
         None
@@ -230,10 +230,10 @@ def scaling_factors_from_json_file(
     Load scaling factors from json file.
 
     Args:
-        blk_of_suffix - Block or Suffix to load scaling factors for
-        filename - name of file to load as string
-        overwrite - (bool) whether to overwrite existing scaling factors or not
-        verify_names - (bool) whether to verify that all names in dict exist on block
+        blk_of_suffix: Block or Suffix to load scaling factors for
+        filename: name of file to load as string
+        overwrite: (bool) whether to overwrite existing scaling factors or not
+        verify_names: (bool) whether to verify that all names in dict exist on block
 
     Returns:
         None
@@ -330,7 +330,7 @@ def get_scaling_factor(component):
         component: component to get scaling factor for
 
     Returns:
-        float - scaling factor
+        float scaling factor
 
     Raises:
         TypeError if component is a Block
@@ -353,9 +353,9 @@ def set_scaling_factor(component, scaling_factor: float, overwrite: bool = False
     Scaling factors must be positive, non-zero floats.
 
     Args:
-        component - component to set scaling factor for
-        scaling_factor - scaling factor to assign
-        overwrite - (bool) whether to overwrite existing scaling factor
+        component: component to set scaling factor for
+        scaling_factor: scaling factor to assign
+        overwrite: (bool) whether to overwrite existing scaling factor
 
     Returns:
         None
@@ -395,8 +395,8 @@ def del_scaling_factor(component, delete_empty_suffix: bool = False):
     Delete scaling factor for component.
 
     Args:
-        component - component to delete scaling factor for
-        delete_empty_suffix - (bool) whether to delete scaling Suffix if it is
+        component: component to delete scaling factor for
+        delete_empty_suffix: (bool) whether to delete scaling Suffix if it is
           empty after deletion.
     """
     # Get suffix
@@ -422,11 +422,11 @@ def report_scaling_factors(
     Write the scaling factors for all components in a Block to a stream.
 
     Args:
-        blk - Block to get scaling factors from.
-        ctype - None, Var or Constraint. Type of component to show scaling factors for
+        blk: Block to get scaling factors from.
+        ctype: None, Var or Constraint. Type of component to show scaling factors for
           (if None, shows both Vars and Constraints).
-        descend_into - whether to show scaling factors for components in sub-blocks.
-        stream - StringIO object to write results to. If not provided, writes to stdout.
+        descend_into: whether to show scaling factors for components in sub-blocks.
+        stream: StringIO object to write results to. If not provided, writes to stdout.
 
     Raises:
         TypeError if blk is not a Pyomo Block.
@@ -539,7 +539,7 @@ def get_nominal_value(component):
     otherwise the absolute nominal value will be equal to 1.
 
     Args:
-        component - component to determine nominal value for
+        component: component to determine nominal value for
 
     Returns:
         signed float with nominal value

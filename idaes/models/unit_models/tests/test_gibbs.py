@@ -328,8 +328,8 @@ class TestMethane(object):
     @pytest.mark.component
     def test_solve_temperature(self, methane):
         scaler = AutoScaler()
-        scaler.variables_by_magnitude(methane)
-        scaler.constraints_by_jacobian_norm(methane)
+        scaler.scale_variables_by_magnitude(methane)
+        scaler.scale_constraints_by_jacobian_norm(methane)
 
         results = solver.solve(methane)
 
@@ -465,8 +465,8 @@ class TestMethane(object):
     @pytest.mark.component
     def test_solve_heat_duty(self, methane):
         scaler = AutoScaler(overwrite=True)
-        scaler.variables_by_magnitude(methane)
-        scaler.constraints_by_jacobian_norm(methane)
+        scaler.scale_variables_by_magnitude(methane)
+        scaler.scale_constraints_by_jacobian_norm(methane)
 
         results = solver.solve(methane)
 

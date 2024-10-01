@@ -110,11 +110,11 @@ class ScalingProfiler:
                     {"norm": 2},
                 ),
                 "Actual L1 Norm": (
-                    ascaler.constraints_by_jacobian_norm,
+                    ascaler.scale_constraints_by_jacobian_norm,
                     {"norm": 1, "block_based": True},
                 ),
                 "Actual L2 Norm": (
-                    ascaler.constraints_by_jacobian_norm,
+                    ascaler.scale_constraints_by_jacobian_norm,
                     {"norm": 2, "block_based": True},
                 ),
             }
@@ -180,7 +180,7 @@ class ScalingProfiler:
         """
         if perfect:
             scaler = AutoScaler()
-            scaler.variables_by_magnitude(model)
+            scaler.scale_variables_by_magnitude(model)
             return model
 
         self._user_scaling(model)

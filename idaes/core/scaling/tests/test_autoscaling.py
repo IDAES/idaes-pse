@@ -60,8 +60,8 @@ class TestAutoscaleVarMagnitude:
     @pytest.mark.unit
     def test_var_data(self, model):
         scaler = AutoScaler()
-        scaler.variables_by_magnitude(model.v1)
-        scaler.variables_by_magnitude(model.v2[1])
+        scaler.scale_variables_by_magnitude(model.v1)
+        scaler.scale_variables_by_magnitude(model.v2[1])
 
         assert model.scaling_factor[model.v1] == pytest.approx(1 / 2, rel=1e-8)
         assert model.scaling_factor[model.v2[1]] == pytest.approx(1 / 10, rel=1e-8)
@@ -73,14 +73,14 @@ class TestAutoscaleVarMagnitude:
         model.v1 = Var()
 
         scaler = AutoScaler()
-        scaler.variables_by_magnitude(model.v1)
+        scaler.scale_variables_by_magnitude(model.v1)
 
         assert model.scaling_factor[model.v1] == 1
 
     @pytest.mark.unit
     def test_indexed_var(self, model):
         scaler = AutoScaler()
-        scaler.variables_by_magnitude(model.v2)
+        scaler.scale_variables_by_magnitude(model.v2)
 
         for i in model.s:
             assert model.scaling_factor[model.v2[i]] == pytest.approx(1 / 10, rel=1e-8)
@@ -89,7 +89,7 @@ class TestAutoscaleVarMagnitude:
     @pytest.mark.unit
     def test_block_data(self, model):
         scaler = AutoScaler()
-        scaler.variables_by_magnitude(model.b[1])
+        scaler.scale_variables_by_magnitude(model.b[1])
 
         assert model.b[1].scaling_factor[model.b[1].v3] == pytest.approx(
             1 / 10, rel=1e-8
@@ -102,7 +102,7 @@ class TestAutoscaleVarMagnitude:
     @pytest.mark.unit
     def test_indexed_block(self, model):
         scaler = AutoScaler()
-        scaler.variables_by_magnitude(model.b)
+        scaler.scale_variables_by_magnitude(model.b)
 
         for bd in model.b.values():
             sfx = bd.scaling_factor
@@ -113,7 +113,7 @@ class TestAutoscaleVarMagnitude:
     @pytest.mark.unit
     def test_nested_blocks_descend(self, model):
         scaler = AutoScaler()
-        scaler.variables_by_magnitude(model)
+        scaler.scale_variables_by_magnitude(model)
 
         assert model.scaling_factor[model.v1] == pytest.approx(1 / 2, rel=1e-8)
         for i in model.s:
@@ -129,7 +129,7 @@ class TestAutoscaleVarMagnitude:
     @pytest.mark.unit
     def test_nested_blocks_no_descend(self, model):
         scaler = AutoScaler()
-        scaler.variables_by_magnitude(model, descend_into=False)
+        scaler.scale_variables_by_magnitude(model, descend_into=False)
 
         assert model.scaling_factor[model.v1] == pytest.approx(1 / 2, rel=1e-8)
         for i in model.s:
@@ -149,7 +149,7 @@ class TestAutoscaleVarMagnitude:
         model.b[1].scaling_factor[model.b[1].v3] = 20
 
         scaler = AutoScaler(overwrite=False)
-        scaler.variables_by_magnitude(model)
+        scaler.scale_variables_by_magnitude(model)
 
         assert model.scaling_factor[model.v1] == 20
         for i in model.s:
@@ -170,7 +170,7 @@ class TestAutoscaleVarMagnitude:
         scaler = AutoScaler(
             max_variable_scaling_factor=1 / 10, min_variable_scaling_factor=1 / 50
         )
-        scaler.variables_by_magnitude(model)
+        scaler.scale_variables_by_magnitude(model)
 
         assert model.scaling_factor[model.v1] == pytest.approx(1 / 10, rel=1e-8)
         for i in model.s:
@@ -187,8 +187,8 @@ class TestAutoscaleVarMagnitude:
     def test_var_fixed(self, model):
         model.v1.fix()
         scaler = AutoScaler()
-        scaler.variables_by_magnitude(model.v1)
-        scaler.variables_by_magnitude(model.v2[1])
+        scaler.scale_variables_by_magnitude(model.v1)
+        scaler.scale_variables_by_magnitude(model.v2[1])
 
         assert model.scaling_factor[model.v1] == pytest.approx(1 / 2, rel=1e-8)
         assert model.scaling_factor[model.v2[1]] == pytest.approx(1 / 10, rel=1e-8)
@@ -199,7 +199,7 @@ class TestAutoscaleVarMagnitude:
         scaler = AutoScaler()
 
         with pytest.raises(TypeError, match="c1 is not a block or variable."):
-            scaler.variables_by_magnitude(model.c1)
+            scaler.scale_variables_by_magnitude(model.c1)
 
 
 class TestConstraintsByNorm:
@@ -208,13 +208,13 @@ class TestConstraintsByNorm:
         scaler = AutoScaler()
 
         with pytest.raises(TypeError, match="v1 is not a block or constraint."):
-            scaler.constraints_by_jacobian_norm(model.v1)
+            scaler.scale_constraints_by_jacobian_norm(model.v1)
 
     @pytest.mark.unit
     def test_block_data_L2(self, model):
         scaler = AutoScaler()
 
-        scaler.constraints_by_jacobian_norm(model.b[1])
+        scaler.scale_constraints_by_jacobian_norm(model.b[1])
 
         assert model.b[1].scaling_factor[model.b[1].c3] == pytest.approx(
             1 / sqrt(20**2 + 1**2), rel=1e-8
@@ -225,7 +225,7 @@ class TestConstraintsByNorm:
     def test_block_data_L2_block_data(self, model):
         scaler = AutoScaler()
 
-        scaler.constraints_by_jacobian_norm(model.b)
+        scaler.scale_constraints_by_jacobian_norm(model.b)
 
         for bd in model.b.values():
             assert bd.scaling_factor[bd.c3] == pytest.approx(
@@ -237,7 +237,7 @@ class TestConstraintsByNorm:
     def test_nested_blocks_L2(self, model):
         scaler = AutoScaler()
 
-        scaler.constraints_by_jacobian_norm(model)
+        scaler.scale_constraints_by_jacobian_norm(model)
 
         for i in model.s:
             assert model.scaling_factor[model.c1[i]] == pytest.approx(
@@ -258,7 +258,7 @@ class TestConstraintsByNorm:
     def test_nested_blocks_L2_no_descent(self, model):
         scaler = AutoScaler()
 
-        scaler.constraints_by_jacobian_norm(model, descend_into=False)
+        scaler.scale_constraints_by_jacobian_norm(model, descend_into=False)
 
         for i in model.s:
             assert model.scaling_factor[model.c1[i]] == pytest.approx(
@@ -276,7 +276,7 @@ class TestConstraintsByNorm:
     def test_constraint_data_L2(self, model):
         scaler = AutoScaler()
 
-        scaler.constraints_by_jacobian_norm(model.c1[1])
+        scaler.scale_constraints_by_jacobian_norm(model.c1[1])
 
         assert model.scaling_factor[model.c1[1]] == pytest.approx(
             1 / sqrt((1 * 2 ** (1 - 1)) ** 2 + 1**2), rel=1e-8
@@ -287,7 +287,7 @@ class TestConstraintsByNorm:
     def test_indexed_constraint_L2(self, model):
         scaler = AutoScaler()
 
-        scaler.constraints_by_jacobian_norm(model.c1)
+        scaler.scale_constraints_by_jacobian_norm(model.c1)
 
         for i in model.s:
             assert model.scaling_factor[model.c1[i]] == pytest.approx(
@@ -299,7 +299,7 @@ class TestConstraintsByNorm:
     def test_block_data_L1(self, model):
         scaler = AutoScaler()
 
-        scaler.constraints_by_jacobian_norm(model.b[1], norm=1)
+        scaler.scale_constraints_by_jacobian_norm(model.b[1], norm=1)
 
         assert model.b[1].scaling_factor[model.b[1].c3] == pytest.approx(
             1 / 21, rel=1e-8
@@ -310,7 +310,7 @@ class TestConstraintsByNorm:
     def test_nested_blocks_L1(self, model):
         scaler = AutoScaler()
 
-        scaler.constraints_by_jacobian_norm(model, norm=1)
+        scaler.scale_constraints_by_jacobian_norm(model, norm=1)
 
         for i in model.s:
             assert model.scaling_factor[model.c1[i]] == pytest.approx(
@@ -327,7 +327,7 @@ class TestConstraintsByNorm:
     def test_constraint_data_L1(self, model):
         scaler = AutoScaler()
 
-        scaler.constraints_by_jacobian_norm(model.c1[1], norm=1)
+        scaler.scale_constraints_by_jacobian_norm(model.c1[1], norm=1)
 
         assert model.scaling_factor[model.c1[1]] == pytest.approx(
             1 / ((1 * 2 ** (1 - 1)) + 1), rel=1e-8
@@ -338,7 +338,7 @@ class TestConstraintsByNorm:
     def test_indexed_constraint_L1(self, model):
         scaler = AutoScaler()
 
-        scaler.constraints_by_jacobian_norm(model.c1, norm=1)
+        scaler.scale_constraints_by_jacobian_norm(model.c1, norm=1)
 
         for i in model.s:
             assert model.scaling_factor[model.c1[i]] == pytest.approx(
@@ -357,7 +357,7 @@ class TestConstraintsByNorm:
 
         scaler = AutoScaler()
 
-        scaler.constraints_by_jacobian_norm(model, norm=1)
+        scaler.scale_constraints_by_jacobian_norm(model, norm=1)
 
         for i in model.s:
             if i == 1:
@@ -375,3 +375,28 @@ class TestConstraintsByNorm:
             else:
                 assert bd.scaling_factor[bd.c3] == pytest.approx(1 / 21, rel=1e-8)
             assert len(bd.scaling_factor) == 1
+
+
+class TestAutoScaleModel:
+    @pytest.mark.unit
+    def test_scale_model_default(self, model):
+        scaler = AutoScaler()
+
+        scaler.scale_model(model)
+
+        c1_sf = {
+            "c1[1]": 0.0980580676,
+            "c1[2]": 0.0780868809,
+            "c1[3]": 0.0384615385,
+            "c1[4]": 0.0154376880,
+        }
+
+        for k, v in model.scaling_factor.items():
+            if str(k).startswith("v2"):
+                assert v == pytest.approx(0.1, rel=1e-8)
+            elif str(k).startswith("v1"):
+                assert v == pytest.approx(0.5, rel=1e-8)
+            elif str(k).startswith("c2"):
+                assert v == pytest.approx(0.5**0.5 * 0.1, rel=1e-8)
+            elif str(k).startswith("c1"):
+                assert v == pytest.approx(c1_sf[str(k)], rel=1e-8)

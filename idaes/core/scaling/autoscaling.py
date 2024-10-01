@@ -46,7 +46,7 @@ class AutoScaler(ScalerBase):
 
     CONFIG = ScalerBase.CONFIG()
 
-    def variables_by_magnitude(self, blk_or_var, descend_into: bool = True):
+    def scale_variables_by_magnitude(self, blk_or_var, descend_into: bool = True):
         """
         Calculate scaling factors for all variables in a model based on their
         current magnitude. Variables with no value are assigned a scaling factor of 1.
@@ -69,10 +69,10 @@ class AutoScaler(ScalerBase):
             for v in blk_or_var.component_data_objects(Var, descend_into=False):
                 self._vardata_by_magnitude(v)
 
-            # Next, get all child blocks and call variables_by_magnitude recursively
+            # Next, get all child blocks and call scale_variables_by_magnitude recursively
             if descend_into:
                 for b in blk_or_var.component_data_objects(Block, descend_into=False):
-                    self.variables_by_magnitude(b, descend_into=descend_into)
+                    self.scale_variables_by_magnitude(b, descend_into=descend_into)
 
         elif isinstance(blk_or_var, Block):
             # Indexed Block
@@ -91,7 +91,7 @@ class AutoScaler(ScalerBase):
         else:
             raise TypeError(f"{blk_or_var.name} is not a block or variable.")
 
-    def constraints_by_jacobian_norm(
+    def scale_constraints_by_jacobian_norm(
         self, blk_or_cons, norm: int = 2, descend_into: bool = True
     ):
         """
@@ -116,7 +116,7 @@ class AutoScaler(ScalerBase):
         norm = int(norm)
         if norm < 1:
             raise ValueError(
-                f"Invalid value for norm in constraints_by_jacobian_norm ({norm}). "
+                f"Invalid value for norm in scale_constraints_by_jacobian_norm ({norm}). "
                 "Value must be a positive integer."
             )
 
@@ -164,6 +164,23 @@ class AutoScaler(ScalerBase):
         # Once we have a single target block and list of constraints, call the scaler method
         # once for all the constraints
         self._con_by_norm(jblock, con_list=con_list, norm=norm)
+
+    def scale_model(self, model, norm: int = 2, descend_into: bool = True):
+        """
+        Apply auto-scaling routine to model.
+
+        Args:
+            model: model to be scaled
+            norm: type of norm to use for scaling. Must be a positive integer.
+            descend_into: if sub-Blocks are present, whether to descend into any sub-Blocks
+
+        Returns:
+            None
+        """
+        self.scale_variables_by_magnitude(blk_or_var=model, descend_into=descend_into)
+        self.scale_constraints_by_jacobian_norm(
+            blk_or_cons=model, norm=norm, descend_into=descend_into
+        )
 
     def _vardata_by_magnitude(self, vardata):
         if vardata.value is None:

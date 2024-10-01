@@ -61,9 +61,9 @@ class GibbsReactorScaler(CustomScalerBase):
         provide the best initial guesses they can for the outlet concentrations.
 
         Args:
-            model - instance of GibbsReactor to be scaled
-            overwrite - whether to overwrite existing scaling factors
-            submodel_scalers - dict of Scalers to use for sub-models, keyed by submodel local name
+            model: instance of GibbsReactor to be scaled
+            overwrite: whether to overwrite existing scaling factors
+            submodel_scalers: dict of Scalers to use for sub-models, keyed by submodel local name
 
         Returns:
             None
@@ -142,9 +142,9 @@ class GibbsReactorScaler(CustomScalerBase):
         be heavily dependent on variable scaling.
 
         Args:
-            model - model to be scaled
-            overwrite - whether to overwrite existing scaling factors
-            submodel_scalers - dict of Scalers to use for sub-models, keyed by submodel local name
+            model: model to be scaled
+            overwrite: whether to overwrite existing scaling factors
+            submodel_scalers: dict of Scalers to use for sub-models, keyed by submodel local name
 
         Returns:
             None
