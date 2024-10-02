@@ -220,7 +220,7 @@ class ScalingProfiler:
                 )
             else:
                 # Add training column divider but no auto column
-                stream.write(f"||\n")
+                stream.write("||\n")
 
         # Write footer row
         stream.write(f"{'=' * max_line}\n")
