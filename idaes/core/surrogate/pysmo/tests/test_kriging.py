@@ -22,6 +22,7 @@ import pandas as pd
 import pytest
 
 
+@pytest.mark.usefixtures("run_class_in_tmp_path")
 class TestKrigingModel:
     y = np.array(
         [
