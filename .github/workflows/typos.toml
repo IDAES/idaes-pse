@@ -40,8 +40,6 @@ delt = "delt"
 # Minimal Infeasible System
 mis = "mis"
 MIS = "MIS"
-# TEMPORARY - Remove after example update
-upadate = "upadate"
 
 # false positive from 1.20.3
 RTO = "RTO"

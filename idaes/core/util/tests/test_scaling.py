@@ -39,6 +39,7 @@ from idaes.models.properties.modular_properties.eos.ceos_common import (
     CubicThermoExpressions,
     CubicType as CubicEoS,
 )
+from idaes.models.properties import iapws95
 
 __author__ = "John Eslick, Tim Bartholomew"
 
@@ -2229,6 +2230,16 @@ class TestNominalValueExtractionVisitor:
         assert sc.NominalValueExtractionVisitor().walk_expression(
             expr=m.constraint.expr
         ) == [21, 0.5 ** (22 + 23 + 24)]
+
+    @pytest.mark.component
+    def test_external_function_w_string_argument(self):
+        m = pyo.ConcreteModel()
+        m.properties = iapws95.Iapws95ParameterBlock()
+        m.state = m.properties.build_state_block([0])
+
+        assert sc.NominalValueExtractionVisitor().walk_expression(
+            expr=m.state[0].temperature
+        ) == [pytest.approx(235.0, rel=1e-8)]
 
 
 @pytest.fixture(scope="function")
