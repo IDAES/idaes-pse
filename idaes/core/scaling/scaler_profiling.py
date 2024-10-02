@@ -11,8 +11,9 @@
 # for full copyright and license information.
 #################################################################################
 """
-Tools for profiling scaling tools.
+Tools for profiling scaling alternatives.
 """
+import sys
 
 from pyomo.environ import check_optimal_termination, Constraint
 from pyomo.common.tempfiles import TempfileManager
@@ -22,11 +23,34 @@ from idaes.core.scaling import AutoScaler, CustomScalerBase
 from idaes.core.solvers import get_solver
 
 
-# TODO: Needs tests
 class ScalingProfiler:
     """
     Class for running a set of constraint scaling methods on a model and reporting the
     effect on model condition number and solver behavior.
+
+    Users should call the profile_scaling_methods method to generate a dict of results or
+    the report_scaling_profiles method for a stream-based output.
+
+    Users are expected to provide callback functions to 1) construct an initialized model
+    that will be used for profiling, 2) apply user-defined variable scaling (used for the
+    imperfect information case) and 3) perturb the model from the initialized state to
+    test how well the model solves (optional).
+
+    Users may also provide a dict of scaling methods they wish to apply using the scaling_methods
+    argument. If this is not provided, the tool will default to applying all the scaling methods
+    defined by the AutoScaler and CustomScalerBase classes.
+
+    **NOTE** methods from the AutoScaler class are applied to Pyomo Blocks, whilst those from
+    CustomScalerBase are applied to individual ConstraintDatas. The profiling tool assumes that
+    methods will be applied to ConstraintDatas unless the `block_based` keyword argument is set to True
+    for the scaling method.
+
+    Args:
+        build_model: callback to use to construct initialized model for testing
+        user_scaling: callback to use to apply user-defined scaling to initialized model
+        perturb_states: (optional) callback to use to perturb model state for re-solve tests
+        scaling_methods: (optional) dict of constraint scaling methods to profile. {"Name": (method, kwargs)}
+        solver: (optional) Pyomo solver object to use for re-solve tests
     """
 
     def __init__(
@@ -41,30 +65,6 @@ class ScalingProfiler:
         Sets up a framework for applying different scaling methods to a model and compiling a
         report of their effects on the Jacobian condition number and how easily the scaled
         model can be solved for a perturbed state.
-
-        Users should call the profile_scaling_methods method to generate a dict of results.
-
-        Users are expected to provide callback functions to i) construct an initialized model
-        that will be used for profiling, ii) apply user-defined variable scaling (used for the
-        imperfect information case) and iii) perturb the model from the initialized state to
-        test how well the model solves (optional).
-
-        Users may also provide a dict of scaling methods they wish to apply using the scaling_methods
-        argument. If this is not provided, the tool will default to applying all the scaling methods
-        defined by the AutoScaler and CustomScalerBase classes.
-
-        **NOTE** methods from the AutoScaler class are applied to Pyomo Blocks, whilst those from
-        CustomScalerBase are applied to individual ConstraintDatas. The profiling tool assumes that
-        methods will be applied to ConstraintDatas unless the `block_based` keyword argument is set to True
-        for the scaling method.
-
-        Args:
-            build_model - callback to use to construct initialized model for testing.
-            user_scaling - callback to use to apply user-defined scaling to initialized model.
-            perturb_states - callback to use to perturb model state for re-solve tests.
-            scaling_methods - dict of constraint scaling methods to profile. {"Name": (method, kwargs)}
-            solver - Pyomo solver object to use for re-solve tests.
-
         """
         self._build_model = build_model
         self._user_scaling = user_scaling
@@ -149,13 +149,89 @@ class ScalingProfiler:
 
         return results
 
+    def report_scaling_profiles(self, stream=None):
+        """
+        Run scaling profile workflow nad report results to a stream.
+
+        Args:
+            stream: StringIO object to write result to (default=stdout)
+
+        Returns:
+            None
+        """
+        results = self.profile_scaling_methods()
+
+        self.write_profile_report(results, stream)
+
+    def write_profile_report(self, results: dict, stream=None):
+        """
+        Write a report on the comparison of scaling methods to a stream based on
+        existing results dict.
+
+        Args:
+            results: dict containing results from a scaler profiling run
+            stream: StringIO object to write result to (default=stdout)
+
+        Returns:
+            None
+        """
+        # If stream is None, default to stdout
+        if stream is None:
+            stream = sys.stdout
+
+        # Get length of longest method name for padding
+        max_str = max([len(i) for i in results.keys()])
+        if max_str < len("Scaling Method"):
+            max_str = len("Scaling Method")
+        # Length of each stats field is 22 characters, plus 4 for column dividers
+        # Max line length is thus longest string name + 2 columns of 22+4 characters
+        max_line = max_str + 26 * 2
+
+        # Write header rows
+        stream.write(f"\n{'='*max_line}\n")
+        stream.write("Scaling Profile Report\n")
+        stream.write(f"{'-' * max_line}\n")
+        # Pad User Scaling columns to full column width (22)
+        stream.write(
+            f"{'Scaling Method': <{max_str}} || {'User Scaling': <{22}} || Perfect Scaling\n"
+        )
+
+        # Iterate over keys in results and write summary for each scaling method
+        for k, v in results.items():
+            if v["Manual"]["solved"]:
+                msolved = "Solved"
+            else:
+                msolved = "Failed"
+            # Pad iterations to 3 characters - hopefully we don;t see more than 999 iterations
+            miters = f"{v['Manual']['iterations']: <{3}}"
+            stream.write(
+                f"{k: <{max_str}} || {v['Manual']['condition_number']:.3E} | {msolved} {miters} "
+            )
+
+            if "Auto" in v.keys():
+                if v["Auto"]["solved"]:
+                    asolved = "Solved"
+                else:
+                    asolved = "Failed"
+                # Pad iterations again
+                aiters = f"{v['Auto']['iterations']: <{3}}"
+                stream.write(
+                    f"|| {v['Auto']['condition_number']:.3E} | {asolved} {aiters}\n"
+                )
+            else:
+                # Add training column divider but no auto column
+                stream.write(f"||\n")
+
+        # Write footer row
+        stream.write(f"{'=' * max_line}\n")
+
     def run_case(self, scaling_method, **kwargs):
         """
         Run case for a given scaling method with both perfect and imperfect scaling information.
 
         Args:
-            scaling_method - constraint scaling method to be tested
-            kwargs - keyword argument to be passed to scaling method
+            scaling_method: constraint scaling method to be tested
+            kwargs: keyword argument to be passed to scaling method
 
         Returns:
             dict summarising results of scaling case

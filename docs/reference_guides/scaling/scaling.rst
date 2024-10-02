@@ -16,4 +16,5 @@ The following modules compose the core IDAES Scaling Toolbox.
     scaling_utils
     custom_scaler
     autoscaler
+    scaling_profiler
 

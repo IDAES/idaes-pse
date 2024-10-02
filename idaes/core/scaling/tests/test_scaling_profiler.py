@@ -15,9 +15,10 @@ Tests for Scaling Profiler
 
 Author: Andrew Lee
 """
-import pytest
 
+from io import StringIO
 import os
+import pytest
 
 from pyomo.environ import ConcreteModel, Constraint, value, Var
 
@@ -330,6 +331,234 @@ def perturb_solution(model):
     model.fs.unit.inlet.mole_frac_comp[0, "O2"].fix(0.1039)
 
 
+expected_profile = {
+    "Unscaled": {
+        "Manual": {
+            "condition_number": 5.70342e17,
+            "solved": False,
+            "termination_message": "TerminationCondition.locallyInfeasible",
+            "iterations": 57,
+            "iters_in_restoration": 27,
+            "iters_w_regularization": 21,
+        }
+    },
+    "Vars Only": {
+        "Manual": {
+            "condition_number": 9.24503e16,
+            "solved": False,
+            "termination_message": "TerminationCondition.locallyInfeasible",
+            "iterations": 82,
+            "iters_in_restoration": 82,
+            "iters_w_regularization": 39,
+        },
+        "Auto": {
+            "condition_number": 6.57667e14,
+            "solved": True,
+            "termination_message": "TerminationCondition.convergenceCriteriaSatisfied",
+            "iterations": 9,
+            "iters_in_restoration": 0,
+            "iters_w_regularization": 0,
+        },
+    },
+    "Harmonic": {
+        "Manual": {
+            "condition_number": 3.73643e18,
+            "solved": False,
+            "termination_message": "TerminationCondition.locallyInfeasible",
+            "iterations": 39,
+            "iters_in_restoration": 39,
+            "iters_w_regularization": 0,
+        },
+        "Auto": {
+            "condition_number": 2.83944e12,
+            "solved": True,
+            "termination_message": "TerminationCondition.convergenceCriteriaSatisfied",
+            "iterations": 17,
+            "iters_in_restoration": 0,
+            "iters_w_regularization": 0,
+        },
+    },
+    "Inverse Sum": {
+        "Manual": {
+            "condition_number": 9.31670e15,
+            "solved": False,
+            "termination_message": "TerminationCondition.iterationLimit",
+            "iterations": 200,
+            "iters_in_restoration": 200,
+            "iters_w_regularization": 75,
+        },
+        "Auto": {
+            "condition_number": 1.50163e6,
+            "solved": True,
+            "termination_message": "TerminationCondition.convergenceCriteriaSatisfied",
+            "iterations": 6,
+            "iters_in_restoration": 0,
+            "iters_w_regularization": 0,
+        },
+    },
+    "Inverse Root Sum Squares": {
+        "Manual": {
+            "condition_number": 1.15511e16,
+            "solved": False,
+            "termination_message": "TerminationCondition.iterationLimit",
+            "iterations": 200,
+            "iters_in_restoration": 201,
+            "iters_w_regularization": 107,
+        },
+        "Auto": {
+            "condition_number": 9.59994e5,
+            "solved": True,
+            "termination_message": "TerminationCondition.convergenceCriteriaSatisfied",
+            "iterations": 6,
+            "iters_in_restoration": 0,
+            "iters_w_regularization": 0,
+        },
+    },
+    "Inverse Maximum": {
+        "Manual": {
+            "condition_number": 1.094304e16,
+            "solved": False,
+            "termination_message": "TerminationCondition.iterationLimit",
+            "iterations": 200,
+            "iters_in_restoration": 197,
+            "iters_w_regularization": 75,
+        },
+        "Auto": {
+            "condition_number": 7.84576e5,
+            "solved": True,
+            "termination_message": "TerminationCondition.convergenceCriteriaSatisfied",
+            "iterations": 6,
+            "iters_in_restoration": 0,
+            "iters_w_regularization": 0,
+        },
+    },
+    "Inverse Minimum": {
+        "Manual": {
+            "condition_number": 7.34636e18,
+            "solved": False,
+            "termination_message": "TerminationCondition.locallyInfeasible",
+            "iterations": 49,
+            "iters_in_restoration": 49,
+            "iters_w_regularization": 1,
+        },
+        "Auto": {
+            "condition_number": 5.600998e12,
+            "solved": True,
+            "termination_message": "TerminationCondition.convergenceCriteriaSatisfied",
+            "iterations": 16,
+            "iters_in_restoration": 0,
+            "iters_w_regularization": 0,
+        },
+    },
+    "Nominal L1 Norm": {
+        "Manual": {
+            "condition_number": 1.18925e16,
+            "solved": False,
+            "termination_message": "TerminationCondition.locallyInfeasible",
+            "iterations": 61,
+            "iters_in_restoration": 60,
+            "iters_w_regularization": 15,
+        },
+        "Auto": {
+            "condition_number": 2.06015e6,
+            "solved": True,
+            "termination_message": "TerminationCondition.convergenceCriteriaSatisfied",
+            "iterations": 4,
+            "iters_in_restoration": 0,
+            "iters_w_regularization": 0,
+        },
+    },
+    "Nominal L2 Norm": {
+        "Manual": {
+            "condition_number": 1.18824e16,
+            "solved": False,
+            "termination_message": "TerminationCondition.locallyInfeasible",
+            "iterations": 53,
+            "iters_in_restoration": 50,
+            "iters_w_regularization": 7,
+        },
+        "Auto": {
+            "condition_number": 3.07419e6,
+            "solved": True,
+            "termination_message": "TerminationCondition.convergenceCriteriaSatisfied",
+            "iterations": 4,
+            "iters_in_restoration": 0,
+            "iters_w_regularization": 0,
+        },
+    },
+    "Actual L1 Norm": {
+        "Manual": {
+            "condition_number": 1.46059e9,
+            "solved": False,
+            "termination_message": "TerminationCondition.locallyInfeasible",
+            "iterations": 29,
+            "iters_in_restoration": 29,
+            "iters_w_regularization": 0,
+        },
+        "Auto": {
+            "condition_number": 2986.99,
+            "solved": True,
+            "termination_message": "TerminationCondition.convergenceCriteriaSatisfied",
+            "iterations": 6,
+            "iters_in_restoration": 0,
+            "iters_w_regularization": 0,
+        },
+    },
+    "Actual L2 Norm": {
+        "Manual": {
+            "condition_number": 6.61297e8,
+            "solved": False,
+            "termination_message": "TerminationCondition.locallyInfeasible",
+            "iterations": 29,
+            "iters_in_restoration": 29,
+            "iters_w_regularization": 0,
+        },
+        "Auto": {
+            "condition_number": 2510.95,
+            "solved": True,
+            "termination_message": "TerminationCondition.convergenceCriteriaSatisfied",
+            "iterations": 6,
+            "iters_in_restoration": 0,
+            "iters_w_regularization": 0,
+        },
+    },
+}
+
+
+@pytest.mark.unit
+def test_write_profile_report():
+    sp = ScalingProfiler(
+        build_model=build_model,
+        user_scaling=scale_vars,
+        perturb_state=perturb_solution,
+    )
+
+    stream = StringIO()
+
+    sp.write_profile_report(results=expected_profile, stream=stream)
+
+    expected = """
+============================================================================
+Scaling Profile Report
+----------------------------------------------------------------------------
+Scaling Method           || User Scaling           || Perfect Scaling
+Unscaled                 || 5.703E+17 | Failed 57  ||
+Vars Only                || 9.245E+16 | Failed 82  || 6.577E+14 | Solved 9  
+Harmonic                 || 3.736E+18 | Failed 39  || 2.839E+12 | Solved 17 
+Inverse Sum              || 9.317E+15 | Failed 200 || 1.502E+06 | Solved 6  
+Inverse Root Sum Squares || 1.155E+16 | Failed 200 || 9.600E+05 | Solved 6  
+Inverse Maximum          || 1.094E+16 | Failed 200 || 7.846E+05 | Solved 6  
+Inverse Minimum          || 7.346E+18 | Failed 49  || 5.601E+12 | Solved 16 
+Nominal L1 Norm          || 1.189E+16 | Failed 61  || 2.060E+06 | Solved 4  
+Nominal L2 Norm          || 1.188E+16 | Failed 53  || 3.074E+06 | Solved 4  
+Actual L1 Norm           || 1.461E+09 | Failed 29  || 2.987E+03 | Solved 6  
+Actual L2 Norm           || 6.613E+08 | Failed 29  || 2.511E+03 | Solved 6  
+============================================================================
+"""
+
+    assert stream.getvalue() == expected
+
+
 @pytest.mark.integration
 def test_case_study_profiling():
     sp = ScalingProfiler(
@@ -340,206 +569,13 @@ def test_case_study_profiling():
 
     results = sp.profile_scaling_methods()
 
-    expected = {
-        "Unscaled": {
-            "Manual": {
-                "condition_number": 5.70342e17,
-                "solved": False,
-                "termination_message": "TerminationCondition.locallyInfeasible",
-                "iterations": 57,
-                "iters_in_restoration": 27,
-                "iters_w_regularization": 21,
-            }
-        },
-        "Vars Only": {
-            "Manual": {
-                "condition_number": 9.24503e16,
-                "solved": False,
-                "termination_message": "TerminationCondition.locallyInfeasible",
-                "iterations": 82,
-                "iters_in_restoration": 82,
-                "iters_w_regularization": 39,
-            },
-            "Auto": {
-                "condition_number": 6.57667e14,
-                "solved": True,
-                "termination_message": "TerminationCondition.convergenceCriteriaSatisfied",
-                "iterations": 9,
-                "iters_in_restoration": 0,
-                "iters_w_regularization": 0,
-            },
-        },
-        "Harmonic": {
-            "Manual": {
-                "condition_number": 3.73643e18,
-                "solved": False,
-                "termination_message": "TerminationCondition.locallyInfeasible",
-                "iterations": 39,
-                "iters_in_restoration": 39,
-                "iters_w_regularization": 0,
-            },
-            "Auto": {
-                "condition_number": 2.83944e12,
-                "solved": True,
-                "termination_message": "TerminationCondition.convergenceCriteriaSatisfied",
-                "iterations": 17,
-                "iters_in_restoration": 0,
-                "iters_w_regularization": 0,
-            },
-        },
-        "Inverse Sum": {
-            "Manual": {
-                "condition_number": 9.31670e15,
-                "solved": False,
-                "termination_message": "TerminationCondition.iterationLimit",
-                "iterations": 200,
-                "iters_in_restoration": 200,
-                "iters_w_regularization": 75,
-            },
-            "Auto": {
-                "condition_number": 1.50163e6,
-                "solved": True,
-                "termination_message": "TerminationCondition.convergenceCriteriaSatisfied",
-                "iterations": 6,
-                "iters_in_restoration": 0,
-                "iters_w_regularization": 0,
-            },
-        },
-        "Inverse Root Sum Squares": {
-            "Manual": {
-                "condition_number": 1.15511e16,
-                "solved": False,
-                "termination_message": "TerminationCondition.iterationLimit",
-                "iterations": 200,
-                "iters_in_restoration": 201,
-                "iters_w_regularization": 107,
-            },
-            "Auto": {
-                "condition_number": 9.59994e5,
-                "solved": True,
-                "termination_message": "TerminationCondition.convergenceCriteriaSatisfied",
-                "iterations": 6,
-                "iters_in_restoration": 0,
-                "iters_w_regularization": 0,
-            },
-        },
-        "Inverse Maximum": {
-            "Manual": {
-                "condition_number": 1.094304e16,
-                "solved": False,
-                "termination_message": "TerminationCondition.iterationLimit",
-                "iterations": 200,
-                "iters_in_restoration": 197,
-                "iters_w_regularization": 75,
-            },
-            "Auto": {
-                "condition_number": 7.84576e5,
-                "solved": True,
-                "termination_message": "TerminationCondition.convergenceCriteriaSatisfied",
-                "iterations": 6,
-                "iters_in_restoration": 0,
-                "iters_w_regularization": 0,
-            },
-        },
-        "Inverse Minimum": {
-            "Manual": {
-                "condition_number": 7.34636e18,
-                "solved": False,
-                "termination_message": "TerminationCondition.locallyInfeasible",
-                "iterations": 49,
-                "iters_in_restoration": 49,
-                "iters_w_regularization": 1,
-            },
-            "Auto": {
-                "condition_number": 5.600998e12,
-                "solved": True,
-                "termination_message": "TerminationCondition.convergenceCriteriaSatisfied",
-                "iterations": 16,
-                "iters_in_restoration": 0,
-                "iters_w_regularization": 0,
-            },
-        },
-        "Nominal L1 Norm": {
-            "Manual": {
-                "condition_number": 1.18925e16,
-                "solved": False,
-                "termination_message": "TerminationCondition.locallyInfeasible",
-                "iterations": 61,
-                "iters_in_restoration": 60,
-                "iters_w_regularization": 15,
-            },
-            "Auto": {
-                "condition_number": 2.06015e6,
-                "solved": True,
-                "termination_message": "TerminationCondition.convergenceCriteriaSatisfied",
-                "iterations": 4,
-                "iters_in_restoration": 0,
-                "iters_w_regularization": 0,
-            },
-        },
-        "Nominal L2 Norm": {
-            "Manual": {
-                "condition_number": 1.18824e16,
-                "solved": False,
-                "termination_message": "TerminationCondition.locallyInfeasible",
-                "iterations": 53,
-                "iters_in_restoration": 50,
-                "iters_w_regularization": 7,
-            },
-            "Auto": {
-                "condition_number": 3.07419e6,
-                "solved": True,
-                "termination_message": "TerminationCondition.convergenceCriteriaSatisfied",
-                "iterations": 4,
-                "iters_in_restoration": 0,
-                "iters_w_regularization": 0,
-            },
-        },
-        "Actual L1 Norm": {
-            "Manual": {
-                "condition_number": 1.46059e9,
-                "solved": False,
-                "termination_message": "TerminationCondition.locallyInfeasible",
-                "iterations": 29,
-                "iters_in_restoration": 29,
-                "iters_w_regularization": 0,
-            },
-            "Auto": {
-                "condition_number": 2986.99,
-                "solved": True,
-                "termination_message": "TerminationCondition.convergenceCriteriaSatisfied",
-                "iterations": 6,
-                "iters_in_restoration": 0,
-                "iters_w_regularization": 0,
-            },
-        },
-        "Actual L2 Norm": {
-            "Manual": {
-                "condition_number": 6.61297e8,
-                "solved": False,
-                "termination_message": "TerminationCondition.locallyInfeasible",
-                "iterations": 29,
-                "iters_in_restoration": 29,
-                "iters_w_regularization": 0,
-            },
-            "Auto": {
-                "condition_number": 2510.95,
-                "solved": True,
-                "termination_message": "TerminationCondition.convergenceCriteriaSatisfied",
-                "iterations": 6,
-                "iters_in_restoration": 0,
-                "iters_w_regularization": 0,
-            },
-        },
-    }
-
     for cmeth, stats in results.items():
         for vmeth in ["Manual", "Auto"]:
             if cmeth == "Unscaled" and vmeth == "Auto":
                 # Unscaled does not have data for auto
                 continue
             rstats = stats[vmeth]
-            xstats = expected[cmeth][vmeth]
+            xstats = expected_profile[cmeth][vmeth]
             assert rstats["condition_number"] == pytest.approx(
                 xstats["condition_number"], rel=1e-5
             )
@@ -552,3 +588,37 @@ def test_case_study_profiling():
             ]:
                 # We will allow a variance of 2 iteration in this test to avoid being overly fragile
                 assert rstats[iters] == pytest.approx(xstats[iters], abs=2)
+
+
+@pytest.mark.integration
+def test_report_scaling_profiles():
+    sp = ScalingProfiler(
+        build_model=build_model,
+        user_scaling=scale_vars,
+        perturb_state=perturb_solution,
+    )
+
+    stream = StringIO()
+
+    sp.report_scaling_profiles(stream=stream)
+
+    expected = """
+============================================================================
+Scaling Profile Report
+----------------------------------------------------------------------------
+Scaling Method           || User Scaling           || Perfect Scaling
+Unscaled                 || 5.703E+17 | Failed 57  ||
+Vars Only                || 9.245E+16 | Failed 82  || 6.577E+14 | Solved 9  
+Harmonic                 || 3.736E+18 | Failed 39  || 2.839E+12 | Solved 17 
+Inverse Sum              || 9.317E+15 | Failed 200 || 1.502E+06 | Solved 6  
+Inverse Root Sum Squares || 1.155E+16 | Failed 200 || 9.600E+05 | Solved 6  
+Inverse Maximum          || 1.094E+16 | Failed 200 || 7.846E+05 | Solved 6  
+Inverse Minimum          || 7.346E+18 | Failed 49  || 5.601E+12 | Solved 16 
+Nominal L1 Norm          || 1.189E+16 | Failed 61  || 2.060E+06 | Solved 4  
+Nominal L2 Norm          || 1.188E+16 | Failed 53  || 3.074E+06 | Solved 4  
+Actual L1 Norm           || 1.461E+09 | Failed 29  || 2.987E+03 | Solved 6  
+Actual L2 Norm           || 6.613E+08 | Failed 29  || 2.511E+03 | Solved 6  
+============================================================================
+"""
+
+    assert stream.getvalue() == expected
