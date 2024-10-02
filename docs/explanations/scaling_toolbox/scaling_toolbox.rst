@@ -48,7 +48,7 @@ Cons:
 
 The alternative to model-state based scaling is to develop customized scaling routines for individual models which take into account the model structure and behavior to estimate scaling factors. These routines are generally written by the original model developer, and thus depend heavily on the skill and foresight of the developer. On the other hand, as these routines depend on knowledge of the model structure rather than the model state, these routines can be applied to uninitialized models (given sufficient estimates of a few key variables).
 
-A suite of methods to assist with developing custom scaling routines are available as part of the IDAES Scaling Toolbox through the :ref:`CustomScalerBase Class<reference_guides/scaling/custom_scaler:CustomScalerBase Class>`. Many models in the core IDAES libraries will have custom Scalers availalble for use - see the documentation of individual models for these.
+A suite of methods to assist with developing custom scaling routines are available as part of the IDAES Scaling Toolbox through the :ref:`CustomScalerBase Class<reference_guides/scaling/custom_scaler:CustomScalerBase Class>`. Many models in the core IDAES libraries will have custom Scalers available for use - see the documentation of individual models for these.
 
 Utility Functions
 -----------------

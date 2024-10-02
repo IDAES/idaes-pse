@@ -14,7 +14,7 @@ Key Points
 * There are three aspects to scaling which are equally important
 * Model scaling is more about avoiding poor scaling than finding “good” scaling
 * Order-of-magnitude scaling factors are often better than exact values
-* A number of tools are availalble to assist modelers with this task
+* A number of tools are available to assist modelers with this task
 
 Topics
 ------
