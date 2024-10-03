@@ -54,6 +54,8 @@ import idaes.core.util.scaling as iscale
 from idaes.core.solvers import get_solver
 import idaes.logger as idaeslog
 
+from idaes.models.unit_models.feed import FeedInitializer as StreamScalerInitializer
+
 __author__ = "Douglas Allan"
 
 
@@ -64,8 +66,11 @@ _log = idaeslog.getLogger(__name__)
 @declare_process_block_class("StreamScaler")
 class StreamScalerData(UnitModelBlockData):
     """
-    TODO
+    Unit model to adjust size of streams to represent, for example, a stream being split across several identical units,
+    which are then all modeled as a single IDAES unit
     """
+
+    default_initializer = StreamScalerInitializer
 
     CONFIG = ConfigBlock()
     CONFIG.declare(
@@ -235,7 +240,7 @@ see property package for documentation.}""",
     def _get_stream_table_contents(self, time_point=0):
         io_dict = {
             "Inlet": self.inlet,
-            "Outlet": self.outlet,
+            # "Outlet": self.outlet,
         }
         return create_stream_table_dataframe(io_dict, time_point=time_point)
 
