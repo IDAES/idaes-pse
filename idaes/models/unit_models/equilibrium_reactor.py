@@ -16,7 +16,7 @@ Standard IDAES Equilibrium Reactor model.
 
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
-from pyomo.environ import Constraint, Reference
+from pyomo.environ import Constraint, Reference, units, value
 
 # Import IDAES cores
 from idaes.core import (
@@ -38,9 +38,43 @@ __author__ = "Andrew Lee"
 
 
 class EquilibriumReactorScaler(CustomScalerBase):
+    """
+    Default modular scaler for Equilibrium reactors.
+
+    This Scaler relies on modular the associated property and reaction packages,
+    either through user provided options (submodel_scalers argument) or by default
+    Scalers assigned to the packages.
+
+    Reaction generation terms are scaled based on component flow rates, whilst
+    extents of reaction are unscaled. Heat duty is scaled to kW and pressure drop
+    to 0.1 bar. All constraints are scaled using the inverse maximum scheme.
+    """
+
+    UNIT_SCALING_FACTORS = {
+        # "QuantityName: (reference units, scaling factor)
+        "Heat": (units.kW, 1),
+        "Pressure Change": (units.bar, 10),
+    }
+
     def variable_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: dict = None
     ):
+        """
+        Routine to apply scaling factors to variables in model.
+
+        Submodel Scalers are called for the property and reaction blocks.
+        Reaction generation terms are scaled based on component flow rates, whilst
+        extents of reaction are unscaled. Heat duty is scaled to kW and pressure drop
+        to 0.1 bar.
+
+        Args:
+            model: model to be scaled
+            overwrite: whether to overwrite existing scaling factors
+            submodel_scalers: dict of Scalers to use for sub-models, keyed by submodel local name
+
+        Returns:
+            None
+        """
         # Call scaling methods for sub-models
         self.call_submodel_scaler_method(
             model=model,
@@ -70,11 +104,41 @@ class EquilibriumReactorScaler(CustomScalerBase):
             overwrite=overwrite,
         )
 
-        # TODO: Scaling for optional CV vairables
+        # Scaling control volume variables
+        # Reaction generation and extent are hard to know a priori
+        # A bad guess is worse than no guess, so leave these unscaled
+        # AL 10/2024: Tried scaling generation by component flow, but that was bad
+
+        # Pressure drop - optional
+        if hasattr(model.control_volume, "deltaP"):
+            for t in model.flowsheet().time:
+                self.scale_variable_by_units(
+                    model.control_volume.deltaP[t], overwrite=overwrite
+                )
+        # Heat transfer - optional
+        if hasattr(model.control_volume, "heat"):
+            for t in model.flowsheet().time:
+                self.scale_variable_by_units(
+                    model.control_volume.heat[t], overwrite=overwrite
+                )
 
     def constraint_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: dict = None
     ):
+        """
+        Routine to apply scaling factors to constraints in model.
+
+        Submodel Scalers are called for the property and reaction blocks. All other constraints
+        are scaled using the inverse maximum shceme.
+
+        Args:
+            model: model to be scaled
+            overwrite: whether to overwrite existing scaling factors
+            submodel_scalers: dict of Scalers to use for sub-models, keyed by submodel local name
+
+        Returns:
+            None
+        """
         # Call scaling methods for sub-models
         self.call_submodel_scaler_method(
             model=model,

@@ -137,7 +137,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
 
 
 class SaponificationPropertiesScaler(CustomScalerBase):
-    DEFAULT_UNIT_SCALING = {
+    UNIT_SCALING_FACTORS = {
         # "QuantityName: (reference units, scaling factor)
         "Pressure": (units.Pa, 1e-5),
     }
