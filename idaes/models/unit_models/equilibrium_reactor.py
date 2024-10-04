@@ -16,7 +16,7 @@ Standard IDAES Equilibrium Reactor model.
 
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
-from pyomo.environ import Reference
+from pyomo.environ import Constraint, Reference
 
 # Import IDAES cores
 from idaes.core import (
@@ -32,8 +32,90 @@ from idaes.core.util.config import (
     is_physical_parameter_block,
     is_reaction_parameter_block,
 )
+from idaes.core.scaling import CustomScalerBase
 
 __author__ = "Andrew Lee"
+
+
+class EquilibriumReactorScaler(CustomScalerBase):
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        # Call scaling methods for sub-models
+        self.call_submodel_scaler_method(
+            model=model,
+            submodel="control_volume.properties_in",
+            method="variable_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+        self.propagate_state_scaling(
+            target_state=model.control_volume.properties_out,
+            source_state=model.control_volume.properties_in,
+            overwrite=overwrite,
+        )
+
+        self.call_submodel_scaler_method(
+            model=model,
+            submodel="control_volume.properties_out",
+            method="variable_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+        self.call_submodel_scaler_method(
+            model=model,
+            submodel="control_volume.reactions",
+            method="variable_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+
+        # TODO: Scaling for optional CV vairables
+
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        # Call scaling methods for sub-models
+        self.call_submodel_scaler_method(
+            model=model,
+            submodel="control_volume.properties_in",
+            method="constraint_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+        self.call_submodel_scaler_method(
+            model=model,
+            submodel="control_volume.properties_out",
+            method="constraint_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+        self.call_submodel_scaler_method(
+            model=model,
+            submodel="control_volume.reactions",
+            method="constraint_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+
+        # Scale control volume constraints
+        for c in model.control_volume.component_data_objects(
+            Constraint, descend_into=False
+        ):
+            self.scale_constraint_by_nominal_value(
+                c,
+                scheme="inverse_maximum",
+                overwrite=overwrite,
+            )
+
+        # Scale unit level constraints
+        if hasattr(model, "rate_reaction_constraint"):
+            for c in model.rate_reaction_constraint.values():
+                self.scale_constraint_by_nominal_value(
+                    c,
+                    scheme="inverse_maximum",
+                    overwrite=overwrite,
+                )
 
 
 @declare_process_block_class("EquilibriumReactor")
@@ -41,6 +123,8 @@ class EquilibriumReactorData(UnitModelBlockData):
     """
     Standard Equilibrium Reactor Unit Model Class
     """
+
+    default_scaler = EquilibriumReactorScaler
 
     CONFIG = ConfigBlock()
     CONFIG.declare(

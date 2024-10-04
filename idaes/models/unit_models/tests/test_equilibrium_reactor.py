@@ -15,9 +15,10 @@ Tests for equilibrium reactor unit model.
 Authors: Andrew Lee
 """
 
+from math import exp
 import pytest
 
-from pyomo.environ import check_optimal_termination, ConcreteModel, value, units
+from pyomo.environ import check_optimal_termination, ConcreteModel, Suffix, value, units
 
 from idaes.core import (
     FlowsheetBlock,
@@ -25,7 +26,10 @@ from idaes.core import (
     EnergyBalanceType,
     MomentumBalanceType,
 )
-from idaes.models.unit_models.equilibrium_reactor import EquilibriumReactor
+from idaes.models.unit_models.equilibrium_reactor import (
+    EquilibriumReactor,
+    EquilibriumReactorScaler,
+)
 from idaes.models.properties.examples.saponification_thermo import (
     SaponificationParameterBlock,
 )
@@ -86,6 +90,7 @@ def test_config():
     assert m.fs.unit.config.reaction_package is m.fs.reactions
 
     assert m.fs.unit.default_initializer is SingleControlVolumeUnitInitializer
+    assert m.fs.unit.default_scaler is EquilibriumReactorScaler
 
 
 # -----------------------------------------------------------------------------
@@ -370,3 +375,153 @@ class TestInitializers:
 
         assert not model.fs.unit.inlet.temperature[0].fixed
         assert not model.fs.unit.inlet.pressure[0].fixed
+
+
+class TestEquilibriumReactorScaler:
+    @pytest.fixture
+    def model(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.properties = SaponificationParameterBlock()
+        m.fs.reactions = SaponificationReactionParameterBlock(
+            property_package=m.fs.properties
+        )
+
+        m.fs.unit = EquilibriumReactor(
+            property_package=m.fs.properties,
+            reaction_package=m.fs.reactions,
+            has_equilibrium_reactions=False,
+            has_heat_transfer=True,
+            has_heat_of_reaction=True,
+            has_pressure_change=True,
+        )
+
+        m.fs.unit.inlet.flow_vol[0].set_value(1.0e-03)
+        m.fs.unit.inlet.conc_mol_comp[0, "H2O"].set_value(55388.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "NaOH"].set_value(100.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "EthylAcetate"].set_value(100.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "SodiumAcetate"].set_value(0.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "Ethanol"].set_value(0.0)
+
+        m.fs.unit.inlet.temperature[0].set_value(303.15)
+        m.fs.unit.inlet.pressure[0].set_value(101325.0)
+
+        m.fs.unit.heat_duty.fix(0)
+        m.fs.unit.deltaP.fix(0)
+
+        return m
+
+    @pytest.mark.component
+    def test_variable_scaling_routine(self, model):
+        scaler = model.fs.unit.default_scaler()
+
+        assert isinstance(scaler, EquilibriumReactorScaler)
+
+        scaler.variable_scaling_routine(model.fs.unit)
+
+        # Check that sub-models have suffixes
+        # Inlet state
+        sfx_in = model.fs.unit.control_volume.properties_in[0].scaling_factor
+        assert isinstance(sfx_in, Suffix)
+        assert len(sfx_in) == 8
+        assert sfx_in[
+            model.fs.unit.control_volume.properties_in[0].flow_vol
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_in[
+            model.fs.unit.control_volume.properties_in[0].pressure
+        ] == pytest.approx(1e-5, rel=1e-8)
+        assert sfx_in[
+            model.fs.unit.control_volume.properties_in[0].temperature
+        ] == pytest.approx(1 / 310.65, rel=1e-8)
+        for k, v in model.fs.unit.control_volume.properties_in[0].conc_mol_comp.items():
+            if k == "H2O":
+                assert sfx_in[v] == pytest.approx(1e-4, rel=1e-8)
+            else:
+                assert sfx_in[v] == pytest.approx(1e-2, rel=1e-8)
+
+        # Outlet state - should be the same as the inlet
+        sfx_out = model.fs.unit.control_volume.properties_out[0].scaling_factor
+        assert isinstance(sfx_out, Suffix)
+        assert len(sfx_out) == 8
+        assert sfx_out[
+            model.fs.unit.control_volume.properties_out[0].flow_vol
+        ] == pytest.approx(1e2, rel=1e-8)
+        assert sfx_out[
+            model.fs.unit.control_volume.properties_out[0].pressure
+        ] == pytest.approx(1e-5, rel=1e-8)
+        assert sfx_out[
+            model.fs.unit.control_volume.properties_out[0].temperature
+        ] == pytest.approx(1 / 310.65, rel=1e-8)
+        for k, v in model.fs.unit.control_volume.properties_out[
+            0
+        ].conc_mol_comp.items():
+            if k == "H2O":
+                assert sfx_out[v] == pytest.approx(1e-4, rel=1e-8)
+            else:
+                assert sfx_out[v] == pytest.approx(1e-2, rel=1e-8)
+
+        # Reaction block
+        sfx_rxn = model.fs.unit.control_volume.reactions[0].scaling_factor
+        assert isinstance(sfx_rxn, Suffix)
+        assert len(sfx_rxn) == 2
+        assert sfx_rxn[
+            model.fs.unit.control_volume.reactions[0].k_rxn
+        ] == pytest.approx(
+            1 / (3.132e6 * exp(-43000 / (8.31446262 * 310.65))), rel=1e-8
+        )
+        assert sfx_rxn[
+            model.fs.unit.control_volume.reactions[0].reaction_rate["R1"]
+        ] == pytest.approx(1e2, rel=1e-8)
+
+        # Check that unit model has scaling factors
+        # assert isinstance(model.fs.unit.control_volume.scaling_factor, Suffix)
+
+        # No unit level variables to scale, so no suffix
+        assert not hasattr(model.fs.unit, "scaling_factor")
+
+    @pytest.mark.component
+    def test_constraint_scaling_routine(self, model):
+        scaler = model.fs.unit.default_scaler()
+
+        assert isinstance(scaler, EquilibriumReactorScaler)
+
+        scaler.constraint_scaling_routine(model.fs.unit)
+
+        # Check that sub-models have suffixes - we will assume they are right at this point
+        assert isinstance(
+            model.fs.unit.control_volume.properties_in[0].scaling_factor, Suffix
+        )
+        assert isinstance(
+            model.fs.unit.control_volume.properties_out[0].scaling_factor, Suffix
+        )
+        assert isinstance(
+            model.fs.unit.control_volume.reactions[0].scaling_factor, Suffix
+        )
+
+        # Check that unit model has scaling factors
+        assert isinstance(model.fs.unit.control_volume.scaling_factor, Suffix)
+        assert isinstance(model.fs.unit.scaling_factor, Suffix)
+
+    @pytest.mark.component
+    def test_scale_model(self, model):
+        scaler = model.fs.unit.default_scaler()
+
+        assert isinstance(scaler, EquilibriumReactorScaler)
+
+        scaler.scale_model(model.fs.unit)
+
+        # Check that sub-models have suffixes - we will assume they are right at this point
+        assert isinstance(
+            model.fs.unit.control_volume.properties_in[0].scaling_factor, Suffix
+        )
+        assert isinstance(
+            model.fs.unit.control_volume.properties_out[0].scaling_factor, Suffix
+        )
+        assert isinstance(
+            model.fs.unit.control_volume.reactions[0].scaling_factor, Suffix
+        )
+
+        # Check that unit model has scaling factors
+        assert isinstance(model.fs.unit.control_volume.scaling_factor, Suffix)
+        assert isinstance(model.fs.unit.scaling_factor, Suffix)

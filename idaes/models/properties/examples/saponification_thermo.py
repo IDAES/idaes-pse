@@ -44,6 +44,7 @@ from idaes.core import (
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 import idaes.logger as idaeslog
+from idaes.core.scaling import CustomScalerBase
 
 # Some more information about this module
 __author__ = "Andrew Lee"
@@ -135,11 +136,47 @@ class PhysicalParameterData(PhysicalParameterBlock):
         )
 
 
+class SaponificationPropertiesScaler(CustomScalerBase):
+    DEFAULT_UNIT_SCALING = {
+        # "QuantityName: (reference units, scaling factor)
+        "Pressure": (units.Pa, 1e-5),
+    }
+
+    DEFAULT_SCALING_FACTORS = {
+        "flow_vol": 1e2,
+        "conc_mol_comp": 1e-2,
+    }
+
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        self.scale_variable_by_default(model.flow_vol, overwrite=overwrite)
+        self.scale_variable_by_units(model.pressure, overwrite=overwrite)
+        self.scale_variable_by_bounds(model.temperature, overwrite=overwrite)
+        for k, v in model.conc_mol_comp.items():
+            if k == "H2O":
+                self.set_variable_scaling_factor(v, 1e-4, overwrite=overwrite)
+            else:
+                self.scale_variable_by_default(v, overwrite=overwrite)
+
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        if model.is_property_constructed("conc_water_eqn"):
+            self.set_constraint_scaling_factor(
+                model.conc_water_eqn,
+                1e-4,
+                overwrite=overwrite,
+            )
+
+
 class _StateBlock(StateBlock):
     """
     This Class contains methods which should be applied to Property Blocks as a
     whole, rather than individual elements of indexed Property Blocks.
     """
+
+    default_scaler = SaponificationPropertiesScaler
 
     def fix_initialization_states(self):
         """
