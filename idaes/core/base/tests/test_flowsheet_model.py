@@ -401,6 +401,29 @@ class TestSubFlowsheetBuild(object):
         assert m.fs.sub.time_units == units.minute
 
     @pytest.mark.unit
+    def test_dynamic_nested_time(self):
+        m = ConcreteModel()
+        m.s1 = ContinuousSet(initialize=[4, 5])
+        m.s2 = ContinuousSet(initialize=[1,2,3])
+        m.fs = FlowsheetBlock(dynamic=True, time_units=units.s)
+        m.fs.sub = FlowsheetBlock(dynamic=True, time=m.s2, time_units=units.s)
+
+        assert m.fs.sub.config.dynamic is True
+        assert isinstance(m.fs.sub.time, ContinuousSet)
+        assert m.fs.sub.time_units == units.s
+
+    @pytest.mark.unit
+    def test_dynamic_nested_time_from_time_set(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=True, time_set = [1,2,3], time_units=units.s)
+        m.fs.sub = FlowsheetBlock(dynamic=True, time_set = [1, 2], time_units=units.s)
+
+        assert m.fs.sub.config.dynamic is True
+        assert isinstance(m.fs.sub.time, ContinuousSet)
+        assert m.fs.sub.time_units is units.s
+
+
+    @pytest.mark.unit
     def test_dynamic_external_time_invalid(self):
         m = ConcreteModel()
         m.s = Set(initialize=[4, 5])
