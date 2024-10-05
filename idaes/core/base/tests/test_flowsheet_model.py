@@ -422,6 +422,16 @@ class TestSubFlowsheetBuild(object):
         assert isinstance(m.fs.sub.time, ContinuousSet)
         assert m.fs.sub.time_units is units.s
 
+    @pytest.mark.unit
+    def test_dynamic_parent_time_indexed_ss_child(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=True, time_set = [1,2,3], time_units=units.s)
+        m.fs.sub = FlowsheetBlock(dynamic=False, time_set = [0, 1], time_units=units.dimensionless)
+
+        assert m.fs.sub.config.dynamic is False
+        assert isinstance(m.fs.sub.time, Set)
+        assert m.fs.sub.time_units == units.dimensionless
+
 
     @pytest.mark.unit
     def test_dynamic_external_time_invalid(self):
