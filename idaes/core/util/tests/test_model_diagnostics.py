@@ -4945,8 +4945,12 @@ class TestConstraintTermAnalysisVisitor:
         assert len(cc) == 0
         assert not k
 
-        # TODO: Trying to do this for nested ExternalFunctions raises an unexpected
-        # exception. The reason for this is still unknown.
+        # Test nested external functions
         vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
             expr=m.state[0].temperature
         )
+
+        assert vv == [pytest.approx(270.4877, rel=1e-6)]
+        assert len(mm) == 0
+        assert len(cc) == 0
+        assert not k
