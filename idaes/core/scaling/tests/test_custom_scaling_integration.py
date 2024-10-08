@@ -91,7 +91,7 @@ def gibbs():
 
     # Autoscale variables by magnitude
     scaler = AutoScaler()
-    scaler.variables_by_magnitude(m)
+    scaler.scale_variables_by_magnitude(m)
     assert hasattr(m.fs.unit, "scaling_factor")
 
     return m
@@ -106,7 +106,7 @@ def test_verify_model_load(gibbs):
 @pytest.mark.integration
 def test_autoscale_L2_norm(gibbs):
     scaler = AutoScaler()
-    scaler.constraints_by_jacobian_norm(gibbs, norm=2)
+    scaler.scale_constraints_by_jacobian_norm(gibbs, norm=2)
 
     scaled = jacobian_cond(gibbs, scaled=True)
 
@@ -116,7 +116,7 @@ def test_autoscale_L2_norm(gibbs):
 @pytest.mark.integration
 def test_autoscale_L1_norm(gibbs):
     scaler = AutoScaler()
-    scaler.constraints_by_jacobian_norm(gibbs, norm=1)
+    scaler.scale_constraints_by_jacobian_norm(gibbs, norm=1)
 
     scaled = jacobian_cond(gibbs, scaled=True)
 
@@ -406,8 +406,8 @@ if __name__ == "__main__":
     )
 
     scaler = AutoScaler()
-    scaler.variables_by_magnitude(m)
-    scaler.constraints_by_jacobian_norm(m)
+    scaler.scale_variables_by_magnitude(m)
+    scaler.scale_constraints_by_jacobian_norm(m)
 
     solver = get_solver("ipopt_v2", writer_config={"scale_model": True})
     results = solver.solve(m, tee=True)
