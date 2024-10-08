@@ -123,8 +123,8 @@ class ScalingProfiler:
         """
         Generate results for all provided scaling methods.
 
-        For each scaling method, the Jacobian condition number and re-solve test
-        is run with both user-provided variable scaling and perfect variable scaling
+        For each scaling method, calculate the Jacobian condition number and re-solve
+        the model with both user-provided variable scaling and perfect variable scaling
         (scaling by inverse magnitude). A base case with no scaling applied is also
         run for reference.
 
