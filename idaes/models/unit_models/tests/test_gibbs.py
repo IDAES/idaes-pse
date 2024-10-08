@@ -338,9 +338,8 @@ class TestMethane(object):
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.integration
+    @pytest.mark.component
     def test_verify_scaling_temperature(self, methane):
-        print(jacobian_cond(methane, scaled=False), jacobian_cond(methane, scaled=True))
         assert jacobian_cond(methane, scaled=False) == pytest.approx(5.703e17, rel=1e-3)
         assert jacobian_cond(methane, scaled=True) == pytest.approx(2511, abs=1)
 
@@ -476,9 +475,8 @@ class TestMethane(object):
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.integration
+    @pytest.mark.component
     def test_verify_scaling_duty(self, methane):
-        print(jacobian_cond(methane, scaled=False), jacobian_cond(methane, scaled=True))
         assert jacobian_cond(methane, scaled=True) == pytest.approx(9191, abs=1)
 
         assert len(extreme_jacobian_rows(methane, scaled=True)) == 0
