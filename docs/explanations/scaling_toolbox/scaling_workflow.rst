@@ -12,7 +12,7 @@ When scaling models, it is often difficult to know where to start. ``AutoScalers
 As a starting point, the following workflow is recommended when scaling any model:
 
 1. Understand as much about the model as possible, including expected input and output values and where possible the formulation of the constraints.
-2. Make use of the Diagnostics Toolbox to ensure there are no structural issues and to identify potential scaling issues that must be resolved. This also provides a reference point for checking to see that your scaling factors are improving the state of the model. Modelers are encouraged to use these tools throughout the process to monitor their progress, however note that a partially scaled model will often have more issues than a completely unscaled model (this is often expected, and not necessarily a sign that you are going the wrong way)
+2. Make use of the Diagnostics Toolbox to ensure there are no structural issues and to identify potential scaling issues that must be resolved. This also provides a reference point for checking to see that your scaling factors are improving the state of the model. Modelers are encouraged to use these tools throughout the process to monitor their progress, however note that a partially scaled model will often have more issues than a completely unscaled model (this is often expected, and not necessarily a sign that you are going the wrong way). Of particular note are the ``display_variables_with_extreme_jacobians`` and ``display_constraints_with_extreme_jacobians`` methods (as well as the ``SVDToolbox`` for advanced users).
 3. Start by scaling those variables you have the most information about – these will generally be variables process inputs, design and operating conditions, etc.
 4. Working from what you already know, try to project expected scaling for other variables, repeating as necessary.
 5. Once you have established scaling for all the variables (or as many as you can), start scaling constraints in a similar fashion (start with what you understand best). Make use of the scaling methods provided by the ``CustomScalerBase`` class to assist you in this.
@@ -20,7 +20,7 @@ As a starting point, the following workflow is recommended when scaling any mode
 Scaling Hierarchical Models
 ---------------------------
 
-The hierarchical nature of IDAES models adds an additional challenge to scaling workflows, but also provides opportunities for modularization and creating of Scalers dedicated to scaling specific sub-sections of a model (e.g., unit and property models).
+The hierarchical nature of IDAES models adds an additional challenge to scaling workflows, but also provides opportunities for modularization and the creation of Scalers dedicated to scaling specific sub-sections of a model (e.g., unit and property models).
 
 Flowsheet Scaling Workflow
 ''''''''''''''''''''''''''

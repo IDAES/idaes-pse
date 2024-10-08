@@ -14,7 +14,7 @@ Some common signs of poor scaling which can be seen in the numerical issues repo
 * variables and constraints with extreme Jacobian norms,
 * extreme entries in Jacobian matrix (conditionally).
 
-If you see any of these warnings in the model diagnostics output, it is a sign that you have potential scaling issues which should be resolved in order to improve the performance, robustness and accuracy of your model.
+If you see any of these warnings in the model diagnostics output, it is a sign that you have potential scaling issues which should be investigated in order to improve the performance, robustness and accuracy of your model.
 
 .. Note::
-  Not all scaling issues can be resolved through the application of scaling factors. In some cases, such as constraints with mismatched terms or possible cancellations, the constraint itself maybe inherently poorly posed and thus may need to be refactored to resolve the scaling issue.
+  Not all scaling issues can be resolved through the application of scaling factors. In some cases, such as constraints with mismatched terms or possible cancellations, the constraint itself may be inherently poorly posed and thus may need to be refactored to resolve the scaling issue.
