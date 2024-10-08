@@ -16,6 +16,7 @@ Base class for custom scaling routines.
 Author: Andrew Lee
 """
 from copy import copy
+from enum import Enum
 
 from pyomo.environ import value
 from pyomo.environ import units
@@ -37,6 +38,14 @@ DEFAULT_UNIT_SCALING = {
     "Temperature": (units.K, 1e-2),
     "Pressure": (units.Pa, 1e-5),
 }
+
+
+class ConstraintScalingScheme(str, Enum):
+    harmonicMean = "harmonic_mean"
+    inverseSum = "inverse_sum"
+    inverseRSS = "inverse_root_sum_squared"
+    inverseMaximum = "inverse_maximum"
+    inverseMinimum = "inverse_minimum"
 
 
 class CustomScalerBase(ScalerBase):
@@ -382,7 +391,10 @@ class CustomScalerBase(ScalerBase):
         return NominalValueExtractionVisitor().walk_expression(expression)
 
     def scale_constraint_by_nominal_value(
-        self, constraint, scheme="harmonic_mean", overwrite: bool = False
+        self,
+        constraint,
+        scheme: ConstraintScalingScheme = ConstraintScalingScheme.inverseMaximum,
+        overwrite: bool = False,
     ):
         """
         Set scaling factor for constraint based on the nominal value(s).
@@ -391,11 +403,12 @@ class CustomScalerBase(ScalerBase):
 
         Args:
             constraint: constraint to set scaling factor for
-            scheme: method to apply for determining constraint scaling
-              'harmonic_mean': (default) sum(1/abs(nominal value))
+            scheme: ConstraintScalingScheme Enum indicating method to apply
+              for determining constraint scaling
+              'harmonic_mean': sum(1/abs(nominal value))
               'inverse_sum': 1 / sum(abs(nominal value))
               'inverse_root_sum_squared': 1 / sqrt(sum(abs(nominal value)**2))
-              'inverse_maximum': 1 / max(abs(nominal value)
+              'inverse_maximum': (default) 1 / max(abs(nominal value)
               'inverse_minimum': 1 / min(abs(nominal value)
             overwrite: whether to overwrite existing scaling factors
 
@@ -410,15 +423,15 @@ class CustomScalerBase(ScalerBase):
         if len(nominal) == 0:
             # No non-zero terms...
             sf = 1
-        elif scheme == "harmonic_mean":
+        elif scheme == ConstraintScalingScheme.harmonicMean:
             sf = sum(1 / abs(i) for i in nominal)
-        elif scheme == "inverse_sum":
+        elif scheme == ConstraintScalingScheme.inverseSum:
             sf = 1 / sum(abs(i) for i in nominal)
-        elif scheme == "inverse_root_sum_squared":
+        elif scheme == ConstraintScalingScheme.inverseRSS:
             sf = 1 / sum(abs(i) ** 2 for i in nominal) ** 0.5
-        elif scheme == "inverse_maximum":
+        elif scheme == ConstraintScalingScheme.inverseMaximum:
             sf = 1 / max(abs(i) for i in nominal)
-        elif scheme == "inverse_minimum":
+        elif scheme == ConstraintScalingScheme.inverseMinimum:
             sf = 1 / min(abs(i) for i in nominal)
         else:
             raise ValueError(
