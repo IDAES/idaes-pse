@@ -20,6 +20,7 @@ import re
 
 from pyomo.environ import (
     Block,
+    ComponentMap,
     ConcreteModel,
     Constraint,
     Set,
@@ -643,12 +644,15 @@ class TestCustomScalerBase:
         m = ConcreteModel()
         m.b = Block([1, 2, 3])
 
+        scaler_map = ComponentMap()
+        scaler_map[m.b] = DummyScaler()
+
         sb = CustomScalerBase()
         sb.call_submodel_scaler_method(
             m,
             "b",
             method="dummy_method",
-            submodel_scalers={"b": DummyScaler()},
+            submodel_scalers=scaler_map,
             overwrite=False,
         )
 
@@ -665,12 +669,15 @@ class TestCustomScalerBase:
         m = ConcreteModel()
         m.b = Block([1, 2, 3])
 
+        scaler_map = ComponentMap()
+        scaler_map[m.b] = DummyScaler()
+
         sb = CustomScalerBase()
         sb.call_submodel_scaler_method(
             m,
             "b",
             method="dummy_method",
-            submodel_scalers={"b": DummyScaler},
+            submodel_scalers=scaler_map,
             overwrite=False,
         )
 
@@ -685,6 +692,9 @@ class TestCustomScalerBase:
         m = ConcreteModel()
         m.b = Block([1, 2, 3])
 
+        scaler_map = ComponentMap()
+        scaler_map[m.b] = DummyScaler()
+
         sb = CustomScalerBase()
 
         with pytest.raises(
@@ -695,6 +705,6 @@ class TestCustomScalerBase:
                 m,
                 "b",
                 method="foo",
-                submodel_scalers={"b": DummyScaler()},
+                submodel_scalers=scaler_map,
                 overwrite=False,
             )
