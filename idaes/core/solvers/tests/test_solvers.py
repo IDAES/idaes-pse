@@ -105,6 +105,7 @@ def test_ipopt_idaes_solve():
     assert pytest.approx(x) == pyo.value(m.x)
 
 
+@pytest.mark.usefixtures("run_in_tmp_path")
 @pytest.mark.unit
 @pytest.mark.skipif(
     not pyo.SolverFactory("ipopt_l1").available(False), reason="solver not available"
