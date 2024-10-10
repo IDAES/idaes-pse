@@ -186,6 +186,18 @@ to load, save, and interpolate.
 .. autoclass:: idaes.core.solvers.petsc.PetscTrajectory
     :members:
 
+Diagnostics
+"""""""""""
+
+Often, the first formulation of a dynamic problem is not successful, suffering form
+structural or numerical singularity or other modeling issues. IDAES features a number
+of :ref:`model diagnostics functions<explanations/model_diagnostics/index:Model Diagnostics Workflow>`
+that can be used to help troubleshoot issues. In order to apply these functions to the initial
+condition subproblem that is solved as part of the PETSc interface, the following 
+function returns a Pyomo block for that problem:
+
+.. autofunction:: idaes.core.solvers.petsc.get_initial_condition_problem
+
 Using TS Solvers without Pyomo.DAE
 """"""""""""""""""""""""""""""""""
 
