@@ -222,7 +222,9 @@ conditions, and thus corresponding constraints  should be included,
         self.set_default_scaling("temperature_dew", 1e-1)
         self.set_default_scaling("temperature_bubble", 1e-1)
         self.set_default_scaling("flow_mol_phase", 1e-2)
-        self.set_default_scaling("density_mol", 1)
+        self.set_default_scaling("density_mol", 1 / 11.1e3, index="Liq")
+        self.set_default_scaling("density_mol", 0.31, index="Vap")
+
         self.set_default_scaling("pressure", 1e-6)
         self.set_default_scaling("pressure_sat", 1e-6)
         self.set_default_scaling("pressure_dew", 1e-6)
@@ -234,8 +236,8 @@ conditions, and thus corresponding constraints  should be included,
         self.set_default_scaling("enth_mol_phase", 1e-4, index="Vap")
         self.set_default_scaling("entr_mol_phase_comp", 1e-2)
         self.set_default_scaling("entr_mol_phase", 1e-2)
-        self.set_default_scaling("mw", 100)
-        self.set_default_scaling("mw_phase", 100)
+        self.set_default_scaling("mw", 1 / 100)
+        self.set_default_scaling("mw_phase", 1 / 100)
         self.set_default_scaling("gibbs_mol_phase_comp", 1e-3)
         self.set_default_scaling("fug_vap", 1e-6)
         self.set_default_scaling("fug_liq", 1e-6)
@@ -1571,30 +1573,26 @@ class ActivityCoeffStateBlockData(StateBlockData):
 
                 def rule_enthalpy_flow_terms(b, p):
                     if p == "Vap":
-                        if self.params.config.state_vars == "FTPz":
-                            return (
-                                self.flow_mol_phase["Vap"] * self.enth_mol_phase["Vap"]
-                            )
+                        if b.params.config.state_vars == "FTPz":
+                            return b.flow_mol_phase["Vap"] * b.enth_mol_phase["Vap"]
                         else:
                             return (
                                 sum(
-                                    self.flow_mol_phase_comp["Vap", j]
-                                    for j in self.params.component_list
+                                    b.flow_mol_phase_comp["Vap", j]
+                                    for j in b.params.component_list
                                 )
-                                * self.enth_mol_phase["Vap"]
+                                * b.enth_mol_phase["Vap"]
                             )
                     elif p == "Liq":
-                        if self.params.config.state_vars == "FTPz":
-                            return (
-                                self.flow_mol_phase["Liq"] * self.enth_mol_phase["Liq"]
-                            )
+                        if b.params.config.state_vars == "FTPz":
+                            return b.flow_mol_phase["Liq"] * b.enth_mol_phase["Liq"]
                         else:
                             return (
                                 sum(
-                                    self.flow_mol_phase_comp["Liq", j]
-                                    for j in self.params.component_list
+                                    b.flow_mol_phase_comp["Liq", j]
+                                    for j in b.params.component_list
                                 )
-                                * self.enth_mol_phase["Liq"]
+                                * b.enth_mol_phase["Liq"]
                             )
 
                 self.enthalpy_flow_terms = Expression(
@@ -2135,15 +2133,23 @@ class ActivityCoeffStateBlockData(StateBlockData):
         if self.is_property_constructed("temperature_bubble"):
             iscale.set_scaling_factor(self.temperature_bubble, sf_T)
         if self.is_property_constructed("eq_temperature_bubble"):
+            sf_p = iscale.get_scaling_factor(self.pressure)
+            # Constraint equates sum-of-partial-pressures at the dew
+            # temperature to equal the total pressure, therefore
+            # has pressure scale
             iscale.constraint_scaling_transform(
-                self.eq_temperature_bubble, sf_T, overwrite=False
+                self.eq_temperature_bubble, sf_p, overwrite=False
             )
 
         if self.is_property_constructed("temperature_dew"):
             iscale.set_scaling_factor(self.temperature_dew, sf_T)
         if self.is_property_constructed("eq_temperature_dew"):
+            # Constraint has quotiant of partial pressures to
+            # total pressure (modified by activity), and everything
+            # sums to 1. Therefore, it's well-scaled by default.
+            # Leaving this here as a record of good scaling.
             iscale.constraint_scaling_transform(
-                self.eq_temperature_dew, sf_T, overwrite=False
+                self.eq_temperature_dew, 1, overwrite=False
             )
 
         if self.is_property_constructed("total_flow_balance"):
@@ -2226,12 +2232,19 @@ class ActivityCoeffStateBlockData(StateBlockData):
                 )
                 iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
+        if self.is_property_constructed("pressure_sat_comp"):
+            sf_p = iscale.get_scaling_factor(self.pressure)
+            for j, c in self.pressure_sat_comp.items():
+                iscale.set_scaling_factor(c, sf_p, overwrite=False)
+
         if self.is_property_constructed("eq_phase_equilibrium"):
-            for p, c in self.eq_phase_equilibrium.items():
-                sf = iscale.get_scaling_factor(
-                    self.eq_phase_equilibrium[p], default=1, warning=True
-                )
-                iscale.constraint_scaling_transform(c, sf, overwrite=False)
+            sf_p = iscale.get_scaling_factor(self.pressure)
+            sf_x = {
+                j: iscale.get_scaling_factor(self.mole_frac_comp[j])
+                for j in self.mole_frac_comp
+            }
+            for j, c in self.eq_phase_equilibrium.items():
+                iscale.constraint_scaling_transform(c, sf_p * sf_x[j], overwrite=False)
 
         if self.is_property_constructed("eq_P_vap"):
             for p, c in self.eq_P_vap.items():
@@ -2239,3 +2252,22 @@ class ActivityCoeffStateBlockData(StateBlockData):
                     self.eq_P_vap[p], default=1, warning=True
                 )
                 iscale.constraint_scaling_transform(c, sf, overwrite=False)
+
+        if self.is_property_constructed("enthalpy_flow_terms"):
+            for p, expr in self.enthalpy_flow_terms.items():
+                sf_enth_mol = iscale.get_scaling_factor(
+                    self.enth_mol_phase[p], default=1
+                )
+                if self.params.config.state_vars == "FTPz":
+                    sf_flow = iscale.get_scaling_factor(
+                        self.flow_mol_phase[p], default=1
+                    )
+                else:
+                    inv_sf_flow = 0
+                    for j in self.params.component_list:
+                        inv_sf_flow += 1 / iscale.get_scaling_factor(
+                            self.flow_mol_phase_comp[p, j], default=1
+                        )
+                    sf_flow = 1 / inv_sf_flow
+
+                iscale.set_scaling_factor(expr, sf_enth_mol * sf_flow, overwrite=False)
