@@ -11,7 +11,7 @@ Basic Usage
 
   Modelers should endeavor to provide as much scaling information as possible before calling Scalers in order to provide as much information on your particular case as possible.
 
-All Scaler in the Scaling Toolbox support a ``scale_model`` method that can be called to apply scaling to a model of the appropriate type. The ``scale_model`` method can be called as shown below:
+All Scalers in the Scaling Toolbox support a ``scale_model`` method that can be called to apply scaling to a model of the appropriate type. The ``scale_model`` method can be called as shown below:
 
 .. code-block:: python
 
@@ -38,7 +38,7 @@ Many Scalers will support additional optional arguments which can be used to pro
 Advanced Usage
 --------------
 
-In most cases, Scaler classes will have a individual methods for scaling variables and constraints that can be called separately. Advanced modelers may wish to make use of these to gain even finer control over the scaling process, and may wish to experiment with mixing-and-matching routines from different Scalers (e.g., a modeler may wish to us the AutoScaler for variables but combine it with a more customized routine for constraint scaling from a Custom Scaler).
+In most cases, Scaler classes will have individual methods for scaling variables and constraints that can be called separately. Advanced modelers may wish to make use of these to gain even finer control over the scaling process, and may wish to experiment with mixing-and-matching routines from different Scalers (e.g., a modeler may wish to use the AutoScaler for variables but combine it with a more customized routine for constraint scaling from a Custom Scaler).
 
 The CustomScalerBase class also contains a number of methods for common scaling approaches that that can be applied to individual variables and constraints, allowing advanced modelers to construct their own custom scaling routines.
 

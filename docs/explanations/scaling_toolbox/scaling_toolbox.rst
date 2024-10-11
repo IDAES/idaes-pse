@@ -7,14 +7,14 @@ Scaling Toolbox
 Approaches to Scaling
 ---------------------
 
-Ultimately, the modeler is the one with the most understanding of the system being modeled and the expected solution. In an ideal world, the modeler would have sufficient time and knowledge to develop a set of scaling factors customized for their specific use case. However, process models are generally very large and modelers often lack the time and understanding to develop tailored scaling routines, thus  there is a need for tools to support the modeler in this.
+Ultimately, the modeler is the one with the most understanding of the system being modeled and the expected solution. In an ideal world, the modeler would have sufficient time and knowledge to develop a set of scaling factors customized for their specific use case. However, process models are generally very large and modelers often lack the time and understanding to develop tailored scaling routines, thus there is a need for tools to support the modeler in this.
 
 In general, there are two types of scaling routines that can be developed for a model:
 
 * those that depend on the current state of the model (often referred to as auto-scalers), and thus require an initial solution, and
 * those that make use of “best-guess” measures and heuristics for scaling and can thus be used before a model is initialized but require development by an expert modeler.
 
-In either case, scaling depends heavily on input from the end user. Whilst it might be possible to get a good idea of the scaling for the current state of the model (assuming the model has been initialized), this may not be indicative of the scaling at the final solution (generally, we want to solve or optimize for some unknown solution). Thus, the modeler needs to provide as much information as they can of the expected scaling near the solution point as possible (based on engineering knowledge or intuition, or solution for similar problems in the past). It is important to note that scaling does not need to be exact – order of magnitude approximations are often as good (or better) than precise values – and the aim is less about providing “good” scaling as it is about avoiding bad scaling.
+In either case, scaling depends heavily on input from the end user. Whilst it might be possible to get a good idea of the scaling for the current state of the model (assuming the model has been initialized), this may not be indicative of the scaling at the final solution (generally, we want to solve or optimize for some unknown solution). Thus, the modeler needs to provide as much information as they can of the expected scaling near the solution point as possible (based on engineering knowledge or intuition, or solutions for similar problems in the past). It is important to note that scaling does not need to be exact – order of magnitude approximations are often as good (or better) than precise values – and the aim is less about providing “good” scaling as it is about avoiding bad scaling.
 
 Auto-Scalers (Current State Scaling)
 ------------------------------------
@@ -32,7 +32,7 @@ Cons:
 
 For models with an initial (ideally feasible) solution, full information on the state of the model and the Jacobian is available. A number of approaches are available that can take this information and generate scaling factors for the entire model in order to meet some overall model characteristic (e.g., minimizing the norm of the Jacobian matrix). These have the advantage of requiring minimal input from the modeler and being able to scale an entire model in one go. However, these approaches require an initial solution (and thus are not useful for pre-initialization scaling) and as they consider only a single characteristic metric calculated at the current model state, they can often over scale the model and may not provide the best performance.
 
-A suite of autoscaler methods are available as part of the IDAES Scaling Toolbox through the :ref:`AutoScaler Class<reference_guides/scaling/autoscaler:AutoScaler Class>`.
+A suite of autoscaler methods is available as part of the IDAES Scaling Toolbox through the :ref:`AutoScaler Class<reference_guides/scaling/autoscaler:AutoScaler Class>`.
 
 Custom Scalers (Best-Guess Scaling)
 -----------------------------------

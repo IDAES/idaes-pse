@@ -20,6 +20,7 @@ import re
 
 from pyomo.environ import (
     Block,
+    ComponentMap,
     ConcreteModel,
     Constraint,
     Set,
@@ -30,7 +31,10 @@ from pyomo.environ import (
 )
 from pyomo.common.config import ConfigDict
 
-from idaes.core.scaling.custom_scaler_base import CustomScalerBase
+from idaes.core.scaling.custom_scaler_base import (
+    CustomScalerBase,
+    ConstraintScalingScheme,
+)
 from idaes.core.util.constants import Constants
 from idaes.core.util.testing import PhysicalParameterTestBlock
 import idaes.logger as idaeslog
@@ -372,10 +376,16 @@ class TestCustomScalerBase:
         model.scaling_factor[model.ideal_gas] = 1
 
         # overwrite = False, no change
-        sb.scale_constraint_by_nominal_value(model.ideal_gas, overwrite=False)
+        sb.scale_constraint_by_nominal_value(
+            model.ideal_gas,
+            scheme=ConstraintScalingScheme.harmonicMean,
+            overwrite=False,
+        )
         assert model.scaling_factor[model.ideal_gas] == 1
         # overwrite = True
-        sb.scale_constraint_by_nominal_value(model.ideal_gas, overwrite=True)
+        sb.scale_constraint_by_nominal_value(
+            model.ideal_gas, scheme=ConstraintScalingScheme.harmonicMean, overwrite=True
+        )
         assert model.scaling_factor[model.ideal_gas] == pytest.approx(
             (1 / 831.446 + 1e-6), rel=1e-5
         )
@@ -391,14 +401,10 @@ class TestCustomScalerBase:
         model.scaling_factor[model.ideal_gas] = 1
 
         # overwrite = False, no change
-        sb.scale_constraint_by_nominal_value(
-            model.ideal_gas, scheme="inverse_maximum", overwrite=False
-        )
+        sb.scale_constraint_by_nominal_value(model.ideal_gas, overwrite=False)
         assert model.scaling_factor[model.ideal_gas] == 1
         # overwrite = True
-        sb.scale_constraint_by_nominal_value(
-            model.ideal_gas, scheme="inverse_maximum", overwrite=True
-        )
+        sb.scale_constraint_by_nominal_value(model.ideal_gas, overwrite=True)
         assert model.scaling_factor[model.ideal_gas] == pytest.approx(1e-6, rel=1e-5)
 
     @pytest.mark.unit
@@ -413,12 +419,16 @@ class TestCustomScalerBase:
 
         # overwrite = False, no change
         sb.scale_constraint_by_nominal_value(
-            model.ideal_gas, scheme="inverse_minimum", overwrite=False
+            model.ideal_gas,
+            scheme=ConstraintScalingScheme.inverseMinimum,
+            overwrite=False,
         )
         assert model.scaling_factor[model.ideal_gas] == 1
         # overwrite = True
         sb.scale_constraint_by_nominal_value(
-            model.ideal_gas, scheme="inverse_minimum", overwrite=True
+            model.ideal_gas,
+            scheme=ConstraintScalingScheme.inverseMinimum,
+            overwrite=True,
         )
         assert model.scaling_factor[model.ideal_gas] == pytest.approx(
             1 / 831.446, rel=1e-5
@@ -436,12 +446,12 @@ class TestCustomScalerBase:
 
         # overwrite = False, no change
         sb.scale_constraint_by_nominal_value(
-            model.ideal_gas, scheme="inverse_sum", overwrite=False
+            model.ideal_gas, scheme=ConstraintScalingScheme.inverseSum, overwrite=False
         )
         assert model.scaling_factor[model.ideal_gas] == 1
         # overwrite = True
         sb.scale_constraint_by_nominal_value(
-            model.ideal_gas, scheme="inverse_sum", overwrite=True
+            model.ideal_gas, scheme=ConstraintScalingScheme.inverseSum, overwrite=True
         )
         assert model.scaling_factor[model.ideal_gas] == pytest.approx(
             1 / (831.446 + 1e6), rel=1e-5
@@ -459,12 +469,12 @@ class TestCustomScalerBase:
 
         # overwrite = False, no change
         sb.scale_constraint_by_nominal_value(
-            model.ideal_gas, scheme="inverse_root_sum_squared", overwrite=False
+            model.ideal_gas, scheme=ConstraintScalingScheme.inverseRSS, overwrite=False
         )
         assert model.scaling_factor[model.ideal_gas] == 1
         # overwrite = True
         sb.scale_constraint_by_nominal_value(
-            model.ideal_gas, scheme="inverse_root_sum_squared", overwrite=True
+            model.ideal_gas, scheme=ConstraintScalingScheme.inverseRSS, overwrite=True
         )
         assert model.scaling_factor[model.ideal_gas] == pytest.approx(
             1 / (831.446**2 + 1e6**2) ** 0.5, rel=1e-5
@@ -634,12 +644,15 @@ class TestCustomScalerBase:
         m = ConcreteModel()
         m.b = Block([1, 2, 3])
 
+        scaler_map = ComponentMap()
+        scaler_map[m.b] = DummyScaler()
+
         sb = CustomScalerBase()
         sb.call_submodel_scaler_method(
             m,
             "b",
             method="dummy_method",
-            submodel_scalers={"b": DummyScaler()},
+            submodel_scalers=scaler_map,
             overwrite=False,
         )
 
@@ -656,12 +669,15 @@ class TestCustomScalerBase:
         m = ConcreteModel()
         m.b = Block([1, 2, 3])
 
+        scaler_map = ComponentMap()
+        scaler_map[m.b] = DummyScaler()
+
         sb = CustomScalerBase()
         sb.call_submodel_scaler_method(
             m,
             "b",
             method="dummy_method",
-            submodel_scalers={"b": DummyScaler},
+            submodel_scalers=scaler_map,
             overwrite=False,
         )
 
@@ -676,6 +692,9 @@ class TestCustomScalerBase:
         m = ConcreteModel()
         m.b = Block([1, 2, 3])
 
+        scaler_map = ComponentMap()
+        scaler_map[m.b] = DummyScaler()
+
         sb = CustomScalerBase()
 
         with pytest.raises(
@@ -686,6 +705,6 @@ class TestCustomScalerBase:
                 m,
                 "b",
                 method="foo",
-                submodel_scalers={"b": DummyScaler()},
+                submodel_scalers=scaler_map,
                 overwrite=False,
             )

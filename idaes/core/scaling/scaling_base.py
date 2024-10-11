@@ -31,8 +31,6 @@ import idaes.logger as idaeslog
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
-# TODO: Tests for new common methods
-
 
 # Common base ConfigBlock for all Scalers
 CONFIG = ConfigDict()

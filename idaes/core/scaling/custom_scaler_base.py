@@ -16,9 +16,9 @@ Base class for custom scaling routines.
 Author: Andrew Lee
 """
 from copy import copy
+from enum import Enum
 
-from pyomo.environ import value
-from pyomo.environ import units
+from pyomo.environ import ComponentMap, units, value
 from pyomo.core.base.units_container import UnitsError
 from pyomo.core.expr import identify_variables
 from pyomo.core.expr.calculus.derivatives import Modes, differentiate
@@ -34,9 +34,29 @@ CSCONFIG = CONFIG()
 
 DEFAULT_UNIT_SCALING = {
     # "QuantityName: (reference units, scaling factor)
+    # Model developers should be careful when using these, especially when
+    # dealing with differential measurements (e.g. pressure and temperature differences)
     "Temperature": (units.K, 1e-2),
     "Pressure": (units.Pa, 1e-5),
 }
+
+
+class ConstraintScalingScheme(str, Enum):
+    """
+    Schemes available for calculating constraint scaling factors.
+
+    * harmonicMean ('harmonic_mean'): sf = sum(1/abs(nominal value))
+    * inverseSum ('inverse_sum'): sf = 1 / sum(abs(nominal value))
+    * inverseRSS ('inverse_root_sum_squared'): sf = 1 / sqrt(sum(abs(nominal value)**2))
+    * inverseMaximum ('inverse_maximum'): sf =  1 / max(abs(nominal value)
+    * inverseMinimum ('inverse_minimum'): sf = 1 / min(abs(nominal value)
+    """
+
+    harmonicMean = "harmonic_mean"
+    inverseSum = "inverse_sum"
+    inverseRSS = "inverse_root_sum_squared"
+    inverseMaximum = "inverse_maximum"
+    inverseMinimum = "inverse_minimum"
 
 
 class CustomScalerBase(ScalerBase):
@@ -72,7 +92,7 @@ class CustomScalerBase(ScalerBase):
         model,
         first_stage_fill_in: list = None,
         second_stage_fill_in: list = None,
-        submodel_scalers: dict = None,
+        submodel_scalers: ComponentMap = None,
     ):
         """
         Default model scaling routine.
@@ -88,7 +108,7 @@ class CustomScalerBase(ScalerBase):
             model: model to be scaled
             first_stage_fill_in: list of methods to use for first-stage scaling factor fill in
             second_stage_fill_in: list of methods to use for second-stage scaling factor fill in
-            submodel_scalers: dict of Scalers to use for sub-models, keyed by submodel local name
+            submodel_scalers: ComponentMap of Scalers to use for sub-models
 
         Returns:
             None
@@ -112,17 +132,8 @@ class CustomScalerBase(ScalerBase):
             for i in second_stage_fill_in:
                 i(model)
 
-        # TODO: Consider how to make this work
-        # Step 5: Return scaling information for parent model
-        # scaling_data = {}
-        # if var_scaling is not None:
-        #     scaling_data.update(var_scaling)
-        # if cons_scaling is not None:
-        #     scaling_data.update(cons_scaling)
-        # return scaling_data
-
     def variable_scaling_routine(
-        self, model, overwrite: bool = False, submodel_scalers: dict = None
+        self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None
     ):
         """
         Routine to apply scaling factors to variables in model.
@@ -132,7 +143,7 @@ class CustomScalerBase(ScalerBase):
         Args:
             model: model to be scaled
             overwrite: whether to overwrite existing scaling factors
-            submodel_scalers: dict of Scalers to use for sub-models, keyed by submodel local name
+            submodel_scalers: ComponentMap of Scalers to use for sub-models
 
         Returns:
             None
@@ -142,7 +153,7 @@ class CustomScalerBase(ScalerBase):
         )
 
     def constraint_scaling_routine(
-        self, model, overwrite: bool = False, submodel_scalers: dict = None
+        self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None
     ):
         """
         Routine to apply scaling factors to constraints in model.
@@ -152,7 +163,7 @@ class CustomScalerBase(ScalerBase):
         Args:
             model: model to be scaled
             overwrite: whether to overwrite existing scaling factors
-            submodel_scalers: dict of Scalers to use for sub-models, keyed by submodel local name
+            submodel_scalers: ComponentMap of Scalers to use for sub-models
 
         Returns:
             None
@@ -391,7 +402,10 @@ class CustomScalerBase(ScalerBase):
         return NominalValueExtractionVisitor().walk_expression(expression)
 
     def scale_constraint_by_nominal_value(
-        self, constraint, scheme="harmonic_mean", overwrite: bool = False
+        self,
+        constraint,
+        scheme: ConstraintScalingScheme = ConstraintScalingScheme.inverseMaximum,
+        overwrite: bool = False,
     ):
         """
         Set scaling factor for constraint based on the nominal value(s).
@@ -400,12 +414,8 @@ class CustomScalerBase(ScalerBase):
 
         Args:
             constraint: constraint to set scaling factor for
-            scheme: method to apply for determining constraint scaling
-              'harmonic_mean': (default) sum(1/abs(nominal value))
-              'inverse_sum': 1 / sum(abs(nominal value))
-              'inverse_root_sum_squared': 1 / sqrt(sum(abs(nominal value)**2))
-              'inverse_maximum': 1 / max(abs(nominal value)
-              'inverse_minimum': 1 / min(abs(nominal value)
+            scheme: ConstraintScalingScheme Enum indicating method to apply
+              for determining constraint scaling.
             overwrite: whether to overwrite existing scaling factors
 
         Returns:
@@ -419,15 +429,15 @@ class CustomScalerBase(ScalerBase):
         if len(nominal) == 0:
             # No non-zero terms...
             sf = 1
-        elif scheme == "harmonic_mean":
+        elif scheme == ConstraintScalingScheme.harmonicMean:
             sf = sum(1 / abs(i) for i in nominal)
-        elif scheme == "inverse_sum":
+        elif scheme == ConstraintScalingScheme.inverseSum:
             sf = 1 / sum(abs(i) for i in nominal)
-        elif scheme == "inverse_root_sum_squared":
+        elif scheme == ConstraintScalingScheme.inverseRSS:
             sf = 1 / sum(abs(i) ** 2 for i in nominal) ** 0.5
-        elif scheme == "inverse_maximum":
+        elif scheme == ConstraintScalingScheme.inverseMaximum:
             sf = 1 / max(abs(i) for i in nominal)
-        elif scheme == "inverse_minimum":
+        elif scheme == ConstraintScalingScheme.inverseMinimum:
             sf = 1 / min(abs(i) for i in nominal)
         else:
             raise ValueError(
@@ -547,25 +557,27 @@ class CustomScalerBase(ScalerBase):
         model,
         submodel: str,
         method: str,
-        submodel_scalers: dict = None,
+        submodel_scalers: ComponentMap = None,
         overwrite: bool = False,
     ):
         """
         Call scaling method for submodel.
 
-        Scaler for submodel is taken from submodel_scalers dict if present, otherwise the
+        Scaler for submodel is taken from submodel_scalers if present, otherwise the
         default scaler for the submodel is used.
 
         Args:
             model: parent model of submodel
-            submodel: name of submodel to be scaled as str
-            submodel_scalers: user provided dict of Scalers to use for submodels
+            submodel: local name of submodel to be scaled as str
+            submodel_scalers: user provided ComponentMap of Scalers to use for submodels
             method: name of method to call from submodel (as string)
 
         Returns:
             None
         """
         # Get actual submodel object from name
+        # For this method, we have to use the component name as the Scaler is written
+        # before the model is constructed.
         sm_obj = model.find_component(submodel)
 
         if submodel_scalers is None:
@@ -574,8 +586,8 @@ class CustomScalerBase(ScalerBase):
         # Iterate over indices of submodel
         for smdata in sm_obj.values():
             # Get Scaler for submodel
-            if submodel in submodel_scalers:
-                scaler = submodel_scalers[submodel]
+            if sm_obj in submodel_scalers:
+                scaler = submodel_scalers[sm_obj]
                 if callable(scaler):
                     # Check to see if Scaler is callable - this implies it is a class and not an instance
                     # Call the class to create an instance

@@ -38,8 +38,6 @@ from idaes.models.unit_models.gibbs_reactor import GibbsReactor
 from idaes.models.properties.activity_coeff_models.methane_combustion_ideal import (
     MethaneParameterBlock as MethaneCombustionParameterBlock,
 )
-from idaes.core.util.testing import PhysicalParameterTestBlock, initialization_tester
-from idaes.core.solvers import get_solver
 from idaes.core.util import to_json, from_json, StoreSpec
 from idaes.core.util.scaling import jacobian_cond
 from idaes.core.scaling import AutoScaler, CustomScalerBase, set_scaling_factor
@@ -91,7 +89,7 @@ def gibbs():
 
     # Autoscale variables by magnitude
     scaler = AutoScaler()
-    scaler.variables_by_magnitude(m)
+    scaler.scale_variables_by_magnitude(m)
     assert hasattr(m.fs.unit, "scaling_factor")
 
     return m
@@ -106,7 +104,7 @@ def test_verify_model_load(gibbs):
 @pytest.mark.integration
 def test_autoscale_L2_norm(gibbs):
     scaler = AutoScaler()
-    scaler.constraints_by_jacobian_norm(gibbs, norm=2)
+    scaler.scale_constraints_by_jacobian_norm(gibbs, norm=2)
 
     scaled = jacobian_cond(gibbs, scaled=True)
 
@@ -116,7 +114,7 @@ def test_autoscale_L2_norm(gibbs):
 @pytest.mark.integration
 def test_autoscale_L1_norm(gibbs):
     scaler = AutoScaler()
-    scaler.constraints_by_jacobian_norm(gibbs, norm=1)
+    scaler.scale_constraints_by_jacobian_norm(gibbs, norm=1)
 
     scaled = jacobian_cond(gibbs, scaled=True)
 
@@ -406,8 +404,8 @@ if __name__ == "__main__":
     )
 
     scaler = AutoScaler()
-    scaler.variables_by_magnitude(m)
-    scaler.constraints_by_jacobian_norm(m)
+    scaler.scale_variables_by_magnitude(m)
+    scaler.scale_constraints_by_jacobian_norm(m)
 
     solver = get_solver("ipopt_v2", writer_config={"scale_model": True})
     results = solver.solve(m, tee=True)
