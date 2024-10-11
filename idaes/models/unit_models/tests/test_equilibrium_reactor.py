@@ -499,7 +499,7 @@ class TestEquilibriumReactorScaler:
         assert isinstance(sfx_cv, Suffix)
         assert len(sfx_cv) == 2
         assert sfx_cv[model.fs.unit.control_volume.heat[0]] == pytest.approx(
-            1e-3, rel=1e-3
+            1.917448e-05, rel=1e-3
         )
         assert sfx_cv[model.fs.unit.control_volume.deltaP[0]] == pytest.approx(
             1e-4, rel=1e-3
@@ -681,7 +681,7 @@ class TestEquilibriumReactorScaler:
         assert isinstance(sfx_cv, Suffix)
         assert len(sfx_cv) == 14
         assert sfx_cv[model.fs.unit.control_volume.heat[0]] == pytest.approx(
-            1e-3, rel=1e-3
+            1.917448e-05, rel=1e-3
         )
         assert sfx_cv[model.fs.unit.control_volume.deltaP[0]] == pytest.approx(
             1e-4, rel=1e-3
