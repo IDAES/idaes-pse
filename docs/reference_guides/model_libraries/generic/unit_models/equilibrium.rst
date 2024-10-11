@@ -51,3 +51,9 @@ EquilibriumReactorData Class
 
 .. autoclass:: EquilibriumReactorData
   :members:
+
+EquilibriumReactorScaler Class
+------------------------------
+
+.. autoclass:: EquilibriumReactorScaler
+  :members:

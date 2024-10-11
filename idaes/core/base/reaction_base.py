@@ -267,6 +267,14 @@ should be constructed in this reaction block,
     def phase_component_set(self):
         return self.state_ref.phase_component_set
 
+    @property
+    def default_initializer(self):
+        return self.parent_component().default_initializer
+
+    @property
+    def default_scaler(self):
+        return self.parent_component().default_scaler
+
     def lock_attribute_creation_context(self):
         """Returns a context manager that does not allow attributes to be created
         while in the context and allows attributes to be created normally outside
