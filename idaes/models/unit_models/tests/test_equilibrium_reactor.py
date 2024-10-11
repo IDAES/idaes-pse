@@ -20,6 +20,7 @@ import pytest
 
 from pyomo.environ import (
     assert_optimal_termination,
+    ComponentMap,
     ConcreteModel,
     Suffix,
     TransformationFactory,
@@ -511,13 +512,14 @@ class TestEquilibriumReactorScaler:
     def test_variable_scaling_routine_submodel_scaler(self, model):
         scaler = model.fs.unit.default_scaler()
 
+        scaler_map = ComponentMap()
+        scaler_map[model.fs.unit.control_volume.properties_in] = DummyScaler
+        scaler_map[model.fs.unit.control_volume.properties_out] = DummyScaler
+        scaler_map[model.fs.unit.control_volume.reactions] = DummyScaler
+
         scaler.variable_scaling_routine(
             model.fs.unit,
-            submodel_scalers={
-                "control_volume.properties_in": DummyScaler,
-                "control_volume.properties_out": DummyScaler,
-                "control_volume.reactions": DummyScaler,
-            },
+            submodel_scalers=scaler_map,
         )
 
         # Should call DummyScaler submethod for each submodel
@@ -588,13 +590,14 @@ class TestEquilibriumReactorScaler:
     def test_constraint_scaling_routine_submodel_scaler(self, model):
         scaler = model.fs.unit.default_scaler()
 
+        scaler_map = ComponentMap()
+        scaler_map[model.fs.unit.control_volume.properties_in] = DummyScaler
+        scaler_map[model.fs.unit.control_volume.properties_out] = DummyScaler
+        scaler_map[model.fs.unit.control_volume.reactions] = DummyScaler
+
         scaler.constraint_scaling_routine(
             model.fs.unit,
-            submodel_scalers={
-                "control_volume.properties_in": DummyScaler,
-                "control_volume.properties_out": DummyScaler,
-                "control_volume.reactions": DummyScaler,
-            },
+            submodel_scalers=scaler_map,
         )
 
         # Should call DummyScaler submethod for each submodel
