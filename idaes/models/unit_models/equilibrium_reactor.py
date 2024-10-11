@@ -16,7 +16,7 @@ Standard IDAES Equilibrium Reactor model.
 
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
-from pyomo.environ import Constraint, Reference, units, value
+from pyomo.environ import Constraint, Reference, units
 
 # Import IDAES cores
 from idaes.core import (
