@@ -52,7 +52,6 @@ class EquilibriumReactorScaler(CustomScalerBase):
 
     UNIT_SCALING_FACTORS = {
         # "QuantityName: (reference units, scaling factor)
-        "Heat": (units.kW, 1),
         "Pressure Change": (units.bar, 10),
     }
 
@@ -115,11 +114,23 @@ class EquilibriumReactorScaler(CustomScalerBase):
                 self.scale_variable_by_units(
                     model.control_volume.deltaP[t], overwrite=overwrite
                 )
+
         # Heat transfer - optional
+        # Scale heat based on enthalpy flow entering reactor
         if hasattr(model.control_volume, "heat"):
             for t in model.flowsheet().time:
-                self.scale_variable_by_units(
-                    model.control_volume.heat[t], overwrite=overwrite
+                h_in = 0
+                for p in model.control_volume.properties_in.phase_list:
+                    h_in += sum(
+                        self.get_expression_nominal_values(
+                            model.control_volume.properties_in[
+                                t
+                            ].get_enthalpy_flow_terms(p)
+                        )
+                    )
+                # Scale for heat is general one order of magnitude less than enthalpy flow
+                self.set_variable_scaling_factor(
+                    model.control_volume.heat[t], 1 / (0.1 * h_in)
                 )
 
     def constraint_scaling_routine(
