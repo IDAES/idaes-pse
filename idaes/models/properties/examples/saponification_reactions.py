@@ -128,7 +128,7 @@ class SaponificationReactionScaler(CustomScalerBase):
                 pass
             else:
                 # Hopefully temperature has been scaled, so we can get the nominal value of k_rxn
-                # by walking hte expression in the constraint.
+                # by walking the expression in the constraint.
                 nominals = self.get_expression_nominal_values(model.arrhenius_eqn)
 
                 # We should get two values, k_rxn (LHS) and the Arrhenius equation (RHS)
