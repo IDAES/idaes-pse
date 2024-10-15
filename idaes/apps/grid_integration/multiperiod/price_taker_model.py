@@ -29,11 +29,11 @@ have_skl = True
 have_kn = True
 try:
     from sklearn.cluster import KMeans
-except:
+except ImportError:
     have_skl = False
 try:
     from kneed import KneeLocator
-except:
+except ImportError:
     have_kn = False
 
 import matplotlib.pyplot as plt
@@ -77,9 +77,10 @@ class PriceTakerModel(ConcreteModel):
 
     @seed.setter
     def seed(self, value):
-        if not isinstance(value, int):
-            raise ValueError(f"seed must be an integer, but {value} is not an integer")
-        self._seed = value
+        try:
+            self._seed = value
+        except TypeError:
+            raise TypeError(f"seed must be an integer, but {value} is not an integer")
 
     @property
     def horizon_length(self):
