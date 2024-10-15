@@ -1254,6 +1254,7 @@ def set_variable_scaling_from_current_value(
             )
 
 
+# TODO: Deprecate in favor of new walker
 class NominalValueExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
     """
     Expression walker for collecting scaling factors in an expression and determining the
@@ -1372,7 +1373,7 @@ class NominalValueExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
                     # Either a positive value or no value, assume positive
                     sign = 1
         else:
-            # No ideal, assume positive
+            # No idea, assume positive
             sign = 1
 
         try:
@@ -1472,10 +1473,14 @@ class NominalValueExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
 
     def _get_nominal_value_external_function(self, node, child_nominal_values):
         # First, need to get expected magnitudes of input terms, which may be sub-expressions
-        input_mag = [
-            self._get_nominal_value_for_sum_subexpression(i)
-            for i in child_nominal_values
-        ]
+        input_mag = []
+        for i in child_nominal_values:
+            if isinstance(i[0], str):
+                # Sometimes external functions might have string arguments
+                # Check here, and return the string if true
+                input_mag.append(i[0])
+            else:
+                input_mag.append(self._get_nominal_value_for_sum_subexpression(i))
 
         # Next, create a copy of the external function with expected magnitudes as inputs
         newfunc = node.create_node_with_local_data(input_mag)

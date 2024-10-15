@@ -152,6 +152,7 @@ class TestFeatureScaling:
             FeatureScaling.data_unscaling_minmax(output_1, min_array, max_array)
 
 
+@pytest.mark.usefixtures("run_class_in_tmp_path")
 class TestRadialBasisFunction:
     y = np.array(
         [
