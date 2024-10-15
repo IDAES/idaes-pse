@@ -34,7 +34,7 @@ The following equations represent the multi-period price taker model, where :mat
 
 The price taker multi-period modeling workflow involves the integration of multiple software platforms into the IDAES optimization model
 and can be broken down into two distinct functions, as shown in the figure below. In part 1, simulated or historical
-ISO (International Organization for Standardization) data is used to generate locational marginal price (LMP)
+ISO (Independent System Operator) data is used to generate locational marginal price (LMP)
 signals, and production cost models (PCMs) are used to compute and optimize the time-varying dispatch schedules for each
 resource based on their respective bid curves. Advanced data analytics (RAVEN) reinterpret the LMP signals and PCM
 as stochastic realizations of the LMPs in the form of representative days (or simply the full-year price signals).
