@@ -47,6 +47,8 @@ class ExtraDependencies:
     ]
     grid = [
         "gridx-prescient>=2.2.1",  # idaes.tests.prescient
+        "scikit-learn>=1.1",
+        "kneed",
     ]
     coolprop = [
         "coolprop",  # idaes.generic_models.properties.general.coolprop
