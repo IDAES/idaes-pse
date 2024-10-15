@@ -45,7 +45,6 @@ class DesignModelData(ProcessBlockData):
         ),
     )
 
-    # noinspection PyAttributeOutsideInit
     def build(self):
         super().build()
 
