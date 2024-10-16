@@ -77,10 +77,9 @@ class PriceTakerModel(ConcreteModel):
 
     @seed.setter
     def seed(self, value):
-        try:
-            self._seed = value
-        except TypeError:
+        if not isinstance(value, int):
             raise TypeError(f"seed must be an integer, but {value} is not an integer")
+        self._seed = value
 
     @property
     def horizon_length(self):
@@ -91,7 +90,7 @@ class PriceTakerModel(ConcreteModel):
         if value <= 0:
             raise ValueError(f"horizon_length must be > 0, but {value} is provided.")
         if not isinstance(value, int):
-            raise ValueError(
+            raise TypeError(
                 f"horizon_length must be an integer, but {value} is not an integer"
             )
         self._horizon_length = value

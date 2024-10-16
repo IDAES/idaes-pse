@@ -75,7 +75,7 @@ def test_seed():
 def test_seed_value():
     value = "fifty"
     with pytest.raises(
-        ValueError,
+        TypeError,
         match=("seed must be an integer, but fifty is not an integer"),
     ):
 
@@ -201,7 +201,7 @@ def test_init_logger_message2(excel_data, caplog):
     value = 12.34
     m = PriceTakerModel()
     with pytest.raises(
-        ValueError,
+        TypeError,
         match=("horizon_length must be an integer, but 12.34 is not an integer"),
     ):
         m.horizon_length = value
@@ -213,7 +213,7 @@ def test_init_logger_message3(excel_data, caplog):
     value = 12.34
     m = PriceTakerModel()
     with pytest.raises(
-        ValueError,
+        TypeError,
         match=("seed must be an integer, but 12.34 is not an integer"),
     ):
         m.seed = value
