@@ -57,9 +57,9 @@ _logger = idaeslog.getLogger(__name__)
 
 def _compute_sse(data, centroids, idx):
     """
-    PRIVATE METHOD
+    PRIVATE FUNCTION
 
-    Method used to compute the inertia (sum of square errors) for k clusters.
+    Function used to compute the inertia (sum of square errors) for k clusters.
 
     Args:
         data:      Columnar data for a given LMP signal
