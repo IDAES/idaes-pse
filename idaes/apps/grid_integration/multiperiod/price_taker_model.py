@@ -88,7 +88,7 @@ class PriceTakerModel(ConcreteModel):
     @staticmethod
     def compute_sse(data, centroids, idx):
         """
-        Function used to compute the inertia (sum of square errors) for k clusters.
+        Method used to compute the inertia (sum of square errors) for k clusters.
 
         Args:
             data:      Columnar data for a given LMP signal
