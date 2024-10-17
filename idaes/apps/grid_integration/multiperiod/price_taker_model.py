@@ -25,16 +25,7 @@
 import pandas as pd
 import numpy as np
 
-have_skl = True
-have_kn = True
-try:
-    from sklearn.cluster import KMeans
-except ImportError:
-    have_skl = False
-try:
-    from kneed import KneeLocator
-except ImportError:
-    have_kn = False
+from scipy.cluster.vq import kmeans, kmeans2, vq, whiten
 
 import matplotlib.pyplot as plt
 
@@ -50,7 +41,6 @@ from pyomo.environ import (
     NonNegativeReals,
     Expression,
     maximize,
-    Param,
 )
 
 from idaes.apps.grid_integration import MultiPeriodModel
@@ -94,6 +84,25 @@ class PriceTakerModel(ConcreteModel):
                 f"horizon_length must be an integer, but {value} is not an integer"
             )
         self._horizon_length = value
+
+    @staticmethod
+    def compute_sse(data, centroids, idx):
+        """
+        Function used to compute the inertia (sum of square errors) for k clusters.
+
+        Args:
+            data:      Columnar data for a given LMP signal
+            centroids: Array of k centroids
+            idx:       Index for data
+
+        Returns:
+            inertia: Sum of square errors for k clusters
+        """
+        inertia = 0
+        for i, centroid in enumerate(centroids):
+            cluster_points = data[idx == i]
+            inertia += np.sum((cluster_points - centroid) ** 2)
+        return inertia
 
     def generate_daily_data(self, raw_data):
         """
@@ -170,20 +179,23 @@ class PriceTakerModel(ConcreteModel):
 
         np.random.seed(self._seed)
 
-        if not (have_skl and have_kn):
-            raise ImportError(
-                f"Optimal cluster feature requires optional imports 'scikit-learn' and 'kneed'."
-            )
-        # Compute the inertia (SSE) for k clusters
-        for k in k_values:
-            kmeans = KMeans(n_clusters=k).fit(daily_data.transpose())
-            inertia_values.append(kmeans.inertia_)
+        whitened_daily_data = whiten(daily_data.transpose())
 
-        # Identify the "elbow point"
-        elbow_point = KneeLocator(
-            k_values, inertia_values, curve="convex", direction="decreasing"
-        )
-        n_clusters = elbow_point.knee
+        for k in k_values:
+            centroids, _ = kmeans(whitened_daily_data, k)
+            idx, _ = vq(whitened_daily_data, centroids)
+
+            # Compute the inertia (SSE) for k clusters
+            inertia = self.compute_sse(whitened_daily_data, centroids, idx)
+            inertia_values.append(inertia)
+
+        # Calculate the second derivative
+        first_deriv = np.diff(inertia_values)
+        second_deriv = np.diff(first_deriv)
+
+        # Determine the optimal number of clusters
+        # The +2 accounts for the dimension being reduced twice by derivatives
+        n_clusters = np.argmin(second_deriv) + 2
 
         if n_clusters is None:
             raise ValueError(
@@ -271,15 +283,10 @@ class PriceTakerModel(ConcreteModel):
 
         # reconfiguring raw data
         daily_data = self.generate_daily_data(raw_data)
+        whitened_daily_data = whiten(daily_data.transpose())
 
         # KMeans clustering with the optimal number of clusters
-        if not have_skl:
-            raise ImportError(
-                f"Clustering feature requires optional import 'scikit-learn'."
-            )
-        kmeans = KMeans(n_clusters=n_clusters).fit(daily_data.transpose())
-        centroids = kmeans.cluster_centers_
-        labels = kmeans.labels_
+        centroids, labels = kmeans2(whitened_daily_data, n_clusters)
 
         # Set any centroid values that are < 1e-4 to 0 to avoid noise
         centroids = centroids * (abs(centroids) >= 1e-4)
