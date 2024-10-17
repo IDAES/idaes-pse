@@ -55,6 +55,27 @@ import idaes.logger as idaeslog
 _logger = idaeslog.getLogger(__name__)
 
 
+def _compute_sse(data, centroids, idx):
+    """
+    PRIVATE METHOD
+
+    Method used to compute the inertia (sum of square errors) for k clusters.
+
+    Args:
+        data:      Columnar data for a given LMP signal
+        centroids: Array of k centroids
+        idx:       Index for data
+
+    Returns:
+        inertia: Sum of square errors for k clusters
+    """
+    inertia = 0
+    for i, centroid in enumerate(centroids):
+        cluster_points = data[idx == i]
+        inertia += np.sum((cluster_points - centroid) ** 2)
+    return inertia
+
+
 class PriceTakerModel(ConcreteModel):
     def __init__(self, seed=20, horizon_length=24):
         super().__init__()
@@ -84,25 +105,6 @@ class PriceTakerModel(ConcreteModel):
                 f"horizon_length must be an integer, but {value} is not an integer"
             )
         self._horizon_length = value
-
-    @staticmethod
-    def compute_sse(data, centroids, idx):
-        """
-        Method used to compute the inertia (sum of square errors) for k clusters.
-
-        Args:
-            data:      Columnar data for a given LMP signal
-            centroids: Array of k centroids
-            idx:       Index for data
-
-        Returns:
-            inertia: Sum of square errors for k clusters
-        """
-        inertia = 0
-        for i, centroid in enumerate(centroids):
-            cluster_points = data[idx == i]
-            inertia += np.sum((cluster_points - centroid) ** 2)
-        return inertia
 
     def generate_daily_data(self, raw_data):
         """
@@ -186,7 +188,7 @@ class PriceTakerModel(ConcreteModel):
             idx, _ = vq(whitened_daily_data, centroids)
 
             # Compute the inertia (SSE) for k clusters
-            inertia = self.compute_sse(whitened_daily_data, centroids, idx)
+            inertia = _compute_sse(whitened_daily_data, centroids, idx)
             inertia_values.append(inertia)
 
         # Calculate the second derivative
