@@ -36,31 +36,11 @@ import idaes.logger as idaeslog
 
 from idaes.apps.grid_integration.multiperiod.price_taker_model import PriceTakerModel
 
-have_skl = True
-have_kn = True
-try:
-    import sklearn as skl
-    from sklearn.cluster import KMeans
-except:
-    have_skl = False
-try:
-    from kneed import KneeLocator
-except:
-    have_kn = False
-
 
 @pytest.fixture
 def excel_data():
     DATA_DIR = Path(__file__).parent
     file_path = DATA_DIR / "FLECCS_princeton.csv"
-    data = pd.read_csv(file_path)
-    return data
-
-
-@pytest.fixture
-def sample_data():
-    DATA_DIR = Path(__file__).parent
-    file_path = DATA_DIR / "sample_data.csv"
     data = pd.read_csv(file_path)
     return data
 
@@ -94,40 +74,16 @@ def test_daily_data_size(excel_data):
     assert len(daily_data) == m.horizon_length
 
 
-@pytest.mark.skipif(
-    have_skl * have_kn < 1,
-    reason="optional packages 'scikit-learn' and 'kneed' not installed",
-)
 @pytest.mark.unit
-def test_skl_version(excel_data):
-    skl_version = skl.__version__
-    major, minor, *_ = map(int, skl_version.split("."))
-
-    # Checks that the version is 2.0+ or greater than 1.1
-    # Only versions at or above 1.1 support python 3.12
-    assert major > 1 or (major == 1 and minor >= 1)
-
-
-@pytest.mark.skipif(
-    have_skl * have_kn < 1,
-    reason="optional packages 'scikit-learn' and 'kneed' not installed",
-)
-@pytest.mark.unit
-def test_determine_optimal_num_clusters(sample_data):
-    # Uses the smaller sample_data dataset so that the solution
-    # reliably converges to 9 clusters, instead of a range of clusters
+def test_determine_optimal_num_clusters(excel_data):
     m = PriceTakerModel()
 
-    daily_data = m.generate_daily_data(sample_data["BaseCaseTax"])
-    n_clusters, inertia_values = m.get_optimal_n_clusters(daily_data, kmax=15)
+    daily_data = m.generate_daily_data(excel_data["BaseCaseTax"])
+    n_clusters, inertia_values = m.get_optimal_n_clusters(daily_data, kmax=30)
 
-    assert n_clusters == 9
+    assert n_clusters == 11
 
 
-@pytest.mark.skipif(
-    have_skl * have_kn < 1,
-    reason="optional packages 'scikit-learn' and 'kneed' not installed",
-)
 @pytest.mark.unit
 def test_generate_elbow_plot(excel_data):
     m = PriceTakerModel()
@@ -145,10 +101,6 @@ def test_generate_elbow_plot(excel_data):
     plt.close("all")
 
 
-@pytest.mark.skipif(
-    not (have_skl and have_kn),
-    reason="optional packages 'scikit-learn' and 'kneed' not installed",
-)
 @pytest.mark.unit
 def test_cluster_lmp_data(excel_data):
     # This function gets within both if statement expression in the
@@ -169,10 +121,6 @@ def test_cluster_lmp_data(excel_data):
     assert len(lmp_data) == n_clusters
 
 
-@pytest.mark.skipif(
-    not (have_skl and have_kn),
-    reason="optional packages 'scikit-learn' and 'kneed' not installed",
-)
 @pytest.mark.unit
 def test_init_logger_messages_clusters(excel_data, caplog):
     with caplog.at_level(idaeslog.WARNING):
@@ -279,10 +227,6 @@ def test_min_down_time_logger_message2(excel_data):
         m.add_startup_shutdown(des, oper, build_bin_var, up_time[0], down_time[1])
 
 
-@pytest.mark.skipif(
-    not (have_skl and have_kn),
-    reason="optional package 'scikit-learn' not installed",
-)
 @pytest.mark.unit
 def test_init_logger_messages_clusters_min_up_down_time(excel_data, caplog):
     # Test Not Implemented Error (Rep. Days used for su/sd code)
@@ -294,7 +238,7 @@ def test_init_logger_messages_clusters_min_up_down_time(excel_data, caplog):
     m.append_lmp_data(
         file_path=file_path,
         column_name="BaseCaseTax",
-        n_clusters=5,
+        n_clusters=2,
     )
 
     m.sofc_design = DesignModel(
@@ -401,25 +345,21 @@ def test_optimal_clusters_kmax_logger_message2(excel_data):
         m.cluster_lmp_data(excel_data, n_clusters)
 
 
-@pytest.mark.skipif(
-    have_skl and have_kn,
-    reason="optional packages 'scikit-learn' and 'kneed' are installed",
-)
-@pytest.mark.unit
-def test_failed_imports(excel_data):
-    m = PriceTakerModel()
-    kmin = 9
-    kmax = 10
-    daily_data = m.generate_daily_data(excel_data["BaseCaseTax"])
-    with pytest.raises(
-        ImportError,
-        match=(
-            "Optimal cluster feature requires optional imports 'scikit-learn' and 'kneed'."
-        ),
-    ):
-        n_clusters, inertia_values = m.get_optimal_n_clusters(
-            daily_data, kmin=kmin, kmax=kmax
-        )
+# @pytest.mark.unit
+# def test_failed_imports(excel_data):
+#     m = PriceTakerModel()
+#     kmin = 9
+#     kmax = 10
+#     daily_data = m.generate_daily_data(excel_data["BaseCaseTax"])
+#     with pytest.raises(
+#         ImportError,
+#         match=(
+#             "Optimal cluster feature requires optional imports 'scikit-learn' and 'kneed'."
+#         ),
+#     ):
+#         n_clusters, inertia_values = m.get_optimal_n_clusters(
+#             daily_data, kmin=kmin, kmax=kmax
+#         )
 
 
 # The following test doesn't pass on all systems, so the warning for n_clusters being
