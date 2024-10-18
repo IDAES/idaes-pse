@@ -19,7 +19,6 @@ pytest.importorskip("onnx", reason="onnx not available")
 pytest.importorskip("omlt", reason="omlt not available")
 
 import os.path
-import pandas as pd
 from pyomo.common.fileutils import this_file_dir
 from pyomo.common.tempfiles import TempfileManager
 from pyomo.environ import (
