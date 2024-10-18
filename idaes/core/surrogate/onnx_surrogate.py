@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2024 by the software owners: The Regents of the
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -11,16 +11,16 @@
 # for full copyright and license information.
 #################################################################################
 """
-Interface for importing Keras models into IDAES
+Interface for importing ONNX models into IDAES
 """
 # TODO: Missing docstrings
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
-
+# TODO: Importing protected  _ACTIVATION_OP_TYPES as not exposed in distributed version
+# pylint: disable=W0123
+from enum import Enum
 import json
 import os.path
-
-import pandas as pd
 
 from pyomo.common.dependencies import attempt_import
 
@@ -28,25 +28,26 @@ from idaes.core.surrogate.sampling.scaling import OffsetScaler
 
 from idaes.core.surrogate.omlt_base_surrogate_class import OMLTSurrogate
 
-keras, keras_available = attempt_import("tensorflow.keras")
+onnx, onnx_available = attempt_import("onnx")
 omlt, omlt_available = attempt_import("omlt")
 
 if omlt_available:
-    from omlt.neuralnet.nn_formulation import (
+    from omlt.neuralnet import (
         FullSpaceSmoothNNFormulation,
         ReducedSpaceSmoothNNFormulation,
         ReluBigMFormulation,
         ReluComplementarityFormulation,
     )
+    import omlt.io as omltio
 
-    if keras_available:
-        from omlt.io import load_keras_sequential
+    if onnx_available:
+        from omlt.io import load_onnx_neural_network, write_onnx_model_with_bounds
 
 
-class KerasSurrogate(OMLTSurrogate):
+class ONNXSurrogate(OMLTSurrogate):
     def __init__(
         self,
-        keras_model,
+        onnx_model,
         input_labels,
         output_labels,
         input_bounds,
@@ -54,8 +55,8 @@ class KerasSurrogate(OMLTSurrogate):
         output_scaler=None,
     ):
         """
-        Standard SurrogateObject for surrogates based on Keras models.
-        Utilizes the OMLT framework for importing Keras models to IDAES.
+        Standard SurrogateObject for surrogates based on ONNX models.
+        Utilizes the OMLT framework for importing ONNX models to IDAES.
 
         Contains methods to both populate a Pyomo Block with constraints
         representing the surrogate and to evaluate the surrogate a set of user
@@ -66,13 +67,11 @@ class KerasSurrogate(OMLTSurrogate):
         with load_from_folder
 
         Args:
-           keras_model: Keras Sequential model
-              This is the Keras Sequential model that will be loaded. Note that
-              specialized layers may not be supported at this time.
+           onnx_model: Onnx model file to be loaded.
            input_labels: list of str
-              The ordered list of labels corresponding to the inputs in the keras model
+              The ordered list of labels corresponding to the inputs in the onnx model
            output_labels: list of str
-              The ordered list of labels corresponding to the outputs in the keras model
+              The ordered list of labels corresponding to the outputs in the onnx model
            input_bounds: None of dict of tuples
               Keys correspond to each of the input labels and values are the tuples of
               bounds (lb, ub)
@@ -88,51 +87,73 @@ class KerasSurrogate(OMLTSurrogate):
             input_scaler=input_scaler,
             output_scaler=output_scaler,
         )
-        self._keras_model = keras_model
+
+        self._onnx_model = onnx_model
+
+    class Formulation(Enum):
+        FULL_SPACE = 1
+        REDUCED_SPACE = 2
+        RELU_BIGM = 3
+        RELU_COMPLEMENTARITY = 4
 
     def populate_block(self, block, additional_options=None):
         """
-        Method to populate a Pyomo Block with the keras model constraints.
+        Method to populate a Pyomo Block with the onnx model constraints.
 
         Args:
            block: Pyomo Block component
               The block to be populated with variables and/or constraints.
            additional_options: dict or None
               If not None, then should be a dict with the following keys;
-              'formulation': KerasSurrogate.Formulation
+              'formulation': ONNXSurrogate.Formulation
               The formulation to use with OMLT. Possible values are FULL_SPACE,
               REDUCED_SPACE, RELU_BIGM, or RELU_COMPLEMENTARITY (default is FULL_SPACE)
         """
         formulation = additional_options.pop(
-            "formulation", KerasSurrogate.Formulation.FULL_SPACE
+            "formulation", ONNXSurrogate.Formulation.REDUCED_SPACE
         )
         omlt_scaling, scaled_input_bounds = self.generate_omlt_scaling_objecets()
 
-        net = load_keras_sequential(
-            self._keras_model,
+        # omlt takes *scaled* input bounds as a dictionary with int keys
+        input_bounds = dict(enumerate(self.input_bounds().values()))
+        scaled_input_bounds = omlt_scaling.get_scaled_input_expressions(input_bounds)
+        scaled_input_bounds = {i: tuple(bnd) for i, bnd in scaled_input_bounds.items()}
+
+        # TODO: remove this once new OMLT 1.2 is made available and includes tanh support
+        # overrides default available activation functions for ONNX, tanh is not listed in 1.1 but is supported
+
+        omltio.onnx_parser._ACTIVATION_OP_TYPES = [  # pylint: disable=protected-access
+            "Relu",
+            "Sigmoid",
+            "LogSoftmax",
+            "Tanh",
+        ]
+
+        net = load_onnx_neural_network(
+            self._onnx_model,
             scaling_object=omlt_scaling,
-            scaled_input_bounds=scaled_input_bounds,
+            input_bounds=scaled_input_bounds,
         )
 
-        if formulation == KerasSurrogate.Formulation.FULL_SPACE:
+        if formulation == ONNXSurrogate.Formulation.FULL_SPACE:
             formulation_object = FullSpaceSmoothNNFormulation(net)
-        elif formulation == KerasSurrogate.Formulation.REDUCED_SPACE:
+        elif formulation == ONNXSurrogate.Formulation.REDUCED_SPACE:
             formulation_object = ReducedSpaceSmoothNNFormulation(net)
-        elif formulation == KerasSurrogate.Formulation.RELU_BIGM:
+        elif formulation == ONNXSurrogate.Formulation.RELU_BIGM:
             formulation_object = ReluBigMFormulation(net)
-        elif formulation == KerasSurrogate.Formulation.RELU_COMPLEMENTARITY:
+        elif formulation == ONNXSurrogate.Formulation.RELU_COMPLEMENTARITY:
             formulation_object = ReluComplementarityFormulation(net)
         else:
             raise ValueError(
                 'An unrecognized formulation "{}" was passed to '
-                "KerasSurrogate.populate_block. Please pass a valid "
+                "ONNXSurrogate.populate_block. Please pass a valid "
                 "formulation.".format(formulation)
             )
         self.populate_block_with_net(block, formulation_object)
 
     def evaluate_surrogate(self, inputs):
         """
-        Method to evaluate Keras model at a set of input values.
+        Method to evaluate ONNX model at a set of input values.
 
         Args:
             inputs: numpy array of input values. First dimension of array
@@ -142,31 +163,25 @@ class KerasSurrogate(OMLTSurrogate):
             outputs: numpy array of values for all outputs evaluated at input
                 points.
         """
-        x = inputs
-        if self._input_scaler is not None:
-            x = self._input_scaler.scale(x)
-        y = self._keras_model.predict(x.to_numpy())
+        raise NotImplementedError
 
-        # y is a numpy array, make it a dataframe
-        y = pd.DataFrame(
-            data=y, columns=self.output_labels(), index=inputs.index, dtype="float64"
-        )
-        if self._output_scaler is not None:
-            y = self._output_scaler.unscale(y)
-        return y
-
-    def save_to_folder(self, keras_folder_name, keras_model_name="idaes_keras_model"):
+    def save_to_folder(self, save_location, save_name):
         """
-        Save the surrogate object to disk by providing the name of the
-        folder to contain the keras model and additional IDAES metadata
+        Save the surrogate object to disk by providing the location to store the
+                model in and its name, as well as additional IDAES metadata
 
         Args:
-           folder_name: str
-              The name of the folder to contain the Keras model and additional
+           save_location: str
+              The name of the folder to contain the ONNX model and additional
               IDAES metadata
+            save_name: str
+                The name for the model
         """
-        self._keras_model.save(
-            os.path.join(keras_folder_name, keras_model_name + ".keras")
+
+        write_onnx_model_with_bounds(
+            os.path.join(save_location, "{}.onnx".format(save_name)),
+            onnx_model=self._onnx_model,
+            input_bounds=None,
         )
         info = dict()
         info["input_scaler"] = None
@@ -181,28 +196,47 @@ class KerasSurrogate(OMLTSurrogate):
         info["output_labels"] = self.output_labels()
         info["input_bounds"] = self.input_bounds()
 
-        with open(os.path.join(keras_folder_name, "idaes_info.json"), "w") as fd:
+        with open(
+            os.path.join(save_location, "{}_idaes_info.json".format(save_name)), "w"
+        ) as fd:
             json.dump(info, fd)
 
     @classmethod
-    def load_from_folder(cls, keras_folder_name, keras_model_name="idaes_keras_model"):
+    def load_onnx_model(cls, onnx_model_location, model_name):
         """
         Load the surrogate object from disk by providing the name of the
-        folder holding the keras model
+        folder holding the onnx model and its name, including accompanying json file that includes following
+        structure:
+
+            "input_scaler":{
+                "expected_columns":[list of input_keys],
+                "offset":{"input_key":offset_value,etc.},
+                "factor":{"input_key":factor_value (e.g. multiplier),etc.}}
+
+            "output_scaler":{
+                "expected_columns":[list of output_keys],
+                "offset":{"output_key":offset_value,etc.},
+                "factor":{"output_key":factor_value (e.g. multiplier),etc.}}
+
+            "input_bounds":{"input_key":[low_bound,high_bound],etc.}
+            "input_labels":[list of input_keys]
+            "output_labels":[list of output_keys]
 
         Args:
            folder_name: str
-              The name of the folder containing the Keras model and additional
+              The name of the folder containing the onnx model and additional
               IDAES metadata
+            model_name: str
+              The name of the model to load in the folder
 
-        Returns: an instance of KerasSurrogate
+        Returns: an instance of ONNXSurrogate
         """
-
-        keras_model = keras.models.load_model(
-            os.path.join(keras_folder_name, keras_model_name + ".keras")
+        onnx_model = onnx.load(
+            os.path.join(onnx_model_location, "{}.onnx".format(model_name))
         )
-
-        with open(os.path.join(keras_folder_name, "idaes_info.json")) as fd:
+        with open(
+            os.path.join(onnx_model_location, "{}_idaes_info.json".format(model_name))
+        ) as fd:
             info = json.load(fd)
 
         input_scaler = None
@@ -213,25 +247,11 @@ class KerasSurrogate(OMLTSurrogate):
         if info["output_scaler"] is not None:
             output_scaler = OffsetScaler.from_dict(info["output_scaler"])
 
-        return KerasSurrogate(
-            keras_model=keras_model,
+        return ONNXSurrogate(
+            onnx_model=onnx_model,
             input_labels=info["input_labels"],
             output_labels=info["output_labels"],
             input_bounds=info["input_bounds"],
             input_scaler=input_scaler,
             output_scaler=output_scaler,
         )
-
-
-def save_keras_json_hd5(nn, path, name):
-    json_model = nn.to_json()
-    with open(os.path.join(path, "{}.json".format(name)), "w") as json_file:
-        json_file.write(json_model)
-    nn.save(os.path.join(path, "{}.keras".format(name)))
-    nn.save_weights(os.path.join(path, "{}.weights.h5".format(name)))
-
-
-def load_keras_json_hd5(path, name):
-    nn = keras.models.load_model(os.path.join(path, "{}.keras".format(name)))
-    nn.load_weights(os.path.join(path, "{}.weights.h5".format(name)))
-    return nn
