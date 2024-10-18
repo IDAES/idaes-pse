@@ -89,8 +89,9 @@ class ProcessBlockData(BlockData):
 
     CONFIG = ConfigBlock("ProcessBlockData", implicit=False)
 
-    # Set default initializer
+    # Set default initializer and scaler
     default_initializer = BlockTriangularizationInitializer
+    default_scaler = None
 
     def __init__(self, component):
         """

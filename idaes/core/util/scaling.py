@@ -1254,6 +1254,7 @@ def set_variable_scaling_from_current_value(
             )
 
 
+# TODO: Deprecate in favor of new walker
 class NominalValueExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
     """
     Expression walker for collecting scaling factors in an expression and determining the
@@ -1372,7 +1373,7 @@ class NominalValueExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
                     # Either a positive value or no value, assume positive
                     sign = 1
         else:
-            # No ideal, assume positive
+            # No idea, assume positive
             sign = 1
 
         try:
