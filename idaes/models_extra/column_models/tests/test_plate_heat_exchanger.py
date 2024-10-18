@@ -68,8 +68,7 @@ def test_config():
 
 
 workaround_for_1294 = pytest.mark.xfail(
-    sys.platform
-    == "win32",  # the failures only occur for Windows on GHA with Python <3.12
+    # the failures only occur for Windows on GHA with Python <3.12, and Linux with Python 3.12
     reason="These tests fail with Pyomo 6.7.0. See IDAES/idaes-pse#1294 for details",
     strict=False,
 )
