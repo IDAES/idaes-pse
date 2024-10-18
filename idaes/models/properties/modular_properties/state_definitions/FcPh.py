@@ -182,15 +182,6 @@ def define_state(b):
 
     b.mole_frac_comp_eq = Constraint(b.component_list, rule=rule_mole_frac_comp)
 
-    def rule_enth_mol(b):
-        return b.enth_mol == sum(
-            b.enth_mol_phase[p] * b.phase_frac[p] for p in b.phase_list
-        )
-
-    b.enth_mol_eq = Constraint(
-        rule=rule_enth_mol, doc="Total molar enthalpy mixing rule"
-    )
-
     if len(b.phase_list) == 1:
 
         def rule_total_mass_balance(b):
@@ -456,7 +447,7 @@ def calculate_scaling_factors(b):
             b.mole_frac_comp_eq[j], sf_j, overwrite=False
         )
 
-    iscale.constraint_scaling_transform(b.enth_mol_eq, sf_h, overwrite=False)
+    iscale.constraint_scaling_transform(b.enth_mol_eqn, sf_h, overwrite=False)
 
     if len(b.phase_list) == 1:
         iscale.constraint_scaling_transform(

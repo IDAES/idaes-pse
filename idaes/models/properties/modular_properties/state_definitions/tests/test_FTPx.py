@@ -55,6 +55,7 @@ from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 
 
+# Note: The state definition is set by importing functions for the relevant module above
 @declare_process_block_class("DummyParameterBlock")
 class DummyParameterData(GenericParameterData):
     pass
