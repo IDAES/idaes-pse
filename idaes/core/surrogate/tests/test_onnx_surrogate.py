@@ -43,8 +43,6 @@ atol = 1e-4
 def load_onnx_model_data(
     name="net_st_net_5000_STM_100_s_2000000_60_5_tanh_1e-06_4096_tr_15481_Calcite_ST",
 ):
-    #    keras_folder_name = os.path.join(this_file_dir(), 'data', 'keras_models', name)
-    #    keras_model = keras.models.load_model(keras_folder_name)
     onnx_folder_name = os.path.join(this_file_dir(), "data", "onnx_models")
     onnx_model = onnx.load(os.path.join(onnx_folder_name, "{}.onnx".format(name)))
     with open(os.path.join(onnx_folder_name, "{}_idaes_info.json".format(name))) as fd:

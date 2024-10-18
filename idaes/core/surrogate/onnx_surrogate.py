@@ -69,9 +69,9 @@ class ONNXSurrogate(OMLTSurrogate):
         Args:
            onnx_model: Onnx model file to be loaded.
            input_labels: list of str
-              The ordered list of labels corresponding to the inputs in the keras model
+              The ordered list of labels corresponding to the inputs in the onnx model
            output_labels: list of str
-              The ordered list of labels corresponding to the outputs in the keras model
+              The ordered list of labels corresponding to the outputs in the onnx model
            input_bounds: None of dict of tuples
               Keys correspond to each of the input labels and values are the tuples of
               bounds (lb, ub)
@@ -105,7 +105,7 @@ class ONNXSurrogate(OMLTSurrogate):
               The block to be populated with variables and/or constraints.
            additional_options: dict or None
               If not None, then should be a dict with the following keys;
-              'formulation': KerasSurrogate.Formulation
+              'formulation': ONNXSurrogate.Formulation
               The formulation to use with OMLT. Possible values are FULL_SPACE,
               REDUCED_SPACE, RELU_BIGM, or RELU_COMPLEMENTARITY (default is FULL_SPACE)
         """
@@ -146,7 +146,7 @@ class ONNXSurrogate(OMLTSurrogate):
         else:
             raise ValueError(
                 'An unrecognized formulation "{}" was passed to '
-                "KerasSurrogate.populate_block. Please pass a valid "
+                "ONNXSurrogate.populate_block. Please pass a valid "
                 "formulation.".format(formulation)
             )
         self.populate_block_with_net(block, formulation_object)
