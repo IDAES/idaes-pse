@@ -368,13 +368,6 @@ within this flowsheet if not otherwise specified,
                     "provided was not a ContinuousSet.".format(self.name)
                 )
             
-            if self.config.dynamic is False and not isinstance(
-                self.config.time, pe.Set
-            ):
-                raise DynamicError(
-                    "{} was set as a steady-state flowsheet, but time domain "
-                    "provided was not a Set.".format(self.name)
-                )
             add_object_reference(self, "_time", self.config.time)
             self._time_units = self.config.time_units
         else:
@@ -382,6 +375,7 @@ within this flowsheet if not otherwise specified,
             if fs is None:
                 # Create time domain
                 _create_time_domain()
+            # Creates a new time domain for a sub-flowsheet with user provided time domain
             elif self.config.time_set is not None:
                 # Create time domain from config.time_set
                 _create_time_domain()
