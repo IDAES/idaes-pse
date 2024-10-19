@@ -409,7 +409,7 @@ class TestSubFlowsheetBuild(object):
         m.fs.sub = FlowsheetBlock(dynamic=True, time=m.s2, time_units=units.s)
 
         assert m.fs.sub.config.dynamic is True
-        assert isinstance(m.fs.sub.time, ContinuousSet)
+        assert m.fs.sub.time is m.s2
         assert m.fs.sub.time_units == units.s
 
     @pytest.mark.unit
@@ -420,17 +420,19 @@ class TestSubFlowsheetBuild(object):
 
         assert m.fs.sub.config.dynamic is True
         assert isinstance(m.fs.sub.time, ContinuousSet)
+        assert list(m.fs.sub.time) == [1, 2]
         assert m.fs.sub.time_units is units.s
 
     @pytest.mark.unit
     def test_dynamic_parent_time_indexed_ss_child(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=True, time_set = [1,2,3], time_units=units.s)
-        m.fs.sub = FlowsheetBlock(dynamic=False, time_set = [0, 1], time_units=units.dimensionless)
+        m.fs.sub = FlowsheetBlock(dynamic=False, time_set = [0, 1], time_units=units.min)
 
         assert m.fs.sub.config.dynamic is False
         assert isinstance(m.fs.sub.time, Set)
-        assert m.fs.sub.time_units == units.dimensionless
+        assert list(m.fs.sub.time) == [0, 1]
+        assert m.fs.sub.time_units == units.min
 
 
     @pytest.mark.unit
