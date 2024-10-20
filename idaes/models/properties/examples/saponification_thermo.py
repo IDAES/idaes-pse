@@ -137,6 +137,15 @@ class PhysicalParameterData(PhysicalParameterBlock):
 
 
 class SaponificationPropertiesScaler(CustomScalerBase):
+    """
+    Scaler for saponification properties package.
+
+    Flow and concentration are scaled by default value (if no user input provided),
+    pressure is scaled assuming order of magnitude of 1e5 Pa, and temperature is
+    scaled using the average of the bounds. Constraints using hte inverse maximum
+    scheme.
+    """
+
     UNIT_SCALING_FACTORS = {
         # "QuantityName: (reference units, scaling factor)
         "Pressure": (units.Pa, 1e-5),

@@ -114,6 +114,13 @@ class ReactionParameterData(ReactionParameterBlock):
 
 
 class SaponificationReactionScaler(CustomScalerBase):
+    """
+    Scaler for saponification reaction package.
+
+    Variables are scaled by nominal order of magnitude, and constraints
+    using hte inverse maximum scheme.
+    """
+
     DEFAULT_SCALING_FACTORS = {"reaction_rate": 1e2}
 
     def variable_scaling_routine(
