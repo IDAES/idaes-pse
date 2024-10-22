@@ -38,8 +38,6 @@ from idaes.models.unit_models.gibbs_reactor import GibbsReactor
 from idaes.models.properties.activity_coeff_models.methane_combustion_ideal import (
     MethaneParameterBlock as MethaneCombustionParameterBlock,
 )
-from idaes.core.util.testing import PhysicalParameterTestBlock, initialization_tester
-from idaes.core.solvers import get_solver
 from idaes.core.util import to_json, from_json, StoreSpec
 from idaes.core.util.scaling import jacobian_cond
 from idaes.core.scaling import AutoScaler, CustomScalerBase, set_scaling_factor
