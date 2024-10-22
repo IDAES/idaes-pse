@@ -404,7 +404,7 @@ class TestSubFlowsheetBuild(object):
     def test_dynamic_nested_time(self):
         m = ConcreteModel()
         m.s1 = ContinuousSet(initialize=[4, 5])
-        m.s2 = ContinuousSet(initialize=[1,2,3])
+        m.s2 = ContinuousSet(initialize=[1, 2, 3])
         m.fs = FlowsheetBlock(dynamic=True, time_units=units.s)
         m.fs.sub = FlowsheetBlock(dynamic=True, time=m.s2, time_units=units.s)
 
@@ -415,8 +415,8 @@ class TestSubFlowsheetBuild(object):
     @pytest.mark.unit
     def test_dynamic_nested_time_from_time_set(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(dynamic=True, time_set = [1,2,3], time_units=units.s)
-        m.fs.sub = FlowsheetBlock(dynamic=True, time_set = [1, 2], time_units=units.s)
+        m.fs = FlowsheetBlock(dynamic=True, time_set=[1, 2, 3], time_units=units.s)
+        m.fs.sub = FlowsheetBlock(dynamic=True, time_set=[1, 2], time_units=units.s)
 
         assert m.fs.sub.config.dynamic is True
         assert isinstance(m.fs.sub.time, ContinuousSet)
@@ -426,14 +426,13 @@ class TestSubFlowsheetBuild(object):
     @pytest.mark.unit
     def test_dynamic_parent_time_indexed_ss_child(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(dynamic=True, time_set = [1,2,3], time_units=units.s)
-        m.fs.sub = FlowsheetBlock(dynamic=False, time_set = [0, 1], time_units=units.min)
+        m.fs = FlowsheetBlock(dynamic=True, time_set=[1, 2, 3], time_units=units.s)
+        m.fs.sub = FlowsheetBlock(dynamic=False, time_set=[0, 1], time_units=units.min)
 
         assert m.fs.sub.config.dynamic is False
         assert isinstance(m.fs.sub.time, Set)
         assert list(m.fs.sub.time) == [0, 1]
         assert m.fs.sub.time_units == units.min
-
 
     @pytest.mark.unit
     def test_dynamic_external_time_invalid(self):

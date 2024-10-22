@@ -367,7 +367,7 @@ within this flowsheet if not otherwise specified,
                     "{} was set as a dynamic flowsheet, but time domain "
                     "provided was not a ContinuousSet.".format(self.name)
                 )
-            
+
             add_object_reference(self, "_time", self.config.time)
             self._time_units = self.config.time_units
         else:
