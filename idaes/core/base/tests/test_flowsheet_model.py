@@ -405,7 +405,7 @@ class TestSubFlowsheetBuild(object):
         m = ConcreteModel()
         m.s1 = ContinuousSet(initialize=[4, 5])
         m.s2 = ContinuousSet(initialize=[1, 2, 3])
-        m.fs = FlowsheetBlock(dynamic=True, time_units=units.s)
+        m.fs = FlowsheetBlock(dynamic=True, time=m.s1, time_units=units.minute)
         m.fs.sub = FlowsheetBlock(dynamic=True, time=m.s2, time_units=units.s)
 
         assert m.fs.sub.config.dynamic is True
