@@ -376,7 +376,7 @@ within this flowsheet if not otherwise specified,
                 # Create time domain
                 _create_time_domain()
             # Creates a new time domain for a sub-flowsheet with user provided time domain
-            elif self.config.time_set is not None:
+            elif self.config.time_set not in [None, [0]]:
                 # Create time domain from config.time_set
                 _create_time_domain()
             else:
