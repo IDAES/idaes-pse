@@ -14,7 +14,7 @@
 Standard IDAES Gibbs reactor model.
 """
 # Import Pyomo libraries
-from pyomo.environ import Constraint, Param, Reals, Reference, Set, Var
+from pyomo.environ import Constraint, Param, Reals, Reference, Set, units, value, Var
 from pyomo.common.config import ConfigBlock, ConfigValue, In, ListOf, Bool
 
 # Import IDAES cores
@@ -28,8 +28,166 @@ from idaes.core import (
 )
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.scaling import CustomScalerBase
+from idaes.core.util.constants import Constants
 
 __author__ = "Jinliang Ma, Andrew Lee"
+
+
+class GibbsReactorScaler(CustomScalerBase):
+    """
+    Scaler for Gibbs Reactor units.
+
+    Due to the nature of Gibbs Reactors, scaling is highly dependent on the outlet
+    concentrations which cannot be predicted a priori, thus we rely on users to
+    provide the best initial guesses they can for the outlet concentrations.
+
+    """
+
+    UNIT_SCALING_FACTORS = {
+        # "QuantityName: (reference units, scaling factor)
+        "Delta Pressure": (units.Pa, 1e-3),
+        "Heat": (units.J / units.s, 1e-6),
+    }
+
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        """
+        Variable scaling routine for Gibbs reactors.
+
+        Due to the nature of Gibbs Reactors, scaling is highly dependent on the outlet
+        concentrations which cannot be predicted a priori, thus we rely on users to
+        provide the best initial guesses they can for the outlet concentrations.
+
+        Args:
+            model: instance of GibbsReactor to be scaled
+            overwrite: whether to overwrite existing scaling factors
+            submodel_scalers: dict of Scalers to use for sub-models, keyed by submodel local name
+
+        Returns:
+            None
+        """
+        if submodel_scalers is None:
+            submodel_scalers = {}
+
+        # Step 1: Property scaling
+
+        # Step 1a: propagate any existing scaling from inlet to outlet
+        # This is likely a very poor approximation for concentrations, but we expect users
+        # to provide better scaling factors manually (as there is no way for us to know).
+        # This will do a first pass fill in however if the user does not provide any information.
+        self.propagate_state_scaling(
+            target_state=model.control_volume.properties_out,
+            source_state=model.control_volume.properties_in,
+            overwrite=overwrite,
+        )
+
+        # Step 1b: Call Scalers for state blocks
+        # Inlet properties
+        self.call_submodel_scaler_method(
+            model=model,
+            submodel="control_volume.properties_in",
+            submodel_scalers=submodel_scalers,
+            method="variable_scaling_routine",
+            overwrite=overwrite,
+        )
+        # Outlet properties
+        self.call_submodel_scaler_method(
+            model=model,
+            submodel="control_volume.properties_out",
+            submodel_scalers=submodel_scalers,
+            method="variable_scaling_routine",
+            overwrite=overwrite,
+        )
+
+        # Step 2: Scaling Gibbs reactor variables
+        # Control volume variables - support only heat and deltaP
+        if hasattr(model.control_volume, "heat"):
+            for v in model.control_volume.heat.values():
+                self.scale_variable_by_units(v, overwrite=overwrite)
+        if hasattr(model.control_volume, "deltaP"):
+            for v in model.control_volume.deltaP.values():
+                self.scale_variable_by_units(v, overwrite=overwrite)
+
+        # Lagrangian multipliers
+        # Best guess scaling for these is R*T, need to convert units
+        p_units = (
+            model.control_volume.config.property_package.get_metadata().get_derived_units
+        )
+        for (t, _), v in model.lagrange_mult.items():
+            tsf = self.get_scaling_factor(
+                model.control_volume.properties_out[t].temperature
+            )
+            if tsf is not None:
+                nominal_t = 1 / tsf
+            else:
+                nominal_t = 500
+            lsf = value(
+                1
+                / units.convert(
+                    Constants.gas_constant * nominal_t * p_units("temperature"),
+                    to_units=p_units("energy_mole"),
+                )
+            )
+            self.set_variable_scaling_factor(v, lsf, overwrite=overwrite)
+
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        """
+        Routine to apply scaling factors to constraints in model.
+
+        Constraints will be scaled based on nominal Jacobian norms, and thus will
+        be heavily dependent on variable scaling.
+
+        Args:
+            model: model to be scaled
+            overwrite: whether to overwrite existing scaling factors
+            submodel_scalers: dict of Scalers to use for sub-models, keyed by submodel local name
+
+        Returns:
+            None
+        """
+        # Step 1: Call Scalers for state blocks
+        # Inlet properties
+        self.call_submodel_scaler_method(
+            model=model,
+            submodel="control_volume.properties_in",
+            submodel_scalers=submodel_scalers,
+            method="constraint_scaling_routine",
+            overwrite=overwrite,
+        )
+        # Outlet properties
+        self.call_submodel_scaler_method(
+            model=model,
+            submodel="control_volume.properties_out",
+            submodel_scalers=submodel_scalers,
+            method="constraint_scaling_routine",
+            overwrite=overwrite,
+        )
+
+        # Step 2: Scale all the control volume constraints
+        for cd in model.control_volume.component_data_objects(
+            ctype=Constraint, descend_into=False
+        ):
+            self.scale_constraint_by_nominal_value(
+                cd, scheme="inverse_sum", overwrite=overwrite
+            )
+
+        # Step 3: Scale local constraints
+        # Scale Gibbs minimization constraints
+        for cd in model.gibbs_minimization.values():
+            self.scale_constraint_by_nominal_value(
+                cd, scheme="inverse_sum", overwrite=overwrite
+            )
+
+        # Scale inert species balance if they are present
+        if hasattr(model, "inert_species_balance"):
+            for cd in model.inert_species_balance.values():
+                self.scale_constraint_by_nominal_value(
+                    cd, scheme="inverse_sum", overwrite=overwrite
+                )
 
 
 @declare_process_block_class("GibbsReactor")
@@ -163,6 +321,8 @@ see property package for documentation.}""",
             doc="List of species which do not take part in reactions.",
         ),
     )
+
+    default_scaler = GibbsReactorScaler
 
     def build(self):
         """

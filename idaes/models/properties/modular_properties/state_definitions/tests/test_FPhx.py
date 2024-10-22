@@ -47,6 +47,7 @@ import idaes.logger as idaeslog
 pytestmark = pytest.mark.unit
 
 
+# Note: The state definition is set by importing functions for the relevant module above
 @declare_process_block_class("DummyParameterBlock")
 class DummyParameterData(GenericParameterData):
     pass
@@ -137,7 +138,7 @@ class TestInvalidBounds(object):
 
 class Test1PhaseDefinedStateFalseNoBounds(object):
     # Test define_state method with no bounds and defined_State = False
-    @pytest.fixture(scope="class")
+    @pytest.fixture()
     def frame(self):
         m = ConcreteModel()
 
@@ -263,7 +264,7 @@ class Test1PhaseDefinedStateFalseNoBounds(object):
 
 class Test1PhaseDefinedStateTrueWithBounds(object):
     # Test define_state method with no bounds and defined_State = False
-    @pytest.fixture(scope="class")
+    @pytest.fixture()
     def frame(self):
         m = ConcreteModel()
 
@@ -389,7 +390,7 @@ class Test1PhaseDefinedStateTrueWithBounds(object):
 
 class Test2PhaseDefinedStateFalseNoBounds(object):
     # Test define_state method with no bounds and defined_State = False
-    @pytest.fixture(scope="class")
+    @pytest.fixture()
     def frame(self):
         m = ConcreteModel()
 
@@ -551,7 +552,7 @@ class Test2PhaseDefinedStateFalseNoBounds(object):
 
 class Test2PhaseDefinedStateTrueWithBounds(object):
     # Test define_state method with no bounds and defined_State = False
-    @pytest.fixture(scope="class")
+    @pytest.fixture()
     def frame(self):
         m = ConcreteModel()
 
@@ -712,7 +713,7 @@ class Test2PhaseDefinedStateTrueWithBounds(object):
 
 class Test3PhaseDefinedStateFalseNoBounds(object):
     # Test define_state method with no bounds and defined_State = False
-    @pytest.fixture(scope="class")
+    @pytest.fixture()
     def frame(self):
         m = ConcreteModel()
 
@@ -862,7 +863,7 @@ class Test3PhaseDefinedStateFalseNoBounds(object):
 
 class Test3PhaseDefinedStateTrueWithBounds(object):
     # Test define_state method with no bounds and defined_State = False
-    @pytest.fixture(scope="class")
+    @pytest.fixture()
     def frame(self):
         m = ConcreteModel()
 
@@ -1020,7 +1021,7 @@ class Test3PhaseDefinedStateTrueWithBounds(object):
 
 
 class TestCommon(object):
-    @pytest.fixture(scope="class")
+    @pytest.fixture()
     def frame(self):
         m = ConcreteModel()
 
