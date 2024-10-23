@@ -636,8 +636,8 @@ class TestInitializers:
         scaler.scale_model(
             m.fs.unit,
             submodel_scalers={
-                "control_volume.properties_in": PropertyScaler,
-                "control_volume.properties_out": PropertyScaler,
+                m.fs.unit.control_volume.properties_in: PropertyScaler,
+                m.fs.unit.control_volume.properties_out: PropertyScaler,
             },
         )
 

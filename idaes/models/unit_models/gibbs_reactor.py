@@ -86,16 +86,14 @@ class GibbsReactorScaler(CustomScalerBase):
         # Step 1b: Call Scalers for state blocks
         # Inlet properties
         self.call_submodel_scaler_method(
-            model=model,
-            submodel="control_volume.properties_in",
+            submodel=model.control_volume.properties_in,
             submodel_scalers=submodel_scalers,
             method="variable_scaling_routine",
             overwrite=overwrite,
         )
         # Outlet properties
         self.call_submodel_scaler_method(
-            model=model,
-            submodel="control_volume.properties_out",
+            submodel=model.control_volume.properties_out,
             submodel_scalers=submodel_scalers,
             method="variable_scaling_routine",
             overwrite=overwrite,
@@ -152,16 +150,14 @@ class GibbsReactorScaler(CustomScalerBase):
         # Step 1: Call Scalers for state blocks
         # Inlet properties
         self.call_submodel_scaler_method(
-            model=model,
-            submodel="control_volume.properties_in",
+            submodel=model.control_volume.properties_in,
             submodel_scalers=submodel_scalers,
             method="constraint_scaling_routine",
             overwrite=overwrite,
         )
         # Outlet properties
         self.call_submodel_scaler_method(
-            model=model,
-            submodel="control_volume.properties_out",
+            submodel=model.control_volume.properties_out,
             submodel_scalers=submodel_scalers,
             method="constraint_scaling_routine",
             overwrite=overwrite,

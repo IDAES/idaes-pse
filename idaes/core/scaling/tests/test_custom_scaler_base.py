@@ -608,15 +608,12 @@ class TestCustomScalerBase:
         m.b = Block([1, 2, 3])
 
         sb = CustomScalerBase()
-        sb.call_submodel_scaler_method(m, "b", method="dummy_method", overwrite=True)
+        sb.call_submodel_scaler_method(m.b, method="dummy_method", overwrite=True)
 
         for bd in m.b.values():
             assert not hasattr(bd, "_dummy_scaler_test")
 
-        assert (
-            "No default Scaler set for unknown.b. Cannot call dummy_method."
-            in caplog.text
-        )
+        assert "No default Scaler set for b. Cannot call dummy_method." in caplog.text
 
     @pytest.mark.unit
     def test_call_submodel_scaler_method_default_scaler(self, caplog):
@@ -629,12 +626,12 @@ class TestCustomScalerBase:
             bd.default_scaler = DummyScaler
 
         sb = CustomScalerBase()
-        sb.call_submodel_scaler_method(m, "b", method="dummy_method", overwrite=True)
+        sb.call_submodel_scaler_method(m.b, method="dummy_method", overwrite=True)
 
         for bd in m.b.values():
             assert bd._dummy_scaler_test
 
-        assert "Using default Scaler for unknown.b." in caplog.text
+        assert "Using default Scaler for b." in caplog.text
 
     @pytest.mark.unit
     def test_call_submodel_scaler_method_user_scaler(self, caplog):
@@ -649,8 +646,7 @@ class TestCustomScalerBase:
 
         sb = CustomScalerBase()
         sb.call_submodel_scaler_method(
-            m,
-            "b",
+            m.b,
             method="dummy_method",
             submodel_scalers=scaler_map,
             overwrite=False,
@@ -659,7 +655,7 @@ class TestCustomScalerBase:
         for bd in m.b.values():
             assert not bd._dummy_scaler_test
 
-        assert "Using user-defined Scaler for unknown.b." in caplog.text
+        assert "Using user-defined Scaler for b." in caplog.text
 
     @pytest.mark.unit
     def test_call_submodel_scaler_method_user_scaler_class(self, caplog):
@@ -674,8 +670,7 @@ class TestCustomScalerBase:
 
         sb = CustomScalerBase()
         sb.call_submodel_scaler_method(
-            m,
-            "b",
+            m.b,
             method="dummy_method",
             submodel_scalers=scaler_map,
             overwrite=False,
@@ -684,27 +679,4 @@ class TestCustomScalerBase:
         for bd in m.b.values():
             assert not bd._dummy_scaler_test
 
-        assert "Using user-defined Scaler for unknown.b." in caplog.text
-
-    @pytest.mark.unit
-    def test_call_submodel_scaler_method_invalid_method(self):
-        # Dummy up a nested model
-        m = ConcreteModel()
-        m.b = Block([1, 2, 3])
-
-        scaler_map = ComponentMap()
-        scaler_map[m.b] = DummyScaler()
-
-        sb = CustomScalerBase()
-
-        with pytest.raises(
-            AttributeError,
-            match="Scaler for unknown.b does not have a method named foo.",
-        ):
-            sb.call_submodel_scaler_method(
-                m,
-                "b",
-                method="foo",
-                submodel_scalers=scaler_map,
-                overwrite=False,
-            )
+        assert "Using user-defined Scaler for b." in caplog.text
