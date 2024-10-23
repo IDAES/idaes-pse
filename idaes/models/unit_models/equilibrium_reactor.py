@@ -76,8 +76,7 @@ class EquilibriumReactorScaler(CustomScalerBase):
         """
         # Call scaling methods for sub-models
         self.call_submodel_scaler_method(
-            model=model,
-            submodel="control_volume.properties_in",
+            submodel=model.control_volume.properties_in,
             method="variable_scaling_routine",
             submodel_scalers=submodel_scalers,
             overwrite=overwrite,
@@ -89,15 +88,13 @@ class EquilibriumReactorScaler(CustomScalerBase):
         )
 
         self.call_submodel_scaler_method(
-            model=model,
-            submodel="control_volume.properties_out",
+            submodel=model.control_volume.properties_out,
             method="variable_scaling_routine",
             submodel_scalers=submodel_scalers,
             overwrite=overwrite,
         )
         self.call_submodel_scaler_method(
-            model=model,
-            submodel="control_volume.reactions",
+            submodel=model.control_volume.reactions,
             method="variable_scaling_routine",
             submodel_scalers=submodel_scalers,
             overwrite=overwrite,
@@ -154,22 +151,19 @@ class EquilibriumReactorScaler(CustomScalerBase):
         """
         # Call scaling methods for sub-models
         self.call_submodel_scaler_method(
-            model=model,
-            submodel="control_volume.properties_in",
+            submodel=model.control_volume.properties_in,
             method="constraint_scaling_routine",
             submodel_scalers=submodel_scalers,
             overwrite=overwrite,
         )
         self.call_submodel_scaler_method(
-            model=model,
-            submodel="control_volume.properties_out",
+            submodel=model.control_volume.properties_out,
             method="constraint_scaling_routine",
             submodel_scalers=submodel_scalers,
             overwrite=overwrite,
         )
         self.call_submodel_scaler_method(
-            model=model,
-            submodel="control_volume.reactions",
+            submodel=model.control_volume.reactions,
             method="constraint_scaling_routine",
             submodel_scalers=submodel_scalers,
             overwrite=overwrite,
