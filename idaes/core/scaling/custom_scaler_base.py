@@ -571,6 +571,7 @@ class CustomScalerBase(ScalerBase):
             submodel: local name of submodel to be scaled as str
             submodel_scalers: user provided ComponentMap of Scalers to use for submodels
             method: name of method to call from submodel (as string)
+            overwrite: whether to overwrite existing scaling factors
 
         Returns:
             None
