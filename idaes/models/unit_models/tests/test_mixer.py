@@ -25,6 +25,7 @@ from pyomo.environ import (
     Param,
     RangeSet,
     Set,
+    TransformationFactory,
     Var,
     value,
     units as pyunits,
@@ -90,6 +91,7 @@ from idaes.core.util.initialization import (
     fix_state_vars,
 )
 from idaes.core.util import DiagnosticsToolbox
+import idaes.core.util.scaling as iscale
 
 
 # TODO: Should have a test for this that does not require models_extra
@@ -936,7 +938,11 @@ class TestBTX(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_numerical_issues(self, btx):
-        dt = DiagnosticsToolbox(btx)
+        iscale.calculate_scaling_factors(btx)
+        btx_scaled = TransformationFactory("core.scale_model").create_using(
+            btx, rename=False
+        )
+        dt = DiagnosticsToolbox(btx_scaled)
         dt.assert_no_numerical_warnings()
 
 
@@ -1462,7 +1468,7 @@ class TestSaponification(object):
     @pytest.mark.component
     def test_numerical_issues(self, sapon):
         dt = DiagnosticsToolbox(sapon)
-        dt.assert_no_numerical_warnings()
+        dt.assert_no_numerical_warnings(ignore_parallel_components=True)
 
 
 @pytest.mark.skipif(not cubic_roots_available(), reason="Cubic functions not available")

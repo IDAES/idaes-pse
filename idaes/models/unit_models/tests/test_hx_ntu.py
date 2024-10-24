@@ -23,6 +23,7 @@ from pyomo.environ import (
     Constraint,
     Expression,
     Param,
+    TransformationFactory,
     units as pyunits,
     value,
     Var,
@@ -50,6 +51,7 @@ from idaes.core.initialization import (
     InitializationStatus,
 )
 from idaes.core.util import DiagnosticsToolbox
+import idaes.core.util.scaling as iscale
 
 
 # -----------------------------------------------------------------------------
@@ -501,7 +503,11 @@ class TestHXNTU(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_numerical_issues(self, model):
-        dt = DiagnosticsToolbox(model)
+        iscale.calculate_scaling_factors(model)
+        model_scaled = TransformationFactory("core.scale_model").create_using(
+            model, rename=False
+        )
+        dt = DiagnosticsToolbox(model_scaled)
         dt.assert_no_numerical_warnings()
 
 
