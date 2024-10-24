@@ -14,8 +14,8 @@
 Tests for Plate Heat Exchnager  unit model.
 Author: Akula Paul
 """
-
 import pytest
+
 from pyomo.environ import (
     check_optimal_termination,
     ConcreteModel,
@@ -23,6 +23,8 @@ from pyomo.environ import (
     units as pyunits,
     value,
 )
+from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
+
 from idaes.core import FlowsheetBlock
 from idaes.models_extra.column_models.plate_heat_exchanger import (
     PlateHeatExchanger as PHE,
@@ -37,7 +39,6 @@ from idaes.models_extra.column_models.properties.MEA_solvent import (
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
 from idaes.core.solvers import get_solver
-from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 
 
 # -----------------------------------------------------------------------------
@@ -66,8 +67,9 @@ def test_config():
 
 
 workaround_for_1294 = pytest.mark.xfail(
+    # the failures only occur for Windows on GHA with Python <3.12, and Linux with Python 3.12
     reason="These tests fail with Pyomo 6.7.0. See IDAES/idaes-pse#1294 for details",
-    strict=False,  # the failures only occur for certain platforms, e.g. Windows on GHA
+    strict=False,
 )
 
 
