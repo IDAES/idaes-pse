@@ -14,7 +14,6 @@
 Tests for Plate Heat Exchnager  unit model.
 Author: Akula Paul
 """
-import sys
 import pytest
 
 from pyomo.environ import (
