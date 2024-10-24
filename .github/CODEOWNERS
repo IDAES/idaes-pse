@@ -30,6 +30,7 @@ conftest.py @lbianchi-lbl
 
 # Models
 /idaes/models/ @agarciadiego @bpaul4
+/idaes/models/properties/ @agarciadiego @dallan-keylogic 
 
 # Apps - each package needs a maintainer
 /idaes/apps/caprese/ @Robbybp
