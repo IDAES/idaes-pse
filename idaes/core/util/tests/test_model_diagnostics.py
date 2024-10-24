@@ -13,52 +13,68 @@
 """
 This module contains model diagnostic utility functions for use in IDAES (Pyomo) models.
 """
+from copy import deepcopy
 from io import StringIO
 import math
-import numpy as np
-import pytest
-import re
 import os
-from copy import deepcopy
+import re
+from unittest import TestCase
 
+import numpy as np
 from pandas import DataFrame
+import pytest
 
 from pyomo.environ import (
     Block,
     ConcreteModel,
     Constraint,
     Expression,
-    log,
-    tan,
-    asin,
-    acos,
-    sqrt,
+    Expr_if,
     Objective,
     PositiveIntegers,
     Set,
     SolverFactory,
-    Suffix,
-    TransformationFactory,
     units,
     value,
     Var,
     assert_optimal_termination,
     Param,
     Integers,
+    exp,
+    log,
+    log10,
+    sin,
+    cos,
+    tan,
+    asin,
+    acos,
+    atan,
+    sqrt,
+    sinh,
+    cosh,
+    tanh,
+    asinh,
+    acosh,
+    atanh,
 )
 from pyomo.common.collections import ComponentSet
 from pyomo.contrib.pynumero.asl import AmplInterface
 from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
 from pyomo.common.fileutils import this_file_dir
 from pyomo.common.tempfiles import TempfileManager
+from pyomo.core import expr as EXPR
 
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 from idaes.core.solvers import get_solver
 from idaes.core import FlowsheetBlock
+from idaes.core.util.scaling import set_scaling_factor
 from idaes.core.util.testing import PhysicalParameterTestBlock
-from unittest import TestCase
-
+from idaes.models.properties.modular_properties.eos.ceos_common import (
+    cubic_roots_available,
+    CubicThermoExpressions,
+    CubicType as CubicEoS,
+)
 from idaes.core.util.model_diagnostics import (
     DiagnosticsToolbox,
     SVDToolbox,
@@ -81,6 +97,7 @@ from idaes.core.util.model_diagnostics import (
     _collect_model_statistics,
     check_parallel_jacobian,
     compute_ill_conditioning_certificate,
+    ConstraintTermAnalysisVisitor,
 )
 from idaes.core.util.parameter_sweep import (
     SequentialSweepRunner,
@@ -90,6 +107,7 @@ from idaes.core.surrogate.pysmo.sampling import (
     UniformSampling,
 )
 from idaes.core.util.testing import _enable_scip_solver_for_testing
+from idaes.models.properties import iapws95
 
 
 __author__ = "Alex Dowling, Douglas Allan, Andrew Lee"
@@ -1005,6 +1023,111 @@ The following pairs of variables are nearly parallel:
         assert stream.getvalue() == expected
 
     @pytest.mark.component
+    def test_collect_constraint_mismatches(self):
+        m = ConcreteModel()
+        m.v1 = Var(initialize=2)
+        m.v2 = Var(initialize=3)
+
+        # Constraint with no free variables
+        m.c1 = Constraint(expr=m.v1 == m.v2)
+        m.v1.fix()
+        m.v2.fix()
+
+        # Constraint with mismatched terms
+        m.v3 = Var(initialize=10)
+        m.v4 = Var(initialize=10)
+        m.v5 = Var(initialize=1e-6)
+        m.c2 = Constraint(expr=m.v3 == m.v4 + m.v5)
+
+        # Constraint with cancellation
+        m.v6 = Var(initialize=10)
+        m.c3 = Constraint(expr=m.v6 == 10 + m.v3 - m.v4)
+
+        dt = DiagnosticsToolbox(model=m)
+
+        mismatch, cancellation, constant = dt._collect_constraint_mismatches()
+
+        assert mismatch == ["c2: v4 + v5"]
+        assert cancellation == ["c2: v3  ==  v4 + v5", "c3: v6  ==  10 + v3 - v4"]
+        assert constant == ["c1"]
+
+    @pytest.mark.component
+    def test_display_constraints_with_mismatched_terms(self):
+        m = ConcreteModel()
+        # Constraint with mismatched terms
+        m.v3 = Var(initialize=10)
+        m.v4 = Var(initialize=10)
+        m.v5 = Var(initialize=1e-6)
+        m.c2 = Constraint(expr=m.v3 == m.v4 + m.v5)
+
+        dt = DiagnosticsToolbox(model=m)
+
+        stream = StringIO()
+        dt.display_constraints_with_mismatched_terms(stream=stream)
+
+        expected = """====================================================================================
+The following constraints have mismatched terms:
+
+    c2: v4 + v5
+
+====================================================================================
+"""
+
+        assert stream.getvalue() == expected
+
+    @pytest.mark.component
+    def test_display_constraints_with_canceling_terms(self):
+        m = ConcreteModel()
+        # Constraint with mismatched terms
+        m.v3 = Var(initialize=10)
+        m.v4 = Var(initialize=10)
+
+        # Constraint with cancellation
+        m.v6 = Var(initialize=10)
+        m.c3 = Constraint(expr=m.v6 == 10 + m.v3 - m.v4)
+
+        dt = DiagnosticsToolbox(model=m)
+
+        stream = StringIO()
+        dt.display_constraints_with_canceling_terms(stream=stream)
+
+        expected = """====================================================================================
+The following constraints have canceling terms:
+
+    c3: v6  ==  10 + v3 - v4
+
+====================================================================================
+"""
+
+        assert stream.getvalue() == expected
+
+    @pytest.mark.component
+    def test_display_constraints_with_no_free_variables(self):
+        m = ConcreteModel()
+        m.v1 = Var(initialize=2)
+        m.v2 = Var(initialize=3)
+
+        # Constraint with no free variables
+        m.c1 = Constraint(expr=m.v1 == m.v2)
+        m.v1.fix()
+        m.v2.fix()
+
+        dt = DiagnosticsToolbox(model=m)
+
+        stream = StringIO()
+        dt.display_constraints_with_no_free_variables(stream=stream)
+
+        expected = """====================================================================================
+The following constraints have no free variables:
+
+    c1
+
+====================================================================================
+"""
+
+        assert stream.getvalue() == expected
+
+    @pytest.mark.component
     def test_collect_structural_warnings_base_case(self, model):
         dt = DiagnosticsToolbox(model=model.b)
 
@@ -1151,7 +1274,8 @@ The following pairs of variables are nearly parallel:
         dt = DiagnosticsToolbox(model=model.b)
 
         cautions = dt._collect_numerical_cautions()
-        assert len(cautions) == 5
+
+        assert len(cautions) == 6
         assert (
             "Caution: 2 Variables with value close to their bounds (abs=1.0E-04, rel=1.0E-04)"
             in cautions
@@ -1162,6 +1286,7 @@ The following pairs of variables are nearly parallel:
         assert (
             "Caution: 1 Variable with extreme value (<1.0E-04 or >1.0E+04)" in cautions
         )
+        assert "Caution: 1 Constraint with potential cancellation of terms" in cautions
 
     @pytest.mark.component
     def test_collect_numerical_cautions_jacobian(self):
@@ -1344,9 +1469,9 @@ Model Statistics
     No warnings found!
 
 ------------------------------------------------------------------------------------
-0 Cautions
+1 Cautions
 
-    No cautions found!
+    Caution: 1 Constraint with potential cancellation of terms
 
 ------------------------------------------------------------------------------------
 Suggested next steps:
@@ -1425,12 +1550,13 @@ Model Statistics
     WARNING: 1 Variable at or outside bounds (tol=0.0E+00)
 
 ------------------------------------------------------------------------------------
-5 Cautions
+6 Cautions
 
     Caution: 2 Variables with value close to their bounds (abs=1.0E-04, rel=1.0E-04)
     Caution: 2 Variables with value close to zero (tol=1.0E-08)
     Caution: 1 Variable with extreme value (<1.0E-04 or >1.0E+04)
     Caution: 1 Variable with None value
+    Caution: 1 Constraint with potential cancellation of terms
     Caution: 1 extreme Jacobian Entry (<1.0E-04 or >1.0E+04)
 
 ------------------------------------------------------------------------------------
@@ -4053,3 +4179,778 @@ Constraints / bounds in MIS:
 Constraints / bounds in guards for stability:
 """
         assert expected in stream.getvalue()
+
+
+class TestConstraintTermAnalysisVisitor:
+    @pytest.mark.unit
+    def test_sum_combinations(self):
+        # Check method to generate sums of all combinations of terms
+        # excludes single term sums
+        terms = [1, 2, 3, 4, 5]
+        visitor = ConstraintTermAnalysisVisitor()
+        sums = [i for i in visitor._generate_sum_combinations(terms)]
+
+        expected = [
+            3,
+            4,
+            5,
+            6,
+            5,
+            6,
+            7,
+            7,
+            8,
+            9,  # 2-term sums
+            6,
+            7,
+            8,
+            8,
+            9,
+            10,  # 3-term sums starting with 1
+            9,
+            10,
+            11,  # 3-term sums starting with 2
+            12,  # 3-term sum starting with 3
+            10,
+            11,
+            12,
+            13,
+            14,  # 4-term sums
+            15,  # 5-term sum
+        ]
+
+        assert sums == expected
+
+    @pytest.mark.unit
+    def test_int(self):
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=7)
+
+        assert vv == [7]
+        assert len(mm) == 0
+        assert len(cc) == 0
+        assert k
+
+    @pytest.mark.unit
+    def test_float(self):
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=7.7)
+
+        assert vv == [7.7]
+        assert len(mm) == 0
+        assert len(cc) == 0
+        assert k
+
+    @pytest.mark.unit
+    def test_scalar_param(self):
+        m = ConcreteModel()
+        m.scalar_param = Param(initialize=1, mutable=True)
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
+            expr=m.scalar_param
+        )
+
+        assert vv == [1]
+        assert len(mm) == 0
+        assert len(cc) == 0
+        assert k
+
+    @pytest.mark.unit
+    def test_indexed_param(self):
+        m = ConcreteModel()
+        m.indexed_param = Param(["a", "b"], initialize=1, mutable=True)
+
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
+            expr=m.indexed_param["a"]
+        )
+        assert vv == [1]
+        assert len(mm) == 0
+        assert len(cc) == 0
+        assert k
+
+    @pytest.mark.unit
+    def test_scalar_var(self):
+        m = ConcreteModel()
+        m.scalar_var = Var(initialize=1)
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
+            expr=m.scalar_var
+        )
+
+        assert vv == [1]
+        assert len(mm) == 0
+        assert len(cc) == 0
+        assert not k
+
+    @pytest.mark.unit
+    def test_indexed_var(self):
+        m = ConcreteModel()
+        m.indexed_var = Var(["a", "b"], initialize=1)
+
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
+            expr=m.indexed_var["a"]
+        )
+        assert vv == [1]
+        assert len(mm) == 0
+        assert len(cc) == 0
+        assert not k
+
+    @pytest.mark.unit
+    def test_scalar_var_fixed(self):
+        m = ConcreteModel()
+        m.scalar_var = Var(initialize=1)
+        m.scalar_var.fix()
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
+            expr=m.scalar_var
+        )
+
+        assert vv == [1]
+        assert len(mm) == 0
+        assert len(cc) == 0
+        assert k
+
+    @pytest.mark.unit
+    def test_indexed_var_fixed(self):
+        m = ConcreteModel()
+        m.indexed_var = Var(["a", "b"], initialize=1)
+        m.indexed_var.fix()
+
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
+            expr=m.indexed_var["a"]
+        )
+        assert vv == [1]
+        assert len(mm) == 0
+        assert len(cc) == 0
+        assert k
+
+    @pytest.mark.unit
+    def test_equality_expr(self):
+        m = ConcreteModel()
+        m.v1 = Var(initialize=1e-7)
+        m.v2 = Var(initialize=1e7)
+
+        expr = m.v1 == m.v2
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
+
+        assert vv == [-1e-7, 1e7]
+        assert expr in mm
+        assert len(mm) == 1
+        assert len(cc) == 0
+        assert not k
+
+    @pytest.mark.unit
+    def test_equality_expr_constant(self):
+        m = ConcreteModel()
+        m.v1 = Var(initialize=1e-7)
+        m.v2 = Var(initialize=1e7)
+
+        # Fix v1, not constant yet as v2 still free
+        m.v1.fix()
+
+        expr = m.v1 == m.v2
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
+
+        assert vv == [-1e-7, 1e7]
+        assert expr in mm
+        assert len(mm) == 1
+        assert len(cc) == 0
+        assert not k
+
+        # Fix v2, now constant
+        m.v2.fix()
+
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
+
+        assert vv == [-1e-7, 1e7]
+        assert expr in mm
+        assert len(mm) == 1
+        assert len(cc) == 0
+        assert k
+
+    @pytest.mark.unit
+    def test_sum_expr(self):
+        m = ConcreteModel()
+        m.v1 = Var(["a", "b", "c"], initialize=1e7)
+        m.v1["a"].set_value(1e-7)
+
+        expr = sum(m.v1[i] for i in m.v1)
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
+
+        assert vv == [1e-7, 1e7, 1e7]
+        assert expr in mm
+        assert len(mm) == 1
+        assert len(cc) == 0
+        assert not k
+
+    @pytest.mark.unit
+    def test_sum_expr_constant(self):
+        m = ConcreteModel()
+        m.v1 = Var(["a", "b", "c"], initialize=1e7)
+        m.v1["a"].set_value(1e-7)
+        m.v1.fix()
+
+        expr = sum(m.v1[i] for i in m.v1)
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
+
+        assert vv == [1e-7, 1e7, 1e7]
+        assert expr in mm
+        assert len(mm) == 1
+        assert len(cc) == 0
+        assert k
+
+    @pytest.fixture(scope="class")
+    def model(self):
+        m = ConcreteModel()
+        m.v1 = Var(initialize=2)
+        m.v2 = Var(initialize=3)
+        m.v3 = Var(initialize=5.0000001)
+        m.v4 = Var(initialize=5)
+
+        return m
+
+    @pytest.mark.unit
+    def test_product_expr(self, model):
+        m = ConcreteModel()
+        expr = model.v1 * model.v2 * model.v3
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
+
+        assert vv == [pytest.approx(30.0000006, rel=1e-8)]
+        assert len(mm) == 0
+        assert len(cc) == 0
+        assert not k
+
+    @pytest.mark.unit
+    def test_product_sum_expr(self, model):
+        expr = (model.v1 + model.v2) * (model.v3 + model.v4)
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
+
+        assert vv == [pytest.approx((2 + 3) * (5.0000001 + 5), rel=1e-8)]
+        assert len(mm) == 0
+        assert len(cc) == 0
+        assert not k
+
+    @pytest.mark.unit
+    def test_product_sum_expr_w_negation(self, model):
+        expr = (model.v1 + model.v2) * (model.v3 - model.v4)
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
+
+        assert vv == [pytest.approx(0.0000005, rel=1e-8)]
+        assert len(mm) == 0
+        assert expr in cc
+        assert len(cc) == 1
+        assert not k
+
+    @pytest.mark.unit
+    def test_division_expr(self, model):
+        expr = model.v1 / model.v2 / model.v3
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
+
+        assert vv == [pytest.approx(2 / 3 / 5.0000001, rel=1e-8)]
+        assert len(mm) == 0
+        assert len(cc) == 0
+        assert not k
+
+    @pytest.mark.unit
+    def test_division_sum_expr(self, model):
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
+            expr=(model.v1 + model.v2) / (model.v3 + model.v4)
+        )
+
+        assert vv == [pytest.approx((2 + 3) / (5.0000001 + 5), rel=1e-8)]
+        assert len(mm) == 0
+        assert len(cc) == 0
+        assert not k
+
+    @pytest.mark.unit
+    def test_division_sum_expr_w_negation(self, model):
+        expr = (model.v1 + model.v2) / (model.v3 - model.v4)
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
+
+        assert vv == [pytest.approx((2 + 3) / (0.0000001), rel=1e-8)]
+        assert len(mm) == 0
+        assert expr in cc
+        assert len(cc) == 1
+        assert not k
+
+    @pytest.mark.unit
+    def test_division_expr_error(self):
+        m = ConcreteModel()
+        m.v1 = Var(initialize=2)
+        m.v2 = Var(initialize=0)
+
+        with pytest.raises(
+            ZeroDivisionError,
+            match=re.escape(
+                "Error in ConstraintTermAnalysisVisitor: found division with "
+                "denominator of 0 (v1/v2)."
+            ),
+        ):
+            ConstraintTermAnalysisVisitor().walk_expression(expr=m.v1 / m.v2)
+
+    @pytest.mark.unit
+    def test_pow_expr(self, model):
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
+            expr=model.v1**model.v2
+        )
+
+        assert vv == [8]
+        assert len(mm) == 0
+        assert len(cc) == 0
+        assert not k
+
+    @pytest.mark.unit
+    def test_pow_sum_expr(self, model):
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
+            expr=(model.v1 + model.v2) ** (model.v3 + model.v4)
+        )
+
+        assert vv == [pytest.approx(5**10.0000001, rel=1e-8)]
+        assert len(mm) == 0
+        assert len(cc) == 0
+        assert not k
+
+    @pytest.mark.unit
+    def test_pow_sum_expr_w_negation(self, model):
+        expr = (model.v1 + model.v2) ** (model.v3 - model.v4)
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
+
+        assert vv == [pytest.approx((2 + 3) ** (0.0000001), rel=1e-8)]
+        assert len(mm) == 0
+        assert expr in cc
+        assert len(cc) == 1
+        assert not k
+
+    @pytest.fixture(scope="class")
+    def func_model(self):
+        m = ConcreteModel()
+        m.v1 = Var(initialize=1)
+        m.v2 = Var(initialize=0.99999)
+        m.v3 = Var(initialize=-100)
+
+        m.v2.fix()
+
+        return m
+
+    @pytest.mark.unit
+    def test_negation_expr(self, func_model):
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
+            expr=-func_model.v1
+        )
+
+        assert vv == [-1]
+        assert len(mm) == 0
+        assert len(cc) == 0
+        assert not k
+
+    @pytest.mark.unit
+    def test_negation_sum_expr(self, func_model):
+        expr = -(func_model.v1 - func_model.v2)
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
+
+        assert vv == [pytest.approx(-0.00001, rel=1e-8)]
+        assert len(mm) == 0
+        assert expr in cc
+        assert len(cc) == 1
+        assert not k
+
+    # acosh has bounds that don't fit with other functions - we will assume we caught enough
+    func_list = [
+        exp,
+        log,
+        log10,
+        sqrt,
+        sin,
+        cos,
+        tan,
+        asin,
+        acos,
+        atan,
+        sinh,
+        cosh,
+        tanh,
+        asinh,
+        atanh,
+    ]
+    func_error_list = [log, log10, sqrt, asin, acos, acosh, atanh]
+
+    @pytest.mark.unit
+    @pytest.mark.parametrize("func", func_list)
+    def test_func_expr(self, func_model, func):
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
+            expr=func(func_model.v2)
+        )
+
+        assert vv == [pytest.approx(value(func(0.99999)), rel=1e-8)]
+        assert len(mm) == 0
+        assert len(cc) == 0
+        assert k
+
+    @pytest.mark.unit
+    @pytest.mark.parametrize("func", func_list)
+    def test_func_sum_expr(self, func_model, func):
+        expr = func(func_model.v1 - func_model.v2)
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
+
+        assert vv == [pytest.approx(value(func(0.00001)), rel=1e-8)]
+        assert len(mm) == 0
+        assert expr in cc
+        assert len(cc) == 1
+        assert not k
+
+    @pytest.mark.unit
+    @pytest.mark.parametrize("func", func_list)
+    def test_func_sum_expr_w_negation(self, func_model, func):
+        expr = func(func_model.v1 - func_model.v2)
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
+
+        assert vv == [pytest.approx(value(func(0.00001)), rel=1e-8)]
+        assert len(mm) == 0
+        assert expr in cc
+        assert len(cc) == 1
+        assert not k
+
+    @pytest.mark.unit
+    @pytest.mark.parametrize("func", func_error_list)
+    def test_func_expr_error(self, func_model, func):
+        with pytest.raises(
+            ValueError,
+            match=re.escape(
+                "Error in ConstraintTermAnalysisVisitor: error evaluating "
+            ),
+        ):
+            ConstraintTermAnalysisVisitor().walk_expression(expr=func(func_model.v3))
+
+    @pytest.mark.unit
+    def test_expr_if(self, model):
+        model.exprif = Expr_if(
+            IF=model.v1,
+            THEN=model.v1 + model.v2,
+            ELSE=model.v3 - model.v4,
+        )
+
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
+            expr=model.exprif
+        )
+
+        assert vv == [pytest.approx(5, rel=1e-8)]
+        assert len(mm) == 0
+        assert model.exprif in cc
+        assert len(cc) == 1
+        assert not k
+
+    @pytest.mark.unit
+    @pytest.mark.skipif(
+        not AmplInterface.available(), reason="pynumero_ASL is not available"
+    )
+    @pytest.mark.skipif(not cubic_roots_available, reason="Cubic roots not available")
+    def test_ext_func(self):
+        # Use the cubic root external function to test
+        m = ConcreteModel()
+        m.a = Var(initialize=1)
+        m.b = Var(initialize=1)
+
+        m.expr_write = CubicThermoExpressions(m)
+        Z = m.expr_write.z_liq(eos=CubicEoS.PR, A=m.a, B=m.b)
+
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=Z)
+
+        assert vv == [pytest.approx(-2.1149075414767577, rel=1e-8)]
+        assert len(mm) == 0
+        assert Z in cc
+        # We actually get two issues here, as one of the input expressions also cancels
+        assert len(cc) == 2
+        assert not k
+
+        # Check that model state did not change
+        assert value(m.a) == 1
+        assert value(m.b) == 1
+        assert value(Z) == pytest.approx(-2.1149075414767577, rel=1e-8)
+
+    @pytest.mark.unit
+    def test_equality_sum_expr(self):
+        m = ConcreteModel()
+        m.v1 = Var(["a", "b", "c"], initialize=1e7)
+        m.v2 = Var(initialize=1e-7)
+
+        expr = m.v2 == sum(m.v1[i] for i in m.v1)
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
+
+        assert vv == [-1e-7, 3e7]
+        assert expr in mm
+        assert len(mm) == 1
+        assert len(cc) == 0
+        assert not k
+
+    @pytest.mark.unit
+    def test_inequality_sum_expr(self):
+        m = ConcreteModel()
+        m.v1 = Var(["a", "b", "c"], initialize=1e7)
+        m.v2 = Var(initialize=1e-7)
+
+        expr = m.v2 <= sum(m.v1[i] for i in m.v1)
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
+
+        assert vv == [-1e-7, 3e7]
+        assert expr in mm
+        assert len(mm) == 1
+        assert len(cc) == 0
+        assert not k
+
+    @pytest.mark.unit
+    def test_compound_equality_expr_1(self):
+        m = ConcreteModel()
+        m.v1 = Var(["a", "b", "c"], initialize=1e7)
+        m.v2 = Var(initialize=1e-7)
+
+        expr = 6 * m.v2 == 8 * sum(m.v1[i] for i in m.v1)
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
+
+        assert vv == [-6e-7, 2.4e8]
+        assert expr in mm
+        assert len(mm) == 1
+        assert len(cc) == 0
+        assert not k
+
+    @pytest.mark.unit
+    def test_ranged_expr(self):
+        m = ConcreteModel()
+        m.v1 = Var(initialize=1e7)
+        m.v2 = Var(initialize=1e-7)
+        m.v3 = Var(initialize=1e7)
+
+        m.expr = EXPR.RangedExpression(args=(m.v1, m.v2, m.v3), strict=True)
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=m.expr)
+
+        assert vv == [-1e7, 1e-7, -1e7]
+        assert m.expr in mm
+        assert len(mm) == 1
+        assert len(cc) == 0
+        assert not k
+
+        # Fix v1 and v2 to make first two terms constant
+        m.v1.fix()
+        m.v2.fix()
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=m.expr)
+
+        # Should not be flagged as constant due to v3
+        assert vv == [-1e7, 1e-7, -1e7]
+        assert m.expr in mm
+        assert len(mm) == 1
+        assert len(cc) == 0
+        assert not k
+
+        # Fix v3 to make all terms constant
+        m.v3.fix()
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=m.expr)
+
+        # Should now be constant
+        assert vv == [-1e7, 1e-7, -1e7]
+        assert m.expr in mm
+        assert len(mm) == 1
+        assert len(cc) == 0
+        assert k
+
+    @pytest.mark.unit
+    def test_compound_equality_expr_2(self):
+        m = ConcreteModel()
+        m.v1 = Var(["a", "b", "c"], initialize=1e7)
+        m.v2 = Var(initialize=1e-7)
+        m.v3 = Var(initialize=1e3)
+
+        # Set this small so we get two mismatched warnings
+        m.v1["a"].set_value(1e-7)
+
+        expr1 = sum(m.v1[i] for i in m.v1)
+        expr = 6 * m.v2 == 8 * expr1 + m.v3
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
+
+        assert vv == [-6e-7, pytest.approx(8 * (2e7 + 1e-7) + 1000, rel=1e-8)]
+        assert expr in mm
+        assert expr1 in mm
+        assert len(mm) == 2
+        assert len(cc) == 0
+        assert not k
+
+    @pytest.mark.unit
+    def test_canceling_sum_expr(self):
+        m = ConcreteModel()
+        m.v1 = Var(initialize=2)
+        m.v2 = Var(initialize=2)
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
+            expr=m.v1 - m.v2
+        )
+
+        assert vv == [2, -2]
+        assert len(mm) == 0
+        # We do not check cancellation at the sum, so this should be empty
+        assert len(cc) == 0
+        assert not k
+
+    @pytest.mark.unit
+    def test_expr_w_canceling_sum(self):
+        m = ConcreteModel()
+        m.v1 = Var(initialize=2)
+        m.v2 = Var(initialize=2)
+        m.v3 = Var(initialize=3)
+
+        expr = m.v3 * (m.v1 - m.v2)
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
+
+        assert vv == [0]
+        assert len(mm) == 0
+        # We should get a warning about canceling sums here
+        assert expr in cc
+        assert len(cc) == 1
+        assert not k
+
+        # Check for tolerance of sum cancellation
+        m.v2.set_value(2.00022)
+
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor(
+            term_cancellation_tolerance=1e-4
+        ).walk_expression(expr=expr)
+
+        assert vv == [pytest.approx(3 * -0.00022, rel=1e-8)]
+        assert len(mm) == 0
+        # This should pass as the difference is greater than tol
+        assert len(cc) == 0
+        assert not k
+
+        # Change tolerance so it should identify cancellation
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor(
+            term_cancellation_tolerance=1e-3
+        ).walk_expression(expr=expr)
+
+        assert vv == [pytest.approx(3 * -0.00022, rel=1e-8)]
+        assert len(mm) == 0
+        assert expr in cc
+        assert len(cc) == 1
+        assert not k
+
+    @pytest.mark.unit
+    def test_canceling_equality_expr_safe(self):
+        m = ConcreteModel()
+        m.v1 = Var(initialize=1e7)
+        m.v2 = Var(initialize=1e7)
+
+        # This is a standard constraint form, so should have no issues despite cancellation
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
+            expr=0 == m.v1 - m.v2
+        )
+
+        assert vv == [0, pytest.approx(0, abs=1e-12)]
+        assert len(mm) == 0
+        assert len(cc) == 0
+        assert not k
+
+    @pytest.mark.unit
+    def test_canceling_equality_expr_issue(self):
+        m = ConcreteModel()
+        m.v1 = Var(initialize=1e7)
+        m.v2 = Var(initialize=1e7)
+        m.v3 = Var(initialize=0)
+
+        expr = m.v3 == m.v1 - m.v2
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
+
+        assert vv == [0, pytest.approx(0, abs=1e-12)]
+        assert len(mm) == 0
+        assert expr in cc
+        assert len(cc) == 1
+        assert not k
+
+    @pytest.mark.unit
+    def test_canceling_equality_expr_compound(self):
+        m = ConcreteModel()
+        m.v1 = Var(["a", "b"], initialize=5e6)
+        m.v2 = Var(initialize=1e7)
+        m.v3 = Var(initialize=0)
+
+        expr = m.v3 == sum(v for v in m.v1.values()) - m.v2
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
+
+        assert vv == [0, pytest.approx(0, abs=1e-12)]
+        assert len(mm) == 0
+        assert expr in cc
+        assert len(cc) == 1
+        assert not k
+
+        # If we fix v3, this should be OK
+        m.v3.fix()
+
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
+
+        assert vv == [0, pytest.approx(0, abs=1e-12)]
+        assert len(mm) == 0
+        assert len(cc) == 0
+        assert not k
+
+    # Double check for a+eps=c form gets flagged in some way
+    @pytest.mark.unit
+    def test_canceling_equality_expr_canceling_sides(self):
+        m = ConcreteModel()
+        m.v1 = Var(initialize=1)
+        m.v2 = Var(initialize=1)
+        m.v3 = Var(initialize=1e-8)
+
+        expr1 = m.v1 + m.v3
+        expr = m.v2 == expr1
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
+
+        assert vv == [-1, pytest.approx(1 + 1e-8, abs=1e-8)]
+        assert expr1 in mm
+        assert len(mm) == 1
+        assert expr in cc
+        assert len(cc) == 1
+        assert not k
+
+    # Check to make sure simple linking constraints are not flagged as cancelling
+    @pytest.mark.unit
+    def test_linking_equality_expr(self):
+        m = ConcreteModel()
+        m.v1 = Var(initialize=1)
+        m.v2 = Var(initialize=1)
+
+        expr = m.v1 == m.v2
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
+
+        assert vv == [-1, 1]
+        assert len(mm) == 0
+        assert len(cc) == 0
+        assert not k
+
+    @pytest.mark.unit
+    def test_linking_equality_expr_compound(self):
+        m = ConcreteModel()
+        m.v1 = Var(initialize=1)
+        m.v2 = Var(initialize=1)
+        m.v3 = Var(initialize=1)
+
+        expr = m.v1 == m.v2 * m.v3
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
+
+        assert vv == [-1, 1]
+        assert len(mm) == 0
+        assert len(cc) == 0
+        assert not k
+
+    @pytest.mark.component
+    def test_external_function_w_string_argument(self):
+        m = ConcreteModel()
+        m.properties = iapws95.Iapws95ParameterBlock()
+        m.state = m.properties.build_state_block([0])
+
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
+            expr=m.state[0].enth_mol
+        )
+
+        assert vv == [pytest.approx(1.1021387e-2, rel=1e-6)]
+        assert len(mm) == 0
+        assert len(cc) == 0
+        assert not k
+
+        # Test nested external functions
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(
+            expr=m.state[0].temperature
+        )
+
+        assert vv == [pytest.approx(270.4877, rel=1e-6)]
+        assert len(mm) == 0
+        assert len(cc) == 0
+        assert not k

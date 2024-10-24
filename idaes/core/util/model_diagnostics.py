@@ -20,10 +20,11 @@ __author__ = "Alexander Dowling, Douglas Allan, Andrew Lee, Robby Parker, Ben Kn
 from operator import itemgetter
 import sys
 from inspect import signature
-from math import log, isclose, inf, isfinite
+from math import log, log10, isclose, inf, isfinite
 import json
 from typing import List
 import logging
+from itertools import combinations, chain
 
 import numpy as np
 from scipy.linalg import svd
@@ -67,6 +68,7 @@ from pyomo.common.config import (
     ConfigValue,
     document_kwargs_from_configdict,
     PositiveInt,
+    NonNegativeFloat,
 )
 from pyomo.util.check_units import identify_inconsistent_units
 from pyomo.contrib.incidence_analysis import IncidenceGraphInterface
@@ -78,6 +80,9 @@ from pyomo.contrib.iis import mis
 from pyomo.common.deprecation import deprecation_warning
 from pyomo.common.errors import PyomoException
 from pyomo.common.tempfiles import TempfileManager
+from pyomo.core import expr as EXPR
+from pyomo.common.numeric_types import native_types
+from pyomo.core.base.units_container import _PyomoUnit
 
 from idaes.core.solvers.get_solver import get_solver
 from idaes.core.util.model_statistics import (
@@ -189,7 +194,7 @@ CONFIG.declare(
     "variable_bounds_absolute_tolerance",
     ConfigValue(
         default=1e-4,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Absolute tolerance for considering a variable to be close "
         "to its bounds.",
     ),
@@ -198,7 +203,7 @@ CONFIG.declare(
     "variable_bounds_relative_tolerance",
     ConfigValue(
         default=1e-4,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Relative tolerance for considering a variable to be close "
         "to its bounds.",
     ),
@@ -207,7 +212,7 @@ CONFIG.declare(
     "variable_bounds_violation_tolerance",
     ConfigValue(
         default=0,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Absolute tolerance for considering a variable to violate its bounds.",
         doc="Absolute tolerance for considering a variable to violate its bounds. "
         "Some solvers relax bounds on variables thus allowing a small violation to be "
@@ -218,15 +223,31 @@ CONFIG.declare(
     "constraint_residual_tolerance",
     ConfigValue(
         default=1e-5,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Absolute tolerance to use when checking constraint residuals.",
+    ),
+)
+CONFIG.declare(
+    "constraint_term_mismatch_tolerance",
+    ConfigValue(
+        default=1e6,
+        domain=NonNegativeFloat,
+        description="Magnitude difference to use when checking for mismatched additive terms in constraints.",
+    ),
+)
+CONFIG.declare(
+    "constraint_term_cancellation_tolerance",
+    ConfigValue(
+        default=1e-4,
+        domain=NonNegativeFloat,
+        description="Absolute tolerance to use when checking for canceling additive terms in constraints.",
     ),
 )
 CONFIG.declare(
     "variable_large_value_tolerance",
     ConfigValue(
         default=1e4,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Absolute tolerance for considering a value to be large.",
     ),
 )
@@ -234,7 +255,7 @@ CONFIG.declare(
     "variable_small_value_tolerance",
     ConfigValue(
         default=1e-4,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Absolute tolerance for considering a value to be small.",
     ),
 )
@@ -242,7 +263,7 @@ CONFIG.declare(
     "variable_zero_value_tolerance",
     ConfigValue(
         default=1e-8,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Absolute tolerance for considering a value to be near to zero.",
     ),
 )
@@ -250,7 +271,7 @@ CONFIG.declare(
     "jacobian_large_value_caution",
     ConfigValue(
         default=1e4,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Tolerance for raising a caution for large Jacobian values.",
     ),
 )
@@ -258,7 +279,7 @@ CONFIG.declare(
     "jacobian_large_value_warning",
     ConfigValue(
         default=1e8,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Tolerance for raising a warning for large Jacobian values.",
     ),
 )
@@ -266,7 +287,7 @@ CONFIG.declare(
     "jacobian_small_value_caution",
     ConfigValue(
         default=1e-4,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Tolerance for raising a caution for small Jacobian values.",
     ),
 )
@@ -274,7 +295,7 @@ CONFIG.declare(
     "jacobian_small_value_warning",
     ConfigValue(
         default=1e-8,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Tolerance for raising a warning for small Jacobian values.",
     ),
 )
@@ -290,7 +311,7 @@ CONFIG.declare(
     "parallel_component_tolerance",
     ConfigValue(
         default=1e-8,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Tolerance for identifying near-parallel Jacobian rows/columns",
     ),
 )
@@ -298,7 +319,7 @@ CONFIG.declare(
     "absolute_feasibility_tolerance",
     ConfigValue(
         default=1e-6,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Feasibility tolerance for identifying infeasible constraints and bounds",
     ),
 )
@@ -336,7 +357,7 @@ SVDCONFIG.declare(
     "singular_value_tolerance",
     ConfigValue(
         default=1e-6,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Tolerance for defining a small singular value",
     ),
 )
@@ -344,7 +365,7 @@ SVDCONFIG.declare(
     "size_cutoff_in_singular_vector",
     ConfigValue(
         default=0.1,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Size below which to ignore constraints and variables in "
         "the singular vector",
     ),
@@ -371,7 +392,7 @@ DHCONFIG.declare(
     "M",  # TODO: Need better name
     ConfigValue(
         default=1e5,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Maximum value for nu in MILP models.",
     ),
 )
@@ -379,7 +400,7 @@ DHCONFIG.declare(
     "m_small",  # TODO: Need better name
     ConfigValue(
         default=1e-5,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Smallest value for nu to be considered non-zero in MILP models.",
     ),
 )
@@ -387,7 +408,7 @@ DHCONFIG.declare(
     "trivial_constraint_tolerance",
     ConfigValue(
         default=1e-6,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Tolerance for identifying non-zero rows in Jacobian.",
     ),
 )
@@ -1052,6 +1073,107 @@ class DiagnosticsToolbox:
     # TODO: Block triangularization analysis
     # Number and size of blocks, polynomial degree of 1x1 blocks, simple pivot check of moderate sized sub-blocks?
 
+    def _collect_constraint_mismatches(self, descend_into=True):
+        walker = ConstraintTermAnalysisVisitor(
+            term_mismatch_tolerance=self.config.constraint_term_mismatch_tolerance,
+            term_cancellation_tolerance=self.config.constraint_term_cancellation_tolerance,
+        )
+
+        mismatch = []
+        cancellation = []
+        constant = []
+
+        for c in self._model.component_data_objects(
+            Constraint, descend_into=descend_into
+        ):
+            _, expr_mismatch, expr_cancellation, expr_constant = walker.walk_expression(
+                c.expr
+            )
+
+            for i in expr_mismatch:
+                mismatch.append(f"{c.name}: {i}")
+            for i in expr_cancellation:
+                cancellation.append(f"{c.name}: {i}")
+            if expr_constant:
+                constant.append(c.name)
+
+        return mismatch, cancellation, constant
+
+    def display_constraints_with_mismatched_terms(self, stream=None):
+        """
+        Display constraints in model which contain additive terms of significantly different magnitude.
+
+        Args:
+            stream: I/O object to write report to (default = stdout)
+
+        Returns:
+            None
+
+        """
+        if stream is None:
+            stream = sys.stdout
+
+        mismatch, _, _ = self._collect_constraint_mismatches()
+
+        # Write the output
+        _write_report_section(
+            stream=stream,
+            lines_list=mismatch,
+            title="The following constraints have mismatched terms:",
+            header="=",
+            footer="=",
+        )
+
+    def display_constraints_with_canceling_terms(self, stream=None):
+        """
+        Display constraints in model which contain additive terms which potentially cancel each other.
+
+        Args:
+            stream: I/O object to write report to (default = stdout)
+
+        Returns:
+            None
+
+        """
+        if stream is None:
+            stream = sys.stdout
+
+        _, canceling, _ = self._collect_constraint_mismatches()
+
+        # Write the output
+        _write_report_section(
+            stream=stream,
+            lines_list=canceling,
+            title="The following constraints have canceling terms:",
+            header="=",
+            footer="=",
+        )
+
+    def display_constraints_with_no_free_variables(self, stream=None):
+        """
+        Display constraints in model which contain no free variables.
+
+        Args:
+            stream: I/O object to write report to (default = stdout)
+
+        Returns:
+            None
+
+        """
+        if stream is None:
+            stream = sys.stdout
+
+        _, _, constant = self._collect_constraint_mismatches()
+
+        # Write the output
+        _write_report_section(
+            stream=stream,
+            lines_list=constant,
+            title="The following constraints have no free variables:",
+            header="=",
+            footer="=",
+        )
+
     def _collect_structural_warnings(
         self, ignore_evaluation_errors=False, ignore_unit_consistency=False
     ):
@@ -1334,6 +1456,28 @@ class DiagnosticsToolbox:
             if len(none_value) == 1:
                 cstring = "Variable"
             cautions.append(f"Caution: {len(none_value)} {cstring} with None value")
+
+        # Constraints with possible ill-posed terms
+        mismatch, cancellation, constant = self._collect_constraint_mismatches()
+        if len(mismatch) > 0:
+            cstring = "Constraints"
+            if len(mismatch) == 1:
+                cstring = "Constraint"
+            cautions.append(f"Caution: {len(mismatch)} {cstring} with mismatched terms")
+        if len(cancellation) > 0:
+            cstring = "Constraints"
+            if len(cancellation) == 1:
+                cstring = "Constraint"
+            cautions.append(
+                f"Caution: {len(cancellation)} {cstring} with potential cancellation of terms"
+            )
+        if len(constant) > 0:
+            cstring = "Constraints"
+            if len(constant) == 1:
+                cstring = "Constraint"
+            cautions.append(
+                f"Caution: {len(constant)} {cstring} with no free variables"
+            )
 
         # Extreme Jacobian rows and columns
         jac_col = extreme_jacobian_columns(
@@ -4122,3 +4266,327 @@ def _collect_model_statistics(model):
     )
 
     return stats
+
+
+class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
+    """
+    Expression walker for checking Constraints for problematic terms.
+
+    This walker will walk the expression and look for summation terms
+    with mismatched magnitudes or potential cancellations.
+
+    Args:
+        term_mismatch_tolerance - tolerance to use when determining mismatched
+            terms
+        term_cancellation_tolerance - tolerance to use when identifying
+            possible cancellation of terms
+
+    Returns:
+        list of values for top-level summation terms
+        list of terms with mismatched magnitudes
+        list of terms with potential cancellations
+        bool indicating whether expression is a constant
+    """
+
+    def __init__(
+        self,
+        term_mismatch_tolerance: float = 1e6,
+        term_cancellation_tolerance: float = 1e-4,
+    ):
+        super().__init__()
+
+        # Tolerance attributes
+        self._log_mm_tol = log10(term_mismatch_tolerance)
+        self._sum_tol = term_cancellation_tolerance
+
+        # Placeholders for collecting results
+        self.canceling_terms = ComponentSet()
+        self.mismatched_terms = ComponentSet()
+
+    def _get_value_for_sum_subexpression(self, child_data):
+        # child_data is a tuple, with the 0-th element being the node values
+        if isinstance(child_data[0][0], str):
+            # Values may be a list containing a string in some cases (e.g. external functions)
+            # Return the string in this case
+            return child_data[0][0]
+        return sum(i for i in child_data[0])
+
+    def _generate_sum_combinations(self, inputs):
+        # We want to test all combinations of terms for cancellation
+        # Single terms cannot cancel, thus we want all combinations of length 2 to all terms
+        combo_range = range(2, len(inputs) + 1)
+        for i in chain.from_iterable(combinations(inputs, r) for r in combo_range):
+            # We want the absolute value of the sum of the combination
+            yield abs(sum(i))
+
+    def _check_sum_cancellations(self, values_list):
+        # First, strip any terms with value 0 as they do not contribute to cancellation
+        # We do this to keep the number of possible combinations as small as possible
+        stripped = [i for i in values_list if i != 0]
+
+        if len(stripped) == 0:
+            # If the stripped list is empty, there are no non-zero terms
+            # We can stop here and return False as there are no possible cancellations
+            return False
+
+        # For scaling of tolerance, we want to compare to the largest absolute value of
+        # the input values
+        max_value = abs(max(stripped, key=abs))
+
+        for i in self._generate_sum_combinations(stripped):
+            # We do not need to check all combinations, as we only need determine if any
+            # combination cancels. Thus, if we find a cancellation, stop and return True
+            if i <= self._sum_tol * max_value:
+                return True
+
+        return False
+
+    def _perform_checks(self, node, child_data):
+        # Perform checks for problematic expressions
+        # First, need to check to see if any child data is a list
+        # This indicates a sum expression
+        const = True
+
+        for d in child_data:
+            # We will check for canceling terms here, rather than the sum itself, to handle special cases
+            # We want to look for cases where a sum term results in a value much smaller
+            # than the terms of the sum
+            # Each element of child_data is a tuple where the 0-th element is the node values
+            if isinstance(d[0][0], str):
+                # Values may be a list containing a string in some cases (e.g. external functions)
+                # Skip if this is the case
+                pass
+            elif self._check_sum_cancellations(d[0]):
+                self.canceling_terms.add(node)
+
+            # Expression is not constant if any child is not constant
+            # Element 1 is a bool indicating if the child node is constant
+            if not d[1]:
+                const = False
+
+        # Return any problematic terms found
+        return const
+
+    def _check_base_type(self, node):
+        if isinstance(node, VarData):
+            const = node.fixed
+        else:
+            const = True
+        return [value(node)], const, False
+
+    def _check_equality_expression(self, node, child_data):
+        # (In)equality expressions are a special case of sum expressions
+        # child_data has two elements; 0 is the LHS of the (in)equality and 1 is the RHS
+        # Each of these then contains three elements; 0 is a list of values for the sum components,
+        # 1 is a bool indicating if the child node term is constant, and 2 is a bool indicating if
+        # the child ode is a sum expression.
+
+        # First, to check for cancellation we need to negate one side of the expression
+        # mdata will contain the new set of child_data with negated values
+        mdata = []
+        # child_data[0][0] has the values of the LHS of the (in)equality, and we will negate these
+        vals = []
+        for j in child_data[0][0]:
+            vals.append(-j)
+        # Append the negated values along with whether the node is constant to mdata
+        mdata.append((vals, child_data[0][1]))
+        # child_data[1] is the RHS, so we take this as it appears and append to mdata
+        mdata.append(child_data[1])
+
+        # Next, call the method to check the sum expression
+        vals, const, _ = self._check_sum_expression(node, mdata)
+
+        # Next, we need to check for canceling terms.
+        # child_data[x][2] indicates if a node is a sum expression or not
+        if not child_data[0][2] and not child_data[1][2]:
+            # If both sides are not sum expressions, we have the form a == b
+            # Simple lLinking constraints do not need to be checked
+            pass
+        # Next, we can ignore any term that has already been flagged as mismatched
+        elif node in self.mismatched_terms:
+            pass
+        # We can also ignore any case where one side of the (in)equality if constant
+        # I.e. if either child_node[x][1] is True
+        elif any(d[1] for d in mdata):
+            pass
+        else:
+            # Check for cancellation
+            # First, collect terms from both sides
+            # Note: outer loop comes first in list comprehension
+            t = [i for d in mdata for i in d[0]]
+
+            # Then check for cancellations
+            if self._check_sum_cancellations(t):
+                self.canceling_terms.add(node)
+
+        return vals, const, False
+
+    def _check_general_expr(self, node, child_data):
+        const = self._perform_checks(node, child_data)
+
+        try:
+            # pylint: disable-next=protected-access
+            val = node._apply_operation(
+                list(map(self._get_value_for_sum_subexpression, child_data))
+            )
+        except ValueError:
+            raise ValueError(
+                f"Error in ConstraintTermAnalysisVisitor: error evaluating {str(node)}."
+            )
+        except ZeroDivisionError:
+            raise ZeroDivisionError(
+                f"Error in ConstraintTermAnalysisVisitor: found division with denominator of 0 "
+                f"({str(node)})."
+            )
+        except Exception as err:
+            # Catch and re-raise any other error that occurs
+            _log.exception(f"Unexpected {err=}, {type(err)=}")
+            raise
+
+        return [val], const, False
+
+    def _check_other_expression(self, node, child_data):
+        const = self._perform_checks(node, child_data)
+
+        # First, need to get value of input terms, which may be sub-expressions
+        input_mag = []
+        for i in child_data:
+            input_mag.append(self._get_value_for_sum_subexpression(i))
+
+        # Next, create a copy of the function with expected magnitudes as inputs
+        newfunc = node.create_node_with_local_data(input_mag)
+
+        # Evaluate new function and return the value along with check results
+        return [value(newfunc)], const, False
+
+    def _check_ranged_expression(self, node, child_data):
+        # child_data should have 3 elements, LHS, middle term, and RHS
+        lhs_vals, lhs_const, _ = self._check_equality_expression(node, child_data[:2])
+        rhs_vals, rhs_const, _ = self._check_equality_expression(node, child_data[1:])
+
+        # Constant is a bit vague in terms ranged expressions.
+        # We will call the term constant only if all parts are constant
+        const = lhs_const and rhs_const
+
+        # For values, we need to avoid double counting the middle term
+        # Also for sign convention, we will negate the outer terms
+        vals = lhs_vals + [-rhs_vals[1]]
+
+        return vals, const, False
+
+    def _check_sum_expression(self, node, child_data):
+        # Sum expressions need special handling
+        # For sums, collect all child values into a list
+        vals = []
+        # We will check for cancellation in this node at the next level
+        # Pyomo is generally good at simplifying compound sums
+        const = True
+        # Collect data from child nodes
+        for d in child_data:
+            vals.append(self._get_value_for_sum_subexpression(d))
+
+            # Expression is not constant if any child is not constant
+            # Element 1 is a bool indicating of bode is constant
+            if not d[1]:
+                const = False
+
+        # Check for mismatched terms
+        if len(vals) > 1:
+            absvals = [abs(v) for v in vals]
+            vl = max(absvals)
+            vs = min(absvals)
+            if vl != vs:
+                if vs == 0:
+                    diff = log10(vl)
+                else:
+                    diff = log10(vl / vs)
+
+                if diff >= self._log_mm_tol:
+                    self.mismatched_terms.add(node)
+
+        return vals, const, True
+
+    node_type_method_map = {
+        EXPR.EqualityExpression: _check_equality_expression,
+        EXPR.InequalityExpression: _check_equality_expression,
+        EXPR.RangedExpression: _check_ranged_expression,
+        EXPR.SumExpression: _check_sum_expression,
+        EXPR.NPV_SumExpression: _check_sum_expression,
+        EXPR.ProductExpression: _check_general_expr,
+        EXPR.MonomialTermExpression: _check_general_expr,
+        EXPR.NPV_ProductExpression: _check_general_expr,
+        EXPR.DivisionExpression: _check_general_expr,
+        EXPR.NPV_DivisionExpression: _check_general_expr,
+        EXPR.PowExpression: _check_general_expr,
+        EXPR.NPV_PowExpression: _check_general_expr,
+        EXPR.NegationExpression: _check_general_expr,
+        EXPR.NPV_NegationExpression: _check_general_expr,
+        EXPR.AbsExpression: _check_general_expr,
+        EXPR.NPV_AbsExpression: _check_general_expr,
+        EXPR.UnaryFunctionExpression: _check_general_expr,
+        EXPR.NPV_UnaryFunctionExpression: _check_general_expr,
+        EXPR.Expr_ifExpression: _check_other_expression,
+        EXPR.ExternalFunctionExpression: _check_other_expression,
+        EXPR.NPV_ExternalFunctionExpression: _check_other_expression,
+        EXPR.LinearExpression: _check_sum_expression,
+    }
+
+    def exitNode(self, node, data):
+        """
+        Method to call when exiting node to check for potential issues.
+        """
+        # Return [node values], constant (bool), sum expression (bool)
+        # first check if the node is a leaf
+        nodetype = type(node)
+
+        if nodetype in native_types:
+            return [node], True, False
+
+        node_func = self.node_type_method_map.get(nodetype, None)
+        if node_func is not None:
+            return node_func(self, node, data)
+
+        if not node.is_expression_type():
+            # this is a leaf, but not a native type
+            if nodetype is _PyomoUnit:
+                # Unit have no value, so return 1 as a placeholder
+                return [1], True, False
+
+            # Var or Param
+            return self._check_base_type(node)
+            # might want to add other common types here
+
+        # not a leaf - check if it is a named expression
+        if (
+            hasattr(node, "is_named_expression_type")
+            and node.is_named_expression_type()
+        ):
+            return self._check_other_expression(node, data)
+
+        raise TypeError(
+            f"An unhandled expression node type: {str(nodetype)} was encountered while "
+            f"analyzing constraint terms {str(node)}"
+        )
+
+    def walk_expression(self, expr):
+        """
+        Main method to call to walk an expression and return analysis.
+
+        Args:
+            expr - expression to be analyzed
+
+        Returns:
+            list of values of top-level additive terms
+            ComponentSet containing any mismatched terms
+            ComponentSet containing any canceling terms
+            Bool indicating whether expression is a constant
+        """
+        # Create new holders for collected terms
+        self.canceling_terms = ComponentSet()
+        self.mismatched_terms = ComponentSet()
+
+        # Call parent walk_expression method
+        vals, const, _ = super().walk_expression(expr)
+
+        # Return results
+        return vals, self.mismatched_terms, self.canceling_terms, const
