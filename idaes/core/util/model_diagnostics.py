@@ -1090,10 +1090,14 @@ class DiagnosticsToolbox:
                 c.expr
             )
 
-            for i in expr_mismatch:
-                mismatch.append(f"{c.name}: {i}")
-            for i in expr_cancellation:
-                cancellation.append(f"{c.name}: {i}")
+            if len(expr_mismatch) > 0:
+                mismatch.append(f"{c.name}: {len(expr_mismatch)} mismatched term(s)")
+
+            if len(expr_cancellation) > 0:
+                cancellation.append(
+                    f"{c.name}: {len(expr_cancellation)} potential cancelling term(s)"
+                )
+
             if expr_constant:
                 constant.append(c.name)
 
@@ -1120,6 +1124,7 @@ class DiagnosticsToolbox:
             stream=stream,
             lines_list=mismatch,
             title="The following constraints have mismatched terms:",
+            end_line="Call display_problematic_constraint_terms(constraint) for more information.",
             header="=",
             footer="=",
         )
@@ -1145,6 +1150,60 @@ class DiagnosticsToolbox:
             stream=stream,
             lines_list=canceling,
             title="The following constraints have canceling terms:",
+            end_line="Call display_problematic_constraint_terms(constraint) for more information.",
+            header="=",
+            footer="=",
+        )
+
+    def display_problematic_constraint_terms(self, constraint, stream=None):
+        """
+        Display a summary of potentially problematic terms in a given constraint.
+
+        Args:
+            constraint: ConstraintData object to be examined
+            stream: I/O object to write report to (default = stdout)
+
+        Returns:
+            None
+
+        """
+        if stream is None:
+            stream = sys.stdout
+
+        # Check that constraint is of correct type ot give useful error message
+        if not isinstance(constraint, ConstraintData):
+            # Wrong type, check if it is an indexed constraint
+            if isinstance(constraint, Constraint):
+                raise TypeError(
+                    f"{constraint.name} is an IndexedConstraint. Please provide "
+                    f"an individual element of {constraint.name} (ConstraintData) "
+                    "to be examined for problematic terms."
+                )
+            else:
+                # Not a constraint
+                raise TypeError(
+                    f"{constraint.name} is not an instance of a Pyomo Constraint."
+                )
+
+        walker = ConstraintTermAnalysisVisitor(
+            term_mismatch_tolerance=self.config.constraint_term_mismatch_tolerance,
+            term_cancellation_tolerance=self.config.constraint_term_cancellation_tolerance,
+        )
+
+        _, expr_mismatch, expr_cancellation, _ = walker.walk_expression(constraint.expr)
+
+        # Combine mismatches and cancellations into a summary list
+        issues = []
+        for i in expr_mismatch:
+            issues.append(f"Mismatched: {i}")
+        for i in expr_cancellation:
+            issues.append(f"Cancelling: {i}")
+
+        # Write the output
+        _write_report_section(
+            stream=stream,
+            lines_list=issues,
+            title=f"The following terms in {constraint.name} are potentially problematic:",
             header="=",
             footer="=",
         )

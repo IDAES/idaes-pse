@@ -1047,9 +1047,80 @@ The following pairs of variables are nearly parallel:
 
         mismatch, cancellation, constant = dt._collect_constraint_mismatches()
 
-        assert mismatch == ["c2: v4 + v5"]
-        assert cancellation == ["c2: v3  ==  v4 + v5", "c3: v6  ==  10 + v3 - v4"]
+        assert mismatch == ["c2: 1 mismatched term(s)"]
+        assert cancellation == [
+            "c2: 1 potential cancelling term(s)",
+            "c3: 1 potential cancelling term(s)",
+        ]
         assert constant == ["c1"]
+
+    @pytest.mark.component
+    def test_display_problematic_constraint_terms(self):
+        m = ConcreteModel()
+        m.v1 = Var(initialize=2)
+        m.v2 = Var(initialize=3)
+
+        # Constraint with no free variables
+        m.c1 = Constraint(expr=m.v1 == m.v2)
+        m.v1.fix()
+        m.v2.fix()
+
+        # Constraint with mismatched terms
+        m.v3 = Var(initialize=10)
+        m.v4 = Var(initialize=10)
+        m.v5 = Var(initialize=1e-6)
+        m.c2 = Constraint(expr=m.v3 == m.v4 + m.v5)
+
+        # Constraint with cancellation
+        m.v6 = Var(initialize=10)
+        m.c3 = Constraint(expr=m.v6 == 10 + m.v3 - m.v4)
+
+        dt = DiagnosticsToolbox(model=m)
+
+        stream = StringIO()
+        dt.display_problematic_constraint_terms(m.c2, stream=stream)
+
+        expected = """====================================================================================
+The following terms in c2 are potentially problematic:
+
+    Mismatched: v4 + v5
+    Cancelling: v3  ==  v4 + v5
+
+====================================================================================
+"""
+
+        assert stream.getvalue() == expected
+
+    @pytest.mark.component
+    def test_display_problematic_constraint_terms_indexed_error(self):
+        m = ConcreteModel()
+        m.s = Set(initialize=[1, 2])
+        m.v1 = Var(m.s, initialize=2)
+        m.v2 = Var(m.s, initialize=3)
+
+        def _c_rule(b, i):
+            return b.v1[i] == b.v2[i]
+
+        m.c1 = Constraint(m.s, rule=_c_rule)
+
+        dt = DiagnosticsToolbox(model=m)
+
+        # Check for indexed constraints
+        with pytest.raises(
+            TypeError,
+            match=re.escape(
+                "c1 is an IndexedConstraint. Please provide "
+                "an individual element of c1 (ConstraintData) "
+                "to be examined for problematic terms."
+            ),
+        ):
+            dt.display_problematic_constraint_terms(m.c1)
+
+        # Check for not a constraints
+        with pytest.raises(
+            TypeError, match="v1 is not an instance of a Pyomo Constraint."
+        ):
+            dt.display_problematic_constraint_terms(m.v1)
 
     @pytest.mark.component
     def test_display_constraints_with_mismatched_terms(self):
@@ -1068,8 +1139,9 @@ The following pairs of variables are nearly parallel:
         expected = """====================================================================================
 The following constraints have mismatched terms:
 
-    c2: v4 + v5
+    c2: 1 mismatched term(s)
 
+Call display_problematic_constraint_terms(constraint) for more information.
 ====================================================================================
 """
 
@@ -1094,8 +1166,9 @@ The following constraints have mismatched terms:
         expected = """====================================================================================
 The following constraints have canceling terms:
 
-    c3: v6  ==  10 + v3 - v4
+    c3: 1 potential cancelling term(s)
 
+Call display_problematic_constraint_terms(constraint) for more information.
 ====================================================================================
 """
 
