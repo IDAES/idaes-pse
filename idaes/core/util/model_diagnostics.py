@@ -1170,7 +1170,7 @@ class DiagnosticsToolbox:
         if stream is None:
             stream = sys.stdout
 
-        # Check that constraint is of correct type ot give useful error message
+        # Check that constraint is of correct type to give useful error message
         if not isinstance(constraint, ConstraintData):
             # Wrong type, check if it is an indexed constraint
             if isinstance(constraint, Constraint):
