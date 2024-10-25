@@ -244,6 +244,14 @@ CONFIG.declare(
     ),
 )
 CONFIG.declare(
+    "constraint_term_zero_tolerance",
+    ConfigValue(
+        default=1e-10,
+        domain=NonNegativeFloat,
+        description="Absolute tolerance to use when determining if a constraint term is equal ot zero.",
+    ),
+)
+CONFIG.declare(
     "variable_large_value_tolerance",
     ConfigValue(
         default=1e4,
@@ -1077,6 +1085,7 @@ class DiagnosticsToolbox:
         walker = ConstraintTermAnalysisVisitor(
             term_mismatch_tolerance=self.config.constraint_term_mismatch_tolerance,
             term_cancellation_tolerance=self.config.constraint_term_cancellation_tolerance,
+            term_zero_tolerance=self.config.constraint_term_zero_tolerance,
         )
 
         mismatch = []
@@ -1188,6 +1197,7 @@ class DiagnosticsToolbox:
         walker = ConstraintTermAnalysisVisitor(
             term_mismatch_tolerance=self.config.constraint_term_mismatch_tolerance,
             term_cancellation_tolerance=self.config.constraint_term_cancellation_tolerance,
+            term_zero_tolerance=self.config.constraint_term_zero_tolerance,
         )
 
         _, expr_mismatch, expr_cancellation, _ = walker.walk_expression(constraint.expr)
@@ -4351,12 +4361,14 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
         self,
         term_mismatch_tolerance: float = 1e6,
         term_cancellation_tolerance: float = 1e-4,
+        term_zero_tolerance: float = 1e-10,
     ):
         super().__init__()
 
         # Tolerance attributes
         self._log_mm_tol = log10(term_mismatch_tolerance)
         self._sum_tol = term_cancellation_tolerance
+        self._zero_tolerance = term_zero_tolerance
 
         # Placeholders for collecting results
         self.canceling_terms = ComponentSet()
@@ -4381,7 +4393,7 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
     def _check_sum_cancellations(self, values_list):
         # First, strip any terms with value 0 as they do not contribute to cancellation
         # We do this to keep the number of possible combinations as small as possible
-        stripped = [i for i in values_list if i != 0]
+        stripped = [i for i in values_list if abs(i) >= self._zero_tolerance]
 
         if len(stripped) == 0:
             # If the stripped list is empty, there are no non-zero terms
@@ -4551,17 +4563,18 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
 
         # Check for mismatched terms
         if len(vals) > 1:
-            absvals = [abs(v) for v in vals]
-            vl = max(absvals)
-            vs = min(absvals)
-            if vl != vs:
-                if vs == 0:
-                    diff = log10(vl)
-                else:
-                    diff = log10(vl / vs)
+            absvals = [abs(v) for v in vals if abs(v) >= self._zero_tolerance]
+            if len(absvals) > 0:
+                vl = max(absvals)
+                vs = min(absvals)
+                if vl != vs:
+                    if vs == 0:
+                        diff = log10(vl)
+                    else:
+                        diff = log10(vl / vs)
 
-                if diff >= self._log_mm_tol:
-                    self.mismatched_terms.add(node)
+                    if diff >= self._log_mm_tol:
+                        self.mismatched_terms.add(node)
 
         return vals, const, True
 
