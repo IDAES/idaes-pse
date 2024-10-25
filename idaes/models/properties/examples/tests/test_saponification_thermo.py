@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -16,13 +16,14 @@ Authors: Andrew Lee
 """
 
 import pytest
-from pyomo.environ import ConcreteModel, Constraint, Param, value, Var
+from pyomo.environ import ConcreteModel, Constraint, Param, Suffix, value, Var
 from pyomo.util.check_units import assert_units_consistent
 from idaes.core import MaterialBalanceType, EnergyBalanceType, MaterialFlowBasis
 
 from idaes.models.properties.examples.saponification_thermo import (
     SaponificationParameterBlock,
     SaponificationStateBlock,
+    SaponificationPropertiesScaler,
 )
 from idaes.core.solvers import get_solver
 from idaes.core.initialization import (
@@ -101,6 +102,8 @@ class TestStateBlock(object):
 
         assert isinstance(model.props[1].conc_water_eqn, Constraint)
         assert len(model.props[1].flow_vol) == 1
+
+        assert model.props[1].default_scaler is SaponificationPropertiesScaler
 
     @pytest.mark.unit
     def test_build_defined_state(self):
@@ -313,3 +316,89 @@ def test_initializer():
     initializer.initialize(model.props)
 
     assert initializer.summary[model.props]["status"] == InitializationStatus.Ok
+
+
+class TestSaponificationPropertiesScaler:
+    @pytest.mark.unit
+    def test_variable_scaling_routine(self):
+        model = ConcreteModel()
+        model.params = SaponificationParameterBlock()
+
+        model.props = model.params.build_state_block([1], defined_state=False)
+
+        scaler = model.props[1].default_scaler()
+        assert isinstance(scaler, SaponificationPropertiesScaler)
+
+        scaler.variable_scaling_routine(model.props[1])
+
+        assert isinstance(model.props[1].scaling_factor, Suffix)
+
+        sfx = model.props[1].scaling_factor
+        assert len(sfx) == 8
+        assert sfx[model.props[1].flow_vol] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.props[1].pressure] == pytest.approx(1e-5, rel=1e-8)
+        assert sfx[model.props[1].temperature] == pytest.approx(1 / 310.65, rel=1e-8)
+        for k, v in model.props[1].conc_mol_comp.items():
+            if k == "H2O":
+                assert sfx[v] == pytest.approx(1e-4, rel=1e-8)
+            else:
+                assert sfx[v] == pytest.approx(1e-2, rel=1e-8)
+
+    @pytest.mark.unit
+    def test_constraint_scaling_routine(self):
+        model = ConcreteModel()
+        model.params = SaponificationParameterBlock()
+
+        model.props = model.params.build_state_block([1], defined_state=False)
+
+        scaler = model.props[1].default_scaler()
+        assert isinstance(scaler, SaponificationPropertiesScaler)
+
+        scaler.constraint_scaling_routine(model.props[1])
+
+        assert isinstance(model.props[1].scaling_factor, Suffix)
+
+        sfx = model.props[1].scaling_factor
+        assert len(sfx) == 1
+        assert sfx[model.props[1].conc_water_eqn] == pytest.approx(1e-4, rel=1e-8)
+
+    @pytest.mark.unit
+    def test_constraint_scaling_routine_defined_state(self):
+        model = ConcreteModel()
+        model.params = SaponificationParameterBlock()
+
+        model.props = model.params.build_state_block([1], defined_state=True)
+
+        scaler = model.props[1].default_scaler()
+        assert isinstance(scaler, SaponificationPropertiesScaler)
+
+        scaler.constraint_scaling_routine(model.props[1])
+
+        # No constraints, so there should be no Suffix
+        assert not hasattr(model.props[1], "scaling_factor")
+
+    @pytest.mark.unit
+    def test_scale_model(self):
+        model = ConcreteModel()
+        model.params = SaponificationParameterBlock()
+
+        model.props = model.params.build_state_block([1], defined_state=False)
+
+        scaler = model.props[1].default_scaler()
+        assert isinstance(scaler, SaponificationPropertiesScaler)
+
+        scaler.scale_model(model.props[1])
+
+        assert isinstance(model.props[1].scaling_factor, Suffix)
+
+        sfx = model.props[1].scaling_factor
+        assert len(sfx) == 9
+        assert sfx[model.props[1].flow_vol] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.props[1].pressure] == pytest.approx(1e-5, rel=1e-8)
+        assert sfx[model.props[1].temperature] == pytest.approx(1 / 310.65, rel=1e-8)
+        for k, v in model.props[1].conc_mol_comp.items():
+            if k == "H2O":
+                assert sfx[v] == pytest.approx(1e-4, rel=1e-8)
+            else:
+                assert sfx[v] == pytest.approx(1e-2, rel=1e-8)
+        assert sfx[model.props[1].conc_water_eqn] == pytest.approx(1e-4, rel=1e-8)

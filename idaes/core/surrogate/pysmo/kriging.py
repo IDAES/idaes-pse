@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -537,9 +537,10 @@ class KrigingModel:
         for i in range(0, x.shape[0]):
             cmt = (np.matmul(((np.abs(x[i, :] - x)) ** p), theta)).transpose()
             cov_matrix_tests = np.exp(-1 * cmt)
-            y_prediction[i, 0] = mean + np.matmul(
+            y_pred_val = mean + np.matmul(
                 np.matmul(cov_matrix_tests.transpose(), cov_inv), y_mu
             )
+            y_prediction[i, 0] = y_pred_val.item()
         ss_error = (1 / y_data.shape[0]) * (np.sum((y_data - y_prediction) ** 2))
         rmse_error = np.sqrt(ss_error)
         return ss_error, rmse_error, y_prediction
@@ -589,10 +590,11 @@ class KrigingModel:
                 )
             ).transpose()
             cov_matrix_tests = np.exp(-1 * cmt)
-            y_pred[i, 0] = self.optimal_mean + np.matmul(
+            y_pred_val = self.optimal_mean + np.matmul(
                 np.matmul(cov_matrix_tests.transpose(), self.covariance_matrix_inverse),
                 self.optimal_y_mu,
             )
+            y_pred[i, 0] = y_pred_val.item()
         return y_pred
 
     def training(self):
