@@ -235,10 +235,18 @@ def create_stream_table_ui(
 
     for key, sb in stream_states.items():
         stream_attributes[key] = {}
-        if true_state:
-            disp_dict = sb.define_state_vars()
-        else:
-            disp_dict = sb.define_display_vars()
+        try:
+            if true_state:
+                disp_dict = sb.define_state_vars()
+            else:
+                disp_dict = sb.define_display_vars()
+        except AttributeError:  # if define_(display,state)_vars doesn't exist(!)
+            disp_dict = {}
+            which = "state" if true_state else "display"
+            _log.warning(
+                f"stream '{key}' does not have expected attribute "
+                f"'define_{which}_vars'. Stream values will be empty."
+            )
         for k in disp_dict:
             for row, i in enumerate(disp_dict[k]):
                 stream_key = k if i is None else f"{k} {i}"
@@ -343,7 +351,15 @@ def _get_state_from_port(port, time_point):
     # This method also assumes that ports with different spatial indices won't
     # end up at the same port. Otherwise this check is insufficient.
     if all(states[0] is s for s in states):
-        return states[0][idx]
+        try:
+            result = states[0][idx]
+        except KeyError:  # cannot treat as indexed component
+            _log.warning(
+                f"Cannot treat state states[0]={states[0]} as an indexed component. "
+                f"Ignoring index={idx}"
+            )
+            result = states[0]
+        return result
     raise RuntimeError(
         f"No block could be retrieved from Port {port.name} "
         f"because components are derived from multiple blocks."
