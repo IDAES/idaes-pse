@@ -248,7 +248,7 @@ CONFIG.declare(
     ConfigValue(
         default=1e-10,
         domain=NonNegativeFloat,
-        description="Absolute tolerance to use when determining if a constraint term is equal ot zero.",
+        description="Absolute tolerance to use when determining if a constraint term is equal to zero.",
     ),
 )
 CONFIG.declare(

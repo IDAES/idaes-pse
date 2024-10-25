@@ -5027,3 +5027,24 @@ class TestConstraintTermAnalysisVisitor:
         assert len(mm) == 0
         assert len(cc) == 0
         assert not k
+
+    @pytest.mark.unit
+    def test_zero_tolerance(self):
+        m = ConcreteModel()
+        m.v1 = Var(initialize=1e-12)
+        m.v2 = Var(initialize=1)
+        m.v3 = Var(initialize=1e-12)
+
+        expr1 = m.v1 - m.v3
+        expr = m.v2 == expr1 + 1
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
+
+        print(vv, mm, cc, k)
+
+        assert vv == [-1, pytest.approx(1, abs=1e-8)]
+        # We expect no mismatches, as smallest terms are below zero tolerance
+        assert len(mm) == 0
+        # We expect the main expression to be flagged as cancelling, but not v1 - v3
+        assert expr in cc
+        assert len(cc) == 1
+        assert not k
