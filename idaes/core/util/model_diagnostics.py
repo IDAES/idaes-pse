@@ -987,7 +987,7 @@ class DiagnosticsToolbox:
             footer="=",
         )
 
-    def display_near_parallel_constraints(self, stream=None):
+    def display_near_parallel_constraints(self, stream=None, scaled=False):
         """
         Display near-parallel (duplicate) constraints in model.
 
@@ -1007,6 +1007,7 @@ class DiagnosticsToolbox:
                 model=self._model,
                 tolerance=self.config.parallel_component_tolerance,
                 direction="row",
+                scaled=scaled,
             )
         ]
 
@@ -1019,7 +1020,7 @@ class DiagnosticsToolbox:
             footer="=",
         )
 
-    def display_near_parallel_variables(self, stream=None):
+    def display_near_parallel_variables(self, stream=None, scaled=None):
         """
         Display near-parallel (duplicate) variables in model.
 
@@ -1039,6 +1040,7 @@ class DiagnosticsToolbox:
                 model=self._model,
                 tolerance=self.config.parallel_component_tolerance,
                 direction="column",
+                scaled=scaled,
             )
         ]
 
@@ -1480,7 +1482,7 @@ class DiagnosticsToolbox:
             footer="=",
         )
 
-    def report_numerical_issues(self, stream=None):
+    def report_numerical_issues(self, stream=None, scaled=False):
         """
         Generates a summary report of any numerical issues identified in the model provided
         and suggest next steps for debugging model.
@@ -1498,7 +1500,7 @@ class DiagnosticsToolbox:
         if stream is None:
             stream = sys.stdout
 
-        jac, nlp = get_jacobian(self._model, scaled=False)
+        jac, nlp = get_jacobian(self._model, scaled=scaled)
 
         warnings, next_steps = self._collect_numerical_warnings(jac=jac, nlp=nlp)
         cautions = self._collect_numerical_cautions(jac=jac, nlp=nlp)
@@ -3719,6 +3721,7 @@ def check_parallel_jacobian(
     zero_norm_tolerance: float = 1e-8,
     jac=None,
     nlp=None,
+    scaled=False,
 ):
     """
     Check for near-parallel rows or columns in the Jacobian.
@@ -3758,7 +3761,7 @@ def check_parallel_jacobian(
         )
 
     if jac is None or nlp is None:
-        jac, nlp = get_jacobian(model, scaled=False)
+        jac, nlp = get_jacobian(model, scaled=scaled)
 
     # Get vectors that we will check, and the Pyomo components
     # they correspond to.
