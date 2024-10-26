@@ -383,19 +383,20 @@ def number_activated_equalities(block):
     ) + number_grey_box_equalities(block)
 
 
-def number_grey_box_equalities(block):
+def number_grey_box_equalities(block) -> int:
     """
-    Method to return the number of equality constraints in GreyBox
+    Function to compute total number of equality constraints for all GreyBox objects in this block.
+
     A GreyBox model is always assumed to be 0DOFs where each output[i]==f(inputs)
     where f is GreyBox model, this should be true regardless if
     GreyBox model is doing internal optimization or not, as every output
     is calculated through a the GreyBox internal model using provided inputs.
 
     Args:
-        block : model to be studied
+        block : pyomo concrete model or pyomo block
 
     Returns:
-        Number of activated equality Constraint components in block
+        Number of equality constraints in all GreyBox objects on the provided block
     """
     equalities = 0
     for grey_box in _iter_indexed_block_data_objects(
