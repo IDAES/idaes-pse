@@ -25,6 +25,7 @@ from pyomo.dae import DerivativeVar
 from pyomo.core.expr import identify_variables
 from pyomo.common.collections import ComponentSet
 from pyomo.common.deprecation import deprecation_warning
+from pyomo.contrib.pynumero.interfaces.external_grey_box import ExternalGreyBoxBlock
 
 import idaes.logger as idaeslog
 
@@ -377,7 +378,31 @@ def number_activated_equalities(block):
     Returns:
         Number of activated equality Constraint components in block
     """
-    return sum(1 for _ in activated_equalities_generator(block))
+    return sum(
+        1 for _ in activated_equalities_generator(block)
+    ) + number_grey_box_equalities(block)
+
+
+def number_grey_box_equalities(block):
+    """
+    Method to return the number of equality constraints in GrayBox
+    A GrayBox model is always assumed to be 0DOFs where each output[i]==f(inputs)
+    where f is GrayBox model, this should be in true regardless if
+    GrayBox model doing internal optimization or not, as every output
+    is calculated through a GrayBox constraint using provided inputs.
+
+    Args:
+        block : model to be studied
+
+    Returns:
+        Number of activated equality Constraint components in block
+    """
+    equalities = 0
+    for grey_box in _iter_indexed_block_data_objects(
+        block, ctype=ExternalGreyBoxBlock, active=True, descend_into=True
+    ):
+        equalities += len(grey_box.outputs)
+    return equalities
 
 
 def deactivated_equalities_generator(block):
@@ -1034,6 +1059,19 @@ def unfixed_variables_in_activated_equalities_set(block):
     for v in variables_in_activated_equalities_set(block):
         if not v.fixed:
             var_set.add(v)
+
+    # for check grayboxes, and their input and
+    # output vars to var_set if they are free
+    # inputs and outputs are defined names for graybox class and should always exist
+    for grey_box in _iter_indexed_block_data_objects(
+        block, ctype=ExternalGreyBoxBlock, active=True, descend_into=True
+    ):
+        for in_var in grey_box.inputs:
+            if not grey_box.inputs[in_var].fixed:
+                var_set.add(grey_box.inputs[in_var])
+        for out_var in grey_box.outputs:
+            if not grey_box.outputs[out_var].fixed:
+                var_set.add(grey_box.outputs[out_var])
     return var_set
 
 

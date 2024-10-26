@@ -31,6 +31,13 @@ from pyomo.common.collections import ComponentSet
 
 from idaes.core.util.model_statistics import *
 from idaes.core.util.model_statistics import _iter_indexed_block_data_objects
+from pyomo.contrib.pynumero.interfaces.external_grey_box import (
+    ExternalGreyBoxBlock,
+    ExternalGreyBoxModel,
+)
+from pyomo.contrib.pynumero.examples.external_grey_box.react_example.reactor_model_outputs import (
+    ReactorConcentrationsOutputModel,
+)
 
 
 @pytest.mark.unit
@@ -683,6 +690,40 @@ def test_number_expressions(m):
 def test_degrees_of_freedom(m):
     assert degrees_of_freedom(m) == 10
     assert degrees_of_freedom(m.b2) == -1
+
+
+@pytest.mark.unit
+def test_degrees_of_freedom_with_graybox():
+    """non functional graybox model added to m fixture, to test DOFs
+
+    Model has 3 inputs, 2 outputs"""
+
+    class BasicGrayBox(ExternalGreyBoxModel):
+        def input_names(self):
+            return ["a1", "a2", "a3"]
+
+        def output_names(self):
+            return ["o1", "o2"]
+
+    m = ConcreteModel()
+
+    m.gb = ExternalGreyBoxBlock(external_model=BasicGrayBox())
+
+    assert degrees_of_freedom(m) == 3
+    m.gb.inputs.fix()
+    assert degrees_of_freedom(m) == 0
+    m.gb.outputs.fix()
+    assert degrees_of_freedom(m) == -2
+    m.gb.outputs.unfix()
+    m.a1 = Var(initialize=1)
+    m.a1.fix()
+    m.gb.inputs["a1"].unfix()
+    m.a1_eq = Constraint(expr=m.a1 == m.gb.inputs["a1"])
+    assert degrees_of_freedom(m) == 0
+    m.o1 = Var(initialize=1)
+    m.o1_eq = Constraint(expr=m.o1 == m.gb.outputs["o1"])
+    m.o1.fix()
+    assert degrees_of_freedom(m) == -1
 
 
 @pytest.mark.unit
