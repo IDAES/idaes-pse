@@ -167,7 +167,7 @@ jobs:
         uses: conda-incubator/setup-miniconda@v3
         with:
           activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
-          python-version: ${{ matrix.python-version }}
+          python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
           miniforge-version: latest
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
@@ -202,7 +202,7 @@ jobs:
         uses: conda-incubator/setup-miniconda@v3
         with:
           activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
-          python-version: ${{ matrix.python-version }}
+          python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
           miniforge-version: latest
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
@@ -235,7 +235,7 @@ jobs:
         uses: conda-incubator/setup-miniconda@v3
         with:
           activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
-          python-version: ${{ matrix.python-version }}
+          python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
           miniforge-version: latest
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
