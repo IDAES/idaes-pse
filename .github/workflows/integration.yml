@@ -144,11 +144,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/display-debug-info
-      - name: Setup Miniforge
+      - name: Set up Conda environment
         uses: conda-incubator/setup-miniconda@v3
         with:
+          activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
+          python-version: ${{ matrix.python-version }}
           miniforge-version: latest
-          activate-environment: anaconda-client-env
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
         with:
@@ -181,11 +182,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/display-debug-info
-      - name: Setup Miniforge
+      - name: Set up Conda environment
         uses: conda-incubator/setup-miniconda@v3
         with:
+          activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
+          python-version: ${{ matrix.python-version }}
           miniforge-version: latest
-          activate-environment: anaconda-client-env
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
         with:
@@ -234,11 +236,12 @@ jobs:
             dependencies-to-uninstall: omlt
     steps:
       - uses: actions/checkout@v4
-      - name: Setup Miniforge
+      - name: Set up Conda environment
         uses: conda-incubator/setup-miniconda@v3
         with:
+          activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
+          python-version: ${{ matrix.python-version }}
           miniforge-version: latest
-          activate-environment: anaconda-client-env
       - name: Set up idaes (non-editable installation)
         uses: ./.github/actions/setup-idaes
         with:
