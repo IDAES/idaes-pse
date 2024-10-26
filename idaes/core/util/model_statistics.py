@@ -385,11 +385,11 @@ def number_activated_equalities(block):
 
 def number_grey_box_equalities(block):
     """
-    Method to return the number of equality constraints in GrayBox
-    A GrayBox model is always assumed to be 0DOFs where each output[i]==f(inputs)
-    where f is GrayBox model, this should be in true regardless if
-    GrayBox model doing internal optimization or not, as every output
-    is calculated through a GrayBox constraint using provided inputs.
+    Method to return the number of equality constraints in GreyBox
+    A GreyBox model is always assumed to be 0DOFs where each output[i]==f(inputs)
+    where f is GreyBox model, this should be true regardless if
+    GreyBox model is doing internal optimization or not, as every output
+    is calculated through a the GreyBox internal model using provided inputs.
 
     Args:
         block : model to be studied
@@ -554,7 +554,7 @@ def deactivated_inequalities_generator(block):
         block : model to be studied
 
     Returns:
-        A generator which returns all indeactivated equality Constraint
+        A generator which returns all in deactivated equality Constraint
         components block
     """
     for c in total_inequalities_generator(block):
@@ -1060,9 +1060,9 @@ def unfixed_variables_in_activated_equalities_set(block):
         if not v.fixed:
             var_set.add(v)
 
-    # for check grayboxes, and their input and
-    # output vars to var_set if they are free
-    # inputs and outputs are defined names for graybox class and should always exist
+    # Checks for greyboxes, and if they exist will add
+    # input and output vars to var_set if they are free
+    # inputs and outputs are defined names for greybox class and should always exist
     for grey_box in _iter_indexed_block_data_objects(
         block, ctype=ExternalGreyBoxBlock, active=True, descend_into=True
     ):

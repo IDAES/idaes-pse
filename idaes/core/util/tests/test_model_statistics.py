@@ -35,9 +35,6 @@ from pyomo.contrib.pynumero.interfaces.external_grey_box import (
     ExternalGreyBoxBlock,
     ExternalGreyBoxModel,
 )
-from pyomo.contrib.pynumero.examples.external_grey_box.react_example.reactor_model_outputs import (
-    ReactorConcentrationsOutputModel,
-)
 
 
 @pytest.mark.unit
@@ -696,7 +693,7 @@ def test_degrees_of_freedom(m):
 def test_degrees_of_freedom_with_graybox():
     """non functional graybox model added to m fixture, to test DOFs
 
-    Model has 3 inputs, 2 outputs"""
+    GreyBoxModel has 3 inputs and 2 outputs calculated an unknown function"""
 
     class BasicGrayBox(ExternalGreyBoxModel):
         def input_names(self):
@@ -708,13 +705,15 @@ def test_degrees_of_freedom_with_graybox():
     m = ConcreteModel()
 
     m.gb = ExternalGreyBoxBlock(external_model=BasicGrayBox())
-
+    # verify DOFS works on stand alone greybox
     assert degrees_of_freedom(m) == 3
     m.gb.inputs.fix()
     assert degrees_of_freedom(m) == 0
     m.gb.outputs.fix()
     assert degrees_of_freedom(m) == -2
     m.gb.outputs.unfix()
+
+    # verify DOFs works on greybox connected to other vars on a model via constraints
     m.a1 = Var(initialize=1)
     m.a1.fix()
     m.gb.inputs["a1"].unfix()
