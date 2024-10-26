@@ -71,12 +71,12 @@ Create the Python Environment
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Once you have the repo cloned, you can change into that directory (by default, it will be called "idaes-pse" like the repo) and install the Python packages.
 
-But before you do that, you need to get the Python package manager fully up and running. We use a Python packaging system called Conda_ and we specifically use its minimal version Miniconda_. If you do not already have Conda, please follow the installation instructions for your operating system in :ref:`getting started<tutorials/getting_started/index:Getting Started>`.
+But before you do that, you need to get the Python package manager fully up and running. We use a Python packaging system called Conda_ and we specifically use a community driven minimal version Miniforge. If you do not already have Miniforge, please follow the installation instructions for your operating system in :ref:`getting started<tutorials/getting_started/index:Getting Started>`.
 
 .. _Conda: https://conda.io/
-.. _Miniconda: https://conda.io/en/latest/miniconda.html
+.. _Miniforge: https://conda-forge.org/miniforge/
 
-After Miniconda is installed, we recommend creating a separate conda environment for IDAES. If you are unfamiliar with environments, a good starting guide is `here <https://towardsdatascience.com/getting-started-with-python-environments-using-conda-32e9f2779307>`__. Create and activate a conda environment for the new IDAES installation with the following commands (we officially support python |python-min| through |python-max|, with |python-default| as a default):
+After Miniforge is installed, we recommend creating a separate conda environment for IDAES. If you are unfamiliar with environments, a good starting guide is `here <https://towardsdatascience.com/getting-started-with-python-environments-using-conda-32e9f2779307>`__. Create and activate a conda environment for the new IDAES installation with the following commands (we officially support python |python-min| through |python-max|, with |python-default| as a default):
 
 .. code-block:: sh
 

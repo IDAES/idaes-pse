@@ -104,11 +104,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/display-debug-info
-      - name: Set up Conda environment
+      - name: Setup Miniforge
         uses: conda-incubator/setup-miniconda@v3
         with:
-          activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
-          python-version: ${{ matrix.python-version }}
+          miniforge-version: latest
+          activate-environment: anaconda-client-env
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
         with:
@@ -162,11 +162,11 @@ jobs:
     needs: [code-formatting, spell-check]
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Conda environment
+      - name: Setup Miniforge
         uses: conda-incubator/setup-miniconda@v3
         with:
-          activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
-          python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
+          miniforge-version: latest
+          activate-environment: anaconda-client-env
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
         with:
@@ -196,11 +196,11 @@ jobs:
       # NOTE: using Conda instead of actions/setup-python in this job is not strictly necessary
       # as it doesn't need to run on Windows or use the setup-idaes local action,
       # but we do it for consistency with the other jobs
-      - name: Set up Conda environment
+      - name: Setup Miniforge
         uses: conda-incubator/setup-miniconda@v3
         with:
-          activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
-          python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
+          miniforge-version: latest
+          activate-environment: anaconda-client-env
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
         with:
@@ -228,11 +228,11 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Conda environment
+      - name: Setup Miniforge
         uses: conda-incubator/setup-miniconda@v3
         with:
-          activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
-          python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
+          miniforge-version: latest
+          activate-environment: anaconda-client-env
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
         with:

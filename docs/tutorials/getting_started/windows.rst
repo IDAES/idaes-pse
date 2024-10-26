@@ -29,10 +29,10 @@ To get IDAES fully set up on your machine, we'll go through the steps to get ida
 Install Prerequisites
 ^^^^^^^^^^^^^^^^^^^^^
 
-**Install Miniconda**
+**Install Miniforge**
 
-1. Download & install `Miniconda <https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe>`_.
-2. Install anaconda from the downloaded & open the Anaconda Prompt (Start -> "Anaconda Prompt").
+1. Download & install `Miniforge <https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Windows-x86_64.exe>`_.
+2. Install miniforge from the downloaded
 
 Install IDAES-PSE
 ^^^^^^^^^^^^^^^^^^
