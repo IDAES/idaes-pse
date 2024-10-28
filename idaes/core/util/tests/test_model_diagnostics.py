@@ -4525,17 +4525,59 @@ class TestConstraintTermAnalysisVisitor:
             expr=(model.v1 + model.v2) / (model.v3 + model.v4)
         )
 
-        assert vv == [pytest.approx((2 + 3) / (5.0000001 + 5), rel=1e-8)]
+        assert vv == [
+            pytest.approx(2 / (5.0000001 + 5), rel=1e-8),
+            pytest.approx(3 / (5.0000001 + 5), rel=1e-8),
+        ]
         assert len(mm) == 0
         assert len(cc) == 0
         assert not k
 
     @pytest.mark.unit
     def test_division_sum_expr_w_negation(self, model):
-        expr = (model.v1 + model.v2) / (model.v3 - model.v4)
+        expr = (model.v1 - model.v2) / (model.v3 - model.v4)
         vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
 
-        assert vv == [pytest.approx((2 + 3) / (0.0000001), rel=1e-8)]
+        assert vv == [
+            pytest.approx(2 / 0.0000001, rel=1e-8),
+            pytest.approx(-3 / 0.0000001, rel=1e-8),
+        ]
+        assert len(mm) == 0
+        # Check for cancellation should be deferred
+        assert len(cc) == 0
+        assert not k
+
+    @pytest.mark.unit
+    def test_division_sum_expr_w_zero_denominator(self):
+        m = ConcreteModel()
+        m.v1 = Var(initialize=2)
+        m.v2 = Var(initialize=3)
+        m.v3 = Var(initialize=5)
+        m.v4 = Var(initialize=5)
+
+        expr = (m.v1 - m.v2) / (m.v3 - m.v4)
+        with pytest.raises(
+            ZeroDivisionError,
+            match=re.escape(
+                "Error in ConstraintTermAnalysisVisitor: found division with denominator of 0 "
+                "((v1 - v2)/(v3 - v4))."
+            ),
+        ):
+            ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
+
+    @pytest.mark.unit
+    def test_division_sum_expr_w_negation_deferred(self):
+        m = ConcreteModel()
+        m.v1 = Var(initialize=2)
+        m.v2 = Var(initialize=2)
+        m.v3 = Var(initialize=5.0000001)
+        m.v4 = Var(initialize=5)
+
+        expr = ((m.v1 - m.v2) / (m.v3 - m.v4)) ** 2
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
+
+        print(vv, mm, cc, k)
+        assert vv == [pytest.approx(0, abs=1e-8)]
         assert len(mm) == 0
         assert expr in cc
         assert len(cc) == 1
@@ -4865,6 +4907,22 @@ class TestConstraintTermAnalysisVisitor:
         expr = m.v3 * (m.v1 - m.v2)
         vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
 
+        assert vv == [6, -6]
+        assert len(mm) == 0
+        # Check for cancellation should be defered
+        assert len(cc) == 0
+        assert not k
+
+    @pytest.mark.unit
+    def test_expr_w_deferred_canceling_sum(self):
+        m = ConcreteModel()
+        m.v1 = Var(initialize=2)
+        m.v2 = Var(initialize=2)
+        m.v3 = Var(initialize=3)
+
+        expr = (m.v3 * (m.v1 - m.v2)) ** 2
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
+
         assert vv == [0]
         assert len(mm) == 0
         # We should get a warning about canceling sums here
@@ -4879,7 +4937,7 @@ class TestConstraintTermAnalysisVisitor:
             term_cancellation_tolerance=1e-4
         ).walk_expression(expr=expr)
 
-        assert vv == [pytest.approx(3 * -0.00022, rel=1e-8)]
+        assert vv == [pytest.approx((3 * -0.00022) ** 2, rel=1e-8)]
         assert len(mm) == 0
         # This should pass as the difference is greater than tol
         assert len(cc) == 0
@@ -4890,7 +4948,7 @@ class TestConstraintTermAnalysisVisitor:
             term_cancellation_tolerance=1e-3
         ).walk_expression(expr=expr)
 
-        assert vv == [pytest.approx(3 * -0.00022, rel=1e-8)]
+        assert vv == [pytest.approx((3 * -0.00022) ** 2, rel=1e-8)]
         assert len(mm) == 0
         assert expr in cc
         assert len(cc) == 1
@@ -5047,4 +5105,35 @@ class TestConstraintTermAnalysisVisitor:
         # We expect the main expression to be flagged as cancelling, but not v1 - v3
         assert expr in cc
         assert len(cc) == 1
+        assert not k
+
+    # Test to make sure scaled constraints are not flagged as issues
+    @pytest.mark.unit
+    def test_scaled_equality_expr_product(self):
+        m = ConcreteModel()
+        m.v1 = Var(initialize=1)
+        m.v2 = Var(initialize=1)
+        m.v3 = Var(initialize=2)
+
+        expr = 0 == m.v3 * (m.v1 - m.v2)
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
+
+        assert vv == [0, 0]
+        assert len(mm) == 0
+        assert len(cc) == 0
+        assert not k
+
+    @pytest.mark.unit
+    def test_scaled_equality_expr_division(self):
+        m = ConcreteModel()
+        m.v1 = Var(initialize=1)
+        m.v2 = Var(initialize=1)
+        m.v3 = Var(initialize=2)
+
+        expr = 0 == (m.v1 - m.v2) / m.v3
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
+
+        assert vv == [0, 0]
+        assert len(mm) == 0
+        assert len(cc) == 0
         assert not k

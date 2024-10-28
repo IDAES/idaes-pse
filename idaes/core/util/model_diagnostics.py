@@ -4492,6 +4492,62 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
 
         return vals, const, False
 
+    def _check_product_expr(self, node, child_data):
+        # We expect child_data to be a tuple of len 2 (a*b)
+        # If both or neither a and b are sums (xor), handle like other expressions
+        if not child_data[0][2] ^ child_data[1][2]:
+            return self._check_general_expr(node, child_data)
+        else:
+            # Here we have the case of a sum and a multiplier
+            # For this case, we will make the result look like a sum with the
+            # multiplier applied
+            # This is important for scaling of the sum terms, as cancellation should be
+            # Checked on the scaled value
+
+            # First, check if both terms are constants - if so we can just get the value of
+            # this node and move on.
+            if child_data[0][1] and child_data[1][1]:
+                return self._check_general_expr(node, child_data)
+
+            # The length of the values (child_data[i][0]) of the multiplier will be 1
+            # We can just iterate over all terms in both value lists and multiply
+            # each pair
+            vals = [i * j for i in child_data[0][0] for j in child_data[1][0]]
+
+            # Return the list of values, not constant, is a sum expression (apparent)
+            return vals, False, True
+
+    def _check_div_expr(self, node, child_data):
+        # We expect child_data to be a tuple of len 2 (a/b)
+        # If the numerator is not a sum, handle like general expression
+        # child_data[0] is numerator, child_data[1] is denominator
+        if not child_data[0][2]:
+            return self._check_general_expr(node, child_data)
+        else:
+            # If the numerator is a sum, we will treat this as if the division
+            # were applied to each term in the numerator separately
+            # This is important for scaling of the sum terms, as cancellation should be
+            # Checked on the scaled value
+
+            # First, check if the numerator is constant - if so we can just get the value of
+            # this node and move on.
+            if child_data[0][1]:
+                return self._check_general_expr(node, child_data)
+
+            # Next, we need to get the value of the denominator
+            denom = self._get_value_for_sum_subexpression(child_data[1])
+
+            try:
+                vals = [i / denom for i in child_data[0][0]]
+            except ZeroDivisionError:
+                raise ZeroDivisionError(
+                    f"Error in ConstraintTermAnalysisVisitor: found division with denominator of 0 "
+                    f"({str(node)})."
+                )
+
+            # Return the list of values, not constant, is a sum expression (apparent)
+            return vals, False, True
+
     def _check_general_expr(self, node, child_data):
         const = self._perform_checks(node, child_data)
 
@@ -4584,11 +4640,11 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
         EXPR.RangedExpression: _check_ranged_expression,
         EXPR.SumExpression: _check_sum_expression,
         EXPR.NPV_SumExpression: _check_sum_expression,
-        EXPR.ProductExpression: _check_general_expr,
-        EXPR.MonomialTermExpression: _check_general_expr,
-        EXPR.NPV_ProductExpression: _check_general_expr,
-        EXPR.DivisionExpression: _check_general_expr,
-        EXPR.NPV_DivisionExpression: _check_general_expr,
+        EXPR.ProductExpression: _check_product_expr,
+        EXPR.MonomialTermExpression: _check_product_expr,
+        EXPR.NPV_ProductExpression: _check_product_expr,
+        EXPR.DivisionExpression: _check_div_expr,
+        EXPR.NPV_DivisionExpression: _check_div_expr,
         EXPR.PowExpression: _check_general_expr,
         EXPR.NPV_PowExpression: _check_general_expr,
         EXPR.NegationExpression: _check_general_expr,
