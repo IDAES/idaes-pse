@@ -714,7 +714,13 @@ def test_degrees_of_freedom_with_graybox():
     m = ConcreteModel()
 
     m.gb = ExternalGreyBoxBlock(external_model=BasicGrayBox())
+    m.gb_inactive = ExternalGreyBoxBlock(external_model=BasicGrayBox())
+    m.gb_inactive.deactivate()
     # test counting functions
+    print(number_activated_greybox_blocks(m))
+
+    assert number_greybox_blocks(m) == 2
+    assert number_activated_greybox_blocks(m) == 1
     assert number_of_greybox_variables(m) == 5
     assert number_of_unfixed_greybox_variables(m) == 5
     assert number_greybox_equalities(m) == 3
@@ -738,6 +744,7 @@ def test_degrees_of_freedom_with_graybox():
     m.o1_eq = Constraint(expr=m.o1 == m.gb.outputs["o1"])
     m.o1.fix()
     assert degrees_of_freedom(m) == -1
+    report_statistics(m)
 
 
 @pytest.mark.unit

@@ -116,6 +116,75 @@ def activated_blocks_set(block):
     return block_set
 
 
+def greybox_block_set(block):
+    """
+    Function to return ComponentSet of all Greybox Blocks components in a
+    model.
+
+    Args:
+        block : model to be studied
+
+    Returns:
+        A ComponentSet including all GreyBox Block components in block
+        (including block itself)
+    """
+    block_set = ComponentSet()
+    for grey_box in activated_block_component_generator(
+        block, ctype=ExternalGreyBoxBlock
+    ):
+        block_set.add(grey_box)
+
+    return block_set
+
+
+def activated_greybox_block_set(block):
+    """
+    Function to return ComponentSet of activated Greybox Blocks components in a
+    model.
+
+    Args:
+        block : model to be studied
+
+    Returns:
+        A ComponentSet including all GreyBox Block components in block
+        (including block itself)
+    """
+    block_set = ComponentSet()
+    for grey_box in greybox_block_set(block):
+        if grey_box.active:
+            block_set.add(grey_box)
+
+    return block_set
+
+
+def number_greybox_blocks(block):
+    """
+    Function to return a Number of activated Greybox Blocks components in a
+    model.
+
+    Args:
+        block : model to be studied
+
+    Returns:
+        number of activated greybox blocks
+    """
+    return len(greybox_block_set(block))
+
+
+def number_activated_greybox_blocks(block):
+    """
+    Function to return a Number of activated Greybox Blocks components in a
+    model.
+
+    Args:
+        block : model to be studied
+
+    Returns:
+        number of activated greybox blocks
+    """
+    return len(activated_greybox_block_set(block))
+
+
 def number_activated_blocks(block):
     """
     Method to return the number of activated Block components in a model.
@@ -399,9 +468,7 @@ def number_greybox_equalities(block) -> int:
         Number of equality constraints in all GreyBox objects on the provided block
     """
     equalities = 0
-    for grey_box in _iter_indexed_block_data_objects(
-        block, ctype=ExternalGreyBoxBlock, active=True, descend_into=True
-    ):
+    for grey_box in activated_greybox_block_set(block):
         equalities += len(grey_box.outputs)
         equalities += grey_box.get_external_model().n_equality_constraints()
     return equalities
@@ -1670,6 +1737,15 @@ def report_statistics(block, ostream=None):
         f"{number_deactivated_blocks(block)}) \n"
     )
     ostream.write(f"No. Expressions: " f"{number_expressions(block)} \n")
+    if number_activated_greybox_blocks(block) != 0:
+        ostream.write(
+            f"No. Activated GreyBox Blocks: {number_activated_greybox_blocks(block)} \n"
+        )
+        ostream.write(f"No. GreyBox Variables: {number_of_greybox_variables(block)} \n")
+        ostream.write(
+            f"No. Fixed GreyBox Variables: {number_of_greybox_variables(block)-number_of_unfixed_greybox_variables(block)} \n"
+        )
+        ostream.write(f"No. GreyBox Equalities: {number_greybox_equalities(block)} \n")
     ostream.write(header + "\n")
     ostream.write("\n")
 

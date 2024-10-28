@@ -91,6 +91,7 @@ from idaes.core.util.model_statistics import (
     deactivated_objectives_set,
     variables_in_activated_constraints_set,
     variables_not_in_activated_constraints_set,
+    number_greybox_equalities,
     degrees_of_freedom,
     large_residuals_set,
     variables_near_bounds_set,
@@ -4109,7 +4110,7 @@ def _collect_model_statistics(model):
         f"(External: {len(ext_fixed_vars_in_constraints)})"
     )
     stats.append(
-        f"{TAB}Activated Equality Constraints: {len(activated_equalities_set(model))} "
+        f"{TAB}Activated Equality Constraints: {len(activated_equalities_set(model))+len(number_greybox_equalities(model))} "
         f"(Deactivated: {len(deactivated_equalities_set(model))})"
     )
     stats.append(
