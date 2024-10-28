@@ -380,10 +380,10 @@ def number_activated_equalities(block):
     """
     return sum(
         1 for _ in activated_equalities_generator(block)
-    ) + number_grey_box_equalities(block)
+    ) + number_greybox_equalities(block)
 
 
-def number_grey_box_equalities(block) -> int:
+def number_greybox_equalities(block) -> int:
     """
     Function to compute total number of equality constraints for all GreyBox objects in this block.
 
@@ -925,6 +925,9 @@ def variables_in_activated_equalities_set(block):
     for c in activated_equalities_generator(block):
         for v in identify_variables(c.body):
             var_set.add(v)
+    # include any vars in greyboxes
+    for v in greybox_variables(block):
+        var_set.add(v)
     return var_set
 
 
@@ -1061,9 +1064,6 @@ def unfixed_variables_in_activated_equalities_set(block):
     for v in variables_in_activated_equalities_set(block):
         if not v.fixed:
             var_set.add(v)
-    # Checks for greyboxes, and if they exist will add
-    for v in unfixed_greybox_variables(block):
-        var_set.add(v)
     return var_set
 
 

@@ -717,7 +717,7 @@ def test_degrees_of_freedom_with_graybox():
     # test counting functions
     assert number_of_greybox_variables(m) == 5
     assert number_of_unfixed_greybox_variables(m) == 5
-    assert number_grey_box_equalities(m) == 3
+    assert number_greybox_equalities(m) == 3
     # verify DOFS works on stand alone greybox
     assert degrees_of_freedom(m) == 2
     m.gb.inputs.fix()
