@@ -4476,7 +4476,7 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
         # Next, we can ignore any term that has already been flagged as mismatched
         elif node in self.mismatched_terms:
             pass
-        # We can also ignore any case where one side of the (in)equality if constant
+        # We can also ignore any case where one side of the (in)equality is constant
         # I.e. if either child_node[x][1] is True
         elif any(d[1] for d in mdata):
             pass
