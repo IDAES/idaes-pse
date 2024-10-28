@@ -31,11 +31,13 @@ from idaes.core import (
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.constants import Constants as const
 import idaes.logger as idaeslog
+from idaes.core.scaling import CustomScalerBase
 
 
 # Some more information about this module
 __author__ = "Andrew Lee"
 
+from idaes.core.util.scaling import get_scaling_factor
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -111,11 +113,83 @@ class ReactionParameterData(ReactionParameterBlock):
         )
 
 
+class SaponificationReactionScaler(CustomScalerBase):
+    """
+    Scaler for saponification reaction package.
+
+    Variables are scaled by nominal order of magnitude, and constraints
+    using the inverse maximum scheme.
+    """
+
+    DEFAULT_SCALING_FACTORS = {"reaction_rate": 1e2}
+
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        if model.is_property_constructed("k_rxn"):
+            # First check to see if k_rxn is already scaled
+            sf = get_scaling_factor(model.k_rxn)
+
+            if sf is not None and not overwrite:
+                # k_rxn already has a scaling factor and we are not set to overwrite - move on
+                pass
+            else:
+                # Hopefully temperature has been scaled, so we can get the nominal value of k_rxn
+                # by walking the expression in the constraint.
+                nominals = self.get_expression_nominal_values(model.arrhenius_eqn)
+
+                # We should get two values, k_rxn (LHS) and the Arrhenius equation (RHS)
+                # As of 10/3/2024, the LHS will be the 0-th element of the list, and the RHS the 1st
+                # However, we cannot assume this will always be the case
+
+                # If LHS has been scaled, nominal will be 1/sf, otherwise it will be k_rxn.value
+                # Find the value which does NOT match this - guess that this is the 1st element
+                if nominals[1] != model.k_rxn.value and sf is None:
+                    # This is the most likely case, so check it first
+                    nominal = nominals[1]
+                elif sf is not None and nominals[1] != 1 / sf:
+                    # Next, check for case where k_rxn was already scaled
+                    nominal = nominals[1]
+                else:
+                    # Otherwise we have the case where something changed in Pyomo since 10/3/2024
+                    nominal = nominals[0]
+
+                self.set_variable_scaling_factor(
+                    model.k_rxn,
+                    1 / nominal,
+                    overwrite=overwrite,
+                )
+
+        if model.is_property_constructed("reaction_rate"):
+            for j in model.reaction_rate.values():
+                self.scale_variable_by_default(j, overwrite=overwrite)
+
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        if model.is_property_constructed("arrhenius_eqn"):
+            self.scale_constraint_by_nominal_value(
+                model.arrhenius_eqn,
+                scheme="inverse_maximum",
+                overwrite=overwrite,
+            )
+
+        if model.is_property_constructed("rate_expression"):
+            for j in model.rate_expression.values():
+                self.scale_constraint_by_nominal_value(
+                    j,
+                    scheme="inverse_maximum",
+                    overwrite=overwrite,
+                )
+
+
 class _ReactionBlock(ReactionBlockBase):
     """
     This Class contains methods which should be applied to Reaction Blocks as a
     whole, rather than individual elements of indexed Reaction Blocks.
     """
+
+    default_scaler = SaponificationReactionScaler
 
     def initialize(blk, outlvl=idaeslog.NOTSET, **kwargs):
         """

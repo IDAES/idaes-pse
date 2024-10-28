@@ -19,7 +19,11 @@ from pyomo.environ import check_optimal_termination, Constraint
 from pyomo.common.tempfiles import TempfileManager
 
 from idaes.core.util.scaling import jacobian_cond
-from idaes.core.scaling import AutoScaler, CustomScalerBase
+from idaes.core.scaling.autoscaling import AutoScaler
+from idaes.core.scaling.custom_scaler_base import (
+    CustomScalerBase,
+    ConstraintScalingScheme,
+)
 from idaes.core.solvers import get_solver
 
 
@@ -83,23 +87,23 @@ class ScalingProfiler:
                 "Vars Only": (None, {}),
                 "Harmonic": (
                     cscaler.scale_constraint_by_nominal_value,
-                    {"scheme": "harmonic_mean"},
+                    {"scheme": ConstraintScalingScheme.harmonicMean},
                 ),
                 "Inverse Sum": (
                     cscaler.scale_constraint_by_nominal_value,
-                    {"scheme": "inverse_sum"},
+                    {"scheme": ConstraintScalingScheme.inverseSum},
                 ),
                 "Inverse Root Sum Squares": (
                     cscaler.scale_constraint_by_nominal_value,
-                    {"scheme": "inverse_root_sum_squared"},
+                    {"scheme": ConstraintScalingScheme.inverseRSS},
                 ),
                 "Inverse Maximum": (
                     cscaler.scale_constraint_by_nominal_value,
-                    {"scheme": "inverse_maximum"},
+                    {"scheme": ConstraintScalingScheme.inverseMaximum},
                 ),
                 "Inverse Minimum": (
                     cscaler.scale_constraint_by_nominal_value,
-                    {"scheme": "inverse_minimum"},
+                    {"scheme": ConstraintScalingScheme.inverseMinimum},
                 ),
                 "Nominal L1 Norm": (
                     cscaler.scale_constraint_by_nominal_derivative_norm,

@@ -593,6 +593,14 @@ should be constructed in this state block,
         # pylint: disable-next=protected-access
         return self.parent_component()._include_inherent_reactions()
 
+    @property
+    def default_initializer(self):
+        return self.parent_component().default_initializer
+
+    @property
+    def default_scaler(self):
+        return self.parent_component().default_scaler
+
     def build(self):
         """
         General build method for StateBlockDatas.
