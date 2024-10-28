@@ -2466,7 +2466,6 @@ class TestIpoptConvergenceAnalysis:
         ca = IpoptConvergenceAnalysis(model)
 
         clone = ca._build_model()
-        clone.pprint()
 
         assert clone is not model
         assert isinstance(clone.v1, Var)
@@ -4576,7 +4575,6 @@ class TestConstraintTermAnalysisVisitor:
         expr = ((m.v1 - m.v2) / (m.v3 - m.v4)) ** 2
         vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
 
-        print(vv, mm, cc, k)
         assert vv == [pytest.approx(0, abs=1e-8)]
         assert len(mm) == 0
         assert expr in cc
@@ -4971,7 +4969,7 @@ class TestConstraintTermAnalysisVisitor:
         assert not k
 
     @pytest.mark.unit
-    def test_canceling_equality_expr_issue(self):
+    def test_canceling_equality_expr_zero_term(self):
         m = ConcreteModel()
         m.v1 = Var(initialize=1e7)
         m.v2 = Var(initialize=1e7)
@@ -4981,6 +4979,16 @@ class TestConstraintTermAnalysisVisitor:
         vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
 
         assert vv == [0, pytest.approx(0, abs=1e-12)]
+        assert len(mm) == 0
+        # No cancelling terms as v3=0 is ignored thus we have a=b form
+        assert len(cc) == 0
+        assert not k
+
+        # Set v3 above zero tolerance
+        m.v3.set_value(1e-4)
+
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
+        assert vv == [-1e-4, pytest.approx(0, abs=1e-12)]
         assert len(mm) == 0
         assert expr in cc
         assert len(cc) == 1
@@ -4998,18 +5006,18 @@ class TestConstraintTermAnalysisVisitor:
 
         assert vv == [0, pytest.approx(0, abs=1e-12)]
         assert len(mm) == 0
-        assert expr in cc
-        assert len(cc) == 1
+        # No cancelling terms as v3=0 is ignored thus we have a=b form
+        assert len(cc) == 0
         assert not k
 
-        # If we fix v3, this should be OK
-        m.v3.fix()
+        # Set v3 above zero tolerance
+        m.v3.set_value(1e-4)
 
         vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
-
-        assert vv == [0, pytest.approx(0, abs=1e-12)]
+        assert vv == [-1e-4, pytest.approx(0, abs=1e-12)]
         assert len(mm) == 0
-        assert len(cc) == 0
+        assert expr in cc
+        assert len(cc) == 1
         assert not k
 
     # Double check for a+eps=c form gets flagged in some way
@@ -5094,15 +5102,27 @@ class TestConstraintTermAnalysisVisitor:
         m.v3 = Var(initialize=1e-12)
 
         expr1 = m.v1 - m.v3
-        expr = m.v2 == expr1 + 1
+        expr2 = expr1 + 1
+        expr = m.v2 == expr2
         vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
-
-        print(vv, mm, cc, k)
 
         assert vv == [-1, pytest.approx(1, abs=1e-8)]
         # We expect no mismatches, as smallest terms are below zero tolerance
         assert len(mm) == 0
-        # We expect the main expression to be flagged as cancelling, but not v1 - v3
+        # We expect no cancelling terms, as v1 and v3 are ignored (zero tolerance), leaving
+        # 1 == 1
+        assert len(cc) == 0
+        assert not k
+
+        # Set v1 and v3 above zero tolerance
+        m.v1.set_value(1e-8)
+        m.v3.set_value(1e-8)
+
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
+
+        assert vv == [-1, pytest.approx(1, abs=1e-8)]
+        assert expr2 in mm
+        assert len(mm) == 1
         assert expr in cc
         assert len(cc) == 1
         assert not k
@@ -5134,6 +5154,39 @@ class TestConstraintTermAnalysisVisitor:
         vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
 
         assert vv == [0, 0]
+        assert len(mm) == 0
+        assert len(cc) == 0
+        assert not k
+
+    @pytest.mark.unit
+    def test_mole_fraction_constraint(self):
+        m = ConcreteModel()
+        m.mole_frac_a = Var(initialize=0.5)
+        m.flow_a = Var(initialize=100)
+        m.flow_b = Var(initialize=100)
+
+        expr = m.mole_frac_a * (m.flow_a + m.flow_b) == m.flow_a
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
+
+        assert vv == [pytest.approx(-100, rel=1e-5), pytest.approx(100, rel=1e-5)]
+        assert len(mm) == 0
+        assert len(cc) == 0
+        assert not k
+
+    @pytest.mark.unit
+    def test_mole_fraction_constraint_trace(self):
+        m = ConcreteModel()
+        m.mole_frac_a = Var(initialize=0.999810)
+        m.flow_a = Var(initialize=122.746)
+        m.flow_b = Var(initialize=0.0233239)
+
+        expr = m.mole_frac_a * (m.flow_a + m.flow_b) == m.flow_a
+        vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
+
+        assert vv == [
+            pytest.approx(-122.746, rel=1e-5),
+            pytest.approx(122.746, rel=1e-5),
+        ]
         assert len(mm) == 0
         assert len(cc) == 0
         assert not k

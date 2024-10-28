@@ -185,7 +185,6 @@ def svd_sparse(jacobian, number_singular_values):
     """
     u, s, vT = svds(jacobian, k=number_singular_values, which="SM")
 
-    print(u, s, vT, number_singular_values)
     return u, s, vT.transpose()
 
 
@@ -2990,8 +2989,6 @@ class DegeneracyHunter:
                     # This variable does not appear in any constraint
                     return Constraint.Skip
 
-        m_dh.pprint()
-
         m_dh.degenerate = Constraint(m_dh.V, rule=eq_degenerate)
 
         # When y_pos = 1, nu >= m_small
@@ -4382,15 +4379,29 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
             return child_data[0][0]
         return sum(i for i in child_data[0])
 
-    def _generate_sum_combinations(self, inputs):
+    def _generate_sum_combinations(self, inputs, equality=False):
         # We want to test all combinations of terms for cancellation
-        # Single terms cannot cancel, thus we want all combinations of length 2 to all terms
-        combo_range = range(2, len(inputs) + 1)
+
+        # The number of combinations we check depends on whether this is an (in)equality
+        # expression or a sum node deeper in hte expression tree.
+        # We expect (in)equalities to generally sum to 0 (0 == expr) thus we want to
+        # check if any subset of the sum terms sum to zero (i.e. are any terms unnecessary).
+        # For other sum nodes, we need ot check for any combination of terms.
+
+        # Maximum number of terms ot include in combinations
+        max_comb = len(inputs)
+        if equality:
+            # Subtract 1 if (in)equality node
+            max_comb += -1
+
+        # Single terms cannot cancel, thus we want all combinations of length 2 to max terms
+        # Note the need for +1 due to way range works
+        combo_range = range(2, max_comb + 1)
         for i in chain.from_iterable(combinations(inputs, r) for r in combo_range):
             # We want the absolute value of the sum of the combination
             yield abs(sum(i))
 
-    def _check_sum_cancellations(self, values_list):
+    def _check_sum_cancellations(self, values_list, equality=False):
         # First, strip any terms with value 0 as they do not contribute to cancellation
         # We do this to keep the number of possible combinations as small as possible
         stripped = [i for i in values_list if abs(i) >= self._zero_tolerance]
@@ -4404,7 +4415,7 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
         # the input values
         max_value = abs(max(stripped, key=abs))
 
-        for i in self._generate_sum_combinations(stripped):
+        for i in self._generate_sum_combinations(stripped, equality):
             # We do not need to check all combinations, as we only need determine if any
             # combination cancels. Thus, if we find a cancellation, stop and return True
             if i <= self._sum_tol * max_value:
@@ -4487,7 +4498,7 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
             t = [i for d in mdata for i in d[0]]
 
             # Then check for cancellations
-            if self._check_sum_cancellations(t):
+            if self._check_sum_cancellations(t, equality=True):
                 self.canceling_terms.add(node)
 
         return vals, const, False
