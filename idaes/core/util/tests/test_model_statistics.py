@@ -693,7 +693,8 @@ def test_degrees_of_freedom(m):
 def test_degrees_of_freedom_with_graybox():
     """non functional graybox model added to m fixture, to test DOFs
 
-    GreyBoxModel has 3 inputs and 2 outputs calculated an unknown function"""
+    GreyBoxModel has 3 inputs and 2 outputs calculated an unknown function,
+    input a1 and a2 are bound by equality constraint through internal graybox model"""
 
     class BasicGrayBox(ExternalGreyBoxModel):
         def input_names(self):
@@ -702,12 +703,26 @@ def test_degrees_of_freedom_with_graybox():
         def output_names(self):
             return ["o1", "o2"]
 
+        def equality_constraint_names(self):
+            return ["a_sum"]
+
+        def evaluate_equality_constraints(self):
+            a1 = self._input_values[0]
+            a2 = self._input_values[1]
+            return [a1 * 0.5 + a2]
+
     m = ConcreteModel()
 
     m.gb = ExternalGreyBoxBlock(external_model=BasicGrayBox())
+    # test counting functions
+    assert number_of_greybox_variables(m) == 5
+    assert number_of_unfixed_greybox_variables(m) == 5
+    assert number_grey_box_equalities(m) == 3
     # verify DOFS works on stand alone greybox
-    assert degrees_of_freedom(m) == 3
+    assert degrees_of_freedom(m) == 2
     m.gb.inputs.fix()
+    m.gb.inputs["a1"].unfix()
+    assert number_of_unfixed_greybox_variables(m) == 3
     assert degrees_of_freedom(m) == 0
     m.gb.outputs.fix()
     assert degrees_of_freedom(m) == -2
@@ -716,7 +731,7 @@ def test_degrees_of_freedom_with_graybox():
     # verify DOFs works on greybox connected to other vars on a model via constraints
     m.a1 = Var(initialize=1)
     m.a1.fix()
-    m.gb.inputs["a1"].unfix()
+    m.gb.inputs["a2"].unfix()
     m.a1_eq = Constraint(expr=m.a1 == m.gb.inputs["a1"])
     assert degrees_of_freedom(m) == 0
     m.o1 = Var(initialize=1)

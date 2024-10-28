@@ -403,6 +403,7 @@ def number_grey_box_equalities(block) -> int:
         block, ctype=ExternalGreyBoxBlock, active=True, descend_into=True
     ):
         equalities += len(grey_box.outputs)
+        equalities += grey_box.get_external_model().n_equality_constraints()
     return equalities
 
 
@@ -555,7 +556,7 @@ def deactivated_inequalities_generator(block):
         block : model to be studied
 
     Returns:
-        A generator which returns all in deactivated equality Constraint
+        A generator which returns all deactivated equality Constraint
         components block
     """
     for c in total_inequalities_generator(block):
@@ -1060,20 +1061,76 @@ def unfixed_variables_in_activated_equalities_set(block):
     for v in variables_in_activated_equalities_set(block):
         if not v.fixed:
             var_set.add(v)
-
     # Checks for greyboxes, and if they exist will add
-    # input and output vars to var_set if they are free
-    # inputs and outputs are defined names for greybox class and should always exist
+    for v in unfixed_greybox_variables(block):
+        var_set.add(v)
+    return var_set
+
+
+def unfixed_greybox_variables(block):
+    """
+    Function to return a ComponentSet of all unfixed Var in GreyBoxModels
+
+    Args:
+        block : model to be studied
+
+    Returns:
+        A ComponentSet including all unfixed Var components which appear within
+        activated equality Constraints in block
+    """
+    var_set = ComponentSet()
+    for var in greybox_variables(block):
+        if not var.fixed:
+            var_set.add(var)
+    return var_set
+
+
+def greybox_variables(block):
+    """
+    Function to return a ComponentSet of all Var in GreyBoxModels
+
+    Args:
+        block : model to be studied
+
+    Returns:
+        A ComponentSet including all unfixed Var components which appear within
+        activated equality Constraints in block
+    """
+    var_set = ComponentSet()
     for grey_box in _iter_indexed_block_data_objects(
         block, ctype=ExternalGreyBoxBlock, active=True, descend_into=True
     ):
         for in_var in grey_box.inputs:
-            if not grey_box.inputs[in_var].fixed:
-                var_set.add(grey_box.inputs[in_var])
+            var_set.add(grey_box.inputs[in_var])
         for out_var in grey_box.outputs:
-            if not grey_box.outputs[out_var].fixed:
-                var_set.add(grey_box.outputs[out_var])
+            var_set.add(grey_box.outputs[out_var])
     return var_set
+
+
+def number_of_unfixed_greybox_variables(block):
+    """
+    Function to return a number of unfixed variables in grey box
+    Args:
+        block : model to be studied
+
+    Returns:
+        number of unfixed greybox variables
+    """
+
+    return len(unfixed_greybox_variables(block))
+
+
+def number_of_greybox_variables(block):
+    """
+    Function to return a number of variables in grey box
+    Args:
+        block : model to be studied
+
+    Returns:
+        number of greybox variables
+    """
+
+    return len(greybox_variables(block))
 
 
 def number_unfixed_variables_in_activated_equalities(block):
