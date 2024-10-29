@@ -92,6 +92,11 @@ from idaes.core.util.model_statistics import (
     variables_in_activated_constraints_set,
     variables_not_in_activated_constraints_set,
     number_greybox_equalities,
+    activated_greybox_block_set,
+    deactivated_greybox_block_set,
+    greybox_block_set,
+    unfixed_greybox_variables,
+    greybox_variables,
     degrees_of_freedom,
     large_residuals_set,
     variables_near_bounds_set,
@@ -4110,7 +4115,7 @@ def _collect_model_statistics(model):
         f"(External: {len(ext_fixed_vars_in_constraints)})"
     )
     stats.append(
-        f"{TAB}Activated Equality Constraints: {len(activated_equalities_set(model))+len(number_greybox_equalities(model))} "
+        f"{TAB}Activated Equality Constraints: {len(activated_equalities_set(model))} "
         f"(Deactivated: {len(deactivated_equalities_set(model))})"
     )
     stats.append(
@@ -4121,5 +4126,18 @@ def _collect_model_statistics(model):
         f"{TAB}Activated Objectives: {len(activated_objectives_set(model))} "
         f"(Deactivated: {len(deactivated_objectives_set(model))})"
     )
+
+    # Only show graybox info if they are present
+    if len(greybox_block_set(model)) != 0:
+        stats.append(
+            f"{TAB}Activated GreyBox model: {len(activated_greybox_block_set(model))} "
+            f"(Deactivated: {len(deactivated_greybox_block_set(model))})"
+        )
+        stats.append(
+            f"{TAB}Activated GreyBox Equalities: {number_greybox_equalities(model)}"
+        )
+        stats.append(
+            f"{TAB}Free Variables in GreyBox Equalities: {len(unfixed_greybox_variables(model))} (Fixed: {len(greybox_variables(model)-unfixed_greybox_variables(model))})"
+        )
 
     return stats

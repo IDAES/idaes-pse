@@ -720,6 +720,7 @@ def test_degrees_of_freedom_with_graybox():
     print(number_activated_greybox_blocks(m))
 
     assert number_greybox_blocks(m) == 2
+    assert number_deactivated_greybox_block(m) ==1 
     assert number_activated_greybox_blocks(m) == 1
     assert number_of_greybox_variables(m) == 5
     assert number_of_unfixed_greybox_variables(m) == 5

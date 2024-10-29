@@ -157,6 +157,35 @@ def activated_greybox_block_set(block):
     return block_set
 
 
+def deactivated_greybox_block_set(block):
+    """
+    Function to return ComponentSet of deactivated Greybox Blocks components in a
+    model.
+
+    Args:
+        block : model to be studied
+
+    Returns:
+        A ComponentSet including all GreyBox Block components in block
+        (including block itself)
+    """
+    return greybox_block_set(block) - activated_greybox_block_set(block)
+
+
+def number_deactivated_greybox_block(block):
+    """
+    Function to return a Number of deactivated Greybox Blocks components in a
+    model.
+
+    Args:
+        block : model to be studied
+
+    Returns:
+        number of deactivated greybox blocks
+    """
+    return len(deactivated_greybox_block_set(block))
+
+
 def number_greybox_blocks(block):
     """
     Function to return a Number of activated Greybox Blocks components in a
@@ -1164,9 +1193,7 @@ def greybox_variables(block):
         activated equality Constraints in block
     """
     var_set = ComponentSet()
-    for grey_box in _iter_indexed_block_data_objects(
-        block, ctype=ExternalGreyBoxBlock, active=True, descend_into=True
-    ):
+    for grey_box in activated_greybox_block_set(block):
         for in_var in grey_box.inputs:
             var_set.add(grey_box.inputs[in_var])
         for out_var in grey_box.outputs:
