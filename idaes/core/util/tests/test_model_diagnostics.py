@@ -1348,7 +1348,7 @@ The following constraints have no free variables:
 
         cautions = dt._collect_numerical_cautions()
 
-        assert len(cautions) == 6
+        assert len(cautions) == 5
         assert (
             "Caution: 2 Variables with value close to their bounds (abs=1.0E-04, rel=1.0E-04)"
             in cautions
@@ -1359,7 +1359,6 @@ The following constraints have no free variables:
         assert (
             "Caution: 1 Variable with extreme value (<1.0E-04 or >1.0E+04)" in cautions
         )
-        assert "Caution: 1 Constraint with potential cancellation of terms" in cautions
 
     @pytest.mark.component
     def test_collect_numerical_cautions_jacobian(self):
@@ -1542,9 +1541,9 @@ Model Statistics
     No warnings found!
 
 ------------------------------------------------------------------------------------
-1 Cautions
+0 Cautions
 
-    Caution: 1 Constraint with potential cancellation of terms
+    No cautions found!
 
 ------------------------------------------------------------------------------------
 Suggested next steps:
@@ -1623,13 +1622,12 @@ Model Statistics
     WARNING: 1 Variable at or outside bounds (tol=0.0E+00)
 
 ------------------------------------------------------------------------------------
-6 Cautions
+5 Cautions
 
     Caution: 2 Variables with value close to their bounds (abs=1.0E-04, rel=1.0E-04)
     Caution: 2 Variables with value close to zero (tol=1.0E-08)
     Caution: 1 Variable with extreme value (<1.0E-04 or >1.0E+04)
     Caution: 1 Variable with None value
-    Caution: 1 Constraint with potential cancellation of terms
     Caution: 1 extreme Jacobian Entry (<1.0E-04 or >1.0E+04)
 
 ------------------------------------------------------------------------------------
@@ -1638,6 +1636,58 @@ Suggested next steps:
     display_constraints_with_large_residuals()
     compute_infeasibility_explanation()
     display_variables_at_or_outside_bounds()
+
+====================================================================================
+"""
+
+        assert stream.getvalue() == expected
+
+    @pytest.mark.component
+    def test_report_numerical_issues_cancellation(self):
+        model = ConcreteModel()
+
+        model.v1 = Var(initialize=1)
+        model.v2 = Var(initialize=2)
+        model.v3 = Var(initialize=1e-8)
+
+        # Non-problematic constraints
+        model.c1 = Constraint(expr=2 * model.v1 == model.v2)
+
+        # Problematic constraints
+        model.c10 = Constraint(expr=0 == exp(model.v1 - 0.5 * model.v2))
+        model.c11 = Constraint(expr=0 == model.v1 - 0.5 * model.v2 + model.v3)
+
+        dt = DiagnosticsToolbox(model=model)
+
+        stream = StringIO()
+        dt.report_numerical_issues(stream)
+
+        expected = """====================================================================================
+Model Statistics
+
+    Jacobian Condition Number: Undefined (Exactly Singular)
+
+------------------------------------------------------------------------------------
+3 WARNINGS
+
+    WARNING: 1 Constraint with large residuals (>1.0E-05)
+    WARNING: 1 pair of constraints are parallel (to tolerance 1.0E-08)
+    WARNING: 1 pair of variables are parallel (to tolerance 1.0E-08)
+
+------------------------------------------------------------------------------------
+3 Cautions
+
+    Caution: 1 Variable with value close to zero (tol=1.0E-08)
+    Caution: 1 Constraint with mismatched terms
+    Caution: 1 Constraint with potential cancellation of terms
+
+------------------------------------------------------------------------------------
+Suggested next steps:
+
+    display_constraints_with_large_residuals()
+    compute_infeasibility_explanation()
+    display_near_parallel_constraints()
+    display_near_parallel_variables()
 
 ====================================================================================
 """
@@ -4656,10 +4706,12 @@ class TestConstraintTermAnalysisVisitor:
         expr = -(func_model.v1 - func_model.v2)
         vv, mm, cc, k = ConstraintTermAnalysisVisitor().walk_expression(expr=expr)
 
-        assert vv == [pytest.approx(-0.00001, rel=1e-8)]
+        # Checking the cancellation should be deferred
+        # Expect to get two values back
+        assert vv == [pytest.approx(-1, rel=1e-8), pytest.approx(0.99999, rel=1e-8)]
         assert len(mm) == 0
-        assert expr in cc
-        assert len(cc) == 1
+        # Check is deferred, so no cancellations identified
+        assert len(cc) == 0
         assert not k
 
     # acosh has bounds that don't fit with other functions - we will assume we caught enough
@@ -4766,8 +4818,7 @@ class TestConstraintTermAnalysisVisitor:
         assert vv == [pytest.approx(-2.1149075414767577, rel=1e-8)]
         assert len(mm) == 0
         assert Z in cc
-        # We actually get two issues here, as one of the input expressions also cancels
-        assert len(cc) == 2
+        assert len(cc) == 1
         assert not k
 
         # Check that model state did not change

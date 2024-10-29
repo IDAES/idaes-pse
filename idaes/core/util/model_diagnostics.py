@@ -4559,6 +4559,16 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
             # Return the list of values, not constant, is a sum expression (apparent)
             return vals, False, True
 
+    def _check_negation_expr(self, node, child_data):
+        # Here we need to defer checking of cancellations too due to different ways
+        # these can appear in an expression.
+        # We will simply negate all values on the child node values (child_data[0][0])
+        # and pass on the rest.
+        vals = [-i for i in child_data[0][0]]
+
+        # Return the list of values, not constant, is a sum expression (apparent)
+        return vals, child_data[0][1], child_data[0][2]
+
     def _check_general_expr(self, node, child_data):
         const = self._perform_checks(node, child_data)
 
@@ -4658,8 +4668,8 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
         EXPR.NPV_DivisionExpression: _check_div_expr,
         EXPR.PowExpression: _check_general_expr,
         EXPR.NPV_PowExpression: _check_general_expr,
-        EXPR.NegationExpression: _check_general_expr,
-        EXPR.NPV_NegationExpression: _check_general_expr,
+        EXPR.NegationExpression: _check_negation_expr,
+        EXPR.NPV_NegationExpression: _check_negation_expr,
         EXPR.AbsExpression: _check_general_expr,
         EXPR.NPV_AbsExpression: _check_general_expr,
         EXPR.UnaryFunctionExpression: _check_general_expr,
