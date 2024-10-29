@@ -4383,12 +4383,12 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
         # We want to test all combinations of terms for cancellation
 
         # The number of combinations we check depends on whether this is an (in)equality
-        # expression or a sum node deeper in hte expression tree.
+        # expression or a sum node deeper in the expression tree.
         # We expect (in)equalities to generally sum to 0 (0 == expr) thus we want to
         # check if any subset of the sum terms sum to zero (i.e. are any terms unnecessary).
-        # For other sum nodes, we need ot check for any combination of terms.
+        # For other sum nodes, we need to check for any combination of terms.
 
-        # Maximum number of terms ot include in combinations
+        # Maximum number of terms to include in combinations
         max_comb = len(inputs)
         if equality:
             # Subtract 1 if (in)equality node

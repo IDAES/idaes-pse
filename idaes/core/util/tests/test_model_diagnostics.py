@@ -4958,7 +4958,7 @@ class TestConstraintTermAnalysisVisitor:
 
         assert vv == [6, -6]
         assert len(mm) == 0
-        # Check for cancellation should be defered
+        # Check for cancellation should be deferred
         assert len(cc) == 0
         assert not k
 
