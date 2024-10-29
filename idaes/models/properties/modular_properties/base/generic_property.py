@@ -304,7 +304,8 @@ class GenericParameterData(PhysicalParameterBlock):
         # Add Phase objects
         if self.config.phases is None:
             raise ConfigurationError(
-                "{} was not provided with a phases argument.".format(self.name)
+                f"{self.name} was not provided with a phases argument. "
+                "Did you forget to unpack the configurations dictionary?"
             )
 
         # Add a flag indicating whether this is an electrolyte system or not
