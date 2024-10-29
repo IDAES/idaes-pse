@@ -13,7 +13,7 @@
 """
 Tests for Stream Scaler unit model.
 
-Author: Andrew Lee
+Author: Tanner Polley
 """
 
 import pytest
