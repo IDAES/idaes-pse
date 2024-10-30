@@ -429,7 +429,7 @@ class PriceTakerModel(ConcreteModel):
             raise ConfigurationError(
                 "Before invoking the build_multiperiod_model method, call the append_lmp_data method on PriceTakerModel class first."
             )
-      
+
         self.mp_model = MultiPeriodModel(
             n_time_points=self._n_time_points,
             set_days=self.set_days,
