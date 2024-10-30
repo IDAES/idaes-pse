@@ -35,16 +35,9 @@ Install Prerequisites
 ^^^^^^^^^^^^^^^^^^^^^
 
 **Install  Miniforge**
-** If your device features apple silicon (M1/2/3/X) **
 1. Download `Miniforge <https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-MacOSX-arm64.sh>`_
 2. Open a terminal window & run the downloaded script.
 
-** If your device has an Intel Chip (x86_64) **
-** 1. Download `Miniforge <https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-MacOSX-x86_64.sh>`_ **
-** 2. Open a terminal window & run the downloaded script. **
-
-**To determine your chip type: **
-** Click the Apple icon on the togit p right of your screen --> `About This Mac` **
 
 Install IDAES-PSE
 ^^^^^^^^^^^^^^^^^^
