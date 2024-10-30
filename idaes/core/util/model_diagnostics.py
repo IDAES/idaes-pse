@@ -4642,7 +4642,7 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
             vals.append(self._get_value_for_sum_subexpression(d))
 
             # Expression is not constant if any child is not constant
-            # Element 1 is a bool indicating of bode is constant
+            # Element 1 is a bool indicating if node is constant
             if not d[1]:
                 const = False
 
