@@ -37,6 +37,7 @@ import idaes.logger as idaeslog
 from idaes.apps.grid_integration.multiperiod.price_taker_model import PriceTakerModel
 from idaes.core.util.exceptions import ConfigurationError
 
+
 @pytest.fixture
 def excel_data():
     DATA_DIR = Path(__file__).parent
