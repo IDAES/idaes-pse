@@ -42,26 +42,28 @@ class DesignModelData(ProcessBlockData):
 
     Example Usage:
 
-    def my_design_model(m, p_min, p_max, cost):
-        m.power = Var()
-        m.min_capacity = Constraint(
-            expr=p_min * m.install_unit <= m.power
-        )
-        m.max_capacity = Constraint(
-            expr=m.power <= p_max * m.install_unit
-        )
+    .. code-block:: python
 
-        # capex and fom must either be a constant, or Var, or Expression
-        m.capex = Expression(expr=cost["capex"] * m.power)
-        m.fom = Expression(expr=cost["fom"] * m.power)
+        def my_design_model(m, p_min, p_max, cost):
+            m.power = Var()
+            m.min_capacity = Constraint(
+                expr=p_min * m.install_unit <= m.power
+            )
+            m.max_capacity = Constraint(
+                expr=m.power <= p_max * m.install_unit
+            )
 
-    m = ConcreteModel()
-    m.unit_1 = DesignModel(
-        model_func=my_design_model,
-        model_args={
-            "p_min": 150, "p_max": 600, "cost": {"capex": 10, "fom": 1},
-        },
-    )
+            # capex and fom must either be a constant, or Var, or Expression
+            m.capex = Expression(expr=cost["capex"] * m.power)
+            m.fom = Expression(expr=cost["fom"] * m.power)
+
+        m = ConcreteModel()
+        m.unit_1 = DesignModel(
+            model_func=my_design_model,
+            model_args={
+                "p_min": 150, "p_max": 600, "cost": {"capex": 10, "fom": 1},
+            },
+        )
     """
 
     CONFIG = ConfigDict()
@@ -127,21 +129,23 @@ class OperationModelData(ProcessBlockData):
 
     Example Usage:
 
-    def my_operation_model(m, design_blk):
-        m.power = Var()
-        m.fuel_flow = Var()
-        ...
+    .. code-block:: python
 
-    m = ConcreteModel()
-    m.unit_1 = DesignModel(
-        model_func=my_design_model,
-        model_args={
-            "p_min": 150, "p_max": 600, "cost": {"capex": 10, "fom": 1},
-        },
-    )
-    m.op_unit_1 = OperationModel(
-        model_func=my_operation_model, model_args={"design_blk": m.unit_1},
-    )
+        def my_operation_model(m, design_blk):
+            m.power = Var()
+            m.fuel_flow = Var()
+            ...
+
+        m = ConcreteModel()
+        m.unit_1 = DesignModel(
+            model_func=my_design_model,
+            model_args={
+                "p_min": 150, "p_max": 600, "cost": {"capex": 10, "fom": 1},
+            },
+        )
+        m.op_unit_1 = OperationModel(
+            model_func=my_operation_model, model_args={"design_blk": m.unit_1},
+        )
     """
 
     CONFIG = ConfigDict()
