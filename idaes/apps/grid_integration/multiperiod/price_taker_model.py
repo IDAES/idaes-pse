@@ -377,7 +377,7 @@ class PriceTakerModel(ConcreteModel):
             )
 
         if n_clusters is not None:
-            # Single price signal, use reprentative days
+            # Single price signal, use representative days
             self.set_years = None
             self.set_days = RangeSet(1, n_clusters)
             self._n_time_points = (
@@ -420,6 +420,16 @@ class PriceTakerModel(ConcreteModel):
                         MultiPeriodModel class to build the time-series
                         based price taker model.
         """
+        if not hasattr(self, "_n_time_points"):
+            raise ConfigurationError(
+                "MultiPeriodModel requires n_time_points as an argument. Before invoking the build_multiperiod_model method, call the append_lmp_data method on PriceTakerModel class first, which will assign the number of time points, n_time_points, to be used in the MultiPeriodModel."
+            )
+        # For now, strictly requiring the user to call append_lmp_data before build_multiperiod_model.
+        if (not hasattr(self, "set_days")) or (not hasattr(self, "set_years")):
+            raise ConfigurationError(
+                "Before invoking the build_multiperiod_model method, call the append_lmp_data method on PriceTakerModel class first."
+            )
+      
         self.mp_model = MultiPeriodModel(
             n_time_points=self._n_time_points,
             set_days=self.set_days,

@@ -961,7 +961,7 @@ def test_build_hourly_cashflow_logger_message_no_op_blks(excel_data, caplog):
 
 @pytest.mark.unit
 def test_build_multiperiod_model_no_LMP_logger_message():
-    # Tests building the model with startup/shutdown then ramping rate with LMP as a single year with all time points
+    # Checks the exception raised if issue arises with attaching LMP data to OperationModel
     # Create an instance of the PriceTakerModel class
     m = PriceTakerModel()
 
@@ -986,6 +986,58 @@ def test_build_multiperiod_model_no_LMP_logger_message():
             flowsheet_options={"sofc_design": None},
         )
 
+@pytest.mark.unit
+def test_build_multiperiod_model_before_append_lmp_data_logger_messages():
+    m = PriceTakerModel()
+
+    # First exception arises if _n_time_points is not an attribute of PriceTakerMode
+    with pytest.raises(
+        ConfigurationError,
+        match=(
+            "MultiPeriodModel requires n_time_points as an argument. Before invoking the build_multiperiod_model method, call the append_lmp_data method on PriceTakerModel class first, which will assign the number of time points, n_time_points, to be used in the MultiPeriodModel."
+        ),
+    ):
+        # Build the multiperiod model
+        m.build_multiperiod_model(
+            process_model_func=build_sofc_flowsheet_no_LMP,
+            linking_variable_func=None,
+            flowsheet_options={"sofc_design": None},
+        )
+    
+    # Next exception that would arise relates to either set_years or set_days attributes not existing, indicating append_lmp_data method was not run first.
+    m1 = PriceTakerModel()
+    m1._n_time_points = 240
+    m1.set_days = None
+
+    with pytest.raises(
+    ConfigurationError,
+    match=(
+        "Before invoking the build_multiperiod_model method, call the append_lmp_data method on PriceTakerModel class first, which will assign the number of time points, n_time_points, to be used in the MultiPeriodModel."
+    ),
+    ):
+        # Build the multiperiod model
+        m.build_multiperiod_model(
+            process_model_func=build_sofc_flowsheet_no_LMP,
+            linking_variable_func=None,
+            flowsheet_options={"sofc_design": None},
+        )
+
+    m2 = PriceTakerModel()
+    m2._n_time_points = 240
+    m2.set_years = None
+
+    with pytest.raises(
+    ConfigurationError,
+    match=(
+        "Before invoking the build_multiperiod_model method, call the append_lmp_data method on PriceTakerModel class first, which will assign the number of time points, n_time_points, to be used in the MultiPeriodModel."
+    ),
+    ):
+        # Build the multiperiod model
+        m.build_multiperiod_model(
+            process_model_func=build_sofc_flowsheet_no_LMP,
+            linking_variable_func=None,
+            flowsheet_options={"sofc_design": None},
+        )
 
 @pytest.mark.unit
 def test_build_hourly_cashflow_logger_message_no_des_blks(excel_data, caplog):
