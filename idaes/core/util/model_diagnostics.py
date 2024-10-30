@@ -1205,10 +1205,14 @@ class DiagnosticsToolbox:
 
         # Combine mismatches and cancellations into a summary list
         issues = []
-        for i in expr_mismatch:
-            issues.append(f"Mismatched: {i}")
+        for k, v in expr_mismatch.items():
+            # Want to show full expression node plus largest and smallest magnitudes
+            issues.append(f"Mismatched: {k} (Max {v[0]}, Min {v[1]})")
         for k, v in expr_cancellation.items():
             # Collect summary of cancelling terms for user
+            # Walker gives us back tuple for each canceling term with its index
+            # in the expression and value
+            # Iterate over all cancelling terms and build a string summary
             terms = ""
             for i in v[0]:
                 if len(terms) > 0:
@@ -4388,7 +4392,7 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
 
         # Placeholders for collecting results
         self.canceling_terms = ComponentMap()
-        self.mismatched_terms = ComponentSet()
+        self.mismatched_terms = ComponentMap()
 
     def _get_value_for_sum_subexpression(self, child_data):
         # child_data is a tuple, with the 0-th element being the node values
@@ -4528,7 +4532,7 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
             # Simple lLinking constraints do not need to be checked
             pass
         # Next, we can ignore any term that has already been flagged as mismatched
-        elif node in self.mismatched_terms:
+        elif node in self.mismatched_terms.keys():
             pass
         # We can also ignore any case where one side of the (in)equality is constant
         # I.e. if either child_node[x][1] is True
@@ -4697,7 +4701,7 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
                         diff = log10(vl / vs)
 
                     if diff >= self._log_mm_tol:
-                        self.mismatched_terms.add(node)
+                        self.mismatched_terms[node] = (vl, vs)
 
         return vals, const, True
 
@@ -4778,7 +4782,7 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
         """
         # Create new holders for collected terms
         self.canceling_terms = ComponentMap()
-        self.mismatched_terms = ComponentSet()
+        self.mismatched_terms = ComponentMap()
 
         # Call parent walk_expression method
         vals, const, _ = super().walk_expression(expr)

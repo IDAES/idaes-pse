@@ -1083,11 +1083,12 @@ The following pairs of variables are nearly parallel:
         expected = """====================================================================================
 The following terms in c2 are potentially problematic:
 
-    Mismatched: v4 + v5
+    Mismatched: v4 + v5 (Max 10, Min 1e-06)
     canceling: v3  ==  v4 + v5. Terms 1 (-10), 2 (10)
 
 ====================================================================================
 """
+
         assert stream.getvalue() == expected
 
     @pytest.mark.component
