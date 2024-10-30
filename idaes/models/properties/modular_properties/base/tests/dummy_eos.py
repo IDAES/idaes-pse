@@ -103,7 +103,7 @@ class DummyEoS(EoSBase):
 
     @staticmethod
     def enth_mol_phase(b, p):
-        return 1e2 * b.temperature
+        return 1e2 * pyunits.J / pyunits.mol / pyunits.K * b.temperature
 
     @staticmethod
     def enth_mol_phase_comp(b, p, j):

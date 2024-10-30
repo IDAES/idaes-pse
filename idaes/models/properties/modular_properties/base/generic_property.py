@@ -304,7 +304,8 @@ class GenericParameterData(PhysicalParameterBlock):
         # Add Phase objects
         if self.config.phases is None:
             raise ConfigurationError(
-                "{} was not provided with a phases argument.".format(self.name)
+                f"{self.name} was not provided with a phases argument. "
+                "Did you forget to unpack the configurations dictionary?"
             )
 
         # Add a flag indicating whether this is an electrolyte system or not
@@ -2104,6 +2105,15 @@ class GenericStateBlockData(StateBlockData):
         for p in self.phase_list:
             pobj = self.params.get_phase(p)
             pobj.config.equation_of_state.common(self, pobj)
+
+        # Check to see if state definition uses enthalpy
+        if self.is_property_constructed("enth_mol"):
+            # State definition uses enthalpy, need to add constraint on phase enthalpies
+            @self.Constraint(doc="Total molar enthalpy mixing rule")
+            def enth_mol_eqn(b):
+                return b.enth_mol == sum(
+                    b.enth_mol_phase[p] * b.phase_frac[p] for p in b.phase_list
+                )
 
         # Add phase equilibrium constraints if necessary
         if self.params.config.phases_in_equilibrium is not None and (

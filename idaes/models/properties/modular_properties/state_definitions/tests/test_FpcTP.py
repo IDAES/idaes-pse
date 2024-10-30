@@ -58,6 +58,7 @@ import idaes.logger as idaeslog
 from idaes.core.util.model_statistics import degrees_of_freedom, large_residuals_set
 
 
+# Note: The state definition is set by importing functions for the relevant module above
 @declare_process_block_class("DummyParameterBlock")
 class DummyParameterData(GenericParameterData):
     pass
