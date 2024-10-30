@@ -1049,8 +1049,8 @@ The following pairs of variables are nearly parallel:
 
         assert mismatch == ["c2: 1 mismatched term(s)"]
         assert cancellation == [
-            "c2: 1 potential cancelling term(s)",
-            "c3: 1 potential cancelling term(s)",
+            "c2: 1 potential canceling term(s)",
+            "c3: 1 potential canceling term(s)",
         ]
         assert constant == ["c1"]
 
@@ -1084,11 +1084,10 @@ The following pairs of variables are nearly parallel:
 The following terms in c2 are potentially problematic:
 
     Mismatched: v4 + v5
-    Cancelling: v3  ==  v4 + v5
+    canceling: v3  ==  v4 + v5. Terms 1 (-10), 2 (10)
 
 ====================================================================================
 """
-
         assert stream.getvalue() == expected
 
     @pytest.mark.component
@@ -1166,7 +1165,7 @@ Call display_problematic_constraint_terms(constraint) for more information.
         expected = """====================================================================================
 The following constraints have canceling terms:
 
-    c3: 1 potential cancelling term(s)
+    c3: 1 potential canceling term(s)
 
 Call display_problematic_constraint_terms(constraint) for more information.
 ====================================================================================
@@ -4309,36 +4308,38 @@ class TestConstraintTermAnalysisVisitor:
         # Check method to generate sums of all combinations of terms
         # excludes single term sums
         terms = [1, 2, 3, 4, 5]
-        visitor = ConstraintTermAnalysisVisitor(max_cancelling_terms=None)
-        sums = [i for i in visitor._generate_sum_combinations(terms)]
+        visitor = ConstraintTermAnalysisVisitor(max_canceling_terms=None)
+        sums = [i for i in visitor._generate_combinations(terms)]
+
+        print(sums)
 
         expected = [
-            3,
-            4,
-            5,
-            6,
-            5,
-            6,
-            7,
-            7,
-            8,
-            9,  # 2-term sums
-            6,
-            7,
-            8,
-            8,
-            9,
-            10,  # 3-term sums starting with 1
-            9,
-            10,
-            11,  # 3-term sums starting with 2
-            12,  # 3-term sum starting with 3
-            10,
-            11,
-            12,
-            13,
-            14,  # 4-term sums
-            15,  # 5-term sum
+            ((0, 1), (1, 2)),
+            ((0, 1), (2, 3)),
+            ((0, 1), (3, 4)),
+            ((0, 1), (4, 5)),
+            ((1, 2), (2, 3)),
+            ((1, 2), (3, 4)),
+            ((1, 2), (4, 5)),
+            ((2, 3), (3, 4)),
+            ((2, 3), (4, 5)),
+            ((3, 4), (4, 5)),
+            ((0, 1), (1, 2), (2, 3)),
+            ((0, 1), (1, 2), (3, 4)),
+            ((0, 1), (1, 2), (4, 5)),
+            ((0, 1), (2, 3), (3, 4)),
+            ((0, 1), (2, 3), (4, 5)),
+            ((0, 1), (3, 4), (4, 5)),
+            ((1, 2), (2, 3), (3, 4)),
+            ((1, 2), (2, 3), (4, 5)),
+            ((1, 2), (3, 4), (4, 5)),
+            ((2, 3), (3, 4), (4, 5)),
+            ((0, 1), (1, 2), (2, 3), (3, 4)),
+            ((0, 1), (1, 2), (2, 3), (4, 5)),
+            ((0, 1), (1, 2), (3, 4), (4, 5)),
+            ((0, 1), (2, 3), (3, 4), (4, 5)),
+            ((1, 2), (2, 3), (3, 4), (4, 5)),
+            ((0, 1), (1, 2), (2, 3), (3, 4), (4, 5)),
         ]
 
         assert sums == expected
@@ -4349,37 +4350,53 @@ class TestConstraintTermAnalysisVisitor:
         # excludes single term sums
         terms = [1, 2, 3, 4, 5]
         visitor = ConstraintTermAnalysisVisitor()
-        sums = [i for i in visitor._generate_sum_combinations(terms)]
+        sums = [i for i in visitor._generate_combinations(terms)]
 
-        expected = [
-            3,
-            4,
-            5,
-            6,
-            5,
-            6,
-            7,
-            7,
-            8,
-            9,  # 2-term sums
-            6,
-            7,
-            8,
-            8,
-            9,
-            10,  # 3-term sums starting with 1
-            9,
-            10,
-            11,  # 3-term sums starting with 2
-            12,  # 3-term sum starting with 3
-            10,
-            11,
-            12,
-            13,
-            14,  # 4-term sums - should not consider longer combinations
+        expected = expected = [
+            ((0, 1), (1, 2)),
+            ((0, 1), (2, 3)),
+            ((0, 1), (3, 4)),
+            ((0, 1), (4, 5)),
+            ((1, 2), (2, 3)),
+            ((1, 2), (3, 4)),
+            ((1, 2), (4, 5)),
+            ((2, 3), (3, 4)),
+            ((2, 3), (4, 5)),
+            ((3, 4), (4, 5)),
+            ((0, 1), (1, 2), (2, 3)),
+            ((0, 1), (1, 2), (3, 4)),
+            ((0, 1), (1, 2), (4, 5)),
+            ((0, 1), (2, 3), (3, 4)),
+            ((0, 1), (2, 3), (4, 5)),
+            ((0, 1), (3, 4), (4, 5)),
+            ((1, 2), (2, 3), (3, 4)),
+            ((1, 2), (2, 3), (4, 5)),
+            ((1, 2), (3, 4), (4, 5)),
+            ((2, 3), (3, 4), (4, 5)),
+            ((0, 1), (1, 2), (2, 3), (3, 4)),
+            ((0, 1), (1, 2), (2, 3), (4, 5)),
+            ((0, 1), (1, 2), (3, 4), (4, 5)),
+            ((0, 1), (2, 3), (3, 4), (4, 5)),
+            ((1, 2), (2, 3), (3, 4), (4, 5)),
+            # 5 term combination should be excluded
         ]
 
         assert sums == expected
+
+    @pytest.mark.unit
+    def test_check_sum_cancellations(self):
+        terms = [1, -2, 3, -4, 5]
+        visitor = ConstraintTermAnalysisVisitor()
+        cancellations = visitor._check_sum_cancellations(terms)
+
+        # We expect to canceling combinations
+        # Results should be a list with each entry being a tuple containing a
+        # canceling combination
+        # In turn, each element of the tuple should be a 2-tuple with thw
+        # position of the term in the input list and its value
+        expected = [((0, 1), (2, 3), (3, -4)), ((0, 1), (1, -2), (3, -4), (4, 5))]
+
+        assert cancellations == expected
 
     @pytest.mark.unit
     def test_int(self):
@@ -5069,7 +5086,7 @@ class TestConstraintTermAnalysisVisitor:
 
         assert vv == [0, pytest.approx(0, abs=1e-12)]
         assert len(mm) == 0
-        # No cancelling terms as v3=0 is ignored thus we have a=b form
+        # No canceling terms as v3=0 is ignored thus we have a=b form
         assert len(cc) == 0
         assert not k
 
@@ -5095,7 +5112,7 @@ class TestConstraintTermAnalysisVisitor:
 
         assert vv == [0, pytest.approx(0, abs=1e-12)]
         assert len(mm) == 0
-        # No cancelling terms as v3=0 is ignored thus we have a=b form
+        # No canceling terms as v3=0 is ignored thus we have a=b form
         assert len(cc) == 0
         assert not k
 
@@ -5128,7 +5145,7 @@ class TestConstraintTermAnalysisVisitor:
         assert len(cc) == 1
         assert not k
 
-    # Check to make sure simple linking constraints are not flagged as cancelling
+    # Check to make sure simple linking constraints are not flagged as canceling
     @pytest.mark.unit
     def test_linking_equality_expr(self):
         m = ConcreteModel()
@@ -5198,7 +5215,7 @@ class TestConstraintTermAnalysisVisitor:
         assert vv == [-1, pytest.approx(1, abs=1e-8)]
         # We expect no mismatches, as smallest terms are below zero tolerance
         assert len(mm) == 0
-        # We expect no cancelling terms, as v1 and v3 are ignored (zero tolerance), leaving
+        # We expect no canceling terms, as v1 and v3 are ignored (zero tolerance), leaving
         # 1 == 1
         assert len(cc) == 0
         assert not k

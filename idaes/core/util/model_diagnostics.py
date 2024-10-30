@@ -36,6 +36,7 @@ from pyomo.environ import (
     Integers,
     Block,
     check_optimal_termination,
+    ComponentMap,
     ConcreteModel,
     Constraint,
     Expression,
@@ -84,6 +85,7 @@ from pyomo.core import expr as EXPR
 from pyomo.common.numeric_types import native_types
 from pyomo.core.base.units_container import _PyomoUnit
 
+from idaes.config import canonical_distro
 from idaes.core.solvers.get_solver import get_solver
 from idaes.core.util.model_statistics import (
     activated_blocks_set,
@@ -1103,7 +1105,7 @@ class DiagnosticsToolbox:
 
             if len(expr_cancellation) > 0:
                 cancellation.append(
-                    f"{c.name}: {len(expr_cancellation)} potential cancelling term(s)"
+                    f"{c.name}: {len(expr_cancellation)} potential canceling term(s)"
                 )
 
             if expr_constant:
@@ -1205,8 +1207,15 @@ class DiagnosticsToolbox:
         issues = []
         for i in expr_mismatch:
             issues.append(f"Mismatched: {i}")
-        for i in expr_cancellation:
-            issues.append(f"Cancelling: {i}")
+        for k, v in expr_cancellation.items():
+            # Collect summary of cancelling terms for user
+            terms = ""
+            for i in v[0]:
+                if len(terms) > 0:
+                    terms += ", "
+                # +1 to switch from 0-index to 1-index
+                terms += f"{i[0]+1} ({i[1]})"
+            issues.append(f"canceling: {k}. Terms {terms}")
 
         # Write the output
         _write_report_section(
@@ -4347,8 +4356,11 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
         term_cancellation_tolerance: tolerance to use when identifying
             possible cancellation of terms
         term_zero_tolerance: tolerance for considering terms equal to zero
-        max_cancelling_terms: maximum number of terms to consider when looking
-            for cancelling combinations (None = consider all possible combinations)
+        max_canceling_terms: maximum number of terms to consider when looking
+            for canceling combinations (None = consider all possible combinations)
+        max_cancellations_per_node: maximum number of cancellations to collect
+            for a single node. Collection will terminate when this many cancellations
+            have been identified (None = collect all cancellations)
 
     Returns:
         list of values for top-level summation terms
@@ -4362,7 +4374,8 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
         term_mismatch_tolerance: float = 1e6,
         term_cancellation_tolerance: float = 1e-4,
         term_zero_tolerance: float = 1e-10,
-        max_cancelling_terms: int = 4,
+        max_canceling_terms: int = 4,
+        max_cancellations_per_node: int = 5,
     ):
         super().__init__()
 
@@ -4370,10 +4383,11 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
         self._log_mm_tol = log10(term_mismatch_tolerance)
         self._sum_tol = term_cancellation_tolerance
         self._zero_tolerance = term_zero_tolerance
-        self._max_cancelling_terms = max_cancelling_terms
+        self._max_canceling_terms = max_canceling_terms
+        self._max_cancellations_per_node = max_cancellations_per_node
 
         # Placeholders for collecting results
-        self.canceling_terms = ComponentSet()
+        self.canceling_terms = ComponentMap()
         self.mismatched_terms = ComponentSet()
 
     def _get_value_for_sum_subexpression(self, child_data):
@@ -4384,7 +4398,7 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
             return child_data[0][0]
         return sum(i for i in child_data[0])
 
-    def _generate_sum_combinations(self, inputs, equality=False):
+    def _generate_combinations(self, inputs, equality=False):
         # We want to test all combinations of terms for cancellation
 
         # The number of combinations we check depends on whether this is an (in)equality
@@ -4399,37 +4413,54 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
             # Subtract 1 if (in)equality node
             max_comb += -1
         # We also have a limit on the maximum number of terms to consider
-        if self._max_cancelling_terms is not None:
-            max_comb = min(max_comb, self._max_cancelling_terms)
+        if self._max_canceling_terms is not None:
+            max_comb = min(max_comb, self._max_canceling_terms)
 
         # Single terms cannot cancel, thus we want all combinations of length 2 to max terms
         # Note the need for +1 due to way range works
         combo_range = range(2, max_comb + 1)
-        for i in chain.from_iterable(combinations(inputs, r) for r in combo_range):
-            # We want the absolute value of the sum of the combination
-            yield abs(sum(i))
+
+        # Collect combinations of terms in an iterator
+        # In order to identify the terms in each cancellation, we will pair each value
+        # with its index in the input set as a tuple using enumerate
+        for i in chain.from_iterable(
+            combinations(enumerate(inputs), r) for r in combo_range
+        ):
+            # Yield each combination in the set
+            yield i
 
     def _check_sum_cancellations(self, values_list, equality=False):
         # First, strip any terms with value 0 as they do not contribute to cancellation
         # We do this to keep the number of possible combinations as small as possible
         stripped = [i for i in values_list if abs(i) >= self._zero_tolerance]
 
+        cancellations = []
+
         if len(stripped) == 0:
             # If the stripped list is empty, there are no non-zero terms
             # We can stop here and return False as there are no possible cancellations
-            return False
+            return cancellations
 
         # For scaling of tolerance, we want to compare to the largest absolute value of
         # the input values
         max_value = abs(max(stripped, key=abs))
 
-        for i in self._generate_sum_combinations(stripped, equality):
-            # We do not need to check all combinations, as we only need determine if any
-            # combination cancels. Thus, if we find a cancellation, stop and return True
-            if i <= self._sum_tol * max_value:
-                return True
+        for i in self._generate_combinations(stripped, equality):
+            # Generate combinations will return a list of combinations of input terms
+            # each element of the list will be a 2-tuple representing a term in the
+            # input list with the first value being the position in the input set and
+            # the second being the value
 
-        return False
+            # Check if the sum of values in the combination are below tolerance
+            if abs(sum(j[1] for j in i)) <= self._sum_tol * max_value:
+                # If so, record combination as canceling
+                cancellations.append(i)
+
+            # Terminate loop if we have reached the max cancellations to collect
+            if len(cancellations) >= self._max_cancellations_per_node:
+                break
+
+        return cancellations
 
     def _perform_checks(self, node, child_data):
         # Perform checks for problematic expressions
@@ -4446,8 +4477,12 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
                 # Values may be a list containing a string in some cases (e.g. external functions)
                 # Skip if this is the case
                 pass
-            elif self._check_sum_cancellations(d[0]):
-                self.canceling_terms.add(node)
+            else:
+                for c in self._check_sum_cancellations(d[0]):
+                    if node in self.canceling_terms.keys():
+                        self.canceling_terms[node].append(c)
+                    else:
+                        self.canceling_terms[node] = [c]
 
             # Expression is not constant if any child is not constant
             # Element 1 is a bool indicating if the child node is constant
@@ -4506,8 +4541,11 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
             t = [i for d in mdata for i in d[0]]
 
             # Then check for cancellations
-            if self._check_sum_cancellations(t, equality=True):
-                self.canceling_terms.add(node)
+            for c in self._check_sum_cancellations(t, equality=True):
+                if node in self.canceling_terms.keys():
+                    self.canceling_terms[node].append(c)
+                else:
+                    self.canceling_terms[node] = [c]
 
         return vals, const, False
 
@@ -4739,7 +4777,7 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
             Bool indicating whether expression is a constant
         """
         # Create new holders for collected terms
-        self.canceling_terms = ComponentSet()
+        self.canceling_terms = ComponentMap()
         self.mismatched_terms = ComponentSet()
 
         # Call parent walk_expression method
