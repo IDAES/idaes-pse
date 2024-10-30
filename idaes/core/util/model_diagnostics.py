@@ -70,6 +70,7 @@ from pyomo.common.config import (
     document_kwargs_from_configdict,
     PositiveInt,
     NonNegativeFloat,
+    NonNegativeInt,
 )
 from pyomo.util.check_units import identify_inconsistent_units
 from pyomo.contrib.incidence_analysis import IncidenceGraphInterface
@@ -242,6 +243,14 @@ CONFIG.declare(
         default=1e-4,
         domain=NonNegativeFloat,
         description="Absolute tolerance to use when checking for canceling additive terms in constraints.",
+    ),
+)
+CONFIG.declare(
+    "max_canceling_terms",
+    ConfigValue(
+        default=5,
+        domain=NonNegativeInt,
+        description="Maximum number of terms to consider when looking for canceling combinations in expressions.",
     ),
 )
 CONFIG.declare(
@@ -1087,6 +1096,10 @@ class DiagnosticsToolbox:
             term_mismatch_tolerance=self.config.constraint_term_mismatch_tolerance,
             term_cancellation_tolerance=self.config.constraint_term_cancellation_tolerance,
             term_zero_tolerance=self.config.constraint_term_zero_tolerance,
+            # for the high level summary, we only need to know if there are any cancellations,
+            # but don't need to find all of them
+            max_cancellations_per_node=1,
+            max_canceling_terms=self.config.max_canceling_terms,
         )
 
         mismatch = []
@@ -1096,8 +1109,8 @@ class DiagnosticsToolbox:
         for c in self._model.component_data_objects(
             Constraint, descend_into=descend_into
         ):
-            _, expr_mismatch, expr_cancellation, expr_constant = walker.walk_expression(
-                c.expr
+            _, expr_mismatch, expr_cancellation, expr_constant, _ = (
+                walker.walk_expression(c.expr)
             )
 
             if len(expr_mismatch) > 0:
@@ -1165,12 +1178,16 @@ class DiagnosticsToolbox:
             footer="=",
         )
 
-    def display_problematic_constraint_terms(self, constraint, stream=None):
+    def display_problematic_constraint_terms(
+        self, constraint, max_cancellations: int = 5, stream=None
+    ):
         """
         Display a summary of potentially problematic terms in a given constraint.
 
         Args:
             constraint: ConstraintData object to be examined
+            max_cancellations: maximum number of cancellations per node before termination.
+                None = find all cancellations.
             stream: I/O object to write report to (default = stdout)
 
         Returns:
@@ -1199,33 +1216,46 @@ class DiagnosticsToolbox:
             term_mismatch_tolerance=self.config.constraint_term_mismatch_tolerance,
             term_cancellation_tolerance=self.config.constraint_term_cancellation_tolerance,
             term_zero_tolerance=self.config.constraint_term_zero_tolerance,
+            max_cancellations_per_node=max_cancellations,
+            max_canceling_terms=self.config.max_canceling_terms,
         )
 
-        _, expr_mismatch, expr_cancellation, _ = walker.walk_expression(constraint.expr)
+        _, expr_mismatch, expr_cancellation, _, tripped = walker.walk_expression(
+            constraint.expr
+        )
 
         # Combine mismatches and cancellations into a summary list
         issues = []
         for k, v in expr_mismatch.items():
             # Want to show full expression node plus largest and smallest magnitudes
             issues.append(f"Mismatched: {k} (Max {v[0]}, Min {v[1]})")
+        # Collect summary of cancelling terms for user
+        # Walker gives us back a list of nodes with cancelling terms
         for k, v in expr_cancellation.items():
-            # Collect summary of cancelling terms for user
-            # Walker gives us back tuple for each canceling term with its index
-            # in the expression and value
-            # Iterate over all cancelling terms and build a string summary
-            terms = ""
-            for i in v[0]:
-                if len(terms) > 0:
-                    terms += ", "
-                # +1 to switch from 0-index to 1-index
-                terms += f"{i[0]+1} ({i[1]})"
-            issues.append(f"canceling: {k}. Terms {terms}")
+            # Each node may have multiple cancellations, these are given as separate tuples
+            for i in v:
+                # For each cancellation, iterate over contributing terms and write a summary
+                terms = ""
+                for j in i:
+                    if len(terms) > 0:
+                        terms += ", "
+                    # +1 to switch from 0-index to 1-index
+                    terms += f"{j[0]+1} ({j[1]})"
+                issues.append(f"Canceling: {k}. Terms {terms}")
+
+        if tripped:
+            end_line = (
+                f"Number of cancelling terms per node limited to {max_cancellations}."
+            )
+        else:
+            end_line = None
 
         # Write the output
         _write_report_section(
             stream=stream,
             lines_list=issues,
             title=f"The following terms in {constraint.name} are potentially problematic:",
+            end_line=end_line,
             header="=",
             footer="=",
         )
@@ -4394,6 +4424,9 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
         self.canceling_terms = ComponentMap()
         self.mismatched_terms = ComponentMap()
 
+        # Flag for if cancellation collection hit limit
+        self._cancellation_tripped = False
+
     def _get_value_for_sum_subexpression(self, child_data):
         # child_data is a tuple, with the 0-th element being the node values
         if isinstance(child_data[0][0], str):
@@ -4462,6 +4495,7 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
 
             # Terminate loop if we have reached the max cancellations to collect
             if len(cancellations) >= self._max_cancellations_per_node:
+                self._cancellation_tripped = True
                 break
 
         return cancellations
@@ -4788,4 +4822,10 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
         vals, const, _ = super().walk_expression(expr)
 
         # Return results
-        return vals, self.mismatched_terms, self.canceling_terms, const
+        return (
+            vals,
+            self.mismatched_terms,
+            self.canceling_terms,
+            const,
+            self._cancellation_tripped,
+        )
