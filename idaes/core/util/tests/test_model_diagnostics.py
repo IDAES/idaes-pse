@@ -4309,7 +4309,7 @@ class TestConstraintTermAnalysisVisitor:
         # Check method to generate sums of all combinations of terms
         # excludes single term sums
         terms = [1, 2, 3, 4, 5]
-        visitor = ConstraintTermAnalysisVisitor()
+        visitor = ConstraintTermAnalysisVisitor(max_cancelling_terms=None)
         sums = [i for i in visitor._generate_sum_combinations(terms)]
 
         expected = [
@@ -4339,6 +4339,44 @@ class TestConstraintTermAnalysisVisitor:
             13,
             14,  # 4-term sums
             15,  # 5-term sum
+        ]
+
+        assert sums == expected
+
+    @pytest.mark.unit
+    def test_sum_combinations_limited_default(self):
+        # Check method to generate sums of all combinations of terms
+        # excludes single term sums
+        terms = [1, 2, 3, 4, 5]
+        visitor = ConstraintTermAnalysisVisitor()
+        sums = [i for i in visitor._generate_sum_combinations(terms)]
+
+        expected = [
+            3,
+            4,
+            5,
+            6,
+            5,
+            6,
+            7,
+            7,
+            8,
+            9,  # 2-term sums
+            6,
+            7,
+            8,
+            8,
+            9,
+            10,  # 3-term sums starting with 1
+            9,
+            10,
+            11,  # 3-term sums starting with 2
+            12,  # 3-term sum starting with 3
+            10,
+            11,
+            12,
+            13,
+            14,  # 4-term sums - should not consider longer combinations
         ]
 
         assert sums == expected

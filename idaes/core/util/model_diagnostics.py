@@ -4342,10 +4342,13 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
     with mismatched magnitudes or potential cancellations.
 
     Args:
-        term_mismatch_tolerance - tolerance to use when determining mismatched
+        term_mismatch_tolerance: tolerance to use when determining mismatched
             terms
-        term_cancellation_tolerance - tolerance to use when identifying
+        term_cancellation_tolerance: tolerance to use when identifying
             possible cancellation of terms
+        term_zero_tolerance: tolerance for considering terms equal to zero
+        max_cancelling_terms: maximum number of terms to consider when looking
+            for cancelling combinations (None = consider all possible combinations)
 
     Returns:
         list of values for top-level summation terms
@@ -4359,6 +4362,7 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
         term_mismatch_tolerance: float = 1e6,
         term_cancellation_tolerance: float = 1e-4,
         term_zero_tolerance: float = 1e-10,
+        max_cancelling_terms: int = 4,
     ):
         super().__init__()
 
@@ -4366,6 +4370,7 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
         self._log_mm_tol = log10(term_mismatch_tolerance)
         self._sum_tol = term_cancellation_tolerance
         self._zero_tolerance = term_zero_tolerance
+        self._max_cancelling_terms = max_cancelling_terms
 
         # Placeholders for collecting results
         self.canceling_terms = ComponentSet()
@@ -4393,6 +4398,9 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
         if equality:
             # Subtract 1 if (in)equality node
             max_comb += -1
+        # We also have a limit on the maximum number of terms to consider
+        if self._max_cancelling_terms is not None:
+            max_comb = min(max_comb, self._max_cancelling_terms)
 
         # Single terms cannot cancel, thus we want all combinations of length 2 to max terms
         # Note the need for +1 due to way range works
