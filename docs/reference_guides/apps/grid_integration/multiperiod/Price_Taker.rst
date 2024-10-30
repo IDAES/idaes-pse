@@ -1,7 +1,7 @@
 Price Taker
 ===========
 
-Price takers are companies or individuals who must accept market prices since they lack the market share
+Price takers are entities that must accept market prices since they lack the market share
 to directly influence the market price. Likewise, it is assumed that a price taker's resource or energy
 system is small enough such that it does not significantly impact the market. When coupled with multi-period modeling,
 the price-taker model is able to synthesize grid-centric modeling with steady-state process-centric modeling, as
