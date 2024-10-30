@@ -11,7 +11,7 @@
 # for full copyright and license information.
 #################################################################################
 """
-    Immediate ToDo list:
+    Immediate #TODO list:
         - Write methods to handle the representative day case
             - automate cash flow expressions (likely use a 
               weighted sum for representative days?)
@@ -51,6 +51,7 @@ from idaes.apps.grid_integration.multiperiod.design_and_operation_models import 
 
 
 import idaes.logger as idaeslog
+from idaes.core.util.exceptions import ConfigurationError
 
 _logger = idaeslog.getLogger(__name__)
 
@@ -427,8 +428,8 @@ class PriceTakerModel(ConcreteModel):
             **kwargs,
         )
 
-        # If append_lmp_data is automatic, need to append the LMP data.
-        # Check if LMP has already been defined with the append_lmp_data
+        # If declare_lmp_param config option on OperationModel is True, need to append the LMP data to the OperationModel.
+        # Check if LMP has already been defined on the PriceTakerModel with the append_lmp_data
         # function above
         LMP_exists = hasattr(self, "LMP")
 
@@ -438,13 +439,13 @@ class PriceTakerModel(ConcreteModel):
         for p in period:
             for blk in period[p].component_data_objects(Block):
                 if isinstance(blk, OperationModelData):
-                    if blk.config.append_lmp_data:
+                    if blk.config.declare_lmp_param:
                         if not LMP_exists:
-                            raise ValueError(
+                            raise ConfigurationError(
                                 f"OperationModelData has been defined to automatically "
-                                + f"populate LMP data. However, m.LMP does not exist. "
-                                + f"Please run the append_lmp_data function first or set the "
-                                + f"append_lmp_data attribute to False when configuring "
+                                + f"populate LMP data. However, self.LMP does not exist, where self is an instance of PriceTakerModel. "
+                                + f"Please run the append_lmp_data method from the PriceTakerModel class first or set the "
+                                + f"declare_lmp_param configuration option to False when configuring "
                                 + f"your OperationModelData object."
                             )
                         blk.LMP = self.LMP[p]

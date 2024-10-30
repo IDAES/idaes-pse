@@ -35,7 +35,7 @@ from idaes.apps.grid_integration import DesignModel, OperationModel
 import idaes.logger as idaeslog
 
 from idaes.apps.grid_integration.multiperiod.price_taker_model import PriceTakerModel
-
+from idaes.core.util.exceptions import ConfigurationError
 
 @pytest.fixture
 def excel_data():
@@ -959,27 +959,22 @@ def test_build_hourly_cashflow_logger_message_no_op_blks(excel_data, caplog):
 
 
 @pytest.mark.unit
-def test_build_multiperiod_model_no_LMP_logger_message(excel_data):
+def test_build_multiperiod_model_no_LMP_logger_message():
     # Tests building the model with startup/shutdown then ramping rate with LMP as a single year with all time points
-    # Create an instance of the Pricetrackermodel class
+    # Create an instance of the PriceTakerModel class
     m = PriceTakerModel()
 
     m._n_time_points = 240
     m.set_days = None
     m.set_years = None
 
-    # m.sofc_design = DesignModel(model_func=SOFC_design_model, model_args={"min_power": 200, "max_power": 650})
-    m.sofc_design = aml.Block()
-    m.sofc_design.PMAX = 650
-    m.sofc_design.PMIN = 200
-    m.sofc_design.build_unit = 1
     with pytest.raises(
-        ValueError,
+        ConfigurationError,
         match=(
             "OperationModelData has been defined to automatically "
-            + "populate LMP data. However, m.LMP does not exist. "
-            + "Please run the append_lmp_data function first or set the "
-            + "append_lmp_data attribute to False when configuring "
+            + "populate LMP data. However, self.LMP does not exist, where self is an instance of PriceTakerModel. "
+            + "Please run the append_lmp_data method from the PriceTakerModel class first or set the "
+            + "declare_lmp_param configuration option to False when configuring "
             + "your OperationModelData object."
         ),
     ):
