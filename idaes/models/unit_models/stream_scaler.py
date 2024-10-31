@@ -19,11 +19,8 @@ from functools import partial
 
 from pyomo.environ import (
     Block,
-    check_optimal_termination,
-    Param,
     PositiveReals,
     Reals,
-    RangeSet,
     units as pyunits,
     Var,
 )
@@ -34,24 +31,13 @@ from idaes.core import (
     declare_process_block_class,
     UnitModelBlockData,
     useDefault,
-    MaterialBalanceType,
-    MaterialFlowBasis,
 )
 from idaes.core.util.config import (
     is_physical_parameter_block,
-    is_state_block,
-)
-from idaes.core.util.exceptions import (
-    BurntToast,
-    ConfigurationError,
-    PropertyNotSupportedError,
-    InitializationError,
 )
 from idaes.core.base.var_like_expression import VarLikeExpression
-from idaes.core.util.math import smooth_min
 from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.core.util.scaling as iscale
-from idaes.core.solvers import get_solver
 import idaes.logger as idaeslog
 
 from idaes.models.unit_models.feed import FeedInitializer as StreamScalerInitializer
