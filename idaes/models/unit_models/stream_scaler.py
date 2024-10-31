@@ -144,14 +144,14 @@ see property package for documentation.}""",
         self._get_indexing_sets()
 
         self.inlet_block = self.config.property_package.build_state_block(
-                self.flowsheet().time, doc="Material properties at inlet", **tmp_dict
+            self.flowsheet().time, doc="Material properties at inlet", **tmp_dict
         )
         self.outlet_block = Block()
         self.multiplier = Var(
             initialize=1,
             domain=PositiveReals,
             units=pyunits.dimensionless,
-            doc="Factor by which to scale dimensionless streams"
+            doc="Factor by which to scale dimensionless streams",
         )
         self.add_inlet_port(name="inlet", block=self.inlet_block)
         self.outlet = Port(doc="Outlet port")
@@ -165,15 +165,11 @@ see property package for documentation.}""",
         for var_name in self.inlet.vars.keys():
             var = getattr(self.inlet, var_name)
             if "flow" in var_name:
-                rule=partial(rule_scale_var, var=var)
+                rule = partial(rule_scale_var, var=var)
             else:
-                rule=partial(rule_no_scale_var, var=var)
+                rule = partial(rule_no_scale_var, var=var)
             self.outlet_block.add_component(
-                var_name,
-                VarLikeExpression(
-                    var.index_set(),
-                    rule=rule
-                )
+                var_name, VarLikeExpression(var.index_set(), rule=rule)
             )
             expr = getattr(self.outlet_block, var_name)
             self.outlet.add(expr, var_name)
@@ -250,11 +246,10 @@ see property package for documentation.}""",
 
         # Need to pass on scaling factors from the property block to the outlet
         # VarLikeExpressions so arcs get scaled right
-        scale = 1/self.multiplier.value
+        scale = 1 / self.multiplier.value
         for var_name in self.inlet.vars.keys():
             var = getattr(self.inlet, var_name)
             outlet_expr = getattr(self.outlet, var_name)
             for key, subvar in var.items():
                 sf = iscale.get_scaling_factor(subvar, default=1, warning=True)
-                iscale.set_scaling_factor(outlet_expr[key],scale*sf)
-        
+                iscale.set_scaling_factor(outlet_expr[key], scale * sf)

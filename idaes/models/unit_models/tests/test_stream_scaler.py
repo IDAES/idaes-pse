@@ -177,6 +177,7 @@ class TestSaponification(object):
 
     # No solve or numerical tests, as StreamScaler block has nothing to solve
 
+
 class TestBTX(object):
     @pytest.fixture(scope="class")
     def btx(self):
