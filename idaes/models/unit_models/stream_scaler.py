@@ -25,7 +25,7 @@ from pyomo.environ import (
     Var,
 )
 from pyomo.network import Port
-from pyomo.common.config import ConfigBlock, ConfigValue, In, ListOf, Bool
+from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 from idaes.core import (
     declare_process_block_class,
