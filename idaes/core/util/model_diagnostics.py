@@ -57,9 +57,11 @@ from pyomo.core.expr.numeric_expr import (
     NPV_UnaryFunctionExpression,
     NumericExpression,
 )
+from pyomo.core.expr.visitor import _ToStringVisitor
 from pyomo.core.base.block import BlockData
 from pyomo.core.base.var import VarData
 from pyomo.core.base.constraint import ConstraintData
+from pyomo.core.base.expression import ExpressionData
 from pyomo.repn.standard_repn import (  # pylint: disable=no-name-in-module
     generate_standard_repn,
 )
@@ -86,7 +88,6 @@ from pyomo.core import expr as EXPR
 from pyomo.common.numeric_types import native_types
 from pyomo.core.base.units_container import _PyomoUnit
 
-from idaes.config import canonical_distro
 from idaes.core.solvers.get_solver import get_solver
 from idaes.core.util.model_statistics import (
     activated_blocks_set,
@@ -1228,7 +1229,9 @@ class DiagnosticsToolbox:
         issues = []
         for k, v in expr_mismatch.items():
             # Want to show full expression node plus largest and smallest magnitudes
-            issues.append(f"Mismatched: {k} (Max {v[0]}, Min {v[1]})")
+            issues.append(
+                f"Mismatch in {compact_expression_to_string(k)} (Max {v[0]}, Min {v[1]})"
+            )
         # Collect summary of cancelling terms for user
         # Walker gives us back a list of nodes with cancelling terms
         for k, v in expr_cancellation.items():
@@ -1241,11 +1244,13 @@ class DiagnosticsToolbox:
                         terms += ", "
                     # +1 to switch from 0-index to 1-index
                     terms += f"{j[0]+1} ({j[1]})"
-                issues.append(f"Canceling: {k}. Terms {terms}")
+                issues.append(
+                    f"Cancellation in {compact_expression_to_string(k)}. Terms {terms}"
+                )
 
         if tripped:
             end_line = (
-                f"Number of cancelling terms per node limited to {max_cancellations}."
+                f"Number of canceling terms per node limited to {max_cancellations}."
             )
         else:
             end_line = None
@@ -4829,3 +4834,29 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
             const,
             self._cancellation_tripped,
         )
+
+
+class _ToExprStringVisitor(_ToStringVisitor):
+    def visiting_potential_leaf(self, node):
+        if isinstance(node, ExpressionData):
+            return True, node.name
+
+        return super().visiting_potential_leaf(node)
+
+
+def compact_expression_to_string(expr):
+    """Return a string representation of an expression.
+
+    Parameters
+    ----------
+    expr: ExpressionBase
+        The root node of an expression tree.
+
+    Returns:
+        A string representation for the expression.
+
+    """
+    # Create and execute the visitor pattern
+    #
+    visitor = _ToExprStringVisitor(verbose=False, smap=None)
+    return visitor.dfs_postorder_stack(expr)

@@ -68,7 +68,6 @@ import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 from idaes.core.solvers import get_solver
 from idaes.core import FlowsheetBlock
-from idaes.core.util.scaling import set_scaling_factor
 from idaes.core.util.testing import PhysicalParameterTestBlock
 from idaes.models.properties.modular_properties.eos.ceos_common import (
     cubic_roots_available,
@@ -98,6 +97,7 @@ from idaes.core.util.model_diagnostics import (
     check_parallel_jacobian,
     compute_ill_conditioning_certificate,
     ConstraintTermAnalysisVisitor,
+    compact_expression_to_string,
 )
 from idaes.core.util.parameter_sweep import (
     SequentialSweepRunner,
@@ -1072,8 +1072,8 @@ The following pairs of variables are nearly parallel:
         expected = """====================================================================================
 The following terms in c2 are potentially problematic:
 
-    Mismatched: v4 + v5 (Max 10, Min 1e-06)
-    Canceling: v3  ==  v4 + v5. Terms 1 (-10), 2 (10)
+    Mismatch in v4 + v5 (Max 10, Min 1e-06)
+    Cancellation in v3  ==  v4 + v5. Terms 1 (-10), 2 (10)
 
 ====================================================================================
 """
@@ -1099,13 +1099,13 @@ The following terms in c2 are potentially problematic:
         expected = """====================================================================================
 The following terms in c1 are potentially problematic:
 
-    Canceling: v6  ==  10 - v4 + v1 + v2. Terms 1 (-10), 2 (10)
-    Canceling: v6  ==  10 - v4 + v1 + v2. Terms 1 (-10), 4 (10)
-    Canceling: v6  ==  10 - v4 + v1 + v2. Terms 2 (10), 3 (-10)
-    Canceling: v6  ==  10 - v4 + v1 + v2. Terms 2 (10), 5 (-10)
-    Canceling: v6  ==  10 - v4 + v1 + v2. Terms 3 (-10), 4 (10)
+    Cancellation in v6  ==  10 - v4 + v1 + v2. Terms 1 (-10), 2 (10)
+    Cancellation in v6  ==  10 - v4 + v1 + v2. Terms 1 (-10), 4 (10)
+    Cancellation in v6  ==  10 - v4 + v1 + v2. Terms 2 (10), 3 (-10)
+    Cancellation in v6  ==  10 - v4 + v1 + v2. Terms 2 (10), 5 (-10)
+    Cancellation in v6  ==  10 - v4 + v1 + v2. Terms 3 (-10), 4 (10)
 
-Number of cancelling terms per node limited to 5.
+Number of canceling terms per node limited to 5.
 ====================================================================================
 """
 
@@ -4427,6 +4427,7 @@ class TestConstraintTermAnalysisVisitor:
         assert len(mm) == 0
         assert len(cc) == 0
         assert k
+        assert not tr
 
     @pytest.mark.unit
     def test_float(self):
@@ -4436,6 +4437,7 @@ class TestConstraintTermAnalysisVisitor:
         assert len(mm) == 0
         assert len(cc) == 0
         assert k
+        assert not tr
 
     @pytest.mark.unit
     def test_scalar_param(self):
@@ -4449,6 +4451,7 @@ class TestConstraintTermAnalysisVisitor:
         assert len(mm) == 0
         assert len(cc) == 0
         assert k
+        assert not tr
 
     @pytest.mark.unit
     def test_indexed_param(self):
@@ -4462,6 +4465,7 @@ class TestConstraintTermAnalysisVisitor:
         assert len(mm) == 0
         assert len(cc) == 0
         assert k
+        assert not tr
 
     @pytest.mark.unit
     def test_scalar_var(self):
@@ -4475,6 +4479,7 @@ class TestConstraintTermAnalysisVisitor:
         assert len(mm) == 0
         assert len(cc) == 0
         assert not k
+        assert not tr
 
     @pytest.mark.unit
     def test_indexed_var(self):
@@ -4488,6 +4493,7 @@ class TestConstraintTermAnalysisVisitor:
         assert len(mm) == 0
         assert len(cc) == 0
         assert not k
+        assert not tr
 
     @pytest.mark.unit
     def test_scalar_var_fixed(self):
@@ -4502,6 +4508,7 @@ class TestConstraintTermAnalysisVisitor:
         assert len(mm) == 0
         assert len(cc) == 0
         assert k
+        assert not tr
 
     @pytest.mark.unit
     def test_indexed_var_fixed(self):
@@ -4516,6 +4523,7 @@ class TestConstraintTermAnalysisVisitor:
         assert len(mm) == 0
         assert len(cc) == 0
         assert k
+        assert not tr
 
     @pytest.mark.unit
     def test_equality_expr(self):
@@ -4531,6 +4539,7 @@ class TestConstraintTermAnalysisVisitor:
         assert len(mm) == 1
         assert len(cc) == 0
         assert not k
+        assert not tr
 
     @pytest.mark.unit
     def test_equality_expr_constant(self):
@@ -4549,6 +4558,7 @@ class TestConstraintTermAnalysisVisitor:
         assert len(mm) == 1
         assert len(cc) == 0
         assert not k
+        assert not tr
 
         # Fix v2, now constant
         m.v2.fix()
@@ -4560,6 +4570,7 @@ class TestConstraintTermAnalysisVisitor:
         assert len(mm) == 1
         assert len(cc) == 0
         assert k
+        assert not tr
 
     @pytest.mark.unit
     def test_sum_expr(self):
@@ -4575,6 +4586,7 @@ class TestConstraintTermAnalysisVisitor:
         assert len(mm) == 1
         assert len(cc) == 0
         assert not k
+        assert not tr
 
     @pytest.mark.unit
     def test_sum_expr_constant(self):
@@ -4591,6 +4603,7 @@ class TestConstraintTermAnalysisVisitor:
         assert len(mm) == 1
         assert len(cc) == 0
         assert k
+        assert not tr
 
     @pytest.fixture(scope="class")
     def model(self):
@@ -4612,6 +4625,7 @@ class TestConstraintTermAnalysisVisitor:
         assert len(mm) == 0
         assert len(cc) == 0
         assert not k
+        assert not tr
 
     @pytest.mark.unit
     def test_product_sum_expr(self, model):
@@ -4622,6 +4636,7 @@ class TestConstraintTermAnalysisVisitor:
         assert len(mm) == 0
         assert len(cc) == 0
         assert not k
+        assert not tr
 
     @pytest.mark.unit
     def test_product_sum_expr_w_negation(self, model):
@@ -4633,6 +4648,7 @@ class TestConstraintTermAnalysisVisitor:
         assert expr in cc
         assert len(cc) == 1
         assert not k
+        assert not tr
 
     @pytest.mark.unit
     def test_division_expr(self, model):
@@ -4643,6 +4659,7 @@ class TestConstraintTermAnalysisVisitor:
         assert len(mm) == 0
         assert len(cc) == 0
         assert not k
+        assert not tr
 
     @pytest.mark.unit
     def test_division_sum_expr(self, model):
@@ -4657,6 +4674,7 @@ class TestConstraintTermAnalysisVisitor:
         assert len(mm) == 0
         assert len(cc) == 0
         assert not k
+        assert not tr
 
     @pytest.mark.unit
     def test_division_sum_expr_w_negation(self, model):
@@ -4671,6 +4689,7 @@ class TestConstraintTermAnalysisVisitor:
         # Check for cancellation should be deferred
         assert len(cc) == 0
         assert not k
+        assert not tr
 
     @pytest.mark.unit
     def test_division_sum_expr_w_zero_denominator(self):
@@ -4706,6 +4725,7 @@ class TestConstraintTermAnalysisVisitor:
         assert expr in cc
         assert len(cc) == 1
         assert not k
+        assert not tr
 
     @pytest.mark.unit
     def test_division_expr_error(self):
@@ -4732,6 +4752,7 @@ class TestConstraintTermAnalysisVisitor:
         assert len(mm) == 0
         assert len(cc) == 0
         assert not k
+        assert not tr
 
     @pytest.mark.unit
     def test_pow_sum_expr(self, model):
@@ -4743,6 +4764,7 @@ class TestConstraintTermAnalysisVisitor:
         assert len(mm) == 0
         assert len(cc) == 0
         assert not k
+        assert not tr
 
     @pytest.mark.unit
     def test_pow_sum_expr_w_negation(self, model):
@@ -4754,6 +4776,7 @@ class TestConstraintTermAnalysisVisitor:
         assert expr in cc
         assert len(cc) == 1
         assert not k
+        assert not tr
 
     @pytest.fixture(scope="class")
     def func_model(self):
@@ -4776,6 +4799,7 @@ class TestConstraintTermAnalysisVisitor:
         assert len(mm) == 0
         assert len(cc) == 0
         assert not k
+        assert not tr
 
     @pytest.mark.unit
     def test_negation_sum_expr(self, func_model):
@@ -4789,6 +4813,7 @@ class TestConstraintTermAnalysisVisitor:
         # Check is deferred, so no cancellations identified
         assert len(cc) == 0
         assert not k
+        assert not tr
 
     # acosh has bounds that don't fit with other functions - we will assume we caught enough
     func_list = [
@@ -4821,6 +4846,7 @@ class TestConstraintTermAnalysisVisitor:
         assert len(mm) == 0
         assert len(cc) == 0
         assert k
+        assert not tr
 
     @pytest.mark.unit
     @pytest.mark.parametrize("func", func_list)
@@ -4833,6 +4859,7 @@ class TestConstraintTermAnalysisVisitor:
         assert expr in cc
         assert len(cc) == 1
         assert not k
+        assert not tr
 
     @pytest.mark.unit
     @pytest.mark.parametrize("func", func_list)
@@ -4845,6 +4872,7 @@ class TestConstraintTermAnalysisVisitor:
         assert expr in cc
         assert len(cc) == 1
         assert not k
+        assert not tr
 
     @pytest.mark.unit
     @pytest.mark.parametrize("func", func_error_list)
@@ -4874,6 +4902,7 @@ class TestConstraintTermAnalysisVisitor:
         assert model.exprif in cc
         assert len(cc) == 1
         assert not k
+        assert not tr
 
     @pytest.mark.unit
     @pytest.mark.skipif(
@@ -4896,6 +4925,7 @@ class TestConstraintTermAnalysisVisitor:
         assert Z in cc
         assert len(cc) == 1
         assert not k
+        assert not tr
 
         # Check that model state did not change
         assert value(m.a) == 1
@@ -4916,6 +4946,7 @@ class TestConstraintTermAnalysisVisitor:
         assert len(mm) == 1
         assert len(cc) == 0
         assert not k
+        assert not tr
 
     @pytest.mark.unit
     def test_inequality_sum_expr(self):
@@ -4931,6 +4962,7 @@ class TestConstraintTermAnalysisVisitor:
         assert len(mm) == 1
         assert len(cc) == 0
         assert not k
+        assert not tr
 
     @pytest.mark.unit
     def test_compound_equality_expr_1(self):
@@ -4946,6 +4978,7 @@ class TestConstraintTermAnalysisVisitor:
         assert len(mm) == 1
         assert len(cc) == 0
         assert not k
+        assert not tr
 
     @pytest.mark.unit
     def test_ranged_expr(self):
@@ -4962,6 +4995,7 @@ class TestConstraintTermAnalysisVisitor:
         assert len(mm) == 1
         assert len(cc) == 0
         assert not k
+        assert not tr
 
         # Fix v1 and v2 to make first two terms constant
         m.v1.fix()
@@ -4974,6 +5008,7 @@ class TestConstraintTermAnalysisVisitor:
         assert len(mm) == 1
         assert len(cc) == 0
         assert not k
+        assert not tr
 
         # Fix v3 to make all terms constant
         m.v3.fix()
@@ -4985,6 +5020,7 @@ class TestConstraintTermAnalysisVisitor:
         assert len(mm) == 1
         assert len(cc) == 0
         assert k
+        assert not tr
 
     @pytest.mark.unit
     def test_compound_equality_expr_2(self):
@@ -5006,6 +5042,7 @@ class TestConstraintTermAnalysisVisitor:
         assert len(mm) == 2
         assert len(cc) == 0
         assert not k
+        assert not tr
 
     @pytest.mark.unit
     def test_canceling_sum_expr(self):
@@ -5021,6 +5058,7 @@ class TestConstraintTermAnalysisVisitor:
         # We do not check cancellation at the sum, so this should be empty
         assert len(cc) == 0
         assert not k
+        assert not tr
 
     @pytest.mark.unit
     def test_expr_w_canceling_sum(self):
@@ -5037,6 +5075,7 @@ class TestConstraintTermAnalysisVisitor:
         # Check for cancellation should be deferred
         assert len(cc) == 0
         assert not k
+        assert not tr
 
     @pytest.mark.unit
     def test_expr_w_deferred_canceling_sum(self):
@@ -5054,6 +5093,7 @@ class TestConstraintTermAnalysisVisitor:
         assert expr in cc
         assert len(cc) == 1
         assert not k
+        assert not tr
 
         # Check for tolerance of sum cancellation
         m.v2.set_value(2.00022)
@@ -5067,6 +5107,7 @@ class TestConstraintTermAnalysisVisitor:
         # This should pass as the difference is greater than tol
         assert len(cc) == 0
         assert not k
+        assert not tr
 
         # Change tolerance so it should identify cancellation
         vv, mm, cc, k, tr = ConstraintTermAnalysisVisitor(
@@ -5078,6 +5119,7 @@ class TestConstraintTermAnalysisVisitor:
         assert expr in cc
         assert len(cc) == 1
         assert not k
+        assert not tr
 
     @pytest.mark.unit
     def test_canceling_equality_expr_safe(self):
@@ -5094,6 +5136,7 @@ class TestConstraintTermAnalysisVisitor:
         assert len(mm) == 0
         assert len(cc) == 0
         assert not k
+        assert not tr
 
     @pytest.mark.unit
     def test_canceling_equality_expr_zero_term(self):
@@ -5110,6 +5153,7 @@ class TestConstraintTermAnalysisVisitor:
         # No canceling terms as v3=0 is ignored thus we have a=b form
         assert len(cc) == 0
         assert not k
+        assert not tr
 
         # Set v3 above zero tolerance
         m.v3.set_value(1e-4)
@@ -5120,6 +5164,7 @@ class TestConstraintTermAnalysisVisitor:
         assert expr in cc
         assert len(cc) == 1
         assert not k
+        assert not tr
 
     @pytest.mark.unit
     def test_canceling_equality_expr_compound(self):
@@ -5136,6 +5181,7 @@ class TestConstraintTermAnalysisVisitor:
         # No canceling terms as v3=0 is ignored thus we have a=b form
         assert len(cc) == 0
         assert not k
+        assert not tr
 
         # Set v3 above zero tolerance
         m.v3.set_value(1e-4)
@@ -5146,6 +5192,7 @@ class TestConstraintTermAnalysisVisitor:
         assert expr in cc
         assert len(cc) == 1
         assert not k
+        assert not tr
 
     # Double check for a+eps=c form gets flagged in some way
     @pytest.mark.unit
@@ -5165,6 +5212,7 @@ class TestConstraintTermAnalysisVisitor:
         assert expr in cc
         assert len(cc) == 1
         assert not k
+        assert not tr
 
     # Check to make sure simple linking constraints are not flagged as canceling
     @pytest.mark.unit
@@ -5180,6 +5228,7 @@ class TestConstraintTermAnalysisVisitor:
         assert len(mm) == 0
         assert len(cc) == 0
         assert not k
+        assert not tr
 
     @pytest.mark.unit
     def test_linking_equality_expr_compound(self):
@@ -5195,6 +5244,7 @@ class TestConstraintTermAnalysisVisitor:
         assert len(mm) == 0
         assert len(cc) == 0
         assert not k
+        assert not tr
 
     @pytest.mark.component
     def test_external_function_w_string_argument(self):
@@ -5210,6 +5260,7 @@ class TestConstraintTermAnalysisVisitor:
         assert len(mm) == 0
         assert len(cc) == 0
         assert not k
+        assert not tr
 
         # Test nested external functions
         vv, mm, cc, k, tr = ConstraintTermAnalysisVisitor().walk_expression(
@@ -5220,6 +5271,7 @@ class TestConstraintTermAnalysisVisitor:
         assert len(mm) == 0
         assert len(cc) == 0
         assert not k
+        assert not tr
 
     @pytest.mark.unit
     def test_zero_tolerance(self):
@@ -5240,6 +5292,7 @@ class TestConstraintTermAnalysisVisitor:
         # 1 == 1
         assert len(cc) == 0
         assert not k
+        assert not tr
 
         # Set v1 and v3 above zero tolerance
         m.v1.set_value(1e-8)
@@ -5253,6 +5306,7 @@ class TestConstraintTermAnalysisVisitor:
         assert expr in cc
         assert len(cc) == 1
         assert not k
+        assert not tr
 
     # Test to make sure scaled constraints are not flagged as issues
     @pytest.mark.unit
@@ -5269,6 +5323,7 @@ class TestConstraintTermAnalysisVisitor:
         assert len(mm) == 0
         assert len(cc) == 0
         assert not k
+        assert not tr
 
     @pytest.mark.unit
     def test_scaled_equality_expr_division(self):
@@ -5284,6 +5339,7 @@ class TestConstraintTermAnalysisVisitor:
         assert len(mm) == 0
         assert len(cc) == 0
         assert not k
+        assert not tr
 
     @pytest.mark.unit
     def test_mole_fraction_constraint(self):
@@ -5299,6 +5355,7 @@ class TestConstraintTermAnalysisVisitor:
         assert len(mm) == 0
         assert len(cc) == 0
         assert not k
+        assert not tr
 
     @pytest.mark.unit
     def test_mole_fraction_constraint_trace(self):
@@ -5317,3 +5374,21 @@ class TestConstraintTermAnalysisVisitor:
         assert len(mm) == 0
         assert len(cc) == 0
         assert not k
+        assert not tr
+
+
+class TestToExprStringVisitor:
+    @pytest.mark.unit
+    def test_visitor(self):
+        m = ConcreteModel()
+        m.v1 = Var()
+        m.v2 = Var()
+        m.v3 = Var()
+
+        m.e1 = Expression(expr=m.v1 + m.v2)
+        m.c1 = Constraint(expr=0 == m.v3 * m.e1)
+
+        str = compact_expression_to_string(m.c1.expr)
+        expected = "v3*e1  ==  0"
+
+        assert str == expected
