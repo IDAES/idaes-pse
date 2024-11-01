@@ -60,6 +60,7 @@ from pyomo.core.expr.numeric_expr import (
 from pyomo.core.base.block import BlockData
 from pyomo.core.base.var import VarData
 from pyomo.core.base.constraint import ConstraintData
+from pyomo.core.base.expression import ExpressionData
 from pyomo.repn.standard_repn import (  # pylint: disable=no-name-in-module
     generate_standard_repn,
 )
@@ -1092,6 +1093,19 @@ class DiagnosticsToolbox:
     # Number and size of blocks, polynomial degree of 1x1 blocks, simple pivot check of moderate sized sub-blocks?
 
     def _collect_constraint_mismatches(self, descend_into=True):
+        """
+        Call ConstraintTermAnalysisVisitor on all Constraints in model to walk expression
+        tree and collect any instances of sum expressions with mismatched terms or potential
+        cancellations.
+
+        Args:
+            descend_into: whether to descend_into child_blocks
+
+        Returns:
+            List of strings summarising constraints with mismatched terms
+            List of strings summarising constraints with cancellations
+            List of strings with constraint names where constraint contains no free variables
+        """
         walker = ConstraintTermAnalysisVisitor(
             term_mismatch_tolerance=self.config.constraint_term_mismatch_tolerance,
             term_cancellation_tolerance=self.config.constraint_term_cancellation_tolerance,
@@ -1156,6 +1170,13 @@ class DiagnosticsToolbox:
         """
         Display constraints in model which contain additive terms which potentially cancel each other.
 
+        Note that this method looks a the current state of the constraint, and will flag terms as
+        cancelling if you have a form A == B + C where C is significantly smaller than A and B. In some
+        cases this behavior is intended, as C is a correction term which happens to be very
+        small at the current state. However, you should review these constraints to determine whether
+        the correction term is important for the situation you are modeling and consider removing the
+        term if it will never be significant.
+
         Args:
             stream: I/O object to write report to (default = stdout)
 
@@ -1183,6 +1204,13 @@ class DiagnosticsToolbox:
     ):
         """
         Display a summary of potentially problematic terms in a given constraint.
+
+        Note that this method looks a the current state of the constraint, and will flag terms as
+        cancelling if you have a form A == B + C where C is significantly smaller than A and B. In some
+        cases this behavior is intended, as C is a correction term which happens to be very
+        small at the current state. However, you should review these constraints to determine whether
+        the correction term is important for the situation you are modeling and consider removing the
+        term if it will never be significant.
 
         Args:
             constraint: ConstraintData object to be examined
@@ -1227,14 +1255,22 @@ class DiagnosticsToolbox:
         # Combine mismatches and cancellations into a summary list
         issues = []
         for k, v in expr_mismatch.items():
+            tag = " "
+            if isinstance(k, ExpressionData):
+                # For clarity, if the problem node is a named Expression, note this in output
+                tag = " Expression "
             # Want to show full expression node plus largest and smallest magnitudes
             issues.append(
-                f"Mismatch in {compact_expression_to_string(k)} (Max {v[0]}, Min {v[1]})"
+                f"Mismatch in{tag}{compact_expression_to_string(k)} (Max {v[0]}, Min {v[1]})"
             )
         # Collect summary of cancelling terms for user
         # Walker gives us back a list of nodes with cancelling terms
         for k, v in expr_cancellation.items():
             # Each node may have multiple cancellations, these are given as separate tuples
+            tag = " "
+            if isinstance(k, ExpressionData):
+                # For clarity, if the problem node is a named Expression, note this in output
+                tag = " Expression "
             for i in v:
                 # For each cancellation, iterate over contributing terms and write a summary
                 terms = ""
@@ -1244,7 +1280,7 @@ class DiagnosticsToolbox:
                     # +1 to switch from 0-index to 1-index
                     terms += f"{j[0]+1} ({j[1]})"
                 issues.append(
-                    f"Cancellation in {compact_expression_to_string(k)}. Terms {terms}"
+                    f"Cancellation in{tag}{compact_expression_to_string(k)}. Terms {terms}"
                 )
 
         if tripped:

@@ -184,7 +184,7 @@ class StrEnum(str, Enum):
 
 class _ToExprStringVisitor(_ToStringVisitor):
     """
-    Derived version fo the Pyomo _ToStringVisitor class
+    Derived version of the Pyomo _ToStringVisitor class
     which checks for named Expressions in the expression tree
     and prints their name instead of expanding the expression tree.
     """
@@ -220,7 +220,7 @@ def compact_expression_to_string(expr):
 
 def print_compact_form(expr, stream=None):
     """
-    Writes a compact string representation fo the given component or
+    Writes a compact string representation of the given component or
     expression to the specified stream.
 
     Unlike the normal Pyomo string representations, this function will

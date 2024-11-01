@@ -1142,6 +1142,34 @@ Number of canceling terms per node limited to 5.
             dt.display_problematic_constraint_terms(m.v1)
 
     @pytest.mark.component
+    def test_display_problematic_constraint_terms_named_expression(self):
+        m = ConcreteModel()
+
+        # Constraint with mismatched terms
+        m.v1 = Var(initialize=10)
+        m.v2 = Var(initialize=10)
+        m.v3 = Var(initialize=1e-6)
+
+        m.e1 = Expression(expr=(m.v1 - m.v2))
+
+        m.c2 = Constraint(expr=m.v3 == m.e1**2)
+
+        dt = DiagnosticsToolbox(model=m)
+
+        stream = StringIO()
+        dt.display_problematic_constraint_terms(m.c2, stream=stream)
+
+        expected = """====================================================================================
+The following terms in c2 are potentially problematic:
+
+    Cancellation in Expression e1. Terms 1 (10), 2 (-10)
+
+====================================================================================
+"""
+
+        assert stream.getvalue() == expected
+
+    @pytest.mark.component
     def test_display_constraints_with_mismatched_terms(self):
         m = ConcreteModel()
         # Constraint with mismatched terms
@@ -4412,7 +4440,7 @@ class TestConstraintTermAnalysisVisitor:
         # We expect to canceling combinations
         # Results should be a list with each entry being a tuple containing a
         # canceling combination
-        # In turn, each element of the tuple should be a 2-tuple with thw
+        # In turn, each element of the tuple should be a 2-tuple with the
         # position of the term in the input list and its value
         expected = [((0, 1), (2, 3), (3, -4)), ((0, 1), (1, -2), (3, -4), (4, 5))]
 
