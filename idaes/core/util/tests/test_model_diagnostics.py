@@ -97,7 +97,6 @@ from idaes.core.util.model_diagnostics import (
     check_parallel_jacobian,
     compute_ill_conditioning_certificate,
     ConstraintTermAnalysisVisitor,
-    compact_expression_to_string,
 )
 from idaes.core.util.parameter_sweep import (
     SequentialSweepRunner,
@@ -5375,20 +5374,3 @@ class TestConstraintTermAnalysisVisitor:
         assert len(cc) == 0
         assert not k
         assert not tr
-
-
-class TestToExprStringVisitor:
-    @pytest.mark.unit
-    def test_visitor(self):
-        m = ConcreteModel()
-        m.v1 = Var()
-        m.v2 = Var()
-        m.v3 = Var()
-
-        m.e1 = Expression(expr=m.v1 + m.v2)
-        m.c1 = Constraint(expr=0 == m.v3 * m.e1)
-
-        str = compact_expression_to_string(m.c1.expr)
-        expected = "v3*e1  ==  0"
-
-        assert str == expected

@@ -57,11 +57,9 @@ from pyomo.core.expr.numeric_expr import (
     NPV_UnaryFunctionExpression,
     NumericExpression,
 )
-from pyomo.core.expr.visitor import _ToStringVisitor
 from pyomo.core.base.block import BlockData
 from pyomo.core.base.var import VarData
 from pyomo.core.base.constraint import ConstraintData
-from pyomo.core.base.expression import ExpressionData
 from pyomo.repn.standard_repn import (  # pylint: disable=no-name-in-module
     generate_standard_repn,
 )
@@ -89,6 +87,7 @@ from pyomo.common.numeric_types import native_types
 from pyomo.core.base.units_container import _PyomoUnit
 
 from idaes.core.solvers.get_solver import get_solver
+from idaes.core.util.misc import compact_expression_to_string
 from idaes.core.util.model_statistics import (
     activated_blocks_set,
     deactivated_blocks_set,
@@ -4834,29 +4833,3 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
             const,
             self._cancellation_tripped,
         )
-
-
-class _ToExprStringVisitor(_ToStringVisitor):
-    def visiting_potential_leaf(self, node):
-        if isinstance(node, ExpressionData):
-            return True, node.name
-
-        return super().visiting_potential_leaf(node)
-
-
-def compact_expression_to_string(expr):
-    """Return a string representation of an expression.
-
-    Parameters
-    ----------
-    expr: ExpressionBase
-        The root node of an expression tree.
-
-    Returns:
-        A string representation for the expression.
-
-    """
-    # Create and execute the visitor pattern
-    #
-    visitor = _ToExprStringVisitor(verbose=False, smap=None)
-    return visitor.dfs_postorder_stack(expr)
