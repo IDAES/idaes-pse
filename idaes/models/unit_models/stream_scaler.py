@@ -183,8 +183,8 @@ see property package for documentation.}""",
             If hold_states is True, returns a dict containing flags for which
             states were fixed during initialization.
         """
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
-        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
+        # init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
+        # solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
 
         # Create solver
 
