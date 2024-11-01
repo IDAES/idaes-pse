@@ -4130,7 +4130,7 @@ def _collect_model_statistics(model):
 
     # Only show graybox info if they are present
     if len(greybox_block_set(model)) != 0:
-        stats.append(f"{TAB}GreyBox statistics")
+        stats.append(f"{TAB}GreyBox Statistics")
         stats.append(
             f"{TAB* 2}Activated GreyBox models: {len(activated_greybox_block_set(model))} "
             f"(Deactivated: {len(deactivated_greybox_block_set(model))})"
