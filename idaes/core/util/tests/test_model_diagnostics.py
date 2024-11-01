@@ -510,7 +510,7 @@ class TestStatsWriter:
         assert stats[6] == f"{tab}Activated Equality Constraints: 5 (Deactivated: 3)"
         assert stats[7] == f"{tab}Activated Inequality Constraints: 0 (Deactivated: 0)"
         assert stats[8] == f"{tab}Activated Objectives: 0 (Deactivated: 0)"
-        assert stats[9] == f"{tab}GreyBox statistics"
+        assert stats[9] == f"{tab}GreyBox Statistics"
         assert stats[10] == f"{tab*2}Activated GreyBox models: 1 (Deactivated: 1)"
         assert stats[11] == f"{tab*2}Activated GreyBox Equalities: 3 (Deactivated: 3)"
         assert (
