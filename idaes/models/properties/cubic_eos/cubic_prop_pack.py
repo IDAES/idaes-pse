@@ -50,6 +50,7 @@ from pyomo.environ import (
 )
 from pyomo.common.config import ConfigDict, ConfigValue, In
 from pyomo.contrib.incidence_analysis import solve_strongly_connected_components
+from pyomo.common.deprecation import deprecated
 
 # Import IDAES cores
 from idaes.core import (
@@ -96,7 +97,12 @@ from idaes.models.properties.modular_properties.eos.ceos_common import (
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
-
+@deprecated(
+    msg="The standalone cubic property package has been deprecated in favor of the "
+    "cubic equation of state for the modular property framework. This class will be "
+    "removed in the next release.",
+    version="2.6.0",
+)
 @declare_process_block_class("CubicParameterBlock")
 class CubicParameterData(PhysicalParameterBlock):
     """
@@ -221,7 +227,12 @@ conditions, and thus corresponding constraints  should be included,
             }
         )
 
-
+@deprecated(
+    msg="The standalone cubic property package has been deprecated in favor of the "
+    "cubic equation of state for the modular property framework. This class will be "
+    "removed in the next release.",
+    version="2.6.0",
+)
 class CubicEoSInitializer(InitializerBase):
     """
     Initializer for CubicEoS property packages.
@@ -639,7 +650,12 @@ class CubicEoSInitializer(InitializerBase):
 
         return None
 
-
+@deprecated(
+    msg="The standalone cubic property package has been deprecated in favor of the "
+    "cubic equation of state for the modular property framework. This class will be "
+    "removed in the next release.",
+    version="2.6.0",
+)
 class _CubicStateBlock(StateBlock):
     """
     This Class contains methods which should be applied to Property Blocks as a
@@ -1095,7 +1111,12 @@ class _CubicStateBlock(StateBlock):
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
         init_log.info_high("States released.")
 
-
+@deprecated(
+    msg="The standalone cubic property package has been deprecated in favor of the "
+    "cubic equation of state for the modular property framework. This class will be "
+    "removed in the next release.",
+    version="2.6.0",
+)
 @declare_process_block_class("CubicStateBlock", block_class=_CubicStateBlock)
 class CubicStateBlockData(StateBlockData):
     """An general property package for cubic equations of state with VLE."""
