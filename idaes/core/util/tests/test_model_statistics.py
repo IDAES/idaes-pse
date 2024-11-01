@@ -717,14 +717,13 @@ def test_degrees_of_freedom_with_graybox():
     m.gb_inactive = ExternalGreyBoxBlock(external_model=BasicGrayBox())
     m.gb_inactive.deactivate()
     # test counting functions
-    print(number_activated_greybox_blocks(m))
-
     assert number_greybox_blocks(m) == 2
     assert number_deactivated_greybox_block(m) == 1
     assert number_activated_greybox_blocks(m) == 1
     assert number_of_greybox_variables(m) == 5
     assert number_of_unfixed_greybox_variables(m) == 5
-    assert number_greybox_equalities(m) == 3
+    assert number_activated_greybox_equalities(m) == 3
+    assert number_variables_in_activated_constraints(m) == 5
     # verify DOFS works on stand alone greybox
     assert degrees_of_freedom(m) == 2
     m.gb.inputs.fix()
@@ -745,6 +744,11 @@ def test_degrees_of_freedom_with_graybox():
     m.o1_eq = Constraint(expr=m.o1 == m.gb.outputs["o1"])
     m.o1.fix()
     assert degrees_of_freedom(m) == -1
+    assert number_variables_in_activated_constraints(m) == 7
+    assert number_total_constraints(m) == 5
+    assert number_total_equalities(m) == 5
+    assert number_deactivated_equalities(m) == 3
+    assert number_deactivated_constraints(m) == 3
     report_statistics(m)
 
 

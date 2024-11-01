@@ -91,7 +91,8 @@ from idaes.core.util.model_statistics import (
     deactivated_objectives_set,
     variables_in_activated_constraints_set,
     variables_not_in_activated_constraints_set,
-    number_greybox_equalities,
+    number_activated_greybox_equalities,
+    number_deactivated_greybox_equalities,
     activated_greybox_block_set,
     deactivated_greybox_block_set,
     greybox_block_set,
@@ -4115,8 +4116,8 @@ def _collect_model_statistics(model):
         f"(External: {len(ext_fixed_vars_in_constraints)})"
     )
     stats.append(
-        f"{TAB}Activated Equality Constraints: {len(activated_equalities_set(model))} "
-        f"(Deactivated: {len(deactivated_equalities_set(model))})"
+        f"{TAB}Activated Equality Constraints: {len(activated_equalities_set(model))+number_activated_greybox_equalities(model)} "
+        f"(Deactivated: {len(deactivated_equalities_set(model))+number_deactivated_greybox_equalities(model)})"
     )
     stats.append(
         f"{TAB}Activated Inequality Constraints: {len(activated_inequalities_set(model))} "
@@ -4129,15 +4130,17 @@ def _collect_model_statistics(model):
 
     # Only show graybox info if they are present
     if len(greybox_block_set(model)) != 0:
+        stats.append(f"{TAB}GreyBox statistics")
         stats.append(
-            f"{TAB}Activated GreyBox model: {len(activated_greybox_block_set(model))} "
+            f"{TAB* 2}Activated GreyBox models: {len(activated_greybox_block_set(model))} "
             f"(Deactivated: {len(deactivated_greybox_block_set(model))})"
         )
         stats.append(
-            f"{TAB}Activated GreyBox Equalities: {number_greybox_equalities(model)}"
+            f"{TAB* 2}Activated GreyBox Equalities: {number_activated_greybox_equalities(model)} "
+            f"(Deactivated: {number_deactivated_greybox_equalities(model)})"
         )
         stats.append(
-            f"{TAB}Free Variables in GreyBox Equalities: {len(unfixed_greybox_variables(model))} (Fixed: {len(greybox_variables(model)-unfixed_greybox_variables(model))})"
+            f"{TAB* 2}Free Variables in Activated GreyBox Equalities: {len(unfixed_greybox_variables(model))} (Fixed: {len(greybox_variables(model)-unfixed_greybox_variables(model))})"
         )
 
     return stats

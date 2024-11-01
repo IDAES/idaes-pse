@@ -294,7 +294,11 @@ def number_total_constraints(block):
     Returns:
         Number of Constraint components in block
     """
-    return sum(1 for _ in activated_block_component_generator(block, ctype=Constraint))
+    number_standard_constraints = sum(
+        1 for _ in activated_block_component_generator(block, ctype=Constraint)
+    )
+    number_greybox_constraints = number_activated_greybox_equalities(block)
+    return number_standard_constraints + number_greybox_constraints
 
 
 def activated_constraints_generator(block):
@@ -379,7 +383,9 @@ def number_deactivated_constraints(block):
     Returns:
         Number of deactivated Constraint components in block
     """
-    return sum(1 for _ in deactivated_constraints_generator(block))
+    standard_equalities = sum(1 for _ in deactivated_constraints_generator(block))
+    greybox_equalities = number_deactivated_greybox_equalities(block)
+    return standard_equalities + greybox_equalities
 
 
 # -------------------------------------------------------------------------
@@ -424,7 +430,9 @@ def number_total_equalities(block):
     Returns:
         Number of equality Constraint components in block
     """
-    return sum(1 for _ in total_equalities_generator(block))
+    standard_equalities = sum(1 for _ in total_equalities_generator(block))
+    greybox_equalities = number_activated_greybox_equalities(block)
+    return standard_equalities + greybox_equalities
 
 
 def activated_equalities_generator(block):
@@ -478,10 +486,10 @@ def number_activated_equalities(block):
     """
     return sum(
         1 for _ in activated_equalities_generator(block)
-    ) + number_greybox_equalities(block)
+    ) + number_activated_greybox_equalities(block)
 
 
-def number_greybox_equalities(block) -> int:
+def number_activated_greybox_equalities(block) -> int:
     """
     Function to compute total number of equality constraints for all GreyBox objects in this block.
 
@@ -498,6 +506,28 @@ def number_greybox_equalities(block) -> int:
     """
     equalities = 0
     for grey_box in activated_greybox_block_set(block):
+        equalities += len(grey_box.outputs)
+        equalities += grey_box.get_external_model().n_equality_constraints()
+    return equalities
+
+
+def number_deactivated_greybox_equalities(block) -> int:
+    """
+    Function to compute total number of equality constraints for all GreyBox objects in this block.
+
+    A GreyBox model is always assumed to be 0DOFs where each output[i]==f(inputs)
+    where f is GreyBox model, this should be true regardless if
+    GreyBox model is doing internal optimization or not, as every output
+    is calculated through a the GreyBox internal model using provided inputs.
+
+    Args:
+        block : pyomo concrete model or pyomo block
+
+    Returns:
+        Number of equality constraints in all GreyBox objects on the provided block
+    """
+    equalities = 0
+    for grey_box in deactivated_greybox_block_set(block):
         equalities += len(grey_box.outputs)
         equalities += grey_box.get_external_model().n_equality_constraints()
     return equalities
@@ -546,7 +576,9 @@ def number_deactivated_equalities(block):
     Returns:
         Number of deactivated equality Constraint components in block
     """
-    return sum(1 for _ in deactivated_equalities_generator(block))
+    standard_equalities = sum(1 for _ in deactivated_equalities_generator(block))
+    greybox_equalities = number_deactivated_greybox_equalities(block)
+    return standard_equalities + greybox_equalities
 
 
 # -------------------------------------------------------------------------
@@ -703,11 +735,14 @@ def variables_set(block):
     Returns:
         A ComponentSet including all Var components in block
     """
-    return ComponentSet(
-        _iter_indexed_block_data_objects(
-            block, ctype=Var, active=True, descend_into=True
-        )
-    )
+    var_set = ComponentSet()
+    for var in _iter_indexed_block_data_objects(
+        block, ctype=Var, active=True, descend_into=True
+    ):
+        var_set.add(var)
+    for var in greybox_variables(block):
+        var_set.add(var)
+    return var_set
 
 
 def number_variables(block):
@@ -736,6 +771,10 @@ def fixed_variables_generator(block):
     for v in _iter_indexed_block_data_objects(
         block, ctype=Var, active=True, descend_into=True
     ):
+        if v.fixed:
+            yield v
+    # include greybox variables in set
+    for v in greybox_variables(block):
         if v.fixed:
             yield v
 
@@ -948,6 +987,9 @@ def variables_in_activated_constraints_set(block):
     ):
         for v in identify_variables(c.body):
             var_set.add(v)
+    # include any vars in greyboxes
+    for v in greybox_variables(block):
+        var_set.add(v)
     return var_set
 
 
@@ -1772,7 +1814,9 @@ def report_statistics(block, ostream=None):
         ostream.write(
             f"No. Fixed GreyBox Variables: {number_of_greybox_variables(block)-number_of_unfixed_greybox_variables(block)} \n"
         )
-        ostream.write(f"No. GreyBox Equalities: {number_greybox_equalities(block)} \n")
+        ostream.write(
+            f"No. GreyBox Equalities: {number_activated_greybox_equalities(block)} \n"
+        )
     ostream.write(header + "\n")
     ostream.write("\n")
 
