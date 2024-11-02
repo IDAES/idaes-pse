@@ -732,7 +732,11 @@ class TestBTX_cocurrent(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_numerical_issues(self, btx):
-        dt = DiagnosticsToolbox(btx)
+        iscale.calculate_scaling_factors(btx)
+        btx_scaled = TransformationFactory("core.scale_model").create_using(
+            btx, rename=False
+        )
+        dt = DiagnosticsToolbox(btx_scaled)
         dt.assert_no_numerical_warnings()
 
 
@@ -964,7 +968,11 @@ class TestBTX_countercurrent(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_numerical_issues(self, btx):
-        dt = DiagnosticsToolbox(btx)
+        iscale.calculate_scaling_factors(btx)
+        btx_scaled = TransformationFactory("core.scale_model").create_using(
+            btx, rename=False
+        )
+        dt = DiagnosticsToolbox(btx_scaled)
         dt.assert_no_numerical_warnings()
 
 
@@ -1562,7 +1570,11 @@ class TestIAPWS_cocurrent(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_numerical_issues(self, iapws):
-        dt = DiagnosticsToolbox(iapws)
+        iscale.calculate_scaling_factors(iapws)
+        iapws_scaled = TransformationFactory("core.scale_model").create_using(
+            iapws, rename=False
+        )
+        dt = DiagnosticsToolbox(iapws_scaled)
         dt.assert_no_numerical_warnings()
 
 
@@ -1779,7 +1791,11 @@ class TestIAPWS_countercurrent(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_numerical_issues(self, iapws):
-        dt = DiagnosticsToolbox(iapws)
+        iscale.calculate_scaling_factors(iapws)
+        iapws_scaled = TransformationFactory("core.scale_model").create_using(
+            iapws, rename=False
+        )
+        dt = DiagnosticsToolbox(iapws_scaled)
         dt.assert_no_numerical_warnings()
 
 
@@ -2038,7 +2054,7 @@ class TestSaponification_cocurrent(object):
     @pytest.mark.component
     def test_numerical_issues(self, sapon):
         dt = DiagnosticsToolbox(sapon)
-        dt.assert_no_numerical_warnings()
+        dt.assert_no_numerical_warnings(ignore_parallel_components=True)
 
 
 # # -----------------------------------------------------------------------------
@@ -2296,7 +2312,7 @@ class TestSaponification_countercurrent(object):
     @pytest.mark.component
     def test_numerical_issues(self, sapon):
         dt = DiagnosticsToolbox(sapon)
-        dt.assert_no_numerical_warnings()
+        dt.assert_no_numerical_warnings(ignore_parallel_components=True)
 
 
 # # -----------------------------------------------------------------------------
@@ -2646,9 +2662,12 @@ class TestBT_Generic_cocurrent(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.integration
     def test_numerical_issues(self, btx):
-        dt = DiagnosticsToolbox(btx)
-        # TODO: Complementarity formulation results in near-parallel components
-        # when unscaled
+        iscale.calculate_scaling_factors(btx)
+        btx_scaled = TransformationFactory("core.scale_model").create_using(
+            btx, rename=False
+        )
+        dt = DiagnosticsToolbox(btx_scaled)
+        # Jacobian Condition Number: 9.403E+16, partially due to ComplementarityVLE
         dt.assert_no_numerical_warnings(ignore_parallel_components=True)
 
     @pytest.mark.component

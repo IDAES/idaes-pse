@@ -20,6 +20,7 @@ import pytest
 from pyomo.environ import (
     check_optimal_termination,
     ConcreteModel,
+    TransformationFactory,
     value,
     units as pyunits,
 )
@@ -44,6 +45,7 @@ from idaes.core.initialization import (
     InitializationStatus,
 )
 from idaes.core.util import DiagnosticsToolbox
+import idaes.core.util.scaling as iscale
 
 
 # -----------------------------------------------------------------------------
@@ -112,6 +114,10 @@ class TestBTXIdeal(object):
         m.fs.unit.control_volume.properties_out[0.0]._temperature_equilibrium.setub(550)
         m.fs.unit.control_volume.properties_out[0.0].pressure_sat_comp.setlb(1e4)
         m.fs.unit.control_volume.properties_out[0.0].pressure_sat_comp.setub(5e6)
+
+        m.fs.properties.set_default_scaling("flow_mol", 1)
+        m.fs.properties.set_default_scaling("flow_mol_phase", 1)
+        m.fs.properties.set_default_scaling("flow_mol_phase_comp", 1)
 
         return m
 
@@ -208,7 +214,11 @@ class TestBTXIdeal(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_numerical_issues(self, btx):
-        dt = DiagnosticsToolbox(btx)
+        iscale.calculate_scaling_factors(btx)
+        btx_scaled = TransformationFactory("core.scale_model").create_using(
+            btx, rename=False
+        )
+        dt = DiagnosticsToolbox(btx_scaled)
         dt.assert_no_numerical_warnings()
 
 
@@ -328,6 +338,12 @@ class TestIAPWS(object):
     @pytest.mark.component
     def test_numerical_issues(self, iapws):
         dt = DiagnosticsToolbox(iapws)
+
+        iscale.calculate_scaling_factors(iapws)
+        iapws_scaled = TransformationFactory("core.scale_model").create_using(
+            iapws, rename=False
+        )
+        dt = DiagnosticsToolbox(iapws_scaled)
         dt.assert_no_numerical_warnings()
 
 

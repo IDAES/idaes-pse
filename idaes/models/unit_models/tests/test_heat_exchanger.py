@@ -24,6 +24,7 @@ from pyomo.environ import (
     ConcreteModel,
     Constraint,
     Expression,
+    TransformationFactory,
     value,
     Var,
     units as pyunits,
@@ -72,6 +73,7 @@ from idaes.core.initialization import (
     InitializationStatus,
 )
 from idaes.core.util import DiagnosticsToolbox
+from idaes.core.util import scaling as iscale
 
 
 # Imports to assemble BT-PR with different units
@@ -300,6 +302,9 @@ def basic_model(cb=delta_temperature_lmtd_callback):
     m.fs.unit.area.fix(1000)
     m.fs.unit.overall_heat_transfer_coefficient.fix(100)
 
+    iscale.set_scaling_factor(m.fs.unit.area, 1e-3)
+    iscale.set_scaling_factor(m.fs.unit.overall_heat_transfer_coefficient, 1e-2)
+
     assert degrees_of_freedom(m) == 0
     m.fs.unit.initialize()
     return m
@@ -328,6 +333,9 @@ def basic_model2(cb=delta_temperature_lmtd_callback):
 
     m.fs.unit.area.fix(100)
     m.fs.unit.overall_heat_transfer_coefficient.fix(100)
+
+    iscale.set_scaling_factor(m.fs.unit.area, 1e-2)
+    iscale.set_scaling_factor(m.fs.unit.overall_heat_transfer_coefficient, 1e-2)
 
     assert degrees_of_freedom(m) == 0
     m.fs.unit.initialize()
@@ -358,6 +366,10 @@ def basic_model3(cb=delta_temperature_lmtd_callback):
     m.fs.unit.area.fix(1000)
     m.fs.unit.overall_heat_transfer_coefficient.fix(100)
     m.fs.unit.crossflow_factor.fix(1.0)
+
+    iscale.set_scaling_factor(m.fs.unit.area, 1e-3)
+    iscale.set_scaling_factor(m.fs.unit.overall_heat_transfer_coefficient, 1e-2)
+
     assert degrees_of_freedom(m) == 0
     m.fs.unit.initialize()
     return m
@@ -503,6 +515,9 @@ class TestBTX_cocurrent(object):
 
         m.fs.unit.area.fix(1)
         m.fs.unit.overall_heat_transfer_coefficient.fix(100)
+
+        iscale.set_scaling_factor(m.fs.unit.area, 1)
+        iscale.set_scaling_factor(m.fs.unit.overall_heat_transfer_coefficient, 1e-2)
 
         # Bound temperature differences to avoid division by zero
         m.fs.unit.delta_temperature_in[0.0].setlb(40)
@@ -715,7 +730,11 @@ class TestBTX_cocurrent(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_numerical_issues(self, btx):
-        dt = DiagnosticsToolbox(btx)
+        iscale.calculate_scaling_factors(btx)
+        btx_scaled = TransformationFactory("core.scale_model").create_using(
+            btx, rename=False
+        )
+        dt = DiagnosticsToolbox(btx_scaled)
         dt.assert_no_numerical_warnings()
 
 
@@ -750,6 +769,9 @@ class TestBTX_cocurrent_alt_name(object):
 
         m.fs.unit.area.fix(1)
         m.fs.unit.overall_heat_transfer_coefficient.fix(100)
+
+        iscale.set_scaling_factor(m.fs.unit.area, 1)
+        iscale.set_scaling_factor(m.fs.unit.overall_heat_transfer_coefficient, 1e-2)
 
         # Bound temperature differences to avoid division by zero
         m.fs.unit.delta_temperature_in[0.0].setlb(40)
@@ -957,7 +979,11 @@ class TestBTX_cocurrent_alt_name(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_numerical_issues(self, btx):
-        dt = DiagnosticsToolbox(btx)
+        iscale.calculate_scaling_factors(btx)
+        btx_scaled = TransformationFactory("core.scale_model").create_using(
+            btx, rename=False
+        )
+        dt = DiagnosticsToolbox(btx_scaled)
         dt.assert_no_numerical_warnings()
 
 
@@ -989,6 +1015,9 @@ class TestIAPWS_countercurrent(object):
         m.fs.unit.area.fix(1000)
         m.fs.unit.overall_heat_transfer_coefficient.fix(100)
 
+        iscale.set_scaling_factor(m.fs.unit.area, 1e-3)
+        iscale.set_scaling_factor(m.fs.unit.overall_heat_transfer_coefficient, 1e-2)
+
         return m
 
     @pytest.fixture(scope="class")
@@ -1015,6 +1044,9 @@ class TestIAPWS_countercurrent(object):
 
         m.fs.unit.area.fix(1000)
         m.fs.unit.overall_heat_transfer_coefficient.fix(100)
+
+        iscale.set_scaling_factor(m.fs.unit.area, 1e-3)
+        iscale.set_scaling_factor(m.fs.unit.overall_heat_transfer_coefficient, 1e-2)
 
         return m
 
@@ -1075,6 +1107,9 @@ class TestIAPWS_countercurrent(object):
 
         iapws.fs.unit.area.fix(1000)
         iapws.fs.unit.overall_heat_transfer_coefficient.fix(100)
+
+        iscale.set_scaling_factor(iapws.fs.unit.area, 1e-3)
+        iscale.set_scaling_factor(iapws.fs.unit.overall_heat_transfer_coefficient, 1e-2)
 
         assert degrees_of_freedom(iapws) == 0
 
@@ -1246,7 +1281,11 @@ class TestIAPWS_countercurrent(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_numerical_issues(self, iapws):
-        dt = DiagnosticsToolbox(iapws)
+        iscale.calculate_scaling_factors(iapws)
+        iapws_scaled = TransformationFactory("core.scale_model").create_using(
+            iapws, rename=False
+        )
+        dt = DiagnosticsToolbox(iapws_scaled)
         dt.assert_no_numerical_warnings()
 
 
@@ -1286,6 +1325,9 @@ class TestSaponification_crossflow(object):
         m.fs.unit.area.fix(1000)
         m.fs.unit.overall_heat_transfer_coefficient.fix(100)
         m.fs.unit.crossflow_factor.fix(0.6)
+
+        iscale.set_scaling_factor(m.fs.unit.area, 1e-3)
+        iscale.set_scaling_factor(m.fs.unit.overall_heat_transfer_coefficient, 1e-2)
 
         return m
 
@@ -1533,7 +1575,7 @@ class TestSaponification_crossflow(object):
         # Model could be better scaled
         # TODO: Using MA57 results in extreme Jacobian and aprallel constraints?
         dt = DiagnosticsToolbox(sapon, constraint_residual_tolerance=1e-2)
-        dt.assert_no_numerical_warnings()
+        dt.assert_no_numerical_warnings(ignore_parallel_components=True)
 
 
 # -----------------------------------------------------------------------------
@@ -1692,6 +1734,9 @@ class TestBT_Generic_cocurrent(object):
         m.fs.unit.hot_side.properties_in[0].eps_z_Vap_Liq.set_value(1e-4)
         m.fs.unit.hot_side.properties_out[0].eps_t_Vap_Liq.set_value(1e-4)
         m.fs.unit.hot_side.properties_out[0].eps_z_Vap_Liq.set_value(1e-4)
+
+        iscale.set_scaling_factor(m.fs.unit.area, 1)
+        iscale.set_scaling_factor(m.fs.unit.overall_heat_transfer_coefficient, 1e-2)
 
         return m
 
@@ -1903,9 +1948,13 @@ class TestBT_Generic_cocurrent(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_numerical_issues(self, btx):
-        dt = DiagnosticsToolbox(btx)
-        # TODO: Complementarity formulation results in near-parallel components
-        # when unscaled
+        iscale.calculate_scaling_factors(btx)
+        btx_scaled = TransformationFactory("core.scale_model").create_using(
+            btx, rename=False
+        )
+        dt = DiagnosticsToolbox(btx_scaled)
+
+        # Presently Jacobian is singular (condition number 4e16)
         dt.assert_no_numerical_warnings(ignore_parallel_components=True)
 
     @pytest.mark.component
@@ -2063,7 +2112,8 @@ class TestInitializersModular:
         model.fs.unit.area.fix(1)
         model.fs.unit.overall_heat_transfer_coefficient.fix(100)
 
-        model.fs.unit.cold_side.scaling_factor_pressure = 1
+        iscale.set_scaling_factor(model.fs.unit.area, 1)
+        iscale.set_scaling_factor(model.fs.unit.overall_heat_transfer_coefficient, 1e-2)
 
         # Set small values of epsilon to get sufficiently accurate results
         # Only applies to hot side, as cold side used the original SmoothVLE.
@@ -2187,6 +2237,9 @@ class TestInitializersIAPWS:
 
         m.fs.unit.area.fix(1000)
         m.fs.unit.overall_heat_transfer_coefficient.fix(100)
+
+        iscale.set_scaling_factor(m.fs.unit.area, 1e-3)
+        iscale.set_scaling_factor(m.fs.unit.overall_heat_transfer_coefficient, 1e-2)
 
         return m
 
