@@ -20,7 +20,6 @@ McGraw-Hill, 1987
 """
 # Import Pyomo libraries
 from pyomo.environ import Reals, Param, NonNegativeReals, Set, units as pyunits
-from pyomo.common.deprecation import deprecated
 
 # Import IDAES cores
 from idaes.core import declare_process_block_class, Component
