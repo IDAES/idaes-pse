@@ -58,9 +58,7 @@ class TestParameterBlock(object):
         m.fs = FlowsheetBlock(dynamic=False)
         with caplog.at_level(idaeslog.WARNING):
             m.fs.params = CubicParameterBlock()
-        assert (
-            "May 2025 release." in caplog.text
-        )
+        assert "May 2025 release." in caplog.text
 
         assert m.fs.params.state_block_class is CubicStateBlock
         assert m.fs.params.config.valid_phase == ("Vap", "Liq")
@@ -194,9 +192,7 @@ class TestStateBlock_LV_PR(object):
     def test_build_default(self, model, caplog):
         with caplog.at_level(idaeslog.WARNING):
             model.fs.props = model.fs.params.build_state_block([1])
-        assert (
-            "May 2025 release." in caplog.text
-        )
+        assert "May 2025 release." in caplog.text
 
         assert model.fs.props.default_initializer is CubicEoSInitializer
 
@@ -521,9 +517,7 @@ class TestStateBlock_V_PR(object):
     def test_build_default(self, model, caplog):
         with caplog.at_level(idaeslog.WARNING):
             model.fs.props = model.fs.params.build_state_block([1])
-        assert (
-            "May 2025 release." in caplog.text
-        )
+        assert "May 2025 release." in caplog.text
 
         assert isinstance(model.fs.props[1].flow_mol, Var)
         assert len(model.fs.props[1].flow_mol) == 1

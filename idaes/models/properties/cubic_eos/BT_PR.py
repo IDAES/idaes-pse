@@ -36,6 +36,7 @@ from idaes.logger import getIdaesLogger
 # Set up logger
 _log = getIdaesLogger(__name__)
 
+
 @deprecated(
     msg="The standalone cubic property package has been deprecated in favor of the "
     "cubic equation of state for the modular property framework. This class will be "

@@ -97,6 +97,7 @@ from idaes.models.properties.modular_properties.eos.ceos_common import (
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
+
 @deprecated(
     msg="The standalone cubic property package has been deprecated in favor of the "
     "cubic equation of state for the modular property framework. This class will be "
@@ -226,6 +227,7 @@ conditions, and thus corresponding constraints  should be included,
                 "temperature": pyunits.K,
             }
         )
+
 
 @deprecated(
     msg="The standalone cubic property package has been deprecated in favor of the "
@@ -649,6 +651,7 @@ class CubicEoSInitializer(InitializerBase):
         init_log.info("Property initialization routine finished.")
 
         return None
+
 
 @deprecated(
     msg="The standalone cubic property package has been deprecated in favor of the "
@@ -1110,6 +1113,7 @@ class _CubicStateBlock(StateBlock):
 
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
         init_log.info_high("States released.")
+
 
 @deprecated(
     msg="The standalone cubic property package has been deprecated in favor of the "
