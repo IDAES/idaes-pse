@@ -37,12 +37,6 @@ from idaes.logger import getIdaesLogger
 _log = getIdaesLogger(__name__)
 
 
-@deprecated(
-    msg="The standalone cubic property package has been deprecated in favor of the "
-    "cubic equation of state for the modular property framework. This class will be "
-    "removed in the May 2025 release.",
-    version="2.7.0",
-)
 @declare_process_block_class("BTParameterBlock")
 class BTParameterData(CubicParameterData):
     """Cubic property package for benzene and toluene mixtures."""

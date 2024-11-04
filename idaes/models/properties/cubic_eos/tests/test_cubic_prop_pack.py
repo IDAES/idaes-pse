@@ -189,10 +189,8 @@ class TestStateBlock_LV_PR(object):
         not cubic_roots_available(), reason="Cubic functions not available"
     )
     @pytest.mark.unit
-    def test_build_default(self, model, caplog):
-        with caplog.at_level(idaeslog.WARNING):
-            model.fs.props = model.fs.params.build_state_block([1])
-        assert "May 2025 release." in caplog.text
+    def test_build_default(self, model):
+        model.fs.props = model.fs.params.build_state_block([1])
 
         assert model.fs.props.default_initializer is CubicEoSInitializer
 
@@ -514,10 +512,8 @@ class TestStateBlock_V_PR(object):
         not cubic_roots_available(), reason="Cubic functions not available"
     )
     @pytest.mark.unit
-    def test_build_default(self, model, caplog):
-        with caplog.at_level(idaeslog.WARNING):
-            model.fs.props = model.fs.params.build_state_block([1])
-        assert "May 2025 release." in caplog.text
+    def test_build_default(self, model):
+        model.fs.props = model.fs.params.build_state_block([1])
 
         assert isinstance(model.fs.props[1].flow_mol, Var)
         assert len(model.fs.props[1].flow_mol) == 1

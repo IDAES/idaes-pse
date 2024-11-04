@@ -653,12 +653,6 @@ class CubicEoSInitializer(InitializerBase):
         return None
 
 
-@deprecated(
-    msg="The standalone cubic property package has been deprecated in favor of the "
-    "cubic equation of state for the modular property framework. This class will be "
-    "removed in the May 2025 release.",
-    version="2.7.0",
-)
 class _CubicStateBlock(StateBlock):
     """
     This Class contains methods which should be applied to Property Blocks as a
@@ -1115,12 +1109,6 @@ class _CubicStateBlock(StateBlock):
         init_log.info_high("States released.")
 
 
-@deprecated(
-    msg="The standalone cubic property package has been deprecated in favor of the "
-    "cubic equation of state for the modular property framework. This class will be "
-    "removed in the next release.",
-    version="2.7.0",
-)
 @declare_process_block_class("CubicStateBlock", block_class=_CubicStateBlock)
 class CubicStateBlockData(StateBlockData):
     """An general property package for cubic equations of state with VLE."""
