@@ -100,8 +100,8 @@ _log = idaeslog.getLogger(__name__)
 @deprecated(
     msg="The standalone cubic property package has been deprecated in favor of the "
     "cubic equation of state for the modular property framework. This class will be "
-    "removed in the next release.",
-    version="2.6.0",
+    "removed in the May 2025 release.",
+    version="2.7.0",
 )
 @declare_process_block_class("CubicParameterBlock")
 class CubicParameterData(PhysicalParameterBlock):
@@ -230,8 +230,8 @@ conditions, and thus corresponding constraints  should be included,
 @deprecated(
     msg="The standalone cubic property package has been deprecated in favor of the "
     "cubic equation of state for the modular property framework. This class will be "
-    "removed in the next release.",
-    version="2.6.0",
+    "removed in the May 2025 release.",
+    version="2.7.0",
 )
 class CubicEoSInitializer(InitializerBase):
     """
@@ -653,8 +653,8 @@ class CubicEoSInitializer(InitializerBase):
 @deprecated(
     msg="The standalone cubic property package has been deprecated in favor of the "
     "cubic equation of state for the modular property framework. This class will be "
-    "removed in the next release.",
-    version="2.6.0",
+    "removed in the May 2025 release.",
+    version="2.7.0",
 )
 class _CubicStateBlock(StateBlock):
     """
@@ -1115,7 +1115,7 @@ class _CubicStateBlock(StateBlock):
     msg="The standalone cubic property package has been deprecated in favor of the "
     "cubic equation of state for the modular property framework. This class will be "
     "removed in the next release.",
-    version="2.6.0",
+    version="2.7.0",
 )
 @declare_process_block_class("CubicStateBlock", block_class=_CubicStateBlock)
 class CubicStateBlockData(StateBlockData):
