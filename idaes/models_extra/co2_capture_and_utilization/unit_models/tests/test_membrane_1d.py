@@ -285,3 +285,23 @@ class TestMembrane:
             )
             <= 1e-6
         )
+
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_material_balance(self, membrane):
+
+        assert (
+            abs(
+                value(
+                    (
+                        membrane.fs.unit.feed_side_inlet.flow_mol[0]
+                        + membrane.fs.unit.sweep_side_inlet.flow_mol[0]
+                        - membrane.fs.unit.feed_side_outlet.flow_mol[0]
+                        - membrane.fs.unit.sweep_side_outlet.flow_mol[0]
+                    )
+                )
+            )
+            <= 1e-3
+        )
