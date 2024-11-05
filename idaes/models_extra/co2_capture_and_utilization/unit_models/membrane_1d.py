@@ -144,6 +144,18 @@ class Membrane1DData(UnitModelBlockData):
         )
 
     def build(self):
+
+        """
+        This is a one-dimensional model for gas separation in CO₂ capture applications. 
+        The model will be discretized in the flow direction, and it supports two flow patterns: 
+        counter-current flow and co-current flow. The model was customized for gas-phase separation 
+        in CO₂ capture with a single-layer design. If a multi-layer design is needed, multiple units 
+        can be connected for this application. The two sides of the membrane are called the feed side 
+        and sweep side. The sweep stream inlet is optional. The driving force across the membrane is the 
+        partial pressure difference in this gas separation application. Additionally, the energy balance 
+        assumes that temperature remains constant on each side of the membrane.
+        
+        """
         super().build()
 
         feed_dict = dict(self.config.feed_side)
@@ -212,8 +224,15 @@ class Membrane1DData(UnitModelBlockData):
             default=10e-8 / 13333.2239,
             units=units.m / units.s / units.Pa,
             mutable=True,
+            doc=" This is a coefficient that will convert the unit of permeability from GPU to SI units for further calculation",
         )
 
+
+        """
+        Selectivity is defined for cases where some permeabilities are unavailable. Only define the selectivity
+         between different components; others should be set to 1. If the permeabilities of all components are defined
+         there is no need to define selectivity, as this may overdefine the problem.
+        """
         self.selectivity = Var(
             self.flowsheet().time,
             self.mscontactor.elements,
@@ -222,6 +241,7 @@ class Membrane1DData(UnitModelBlockData):
             initialize=1,
             units=units.dimensionless,
         )
+
 
         @self.Constraint(
             self.flowsheet().time,
