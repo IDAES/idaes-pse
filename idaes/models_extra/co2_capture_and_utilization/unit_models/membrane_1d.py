@@ -54,6 +54,7 @@ class MembraneFlowPattern(Enum):
 
 @declare_process_block_class("Membrane1D")
 class Membrane1DData(UnitModelBlockData):
+    
     """Standard Membrane 1D Unit Model Class."""
 
     CONFIG = UnitModelBlockData.CONFIG()
