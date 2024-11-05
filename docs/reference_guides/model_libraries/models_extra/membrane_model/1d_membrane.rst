@@ -1,5 +1,5 @@
 One-dimensional membrane class for CO2 gas separation
-=============================================
+================================================================
 
 This is a one-dimensional model for gas separation in CO₂ capture applications.
 The model will be discretized in the flow direction, and it supports two flow patterns:
