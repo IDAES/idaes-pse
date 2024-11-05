@@ -164,7 +164,7 @@ class PriceTakerModel(ConcreteModel):
             kmin = 4
         if kmax is None:
             kmax = 30
-            _logger.warning(f"kmax was not set - using a default value of 30.")
+            _logger.warning("kmax was not set - using a default value of 30.")
 
         if not isinstance(kmin, int):
             raise ValueError(f"kmin must be an integer, but {kmin} is not an integer")
@@ -202,7 +202,7 @@ class PriceTakerModel(ConcreteModel):
 
         if n_clusters is None:
             raise ValueError(
-                f"Could not find elbow point for given kmin, kmax. Consider increasing the range of kmin, kmax."
+                "Could not find elbow point for given kmin, kmax. Consider increasing the range of kmin, kmax."
             )
 
         _logger.info(f"Optimal # of clusters is: {n_clusters}")
@@ -225,7 +225,7 @@ class PriceTakerModel(ConcreteModel):
             kmin = 4
         if kmax is None:
             kmax = 30
-            _logger.warning(f"kmax was not set - using a default value of 30.")
+            _logger.warning("kmax was not set - using a default value of 30.")
 
         if not isinstance(kmin, int):
             raise ValueError(f"kmin must be an integer, but {kmin} is not an integer")
@@ -341,7 +341,7 @@ class PriceTakerModel(ConcreteModel):
         """
         if column_name is None:
             raise ValueError(
-                f"Data was provided but no column name was provided. Please supply a value for column_name."
+                "Data was provided but no column name was provided. Please supply a value for column_name."
             )
 
         if horizon_length is not None:
@@ -367,7 +367,7 @@ class PriceTakerModel(ConcreteModel):
         if ".xls" in path_to_file.suffix:
             if sheet is None:
                 _logger.warning(
-                    f"Excel file was provided but no sheet was specified. Using the first sheet of the excel file."
+                    "Excel file was provided but no sheet was specified. Using the first sheet of the excel file."
                 )
                 sheet = 0
             full_data = pd.read_excel(path_to_file, sheet_name=[sheet])[sheet]
@@ -452,11 +452,11 @@ class PriceTakerModel(ConcreteModel):
                     if blk.config.declare_lmp_param:
                         if not LMP_exists:
                             raise ConfigurationError(
-                                f"OperationModelData has been defined to automatically "
-                                + f"populate LMP data. However, self.LMP does not exist, where self is an instance of PriceTakerModel. "
-                                + f"Please run the append_lmp_data method from the PriceTakerModel class first or set the "
-                                + f"declare_lmp_param configuration option to False when configuring "
-                                + f"your OperationModelData object."
+                                "OperationModelData has been defined to automatically "
+                                "populate LMP data. However, self.LMP does not exist, where self is an instance of PriceTakerModel. "
+                                "Please run the append_lmp_data method from the PriceTakerModel class first or set the "
+                                "declare_lmp_param configuration option to False when configuring "
+                                "your OperationModelData object."
                             )
                         blk.LMP = self.LMP[p]
 
@@ -542,7 +542,7 @@ class PriceTakerModel(ConcreteModel):
 
         elif constraint_type == "nonlinear" and linearization:
             raise NotImplementedError(
-                f"You tried use nonlinear capacity with linearization. This is not yet supported."
+                "You tried use nonlinear capacity with linearization. This is not yet supported."
             )
         else:
             raise ValueError(
@@ -626,7 +626,7 @@ class PriceTakerModel(ConcreteModel):
             )
         if op_range_lb > shutdown_rate:
             raise ValueError(
-                f"op_range_lb fraction must be <= shut_down_rate, otherwise the system cannot reach the off state."
+                "op_range_lb fraction must be <= shut_down_rate, otherwise the system cannot reach the off state."
             )
 
         start_up = {
@@ -661,7 +661,7 @@ class PriceTakerModel(ConcreteModel):
         elif constraint_type == "nonlinear":
             if linearization == True:
                 raise NotImplementedError(
-                    f"You tried use nonlinear capacity with linearization. This is not yet supported."
+                    "You tried use nonlinear capacity with linearization. This is not yet supported."
                 )
             elif linearization == False:
                 var_capacity = self.find_component(design_blk + "." + capacity_var)
@@ -808,7 +808,7 @@ class PriceTakerModel(ConcreteModel):
         # Check to see if there is a representative day structure
         if self.set_days is not None:
             raise NotImplementedError(
-                f"You tried to use representative days with minimum up or minimum downtime constraints. This is not yet supported."
+                "You tried to use representative days with minimum up or minimum downtime constraints. This is not yet supported."
             )
         else:
             if up_time > 1:
@@ -887,13 +887,13 @@ class PriceTakerModel(ConcreteModel):
             total_revenue_expr = 0
             if costs is None:
                 _logger.warning(
-                    f"No costs were provided while building the hourly cashflow. Costs will be set to 0."
+                    "No costs were provided while building the hourly cashflow. Costs will be set to 0."
                 )
                 costs = []
 
             if revenue_streams is None:
                 _logger.warning(
-                    f"No revenues were provided while building the hourly cashflow. Revenues will be set to 0."
+                    "No revenues were provided while building the hourly cashflow. Revenues will be set to 0."
                 )
                 revenue_streams = []
 
@@ -953,12 +953,12 @@ class PriceTakerModel(ConcreteModel):
 
         if count_op_blks < 1:
             _logger.warning(
-                f"build_hourly_cashflows was called but no operation blocks were found so hourly cashflow of the model was set to 0. If you have hourly costs, please manually assign them."
+                "build_hourly_cashflows was called but no operation blocks were found so hourly cashflow of the model was set to 0. If you have hourly costs, please manually assign them."
             )
 
         # Logger info for where constraint is located on the model
         _logger.info(
-            f"Created hourly cashflow expressions at (mp_model.period[i].net_cash_inflow)"
+            "Created hourly cashflow expressions at (mp_model.period[i].net_cash_inflow)"
         )
 
     def build_cashflows(
@@ -1069,5 +1069,5 @@ class PriceTakerModel(ConcreteModel):
 
         if count_des_blks < 1:
             _logger.warning(
-                f"build_cashflows was called, but no design blocks were found so capex and FOM are 0. Please manually add your cost objective if you require one."
+                "build_cashflows was called, but no design blocks were found so capex and FOM are 0. Please manually add your cost objective if you require one."
             )
