@@ -286,7 +286,6 @@ class TestMembrane:
             <= 1e-6
         )
 
-
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
