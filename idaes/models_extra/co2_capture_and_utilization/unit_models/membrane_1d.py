@@ -37,6 +37,7 @@ from idaes.core import (
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.models.unit_models.mscontactor import MSContactor
 from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.tables import create_stream_table_dataframe
 
 __author__ = "Maojian Wang"
 
@@ -49,7 +50,7 @@ class MembraneFlowPattern(Enum):
 
     COUNTERCURRENT = 1
     COCURRENT = 2
-    CROSSFLOW = 3
+
 
 
 @declare_process_block_class("Membrane1D")
@@ -284,3 +285,15 @@ class Membrane1DData(UnitModelBlockData):
                 self.mscontactor.feed_side[t, s].temperature
                 == self.mscontactor.sweep_side[t, s].temperature
             )
+    
+    def _get_stream_table_contents(self, time_point=0):
+        return create_stream_table_dataframe(
+            {
+                "Feed Inlet": self.feed_side_inlet,
+                "Feed Outlet": self.feed_side_outlet,
+                "Permeate Inlet": self.sweep_side_inlet,
+                "Permeate Outlet": self.sweep_side_outlet,
+            },
+            time_point=time_point,
+        )
+

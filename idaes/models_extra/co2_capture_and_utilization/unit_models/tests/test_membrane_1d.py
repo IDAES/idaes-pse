@@ -52,7 +52,7 @@ solver = get_solver()
 
 # -----------------------------------------------------------------------------
 @pytest.mark.unit
-def test_config():
+def test_config_countercurrent():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
@@ -66,6 +66,30 @@ def test_config():
         dynamic=False,
         sweep_flow=True,
         flow_type=MembraneFlowPattern.COUNTERCURRENT,
+        feed_side = { "property_package" :  m.fs.properties },
+        sweep_side = {"property_package" :  m.fs.properties },
+    )
+
+    # Check unit config arguments
+    assert len(m.fs.unit.config) == 7
+    assert not m.fs.unit.config.dynamic
+    assert not m.fs.unit.config.has_holdup
+
+@pytest.mark.unit
+def test_congif_cocurrent():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+
+    m.fs.properties = GenericParameterBlock(
+        **get_prop(["CO2", "H2O", "N2"], ["Vap"], eos=EosType.IDEAL),
+        doc="Key flue gas property parameters",
+    )
+
+    m.fs.unit = Membrane1D(
+        finite_elements=3,
+        dynamic=False,
+        sweep_flow=True,
+        flow_type=MembraneFlowPattern.COCURRENT,
         feed_side = { "property_package" :  m.fs.properties },
         sweep_side = {"property_package" :  m.fs.properties },
     )
