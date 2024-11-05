@@ -129,9 +129,8 @@ class Membrane1DData(UnitModelBlockData):
             domain=In(MembraneFlowPattern),
             description="Flow configuration of membrane",
             doc="""Flow configuration of membrane
-               - MembraneFlowPattern.COCURRENT: feed and sweep flows from 0 to 1
-               - MembraneFlowPattern.COUNTERCURRENT: feed side flows from 0 to 1
-                                                    sweep side flows from 1 to 0  (default)""",
+                MembraneFlowPattern.COCURRENT - feed and sweep flows from 0 to 1
+                MembraneFlowPattern.COUNTERCURRENT - feed side flows from 0 to 1 and sweep side flows from 1 to 0  (default)""",
         ),
     )
 
