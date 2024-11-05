@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -198,6 +198,13 @@ class GenericReactionParameterData(ReactionParameterBlock):
         # The super.build tries to validate units, but they have not been set
         # and cannot be set until the config block is created by super.build
         super(ReactionParameterBlock, self).build()
+
+        # Check to make sure a property block was assigned
+        if self.config.property_package is None:
+            raise ConfigurationError(
+                f"{self.name} was not assigned a property package. "
+                "Did you forget to unpack the configuration dictionary?"
+            )
 
         # Set base units of measurement
         self.get_metadata().add_default_units(self.config.base_units)

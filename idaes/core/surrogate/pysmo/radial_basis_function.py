@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -18,7 +18,6 @@
 
 # Imports from the python standard library
 import os.path
-import warnings
 import pickle
 
 # Imports from third parties
@@ -43,6 +42,9 @@ from pyomo.environ import (
 
 # Imports from IDAES namespace
 from idaes.core.surrogate.pysmo.sampling import FeatureScaling as fs
+import idaes.logger as idaeslog
+
+_log = idaeslog.getLogger(__name__)
 
 __author__ = "Oluwamayowa Amusat"
 
@@ -1105,7 +1107,7 @@ class RadialBasisFunctions:
         if x_condition_number < (1 / np.finfo(float).eps):
             self.solution_status = "ok"
         else:
-            warnings.warn(
+            _log.warning(
                 "The parameter matrix A in A.x=B is ill-conditioned (condition number > 1e10). The solution returned may be inaccurate or unstable - inspect rmse error. Regularization (if not already done) may improve solution"
             )
             self.solution_status = "unstable solution"

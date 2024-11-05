@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -114,6 +114,8 @@ class _IndexedProcessBlockMeta(type):
         dct["__process_block__"] = "indexed"
         # provide function ``base_class_module()`` to get unit module, for visualizer
         dct["base_class_module"] = lambda mcs: bases[0].__module__
+        # provide function ``process_block_class()`` to get the constructing class
+        dct["process_block_class"] = lambda mcs: bases[0]
         return type.__new__(mcs, name, bases, dct)
 
 
@@ -130,6 +132,8 @@ class _ScalarProcessBlockMeta(type):
         dct["__process_block__"] = "scalar"
         # provide function ``base_class_module()`` to get unit module, for visualizer
         dct["base_class_module"] = lambda mcs: bases[0].__module__
+        # provide function ``process_block_class()`` to get the constructing class
+        dct["process_block_class"] = lambda mcs: bases[1]
         return type.__new__(mcs, name, bases, dct)
 
 

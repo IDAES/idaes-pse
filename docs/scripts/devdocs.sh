@@ -37,8 +37,6 @@ done
 make clean >/dev/null
 printf "Rebuilding API docs\n"
 make apidoc > docs.stdout 2> docs.stderr
-printf "Extracting schemas\n"
-./extract_schemas.py
 printf "Rebuilding HTML pages\n"
 make html >> docs.stdout 2>> docs.stderr
 
