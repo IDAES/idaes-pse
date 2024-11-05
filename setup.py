@@ -44,6 +44,7 @@ class ExtraDependencies:
     omlt = [
         "omlt==1.1",  # fix the version for now as package evolves
         "tensorflow",
+        "onnx",
     ]
     grid = [
         "gridx-prescient>=2.2.1",  # idaes.tests.prescient
@@ -124,6 +125,7 @@ kwargs = dict(
             "*.trc",
             "*.nl",
             "*.keras",  # idaes/core/surrogate/tests/data/keras_models
+            "*.onnx",
         ]
     },
     include_package_data=True,
