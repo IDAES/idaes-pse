@@ -54,7 +54,6 @@ class MembraneFlowPattern(Enum):
 
 @declare_process_block_class("Membrane1D")
 class Membrane1DData(UnitModelBlockData):
-
     """Standard Membrane 1D Unit Model Class."""
 
     CONFIG = UnitModelBlockData.CONFIG()
@@ -192,7 +191,9 @@ class Membrane1DData(UnitModelBlockData):
 
     def _make_geometry(self):
 
-        self.area = Var(initialize=100, units=units.cm**2, doc="The membrane area")
+        self.area = Var(
+            initialize=100, units=units.cm**2, doc="Area per cell (or finite element)"
+        )
 
         self.length = Var(initialize=100, units=units.cm, doc="The membrane length")
         self.cell_length = Expression(expr=self.length / self.config.finite_elements)
