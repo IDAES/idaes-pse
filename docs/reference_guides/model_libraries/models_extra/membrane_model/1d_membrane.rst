@@ -10,5 +10,30 @@ and sweep side. The sweep stream inlet is optional. The driving force across the
 partial pressure difference in this gas separation application. Additionally, the energy balance
 assumes that temperature remains constant on each side of the membrane.
 
+Variables
+---------
+
+Model Inputs - symbol:
+
+* Membrane length - :math:`L`
+* Membrane Area - :math:`A`
+* Permeance - :math:`per`
+* Feed flowrate - :math:`F_fr`
+* Feed compositions - :math:`x`
+* Feed pressure - :math:`P`
+* Feed temperature - :math:`T`
+
+
+Model Outputs :
+
+* Permeate compositions
+* Permeate flowrate
+
+Degrees of Freedom
+------------------
+
+The DOF should be 0 for square problem simulations.
+
+
 
 

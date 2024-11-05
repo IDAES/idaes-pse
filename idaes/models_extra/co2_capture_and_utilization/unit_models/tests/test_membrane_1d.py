@@ -73,8 +73,6 @@ def test_config_countercurrent():
     )
 
     # Check unit config arguments
-    print("=====================================================")
-    print(len(m.fs.unit.config))
     assert len(m.fs.unit.config) == 7
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup

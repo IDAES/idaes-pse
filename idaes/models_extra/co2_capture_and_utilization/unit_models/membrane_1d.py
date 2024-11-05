@@ -273,7 +273,7 @@ class Membrane1DData(UnitModelBlockData):
             self.mscontactor.elements,
             doc="isothermal constraint",
         )
-        def energy_transfer(self, t, s):
+        def isothermal_constraint(self, t, s):
             return (
                 self.mscontactor.feed_side[t, s].temperature
                 == self.mscontactor.sweep_side[t, s].temperature
