@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -3850,3 +3850,35 @@ def test_estimate_states_backward():
             )
             assert value(state.pressure) == pytest.approx(2.5e5, rel=1e-8)
             assert value(state.temperature) == pytest.approx(345, rel=1e-8)
+
+
+@pytest.mark.unit
+def test_dynamic_mass_flow_basis_unit_consistency():
+    m = ConcreteModel()
+    m.fs = Flowsheet(dynamic=True, time_units=units.s)
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.pp.basis_switch = 2
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
+
+    m.fs.cv = ControlVolume1DBlock(
+        dynamic=True,
+        has_holdup=True,
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
+    )
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
+
+    m.fs.cv.add_phase_component_balances()
+    m.fs.cv.test_var = Var(
+        m.fs.cv.flowsheet().time, m.fs.pp.phase_list, m.fs.pp.component_list
+    )
+
+    assert_units_consistent(m)
+    assert_units_equivalent(m.fs.cv.material_holdup, units.kg / units.m)
+    assert_units_equivalent(m.fs.cv.material_accumulation, units.kg / units.s / units.m)

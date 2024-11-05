@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -23,7 +23,7 @@ from pyomo.common.config import Bool
 
 _log = logging.getLogger(__name__)
 # Default release version if no options provided for get-extensions
-default_binary_release = "3.4.0"
+default_binary_release = "3.4.2"
 # Where to download releases from get-extensions
 release_base_url = "https://github.com/IDAES/idaes-ext/releases/download"
 # Where to get release checksums

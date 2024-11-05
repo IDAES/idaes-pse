@@ -5,7 +5,13 @@ The IDAES Moving Bed Reactor (MBR) model represents a unit operation where two m
 solid phase and a gas phase – pass through a linear reactor vessel while undergoing chemical reaction(s). 
 The two streams have opposite flow directions (counter-flow).
 The MBR mathematical model is a 1-D rigorous first-principles model consisting of a set of differential 
-equations obtained by applying the mass, energy (for each phase) and momentum balance equations. 
+equations obtained by applying the mass, energy (for each phase) and momentum balance equations.
+
+The model code is located in the `main unit model module <https://github.com/IDAES/idaes-pse/blob/main/idaes/models_extra/gas_solid_contactors/unit_models/moving_bed.py>`_ and may be imported as:
+
+.. code:: python
+
+  >>> from idaes.models_extra.gas_solid_contactors.unit_models.moving_bed import MBR
 
 **Assumptions:**
 

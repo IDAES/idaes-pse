@@ -4,7 +4,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -21,7 +21,6 @@ import time
 
 # package
 import idaes
-from idaes.core.dmf.util import ColorTerm
 import pytest
 
 good_modname = re.compile(r"[a-zA-Z][a-zA-Z0-9_]*")
@@ -30,12 +29,11 @@ good_modname = re.compile(r"[a-zA-Z][a-zA-Z0-9_]*")
 SKIP, OK, BAD = "skipped", "success", "failed"
 
 
-_term = ColorTerm()
+# NOTE (@lbianchi-lbl): this file should be rewritten as a proper pytest plugin
 
 
 def print_path_status(path, status, msg=""):
-    color = {SKIP: "", OK: _term.green, BAD: _term.red}[status]
-    print(f"{color}{status.upper():8s}{_term.resetc} {path} {msg}")
+    print(f"{status.upper():8s} {path} {msg}")
 
 
 def importr(root: pathlib.Path, max_sec=10):

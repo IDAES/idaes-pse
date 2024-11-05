@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -263,7 +263,7 @@ within this flowsheet if not otherwise specified,
             dict_arcs, time_point=time_point, orient=orient, true_state=true_state
         )
 
-    def visualize(self, model_name, **kwargs):
+    def visualize(self, model_name, **kwargs) -> "VisualizeResult":
         """
         Starts up a flask server that serializes the model and pops up a
         webpage with the visualization
@@ -275,9 +275,10 @@ within this flowsheet if not otherwise specified,
             **kwargs: Additional keywords for :func:`idaes.core.ui.fv.visualize()`
 
         Returns:
-            None
+            The :class:`idaes_ui.fv.fsvis.VisualizeResult` instance returned by :meth:`UI.visualize`
         """
-        UI().visualize(self, model_name, **kwargs)
+        visualize_result = UI().visualize(self, model_name, **kwargs)
+        return visualize_result
 
     def _get_stream_table_contents(self, time_point=0):
         """
@@ -322,10 +323,10 @@ within this flowsheet if not otherwise specified,
         elif self.config.time_units is None and self.config.dynamic:
             raise ConfigurationError(
                 f"{self.name} - no units were specified for the time domain. "
-                f"Units must be be specified for dynamic models."
+                f"Units must be specified for dynamic models."
             )
         elif self.config.time_units is None and not self.config.dynamic:
-            _log.debug("No units specified for stady-state time domain.")
+            _log.debug("No units specified for steady-state time domain.")
         elif not isinstance(self.config.time_units, _PyomoUnit):
             raise ConfigurationError(
                 "{} unrecognised value for time_units argument. This must be "

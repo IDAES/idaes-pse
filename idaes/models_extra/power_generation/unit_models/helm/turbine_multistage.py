@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -356,7 +356,7 @@ class HelmTurbineMultistageData(UnitModelBlockData):
         self.stream_inlet_mix_inlet = Arc(inlet_idx, rule=_inlet_to_rule)
 
         # There are three sections HP, IP, and LP which all have the same sort
-        # of internal connctions, so the functions below provide some generic
+        # of internal connections, so the functions below provide some generic
         # capcbilities for adding the internal Arcs (streams).
         def _arc_indexes(nstages, index_set, discon, splits):
             """
@@ -369,7 +369,7 @@ class HelmTurbineMultistageData(UnitModelBlockData):
                 nstages (int): Number of stages in section
                 index_set (Set): Index set for arcs in the section
                 discon (list): Disconnected stages in the section
-                splits (list): Spliter locations
+                splits (list): Splitter locations
             """
             sr = set()  # set of things to remove from the Arc index set
             for i in index_set:
@@ -602,7 +602,7 @@ class HelmTurbineMultistageData(UnitModelBlockData):
         copy_disconnected_flow,
         copy_disconnected_pressure,
     ):
-        """Reuse the initializtion for HP, IP and, LP sections."""
+        """Reuse the initialization for HP, IP and, LP sections."""
         if 0 in splits:
             propagate_state(splits[0].inlet, prev_port)
             splits[0].initialize(outlvl=outlvl, solver=solver, optarg=optarg)
@@ -671,7 +671,7 @@ class HelmTurbineMultistageData(UnitModelBlockData):
             None
         """
         # Setup loggers
-        # Store initial model specs, restored at the end of initializtion, so
+        # Store initial model specs, restored at the end of initialization, so
         # the problem is not altered.  This can restore fixed/free vars,
         # active/inactive constraints, and fixed variable values.
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)

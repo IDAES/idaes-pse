@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -15,9 +15,12 @@
 This module contains miscellaneous utility functions for use in IDAES models.
 """
 from enum import Enum
+import sys
 
 import pyomo.environ as pyo
 from pyomo.common.config import ConfigBlock
+from pyomo.core.expr.visitor import _ToStringVisitor
+from pyomo.core.base.expression import ExpressionData
 
 import idaes.logger as idaeslog
 
@@ -177,3 +180,66 @@ class StrEnum(str, Enum):
 
     def __str__(self):
         return str(self.value)
+
+
+class _ToExprStringVisitor(_ToStringVisitor):
+    """
+    Derived version of the Pyomo _ToStringVisitor class
+    which checks for named Expressions in the expression tree
+    and prints their name instead of expanding the expression tree.
+    """
+
+    def visiting_potential_leaf(self, node):
+        # Check if node is a named Expression
+        if isinstance(node, ExpressionData):
+            # If it is, return the name of the Expression
+            return True, node.name
+
+        # Otherwise, continue descending as normal
+        return super().visiting_potential_leaf(node)
+
+
+def compact_expression_to_string(expr):
+    """Return a compact string representation of an expression.
+
+    Unlike the normal Pyomo string representations, this function will
+    identify any Expressions that appear within the expression tree and
+    print the name of these rather than expanding the expression tree.
+
+    Args:
+        expr: ExpressionBase. The root node of an expression tree.
+
+    Returns:
+        A string representation for the expression.
+    """
+    # Create and execute the visitor pattern
+    #
+    visitor = _ToExprStringVisitor(verbose=False, smap=None)
+    return visitor.dfs_postorder_stack(expr)
+
+
+def print_compact_form(expr, stream=None):
+    """
+    Writes a compact string representation of the given component or
+    expression to the specified stream.
+
+    Unlike the normal Pyomo string representations, this function will
+    identify any Expressions that appear within the expression tree and
+    print the name of these rather than expanding the expression tree.
+
+    Args:
+        expr: component or expression to print
+        stream: StringIO object to write to. Default is stdout.
+
+    Returns:
+        None
+    """
+    if stream is None:
+        stream = sys.stdout
+
+    if hasattr(expr, "expr"):
+        # We have a Constraint or Expression
+        # We want to print the expression, not the object name
+        expr = expr.expr
+
+    stream.write(compact_expression_to_string(expr))
