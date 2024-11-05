@@ -15,7 +15,7 @@
 One-dimensional membrane class for CO2 gas separation
 """
 
-# pylint: disable=unused-import
+
 from enum import Enum
 from pyomo.common.config import Bool, ConfigDict, ConfigValue, In
 from pyomo.environ import (
@@ -208,13 +208,17 @@ class Membrane1DData(UnitModelBlockData):
         feed_side_units = (
             self.config.feed_side.property_package.get_metadata().derived_units
         )
+        crossover_component_list = list(
+            set(self.mscontactor.feed_side.component_list)
+            & set(self.mscontactor.sweep_side.component_list)
+        )
 
         self.permeance = Var(
             self.flowsheet().time,
             self.mscontactor.elements,
-            self.mscontactor.feed_side.component_list,
+            crossover_component_list,
             initialize=1,
-            doc="Values in Gas Permeance Unit(GPU)",
+            doc="Values in Gas Permeance Unit (GPU)",
             units=units.dimensionless,
         )
 
@@ -222,42 +226,10 @@ class Membrane1DData(UnitModelBlockData):
             default=10e-8 / 13333.2239,
             units=units.m / units.s / units.Pa,
             mutable=True,
-            doc=" This is a coefficient that will convert the unit of permeability from GPU to SI units for further calculation",
+            # This is a coefficient that will convert the unit of permeability from GPU to SI units for further calculation"
         )
-
-        """
-        Selectivity is defined for cases where some permeabilities are unavailable. Only define the selectivity
-         between different components; others should be set to 1. If the permeabilities of all components are defined
-         there is no need to define selectivity, as this may overdefine the problem.
-        """
-        self.selectivity = Var(
-            self.flowsheet().time,
-            self.mscontactor.elements,
-            self.mscontactor.feed_side.component_list,
-            self.mscontactor.feed_side.component_list,
-            initialize=1,
-            units=units.dimensionless,
-        )
-
-        @self.Constraint(
-            self.flowsheet().time,
-            self.mscontactor.elements,
-            self.mscontactor.feed_side.component_list,
-            self.mscontactor.feed_side.component_list,
-            doc="permeance calculation",
-        )
-        def permeance_calculation(self, t, e, a, b):
-            return (
-                self.permeance[t, e, a] * self.selectivity[t, e, a, b]
-                == self.permeance[t, e, b]
-            )
 
         p_units = feed_side_units.PRESSURE
-
-        crossover_component_list = list(
-            set(self.mscontactor.feed_side.component_list)
-            & set(self.mscontactor.sweep_side.component_list)
-        )
 
         @self.Constraint(
             self.flowsheet().time,
@@ -301,7 +273,7 @@ class Membrane1DData(UnitModelBlockData):
         @self.Constraint(
             self.flowsheet().time,
             self.mscontactor.elements,
-            doc="Energy balance",
+            doc="isothermal constraint",
         )
         def energy_transfer(self, t, s):
             return (
@@ -310,12 +282,22 @@ class Membrane1DData(UnitModelBlockData):
             )
 
     def _get_stream_table_contents(self, time_point=0):
-        return create_stream_table_dataframe(
-            {
-                "Feed Inlet": self.feed_side_inlet,
-                "Feed Outlet": self.feed_side_outlet,
-                "Permeate Inlet": self.sweep_side_inlet,
-                "Permeate Outlet": self.sweep_side_outlet,
-            },
-            time_point=time_point,
-        )
+        if self.config.sweep_flow:
+            return create_stream_table_dataframe(
+                {
+                    "Feed Inlet": self.feed_side_inlet,
+                    "Feed Outlet": self.feed_side_outlet,
+                    "Permeate Inlet": self.sweep_side_inlet,
+                    "Permeate Outlet": self.sweep_side_outlet,
+                },
+                time_point=time_point,
+            )
+        else:
+            return create_stream_table_dataframe(
+                {
+                    "Feed Inlet": self.feed_side_inlet,
+                    "Feed Outlet": self.feed_side_outlet,
+                    "Permeate Outlet": self.sweep_side_outlet,
+                },
+                time_point=time_point,
+            )

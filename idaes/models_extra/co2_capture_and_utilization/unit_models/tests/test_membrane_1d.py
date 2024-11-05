@@ -181,8 +181,8 @@ class TestMembrane:
         assert hasattr(membrane.fs.unit, "permeability_calculation")
         assert hasattr(membrane.fs.unit, "energy_transfer")
 
-        assert number_variables(membrane) == 184
-        assert number_total_constraints(membrane) == 116
+        assert number_variables(membrane) == 157
+        assert number_total_constraints(membrane) == 89
         assert number_unused_variables(membrane) == 28
 
     @pytest.mark.component
