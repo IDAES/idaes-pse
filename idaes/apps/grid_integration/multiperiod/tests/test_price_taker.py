@@ -346,43 +346,21 @@ def test_optimal_clusters_kmax_logger_message2(excel_data):
         m.cluster_lmp_data(excel_data, n_clusters)
 
 
-# @pytest.mark.unit
-# def test_failed_imports(excel_data):
-#     m = PriceTakerModel()
-#     kmin = 9
-#     kmax = 10
-#     daily_data = m.generate_daily_data(excel_data["BaseCaseTax"])
-#     with pytest.raises(
-#         ImportError,
-#         match=(
-#             "Optimal cluster feature requires optional imports 'scikit-learn' and 'kneed'."
-#         ),
-#     ):
-#         n_clusters, inertia_values = m.get_optimal_n_clusters(
-#             daily_data, kmin=kmin, kmax=kmax
-#         )
+@pytest.mark.unit
+def test_optimal_clusters_close_to_kmax(excel_data, caplog):
+    caplog.clear()
+    with caplog.at_level(idaeslog.WARNING):
+        m = PriceTakerModel()
+        kmin = 1
+        kmax = 4
 
+        daily_data = m.generate_daily_data(excel_data["BaseCaseTax"])
+        m.get_optimal_n_clusters(daily_data, kmin=kmin, kmax=kmax)
 
-# The following test doesn't pass on all systems, so the warning for n_clusters being
-# too close to kmax will be uncovered.
-# @pytest.mark.unit
-# def test_optimal_clusters_close_to_kmax(excel_data, caplog):
-#     # Ideally the following test will work, however this will depend on the version of scikit-learn and
-#     # kneed. It is possible that if these packages change, the test will fail. In that case, the test
-#     # could be removed as the function works properly, but some lines of code will not be covered.
-#     caplog.clear()
-#     with caplog.at_level(idaeslog.WARNING):
-#         m = PriceTakerModel()
-#         kmin = 9
-#         kmax = 14
-
-#         daily_data = m.generate_daily_data(excel_data["BaseCaseTax"])
-#         m.get_optimal_n_clusters(daily_data, kmin=kmin, kmax=kmax)
-
-#         assert (
-#             f"Optimal number of clusters is close to kmax: {kmax}. Consider increasing kmax."
-#             in caplog.text
-#         )
+        assert (
+            f"Optimal number of clusters is close to kmax: {kmax}. Consider increasing kmax."
+            in caplog.text
+        )
 
 
 @pytest.mark.unit
