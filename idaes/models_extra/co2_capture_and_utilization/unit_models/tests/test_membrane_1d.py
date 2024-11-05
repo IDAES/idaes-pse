@@ -177,7 +177,7 @@ class TestMembrane:
 
         assert hasattr(membrane.fs.unit, "mscontactor")
         assert hasattr(membrane.fs.unit, "permeability_calculation")
-        assert hasattr(membrane.fs.unit, "energy_transfer")
+        assert hasattr(membrane.fs.unit, "isothermal_constraint")
 
         assert number_variables(membrane) == 157
         assert number_total_constraints(membrane) == 89
