@@ -20,6 +20,7 @@ import pytest
 
 from pyomo.environ import (
     check_optimal_termination,
+    assert_optimal_termination,
     ConcreteModel,
     value,
 )
@@ -50,6 +51,7 @@ from idaes.models_extra.co2_capture_and_utilization.unit_models import (
 # Get default solver for testing
 solver = get_solver()
 
+
 # -----------------------------------------------------------------------------
 @pytest.mark.unit
 def test_config_countercurrent():
@@ -66,14 +68,17 @@ def test_config_countercurrent():
         dynamic=False,
         sweep_flow=True,
         flow_type=MembraneFlowPattern.COUNTERCURRENT,
-        feed_side = { "property_package" :  m.fs.properties },
-        sweep_side = {"property_package" :  m.fs.properties },
+        feed_side={"property_package": m.fs.properties},
+        sweep_side={"property_package": m.fs.properties},
     )
 
     # Check unit config arguments
+    print("=====================================================")
+    print(len(m.fs.unit.config))
     assert len(m.fs.unit.config) == 7
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup
+
 
 @pytest.mark.unit
 def test_congif_cocurrent():
@@ -90,8 +95,8 @@ def test_congif_cocurrent():
         dynamic=False,
         sweep_flow=True,
         flow_type=MembraneFlowPattern.COCURRENT,
-        feed_side = { "property_package" :  m.fs.properties },
-        sweep_side = {"property_package" :  m.fs.properties },
+        feed_side={"property_package": m.fs.properties},
+        sweep_side={"property_package": m.fs.properties},
     )
 
     # Check unit config arguments
@@ -100,8 +105,7 @@ def test_congif_cocurrent():
     assert not m.fs.unit.config.has_holdup
 
 
-
-class TestMembrane(object):
+class TestMembrane:
     @pytest.fixture(scope="class")
     def membrane(self):
         m = ConcreteModel()
@@ -116,10 +120,9 @@ class TestMembrane(object):
             dynamic=False,
             sweep_flow=True,
             flow_type=MembraneFlowPattern.COUNTERCURRENT,
-            feed_side = { "property_package" :  m.fs.properties },
-            sweep_side = {"property_package" :  m.fs.properties },
+            feed_side={"property_package": m.fs.properties},
+            sweep_side={"property_package": m.fs.properties},
         )
-        
 
         m.fs.unit.permeance[:, :, "CO2"].fix(1500)
         m.fs.unit.permeance[:, :, "H2O"].fix(1500 / 25)
@@ -195,7 +198,7 @@ class TestMembrane(object):
         initializer.initialize(membrane.fs.unit)
         results = solver.solve(membrane)
         # Check for optimal solution
-        assert check_optimal_termination(results)
+        assert_optimal_termination(results)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")

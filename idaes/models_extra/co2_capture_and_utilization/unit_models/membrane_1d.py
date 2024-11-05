@@ -52,7 +52,6 @@ class MembraneFlowPattern(Enum):
     COCURRENT = 2
 
 
-
 @declare_process_block_class("Membrane1D")
 class Membrane1DData(UnitModelBlockData):
     """Standard Membrane 1D Unit Model Class."""
@@ -86,6 +85,7 @@ class Membrane1DData(UnitModelBlockData):
     see property package for documentation.}""",
         ),
     )
+
     Stream_Config.declare(
         "has_energy_balance",
         ConfigValue(
@@ -136,7 +136,6 @@ class Membrane1DData(UnitModelBlockData):
         ),
     )
 
-
     for side_name in ["feed", "sweep"]:
         CONFIG.declare(
             side_name + "_side",
@@ -144,17 +143,16 @@ class Membrane1DData(UnitModelBlockData):
         )
 
     def build(self):
-
         """
-        This is a one-dimensional model for gas separation in CO₂ capture applications. 
-        The model will be discretized in the flow direction, and it supports two flow patterns: 
-        counter-current flow and co-current flow. The model was customized for gas-phase separation 
-        in CO₂ capture with a single-layer design. If a multi-layer design is needed, multiple units 
-        can be connected for this application. The two sides of the membrane are called the feed side 
-        and sweep side. The sweep stream inlet is optional. The driving force across the membrane is the 
-        partial pressure difference in this gas separation application. Additionally, the energy balance 
+        This is a one-dimensional model for gas separation in CO₂ capture applications.
+        The model will be discretized in the flow direction, and it supports two flow patterns:
+        counter-current flow and co-current flow. The model was customized for gas-phase separation
+        in CO₂ capture with a single-layer design. If a multi-layer design is needed, multiple units
+        can be connected for this application. The two sides of the membrane are called the feed side
+        and sweep side. The sweep stream inlet is optional. The driving force across the membrane is the
+        partial pressure difference in this gas separation application. Additionally, the energy balance
         assumes that temperature remains constant on each side of the membrane.
-        
+
         """
         super().build()
 
@@ -198,9 +196,7 @@ class Membrane1DData(UnitModelBlockData):
         self.length = Var(initialize=100, units=units.cm, doc="The membrane length")
         self.cell_length = Expression(expr=self.length / self.config.finite_elements)
 
-        self.cell_area = Var(
-            initialize=100, units=units.cm**2, doc="The membrane area"
-        )
+        self.cell_area = Var(initialize=100, units=units.cm**2, doc="The membrane area")
 
         @self.Constraint()
         def area_per_cell(self):
@@ -227,7 +223,6 @@ class Membrane1DData(UnitModelBlockData):
             doc=" This is a coefficient that will convert the unit of permeability from GPU to SI units for further calculation",
         )
 
-
         """
         Selectivity is defined for cases where some permeabilities are unavailable. Only define the selectivity
          between different components; others should be set to 1. If the permeabilities of all components are defined
@@ -241,7 +236,6 @@ class Membrane1DData(UnitModelBlockData):
             initialize=1,
             units=units.dimensionless,
         )
-
 
         @self.Constraint(
             self.flowsheet().time,
@@ -258,10 +252,15 @@ class Membrane1DData(UnitModelBlockData):
 
         p_units = feed_side_units.PRESSURE
 
+        crossover_component_list = list(
+            set(self.mscontactor.feed_side.component_list)
+            & set(self.mscontactor.sweep_side.component_list)
+        )
+
         @self.Constraint(
             self.flowsheet().time,
             self.mscontactor.elements,
-            self.mscontactor.feed_side.component_list,
+            crossover_component_list,
             doc="permeability calculation",
         )
         def permeability_calculation(self, t, s, m):
@@ -273,7 +272,9 @@ class Membrane1DData(UnitModelBlockData):
                 mb_units = feed_side_units.FLOW_MASS
                 rho = self.mscontactor.feed_side[t, s].dens_mass
             else:
-                raise TypeError("Undefined flow basis, please define the flow basis")
+                raise TypeError(
+                    "This model only supports MaterialFlowBasis equal to molar or mass"
+                )
 
             return self.mscontactor.material_transfer_term[
                 t, s, "feed_side", "sweep_side", m
@@ -305,7 +306,7 @@ class Membrane1DData(UnitModelBlockData):
                 self.mscontactor.feed_side[t, s].temperature
                 == self.mscontactor.sweep_side[t, s].temperature
             )
-    
+
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe(
             {
@@ -316,4 +317,3 @@ class Membrane1DData(UnitModelBlockData):
             },
             time_point=time_point,
         )
-
