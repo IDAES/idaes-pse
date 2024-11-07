@@ -93,7 +93,6 @@ kwargs = dict(
         "sympy",  # idaes.core.util.expr_doc
         "matplotlib",
         "click>=8",
-        "flexparser!=0.4",
     ],
     entry_points={
         "console_scripts": [
