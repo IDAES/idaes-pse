@@ -2,7 +2,7 @@ Cubic Equations of State
 ========================
 
 .. deprecated:: 2.7
-   Use `idaes.models.properties.modular_properties.eos.ceos` in the Modular Property Framework instead.
+   Use :class:`idaes.models.properties.modular_properties.eos.ceos` in the Modular Property Framework instead.
 
 This property package implements a general form of a cubic equation of state which can be used for most cubic-type equations of state. This package supports phase equilibrium calculations with a smooth phase transition formulation that makes it amenable for equation oriented optimization. The following equations of state are currently supported:
 
