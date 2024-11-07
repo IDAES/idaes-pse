@@ -85,7 +85,7 @@ kwargs = dict(
         "pyomo @ https://github.com/IDAES/pyomo/archive/6.8.0.idaes.2024.11.06.zip",
         "pint >= 0.24.1",  # required to use Pyomo units. Pint 0.24.1 needed for Python 3.9 support
         "networkx",  # required to use Pyomo network
-        "numpy>=1,<3",
+        "numpy>=1,<2",  # Need <2 until there is a compatible Pint version
         # pandas constraint added on 2023-08-30 b/c bug in v2.1
         # see IDAES/idaes-pse#1253
         "pandas!=2.1.0,<3",
