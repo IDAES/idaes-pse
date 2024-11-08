@@ -79,6 +79,27 @@ def test_design_model_class(caplog):
 
 
 @pytest.mark.unit
+def test_design_model_class_logger_message1(caplog):
+    caplog.clear()
+
+    blk = ConcreteModel()
+    blk.unit_1 = DesignModel(
+        model_args={
+            "p_min": 150,
+            "p_max": 600,
+            "cost": {"capex": 10, "fom": 1},
+        },
+    )
+
+    assert (
+        "The function that builds the design model is not specified."
+        "model_func must declare all the necessary design variables,"
+        "relations among design variables, capital cost correlations,"
+        "and fixed operating and maintenance cost correlations." in caplog.text
+    )
+
+
+@pytest.mark.unit
 def test_operation_model_class():
     """Tests the OperationModel class"""
 
@@ -110,3 +131,24 @@ def test_operation_model_class():
     blk.unit_2_op = OperationModel(declare_op_vars=False, declare_lmp_param=False)
     for attr in ["op_mode", "startup", "shutdown", "power", "LMP"]:
         assert not hasattr(blk.unit_2_op, attr)
+
+
+@pytest.mark.unit
+def test_operation_model_class_logger_message1(caplog):
+    caplog.clear()
+
+    def des_model(m):
+        m.power = Var()
+        m.capex = 0
+        m.fom = 0
+
+    blk = ConcreteModel()
+    blk.unit_1_design = DesignModel(model_func=des_model)
+    blk.unit_1_op = OperationModel(model_args={"des_blk": blk.unit_1_design})
+
+    assert (
+        "The function that builds the operation model is not specified."
+        "model_func must declare all the necessary operation variables,"
+        "relations among operation variables, and variable"
+        "operating and maintenance cost correlations." in caplog.text
+    )
