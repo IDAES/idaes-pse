@@ -199,7 +199,7 @@ class TestGenericParameterBlock(object):
 
         with pytest.raises(
             ConfigurationError,
-            match="params was not provided with a components " "argument.",
+            match="params was not provided with a components argument.",
         ):
             m.params = DummyParameterBlock(
                 phases={
@@ -215,11 +215,32 @@ class TestGenericParameterBlock(object):
 
         with pytest.raises(
             ConfigurationError,
-            match="params was not provided with a phases " "argument.",
+            match="params was not provided with a phases argument. "
+            "Did you forget to unpack the configurations dictionary?",
         ):
             m.params = DummyParameterBlock(
                 components={"a": {}, "b": {}, "c": {}}, base_units=base_units
             )
+
+    @pytest.mark.unit
+    def test_packed_dict(self):
+        m = ConcreteModel()
+
+        dummy_dict = {
+            "phases": {
+                "p1": {"equation_of_state": "foo"},
+                "p2": {"equation_of_state": "bar"},
+            },
+        }
+
+        with pytest.raises(
+            ConfigurationError,
+            match=re.escape(
+                "params[phases] was not provided with a phases argument. "
+                "Did you forget to unpack the configurations dictionary?"
+            ),
+        ):
+            m.params = DummyParameterBlock(dummy_dict)
 
     @pytest.mark.unit
     def test_invalid_component_in_phase_component_list(self):

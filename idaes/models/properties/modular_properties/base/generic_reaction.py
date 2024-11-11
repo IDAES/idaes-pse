@@ -199,6 +199,13 @@ class GenericReactionParameterData(ReactionParameterBlock):
         # and cannot be set until the config block is created by super.build
         super(ReactionParameterBlock, self).build()
 
+        # Check to make sure a property block was assigned
+        if self.config.property_package is None:
+            raise ConfigurationError(
+                f"{self.name} was not assigned a property package. "
+                "Did you forget to unpack the configuration dictionary?"
+            )
+
         # Set base units of measurement
         self.get_metadata().add_default_units(self.config.base_units)
 
