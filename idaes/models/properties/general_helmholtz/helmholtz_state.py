@@ -366,7 +366,9 @@ class HelmholtzStateBlockData(StateBlockData):
             )
             if phase_set == PhaseType.MIX or phase_set == PhaseType.LG:
                 self.vapor_frac = pyo.Expression(
-                    expr=self.vf_hp_func(cmp, self.h_kJ_per_kg, self.p_kPa, _get_data_dir()),
+                    expr=self.vf_hp_func(
+                        cmp, self.h_kJ_per_kg, self.p_kPa, _get_data_dir()
+                    ),
                     doc="Vapor mole fraction (mol vapor/mol total)",
                 )
             self._state_vars_dict = {
@@ -392,7 +394,9 @@ class HelmholtzStateBlockData(StateBlockData):
             )
             if phase_set == PhaseType.MIX or phase_set == PhaseType.LG:
                 self.vapor_frac = pyo.Expression(
-                    expr=self.vf_hp_func(cmp, self.h_kJ_per_kg, self.p_kPa, _get_data_dir()),
+                    expr=self.vf_hp_func(
+                        cmp, self.h_kJ_per_kg, self.p_kPa, _get_data_dir()
+                    ),
                     doc="Vapor mole fraction (mol vapor/mol total)",
                 )
             self._state_vars_dict = {
@@ -413,12 +417,16 @@ class HelmholtzStateBlockData(StateBlockData):
                 expr=self.entr_mol * params.uc["J/mol/K to kJ/kg/K"]
             )
             self.temperature = pyo.Expression(
-                expr=self.t_sp_func(cmp, self.s_kJ_per_kgK, self.p_kPa, _get_data_dir()),
+                expr=self.t_sp_func(
+                    cmp, self.s_kJ_per_kgK, self.p_kPa, _get_data_dir()
+                ),
                 doc="Temperature",
             )
             if phase_set == PhaseType.MIX or phase_set == PhaseType.LG:
                 self.vapor_frac = pyo.Expression(
-                    expr=self.vf_sp_func(cmp, self.s_kJ_per_kgK, self.p_kPa, _get_data_dir()),
+                    expr=self.vf_sp_func(
+                        cmp, self.s_kJ_per_kgK, self.p_kPa, _get_data_dir()
+                    ),
                     doc="Vapor mole fraction (mol vapor/mol total)",
                 )
             self._state_vars_dict = {
@@ -439,12 +447,16 @@ class HelmholtzStateBlockData(StateBlockData):
                 expr=self.entr_mass * params.uc["J/kg/K to kJ/kg/K"]
             )
             self.temperature = pyo.Expression(
-                expr=self.t_sp_func(cmp, self.s_kJ_per_kgK, self.p_kPa, _get_data_dir()),
+                expr=self.t_sp_func(
+                    cmp, self.s_kJ_per_kgK, self.p_kPa, _get_data_dir()
+                ),
                 doc="Temperature",
             )
             if phase_set == PhaseType.MIX or phase_set == PhaseType.LG:
                 self.vapor_frac = pyo.Expression(
-                    expr=self.vf_sp_func(cmp, self.s_kJ_per_kgK, self.p_kPa, _get_data_dir()),
+                    expr=self.vf_sp_func(
+                        cmp, self.s_kJ_per_kgK, self.p_kPa, _get_data_dir()
+                    ),
                     doc="Vapor mole fraction (mol vapor/mol total)",
                 )
             self._state_vars_dict = {
@@ -470,7 +482,9 @@ class HelmholtzStateBlockData(StateBlockData):
             )
             if phase_set == PhaseType.MIX or phase_set == PhaseType.LG:
                 self.vapor_frac = pyo.Expression(
-                    expr=self.vf_up_func(cmp, self.u_kJ_per_kg, self.p_kPa, _get_data_dir()),
+                    expr=self.vf_up_func(
+                        cmp, self.u_kJ_per_kg, self.p_kPa, _get_data_dir()
+                    ),
                     doc="Vapor mole fraction (mol vapor/mol total)",
                 )
             self._state_vars_dict = {
@@ -496,7 +510,9 @@ class HelmholtzStateBlockData(StateBlockData):
             )
             if phase_set == PhaseType.MIX or phase_set == PhaseType.LG:
                 self.vapor_frac = pyo.Expression(
-                    expr=self.vf_up_func(cmp, self.u_kJ_per_kg, self.p_kPa, _get_data_dir()),
+                    expr=self.vf_up_func(
+                        cmp, self.u_kJ_per_kg, self.p_kPa, _get_data_dir()
+                    ),
                     doc="Vapor mole fraction (mol vapor/mol total)",
                 )
             self._state_vars_dict = {
@@ -1227,7 +1243,8 @@ class HelmholtzStateBlockData(StateBlockData):
                 * params.uc["kJ/kg/K to J/mol/K"]
             )
             self.dens_mass = pyo.Expression(
-                expr=1.0 / self.v_hp_func(cmp, self.h_kJ_per_kg, self.p_kPa, _get_data_dir())
+                expr=1.0
+                / self.v_hp_func(cmp, self.h_kJ_per_kg, self.p_kPa, _get_data_dir())
             )
             self.dens_mol = pyo.Expression(
                 expr=params.uc["kg/m3 to mol/m3"]
@@ -1260,23 +1277,32 @@ class HelmholtzStateBlockData(StateBlockData):
                 * params.uc["kJ/kg to J/mol"]
             )
             self.cp_mass = pyo.Expression(
-                expr=self.cp_sp_func(cmp, self.s_kJ_per_kgK, self.p_kPa, _get_data_dir())
+                expr=self.cp_sp_func(
+                    cmp, self.s_kJ_per_kgK, self.p_kPa, _get_data_dir()
+                )
                 * params.uc["kJ/kg/K to J/kg/K"]
             )
             self.cp_mol = pyo.Expression(
-                expr=self.cp_sp_func(cmp, self.s_kJ_per_kgK, self.p_kPa, _get_data_dir())
+                expr=self.cp_sp_func(
+                    cmp, self.s_kJ_per_kgK, self.p_kPa, _get_data_dir()
+                )
                 * params.uc["kJ/kg/K to J/mol/K"]
             )
             self.cv_mass = pyo.Expression(
-                expr=self.cv_sp_func(cmp, self.s_kJ_per_kgK, self.p_kPa, _get_data_dir())
+                expr=self.cv_sp_func(
+                    cmp, self.s_kJ_per_kgK, self.p_kPa, _get_data_dir()
+                )
                 * params.uc["kJ/kg/K to J/kg/K"]
             )
             self.cv_mol = pyo.Expression(
-                expr=self.cv_sp_func(cmp, self.s_kJ_per_kgK, self.p_kPa, _get_data_dir())
+                expr=self.cv_sp_func(
+                    cmp, self.s_kJ_per_kgK, self.p_kPa, _get_data_dir()
+                )
                 * params.uc["kJ/kg/K to J/mol/K"]
             )
             self.dens_mass = pyo.Expression(
-                expr=1.0 / self.v_sp_func(cmp, self.s_kJ_per_kgK, self.p_kPa, _get_data_dir())
+                expr=1.0
+                / self.v_sp_func(cmp, self.s_kJ_per_kgK, self.p_kPa, _get_data_dir())
             )
             self.dens_mol = pyo.Expression(
                 expr=params.uc["kg/m3 to mol/m3"]
@@ -1325,7 +1351,8 @@ class HelmholtzStateBlockData(StateBlockData):
                 * params.uc["kJ/kg/K to J/mol/K"]
             )
             self.dens_mass = pyo.Expression(
-                expr=1.0 / self.v_up_func(cmp, self.u_kJ_per_kg, self.p_kPa, _get_data_dir())
+                expr=1.0
+                / self.v_up_func(cmp, self.u_kJ_per_kg, self.p_kPa, _get_data_dir())
             )
             self.dens_mol = pyo.Expression(
                 expr=params.uc["kg/m3 to mol/m3"]

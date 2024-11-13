@@ -56,8 +56,10 @@ from idaes.models.properties.general_helmholtz.helmholtz_functions_map import (
 
 _log = idaeslog.getLogger(__name__)
 
+
 def _get_data_dir():
-    return os.path.join(get_parameter_path(),"")
+    return os.path.join(get_parameter_path(), "")
+
 
 # General Helmholtz functions return variables for all phases,
 # but single phase properties do not need all of these.
@@ -81,6 +83,7 @@ def helmholtz_available():
         _log.error(f"The Helmholtz EoS data directory {data_dir} does not exist.")
         return False
     return True
+
 
 _data_dir = _get_data_dir()
 helmholtz_data_dir = _data_dir
@@ -1855,7 +1858,8 @@ change.
         p_vec = [
             pyo.value(
                 pyo.units.convert(
-                    self.p_sat_func(self.pure_component, tau, _get_data_dir()), pressure_unit
+                    self.p_sat_func(self.pure_component, tau, _get_data_dir()),
+                    pressure_unit,
                 )
             )
             for tau in tau_vec
@@ -2003,14 +2007,18 @@ change.
             if phase == "liq" or phase == "sc":
                 delta = [
                     pyo.value(
-                        self.delta_liq_func(self.pure_component, p, tau, _get_data_dir())
+                        self.delta_liq_func(
+                            self.pure_component, p, tau, _get_data_dir()
+                        )
                     )
                     for p in p_vec
                 ]
             elif phase == "vap":
                 delta = [
                     pyo.value(
-                        self.delta_vap_func(self.pure_component, p, tau, _get_data_dir())
+                        self.delta_vap_func(
+                            self.pure_component, p, tau, _get_data_dir()
+                        )
                     )
                     for p in p_vec
                 ]
@@ -2052,7 +2060,9 @@ change.
                 _pvec(d2["sc"], tau, pc, pmax, "sc")
                 _pvec(d2["vap"], tau, pc, pt, "vap")
             else:
-                p_sat = pyo.value(self.p_sat_func(self.pure_component, tau, _get_data_dir()))
+                p_sat = pyo.value(
+                    self.p_sat_func(self.pure_component, tau, _get_data_dir())
+                )
                 _pvec(d2["liq"], tau, p_sat, pmax, "liq")
                 _pvec(d2["sat"], tau, p_sat, p_sat, "sat")
                 _pvec(d2["vap"], tau, p_sat, pt, "vap")
