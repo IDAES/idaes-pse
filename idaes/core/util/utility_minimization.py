@@ -28,7 +28,7 @@ from pyomo.environ import units as pyunits
 
 __author__ = "Alejandro Garciadiego, Alexander Dowling"
 
-# Temperature Epsilon to add or subsract 1 degree to avoid division over
+# Temperature Epsilon to add or subtract 1 degree to avoid division over
 # 0 in equipment not changing temperature
 EpsT = 1
 
@@ -301,7 +301,7 @@ def heat_data(blk, heating, cooling, DG_units=pyunits.Mwatt):
         Q[i] = value(pyunits.convert(v.heat_duty[0], to_units=DG_units))
         FCp_[i] = Q[i] / (T_out[i] - T_in[i])
 
-    # Generate a large dictioary containing all the data obtained
+    # Generate a large dictionary containing all the data obtained
     # from the equipment
     exchangeData = {}
     for i in pinch_streamsdict:
@@ -413,7 +413,7 @@ def pinch_calc(heating, cooling, exchangeData, DTmin, eps):
     initQw = -sum(value(exchangeData[i]["Q"]) for i in exchangerdict) + initQs
     initQw = max([initQw, 0.0])
 
-    # Fill Class with all the data to initialioze Duran-Grossmann variables
+    # Fill Class with all the data to initialize Duran-Grossmann variables
     PD = PinchDataClass(initQs, initQw)
     PD.initQAh = initQAh
     PD.initQAc = initQAc
