@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -51,6 +51,8 @@ from idaes.models.properties.modular_properties.base.generic_property import (
 
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.solvers import get_solver
+
+solver = get_solver("ipopt_v2")
 
 
 def dummy_method(b, *args, **kwargs):
@@ -235,7 +237,6 @@ class TestApparentSpeciesBasisNoInherent:
 
         assert degrees_of_freedom(m.fs) == 0
 
-        solver = get_solver()
         res = solver.solve(m.fs, tee=True)
 
         # Check for optimal solution
@@ -522,7 +523,6 @@ class TestApparentSpeciesBasisInherent:
 
         m.fs.state.initialize()
 
-        solver = get_solver()
         res = solver.solve(m.fs)
 
         # Check for optimal solution
@@ -1017,7 +1017,6 @@ class TestTrueSpeciesBasisInherent:
 
         m.fs.state.initialize()
 
-        solver = get_solver()
         res = solver.solve(m.fs)
 
         # Check for optimal solution

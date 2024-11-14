@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -16,11 +16,11 @@ Test for functions to save/load Pyomo model state to a dict or json
 
 import unittest
 import os
+from tempfile import mkdtemp
 
 from pyomo.environ import *
 from idaes.core.util import to_json, from_json, StoreSpec
 from idaes.core.util.model_serializer import _only_fixed
-from idaes.core.dmf.util import mkdtemp
 import shutil
 import pytest
 

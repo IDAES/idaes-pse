@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -175,15 +175,6 @@ def define_state(b):
         b.sum_mole_frac_out = Constraint(
             expr=1 == sum(b.mole_frac_comp[i] for i in b.component_list)
         )
-
-    def rule_enth_mol(b):
-        return b.enth_mol == sum(
-            b.enth_mol_phase[p] * b.phase_frac[p] for p in b.phase_list
-        )
-
-    b.enth_mol_eq = Constraint(
-        rule=rule_enth_mol, doc="Total molar enthalpy mixing rule"
-    )
 
     if len(b.phase_list) == 1:
 
@@ -451,7 +442,7 @@ def calculate_scaling_factors(b):
             b.sum_mole_frac_out, min(sf_mf.values()), overwrite=False
         )
 
-    iscale.constraint_scaling_transform(b.enth_mol_eq, sf_h, overwrite=False)
+    iscale.constraint_scaling_transform(b.enth_mol_eqn, sf_h, overwrite=False)
 
     if len(b.phase_list) == 1:
         iscale.constraint_scaling_transform(

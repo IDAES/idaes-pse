@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -192,6 +192,17 @@ class TestGenericReactionParameterBlock(object):
                 base_units=base_units,
                 rate_reactions={"r1": {"heat_of_reaction": "foo", "rate_form": "foo"}},
             )
+
+    @pytest.mark.unit
+    def test_packed_config_dict(self, m):
+        with pytest.raises(
+            ConfigurationError,
+            match=re.escape(
+                "rxn_params[property_package] was not assigned a property package. "
+                "Did you forget to unpack the configuration dictionary?"
+            ),
+        ):
+            m.rxn_params = GenericReactionParameterBlock({"property_package": m.params})
 
     @pytest.mark.unit
     def test_rate_build_invalid_phase_stoichiometry(self, m):
