@@ -32,7 +32,7 @@ Install Prerequisites
 **Install Miniforge**
 
 1. Download & install `Miniforge <https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Windows-x86_64.exe>`_.
-2. Install miniforge from the downloaded
+2. Install miniforge from the downloaded executable
 
 Install IDAES-PSE
 ^^^^^^^^^^^^^^^^^^
