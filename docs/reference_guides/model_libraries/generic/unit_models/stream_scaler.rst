@@ -16,7 +16,7 @@ Stream Scaler Blocks consists of a single StateBlock (named properties), each wi
 Additional Constraints
 ----------------------
 
-Stream Scaler Blocks write no additional constraints to the model.
+Stream Scaler Blocks write no additional constraints* (besides those naturally occurring in StateBlocks).
 
 Variables
 ---------
