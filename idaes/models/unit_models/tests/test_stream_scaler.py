@@ -271,19 +271,19 @@ class TestBTX(object):
         # Check for optimal solution
         assert check_optimal_termination(results)
 
-    # @pytest.mark.solver
-    # @pytest.mark.skipif(solver is None, reason="Solver not available")
-    # @pytest.mark.component
-    # def test_solution(self, btx):
-    #     assert pytest.approx(5, abs=1e-3) == value(
-    #         btx.fs.unit.properties[0].flow_mol_phase["Liq"]
-    #     )
-    #     assert pytest.approx(0.5, abs=1e-3) == value(
-    #         btx.fs.unit.properties[0].mole_frac_phase_comp["Liq", "benzene"]
-    #     )
-    #     assert pytest.approx(0.5, abs=1e-3) == value(
-    #         btx.fs.unit.properties[0].mole_frac_phase_comp["Liq", "toluene"]
-    #     )
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solution(self, btx):
+        assert pytest.approx(5, abs=1e-3) == value(
+            btx.fs.unit.inlet.flow_mol[0]
+        )
+        assert pytest.approx(0.5, abs=1e-3) == value(
+            btx.fs.unit.inlet.mole_frac_comp[0, "benzene"]
+        )
+        assert pytest.approx(0.5, abs=1e-3) == value(
+            btx.fs.unit.inlet.mole_frac_comp[0, "toluene"]
+        )
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -372,5 +372,3 @@ class TestIAPWS(object):
     @pytest.mark.component
     def test_initialize(self, iapws):
         initialization_tester(iapws)
-
-    # No solve or numerical tests as there is nothing to solve for
