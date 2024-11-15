@@ -14,16 +14,19 @@
 This module contains miscellaneous utility functions for use in IDAES models.
 """
 
+from io import StringIO
 import pytest
 import re
 
-from pyomo.environ import ConcreteModel, Set, Block, Var, units
+from pyomo.environ import ConcreteModel, Constraint, Expression, Set, Block, Var, units
 from pyomo.common.config import ConfigBlock
 from pyomo.core.base.units_container import UnitsError
 
 from idaes.core.util.misc import (
     add_object_reference,
     set_param_from_config,
+    compact_expression_to_string,
+    print_compact_form,
 )
 import idaes.logger as idaeslog
 
@@ -361,3 +364,54 @@ class TestSetParamFromConfig:
             "b no units provided for parameter test_param - assuming "
             "default units" in caplog.text
         )
+
+
+class TestToExprStringVisitor:
+    @pytest.mark.unit
+    def test_compact_expression_to_string(self):
+        m = ConcreteModel()
+        m.v1 = Var()
+        m.v2 = Var()
+        m.v3 = Var()
+
+        m.e1 = Expression(expr=m.v1 + m.v2)
+        m.c1 = Constraint(expr=0 == m.v3 * m.e1)
+
+        str = compact_expression_to_string(m.c1.expr)
+        expected = "v3*e1  ==  0"
+
+        assert str == expected
+
+    @pytest.mark.unit
+    def test_print_compact_form_expr(self):
+        m = ConcreteModel()
+        m.v1 = Var()
+        m.v2 = Var()
+        m.v3 = Var()
+
+        m.e1 = Expression(expr=m.v1 + m.v2)
+        m.c1 = Constraint(expr=0 == m.v3 * m.e1)
+
+        expected = "v3*e1  ==  0"
+
+        stream = StringIO()
+        print_compact_form(m.c1.expr, stream=stream)
+
+        assert stream.getvalue() == expected
+
+    @pytest.mark.unit
+    def test_print_compact_form_component(self):
+        m = ConcreteModel()
+        m.v1 = Var()
+        m.v2 = Var()
+        m.v3 = Var()
+
+        m.e1 = Expression(expr=m.v1 + m.v2)
+        m.c1 = Constraint(expr=0 == m.v3 * m.e1)
+
+        expected = "v3*e1  ==  0"
+
+        stream = StringIO()
+        print_compact_form(m.c1, stream=stream)
+
+        assert stream.getvalue() == expected

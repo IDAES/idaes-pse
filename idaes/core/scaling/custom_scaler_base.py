@@ -16,7 +16,6 @@ Base class for custom scaling routines.
 Author: Andrew Lee
 """
 from copy import copy
-from enum import Enum
 
 from pyomo.environ import ComponentMap, units, value
 from pyomo.core.base.units_container import UnitsError
@@ -26,6 +25,7 @@ from pyomo.core.expr.calculus.derivatives import Modes, differentiate
 from idaes.core.scaling.scaling_base import CONFIG, ScalerBase
 from idaes.core.scaling.util import get_scaling_factor, NominalValueExtractionVisitor
 import idaes.logger as idaeslog
+from idaes.core.util.misc import StrEnum
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -41,7 +41,7 @@ DEFAULT_UNIT_SCALING = {
 }
 
 
-class ConstraintScalingScheme(str, Enum):
+class ConstraintScalingScheme(StrEnum):
     """
     Schemes available for calculating constraint scaling factors.
 
