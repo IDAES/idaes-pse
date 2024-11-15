@@ -40,7 +40,7 @@ from .separator import (
 )
 from .shell_and_tube_1d import ShellAndTube1D, ShellAndTubeInitializer
 from .skeleton_model import SkeletonUnitModel, SkeletonUnitModelData
-from .stream_scaler import StreamScaler
+from .stream_scaler import StreamScaler, StreamScalerData
 from .statejunction import StateJunction, StateJunctionInitializer
 from .stoichiometric_reactor import StoichiometricReactor
 from .translator import Translator
