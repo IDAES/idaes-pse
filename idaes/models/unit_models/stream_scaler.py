@@ -40,7 +40,7 @@ import idaes.logger as idaeslog
 
 from idaes.models.unit_models.feed import FeedInitializer as StreamScalerInitializer
 
-__author__ = "Douglas Allan"
+__author__ = "Douglas Allan, Tanner Polley"
 
 
 # Set up logger
@@ -127,17 +127,17 @@ see property package for documentation.}""",
         self._get_property_package()
         self._get_indexing_sets()
 
-        self.inlet_block = self.config.property_package.build_state_block(
+        self.properties = self.config.property_package.build_state_block(
             self.flowsheet().time, doc="Material properties at inlet", **tmp_dict
         )
-        self.outlet_block = Block()
+        self.scaled_expressions = Block()
         self.multiplier = Var(
             initialize=1,
             domain=PositiveReals,
             units=pyunits.dimensionless,
             doc="Factor by which to scale dimensionless streams",
         )
-        self.add_inlet_port(name="inlet", block=self.inlet_block)
+        self.add_inlet_port(name="inlet", block=self.properties)
         self.outlet = Port(doc="Outlet port")
 
         def rule_scale_var(b, *args, var=None):
@@ -152,10 +152,10 @@ see property package for documentation.}""",
                 rule = partial(rule_scale_var, var=var)
             else:
                 rule = partial(rule_no_scale_var, var=var)
-            self.outlet_block.add_component(
+            self.scaled_expressions.add_component(
                 var_name, VarLikeExpression(var.index_set(), rule=rule)
             )
-            expr = getattr(self.outlet_block, var_name)
+            expr = getattr(self.scaled_expressions, var_name)
             self.outlet.add(expr, var_name)
 
     def initialize_build(
@@ -183,13 +183,11 @@ see property package for documentation.}""",
             If hold_states is True, returns a dict containing flags for which
             states were fixed during initialization.
         """
-        # init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
-        # solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
 
         # Create solver
 
         # Initialize inlet state blocks
-        flags = blk.inlet_block.initialize(
+        flags = blk.properties.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
@@ -215,7 +213,7 @@ see property package for documentation.}""",
         Returns:
             None
         """
-        blk.inlet_block.release_state(flags, outlvl=outlvl)
+        blk.properties.release_state(flags, outlvl=outlvl)
 
     def _get_stream_table_contents(self, time_point=0):
         io_dict = {
@@ -230,7 +228,12 @@ see property package for documentation.}""",
 
         # Need to pass on scaling factors from the property block to the outlet
         # VarLikeExpressions so arcs get scaled right
-        scale = 1 / self.multiplier.value
+        if self.multiplier.value == 0:
+            default = 1
+        else:
+            default = 1 / self.multiplier.value
+
+        scale = iscale.get_scaling_factor(self.multiplier, default=default, warning=False)
         for var_name in self.inlet.vars.keys():
             var = getattr(self.inlet, var_name)
             outlet_expr = getattr(self.outlet, var_name)
