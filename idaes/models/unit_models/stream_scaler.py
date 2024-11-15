@@ -233,7 +233,9 @@ see property package for documentation.}""",
         else:
             default = 1 / self.multiplier.value
 
-        scale = iscale.get_scaling_factor(self.multiplier, default=default, warning=False)
+        scale = iscale.get_scaling_factor(
+            self.multiplier, default=default, warning=False
+        )
         for var_name in self.inlet.vars.keys():
             var = getattr(self.inlet, var_name)
             outlet_expr = getattr(self.outlet, var_name)

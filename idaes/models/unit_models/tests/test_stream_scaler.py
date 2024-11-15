@@ -275,9 +275,7 @@ class TestBTX(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, btx):
-        assert pytest.approx(5, abs=1e-3) == value(
-            btx.fs.unit.inlet.flow_mol[0]
-        )
+        assert pytest.approx(5, abs=1e-3) == value(btx.fs.unit.inlet.flow_mol[0])
         assert pytest.approx(0.5, abs=1e-3) == value(
             btx.fs.unit.inlet.mole_frac_comp[0, "benzene"]
         )
