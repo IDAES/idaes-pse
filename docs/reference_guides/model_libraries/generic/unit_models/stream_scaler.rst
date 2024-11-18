@@ -6,17 +6,17 @@ Stream Scaler Blocks are used to adjust size of streams to represent, for exampl
 Degrees of Freedom
 ------------------
 
-Stream Scaler blocks have one degree of freedom (and an additional variable).
+Stream Scaler blocks have one degree of freedom (beyond the state variables in the ``StateBlock`` properties), a ``Var`` called ``multiplier``. It is the factor by which extensive state variables (defined as those having "flow" in their name) are scaled, with ``output_var = multiplier * input_var``.
 
 Model Structure
 ---------------
 
-Stream Scaler Blocks consists of a single StateBlock (named properties), each with an inlet and outlet port.
+Stream Scaler Blocks consists of a single ``StateBlock`` (named properties), each with an inlet and outlet port.
 
 Additional Constraints
 ----------------------
 
-Stream Scaler Blocks write no additional constraints* (besides those naturally occurring in StateBlocks).
+Stream Scaler Blocks write no additional constraints* (besides those naturally occurring in ``StateBlocks``).
 
 Variables
 ---------
