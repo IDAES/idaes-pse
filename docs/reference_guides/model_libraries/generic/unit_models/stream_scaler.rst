@@ -6,7 +6,7 @@ Stream Scaler Blocks are used to adjust size of streams to represent, for exampl
 Degrees of Freedom
 ------------------
 
-Stream Scaler blocks generally have zero degrees of freedom.
+Stream Scaler blocks have one degree of freedom (and an additional variable).
 
 Model Structure
 ---------------
