@@ -139,7 +139,7 @@ reference it here.""",
     CONFIG.declare(
         "time_set",
         ConfigValue(
-            default=[0],
+            default=None,
             domain=ListOf(float),
             description="Set of points for initializing time domain",
             doc="""Set of points for initializing time domain. This should be a
@@ -373,10 +373,13 @@ within this flowsheet if not otherwise specified,
         else:
             # If no parent flowsheet, set up time domain
             if fs is None:
+                # Set default time_set to [0] if not provided
+                if self.config.time_set is None:
+                    self.config.time_set = [0]
                 # Create time domain
                 _create_time_domain()
             # Creates a new time domain for a sub-flowsheet with user provided time domain
-            elif self.config.time_set not in [None, [0]]:
+            elif self.config.time_set is not None:
                 # Create time domain from config.time_set
                 _create_time_domain()
             else:
