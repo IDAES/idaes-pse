@@ -55,7 +55,7 @@ class TestConfig(object):
         assert len(model.fs.config) == 5
         assert model.fs.config.dynamic is useDefault
         assert model.fs.config.time is None
-        assert model.fs.config.time_set == [0]
+        assert model.fs.config.time_set == None
         assert model.fs.config.default_property_package is None
         assert model.fs.config.time_units is None
 
