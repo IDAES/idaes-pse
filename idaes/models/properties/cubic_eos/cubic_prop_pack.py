@@ -50,6 +50,7 @@ from pyomo.environ import (
 )
 from pyomo.common.config import ConfigDict, ConfigValue, In
 from pyomo.contrib.incidence_analysis import solve_strongly_connected_components
+from pyomo.common.deprecation import deprecated
 
 # Import IDAES cores
 from idaes.core import (
@@ -97,6 +98,12 @@ from idaes.models.properties.modular_properties.eos.ceos_common import (
 _log = idaeslog.getLogger(__name__)
 
 
+@deprecated(
+    msg="The standalone cubic property package has been deprecated in favor of the "
+    "cubic equation of state for the modular property framework. This class will be "
+    "removed in the May 2025 release.",
+    version="2.7.0",
+)
 @declare_process_block_class("CubicParameterBlock")
 class CubicParameterData(PhysicalParameterBlock):
     """
@@ -222,6 +229,12 @@ conditions, and thus corresponding constraints  should be included,
         )
 
 
+@deprecated(
+    msg="The standalone cubic property package has been deprecated in favor of the "
+    "cubic equation of state for the modular property framework. This class will be "
+    "removed in the May 2025 release.",
+    version="2.7.0",
+)
 class CubicEoSInitializer(InitializerBase):
     """
     Initializer for CubicEoS property packages.
