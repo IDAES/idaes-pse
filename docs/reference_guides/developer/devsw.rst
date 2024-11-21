@@ -145,7 +145,7 @@ Once you have the repo cloned, you can change into that directory (by default, i
 will be called "idaes-dev" like the repo) and install the Python packages.
 
 But before you do that, you need to get the Python package manager fully up and
-running. We use a Python packaging system called Miniforge.
+running. We use a Python packaging system called Miniforge_.
 Below are the instructions for installing the package manager -- which is a community driven and minimal version of Conda.
 The full version installs a large number of scientific analysis and visualization libraries
 that are not required by the IDAES framework.
