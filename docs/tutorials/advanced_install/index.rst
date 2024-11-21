@@ -71,7 +71,7 @@ Create the Python Environment
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Once you have the repo cloned, you can change into that directory (by default, it will be called "idaes-pse" like the repo) and install the Python packages.
 
-But before you do that, you need to get the Python package manager fully up and running. We use a Python packaging system called Conda_ and we specifically use a community driven minimal version Miniforge. If you do not already have Miniforge, please follow the installation instructions for your operating system in :ref:`getting started<tutorials/getting_started/index:Getting Started>`.
+But before you do that, you need to get the Python package manager fully up and running. We use a Python packaging system called Conda_ and we specifically use a community driven minimal version Miniforge_. If you do not already have Miniforge, please follow the installation instructions for your operating system in :ref:`getting started<tutorials/getting_started/index:Getting Started>`.
 
 .. _Conda: https://conda.io/
 .. _Miniforge: https://conda-forge.org/miniforge/
