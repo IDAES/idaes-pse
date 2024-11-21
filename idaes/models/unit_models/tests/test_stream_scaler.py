@@ -191,8 +191,6 @@ class TestBTX(object):
         m.fs.unit.inlet.pressure[0].fix(101325)  # Pa
         m.fs.unit.inlet.mole_frac_comp[0, "benzene"].fix(0.5)
         m.fs.unit.inlet.mole_frac_comp[0, "toluene"].fix(0.5)
-        # x = m.fs.unit
-        # print(variables_set(x))
         return m
 
     @pytest.mark.build
@@ -205,10 +203,6 @@ class TestBTX(object):
         assert hasattr(btx.fs.unit.inlet, "mole_frac_comp")
         assert hasattr(btx.fs.unit.inlet, "temperature")
         assert hasattr(btx.fs.unit.inlet, "pressure")
-
-        # x1 = number_variables(btx)
-        # x2 = number_total_constraints(btx)
-        # x3 = number_unused_variables(btx)
 
         assert number_variables(btx) == 9
         assert number_total_constraints(btx) == 3
@@ -304,8 +298,6 @@ class TestIAPWS(object):
 
         m.fs.unit = StreamScaler(property_package=m.fs.properties)
 
-        # x = m.fs.unit
-        # print(variables_set(x))
         m.fs.unit.multiplier.fix(1)
         m.fs.unit.inlet.flow_mol[0].fix(100)
         m.fs.unit.inlet.enth_mol[0].fix(5000)
