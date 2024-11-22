@@ -145,18 +145,18 @@ Once you have the repo cloned, you can change into that directory (by default, i
 will be called "idaes-dev" like the repo) and install the Python packages.
 
 But before you do that, you need to get the Python package manager fully up and
-running. We use a Python packaging system called Conda_.
-Below are instructions for installing a minimal version of Conda, called Miniconda_.
+running. We use a Python packaging system called Miniforge_.
+Below are the instructions for installing the package manager -- which is a community driven and minimal version of Conda.
 The full version installs a large number of scientific analysis and visualization libraries
 that are not required by the IDAES framework.
 
 .. _Conda: https://conda.io/
-.. _Miniconda: https://conda.io/en/latest/miniconda.html
+.. _Miniforge: https://conda-forge.org/miniforge/
 
 .. code-block:: sh
 
-    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-    bash Miniconda3-latest-Linux-x86_64.sh
+    wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh
+    bash Miniforge3-Linux-x86_64.sh
 
 Create and activate a conda environment (along with its own copy of ``pip``)
 for the new IDAES installation **(you will need to** ``conda activate idaes``
