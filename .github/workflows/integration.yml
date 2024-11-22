@@ -149,6 +149,7 @@ jobs:
         with:
           activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
           python-version: ${{ matrix.python-version }}
+          miniforge-version: latest
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
         with:
@@ -186,6 +187,7 @@ jobs:
         with:
           activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
           python-version: ${{ matrix.python-version }}
+          miniforge-version: latest
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
         with:
@@ -239,6 +241,7 @@ jobs:
         with:
           activate-environment: idaes-env
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
+          miniforge-version: latest
       - name: Set up idaes (non-editable installation)
         uses: ./.github/actions/setup-idaes
         with:
