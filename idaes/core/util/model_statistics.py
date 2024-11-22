@@ -287,8 +287,8 @@ def total_constraints_set(block):
 def number_total_constraints(block):
     """
     Method to return the total number of Constraint components in a model.
-    This will include number of constraints provided by Greybox models using
-    number_activated_greybox_equalities function.
+    This will include the number of constraints provided by Greybox models using
+    the number_activated_greybox_equalities function.
 
     Args:
         block : model to be studied
@@ -425,7 +425,7 @@ def total_equalities_set(block):
 def number_total_equalities(block):
     """
     Method to return the total number of equality Constraint components in a
-    model. This will include number of activated equalities Greybox using number_activated_greybox_equalities function.
+    model. This will include the number of activated equalities Greybox using the number_activated_greybox_equalities function.
 
     Args:
         block : model to be studied
@@ -571,7 +571,7 @@ def deactivated_equalities_set(block):
 def number_deactivated_equalities(block):
     """
     Method to return the number of deactivated equality Constraint components
-    in a model. This will include number of deactivated equality constraints in Greybox models.
+    in a model. This will include the number of deactivated equality constraints in Greybox models.
 
     Args:
         block : model to be studied
