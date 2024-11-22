@@ -14,7 +14,7 @@ scale-up, operation and troubleshooting of innovative, advanced energy systems.
 [![GitHub contributors](https://img.shields.io/github/contributors/IDAES/idaes-pse.svg)](https://github.com/IDAES/idaes-pse/graphs/contributors)
 [![Merged PRs](https://img.shields.io/github/issues-pr-closed-raw/IDAES/idaes-pse.svg?label=merged+PRs)](https://github.com/IDAES/idaes-pse/pulls?q=is:pr+is:merged)
 [![Issue stats](http://isitmaintained.com/badge/resolution/IDAES/idaes-pse.svg)](http://isitmaintained.com/project/IDAES/idaes-pse)
-[![Downloads](https://pepy.tech/badge/idaes-pse)](https://pepy.tech/project/idaes-pse)
+[![Downloads](https://static.pepy.tech/badge/idaes-pse)](https://pepy.tech/project/idaes-pse)
 <!-- END Status badges -->
 
 ## Getting Started
