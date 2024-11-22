@@ -749,7 +749,6 @@ def test_degrees_of_freedom_with_graybox():
     assert number_total_equalities(m) == 5
     assert number_deactivated_equalities(m) == 3
     assert number_deactivated_constraints(m) == 3
-    report_statistics(m)
 
 
 @pytest.mark.unit

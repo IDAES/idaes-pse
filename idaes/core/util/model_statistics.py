@@ -287,6 +287,8 @@ def total_constraints_set(block):
 def number_total_constraints(block):
     """
     Method to return the total number of Constraint components in a model.
+    This will include constraints provided by Greybox models using
+    number_activated_greybox_equalities function.
 
     Args:
         block : model to be studied
@@ -375,7 +377,8 @@ def deactivated_constraints_set(block):
 def number_deactivated_constraints(block):
     """
     Method to return the number of deactivated Constraint components in a
-    model.
+    model. This will include number of deactivated equalities in a Greybox models
+    using number_deactivated_greybox_equalities function.
 
     Args:
         block : model to be studied
@@ -422,7 +425,7 @@ def total_equalities_set(block):
 def number_total_equalities(block):
     """
     Method to return the total number of equality Constraint components in a
-    model.
+    model. This will include number of activated equalities using number_activated_greybox_equalities function.
 
     Args:
         block : model to be studied
@@ -476,7 +479,7 @@ def activated_equalities_set(block):
 def number_activated_equalities(block):
     """
     Method to return the number of activated equality Constraint components in
-    a model.
+    a model. This will include number of equalities in Greybox model using number_activated_greybox_equalities function.
 
     Args:
         block : model to be studied
@@ -496,7 +499,7 @@ def number_activated_greybox_equalities(block) -> int:
     A GreyBox model is always assumed to be 0DOFs where each output[i]==f(inputs)
     where f is GreyBox model, this should be true regardless if
     GreyBox model is doing internal optimization or not, as every output
-    is calculated through a the GreyBox internal model using provided inputs.
+    is calculated through the GreyBox internal model using provided inputs.
 
     Args:
         block : pyomo concrete model or pyomo block
@@ -568,7 +571,7 @@ def deactivated_equalities_set(block):
 def number_deactivated_equalities(block):
     """
     Method to return the number of deactivated equality Constraint components
-    in a model.
+    in a model. This include number of deactivated equality constraints in Greybox models.
 
     Args:
         block : model to be studied
@@ -1195,7 +1198,7 @@ def unfixed_variables_in_activated_equalities_set(block):
         block : model to be studied
 
     Returns:
-        A ComponentSet including all unfixed Var components which appear within
+        A ComponentSet of all unfixed Var components which appear within
         activated equality Constraints in block
     """
     var_set = ComponentSet()
@@ -1213,8 +1216,7 @@ def unfixed_greybox_variables(block):
         block : model to be studied
 
     Returns:
-        A ComponentSet including all unfixed Var components which appear within
-        activated equality Constraints in block
+        A ComponentSet of unfixed Var components which appear in Greybox models
     """
     var_set = ComponentSet()
     for var in greybox_variables(block):
