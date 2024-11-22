@@ -29,10 +29,13 @@ To get IDAES fully set up on your machine, we'll go through the steps to get ida
 Install Prerequisites
 ^^^^^^^^^^^^^^^^^^^^^
 
-**Install  Miniconda**
+**Install  Miniforge**
 
-1. Download `Miniconda <https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh>`_
+1. Download `Miniforge <https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh>`_
 2. Open a terminal window & run the downloaded script.
+
+** If you are running Arm64 or Power8/9 architecture, make sure you pull the applicable installer from the link below **
+https://github.com/conda-forge/miniforge/releases
 
 **Install Dependencies**
 
