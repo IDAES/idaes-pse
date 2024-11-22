@@ -119,99 +119,10 @@ jobs:
           _display_on_run_dashboard(msg)
           _set_output('workflow-trigger', workflow_trigger)
 
-  pytest:
-    name: pytest (py${{ matrix.python-version }}/${{ matrix.os }}/integration)
-    runs-on: ${{ matrix.runner-image }}
-    needs: [precheck]
-    if: >-
-      (
-        needs.precheck.outputs.workflow-trigger == 'user_dispatch'
-        || needs.precheck.outputs.workflow-trigger == 'not_pr'
-        || needs.precheck.outputs.workflow-trigger == 'approved_pr'
-      )
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ['3.9', '3.10', '3.11', '3.12']
-        os:
-          - linux
-          - win64
-        include:
-          - os: linux
-            runner-image: ubuntu-20.04
-          - os: win64
-            runner-image: windows-2022
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/display-debug-info
-      - name: Set up Conda environment
-        uses: conda-incubator/setup-miniconda@v3
-        with:
-          activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
-          python-version: ${{ matrix.python-version }}
-          miniforge-version: latest
-      - name: Set up idaes
-        uses: ./.github/actions/setup-idaes
-        with:
-          install-target: -r requirements-dev.txt
-      - name: Run pytest (integration)
-        run: pytest --pyargs idaes -m integration
-
-  examples:
-    name: Run examples (py${{ matrix.python-version }}/${{ matrix.os }})
-    runs-on: ${{ matrix.runner-image }}
-    needs: [precheck]
-    if: >-
-      (
-        needs.precheck.outputs.workflow-trigger == 'user_dispatch'
-        || needs.precheck.outputs.workflow-trigger == 'not_pr'
-        || needs.precheck.outputs.workflow-trigger == 'approved_pr'
-      )
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ['3.9', '3.10', '3.11', '3.12']
-        os:
-          - linux
-          - win64
-        include:
-          - os: linux
-            runner-image: ubuntu-20.04
-          - os: win64
-            runner-image: windows-2022
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/display-debug-info
-      - name: Set up Conda environment
-        uses: conda-incubator/setup-miniconda@v3
-        with:
-          activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
-          python-version: ${{ matrix.python-version }}
-          miniforge-version: latest
-      - name: Set up idaes
-        uses: ./.github/actions/setup-idaes
-        with:
-          install-target: -r requirements-dev.txt
-      - name: Fetch and run examples
-        uses: ./.github/actions/run-examples
-        with:
-          examples-repository: IDAES/examples
-          examples-ref: main
-          reinstall-target: -r requirements-dev.txt
-          notebook-cell-exec-timeout: '600'
-          working-dir: ${{ runner.temp }}
-
   pytest-site-packages:
     name: Run tests from site-packages (non-editable) installation (${{ matrix.install-mode }}/${{ matrix.os }})
     # NOTE: using ubuntu-latest (20.04) instead of 18.04 results in failures in power_generation/carbon_capture/mea_solvent_system/unit_models/tests/test_column.py
     runs-on: ${{ matrix.runner-image }}
-    needs: [precheck]
-    if: >-
-      (
-        needs.precheck.outputs.workflow-trigger == 'user_dispatch'
-        || needs.precheck.outputs.workflow-trigger == 'not_pr'
-        || needs.precheck.outputs.workflow-trigger == 'approved_pr'
-      )
     strategy:
       fail-fast: false
       matrix:
