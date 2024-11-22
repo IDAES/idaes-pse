@@ -493,7 +493,10 @@ class DiagnosticsToolbox:
                 "model argument must be an instance of a Pyomo BlockData object "
                 "(either a scalar Block or an element of an indexed Block)."
             )
-
+        if len(greybox_block_set(model)) != 0:
+            raise NotImplementedError(
+                "Model contains Greybox models, which are not supported by Diagnostics toolbox at the moment"
+            )
         self._model = model
         self.config = CONFIG(kwargs)
 
@@ -1802,11 +1805,6 @@ class DiagnosticsToolbox:
         """
         if stream is None:
             stream = sys.stdout
-        if len(greybox_block_set(self._model)) != 0:
-            raise NotImplementedError(
-                "Model contains Greybox models, which are not supported by Diagnostics toolbox at the moment"
-            )
-
         jac, nlp = get_jacobian(self._model, scaled=False)
 
         warnings, next_steps = self._collect_numerical_warnings(jac=jac, nlp=nlp)
@@ -1951,7 +1949,10 @@ class SVDToolbox:
                 "model argument must be an instance of a Pyomo BlockData object "
                 "(either a scalar Block or an element of an indexed Block)."
             )
-
+        if len(greybox_block_set(model)) != 0:
+            raise NotImplementedError(
+                "Model contains Greybox models, which are not supported by Diagnostics toolbox at the moment"
+            )
         self._model = model
         self.config = SVDCONFIG(kwargs)
 
@@ -2393,7 +2394,10 @@ class DegeneracyHunter2:
                 "model argument must be an instance of a Pyomo BlockData object "
                 "(either a scalar Block or an element of an indexed Block)."
             )
-
+        if len(greybox_block_set(model)) != 0:
+            raise NotImplementedError(
+                "Model contains Greybox models, which are not supported by Diagnostics toolbox at the moment"
+            )
         self._model = model
         self.config = DHCONFIG(kwargs)
 
@@ -3491,7 +3495,10 @@ class IpoptConvergenceAnalysis:
                 "model argument must be an instance of a Pyomo BlockData object "
                 "(either a scalar Block or an element of an indexed Block)."
             )
-
+        if len(greybox_block_set(model)) != 0:
+            raise NotImplementedError(
+                "Model contains Greybox models, which are not supported by Diagnostics toolbox at the moment"
+            )
         self.config = self.CONFIG(kwargs)
 
         self._model = model

@@ -597,6 +597,30 @@ class TestDiagnosticsToolbox:
         return m
 
     @pytest.mark.component
+    def test_with_grey_box(self):
+
+        class BasicGrayBox(ExternalGreyBoxModel):
+            def input_names(self):
+                return ["a1", "a2", "a3"]
+
+            def output_names(self):
+                return ["o1", "o2"]
+
+            def equality_constraint_names(self):
+                return ["a_sum"]
+
+            def evaluate_equality_constraints(self):
+                a1 = self._input_values[0]
+                a2 = self._input_values[1]
+                return [a1 * 0.5 + a2]
+
+        m = ConcreteModel()
+
+        m.gb = ExternalGreyBoxBlock(external_model=BasicGrayBox())
+        with pytest.raises(NotImplementedError):
+            DiagnosticsToolbox(model=m)
+
+    @pytest.mark.component
     def test_display_external_variables(self, model):
         dt = DiagnosticsToolbox(model=model.b)
 
@@ -1911,6 +1935,30 @@ class TestSVDToolbox:
         svd = SVDToolbox(dummy_problem, svd_callback=dummy_callback2)
         assert svd.config.svd_callback is dummy_callback2
 
+    @pytest.mark.component
+    def test_with_grey_box(self):
+
+        class BasicGrayBox(ExternalGreyBoxModel):
+            def input_names(self):
+                return ["a1", "a2", "a3"]
+
+            def output_names(self):
+                return ["o1", "o2"]
+
+            def equality_constraint_names(self):
+                return ["a_sum"]
+
+            def evaluate_equality_constraints(self):
+                a1 = self._input_values[0]
+                a2 = self._input_values[1]
+                return [a1 * 0.5 + a2]
+
+        m = ConcreteModel()
+
+        m.gb = ExternalGreyBoxBlock(external_model=BasicGrayBox())
+        with pytest.raises(NotImplementedError):
+            SVDToolbox(model=m)
+
     @pytest.mark.unit
     def test_init(self, dummy_problem):
         svd = SVDToolbox(dummy_problem)
@@ -2360,6 +2408,30 @@ class TestDegeneracyHunter:
         assert dh.degenerate_set == {}
         assert dh.irreducible_degenerate_sets == []
 
+    @pytest.mark.component
+    def test_with_grey_box(self):
+
+        class BasicGrayBox(ExternalGreyBoxModel):
+            def input_names(self):
+                return ["a1", "a2", "a3"]
+
+            def output_names(self):
+                return ["o1", "o2"]
+
+            def equality_constraint_names(self):
+                return ["a_sum"]
+
+            def evaluate_equality_constraints(self):
+                a1 = self._input_values[0]
+                a2 = self._input_values[1]
+                return [a1 * 0.5 + a2]
+
+        m = ConcreteModel()
+
+        m.gb = ExternalGreyBoxBlock(external_model=BasicGrayBox())
+        with pytest.raises(NotImplementedError):
+            DegeneracyHunter2(model=m)
+
     @pytest.mark.unit
     def test_get_solver(self, model):
         dh = DegeneracyHunter2(model, solver="ipopt", solver_options={"maxiter": 50})
@@ -2616,6 +2688,30 @@ class TestIpoptConvergenceAnalysis:
         m.v2.fix(0)
 
         return m
+
+    @pytest.mark.component
+    def test_with_grey_box(self):
+
+        class BasicGrayBox(ExternalGreyBoxModel):
+            def input_names(self):
+                return ["a1", "a2", "a3"]
+
+            def output_names(self):
+                return ["o1", "o2"]
+
+            def equality_constraint_names(self):
+                return ["a_sum"]
+
+            def evaluate_equality_constraints(self):
+                a1 = self._input_values[0]
+                a2 = self._input_values[1]
+                return [a1 * 0.5 + a2]
+
+        m = ConcreteModel()
+
+        m.gb = ExternalGreyBoxBlock(external_model=BasicGrayBox())
+        with pytest.raises(NotImplementedError):
+            IpoptConvergenceAnalysis(model=m)
 
     @pytest.mark.unit
     def test_init(self, model):
