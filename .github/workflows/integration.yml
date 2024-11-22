@@ -222,9 +222,12 @@ jobs:
           - conda-like
         os:
           - linux
+          - win64
         include:
           - os: linux
             runner-image: ubuntu-20.04
+          - os: win64
+            runner-image: windows-2022
           - install-mode: pip-default
             pip-install-target: '.'
           - install-mode: pip-complete
