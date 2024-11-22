@@ -1753,7 +1753,12 @@ class DiagnosticsToolbox:
 
         # Potential evaluation errors
         # TODO: High Index?
+        if len(greybox_block_set(self._model)) != 0:
+            raise NotImplementedError(
+                "Model contains Greybox models, which are not supported by Diagnostics toolbox at the moment"
+            )
         stats = _collect_model_statistics(self._model)
+
         warnings, next_steps = self._collect_structural_warnings()
         cautions = self._collect_structural_cautions()
 
@@ -1797,6 +1802,10 @@ class DiagnosticsToolbox:
         """
         if stream is None:
             stream = sys.stdout
+        if len(greybox_block_set(self._model)) != 0:
+            raise NotImplementedError(
+                "Model contains Greybox models, which are not supported by Diagnostics toolbox at the moment"
+            )
 
         jac, nlp = get_jacobian(self._model, scaled=False)
 
