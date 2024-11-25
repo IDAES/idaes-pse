@@ -1,8 +1,6 @@
 import pytest
 import logging
 import pandas as pd
-from pyomo.environ import check_optimal_termination
-from pyomo.environ import value
 from idaes.models_extra.temperature_swing_adsorption.util import tsa_summary
 from idaes.models_extra.temperature_swing_adsorption.fixed_bed_tsa0d_ui import (
     export_to_ui,
@@ -107,4 +105,5 @@ def test_ui_output():
     # compare data frame string
     jupyter_df_string = stream_table_dataframe_to_string(jupyter_df)
     ui_df_string = stream_table_dataframe_to_string(ui_df)
+    print(ui_df_string)
     assert jupyter_df_string == ui_df_string
