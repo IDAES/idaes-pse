@@ -16,19 +16,14 @@ UI exports for 0D Fixed Bed TSA unit model.
 """
 from datetime import datetime
 from watertap.ui import fsapi as api
-from pyomo.environ import (
-    ConcreteModel,
-    SolverFactory,
-    value,
-    units,
-)
+from pyomo.environ import ConcreteModel, SolverFactory, value, units, Var, Expression
 
 from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.core.util as iutil
 from idaes.core.solvers import get_solver
 from idaes.core.util.exceptions import ConfigurationError
-import idaes.logger as idaeslog
+import idaes.logger as idaes_log
 
 
 from idaes.models_extra.temperature_swing_adsorption import (
@@ -42,6 +37,8 @@ from idaes.models_extra.temperature_swing_adsorption.util import (
     tsa_summary,
     plot_tsa_profiles,
 )
+
+_log = idaes_log.getLogger(__name__)
 
 model_name = "0D Fixed Bed TSA"
 model_name_for_ui = f"0D Fixed Bed TSA - {datetime.now()}"
@@ -152,6 +149,7 @@ def build(build_options=None, **kwargs):
         "temperature": 300.0,
         "pressure": 1.0e5,
     }
+
     for i in m.fs.tsa.component_list:
         m.fs.tsa.inlet.flow_mol_comp[:, i].fix(flue_gas["flow_mol_comp"][i])
     m.fs.tsa.inlet.temperature.fix(flue_gas["temperature"])
@@ -163,6 +161,9 @@ def build(build_options=None, **kwargs):
     m.fs.tsa.temperature_cooling.fix(300)
     m.fs.tsa.bed_diameter.fix(3 / 100)
     m.fs.tsa.bed_height.fix(1.2)
+
+    DOF = degrees_of_freedom(m)
+    _log.info(f"The DOF of the TSA unit is {DOF}")
 
     return m
 
@@ -202,14 +203,14 @@ def export(flowsheet=None, exports=None, build_options=None, **kwargs):
         name="Number of beds",
         ui_units=units.dimensionless,
         display_units="-",
-        rounding=6,
+        rounding=4,
         output_category="Equipment Parameters",
         is_input=False,
         is_output=True,
     )
     exports.add(
         obj=fs.tsa.bed_diameter,
-        name="Bed diameter",
+        name="Column diameter",
         ui_units=units.m,
         display_units="m",
         rounding=6,
@@ -220,7 +221,7 @@ def export(flowsheet=None, exports=None, build_options=None, **kwargs):
     )
     exports.add(
         obj=fs.tsa.bed_height,
-        name="Bed length",
+        name="Column length",
         ui_units=units.m,
         display_units="m",
         rounding=6,
@@ -281,7 +282,7 @@ def export(flowsheet=None, exports=None, build_options=None, **kwargs):
         name="Column volume",
         ui_units=units.m**3,
         display_units="m3",
-        rounding=6,
+        rounding=8,
         output_category="Operating Parameters",
         is_input=False,
         is_output=True,
@@ -314,7 +315,7 @@ def export(flowsheet=None, exports=None, build_options=None, **kwargs):
         name="Feed velocity",
         ui_units=units.m / units.s,
         display_units="m/s",
-        rounding=6,
+        rounding=5,
         output_category="Operating Parameters",
         is_input=False,
         is_output=True,
@@ -326,7 +327,7 @@ def export(flowsheet=None, exports=None, build_options=None, **kwargs):
         name="Minimum fluidization velocity",
         ui_units=units.m / units.s,
         display_units="m/s",
-        rounding=6,
+        rounding=4,
         input_category="Operating Parameters",
         output_category="Operating Parameters",
         is_input=True,
@@ -351,7 +352,7 @@ def export(flowsheet=None, exports=None, build_options=None, **kwargs):
         name="Time of cooling step",
         ui_units=units.h,
         display_units="h",
-        rounding=6,
+        rounding=5,
         input_category="Operating Parameters",
         output_category="Operating Parameters",
         is_input=True,
@@ -363,7 +364,7 @@ def export(flowsheet=None, exports=None, build_options=None, **kwargs):
         name="Time of pressurization step",
         ui_units=units.h,
         display_units="h",
-        rounding=6,
+        rounding=7,
         input_category="Operating Parameters",
         output_category="Operating Parameters",
         is_input=True,
@@ -375,7 +376,7 @@ def export(flowsheet=None, exports=None, build_options=None, **kwargs):
         name="Time of adsorption step",
         ui_units=units.h,
         display_units="h",
-        rounding=6,
+        rounding=5,
         input_category="Operating Parameters",
         output_category="Operating Parameters",
         is_input=True,
@@ -400,7 +401,7 @@ def export(flowsheet=None, exports=None, build_options=None, **kwargs):
         name="Pressure drop",
         ui_units=units.Pa,
         display_units="Pa",
-        rounding=6,
+        rounding=1,
         input_category="Operating Parameters",
         output_category="Operating Parameters",
         is_input=True,
@@ -413,7 +414,7 @@ def export(flowsheet=None, exports=None, build_options=None, **kwargs):
         name="Purity",
         ui_units=units.dimensionless,
         display_units="-",
-        rounding=6,
+        rounding=5,
         input_category="Performance Metrics",
         output_category="Performance Metrics",
         is_input=True,
@@ -425,7 +426,7 @@ def export(flowsheet=None, exports=None, build_options=None, **kwargs):
         name="Recovery",
         ui_units=units.dimensionless,
         display_units="-",
-        rounding=6,
+        rounding=5,
         input_category="Performance Metrics",
         output_category="Performance Metrics",
         is_input=True,
@@ -433,14 +434,14 @@ def export(flowsheet=None, exports=None, build_options=None, **kwargs):
     )
 
     exports.add(
-        obj=fs.tsa.productivity,  # Productivity
+        obj=fs.tsa.productivity,
         name="Productivity",
-        ui_units=units.kg / units.ton / units.h,
+        ui_units=units.kg / units.metric_ton / units.h,
         display_units="kg CO2/ton/h",
-        rounding=6,
+        rounding=3,
         input_category="Performance Metrics",
         output_category="Performance Metrics",
-        is_input=True,
+        is_input=False,
         is_output=True,
     )
 
@@ -449,7 +450,7 @@ def export(flowsheet=None, exports=None, build_options=None, **kwargs):
         name="Specific energy",
         ui_units=units.MJ / units.kg,
         display_units="MJ/kg CO2",
-        rounding=6,
+        rounding=4,
         input_category="Performance Metrics",
         output_category="Performance Metrics",
         is_input=True,
@@ -459,9 +460,9 @@ def export(flowsheet=None, exports=None, build_options=None, **kwargs):
     exports.add(
         obj=fs.tsa.heat_duty_bed,
         name="Heat duty per bed",
-        ui_units=units.MW,
+        ui_units=units.MJ / units.seconds,
         display_units="MW",
-        rounding=6,
+        rounding=9,
         output_category="Performance Metrics",
         is_input=False,
         is_output=True,
@@ -469,10 +470,10 @@ def export(flowsheet=None, exports=None, build_options=None, **kwargs):
 
     exports.add(
         obj=fs.tsa.heat_duty_total,
-        name="Total heat duty",
+        name="Heat duty total",
         ui_units=units.MW,
         display_units="MW",
-        rounding=6,
+        rounding=8,
         output_category="Performance Metrics",
         is_input=False,
         is_output=True,
@@ -495,7 +496,7 @@ def export(flowsheet=None, exports=None, build_options=None, **kwargs):
         name="Cycles per year",
         ui_units=1 / units.year,
         display_units="cycles/year",
-        rounding=6,
+        rounding=1,
         output_category="Performance Metrics",
         is_input=False,
         is_output=True,
@@ -506,7 +507,7 @@ def export(flowsheet=None, exports=None, build_options=None, **kwargs):
         name="Total CO2 captured per year",
         ui_units=units.tonne / units.year,
         display_units="tonne/year",
-        rounding=6,
+        rounding=4,
         output_category="Performance Metrics",
         is_input=False,
         is_output=True,
@@ -518,7 +519,7 @@ def export(flowsheet=None, exports=None, build_options=None, **kwargs):
         name="Amount of flue gas processed per year",
         ui_units=units.Gmol / units.year,  # Gmol/year
         display_units="Gmol/year",
-        rounding=6,
+        rounding=8,
         output_category="Performance Metrics",
         is_input=False,
         is_output=True,
@@ -529,7 +530,7 @@ def export(flowsheet=None, exports=None, build_options=None, **kwargs):
         name="Amount of flue gas processed per year (target)",
         ui_units=units.Gmol / units.year,
         display_units="Gmol/year",
-        rounding=6,
+        rounding=8,
         output_category="Performance Metrics",
         is_input=False,
         is_output=True,
@@ -568,7 +569,7 @@ def initialize(fs, **kwargs):
     }
 
     initializer = FixedBedTSA0DInitializer(
-        output_level=idaeslog.INFO, solver_options=solver_options
+        output_level=idaes_log.INFO, solver_options=solver_options
     )
 
     initializer.initialize(fs.tsa)
