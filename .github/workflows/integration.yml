@@ -248,7 +248,7 @@ jobs:
           install-target: ${{ matrix.pip-install-target }}
       - name: Remove dependencies installable with pip but not with conda
         # NOTE some dependencies that are installed by default with pip are not available through conda
-        # so they're not installed if IDAES is installed with `conda -c conda-forge -c IDAES-PSE idaes-pse`
+        # so they're not installed if IDAES is installed with `conda -c conda-forge idaes-pse`
         # to ensure this scenario is handled properly, since we don't have (yet) the conda-build process integrated with the CI,
         # we manually remove the "pip-but-not-conda" dependencies after installing with pip
         # as an approximation of the enviroment that we'd get from `conda install`
