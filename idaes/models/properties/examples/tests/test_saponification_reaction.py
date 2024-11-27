@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -14,24 +14,26 @@
 Tests for saponification property package example.
 Authors: Andrew Lee
 """
+from math import exp
 import pytest
-from pyomo.environ import ConcreteModel, Constraint, Param, units, value, Var
-from idaes.core import MaterialFlowBasis
 
+from pyomo.environ import ConcreteModel, Constraint, Param, Suffix, units, value, Var
+
+from idaes.core import MaterialFlowBasis
 from idaes.models.properties.examples.saponification_reactions import (
     SaponificationReactionParameterBlock,
     ReactionBlock,
+    SaponificationReactionScaler,
 )
 from idaes.models.properties.examples.saponification_thermo import (
     SaponificationParameterBlock,
 )
-
 from idaes.core.solvers import get_solver
 
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_solver()
+solver = get_solver("ipopt_v2")
 
 
 class TestParamBlock(object):
@@ -100,6 +102,8 @@ class TestReactionBlock(object):
         assert model.rxns[1].temperature_ref is model.props[1].temperature
         assert model.rxns[1].dh_rxn is model.rparams.dh_rxn
 
+        assert model.rxns[1].default_scaler is SaponificationReactionScaler
+
     @pytest.mark.unit
     def test_rate_constant(self, model):
         assert isinstance(model.rxns[1].k_rxn, Var)
@@ -124,3 +128,90 @@ class TestReactionBlock(object):
 
     def check_units(self, model):
         units.assert_units_consistent(model)
+
+
+class TestSaponificationReactionScaler(object):
+    @pytest.mark.unit
+    def test_variable_scaling_routine(self):
+        model = ConcreteModel()
+        model.pparams = SaponificationParameterBlock()
+        model.rparams = SaponificationReactionParameterBlock(
+            property_package=model.pparams
+        )
+
+        model.props = model.pparams.build_state_block([1])
+        model.rxns = model.rparams.build_reaction_block([1], state_block=model.props)
+
+        # Trigger build of reaction properties
+        model.rxns[1].reaction_rate
+
+        scaler = model.rxns[1].default_scaler()
+        assert isinstance(scaler, SaponificationReactionScaler)
+
+        scaler.variable_scaling_routine(model.rxns[1])
+
+        assert isinstance(model.rxns[1].scaling_factor, Suffix)
+
+        sfx = model.rxns[1].scaling_factor
+        assert len(sfx) == 2
+        assert sfx[model.rxns[1].k_rxn] == pytest.approx(
+            1 / (3.132e6 * exp(-43000 / (8.31446262 * 298.15))), rel=1e-8
+        )
+        assert sfx[model.rxns[1].reaction_rate["R1"]] == pytest.approx(1e2, rel=1e-8)
+
+    @pytest.mark.unit
+    def test_constraint_scaling_routine(self):
+        model = ConcreteModel()
+        model.pparams = SaponificationParameterBlock()
+        model.rparams = SaponificationReactionParameterBlock(
+            property_package=model.pparams
+        )
+
+        model.props = model.pparams.build_state_block([1])
+        model.rxns = model.rparams.build_reaction_block([1], state_block=model.props)
+
+        # Trigger build of reaction properties
+        model.rxns[1].reaction_rate
+
+        scaler = model.rxns[1].default_scaler()
+        assert isinstance(scaler, SaponificationReactionScaler)
+
+        scaler.constraint_scaling_routine(model.rxns[1])
+
+        assert isinstance(model.rxns[1].scaling_factor, Suffix)
+
+        sfx = model.rxns[1].scaling_factor
+        assert len(sfx) == 2
+        assert sfx[model.rxns[1].arrhenius_eqn] == pytest.approx(1, rel=1e-8)
+        assert sfx[model.rxns[1].rate_expression["R1"]] == pytest.approx(1e-4, rel=1e-8)
+
+    @pytest.mark.unit
+    def test_scale_model(self):
+        model = ConcreteModel()
+        model.pparams = SaponificationParameterBlock()
+        model.rparams = SaponificationReactionParameterBlock(
+            property_package=model.pparams
+        )
+
+        model.props = model.pparams.build_state_block([1])
+        model.rxns = model.rparams.build_reaction_block([1], state_block=model.props)
+
+        # Trigger build of reaction properties
+        model.rxns[1].reaction_rate
+
+        scaler = model.rxns[1].default_scaler()
+        assert isinstance(scaler, SaponificationReactionScaler)
+
+        scaler.scale_model(model.rxns[1])
+
+        assert isinstance(model.rxns[1].scaling_factor, Suffix)
+
+        sfx = model.rxns[1].scaling_factor
+        k_rxn_sf = 1 / (3.132e6 * exp(-43000 / (8.31446262 * 298.15)))
+        assert len(sfx) == 4
+        assert sfx[model.rxns[1].k_rxn] == pytest.approx(k_rxn_sf, rel=1e-8)
+        assert sfx[model.rxns[1].reaction_rate["R1"]] == pytest.approx(1e2, rel=1e-8)
+        assert sfx[model.rxns[1].arrhenius_eqn] == pytest.approx(k_rxn_sf, rel=1e-8)
+        assert sfx[model.rxns[1].rate_expression["R1"]] == pytest.approx(
+            1e-4 * k_rxn_sf, rel=1e-8
+        )

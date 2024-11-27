@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -15,6 +15,7 @@ Tests for 0D lumped capacitance heat exchanger model
 
 Author: Rusty Gentile, John Eslick, Andrew Lee
 """
+from sys import platform
 import pytest
 import re
 
@@ -62,7 +63,7 @@ from idaes.core.initialization import (
 from idaes.core.util import DiagnosticsToolbox
 
 # Get default solver for testing
-solver = get_solver()
+solver = get_solver("ipopt_v2")
 
 # Number of steps for transient simulations
 TIME_STEPS = 50
@@ -550,7 +551,6 @@ class TestInitializers:
         m.fs.unit.area.fix(1000)
 
         # Modified from the original:
-        # m.fs.unit.overall_heat_transfer_coefficient.fix(100)
         m.fs.unit.ua_hot_side.fix(200 * 1000)
         m.fs.unit.ua_cold_side.fix(200 * 1000)
 
@@ -560,7 +560,13 @@ class TestInitializers:
 
     @pytest.mark.component
     def test_hx_initializer(self, model):
-        initializer = HX0DInitializer()
+        # Setting bounds on deltaT seems to help avoid a temperature cross-over
+        # during initialization.
+        model.fs.unit.delta_temperature_in.setlb(1e-8)
+        model.fs.unit.delta_temperature_out.setlb(1e-8)
+        # TODO: Linear presolve appears to cause issues on Windows
+        # Hope that these will be fixed with better scaling
+        initializer = HX0DInitializer(writer_config={"linear_presolve": False})
         initializer.initialize(model.fs.unit)
 
         assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok

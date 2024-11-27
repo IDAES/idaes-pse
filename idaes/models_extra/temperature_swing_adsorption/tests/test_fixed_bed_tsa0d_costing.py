@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -49,6 +49,7 @@ import idaes.core.util.scaling as iscale
 solver = get_solver()
 
 
+@pytest.mark.integration
 class TestElectricBoilerCosting:
     @pytest.fixture(scope="class")
     def model(self):
@@ -97,7 +98,6 @@ class TestElectricBoilerCosting:
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.component
     def test_build(self, model):
         assert hasattr(model.fs, "costing")
         assert hasattr(model.fs.costing, "total_TPC")
@@ -110,13 +110,11 @@ class TestElectricBoilerCosting:
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.component
     def test_dof(self, model):
         assert degrees_of_freedom(model) == 0
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.component
     def test_solve(self, model):
         solver.options.bound_push = 1e-6
         results = solver.solve(model)
@@ -124,7 +122,6 @@ class TestElectricBoilerCosting:
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.component
     def test_solution(self, model):
         # CO2 rich outlet
         assert pytest.approx(79.1955, abs=1e-4) == value(
@@ -143,12 +140,12 @@ class TestElectricBoilerCosting:
     @pytest.mark.ui
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.component
     def test_report(self, model):
         print_dac_costing(model.fs.unit)
         dac_costing_summary(model.fs.unit)
 
 
+@pytest.mark.integration
 class TestRetrofitNgccCosting:
     @pytest.fixture(scope="class")
     def model(self):
@@ -197,7 +194,6 @@ class TestRetrofitNgccCosting:
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.component
     def test_build(self, model):
         assert hasattr(model.fs, "costing")
         assert hasattr(model.fs.costing, "total_TPC")
@@ -210,13 +206,11 @@ class TestRetrofitNgccCosting:
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.component
     def test_dof(self, model):
         assert degrees_of_freedom(model) == 0
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.component
     def test_solve(self, model):
         solver.options.bound_push = 1e-6
         results = solver.solve(model)
@@ -224,7 +218,6 @@ class TestRetrofitNgccCosting:
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.component
     def test_solution(self, model):
         # CO2 rich outlet
         assert pytest.approx(81.1308, abs=1e-4) == value(

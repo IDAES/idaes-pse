@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -50,6 +50,7 @@ from pyomo.environ import (
 )
 from pyomo.common.config import ConfigDict, ConfigValue, In
 from pyomo.contrib.incidence_analysis import solve_strongly_connected_components
+from pyomo.common.deprecation import deprecated
 
 # Import IDAES cores
 from idaes.core import (
@@ -97,6 +98,12 @@ from idaes.models.properties.modular_properties.eos.ceos_common import (
 _log = idaeslog.getLogger(__name__)
 
 
+@deprecated(
+    msg="The standalone cubic property package has been deprecated in favor of the "
+    "cubic equation of state for the modular property framework. This class will be "
+    "removed in the May 2025 release.",
+    version="2.7.0",
+)
 @declare_process_block_class("CubicParameterBlock")
 class CubicParameterData(PhysicalParameterBlock):
     """
@@ -222,6 +229,12 @@ conditions, and thus corresponding constraints  should be included,
         )
 
 
+@deprecated(
+    msg="The standalone cubic property package has been deprecated in favor of the "
+    "cubic equation of state for the modular property framework. This class will be "
+    "removed in the May 2025 release.",
+    version="2.7.0",
+)
 class CubicEoSInitializer(InitializerBase):
     """
     Initializer for CubicEoS property packages.
@@ -247,7 +260,7 @@ class CubicEoSInitializer(InitializerBase):
     CONFIG.declare(
         "solver",
         ConfigValue(
-            default=None,
+            default="ipopt_v2",
             description="Solver to use for initialization",
         ),
     )
@@ -256,6 +269,13 @@ class CubicEoSInitializer(InitializerBase):
         ConfigDict(
             implicit=True,
             description="Dict of options to pass to solver",
+        ),
+    )
+    CONFIG.declare(
+        "solver_writer_config",
+        ConfigDict(
+            implicit=True,
+            description="Dict of writer_config arguments to pass to solver",
         ),
     )
     CONFIG.declare(
@@ -297,7 +317,11 @@ class CubicEoSInitializer(InitializerBase):
         )
 
         # Create solver object
-        solver_obj = get_solver(self.config.solver, self.config.solver_options)
+        solver_obj = get_solver(
+            solver=self.config.solver,
+            solver_options=self.config.solver_options,
+            writer_config=self.config.solver_writer_config,
+        )
 
         init_log.info("Starting initialization routine")
 

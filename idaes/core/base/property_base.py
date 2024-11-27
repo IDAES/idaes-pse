@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -592,6 +592,14 @@ should be constructed in this state block,
         # TODO: Should refactor parent so this is not private
         # pylint: disable-next=protected-access
         return self.parent_component()._include_inherent_reactions()
+
+    @property
+    def default_initializer(self):
+        return self.parent_component().default_initializer
+
+    @property
+    def default_scaler(self):
+        return self.parent_component().default_scaler
 
     def build(self):
         """

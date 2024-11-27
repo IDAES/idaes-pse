@@ -132,7 +132,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+        python-version: ['3.9', '3.10', '3.11', '3.12']
         os:
           - linux
           - win64
@@ -149,6 +149,7 @@ jobs:
         with:
           activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
           python-version: ${{ matrix.python-version }}
+          miniforge-version: latest
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
         with:
@@ -169,7 +170,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+        python-version: ['3.9', '3.10', '3.11', '3.12']
         os:
           - linux
           - win64
@@ -186,6 +187,7 @@ jobs:
         with:
           activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
           python-version: ${{ matrix.python-version }}
+          miniforge-version: latest
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
         with:
@@ -226,9 +228,9 @@ jobs:
           - install-mode: pip-default
             pip-install-target: '.'
           - install-mode: pip-complete
-            pip-install-target: .[ui,dmf,grid]
+            pip-install-target: .[ui,grid]
           - install-mode: pip-all
-            pip-install-target: .[ui,dmf,grid,omlt,coolprop]
+            pip-install-target: .[ui,grid,omlt,coolprop]
           - install-mode: conda-like
             pip-install-target: '.'
             dependencies-to-uninstall: omlt
@@ -239,13 +241,14 @@ jobs:
         with:
           activate-environment: idaes-env
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
+          miniforge-version: latest
       - name: Set up idaes (non-editable installation)
         uses: ./.github/actions/setup-idaes
         with:
           install-target: ${{ matrix.pip-install-target }}
       - name: Remove dependencies installable with pip but not with conda
         # NOTE some dependencies that are installed by default with pip are not available through conda
-        # so they're not installed if IDAES is installed with `conda -c conda-forge -c IDAES-PSE idaes-pse`
+        # so they're not installed if IDAES is installed with `conda -c conda-forge idaes-pse`
         # to ensure this scenario is handled properly, since we don't have (yet) the conda-build process integrated with the CI,
         # we manually remove the "pip-but-not-conda" dependencies after installing with pip
         # as an approximation of the enviroment that we'd get from `conda install`

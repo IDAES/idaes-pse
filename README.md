@@ -14,14 +14,14 @@ scale-up, operation and troubleshooting of innovative, advanced energy systems.
 [![GitHub contributors](https://img.shields.io/github/contributors/IDAES/idaes-pse.svg)](https://github.com/IDAES/idaes-pse/graphs/contributors)
 [![Merged PRs](https://img.shields.io/github/issues-pr-closed-raw/IDAES/idaes-pse.svg?label=merged+PRs)](https://github.com/IDAES/idaes-pse/pulls?q=is:pr+is:merged)
 [![Issue stats](http://isitmaintained.com/badge/resolution/IDAES/idaes-pse.svg)](http://isitmaintained.com/project/IDAES/idaes-pse)
-[![Downloads](https://pepy.tech/badge/idaes-pse)](https://pepy.tech/project/idaes-pse)
+[![Downloads](https://static.pepy.tech/badge/idaes-pse)](https://pepy.tech/project/idaes-pse)
 <!-- END Status badges -->
 
 ## Getting Started
 
 Our [complete documentation is online](https://idaes-pse.readthedocs.io/en/stable/) but here is a summarized set of steps to get started using the framework. For help and assistance, please visit the [IDAES PSE Discussions Board](https://github.com/IDAES/idaes-pse/discussions).
 
-While not required, we encourage the installation of [Anaconda](https://www.anaconda.com/products/individual#Downloads) or [Miniconda](https://docs.conda.io/en/latest/miniconda.html) and using the `conda` command to create a separate python environment in which to install the IDAES Toolkit.
+While not required, we encourage the installation of [Miniforge](https://conda-forge.org/miniforge/) with which you can use the `conda` command to create a separate python environment in which to install the IDAES Toolkit.
 
 Use conda to create a new "idaes-pse" (could be any name you like) environment then activate that environment:
 ```bash
@@ -37,7 +37,7 @@ pip install idaes-pse
 # install latest stable release with one set of optional dependencies, e.g. `ui` for the user interface
 pip install "idaes-pse[ui]"
 # install latest stable release with multiple sets of optional dependencies
-pip install "idaes-pse[ui,dmf,omlt,grid,coolprop]"
+pip install "idaes-pse[ui,omlt,grid,coolprop]"
 # install latest version from the main branch of this repository
 pip install "idaes-pse @ git+https://github.com/IDAES/idaes-pse@main"
 # install from the `mybranch` branch of the fork belonging to `myuser`
@@ -82,11 +82,13 @@ Most of the functionality is implemented in Python. In accordance with
 the end-of-life for many Python 2 libraries, the IDAES Toolkit is written
 for Python 3. The following sub-versions are supported:
 
-* Python 3.8
 * Python 3.9
 * Python 3.10
 * Python 3.11
 * Python 3.12
+
+> [!IMPORTANT]
+> Note that Python 3.8 is no longer officially supported.
 
 ## Contacts and more information
 
