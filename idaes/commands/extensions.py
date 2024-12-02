@@ -262,7 +262,10 @@ def bin_platform(distro):
         )
         click.echo(idaes.commands.util.download_bin._get_release_platform(platform))
     except idaes.commands.util.download_bin.UnsupportedPlatformError:
-        click.echo(f"No supported binaries found for {platform}.")
+        click.echo(
+            f"No supported binaries found for {platform}. "
+            f"Use the command 'idaes get-extensions --info' to see supported platforms"
+        )
 
 
 @cb.command(name="extensions-license", help="show license info for binary extensions")

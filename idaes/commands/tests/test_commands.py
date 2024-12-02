@@ -19,6 +19,7 @@ import json
 import logging
 import os
 from pathlib import Path
+import re
 from shutil import rmtree
 import subprocess
 import sys
@@ -126,9 +127,12 @@ def test_get_extensions_plat(runner):
 
 @pytest.mark.integration
 def test_get_extensions_bad_plat(runner):
-    result = runner.invoke(extensions.bin_platform, ["--distro", "johns_good_linux42"])
+    platform_name = "johns_good_linux42"
+    result = runner.invoke(extensions.bin_platform, ["--distro", platform_name])
     assert result.exit_code == 0
-    assert result.output == "No supported binaries found for johns_good_linux42.\n"
+    for expr in (r"[Nn]o.*found.*" + platform_name, r"command.*--info"):
+        m = re.search(expr, result.output)
+        assert m, f"Could not find in bad platform output: '{expr}'"
 
 
 @pytest.mark.integration
