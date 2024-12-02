@@ -175,6 +175,8 @@ def get_extensions(
     extra,
     to,
 ):
+    """Main sub-command."""
+    cmd_name = "idaes get-extensions"
     if info:
         print_build_info()
         return
@@ -205,7 +207,10 @@ def get_extensions(
             click.echo("")
             click.echo(e)
             click.echo("")
-            click.echo("Specify an os with --distro <os>:")
+            click.echo(
+                f"Use the command '{cmd_name} --distro <os>' to specify an OS distribution\n"
+                f"Use the command '{cmd_name} --info' to see supported platforms"
+            )
             return
         if no_download:
             for k, i in d.items():
