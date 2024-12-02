@@ -137,6 +137,12 @@ def test_extensions_license(runner):
     assert result.exit_code == 0
 
 
+@pytest.mark.integration
+def test_extensions_info(runner):
+    result = runner.invoke(extensions.get_extensions, ["--info"])
+    assert result.exit_code == 0
+
+
 ###########
 # config  #
 ###########
