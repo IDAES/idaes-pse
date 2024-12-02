@@ -98,7 +98,7 @@ def print_build_info():
     ):
         print(f"\n{name} aliases:")
         rmap = defaultdict(list)
-        {rmap[v].append(k) for k, v in data.items()}
+        _ = {rmap[v].append(k) for k, v in data.items()}
         w = max((len(name) for name in rmap))
         name_fmt = f"{{name:>{w}s}}"
         for name in sorted(rmap.keys()):
