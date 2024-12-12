@@ -27,6 +27,7 @@ Unit Models
     skeleton_unit
     statejunction
     stoichiometric_reactor
+    stream_scaler
     translator
     turbine
     valve

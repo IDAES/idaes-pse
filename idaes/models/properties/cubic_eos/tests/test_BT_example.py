@@ -26,6 +26,7 @@ from pyomo.environ import (
 )
 from pyomo.util.check_units import assert_units_consistent
 
+import idaes.logger as idaeslog
 from idaes.models.properties.tests.test_harness import PropertyTestHarness
 from idaes.core.solvers import get_solver
 
@@ -76,12 +77,13 @@ class TestBasicV(PropertyTestHarness):
 @pytest.mark.skipif(not prop_available, reason="Cubic root finder not available")
 class TestBTExample(object):
     @pytest.mark.component
-    def test_units(self):
+    def test_units(self, caplog):
         m = ConcreteModel()
-
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.props = BT_PR.BTParameterBlock(valid_phase=("Vap", "Liq"))
+        with caplog.at_level(idaeslog.WARNING):
+            m.fs.props = BT_PR.BTParameterBlock(valid_phase=("Vap", "Liq"))
+        assert "May 2025 release." in caplog.text
 
         m.fs.state = m.fs.props.build_state_block([0], defined_state=True)
 
