@@ -100,6 +100,13 @@ from idaes.core.util.model_statistics import (
     deactivated_objectives_set,
     variables_in_activated_constraints_set,
     variables_not_in_activated_constraints_set,
+    number_activated_greybox_equalities,
+    number_deactivated_greybox_equalities,
+    activated_greybox_block_set,
+    deactivated_greybox_block_set,
+    greybox_block_set,
+    unfixed_greybox_variables,
+    greybox_variables,
     degrees_of_freedom,
     large_residuals_set,
     variables_near_bounds_set,
@@ -486,7 +493,10 @@ class DiagnosticsToolbox:
                 "model argument must be an instance of a Pyomo BlockData object "
                 "(either a scalar Block or an element of an indexed Block)."
             )
-
+        if len(greybox_block_set(model)) != 0:
+            raise NotImplementedError(
+                "Model contains Greybox models, which are not supported by Diagnostics toolbox at the moment"
+            )
         self._model = model
         self.config = CONFIG(kwargs)
 
@@ -1746,7 +1756,12 @@ class DiagnosticsToolbox:
 
         # Potential evaluation errors
         # TODO: High Index?
+        if len(greybox_block_set(self._model)) != 0:
+            raise NotImplementedError(
+                "Model contains Greybox models, which are not supported by Diagnostics toolbox at the moment"
+            )
         stats = _collect_model_statistics(self._model)
+
         warnings, next_steps = self._collect_structural_warnings()
         cautions = self._collect_structural_cautions()
 
@@ -1790,7 +1805,6 @@ class DiagnosticsToolbox:
         """
         if stream is None:
             stream = sys.stdout
-
         jac, nlp = get_jacobian(self._model, scaled=False)
 
         warnings, next_steps = self._collect_numerical_warnings(jac=jac, nlp=nlp)
@@ -1935,7 +1949,10 @@ class SVDToolbox:
                 "model argument must be an instance of a Pyomo BlockData object "
                 "(either a scalar Block or an element of an indexed Block)."
             )
-
+        if len(greybox_block_set(model)) != 0:
+            raise NotImplementedError(
+                "Model contains Greybox models, which are not supported by Diagnostics toolbox at the moment"
+            )
         self._model = model
         self.config = SVDCONFIG(kwargs)
 
@@ -2377,7 +2394,10 @@ class DegeneracyHunter2:
                 "model argument must be an instance of a Pyomo BlockData object "
                 "(either a scalar Block or an element of an indexed Block)."
             )
-
+        if len(greybox_block_set(model)) != 0:
+            raise NotImplementedError(
+                "Model contains Greybox models, which are not supported by Diagnostics toolbox at the moment"
+            )
         self._model = model
         self.config = DHCONFIG(kwargs)
 
@@ -3475,7 +3495,10 @@ class IpoptConvergenceAnalysis:
                 "model argument must be an instance of a Pyomo BlockData object "
                 "(either a scalar Block or an element of an indexed Block)."
             )
-
+        if len(greybox_block_set(model)) != 0:
+            raise NotImplementedError(
+                "Model contains Greybox models, which are not supported by Diagnostics toolbox at the moment"
+            )
         self.config = self.CONFIG(kwargs)
 
         self._model = model
@@ -4402,8 +4425,8 @@ def _collect_model_statistics(model):
         f"(External: {len(ext_fixed_vars_in_constraints)})"
     )
     stats.append(
-        f"{TAB}Activated Equality Constraints: {len(activated_equalities_set(model))} "
-        f"(Deactivated: {len(deactivated_equalities_set(model))})"
+        f"{TAB}Activated Equality Constraints: {len(activated_equalities_set(model))+number_activated_greybox_equalities(model)} "
+        f"(Deactivated: {len(deactivated_equalities_set(model))+number_deactivated_greybox_equalities(model)})"
     )
     stats.append(
         f"{TAB}Activated Inequality Constraints: {len(activated_inequalities_set(model))} "
@@ -4413,6 +4436,21 @@ def _collect_model_statistics(model):
         f"{TAB}Activated Objectives: {len(activated_objectives_set(model))} "
         f"(Deactivated: {len(deactivated_objectives_set(model))})"
     )
+
+    # Only show graybox info if they are present
+    if len(greybox_block_set(model)) != 0:
+        stats.append(f"{TAB}GreyBox Statistics")
+        stats.append(
+            f"{TAB* 2}Activated GreyBox models: {len(activated_greybox_block_set(model))} "
+            f"(Deactivated: {len(deactivated_greybox_block_set(model))})"
+        )
+        stats.append(
+            f"{TAB* 2}Activated GreyBox Equalities: {number_activated_greybox_equalities(model)} "
+            f"(Deactivated: {number_deactivated_greybox_equalities(model)})"
+        )
+        stats.append(
+            f"{TAB* 2}Free Variables in Activated GreyBox Equalities: {len(unfixed_greybox_variables(model))} (Fixed: {len(greybox_variables(model)-unfixed_greybox_variables(model))})"
+        )
 
     return stats
 
