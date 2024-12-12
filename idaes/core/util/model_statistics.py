@@ -188,7 +188,7 @@ def number_deactivated_greybox_block(block):
 
 def number_greybox_blocks(block):
     """
-    Function to return a Number of activated Greybox Blocks components in a
+    Function to return a number of Greybox Blocks components in a
     model.
 
     Args:
