@@ -33,9 +33,9 @@ class Test5Bus:
         # we need to specify __init__.py as a workaround for Python 3.9,
         # where importlib.resources.path() requires the resource to be a file
         # directories are not supported and will raise an error if attempted
-        fname = "idaes.tests.prescient.5bus"
-        py_fname = "__init__.py"
-        with as_file(files(fname).joinpath(py_fname)) as pkg_file:
+        with as_file(
+            files("idaes.tests.prescient.5bus").joinpath("__init__.py")
+        ) as pkg_file:
             prescient_5bus = Path(pkg_file).parent
 
     @pytest.mark.unit

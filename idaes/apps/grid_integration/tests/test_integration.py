@@ -50,12 +50,10 @@ class TestDoubleLoopIntegration:
         # we need to specify __init__.py as a workaround for Python 3.9,
         # where importlib.resources.path() requires the resource to be a file
         # directories are not supported and will raise an error if attempted
-        
-        fname = "idaes.tests.prescient.5bus"
-        py_fname = "__init__.py"
-        with as_file(files(fname).joinpath(py_fname)) as pkg_file:
+        with as_file(
+            files("idaes.tests.prescient.5bus").joinpath("__init__.py")
+        ) as pkg_file:
             prescient_5bus = Path(pkg_file).parent
-
 
     @pytest.mark.unit
     def test_data_path_available(self, data_path: Path):
@@ -75,9 +73,11 @@ class TestDoubleLoopIntegration:
 
     @pytest.fixture
     def self_scheduler_plugin_path(self) -> Path:
-        fname = "idaes.apps.grid_integration.tests"
-        py_fname = "self_scheduler_integration_test_plugin.py"
-        with as_file(files(fname).joinpath(py_fname)) as p:
+        with as_file(
+            files("idaes.apps.grid_integration.tests").joinpath(
+                "self_scheduler_integration_test_plugin.py"
+            )
+        ) as p:
             return Path(p)
 
     @pytest.mark.unit
