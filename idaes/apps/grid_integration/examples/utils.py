@@ -19,7 +19,7 @@ import pandas as pd
 
 
 with resources.as_file(
-    files("idaes.tests.prescient.5bus").joinpath("__init__.py")
+    resources.files("idaes.tests.prescient.5bus").joinpath("__init__.py")
 ) as pkg_file:
     prescient_5bus = Path(pkg_file).parent
 
