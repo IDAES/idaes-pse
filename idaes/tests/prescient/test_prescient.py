@@ -11,7 +11,7 @@
 # for full copyright and license information.
 #################################################################################
 
-from importlib.resources import files, as_file
+from importlib import resources
 from numbers import Number
 from pathlib import Path
 from typing import Dict, Union
@@ -33,8 +33,8 @@ class Test5Bus:
         # we need to specify __init__.py as a workaround for Python 3.9,
         # where importlib.resources.path() requires the resource to be a file
         # directories are not supported and will raise an error if attempted
-        with as_file(
-            files("idaes.tests.prescient.5bus").joinpath("__init__.py")
+        with resources.as_file(
+            resources.files("idaes.tests.prescient.5bus").joinpath("__init__.py")
         ) as pkg_file:
             prescient_5bus = Path(pkg_file).parent
 

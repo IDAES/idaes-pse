@@ -11,7 +11,7 @@
 # for full copyright and license information.
 #################################################################################
 
-from importlib.resources import as_file, files
+from importlib import resources
 from pathlib import Path
 import os
 
