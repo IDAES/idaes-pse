@@ -51,7 +51,9 @@ class TestDoubleLoopIntegration:
         # where importlib.resources.path() requires the resource to be a file
         # directories are not supported and will raise an error if attempted
         
-        with as_file(files("idaes.tests.prescient.5bus").joinpath("__init__.py")) as pkg_file:
+        fname = "idaes.tests.prescient.5bus"
+        py_fname = "__init__.py"
+        with as_file(files(fname).joinpath(py_fname)) as pkg_file:
             prescient_5bus = Path(pkg_file).parent
 
 
@@ -73,7 +75,9 @@ class TestDoubleLoopIntegration:
 
     @pytest.fixture
     def self_scheduler_plugin_path(self) -> Path:
-        with as_file(files("idaes.apps.grid_integration.tests").joinpath("self_scheduler_integration_test_plugin.py")) as p:
+        fname = "idaes.apps.grid_integration.tests"
+        py_fname = "self_scheduler_integration_test_plugin.py"
+        with as_file(files(fname).joinpath(py_fname)) as p:
             return Path(p)
 
     @pytest.mark.unit
