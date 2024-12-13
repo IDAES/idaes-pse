@@ -11,14 +11,14 @@
 # for full copyright and license information.
 #################################################################################
 
-from importlib import resources
+from importlib.resources import as_file, files
 from pathlib import Path
 import os
 
 import pandas as pd
 
 
-with resources.as_file(resources.files("idaes.tests.prescient.5bus").joinpath("__init__.py")) as pkg_file:
+with as_file(files("idaes.tests.prescient.5bus").joinpath("__init__.py")) as pkg_file:
     prescient_5bus = Path(pkg_file).parent
 
 # rts_gmlc_generator_dataframe = pd.read_csv("gen.csv")
