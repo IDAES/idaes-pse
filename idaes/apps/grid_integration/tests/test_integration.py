@@ -77,11 +77,6 @@ class TestDoubleLoopIntegration:
 
     @pytest.fixture
     def self_scheduler_plugin_path(self) -> Path:
-        # with resources.path(
-        #     "idaes.apps.grid_integration.tests",
-        #     "self_scheduler_integration_test_plugin.py",
-        # ) as p:
-        #     return Path(p)
         with resources.as_file(resources.files("idaes.apps.grid_integration.tests").joinpath("self_scheduler_integration_test_plugin.py")) as p:
             return Path(p)
 

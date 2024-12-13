@@ -18,9 +18,6 @@ import os
 import pandas as pd
 
 
-# with resources.path("idaes.tests.prescient.5bus", "__init__.py") as pkg_file:
-#     prescient_5bus = Path(pkg_file).parent
-
 with resources.as_file(resources.files("idaes.tests.prescient.5bus").joinpath("__init__.py")) as pkg_file:
     prescient_5bus = Path(pkg_file).parent
 
