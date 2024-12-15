@@ -11,6 +11,12 @@
 # for full copyright and license information.
 #################################################################################
 
+# TODO:
+# 1. export_to_ui collocation_points and finite_elements need to be conditional render based on transformation_method
+# 2. Optimization confusing user need add one option simulation
+# 3. Question Generally missing: Costing metrics (Alex Noring added them)
+# 4. Build out graph (go run Jupyter at TSA0D model last step)
+
 """
 UI exports for 0D Fixed Bed TSA unit model.
 """
@@ -40,7 +46,7 @@ from idaes.models_extra.temperature_swing_adsorption.util import (
 _log = idaes_log.getLogger(__name__)
 
 model_name = "0D Fixed Bed TSA"
-model_name_for_ui = f"0D Fixed Bed TSA - {datetime.now()}"
+model_name_for_ui = f"0D Fixed Bed TSA"
 unit_name = "FixedBedTSA0D"
 
 
@@ -93,16 +99,19 @@ def export_to_ui() -> api.FlowsheetInterface:
                 "value": "lagrangeRadau",
                 "category": unit_name,
             },
-            "finite_elements": {
-                "name": "finite_elements",
-                "display_name": "Number of Finite Elements",
-                "description": "Number of finite elements to use when discretizing time domain",
-                "min_val": 0,
-                "max_val": 10000,
-                "value": 20,
-                "values_allowed": "int",
-                "category": unit_name,
-            },
+            # TODO This parts need to conditional render based on transformation_method
+            # TODO: this is only show when dae.finite_difference is selected
+            # "finite_elements": {
+            #     "name": "finite_elements",
+            #     "display_name": "Number of Finite Elements",
+            #     "description": "Number of finite elements to use when discretizing time domain",
+            #     "min_val": 0,
+            #     "max_val": 10000,
+            #     "value": 20,
+            #     "values_allowed": "int",
+            #     "category": unit_name,
+            # },
+            # TODO: this only show when dae.collocation is selected
             "collocation_points": {
                 "name": "collocation_points",
                 "display_name": "Collocation Points",
@@ -124,19 +133,31 @@ def build(build_options=None, **kwargs):
 
     unit_opt = {k: v for k, v in build_options.items() if v.category == unit_name}
 
-    m.fs.tsa = FixedBedTSA0D(
-        adsorbent=Adsorbent[unit_opt["adsorbent"].value],  # Use zeolite_13x
-        number_of_beds=unit_opt["number_of_beds"].value,  # Set to 1
-        transformation_method=unit_opt[
+    # build args for m.fs.tsa
+    tsa_params = {
+        "adsorbent": Adsorbent[unit_opt["adsorbent"].value],  # Use zeolite_13x
+        "number_of_beds": unit_opt["number_of_beds"].value,  # Set to 1
+        "transformation_method": unit_opt[
             "transformation_method"
         ].value,  # Use dae.collocation
-        transformation_scheme=unit_opt[
+        "transformation_scheme": unit_opt[
             "transformation_scheme"
         ].value,  # default Use lagrangeRadau
-        finite_elements=unit_opt["finite_elements"].value,  # Set to 20
-        collocation_points=unit_opt["collocation_points"].value,  # Set to 6
-        steam_calculation=SteamCalculationType.none,
-    )
+        "steam_calculation": SteamCalculationType.none,
+    }
+
+    # Conditional parameters collocation_points base on transformation_method is dae.collocation
+    if (
+        "collocation_points" in unit_opt
+        and unit_opt["collocation_points"].value is not None
+    ):
+        tsa_params["collocation_points"] = unit_opt["collocation_points"].value
+
+    # Conditional parameters finite_elements base on transformation_method is dae.finite_difference
+    if "finite_elements" in unit_opt and unit_opt["finite_elements"].value is not None:
+        tsa_params["finite_elements"] = unit_opt["finite_elements"].value
+
+    m.fs.tsa = FixedBedTSA0D(**tsa_params)
 
     flue_gas = {
         "flow_mol_comp": {
@@ -184,6 +205,19 @@ def export(flowsheet=None, exports=None, build_options=None, **kwargs):
             is_output=True,
         )
 
+    # Feed
+    exports.add(
+        obj=fs.tsa.inlet.pressure[0],
+        name="Pressure",
+        ui_units=units.Pa,
+        display_units="Pa",
+        rounding=1,
+        input_category="Feed",
+        output_category="Feed",
+        is_input=True,
+        is_output=True,
+    )
+
     exports.add(
         obj=fs.tsa.inlet.temperature[0],
         name="Temperature",
@@ -209,7 +243,7 @@ def export(flowsheet=None, exports=None, build_options=None, **kwargs):
     )
     exports.add(
         obj=fs.tsa.bed_diameter,
-        name="Column diameter",
+        name="Bed diameter",  # column diameter from original model
         ui_units=units.m,
         display_units="m",
         rounding=6,
@@ -220,7 +254,7 @@ def export(flowsheet=None, exports=None, build_options=None, **kwargs):
     )
     exports.add(
         obj=fs.tsa.bed_height,
-        name="Column length",
+        name="Bed length",  # column length from original model
         ui_units=units.m,
         display_units="m",
         rounding=6,
@@ -278,7 +312,7 @@ def export(flowsheet=None, exports=None, build_options=None, **kwargs):
 
     exports.add(
         obj=fs.tsa.bed_volume,
-        name="Column volume",
+        name="Bed volume",  # column volume from original model
         ui_units=units.m**3,
         display_units="m3",
         rounding=8,
@@ -305,7 +339,7 @@ def export(flowsheet=None, exports=None, build_options=None, **kwargs):
         rounding=6,
         input_category="Operating Parameters",
         output_category="Operating Parameters",
-        is_input=True,
+        is_input=False,
         is_output=True,
     )
 
@@ -329,56 +363,7 @@ def export(flowsheet=None, exports=None, build_options=None, **kwargs):
         rounding=4,
         input_category="Operating Parameters",
         output_category="Operating Parameters",
-        is_input=True,
-        is_output=True,
-    )
-
-    # Time steps
-    exports.add(
-        obj=fs.tsa.heating.time,  # Time of heating step
-        name="Time of heating step",
-        ui_units=units.h,
-        display_units="h",
-        rounding=6,
-        input_category="Operating Parameters",
-        output_category="Operating Parameters",
-        is_input=True,
-        is_output=True,
-    )
-
-    exports.add(
-        obj=fs.tsa.cooling.time,  # Time of cooling step
-        name="Time of cooling step",
-        ui_units=units.h,
-        display_units="h",
-        rounding=5,
-        input_category="Operating Parameters",
-        output_category="Operating Parameters",
-        is_input=True,
-        is_output=True,
-    )
-
-    exports.add(
-        obj=fs.tsa.pressurization.time,  # Time of pressurization step
-        name="Time of pressurization step",
-        ui_units=units.h,
-        display_units="h",
-        rounding=7,
-        input_category="Operating Parameters",
-        output_category="Operating Parameters",
-        is_input=True,
-        is_output=True,
-    )
-
-    exports.add(
-        obj=fs.tsa.adsorption.time,  # Time of adsorption step
-        name="Time of adsorption step",
-        ui_units=units.h,
-        display_units="h",
-        rounding=5,
-        input_category="Operating Parameters",
-        output_category="Operating Parameters",
-        is_input=True,
+        is_input=False,
         is_output=True,
     )
 
@@ -390,7 +375,7 @@ def export(flowsheet=None, exports=None, build_options=None, **kwargs):
         rounding=6,
         input_category="Operating Parameters",
         output_category="Operating Parameters",
-        is_input=True,
+        is_input=False,
         is_output=True,
     )
 
@@ -403,7 +388,7 @@ def export(flowsheet=None, exports=None, build_options=None, **kwargs):
         rounding=1,
         input_category="Operating Parameters",
         output_category="Operating Parameters",
-        is_input=True,
+        is_input=False,
         is_output=True,
     )
 
@@ -416,7 +401,7 @@ def export(flowsheet=None, exports=None, build_options=None, **kwargs):
         rounding=5,
         input_category="Performance Metrics",
         output_category="Performance Metrics",
-        is_input=True,
+        is_input=False,
         is_output=True,
     )
 
@@ -426,18 +411,6 @@ def export(flowsheet=None, exports=None, build_options=None, **kwargs):
         ui_units=units.dimensionless,
         display_units="-",
         rounding=5,
-        input_category="Performance Metrics",
-        output_category="Performance Metrics",
-        is_input=True,
-        is_output=True,
-    )
-
-    exports.add(
-        obj=fs.tsa.productivity,
-        name="Productivity",
-        ui_units=units.kg / units.metric_ton / units.h,
-        display_units="kg CO2/ton/h",
-        rounding=3,
         input_category="Performance Metrics",
         output_category="Performance Metrics",
         is_input=False,
@@ -452,16 +425,17 @@ def export(flowsheet=None, exports=None, build_options=None, **kwargs):
         rounding=4,
         input_category="Performance Metrics",
         output_category="Performance Metrics",
-        is_input=True,
+        is_input=False,
         is_output=True,
     )
 
     exports.add(
-        obj=fs.tsa.heat_duty_bed,
-        name="Heat duty per bed",
-        ui_units=units.MJ / units.seconds,
-        display_units="MW",
-        rounding=9,
+        obj=fs.tsa.productivity,
+        name="Productivity",
+        ui_units=units.kg / units.metric_ton / units.h,
+        display_units="kg CO2/ton/h",
+        rounding=3,
+        input_category="Performance Metrics",
         output_category="Performance Metrics",
         is_input=False,
         is_output=True,
@@ -485,51 +459,6 @@ def export(flowsheet=None, exports=None, build_options=None, **kwargs):
         ui_units=units.kg,
         display_units="kg/cycle",
         rounding=6,
-        output_category="Performance Metrics",
-        is_input=False,
-        is_output=True,
-    )
-
-    exports.add(
-        obj=fs.tsa.cycles_year,
-        name="Cycles per year",
-        ui_units=1 / units.year,
-        display_units="cycles/year",
-        rounding=1,
-        output_category="Performance Metrics",
-        is_input=False,
-        is_output=True,
-    )
-
-    exports.add(
-        obj=fs.tsa.total_CO2_captured_year,  # Total CO2 captured per year
-        name="Total CO2 captured per year",
-        ui_units=units.tonne / units.year,
-        display_units="tonne/year",
-        rounding=4,
-        output_category="Performance Metrics",
-        is_input=False,
-        is_output=True,
-    )
-
-    # Flue Gas Processing
-    exports.add(
-        obj=fs.tsa.flue_gas_processed_year,
-        name="Amount of flue gas processed per year",
-        ui_units=units.Gmol / units.year,  # Gmol/year
-        display_units="Gmol/year",
-        rounding=8,
-        output_category="Performance Metrics",
-        is_input=False,
-        is_output=True,
-    )
-
-    exports.add(
-        obj=fs.tsa.flue_gas_processed_year_target,
-        name="Amount of flue gas processed per year (target)",
-        ui_units=units.Gmol / units.year,
-        display_units="Gmol/year",
-        rounding=8,
         output_category="Performance Metrics",
         is_input=False,
         is_output=True,
