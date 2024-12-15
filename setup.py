@@ -97,7 +97,10 @@ kwargs = dict(
     entry_points={
         "console_scripts": [
             "idaes = idaes.commands.base:command_base",
-        ]
+        ],
+        "idaes.flowsheets": [
+            "0D Fixed Bed TSA = idaes.models_extra.temperature_swing_adsorption.fixed_bed_tsa0d_ui",
+        ],
     },
     # Only installed if [<key>] is added to package name
     extras_require=dict(ExtraDependencies()),
