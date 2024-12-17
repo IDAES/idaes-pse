@@ -11,13 +11,13 @@
 # for full copyright and license information.
 #################################################################################
 
-import logging
 from pyomo.environ import Binary, Param, Var
 from pyomo.common.config import Bool, ConfigDict, ConfigValue
 from idaes.core.base.process_base import declare_process_block_class
 from idaes.core.base.process_base import ProcessBlockData
+import idaes.logger as idaeslog
 
-_logger = logging.getLogger(__name__)
+_logger = idaeslog.getLogger(__name__)
 
 
 # pylint: disable = attribute-defined-outside-init, too-many-ancestors

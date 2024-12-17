@@ -192,3 +192,22 @@ def DefaultBool(arg):
         return arg
     else:
         return Bool(arg)
+
+
+def is_in_range(lb, ub):
+    """
+    Domain validator for 1D compact sets.
+
+    Args:
+        lb: float, lower bound
+        ub: float, upper bound
+    """
+
+    def _in_range(val):
+        if lb <= val <= ub:
+            return val
+        raise ConfigurationError(
+            f"Value {val} lies outside the admissible range {[lb, ub]}"
+        )
+
+    return _in_range

@@ -36,6 +36,7 @@ from idaes.core.util.config import (
     is_transformation_method,
     is_transformation_scheme,
     DefaultBool,
+    is_in_range,
 )
 from idaes.core.util.exceptions import ConfigurationError
 
@@ -219,3 +220,21 @@ def test_DefaultBool():
     assert not DefaultBool(False)
     with pytest.raises(ValueError):
         DefaultBool("foo")
+
+
+@pytest.mark.unit
+def test_is_in_range():
+    assert is_in_range(0, 1)(0) == 0
+    assert is_in_range(0, 1)(1) == 1
+    assert is_in_range(0, 1)(0.5) == 0.5
+    with pytest.raises(
+        ConfigurationError,
+        match="Value -1 lies outside the admissible range \\[0, 1\\]"
+    ):
+        is_in_range(0, 1)(-1)
+
+    with pytest.raises(
+        ConfigurationError,
+        match="Value 2 lies outside the admissible range \\[0, 1\\]"
+    ):
+        is_in_range(0, 1)(2)
