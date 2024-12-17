@@ -32,6 +32,7 @@ def startup_shutdown_constraints(
     """
     Appends startup and shutdown constraints for a given unit/process
     """
+
     @blk.Constraint(set_time)
     def binary_relationship_con(_, t):
         if t == 1:
@@ -97,9 +98,7 @@ def ramping_limits(
     """
     Appends ramping constraints
     """
-    ramping_var = {
-        t: getattr(blk, ramping_var) for t, blk in op_blocks.items()
-    }
+    ramping_var = {t: getattr(blk, ramping_var) for t, blk in op_blocks.items()}
 
     @blk.Constraint(set_time)
     def ramp_up_con(_, t):

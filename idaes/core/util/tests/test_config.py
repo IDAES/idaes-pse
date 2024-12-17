@@ -229,12 +229,11 @@ def test_is_in_range():
     assert is_in_range(0, 1)(0.5) == 0.5
     with pytest.raises(
         ConfigurationError,
-        match="Value -1 lies outside the admissible range \\[0, 1\\]"
+        match="Value -1 lies outside the admissible range \\[0, 1\\]",
     ):
         is_in_range(0, 1)(-1)
 
     with pytest.raises(
-        ConfigurationError,
-        match="Value 2 lies outside the admissible range \\[0, 1\\]"
+        ConfigurationError, match="Value 2 lies outside the admissible range \\[0, 1\\]"
     ):
         is_in_range(0, 1)(2)

@@ -54,7 +54,7 @@ def generate_daily_data(raw_data: list, horizon_length: int):
         )
 
     daily_data = {
-        j: raw_data[((j - 1) * horizon_length):(j * horizon_length)]
+        j: raw_data[((j - 1) * horizon_length) : (j * horizon_length)]
         for j in range(1, (len(raw_data) // horizon_length) + 1)
     }
 
@@ -63,7 +63,9 @@ def generate_daily_data(raw_data: list, horizon_length: int):
     return pd.DataFrame(daily_data).transpose()
 
 
-def cluster_lmp_data(raw_data: list, n_clusters: int, horizon_length: int, seed: int = 42):
+def cluster_lmp_data(
+    raw_data: list, n_clusters: int, horizon_length: int, seed: int = 42
+):
     """
     Clusters the given price signal into n_clusters using the k-means clustering
     technique.
@@ -88,7 +90,7 @@ def cluster_lmp_data(raw_data: list, n_clusters: int, horizon_length: int, seed:
 
                     {1: {1: 4, 2: 3, 3: 5},
                     2: {1: 1, 2: 7, 3: 3}}
-                 
+
 
         weights: dict
             A dictionary of weights for each representative day, indexed the
@@ -111,9 +113,7 @@ def cluster_lmp_data(raw_data: list, n_clusters: int, horizon_length: int, seed:
         d + 1: {t + 1: centroids[d, t] for t in range(num_time_periods)}
         for d in range(num_days)
     }
-    weights = {
-        d + 1: sum(labels == d) for d in range(num_days)
-    }
+    weights = {d + 1: sum(labels == d) for d in range(num_days)}
 
     return lmp_data_clusters, weights
 

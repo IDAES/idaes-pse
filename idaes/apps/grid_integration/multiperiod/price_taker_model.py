@@ -285,14 +285,11 @@ class PriceTakerModel(ConcreteModel):
         """
         Returns a dictionary of operational blocks named 'blk_name'.
         In addition, it also checks the existence of the operational
-        blocks, and the existence of specified attributes. 
+        blocks, and the existence of specified attributes.
         """
         # pylint: disable=not-an-iterable
         op_blocks = {
-            d: {
-                t: self.period[d, t].find_component(blk_name)
-                for t in self.set_time
-            }
+            d: {t: self.period[d, t].find_component(blk_name) for t in self.set_time}
             for d in self.set_days
         }
 
@@ -303,9 +300,7 @@ class PriceTakerModel(ConcreteModel):
 
         # First, check for the existence of the operational block
         if blk is None:
-            raise AttributeError(
-                f"Operational block {blk_name} is not found."
-            )
+            raise AttributeError(f"Operational block {blk_name} is not found.")
 
         # Next, check for the existence of attributes.
         for attribute in attribute_list:
@@ -327,7 +322,7 @@ class PriceTakerModel(ConcreteModel):
         """
         Adds capacity limit constraints of the form:
             op_range_lb * capacity * op_mode(t) <= commodity(t) <= capacity * op_mode(t)
-            ex: 0.3 * P_max * op_mode(t) <= P(t) <= P_max * op_mode(t), 
+            ex: 0.3 * P_max * op_mode(t) <= P(t) <= P_max * op_mode(t),
                 where P(t) is power at time t and op_mode(t) = 1 if the system is operating
                 at time t; and op_mode(t) = 0, otherwise.
 
@@ -395,9 +390,9 @@ class PriceTakerModel(ConcreteModel):
         """
         Adds ramping constraints of the form:
 
-            ramping_var[t] - ramping_var[t-1] <= 
+            ramping_var[t] - ramping_var[t-1] <=
                 startup_rate * capacity * startup[t] + rampup_rate * capacity * op_mode[t-1]
-            
+
             ramping_var[t-1] - ramping_var[t] <=
                 shutdown_rate * capacity * shutdown[t] + rampdown_rate * capacity * op_mode[t]
 
@@ -444,7 +439,7 @@ class PriceTakerModel(ConcreteModel):
 
         op_blocks = self._get_operation_blocks(
             blk_name=op_block_name,
-            attribute_list=["op_mode", "startup", "shutdown", ramping_var_name]
+            attribute_list=["op_mode", "startup", "shutdown", ramping_var_name],
         )
 
         # Creating the pyomo block
@@ -493,7 +488,7 @@ class PriceTakerModel(ConcreteModel):
             up_time: int, default=1,
                 Total uptime (must be >= 1), e.g., 4 time periods
                 Uptime must include the minimum uptime and the time required
-                for shutdown. 
+                for shutdown.
 
             down_time: int, default=1,
                 Total downtime (must be >= 1), e.g., 4 time periods
@@ -505,7 +500,8 @@ class PriceTakerModel(ConcreteModel):
         self.config.down_time = down_time
 
         op_blocks = self._get_operation_blocks(
-            blk_name=op_block_name, attribute_list=["op_mode", "startup", "shutdown"],
+            blk_name=op_block_name,
+            attribute_list=["op_mode", "startup", "shutdown"],
         )
         if des_block_name is not None:
             install_unit = self.find_component(des_block_name + ".install_unit")
@@ -565,8 +561,8 @@ class PriceTakerModel(ConcreteModel):
             revenue_streams: List of strings representing the names of the
                 revenue streams, default: None
 
-                Example: :: 
-                
+                Example: ::
+
                     ['elec_revenue', 'H2_revenue', ]
 
             costs: List of strings representing the names of the
@@ -627,7 +623,8 @@ class PriceTakerModel(ConcreteModel):
 
             # Set net cash inflow expression
             self.period[p].net_hourly_cash_inflow = Expression(
-                expr=self.period[p].total_hourly_revenue - self.period[p].total_hourly_cost
+                expr=self.period[p].total_hourly_revenue
+                - self.period[p].total_hourly_cost
             )
 
         # Logger info for where constraint is located on the model
@@ -665,13 +662,13 @@ class PriceTakerModel(ConcreteModel):
                 Annualization factor
 
             cash_inflow_scale_factor: float, default=1.0,
-                Scaling factor for the sum of net hourly cashflows. 
-                If the specified price signal is for the full year, then the 
+                Scaling factor for the sum of net hourly cashflows.
+                If the specified price signal is for the full year, then the
                 value of this argument must be 1.0. However, if the specified
-                price signal is for a short period, say 1 month, then an 
+                price signal is for a short period, say 1 month, then an
                 appropriate scaling factor can be specified to compute the value
                 for a year (12, for the case of 1 month's price signal).
-                
+
         """
 
         # Domain validation of input arguments
@@ -721,7 +718,8 @@ class PriceTakerModel(ConcreteModel):
         cf.net_cash_inflow = Var(doc="Net cash inflow")
         cf.net_cash_inflow_calculation = Constraint(
             expr=cf.net_cash_inflow
-            == cash_inflow_scale_factor * sum(
+            == cash_inflow_scale_factor
+            * sum(
                 self.WEIGHTS[d] * self.period[d, t].net_hourly_cash_inflow
                 for d, t in self.period
             )
@@ -730,8 +728,7 @@ class PriceTakerModel(ConcreteModel):
         cf.corporate_tax = Var(within=NonNegativeReals, doc="Corporate tax")
         cf.corporate_tax_calculation = Constraint(
             expr=cf.corporate_tax
-            >= corporate_tax_rate
-            * (cf.net_cash_inflow - self.fom - self.depreciation)
+            >= corporate_tax_rate * (cf.net_cash_inflow - self.fom - self.depreciation)
         )
 
         cf.net_profit = Var(doc="Net profit after taxes")
@@ -741,7 +738,9 @@ class PriceTakerModel(ConcreteModel):
 
         if annualization_factor is None:
             # If the annualization factor is specified
-            annualization_factor = (1 - (1 + discount_rate) ** (-lifetime)) / discount_rate
+            annualization_factor = (
+                1 - (1 + discount_rate) ** (-lifetime)
+            ) / discount_rate
 
         cf.lifetime_npv = Expression(
             expr=annualization_factor * cf.net_profit - cf.capex
@@ -756,12 +755,12 @@ class PriceTakerModel(ConcreteModel):
     def append_objective(self, objective_type="npv"):
         """
         Appends the objective function.
-        
+
         Args:
             objective_type: str, default="npv",
                 Supported objective functions are
-                annualized net present value ("npv"), 
-                net profit ("net_profit"), and 
+                annualized net present value ("npv"),
+                net profit ("net_profit"), and
                 lifetime net present value ("lifetime_npv").
         """
         # pylint: disable = attribute-defined-outside-init
