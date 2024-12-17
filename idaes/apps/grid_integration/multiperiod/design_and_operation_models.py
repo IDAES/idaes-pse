@@ -91,6 +91,12 @@ class DesignModelData(ProcessBlockData):
 
         if self.config.model_func is None:
             # Function that builds the design model is not specified
+            _logger.warning(
+                "The function that builds the design model is not specified."
+                "model_func must declare all the necessary design variables,"
+                "relations among design variables, capital cost correlations,"
+                "and fixed operating and maintenance cost correlations."
+            )
             return
 
         # Call the function that builds the design model
@@ -99,14 +105,14 @@ class DesignModelData(ProcessBlockData):
         # Check if capital and fixed O&M costs are defined
         if not hasattr(self, "capex"):
             _logger.warning(
-                f"'capex' attribute is not set for the design model "
+                "'capex' attribute is not set for the design model "
                 f"{self.name}. Setting the capital cost of the unit to zero."
             )
             self.capex = 0
 
         if not hasattr(self, "fom"):
             _logger.warning(
-                f"'fom' attribute is not set for the design model "
+                "'fom' attribute is not set for the design model "
                 f"{self.name}. Setting the fixed O&M cost of the unit to zero."
             )
             self.fom = 0
@@ -208,7 +214,12 @@ class OperationModelData(ProcessBlockData):
             )
 
         if self.config.model_func is None:
-            # Function that builds the operation model is not specified
+            _logger.warning(
+                "The function that builds the operation model is not specified."
+                "model_func must declare all the necessary operation variables,"
+                "relations among operation variables, and variable"
+                "operating and maintenance cost correlations."
+            )
             return
 
         # Call the function that builds the operation model
