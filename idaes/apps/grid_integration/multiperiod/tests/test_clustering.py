@@ -12,40 +12,90 @@
 #################################################################################
 
 import pytest
+from pathlib import Path
 import pandas as pd
+import matplotlib.pyplot as plt
 
 from idaes.apps.grid_integration.multiperiod.clustering import (
     generate_daily_data,
     get_optimal_num_clusters,
     cluster_lmp_data,
+    sklearn_avail,
+    kneed_avail,
 )
+
+pytest.importorskip("sklearn", reason="sklearn not available")
+pytest.importorskip("kneed", reason="kneed not available")
+
+
+@pytest.fixture
+def sample_data():
+    DATA_DIR = Path(__file__).parent
+    file_path = DATA_DIR / "FLECCS_princeton.csv"
+    data = pd.read_csv(file_path)
+    return data
 
 
 @pytest.mark.unit
-def test_generate_daily_data(caplog):
-    """Tests the generate_daily_data function"""
-    # Test the ValueError exception
-    raw_data = [1, 2, 3, 4]
-    with pytest.raises(
-        ValueError,
-        match="Horizon length 10 exceeds the length of the price signal \\(4\\)",
-    ):
-        generate_daily_data(raw_data, horizon_length=10)
+def test_daily_data_size(sample_data):
+    # Generate price data for each hour of every day in the data
+    daily_data = generate_daily_data(sample_data["BaseCaseTax"], horizon_length=24)
 
-    # Test the logger warning
-    raw_data = list(range(8))
-    daily_data = generate_daily_data(raw_data, horizon_length=3)
-    assert (
-        "Length of the price signal is not an integer multiple of horizon_length.\n"
-        "\tIgnoring the last 2 elements in the price signal."
-    ) in caplog.text
-    assert isinstance(daily_data, pd.DataFrame)
-    assert daily_data.shape == (2, 3)
+    # Check that there is a row for each horizon length in a representative day (24 x 365)
+    assert len(daily_data) == 24
+    assert len(daily_data.transpose()) == 365
 
-    # Test the output
-    raw_data = list(range(9))
-    daily_data = generate_daily_data(raw_data, horizon_length=3)
-    assert daily_data.shape == (3, 3)
-    assert daily_data.equals(
-        pd.DataFrame({1: [0, 1, 2], 2: [3, 4, 5], 3: [6, 7, 8]}).transpose()
+
+@pytest.mark.unit
+@pytest.mark.skipif(
+    not sklearn_avail, reason="sklearn (optional dependency) not available"
+)
+@pytest.mark.skipif(not kneed_avail, reason="kneed (optional dependency) not available")
+def test_determine_optimal_num_clusters(sample_data):
+
+    daily_data = generate_daily_data(sample_data["BaseCaseTax"], horizon_length=24)
+    n_clusters, inertia_values = get_optimal_num_clusters(daily_data, kmax=30, seed=20)
+
+    assert n_clusters == 11
+
+
+@pytest.mark.unit
+@pytest.mark.skipif(
+    not sklearn_avail, reason="sklearn (optional dependency) not available"
+)
+@pytest.mark.skipif(not kneed_avail, reason="kneed (optional dependency) not available")
+def test_elbow_plot(sample_data):
+
+    daily_data = generate_daily_data(sample_data["BaseCaseTax"], horizon_length=24)
+    n_clusters, inertia_values = get_optimal_num_clusters(
+        daily_data, kmax=30, generate_elbow_plot=True
     )
+
+    # Test that a figure was created
+    assert plt.gcf() is not None
+    # Test that axes were created
+    assert plt.gca() is not None
+    # Test that the plot has data
+    assert plt.gca().has_data()
+
+    plt.close("all")
+
+
+@pytest.mark.skipif(
+    not sklearn_avail, reason="sklearn (optional dependency) not available"
+)
+@pytest.mark.skipif(not kneed_avail, reason="kneed (optional dependency) not available")
+@pytest.mark.unit
+def test_cluster_lmp_data(sample_data):
+    daily_data = generate_daily_data(sample_data["BaseCaseTax"], horizon_length=24)
+    n_clusters, inertia_values = get_optimal_num_clusters(daily_data, kmax=30, seed=20)
+    lmp_data, weights = cluster_lmp_data(
+        sample_data["BaseCaseTax"],
+        n_clusters=n_clusters,
+        horizon_length=24,
+    )
+
+    sum_of_weights = sum(weights.values())
+    assert sum_of_weights == 365
+
+    assert len(lmp_data) == n_clusters

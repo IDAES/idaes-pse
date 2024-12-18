@@ -17,50 +17,54 @@ Contains functions for clustering the price signal into representative days/peri
 
 import numpy as np
 import pandas as pd
-import scipy.cluster.vq as spc
 import matplotlib.pyplot as plt
 import idaes.logger as idaeslog
+from pyomo.common.dependencies import attempt_import
+
+sklearn, sklearn_avail = attempt_import("sklearn")
+kneed, kneed_avail = attempt_import("kneed")
+
+if sklearn_avail:
+    from sklearn.cluster import KMeans
+
+if kneed_avail:
+    from kneed import KneeLocator
 
 _logger = idaeslog.getLogger(__name__)
 
 
 def generate_daily_data(raw_data: list, horizon_length: int):
     """
-    Generates the daily data in a usable format from the raw data provided.
+    Function used to generate the daily data in a usable format
+    from the raw data provided.
 
     Args:
-        raw_data: list,
-            Columnar data for a given LMP signal
-
-        horizon_length: int,
-            Length of each representative day/period
+        raw_data:   Columnar data for a given LMP signal
 
     Returns:
-        daily_data: pd.DataFrame,
-            Input data arranged in a DataFrame, where columns correspond to hours
-            and rows correspond to days.
+        daily_data: Correctly formatted daily LMP data for later use
     """
-    if horizon_length > len(raw_data):
+    day_list = list(range(1, (len(raw_data) // horizon_length) + 1))
+
+    daily_data = pd.DataFrame(columns=day_list)
+
+    # Extracting data to populate empty dataframe
+    i = 0
+    j = horizon_length
+    day = 1
+
+    if j > len(raw_data):
         raise ValueError(
-            f"Horizon length {horizon_length} exceeds the length of the "
-            f"price signal ({len(raw_data)})"
+            f"tried to generate daily data, but horizon length of {horizon_length} exceeds raw_data length of {len(raw_data)}"
         )
 
-    elements_ignored = len(raw_data) % horizon_length
-    if elements_ignored:
-        _logger.warning(
-            f"Length of the price signal is not an integer multiple of horizon_length.\n"
-            f"\tIgnoring the last {elements_ignored} elements in the price signal."
-        )
+    while j <= len(raw_data):
+        daily_data[day] = raw_data[i:j].reset_index(drop=True)
+        i = j
+        j = j + horizon_length
+        day = day + 1
 
-    daily_data = {
-        j: raw_data[((j - 1) * horizon_length) : (j * horizon_length)]
-        for j in range(1, (len(raw_data) // horizon_length) + 1)
-    }
-
-    # DataFrame arranges the data for each day as a column. Since most clustering techniques
-    # require different samples as rows, we take the transpose before returning the data.
-    return pd.DataFrame(daily_data).transpose()
+    return daily_data
 
 
 def cluster_lmp_data(
@@ -102,7 +106,9 @@ def cluster_lmp_data(
     daily_data = generate_daily_data(raw_data, horizon_length)
 
     # KMeans clustering with the optimal number of clusters
-    centroids, labels = spc.kmeans2(daily_data, n_clusters, seed=seed)
+    kmeans = KMeans(n_clusters=n_clusters).fit(daily_data.transpose())
+    centroids = kmeans.cluster_centers_
+    labels = kmeans.labels_
 
     # Set any centroid values that are < 1e-4 to 0 to avoid noise
     centroids = centroids * (abs(centroids) >= 1e-4)
@@ -141,7 +147,7 @@ def get_optimal_num_clusters(
     daily_data,
     kmin: int = 4,
     kmax: int = 30,
-    generate_elblow_plot: bool = False,
+    generate_elbow_plot: bool = False,
     seed: int = 42,
 ):
     """
@@ -163,21 +169,17 @@ def get_optimal_num_clusters(
     k_values = list(range(kmin, kmax + 1))
     inertia_values = []
 
+    np.random.seed(seed)
+
     for k in k_values:
-        centroids, _ = spc.kmeans2(daily_data, k)
-        idx, _ = spc.vq(daily_data, centroids)
+        kmeans = KMeans(n_clusters=k).fit(daily_data.transpose())
+        inertia_values.append(kmeans.inertia_)
 
-        # Compute the inertia (SSE) for k clusters
-        inertia = _compute_sse(daily_data, centroids, idx)
-        inertia_values.append(inertia)
-
-    # Calculate the second derivative
-    first_deriv = np.diff(inertia_values)
-    second_deriv = np.diff(first_deriv)
-
-    # Determine the optimal number of clusters
-    # The +2 accounts for the dimension being reduced twice by derivatives
-    n_clusters = np.argmin(second_deriv) + 2
+    # Identify the "elbow point"
+    elbow_point = KneeLocator(
+        k_values, inertia_values, curve="convex", direction="decreasing"
+    )
+    n_clusters = elbow_point.knee
 
     if n_clusters is None:
         raise ValueError(
@@ -192,7 +194,7 @@ def get_optimal_num_clusters(
             f"Optimal number of clusters is close to kmax: {kmax}. Consider increasing kmax."
         )
 
-    if generate_elblow_plot:
+    if generate_elbow_plot:
         plt.plot(k_values, inertia_values)
         plt.axvline(x=n_clusters, color="red", linestyle="--", label="Elbow")
         plt.xlabel("Number of clusters")
