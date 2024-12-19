@@ -24,6 +24,7 @@ from pyomo.environ import (
 )
 
 from idaes.core import FlowsheetBlock, Component
+import idaes.logger as idaeslog
 from idaes.models.properties.cubic_eos.cubic_prop_pack import (
     CubicParameterBlock,
     CubicStateBlock,
@@ -51,12 +52,13 @@ class TestParameterBlock(object):
         not cubic_roots_available(), reason="Cubic functions not available"
     )
     @pytest.mark.unit
-    def test_build_default(self):
+    def test_build_default(self, caplog):
         m = ConcreteModel()
 
         m.fs = FlowsheetBlock(dynamic=False)
-
-        m.fs.params = CubicParameterBlock()
+        with caplog.at_level(idaeslog.WARNING):
+            m.fs.params = CubicParameterBlock()
+        assert "May 2025 release." in caplog.text
 
         assert m.fs.params.state_block_class is CubicStateBlock
         assert m.fs.params.config.valid_phase == ("Vap", "Liq")

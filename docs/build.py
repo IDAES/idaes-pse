@@ -213,8 +213,8 @@ def main() -> int:
         "-t",
         "--timeout",
         dest="timeout",
-        help="Timeout (in seconds) for sphinx-build (default=180)",
-        default=180,
+        help="Timeout (in seconds) for sphinx-build (default=360)",
+        default=360,
         type=int,
     )
     prs.add_argument(

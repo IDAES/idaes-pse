@@ -34,10 +34,10 @@ To get IDAES fully set up on your machine, we'll go through the steps to get ida
 Install Prerequisites
 ^^^^^^^^^^^^^^^^^^^^^
 
-**Install  Miniconda**
-
-1. Download `Miniconda <https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh>`_
+**Install  Miniforge**
+1. Download `Miniforge <https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-MacOSX-arm64.sh>`_
 2. Open a terminal window & run the downloaded script.
+
 
 Install IDAES-PSE
 ^^^^^^^^^^^^^^^^^^
