@@ -35,8 +35,8 @@ Install Prerequisites
 ^^^^^^^^^^^^^^^^^^^^^
 
 **Install  Miniforge**
-1. Download `Miniforge <https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-MacOSX-arm64.sh>`_
-2. Open a terminal window & run the downloaded script.
+1. curl -L -O "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh"
+2. bash Miniforge3-$(uname)-$(uname -m).sh`
 
 
 Install IDAES-PSE
