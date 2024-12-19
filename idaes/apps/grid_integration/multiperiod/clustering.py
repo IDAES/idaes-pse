@@ -44,6 +44,18 @@ def generate_daily_data(raw_data: list, horizon_length: int):
     Returns:
         daily_data: Correctly formatted daily LMP data for later use
     """
+    if horizon_length > len(raw_data):
+        raise ValueError(
+            f"Horizon length {horizon_length} exceeds the price signal length of {len(raw_data)}"
+        )
+
+    elements_ignored = len(raw_data) % horizon_length
+    if elements_ignored:
+        _logger.warning(
+            f"Length of the price signal is not an integer multiple of horizon_length.\n"
+            f"\tIgnoring the last {elements_ignored} elements in the price signal."
+        )
+
     day_list = list(range(1, (len(raw_data) // horizon_length) + 1))
 
     daily_data = pd.DataFrame(columns=day_list)
@@ -52,11 +64,6 @@ def generate_daily_data(raw_data: list, horizon_length: int):
     i = 0
     j = horizon_length
     day = 1
-
-    if j > len(raw_data):
-        raise ValueError(
-            f"tried to generate daily data, but horizon length of {horizon_length} exceeds raw_data length of {len(raw_data)}"
-        )
 
     while j <= len(raw_data):
         daily_data[day] = raw_data[i:j].reset_index(drop=True)

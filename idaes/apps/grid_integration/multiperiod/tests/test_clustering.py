@@ -23,6 +23,7 @@ from idaes.apps.grid_integration.multiperiod.clustering import (
     sklearn_avail,
     kneed_avail,
 )
+import idaes.logger as idaeslog
 
 pytest.importorskip("sklearn", reason="sklearn not available")
 pytest.importorskip("kneed", reason="kneed not available")
@@ -47,6 +48,29 @@ def test_daily_data_size(sample_data):
 
 
 @pytest.mark.unit
+def test_daily_data_logger_message1():
+    horizon_length = 24
+    raw_data = [1, 2, 3, 4]
+    with pytest.raises(
+        ValueError,
+        match=f"Horizon length {horizon_length} exceeds the price signal length of {len(raw_data)}",
+    ):
+        generate_daily_data(raw_data, horizon_length=horizon_length)
+
+
+@pytest.mark.unit
+def test_daily_data_logger_message2(sample_data, caplog):
+    horizon_length = 23
+    with caplog.at_level(idaeslog.WARNING):
+        generate_daily_data(sample_data["BaseCaseTax"], horizon_length=horizon_length)
+        elements_ignored = len(sample_data) % horizon_length
+        assert (
+            f"Length of the price signal is not an integer multiple of horizon_length.\n"
+            f"\tIgnoring the last {elements_ignored} elements in the price signal."
+        ) in caplog.text
+
+
+@pytest.mark.unit
 @pytest.mark.skipif(
     not sklearn_avail, reason="sklearn (optional dependency) not available"
 )
@@ -57,6 +81,58 @@ def test_determine_optimal_num_clusters(sample_data):
     n_clusters, inertia_values = get_optimal_num_clusters(daily_data, kmax=30, seed=20)
 
     assert n_clusters == 11
+
+
+@pytest.mark.skipif(
+    not sklearn_avail, reason="sklearn (optional dependency) not available"
+)
+@pytest.mark.skipif(not kneed_avail, reason="kneed (optional dependency) not available")
+@pytest.mark.unit
+def test_optimal_clusters_logger_message1(sample_data):
+    kmax = 10
+    kmin = 15
+    with pytest.raises(
+        ValueError,
+        match=f"kmin must be less than kmax, but {kmin} >= {kmax}",
+    ):
+
+        daily_data = generate_daily_data(sample_data["BaseCaseTax"], horizon_length=24)
+        get_optimal_num_clusters(daily_data, kmin=kmin, kmax=kmax, seed=20)
+
+
+@pytest.mark.skipif(
+    not sklearn_avail, reason="sklearn (optional dependency) not available"
+)
+@pytest.mark.skipif(not kneed_avail, reason="kneed (optional dependency) not available")
+@pytest.mark.unit
+def test_optimal_clusters_logger_message2(sample_data, caplog):
+    kmin = 9
+    kmax = 14
+    with caplog.at_level(idaeslog.WARNING):
+        daily_data = generate_daily_data(sample_data["BaseCaseTax"], horizon_length=24)
+        get_optimal_num_clusters(daily_data, kmin=kmin, kmax=kmax, seed=20)
+        assert (
+            f"Optimal number of clusters is close to kmax: {kmax}. Consider increasing kmax."
+            in caplog.text
+        )
+
+
+@pytest.mark.skipif(
+    not sklearn_avail, reason="sklearn (optional dependency) not available"
+)
+@pytest.mark.skipif(not kneed_avail, reason="kneed (optional dependency) not available")
+@pytest.mark.unit
+def test_optimal_clusters_logger_message3(sample_data):
+    kmin = 11
+    kmax = 12
+    with pytest.raises(
+        ValueError,
+        match="Could not find elbow point for the given kmin, kmax. "
+        "Consider increasing the range of kmin, kmax.",
+    ):
+
+        daily_data = generate_daily_data(sample_data["BaseCaseTax"], horizon_length=24)
+        get_optimal_num_clusters(daily_data, kmin=kmin, kmax=kmax, seed=20)
 
 
 @pytest.mark.unit
