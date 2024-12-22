@@ -1488,6 +1488,11 @@ class ModularPropertiesInitializer(InitializerBase):
                         # constraint at this stage.
                         if "flow_mol_phase_comp" not in b.define_state_vars():
                             c.activate()
+                    elif getattr(c, "defining_state_var", False):
+                        # Allow using a constraint to define a state var
+                        # (rather than fixing it directly) by setting 
+                        # c.defining_state_var = True.
+                        c.activate()
 
                 for pp in b.params._pe_pairs:
                     # Activate formulation specific constraints
@@ -1938,6 +1943,12 @@ class _GenericStateBlock(StateBlock):
                         # constraint at this stage.
                         if "flow_mol_phase_comp" not in b.define_state_vars():
                             c.activate()
+                    elif getattr(c, "defining_state_var", False):
+                        # Allow using a constraint to define a state var
+                        # (rather than fixing it directly) by setting 
+                        # c.defining_state_var = True. This can be used in
+                        # conjunction with setting state_vars_fixed = True
+                        c.activate()
 
                 for pp in b.params._pe_pairs:
                     # Activate formulation specific constraints
