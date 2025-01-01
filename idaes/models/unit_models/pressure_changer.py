@@ -911,7 +911,6 @@ see property package for documentation.}""",
 
         cv = blk.control_volume
         t0 = blk.flowsheet().time.first()
-        state_args_out = {}
 
         if state_args is None:
             state_args = {}
@@ -925,23 +924,6 @@ see property package for documentation.}""",
                 else:
                     state_args[k] = state_dict[k].value
 
-        # Get initialisation guesses for outlet and isentropic states
-        for k in state_args:
-            if k == "pressure" and k not in state_args_out:
-                # Work out how to estimate outlet pressure
-                if cv.properties_out[t0].pressure.fixed:
-                    # Fixed outlet pressure, use this value
-                    state_args_out[k] = value(cv.properties_out[t0].pressure)
-                elif blk.deltaP[t0].fixed:
-                    state_args_out[k] = value(state_args[k] + blk.deltaP[t0])
-                elif blk.ratioP[t0].fixed:
-                    state_args_out[k] = value(state_args[k] * blk.ratioP[t0])
-                else:
-                    # Not obvious what to do, use inlet state
-                    state_args_out[k] = state_args[k]
-            elif k not in state_args_out:
-                state_args_out[k] = state_args[k]
-
         # Initialize state blocks
         flags = cv.properties_in.initialize(
             outlvl=outlvl,
@@ -950,6 +932,33 @@ see property package for documentation.}""",
             hold_state=True,
             state_args=state_args,
         )
+
+        # Get initialisation guesses for outlet state
+        state_args_out = {}
+        # refresh state_dict (may have changed during initialization)
+        state_dict = cv.properties_in[t0].define_port_members()
+        for k in state_args:
+            if k == "pressure" and k not in state_args_out:
+                # Work out how to estimate outlet pressure
+                if cv.properties_out[t0].pressure.fixed:
+                    # Fixed outlet pressure, use this value
+                    state_args_out[k] = value(cv.properties_out[t0].pressure)
+                elif blk.deltaP[t0].fixed:
+                    state_args_out[k] = value(cv.properties_in[t0].pressure + blk.deltaP[t0])
+                elif blk.ratioP[t0].fixed:
+                    state_args_out[k] = value(cv.properties_in[t0].pressure * blk.ratioP[t0])
+                else:
+                    # Not obvious what to do, use inlet state
+                    state_args_out[k] = value(cv.properties_in[t0].pressure)
+            elif k not in state_args_out:
+                # use the inlet state as a guess for the outlet state
+                if state_dict[k].is_indexed():
+                    state_args_out[k] = {}
+                    for m in state_dict[k].keys():
+                        state_args_out[k][m] = state_dict[k][m].value
+                else:
+                    state_args_out[k] = state_dict[k].value
+
         cv.properties_out.initialize(
             outlvl=outlvl,
             optarg=optarg,
@@ -1002,7 +1011,6 @@ see property package for documentation.}""",
 
         cv = blk.control_volume
         t0 = blk.flowsheet().time.first()
-        state_args_out = {}
 
         # performance curves exist and are active so initialize with them
         activate_performance_curves = (
@@ -1070,6 +1078,7 @@ see property package for documentation.}""",
         )
 
         # Get initialisation guesses for outlet and isentropic states
+        state_args_out = {}
         # refresh state_dict (may have changed during initialization)
         state_dict = cv.properties_in[t0].define_port_members()
         for k in state_args:
