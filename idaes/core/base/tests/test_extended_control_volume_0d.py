@@ -11,7 +11,7 @@
 # for full copyright and license information.
 #################################################################################
 """
-Tests for ControlVolumeBlockData.
+Tests for ExtendedControlVolumeBlockData.
 
 Author: Andrew Lee
 """
@@ -20,7 +20,7 @@ from pyomo.environ import ConcreteModel, Constraint, Expression, Set, units, Var
 from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 from pyomo.common.config import ConfigBlock
 from idaes.core import (
-    ControlVolume0DBlock,
+    ExtendedControlVolume0DBlock as ControlVolume0DBlock,
     ControlVolumeBlockData,
     FlowsheetBlockData,
     declare_process_block_class,
