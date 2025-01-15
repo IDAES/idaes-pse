@@ -16,9 +16,6 @@
 
 __author__ = "Andrew Lee"
 
-# Import Pyomo libraries
-from pyomo.environ import Constraint, Reals, units as pyunits, Var, value
-
 # Import IDAES cores
 from idaes.core.base.control_volume0d import ControlVolume0DBlockData
 from idaes.core import declare_process_block_class

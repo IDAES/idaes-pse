@@ -17,7 +17,7 @@
 __author__ = "Andrew Lee"
 
 # Import Pyomo libraries
-from pyomo.environ import Constraint, Reals, units as pyunits, Var, value
+from pyomo.environ import Constraint
 
 # Import IDAES cores
 from idaes.core.base.control_volume1d import ControlVolume1DBlockData
@@ -104,7 +104,9 @@ class ExtendedControlVolume1DBlockData(ControlVolume1DBlockData):
             )
 
         # Add isothermal constraint
-        @self.Constraint(self.flowsheet().time, self.length_domain, doc="Energy balances")
+        @self.Constraint(
+            self.flowsheet().time, self.length_domain, doc="Energy balances"
+        )
         def enthalpy_balances(b, t, x):
             if (
                 b.config.transformation_scheme != "FORWARD"
@@ -114,5 +116,8 @@ class ExtendedControlVolume1DBlockData(ControlVolume1DBlockData):
                 and x == b.length_domain.last()
             ):
                 return Constraint.Skip
-            else:
-                return b.properties[t, b.length_domain.prev(x)].temperature == b.properties[t, x].temperature
+
+            return (
+                b.properties[t, b.length_domain.prev(x)].temperature
+                == b.properties[t, x].temperature
+            )
