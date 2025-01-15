@@ -108,13 +108,7 @@ class ExtendedControlVolume1DBlockData(ControlVolume1DBlockData):
             self.flowsheet().time, self.length_domain, doc="Energy balances"
         )
         def enthalpy_balances(b, t, x):
-            if (
-                b.config.transformation_scheme != "FORWARD"
-                and x == b.length_domain.first()
-            ) or (
-                b.config.transformation_scheme == "FORWARD"
-                and x == b.length_domain.last()
-            ):
+            if x == b.length_domain.first():
                 return Constraint.Skip
 
             return (
