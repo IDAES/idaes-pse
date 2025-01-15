@@ -90,7 +90,7 @@ class ExtendedControlVolume0DBlockData(ControlVolume0DBlockData):
             )
         if has_enthalpy_transfer:
             raise ConfigurationError(
-                f"{self.name}: isothermal energy balance option does not support enthalpy transfer. "
+                f"{self.name}: isothermal energy balance option does not support enthalpy transfer."
             )
         if has_heat_of_reaction:
             raise ConfigurationError(
@@ -100,7 +100,7 @@ class ExtendedControlVolume0DBlockData(ControlVolume0DBlockData):
             )
         if custom_term is not None:
             raise ConfigurationError(
-                f"{self.name}: isothermal energy balance option does not support custom terms. "
+                f"{self.name}: isothermal energy balance option does not support custom terms."
             )
 
         # Add isothermal constraint

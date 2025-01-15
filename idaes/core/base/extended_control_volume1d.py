@@ -104,7 +104,7 @@ class ExtendedControlVolume1DBlockData(ControlVolume1DBlockData):
             )
 
         # Add isothermal constraint
-        @self.Constraint(self.flowsheet().time, doc="Energy balances")
+        @self.Constraint(self.flowsheet().time, self.length_domain, doc="Energy balances")
         def enthalpy_balances(b, t, x):
             if (
                 b.config.transformation_scheme != "FORWARD"

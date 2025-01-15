@@ -20,7 +20,7 @@ from pyomo.environ import ConcreteModel, Constraint, units
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import (
-    ExtendedControlVolume0DBlock,
+    ExtendedControlVolume1DBlock,
     FlowsheetBlockData,
     declare_process_block_class,
 )
@@ -46,7 +46,12 @@ def test_add_isothermal_constraint():
     m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
 
-    m.fs.cv = ExtendedControlVolume0DBlock(property_package=m.fs.pp)
+    m.fs.cv = ExtendedControlVolume1DBlock(
+        property_package=m.fs.pp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
+    )
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -54,10 +59,11 @@ def test_add_isothermal_constraint():
     m.fs.cv.add_isothermal_constraint()
 
     assert isinstance(m.fs.cv.enthalpy_balances, Constraint)
-    assert len(m.fs.cv.enthalpy_balances) == 1
-    assert str(m.fs.cv.enthalpy_balances[0].expr) == str(
-        m.fs.cv.properties_in[0].temperature == m.fs.cv.properties_out[0].temperature
+    assert len(m.fs.cv.enthalpy_balances) == 1  # x==0 is skipped
+    assert str(m.fs.cv.enthalpy_balances[0, 1].expr) == str(
+        m.fs.cv.properties[0, 0].temperature == m.fs.cv.properties[0, 1].temperature
     )
+    assert (0, 0) not in m.fs.cv.enthalpy_balances
 
     assert_units_consistent(m.fs.cv)
 
@@ -68,7 +74,12 @@ def test_add_isothermal_constraint_dynamic():
     m.fs = Flowsheet(dynamic=True, time_set=[0, 1, 2, 3], time_units=units.s)
     m.fs.pp = PhysicalParameterTestBlock()
 
-    m.fs.cv = ExtendedControlVolume0DBlock(property_package=m.fs.pp)
+    m.fs.cv = ExtendedControlVolume1DBlock(
+        property_package=m.fs.pp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
+    )
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -76,11 +87,12 @@ def test_add_isothermal_constraint_dynamic():
     m.fs.cv.add_isothermal_constraint()
 
     assert isinstance(m.fs.cv.enthalpy_balances, Constraint)
-    assert len(m.fs.cv.enthalpy_balances) == 4
+    assert len(m.fs.cv.enthalpy_balances) == 4  # x==0 is skipped
     for t in m.fs.time:
-        assert str(m.fs.cv.enthalpy_balances[t].expr) == str(
-            m.fs.cv.properties_in[t].temperature == m.fs.cv.properties_out[t].temperature
+        assert str(m.fs.cv.enthalpy_balances[t, 1].expr) == str(
+            m.fs.cv.properties[t, 0].temperature == m.fs.cv.properties[t, 1].temperature
         )
+        assert (t, 0) not in m.fs.cv.enthalpy_balances
 
     assert_units_consistent(m.fs.cv)
 
@@ -91,7 +103,12 @@ def test_add_isothermal_constraint_heat_transfer():
     m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
 
-    m.fs.cv = ExtendedControlVolume0DBlock(property_package=m.fs.pp)
+    m.fs.cv = ExtendedControlVolume1DBlock(
+        property_package=m.fs.pp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
+    )
 
     with pytest.raises(
         ConfigurationError,
@@ -108,7 +125,12 @@ def test_add_isothermal_constraint_work_transfer():
     m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
 
-    m.fs.cv = ExtendedControlVolume0DBlock(property_package=m.fs.pp)
+    m.fs.cv = ExtendedControlVolume1DBlock(
+        property_package=m.fs.pp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
+    )
 
     with pytest.raises(
         ConfigurationError,
@@ -125,7 +147,12 @@ def test_add_isothermal_constraint_enthalpy_transfer():
     m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
 
-    m.fs.cv = ExtendedControlVolume0DBlock(property_package=m.fs.pp)
+    m.fs.cv = ExtendedControlVolume1DBlock(
+        property_package=m.fs.pp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
+    )
 
     with pytest.raises(
         ConfigurationError,
@@ -140,7 +167,12 @@ def test_add_isothermal_constraint_heat_of_rxn():
     m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
 
-    m.fs.cv = ExtendedControlVolume0DBlock(property_package=m.fs.pp)
+    m.fs.cv = ExtendedControlVolume1DBlock(
+        property_package=m.fs.pp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
+    )
 
     with pytest.raises(
         ConfigurationError,
@@ -157,7 +189,12 @@ def test_add_isothermal_constraint_custom_term():
     m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
 
-    m.fs.cv = ExtendedControlVolume0DBlock(property_package=m.fs.pp)
+    m.fs.cv = ExtendedControlVolume1DBlock(
+        property_package=m.fs.pp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
+    )
 
     with pytest.raises(
         ConfigurationError,
