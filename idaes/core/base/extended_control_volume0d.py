@@ -77,13 +77,13 @@ class ExtendedControlVolume0DBlockData(ControlVolume0DBlockData):
             raise ConfigurationError(
                 f"{self.name}: isothermal energy balance option requires that has_heat_transfer is False. "
                 "If you are trying to solve for heat duty to achieve isothermal operation, please use "
-                "a full energy balance as add a constraint to equate inlet and outlet temperatures."
+                "a full energy balance and add a constraint to equate inlet and outlet temperatures."
             )
         if has_work_transfer:
             raise ConfigurationError(
                 f"{self.name}: isothermal energy balance option requires that has_work_transfer is False. "
                 "If you are trying to solve for work under isothermal operation, please use "
-                "a full energy balance as add a constraint to equate inlet and outlet temperatures."
+                "a full energy balance and add a constraint to equate inlet and outlet temperatures."
             )
         if has_enthalpy_transfer:
             raise ConfigurationError(
@@ -93,7 +93,7 @@ class ExtendedControlVolume0DBlockData(ControlVolume0DBlockData):
             raise ConfigurationError(
                 f"{self.name}: isothermal energy balance option requires that has_heat_of_reaction is False. "
                 "If you are trying to solve for heat duty to achieve isothermal operation, please use "
-                "a full energy balance as add a constraint to equate inlet and outlet temperatures."
+                "a full energy balance and add a constraint to equate inlet and outlet temperatures."
             )
         if custom_term is not None:
             raise ConfigurationError(

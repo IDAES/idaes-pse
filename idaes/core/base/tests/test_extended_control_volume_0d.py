@@ -98,7 +98,7 @@ def test_add_isothermal_constraint_heat_transfer():
         ConfigurationError,
         match="fs.cv: isothermal energy balance option requires that has_heat_transfer is False. "
         "If you are trying to solve for heat duty to achieve isothermal operation, please use "
-        "a full energy balance as add a constraint to equate inlet and outlet temperatures.",
+        "a full energy balance and add a constraint to equate inlet and outlet temperatures.",
     ):
         m.fs.cv.add_isothermal_constraint(has_heat_transfer=True)
 
@@ -115,7 +115,7 @@ def test_add_isothermal_constraint_work_transfer():
         ConfigurationError,
         match="fs.cv: isothermal energy balance option requires that has_work_transfer is False. "
         "If you are trying to solve for work under isothermal operation, please use "
-        "a full energy balance as add a constraint to equate inlet and outlet temperatures.",
+        "a full energy balance and add a constraint to equate inlet and outlet temperatures.",
     ):
         m.fs.cv.add_isothermal_constraint(has_work_transfer=True)
 
@@ -147,7 +147,7 @@ def test_add_isothermal_constraint_heat_of_rxn():
         ConfigurationError,
         match="fs.cv: isothermal energy balance option requires that has_heat_of_reaction is False. "
         "If you are trying to solve for heat duty to achieve isothermal operation, please use "
-        "a full energy balance as add a constraint to equate inlet and outlet temperatures.",
+        "a full energy balance and add a constraint to equate inlet and outlet temperatures.",
     ):
         m.fs.cv.add_isothermal_constraint(has_heat_of_reaction=True)
 
