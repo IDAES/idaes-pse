@@ -30,6 +30,7 @@ from idaes.core.util.exceptions import (
 from idaes.core.util.testing import (
     PhysicalParameterTestBlock,
 )
+from idaes.core.util.model_diagnostics import DiagnosticsToolbox
 
 
 # -----------------------------------------------------------------------------
@@ -50,22 +51,35 @@ def test_add_isothermal_constraint():
         property_package=m.fs.pp,
         transformation_method="dae.finite_difference",
         transformation_scheme="BACKWARD",
-        finite_elements=10,
+        finite_elements=4,
     )
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
-
     m.fs.cv.add_isothermal_constraint()
+    m.fs.cv.apply_transformation()
 
     assert isinstance(m.fs.cv.enthalpy_balances, Constraint)
-    assert len(m.fs.cv.enthalpy_balances) == 1  # x==0 is skipped
+    assert len(m.fs.cv.enthalpy_balances) == (5-1)*1  # x==0 so (5-1) spatial points and 1 time point
+
+    assert (0, 0) not in m.fs.cv.enthalpy_balances
+    assert str(m.fs.cv.enthalpy_balances[0, 0.25].expr) == str(
+        m.fs.cv.properties[0, 0].temperature == m.fs.cv.properties[0, 0.25].temperature
+    )
+    assert str(m.fs.cv.enthalpy_balances[0, 0.5].expr) == str(
+        m.fs.cv.properties[0, 0.25].temperature == m.fs.cv.properties[0, 0.5].temperature
+    )
+    assert str(m.fs.cv.enthalpy_balances[0, 0.75].expr) == str(
+        m.fs.cv.properties[0, 0.5].temperature == m.fs.cv.properties[0, 0.75].temperature
+    )
     assert str(m.fs.cv.enthalpy_balances[0, 1].expr) == str(
         m.fs.cv.properties[0, 0].temperature == m.fs.cv.properties[0, 1].temperature
     )
-    assert (0, 0) not in m.fs.cv.enthalpy_balances
 
-    assert_units_consistent(m.fs.cv)
+    # Fix inlet and check for unit consistency and structural singularities
+    m.fs.cv.properties[0, 0].temperature.fix()
+    dt = DiagnosticsToolbox(m)
+    dt.assert_no_structural_warnings()
 
 
 @pytest.mark.unit
@@ -78,23 +92,36 @@ def test_add_isothermal_constraint_dynamic():
         property_package=m.fs.pp,
         transformation_method="dae.finite_difference",
         transformation_scheme="BACKWARD",
-        finite_elements=10,
+        finite_elements=4,
     )
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
-
     m.fs.cv.add_isothermal_constraint()
+    m.fs.cv.apply_transformation()
 
     assert isinstance(m.fs.cv.enthalpy_balances, Constraint)
-    assert len(m.fs.cv.enthalpy_balances) == 4  # x==0 is skipped
+    assert len(m.fs.cv.enthalpy_balances) == (5-1)*4  # x==0 so (5-1) spatial points and 4 time points
+
     for t in m.fs.time:
+        assert (t, 0) not in m.fs.cv.enthalpy_balances
+        assert str(m.fs.cv.enthalpy_balances[t, 0.25].expr) == str(
+            m.fs.cv.properties[t, 0].temperature == m.fs.cv.properties[t, 0.25].temperature
+        )
+        assert str(m.fs.cv.enthalpy_balances[t, 0.5].expr) == str(
+            m.fs.cv.properties[t, 0.25].temperature == m.fs.cv.properties[t, 0.5].temperature
+        )
+        assert str(m.fs.cv.enthalpy_balances[t, 0.75].expr) == str(
+            m.fs.cv.properties[t, 0.5].temperature == m.fs.cv.properties[t, 0.75].temperature
+        )
         assert str(m.fs.cv.enthalpy_balances[t, 1].expr) == str(
             m.fs.cv.properties[t, 0].temperature == m.fs.cv.properties[t, 1].temperature
         )
-        assert (t, 0) not in m.fs.cv.enthalpy_balances
 
-    assert_units_consistent(m.fs.cv)
+        # Fix inlet and check for unit consistency and structural singularities
+        m.fs.cv.properties[:, 0].temperature.fix()
+        dt = DiagnosticsToolbox(m)
+        dt.assert_no_structural_warnings()
 
 
 @pytest.mark.unit
