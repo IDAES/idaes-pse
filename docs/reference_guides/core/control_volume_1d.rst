@@ -338,6 +338,6 @@ A constraint equating temperature along the length domain of the control volume 
 
 `enthalpy_balances(t)`:
 
-.. math:: P_{t, x-1} == P_{t, x}
+.. math:: T_{t, x-1} == T_{t, x}
 
 This constraint is skipped at the inlet to the control volume.
