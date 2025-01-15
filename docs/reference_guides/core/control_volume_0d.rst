@@ -282,3 +282,31 @@ A single pressure balance is written for the entire mixture.
 .. math:: 0 = s_{pressure} \times P_{in, t} - s_{pressure} \times P_{out, t} + s_{pressure} \times \Delta P_t + s_{pressure} \times \Delta P_{custom, t}
 
 The :math:`\Delta P_{custom, t}` term allows the user to provide custom terms  which will be added into the pressure balance.
+
+
+Extended 0D Control Volume Class
+--------------------------------
+
+The ExtendedControlVolume0DBlock block builds upon ControlVolume0DBlock by adding some new balance options. It is envisioned that this will
+merge with ControlVolume0DBlock, however to ensure backward compatibility these additions have been kept separate until unit models can
+be updated to restrict (or allow) these new options if necessary. The core functionality is the same as for ControlVolume0DBlock, with the
+addition of one extra energy balance type; isothermal.
+
+.. module:: idaes.core.base.extended_control_volume0d
+
+.. autoclass:: ExtendedControlVolume0DBlock
+    :members:
+
+.. autoclass:: ExtendedControlVolume0DBlockData
+    :members:
+
+add_isothermal_constraint
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+A constraint equating temperature at the inlet and outlet of the control volume is written.
+
+**Constraints**
+
+`enthalpy_balances(t)`:
+
+.. math:: P_{in, t} == P_{out, t}

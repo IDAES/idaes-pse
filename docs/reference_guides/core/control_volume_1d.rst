@@ -311,3 +311,33 @@ The :math:`\Delta P_{custom, t, x}` term allows the user to provide custom terms
 `pressure_linking_constraint(t, x)`:
 
 This constraint is an internal constraint used to link the pressure terms in the StateBlocks into a single indexed variable. This is required as Pyomo.DAE requires a single indexed variable to create the associated DerivativeVars and their numerical expansions.
+
+
+Extended 1D Control Volume Class
+--------------------------------
+
+The ExtendedControlVolume1DBlock block builds upon ControlVolume1DBlock by adding some new balance options. It is envisioned that this will
+merge with ControlVolume1DBlock, however to ensure backward compatibility these additions have been kept separate until unit models can
+be updated to restrict (or allow) these new options if necessary. The core functionality is the same as for ControlVolume1DBlock, with the
+addition of one extra energy balance type; isothermal.
+
+.. module:: idaes.core.base.extended_control_volume1d
+
+.. autoclass:: ExtendedControlVolume1DBlock
+    :members:
+
+.. autoclass:: ExtendedControlVolume1DBlockData
+    :members:
+
+add_isothermal_constraint
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+A constraint equating temperature along the length domain of the control volume is written.
+
+**Constraints**
+
+`enthalpy_balances(t)`:
+
+.. math:: P_{t, x-1} == P_{t, x}
+
+This constraint is skipped at the inlet to the control volume.
