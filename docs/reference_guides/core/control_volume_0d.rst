@@ -309,4 +309,4 @@ A constraint equating temperature at the inlet and outlet of the control volume 
 
 `enthalpy_balances(t)`:
 
-.. math:: P_{in, t} == P_{out, t}
+.. math:: T_{in, t} == T_{out, t}
