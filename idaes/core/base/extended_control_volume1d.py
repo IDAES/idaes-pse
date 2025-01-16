@@ -16,10 +16,8 @@
 
 __author__ = "Andrew Lee"
 
-from pyomo.environ import Constraint, Expression
-
 # Import Pyomo libraries
-from pyomo.environ import Constraint
+from pyomo.environ import Constraint, Expression
 
 # Import IDAES cores
 from idaes.core.base.control_volume1d import ControlVolume1DBlockData
