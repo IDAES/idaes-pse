@@ -45,11 +45,11 @@ class ExtendedControlVolume0DBlockData(ControlVolume0DBlockData):
 
     def add_isothermal_constraint(
         self,
-        has_heat_of_reaction: bool =False,
-        has_heat_transfer: bool =False,
-        has_work_transfer: bool =False,
-        has_enthalpy_transfer: bool =False,
-        custom_term: Expression =None,
+        has_heat_of_reaction: bool = False,
+        has_heat_transfer: bool = False,
+        has_work_transfer: bool = False,
+        has_enthalpy_transfer: bool = False,
+        custom_term: Expression = None,
     ) -> Constraint:
         """
         This method constructs an isothermal constraint for the control volume.
@@ -103,7 +103,9 @@ class ExtendedControlVolume0DBlockData(ControlVolume0DBlockData):
             )
 
         # Add isothermal constraint
-        @self.Constraint(self.flowsheet().time, doc="Isothermal constraint - replaces energy balance")
+        @self.Constraint(
+            self.flowsheet().time, doc="Isothermal constraint - replaces energy balance"
+        )
         def isothermal_constraint(b, t):
             return b.properties_in[t].temperature == b.properties_out[t].temperature
 
