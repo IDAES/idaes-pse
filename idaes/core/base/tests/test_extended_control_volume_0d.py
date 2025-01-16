@@ -51,11 +51,12 @@ def test_add_isothermal_constraint():
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
 
-    m.fs.cv.add_isothermal_constraint()
+    cons = m.fs.cv.add_isothermal_constraint()
 
-    assert isinstance(m.fs.cv.enthalpy_balances, Constraint)
-    assert len(m.fs.cv.enthalpy_balances) == 1
-    assert str(m.fs.cv.enthalpy_balances[0].expr) == str(
+    assert cons is m.fs.cv.isothermal_constraint
+    assert isinstance(m.fs.cv.isothermal_constraint, Constraint)
+    assert len(m.fs.cv.isothermal_constraint) == 1
+    assert str(m.fs.cv.isothermal_constraint[0].expr) == str(
         m.fs.cv.properties_in[0].temperature == m.fs.cv.properties_out[0].temperature
     )
 
@@ -75,10 +76,10 @@ def test_add_isothermal_constraint_dynamic():
 
     m.fs.cv.add_isothermal_constraint()
 
-    assert isinstance(m.fs.cv.enthalpy_balances, Constraint)
-    assert len(m.fs.cv.enthalpy_balances) == 4
+    assert isinstance(m.fs.cv.isothermal_constraint, Constraint)
+    assert len(m.fs.cv.isothermal_constraint) == 4
     for t in m.fs.time:
-        assert str(m.fs.cv.enthalpy_balances[t].expr) == str(
+        assert str(m.fs.cv.isothermal_constraint[t].expr) == str(
             m.fs.cv.properties_in[t].temperature
             == m.fs.cv.properties_out[t].temperature
         )

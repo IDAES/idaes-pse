@@ -16,6 +16,8 @@
 
 __author__ = "Andrew Lee"
 
+from pyomo.environ import Constraint, Expression
+
 # Import Pyomo libraries
 from pyomo.environ import Constraint
 
@@ -46,12 +48,12 @@ class ExtendedControlVolume1DBlockData(ControlVolume1DBlockData):
 
     def add_isothermal_constraint(
         self,
-        has_heat_of_reaction=False,
-        has_heat_transfer=False,
-        has_work_transfer=False,
-        has_enthalpy_transfer=False,
-        custom_term=None,
-    ):
+        has_heat_of_reaction: bool =False,
+        has_heat_transfer: bool =False,
+        has_work_transfer: bool =False,
+        has_enthalpy_transfer: bool =False,
+        custom_term: Expression =None,
+    ) -> None:
         """
         This method constructs an isothermal constraint for the control volume.
 
@@ -105,9 +107,9 @@ class ExtendedControlVolume1DBlockData(ControlVolume1DBlockData):
 
         # Add isothermal constraint
         @self.Constraint(
-            self.flowsheet().time, self.length_domain, doc="Energy balances"
+            self.flowsheet().time, self.length_domain, doc="Isothermal constraint - replaces energy balances"
         )
-        def enthalpy_balances(b, t, x):
+        def isothermal_constraint(b, t, x):
             if x == b.length_domain.first():
                 return Constraint.Skip
 
@@ -115,3 +117,5 @@ class ExtendedControlVolume1DBlockData(ControlVolume1DBlockData):
                 b.properties[t, b.length_domain.prev(x)].temperature
                 == b.properties[t, x].temperature
             )
+
+        return self.isothermal_constraint

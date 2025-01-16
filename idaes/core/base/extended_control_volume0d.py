@@ -16,6 +16,8 @@
 
 __author__ = "Andrew Lee"
 
+from pyomo.environ import Constraint, Expression
+
 # Import IDAES cores
 from idaes.core.base.control_volume0d import ControlVolume0DBlockData
 from idaes.core import declare_process_block_class
@@ -43,12 +45,12 @@ class ExtendedControlVolume0DBlockData(ControlVolume0DBlockData):
 
     def add_isothermal_constraint(
         self,
-        has_heat_of_reaction=False,
-        has_heat_transfer=False,
-        has_work_transfer=False,
-        has_enthalpy_transfer=False,
-        custom_term=None,
-    ):
+        has_heat_of_reaction: bool =False,
+        has_heat_transfer: bool =False,
+        has_work_transfer: bool =False,
+        has_enthalpy_transfer: bool =False,
+        custom_term: Expression =None,
+    ) -> Constraint:
         """
         This method constructs an isothermal constraint for the control volume.
 
@@ -101,6 +103,8 @@ class ExtendedControlVolume0DBlockData(ControlVolume0DBlockData):
             )
 
         # Add isothermal constraint
-        @self.Constraint(self.flowsheet().time, doc="Energy balances")
-        def enthalpy_balances(b, t):
+        @self.Constraint(self.flowsheet().time, doc="Isothermal constraint - replaces energy balance")
+        def isothermal_constraint(b, t):
             return b.properties_in[t].temperature == b.properties_out[t].temperature
+
+        return self.isothermal_constraint
