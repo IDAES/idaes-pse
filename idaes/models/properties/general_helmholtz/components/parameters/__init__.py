@@ -52,7 +52,8 @@ def set_parameter_path(path):
     Returns:
         None
     """
-    idaes.properties.helmholtz.parameter_file_path = path
+    idaes.cfg.properties.helmholtz.parameter_file_path = path
+    auto_register()
 
 
 def auto_register():
