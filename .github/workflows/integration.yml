@@ -134,11 +134,14 @@ jobs:
       matrix:
         python-version: ['3.9', '3.10', '3.11', '3.12']
         os:
-          - linux
           - win64
+          - ubuntu-22
+          - ubuntu-24
         include:
-          - os: linux
-            runner-image: ubuntu-20.04
+          - os: ubuntu-22
+            runner-image: ubuntu-22.04
+          - os: ubuntu-24
+            runner-image: ubuntu-22.04
           - os: win64
             runner-image: windows-2022
     steps:
@@ -172,11 +175,14 @@ jobs:
       matrix:
         python-version: ['3.9', '3.10', '3.11', '3.12']
         os:
-          - linux
           - win64
+          - ubuntu-22
+          - ubuntu-24
         include:
-          - os: linux
-            runner-image: ubuntu-20.04
+          - os: ubuntu-22
+            runner-image: ubuntu-22.04
+          - os: ubuntu-24
+            runner-image: ubuntu-22.04
           - os: win64
             runner-image: windows-2022
     steps:
