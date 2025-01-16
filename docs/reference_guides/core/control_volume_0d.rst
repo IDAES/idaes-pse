@@ -307,6 +307,6 @@ A constraint equating temperature at the inlet and outlet of the control volume 
 
 **Constraints**
 
-`enthalpy_balances(t)`:
+`isothermal_constraint(t)`:
 
 .. math:: T_{in, t} == T_{out, t}

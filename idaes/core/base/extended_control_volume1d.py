@@ -74,7 +74,7 @@ class ExtendedControlVolume1DBlockData(ControlVolume1DBlockData):
                 Method should accept time and phase list as arguments.
 
         Returns:
-            Constraint object representing enthalpy balances
+            Constraint object representing isothermal constraints
         """
         if has_heat_transfer:
             raise ConfigurationError(

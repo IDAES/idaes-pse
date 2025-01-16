@@ -336,7 +336,7 @@ A constraint equating temperature along the length domain of the control volume 
 
 **Constraints**
 
-`enthalpy_balances(t)`:
+`isothermal_constraint(t, x)`:
 
 .. math:: T_{t, x-1} == T_{t, x}
 
