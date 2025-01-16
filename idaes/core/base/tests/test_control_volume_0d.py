@@ -2280,6 +2280,20 @@ def test_add_total_energy_balances():
         m.fs.cv.add_total_energy_balances()
 
 
+@pytest.mark.unit
+def test_add_isothermal_energy_balances():
+    m = ConcreteModel()
+    m.fs = Flowsheet(dynamic=False)
+    m.fs.pp = PhysicalParameterTestBlock()
+
+    m.fs.cv = ControlVolume0DBlock(property_package=m.fs.pp)
+
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
+
+    with pytest.raises(BalanceTypeNotSupportedError):
+        m.fs.cv.add_isothermal_constraint()
+
+
 # -----------------------------------------------------------------------------
 # Test add total pressure balances
 @pytest.mark.unit
