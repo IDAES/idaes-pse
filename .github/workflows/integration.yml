@@ -43,7 +43,7 @@ defaults:
 jobs:
   precheck:
     name: (util) Check if should run
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     # the ">-" YAML syntax will result in a single string without terminating newline
     # it is used here to make the relatively complex if clause more readable by adding line breaks
     if: >-
@@ -224,7 +224,7 @@ jobs:
           - linux
         include:
           - os: linux
-            runner-image: ubuntu-20.04
+            runner-image: ubuntu-22.04
           - install-mode: pip-default
             pip-install-target: '.'
           - install-mode: pip-complete
