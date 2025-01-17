@@ -944,9 +944,13 @@ see property package for documentation.}""",
                     # Fixed outlet pressure, use this value
                     state_args_out[k] = value(cv.properties_out[t0].pressure)
                 elif blk.deltaP[t0].fixed:
-                    state_args_out[k] = value(cv.properties_in[t0].pressure + blk.deltaP[t0])
+                    state_args_out[k] = value(
+                        cv.properties_in[t0].pressure + blk.deltaP[t0]
+                    )
                 elif blk.ratioP[t0].fixed:
-                    state_args_out[k] = value(cv.properties_in[t0].pressure * blk.ratioP[t0])
+                    state_args_out[k] = value(
+                        cv.properties_in[t0].pressure * blk.ratioP[t0]
+                    )
                 else:
                     # Not obvious what to do, use inlet state
                     state_args_out[k] = value(cv.properties_in[t0].pressure)
@@ -1088,9 +1092,13 @@ see property package for documentation.}""",
                     # Fixed outlet pressure, use this value
                     state_args_out[k] = value(cv.properties_out[t0].pressure)
                 elif blk.deltaP[t0].fixed:
-                    state_args_out[k] = value(cv.properties_in[t0].pressure + blk.deltaP[t0])
+                    state_args_out[k] = value(
+                        cv.properties_in[t0].pressure + blk.deltaP[t0]
+                    )
                 elif blk.ratioP[t0].fixed:
-                    state_args_out[k] = value(cv.properties_in[t0].pressure * blk.ratioP[t0])
+                    state_args_out[k] = value(
+                        cv.properties_in[t0].pressure * blk.ratioP[t0]
+                    )
                 else:
                     # Not obvious what to do, use inlet state
                     state_args_out[k] = value(cv.properties_in[t0].pressure)
