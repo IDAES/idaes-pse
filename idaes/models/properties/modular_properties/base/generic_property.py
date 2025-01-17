@@ -1490,7 +1490,7 @@ class ModularPropertiesInitializer(InitializerBase):
                             c.activate()
                     elif getattr(c, "defining_state_var", False):
                         # Allow using a constraint to define a state var
-                        # (rather than fixing it directly) by setting 
+                        # (rather than fixing it directly) by setting
                         # c.defining_state_var = True.
                         c.activate()
 
@@ -1945,7 +1945,7 @@ class _GenericStateBlock(StateBlock):
                             c.activate()
                     elif getattr(c, "defining_state_var", False):
                         # Allow using a constraint to define a state var
-                        # (rather than fixing it directly) by setting 
+                        # (rather than fixing it directly) by setting
                         # c.defining_state_var = True. This can be used in
                         # conjunction with setting state_vars_fixed = True
                         c.activate()
