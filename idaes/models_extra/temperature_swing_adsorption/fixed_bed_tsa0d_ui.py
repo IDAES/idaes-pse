@@ -99,8 +99,10 @@ def export_to_ui() -> api.FlowsheetInterface:
                 "value": "lagrangeRadau",
                 "category": unit_name,
             },
-            # TODO This parts need to conditional render based on transformation_method
-            # TODO: this is only show when dae.finite_difference is selected
+            # TODO
+            # This part need to be conditional render based on transformation_method in UI
+            # This parts need to conditional render based on transformation_method
+            #  this is only show when dae.finite_difference is selected
             # "finite_elements": {
             #     "name": "finite_elements",
             #     "display_name": "Number of Finite Elements",
