@@ -1352,6 +1352,16 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             "add_total_energy_balances.".format(self.name)
         )
 
+    def add_isothermal_constraint(self, *args, **kwargs):
+        """
+        Requires ExtendedControlVolume0D
+        """
+        raise BalanceTypeNotSupportedError(
+            f"{self.name} ControlVolume0D does not support isothermal energy balances. "
+            "Please consider using ExtendedControlVolume0D in your model if you require "
+            "support for isothermal balances."
+        )
+
     def add_total_pressure_balances(self, has_pressure_change=False, custom_term=None):
         """
         This method constructs a set of 0D pressure balances indexed by time.

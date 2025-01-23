@@ -55,7 +55,7 @@ def test_material_balance_type():
 
 @pytest.mark.unit
 def test_energy_balance_type():
-    assert len(EnergyBalanceType) == 6
+    assert len(EnergyBalanceType) == 7
 
     # Test that error is raised when given non-member
     with pytest.raises(AttributeError):
