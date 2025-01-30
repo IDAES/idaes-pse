@@ -46,6 +46,10 @@ runs:
         echo '::group::Output of "idaes get-extensions" command'
         idaes get-extensions --extra petsc --verbose
         echo '::endgroup::'
+
+        echo '::group::Output of test commands for IDAES binaries'
+        PATH="$PATH:$(idaes bin-directory)" ipopt -v
+        echo '::endgroup::'
     - name: Install AMPL SCIP (${{ inputs.ampl-scip-pip-target }})
       if: inputs.ampl-scip-pip-target
       shell: bash -l {0}
