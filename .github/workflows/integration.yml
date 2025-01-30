@@ -141,7 +141,7 @@ jobs:
           - os: ubuntu-22
             runner-image: ubuntu-22.04
           - os: ubuntu-24
-            runner-image: ubuntu-22.04
+            runner-image: ubuntu-24.04
           - os: win64
             runner-image: windows-2022
     steps:
