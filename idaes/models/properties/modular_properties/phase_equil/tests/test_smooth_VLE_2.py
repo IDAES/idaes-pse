@@ -345,79 +345,160 @@ def test_calculate_ceos_derivative_slacks(frame):
     assert value(gn["Vap"]) == pytest.approx(EPS_INIT, abs=1e-8)
 
 
-@pytest.fixture()
-def H2O_H2_model():
-    m = ConcreteModel()
+class TestWithNonCondensable:
+    # TODO These tests could be fleshed out
+    @pytest.fixture()
+    def H2O_H2_model(self):
+        m = ConcreteModel()
 
-    # Create a dummy parameter block
-    m.params = GenericParameterBlock(
-        components={
-            "H2O": {
-                "parameter_data": {
-                    "pressure_crit": (220.6e5, pyunits.Pa),
-                    "temperature_crit": (647, pyunits.K),
-                    "omega": 0.344,
-                    "pressure_sat_comp_coeff": {  # NIST <- Stull 1947
-                        "A": 4.6543,
-                        "B": 1435.264,
-                        "C": -64.848,
+        # Create a dummy parameter block
+        m.params = GenericParameterBlock(
+            components={
+                "H2O": {
+                    "parameter_data": {
+                        "pressure_crit": (220.6e5, pyunits.Pa),
+                        "temperature_crit": (647, pyunits.K),
+                        "omega": 0.344,
+                        "pressure_sat_comp_coeff": {  # NIST <- Stull 1947
+                            "A": 4.6543,
+                            "B": 1435.264,
+                            "C": -64.848,
+                        },
+                    },
+                    "pressure_sat_comp": NIST,
+                    "phase_equilibrium_form": {("Vap", "Liq"): fugacity},
+                },
+                "H2": {
+                    "valid_phase_types": [PhaseType.vaporPhase],
+                    "parameter_data": {
+                        "pressure_crit": (13e5, pyunits.Pa),
+                        "temperature_crit": (33.2, pyunits.K),
+                        "omega": -0.218,
                     },
                 },
-                "pressure_sat_comp": NIST,
-                "phase_equilibrium_form": {("Vap", "Liq"): fugacity},
             },
-            "H2": {
-                "valid_phase_types": [PhaseType.vaporPhase],
-                "parameter_data": {
-                    "pressure_crit": (13e5, pyunits.Pa),
-                    "temperature_crit": (33.2, pyunits.K),
-                    "omega": -0.218,
+            phases={
+                "Liq": {
+                    "equation_of_state": Cubic,
+                    "equation_of_state_options": {"type": CubicType.PR},
+                },
+                "Vap": {
+                    "equation_of_state": Cubic,
+                    "equation_of_state_options": {"type": CubicType.PR},
                 },
             },
-        },
-        phases={
-            "Liq": {
-                "equation_of_state": Cubic,
-                "equation_of_state_options": {"type": CubicType.PR},
+            state_definition=FTPx,
+            pressure_ref=100000.0,
+            temperature_ref=300,
+            base_units={
+                "time": pyunits.s,
+                "length": pyunits.m,
+                "mass": pyunits.kg,
+                "amount": pyunits.mol,
+                "temperature": pyunits.K,
             },
-            "Vap": {
-                "equation_of_state": Cubic,
-                "equation_of_state_options": {"type": CubicType.PR},
+            phases_in_equilibrium=[("Vap", "Liq")],
+            phase_equilibrium_state={("Vap", "Liq"): CubicComplementarityVLE},
+            parameter_data={
+                "PR_kappa": {
+                    ("H2O", "H2O"): 0.000,
+                    ("H2", "H2O"): 0.000,
+                    ("H2O", "H2"): 0.000,
+                    ("H2", "H2"): 0.000,
+                }
             },
-        },
-        state_definition=FTPx,
-        pressure_ref=100000.0,
-        temperature_ref=300,
-        base_units={
-            "time": pyunits.s,
-            "length": pyunits.m,
-            "mass": pyunits.kg,
-            "amount": pyunits.mol,
-            "temperature": pyunits.K,
-        },
-        phases_in_equilibrium=[("Vap", "Liq")],
-        phase_equilibrium_state={("Vap", "Liq"): CubicComplementarityVLE},
-        parameter_data={
-            "PR_kappa": {
-                ("H2O", "H2O"): 0.000,
-                ("H2", "H2O"): 0.000,
-                ("H2O", "H2"): 0.000,
-                ("H2", "H2"): 0.000,
-            }
-        },
-    )
+        )
 
-    # Create a dummy state block
-    m.props = m.params.state_block_class([1], parameters=m.params)
+        # Create a dummy state block
+        m.props = m.params.state_block_class([1], parameters=m.params)
 
-    return m
+        return m
+
+    @pytest.mark.unit
+    def test_calculate_teq_permanent_gas(self, H2O_H2_model):
+        m = H2O_H2_model
+        m.props[1].pressure.set_value(1e5)
+        m.props[1].temperature.set_value(300)
+        CubicComplementarityVLE.calculate_teq(m.props[1], ("Vap", "Liq"))
+        assert not m.props[1].is_property_constructed("temperature_dew")
+        assert not m.props[1].is_property_constructed("temperature_bubble")
 
 
-@pytest.mark.unit
-def test_calculate_teq_permanent_gas(H2O_H2_model):
-    m = H2O_H2_model
-    m.props[1].pressure.set_value(1e5)
-    m.props[1].temperature.set_value(300)
-    CubicComplementarityVLE.calculate_teq(m.props[1], ("Vap", "Liq"))
-    assert not m.props[1].is_property_constructed("temperature_dew")
-    assert not m.props[1].is_property_constructed("temperature_bubble")
+class TestWithNonVolatile:
+    # TODO These tests could be fleshed out
+    @pytest.fixture()
+    def H2O_TEG_model(self):
+        m = ConcreteModel()
+
+        # Create a dummy parameter block
+        m.params = GenericParameterBlock(
+            components={
+                "H2O": {
+                    "parameter_data": {
+                        "pressure_crit": (220.6e5, pyunits.Pa),
+                        "temperature_crit": (647, pyunits.K),
+                        "omega": 0.344,
+                        "pressure_sat_comp_coeff": {  # NIST <- Stull 1947
+                            "A": 4.6543,
+                            "B": 1435.264,
+                            "C": -64.848,
+                        },
+                    },
+                    "pressure_sat_comp": NIST,
+                    "phase_equilibrium_form": {("Vap", "Liq"): fugacity},
+                },
+                "TEG": {  # Triethylene Glycol
+                    "valid_phase_types": [PhaseType.liquidPhase],
+                    # Values from WolframAlpha
+                    "parameter_data": {
+                        "pressure_crit": (3.3e6, pyunits.Pa),
+                        "temperature_crit": (797, pyunits.K),
+                        "omega": 0.51,
+                    },
+                },
+            },
+            phases={
+                "Liq": {
+                    "equation_of_state": Cubic,
+                    "equation_of_state_options": {"type": CubicType.PR},
+                },
+                "Vap": {
+                    "equation_of_state": Cubic,
+                    "equation_of_state_options": {"type": CubicType.PR},
+                },
+            },
+            state_definition=FTPx,
+            pressure_ref=100000.0,
+            temperature_ref=300,
+            base_units={
+                "time": pyunits.s,
+                "length": pyunits.m,
+                "mass": pyunits.kg,
+                "amount": pyunits.mol,
+                "temperature": pyunits.K,
+            },
+            phases_in_equilibrium=[("Vap", "Liq")],
+            phase_equilibrium_state={("Vap", "Liq"): CubicComplementarityVLE},
+            parameter_data={
+                "PR_kappa": {
+                    ("H2O", "H2O"): 0.000,
+                    ("TEG", "H2O"): 0.000,
+                    ("H2O", "TEG"): 0.000,
+                    ("TEG", "TEG"): 0.000,
+                }
+            },
+        )
+
+        # Create a dummy state block
+        m.props = m.params.state_block_class([1], parameters=m.params)
+
+        return m
+
+    @pytest.mark.unit
+    def test_calculate_teq_permanent_gas(self, H2O_TEG_model):
+        m = H2O_TEG_model
+        m.props[1].pressure.set_value(1e5)
+        m.props[1].temperature.set_value(300)
+        CubicComplementarityVLE.calculate_teq(m.props[1], ("Vap", "Liq"))
+        assert not m.props[1].is_property_constructed("temperature_dew")
+        assert not m.props[1].is_property_constructed("temperature_bubble")
