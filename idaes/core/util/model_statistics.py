@@ -1729,6 +1729,37 @@ def number_active_variables_in_deactivated_blocks(block):
     """
     return len(active_variables_in_deactivated_blocks_set(block))
 
+def uninitialized_variables_in_activated_equalities_set(block):
+    """
+    Method to return a ComponentSet of all fixed Var components which appear
+    within an equality Constraint in a model.
+
+    Args:
+        block : model to be studied
+
+    Returns:
+        A ComponentSet including all fixed Var components which appear within
+        activated equality Constraints in block
+    """
+    var_set = ComponentSet()
+    for v in variables_in_activated_equalities_set(block):
+        if v.value is None:
+            var_set.add(v)
+    return var_set
+
+def number_uninitialized_variables_in_activated_equalities(block):
+    """
+    Method to return the number of Var components which appear within an active
+    Constraint but belong to a deactivated Block in a model.
+
+    Args:
+        block : model to be studied
+
+    Returns:
+        Number of Var components which belong to a deactivated Block but appear
+        in an activate Constraint in block
+    """
+    return len(uninitialized_variables_in_activated_equalities_set(block))
 
 # -------------------------------------------------------------------------
 # Reporting methods
