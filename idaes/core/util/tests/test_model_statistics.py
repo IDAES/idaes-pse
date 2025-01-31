@@ -657,23 +657,23 @@ def test_uninitialized_variables_in_activated_constraints():
 
     active_uninit_set = ComponentSet([m.y[1], m.z, m.block1.a])
 
-    assert uninitialized_variables_in_activated_equalities_set(m) == active_uninit_set
-    assert number_uninitialized_variables_in_activated_equalities(m) == len(active_uninit_set)
+    assert variables_with_none_value_in_activated_equalities_set(m) == active_uninit_set
+    assert number_variables_with_none_value_in_activated_equalities(m) == len(active_uninit_set)
 
     m.block1.deactivate()
 
     active_uninit_set = ComponentSet([m.y[1], m.z])
 
-    assert uninitialized_variables_in_activated_equalities_set(m) == active_uninit_set
-    assert number_uninitialized_variables_in_activated_equalities(m) == len(active_uninit_set)
+    assert variables_with_none_value_in_activated_equalities_set(m) == active_uninit_set
+    assert number_variables_with_none_value_in_activated_equalities(m) == len(active_uninit_set)
 
     m.block1.activate()
     m.con_z.deactivate()
 
     active_uninit_set = ComponentSet([m.y[1], m.block1.a])
 
-    assert uninitialized_variables_in_activated_equalities_set(m) == active_uninit_set
-    assert number_uninitialized_variables_in_activated_equalities(m) == len(active_uninit_set)
+    assert variables_with_none_value_in_activated_equalities_set(m) == active_uninit_set
+    assert number_variables_with_none_value_in_activated_equalities(m) == len(active_uninit_set)
 
 # -------------------------------------------------------------------------
 # Objective methods
