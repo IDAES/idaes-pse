@@ -630,6 +630,61 @@ def test_number_derivative_variables():
     assert number_derivative_variables(m) == 0
 
 
+@pytest.mark.unit
+def test_uninitialized_variables_in_activated_constraints():
+    m = ConcreteModel()
+    m.u = Var()
+    m.w = Var(initialize=1)
+    m.x = Var(initialize=1)
+    m.y = Var(range(3), initialize=[1, None, 2])
+    m.z = Var()
+
+    m.con_w = Constraint(expr=m.w == 0)
+    m.con_x = Constraint(expr=m.x == 1)
+
+    def rule_con_y(b, i):
+        return b.y[i] == 3
+
+    m.con_y = Constraint(range(3), rule=rule_con_y)
+    m.con_z = Constraint(expr=m.x + m.z == -1)
+
+    m.block1 = Block()
+    m.block1.a = Var()
+    m.block1.b = Var(initialize=7)
+    m.block1.c = Var(initialize=-5)
+    m.block1.d = Var()
+
+    m.block1.con_a = Constraint(expr=m.block1.a**2 + m.block1.b == 1)
+    m.block1.con_b = Constraint(expr=m.block1.b + m.block1.c == 3)
+    m.block1.con_c = Constraint(expr=m.block1.c + m.block1.a == -4)
+
+    active_uninit_set = ComponentSet([m.y[1], m.z, m.block1.a])
+
+    assert variables_with_none_value_in_activated_equalities_set(m) == active_uninit_set
+    assert number_variables_with_none_value_in_activated_equalities(m) == len(
+        active_uninit_set
+    )
+
+    m.block1.deactivate()
+
+    active_uninit_set = ComponentSet([m.y[1], m.z])
+
+    assert variables_with_none_value_in_activated_equalities_set(m) == active_uninit_set
+    assert number_variables_with_none_value_in_activated_equalities(m) == len(
+        active_uninit_set
+    )
+
+    m.block1.activate()
+    m.con_z.deactivate()
+
+    active_uninit_set = ComponentSet([m.y[1], m.block1.a])
+
+    assert variables_with_none_value_in_activated_equalities_set(m) == active_uninit_set
+    assert number_variables_with_none_value_in_activated_equalities(m) == len(
+        active_uninit_set
+    )
+
+
 # -------------------------------------------------------------------------
 # Objective methods
 @pytest.mark.unit
