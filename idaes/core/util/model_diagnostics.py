@@ -634,8 +634,8 @@ class DiagnosticsToolbox:
 
     def display_variables_with_none_value_in_activated_constraints(self, stream=None):
         """
-        Prints a list of variables with values of None that are present in the 
-        mathematical program generated to solve the model. This list includes only 
+        Prints a list of variables with values of None that are present in the
+        mathematical program generated to solve the model. This list includes only
         variables in active constraints that are reachable through active blocks.
 
         Args:
@@ -652,7 +652,9 @@ class DiagnosticsToolbox:
             stream=stream,
             lines_list=[
                 f"{v.name}"
-                for v in variables_with_none_value_in_activated_equalities_set(self._model)
+                for v in variables_with_none_value_in_activated_equalities_set(
+                    self._model
+                )
             ],
             title=f"The following variable(s) have a value of None:",
             header="=",
@@ -661,12 +663,14 @@ class DiagnosticsToolbox:
 
     def _verify_active_variables_initialized(self, stream=None):
         """
-        Validate that all variables are initialized (i.e., have values set to 
-        something other than None) before doing further numerical analysis. 
-        Stream argument provided for forward compatibility (in case we want 
+        Validate that all variables are initialized (i.e., have values set to
+        something other than None) before doing further numerical analysis.
+        Stream argument provided for forward compatibility (in case we want
         to print a list or something).
         """
-        n_uninit = len(variables_with_none_value_in_activated_equalities_set(self._model))
+        n_uninit = len(
+            variables_with_none_value_in_activated_equalities_set(self._model)
+        )
         if n_uninit > 0:
             raise RuntimeError(
                 f"Found {n_uninit} variables with a value of None in the mathematical "
@@ -972,8 +976,6 @@ class DiagnosticsToolbox:
             stream.write("\n")
 
         stream.write("=" * MAX_STR_LENGTH + "\n")
-
-
 
     def display_variables_with_extreme_jacobians(self, stream=None):
         """
@@ -1385,7 +1387,7 @@ class DiagnosticsToolbox:
 
         """
         # Although, in principle, this method doesn't require
-        # all variables to be initialized, its current 
+        # all variables to be initialized, its current
         # implementation does.
         self._verify_active_variables_initialized(stream=stream)
 
