@@ -243,11 +243,11 @@ class CubicComplementarityVLE:
             vapor_phase,
             raoult_comps,
             henry_comps,
-            _,
+            l_only_comps,
             v_only_comps,
         ) = identify_VL_component_list(blk, pp)
 
-        if v_only_comps is None:
+        if len(v_only_comps) == 0:
             if blk.is_property_constructed("temperature_bubble"):
                 Tbub = value(blk.temperature_bubble[pp])
             else:
@@ -258,7 +258,7 @@ class CubicComplementarityVLE:
         else:
             t1 = value(blk.temperature)
 
-        if v_only_comps is None:
+        if len(l_only_comps) == 0:
             if blk.is_property_constructed("temperature_dew"):
                 Tdew = value(blk.temperature_bubble[pp])
             else:
