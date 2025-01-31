@@ -256,7 +256,6 @@ class TestVariablesWithNoneValue:
             "display_near_parallel_variables",
             "display_constraints_with_mismatched_terms",
             "display_constraints_with_canceling_terms",
-            # "display_problematic_constraint_terms",
             "display_constraints_with_no_free_variables",
             "report_numerical_issues",
         ]
@@ -1100,8 +1099,8 @@ Dulmage-Mendelsohn Over-Constrained Set
     def test_display_variables_with_extreme_jacobians(self):
         model = ConcreteModel()
         model.v1 = Var(initialize=1e-8)
-        model.v2 = Var()
-        model.v3 = Var()
+        model.v2 = Var(initialize=1)
+        model.v3 = Var(initialize=1)
 
         model.c1 = Constraint(expr=model.v1 == model.v2)
         model.c2 = Constraint(expr=model.v1 == 1e-8 * model.v3)
@@ -1128,8 +1127,8 @@ The following variable(s) are associated with extreme Jacobian values (<1.0E-04 
     def test_display_constraints_with_extreme_jacobians(self):
         model = ConcreteModel()
         model.v1 = Var(initialize=1e-8)
-        model.v2 = Var()
-        model.v3 = Var()
+        model.v2 = Var(initialize=1)
+        model.v3 = Var(initialize=1)
 
         model.c1 = Constraint(expr=model.v1 == model.v2)
         model.c2 = Constraint(expr=model.v1 == 1e-8 * model.v3)
@@ -1154,8 +1153,8 @@ The following constraint(s) are associated with extreme Jacobian values (<1.0E-0
     def test_display_extreme_jacobian_entries(self):
         model = ConcreteModel()
         model.v1 = Var(initialize=1e-8)
-        model.v2 = Var()
-        model.v3 = Var()
+        model.v2 = Var(initialize=1)
+        model.v3 = Var(initialize=1)
 
         model.c1 = Constraint(expr=model.v1 == model.v2)
         model.c2 = Constraint(expr=model.v1 == 1e-8 * model.v3)
@@ -1184,8 +1183,8 @@ values (<1.0E-04 or>1.0E+04):
     def test_display_near_parallel_constraints(self):
         model = ConcreteModel()
         model.v1 = Var(initialize=1e-8)
-        model.v2 = Var()
-        model.v3 = Var()
+        model.v2 = Var(initialize=1)
+        model.v3 = Var(initialize=1)
 
         model.c1 = Constraint(expr=model.v1 == model.v2)
         model.c2 = Constraint(expr=model.v1 == 1e-8 * model.v3)
@@ -1211,9 +1210,9 @@ The following pairs of constraints are nearly parallel:
     def test_display_near_parallel_variables(self):
         model = ConcreteModel()
         model.v1 = Var(initialize=1e-8)
-        model.v2 = Var()
-        model.v3 = Var()
-        model.v4 = Var()
+        model.v2 = Var(initialize=1)
+        model.v3 = Var(initialize=1)
+        model.v4 = Var(initialize=1)
 
         model.c1 = Constraint(expr=1e-8 * model.v1 == 1e-8 * model.v2 - 1e-8 * model.v4)
         model.c2 = Constraint(expr=1e-8 * model.v1 + 1e-8 * model.v4 == model.v3)

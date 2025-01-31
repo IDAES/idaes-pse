@@ -604,7 +604,7 @@ class DiagnosticsToolbox:
                     tolerance=self.config.variable_bounds_violation_tolerance,
                 )
             ],
-            title=f"The following variable(s) have values at or outside their bounds "
+            title="The following variable(s) have values at or outside their bounds "
             f"(tol={self.config.variable_bounds_violation_tolerance:.1E}):",
             header="=",
             footer="=",
@@ -656,7 +656,7 @@ class DiagnosticsToolbox:
                     self._model
                 )
             ],
-            title=f"The following variable(s) have a value of None:",
+            title="The following variable(s) have a value of None:",
             header="=",
             footer="=",
         )
