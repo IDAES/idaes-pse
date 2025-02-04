@@ -10,6 +10,10 @@ from idaes.models_extra.temperature_swing_adsorption.fixed_bed_tsa0d_ui import (
 )
 from idaes.core.util.tables import stream_table_dataframe_to_string
 
+from pyomo.environ import (
+    check_optimal_termination,
+)
+
 _log = logging.getLogger(__name__)
 
 
