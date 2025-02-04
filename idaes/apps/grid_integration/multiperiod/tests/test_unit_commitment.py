@@ -18,7 +18,71 @@ import idaes.apps.grid_integration.multiperiod.unit_commitment as uc
 
 
 @pytest.mark.unit
+def test_unit_commitment_data():
+    """Tests the UnitCommitmentData class"""
+    m = uc.UnitCommitmentData(
+        blk_name="ngcc",
+        commodity_name="power",
+        op_range_lb=0.3,
+    )
+    assert m.config.startup_rate is None
+    assert m.config.shutdown_rate is None
+    assert m.config.rampup_rate is None
+    assert m.config.rampdown_rate is None
+    assert m.config.op_range_lb == pytest.approx(0.3)
+    assert m.blk_name == "ngcc"
+    assert m.commodity_name == "power"
+
+    # Test the update method
+    mdl = pyo.ConcreteModel()
+    mdl.capacity = pyo.Var()
+
+    m.update(
+        startup_rate=0.4,
+        rampup_rate=0.4,
+        capacity=mdl.capacity,
+    )
+    assert m.config.startup_rate == pytest.approx(0.4)
+    assert m.config.rampup_rate == pytest.approx(0.4)
+    assert isinstance(m.config.capacity, pyo.Var)
+    assert m.config.capacity.value is None
+
+    # Test assertion error associated with invalid startup_rate
+    with pytest.raises(
+        uc.ConfigurationError,
+        match=(
+            "For commidity power in operational "
+            "block ngcc, \n\tthe startup rate is less than "
+            "the minimum stable operation value."
+        ),
+    ):
+        m.update(startup_rate=0.2)
+
+    # Test assertion error associated with invalid shutdown_rate
+    with pytest.raises(
+        uc.ConfigurationError,
+        match=(
+            "For commidity power in operational "
+            "block ngcc, \n\tthe shutdown rate is less than "
+            "the minimum stable operation value."
+        ),
+    ):
+        m.update(startup_rate=0.4, shutdown_rate=0.2)
+
+    # Test assertion error associated with incomplete data
+    with pytest.raises(
+        uc.ConfigurationError,
+        match=(
+            "Necessary arguments needed for the ramping constraints " "are missing."
+        ),
+    ):
+        # rampdown_rate value is missing, so it should throw an error.
+        m.assert_ramping_args_present()
+
+
+@pytest.mark.unit
 def test_startup_shutdown_constraints():
+    """Tests the startup_shutdown_constraints function"""
     m = pyo.ConcreteModel()
     m.set_time = pyo.RangeSet(10)
 
@@ -96,6 +160,10 @@ def test_startup_shutdown_constraints():
 
 @pytest.mark.unit
 def test_capacity_limits_with_float():
+    """
+    Tests the capacity_limits function with a constant
+    for capacity variable
+    """
     m = pyo.ConcreteModel()
     m.set_time = pyo.RangeSet(10)
 
@@ -105,11 +173,13 @@ def test_capacity_limits_with_float():
         b.op_mode = pyo.Var(within=pyo.Binary)
 
     m.cap_limits = pyo.Block()
+    uc_data = uc.UnitCommitmentData(
+        blk_name="op_blk", commodity_name="power", op_range_lb=0.3, capacity=650.0
+    )
     uc.capacity_limits(
         blk=m.cap_limits,
         op_blocks=m.op_blk,
-        commodity="power",
-        limits=(150.5, 650.0),
+        uc_data=uc_data,
         set_time=m.set_time,
     )
 
@@ -120,8 +190,8 @@ def test_capacity_limits_with_float():
     assert len(cl.capacity_high_limit_con) == 10
 
     # Check if the constraint is implemented correctly
-    con1_1 = "150.5*op_blk[1].op_mode  <=  op_blk[1].power"
-    con1_9 = "150.5*op_blk[9].op_mode  <=  op_blk[9].power"
+    con1_1 = "195.0*op_blk[1].op_mode  <=  op_blk[1].power"
+    con1_9 = "195.0*op_blk[9].op_mode  <=  op_blk[9].power"
     assert con1_1 == str(cl.capacity_low_limit_con[1].expr)
     assert con1_9 == str(cl.capacity_low_limit_con[9].expr)
 
@@ -133,8 +203,10 @@ def test_capacity_limits_with_float():
 
 @pytest.mark.unit
 def test_capacity_limits_with_var():
-    # NOTE: This test ensures that the function
-    # also works with Pyomo Expressions as limits
+    """
+    Tests the capacity_limits function with a Pyomo Var
+    for capacity variable
+    """
     m = pyo.ConcreteModel()
     m.set_time = pyo.RangeSet(10)
     m.capacity = pyo.Var(bounds=(150, 600))
@@ -145,11 +217,13 @@ def test_capacity_limits_with_var():
         b.op_mode = pyo.Var(within=pyo.Binary)
 
     m.cap_limits = pyo.Block()
+    uc_data = uc.UnitCommitmentData(
+        blk_name="op_blk", commodity_name="power", op_range_lb=0.3, capacity=m.capacity
+    )
     uc.capacity_limits(
         blk=m.cap_limits,
         op_blocks=m.op_blk,
-        commodity="power",
-        limits=(0.3 * m.capacity, m.capacity),
+        uc_data=uc_data,
         set_time=m.set_time,
     )
 
@@ -169,6 +243,7 @@ def test_capacity_limits_with_var():
 
 @pytest.mark.unit
 def test_ramping_limits():
+    """Tests the ramping_limits constraint"""
     m = pyo.ConcreteModel()
     m.set_time = pyo.RangeSet(10)
     m.capacity = pyo.Var(bounds=(150, 600))
@@ -181,14 +256,19 @@ def test_ramping_limits():
         b.shutdown = pyo.Var(within=pyo.Binary)
 
     m.ramp_limits = pyo.Block()
+    uc_data = uc.UnitCommitmentData(
+        blk_name="op_blk",
+        commodity_name="power",
+        capacity=m.capacity,
+        startup_rate=0.3,
+        shutdown_rate=0.3,
+        rampup_rate=0.2,
+        rampdown_rate=0.15,
+    )
     uc.ramping_limits(
         blk=m.ramp_limits,
         op_blocks=m.op_blk,
-        ramping_var="power",
-        startup_rate=(0.3 * m.capacity),
-        shutdown_rate=(0.3 * m.capacity),
-        rampup_rate=(0.2 * m.capacity),
-        rampdown_rate=(0.15 * m.capacity),
+        uc_data=uc_data,
         set_time=m.set_time,
     )
 

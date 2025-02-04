@@ -17,8 +17,118 @@ constraints: startup/shutdown, uptime/downtime constraints,
 capacity limit constraints, and ramping constraints.
 """
 
-from typing import Union, Any
+from typing import Union
+from pyomo.common.config import ConfigDict, ConfigValue
 from pyomo.environ import Block, Constraint, Var, RangeSet
+from idaes.core.util.config import ConfigurationError, is_in_range
+
+
+class UnitCommitmentData:
+    """Dataclass to store startup, shutdown, and ramp rates"""
+
+    def __init__(self, blk_name: str, commodity_name: str, **kwargs):
+        self.blk_name = blk_name
+        self.commodity_name = commodity_name
+        self.config = self._get_config()
+        self.update(**kwargs)
+
+    def _get_config(self):
+        config = ConfigDict()
+        config.declare(
+            "startup_rate",
+            ConfigValue(
+                domain=is_in_range(0, 1),
+                doc="Startup rate as a fraction of design capacity",
+            ),
+        )
+        config.declare(
+            "shutdown_rate",
+            ConfigValue(
+                domain=is_in_range(0, 1),
+                doc="Shutdown rate as a fraction of design capacity",
+            ),
+        )
+        config.declare(
+            "rampup_rate",
+            ConfigValue(
+                domain=is_in_range(0, 1),
+                doc="Rampup rate as a fraction of design capacity",
+            ),
+        )
+        config.declare(
+            "rampdown_rate",
+            ConfigValue(
+                domain=is_in_range(0, 1),
+                doc="Rampdown rate as a fraction of design capacity",
+            ),
+        )
+        config.declare(
+            "op_range_lb",
+            ConfigValue(
+                domain=is_in_range(0, 1),
+                doc="Minimum stable operation range as a fraction of design capacity",
+            ),
+        )
+        config.declare(
+            "capacity",
+            ConfigValue(
+                doc=(
+                    "Parameter/variable denoting the maximum "
+                    "capacity of the commodity"
+                ),
+            ),
+        )
+
+        return config
+
+    def update(self, **kwargs):
+        """Updates the attribute values"""
+        self.config.set_value(kwargs)
+        self.assert_startup_rate_validity()
+        self.assert_shutdown_rate_validity()
+
+    def assert_startup_rate_validity(self):
+        """Raises an error if startup rate value is not valid."""
+        if None in (self.config.op_range_lb, self.config.startup_rate):
+            # One of the values is not provided, so skip the check
+            return
+
+        if self.config.startup_rate < self.config.op_range_lb:
+            raise ConfigurationError(
+                f"For commidity {self.commodity_name} in operational "
+                f"block {self.blk_name}, \n\tthe startup rate is less than "
+                f"the minimum stable operation value."
+            )
+
+    def assert_shutdown_rate_validity(self):
+        """Raises an error if shutdown rate value is not valid"""
+        if None in (self.config.op_range_lb, self.config.shutdown_rate):
+            # One of the values is not provided, so skip the check
+            return
+
+        if self.config.shutdown_rate < self.config.op_range_lb:
+            raise ConfigurationError(
+                f"For commidity {self.commodity_name} in operational "
+                f"block {self.blk_name}, \n\tthe shutdown rate is less than "
+                f"the minimum stable operation value."
+            )
+
+    def assert_ramping_args_present(self):
+        """
+        Raises an error if any of the arguments needed for the ramping
+        constraints is missing.
+        """
+        cf = self.config
+        if None in (
+            cf.startup_rate,
+            cf.shutdown_rate,
+            cf.rampup_rate,
+            cf.rampdown_rate,
+            cf.capacity,
+        ):
+            raise ConfigurationError(
+                "Necessary arguments needed for the ramping constraints " "are missing."
+            )
 
 
 def startup_shutdown_constraints(
@@ -67,13 +177,17 @@ def startup_shutdown_constraints(
 def capacity_limits(
     blk: Block,
     op_blocks: dict,
-    commodity: str,
-    limits: tuple,
+    uc_data: UnitCommitmentData,
     set_time: RangeSet,
 ):
     """
     Appends capacity limit constraints
     """
+    commodity = uc_data.commodity_name
+    limits = (
+        uc_data.config.op_range_lb * uc_data.config.capacity,
+        uc_data.config.capacity,
+    )
     commodity = {t: getattr(blk, commodity) for t, blk in op_blocks.items()}
 
     @blk.Constraint(set_time)
@@ -88,17 +202,18 @@ def capacity_limits(
 def ramping_limits(
     blk: Block,
     op_blocks: dict,
-    ramping_var: str,
-    startup_rate: Any,
-    shutdown_rate: Any,
-    rampup_rate: Any,
-    rampdown_rate: Any,
+    uc_data: UnitCommitmentData,
     set_time: RangeSet,
 ):
     """
     Appends ramping constraints
     """
-    ramping_var = {t: getattr(blk, ramping_var) for t, blk in op_blocks.items()}
+    _ramping_var = uc_data.commodity_name
+    startup_rate = uc_data.config.startup_rate * uc_data.config.capacity
+    shutdown_rate = uc_data.config.shutdown_rate * uc_data.config.capacity
+    rampup_rate = uc_data.config.rampup_rate * uc_data.config.capacity
+    rampdown_rate = uc_data.config.rampdown_rate * uc_data.config.capacity
+    ramping_var = {t: getattr(blk, _ramping_var) for t, blk in op_blocks.items()}
 
     @blk.Constraint(set_time)
     def ramp_up_con(_, t):
