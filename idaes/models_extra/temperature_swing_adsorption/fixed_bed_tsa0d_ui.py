@@ -21,12 +21,10 @@
 UI exports for 0D Fixed Bed TSA unit model.
 """
 import pytest
-from pyomo.environ import ConcreteModel, SolverFactory, value, units, Var, Expression
+from pyomo.environ import ConcreteModel, SolverFactory, units
 from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.core.util as iutil
-from idaes.core.solvers import get_solver
-from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaes_log
 from idaes_flowsheet_processor import api
 
