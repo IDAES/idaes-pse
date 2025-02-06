@@ -279,7 +279,7 @@ class TestVariablesWithNoneValue:
             match=self.err_msg(3),
         ):
             diag_tbx.display_problematic_constraint_terms(model.con_y[1])
-        # Right now the error message should show whether or not
+        # The current implementation shows an error message whether or not
         # a problematic constraint is called.
         with pytest.raises(
             RuntimeError,
