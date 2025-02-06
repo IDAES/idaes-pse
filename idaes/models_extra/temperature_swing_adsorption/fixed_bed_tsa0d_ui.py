@@ -12,10 +12,7 @@
 #################################################################################
 
 # TODO:
-# 1. export_to_ui collocation_points and finite_elements need to be conditional render based on transformation_method
-# 2. Optimization confusing user need add one option simulation
-# 3. Question Generally missing: Costing metrics (Alex Noring added them)
-# 4. Build out graph (go run Jupyter at TSA0D model last step)
+# 1. Build out graph (go run Jupyter at TSA0D model last step)
 
 """
 UI exports for 0D Fixed Bed TSA unit model.
