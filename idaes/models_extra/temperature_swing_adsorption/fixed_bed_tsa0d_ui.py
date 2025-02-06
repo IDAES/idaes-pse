@@ -47,6 +47,11 @@ unit_name = "FixedBedTSA0D"
 
 
 def export_to_ui() -> api.FlowsheetInterface:
+    """
+    Export the model to UI, define the UI options and build the model.
+    Return:
+        fsi object.
+    """
     fsi = api.FlowsheetInterface(
         name="0D Fixed Bed TSA",
         description=model_name_for_ui,  # The water tap UI use description as flowsheet name
@@ -126,6 +131,12 @@ def export_to_ui() -> api.FlowsheetInterface:
 
 
 def build(build_options=None, **kwargs):
+    """
+    Build the model
+
+    Return:
+        the model object.
+    """
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 
@@ -187,6 +198,12 @@ def build(build_options=None, **kwargs):
 
 
 def export(flowsheet=None, exports=None, build_options=None, **kwargs):
+    """
+    Define which variables to export to UI exports.
+
+    Return:
+        None.
+    """
     fs = flowsheet
 
     for compound in "H2O", "CO2", "N2", "O2":
@@ -487,7 +504,12 @@ def export(flowsheet=None, exports=None, build_options=None, **kwargs):
 
 
 def initialize(fs, **kwargs):
-    """Initialize the model."""
+    """
+    Initialize the model.
+
+    Return:
+        solver_options
+    """
 
     solver_options = {
         "nlp_scaling_method": "user-scaling",
@@ -503,7 +525,12 @@ def initialize(fs, **kwargs):
 
 
 def solve(flowsheet=None, **kwargs):
-    """Solve the model."""
+    """
+    Solve the model.
+
+    Return:
+        solver results.
+    """
     fs = flowsheet
 
     iutil.scaling.calculate_scaling_factors(fs.tsa)
