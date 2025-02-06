@@ -44,6 +44,7 @@ class ExtraDependencies:
     omlt = [
         "omlt==1.1",  # fix the version for now as package evolves
         "tensorflow",
+        "onnx",
     ]
     grid = [
         "gridx-prescient>=2.2.1",  # idaes.tests.prescient
@@ -81,7 +82,7 @@ kwargs = dict(
     # Put abstract (non-versioned) deps here.
     # Concrete dependencies go in requirements[-dev].txt
     install_requires=[
-        "pyomo >= 6.8.0",
+        "pyomo >= 6.8.2",
         "pint >= 0.24.1",  # required to use Pyomo units. Pint 0.24.1 needed for Python 3.9 support
         "networkx",  # required to use Pyomo network
         "numpy>=1,<3",
@@ -127,6 +128,7 @@ kwargs = dict(
             "*.trc",
             "*.nl",
             "*.keras",  # idaes/core/surrogate/tests/data/keras_models
+            "*.onnx",
         ]
     },
     include_package_data=True,

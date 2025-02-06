@@ -16,7 +16,6 @@ Base class for custom scaling routines.
 Author: Andrew Lee
 """
 from copy import copy
-from enum import Enum
 
 from pyomo.environ import ComponentMap, units, value
 from pyomo.core.base.units_container import UnitsError
@@ -26,6 +25,7 @@ from pyomo.core.expr.calculus.derivatives import Modes, differentiate
 from idaes.core.scaling.scaling_base import CONFIG, ScalerBase
 from idaes.core.scaling.util import get_scaling_factor, NominalValueExtractionVisitor
 import idaes.logger as idaeslog
+from idaes.core.util.misc import StrEnum
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -41,7 +41,7 @@ DEFAULT_UNIT_SCALING = {
 }
 
 
-class ConstraintScalingScheme(str, Enum):
+class ConstraintScalingScheme(StrEnum):
     """
     Schemes available for calculating constraint scaling factors.
 
@@ -554,8 +554,7 @@ class CustomScalerBase(ScalerBase):
 
     def call_submodel_scaler_method(
         self,
-        model,
-        submodel: str,
+        submodel,
         method: str,
         submodel_scalers: ComponentMap = None,
         overwrite: bool = False,
@@ -567,47 +566,40 @@ class CustomScalerBase(ScalerBase):
         default scaler for the submodel is used.
 
         Args:
-            model: parent model of submodel
-            submodel: local name of submodel to be scaled as str
+            submodel: submodel to be scaled
             submodel_scalers: user provided ComponentMap of Scalers to use for submodels
             method: name of method to call from submodel (as string)
+            overwrite: whether to overwrite existing scaling factors
 
         Returns:
             None
         """
-        # Get actual submodel object from name
-        # For this method, we have to use the component name as the Scaler is written
-        # before the model is constructed.
-        sm_obj = model.find_component(submodel)
-
         if submodel_scalers is None:
             submodel_scalers = {}
 
         # Iterate over indices of submodel
-        for smdata in sm_obj.values():
+        for smdata in submodel.values():
             # Get Scaler for submodel
-            if sm_obj in submodel_scalers:
-                scaler = submodel_scalers[sm_obj]
+            if submodel in submodel_scalers:
+                scaler = submodel_scalers[submodel]
                 if callable(scaler):
                     # Check to see if Scaler is callable - this implies it is a class and not an instance
                     # Call the class to create an instance
                     scaler = scaler()
-                _log.debug(f"Using user-defined Scaler for {model}.{submodel}.")
+                _log.debug(f"Using user-defined Scaler for {submodel}.")
             else:
                 try:
                     scaler = smdata.default_scaler
-                    _log.debug(f"Using default Scaler for {model}.{submodel}.")
+                    _log.debug(f"Using default Scaler for {submodel}.")
                 except AttributeError:
                     _log.debug(
-                        f"No default Scaler set for {model}.{submodel}. Cannot call {method}."
+                        f"No default Scaler set for {submodel}. Cannot call {method}."
                     )
                     return
                 if scaler is not None:
                     scaler = scaler()
                 else:
-                    _log.debug(
-                        f"No Scaler found for {model}.{submodel}. Cannot call {method}."
-                    )
+                    _log.debug(f"No Scaler found for {submodel}. Cannot call {method}.")
 
             # If a Scaler is found, call desired method
             if scaler is not None:
@@ -615,6 +607,6 @@ class CustomScalerBase(ScalerBase):
                     smeth = getattr(scaler, method)
                 except AttributeError:
                     raise AttributeError(
-                        f"Scaler for {model}.{submodel} does not have a method named {method}."
+                        f"Scaler for {submodel} does not have a method named {method}."
                     )
                 smeth(smdata, overwrite=overwrite)
