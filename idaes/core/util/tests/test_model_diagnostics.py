@@ -270,7 +270,7 @@ class TestVariablesWithNoneValue:
     @pytest.mark.unit
     def test_display_problematic_constraint_terms(self, model):
         """
-        This method needs to be split in a separate function
+        This method needs to be split into a separate function
         because it takes a constraint as an argument.
         """
         diag_tbx = DiagnosticsToolbox(model)
