@@ -38,10 +38,8 @@ from idaes.models_extra.temperature_swing_adsorption import (
     SteamCalculationType,
 )
 
-from idaes.models_extra.temperature_swing_adsorption.util import (
-    tsa_summary,
-    plot_tsa_profiles,
-)
+from idaes.models_extra.temperature_swing_adsorption.util import tsa_summary
+pytest.importorskip("idaes_flowsheet_processor.api", reason="idaes-flowsheet-processor must be installed to run this test")
 
 _log = idaes_log.getLogger(__name__)
 
