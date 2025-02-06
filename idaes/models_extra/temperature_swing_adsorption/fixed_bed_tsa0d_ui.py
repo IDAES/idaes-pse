@@ -42,7 +42,7 @@ pytest.importorskip(
 _log = idaes_log.getLogger(__name__)
 
 model_name = "0D Fixed Bed TSA"
-model_name_for_ui = f"0D Fixed Bed TSA"
+model_name_for_ui = "0D Fixed Bed TSA"
 unit_name = "FixedBedTSA0D"
 
 
