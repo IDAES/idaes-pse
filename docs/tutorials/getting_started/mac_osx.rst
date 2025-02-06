@@ -35,8 +35,9 @@ Install Prerequisites
 ^^^^^^^^^^^^^^^^^^^^^
 
 **Install  Miniforge**
-1. curl -L -O "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh"
-2. bash Miniforge3-$(uname)-$(uname -m).sh`
+.. code-block:: console
+   1. curl -L -O "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh"
+   2. bash Miniforge3-$(uname)-$(uname -m).sh`
 
 
 Install IDAES-PSE
