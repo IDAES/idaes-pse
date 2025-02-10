@@ -535,9 +535,8 @@ def solve(flowsheet=None, **kwargs):
 
     iutil.scaling.calculate_scaling_factors(fs.tsa)
 
-    solver_options = initialize(
-        fs
-    )  # XXX: skip when do_initialize is in FlowsheetInterface ctor
+    # XXX: skip when do_initialize is in FlowsheetInterface ctor
+    solver_options = initialize(fs)
 
     solver = SolverFactory("ipopt")
     solver.options = solver_options
