@@ -13,6 +13,7 @@
 import pytest
 import logging
 import pandas as pd
+from idaes_flowsheet_processor.api import ModelOption
 from idaes.models_extra.temperature_swing_adsorption.util import tsa_summary
 from idaes.models_extra.temperature_swing_adsorption.fixed_bed_tsa0d_ui import (
     export_to_ui,
@@ -60,6 +61,56 @@ def test_default_build_options():
     for key, val in ui.fs_exp.build_options.items():
         assert default_build_options[key] == val.value
     assert True
+
+
+@pytest.mark.integration
+def test_build_with_finite_elements():
+    """
+    test build with finite elements
+    """
+    ui = export_to_ui()
+    
+    # Get current build options from ui.fs_exp.build_options
+    build_options = ui.fs_exp.build_options.copy()
+    
+    # Print initial options
+    _log.info("Initial build options:")
+    for key, option in build_options.items():
+        _log.info(f"{key}: {option.value}")
+    
+    # 添加 finite_elements 选项
+    build_options["finite_elements"] = ModelOption(
+        name="finite_elements",
+        category="FixedBedTSA0D",
+        display_name="Number of Finite Elements",
+        description="Number of finite elements",
+        value=10,
+        values_allowed="int",
+        min_val=0,
+        max_val=10000
+    )
+    
+    # Modify required option values
+    for key, new_value in {
+        "adsorbent": "zeolite_13x",
+        "number_of_beds": 1,
+        "transformation_method": "dae.finite_difference",
+        "transformation_scheme": "backward",
+    }.items():
+        if key in build_options:
+            build_options[key].value = new_value
+    
+    # Print updated options
+    _log.info("\nUpdated build options:")
+    for key, option in build_options.items():
+        _log.info(f"{key}: {option.value}")
+    
+    # Build model with updated options
+    model = build(build_options=build_options)
+    
+    assert model.fs.tsa.config["finite_elements"] == 10
+    assert model.fs.tsa.config["transformation_method"] == "dae.finite_difference"
+
 
 
 @pytest.mark.integration
