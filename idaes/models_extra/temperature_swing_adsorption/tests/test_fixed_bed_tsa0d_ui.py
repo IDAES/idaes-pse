@@ -69,15 +69,15 @@ def test_build_with_finite_elements():
     test build with finite elements
     """
     ui = export_to_ui()
-    
+
     # Get current build options from ui.fs_exp.build_options
     build_options = ui.fs_exp.build_options.copy()
-    
+
     # Print initial options
     _log.info("Initial build options:")
     for key, option in build_options.items():
         _log.info("%s: %s", key, option.value)
-    
+
     # 添加 finite_elements 选项
     build_options["finite_elements"] = ModelOption(
         name="finite_elements",
@@ -87,9 +87,9 @@ def test_build_with_finite_elements():
         value=10,
         values_allowed="int",
         min_val=0,
-        max_val=10000
+        max_val=10000,
     )
-    
+
     # Modify required option values
     for key, new_value in {
         "adsorbent": "zeolite_13x",
@@ -99,18 +99,17 @@ def test_build_with_finite_elements():
     }.items():
         if key in build_options:
             build_options[key].value = new_value
-    
+
     # Print updated options
     _log.info("\nUpdated build options:")
     for key, option in build_options.items():
         _log.info("%s: %s", key, option.value)
-    
+
     # Build model with updated options
     model = build(build_options=build_options)
-    
+
     assert model.fs.tsa.config["finite_elements"] == 10
     assert model.fs.tsa.config["transformation_method"] == "dae.finite_difference"
-
 
 
 @pytest.mark.integration
