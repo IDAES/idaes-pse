@@ -76,7 +76,7 @@ def test_build_with_finite_elements():
     # Print initial options
     _log.info("Initial build options:")
     for key, option in build_options.items():
-        _log.info(f"{key}: {option.value}")
+        _log.info("%s: %s", key, option.value)
     
     # 添加 finite_elements 选项
     build_options["finite_elements"] = ModelOption(
@@ -103,7 +103,7 @@ def test_build_with_finite_elements():
     # Print updated options
     _log.info("\nUpdated build options:")
     for key, option in build_options.items():
-        _log.info(f"{key}: {option.value}")
+        _log.info("%s: %s", key, option.value)
     
     # Build model with updated options
     model = build(build_options=build_options)
