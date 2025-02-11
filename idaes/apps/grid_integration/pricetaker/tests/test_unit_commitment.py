@@ -14,7 +14,7 @@
 import pyomo.environ as pyo
 import pytest
 
-import idaes.apps.grid_integration.multiperiod.unit_commitment as uc
+import idaes.apps.grid_integration.pricetaker.unit_commitment as uc
 
 
 @pytest.mark.unit

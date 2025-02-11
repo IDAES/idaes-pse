@@ -13,7 +13,7 @@
 
 import pytest
 from pyomo.environ import ConcreteModel, Constraint, Expression, Var
-from idaes.apps.grid_integration import (
+from idaes.apps.grid_integration.pricetaker.design_and_operation_models import (
     DesignModel,
     OperationModel,
 )

@@ -34,15 +34,15 @@ from pyomo.common.config import (
     PositiveInt,
 )
 
-from idaes.apps.grid_integration.multiperiod.design_and_operation_models import (
+from idaes.apps.grid_integration.pricetaker.design_and_operation_models import (
     DesignModelData,
 )
-from idaes.apps.grid_integration.multiperiod.clustering import (
+from idaes.apps.grid_integration.pricetaker.clustering import (
     generate_daily_data,
     cluster_lmp_data,
     get_optimal_num_clusters,
 )
-from idaes.apps.grid_integration.multiperiod.unit_commitment import (
+from idaes.apps.grid_integration.pricetaker.unit_commitment import (
     UnitCommitmentData,
     capacity_limits,
     ramping_limits,

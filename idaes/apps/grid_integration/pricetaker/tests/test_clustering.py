@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import pytest
 
-from idaes.apps.grid_integration.multiperiod.clustering import (
+from idaes.apps.grid_integration.pricetaker.clustering import (
     generate_daily_data,
     get_optimal_num_clusters,
     cluster_lmp_data,

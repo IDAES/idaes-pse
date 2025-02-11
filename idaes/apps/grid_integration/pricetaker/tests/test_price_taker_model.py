@@ -17,11 +17,11 @@ import pytest
 
 import idaes.logger as idaeslog
 from idaes.apps.grid_integration import DesignModel, OperationModel
-from idaes.apps.grid_integration.multiperiod.price_taker_model import PriceTakerModel
-from idaes.apps.grid_integration.multiperiod.unit_commitment import UnitCommitmentData
+from idaes.apps.grid_integration.pricetaker.price_taker_model import PriceTakerModel
+from idaes.apps.grid_integration.pricetaker.unit_commitment import UnitCommitmentData
 
 # pylint: disable = unused-import
-from idaes.apps.grid_integration.multiperiod.tests.test_clustering import (
+from idaes.apps.grid_integration.pricetaker.tests.test_clustering import (
     dummy_data_fixture,
     sklearn_avail,
 )
