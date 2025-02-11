@@ -144,11 +144,11 @@ def svd_explicit_normal(A, number_singular_values=10, p=5, num_iter=10, small_sv
     )
 
     if m < n:
-        U_tilde, svals, VT = svd(B.T @ A)
+        U_tilde, svals, VT = svd(B.T @ A, full_matrices=False)
         U = B @ U_tilde
         V = VT.T
     else:
-        U, svals, VT_tilde = svd(A @ B)
+        U, svals, VT_tilde = svd(A @ B, full_matrices=False)
         V = B @ VT_tilde.T
 
     if svals[0] < small_sv_tol:
