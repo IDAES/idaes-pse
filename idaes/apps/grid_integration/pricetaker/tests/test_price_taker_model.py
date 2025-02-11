@@ -377,7 +377,7 @@ def test_get_operation_blocks_rep_days(dummy_data):
 
 
 @pytest.mark.unit
-def test_get_opreation_vars(dummy_data):
+def test_get_operation_vars(dummy_data):
     """Tests the _get_operation_vars method"""
     m = PriceTakerModel()
     m.append_lmp_data(lmp_data=dummy_data)
