@@ -36,7 +36,6 @@ from pyomo.common.config import (
 
 from idaes.apps.grid_integration.multiperiod.design_and_operation_models import (
     DesignModelData,
-    OperationModelData,
 )
 from idaes.apps.grid_integration.multiperiod.clustering import (
     generate_daily_data,
@@ -850,10 +849,10 @@ class PriceTakerModel(ConcreteModel):
         )
 
         if annualization_factor is None:
-            # If the annualization factor is specified
-            annualization_factor = (
+            # If the annualization factor is not specified
+            annualization_factor = discount_rate / (
                 1 - (1 + discount_rate) ** (-lifetime)
-            ) / discount_rate
+            )
 
         cf.lifetime_npv = Expression(
             expr=(1 / annualization_factor) * cf.net_profit - cf.capex

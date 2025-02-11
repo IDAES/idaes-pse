@@ -23,8 +23,11 @@ from idaes.apps.grid_integration.multiperiod.unit_commitment import UnitCommitme
 # pylint: disable = unused-import
 from idaes.apps.grid_integration.multiperiod.tests.test_clustering import (
     dummy_data_fixture,
+    sklearn_avail,
 )
 from idaes.core.util.exceptions import ConfigurationError
+
+pytest.importorskip("sklearn", reason="sklearn not available")
 
 
 def simple_flowsheet_func(m):
@@ -185,6 +188,9 @@ def test_append_lmp_data():
 
 
 @pytest.mark.unit
+@pytest.mark.skipif(
+    not sklearn_avail, reason="sklearn (optional dependency) not available"
+)
 def test_get_optimal_representative_days(dummy_data):
     """Tests the get_optimal_representative_days method"""
     m = PriceTakerModel()
@@ -266,6 +272,9 @@ def test_mp_model_full_year(dummy_data):
 
 
 @pytest.mark.unit
+@pytest.mark.skipif(
+    not sklearn_avail, reason="sklearn (optional dependency) not available"
+)
 def test_mp_model_rep_days(dummy_data):
     """
     Tests the build_multiperiod_model using representative days
@@ -304,7 +313,7 @@ def test_mp_model_rep_days(dummy_data):
 def test_get_operation_blocks(dummy_data):
     """Tests the _get_operation_blocks method"""
     m = PriceTakerModel()
-    m.append_lmp_data(lmp_data=dummy_data, horizon_length=2, num_representative_days=3)
+    m.append_lmp_data(lmp_data=dummy_data)
 
     # Test multiperiod model does not exist error
     with pytest.raises(
@@ -323,9 +332,8 @@ def test_get_operation_blocks(dummy_data):
     # pylint: disable = protected-access
     op_blocks = m._get_operation_blocks(blk_name="blk", attribute_list=["op_mode"])
 
-    assert len(op_blocks) == 3  # 3 representative days
-    for d in m.rep_days_weights:
-        assert len(op_blocks[d]) == 2  # horizon length = 2
+    assert len(op_blocks) == 1
+    assert len(op_blocks[1]) == 24
 
     for d, t in m.period:
         assert op_blocks[d][t] is m.period[d, t].blk
@@ -348,7 +356,28 @@ def test_get_operation_blocks(dummy_data):
 
 
 @pytest.mark.unit
-def test_retieve_uc_data():
+@pytest.mark.skipif(
+    not sklearn_avail, reason="sklearn (optional dependency) not available"
+)
+def test_get_operation_blocks_rep_days(dummy_data):
+    """Tests the get_operation_blocks method with representative days"""
+    m = PriceTakerModel()
+    m.append_lmp_data(lmp_data=dummy_data, horizon_length=2, num_representative_days=3)
+    m.build_multiperiod_model(flowsheet_func=simple_flowsheet_func)
+
+    # pylint: disable = protected-access
+    op_blocks = m._get_operation_blocks(blk_name="blk", attribute_list=["op_mode"])
+
+    assert len(op_blocks) == 3  # 3 representative days
+    for d in m.rep_days_weights:
+        assert len(op_blocks[d]) == 2  # horizon length = 2
+
+    for d, t in m.period:
+        assert op_blocks[d][t] is m.period[d, t].blk
+
+
+@pytest.mark.unit
+def test_retrieve_uc_data():
     """Tests the _retrieve_uc_data method"""
     m = PriceTakerModel()
 
@@ -409,7 +438,7 @@ def test_add_capacity_limits(dummy_data):
     """Tests the add_capacity_limits method"""
 
     m = PriceTakerModel()
-    m.append_lmp_data(lmp_data=dummy_data, horizon_length=2, num_representative_days=3)
+    m.append_lmp_data(lmp_data=dummy_data)
     method_args = {
         "op_block_name": "blk",
         "commodity": "power",
@@ -432,12 +461,9 @@ def test_add_capacity_limits(dummy_data):
     # Test if capacity limits are added correctly
     m.add_capacity_limits(**method_args)
 
-    assert hasattr(m, "blk_power_limits")
-    assert len(m.blk_power_limits) == 3  # 3 representative days
-    # Following must be valid because the horizon length is 2
-    for d in [1, 2, 3]:
-        assert len(m.blk_power_limits[d].capacity_low_limit_con) == 2
-        assert len(m.blk_power_limits[d].capacity_high_limit_con) == 2
+    assert len(m.blk_power_limits) == 1
+    assert len(m.blk_power_limits[1].capacity_low_limit_con) == 24
+    assert len(m.blk_power_limits[1].capacity_high_limit_con) == 24
 
     # Test overwriting error
     with pytest.raises(
@@ -448,11 +474,32 @@ def test_add_capacity_limits(dummy_data):
 
 
 @pytest.mark.unit
+@pytest.mark.skipif(
+    not sklearn_avail, reason="sklearn (optional dependency) not available"
+)
+def test_add_capacity_limits_rep_days(dummy_data):
+    """Tests the add_capacity_limits method with representative days"""
+    m = PriceTakerModel()
+    m.append_lmp_data(lmp_data=dummy_data, horizon_length=2, num_representative_days=3)
+    m.build_multiperiod_model(flowsheet_func=simple_flowsheet_func)
+    m.add_capacity_limits(
+        op_block_name="blk", commodity="power", capacity=100, op_range_lb=0.3
+    )
+
+    # Test if capacity limits are added correctly
+    assert len(m.blk_power_limits) == 3  # 3 representative days
+    # Following must be valid because the horizon length is 2
+    for d in [1, 2, 3]:
+        assert len(m.blk_power_limits[d].capacity_low_limit_con) == 2
+        assert len(m.blk_power_limits[d].capacity_high_limit_con) == 2
+
+
+@pytest.mark.unit
 def test_add_ramping_limits(dummy_data):
     """Tests the add_ramping_limits method"""
 
     m = PriceTakerModel()
-    m.append_lmp_data(lmp_data=dummy_data, horizon_length=12, num_representative_days=2)
+    m.append_lmp_data(lmp_data=dummy_data)
     m.design_blk = DesignModel(
         model_func=foo_design_model, model_args={"max_power": 400, "min_power": 300}
     )
@@ -492,12 +539,9 @@ def test_add_ramping_limits(dummy_data):
     assert uc_data.rampdown_rate == pytest.approx(method_args["rampdown_rate"])
     assert uc_data.capacity is m.design_blk.capacity
 
-    assert hasattr(m, "op_blk_power_ramping")
-    assert len(m.op_blk_power_ramping) == 2  # 2 representative days
-    # Following must be valid because the horizon length is 12
-    for d in [1, 2]:
-        assert len(m.op_blk_power_ramping[d].ramp_up_con) == 12 - 1
-        assert len(m.op_blk_power_ramping[d].ramp_down_con) == 12 - 1
+    assert len(m.op_blk_power_ramping) == 1
+    assert len(m.op_blk_power_ramping[1].ramp_up_con) == 24 - 1
+    assert len(m.op_blk_power_ramping[1].ramp_down_con) == 24 - 1
 
     # Test overwriting error
     with pytest.raises(
@@ -508,11 +552,42 @@ def test_add_ramping_limits(dummy_data):
 
 
 @pytest.mark.unit
+@pytest.mark.skipif(
+    not sklearn_avail, reason="sklearn (optional dependency) not available"
+)
+def test_add_ramping_limits_rep_days(dummy_data):
+    """Tests the add_ramping_limits method with representative days"""
+    m = PriceTakerModel()
+    m.append_lmp_data(lmp_data=dummy_data, horizon_length=12, num_representative_days=2)
+    m.design_blk = DesignModel(
+        model_func=foo_design_model, model_args={"max_power": 400, "min_power": 300}
+    )
+    m.build_multiperiod_model(
+        flowsheet_func=build_foo_flowsheet,
+        flowsheet_options={"design_blk": m.design_blk},
+    )
+    m.add_ramping_limits(
+        op_block_name="op_blk",
+        commodity="power",
+        capacity=m.design_blk.capacity,
+        startup_rate=0.3,
+        shutdown_rate=0.4,
+        rampup_rate=0.2,
+        rampdown_rate=0.2,
+    )
+    assert len(m.op_blk_power_ramping) == 2  # 2 representative days
+    # Following must be valid because the horizon length is 12
+    for d in [1, 2]:
+        assert len(m.op_blk_power_ramping[d].ramp_up_con) == 12 - 1
+        assert len(m.op_blk_power_ramping[d].ramp_down_con) == 12 - 1
+
+
+@pytest.mark.unit
 def test_start_shut_no_install(dummy_data):
     """Tests the add_startup_shutdown method without install_unit variable."""
 
     m = PriceTakerModel()
-    m.append_lmp_data(lmp_data=dummy_data, horizon_length=12, num_representative_days=2)
+    m.append_lmp_data(lmp_data=dummy_data)
     m.design_blk = DesignModel(
         model_func=foo_design_model, model_args={"max_power": 400, "min_power": 300}
     )
@@ -526,25 +601,17 @@ def test_start_shut_no_install(dummy_data):
     m.add_startup_shutdown(op_block_name="op_blk", up_time=3, down_time=4)
 
     assert hasattr(m, "op_blk_startup_shutdown")
-    assert len(m.op_blk_startup_shutdown) == 2  # 2 representative days
-    # Following must be valid because the horizon length is 12
-    for d in [1, 2]:
-        assert len(m.op_blk_startup_shutdown[d].binary_relationship_con) == 12 - 1
-        assert len(m.op_blk_startup_shutdown[d].minimum_up_time_con) == 12 - (3 - 1)
-        assert len(m.op_blk_startup_shutdown[d].minimum_down_time_con) == 12 - (4 - 1)
+    assert len(m.op_blk_startup_shutdown) == 1
+    assert len(m.op_blk_startup_shutdown[1].binary_relationship_con) == 24 - 1
+    assert len(m.op_blk_startup_shutdown[1].minimum_up_time_con) == 24 - (3 - 1)
+    assert len(m.op_blk_startup_shutdown[1].minimum_down_time_con) == 24 - (4 - 1)
 
     con3_1_10 = (
         "period[1,7].op_blk.shutdown + period[1,8].op_blk.shutdown + "
         "period[1,9].op_blk.shutdown + period[1,10].op_blk.shutdown  <=  "
         "1 - period[1,10].op_blk.op_mode"
     )
-    con3_2_10 = (
-        "period[2,7].op_blk.shutdown + period[2,8].op_blk.shutdown + "
-        "period[2,9].op_blk.shutdown + period[2,10].op_blk.shutdown  <=  "
-        "1 - period[2,10].op_blk.op_mode"
-    )
     assert con3_1_10 == str(m.op_blk_startup_shutdown[1].minimum_down_time_con[10].expr)
-    assert con3_2_10 == str(m.op_blk_startup_shutdown[2].minimum_down_time_con[10].expr)
 
     # Test overwriting error
     with pytest.raises(
@@ -559,10 +626,10 @@ def test_start_shut_no_install(dummy_data):
 
 @pytest.mark.unit
 def test_start_shut_with_install(dummy_data):
-    """Tests the add_startup_shutdown method witho install_unit variable."""
+    """Tests the add_startup_shutdown method with install_unit variable."""
 
     m = PriceTakerModel()
-    m.append_lmp_data(lmp_data=dummy_data, horizon_length=12, num_representative_days=2)
+    m.append_lmp_data(lmp_data=dummy_data)
     m.design_blk = DesignModel(
         model_func=foo_design_model, model_args={"max_power": 400, "min_power": 300}
     )
@@ -602,6 +669,47 @@ def test_start_shut_with_install(dummy_data):
         "period[1,9].op_blk.shutdown + period[1,10].op_blk.shutdown  <=  "
         "design_blk.install_unit - period[1,10].op_blk.op_mode"
     )
+    assert con3_1_10 == str(m.op_blk_startup_shutdown[1].minimum_down_time_con[10].expr)
+
+
+@pytest.mark.unit
+@pytest.mark.skipif(
+    not sklearn_avail, reason="sklearn (optional dependency) not available"
+)
+def test_start_shut_with_rep_days(dummy_data):
+    """
+    Tests the add_startup_shutdown method with install_unit variable,
+    and with representative days
+    """
+
+    m = PriceTakerModel()
+    m.append_lmp_data(lmp_data=dummy_data, horizon_length=12, num_representative_days=2)
+    m.design_blk = DesignModel(
+        model_func=foo_design_model, model_args={"max_power": 400, "min_power": 300}
+    )
+    m.build_multiperiod_model(
+        flowsheet_func=build_foo_flowsheet,
+        flowsheet_options={"design_blk": m.design_blk},
+    )
+    m.add_startup_shutdown(
+        op_block_name="op_blk",
+        des_block_name="design_blk",
+        up_time=3,
+        down_time=4,
+    )
+
+    assert len(m.op_blk_startup_shutdown) == 2  # 2 representative days
+    # Following must be valid because the horizon length is 12
+    for d in [1, 2]:
+        assert len(m.op_blk_startup_shutdown[d].binary_relationship_con) == 12 - 1
+        assert len(m.op_blk_startup_shutdown[d].minimum_up_time_con) == 12 - (3 - 1)
+        assert len(m.op_blk_startup_shutdown[d].minimum_down_time_con) == 12 - (4 - 1)
+
+    con3_1_10 = (
+        "period[1,7].op_blk.shutdown + period[1,8].op_blk.shutdown + "
+        "period[1,9].op_blk.shutdown + period[1,10].op_blk.shutdown  <=  "
+        "design_blk.install_unit - period[1,10].op_blk.op_mode"
+    )
     con3_2_10 = (
         "period[2,7].op_blk.shutdown + period[2,8].op_blk.shutdown + "
         "period[2,9].op_blk.shutdown + period[2,10].op_blk.shutdown  <=  "
@@ -616,7 +724,7 @@ def test_add_hourly_cashflows_warnings(dummy_data, caplog):
     """Tests the add_hourly_cashflows method with empty args"""
 
     m = PriceTakerModel()
-    m.append_lmp_data(lmp_data=dummy_data, horizon_length=12, num_representative_days=2)
+    m.append_lmp_data(lmp_data=dummy_data)
     m.design_blk = DesignModel(
         model_func=foo_design_model, model_args={"max_power": 400, "min_power": 300}
     )
@@ -650,7 +758,7 @@ def test_add_hourly_cashflows(dummy_data, caplog):
     """Tests the add_hourly_cashflows method"""
 
     m = PriceTakerModel()
-    m.append_lmp_data(lmp_data=dummy_data, horizon_length=12, num_representative_days=2)
+    m.append_lmp_data(lmp_data=dummy_data)
     m.design_blk = DesignModel(
         model_func=foo_design_model, model_args={"max_power": 400, "min_power": 300}
     )
@@ -691,7 +799,7 @@ def test_add_hourly_cashflows(dummy_data, caplog):
 def test_add_overall_cashflows_warnings(dummy_data, caplog):
     """Tests the warning/error messages in add_overall_cashflows"""
     m = PriceTakerModel()
-    m.append_lmp_data(lmp_data=dummy_data, horizon_length=12, num_representative_days=2)
+    m.append_lmp_data(lmp_data=dummy_data)
     m.build_multiperiod_model(flowsheet_func=simple_flowsheet_func)
 
     with pytest.raises(
@@ -722,6 +830,30 @@ def test_add_overall_cashflows_warnings(dummy_data, caplog):
             "No design blocks were found, so the overall capital cost "
             "(capex) and the fixed O&M cost (fom) are set to 0."
         ) in caplog.text
+
+    cf = m.cashflows
+    assert str(cf.capex_calculation.expr) == "cashflows.capex  ==  0"
+    assert str(cf.fom_calculation.expr) == "cashflows.fom  ==  0"
+    assert str(cf.depreciation_calculation.expr) == (
+        "cashflows.depreciation  ==  0.03333333333333333*cashflows.capex"
+    )
+    assert hasattr(cf, "net_cash_inflow")
+    assert hasattr(cf, "net_cash_inflow_calculation")
+    assert str(cf.corporate_tax_calculation.expr) == (
+        "0.2*(cashflows.net_cash_inflow - cashflows.fom - cashflows.depreciation)"
+        "  <=  cashflows.corporate_tax"
+    )
+
+    assert str(cf.net_profit_calculation.expr) == (
+        "cashflows.net_profit  ==  cashflows.net_cash_inflow - cashflows.fom"
+        " - cashflows.corporate_tax"
+    )
+    assert str(cf.npv.expr) == (
+        "cashflows.net_profit - 0.08882743338727227*cashflows.capex"
+    )
+    assert str(cf.lifetime_npv.expr) == (
+        "11.257783343127485*cashflows.net_profit - cashflows.capex"
+    )
 
 
 @pytest.mark.unit
