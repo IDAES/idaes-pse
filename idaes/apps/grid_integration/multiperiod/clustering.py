@@ -116,21 +116,23 @@ def cluster_lmp_data(
     centroids = centroids * (abs(centroids) >= 1e-4)
 
     # Create dicts for lmp data and the weight of each cluster
+    # By default, the data is of type numpy.int or numpy.float.
+    # Converting the data to python int/float. Otherwise, Pyomo complains!
     num_days, num_time_periods = centroids.shape
     lmp_data_clusters = {
-        d + 1: {t + 1: centroids[d, t] for t in range(num_time_periods)}
+        d + 1: {t + 1: float(centroids[d, t]) for t in range(num_time_periods)}
         for d in range(num_days)
     }
-    weights = {d + 1: sum(labels == d) for d in range(num_days)}
+    weights = {d + 1: int(sum(labels == d)) for d in range(num_days)}
 
     return lmp_data_clusters, weights
 
 
 def get_optimal_num_clusters(
     samples: Union[pd.DataFrame, np.array],
-    kmin: int = 1,
+    kmin: int = 2,
     kmax: int = 30,
-    method: str = "elbow",
+    method: str = "silhouette",
     generate_elbow_plot: bool = False,
     seed: int = 42,
 ):
@@ -148,6 +150,10 @@ def get_optimal_num_clusters(
 
         kmax : int,
             Maximum number of clusters
+
+        method : str,
+            Method for obtaining the optimal number of clusters.
+            Supported methods are elbow and silhouette
 
         generate_elbow_plot : bool,
             If True, generates an elbow plot for inertia as a function of
@@ -185,7 +191,10 @@ def get_optimal_num_clusters(
 
     # Identify the optimal number of clusters
     if method == "elbow":
-        n_clusters = locate_elbow(k_values, inertia_values)
+        raise NotImplementedError(
+            "elbow method is not supported currently for finding the optimal "
+            "number of clusters."
+        )
 
     elif method == "silhouette":
         max_index = mean_silhouette.index(max(mean_silhouette))

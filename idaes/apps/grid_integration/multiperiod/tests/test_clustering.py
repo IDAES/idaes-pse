@@ -133,25 +133,21 @@ def test_cluster_lmp_data(dummy_data):
 def test_optimal_num_clusters_elbow(dummy_data):
     """Tests the get_optimal_num_clusters function"""
     samples = generate_daily_data(dummy_data, horizon_length=2)
-    n_clusters = get_optimal_num_clusters(
-        samples=samples,
-        kmin=2,
-        kmax=7,
-        method="silhouette",
-        generate_elbow_plot=True,
-        seed=20,
-    )
-
-    assert n_clusters == 3
-
-    # Test that a figure was created
-    assert plt.gcf() is not None
-    # Test that axes were created
-    assert plt.gca() is not None
-    # Test that the plot has data
-    # assert plt.gca().has_data()
-
-    plt.close("all")
+    with pytest.raises(
+        NotImplementedError,
+        match=(
+            "elbow method is not supported currently for finding the optimal "
+            "number of clusters."
+        ),
+    ):
+        get_optimal_num_clusters(
+            samples=samples,
+            kmin=2,
+            kmax=7,
+            method="elbow",
+            generate_elbow_plot=True,
+            seed=20,
+        )
 
 
 @pytest.mark.unit
@@ -169,6 +165,15 @@ def test_optimal_num_clusters_silhouette(dummy_data):
     )
 
     assert n_clusters == 3
+
+    # Test that a figure was created
+    assert plt.gcf() is not None
+    # Test that axes were created
+    assert plt.gca() is not None
+    # Test that the plot has data
+    # assert plt.gca().has_data()
+
+    plt.close("all")
 
 
 @pytest.mark.unit

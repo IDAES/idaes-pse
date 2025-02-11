@@ -119,15 +119,18 @@ class UnitCommitmentData:
         constraints is missing.
         """
         cf = self.config
-        if None in (
-            cf.startup_rate,
-            cf.shutdown_rate,
-            cf.rampup_rate,
-            cf.rampdown_rate,
-            cf.capacity,
+        if (
+            None
+            in (
+                cf.startup_rate,
+                cf.shutdown_rate,
+                cf.rampup_rate,
+                cf.rampdown_rate,
+            )
+            or cf.capacity is None
         ):
             raise ConfigurationError(
-                "Necessary arguments needed for the ramping constraints " "are missing."
+                "Necessary arguments needed for the ramping constraints are missing."
             )
 
 
