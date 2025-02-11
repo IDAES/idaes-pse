@@ -413,10 +413,10 @@ class PriceTakerModel(ConcreteModel):
     ):
         """
         Adds capacity limit constraints of the form:
-            op_range_lb * capacity * op_mode(t) <= commodity(t) <= capacity * op_mode(t)
-            ex: 0.3 * P_max * op_mode(t) <= P(t) <= P_max * op_mode(t),
-                where P(t) is power at time t and op_mode(t) = 1 if the system is operating
-                at time t; and op_mode(t) = 0, otherwise.
+        op_range_lb * capacity * op_mode(t) <= commodity(t) <= capacity * op_mode(t)
+        ex: 0.3 * P_max * op_mode(t) <= P(t) <= P_max * op_mode(t),
+            where P(t) is power at time t and op_mode(t) = 1 if the system is operating
+            at time t; and op_mode(t) = 0, otherwise.
 
 
         Args:
@@ -484,12 +484,11 @@ class PriceTakerModel(ConcreteModel):
     ):
         """
         Adds ramping constraints of the form:
+        ramping_var[t] - ramping_var[t-1] <=
+        startup_rate * capacity * startup[t] + rampup_rate * capacity * op_mode[t-1]
 
-            ramping_var[t] - ramping_var[t-1] <=
-                startup_rate * capacity * startup[t] + rampup_rate * capacity * op_mode[t-1]
-
-            ramping_var[t-1] - ramping_var[t] <=
-                shutdown_rate * capacity * shutdown[t] + rampdown_rate * capacity * op_mode[t]
+        ramping_var[t-1] - ramping_var[t] <=
+        shutdown_rate * capacity * shutdown[t] + rampdown_rate * capacity * op_mode[t]
 
         Args:
             op_block_name: str,

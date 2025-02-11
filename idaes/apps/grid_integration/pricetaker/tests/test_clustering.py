@@ -162,6 +162,7 @@ def test_optimal_num_clusters_silhouette(dummy_data):
         kmin=2,
         kmax=7,
         method="silhouette",
+        generate_elbow_plot=True,
     )
 
     assert n_clusters == 3

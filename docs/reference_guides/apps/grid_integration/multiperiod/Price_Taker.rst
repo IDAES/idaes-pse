@@ -49,7 +49,7 @@ process models (b, ii) into the daily (a, c) and hourly (i, iii) grid operations
 
 |hybrid_energy_system|
 
-.. module:: idaes.apps.grid_integration.multiperiod.price_taker_model
+.. module:: idaes.apps.grid_integration.pricetaker.price_taker_model
 
 .. autoclass:: PriceTakerModel
   :members:

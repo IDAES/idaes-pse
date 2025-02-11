@@ -857,6 +857,30 @@ def test_add_overall_cashflows_warnings(dummy_data, caplog):
 
 
 @pytest.mark.unit
+def test_add_overall_cashflows(dummy_data):
+    """Tests the add_overall_cashflows method"""
+
+    m = PriceTakerModel()
+    m.append_lmp_data(lmp_data=dummy_data)
+    m.design_blk = DesignModel(
+        model_func=foo_design_model, model_args={"max_power": 400, "min_power": 300}
+    )
+    # Build the multiperiod model
+    m.build_multiperiod_model(
+        flowsheet_func=build_foo_flowsheet,
+        flowsheet_options={"design_blk": m.design_blk},
+    )
+    m.add_hourly_cashflows(
+        operational_costs=["fuel_cost", "su_sd_costs", "fixed_cost"],
+        revenue_streams=["elec_revenue", "fixed_rev"],
+    )
+    m.add_overall_cashflows()
+    cf = m.cashflows
+    assert str(cf.capex_calculation.expr) == "cashflows.capex  ==  1000.0"
+    assert str(cf.fom_calculation.expr) == "cashflows.fom  ==  30.0"
+
+
+@pytest.mark.unit
 def test_add_objective_function(dummy_data):
     """Tests the add_objective_function method"""
     m = PriceTakerModel()
