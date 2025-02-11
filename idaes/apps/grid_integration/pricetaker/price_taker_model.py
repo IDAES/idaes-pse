@@ -162,6 +162,7 @@ class PriceTakerModel(ConcreteModel):
         self._has_overall_cashflows = False
         self._op_blk_uc_data = {}  # Save UC data for op. blocks
         self._op_blk_uptime_downtime = {}
+        self._linking_constraint_counter = 1
 
     @property
     def num_representative_days(self):
@@ -387,6 +388,62 @@ class PriceTakerModel(ConcreteModel):
                 )
 
         return op_blocks
+
+    def _get_operation_vars(self, var_name: str):
+        """
+        Returns a dictionary of pointers to the var_name variable located in each flowsheet
+        instance. If the variable is not present, then an error is raised.
+        """
+        # Ensure that the multiperiod model exists
+        self._assert_mp_model_exists()
+
+        # pylint: disable=not-an-iterable
+        op_vars = {
+            d: {t: self.period[d, t].find_component(var_name) for t in self.set_time}
+            for d in self.set_days
+        }
+
+        # NOTE: It is sufficient to perform checks only for one variable
+        if op_vars[1][1] is None:
+            raise AttributeError(
+                f"Variable {var_name} does not exist in the multiperiod model."
+            )
+
+        return op_vars
+
+    def add_linking_constraints(self, previous_time_var: str, current_time_var: str):
+        """
+        Adds constraints to relate variables across two consecutive time periods. This method is
+        usually needed if the system has storage. Using this method, the holdup at the end of the
+        previous time period can be equated to the holdup at the beginning of the current time
+        period.
+
+        Args:
+            previous_time_var : str,
+                Name of the operational variable at the end of the previous time step
+
+        current_time_var : str,
+                Name of the operational variable at the beginning of the current time step
+
+        """
+        old_time_var = self._get_operation_vars(previous_time_var)
+        new_time_var = self._get_operation_vars(current_time_var)
+
+        def _rule_linking_constraints(_, d, t):
+            if t == 1:
+                return Constraint.Skip
+            return old_time_var[d][t - 1] == new_time_var[d][t]
+
+        setattr(
+            self,
+            "variable_linking_constraints_" + str(self._linking_constraint_counter),
+            Constraint(self.set_days, self.set_time, rule=_rule_linking_constraints),
+        )
+        _logger.info(
+            f"Linking constraints are added to the model at "
+            f"variable_linking_constraints_{self._linking_constraint_counter}"
+        )
+        self._linking_constraint_counter += 1  # Increase the counter for the new pair
 
     def _retrieve_uc_data(self, op_blk: str, commodity: str, **kwargs):
         """

@@ -47,6 +47,9 @@ def generate_daily_data(raw_data: list, horizon_length: int):
         daily_data: pd.DataFrame,
             Correctly formatted daily LMP data for later use
     """
+    # Converting the data to a list (Needed if the input is not a list, e.g., pd.DataFrame)
+    raw_data = list(raw_data)
+
     if horizon_length > len(raw_data):
         raise ValueError(
             f"Horizon length {horizon_length} exceeds the price signal length of {len(raw_data)}"

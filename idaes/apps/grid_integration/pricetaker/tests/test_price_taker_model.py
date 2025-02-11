@@ -377,6 +377,115 @@ def test_get_operation_blocks_rep_days(dummy_data):
 
 
 @pytest.mark.unit
+def test_get_opreation_vars(dummy_data):
+    """Tests the _get_operation_vars method"""
+    m = PriceTakerModel()
+    m.append_lmp_data(lmp_data=dummy_data)
+
+    # Test multiperiod model does not exist error
+    with pytest.raises(
+        ConfigurationError,
+        match=(
+            "Unable to find the multiperiod model. Please use the "
+            "build_multiperiod_model method to construct one."
+        ),
+    ):
+        # pylint: disable = protected-access
+        m._get_operation_vars(var_name="blk.power")
+
+    # Build multiperiod model
+    m.build_multiperiod_model(flowsheet_func=simple_flowsheet_func)
+
+    # pylint: disable = protected-access
+    op_vars = m._get_operation_vars(var_name="blk.power")
+
+    assert len(op_vars) == 1
+    assert len(op_vars[1]) == 24
+
+    for d, t in m.period:
+        assert op_vars[d][t] is m.period[d, t].blk.power
+
+    # Test operational block not found error
+    with pytest.raises(
+        AttributeError,
+        match="Variable foo_blk.foo does not exist in the multiperiod model.",
+    ):
+        m._get_operation_vars(var_name="foo_blk.foo")
+
+
+@pytest.mark.unit
+@pytest.mark.skipif(
+    not sklearn_avail, reason="sklearn (optional dependency) not available"
+)
+def test_get_operation_vars_rep_days(dummy_data):
+    """Tests the get_operation_vars method with representative days"""
+    m = PriceTakerModel()
+    m.append_lmp_data(lmp_data=dummy_data, horizon_length=2, num_representative_days=3)
+    m.build_multiperiod_model(flowsheet_func=simple_flowsheet_func)
+
+    # pylint: disable = protected-access
+    op_vars = m._get_operation_vars(var_name="blk.power")
+
+    assert len(op_vars) == 3  # 3 representative days
+    for d in m.rep_days_weights:
+        assert len(op_vars[d]) == 2  # horizon length = 2
+
+    for d, t in m.period:
+        assert op_vars[d][t] is m.period[d, t].blk.power
+
+
+@pytest.mark.unit
+def test_add_linking_constraints(dummy_data):
+    """Tests the add_linking_constraints method"""
+    m = PriceTakerModel()
+    m.append_lmp_data(lmp_data=dummy_data)
+    m.build_multiperiod_model(flowsheet_func=simple_flowsheet_func)
+    m.add_linking_constraints(
+        previous_time_var="blk.power", current_time_var="blk.op_mode"
+    )
+
+    assert len(m.variable_linking_constraints_1) == 24 - 1
+    assert str(m.variable_linking_constraints_1[1, 10].expr) == (
+        "period[1,9].blk.power  ==  period[1,10].blk.op_mode"
+    )
+    assert str(m.variable_linking_constraints_1[1, 24].expr) == (
+        "period[1,23].blk.power  ==  period[1,24].blk.op_mode"
+    )
+
+    # Add another set of linking constraints
+    m.add_linking_constraints(previous_time_var="x", current_time_var="y")
+    assert len(m.variable_linking_constraints_2) == 24 - 1
+    assert str(m.variable_linking_constraints_2[1, 10].expr) == (
+        "period[1,9].x  ==  period[1,10].y"
+    )
+    assert str(m.variable_linking_constraints_2[1, 24].expr) == (
+        "period[1,23].x  ==  period[1,24].y"
+    )
+
+
+@pytest.mark.unit
+@pytest.mark.skipif(
+    not sklearn_avail, reason="sklearn (optional dependency) not available"
+)
+def test_add_linking_constraints_rep_days(dummy_data):
+    """Tests the add_linking_constraints method with representative days"""
+    m = PriceTakerModel()
+    m.append_lmp_data(lmp_data=dummy_data, horizon_length=12, num_representative_days=2)
+    m.build_multiperiod_model(flowsheet_func=simple_flowsheet_func)
+    m.add_linking_constraints(
+        previous_time_var="blk.power", current_time_var="blk.op_mode"
+    )
+
+    assert len(m.variable_linking_constraints_1) == 2 * (12 - 1)
+    assert str(m.variable_linking_constraints_1[1, 10].expr) == (
+        "period[1,9].blk.power  ==  period[1,10].blk.op_mode"
+    )
+    assert str(m.variable_linking_constraints_1[2, 12].expr) == (
+        "period[2,11].blk.power  ==  period[2,12].blk.op_mode"
+    )
+
+
+@pytest.mark.unit
 def test_retrieve_uc_data():
     """Tests the _retrieve_uc_data method"""
     m = PriceTakerModel()
