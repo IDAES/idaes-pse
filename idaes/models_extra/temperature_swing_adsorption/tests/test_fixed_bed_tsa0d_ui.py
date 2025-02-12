@@ -10,10 +10,20 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-import pytest
 import logging
+import pytest
+
+pytest.importorskip(
+    "idaes_flowsheet_processor.api",
+    reason="idaes-flowsheet-processor must be installed to run this test",
+)
+
 import pandas as pd
+from pyomo.environ import (
+    check_optimal_termination,
+)
 from idaes_flowsheet_processor.api import ModelOption
+from idaes.core.util.tables import stream_table_dataframe_to_string
 from idaes.models_extra.temperature_swing_adsorption.util import tsa_summary
 from idaes.models_extra.temperature_swing_adsorption.fixed_bed_tsa0d_ui import (
     export_to_ui,
@@ -21,11 +31,7 @@ from idaes.models_extra.temperature_swing_adsorption.fixed_bed_tsa0d_ui import (
     initialize,
     solve,
 )
-from idaes.core.util.tables import stream_table_dataframe_to_string
 
-from pyomo.environ import (
-    check_optimal_termination,
-)
 
 _log = logging.getLogger(__name__)
 
