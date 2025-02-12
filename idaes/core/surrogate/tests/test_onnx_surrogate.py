@@ -40,7 +40,7 @@ atol = 1e-4
 
 
 def load_onnx_model_data(
-    name="net_st_net_5000_STM_100_s_2000000_60_5_tanh_1e-06_4096_tr_15481_Calcite_ST",
+    name="net_Calcite_ST",
 ):
     onnx_folder_name = os.path.join(this_file_dir(), "data", "onnx_models")
     onnx_model = onnx.load(os.path.join(onnx_folder_name, "{}.onnx".format(name)))
@@ -138,7 +138,7 @@ def test_onnx_surrogate_load_and_save_from_file():
 
     onnx_surrogate = ONNXSurrogate.load_onnx_model(
         onnx_model_location=os.path.join(this_file_dir(), "data", "onnx_models"),
-        model_name="net_st_net_5000_STM_100_s_2000000_60_5_tanh_1e-06_4096_tr_15481_Calcite_ST",
+        model_name="net_Calcite_ST",
     )
     with TempfileManager.new_context() as tf:
         dname = tf.mkdtemp()
