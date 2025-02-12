@@ -20,10 +20,6 @@ UI exports for 0D Fixed Bed TSA unit model.
 from pyomo.environ import ConcreteModel, SolverFactory, units
 from pyomo.common.dependencies import attempt_import
 
-api, flowsheet_processor_available = attempt_import(
-    "idaes_flowsheet_processor.api", defer_import=False
-)
-
 from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.core.util as iutil
@@ -37,6 +33,11 @@ from idaes.models_extra.temperature_swing_adsorption import (
 )
 
 from idaes.models_extra.temperature_swing_adsorption.util import tsa_summary
+
+api, flowsheet_processor_available = attempt_import(
+    "idaes_flowsheet_processor.api", defer_import=False
+)
+
 
 _log = idaes_log.getLogger(__name__)
 
