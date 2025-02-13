@@ -32,7 +32,7 @@ Developer environment
 ---------------------
 Development of IDAES will require an extra set of required package not needed by regular users.
 To install those extra developer tools use the command ``pip install -r requirements-dev.txt``
-rather than ``pip install -r requirements.txt``
+rather than ``pip install -e .``
 
 
 Code style
@@ -142,7 +142,7 @@ Documentation
 The documentation is built from its sources with a tool called Sphinx.
 The sources for the documentation are:
 
-* hand-written text files, under `docs/`, with the extension ".rst" for `reStructuredText`_.
+* hand-written text files, under ``docs/``, with the extension ".rst" for `reStructuredText`_.
 * the Python source code
 * selected Jupyter Notebooks 
 
@@ -150,15 +150,15 @@ Building documentation
 ^^^^^^^^^^^^^^^^^^^^^^
 
 .. note:: To build the documentation locally, you will need to have the Sphinx tools installed.
-       This will be done for you by running ``pip install requirements-dev.txt`` ("developer" setup)
-       as opposed to the regular ``pip install requirements.txt`` ("user" setup).
+       This will be done for you by running ``pip install -r requirements-dev.txt`` ("developer" setup)
+       as opposed to the regular ``pip install -e .`` ("user" setup).
 
-To build the documentation locally, use our custom `build.py` script.
+To build the documentation locally, use our custom ``build.py`` script::
 
     cd docs
-    python build.py
+    python build.py [--dirty]
 
-The above commands will do a completely clean build to create HTML output.
+The above commands will do a completely clean build (unless the ``--dirty`` option is used) to create HTML output.
 
 If the command succeeds, the final line will look like::
 
