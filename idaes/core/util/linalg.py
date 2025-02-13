@@ -21,7 +21,7 @@ from numpy.linalg import norm, qr
 from numpy.random import randn
 from scipy.linalg import svd
 from scipy.sparse.linalg import svds, norm as spnorm, splu, spsolve_triangular, spsolve
-from scipy.sparse import issparse, find, spdiags, block_array
+from scipy.sparse import issparse, find, spdiags, block_array, eye as speye
 
 def _symmetric_inverse_iteration(H, H_inv_func, n_vec, tol, max_iter):
     """
@@ -121,14 +121,23 @@ def svd_explicit_normal(A, number_singular_values=10, p=5, num_iter=10, small_sv
     assert issparse(A)
     assert p >= 0
     m, n = A.shape
-
+    q = min(m, n)
     if m < n:
         H = A @ A.T
     else:
         H = A.T @ A
     H = H.tocsc()
 
-    invH = splu(H)
+    try:
+        invH = splu(H)
+    except RuntimeError as err:
+        if "Factor is exactly singular" in str(err):
+            H_reg = H + 1e-15 * spnorm(H, ord='fro') / np.sqrt(q) * speye(q)
+            invH = splu(H_reg)
+        else:
+            raise
+
+
     def H_inv_func(B):
         return invH.solve(B)
 
