@@ -47,13 +47,12 @@ class TestDoubleLoopIntegration:
     @pytest.fixture
     def data_path(self) -> Path:
         # NOTE here we want the path to the entire 5bus directory
-        # we need to specify __init__.py as a workaround for Python 3.9,
-        # where importlib.resources.path() requires the resource to be a file
-        # directories are not supported and will raise an error if attempted
+        # we need to specify __init__.py and then use `pathlib.Path.parent` since
+        # `importlib.resources.as_path()` only supports directories on Python 3.12+
         with resources.as_file(
             resources.files("idaes.tests.prescient.5bus").joinpath("__init__.py")
         ) as pkg_file:
-            prescient_5bus = Path(pkg_file).parent
+            return pkg_file.parent
 
     @pytest.mark.unit
     def test_data_path_available(self, data_path: Path):
