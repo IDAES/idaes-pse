@@ -70,6 +70,7 @@ binary_distro_map = {
     "xubuntu2004": "ubuntu2004",
     "xubuntu2204": "ubuntu2204",
     "pop22": "ubuntu2204",
+    "ubuntu2404": "ubuntu2204",
 }
 # Machine map
 binary_arch_map = {
