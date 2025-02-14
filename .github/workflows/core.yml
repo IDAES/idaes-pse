@@ -90,13 +90,10 @@ jobs:
       matrix:
         python-version: ['3.9', '3.10', '3.11', '3.12']
         os:
+          - linux
           - win64
-          - ubuntu-22
-          - ubuntu-24
         include:
-          - os: ubuntu-22
-            runner-image: ubuntu-22.04
-          - os: ubuntu-24
+          - os: linux
             runner-image: ubuntu-24.04
           - os: win64
             runner-image: windows-2022
@@ -231,7 +228,7 @@ jobs:
 
   compat:
     name: Compatibility tests
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - name: Set up Conda environment

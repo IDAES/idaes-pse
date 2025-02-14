@@ -43,7 +43,7 @@ defaults:
 jobs:
   precheck:
     name: (util) Check if should run
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # the ">-" YAML syntax will result in a single string without terminating newline
     # it is used here to make the relatively complex if clause more readable by adding line breaks
     if: >-
@@ -134,13 +134,10 @@ jobs:
       matrix:
         python-version: ['3.9', '3.10', '3.11', '3.12']
         os:
+          - linux
           - win64
-          - ubuntu-22
-          - ubuntu-24
         include:
-          - os: ubuntu-22
-            runner-image: ubuntu-22.04
-          - os: ubuntu-24
+          - os: linux
             runner-image: ubuntu-24.04
           - os: win64
             runner-image: windows-2022
@@ -175,14 +172,11 @@ jobs:
       matrix:
         python-version: ['3.9', '3.10', '3.11', '3.12']
         os:
+          - linux
           - win64
-          - ubuntu-22
-          - ubuntu-24
         include:
-          - os: ubuntu-22
-            runner-image: ubuntu-22.04
-          - os: ubuntu-24
-            runner-image: ubuntu-22.04
+          - os: linux
+            runner-image: ubuntu-24.04
           - os: win64
             runner-image: windows-2022
     steps:
@@ -230,7 +224,7 @@ jobs:
           - linux
         include:
           - os: linux
-            runner-image: ubuntu-22.04
+            runner-image: ubuntu-24.04
           - install-mode: pip-default
             pip-install-target: '.'
           - install-mode: pip-complete
