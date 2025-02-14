@@ -15,3 +15,8 @@ from .bidder import Bidder, SelfScheduler
 from .coordinator import DoubleLoopCoordinator
 from .forecaster import PlaceHolderForecaster
 from .multiperiod.multiperiod import MultiPeriodModel
+from .pricetaker.price_taker_model import PriceTakerModel
+from .pricetaker.design_and_operation_models import (
+    DesignModel,
+    OperationModel,
+)
