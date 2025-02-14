@@ -35,7 +35,7 @@ class Test5Bus:
         with resources.as_file(
             resources.files("idaes.tests.prescient.5bus").joinpath("__init__.py")
         ) as pkg_file:
-             return pkg_file.parent
+            return pkg_file.parent
 
     @pytest.mark.unit
     def test_data_path_available(self, data_path: Path):
