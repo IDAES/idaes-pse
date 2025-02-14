@@ -1730,6 +1730,41 @@ def number_active_variables_in_deactivated_blocks(block):
     return len(active_variables_in_deactivated_blocks_set(block))
 
 
+def variables_with_none_value_in_activated_equalities_set(block):
+    """
+    Method to return a ComponentSet of all Var components which
+    have a value of None in the set of activated constraints.
+
+    Args:
+        block : model to be studied
+
+    Returns:
+        A ComponentSet including all Var components which
+        have a value of None in the set of activated constraints.
+    """
+    var_set = ComponentSet()
+    for v in variables_in_activated_equalities_set(block):
+        if v.value is None:
+            var_set.add(v)
+    return var_set
+
+
+def number_variables_with_none_value_in_activated_equalities(block):
+    """
+    Method to return the number of Var components which
+    have a value of None in the set of activated constraints.
+
+    Args:
+        block : model to be studied
+
+    Returns:
+        Number of Var components which
+        have a value of None in the set of activated constraints.
+    """
+
+    return len(variables_with_none_value_in_activated_equalities_set(block))
+
+
 # -------------------------------------------------------------------------
 # Reporting methods
 def report_statistics(block, ostream=None):
