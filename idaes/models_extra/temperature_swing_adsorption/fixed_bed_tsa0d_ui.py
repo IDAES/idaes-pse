@@ -34,10 +34,9 @@ from idaes.models_extra.temperature_swing_adsorption import (
 
 from idaes.models_extra.temperature_swing_adsorption.util import tsa_summary
 
-api, flowsheet_processor_available = attempt_import(
-    "idaes_flowsheet_processor.api", defer_import=False
-)
-
+_, flowsheet_processor_available = attempt_import("idaes_flowsheet_processor")
+if flowsheet_processor_available:
+    from idaes_flowsheet_processor import api
 
 _log = idaes_log.getLogger(__name__)
 
@@ -46,7 +45,7 @@ model_name_for_ui = "0D Fixed Bed TSA"
 unit_name = "FixedBedTSA0D"
 
 
-def export_to_ui() -> api.FlowsheetInterface:
+def export_to_ui() -> "api.FlowsheetInterface":
     """
     Export the model to UI, define the UI options and build the model.
     Return:
