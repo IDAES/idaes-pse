@@ -31,6 +31,10 @@ from pyomo.common.collections import ComponentSet
 
 from idaes.core.util.model_statistics import *
 from idaes.core.util.model_statistics import _iter_indexed_block_data_objects
+from pyomo.contrib.pynumero.interfaces.external_grey_box import (
+    ExternalGreyBoxBlock,
+    ExternalGreyBoxModel,
+)
 
 
 @pytest.mark.unit
@@ -626,6 +630,61 @@ def test_number_derivative_variables():
     assert number_derivative_variables(m) == 0
 
 
+@pytest.mark.unit
+def test_uninitialized_variables_in_activated_constraints():
+    m = ConcreteModel()
+    m.u = Var()
+    m.w = Var(initialize=1)
+    m.x = Var(initialize=1)
+    m.y = Var(range(3), initialize=[1, None, 2])
+    m.z = Var()
+
+    m.con_w = Constraint(expr=m.w == 0)
+    m.con_x = Constraint(expr=m.x == 1)
+
+    def rule_con_y(b, i):
+        return b.y[i] == 3
+
+    m.con_y = Constraint(range(3), rule=rule_con_y)
+    m.con_z = Constraint(expr=m.x + m.z == -1)
+
+    m.block1 = Block()
+    m.block1.a = Var()
+    m.block1.b = Var(initialize=7)
+    m.block1.c = Var(initialize=-5)
+    m.block1.d = Var()
+
+    m.block1.con_a = Constraint(expr=m.block1.a**2 + m.block1.b == 1)
+    m.block1.con_b = Constraint(expr=m.block1.b + m.block1.c == 3)
+    m.block1.con_c = Constraint(expr=m.block1.c + m.block1.a == -4)
+
+    active_uninit_set = ComponentSet([m.y[1], m.z, m.block1.a])
+
+    assert variables_with_none_value_in_activated_equalities_set(m) == active_uninit_set
+    assert number_variables_with_none_value_in_activated_equalities(m) == len(
+        active_uninit_set
+    )
+
+    m.block1.deactivate()
+
+    active_uninit_set = ComponentSet([m.y[1], m.z])
+
+    assert variables_with_none_value_in_activated_equalities_set(m) == active_uninit_set
+    assert number_variables_with_none_value_in_activated_equalities(m) == len(
+        active_uninit_set
+    )
+
+    m.block1.activate()
+    m.con_z.deactivate()
+
+    active_uninit_set = ComponentSet([m.y[1], m.block1.a])
+
+    assert variables_with_none_value_in_activated_equalities_set(m) == active_uninit_set
+    assert number_variables_with_none_value_in_activated_equalities(m) == len(
+        active_uninit_set
+    )
+
+
 # -------------------------------------------------------------------------
 # Objective methods
 @pytest.mark.unit
@@ -683,6 +742,68 @@ def test_number_expressions(m):
 def test_degrees_of_freedom(m):
     assert degrees_of_freedom(m) == 10
     assert degrees_of_freedom(m.b2) == -1
+
+
+@pytest.mark.unit
+def test_degrees_of_freedom_with_graybox():
+    """non functional graybox model added to m fixture, to test DOFs
+
+    GreyBoxModel has 3 inputs and 2 outputs calculated an unknown function,
+    input a1 and a2 are bound by equality constraint through internal graybox model"""
+
+    class BasicGrayBox(ExternalGreyBoxModel):
+        def input_names(self):
+            return ["a1", "a2", "a3"]
+
+        def output_names(self):
+            return ["o1", "o2"]
+
+        def equality_constraint_names(self):
+            return ["a_sum"]
+
+        def evaluate_equality_constraints(self):
+            a1 = self._input_values[0]
+            a2 = self._input_values[1]
+            return [a1 * 0.5 + a2]
+
+    m = ConcreteModel()
+
+    m.gb = ExternalGreyBoxBlock(external_model=BasicGrayBox())
+    m.gb_inactive = ExternalGreyBoxBlock(external_model=BasicGrayBox())
+    m.gb_inactive.deactivate()
+    # test counting functions
+    assert number_greybox_blocks(m) == 2
+    assert number_deactivated_greybox_block(m) == 1
+    assert number_activated_greybox_blocks(m) == 1
+    assert number_of_greybox_variables(m) == 5
+    assert number_of_unfixed_greybox_variables(m) == 5
+    assert number_activated_greybox_equalities(m) == 3
+    assert number_variables_in_activated_constraints(m) == 5
+    # verify DOFS works on stand alone greybox
+    assert degrees_of_freedom(m) == 2
+    m.gb.inputs.fix()
+    m.gb.inputs["a1"].unfix()
+    assert number_of_unfixed_greybox_variables(m) == 3
+    assert degrees_of_freedom(m) == 0
+    m.gb.outputs.fix()
+    assert degrees_of_freedom(m) == -2
+    m.gb.outputs.unfix()
+
+    # verify DOFs works on greybox connected to other vars on a model via constraints
+    m.a1 = Var(initialize=1)
+    m.a1.fix()
+    m.gb.inputs["a2"].unfix()
+    m.a1_eq = Constraint(expr=m.a1 == m.gb.inputs["a1"])
+    assert degrees_of_freedom(m) == 0
+    m.o1 = Var(initialize=1)
+    m.o1_eq = Constraint(expr=m.o1 == m.gb.outputs["o1"])
+    m.o1.fix()
+    assert degrees_of_freedom(m) == -1
+    assert number_variables_in_activated_constraints(m) == 7
+    assert number_total_constraints(m) == 5
+    assert number_total_equalities(m) == 5
+    assert number_deactivated_equalities(m) == 3
+    assert number_deactivated_constraints(m) == 3
 
 
 @pytest.mark.unit

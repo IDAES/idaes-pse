@@ -84,6 +84,12 @@ options
 
     Just show list of binary extras
 
+.. option:: --info
+
+    Show information about available binary builds. Lists all platforms
+    and architectures and shows which (if any) matches the current system.
+    If given, all other options are ignored.
+
 .. option:: --extra <extra>
 
     Add an extra binary package to the things to install. You can specify the
