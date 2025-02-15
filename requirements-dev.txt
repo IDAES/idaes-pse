@@ -9,6 +9,7 @@ sphinxcontrib-napoleon>=0.5.0
 sphinx-argparse==0.4.0
 sphinx-book-theme<=1.1.2,>=1.0.0
 sphinx-copybutton==0.5.2
+enum-tools[sphinx]
 
 ### testing and linting
 # TODO/NOTE pytest is specified as a dependency in setup.py, but we might want to pin a specific version here
@@ -24,6 +25,7 @@ pre-commit
 
 ### other/misc
 addheader>=0.2.2
+highspy
 
 # this will install IDAES in editable mode using the dependencies defined under the `extras_require` tags defined in `setup.py`
 --editable .[ui,grid,omlt,coolprop]
