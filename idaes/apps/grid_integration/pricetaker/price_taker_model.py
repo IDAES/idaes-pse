@@ -71,7 +71,7 @@ CONFIG.declare(
     "horizon_length",
     ConfigValue(
         domain=PositiveInt,
-        doc="Length of each representative day/period",
+        doc="Length of each time horizon",
     ),
 )
 CONFIG.declare(
@@ -99,14 +99,14 @@ CONFIG.declare(
 
 # List of arguments needed for adding startup/shutdown constraints
 CONFIG.declare(
-    "up_time",
+    "minimum_up_time",
     ConfigValue(
         domain=PositiveInt,
         doc="Minimum uptime [in hours]",
     ),
 )
 CONFIG.declare(
-    "down_time",
+    "minimum_down_time",
     ConfigValue(
         domain=PositiveInt,
         doc="Minimum downtime [in hours]",
@@ -136,10 +136,10 @@ CONFIG.declare(
     ),
 )
 CONFIG.declare(
-    "annualization_factor",
+    "capital_recovery_factor",
     ConfigValue(
         domain=is_in_range(0, 1),
-        doc="Capital cost annualization factor [fraction]",
+        doc="Capital cost annualization factor [fraction of investment cost/year]",
     ),
 )
 CONFIG.declare(
@@ -620,8 +620,8 @@ class PriceTakerModel(ConcreteModel):
         self,
         op_block_name: str,
         des_block_name: Optional[str] = None,
-        up_time: int = 1,
-        down_time: int = 1,
+        minimum_up_time: int = 1,
+        minimum_down_time: int = 1,
     ):
         """
         Adds minimum uptime/downtime constraints for a given unit/process
@@ -635,19 +635,19 @@ class PriceTakerModel(ConcreteModel):
                 op_block_name. This argument is specified if the design is
                 being optimized simultaneously, e.g., "ngcc_design"
 
-            up_time: int, default=1,
+            minimum_up_time: int, default=1,
                 Total uptime (must be >= 1), e.g., 4 time periods
                 Uptime must include the minimum uptime and the time required
                 for shutdown.
 
-            down_time: int, default=1,
+            minimum_down_time: int, default=1,
                 Total downtime (must be >= 1), e.g., 4 time periods
                 Downtime must include the minimum downtime and the time
                 required for startup
         """
-        # Check up_time and down_time for validity
-        self.config.up_time = up_time
-        self.config.down_time = down_time
+        # Check minimum_up_time and minimum_down_time for validity
+        self.config.minimum_up_time = minimum_up_time
+        self.config.minimum_down_time = minimum_down_time
 
         op_blocks = self._get_operation_blocks(
             blk_name=op_block_name,
@@ -681,15 +681,15 @@ class PriceTakerModel(ConcreteModel):
                 blk=start_shut_blk[d],
                 op_blocks=op_blocks[d],
                 install_unit=install_unit,
-                up_time=up_time,
-                down_time=down_time,
+                minimum_up_time=minimum_up_time,
+                minimum_down_time=minimum_down_time,
                 set_time=self.set_time,
             )
 
         # Save the uptime and downtime data for reference
         self._op_blk_uptime_downtime[op_block_name] = {
-            "up_time": up_time,
-            "down_time": down_time,
+            "minimum_up_time": minimum_up_time,
+            "minimum_down_time": minimum_down_time,
         }
 
         # Logger info for where constraint is located on the model
@@ -803,7 +803,7 @@ class PriceTakerModel(ConcreteModel):
         lifetime: int = 30,
         discount_rate: float = 0.08,
         corporate_tax_rate: float = 0.2,
-        annualization_factor: Optional[float] = None,
+        capital_recovery_factor: Optional[float] = None,
         cash_inflow_scale_factor: Optional[float] = 1.0,
     ):
         """
@@ -822,7 +822,7 @@ class PriceTakerModel(ConcreteModel):
                 Fractional value of corporate tax used in NPV calculations.
                 Must be between 0 and 1.
 
-            annualization_factor: float, default=None,
+            capital_recovery_factor: float, default=None,
                 Annualization factor
 
             cash_inflow_scale_factor: float, default=1.0,
@@ -841,7 +841,7 @@ class PriceTakerModel(ConcreteModel):
         self.config.lifetime = lifetime
         self.config.discount_rate = discount_rate
         self.config.corporate_tax = corporate_tax_rate
-        self.config.annualization_factor = annualization_factor
+        self.config.capital_recovery_factor = capital_recovery_factor
         self.config.cash_inflow_scale_factor = cash_inflow_scale_factor
 
         if not self._has_hourly_cashflows:
@@ -902,17 +902,17 @@ class PriceTakerModel(ConcreteModel):
             expr=cf.net_profit == cf.net_cash_inflow - cf.fom - cf.corporate_tax
         )
 
-        if annualization_factor is None:
+        if capital_recovery_factor is None:
             # If the annualization factor is not specified
-            annualization_factor = discount_rate / (
+            capital_recovery_factor = discount_rate / (
                 1 - (1 + discount_rate) ** (-lifetime)
             )
 
         cf.lifetime_npv = Expression(
-            expr=(1 / annualization_factor) * cf.net_profit - cf.capex
+            expr=(1 / capital_recovery_factor) * cf.net_profit - cf.capex
         )
         cf.npv = Expression(
-            expr=cf.net_profit - annualization_factor * cf.capex,
+            expr=cf.net_profit - capital_recovery_factor * cf.capex,
         )
 
         self._has_overall_cashflows = True

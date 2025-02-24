@@ -73,7 +73,11 @@ def generate_daily_data(raw_data: list, horizon_length: int):
 
 
 def cluster_lmp_data(
-    raw_data: list, horizon_length: int, n_clusters: int, seed: int = 42
+    raw_data: list,
+    horizon_length: int,
+    n_clusters: int,
+    seed: int = 42,
+    eps: int = 1e-4,
 ):
     """
     Clusters the given price signal into n_clusters using the k-means clustering
@@ -91,6 +95,9 @@ def cluster_lmp_data(
 
         seed: int,
             Seed value for initializing random number generator within Kmeans
+
+        eps: int,
+            Centroid values below this threshold are set to 0 to limit noise in the data
 
     Returns:
         lmp_data_clusters: dict
@@ -116,7 +123,7 @@ def cluster_lmp_data(
     labels = kmeans.labels_
 
     # Set any centroid values that are < 1e-4 to 0 to avoid noise
-    centroids = centroids * (abs(centroids) >= 1e-4)
+    centroids = centroids * (abs(centroids) >= eps)
 
     # Create dicts for lmp data and the weight of each cluster
     # By default, the data is of type numpy.int or numpy.float.
