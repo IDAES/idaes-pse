@@ -383,9 +383,8 @@ def state_initialization(b):
     else:
         _pe_pairs = b.params._pe_pairs
 
-    vl_comps = []
-    henry_comps = []
-    init_VLE = False
+    num_VLE = 0
+
     for pp in _pe_pairs:
         # Look for a VLE pair with this phase - should only be 1
         if (
@@ -395,7 +394,7 @@ def state_initialization(b):
             b.params.get_phase(pp[1]).is_liquid_phase()
             and b.params.get_phase(pp[0]).is_vapor_phase()
         ):
-            init_VLE = True
+            num_VLE += 1
             # Get bubble and dew points
             tbub = None
             tdew = None
@@ -409,10 +408,6 @@ def state_initialization(b):
                     tdew = b.temperature_dew[pp].value
                 except KeyError:
                     pass
-            if len(vl_comps) > 0:
-                # More than one VLE. Just use the default initialization for
-                # now
-                init_VLE = False
             (
                 l_phase,
                 v_phase,
@@ -423,7 +418,7 @@ def state_initialization(b):
             ) = identify_VL_component_list(b, pp)
             pp_VLE = pp
 
-    if init_VLE:
+    if num_VLE == 1:  # Only support initialization when a single VLE is present
         henry_mole_frac = []
         henry_conc = []
         henry_other = []
@@ -471,7 +466,7 @@ def state_initialization(b):
 
     # Default is no initialization of VLE
     vap_frac = None
-    if init_VLE:
+    if num_VLE == 1:
         raoult_init = False
         if tdew is not None and b.temperature.value > tdew:
             # Pure vapour

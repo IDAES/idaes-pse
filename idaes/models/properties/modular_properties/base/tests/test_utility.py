@@ -710,7 +710,6 @@ class TestIdentifyVLComponentList:
         )
 
         m.props = m.params.build_state_block([1], defined_state=False)
-
         l_phase, v_phase, vl_comps, henry_comps, l_only_comps, v_only_comps = (
             identify_VL_component_list(m.props[1], ("p1", "p2"))
         )
@@ -720,6 +719,102 @@ class TestIdentifyVLComponentList:
         assert henry_comps == ["e"]
         assert l_only_comps == ["b"]
         assert v_only_comps == ["c"]
+
+    @pytest.mark.unit
+    def test_henry_components_only(self):
+        m = ConcreteModel()
+        m.params = DummyParameterBlock(
+            components={
+                "b": {
+                    "valid_phase_types": PT.liquidPhase,
+                },
+                "c": {
+                    "valid_phase_types": PT.vaporPhase,
+                },
+                "d": {
+                    "valid_phase_types": PT.solidPhase,
+                },
+                "e": {
+                    "parameter_data": {"henry_ref": {"p1": 86}},
+                    "henry_component": {
+                        "p1": {"method": ConstantH, "type": HenryType.Kpx}
+                    },
+                },
+            },
+            phases={
+                "p1": {
+                    "type": LiquidPhase,
+                    "equation_of_state": DummyEoS,
+                },
+                "p2": {
+                    "type": VaporPhase,
+                    "equation_of_state": DummyEoS,
+                },
+                "p3": {
+                    "type": SolidPhase,
+                    "equation_of_state": DummyEoS,
+                },
+            },
+            state_definition=self,
+            pressure_ref=100000.0,
+            temperature_ref=300,
+            base_units=self.base_units,
+        )
+
+        m.props = m.params.build_state_block([1], defined_state=False)
+        l_phase, v_phase, vl_comps, henry_comps, l_only_comps, v_only_comps = (
+            identify_VL_component_list(m.props[1], ("p1", "p2"))
+        )
+        assert l_phase == "p1"
+        assert v_phase == "p2"
+        assert vl_comps == []
+        assert henry_comps == ["e"]
+        assert l_only_comps == ["b"]
+        assert v_only_comps == ["c"]
+
+    @pytest.mark.unit
+    def test_no_vle_components(self):
+        m = ConcreteModel()
+        m.params = DummyParameterBlock(
+            components={
+                "b": {
+                    "valid_phase_types": PT.liquidPhase,
+                },
+                "c": {
+                    "valid_phase_types": PT.vaporPhase,
+                },
+                "d": {
+                    "valid_phase_types": PT.solidPhase,
+                },
+            },
+            phases={
+                "p1": {
+                    "type": LiquidPhase,
+                    "equation_of_state": DummyEoS,
+                },
+                "p2": {
+                    "type": VaporPhase,
+                    "equation_of_state": DummyEoS,
+                },
+                "p3": {
+                    "type": SolidPhase,
+                    "equation_of_state": DummyEoS,
+                },
+            },
+            state_definition=self,
+            pressure_ref=100000.0,
+            temperature_ref=300,
+            base_units=self.base_units,
+        )
+
+        m.props = m.params.build_state_block([1], defined_state=False)
+        with pytest.raises(
+            PropertyPackageError,
+            match="Phase pair p1-p2 was identified as "
+            "being a VLE pair, however are no components present in both "
+            "the vapor and liquid phases simultaneously.",
+        ):
+            _ = identify_VL_component_list(m.props[1], ("p1", "p2"))
 
 
 # Property configuration for pure water to use in bubble and dew point tests
