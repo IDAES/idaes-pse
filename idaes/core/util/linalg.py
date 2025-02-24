@@ -23,6 +23,8 @@ from scipy.linalg import svd
 from scipy.sparse.linalg import svds, norm as spnorm, splu, spsolve_triangular, spsolve
 from scipy.sparse import issparse, find, spdiags, block_array, eye as speye
 
+from idaes.core.util.exceptions import BurntToast
+
 def _symmetric_inverse_iteration(H, H_inv_func, n_vec, tol, max_iter):
     """
     Function to perform simultaneous inverse iteration on a real
@@ -98,24 +100,38 @@ def _symmetric_inverse_iteration(H, H_inv_func, n_vec, tol, max_iter):
     
 
 
-def svd_explicit_normal(A, number_singular_values=10, p=5, num_iter=10, small_sv_tol=1e-7):
+def svd_explicit_grammian(
+        A,
+        number_singular_values: int = 10,
+        p: int = 5,
+        num_iter: int = 10,
+        small_sv_tol: float = 1e-7
+    ):
     """
-    Computes the n_vec smallest singular vectors of the Scipy sparse m*n matrix A (m<=n).
-    Because this method is typically called on singular or near-singular A, there can be 
-    significant error in this calcuation. Nevertheless, the resulting matrix U will contain
-    n_vec orthonormal vectors whose left-multiplication into A, U.T @ A, results in a matrix
-    of extremely small magnitude---in other words, they are left near-null vectors of A.
-    Typically such vectors are sufficient for model diagnostic tools.
+    Computes smallest singular vectors of the sparse m*n matrix A (m<=n) by explicitly
+    forming the Gram matrix A @ A.T or A.T @ A, whichever is smaller, and then carrying
+    out inverse iteration on it. Forming this matrix explicitly is typically not 
+    recommended because it means that singular values of A that are less than the square 
+    root of machine epsilon are indistinguishable, halving the number of significant 
+    digits in the results. As a result, this method computes p additional eigenvectors 
+    of the Gram matrix, in order to ensure that the entire subspace containing small
+    eigenvalues is captured, then projects A into this subspace and conducts a dense
+    svd on the much smaller matrix.
 
-    Note that if singular values are close to each other, convergence can be impaired and
-    the resulting singular vector estimate may be a linear combination of the singular 
-    vectors associated with the other singular values.
+    Args:
+        A: Scipy sparse array with real entries
+        number_singular_values: number of small singular values and vectors to compute
+        p: number of extra vectors to oversample Gram matrix with
+        num_iter: Number of steps of inverse iteration to conduct on Gram matrix
+        small_sv_tol: If the smallest singular value computed for the
+            number_singular_values + p exceeds this tolerance, the user is warned that
+            the returned singular values and vectors may not accurately represent the
+            entire subspace of A associated with singular values less than this value.
 
-    For example, for a matrix with condition number of 5.7e17, this method returned a 
-    vector associated with an estimated singular value of 9.31e-5. Comparison to the 
-    results of a dense SVD revealed the vector to be primarily a linear combination 
-    of 11 singular vectors with associated singular values ranging from 9.19e-5 to 9.82e-5.
-    However, for model diagnostic purposes, the singular vector estimate is adequate.
+    Returns:
+        U: m by number_singular_values dense array of left singular vectors
+        svals: 1D dense array of number_singular_values singular values
+        V: n by number_singular_values dense array of left singular vectors
     """
     assert len(A.shape) == 2
     assert issparse(A)
@@ -132,8 +148,20 @@ def svd_explicit_normal(A, number_singular_values=10, p=5, num_iter=10, small_sv
         invH = splu(H)
     except RuntimeError as err:
         if "Factor is exactly singular" in str(err):
-            H_reg = H + 1e-15 * spnorm(H, ord='fro') / np.sqrt(q) * speye(q)
-            invH = splu(H_reg)
+            H_reg = H + 1e-15 * speye(q)
+            try: 
+                invH = splu(H_reg)
+            except RuntimeError as err2:
+                if "Factor is exactly singular" in str(err2):
+                    raise BurntToast(
+                        "Regularization of singular Gram matrix failed. Please export "
+                        "this matrix using scipy.sparse.save_npz and share it with the "
+                        "developers of IDAES for troubleshooting. (If this method was "
+                        "called through the SVDToolbox, the matrix is stored as the "
+                        ".jacobian attribute.)"
+                    ) from err2
+                else:
+                    raise
         else:
             raise
 
