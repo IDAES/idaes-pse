@@ -143,7 +143,7 @@ def get_optimal_num_clusters(
     samples: Union[pd.DataFrame, np.array],
     kmin: int = 2,
     kmax: int = 30,
-    method: str = "elbow",
+    method: str = "silhouette",
     sensitivity: int = 1,
     generate_elbow_plot: bool = False,
     seed: int = 42,
@@ -251,7 +251,7 @@ def locate_elbow(
     kmax: int = 30,
 ):
     """
-    Identifies the elbow/knee for the input/output data
+    Identifies the elbow/knee for the input/output data that is concave down and increasing
 
     Args:
         x : list,
