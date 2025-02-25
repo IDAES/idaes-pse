@@ -38,8 +38,7 @@ class ExtraDependencies:
 
     ui = [
         # FIXME this must be changed to the PyPI distribution for the release
-        # "idaes-ui",
-        "idaes-ui @ git+https://github.com/IDAES/idaes-ui@main",
+        "idaes-ui",
     ]
     omlt = [
         "omlt==1.1",  # fix the version for now as package evolves
