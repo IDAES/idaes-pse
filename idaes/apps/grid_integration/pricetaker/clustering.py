@@ -215,7 +215,6 @@ def get_optimal_num_clusters(
     elif method == "elbow":
         # Invert inertia values such that plot is concave down and increasing
         inverted_inertia_values = [-y for y in inertia_values]
-        # TODO: See if make_splrep works and generates similar results
         # Use a smoothing spline that retains the data's original shape
         spline = splrep(k_values, inverted_inertia_values, k=3)
         k_smooth = np.linspace(kmin, kmax + 1, 100)
@@ -246,7 +245,7 @@ def get_optimal_num_clusters(
         if len(local_maxima) == 0:
             n_clusters = 0
             _logger.warning(
-                "The optimal number of cluster cannot be determined for this dataset."
+                "The optimal number of clusters cannot be determined for this dataset."
             )
         elif len(local_maxima) == 1:
             n_clusters_norm = local_maxima[0][0]
