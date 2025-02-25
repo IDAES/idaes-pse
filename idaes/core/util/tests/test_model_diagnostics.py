@@ -4180,7 +4180,7 @@ class TestEvalErrorDetection(TestCase):
         w = warnings[0]
         self.assertEqual(
             w,
-            "c: Potential evaluation error in x**-2; base bounds are (0, inf); exponent bounds are (-2, -2)",
+            "c: Potential evaluation error in x**(-2); base bounds are (0, inf); exponent bounds are (-2, -2)",
         )
 
         dtb.config.warn_for_evaluation_error_at_bounds = False
@@ -4193,7 +4193,7 @@ class TestEvalErrorDetection(TestCase):
         w = warnings[0]
         self.assertEqual(
             w,
-            "c: Potential evaluation error in x**-2; base bounds are (-1, inf); exponent bounds are (-2, -2)",
+            "c: Potential evaluation error in x**(-2); base bounds are (-1, inf); exponent bounds are (-2, -2)",
         )
 
     @pytest.mark.unit
@@ -4208,7 +4208,7 @@ class TestEvalErrorDetection(TestCase):
         w = warnings[0]
         self.assertEqual(
             w,
-            "c: Potential evaluation error in x**-2.5; base bounds are (0, inf); exponent bounds are (-2.5, -2.5)",
+            "c: Potential evaluation error in x**(-2.5); base bounds are (0, inf); exponent bounds are (-2.5, -2.5)",
         )
 
         dtb.config.warn_for_evaluation_error_at_bounds = False
@@ -4221,7 +4221,7 @@ class TestEvalErrorDetection(TestCase):
         w = warnings[0]
         self.assertEqual(
             w,
-            "c: Potential evaluation error in x**-2.5; base bounds are (-1, inf); exponent bounds are (-2.5, -2.5)",
+            "c: Potential evaluation error in x**(-2.5); base bounds are (-1, inf); exponent bounds are (-2.5, -2.5)",
         )
 
     @pytest.mark.unit
