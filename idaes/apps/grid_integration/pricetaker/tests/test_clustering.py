@@ -21,7 +21,6 @@ from idaes.apps.grid_integration.pricetaker.clustering import (
     get_optimal_num_clusters,
     cluster_lmp_data,
     sklearn_avail,
-    locate_elbow,
 )
 import idaes.logger as idaeslog
 
@@ -277,11 +276,3 @@ def test_optimal_clusters_logger_message5(dummy_data, caplog):
             "Optimal number of clusters is close to kmax: 5. Consider increasing kmax."
             in caplog.text
         )
-
-
-# @pytest.mark.unit
-# def test_locate_elbow(sample_data):
-#     """Tests the locate_elbow function"""
-#     opt_x = locate_elbow([1, 2, 3], [5, 3.8, 1.2])
-#
-#     assert opt_x == 2
