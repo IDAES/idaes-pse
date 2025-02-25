@@ -78,7 +78,7 @@ def cluster_lmp_data(
     horizon_length: int,
     n_clusters: int,
     seed: int = 42,
-    eps: int = 1e-4,
+    eps: float = 1e-4,
 ):
     """
     Clusters the given price signal into n_clusters using the k-means clustering
@@ -97,7 +97,7 @@ def cluster_lmp_data(
         seed: int,
             Seed value for initializing random number generator within Kmeans
 
-        eps: int,
+        eps: float,
             Centroid values below this threshold are set to 0 to limit noise in the data
 
     Returns:
