@@ -97,7 +97,7 @@ Now that conda and pip are installed, and you are in the "idaes" conda environme
     idaes get-extensions
 
 .. warning::
-    The IDAES binary extensions are not yet supported on Mac/OSX
+    The IDAES binary extensions are not yet supported on macOS with an Intel processor but are available for macOS with Apple Silicon (M1) processors. If you are using macOS (Intel), you can `build the extensions from source <https://github.com/IDAES/idaes-ext>`_.
 
 .. note::
     This ``pip install`` command would override any package within the conda environment,
