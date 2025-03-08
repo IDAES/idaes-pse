@@ -2183,7 +2183,7 @@ change.
         ax.set_title(f"P-H Diagram for {self.pure_component}")
 
         if self.config.amount_basis == AmountBasis.MOLE:
-            ax.set_xlabel("Enthalpy (kJ/mol)")
+            ax.set_xlabel("Enthalpy (kJ/kmol)")
         elif self.config.amount_basis == AmountBasis.MASS:
             ax.set_xlabel("Enthalpy (kJ/kg)")
         else:
@@ -2257,7 +2257,7 @@ change.
 
         ax.set_title(f"T-S Diagram for {self.pure_component}")
         if self.config.amount_basis == AmountBasis.MOLE:
-            ax.set_xlabel("Entropy (kJ/mol/K)")
+            ax.set_xlabel("Entropy (kJ/kmol/K)")
         elif self.config.amount_basis == AmountBasis.MASS:
             ax.set_xlabel("Entropy (kJ/kg/K)")
         else:
