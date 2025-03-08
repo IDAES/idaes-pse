@@ -2181,7 +2181,13 @@ change.
 
         # Titles
         ax.set_title(f"P-H Diagram for {self.pure_component}")
-        ax.set_xlabel("Enthalpy (kJ/kg)")
+
+        if self.config.amount_basis == AmountBasis.MOLE:
+            ax.set_xlabel("Enthalpy (kJ/mol)")
+        elif self.config.amount_basis == AmountBasis.MASS:
+            ax.set_xlabel("Enthalpy (kJ/kg)")
+        else:
+            raise ConfigurationError("Invalid amount basis")
         ax.set_ylabel("Pressure (kPa)")
         return fig, ax
 
@@ -2250,7 +2256,12 @@ change.
         plt.plot(x, y, c="black")
 
         ax.set_title(f"T-S Diagram for {self.pure_component}")
-        ax.set_xlabel("Entropy (kJ/kg/K)")
+        if self.config.amount_basis == AmountBasis.MOLE:
+            ax.set_xlabel("Entropy (kJ/mol/K)")
+        elif self.config.amount_basis == AmountBasis.MASS:
+            ax.set_xlabel("Entropy (kJ/kg/K)")
+        else:
+            raise ConfigurationError("Invalid amount basis")
         ax.set_ylabel("Temperature (K)")
         return fig, ax
 
