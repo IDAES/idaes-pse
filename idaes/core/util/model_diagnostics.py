@@ -2745,10 +2745,13 @@ class DegeneracyHunter2:
             # We found an irreducible degenerate set
             return self._get_ids()
         else:
-            raise ValueError(
+            # We did not find an irreducible degenerate set
+            _log.info(
                 f"Solver did not return an optimal termination condition for "
-                f"IDS MILP with constraint {cons.name}."
+                f"constraint {cons.name}. This probably indicates the constraint"
+                " is not a major component of an IDS."
             )
+            return None
 
     def find_irreducible_degenerate_sets(self, tee=False):
         """
