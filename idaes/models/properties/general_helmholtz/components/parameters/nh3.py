@@ -29,78 +29,118 @@ def thermal_conductivity_rule(m):
     # Fenghour, A., W.A. Wakeham, V. Vesovic, (1998). "The Viscosity of Carbon
     #     Dioxide." J. Phys. Chem. Ref. Data, 27, 31-44.
     # """
-    # b = {
-    #     0: 0.4226159,
-    #     1: 0.6280115,
-    #     2: -0.5387661,
-    #     3: 0.6735941,
-    #     4: 0,
-    #     5: 0,
-    #     6: -0.4362677,
-    #     7: 0.2255388,
-    # }
-    # c = {
-    #     1: 2.387869e-2,
-    #     2: 4.350794,
-    #     3: -10.33404,
-    #     4: 7.981590,
-    #     5: -1.940558,
-    # }
-    # d = {
-    #     1: 24.47164,
-    #     2: 8.705605e-2,
-    #     3: -6.547950e-5,
-    #     4: 6.594919e-8,
-    # }
-    # T = m.T_star / m.tau
+    b = {
+        1: 0.07152,
+        2: 130.228,
+        3: 9569.817
+    }
+    u = {
+        1: 1646,
+        2: 3965,
+        3: 7231        
+    }
+    v = {
+        1: 2.224,
+        2: 3.148,
+        3: 0.9579
+    }
+    B = {
+        1: {
+            1:  0.103432e0,
+            2: -0.112597e0,
+            3: 0.233301e0,
+            4: -0.112536e0,
+            5: 0.141129e-1
+        },
+        2: {
+            1: -0.283976e-1,
+            2: 0.482520e-1,
+            3: -0.644124e-1,
+            4: 0.529376e-2,
+            5: 0.891203e-2
+        }
+    }
+    T = m.T_star / m.tau
     # Ts = T / 251.196
-    # rho = m.rho_star * m.delta
-    # G = sum(bval / Ts**i for i, bval in b.items())
-    # cint_over_k = 1.0 + pyo.exp(-183.5 / T) * sum(
-    #     cval * (T / 100) ** (2 - i) for i, cval in c.items()
-    # )
-    return ()
-    #     475.598 * pyo.sqrt(T) * (1 + 2.0 / 5.0 * cint_over_k) / G
-    #     + d[1] * rho
-    #     + d[2] * rho**2
-    #     + d[3] * rho**3
-    #     + d[4] * rho**4
-    # ) / 1e3
+    rho = m.rho_star * m.delta
+    G = sum(bval / T**i for i, bval in b.items())
+    cint_over_k = 4.0 + sum(
+        v[i] * (u[i] / T) ** 2
+        * pyo.exp(u[i]/T)
+         / (pyo.exp(u[i]/T)-1) ** 2
+           for i in len(u.items())
+    )
+    return (
+        0.1351767 * pyo.sqrt(T) * cint_over_k / G
+        +sum((B[1][i] + B[2][i]*T)*rho ** i for i in range(1,6))
+    )
 
 
 def viscosity_rule(m):
     # """Viscosity rule
 
-    # Fenghour, A., W.A. Wakeham, V. Vesovic, (1998). "The Viscosity of Carbon
-    #     Dioxide." J. Phys. Chem. Ref. Data, 27, 31-44.
+    # Fenghour, A., et al. "The viscosity of ammonia." 
+    # Journal of Physical and Chemical Reference Data 24.5 (1995): 1649-1667.
     # """
-    # a = {
-    #     0: 0.235156,
-    #     1: -0.491266,
-    #     2: 5.211155e-2,
-    #     3: 5.347906e-2,
-    #     4: -1.537102e-2,
-    # }
-    # d = {
-    #     1: 0.4071119e-2,
-    #     2: 0.7198037e-4,
-    #     3: 0.2411697e-16,
-    #     4: 0.2971072e-22,
-    #     5: -0.1627888e-22,
-    # }
-    # T = m.T_star / m.tau
-    # rho = m.delta * m.rho_star
-    # Ts = T / 251.196
-    return ()
-    #     1.00697
-    #     * pyo.sqrt(T)
-    #     / pyo.exp(sum(aval * pyo.log(Ts) ** i for i, aval in a.items()))
-    #     + d[1] * rho
-    #     + d[2] * rho**2
-    #     + d[3] * rho**6 / Ts**3
-    #     + d[4] * rho**8
-    #     + d[5] * rho**8 / Ts
-    # )
+    a = {
+        0: 4.99318220,
+        1: -0.61122364,
+        2: 0,
+        3: 0.18535124,
+        4: -0.11160946,
+    }
+    c = {
+        0: -0.17999496e1,
+        1: 0.46692621e2,
+        2: -0.53460794e3,
+        3: 0.33604074e4,
+        4: -0.13019164e5,
+        5: 0.33414230e5,
+        6: -0.58711743e5,
+        7: 0.71426686e5,
+        8: -0.59834012e5,
+        9: 0.33652741e5,
+        10: -0.12027350e5,
+        11: 0.24348205e4,
+        12: -0.20807957e3
+    }
+    d = {
+        2: {
+            0: 0,
+            1: 0,
+            2: 2.19664285e-1,
+            3: 0,
+            4:-0.83651107e-1
+        },
+        3: {
+            0: 0.17366936e-2,
+            1: -0.64250359e-2,
+            2: 0,
+            3: 0,
+            4: 0
+        },
+        4: {
+            0: 0,
+            1: 0,
+            2: 1.67668649e-4,
+            3: -1.49710093e-4,
+            4: 0.77012274e-4
+        }
+    }
+
+    T = m.T_star / m.tau
+    rho = m.delta * m.rho_star
+    Ts = T / 386
+    return (
+        0.021357
+        * pyo.sqrt(17.03052*T)
+        / (0.2957 ** 2 * pyo.exp(sum(aval * pyo.log(Ts) ** i for i, aval in a.items())))
+        * sum((c[i] * pyo.sqrt(Ts))**-i 
+              for i in range (0, len(c.items())+1)) #check for use of initial n(T)
+        / (0.6022137 * 0.2957 **3)
+        * rho
+        + sum(sum(d[i][j]/Ts**j for j in range (0, len(d[i].items())))* rho ** i for i in range (2,5))
+    )
 
 
 def main(dry_run=False):

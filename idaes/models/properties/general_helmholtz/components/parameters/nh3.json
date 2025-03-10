@@ -229,12 +229,14 @@
         },
         "viscosity": {
             "reference": [
-                
+                "Fenghour, A., et al. The viscosity of ammonia.",
+                "   Journal of Physical and Chemical Reference Data 24.5 (1995): 1649-1667."
             ]
         },
         "surface_tension": {
             "reference": [
-                
+                "Mulero, A., I. Cachadina, Parra, M., Recommended Correlations for the Surface ",
+                "    Tension of Common Fluids, J. Phys. Chem. Ref. Data 41, 043105, (2012)."
             ],
             "Tc": 405.4,
             "s": {
