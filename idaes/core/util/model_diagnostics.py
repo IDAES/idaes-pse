@@ -2172,7 +2172,7 @@ class SVDToolbox:
                     "singular values."
                 )
 
-            stream.write(f"{TAB}Smallest Singular Value {e}:\n\n")
+            stream.write(f"{TAB}Smallest Singular Value {e} ({self.s[e-1]:.3e}):\n\n")
             stream.write(f"{2 * TAB}Variables:\n\n")
             for v in np.where(abs(self.v[:, e - 1]) > tol)[0]:
                 stream.write(f"{3 * TAB}{self._var_list[v].name}\n")
