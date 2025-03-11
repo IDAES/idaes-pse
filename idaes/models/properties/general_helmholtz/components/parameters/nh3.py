@@ -25,9 +25,11 @@ from idaes.models.properties.general_helmholtz.helmholtz_parameters import (
 
 def thermal_conductivity_rule(m):
     # """Thermal conductivity rule
-
-    # Fenghour, A., W.A. Wakeham, V. Vesovic, (1998). "The Viscosity of Carbon
-    #     Dioxide." J. Phys. Chem. Ref. Data, 27, 31-44.
+    
+    # Monogenidou, S. A., Marc J. Assael, and Marcia L. Huber. 
+    # "Reference correlation for the thermal conductivity of ammonia 
+    # from the triple-point temperature to 680 K and pressures up to 80 MPa." 
+    # Journal of Physical and Chemical Reference Data 47.4 (2018).
     # """
     b = {
         1: 0.07152,
