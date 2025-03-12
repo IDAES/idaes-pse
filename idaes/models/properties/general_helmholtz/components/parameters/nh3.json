@@ -178,7 +178,8 @@
     },
     "aux": {
         "reference": [
-               
+            "Gao, Kehui, et al. A reference equation of state with an associating term for the thermodynamic properties of ammonia.",
+            "   Journal of Physical and Chemical Reference Data 52.1 (2023)."
         ],
         "delta_l_sat_approx": {
             "c": 1,
