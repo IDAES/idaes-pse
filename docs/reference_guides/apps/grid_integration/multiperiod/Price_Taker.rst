@@ -5,7 +5,7 @@ Price takers are entities that must accept market prices since they lack the mar
 to directly influence the market price. Likewise, it is assumed that a price taker's resource or energy
 system is small enough such that it does not significantly impact the market. When coupled with multi-period modeling,
 the price-taker model is able to synthesize grid-centric modeling with steady-state process-centric modeling, as
-depicted in figure below.
+depicted in the figure below.
 
 .. |pricetaker| image:: images/pricetaker.png
   :width: 1200
@@ -32,15 +32,13 @@ The following equations represent the multi-period price taker model, where :mat
        h(d,u_{s,t},δ_{s,t},u_{s,t+1},δ_{s,t+1}) = 0; ∀_{s} ∈ S, t ∈ T
 
 
-The price taker multi-period modeling workflow involves the integration of multiple software platforms into the IDAES optimization model
-and can be broken down into two distinct functions, as shown in the figure below. In part 1, simulated or historical
-ISO (Independent System Operator) data is used to generate locational marginal price (LMP)
+The price taker multi-period modeling workflow is shown in part 1 of the figure below. The price taker model uses
+simulated or historical ISO (Independent System Operator) data to generate locational marginal price (LMP)
 signals, and production cost models (PCMs) are used to compute and optimize the time-varying dispatch schedules for each
-resource based on their respective bid curves. Advanced data analytics (RAVEN) reinterpret the LMP signals and PCM
+resource based on their respective bid curves. Advanced data analytics reinterpret the LMP signals and PCM
 as stochastic realizations of the LMPs in the form of representative days (or simply the full-year price signals).
-In part 2, PRESCIENT uses a variety of input parameters (design capacity, minimum power output, ramp rate, minimum up/down time, marginal cost, no load cost, and startup profile)
-to generate data for the market surrogates. Meanwhile, IDAES uses the double loop simulation to integrate detailed
-process models (b, ii) into the daily (a, c) and hourly (i, iii) grid operations workflow.
+Part 2 describes how a variety of input parameters (design capacity, minimum power output, ramp rate, minimum up/down time, marginal cost, no load cost, and startup profile)
+are used generate data for market surrogates, which, in conjunction with the price taker model, can be used to optimize hybrid energy systems.
 
 .. |hybrid_energy_system| image:: images/hybrid_energy_system.png
   :width: 1200
