@@ -811,7 +811,7 @@ class TestIdentifyVLComponentList:
         with pytest.raises(
             PropertyPackageError,
             match="Phase pair p1-p2 was identified as "
-            "being a VLE pair, however are no components present in both "
+            "being a VLE pair, however there are no components present in both "
             "the vapor and liquid phases simultaneously.",
         ):
             _ = identify_VL_component_list(m.props[1], ("p1", "p2"))
