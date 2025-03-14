@@ -374,6 +374,13 @@ def identify_VL_component_list(blk, phase_pair):
         elif (v_phase, j) in blk.phase_component_set:
             v_only_comps.append(j)
 
+    if len(vl_comps) == 0 and len(henry_comps) == 0:
+        raise PropertyPackageError(
+            f"Phase pair {phase_pair[0]}-{phase_pair[1]} was identified as "
+            "being a VLE pair, however there are no components present in "
+            "both the vapor and liquid phases simultaneously."
+        )
+
     return l_phase, v_phase, vl_comps, henry_comps, l_only_comps, v_only_comps
 
 
