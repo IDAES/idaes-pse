@@ -149,8 +149,6 @@ def test_optimal_num_clusters_elbow(sample_data):
     assert plt.gcf() is not None
     # Test that axes were created
     assert plt.gca() is not None
-    # Test that the plot has data
-    # assert plt.gca().has_data()
 
     plt.close("all")
 
@@ -176,8 +174,6 @@ def test_optimal_num_clusters_silhouette(dummy_data):
     assert plt.gcf() is not None
     # Test that axes were created
     assert plt.gca() is not None
-    # Test that the plot has data
-    # assert plt.gca().has_data()
 
     plt.close("all")
 
