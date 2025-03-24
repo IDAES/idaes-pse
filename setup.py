@@ -82,7 +82,7 @@ kwargs = dict(
     # Put abstract (non-versioned) deps here.
     # Concrete dependencies go in requirements[-dev].txt
     install_requires=[
-        "pyomo >= 6.8.2",
+        "pyomo >=6.9.1",
         "pint >= 0.24.1",  # required to use Pyomo units. Pint 0.24.1 needed for Python 3.9 support
         "networkx",  # required to use Pyomo network
         "numpy>=1,<3",
@@ -97,7 +97,10 @@ kwargs = dict(
     entry_points={
         "console_scripts": [
             "idaes = idaes.commands.base:command_base",
-        ]
+        ],
+        "idaes.flowsheets": [
+            "0D Fixed Bed TSA = idaes.models_extra.temperature_swing_adsorption.fixed_bed_tsa0d_ui",
+        ],
     },
     # Only installed if [<key>] is added to package name
     extras_require=dict(ExtraDependencies()),

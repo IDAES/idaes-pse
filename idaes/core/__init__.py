@@ -33,6 +33,8 @@ from .base.control_volume_base import (
 )
 from .base.control_volume0d import ControlVolume0DBlock
 from .base.control_volume1d import ControlVolume1DBlock, DistributedVars
+from .base.extended_control_volume0d import ExtendedControlVolume0DBlock
+from .base.extended_control_volume1d import ExtendedControlVolume1DBlock
 from .base.phases import (
     Phase,
     LiquidPhase,

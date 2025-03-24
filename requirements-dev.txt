@@ -2,7 +2,7 @@
 
 ### docs
 # Newer sphinx needed for proper type hint support in docstrings
-sphinx>=3.0.0
+sphinx>=3.0.0,!=8.2.0
 sphinxcontrib-napoleon>=0.5.0
 # sphinx-argparse 0.4.0 is the last version to support Python 3.9
 # see https://sphinx-argparse.readthedocs.io/en/latest/changelog.html#id3
@@ -28,3 +28,6 @@ addheader>=0.2.2
 # this will install IDAES in editable mode using the dependencies defined under the `extras_require` tags defined in `setup.py`
 --editable .[ui,grid,omlt,coolprop]
 # to customize this (e.g. to install a local clone of the Pyomo git repository), add the desired alternate requirements below
+
+# for flowsheet_processor
+idaes-flowsheet-processor>=0.1.dev4

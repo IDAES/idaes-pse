@@ -37,6 +37,9 @@ equil = "equil"
 astroid = "astroid"
 # delt == delta
 delt = "delt"
+# FOM for fixed operating and maintenance for DISPATCHES
+FOM = "FOM"
+fom = "fom"
 # Minimal Infeasible System
 mis = "mis"
 MIS = "MIS"
