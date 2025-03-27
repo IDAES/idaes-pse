@@ -124,6 +124,7 @@ from idaes.core.util.parameter_sweep import (
     ParameterSweepBase,
     is_psweepspec,
 )
+
 import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
