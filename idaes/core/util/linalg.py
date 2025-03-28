@@ -89,9 +89,6 @@ def _symmetric_inverse_iteration(H_inv_func, H_shape, n_vec, tol, max_iter):
             converged = True
             break
 
-    if not converged:
-        import pdb; pdb.set_trace()
-
     # If we've converged, the eigenvalues are the diagonal entries of R
     evals = 1 / np.diag(R)
     sort_vec = np.argsort(evals)
@@ -111,6 +108,8 @@ def _symmetric_rayleigh_ritz_iteration(H, n_vec, tol, max_iter):
 
     for i in range(max_iter):
         err = norm(H @ B - B @ np.diag(mu), axis=0)
+
+        # TODO should this tolerance be scaled by matrix size?
         if max(err) < tol:
             converged = True
             print(f"Converged in {i} iterations")
@@ -119,7 +118,7 @@ def _symmetric_rayleigh_ritz_iteration(H, n_vec, tol, max_iter):
 
         Bhat, _ = qr(
             spsolve(
-                H- mu[max_err_idx] * speye(m + n),
+                H- mu[max_err_idx] * speye(n),
                 B
             )
         )
@@ -177,8 +176,6 @@ def _aug_eig_processing(
     U_norms = norm(U, axis=0)
     n_vecs = evecs.shape[1]
 
-    # import pdb; pdb.set_trace()
-
     # For an index k corresponding to a singular vector pair, we should have
     # V_norms[k] ~= 1/sqrt(2) and U_norms[k] ~= 1/sqrt(2). However, if A
     # is nonsquare, then we'll also have elements of the right null space if
@@ -186,35 +183,36 @@ def _aug_eig_processing(
     # one vector having norm of approximately 1 and the other vector having
     # norm of approximately zero.
 
-    # Check that we don't have any vectors of intermediate size
     V_zero_indices = np.nonzero(V_norms < zero_tol)[0]
     V_pair_indices = np.nonzero(V_norms > 1/np.sqrt(2) - pair_tol)[0]
 
     U_zero_indices = np.nonzero(U_norms < zero_tol)[0]
     U_pair_indices = np.nonzero(U_norms > 1/np.sqrt(2) - pair_tol)[0]
 
+    # Check that we don't have any vectors of intermediate size
+    # This check is probably redundant now
     assert not np.any(np.logical_and(V_norms > zero_tol, V_norms < 1/np.sqrt(2) - pair_tol))
     assert not np.any(np.logical_and(U_norms > zero_tol, U_norms < 1/np.sqrt(2) - pair_tol))
 
     if m > n:
-        assert len(V_zero_indices) == 0
-        assert len(U_zero_indices) + len(U_pair_indices) == n_vecs
-        null_space = V[:, U_zero_indices]
-        null_norms = V_norms[U_zero_indices]
+        assert len(U_zero_indices) == 0
+        assert len(V_zero_indices) + len(V_pair_indices) == n_vecs
+        null_space = U[:, V_zero_indices]
+        null_norms = U_norms[V_zero_indices]
         null_space = null_space / null_norms
         assert np.all(null_norms > 1 - pair_tol)
 
-        pair_indices = U_pair_indices
+        pair_indices = V_pair_indices
 
 
     elif m < n:
-        assert len(U_zero_indices) == 0
-        assert len(V_zero_indices) + len(V_pair_indices) == n_vecs
-        null_space = U[:, V_zero_indices] # Actually the left null space
-        null_norms = U_norms[V_zero_indices]
+        assert len(V_zero_indices) == 0
+        assert len(U_zero_indices) + len(U_pair_indices) == n_vecs
+        null_space = V[:, U_zero_indices] # Actually the left null space
+        null_norms = V_norms[U_zero_indices]
         assert np.all(null_norms > 1 - pair_tol)
         
-        pair_indices = V_pair_indices
+        pair_indices = U_pair_indices
 
     else:
         assert len(U_zero_indices) == 0
@@ -243,7 +241,6 @@ def _aug_eig_processing(
     # but, unfortunately, that does not mean that the resulting columns of
     # U and V are orthogonal except for duplicate eigenvectors. Furthermore, 
     # we might not get matching pairs of singular vectors.
-    # import pdb; pdb.set_trace()
 
     U, R = qr(U)
     r = np.abs(np.diag(R))
@@ -252,7 +249,6 @@ def _aug_eig_processing(
 
     V, R = qr(V)
     r = np.abs(np.diag(R))
-    # import pdb; pdb.set_trace()
     lin_idp_vecs = np.nonzero(r > idp_tol)[0]
     V = V[:, lin_idp_vecs]
     
@@ -263,7 +259,6 @@ def _aug_eig_processing(
     assert U.shape[1] == V.shape[1]
 
     U_sub, svals, VT_sub = svd(U.T @ A @ V)
-    # import pdb; pdb.set_trace()
     U = U @ U_sub
     V = V @ VT_sub.T
 
@@ -369,9 +364,8 @@ def svd_explicit_grammian(
 def svd_rayleigh_ritz(
         A,
         number_singular_values: int = 10,
-        p: int = 5,
         max_iter: int = 100,
-        tol: float = 1e-14
+        tol: float = 1e-12
     ):
     """
     Computes smallest singular vectors of the sparse m*n matrix A (m<=n) by explicitly
@@ -401,14 +395,13 @@ def svd_rayleigh_ritz(
     """
     assert len(A.shape) == 2
     assert issparse(A)
-    assert p >= 0
     m, n = A.shape
     q = min(m, n)
     l = abs(m-n)
     n_samples = 2*number_singular_values + l
     A_aug = block_array([[None, A.T],[A, None]])
 
-    mu, B, converged = _symmetric_rayleigh_ritz_iteration(A_aug, n_samples, tol=tol, max_iter=max_iter)
+    _, B, converged = _symmetric_rayleigh_ritz_iteration(A_aug, n_samples, tol=tol, max_iter=max_iter)
 
     if not converged:
         raise RuntimeError
