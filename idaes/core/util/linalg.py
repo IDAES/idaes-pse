@@ -18,7 +18,7 @@ __author__ = "Douglas Allan"
 
 import numpy as np
 from numpy.linalg import norm, qr
-from numpy.random import rand, randn
+from numpy.random import rand, randn, default_rng
 from scipy.linalg import svd, eigh
 from scipy.sparse.linalg import svds, norm as spnorm, splu, spsolve_triangular, spsolve, eigsh, gmres
 from scipy.sparse import issparse, find, spdiags, block_array, eye as speye
@@ -97,16 +97,20 @@ def _symmetric_inverse_iteration(H_inv_func, H_shape, n_vec, tol, max_iter):
 
     return evals, evecs, converged
 
-def _symmetric_rayleigh_ritz_iteration(H, n_vec, tol, max_iter):
+def _symmetric_rayleigh_ritz_iteration(H, n_vec, tol, max_iter, seed):
     assert len(H.shape) == 2
     m, n = H.shape
     assert m == n
-    mu = 1e-15*(2*rand(n_vec) -1)
-    B, _ =  qr(randn(n, n_vec))
+    rng_obj = default_rng(seed)
+    mu = rng_obj.uniform(low=-1e-15, high=1e-15, size=(n_vec,))
+    B = rng_obj.standard_normal(size=(m, n_vec))
+    B, _ =  qr(B)
 
     converged = False
 
     for i in range(max_iter):
+        # Calculate how close B[:,k] and mu[k] are to an eigenpair
+        # by calculating norm(H @ B[:, k]  - mu[k] * B[:,k]) for all k.
         err = norm(H @ B - B @ np.diag(mu), axis=0)
 
         # TODO should this tolerance be scaled by matrix size?
@@ -114,14 +118,44 @@ def _symmetric_rayleigh_ritz_iteration(H, n_vec, tol, max_iter):
             converged = True
             print(f"Converged in {i} iterations")
             break
+
+        # Find the index which is furthest from being an eigenvector in
+        # order to improve the estimate for that index
         max_err_idx = np.argmax(err)
 
-        Bhat, _ = qr(
-            spsolve(
-                H- mu[max_err_idx] * speye(n),
+        try:
+            # Calculate 
+            Bgrave = spsolve(
+                H - mu[max_err_idx] * speye(n),
                 B
             )
-        )
+        except RuntimeError:
+            if "Factor is exactly singular" in str(err):
+                # mu[max_err_idx] is exactly equal to an
+                # eigenvalue, but B[:,max_err_idx] is not
+                # a good eigenvector estimate. Therefore
+                # perturb mu[max_err_idx] to allow matrix
+                # inversion to succeed
+                try:
+                    Bgrave = spsolve(
+                        H - (1e-15 + mu[max_err_idx]) * speye(n),
+                        B
+                    )
+                except RuntimeError as exc:
+                    if "Factor is exactly singular" in str(err):
+                        # If perturbation fails, we'll assume
+                        # something bigger is wrong in the solver
+                        raise RuntimeError(
+                            "Unable to invert matrix H when shifted by "
+                            f"{mu[max_err_idx]}*I. Check whether something "
+                            "is wrong with the matrix H's scaling."
+                        ) from exc
+                    else:
+                        raise
+            else:
+                raise
+
+        Bhat, _ = qr(Bgrave)
         mu, B_tilde = eigh(Bhat.T @ H @ Bhat)
         B =  Bhat @ B_tilde
 
@@ -160,9 +194,9 @@ def _safe_inverse_splu(H):
 def _aug_eig_processing(
     A,
     evecs,
-    zero_tol=1e-8,
+    zero_tol=1e-2,
     pair_tol=1e-2,
-    idp_tol=1e-8,
+    idp_tol=1e-2,
 ):
     """
     Takes the output of eigenvalue 
@@ -203,6 +237,7 @@ def _aug_eig_processing(
         assert np.all(null_norms > 1 - pair_tol)
 
         pair_indices = V_pair_indices
+        import pdb; pdb.set_trace()
 
 
     elif m < n:
@@ -232,8 +267,15 @@ def _aug_eig_processing(
     # the columns, as intended
     V = V / V_norms
     U = U / U_norms
-    if m != n:
+
+    # We need to include the null space in the orthonormalization process in
+    # order to avoid blending betwen small singular values and the null vectors
+    if m > n:
         null_space = null_space / null_norms
+        U = np.concatenate([U, null_space], axis=1)
+    elif m < n:
+        null_space = null_space / null_norms
+        U = np.concatenate([V, null_space], axis=1)
 
     # Now we need to deduplicate the singular vectors. The augmented matrix has
     # two eigenvectors corresponding to a singular value. We know that the
@@ -242,27 +284,30 @@ def _aug_eig_processing(
     # U and V are orthogonal except for duplicate eigenvectors. Furthermore, 
     # we might not get matching pairs of singular vectors.
 
-    U, R = qr(U)
-    r = np.abs(np.diag(R))
-    lin_idp_vecs = np.nonzero(r > idp_tol)[0]
+    U, R_U = qr(U)
+    r_U = np.abs(np.diag(R_U))
+    lin_idp_vecs = np.nonzero(r_U > idp_tol)[0]
     U = U[:, lin_idp_vecs]
 
-    V, R = qr(V)
-    r = np.abs(np.diag(R))
-    lin_idp_vecs = np.nonzero(r > idp_tol)[0]
+    V, R_V = qr(V)
+    r_V = np.abs(np.diag(R_V))
+    lin_idp_vecs = np.nonzero(r_V > idp_tol)[0]
     V = V[:, lin_idp_vecs]
     
     # Don't need to worry about columns of U
     # matching up with columns of V, the final
     # SVD will take care of sorting  them.
     # However, we do want the same number of vectors.
-    assert U.shape[1] == V.shape[1]
-
-    U_sub, svals, VT_sub = svd(U.T @ A @ V)
+    # assert U.shape[1] == V.shape[1]
+    U_sub, svals, VT_sub = svd(U.T @ A @ V, full_matrices=True)
     U = U @ U_sub
     V = V @ VT_sub.T
-
-
+    if m > n:
+        null_space = U[:, -l:]
+        U = U[:, :-l]
+    elif m < n:
+        null_space = V[:, -l:]
+        V = V[:, :-l]
     # Sort singular values in ascending order
     U = U[:, ::-1]
     V = V[:, ::-1]
@@ -365,7 +410,8 @@ def svd_rayleigh_ritz(
         A,
         number_singular_values: int = 10,
         max_iter: int = 100,
-        tol: float = 1e-12
+        tol: float = 1e-12,
+        seed: int = None,
     ):
     """
     Computes smallest singular vectors of the sparse m*n matrix A (m<=n) by explicitly
@@ -393,23 +439,59 @@ def svd_rayleigh_ritz(
         svals: 1D dense array of number_singular_values singular values
         V: n by number_singular_values dense array of left singular vectors
     """
-    assert len(A.shape) == 2
-    assert issparse(A)
+    # Should we try to squeeze extra dimensions first? It doesn't look like np.squeeze
+    # works on sparse arrays, so we'd need to reshape it.
+
+    # It appears that my version of Scipy does not support sparse arrays of dimension
+    # higher than 2, but that such a feature is actively being worked on. Therefore
+    # the shape of A first to facilitate testing
+    if not len(A.shape) == 2:
+        raise ValueError(
+            "This method expects a 2D Scipy sparse array-like as input, but was passed "
+            f"a {len(A.shape)}D array-like instead."
+        )
+
+    if not issparse(A):
+        raise ValueError(
+            "This method expects a Scipy sparse array-like as an input but was passed "
+            "a dense array-like instead. Try using scipy.linalg.svd for a dense SVD method."
+        )
+
     m, n = A.shape
-    q = min(m, n)
     l = abs(m-n)
+
+    # The augmented matrix has two eigenvectors for every singular triplet, in addition
+    # to eigenvectors corresponding to the (left) null space if m<n (m>n). In order to
+    # get the required number of singular triplets, we need to exhaust the null space
+    # as well as the duplicate singular triplets. 
     n_samples = 2*number_singular_values + l
     A_aug = block_array([[None, A.T],[A, None]])
 
-    _, B, converged = _symmetric_rayleigh_ritz_iteration(A_aug, n_samples, tol=tol, max_iter=max_iter)
+    _, B, converged = _symmetric_rayleigh_ritz_iteration(
+        A_aug,
+        n_samples,
+        tol=tol,
+        max_iter=max_iter,
+        seed=seed
+    )
 
     if not converged:
-        raise RuntimeError
+        raise RuntimeError(
+            "Rayleigh-Ritz iteration did not converge! Consider increasing the tolerance or "
+            "maximum number of iterations."
+        )
 
+    # try:
     if m == n:
         U, svals, V = _aug_eig_processing(A, B)
     else:
         U, svals, V, null = _aug_eig_processing(A, B)
+    # except AssertionError as exc:
+    #     raise RuntimeError(
+    #         "Categorization of singular vectors failed despite Rayleigh-Ritz iteration "
+    #         "converging. Please let the IDAES dev team know about this failure so that "
+    #         "appropriate tolerances for categorization can be chosen."
+    #     ) from exc
 
     # Singular values already in ascending order, so just take the number that we want
     U = U[:, :number_singular_values]
