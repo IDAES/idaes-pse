@@ -11,6 +11,9 @@ import scipy.stats
 import diptest
 import matplotlib.ticker as mtick
 from linear_regression import read_raw_data
+import pyomo.environ as pyo
+import pickle
+import json
 
 def read_all_files(directory):
     '''
@@ -904,3 +907,191 @@ def compute_computation_times(directory, save = False):
         comp_times.to_csv('comp_times.csv')
 
     return comp_times
+
+def process_model_results(m_results_m):
+    '''
+    Process model results to calculate capacity factors and other metrics
+    
+    Arguments:
+        m_results_m: dictionary of model results for different columns
+        
+    Returns:
+        plot_data: dictionary containing processed data for plotting
+    '''
+    plot_data = {}
+    
+    for column_name, model in m_results_m.items():
+        if model is None:
+            continue
+            
+        # Initialize data structure for this column
+        plot_data[column_name] = {
+            'profit': 0,
+            'p_capacity': 0,
+            'p_output': 0
+        }
+        
+        try:
+            # Get power dispatch data
+            power_dispatch = []
+            for t in model.time:
+                if hasattr(model, 'power_dispatch'):
+                    power_dispatch.append(pyo.value(model.power_dispatch[t]))
+                elif hasattr(model, 'fs') and hasattr(model.fs, 'power_dispatch'):
+                    power_dispatch.append(pyo.value(model.fs.power_dispatch[t]))
+            
+            # Calculate metrics
+            if power_dispatch:
+                # Calculate total power output
+                plot_data[column_name]['p_output'] = sum(power_dispatch)
+                
+                # Calculate capacity factor
+                # Assuming nameplate capacity of 650 MW (from your model configuration)
+                nameplate_capacity = 650
+                time_periods = len(power_dispatch)
+                plot_data[column_name]['p_capacity'] = sum(power_dispatch) / (time_periods * nameplate_capacity)
+                
+                # Get profit if available
+                if hasattr(model, 'objective'):
+                    plot_data[column_name]['profit'] = pyo.value(model.objective)
+                elif hasattr(model, 'fs') and hasattr(model.fs, 'objective'):
+                    plot_data[column_name]['profit'] = pyo.value(model.fs.objective)
+                    
+        except Exception as e:
+            print(f"Error processing column {column_name}: {e}")
+            continue
+            
+    return plot_data
+
+def plot_model_results(plot_data, save=False):
+    '''
+    Plot the processed model results
+    
+    Arguments:
+        plot_data: dictionary containing processed data for plotting
+        save: boolean, whether to save the plots
+    '''
+    # Create figure with subplots
+    fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(15, 12))
+    
+    # Get column names for x-axis
+    columns = list(plot_data.keys())
+    
+    # Plot profit
+    profits = [plot_data[col]['profit'] for col in columns]
+    ax1.plot(range(len(columns)), profits, 'b-o', label='Profit')
+    ax1.set_ylabel('Profit ($)')
+    ax1.set_title('Model Results by Column')
+    ax1.grid(True)
+    ax1.legend()
+    
+    # Plot capacity factor
+    capacity_factors = [plot_data[col]['p_capacity'] for col in columns]
+    ax2.plot(range(len(columns)), capacity_factors, 'r-o', label='Power Capacity Factor')
+    ax2.set_ylabel('Capacity Factor')
+    ax2.grid(True)
+    ax2.legend()
+    
+    # Plot power output
+    power_outputs = [plot_data[col]['p_output'] for col in columns]
+    ax3.plot(range(len(columns)), power_outputs, 'g-o', label='Power Output')
+    ax3.set_ylabel('Power Output (MW)')
+    ax3.grid(True)
+    ax3.legend()
+    
+    # Set x-axis labels
+    plt.xticks(range(len(columns)), columns, rotation=45)
+    
+    # Adjust layout
+    plt.tight_layout()
+    
+    # Save if requested
+    if save:
+        plt.savefig('model_results.png', dpi=300, bbox_inches='tight')
+        plt.savefig('model_results.pdf', dpi=300, bbox_inches='tight')
+    
+    plt.show()
+
+def save_model_results(m_results_m, filename='model_results.pkl'):
+    '''
+    Save model results to a file
+    
+    Arguments:
+        m_results_m: dictionary of model results
+        filename: name of the file to save to
+    '''
+    # Create a dictionary to store the extracted data
+    save_data = {}
+    
+    for column_name, model in m_results_m.items():
+        if model is None:
+            save_data[column_name] = None
+            continue
+            
+        try:
+            # Extract power dispatch data
+            power_dispatch = []
+            for t in model.time:
+                if hasattr(model, 'power_dispatch'):
+                    power_dispatch.append(pyo.value(model.power_dispatch[t]))
+                elif hasattr(model, 'fs') and hasattr(model.fs, 'power_dispatch'):
+                    power_dispatch.append(pyo.value(model.fs.power_dispatch[t]))
+            
+            # Get profit if available
+            profit = 0
+            if hasattr(model, 'objective'):
+                profit = pyo.value(model.objective)
+            elif hasattr(model, 'fs') and hasattr(model.fs, 'objective'):
+                profit = pyo.value(model.fs.objective)
+            
+            # Store the extracted data
+            save_data[column_name] = {
+                'power_dispatch': power_dispatch,
+                'profit': profit,
+                'time': list(model.time)
+            }
+            
+        except Exception as e:
+            print(f"Error saving column {column_name}: {e}")
+            save_data[column_name] = None
+    
+    # Save to file
+    with open(filename, 'wb') as f:
+        pickle.dump(save_data, f)
+    
+    print(f"Saved model results to {filename}")
+
+def load_model_results(filename='model_results.pkl'):
+    '''
+    Load model results from a file
+    
+    Arguments:
+        filename: name of the file to load from
+        
+    Returns:
+        plot_data: dictionary containing processed data for plotting
+    '''
+    try:
+        with open(filename, 'rb') as f:
+            save_data = pickle.load(f)
+        
+        # Process the loaded data into the format needed for plotting
+        plot_data = {}
+        for column_name, data in save_data.items():
+            if data is None:
+                continue
+                
+            plot_data[column_name] = {
+                'profit': data['profit'],
+                'p_output': sum(data['power_dispatch']),
+                'p_capacity': sum(data['power_dispatch']) / (len(data['power_dispatch']) * 650)  # 650 MW nameplate
+            }
+        
+        return plot_data
+        
+    except FileNotFoundError:
+        print(f"File {filename} not found")
+        return None
+    except Exception as e:
+        print(f"Error loading model results: {e}")
+        return None
