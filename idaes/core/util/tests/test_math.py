@@ -23,6 +23,7 @@ from idaes.core.util.math import (
     smooth_max,
     safe_sqrt,
     safe_log,
+    smooth_heaviside,
 )
 
 __author__ = "Andrew Lee"
@@ -200,3 +201,16 @@ def test_smooth_min(simple_model):
     assert value(safe_log(simple_model.a, simple_model.e)) == pytest.approx(
         1.386294, abs=1e-4
     )
+
+
+@pytest.mark.unit
+def test_smooth_heaviside():
+    # Test that smooth_heaviside gives correct values
+    assert smooth_heaviside(0, 1) == pytest.approx(0.5, abs=1e-4)
+    assert smooth_heaviside(0, 1000) == pytest.approx(0.5, abs=1e-4)
+    assert smooth_heaviside(0.5, 1) == pytest.approx(0.731059, abs=1e-4)
+    assert smooth_heaviside(0.5, 10) == pytest.approx(0.9999546, abs=1e-4)
+    assert smooth_heaviside(0.5, 100) == pytest.approx(1, abs=1e-4)
+    assert smooth_heaviside(0.5, 1000) == pytest.approx(1, abs=1e-4)
+    assert smooth_heaviside(5, 1) == pytest.approx(1, abs=1e-4)
+    assert smooth_heaviside(5, 1000) == pytest.approx(1, abs=1e-4)
