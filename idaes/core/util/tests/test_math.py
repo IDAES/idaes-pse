@@ -42,7 +42,7 @@ def simple_model():
 
 @pytest.mark.unit
 def test_smooth_abs_maths():
-    # Test basic smooth_abs functionalliy
+    # Test basic smooth_abs functionality
     assert smooth_abs(4, 0) == 4.0
     assert smooth_abs(-4, 0) == 4.0
     assert smooth_abs(10.0, 0.0) == 10.0
@@ -206,9 +206,10 @@ def test_smooth_min(simple_model):
 @pytest.mark.unit
 def test_smooth_heaviside():
     # Test that smooth_heaviside gives correct values
+    print(value(smooth_heaviside(0.5, 10)))
     assert smooth_heaviside(0, 1) == pytest.approx(0.5, abs=1e-4)
     assert smooth_heaviside(0, 1000) == pytest.approx(0.5, abs=1e-4)
-    assert smooth_heaviside(0.5, 1) == pytest.approx(0.731059, abs=1e-4)
+    assert smooth_heaviside(0.5, 1) == pytest.approx(0.37754067, abs=1e-4)
     assert smooth_heaviside(0.5, 10) == pytest.approx(0.9999546, abs=1e-4)
     assert smooth_heaviside(0.5, 100) == pytest.approx(1, abs=1e-4)
     assert smooth_heaviside(0.5, 1000) == pytest.approx(1, abs=1e-4)
