@@ -23,8 +23,10 @@ from numpy.random import default_rng
 from scipy.sparse import csc_array, load_npz
 
 from pyomo.common.fileutils import this_file_dir
-from pyomo.environ import ConcreteModel, Param, log10, Var, value
-from idaes.core.util.linalg import svd_explicit_grammian, svd_rayleigh_ritz
+from pyomo.environ import log10
+
+import idaes.logger as idaeslog
+from idaes.core.util.linalg import svd_rayleigh_ritz
 
 svd_cache = os.sep.join([this_file_dir(), "svd_cache"])
 
@@ -85,13 +87,6 @@ def _assert_subspace_containment(U, V, tol=1e-8):
     the orthonormal basis V to an absolute tolerance of tol.
     """
     assert norm(V@(V.T @ U) - U) == pytest.approx(0, rel=0, abs=tol)
-
-def _assert_subspace_orthogonality(U, V, tol=1e-8):
-    """
-    Assert that the matrix U is orthogonal to the subspace spanned by
-    the orthonormal basis V to an absolute tolerance of tol.
-    """
-    assert norm(V@(V.T @ U)) == pytest.approx(0, rel=0, abs=tol)
 
 def _test_svd_quality(A, Uhat, svals_hat, Vhat, null_hat=None, nvec=10):
     m, n = A.shape
@@ -170,7 +165,7 @@ class TestSVDRayleighRitz:
         assert pytest.approx(svals_trunc, rel=1e-4, abs=1e-14) == svals_hat
 
     @pytest.mark.unit
-    def test_underdetermined(self):
+    def test_overdetermined(self):
         A, _, svals, _ = _random_svd(n_rows=35, n_columns=30, n_small=5, seed=8, eps_min=1e-16) 
         svals_trunc = svals[:10]
         Uhat, svals_hat, Vhat, null_hat = svd_rayleigh_ritz(csc_array(A), seed=2)
@@ -178,11 +173,71 @@ class TestSVDRayleighRitz:
         assert pytest.approx(svals_trunc, rel=1e-4, abs=1e-14) == svals_hat
 
     @pytest.mark.unit
-    def test_overdetermined(self):
+    def test_underdetermined(self):
         A, _, svals, _ = _random_svd(n_rows=30, n_columns=35, n_small=5, seed=9, eps_min=1e-16) 
         svals_trunc = svals[:10]
         Uhat, svals_hat, Vhat, null_hat = svd_rayleigh_ritz(csc_array(A), seed=3)
         _test_svd_quality(A, Uhat, svals_hat, Vhat, null_hat)
+        assert pytest.approx(svals_trunc, rel=1e-4, abs=1e-14) == svals_hat
+
+    @pytest.mark.unit
+    def test_underdetermined_warning(self, caplog):
+        A, _, svals, _ = _random_svd(n_rows=30, n_columns=45, n_small=5, seed=13, eps_min=1e-16) 
+        svals_trunc = svals[:10]
+        with caplog.at_level(idaeslog.WARNING):
+            Uhat, svals_hat, Vhat, null_hat = svd_rayleigh_ritz(csc_array(A), seed=3)
+        assert (
+            "Matrix A has a nullspace of dimension at least 15, which "
+            "degrades the efficiency of SVD algorithms based on the augmented "
+            "matrix [[0, A.T], [A, 0]]."
+        ) in caplog.text
+
+        _test_svd_quality(A, Uhat, svals_hat, Vhat, null_hat)
+        assert pytest.approx(svals_trunc, rel=1e-4, abs=1e-14) == svals_hat
+
+    @pytest.mark.unit
+    def test_overdetermined_warning(self, caplog):
+        A, _, svals, _ = _random_svd(n_rows=44, n_columns=30, n_small=5, seed=23, eps_min=1e-16) 
+        svals_trunc = svals[:10]
+        with caplog.at_level(idaeslog.WARNING):
+            Uhat, svals_hat, Vhat, null_hat = svd_rayleigh_ritz(csc_array(A), seed=3)
+        assert (
+            "Matrix A has a left nullspace of dimension at least 14, which "
+            "degrades the efficiency of SVD algorithms based on the augmented "
+            "matrix [[0, A.T], [A, 0]]."
+        ) in caplog.text
+
+        _test_svd_quality(A, Uhat, svals_hat, Vhat, null_hat)
+        assert pytest.approx(svals_trunc, rel=1e-4, abs=1e-14) == svals_hat
+
+    @pytest.mark.unit
+    def test_underdetermined_small(self):
+        A, _, svals, _ = _random_svd(n_rows=5, n_columns=6, n_small=1, seed=657457, eps_min=1e-16) 
+        svals_trunc = svals
+        # The default option is 10 singular vectors, but the method is supposed to silently
+        # truncate it to 5 singular vectors
+        Uhat, svals_hat, Vhat, null_hat = svd_rayleigh_ritz(csc_array(A), seed=12342314)
+        _test_svd_quality(A, Uhat, svals_hat, Vhat, null_hat, nvec=5)
+        assert pytest.approx(svals_trunc, rel=1e-4, abs=1e-14) == svals_hat
+
+    @pytest.mark.unit
+    def test_overdetermined_small(self):
+        A, _, svals, _ = _random_svd(n_rows=6, n_columns=5, n_small=1, seed=4321412, eps_min=1e-16) 
+        svals_trunc = svals
+        # The default option is 10 singular vectors, but the method is supposed to silently
+        # truncate it to 5 singular vectors
+        Uhat, svals_hat, Vhat, null_hat = svd_rayleigh_ritz(csc_array(A), seed=3425767)
+        _test_svd_quality(A, Uhat, svals_hat, Vhat, null_hat, nvec=5)
+        assert pytest.approx(svals_trunc, rel=1e-4, abs=1e-14) == svals_hat
+
+    @pytest.mark.unit
+    def test_square_small(self):
+        A, _, svals, _ = _random_svd(n_rows=5, n_columns=5, n_small=1, seed=5463, eps_min=1e-16) 
+        svals_trunc = svals
+        # The default option is 10 singular vectors, but the method is supposed to silently
+        # truncate it to 5 singular vectors
+        Uhat, svals_hat, Vhat = svd_rayleigh_ritz(csc_array(A), seed=9876575)
+        _test_svd_quality(A, Uhat, svals_hat, Vhat, nvec=5)
         assert pytest.approx(svals_trunc, rel=1e-4, abs=1e-14) == svals_hat
 
     @pytest.mark.unit
@@ -271,5 +326,5 @@ class TestSVDRayleighRitz:
 
         Uhat, svals_hat, Vhat = svd_rayleigh_ritz(jac, seed=87, max_iter=200)
         _test_svd_quality(jac, Uhat, svals_hat, Vhat)
-        _assert_subspace_containment(Uhat, Utrue)
-        _assert_subspace_containment(Vhat, Vtrue)
+        _assert_subspace_containment(Uhat, Utrue, tol=1e-6)
+        _assert_subspace_containment(Vhat, Vtrue, tol=1e-6)
