@@ -27,15 +27,16 @@ import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
 
+
 def _symmetric_rayleigh_ritz_iteration(H, n_vec, tol, max_iter, seed=None):
     """
     Function to perform simultaneous Rayleigh quotient iteration on the
-    real symmetric matrix H. 
-    
-    Start out with initial eigenvalue estimates chosen randomly from 
-    -1e-15 to 1e-15 in order to encourage convergence towards the 
-    eigenvaleus of smallest magnitude, while the original eigenvector 
-    estimates are chosen as an orthogonalization of a random matrix 
+    real symmetric matrix H.
+
+    Start out with initial eigenvalue estimates chosen randomly from
+    -1e-15 to 1e-15 in order to encourage convergence towards the
+    eigenvaleus of smallest magnitude, while the original eigenvector
+    estimates are chosen as an orthogonalization of a random matrix
     whose values were chosen from the standard Gaussian distribution.
 
     Then this iterative procedure is followed:
@@ -43,50 +44,50 @@ def _symmetric_rayleigh_ritz_iteration(H, n_vec, tol, max_iter, seed=None):
             err[j] = abs(H @ B[:, j] - mu[j] * B[:,j]) for all j
         1a) If err[j] < tol for all j, terminate iteration
         2) Choose j* such that err[j*] is maximized.
-        3) Calculate Bgrave = (H - mu[j*]) ** -1 @ B via a sparse 
+        3) Calculate Bgrave = (H - mu[j*]) ** -1 @ B via a sparse
             LU decomposition
         4) Calculate an orthonormal basis Bhat for Bgrave using a
             QR factorization
-        5) Calculate the Ritz values of H with respect to the 
-            subspace Bhat via a symmetric eigendecomposition of 
+        5) Calculate the Ritz values of H with respect to the
+            subspace Bhat via a symmetric eigendecomposition of
             Bhat.T @ H @ Bhat and construct the Ritz vectors
             from Bhat and the eigenvectors of Bhat.T @ H @ Bhat
-        6) Set mu and B to equal the Ritz values and vectors, 
+        6) Set mu and B to equal the Ritz values and vectors,
             respectively, then return to (1).
-    
+
     The scalar version of this algorithm, in which B is a single
-    vector and mu is a scalar, is known as Rayleigh quotient 
-    iteration, and is known to be cubically convergent for 
-    symmetric matrices. I (Doug A.) have not seen this vectorized 
-    extension anywhere in the literature. General attention 
-    has been given to the (implicitly shifted) QR algorithm for 
+    vector and mu is a scalar, is known as Rayleigh quotient
+    iteration, and is known to be cubically convergent for
+    symmetric matrices. I (Doug A.) have not seen this vectorized
+    extension anywhere in the literature. General attention
+    has been given to the (implicitly shifted) QR algorithm for
     dense matrices and Krylov subspace methods for sparse matrices.
-    However, dense methods do not scale well and the Lanczos 
+    However, dense methods do not scale well and the Lanczos
     algorithm (a Krylov method) provided by ARPACK through Scipy's
     sparse.linalg.eigsh does not provide high quality eigenvector
-    approximations (or at least high enough quality approximations 
-    to use as part of a sparse SVD routine), even when used in 
+    approximations (or at least high enough quality approximations
+    to use as part of a sparse SVD routine), even when used in
     shift-invert mode on the augmented matrix.
 
-    For finding small eigenvalues, the methods provided in Section 5 
-    of Sleijpen and Van Der Vorst (2000) and Section 4.4 of 
-    Hochstenbach (2001) may provide performant alternatives, because 
-    they can be implemented in a vectorized form in Python. The 
-    Lanczos varient suggested by Kokiopoulou et al. (2004) may 
+    For finding small eigenvalues, the methods provided in Section 5
+    of Sleijpen and Van Der Vorst (2000) and Section 4.4 of
+    Hochstenbach (2001) may provide performant alternatives, because
+    they can be implemented in a vectorized form in Python. The
+    Lanczos varient suggested by Kokiopoulou et al. (2004) may
     be worth attention, but may have to be implemented in a lower
     level language to be performant.
 
-    Sleijpen, G.L.G., Van Der Vorst, H.A., 2000. A Jacobi--Davidson 
-    Iteration Method for Linear Eigenvalue Problems. SIAM Rev. 42, 
+    Sleijpen, G.L.G., Van Der Vorst, H.A., 2000. A Jacobi--Davidson
+    Iteration Method for Linear Eigenvalue Problems. SIAM Rev. 42,
     267–293. https://doi.org/10.1137/S0036144599363084
 
-    Hochstenbach, M.E., 2001. A Jacobi--Davidson Type SVD Method. 
-    SIAM J. Sci. Comput. 23, 606–628. 
+    Hochstenbach, M.E., 2001. A Jacobi--Davidson Type SVD Method.
+    SIAM J. Sci. Comput. 23, 606–628.
     https://doi.org/10.1137/S1064827500372973
 
-    Kokiopoulou, E., Bekas, C., Gallopoulos, E., 2004. Computing 
-    smallest singular triplets with implicitly restarted Lanczos 
-    bidiagonalization. Applied Numerical Mathematics 49, 39–61. 
+    Kokiopoulou, E., Bekas, C., Gallopoulos, E., 2004. Computing
+    smallest singular triplets with implicitly restarted Lanczos
+    bidiagonalization. Applied Numerical Mathematics 49, 39–61.
     https://doi.org/10.1016/j.apnum.2003.11.011
 
 
@@ -109,7 +110,7 @@ def _symmetric_rayleigh_ritz_iteration(H, n_vec, tol, max_iter, seed=None):
     rng_obj = default_rng(seed)
     mu = rng_obj.uniform(low=-1e-15, high=1e-15, size=(n_vec,))
     B = rng_obj.standard_normal(size=(m, n_vec))
-    B, _ =  qr(B, mode="economic")
+    B, _ = qr(B, mode="economic")
     # import pdb; pdb.set_trace()
 
     converged = False
@@ -131,7 +132,7 @@ def _symmetric_rayleigh_ritz_iteration(H, n_vec, tol, max_iter, seed=None):
 
         try:
             # Calculate
-            invH_shift = splu(H - mu[max_err_idx] * speye(n, format='csc'))
+            invH_shift = splu(H - mu[max_err_idx] * speye(n, format="csc"))
         except RuntimeError as exc1:
             if "Factor is exactly singular" in str(exc1):
                 # mu[max_err_idx] is exactly equal to an
@@ -140,7 +141,9 @@ def _symmetric_rayleigh_ritz_iteration(H, n_vec, tol, max_iter, seed=None):
                 # perturb mu[max_err_idx] to allow matrix
                 # inversion to succeed
                 try:
-                    invH_shift = splu(H - (1e-15 + mu[max_err_idx]) * speye(n, format='csc'))
+                    invH_shift = splu(
+                        H - (1e-15 + mu[max_err_idx]) * speye(n, format="csc")
+                    )
                 except RuntimeError as exc2:
                     if "Factor is exactly singular" in str(exc2):
                         # If perturbation fails, we'll assume
@@ -157,12 +160,11 @@ def _symmetric_rayleigh_ritz_iteration(H, n_vec, tol, max_iter, seed=None):
         Bgrave = invH_shift.solve(B)
         Bhat, _ = qr(Bgrave, mode="economic")
         mu, B_tilde = eigh(Bhat.T @ H @ Bhat)
-        B =  Bhat @ B_tilde
+        B = Bhat @ B_tilde
 
     return mu, B, converged
 
 
-    
 def _aug_eig_processing(
     A,
     evecs,
@@ -170,7 +172,7 @@ def _aug_eig_processing(
 ):
     """
     Takes the output of subspace iteration on the augmented matrix [[0, A.T], [A, 0]]
-    for some m by n matrix A, and obtains estimates for U, svals, V such that 
+    for some m by n matrix A, and obtains estimates for U, svals, V such that
     U.T @ A @ V == diag(svals). If m < n (m > n), then a basis for the (left) null
     space is also computed.
 
@@ -192,20 +194,20 @@ def _aug_eig_processing(
     obtain orthonormal bases of those sets of vectors. The diagonal elements of R are measures
     of how strongly a basis vector is represented in the U and V components of evecs. In an
     ideal world, if evecs contained q singular vectors and p null vectors, we would have
-    R[k,k] == 1 for k<=p-1 (corresponding to the null vectors), R[k,k] = 1/sqrt(2) for 
+    R[k,k] == 1 for k<=p-1 (corresponding to the null vectors), R[k,k] = 1/sqrt(2) for
     p <= k <= p+q-1 (corresponding to the singular vectors), and R[k,k] ~= 1e-15 for k > p+q.
     However, we often get a spectrum of values.
 
-    Presently, we use a crude thresholding scheme: if both abs(R_U[k,k]) and abs(R_V[k,k]) are 
-    greater than zero_tol, we add the columns Q_U[:,k] and Q_V[:,k] to our basis. If only one 
-    is greater than zero_tol, then we check how many more basis vectors we have for U than for 
+    Presently, we use a crude thresholding scheme: if both abs(R_U[k,k]) and abs(R_V[k,k]) are
+    greater than zero_tol, we add the columns Q_U[:,k] and Q_V[:,k] to our basis. If only one
+    is greater than zero_tol, then we check how many more basis vectors we have for U than for
     V (if m > n) or for V than U (if m < n). If the difference in number of basis vectors is
     less than the size of the null space, we add an additional basis vector, otherwise we drop
     it. This scheme is somewhat arbitrary, but has worked better than any replacement that I
     (Doug A.) have tried.
 
-    After determining bases for U and V, we perform a SVD on U.T @ A @ V in order to 
-    reconstruct appropriate singular triplets as well as the null vectors. 
+    After determining bases for U and V, we perform a SVD on U.T @ A @ V in order to
+    reconstruct appropriate singular triplets as well as the null vectors.
 
     Args:
         A: Scipy sparse array with real entries
@@ -222,7 +224,7 @@ def _aug_eig_processing(
     """
     assert len(A.shape) == 2
     m, n = A.shape
-    p = abs(m-n)
+    p = abs(m - n)
 
     V = evecs[:n, :]
     U = evecs[n:, :]
@@ -240,21 +242,21 @@ def _aug_eig_processing(
             if r_U[k] > zero_tol:
                 if k < n and r_V[k] > zero_tol:
                     n_U += 1
-                    n_V +=1
+                    n_V += 1
                 elif n_U - n_V < p:
-                    n_U +=1
+                    n_U += 1
         else:
             if r_V[k] > zero_tol:
                 if k < m and r_U[k] > zero_tol:
                     n_U += 1
-                    n_V +=1
-                     
+                    n_V += 1
+
                 elif n_V - n_U < p:
-                    n_V +=1
+                    n_V += 1
 
     U = U[:, :n_U]
     V = V[:, :n_V]
-            
+
     # Want to make sure that the number of null vector candidates
     # is the expected size
     # This assertion should no longer be necessary
@@ -266,13 +268,13 @@ def _aug_eig_processing(
 
     if m > n:
         null_space = U[:, -p_hat:]
-        assert norm(null_space.T @ A) <= np.sqrt(m*n) * 1e-15
+        assert norm(null_space.T @ A) <= np.sqrt(m * n) * 1e-15
         U = U[:, :-p_hat]
     elif m < n:
         null_space = V[:, -p_hat:]
-        assert norm(A @ null_space) <= np.sqrt(m*n) * 1e-15
+        assert norm(A @ null_space) <= np.sqrt(m * n) * 1e-15
         V = V[:, :-p_hat]
-    
+
     # Sort singular values in ascending order
     U = U[:, ::-1]
     V = V[:, ::-1]
@@ -283,21 +285,22 @@ def _aug_eig_processing(
     else:
         return U, svals, V, null_space
 
+
 def svd_rayleigh_ritz(
-        A,
-        number_singular_values: int = 10,
-        max_iter: int = 100,
-        tol: float = 1e-12,
-        seed: int = None,
-        suppress_warning=False,
-    ):
+    A,
+    number_singular_values: int = 10,
+    max_iter: int = 100,
+    tol: float = 1e-12,
+    seed: int = None,
+    suppress_warning=False,
+):
     """
     Computes smallest singular vectors of the sparse m by n matrix A via Rayleigh-Ritz
-    iteration on the augmented matrix [[0, A.T], [A, 0]]. Working with this matrix 
-    avoids the roundoff error inherent working with the Gram matrices A.T @ A or 
-    A @ A.T, but also results in the (left) null space polluting the singular spectrum 
-    if m < n (m > n). Therefore, this method is not appropriate for diagnosing 
-    optimization problems in which m << n, but is appropriate if the (left) null space 
+    iteration on the augmented matrix [[0, A.T], [A, 0]]. Working with this matrix
+    avoids the roundoff error inherent working with the Gram matrices A.T @ A or
+    A @ A.T, but also results in the (left) null space polluting the singular spectrum
+    if m < n (m > n). Therefore, this method is not appropriate for diagnosing
+    optimization problems in which m << n, but is appropriate if the (left) null space
     is desired for diagnosing degrees of freedom.
 
     Args:
@@ -332,7 +335,7 @@ def svd_rayleigh_ritz(
             "a dense array-like instead. Try using scipy.linalg.svd for a dense SVD method."
         )
     m, n = A.shape
-    l = abs(m-n)
+    l = abs(m - n)
     if l > 10 and not suppress_warning:
         if m > n:
             _log.warning(
@@ -352,16 +355,12 @@ def svd_rayleigh_ritz(
     # The augmented matrix has two eigenvectors for every singular triplet, in addition
     # to eigenvectors corresponding to the (left) null space if m<n (m>n). In order to
     # get the required number of singular triplets, we need to exhaust the null space
-    # as well as the duplicate singular triplets. 
-    n_samples = 2*number_singular_values + l
-    A_aug = block_array([[None, A.T],[A, None]], format='csc')
+    # as well as the duplicate singular triplets.
+    n_samples = 2 * number_singular_values + l
+    A_aug = block_array([[None, A.T], [A, None]], format="csc")
 
     _, B, converged = _symmetric_rayleigh_ritz_iteration(
-        A_aug,
-        n_samples,
-        tol=tol,
-        max_iter=max_iter,
-        seed=seed
+        A_aug, n_samples, tol=tol, max_iter=max_iter, seed=seed
     )
 
     if not converged:
@@ -391,4 +390,3 @@ def svd_rayleigh_ritz(
         return U, svals, V
     else:
         return U, svals, V, null
-

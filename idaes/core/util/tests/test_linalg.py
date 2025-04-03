@@ -32,18 +32,19 @@ svd_cache = os.sep.join([this_file_dir(), "svd_cache"])
 
 __author__ = "Douglas Allan"
 
+
 def _random_svd(
-        n_rows:int,
-        n_columns:int,
-        n_small:int,
-        seed:int,
-        eps_small: float = 1e-12,
-        eps_min: float = 1e-16
-    ):
+    n_rows: int,
+    n_columns: int,
+    n_small: int,
+    seed: int,
+    eps_small: float = 1e-12,
+    eps_min: float = 1e-16,
+):
     """
     Constructs an n_rows by n_columns Numpy 2D array A from its singular value decomposition
-    A = U @ diag(sigma) @ V.T. U and V are created through orthogonalization of random 
-    arrays. The 1D array sigma is generated such that min(n_rows, n_columns) - n_small 
+    A = U @ diag(sigma) @ V.T. U and V are created through orthogonalization of random
+    arrays. The 1D array sigma is generated such that min(n_rows, n_columns) - n_small
     singluar values are greater than eps_small while n_small singular values are less than
     eps_small.
 
@@ -69,11 +70,13 @@ def _random_svd(
     U, _ = qr(U)
     V, _ = qr(V)
 
-    svals_big = rng_obj.uniform(low=log10(eps_small), high=0, size=(n_svals-n_small,))
-    svals_big = 10 ** svals_big
+    svals_big = rng_obj.uniform(low=log10(eps_small), high=0, size=(n_svals - n_small,))
+    svals_big = 10**svals_big
     svals_big.sort()
-    svals_small = rng_obj.uniform(low=log10(eps_min), high=log10(eps_small), size=(n_small,))
-    svals_small = 10 ** svals_small
+    svals_small = rng_obj.uniform(
+        low=log10(eps_min), high=log10(eps_small), size=(n_small,)
+    )
+    svals_small = 10**svals_small
     svals_small.sort()
     svals = np.concatenate([svals_small, svals_big])
 
@@ -81,16 +84,18 @@ def _random_svd(
 
     return A, U, svals, V
 
+
 def _assert_subspace_containment(U, V, tol=1e-8):
     """
     Asserts that the matrix U is contained in the subspace spanned by
     the orthonormal basis V to an absolute tolerance of tol.
     """
-    assert norm(V@(V.T @ U) - U) == pytest.approx(0, rel=0, abs=tol)
+    assert norm(V @ (V.T @ U) - U) == pytest.approx(0, rel=0, abs=tol)
+
 
 def _test_svd_quality(A, Uhat, svals_hat, Vhat, null_hat=None, nvec=10):
     m, n = A.shape
-    abs_tol = 1e-15 * np.sqrt(m*n)
+    abs_tol = 1e-15 * np.sqrt(m * n)
     # First test shapes
     assert Uhat.shape == (m, nvec)
     assert Vhat.shape == (n, nvec)
@@ -119,11 +124,14 @@ def _test_svd_quality(A, Uhat, svals_hat, Vhat, null_hat=None, nvec=10):
     assert Uhat.T @ Uhat == pytest.approx(np.eye(Uhat.shape[1]), rel=0, abs=abs_tol)
     assert Vhat.T @ Vhat == pytest.approx(np.eye(Vhat.shape[1]), rel=0, abs=abs_tol)
     if null_hat is not None:
-        assert null_hat.T @ null_hat == pytest.approx(np.eye(null_hat.shape[1]), rel=0, abs=abs_tol)
+        assert null_hat.T @ null_hat == pytest.approx(
+            np.eye(null_hat.shape[1]), rel=0, abs=abs_tol
+        )
         if m > n:
             assert norm(null_hat.T @ Uhat) == pytest.approx(0, abs=abs_tol)
         else:
             assert norm(null_hat.T @ Vhat) == pytest.approx(0, abs=abs_tol)
+
 
 class TestSVDRayleighRitz:
     @pytest.mark.unit
@@ -133,17 +141,17 @@ class TestSVDRayleighRitz:
             ValueError,
             match="This method expects a Scipy sparse array-like as an input but was passed "
             "a dense array-like instead. Try using scipy.linalg.svd for a dense SVD method.",
-        ):  
+        ):
             svd_rayleigh_ritz(A)
 
     @pytest.mark.unit
     def test_not_2D(self):
-        A = np.zeros((2,3,4))
+        A = np.zeros((2, 3, 4))
         with pytest.raises(
             ValueError,
             match="This method expects a 2D Scipy sparse array-like as input, but was passed "
             "a 3D array-like instead.",
-        ):  
+        ):
             svd_rayleigh_ritz(A)
 
     @pytest.mark.unit
@@ -158,7 +166,9 @@ class TestSVDRayleighRitz:
 
     @pytest.mark.unit
     def test_square(self):
-        A, _, svals, _ = _random_svd(n_rows=30, n_columns=30, n_small=5, seed=7, eps_min=1e-16)
+        A, _, svals, _ = _random_svd(
+            n_rows=30, n_columns=30, n_small=5, seed=7, eps_min=1e-16
+        )
         svals_trunc = svals[:10]
         Uhat, svals_hat, Vhat = svd_rayleigh_ritz(csc_array(A), seed=1)
         _test_svd_quality(A, Uhat, svals_hat, Vhat)
@@ -166,7 +176,9 @@ class TestSVDRayleighRitz:
 
     @pytest.mark.unit
     def test_overdetermined(self):
-        A, _, svals, _ = _random_svd(n_rows=35, n_columns=30, n_small=5, seed=8, eps_min=1e-16) 
+        A, _, svals, _ = _random_svd(
+            n_rows=35, n_columns=30, n_small=5, seed=8, eps_min=1e-16
+        )
         svals_trunc = svals[:10]
         Uhat, svals_hat, Vhat, null_hat = svd_rayleigh_ritz(csc_array(A), seed=2)
         _test_svd_quality(A, Uhat, svals_hat, Vhat, null_hat)
@@ -174,7 +186,9 @@ class TestSVDRayleighRitz:
 
     @pytest.mark.unit
     def test_underdetermined(self):
-        A, _, svals, _ = _random_svd(n_rows=30, n_columns=35, n_small=5, seed=9, eps_min=1e-16) 
+        A, _, svals, _ = _random_svd(
+            n_rows=30, n_columns=35, n_small=5, seed=9, eps_min=1e-16
+        )
         svals_trunc = svals[:10]
         Uhat, svals_hat, Vhat, null_hat = svd_rayleigh_ritz(csc_array(A), seed=3)
         _test_svd_quality(A, Uhat, svals_hat, Vhat, null_hat)
@@ -182,7 +196,9 @@ class TestSVDRayleighRitz:
 
     @pytest.mark.unit
     def test_underdetermined_warning(self, caplog):
-        A, _, svals, _ = _random_svd(n_rows=30, n_columns=45, n_small=5, seed=13, eps_min=1e-16) 
+        A, _, svals, _ = _random_svd(
+            n_rows=30, n_columns=45, n_small=5, seed=13, eps_min=1e-16
+        )
         svals_trunc = svals[:10]
         with caplog.at_level(idaeslog.WARNING):
             Uhat, svals_hat, Vhat, null_hat = svd_rayleigh_ritz(csc_array(A), seed=3)
@@ -197,7 +213,9 @@ class TestSVDRayleighRitz:
 
     @pytest.mark.unit
     def test_overdetermined_warning(self, caplog):
-        A, _, svals, _ = _random_svd(n_rows=44, n_columns=30, n_small=5, seed=23, eps_min=1e-16) 
+        A, _, svals, _ = _random_svd(
+            n_rows=44, n_columns=30, n_small=5, seed=23, eps_min=1e-16
+        )
         svals_trunc = svals[:10]
         with caplog.at_level(idaeslog.WARNING):
             Uhat, svals_hat, Vhat, null_hat = svd_rayleigh_ritz(csc_array(A), seed=3)
@@ -212,7 +230,9 @@ class TestSVDRayleighRitz:
 
     @pytest.mark.unit
     def test_underdetermined_small(self):
-        A, _, svals, _ = _random_svd(n_rows=5, n_columns=6, n_small=1, seed=657457, eps_min=1e-16) 
+        A, _, svals, _ = _random_svd(
+            n_rows=5, n_columns=6, n_small=1, seed=657457, eps_min=1e-16
+        )
         svals_trunc = svals
         # The default option is 10 singular vectors, but the method is supposed to silently
         # truncate it to 5 singular vectors
@@ -222,7 +242,9 @@ class TestSVDRayleighRitz:
 
     @pytest.mark.unit
     def test_overdetermined_small(self):
-        A, _, svals, _ = _random_svd(n_rows=6, n_columns=5, n_small=1, seed=4321412, eps_min=1e-16) 
+        A, _, svals, _ = _random_svd(
+            n_rows=6, n_columns=5, n_small=1, seed=4321412, eps_min=1e-16
+        )
         svals_trunc = svals
         # The default option is 10 singular vectors, but the method is supposed to silently
         # truncate it to 5 singular vectors
@@ -232,7 +254,9 @@ class TestSVDRayleighRitz:
 
     @pytest.mark.unit
     def test_square_small(self):
-        A, _, svals, _ = _random_svd(n_rows=5, n_columns=5, n_small=1, seed=5463, eps_min=1e-16) 
+        A, _, svals, _ = _random_svd(
+            n_rows=5, n_columns=5, n_small=1, seed=5463, eps_min=1e-16
+        )
         svals_trunc = svals
         # The default option is 10 singular vectors, but the method is supposed to silently
         # truncate it to 5 singular vectors
@@ -242,25 +266,35 @@ class TestSVDRayleighRitz:
 
     @pytest.mark.unit
     def test_more_svs(self):
-        A, _, svals, _ = _random_svd(n_rows=30, n_columns=35, n_small=5, seed=12, eps_min=1e-16) 
+        A, _, svals, _ = _random_svd(
+            n_rows=30, n_columns=35, n_small=5, seed=12, eps_min=1e-16
+        )
         svals_trunc = svals[:12]
-        Uhat, svals_hat, Vhat, null_hat = svd_rayleigh_ritz(csc_array(A), number_singular_values=12, seed=31)
+        Uhat, svals_hat, Vhat, null_hat = svd_rayleigh_ritz(
+            csc_array(A), number_singular_values=12, seed=31
+        )
         _test_svd_quality(A, Uhat, svals_hat, Vhat, null_hat, nvec=12)
         assert pytest.approx(svals_trunc, rel=1e-4, abs=1e-14) == svals_hat
 
     @pytest.mark.unit
     def test_fewer_svs(self):
-        A, _, svals, _ = _random_svd(n_rows=30, n_columns=35, n_small=5, seed=37, eps_min=1e-16) 
+        A, _, svals, _ = _random_svd(
+            n_rows=30, n_columns=35, n_small=5, seed=37, eps_min=1e-16
+        )
         svals_trunc = svals[:7]
-        Uhat, svals_hat, Vhat, null_hat = svd_rayleigh_ritz(csc_array(A), number_singular_values=7, seed=31)
+        Uhat, svals_hat, Vhat, null_hat = svd_rayleigh_ritz(
+            csc_array(A), number_singular_values=7, seed=31
+        )
         _test_svd_quality(A, Uhat, svals_hat, Vhat, null_hat, nvec=7)
         assert pytest.approx(svals_trunc, rel=1e-4, abs=1e-14) == svals_hat
 
     @pytest.mark.component
     def test_soc_overdetermined(self):
-        jac =  load_npz(os.sep.join([svd_cache, "overdetermined_soc_jac.npz"]))
+        jac = load_npz(os.sep.join([svd_cache, "overdetermined_soc_jac.npz"]))
         # "Truth" values come from a dense svd of the matrix
-        cached_svd = np.load(os.sep.join([svd_cache, "overdetermined_soc_svd.npz"]), allow_pickle=False)
+        cached_svd = np.load(
+            os.sep.join([svd_cache, "overdetermined_soc_svd.npz"]), allow_pickle=False
+        )
         Utrue = cached_svd["Utrue"]
         svals_true = cached_svd["svals_true"]
         Vtrue = cached_svd["Vtrue"]
@@ -275,9 +309,11 @@ class TestSVDRayleighRitz:
 
     @pytest.mark.integration
     def test_soc_underdetermined(self):
-        jac =  load_npz(os.sep.join([svd_cache, "underdetermined_soc_jac.npz"]))
+        jac = load_npz(os.sep.join([svd_cache, "underdetermined_soc_jac.npz"]))
         # "Truth" values come from a dense svd of the matrix
-        cached_svd = np.load(os.sep.join([svd_cache, "underdetermined_soc_svd.npz"]), allow_pickle=False)
+        cached_svd = np.load(
+            os.sep.join([svd_cache, "underdetermined_soc_svd.npz"]), allow_pickle=False
+        )
         Utrue = cached_svd["Utrue"]
         svals_true = cached_svd["svals_true"]
         Vtrue = cached_svd["Vtrue"]
@@ -292,7 +328,7 @@ class TestSVDRayleighRitz:
 
     @pytest.mark.integration
     def test_mea_column_overdetermined(self):
-        jac =  load_npz(os.sep.join([svd_cache, "overdetermined_mea_column_jac.npz"]))
+        jac = load_npz(os.sep.join([svd_cache, "overdetermined_mea_column_jac.npz"]))
         # "Truth" values come from a dense svd of the matrix
         # However, with this seed, we do not converge to the 10 smallest singular
         # values, but only 9 of them plus the 11th(?) smallest sval
@@ -302,10 +338,13 @@ class TestSVDRayleighRitz:
 
     @pytest.mark.integration
     def test_mea_column_underdetermined(self):
-        jac =  load_npz(os.sep.join([svd_cache, "underdetermined_mea_column_jac.npz"]))
+        jac = load_npz(os.sep.join([svd_cache, "underdetermined_mea_column_jac.npz"]))
         # "Truth" values come from a dense svd of the matrix
         # We've got the smallest 20 singular vectors saved, so we can test subspace containment here
-        cached_svd = np.load(os.sep.join([svd_cache, "underdetermined_mea_column_svd.npz"]), allow_pickle=False)
+        cached_svd = np.load(
+            os.sep.join([svd_cache, "underdetermined_mea_column_svd.npz"]),
+            allow_pickle=False,
+        )
         Utrue = cached_svd["Utrue"]
         Vtrue = cached_svd["Vtrue"]
         null_true = cached_svd["null_true"]
@@ -318,9 +357,12 @@ class TestSVDRayleighRitz:
 
     @pytest.mark.integration
     def test_big_mea_column_square(self):
-        jac =  load_npz(os.sep.join([svd_cache, "square_big_mea_column_jac.npz"]))
+        jac = load_npz(os.sep.join([svd_cache, "square_big_mea_column_jac.npz"]))
         # "Truth" values come from a dense svd of the matrix
-        cached_svd = np.load(os.sep.join([svd_cache, "square_big_mea_column_svd.npz"]), allow_pickle=False)
+        cached_svd = np.load(
+            os.sep.join([svd_cache, "square_big_mea_column_svd.npz"]),
+            allow_pickle=False,
+        )
         Utrue = cached_svd["Utrue"]
         Vtrue = cached_svd["Vtrue"]
 
