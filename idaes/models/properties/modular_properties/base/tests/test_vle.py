@@ -32,7 +32,7 @@ from pyomo.environ import (
 from idaes.core import LiquidPhase, VaporPhase, Component
 from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
-    ModularPropertiesInitializer
+    ModularPropertiesInitializer,
 )
 from idaes.core.solvers import get_solver
 from idaes.core.util.exceptions import InitializationError
@@ -454,6 +454,8 @@ configuration = {
     "phase_equilibrium_state": {("Vap", "Liq"): SmoothVLE},
     "bubble_dew_method": IdealBubbleDew,
 }
+
+
 @pytest.mark.unit
 def test_multiple_VLE():
     cfg = deepcopy(configuration)
@@ -491,7 +493,6 @@ def test_multiple_VLE():
         "More than one VLE present in props[1]. Initialization for multiple "
         "VLE is not supported, so skipping VLE initialization." in str(err)
     )
-    
 
 
 class TestHenryComps0(object):
