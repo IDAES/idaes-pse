@@ -21,7 +21,7 @@ from numpy.linalg import norm
 from numpy.random import default_rng
 from scipy.linalg import svd, eigh, qr
 from scipy.sparse.linalg import splu
-from scipy.sparse import issparse, block_array, eye as speye, csc_array
+from scipy.sparse import issparse, block_array, eye as speye
 
 import idaes.logger as idaeslog
 
