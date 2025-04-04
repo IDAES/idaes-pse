@@ -418,7 +418,13 @@ def state_initialization(b):
             ) = identify_VL_component_list(b, pp)
             pp_VLE = pp
 
-    if num_VLE == 1:  # Only support initialization when a single VLE is present
+    if num_VLE > 1:
+        _log.warning(
+            f"More than one VLE present in {b.name}. Initialization for multiple "
+            "VLE is not supported, so skipping VLE initialization."
+        )
+
+    elif num_VLE == 1:  # Only support initialization when a single VLE is present
         henry_mole_frac = []
         henry_conc = []
         henry_other = []
