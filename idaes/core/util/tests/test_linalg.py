@@ -45,7 +45,7 @@ def _random_svd(
     Constructs an n_rows by n_columns Numpy 2D array A from its singular value decomposition
     A = U @ diag(sigma) @ V.T. U and V are created through orthogonalization of random
     arrays. The 1D array sigma is generated such that min(n_rows, n_columns) - n_small
-    singluar values are greater than eps_small while n_small singular values are less than
+    singular values are greater than eps_small while n_small singular values are less than
     eps_small.
 
     Args:

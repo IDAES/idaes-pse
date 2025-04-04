@@ -73,7 +73,7 @@ def _symmetric_rayleigh_ritz_iteration(H, n_vec, tol, max_iter, seed=None):
     of Sleijpen and Van Der Vorst (2000) and Section 4.4 of
     Hochstenbach (2001) may provide performant alternatives, because
     they can be implemented in a vectorized form in Python. The
-    Lanczos varient suggested by Kokiopoulou et al. (2004) may
+    Lanczos variant suggested by Kokiopoulou et al. (2004) may
     be worth attention, but may have to be implemented in a lower
     level language to be performant.
 
