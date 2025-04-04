@@ -16,6 +16,7 @@ General tests for generic properties with Henry components present
 Author: Andrew Lee
 """
 # Import Python libraries
+from copy import deepcopy
 import pytest
 
 # Import Pyomo components
@@ -31,8 +32,10 @@ from pyomo.environ import (
 from idaes.core import LiquidPhase, VaporPhase, Component
 from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
+    ModularPropertiesInitializer
 )
 from idaes.core.solvers import get_solver
+from idaes.core.util.exceptions import InitializationError
 
 from idaes.models.properties.modular_properties.base.generic_property import (
     _init_Pbub,
@@ -451,6 +454,44 @@ configuration = {
     "phase_equilibrium_state": {("Vap", "Liq"): SmoothVLE},
     "bubble_dew_method": IdealBubbleDew,
 }
+@pytest.mark.unit
+def test_multiple_VLE():
+    cfg = deepcopy(configuration)
+    cfg["phases_in_equilibrium"].append(("Liq", "Vap"))
+    cfg["phase_equilibrium_state"][("Liq", "Vap")] = SmoothVLE
+
+    model = ConcreteModel()
+    model.params = GenericParameterBlock(**cfg)
+
+    model.props = model.params.build_state_block([1], defined_state=True)
+
+    model.props[1].flow_mol.fix(1)
+    model.props[1].temperature.fix(368)
+    model.props[1].pressure.fix(101325)
+    model.props[1].mole_frac_comp["A"].fix(0.5)
+    model.props[1].mole_frac_comp["B"].fix(0.5)
+    model.props[1].mole_frac_comp["C"].fix(1e-10)
+
+    # Trigger construction of some things we will test later
+    model.props[1].pressure_bubble
+    model.props[1].pressure_dew
+
+    # In order to test this warning I need to get a square system
+    model.props[1].equilibrium_constraint["Liq", "Vap", "A"].deactivate()
+    model.props[1].equilibrium_constraint["Vap", "Liq", "A"].deactivate()
+    model.props[1].equilibrium_constraint["Liq", "Vap", "C"].deactivate()
+
+    initializer = ModularPropertiesInitializer()
+
+    with pytest.raises(
+        InitializationError,
+    ) as err:
+        initializer.initialize(model.props)
+    assert (
+        "More than one VLE present in props[1]. Initialization for multiple "
+        "VLE is not supported, so skipping VLE initialization." in str(err)
+    )
+    
 
 
 class TestHenryComps0(object):
