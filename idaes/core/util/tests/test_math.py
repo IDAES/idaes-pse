@@ -207,14 +207,14 @@ def test_smooth_min(simple_model):
 def test_smooth_heaviside():
     # Test that smooth_heaviside gives correct values
     # Ensure that the slope of the function is sharper when k is larger
-    assert smooth_heaviside(-1, 1) == pytest.approx(0.7310586, abs=1e-4)
-    assert smooth_heaviside(-0.5, 1) == pytest.approx(0.6224593, abs=1e-4)
+    assert smooth_heaviside(-1, 1) == pytest.approx(0.2689414, abs=1e-4)
+    assert smooth_heaviside(-0.5, 1) == pytest.approx(0.37754067, abs=1e-4)
     assert smooth_heaviside(0, 1) == pytest.approx(0.5, abs=1e-4)
-    assert smooth_heaviside(0.5, 1) == pytest.approx(0.37754067, abs=1e-4)
-    assert smooth_heaviside(1, 1) == pytest.approx(0.2689414, abs=1e-4)
+    assert smooth_heaviside(0.5, 1) == pytest.approx(0.6224593, abs=1e-4)
+    assert smooth_heaviside(1, 1) == pytest.approx(0.7310586, abs=1e-4)
 
-    assert smooth_heaviside(-1, 10) == pytest.approx(0.9999546, abs=1e-4)
-    assert smooth_heaviside(-0.5, 10) == pytest.approx(0.9933071, abs=1e-4)
+    assert smooth_heaviside(-1, 10) == pytest.approx(4.53979e-5, abs=1e-4)
+    assert smooth_heaviside(-0.5, 10) == pytest.approx(0.00669285, abs=1e-4)
     assert smooth_heaviside(0, 10) == pytest.approx(0.5, abs=1e-4)
-    assert smooth_heaviside(0.5, 10) == pytest.approx(0.00669285, abs=1e-4)
-    assert smooth_heaviside(1, 10) == pytest.approx(4.53979e-5, rel=1e-4)
+    assert smooth_heaviside(0.5, 10) == pytest.approx(0.9933071, abs=1e-4)
+    assert smooth_heaviside(1, 10) == pytest.approx(0.9999546, rel=1e-4)
