@@ -43,7 +43,7 @@ from idaes.models.properties.modular_properties.phase_equil.henry import (
     HenryType,
     henry_equilibrium_ratio,
 )
-from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.exceptions import ConfigurationError, InitializationError
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 from .electrolyte_states import define_electrolyte_state, calculate_electrolyte_scaling
@@ -419,7 +419,7 @@ def state_initialization(b):
             pp_VLE = pp
 
     if num_VLE > 1:
-        _log.warning(
+        raise InitializationError(
             f"More than one VLE present in {b.name}. Initialization for multiple "
             "VLE is not supported, so skipping VLE initialization."
         )
