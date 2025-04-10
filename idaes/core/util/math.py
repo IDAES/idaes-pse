@@ -16,7 +16,7 @@ This module contains utility functions for mathematical operators of use in
 equation oriented models.
 """
 
-from pyomo.environ import Param, log, sqrt
+from pyomo.environ import Param, log, sqrt, exp
 
 __author__ = "Andrew Lee"
 
@@ -191,3 +191,16 @@ def safe_log(a, eps=1e-4):
         approximately log(max(a, eps))
     """
     return log(smooth_max(a, eps, eps=eps))
+
+
+def smooth_heaviside(x, k):
+    """
+    Provides a smooth, continuous approximation of the Heaviside step function using the logistic function
+    Args:
+        x : Independent variable; as x increases, the function increases from 0 to 1
+        k : Smoothing parameter proportional to the slope of the discontinuity
+    Returns:
+        function : Continuous approximation of a discontinuous function which approximately equals 0 when x < 0 and approximately equals 1 when x > 0
+    """
+    function = 1 / (1 + exp(-k * x))
+    return function
