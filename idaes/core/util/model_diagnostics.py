@@ -3559,7 +3559,7 @@ class IpoptConvergenceAnalysis:
 
     CONFIG = CACONFIG()
 
-    def __init__(self, model, **kwargs):
+    def __init__(self, model, solver=SolverFactory("ipopt"), **kwargs):
         # TODO: In future may want to generalise this to accept indexed blocks
         # However, for now some of the tools do not support indexed blocks
         if not isinstance(model, BlockData):
@@ -3575,7 +3575,8 @@ class IpoptConvergenceAnalysis:
 
         self._model = model
 
-        solver = SolverFactory("ipopt")
+        self._solver = solver
+
         if self.config.solver_options is not None:
             solver.options = self.config.solver_options
 
