@@ -30,7 +30,7 @@ pytest.importorskip("sklearn", reason="sklearn not available")
 @pytest.fixture(name="sample_data")
 def sample_data_fixture():
     """Returns a sample price signal for testing"""
-    file_path = "../../multiperiod/tests/lmp_data.csv"
+    file_path = "lmp_data.csv"
     data = pd.read_csv(file_path)
     return data
 

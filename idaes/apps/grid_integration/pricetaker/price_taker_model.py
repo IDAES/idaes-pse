@@ -136,7 +136,7 @@ CONFIG.declare(
     ),
 )
 CONFIG.declare(
-    "capital_recovery_factor",
+    "annualization_factor",
     ConfigValue(
         domain=is_in_range(0, 1),
         doc="Capital cost annualization factor [fraction of investment cost/year]",
@@ -803,7 +803,7 @@ class PriceTakerModel(ConcreteModel):
         lifetime: int = 30,
         discount_rate: float = 0.08,
         corporate_tax_rate: float = 0.2,
-        capital_recovery_factor: Optional[float] = None,
+        annualization_factor: Optional[float] = None,
         cash_inflow_scale_factor: Optional[float] = 1.0,
     ):
         """
@@ -822,7 +822,7 @@ class PriceTakerModel(ConcreteModel):
                 Fractional value of corporate tax used in NPV calculations.
                 Must be between 0 and 1.
 
-            capital_recovery_factor: float, default=None,
+            annualization_factor: float, default=None,
                 Annualization factor
 
             cash_inflow_scale_factor: float, default=1.0,
@@ -841,7 +841,7 @@ class PriceTakerModel(ConcreteModel):
         self.config.lifetime = lifetime
         self.config.discount_rate = discount_rate
         self.config.corporate_tax = corporate_tax_rate
-        self.config.capital_recovery_factor = capital_recovery_factor
+        self.config.annualization_factor = annualization_factor
         self.config.cash_inflow_scale_factor = cash_inflow_scale_factor
 
         if not self._has_hourly_cashflows:
@@ -902,17 +902,17 @@ class PriceTakerModel(ConcreteModel):
             expr=cf.net_profit == cf.net_cash_inflow - cf.fom - cf.corporate_tax
         )
 
-        if capital_recovery_factor is None:
+        if annualization_factor is None:
             # If the annualization factor is not specified
-            capital_recovery_factor = discount_rate / (
+            annualization_factor = discount_rate / (
                 1 - (1 + discount_rate) ** (-lifetime)
             )
 
         cf.lifetime_npv = Expression(
-            expr=(1 / capital_recovery_factor) * cf.net_profit - cf.capex
+            expr=(1 / annualization_factor) * cf.net_profit - cf.capex
         )
         cf.npv = Expression(
-            expr=cf.net_profit - capital_recovery_factor * cf.capex,
+            expr=cf.net_profit - annualization_factor * cf.capex,
         )
 
         self._has_overall_cashflows = True
