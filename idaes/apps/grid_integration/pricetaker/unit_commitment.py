@@ -138,8 +138,8 @@ def startup_shutdown_constraints(
     blk: Block,
     op_blocks: dict,
     install_unit: Union[int, Var],
-    up_time: int,
-    down_time: int,
+    minimum_up_time: int,
+    minimum_down_time: int,
     set_time: RangeSet,
 ):
     """
@@ -158,21 +158,21 @@ def startup_shutdown_constraints(
 
     @blk.Constraint(set_time)
     def minimum_up_time_con(_, t):
-        if t < up_time:
+        if t < minimum_up_time:
             return Constraint.Skip
 
         return (
-            sum(op_blocks[i].startup for i in range(t - up_time + 1, t + 1))
+            sum(op_blocks[i].startup for i in range(t - minimum_up_time + 1, t + 1))
             <= op_blocks[t].op_mode
         )
 
     @blk.Constraint(set_time)
     def minimum_down_time_con(_, t):
-        if t < down_time:
+        if t < minimum_down_time:
             return Constraint.Skip
 
         return (
-            sum(op_blocks[i].shutdown for i in range(t - down_time + 1, t + 1))
+            sum(op_blocks[i].shutdown for i in range(t - minimum_down_time + 1, t + 1))
             <= install_unit - op_blocks[t].op_mode
         )
 
