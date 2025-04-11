@@ -244,8 +244,9 @@ def get_optimal_num_clusters(
 
         if len(local_maxima) == 0:
             n_clusters = 0
-            _logger.warning(
-                "The optimal number of clusters cannot be determined for this dataset."
+            _logger.error(
+                "The optimal number of clusters cannot be determined with the elbow method for this dataset."
+                "Try the silhouette method instead."
             )
         elif len(local_maxima) == 1:
             n_clusters_norm = local_maxima[0][0]
