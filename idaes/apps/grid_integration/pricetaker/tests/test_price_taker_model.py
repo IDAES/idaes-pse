@@ -712,6 +712,8 @@ def test_start_shut_no_install(dummy_data):
     )
 
     assert hasattr(m, "op_blk_startup_shutdown")
+    assert hasattr(m.config, "minimum_up_time")
+    assert hasattr(m.config, "minimum_down_time")
     assert len(m.op_blk_startup_shutdown) == 1
     assert len(m.op_blk_startup_shutdown[1].binary_relationship_con) == 24 - 1
     assert len(m.op_blk_startup_shutdown[1].minimum_up_time_con) == 24 - (3 - 1)
