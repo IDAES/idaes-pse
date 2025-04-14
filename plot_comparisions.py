@@ -12,8 +12,6 @@ import diptest
 import matplotlib.ticker as mtick
 from linear_regression import read_raw_data
 import pyomo.environ as pyo
-import pickle
-import json
 
 def read_all_files(directory):
     '''
@@ -1011,87 +1009,3 @@ def plot_model_results(plot_data, save=False):
         plt.savefig('model_results.pdf', dpi=300, bbox_inches='tight')
     
     plt.show()
-
-def save_model_results(m_results_m, filename='model_results.pkl'):
-    '''
-    Save model results to a file
-    
-    Arguments:
-        m_results_m: dictionary of model results
-        filename: name of the file to save to
-    '''
-    # Create a dictionary to store the extracted data
-    save_data = {}
-    
-    for column_name, model in m_results_m.items():
-        if model is None:
-            save_data[column_name] = None
-            continue
-            
-        try:
-            # Extract power dispatch data
-            power_dispatch = []
-            for t in model.time:
-                if hasattr(model, 'power_dispatch'):
-                    power_dispatch.append(pyo.value(model.power_dispatch[t]))
-                elif hasattr(model, 'fs') and hasattr(model.fs, 'power_dispatch'):
-                    power_dispatch.append(pyo.value(model.fs.power_dispatch[t]))
-            
-            # Get profit if available
-            profit = 0
-            if hasattr(model, 'objective'):
-                profit = pyo.value(model.objective)
-            elif hasattr(model, 'fs') and hasattr(model.fs, 'objective'):
-                profit = pyo.value(model.fs.objective)
-            
-            # Store the extracted data
-            save_data[column_name] = {
-                'power_dispatch': power_dispatch,
-                'profit': profit,
-                'time': list(model.time)
-            }
-            
-        except Exception as e:
-            print(f"Error saving column {column_name}: {e}")
-            save_data[column_name] = None
-    
-    # Save to file
-    with open(filename, 'wb') as f:
-        pickle.dump(save_data, f)
-    
-    print(f"Saved model results to {filename}")
-
-def load_model_results(filename='model_results.pkl'):
-    '''
-    Load model results from a file
-    
-    Arguments:
-        filename: name of the file to load from
-        
-    Returns:
-        plot_data: dictionary containing processed data for plotting
-    '''
-    try:
-        with open(filename, 'rb') as f:
-            save_data = pickle.load(f)
-        
-        # Process the loaded data into the format needed for plotting
-        plot_data = {}
-        for column_name, data in save_data.items():
-            if data is None:
-                continue
-                
-            plot_data[column_name] = {
-                'profit': data['profit'],
-                'p_output': sum(data['power_dispatch']),
-                'p_capacity': sum(data['power_dispatch']) / (len(data['power_dispatch']) * 650)  # 650 MW nameplate
-            }
-        
-        return plot_data
-        
-    except FileNotFoundError:
-        print(f"File {filename} not found")
-        return None
-    except Exception as e:
-        print(f"Error loading model results: {e}")
-        return None
