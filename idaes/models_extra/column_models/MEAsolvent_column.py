@@ -86,15 +86,10 @@ class MEAColumnData(PackedColumnData):
         """
         Enhancement factor based liquid phase mass transfer model.
         """
-        time = self.flowsheet().time
         vap_comp = self.config.vapor_phase.property_package.component_list
         liq_comp = self.config.liquid_phase.property_package.component_list
         equilibrium_comp = vap_comp & liq_comp
         solute_comp_list = ["CO2"]
-        log_diffus_liq_comp_list = self.log_diffus_liq_comp_list = [
-            "CO2",
-            "MEA",
-        ]  # Can add ions if we want them
 
         lunits = (
             self.config.liquid_phase.property_package.get_metadata().get_derived_units
@@ -1204,13 +1199,6 @@ class MEAColumnData(PackedColumnData):
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
 
-        vunits = (
-            self.config.vapor_phase.property_package.get_metadata().get_derived_units
-        )
-        lunits = (
-            self.config.liquid_phase.property_package.get_metadata().get_derived_units
-        )
-
         def gsf(var):
             return iscale.get_scaling_factor(var, default=1, warning=True)
 
@@ -1707,12 +1695,10 @@ class MEAColumnData(PackedColumnData):
         blk,
         vapor_phase_state_args=None,
         liquid_phase_state_args=None,
-        state_vars_fixed=False,
         outlvl=idaeslog.NOTSET,
         solver=None,
         optarg=None,
         mode="absorber",
-        monolithic_enhancement_factor_system=True,
     ):
         """
         MEA solvent Packed Column initialization.
@@ -1726,8 +1712,12 @@ class MEAColumnData(PackedColumnData):
                       default solver options)
             solver : str indicating which solver to use during initialization
                     (default = None, use IDAES default solver)
+            outlvl : output level for logging
+            mode: str about what values to use as initial guess for certain
+                variables, most importantly the enhancement factor. Valid
+                values are "absorber" and "stripper"
         """
-
+        assert mode in ["absorber", "stripper"]
         # Set up logger for initialization and solve
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
@@ -1739,10 +1729,6 @@ class MEAColumnData(PackedColumnData):
         opt = get_solver(solver, optarg)
 
         initial_dof = degrees_of_freedom(blk)
-
-        lunits = (
-            blk.config.liquid_phase.property_package.get_metadata().get_derived_units
-        )
 
         unit_constraints = [
             "pressure_at_interface",
@@ -2255,6 +2241,6 @@ class MEAColumnData(PackedColumnData):
         # Check solver status
         if not check_optimal_termination(res):
             raise InitializationError(
-                f"Model failed to initialize successfully. Please check "
-                f"the output logs for more information."
+                "Model failed to initialize successfully. Please check "
+                "the output logs for more information."
             )

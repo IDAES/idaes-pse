@@ -1,3 +1,21 @@
+################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES).
+#
+# Copyright (c) 2018-2025 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
+#################################################################################
+"""
+Class implementing a variation of the enhancement factor model presented in Gaspar and Fosbol 
+(2015, https://doi.org/10.1016/j.ces.2015.08.023). An expression giving the enhancement factor
+at equilibrium is used instead of solving the full system of equations. A paper containing a 
+full explanation of this model has been submitted to CAChe
+"""
 from pyomo.environ import (
     value,
     Var,
@@ -11,12 +29,26 @@ from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 import idaes.logger as idaeslog
 
+__author__ = "Douglas Allan"
+
 
 class PseudoSecondOrderExplicit(object):
+    """
+    Class implementing a variation of the enhancement factor model presented in Gaspar and Fosbol
+    (2015, https://doi.org/10.1016/j.ces.2015.08.023). An expression giving the enhancement factor
+    at equilibrium is used instead of solving the full system of equations. A paper containing a
+    full explanation of this model has been submitted to CAChe
+    """
+
     @staticmethod
     def make_model(blk, kinetics="Putta"):
         """
         Enhancement factor based liquid phase mass transfer model.
+
+        Arguments:
+            blk: MEASolventColumn object whose enhancement factor model needs to be created
+            kinetics : str giving which set of kinetics to use. Valid options are "Putta"
+                and "Luo"
         """
         lunits = blk.liquid_phase.properties.params.get_metadata().get_derived_units
 
@@ -219,14 +251,21 @@ class PseudoSecondOrderExplicit(object):
     @staticmethod
     def initialize_model(
         blk,
-        state_args=None,
         outlvl=idaeslog.NOTSET,
         optarg=None,
         solver=None,
     ):
-        # Set up logger for initialization and solve
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
-        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
+        """
+        Initialization method for enhancement factor submodel for MEASolventColumn
+
+        Arguments:
+            blk: MEASolventColumn object whose enhancement factor model needs to be initialized
+            optarg : solver options dictionary object (default=None, use
+                        default solver options)
+            solver : str indicating which solver to use during initialization
+                    (default = None, use IDAES default solver)
+            outlvl : output level for logging
+        """
         # Set solver options
         if optarg is None:
             optarg = {}
@@ -235,7 +274,6 @@ class PseudoSecondOrderExplicit(object):
             for x in blk.liquid_phase.length_domain:
                 if x == blk.liquid_phase.length_domain.last():
                     continue
-                zf = blk.liquid_phase.length_domain.next(x)
 
                 calculate_variable_from_constraint(
                     blk.log_rate_constant_MEA[t, x], blk.log_rate_constant_MEA_eqn[t, x]

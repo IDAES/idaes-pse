@@ -20,7 +20,6 @@ from pyomo.environ import (
     Expression,
     Param,
     Reals,
-    NonNegativeReals,
     Var,
     SolverStatus,
     TerminationCondition,
@@ -657,10 +656,6 @@ and used when constructing these
         vap_comp = self.config.vapor_phase.property_package.component_list
         liq_comp = self.config.liquid_phase.property_package.component_list
         equilibrium_comp = vap_comp & liq_comp
-
-        lunits = (
-            self.config.liquid_phase.property_package.get_metadata().get_derived_units
-        )
 
         @self.Constraint(
             self.flowsheet().time,
