@@ -506,7 +506,7 @@ class TestStripperHeatDuty(object):
             iscale.get_constraint_transform_applied_scaling_factor(
                 model.fs.unit.unit_material_balance[0, "MEA"]
             )
-            == 1e8
+            == 1
         )
 
         assert (
