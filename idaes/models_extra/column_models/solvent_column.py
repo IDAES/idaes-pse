@@ -346,7 +346,7 @@ and used when constructing these
             self.config.liquid_phase.property_package.get_metadata().get_derived_units
         )
 
-        # Hydrodynamics and cacking parameters
+        # Hydrodynamics and packing parameters
         self.eps_ref = Param(
             initialize=0.97,
             units=pyunits.dimensionless,
@@ -505,9 +505,8 @@ and used when constructing these
                     * blk.area_interfacial[t, x]
                     * blk.area_column
                     * (
-                        blk.vapor_phase.properties[t, x].mole_frac_comp[j]
-                        * pyunits.convert(
-                            blk.vapor_phase.properties[t, x].pressure,
+                        pyunits.convert(
+                            blk.vapor_phase.properties[t, x].fug_phase_comp["Vap", j],
                             to_units=lunits("pressure"),
                         )
                         - blk.pressure_equil[t, x, j]
@@ -674,14 +673,7 @@ and used when constructing these
             else:
                 zb = self.liquid_phase.length_domain.prev(x)
                 lprops = blk.liquid_phase.properties[t, zb]
-                return blk.mass_transfer_driving_force[t, x, j] == (
-                        blk.vapor_phase.properties[t, x].mole_frac_comp[j]
-                        * pyunits.convert(
-                            blk.vapor_phase.properties[t, x].pressure,
-                            to_units=lunits("pressure"),
-                        )
-                        - lprops.fug_phase_comp["Liq", j]
-                )
+                return blk.pressure_equil[t, x, j] == lprops.fug_phase_comp["Liq", j]
 
     # =========================================================================
     # Scaling routine

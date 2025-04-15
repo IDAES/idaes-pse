@@ -52,6 +52,7 @@ import idaes.core.util.scaling as iscale
 from idaes.core.solvers.get_solver import get_solver
 import idaes.logger as idaeslog
 
+from idaes.models_extra.column_models.properties.MEA_solvent import initialize_inherent_reactions
 from idaes.models_extra.column_models.enhancement_factor_model_pseudo_second_order_explicit import PseudoSecondOrderExplicit
 __author__ = "Paul Akula, John Eslick, Anuja Deshpande, Andrew Lee, Douglas Allan"
 
@@ -715,10 +716,16 @@ class MEAColumnData(PackedColumnData):
         # from information we have, but the channel size appears only in this equation for the set of correlations
         # we are using. Technically that parameter exists in the SolventColumn model, but we have nothing on which
         # to base its value.
-        self.holdup_parAlpha = Param(
-            initialize=3.185966,
-            units=1 / (lunits("length") * (lunits("acceleration") ** (2 / 3))),
-            doc="Holdup parameter alpha",
+        # self.holdup_parAlpha = Param(
+        #     initialize=3.185966,
+        #     units=1 / (lunits("length") * (lunits("acceleration") ** (2 / 3))),
+        #     doc="Holdup parameter alpha",
+        #     mutable=True,
+        # )
+        self.log_holdup_parAlpha = Param(
+            initialize=log(3.185966), # Original units were 1 / m * (m / s**2) ** (2/3)
+            units=pyunits.dimensionless,
+            doc="Natural logarithm of holdup parameter alpha",
             mutable=True,
         )
 
@@ -763,16 +770,11 @@ class MEAColumnData(PackedColumnData):
             if x == blk.liquid_phase.length_domain.last():
                 return Constraint.Skip
             else:
-                log_holdup_parAlpha = log(
-                    blk.holdup_parAlpha
-                    * lunits("length")
-                    * (lunits("acceleration") ** (2 / 3))
-                )
                 return blk.log_holdup_liq[t, x] == (
                     blk.log_holdup_parA
                     + blk.holdup_parB
                     * (
-                        log_holdup_parAlpha
+                        blk.log_holdup_parAlpha
                         + blk.log_velocity_liq[t, x]
                         + (1 / 3)
                         * (blk.log_visc_d_liq[t, x] - blk.log_dens_mass_liq[t, x])
@@ -1881,6 +1883,7 @@ class MEAColumnData(PackedColumnData):
         )
 
         # Initialize liquid_phase properties block
+        initialize_inherent_reactions(blk.liquid_phase)
         lflag = blk.liquid_phase.initialize(
             state_args=liquid_phase_state_args,
             outlvl=outlvl,
