@@ -39,7 +39,7 @@ References:
 # pylint: disable=missing-function-docstring
 
 # Import Pyomo units
-from pyomo.environ import exp, log, units as pyunits, Var, Expression, value
+from pyomo.environ import exp, log, units as pyunits, Var, Expression
 
 # Import IDAES cores
 from idaes.core import (
