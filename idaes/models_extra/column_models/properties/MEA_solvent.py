@@ -48,10 +48,6 @@ from idaes.core import (
     Solute,
     Anion,
     Cation,
-    StateBlock,
-    ControlVolume0DBlock,
-    ControlVolume1DBlock,
-    FlowDirection
 )
 
 from idaes.models.properties.modular_properties.state_definitions import FTPx
@@ -70,58 +66,6 @@ import idaes.logger as idaeslog
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
-
-def initialize_inherent_reactions(blk):
-    """
-    Helper method to initialize inherent reactions for MEA property package.
-    """
-    if isinstance(blk, ControlVolume1DBlock):
-        if blk._flow_direction == FlowDirection.forward:
-            source_idx = blk.length_domain.first()
-        else:
-            source_idx = blk.length_domain.last()
-        source = blk.properties[blk.flowsheet().time.first(), source_idx]
-
-        x_lim_reag = min(
-            value(source.mole_frac_comp["MEA"]),
-            value(source.mole_frac_comp["CO2"]),
-        )
-
-        F_lim_reag = value(source.flow_mol*x_lim_reag)
-
-        for k in blk.properties.keys():
-            blk.properties[k].apparent_inherent_reaction_extent["bicarbonate"].value = 0.2 * F_lim_reag
-            blk.properties[k].apparent_inherent_reaction_extent["carbamate"].value = 0.1 * F_lim_reag
-    elif isinstance(blk, ControlVolume0DBlock):
-        source = blk.properties_in[blk.flowsheet().time.first()]
-        x_lim_reag = min(
-            value(source.mole_frac_comp["MEA"]),
-            value(source.mole_frac_comp["CO2"]),
-        )
-
-        F_lim_reag = value(source.flow_mol*x_lim_reag)
-
-        for t in blk.flowsheet().time:
-            blk.properties_in[t].apparent_inherent_reaction_extent["bicarbonate"].value = 0.2 * F_lim_reag
-            blk.properties_in[t].apparent_inherent_reaction_extent["carbamate"].value = 0.1 * F_lim_reag
-
-            blk.properties_out[t].apparent_inherent_reaction_extent["bicarbonate"].value = 0.2 * F_lim_reag
-            blk.properties_out[t].apparent_inherent_reaction_extent["carbamate"].value = 0.1 * F_lim_reag
-
-    elif isinstance(blk, StateBlock):
-        for sub_blk in blk.values():
-            x_lim_reag = min(
-                value(sub_blk.mole_frac_comp["MEA"]),
-                value(sub_blk.mole_frac_comp["CO2"]),
-            )
-
-            F_lim_reag = value(sub_blk.flow_mol*x_lim_reag)
-
-
-            sub_blk.apparent_inherent_reaction_extent["bicarbonate"].value = 0.2 * F_lim_reag
-            sub_blk.apparent_inherent_reaction_extent["carbamate"].value = 0.1 * F_lim_reag
-    else:
-        raise ValueError("Must be passed control volume or state block")
 
 # -----------------------------------------------------------------------------
 # Pure Component Property methods for aqueous MEA
