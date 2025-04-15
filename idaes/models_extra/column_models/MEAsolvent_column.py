@@ -90,6 +90,10 @@ class MEAColumnData(PackedColumnData):
         liq_comp = self.config.liquid_phase.property_package.component_list
         equilibrium_comp = vap_comp & liq_comp
         solute_comp_list = ["CO2"]
+        self.log_diffus_liq_comp_list = [
+            "CO2",
+            "MEA",
+        ]  # Can add ions if we want them
 
         lunits = (
             self.config.liquid_phase.property_package.get_metadata().get_derived_units
@@ -903,7 +907,7 @@ class MEAColumnData(PackedColumnData):
         self.Cl_ref = Var(
             initialize=0.5,
             units=pyunits.dimensionless,
-            doc="""Liquid packing specific constant in Billet and Schultes
+            doc="""Liquid packing specific constant in Billet and Schultes 
                       volumetric mass transfer coefficient correlation""",
         )
 
