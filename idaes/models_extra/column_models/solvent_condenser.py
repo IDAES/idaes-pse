@@ -453,7 +453,7 @@ see property package for documentation.}""",
                 iscale.constraint_scaling_transform(
                     v,
                     iscale.get_scaling_factor(
-                        self.liquid_phase[t].get_material_flow_terms("Liq",j),
+                        self.liquid_phase[t].get_material_flow_terms("Liq", j),
                         default=1,
                         warning=True,
                     ),

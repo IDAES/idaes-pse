@@ -52,7 +52,10 @@ import idaes.core.util.scaling as iscale
 from idaes.core.solvers.get_solver import get_solver
 import idaes.logger as idaeslog
 
-from idaes.models_extra.column_models.enhancement_factor_model_pseudo_second_order_explicit import PseudoSecondOrderExplicit
+from idaes.models_extra.column_models.enhancement_factor_model_pseudo_second_order_explicit import (
+    PseudoSecondOrderExplicit,
+)
+
 __author__ = "Paul Akula, John Eslick, Anuja Deshpande, Andrew Lee, Douglas Allan"
 
 
@@ -111,7 +114,10 @@ class MEAColumnData(PackedColumnData):
             self.flowsheet().time,
             self.liquid_phase.length_domain,
             units=pyunits.dimensionless,
-            bounds=(None, 100), #  100 is about where we start getting AMPL evaluation errors due to overflow
+            bounds=(
+                None,
+                100,
+            ),  #  100 is about where we start getting AMPL evaluation errors due to overflow
             initialize=5,
             doc="Natural logarithm of the enhancement factor",
         )
@@ -164,8 +170,7 @@ class MEAColumnData(PackedColumnData):
                         (
                             blk.vapor_phase.properties[t, x].mole_frac_comp[j]
                             * Pressure
-                            + blk.psi[t, x]
-                            * lprops.conc_mol_phase_comp_true["Liq", j]
+                            + blk.psi[t, x] * lprops.conc_mol_phase_comp_true["Liq", j]
                         )
                         / (
                             1
@@ -178,6 +183,7 @@ class MEAColumnData(PackedColumnData):
                         lprops.mole_frac_phase_comp_true["Liq", j]
                         * lprops.pressure_sat_comp[j]
                     )
+
     def build(self):
         super().build()
         if self.config.enhancement_factor_kwargs is None:
@@ -189,7 +195,7 @@ class MEAColumnData(PackedColumnData):
         # Unit level sets
         vap_comp = self.config.vapor_phase.property_package.component_list
         liq_comp = self.config.liquid_phase.property_package.component_list
-        self.equilibirum_comp = equilibrium_comp = vap_comp & liq_comp
+        self.equilibrium_comp = equilibrium_comp = vap_comp & liq_comp
         solute_comp_list = self.solute_comp_list = Set(
             initialize=["CO2"],
             ordered=True,
@@ -227,9 +233,9 @@ class MEAColumnData(PackedColumnData):
                 == blk.liquid_phase.properties[t, x].dens_mass_phase["Liq"]
             )
 
-        self.log_property_var_eqn_map[
-            self.log_dens_mass_liq
-        ] = self.log_dens_mass_liq_eqn
+        self.log_property_var_eqn_map[self.log_dens_mass_liq] = (
+            self.log_dens_mass_liq_eqn
+        )
 
         self.log_surf_tens_liq = Var(
             self.flowsheet().time,
@@ -252,9 +258,9 @@ class MEAColumnData(PackedColumnData):
                 == blk.liquid_phase.properties[t, x].surf_tens_phase["Liq"]
             )
 
-        self.log_property_var_eqn_map[
-            self.log_surf_tens_liq
-        ] = self.log_surf_tens_liq_eqn
+        self.log_property_var_eqn_map[self.log_surf_tens_liq] = (
+            self.log_surf_tens_liq_eqn
+        )
 
         self.log_visc_d_liq = Var(
             self.flowsheet().time,
@@ -305,9 +311,9 @@ class MEAColumnData(PackedColumnData):
                     "diffusivity"
                 ) == (blk.liquid_phase.properties[t, x].diffus_phase_comp["Liq", j])
 
-        self.log_property_var_eqn_map[
-            self.log_diffus_liq_comp
-        ] = self.log_diffus_liq_comp_eqn
+        self.log_property_var_eqn_map[self.log_diffus_liq_comp] = (
+            self.log_diffus_liq_comp_eqn
+        )
 
         self.log_dens_mass_vap = Var(
             self.flowsheet().time,
@@ -329,9 +335,9 @@ class MEAColumnData(PackedColumnData):
                 to_units=lunits("density_mass"),
             )
 
-        self.log_property_var_eqn_map[
-            self.log_dens_mass_vap
-        ] = self.log_dens_mass_vap_eqn
+        self.log_property_var_eqn_map[self.log_dens_mass_vap] = (
+            self.log_dens_mass_vap_eqn
+        )
 
         self.log_visc_d_vap = Var(
             self.flowsheet().time,
@@ -387,9 +393,9 @@ class MEAColumnData(PackedColumnData):
                     == diffus_vap_comp
                 )
 
-        self.log_property_var_eqn_map[
-            self.log_diffus_vap_comp
-        ] = self.log_diffus_vap_comp_eqn
+        self.log_property_var_eqn_map[self.log_diffus_vap_comp] = (
+            self.log_diffus_vap_comp_eqn
+        )
 
         self.log_pressure_vap = Var(
             self.flowsheet().time,
@@ -455,9 +461,9 @@ class MEAColumnData(PackedColumnData):
                     == therm_cond_vap
                 )
 
-        self.log_property_var_eqn_map[
-            self.log_therm_cond_vap
-        ] = self.log_therm_cond_vap_eqn
+        self.log_property_var_eqn_map[self.log_therm_cond_vap] = (
+            self.log_therm_cond_vap_eqn
+        )
 
         self.log_cp_mol_vap = Var(
             self.flowsheet().time,
@@ -654,9 +660,9 @@ class MEAColumnData(PackedColumnData):
         def log_area_interfacial_parA_eqn(blk):
             return exp(blk.log_area_interfacial_parA) == blk.area_interfacial_parA
 
-        self.log_parameter_var_eqn_map[
-            self.log_area_interfacial_parA
-        ] = self.log_area_interfacial_parA_eqn
+        self.log_parameter_var_eqn_map[self.log_area_interfacial_parA] = (
+            self.log_area_interfacial_parA_eqn
+        )
 
         @self.Constraint(
             self.flowsheet().time,
@@ -716,7 +722,7 @@ class MEAColumnData(PackedColumnData):
         # we are using. Technically that parameter exists in the SolventColumn model, but we have nothing on which
         # to base its value.
         self.log_holdup_parAlpha = Param(
-            initialize=log(3.185966), # Original units were 1 / m * (m / s**2) ** (2/3)
+            initialize=log(3.185966),  # Original units were 1 / m * (m / s**2) ** (2/3)
             units=pyunits.dimensionless,
             doc="Natural logarithm of holdup parameter alpha",
             mutable=True,
@@ -1023,7 +1029,8 @@ class MEAColumnData(PackedColumnData):
                 return Constraint.Skip
             else:
                 return 3 * blk.log_heat_transfer_coeff_base[t, x] == 3 * (
-                    blk.log_mass_transfer_coeff_vap[t, x, "CO2"] + blk.log_pressure_vap[t, x]
+                    blk.log_mass_transfer_coeff_vap[t, x, "CO2"]
+                    + blk.log_pressure_vap[t, x]
                 ) + 2 * blk.log_therm_cond_vap[t, x] + blk.log_cp_mol_vap[t, x] - 2 * (
                     blk.log_dens_mol_vap[t, x] + blk.log_diffus_vap_comp[t, x, "CO2"]
                 )
@@ -1032,7 +1039,7 @@ class MEAColumnData(PackedColumnData):
             self.flowsheet().time,
             self.vapor_phase.length_domain,
             doc="""Vap-Liq heat transfer correction""",
-        )        
+        )
         def heat_transfer_coeff_eqn(blk, t, x):
             if x == blk.vapor_phase.length_domain.first():
                 return Constraint.Skip
@@ -1044,10 +1051,10 @@ class MEAColumnData(PackedColumnData):
                     * blk.area_column
                 )
 
-
-        self.enhancement_factor_vars, self.enhancement_factor_constraints = self.config.enhancement_factor_model.make_model(
-            self,
-            **enhancement_factor_kwargs
+        self.enhancement_factor_vars, self.enhancement_factor_constraints = (
+            self.config.enhancement_factor_model.make_model(
+                self, **enhancement_factor_kwargs
+            )
         )
         # Flood point calculations
 
@@ -1315,7 +1322,7 @@ class MEAColumnData(PackedColumnData):
                 sf = gsf(self.liquid_phase.properties[t, x_liq].flow_mass_phase["Liq"])
                 cst(self.log_flow_mass_Liq_Vap_eqn[t, x_vap], sf)
 
-                for j in self.equilibirum_comp:
+                for j in self.equilibrium_comp:
                     sf = iscale.get_scaling_factor(
                         self.mass_transfer_coeff_vap[t, x_vap, j],
                         default=25000,
@@ -1371,7 +1378,6 @@ class MEAColumnData(PackedColumnData):
                     self.liquid_phase.enthalpy_transfer[t, x], default=1, warning=True
                 ),
             )
-
 
     def set_init_values_correlation_vars(blk, nfe, mode):
         """
@@ -1693,9 +1699,7 @@ class MEAColumnData(PackedColumnData):
             else:
                 blk.mass_transfer_coeff_liq[0, x, "CO2"].fix(k_l_co2_values[i])
                 blk.holdup_liq[0, x].fix(0.01)
-                blk.log_enhancement_factor[0, x].fix(
-                    log(enhancement_factor_values[i])
-                )
+                blk.log_enhancement_factor[0, x].fix(log(enhancement_factor_values[i]))
 
     # =========================================================================
     # Model initialization routine
@@ -1930,7 +1934,9 @@ class MEAColumnData(PackedColumnData):
         blk.pressure_equil.unfix()
         blk.pressure_at_interface.activate()
         for idx in blk.pressure_at_interface:
-            calculate_variable_from_constraint(blk.pressure_equil[idx], blk.pressure_at_interface[idx])
+            calculate_variable_from_constraint(
+                blk.pressure_equil[idx], blk.pressure_at_interface[idx]
+            )
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
@@ -2051,8 +2057,8 @@ class MEAColumnData(PackedColumnData):
             "Initializing interfacial area - degrees_of_freedom = {}".format(
                 degrees_of_freedom(blk)
             )
-        )           
-        
+        )
+
         # Confusing naming convention: log_var_eqn are always of the form exp(log_var) == var.
         # log_area_interfacial is defined from the performance equation area_interfacial_eqn
         # and then area_interfacial is back-calculated from the exponential relationship
@@ -2112,7 +2118,7 @@ class MEAColumnData(PackedColumnData):
         for c in mass_transfer_coeff_vap_constraints:
             getattr(blk, c).activate()
 
-        for t in  blk.flowsheet().time:
+        for t in blk.flowsheet().time:
             for x in blk.vapor_phase.length_domain:
                 if x == blk.liquid_phase.length_domain.first():
                     pass
@@ -2185,13 +2191,11 @@ class MEAColumnData(PackedColumnData):
             var.unfix()
 
         blk.config.enhancement_factor_model.initialize_model(
-            blk, 
+            blk,
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
         )
-                        
-        
 
         init_log.info("Step 11b: Solve model with initialized enhancement factor")
 
@@ -2203,7 +2207,7 @@ class MEAColumnData(PackedColumnData):
         # ---------------------------------------------------------------------
         init_log.info("Step 12: Heat transfer coefficient constraint")
         init_log.info(
-            "Initializing heat transfer coefficent - degrees_of_freedom = {}".format(
+            "Initializing heat transfer coefficient - degrees_of_freedom = {}".format(
                 degrees_of_freedom(blk)
             )
         )

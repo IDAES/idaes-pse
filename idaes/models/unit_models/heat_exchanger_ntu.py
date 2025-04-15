@@ -483,9 +483,15 @@ constructed,
         super().calculate_scaling_factors()
 
         for t in self.flowsheet().time:
-            sf_heat = iscale.get_scaling_factor(self.hot_side.heat[t], default=1, warning=True)
-            iscale.constraint_scaling_transform(self.energy_balance_constraint[t], sf_heat, overwrite=False)
-            iscale.constraint_scaling_transform(self.heat_duty_constraint[t], sf_heat, overwrite=False)
+            sf_heat = iscale.get_scaling_factor(
+                self.hot_side.heat[t], default=1, warning=True
+            )
+            iscale.constraint_scaling_transform(
+                self.energy_balance_constraint[t], sf_heat, overwrite=False
+            )
+            iscale.constraint_scaling_transform(
+                self.heat_duty_constraint[t], sf_heat, overwrite=False
+            )
 
     def initialize_build(
         self,

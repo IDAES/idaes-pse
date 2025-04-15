@@ -466,7 +466,7 @@ and used when constructing these
             doc="Vapor phase mass transfer coefficient",
         )
 
-        # Equilibruim partial pressure of components at interface
+        # Equilibrium partial pressure of components at interface
         self.pressure_equil = Var(
             self.flowsheet().time,
             self.vapor_phase.length_domain,
@@ -474,7 +474,7 @@ and used when constructing these
             bounds=(0, None),
             initialize=500,
             units=lunits("pressure"),
-            doc="Equilibruim pressure of components at interface",
+            doc="Equilibrium pressure of components at interface",
         )
 
         # Mass transfer constraints
@@ -536,6 +536,7 @@ and used when constructing these
         vunits = (
             self.config.vapor_phase.property_package.get_metadata().get_derived_units
         )
+
         @self.Constraint(
             self.flowsheet().time,
             self.vapor_phase.length_domain,
@@ -749,7 +750,9 @@ and used when constructing these
             except KeyError:
                 # This implies a non-volatile component
                 sf = iscale.get_scaling_factor(
-                    self.liquid_phase.mass_transfer_term[t, x, "Liq", j], default=1, warning=True
+                    self.liquid_phase.mass_transfer_term[t, x, "Liq", j],
+                    default=1,
+                    warning=True,
                 )
             iscale.constraint_scaling_transform(v, sf)
 
@@ -761,8 +764,9 @@ and used when constructing these
                 # Account for the fact that this equation is written on a vapor unit basis
                 sf_units = pyunits.convert_value(
                     1,
-                    from_units=1 / (lunits("amount") / lunits("time") / lunits("length")),
-                    to_units=1 / (vunits("amount") / vunits("time") / vunits("length"))
+                    from_units=1
+                    / (lunits("amount") / lunits("time") / lunits("length")),
+                    to_units=1 / (vunits("amount") / vunits("time") / vunits("length")),
                 )
                 sf *= sf_units
             except KeyError:
@@ -770,7 +774,9 @@ and used when constructing these
                 # The mass transfer term is set to zero, but
                 # the equation still needs to be scaled
                 sf = iscale.get_scaling_factor(
-                    self.vapor_phase.mass_transfer_term[t, x, "Vap", j], default=1, warning=True
+                    self.vapor_phase.mass_transfer_term[t, x, "Vap", j],
+                    default=1,
+                    warning=True,
                 )
             iscale.constraint_scaling_transform(v, sf)
 

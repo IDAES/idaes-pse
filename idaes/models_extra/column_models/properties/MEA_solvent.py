@@ -67,6 +67,7 @@ import idaes.logger as idaeslog
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
+
 # -----------------------------------------------------------------------------
 # Pure Component Property methods for aqueous MEA
 class CpMolCO2:
@@ -338,6 +339,7 @@ class VolMolSolvent:
 
         return pyunits.convert(vol_mol, units.VOLUME / units.AMOUNT)
 
+
 class VolMolMEA:
     # Molar volume of MEA as calculated by Morgan [2]
     @staticmethod
@@ -386,12 +388,13 @@ class VolMolMEA:
         vol_mol_pure = pyunits.convert(cobj.mw / rho, units.VOLUME / units.AMOUNT)
 
         vol_mol_interaction = x["H2O"] * (
-            cobj.vol_mol_liq_comp_coeff_b 
-            + cobj.vol_mol_liq_comp_coeff_c * x["MEA"]
+            cobj.vol_mol_liq_comp_coeff_b + cobj.vol_mol_liq_comp_coeff_c * x["MEA"]
         )
-        
 
-        return vol_mol_pure + pyunits.convert(vol_mol_interaction, units.VOLUME / units.AMOUNT)
+        return vol_mol_pure + pyunits.convert(
+            vol_mol_interaction, units.VOLUME / units.AMOUNT
+        )
+
 
 class VolMolCO2:
     # Weiland Method for calculating molar volume of dissolved CO2 [2]
@@ -964,7 +967,7 @@ configuration = {
                     "3": (1.19451, pyunits.g / pyunits.mL),
                 },
                 "vol_mol_liq_comp_coeff": {
-                    "b": (-2.2642, pyunits.mL / pyunits.mol), # [2]
+                    "b": (-2.2642, pyunits.mL / pyunits.mol),  # [2]
                     "c": (3.0059, pyunits.mL / pyunits.mol),
                 },
                 "dh_vap": 58000,  # [3]

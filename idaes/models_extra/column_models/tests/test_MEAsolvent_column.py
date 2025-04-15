@@ -60,7 +60,9 @@ def _scale_mea_liquid_params(params, scaling_factor_flow_mol=3e-4):
     params.set_default_scaling("flow_mol", scaling_factor_flow_mol)
     params.set_default_scaling("flow_mol_phase", scaling_factor_flow_mol)
 
-    params.set_default_scaling("flow_mass_phase", scaling_factor_flow_mol / 24e-3)  # MW mixture ~= 24 g/Mol
+    params.set_default_scaling(
+        "flow_mass_phase", scaling_factor_flow_mol / 24e-3
+    )  # MW mixture ~= 24 g/Mol
     params.set_default_scaling("dens_mol_phase", 1 / 43000)
     params.set_default_scaling("visc_d_phase", 700)
     params.set_default_scaling("log_k_eq", 1)
@@ -82,21 +84,25 @@ def _scale_mea_liquid_params(params, scaling_factor_flow_mol=3e-4):
         params.set_default_scaling("mole_frac_comp", sf_x, index=comp)
         params.set_default_scaling("mole_frac_phase_comp", sf_x, index=("Liq", comp))
         params.set_default_scaling(
-            "flow_mol_phase_comp",
-            sf_x * scaling_factor_flow_mol,
-            index=("Liq", comp)
+            "flow_mol_phase_comp", sf_x * scaling_factor_flow_mol, index=("Liq", comp)
         )
 
     for comp, sf_x in mole_frac_true_scaling_factors.items():
-        params.set_default_scaling("mole_frac_phase_comp_true", sf_x, index=("Liq", comp))
+        params.set_default_scaling(
+            "mole_frac_phase_comp_true", sf_x, index=("Liq", comp)
+        )
         params.set_default_scaling(
             "flow_mol_phase_comp_true",
             sf_x * scaling_factor_flow_mol,
-            index=("Liq", comp)
+            index=("Liq", comp),
         )
 
-    params.set_default_scaling("apparent_inherent_reaction_extent", 2e-2, index="bicarbonate")
-    params.set_default_scaling("apparent_inherent_reaction_extent", 1e-3, index="carbamate")
+    params.set_default_scaling(
+        "apparent_inherent_reaction_extent", 2e-2, index="bicarbonate"
+    )
+    params.set_default_scaling(
+        "apparent_inherent_reaction_extent", 1e-3, index="carbamate"
+    )
 
 
 def _scale_mea_vapor_params(params, scaling_factor_flow_mol=3e-4):
@@ -107,8 +113,11 @@ def _scale_mea_vapor_params(params, scaling_factor_flow_mol=3e-4):
     params.set_default_scaling("flow_mol_phase", scaling_factor_flow_mol)
 
     params.set_default_scaling("flow_mol_phase_comp", 2 * scaling_factor_flow_mol)
-    params.set_default_scaling("flow_mass_phase", scaling_factor_flow_mol / 24e-3)  # Say MW ~=24 g/mol
+    params.set_default_scaling(
+        "flow_mass_phase", scaling_factor_flow_mol / 24e-3
+    )  # Say MW ~=24 g/mol
     params.set_default_scaling("visc_d_phase", 6e4)
+
 
 # -----------------------------------------------------------------------------
 def build_model():
@@ -169,15 +178,18 @@ def build_model():
     m.fs.unit.liquid_inlet.mole_frac_comp[0, "CO2"].fix(0.022)
     m.fs.unit.liquid_inlet.mole_frac_comp[0, "H2O"].fix(0.868)
     m.fs.unit.liquid_inlet.mole_frac_comp[0, "MEA"].fix(0.11)
-    
+
     _scale_mea_liquid_params(m.fs.liquid_properties)
     _scale_mea_vapor_params(m.fs.vapor_properties)
     for t in m.fs.time:
         for x in m.fs.unit.liquid_phase.length_domain:
-                iscale.set_scaling_factor(m.fs.unit.velocity_liq[t, x], 20)
-                iscale.set_scaling_factor(m.fs.unit.interphase_mass_transfer[t, x, "CO2"], 1 / 20)
-                iscale.set_scaling_factor(m.fs.unit.interphase_mass_transfer[t, x, "H2O"], 1 / 100)
-
+            iscale.set_scaling_factor(m.fs.unit.velocity_liq[t, x], 20)
+            iscale.set_scaling_factor(
+                m.fs.unit.interphase_mass_transfer[t, x, "CO2"], 1 / 20
+            )
+            iscale.set_scaling_factor(
+                m.fs.unit.interphase_mass_transfer[t, x, "H2O"], 1 / 100
+            )
 
     iscale.calculate_scaling_factors(m)
 
@@ -201,7 +213,6 @@ class Test_MEAColumn_Performance(PerformanceBaseClass, unittest.TestCase):
         with idaes.temporary_config_ctx():
             # Get default solver for testing
             solver.options["bound_push"] = 1e-10
-            solver.options["max_iter"] = 400
 
             res = solver.solve(model)
 
@@ -230,7 +241,7 @@ class TestAbsorber:
             optarg={
                 "bound_push": 1e-6,
                 "max_iter": 400,
-            }
+            },
         )
 
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -302,7 +313,8 @@ class TestAbsorber:
         # Material conservation
         for j in ["CO2", "H2O"]:
             normalization = value(
-                vap_in.get_material_flow_terms("Vap", j) + liq_in.get_material_flow_terms("Liq", j)
+                vap_in.get_material_flow_terms("Vap", j)
+                + liq_in.get_material_flow_terms("Liq", j)
             )
             assert 1e-6 >= abs(
                 value(
@@ -310,7 +322,8 @@ class TestAbsorber:
                     + liq_in.get_material_flow_terms("Liq", j)
                     - vap_out.get_material_flow_terms("Vap", j)
                     - liq_out.get_material_flow_terms("Liq", j)
-                ) / normalization
+                )
+                / normalization
             )
         for j in ["N2", "O2"]:
             normalization = value(vap_in.get_material_flow_terms("Vap", j))
@@ -318,7 +331,8 @@ class TestAbsorber:
                 value(
                     vap_in.get_material_flow_terms("Vap", j)
                     - vap_out.get_material_flow_terms("Vap", j)
-                ) / normalization
+                )
+                / normalization
             )
         for j in ["MEA"]:
             normalization = value(liq_in.get_material_flow_terms("Liq", j))
@@ -326,16 +340,23 @@ class TestAbsorber:
                 value(
                     liq_in.get_material_flow_terms("Liq", j)
                     - liq_out.get_material_flow_terms("Liq", j)
-                ) / normalization
+                )
+                / normalization
             )
 
         # Energy conservation
-        normalization = abs(value(vap_out.get_enthalpy_flow_terms("Vap")-vap_in.get_enthalpy_flow_terms("Vap")))
+        normalization = abs(
+            value(
+                vap_out.get_enthalpy_flow_terms("Vap")
+                - vap_in.get_enthalpy_flow_terms("Vap")
+            )
+        )
         assert 1e-6 >= abs(
             value(
                 vap_in.get_enthalpy_flow_terms("Vap")
                 + liq_in.get_enthalpy_flow_terms("Liq")
                 - vap_out.get_enthalpy_flow_terms("Vap")
                 - liq_out.get_enthalpy_flow_terms("Liq")
-            ) / normalization
+            )
+            / normalization
         )
