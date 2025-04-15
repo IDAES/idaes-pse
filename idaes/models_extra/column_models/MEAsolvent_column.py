@@ -1977,9 +1977,9 @@ class MEAColumnData(PackedColumnData):
                 blk.heat_transfer_coeff[k], blk.heat_transfer_coeff_eqn[k]
             )
 
-        # with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-        #     res = opt.solve(blk, tee=slc.tee)
-        # assert_optimal_termination(res)
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(blk, tee=slc.tee)
+        assert_optimal_termination(res)
         blk.vapor_phase.heat.unfix()
         blk.liquid_phase.heat.unfix()
         blk.vapor_phase.enthalpy_transfer.unfix()
