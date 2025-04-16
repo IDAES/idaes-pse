@@ -1566,9 +1566,12 @@ class ModularPropertiesInitializer(InitializerBase):
                     f"{model.name} Unexpected degrees of freedom during "
                     f"initialization at phase equilibrium step: {dof}."
                 )
+            else:
+                result = None
             # Skip solve if DoF < 0 - this is probably due to a
             # phase-component flow state with flash
-
+        else:
+            result = None
         init_log.info("Property initialization routine finished.")
 
         return result
