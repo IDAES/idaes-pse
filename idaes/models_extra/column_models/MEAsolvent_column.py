@@ -907,7 +907,7 @@ class MEAColumnData(PackedColumnData):
         self.Cl_ref = Var(
             initialize=0.5,
             units=pyunits.dimensionless,
-            doc="""Liquid packing specific constant in Billet and Schultes 
+            doc="""Liquid packing specific constant in Billet and Schultes
                       volumetric mass transfer coefficient correlation""",
         )
 
