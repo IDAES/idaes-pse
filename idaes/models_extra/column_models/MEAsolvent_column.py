@@ -141,7 +141,7 @@ class MEAColumnData(PackedColumnData):
             if x == blk.vapor_phase.length_domain.first():
                 return Expression.Skip
             else:
-                zb = self.liquid_phase.length_domain.prev(x)
+                zb = blk.liquid_phase.length_domain.prev(x)
                 return (
                     blk.enhancement_factor[t, zb]
                     * blk.mass_transfer_coeff_liq[t, zb, "CO2"]
@@ -206,6 +206,9 @@ class MEAColumnData(PackedColumnData):
         )
 
         # Map from log variable of property to equation that defines it.
+        # This map contains only log variables of variables defined in the property packages
+        # and both superficial velocities, so they can be initialized immediately after
+        # initializing the property package
         self.log_property_var_eqn_map = ComponentMap()
         # Map from log variable of parameter (fixed var) to equation that defines it.
         self.log_parameter_var_eqn_map = ComponentMap()
@@ -585,23 +588,6 @@ class MEAColumnData(PackedColumnData):
         self.log_property_var_eqn_map[self.log_velocity_liq] = self.log_velocity_liq_eqn
         self.log_property_var_eqn_map[self.log_velocity_vap] = self.log_velocity_vap_eqn
 
-        @self.Expression(
-            self.flowsheet().time,
-            self.vapor_phase.length_domain,
-            doc="Partial pressure of CO2 Henry's law [Pa]",
-        )
-        def PpCO2_equil_He(blk, t, x):
-            if x == blk.vapor_phase.length_domain.first():
-                return 1000
-            else:
-                zb = self.liquid_phase.length_domain.prev(x)
-                return (
-                    blk.liquid_phase.properties[t, zb].conc_mol_phase_comp_true[
-                        "Liq", "CO2"
-                    ]
-                    * blk.liquid_phase.properties[t, zb].henry["Liq", "CO2"]
-                )
-
         # #####################################################################
         # Interfacial Area model ([m2/m3]):
         # Reference: Tsai correlation,regressed by Chinen et al. 2018
@@ -721,7 +707,13 @@ class MEAColumnData(PackedColumnData):
         # we are using. Technically that parameter exists in the SolventColumn model, but we have nothing on which
         # to base its value.
         self.log_holdup_parAlpha = Param(
-            initialize=log(3.185966),  # Original units were 1 / m * (m / s**2) ** (2/3)
+            initialize=log(
+                pyunits.convert_value(
+                    3.185966,
+                    from_units=1 / pyunits.m * (pyunits.m / pyunits.s**2) ** (2 / 3),
+                    to_units=1 / lunits("length") * lunits("acceleration") ** (2 / 3),
+                )
+            ),  # Original units were 1 / m * (m / s**2) ** (2/3)
             units=pyunits.dimensionless,
             doc="Natural logarithm of holdup parameter alpha",
             mutable=True,
@@ -1057,11 +1049,12 @@ class MEAColumnData(PackedColumnData):
         )
         # Flood point calculations
 
-        self.log_flow_mass_Liq_Vap = Var(
+        self.log_flow_mass_ratio_Liq_Vap = Var(
             self.flowsheet().time,
             self.vapor_phase.length_domain,
             bounds=(None, 100),
             initialize=1,
+            doc="Logarithm of the ratio of liquid mass flow to vapor mass flow",
         )
 
         @self.Constraint(
@@ -1069,13 +1062,13 @@ class MEAColumnData(PackedColumnData):
             self.vapor_phase.length_domain,
             doc="Constraint for log variable",
         )
-        def log_flow_mass_Liq_Vap_eqn(blk, t, x):
+        def log_flow_mass_ratio_Liq_Vap_eqn(blk, t, x):
             if x == blk.vapor_phase.length_domain.first():
                 return Constraint.Skip
             else:
                 x_liq = blk.liquid_phase.length_domain.prev(x)
                 return (
-                    exp(blk.log_flow_mass_Liq_Vap[t, x])
+                    exp(blk.log_flow_mass_ratio_Liq_Vap[t, x])
                     * blk.vapor_phase.properties[t, x].flow_mass_phase["Vap"]
                     == blk.liquid_phase.properties[t, x_liq].flow_mass_phase["Liq"]
                 )
@@ -1094,7 +1087,7 @@ class MEAColumnData(PackedColumnData):
                 return Constraint.Skip
             else:
                 x_liq = blk.liquid_phase.length_domain.prev(x)
-                return blk.log_flood_H[t, x] == blk.log_flow_mass_Liq_Vap[
+                return blk.log_flood_H[t, x] == blk.log_flow_mass_ratio_Liq_Vap[
                     t, x
                 ] + 0.5 * (
                     blk.log_dens_mass_vap[t, x] - blk.log_dens_mass_liq[t, x_liq]
@@ -1312,7 +1305,7 @@ class MEAColumnData(PackedColumnData):
                 cst(self.velocity_vap_eqn[t, x_vap], sf)
 
                 sf = gsf(self.liquid_phase.properties[t, x_liq].flow_mass_phase["Liq"])
-                cst(self.log_flow_mass_Liq_Vap_eqn[t, x_vap], sf)
+                cst(self.log_flow_mass_ratio_Liq_Vap_eqn[t, x_vap], sf)
 
                 for j in self.equilibrium_comp:
                     sf = iscale.get_scaling_factor(
@@ -1371,7 +1364,7 @@ class MEAColumnData(PackedColumnData):
                 ),
             )
 
-    def set_init_values_correlation_vars(blk, nfe, mode):
+    def _set_init_values_correlation_vars(blk, mode):
         """
         This method fixes the initial values of mass and heat transfer coefficients
         interfacial area, enhancement factor, and liquid holdup, based on
@@ -1382,7 +1375,7 @@ class MEAColumnData(PackedColumnData):
         length of the base set of values, linear interpolation is used to
         obtain the initial values.
         """
-
+        nfe = blk.config.finite_elements
         # Define vapor phase mass transfer coefficient known values
         k_v_co2_values = [
             0,
@@ -1627,7 +1620,9 @@ class MEAColumnData(PackedColumnData):
                 1,
             ]
         else:
-            raise RuntimeError
+            raise RuntimeError(
+                f"Unknown value {mode} for mode. Allowed values are 'absorber' and 'stripper'."
+            )
 
         nfe_base = len(interfacial_area_values) - 1
         x_nfe_list_base = [i / nfe_base for i in range(nfe_base + 1)]
@@ -1721,7 +1716,6 @@ class MEAColumnData(PackedColumnData):
                 variables, most importantly the enhancement factor. Valid
                 values are "absorber" and "stripper"
         """
-        assert mode in ["absorber", "stripper"]
         # Set up logger for initialization and solve
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
@@ -1777,7 +1771,7 @@ class MEAColumnData(PackedColumnData):
 
         flooding_constraints = [
             "log_flood_H_eqn",
-            "log_flow_mass_Liq_Vap_eqn",
+            "log_flow_mass_ratio_Liq_Vap_eqn",
             "flood_H_eqn",
             "fourth_root_flood_H_eqn",
             "log_gas_velocity_fld_eqn",
@@ -1807,9 +1801,7 @@ class MEAColumnData(PackedColumnData):
             constraint.deactivate()
 
         # Fix variables
-
-        nfe = blk.config.finite_elements
-        blk.set_init_values_correlation_vars(nfe, mode)
+        blk._set_init_values_correlation_vars(mode)
 
         # Interface pressure
         blk.pressure_equil.fix()
@@ -1844,7 +1836,7 @@ class MEAColumnData(PackedColumnData):
 
         # Flood fraction
         blk.log_flood_H.fix()
-        blk.log_flow_mass_Liq_Vap.fix()
+        blk.log_flow_mass_ratio_Liq_Vap.fix()
         blk.fourth_root_flood_H.fix()
         blk.gas_velocity_fld.fix()
         blk.log_gas_velocity_fld.fix()
@@ -1998,14 +1990,14 @@ class MEAColumnData(PackedColumnData):
         init_log.info("Step 6: Flooding velocity constraints")
 
         blk.log_flood_H.unfix()
-        blk.log_flow_mass_Liq_Vap.unfix()
+        blk.log_flow_mass_ratio_Liq_Vap.unfix()
         blk.fourth_root_flood_H.unfix()
         blk.gas_velocity_fld.unfix()
         blk.log_gas_velocity_fld.unfix()
         blk.flood_fraction.unfix()
 
         blk.flood_H_eqn.activate()
-        blk.log_flow_mass_Liq_Vap_eqn.activate()
+        blk.log_flow_mass_ratio_Liq_Vap_eqn.activate()
         blk.flood_H_eqn.activate()
         blk.fourth_root_flood_H_eqn.activate()
         blk.log_gas_velocity_fld_eqn.activate()
@@ -2021,8 +2013,8 @@ class MEAColumnData(PackedColumnData):
                         blk.log_flood_H[t, x], blk.flood_H_eqn[t, x]
                     )
                     calculate_variable_from_constraint(
-                        blk.log_flow_mass_Liq_Vap[t, x],
-                        blk.log_flow_mass_Liq_Vap_eqn[t, x],
+                        blk.log_flow_mass_ratio_Liq_Vap[t, x],
+                        blk.log_flow_mass_ratio_Liq_Vap_eqn[t, x],
                     )
                     calculate_variable_from_constraint(
                         blk.log_gas_velocity_fld[t, x],
