@@ -1704,7 +1704,7 @@ class PolynomialRegression:
         for j in range(0, x_data.shape[0]):
             for i in x_list:
                 m.xx[i] = x_data[j, i]
-            y_eq[j, 0] = value(m.o2())
+            y_eq[j, 0] = value(m.o2)
         return y_eq
 
     def pickle_save(self, solutions):
