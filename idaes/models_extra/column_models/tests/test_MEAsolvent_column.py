@@ -233,7 +233,6 @@ class TestAbsorber:
         assert_units_consistent(model)
 
     @pytest.mark.component
-    @pytest.mark.xfail  # TODO: Remove once Pyomo is updated beyond 6.9.1
     def test_initialize(self, model):
         initialization_tester(
             model,
@@ -246,7 +245,6 @@ class TestAbsorber:
 
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
-    @pytest.mark.xfail  # TODO: Remove once Pyomo is updated beyond 6.9.1
     def test_solve(self, model):
         with idaes.temporary_config_ctx():
             # Get default solver for testing
@@ -259,7 +257,6 @@ class TestAbsorber:
 
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
-    @pytest.mark.xfail  # TODO: Remove once Pyomo is updated beyond 6.9.1
     def test_solution(self, model):
         assert pytest.approx(19436.66052, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.flow_mol[0]
@@ -304,7 +301,6 @@ class TestAbsorber:
 
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
-    @pytest.mark.xfail  # TODO: Remove once Pyomo is updated beyond 6.9.1
     def test_conservation(self, model):
         vap_in = model.fs.unit.vapor_phase.properties[0, 0]
         vap_out = model.fs.unit.vapor_phase.properties[0, 1]
