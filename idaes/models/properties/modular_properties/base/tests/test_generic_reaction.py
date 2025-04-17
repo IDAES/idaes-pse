@@ -649,8 +649,10 @@ class TestGenericReactionBlock(object):
         )
         assert value(model.rblock[1].equilibrium_constraint["e2"].body) == value(
             model.rblock[1].log_k_eq["e2"]
-            - model.sblock[1].log_mole_frac_phase_comp["p2", "c1"] * -5
-            + model.sblock[1].log_mole_frac_phase_comp["p2", "c2"] * 6
+            - (
+                model.sblock[1].log_mole_frac_phase_comp["p2", "c1"] * -5
+                + model.sblock[1].log_mole_frac_phase_comp["p2", "c2"] * 6
+            )
         )
 
     @pytest.mark.unit

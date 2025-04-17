@@ -118,7 +118,7 @@ def _apparent_species_state(b):
             # Next, check for inherent reactions
             if b.has_inherent_reactions:
                 for r in b.params.inherent_reaction_idx:
-                    # Get stoichiometric coeffiicient for inherent reactions
+                    # Get stoichiometric coefficient for inherent reactions
                     gamma = b.params.inherent_reaction_stoichiometry[r, p, j]
 
                     if gamma != 0:
@@ -156,16 +156,37 @@ def _apparent_species_state(b):
 
 def _apparent_species_scaling(b):
     for p, j in b.params.true_phase_component_set:
-        sf = iscale.get_scaling_factor(
-            b.flow_mol_phase_comp_true[p, j], default=1, warning=True
-        )
+        pobj = b.params.get_phase(p)
+        cobj = b.params.get_component(j)
 
-        iscale.constraint_scaling_transform(
-            b.appr_to_true_species[p, j], sf, overwrite=False
-        )
-        iscale.constraint_scaling_transform(
-            b.true_mole_frac_constraint[p, j], sf, overwrite=False
-        )
+        # For apparent species in an aqueous phase, want to scale material balance
+        # equations by apparent magnitude. If they're not consumed to exhaustion,
+        # they'll be well-scaled in this equation. If they are consumed to "exhaustion"
+        # (several orders of magnitude below apparent concentration), then their concentration
+        # will decouple from this equation and will be given by equilibrium equation instead
+        if pobj.is_aqueous_phase and not isinstance(cobj, IonData):
+            sf_apparent = iscale.get_scaling_factor(
+                b.flow_mol_phase_comp_apparent[p, j], default=1, warning=True
+            )
+            iscale.constraint_scaling_transform(
+                b.appr_to_true_species[p, j], sf_apparent, overwrite=False
+            )
+            sf_true = iscale.get_scaling_factor(
+                b.flow_mol_phase_comp_true[p, j], default=1, warning=True
+            )
+            iscale.constraint_scaling_transform(
+                b.true_mole_frac_constraint[p, j], sf_true, overwrite=False
+            )
+        else:
+            sf = iscale.get_scaling_factor(
+                b.flow_mol_phase_comp_true[p, j], default=1, warning=True
+            )
+            iscale.constraint_scaling_transform(
+                b.appr_to_true_species[p, j], sf, overwrite=False
+            )
+            iscale.constraint_scaling_transform(
+                b.true_mole_frac_constraint[p, j], sf, overwrite=False
+            )
 
 
 def _true_species_state(b):
