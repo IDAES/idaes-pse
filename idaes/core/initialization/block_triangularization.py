@@ -171,7 +171,7 @@ class BlockTriangularizationInitializer(InitializerBase):
         # TODO: Can we get more diagnostic output from this method?
         # import logging
         # logging.getLogger().setLevel(logging.DEBUG)
-        # results_list = solve_strongly_connected_components(
+        results_list = solve_strongly_connected_components(
             block_data,
             solver=solver,
             solve_kwds=self.config.block_solver_call_options,
