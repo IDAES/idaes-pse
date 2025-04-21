@@ -180,5 +180,5 @@ class BlockTriangularizationInitializer(InitializerBase):
         for results in results_list:
             if results is not None and not check_optimal_termination(results):
                 raise InitializationError(
-                    f"Block Triangularization failed with solver status: {results["Solver"]}."
+                    f"Block Triangularization failed with solver status: {results['Solver']}."
                 )
