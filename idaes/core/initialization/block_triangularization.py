@@ -13,7 +13,7 @@
 """
 Initializer class for implementing Block Triangularization initialization
 """
-from pyomo.environ import SolverFactory
+from pyomo.environ import SolverFactory, check_optimal_termination
 from pyomo.common.config import Bool, ConfigDict, ConfigValue
 from pyomo.contrib.incidence_analysis import (
     IncidenceGraphInterface,
@@ -168,10 +168,17 @@ class BlockTriangularizationInitializer(InitializerBase):
         """
         Call solve_strongly_connected_components on a given BlockData.
         """
-        # TODO: Can we get diagnostic output from this method?
-        solve_strongly_connected_components(
+        # TODO: Can we get more diagnostic output from this method?
+        # import logging
+        # logging.getLogger().setLevel(logging.DEBUG)
+        # results_list = solve_strongly_connected_components(
             block_data,
             solver=solver,
             solve_kwds=self.config.block_solver_call_options,
             calc_var_kwds=self.config.calculate_variable_options,
         )
+        for results in results_list:
+            if results is not None and not check_optimal_termination(results):
+                raise InitializationError(
+                    f"Block Triangularization failed with solver status: {results["Solver"]}."
+                )

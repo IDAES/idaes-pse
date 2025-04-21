@@ -1224,7 +1224,7 @@ class ModularPropertiesInitializer(InitializerBase):
     CONFIG.declare(
         "solver",
         ConfigValue(
-            default=None,
+            default="ipopt_v2",
             description="Solver to use for initialization",
         ),
     )
@@ -1582,6 +1582,8 @@ class _GenericStateBlock(StateBlock):
     This Class contains methods which should be applied to Property Blocks as a
     whole, rather than individual elements of indexed Property Blocks.
     """
+
+    default_initializer=ModularPropertiesInitializer
 
     def _return_component_list(self):
         # Overload the _return_component_list method to handle electrolyte
@@ -2080,6 +2082,8 @@ class GenericStateBlockData(StateBlockData):
     """
 
     CONFIG = StateBlockData.CONFIG()
+
+    default_initializer=ModularPropertiesInitializer
 
     def build(self):
         super(GenericStateBlockData, self).build()
