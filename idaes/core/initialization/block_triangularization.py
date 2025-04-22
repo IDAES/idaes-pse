@@ -169,8 +169,6 @@ class BlockTriangularizationInitializer(InitializerBase):
         Call solve_strongly_connected_components on a given BlockData.
         """
         # TODO: Can we get more diagnostic output from this method?
-        # import logging
-        # logging.getLogger().setLevel(logging.DEBUG)
         results_list = solve_strongly_connected_components(
             block_data,
             solver=solver,
