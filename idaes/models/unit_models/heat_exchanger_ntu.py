@@ -48,6 +48,7 @@ from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.math import smooth_min, smooth_max
 from idaes.core.solvers import get_solver
 from idaes.core.util.exceptions import InitializationError
+import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 from idaes.core.initialization import SingleControlVolumeUnitInitializer
 
@@ -478,7 +479,19 @@ constructed,
 
         self.heat_duty_constraint = Constraint(self.flowsheet().time, rule=rule_entu)
 
-    # TODO : Add scaling methods
+    def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
+
+        for t in self.flowsheet().time:
+            sf_heat = iscale.get_scaling_factor(
+                self.hot_side.heat[t], default=1, warning=True
+            )
+            iscale.constraint_scaling_transform(
+                self.energy_balance_constraint[t], sf_heat, overwrite=False
+            )
+            iscale.constraint_scaling_transform(
+                self.heat_duty_constraint[t], sf_heat, overwrite=False
+            )
 
     def initialize_build(
         self,

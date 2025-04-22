@@ -29,6 +29,7 @@ from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterData,
     GenericStateBlock,
     _initialize_critical_props,
+    ModularPropertiesInitializer,
 )
 from idaes.models.properties.modular_properties.base.tests.dummy_eos import DummyEoS
 
@@ -49,7 +50,6 @@ from idaes.models.properties.modular_properties.phase_equil.henry import HenryTy
 from idaes.models.properties.modular_properties.eos.ceos import Cubic, CubicType
 from idaes.models.properties.modular_properties.state_definitions import FTPx
 from idaes.core.base.property_meta import UnitSet
-from idaes.core.initialization import BlockTriangularizationInitializer
 
 from idaes.models.properties.modular_properties.phase_equil.henry import HenryType
 from idaes.models.properties.modular_properties.examples.BT_ideal import (
@@ -1241,7 +1241,7 @@ class TestGenericStateBlock(object):
     def test_build(self, frame):
         assert isinstance(frame.props, Block)
         assert len(frame.props) == 1
-        assert frame.props.default_initializer is BlockTriangularizationInitializer
+        assert frame.props.default_initializer is ModularPropertiesInitializer
 
         # Check for expected behaviour for dummy methods
         assert frame.props[1].state_defined

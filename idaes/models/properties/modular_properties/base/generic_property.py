@@ -1224,7 +1224,7 @@ class ModularPropertiesInitializer(InitializerBase):
     CONFIG.declare(
         "solver",
         ConfigValue(
-            default=None,
+            default="ipopt_v2",
             description="Solver to use for initialization",
         ),
     )
@@ -1365,6 +1365,7 @@ class ModularPropertiesInitializer(InitializerBase):
 
         # If StateBlock has active constraints (i.e. has bubble, dew, or critical
         # point calculations), solve the block to converge these
+        solve_blocks = False
         for b in model.values():
             if number_activated_constraints(b) > 0:
                 if not degrees_of_freedom(b) == 0:
@@ -1373,8 +1374,10 @@ class ModularPropertiesInitializer(InitializerBase):
                         f"initialization at bubble, dew, and critical point step: "
                         f"{degrees_of_freedom(b)}."
                     )
-        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            solve_indexed_blocks(solver_obj, model, tee=slc.tee)
+                solve_blocks = True
+        if solve_blocks > 0:
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                solve_indexed_blocks(solver_obj, model, tee=slc.tee)
         init_log.info("Bubble, dew, and critical point initialization completed.")
 
         # ---------------------------------------------------------------------
@@ -1582,6 +1585,8 @@ class _GenericStateBlock(StateBlock):
     This Class contains methods which should be applied to Property Blocks as a
     whole, rather than individual elements of indexed Property Blocks.
     """
+
+    default_initializer = ModularPropertiesInitializer
 
     def _return_component_list(self):
         # Overload the _return_component_list method to handle electrolyte
@@ -2080,6 +2085,8 @@ class GenericStateBlockData(StateBlockData):
     """
 
     CONFIG = StateBlockData.CONFIG()
+
+    default_initializer = ModularPropertiesInitializer
 
     def build(self):
         super(GenericStateBlockData, self).build()
@@ -4484,7 +4491,7 @@ class GenericStateBlockData(StateBlockData):
         try:
             self.log_mole_frac_phase_comp = Var(
                 self.phase_component_set,
-                initialize=0,
+                initialize=-1,
                 bounds=(-100, log(1.001)),
                 units=pyunits.dimensionless,
                 doc="Log of mole fractions of component by phase",
@@ -4509,8 +4516,8 @@ class GenericStateBlockData(StateBlockData):
         try:
             self.log_mole_frac_phase_comp_apparent = Var(
                 self.params.apparent_phase_component_set,
-                initialize=0,
-                bounds=(-50, 0),
+                initialize=-1,
+                bounds=(-100, log(1.001)),
                 units=pyunits.dimensionless,
                 doc="Log of mole fractions of component by phase",
             )
@@ -4534,8 +4541,8 @@ class GenericStateBlockData(StateBlockData):
         try:
             self.log_mole_frac_phase_comp_true = Var(
                 self.params.true_phase_component_set,
-                initialize=0,
-                bounds=(-50, 0),
+                initialize=-1,
+                bounds=(-100, log(1.001)),
                 units=pyunits.dimensionless,
                 doc="Log of mole fractions of component by phase",
             )
