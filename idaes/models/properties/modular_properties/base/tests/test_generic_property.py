@@ -29,7 +29,7 @@ from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterData,
     GenericStateBlock,
     _initialize_critical_props,
-    ModularPropertiesInitializer
+    ModularPropertiesInitializer,
 )
 from idaes.models.properties.modular_properties.base.tests.dummy_eos import DummyEoS
 
