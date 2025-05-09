@@ -13,6 +13,7 @@
 
 import re
 from typing import Optional, Union, Callable, List
+import matplotlib.pyplot as plt
 import pandas as pd
 from pyomo.environ import (
     ConcreteModel,
@@ -25,7 +26,8 @@ from pyomo.environ import (
     NonNegativeReals,
     Expression,
     maximize,
-    value,
+    # creating a new name to avoid pylint warning on outerscope variable
+    value as pyo_value,
 )
 from pyomo.common.config import (
     ConfigDict,
@@ -426,6 +428,18 @@ class PriceTakerModel(ConcreteModel):
         op_vars = self._get_operation_vars(var_name)
         for d, t in self.period:
             op_vars[d][t].fix(value)
+
+    def unfix_operation_var(self, var_name: str):
+        """
+        Unfixes the specified variable in all operation blocks
+
+        Args:
+            var_name : str
+                Variable name as a string
+        """
+        op_vars = self._get_operation_vars(var_name)
+        for d, t in self.period:
+            op_vars[d][t].unfix()
 
     def update_operation_params(self, params: dict):
         """
@@ -1095,9 +1109,7 @@ class PriceTakerModel(ConcreteModel):
             )
             return None
 
-    def get_operation_var_values(
-        self, var_list: Optional[list] = None, filename: Optional[str] = None
-    ):
+    def get_operation_var_values(self, var_list: Optional[list] = None):
         """
         Returns a DataFrame of all operation values
 
@@ -1105,11 +1117,8 @@ class PriceTakerModel(ConcreteModel):
             var_list : list, optional
                 List of variables/expressions. If not specified, values of all variables
                 and expressions will be returned, by default None
-
-            filename : Optional[str], optional
-                If specified, the data will be written to csv file, by default None
         """
-        # Create an empty list to get all variable names
+        # Create a list of all flowsheet instances
         set_of_fs = [self.period[p] for p in self.period]
         results = {
             "Day": [d for d, _ in self.period],
@@ -1120,7 +1129,7 @@ class PriceTakerModel(ConcreteModel):
         if var_list is not None:
             # Return the values of selected variables and/or expressions
             for v in var_list:
-                results[v] = [value(fs.find_component(v)) for fs in set_of_fs]
+                results[v] = [pyo_value(fs.find_component(v)) for fs in set_of_fs]
 
         else:
             # Return the values of all variables and expressions
@@ -1133,13 +1142,103 @@ class PriceTakerModel(ConcreteModel):
             for v in blk.component_data_objects(Expression):
                 # Expression name will be of the form period[d, t].expr_name
                 v_name = v.name.split(".", maxsplit=1)[-1]
-                results[v_name] = [value(fs.find_component(v_name)) for fs in set_of_fs]
+                results[v_name] = [
+                    pyo_value(fs.find_component(v_name)) for fs in set_of_fs
+                ]
 
-        # Store the data in a DataFrame
-        results_df = pd.DataFrame(results)
+        # Return the data as a DataFrame
+        return pd.DataFrame(results)
 
-        if filename is not None:
-            # Filename is specified, so write the data to a file
-            results_df.to_csv(filename, index=False)
+    def get_design_var_values(self, var_list: Optional[list] = None):
+        """
+        Returns the values of non-time-varying variables and expressions.
+        This includes values in design blocks (DesignModel instances), and
+        the cashflows block.
+        """
+        result = {}
+        if var_list is not None:
+            # User specified the variables they would like to query
+            for v in var_list:
+                result[v] = pyo_value(self.find_component(v))
 
-        return results_df
+            return result
+
+        # User did not specify variables, so return the values of all variables
+        # and expressions in this object, in DesignModel objects, and in cashflows
+        for v in self.component_data_objects((Var, Expression), descend_into=False):
+            # Get variables and expressions in this object
+            result[v.name] = pyo_value(v)
+
+        for blk in self.component_data_objects(Block):
+            # Get variables and expression in DesignModel instances
+            if not isinstance(blk, DesignModelData):
+                continue
+
+            for v in blk.component_data_objects((Var, Expression)):
+                result[v.name] = pyo_value(v)
+
+        if hasattr(self, "cashflows"):
+            # Get variables and expressions in cashflows
+            # pylint: disable = no-member
+            for v in self.cashflows.component_data_objects((Var, Expression)):
+                result[v.name] = pyo_value(v)
+
+        return result
+
+    def plot_operation_profile(
+        self,
+        operation_vars: List[str],
+        day: int = 1,
+        time: Optional[tuple] = None,
+        include_lmp: bool = False,
+    ):
+        data = self.get_operation_var_values(list(operation_vars))
+        data = data[data["Day"] == day]
+
+        if time is not None:
+            data = data[data["Time"] >= time[0]]
+            data = data[data["Time"] <= time[1]]
+
+        num_plots = len(operation_vars) if include_lmp else len(operation_vars) + 1
+        counter = 0
+        _colors = [
+            "blue",
+            "green",
+            "orange",
+            "purple",
+            "cyan",
+            "magenta",
+            "brown",
+            "pink",
+        ]
+
+        fig, axs = plt.subplots(num_plots, 1, sharex=True)
+
+        if not include_lmp:
+            # LMP data is not shown in the same plot as operation schedule.
+            # So, show LMP data at the top of the plot
+            axs[counter].plot(data["Time"], data["LMP"], color="red", drawstyle="steps")
+            axs[counter].set_title("Locational Marginal Price")
+            counter += 1
+
+        for v in operation_vars:
+            axs[counter].plot(
+                data["Time"], data[v], drawstyle="steps", color=_colors.pop(0)
+            )
+            axs[counter].set_title(v)
+
+            if include_lmp:
+                ax1 = axs[counter].twinx()
+                ax1.plot(data["Time"], data["LMP"], color="red", drawstyle="steps")
+                ax1.tick_params(axis="y", labelcolor="red")
+
+            counter += 1
+
+        plt.tight_layout()
+
+        return fig, axs
+
+    def plot_lmp_histogram(self):
+        """Returns a histogram of the specified LMP signal"""
+        assert self._assert_lmp_data_exists()
+        raise NotImplementedError()
