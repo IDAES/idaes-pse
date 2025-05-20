@@ -33,6 +33,9 @@ from idaes.models.properties.general_helmholtz.components.parameters.h2o import 
 from idaes.models.properties.general_helmholtz.components.parameters.co2 import (
     main as co2_main,
 )
+from idaes.models.properties.general_helmholtz.components.parameters.nh3 import (
+    main as nh3_main,
+)
 from idaes.models.properties.general_helmholtz.components.parameters.propane import (
     main as propane_main,
 )
@@ -134,6 +137,43 @@ def test_h2o():
     we = h2o_main(dry_run=True)
     _common_sat(sat_thermo_data, we)
 
+@pytest.mark.unit
+def test_nh3():
+
+    sat_thermo_data = {
+        1: {  # near critical
+            "T": 405,
+            "p": 11252.87,
+            "rhol": 281.00858,
+            "hl": 1179.9637,
+            "sl": 3828.84989,
+            "rhov": 188.1331,
+            "hv": 1318.9971,
+            "sv": 4172.1588,
+        },
+        # 2: {  # between critical and triple point
+        #     "T": 320,
+        #     "p": 27632.75,
+        #     "rhol": 596.0682,
+        #     "hl": 577.3038,
+        #     "sl": 2117.4040,
+        #     "rhov": 14.49950,
+        #     "hv": 1637.0140,
+        #     "sv": 5567.0830,
+        # },
+        # 3: {  # near triple point
+        #     "T": 200,
+        #     "p": 555563.1,
+        #     "rhol": 851.526,
+        #     "hl": 560.2419,
+        #     "sl": -682.19690,
+        #     "rhov": 0.08867,
+        #     "hv": 1497.4196,
+        #     "sv": 7488.151596,
+        # },
+    }
+    we = nh3_main(dry_run=True)
+    _common_sat(sat_thermo_data, we)
 
 @pytest.mark.unit
 def test_co2():
