@@ -66,11 +66,11 @@ def thermal_conductivity_rule(m):
     # Ts = T / 251.196
     rho = m.rho_star * m.delta
     G = sum(bval / T**i for i, bval in b.items())
-    cint_over_k = 4.0 + sum(
-        v[i] * (u[i] / T) ** 2
+    cint_over_k = 4.0 
+    + sum(v[i] * (u[i] / T) ** 2
         * pyo.exp(u[i]/T)
          / (pyo.exp(u[i]/T)-1) ** 2
-           for i in len(u.items())
+           for i in range(1,len(u.items())+1)
     )
     return (
         0.1351767 * pyo.sqrt(T) * cint_over_k / G
@@ -137,8 +137,8 @@ def viscosity_rule(m):
         0.021357
         * pyo.sqrt(17.03052*T)
         / (0.2957 ** 2 * pyo.exp(sum(aval * pyo.log(Ts) ** i for i, aval in a.items())))
-        * sum((c[i] * pyo.sqrt(Ts))**-i 
-              for i in range (0, len(c.items())+1)) #check for use of initial n(T)
+        * sum((c[i] * pyo.sqrt(Ts)**-i) 
+              for i in range (0, len(c.items()))) #check for use of initial n(T)
         / (0.6022137 * 0.2957 **3)
         * rho
         + sum(sum(d[i][j]/Ts**j for j in range (0, len(d[i].items())))* rho ** i for i in range (2,5))
@@ -154,7 +154,7 @@ def main(dry_run=False):
     Returns:
         None
     """
-    main_param_file = os.path.join(this_file_dir(), "cnh3.json")
+    main_param_file = os.path.join(this_file_dir(), "nh3.json")
     we = WriteParameters(parameters=main_param_file)
     we.add(
         {
