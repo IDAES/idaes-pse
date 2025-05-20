@@ -25,7 +25,7 @@ the pressure from density of a liquid at the triple point, a lot of significant 
 are needed. As long a I could add significant figures to the density and not change the 
 reported value when rounded, I assumed it was okay. 
 """
-
+from pyomo.environ import value
 import pytest
 from idaes.models.properties.general_helmholtz.components.parameters.h2o import (
     main as h2o_main,
@@ -59,6 +59,7 @@ from idaes.models.properties.general_helmholtz.components.parameters.r32 import 
 def _common_sat(sat_thermo_data, we):
     # Check the EoS expressions, the tolerance is a little loose
     # due to lack of sig. figs. in reported data
+    
     for pnt in sat_thermo_data.values():
         assert we.calculate_pressure(rho=pnt["rhov"], T=pnt["T"]) == pytest.approx(
             pnt["p"], rel=1e-2, abs=1e-3
@@ -139,38 +140,41 @@ def test_h2o():
 
 @pytest.mark.unit
 def test_nh3():
-
+    # Some test data from:
+    #
+    # SKehui Gao (高克慧),Jiangtao Wu (吴江涛),Ian H. Bell, Allan H. Harvey, and Eric W. Lemmon (2023)
+    # A Reference Equation of State with an Associating Term for Thermodynamic Properties of Ammonia
     sat_thermo_data = {
         1: {  # near critical
             "T": 405,
             "p": 11252.87,
             "rhol": 281.00858,
             "hl": 1179.9637,
-            "sl": 3828.84989,
+            "sl": 3.8288,
             "rhov": 188.1331,
             "hv": 1318.9971,
-            "sv": 4172.1588,
+            "sv": 4.1722,
         },
-        # 2: {  # between critical and triple point
-        #     "T": 320,
-        #     "p": 27632.75,
-        #     "rhol": 596.0682,
-        #     "hl": 577.3038,
-        #     "sl": 2117.4040,
-        #     "rhov": 14.49950,
-        #     "hv": 1637.0140,
-        #     "sv": 5567.0830,
-        # },
-        # 3: {  # near triple point
-        #     "T": 200,
-        #     "p": 555563.1,
-        #     "rhol": 851.526,
-        #     "hl": 560.2419,
-        #     "sl": -682.19690,
-        #     "rhov": 0.08867,
-        #     "hv": 1497.4196,
-        #     "sv": 7488.151596,
-        # },
+        2: {  # between critical and triple point
+            "T": 380,
+            "p": 7139.7014,
+            "rhol": 436.2496,
+            "hl": 912.9600,
+            "sl": 3.1807,
+            "rhov": 67.3260,
+            "hv": 1559.7529,
+            "sv": 4.8828,
+        },
+        3: {  # near triple point
+            "T": 195.49,
+            "p": 6.055813,
+            "rhol": 733.8544,
+            "hl": 8.2544e-03,
+            "sl": 1.1792e-05,
+            "rhov": 0.06371,
+            "hv": 1489.120,
+            "sv": 7.6173,
+        },
     }
     we = nh3_main(dry_run=True)
     _common_sat(sat_thermo_data, we)
