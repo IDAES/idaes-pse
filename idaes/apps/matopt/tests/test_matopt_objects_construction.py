@@ -72,7 +72,7 @@ import pytest
 
 
 @pytest.fixture
-def test_construct_FCCLattice():
+def construct_FCCLattice():
     IAD = sqrt(2) / 2
     lattice = FCCLattice.alignedWith100(IAD)
     lattice = FCCLattice.alignedWith111(IAD)
@@ -81,21 +81,20 @@ def test_construct_FCCLattice():
 
 
 @pytest.fixture
-def test_construct_CubicLattice():
+def construct_CubicLattice():
     IAD = 1.0
     lattice = CubicLattice(IAD)
     return lattice
 
 
-@pytest.fixture
+@pytest.mark.unit
 def test_construct_PerovskiteLattice():
     A, B, C = 1.0, 1.0, 1.0
     lattice = PerovskiteLattice(A, B, C)
-    return lattice
 
 
 @pytest.fixture
-def test_construct_DiamondLattice():
+def construct_DiamondLattice():
     IAD = sqrt(3) / 4
     lattice = DiamondLattice.alignedWith(IAD, "100")
     lattice = DiamondLattice.alignedWith(IAD, "110")
@@ -105,7 +104,7 @@ def test_construct_DiamondLattice():
 
 
 @pytest.fixture
-def test_construct_WurtziteLattice():
+def construct_WurtziteLattice():
     IAD = sqrt(3 / 8)
     lattice = WurtziteLattice.alignedWith(IAD, "0001")
     lattice = WurtziteLattice(IAD)
@@ -113,7 +112,7 @@ def test_construct_WurtziteLattice():
 
 
 @pytest.fixture
-def test_construct_Atom():
+def construct_Atom():
     atom_zero = Atom(39)
     atom_one = Atom(40)
     atom_two = Atom("Zr")
@@ -122,16 +121,16 @@ def test_construct_Atom():
 
 
 @pytest.fixture
-def test_construct_Canvas():
+def construct_Canvas():
     canvas = Canvas()
     return canvas
 
 
 @pytest.fixture
-def test_construct_Design():
-    lattice = test_construct_FCCLattice()
-    canvas = test_construct_Canvas()
-    atom, _ = test_construct_Atom()
+def construct_Design(construct_FCCLattice, construct_Canvas, construct_Atom):
+    lattice = construct_FCCLattice
+    canvas = construct_Canvas
+    atom, _ = construct_Atom
     canvas.addLocation(np.array([0, 0, 0], dtype=float))
     canvas.addShell(lattice.getNeighbors)
     canvas.setNeighborsFromFunc(lattice.getNeighbors)
@@ -139,20 +138,18 @@ def test_construct_Design():
     return design
 
 
-@pytest.fixture
+@pytest.mark.unit
 def test_construct_Shape():
     shape = Shape(np.array([0, 0, 0], dtype=float))
-    return shape
 
 
-@pytest.fixture
+@pytest.mark.unit
 def test_construct_Cuboctahedron():
     shape = Cuboctahedron(1.0)
-    return shape
 
 
 @pytest.fixture
-def test_construct_Parallelepiped():
+def construct_Parallelepiped():
     shape = Parallelepiped(
         np.array([1, 0, 0], dtype=float),
         np.array([0, 1, 0], dtype=float),
@@ -161,31 +158,28 @@ def test_construct_Parallelepiped():
     return shape
 
 
-@pytest.fixture
+@pytest.mark.unit
 def test_construct_Rhombohedron():
     shape = Rhombohedron(1.0, 0.5)
-    return shape
 
 
-@pytest.fixture
+@pytest.mark.unit
 def test_construct_RectPrism():
     shape = RectPrism(1.0, 1.0, 1.0)
-    return shape
 
 
-@pytest.fixture
+@pytest.mark.unit
 def test_construct_Cube():
     shape = Cube(1.0)
-    return shape
 
 
 @pytest.fixture
-def test_construct_Cylinder():
+def construct_Cylinder():
     shape = Cylinder(np.zeros(3, dtype=float), 1.0, 1.0)
     return shape
 
 
-@pytest.fixture
+@pytest.mark.unit
 def test_construct_CylindricalSector():
     shape = CylindricalSector(
         np.zeros(3, dtype=float),
@@ -195,229 +189,213 @@ def test_construct_CylindricalSector():
         np.array([0, 1, 0], dtype=float),
         np.array([0, 0, 1], dtype=float),
     )
-    return shape
 
 
-@pytest.fixture
-def test_construct_LinearTiling():
-    parallelepiped = test_construct_Parallelepiped()
-    cylinder = test_construct_Cylinder()
+@pytest.mark.unit
+def test_construct_LinearTiling(construct_Parallelepiped, construct_Cylinder):
+    parallelepiped = construct_Parallelepiped
+    cylinder = construct_Cylinder
     tiling = LinearTiling.fromParallelepiped(parallelepiped)
     tiling = LinearTiling.fromCylindricalShape(cylinder)
-    return tiling
 
 
-@pytest.fixture
-def test_construct_PlanarTiling():
-    shape = test_construct_Parallelepiped()
+@pytest.mark.unit
+def test_construct_PlanarTiling(construct_Parallelepiped):
+    shape = construct_Parallelepiped
     tiling = PlanarTiling(shape)
-    return tiling
 
 
-@pytest.fixture
-def test_construct_CubicTiling():
-    shape = test_construct_Parallelepiped()
+@pytest.mark.unit
+def test_construct_CubicTiling(construct_Parallelepiped):
+    shape = construct_Parallelepiped
     tiling = CubicTiling(shape)
-    return tiling
 
 
-@pytest.fixture
+@pytest.mark.unit
 def test_construct_ShiftFunc():
     transformation = ShiftFunc(np.array([1, 0, 0], dtype=float))
-    return transformation
 
 
-@pytest.fixture
+@pytest.mark.unit
 def test_construct_ScaleFunc():
     transformation = ScaleFunc(2.0)
-    return transformation
 
 
-@pytest.fixture
+@pytest.mark.unit
 def test_construct_RotateFunc():
     transformation = RotateFunc.fromXYZAngles(0.5, 0.5, 0.5)
-    return transformation
 
 
-@pytest.fixture
+@pytest.mark.unit
 def test_construct_ReflectFunc():
     transformation = ReflectFunc.acrossX()
-    return transformation
 
 
-@pytest.fixture
+@pytest.mark.unit
 def test_construct_Coef():
     coefficient = Coef([0.5, 0.5])
-    return coefficient
 
 
-@pytest.fixture
+@pytest.mark.unit
 def test_construct_LinearExpr():
     expression = LinearExpr()
-    return expression
 
 
 @pytest.fixture
-def test_construct_SumNeighborSites():
-    m = test_construct_MatOptModel()
+def construct_MatOptModel(construct_Canvas, construct_Atom):
+    canvas = construct_Canvas
+    a0, a1 = construct_Atom
+    atoms = [a0, a1]
+    model = MatOptModel(canvas, atoms)
+    return model
+
+
+@pytest.fixture
+def test_construct_SumNeighborSites(construct_MatOptModel):
+    m = construct_MatOptModel
     expression = SumNeighborSites(m.Yi)
     return expression
 
 
 @pytest.fixture
-def test_construct_SumNeighborBonds():
-    m = test_construct_MatOptModel()
+def test_construct_SumNeighborBonds(construct_MatOptModel):
+    m = construct_MatOptModel
     expression = SumNeighborBonds(m.Xij)
     return expression
 
 
 @pytest.fixture
-def test_construct_SumSites():
-    m = test_construct_MatOptModel()
+def test_construct_SumSites(construct_MatOptModel):
+    m = construct_MatOptModel
     expression = SumSites(m.Yi)
     return expression
 
 
 @pytest.fixture
-def test_construct_SumBonds():
-    m = test_construct_MatOptModel()
+def test_construct_SumBonds(construct_MatOptModel):
+    m = construct_MatOptModel
     expression = SumBonds(m.Xij)
     return expression
 
 
 @pytest.fixture
-def test_construct_SumSiteTypes():
-    m = test_construct_MatOptModel()
+def test_construct_SumSiteTypes(construct_MatOptModel):
+    m = construct_MatOptModel
     expression = SumSiteTypes(m.Yik)
     return expression
 
 
 @pytest.fixture
-def test_construct_SumBondTypes():
-    m = test_construct_MatOptModel()
+def test_construct_SumBondTypes(construct_MatOptModel):
+    m = construct_MatOptModel
     expression = SumBondTypes(m.Xijkl)
     return expression
 
 
 @pytest.fixture
-def test_construct_SumSitesAndTypes():
-    m = test_construct_MatOptModel()
+def test_construct_SumSitesAndTypes(construct_MatOptModel):
+    m = construct_MatOptModel
     expression = SumSitesAndTypes(m.Yik)
     return expression
 
 
-@pytest.fixture
-def test_construct_SumBondsAndTypes():
-    m = test_construct_MatOptModel()
+@pytest.mark.unit
+def test_construct_SumBondsAndTypes(construct_MatOptModel):
+    m = construct_MatOptModel
     expression = SumBondsAndTypes(m.Xijkl)
-    return expression
 
 
-@pytest.fixture
-def test_construct_SumConfs():
-    lattice = test_construct_FCCLattice()
-    canvas = test_construct_Canvas()
+@pytest.mark.unit
+def test_construct_SumConfs(construct_FCCLattice, construct_Canvas, construct_Atom):
+    lattice = construct_FCCLattice
+    canvas = construct_Canvas
     canvas.addLocation(np.array([0, 0, 0], dtype=float))
     canvas.addShell(lattice.getNeighbors)
     canvas.setNeighborsFromFunc(lattice.getNeighbors)
     confs = [[None] * len(canvas.NeighborhoodIndexes[0]) for _ in range(1)]
-    a0, a1 = test_construct_Atom()
-    atoms = [a0, a1]
-    m = MatOptModel(canvas, atoms, confs)
-    expression = SumConfs(m.Zic)
-    return expression
+    # a0, a1 = construct_Atom
+    # atoms = [a0, a1]
+    # m = MatOptModel(canvas, atoms, confs)
+    # expression = SumConfs(m.Zic)
 
 
-@pytest.fixture
-def test_construct_SumSitesAndConfs():
-    lattice = test_construct_FCCLattice()
-    canvas = test_construct_Canvas()
+@pytest.mark.unit
+def test_construct_SumSitesAndConfs(
+    construct_FCCLattice, construct_Canvas, construct_Atom
+):
+    lattice = construct_FCCLattice
+    canvas = construct_Canvas
     canvas.addLocation(np.array([0, 0, 0], dtype=float))
     canvas.addShell(lattice.getNeighbors)
     canvas.setNeighborsFromFunc(lattice.getNeighbors)
     confs = [[None] * len(canvas.NeighborhoodIndexes[0]) for _ in range(1)]
-    a0, a1 = test_construct_Atom()
+    a0, a1 = construct_Atom
     atoms = [a0, a1]
     m = MatOptModel(canvas, atoms, confs)
     expression = SumSitesAndConfs(m.Zic)
-    return expression
 
 
 @pytest.fixture
-def test_construct_LessThan():
+def construct_LessThan():
     rule = LessThan(2)
     return rule
 
 
-@pytest.fixture
+@pytest.mark.unit
 def test_construct_EqualTo():
     rule = EqualTo(2)
-    return rule
 
 
 @pytest.fixture
-def test_construct_GreaterThan():
+def construct_GreaterThan():
     rule = GreaterThan(2)
     return rule
 
 
-@pytest.fixture
-def test_construct_FixedTo():
+@pytest.mark.unit
+def construct_FixedTo():
     rule = FixedTo(2)
-    return rule
 
 
-@pytest.fixture
-def test_construct_Disallow():
-    design = test_construct_Design()
+@pytest.mark.unit
+def test_construct_Disallow(construct_Design):
+    design = construct_Design
     rule = Disallow(design)
-    return rule
 
 
-@pytest.fixture
-def test_construct_PiecewiseLinear():
-    m = test_construct_MatOptModel()
+@pytest.mark.unit
+def test_construct_PiecewiseLinear(construct_MatOptModel):
+    m = construct_MatOptModel
     rule = PiecewiseLinear([x**2 for x in range(3)], [x for x in range(3)], m.Ci)
-    return rule
 
 
-@pytest.fixture
-def test_construct_Implies():
-    m = test_construct_MatOptModel()
-    r = test_construct_LessThan()
+@pytest.mark.unit
+def test_construct_Implies(construct_MatOptModel, construct_LessThan):
+    m = construct_MatOptModel
+    r = construct_LessThan
     rule = Implies((m.Yi, r))
-    return rule
 
 
-@pytest.fixture
-def test_construct_NegImplies():
-    m = test_construct_MatOptModel()
-    r = test_construct_LessThan()
+@pytest.mark.unit
+def test_construct_NegImplies(construct_MatOptModel, construct_LessThan):
+    m = construct_MatOptModel
+    r = construct_LessThan
     rule = NegImplies((m.Yi, r))
-    return rule
 
 
-@pytest.fixture
-def test_construct_ImpliesSiteCombination():
-    canvas = test_construct_Canvas()
-    m = test_construct_MatOptModel()
-    r = test_construct_GreaterThan()
+@pytest.mark.unit
+def test_construct_ImpliesSiteCombination(
+    construct_Canvas, construct_MatOptModel, construct_GreaterThan
+):
+    canvas = construct_Canvas
+    m = construct_MatOptModel
+    r = construct_GreaterThan
+    print(m)
     rule = ImpliesSiteCombination(canvas, (m.Yi, r), (m.Yik, r))
-    return rule
 
 
-@pytest.fixture
-def test_construct_ImpliesNeighbors():
-    m = test_construct_MatOptModel()
-    r = test_construct_FixedTo()
+@pytest.mark.unit
+def test_construct_ImpliesNeighbors(construct_MatOptModel, construct_LessThan):
+    m = construct_MatOptModel
+    r = construct_LessThan
     rule = ImpliesNeighbors((m.Yi, r))
-    return rule
-
-
-@pytest.fixture
-def test_construct_MatOptModel():
-    canvas = test_construct_Canvas()
-    a0, a1 = test_construct_Atom()
-    atoms = [a0, a1]
-    model = MatOptModel(canvas, atoms)
-    return model
