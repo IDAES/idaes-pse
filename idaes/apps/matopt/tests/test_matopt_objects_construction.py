@@ -250,53 +250,46 @@ def construct_MatOptModel(construct_Canvas, construct_Atom):
     return model
 
 
-@pytest.fixture
+@pytest.mark.unit
 def test_construct_SumNeighborSites(construct_MatOptModel):
     m = construct_MatOptModel
     expression = SumNeighborSites(m.Yi)
-    return expression
 
 
-@pytest.fixture
+@pytest.mark.unit
 def test_construct_SumNeighborBonds(construct_MatOptModel):
     m = construct_MatOptModel
     expression = SumNeighborBonds(m.Xij)
-    return expression
 
 
-@pytest.fixture
+@pytest.mark.unit
 def test_construct_SumSites(construct_MatOptModel):
     m = construct_MatOptModel
     expression = SumSites(m.Yi)
-    return expression
 
 
-@pytest.fixture
+@pytest.mark.unit
 def test_construct_SumBonds(construct_MatOptModel):
     m = construct_MatOptModel
     expression = SumBonds(m.Xij)
-    return expression
 
 
-@pytest.fixture
+@pytest.mark.unit
 def test_construct_SumSiteTypes(construct_MatOptModel):
     m = construct_MatOptModel
     expression = SumSiteTypes(m.Yik)
-    return expression
 
 
-@pytest.fixture
+@pytest.mark.unit
 def test_construct_SumBondTypes(construct_MatOptModel):
     m = construct_MatOptModel
     expression = SumBondTypes(m.Xijkl)
-    return expression
 
 
-@pytest.fixture
+@pytest.mark.unit
 def test_construct_SumSitesAndTypes(construct_MatOptModel):
     m = construct_MatOptModel
     expression = SumSitesAndTypes(m.Yik)
-    return expression
 
 
 @pytest.mark.unit
@@ -313,10 +306,10 @@ def test_construct_SumConfs(construct_FCCLattice, construct_Canvas, construct_At
     canvas.addShell(lattice.getNeighbors)
     canvas.setNeighborsFromFunc(lattice.getNeighbors)
     confs = [[None] * len(canvas.NeighborhoodIndexes[0]) for _ in range(1)]
-    # a0, a1 = construct_Atom
-    # atoms = [a0, a1]
-    # m = MatOptModel(canvas, atoms, confs)
-    # expression = SumConfs(m.Zic)
+    a0, a1 = construct_Atom
+    atoms = [a0, a1]
+    m = MatOptModel(canvas, atoms, confs)
+    expression = SumConfs(m.Zic)
 
 
 @pytest.mark.unit
@@ -390,7 +383,6 @@ def test_construct_ImpliesSiteCombination(
     canvas = construct_Canvas
     m = construct_MatOptModel
     r = construct_GreaterThan
-    print(m)
     rule = ImpliesSiteCombination(canvas, (m.Yi, r), (m.Yik, r))
 
 
