@@ -40,6 +40,7 @@ from pyomo.common.config import (
 
 from idaes.apps.grid_integration.pricetaker.design_and_operation_models import (
     DesignModelData,
+    StorageModelData,
 )
 from idaes.apps.grid_integration.pricetaker.clustering import (
     generate_daily_data,
@@ -290,6 +291,8 @@ class PriceTakerModel(ConcreteModel):
         self,
         flowsheet_func: Callable,
         flowsheet_options: Optional[dict] = None,
+        add_linking_constraints: bool = True,
+        add_periodic_constraints: bool = False,
     ):
         """
         Builds the multiperiod model.
@@ -300,6 +303,14 @@ class PriceTakerModel(ConcreteModel):
 
             flowsheet_options : dict,
                 Optional arguments needed for `flowsheet_func`
+
+            add_linking_constraints: bool,
+                If True, adds linking constraints if a StorageModel is
+                found in the flowsheet. Default value = True.
+
+            add_periodic_constraints: bool,
+                If True, adds periodic constraints if a StorageModel is
+                found in the flowsheet. Default value = False.
 
         """
         self._assert_lmp_data_exists()
@@ -355,6 +366,28 @@ class PriceTakerModel(ConcreteModel):
             for blk in self.period[d, t].component_data_objects(Block):
                 if hasattr(blk, "LMP"):
                     blk.LMP = self.rep_days_lmp[d][t]
+
+        # Check if storage blocks are present in the flowsheet. If yes,
+        # then add constraints linking successive time period holdups
+        storage_blocks = [
+            blk.name
+            for blk in flowsheet_blk.component_data_objects(Block)
+            if isinstance(blk, StorageModelData)
+        ]
+        for storage_blk in storage_blocks:
+            _logger.info(f"Found a StorageModel named {storage_blk} in the flowsheet")
+
+            if add_linking_constraints:
+                self.add_linking_constraints(
+                    previous_time_var=storage_blk + ".final_holdup",
+                    current_time_var=storage_blk + ".initial_holdup",
+                )
+
+            if add_periodic_constraints:
+                self.add_periodic_constraints(
+                    initial_time_var=storage_blk + ".initial_holdup",
+                    final_time_var=storage_blk + ".final_holdup",
+                )
 
     def _get_operation_blocks(
         self,
