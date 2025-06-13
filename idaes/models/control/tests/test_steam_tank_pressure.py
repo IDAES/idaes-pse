@@ -294,8 +294,6 @@ def test_inlet_disturbance():
         m_dynamic.fs.valve_1.valve_opening[m_dynamic.fs.time.last()]
     ) == pytest.approx(s2_valve, abs=0.001)
 
-    return m_dynamic, solver
-
 
 @pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.integration
@@ -336,8 +334,6 @@ def test_inlet_disturbance_derivative_on_error():
     assert pyo.value(
         m_dynamic.fs.valve_1.valve_opening[m_dynamic.fs.time.last()]
     ) == pytest.approx(s2_valve, abs=0.001)
-
-    return m_dynamic, solver
 
 
 @pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
@@ -385,8 +381,6 @@ def test_setpoint_change_derivative_on_pv():
         m_dynamic.fs.valve_1.valve_opening[m_dynamic.fs.time.at(31)]
     ) == pytest.approx(0.78949, abs=0.001)
 
-    return m_dynamic, solver
-
 
 @pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.integration
@@ -432,8 +426,6 @@ def test_setpoint_change_derivative_on_error():
     assert pyo.value(
         m_dynamic.fs.valve_1.valve_opening[m_dynamic.fs.time.at(31)]
     ) == pytest.approx(0.93196, abs=0.001)
-
-    return m_dynamic, solver
 
 
 if __name__ == "__main__":
