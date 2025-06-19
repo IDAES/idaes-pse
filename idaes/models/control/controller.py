@@ -469,7 +469,9 @@ class PIDControllerData(UnitModelBlockData):
 
         # deactivate the time 0 mv_eqn instead of skip, should be fine since
         # first time step always exists.
-        if self.config.calculate_initial_integral:
+        #TODO: should this happen for True or False? Seems this change caused subcritical power plant to fail
+        # setting to not gets subcritical power plant to work, but steam cycle fails
+        if not self.config.calculate_initial_integral:
             self.mv_eqn[t0].deactivate()
 
         if self.config.controller_type in [ControllerType.PI, ControllerType.PID]:

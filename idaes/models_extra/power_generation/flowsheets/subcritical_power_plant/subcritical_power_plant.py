@@ -573,12 +573,15 @@ def main_dynamic():
     m_dyn.fs_main.fs_stc.spray_ctrl.mv_ref.value = (
         m_dyn.fs_main.fs_stc.spray_valve.valve_opening[t0].value
     )
+
+    #TODO: integral_component_ref was replaced with mv_integral_component_dot
+    # 'ref' does not exist anymore, not sure what this should be set to
     # For two bounded controllers, set the initial mv_integral_component
     m_dyn.fs_main.fs_stc.makeup_ctrl.mv_integral_component[:].value = pyo.value(
-        m_dyn.fs_main.fs_stc.makeup_ctrl.mv_integral_component_ref[t0]
+        m_dyn.fs_main.fs_stc.makeup_ctrl.mv_integral_component_dot[t0]
     )
     m_dyn.fs_main.fs_stc.spray_ctrl.mv_integral_component[:].value = pyo.value(
-        m_dyn.fs_main.fs_stc.spray_ctrl.mv_integral_component_ref[t0]
+        m_dyn.fs_main.fs_stc.spray_ctrl.mv_integral_component_dot[t0]
     )
 
     # Controllers on the main flowsheet
@@ -692,7 +695,7 @@ def main_dynamic():
     time_used = end_time - start_time
     _log.info("simulation time={}".format(time_used))
     write_data_to_txt_file(plot_data)
-    plot_results(plot_data)
+    # plot_results(plot_data)
     return m_dyn
 
 
@@ -2279,9 +2282,9 @@ if __name__ == "__main__":
     # to 100% load and holding for 20 minutes.
     # uncomment the code (line 1821) to run this simulation,
     # note that this simulation takes around ~60 minutes to complete
-    # m_dyn = main_dynamic()
+    m_dyn = main_dynamic()
 
     # This method builds and runs a steady state subcritical coal-fired power
     # plant, the simulation consists of a typical base load case.
-    m_ss = main_steady_state()
-    print_pfd_results(m_ss)
+    # m_ss = main_steady_state()
+    # print_pfd_results(m_ss)
