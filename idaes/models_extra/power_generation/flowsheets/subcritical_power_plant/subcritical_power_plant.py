@@ -2238,12 +2238,14 @@ def print_pfd_results(m):
         except AttributeError:
             pass
         try:
-            tags[i + "_yN2"] = s.mole_frac_comp["N2"]
-            tags[i + "_yO2"] = s.mole_frac_comp["O2"]
-            tags[i + "_yNO"] = s.mole_frac_comp["NO"]
-            tags[i + "_yCO2"] = s.mole_frac_comp["CO2"]
-            tags[i + "_yH2O"] = s.mole_frac_comp["H2O"]
-            tags[i + "_ySO2"] = s.mole_frac_comp["SO2"]
+            # Fix for missing components (just H20 in steam portion)
+            #TODO: Incorporate in logging system. 
+            print("Processing molecules for stream :{}".format(s))
+            for key in ['N2', 'O2', 'NO', 'CO2', 'H2O', 'SO2']:
+                if key in s.mole_frac_comp.keys():
+                    tags[i + "_y{}".format(key)] = s.mole_frac_comp[key]
+                else:
+                    print("{} was not found".format(key))
         except AttributeError:
             pass
 
