@@ -89,7 +89,7 @@ kwargs = dict(
         # pandas constraint added on 2023-08-30 b/c bug in v2.1
         # see IDAES/idaes-pse#1253
         "pandas!=2.1.0,<3",
-        "scipy",
+        "scipy >= 1.15.3",
         "sympy",  # idaes.core.util.expr_doc
         "matplotlib",
         "click>=8",
