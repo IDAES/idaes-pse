@@ -19,7 +19,7 @@ from typing import Union
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from scipy.interpolate import make_splrep
+from scipy.interpolate import splrep, splev
 from pyomo.common.dependencies import attempt_import
 import idaes.logger as idaeslog
 
@@ -245,9 +245,14 @@ def _elbow_method(k_values, inertia_values, kmin, kmax, sensitivity: int = 1):
     # Invert inertia values such that plot is concave down and increasing
     inverted_inertia_values = [-y for y in inertia_values]
     # Use a smoothing spline that removes noise while retaining the data's original shape
-    spline = make_splrep(k_values, inverted_inertia_values)
+    spline = splrep(k_values, inverted_inertia_values, k=3)
     k_smooth = np.arange(kmin, kmax + 1)
-    inertia_smooth = spline(k_smooth)
+    inertia_smooth = splev(k_smooth, spline)
+
+    # TODO: Replace the legacy code above with the following after IDAES deprecates Python 3.9
+    # spline = make_splrep(k_values, inverted_inertia_values)
+    # k_smooth = np.arange(kmin, kmax + 1)
+    # inertia_smooth = spline(k_smooth)
 
     # Normalize the k values and inertia values
     k_norm = _normalize_values(k_smooth)
