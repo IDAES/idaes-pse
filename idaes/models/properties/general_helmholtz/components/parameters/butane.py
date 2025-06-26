@@ -27,11 +27,7 @@
 # .nl files (as explained in the documentation.)
 
 import os
-import math
-import pyomo.environ as pyo
 from pyomo.common.fileutils import this_file_dir
-from pyomo.common.fileutils import find_library
-from idaes.core.util.math import smooth_max
 from idaes.models.properties.general_helmholtz.helmholtz_parameters import (
     WriteParameters,
 )
@@ -48,11 +44,6 @@ def main(dry_run=False):
     """
     main_param_file = os.path.join(this_file_dir(), "butane.json")
     we = WriteParameters(parameters=main_param_file)
-    # we.add(
-    #     {
-    #         # Add extra things here
-    #     }
-    # )
     we.write(dry_run=dry_run)
     return we
 
