@@ -11,6 +11,9 @@
 # for full copyright and license information.
 #################################################################################
 
+"""Generate parameter and expression files for n-butane
+"""
+
 # Look at the documentation at
 # https://github.com/IDAES/idaes-ext/blob/f60f28be990755749906567ac73fb1e0a188fa42/src/general_helmholtz/doc/documentation.pdf
 # to see how to make new parameter files.
