@@ -49,6 +49,7 @@ def sat_delta_type02(model, name, parameters):
     t = parameters["aux"][name]["t"]
     return c * pyo.exp(sum(n[i] * (1 - 1 / model.tau) ** t[i] for i in n))
 
+
 def sat_delta_type03(model, name, parameters):
     """Type03 expression for the approximate saturated reduced density
     Used by Butane

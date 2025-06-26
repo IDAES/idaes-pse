@@ -9,7 +9,7 @@
 # the biggest difficulty is making sure the equations match the equations in helmholtz,
 # otherwise you've got to define them yourself.
 
-# Once you've made the .json file, you can use this script to generate the 
+# Once you've made the .json file, you can use this script to generate the
 # .nl files (as explained in the documentation.)
 
 import os
@@ -21,7 +21,6 @@ from idaes.core.util.math import smooth_max
 from idaes.models.properties.general_helmholtz.helmholtz_parameters import (
     WriteParameters,
 )
-
 
 
 def main(dry_run=False):

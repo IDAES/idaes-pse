@@ -68,7 +68,7 @@ def _common_sat(sat_thermo_data, we):
         # pressure calculated from rhol is not the same as rhov.
         # This can infer a better value to use for rhol
         # with more decimal places of precision
-        #calc_liq_value(pnt,we) 
+        # calc_liq_value(pnt,we)
 
         assert we.calculate_pressure(rho=pnt["rhov"], T=pnt["T"]) == pytest.approx(
             pnt["p"], rel=1e-2, abs=1e-3
@@ -425,7 +425,7 @@ def test_butane():
     # Properties of Fluid Phase -Butane and Isobutane
     # D. Bücker; W. Wagner
     sat_thermo_data = {
-        1: { # near triple point
+        1: {  # near triple point
             "T": 136,
             "p": 0.00082,
             "rhol": 733.2830604395986,
@@ -433,9 +433,9 @@ def test_butane():
             "sl": -3.020002726615331,
             "rhov": 4.2144648219014844e-05,
             "hv": -224.476119878109,
-            "sv": 0.6193124379530769
+            "sv": 0.6193124379530769,
         },
-        2: { # Middle value
+        2: {  # Middle value
             "T": 222,
             "p": 8.829,
             "rhol": 652.2556845646468,
@@ -443,9 +443,9 @@ def test_butane():
             "sl": -2.0278638641793307,
             "rhov": 0.27996277123216506,
             "hv": -117.79829132234931,
-            "sv": -0.10453501347214404
+            "sv": -0.10453501347214404,
         },
-        3: { # near critical point
+        3: {  # near critical point
             "T": 425,
             "p": 3788.1,
             "rhol": 264.7312031078,
@@ -453,13 +453,12 @@ def test_butane():
             "sl": -0.2505256333683984,
             "rhov": 205.129236104155,
             "hv": 74.05462506435113,
-            "sv": -0.17984390766126987
-        }
+            "sv": -0.17984390766126987,
+        },
     }
 
     we = butane_main(dry_run=True)
     _common_sat(sat_thermo_data, we)
-
 
 
 @pytest.mark.unit
@@ -470,7 +469,7 @@ def test_isobutane():
     # Properties of Fluid Phase -Butane and Isobutane
     # D. Bücker; W. Wagner
     sat_thermo_data = {
-        1: { # as close to the triple point as I could get it to solve
+        1: {  # as close to the triple point as I could get it to solve
             "T": 244,
             "p": 48.482,
             "rhol": 612.7089159567313,
@@ -478,9 +477,9 @@ def test_isobutane():
             "sl": -1.7676822027038077,
             "rhov": 1.4236413419350442,
             "hv": -86.14006509543601,
-            "sv": -0.21025284166965258
+            "sv": -0.21025284166965258,
         },
-        2: { # middle value
+        2: {  # middle value
             "T": 266,
             "p": 120.89,
             "rhol": 588.6890683531155,
@@ -488,9 +487,9 @@ def test_isobutane():
             "sl": -1.5787731067716966,
             "rhov": 3.333264026007927,
             "hv": -56.91293931766913,
-            "sv": -0.22178473597968779
+            "sv": -0.22178473597968779,
         },
-        3: { # close to the critical point.
+        3: {  # close to the critical point.
             "T": 407,
             "p": 3580.1,
             "rhol": 276.81776780534676,
@@ -498,23 +497,24 @@ def test_isobutane():
             "sl": -0.3538117763443197,
             "rhov": 173.4503046051935,
             "hv": 59.64795727088574,
-            "sv": -0.22517272904982927
-        }
+            "sv": -0.22517272904982927,
+        },
     }
 
     we = isobutane_main(dry_run=True)
     _common_sat(sat_thermo_data, we)
 
 
-def calc_liq_value(pnt,we):
+def calc_liq_value(pnt, we):
     import math
+
     # This method is used to infer the decimal places
     # required in rhol to get the pressure correct
     # for rhol and rhov
     pressure = pnt["p"]
     rhol_pressure = we.calculate_pressure(rho=pnt["rhol"], T=pnt["T"])
-    #shouldn't be any problems with rhov pressure
-    #rhov_pressure =we.calculate_pressure(rho=pnt["rhov"], T=pnt["T"])
+    # shouldn't be any problems with rhov pressure
+    # rhov_pressure =we.calculate_pressure(rho=pnt["rhov"], T=pnt["T"])
 
     rhol = pnt["rhol"]
     rhol_max = math.ceil(pnt["rhol"])
@@ -533,4 +533,3 @@ def calc_liq_value(pnt,we):
         rhol_pressure = we.calculate_pressure(rho=rhol, T=pnt["T"])
 
     print(f"update the rhol to this value: {rhol}")
-
