@@ -13,7 +13,7 @@
 import pytest
 
 import pyomo.environ as pyo
-from pyomo.contrib.solver.base import LegacySolverWrapper
+from pyomo.contrib.solver.common.base import LegacySolverWrapper
 
 from idaes.core.solvers.features import lp, milp, nlp, minlp, nle, dae
 from idaes.core.solvers import get_solver, ipopt_has_linear_solver, petsc
