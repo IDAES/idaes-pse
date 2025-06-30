@@ -25,7 +25,6 @@ the pressure from density of a liquid at the triple point, a lot of significant 
 are needed. As long a I could add significant figures to the density and not change the 
 reported value when rounded, I assumed it was okay. 
 """
-from pyomo.environ import value
 import pytest
 from idaes.models.properties.general_helmholtz.components.parameters.h2o import (
     main as h2o_main,
