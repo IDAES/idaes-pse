@@ -142,7 +142,7 @@ def viscosity_rule(m):
         * pyo.sqrt(17.03026*T)
         / (0.2957 ** 2 * pyo.exp(sum(aval * pyo.log(Ts) ** i for i, aval in a.items())))
         * sum((c[i] * pyo.sqrt(Ts)**-i) 
-              for i in range (0, len(c.items()))) #check for use of initial n(T)
+              for i in range (0, len(c.items())))
         / (0.6022137 * 0.2957 **3)
         * rho
         + sum(sum(d[i][j]/Ts**j for j in range (0, len(d[i].items())))

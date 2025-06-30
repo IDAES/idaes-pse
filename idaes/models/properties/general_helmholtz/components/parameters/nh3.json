@@ -225,7 +225,10 @@
     "transport": {
         "thermal_conductivity": {
             "reference": [
-                
+                "Monogenidou, S. A., Marc J. Assael, and Marcia L. Huber.",
+                "Reference correlation for the thermal conductivity of ammonia ",
+                "from the triple-point temperature to 680 K and pressures up to 80 MPa. ", 
+                "Journal of Physical and Chemical Reference Data 47.4 (2018)."
             ]
         },
         "viscosity": {
