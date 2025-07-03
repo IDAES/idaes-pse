@@ -11,7 +11,9 @@
 # for full copyright and license information.
 #################################################################################
 
+import re
 from typing import Optional, Union, Callable, List
+import matplotlib.pyplot as plt
 import pandas as pd
 from pyomo.environ import (
     ConcreteModel,
@@ -24,6 +26,8 @@ from pyomo.environ import (
     NonNegativeReals,
     Expression,
     maximize,
+    # creating a new name to avoid pylint warning on outerscope variable
+    value as pyo_value,
 )
 from pyomo.common.config import (
     ConfigDict,
@@ -36,6 +40,7 @@ from pyomo.common.config import (
 
 from idaes.apps.grid_integration.pricetaker.design_and_operation_models import (
     DesignModelData,
+    StorageModelData,
 )
 from idaes.apps.grid_integration.pricetaker.clustering import (
     generate_daily_data,
@@ -286,6 +291,8 @@ class PriceTakerModel(ConcreteModel):
         self,
         flowsheet_func: Callable,
         flowsheet_options: Optional[dict] = None,
+        add_linking_constraints: bool = True,
+        add_periodic_constraints: bool = False,
     ):
         """
         Builds the multiperiod model.
@@ -296,6 +303,14 @@ class PriceTakerModel(ConcreteModel):
 
             flowsheet_options : dict,
                 Optional arguments needed for `flowsheet_func`
+
+            add_linking_constraints: bool,
+                If True, adds linking constraints if a StorageModel is
+                found in the flowsheet. Default value = True.
+
+            add_periodic_constraints: bool,
+                If True, adds periodic constraints if a StorageModel is
+                found in the flowsheet. Default value = False.
 
         """
         self._assert_lmp_data_exists()
@@ -351,6 +366,28 @@ class PriceTakerModel(ConcreteModel):
             for blk in self.period[d, t].component_data_objects(Block):
                 if hasattr(blk, "LMP"):
                     blk.LMP = self.rep_days_lmp[d][t]
+
+        # Check if storage blocks are present in the flowsheet. If yes,
+        # then add constraints linking successive time period holdups
+        storage_blocks = [
+            blk.name
+            for blk in flowsheet_blk.component_data_objects(Block)
+            if isinstance(blk, StorageModelData)
+        ]
+        for storage_blk in storage_blocks:
+            _logger.info(f"Found a StorageModel named {storage_blk} in the flowsheet")
+
+            if add_linking_constraints:
+                self.add_linking_constraints(
+                    previous_time_var=storage_blk + ".final_holdup",
+                    current_time_var=storage_blk + ".initial_holdup",
+                )
+
+            if add_periodic_constraints:
+                self.add_periodic_constraints(
+                    initial_time_var=storage_blk + ".initial_holdup",
+                    final_time_var=storage_blk + ".final_holdup",
+                )
 
     def _get_operation_blocks(
         self,
@@ -411,6 +448,66 @@ class PriceTakerModel(ConcreteModel):
 
         return op_vars
 
+    def fix_operation_var(self, var_name: str, value: int | float):
+        """
+        Fixes the specified variable to the given value in all operation blocks
+
+        Args:
+            var_name : str
+                Variable name as a string
+            value : int | float
+                Value of the variable
+        """
+        op_vars = self._get_operation_vars(var_name)
+        for d, t in self.period:
+            op_vars[d][t].fix(value)
+
+    def unfix_operation_var(self, var_name: str):
+        """
+        Unfixes the specified variable in all operation blocks
+
+        Args:
+            var_name : str
+                Variable name as a string
+        """
+        op_vars = self._get_operation_vars(var_name)
+        for d, t in self.period:
+            op_vars[d][t].unfix()
+
+    def update_operation_params(self, params: dict):
+        """
+        This method updates the time-varying parameter values. This
+        method is not supported for the representative days case.
+
+        Args:
+            params : dict
+                keys => parameter name, values => parameter values
+        """
+        # Ensure that the multiperiod model exists
+        self._assert_mp_model_exists()
+
+        if self.num_representative_days > 1:
+            raise NotImplementedError(
+                "This method is not supported for num_representative_days > 1"
+            )
+
+        # Perform data checks
+        _params = {}
+        for key, data in params.items():
+            if len(data) != self.horizon_length:
+                raise ConfigurationError(
+                    f"Number of elements for {key} exceeds the horizon length."
+                )
+
+            # Convert the data to a list. This way, the input can be a list,
+            # or a tuple, or a pd.DataFrame, or a pd.Series
+            _params[key] = list(data)
+
+        op_params = {key: self._get_operation_vars(key) for key in params}
+        for key, data in _params.items():
+            for d, t in self.period:
+                op_params[key][d][t].set_value(data[t - 1])
+
     def add_linking_constraints(self, previous_time_var: str, current_time_var: str):
         """
         Adds constraints to relate variables across two consecutive time periods. This method is
@@ -445,6 +542,36 @@ class PriceTakerModel(ConcreteModel):
         )
         self._linking_constraint_counter += 1  # Increase the counter for the new pair
 
+    def add_periodic_constraints(self, initial_time_var: str, final_time_var: str):
+        """
+        Adds constraints to relate variables across the entire time horizon. This method is
+        usually needed if the system has storage. Using this method, the holdup at the end of the
+        time horizon can be equated to the holdup at the beginning of the time horizon
+
+        Args:
+            initial_time_var : str,
+                Name of the operational variable at the beginning of the time horizon
+
+            final_time_var : str,
+                Name of the operational variable at the end of the time horizon
+        """
+        initial_time_var = self._get_operation_vars(initial_time_var)
+        final_time_var = self._get_operation_vars(final_time_var)
+
+        def _rule_linking_constraints(_, d):
+            return initial_time_var[d][1] == final_time_var[d][self.horizon_length]
+
+        setattr(
+            self,
+            "variable_linking_constraints_" + str(self._linking_constraint_counter),
+            Constraint(self.set_days, rule=_rule_linking_constraints),
+        )
+        _logger.info(
+            f"Linking constraints are added to the model at "
+            f"variable_linking_constraints_{self._linking_constraint_counter}"
+        )
+        self._linking_constraint_counter += 1  # Increase the counter for the new pair
+
     def _retrieve_uc_data(self, op_blk: str, commodity: str, **kwargs):
         """
         Retrieves unit commitment data for the given operation
@@ -460,6 +587,17 @@ class PriceTakerModel(ConcreteModel):
             )
 
         return self._op_blk_uc_data[op_blk, commodity]
+
+    @staticmethod
+    def _get_valid_block_name(blk_name: str):
+        "Returns a valid python variable name for the given block"
+        # Indexed blocks contain square brackets. This method replaces
+        # them with underscores and returns a valid python variable name.
+        bn = re.sub(r"[\[,\]]", "_", blk_name.split(".")[-1])
+        if bn[-1] == "_":
+            # Remove the trailing underscore, if it exists
+            return bn[:-1]
+        return bn
 
     def add_capacity_limits(
         self,
@@ -504,7 +642,9 @@ class PriceTakerModel(ConcreteModel):
         )
 
         # Create a block for storing capacity limit constraints
-        cap_limit_blk_name = op_block_name.split(".")[-1] + f"_{commodity}_limits"
+        cap_limit_blk_name = (
+            self._get_valid_block_name(op_block_name) + f"_{commodity}_limits"
+        )
         if hasattr(self, cap_limit_blk_name):
             raise ConfigurationError(
                 f"Attempting to overwrite capacity limits for {commodity} in {op_block_name}."
@@ -592,7 +732,9 @@ class PriceTakerModel(ConcreteModel):
         uc_data.assert_ramping_args_present()
 
         # Creating the pyomo block
-        ramp_blk_name = op_block_name.split(".")[-1] + f"_{commodity}_ramping"
+        ramp_blk_name = (
+            self._get_valid_block_name(op_block_name) + f"_{commodity}_ramping"
+        )
         if hasattr(self, ramp_blk_name):
             raise ConfigurationError(
                 f"Attempting to overwrite ramping limits for {commodity} in {op_block_name}."
@@ -665,7 +807,9 @@ class PriceTakerModel(ConcreteModel):
         else:
             install_unit = 1
 
-        start_shut_blk_name = op_block_name.split(".")[-1] + "_startup_shutdown"
+        start_shut_blk_name = (
+            self._get_valid_block_name(op_block_name) + "_startup_shutdown"
+        )
         if hasattr(self, start_shut_blk_name):
             raise ConfigurationError(
                 f"Attempting to overwrite startup/shutdown constraints "
@@ -805,6 +949,8 @@ class PriceTakerModel(ConcreteModel):
         corporate_tax_rate: float = 0.2,
         annualization_factor: Optional[float] = None,
         cash_inflow_scale_factor: Optional[float] = 1.0,
+        other_costs: Optional[list] = None,
+        other_revenue: Optional[list] = None,
     ):
         """
         Builds overall cashflow expressions.
@@ -883,11 +1029,15 @@ class PriceTakerModel(ConcreteModel):
 
         cf.net_cash_inflow = Var(doc="Net cash inflow")
         cf.net_cash_inflow_calculation = Constraint(
-            expr=cf.net_cash_inflow
-            == cash_inflow_scale_factor
-            * sum(
-                self.rep_days_weights[d] * self.period[d, t].net_hourly_cash_inflow
-                for d, t in self.period
+            expr=(
+                cf.net_cash_inflow
+                == cash_inflow_scale_factor
+                * sum(
+                    self.rep_days_weights[d] * self.period[d, t].net_hourly_cash_inflow
+                    for d, t in self.period
+                )
+                + (sum(other_revenue) if other_revenue is not None else 0)
+                - (sum(other_costs) if other_costs is not None else 0)
             )
         )
 
@@ -948,3 +1098,180 @@ class PriceTakerModel(ConcreteModel):
                 f"Please specify either npv, or lifetime_npv, or net_profit "
                 f"as the objective_type."
             ) from msg
+
+    # Utilities for reading the results
+    def get_num_startups(self, op_block_name: str):
+        """Returns the number of times the given operation block undergoes startup"""
+        op_blks = self._get_operation_blocks(
+            blk_name=op_block_name, attribute_list=["startup"]
+        )
+        startups = {d: {t: op_blks[d][t].startup.value} for d, t in self.period}
+
+        # pylint: disable = not-an-iterable
+        try:
+            return sum(
+                self.rep_days_weights[d] * sum(startups[d].values())
+                for d in self.set_days
+            )
+        except TypeError:
+            # Either the problem is not solved, or the startup variable is not used
+            _logger.warning(
+                "startup variable value is not available. \n\t Either the model "
+                "is not solved, or the startup variable maynot be used in the model."
+            )
+            return None
+
+    def get_num_shutdowns(self, op_block_name: str):
+        """Returns the number of times the given operation block undergoes shutdown"""
+        op_blks = self._get_operation_blocks(
+            blk_name=op_block_name, attribute_list=["shutdown"]
+        )
+        shutdowns = {d: {t: op_blks[d][t].shutdown.value} for d, t in self.period}
+
+        # pylint: disable = not-an-iterable
+        try:
+            return sum(
+                self.rep_days_weights[d] * sum(shutdowns[d].values())
+                for d in self.set_days
+            )
+        except TypeError:
+            # Either the problem is not solved, or the shutdown variable is not used
+            _logger.warning(
+                "startup variable value is not available. \n\t Either the model "
+                "is not solved, or the startup variable maynot be used in the model."
+            )
+            return None
+
+    def get_operation_var_values(self, var_list: Optional[list] = None):
+        """
+        Returns a DataFrame of all operation values
+
+        Args:
+            var_list : list, optional
+                List of variables/expressions. If not specified, values of all variables
+                and expressions will be returned, by default None
+        """
+        # Create a list of all flowsheet instances
+        set_of_fs = [self.period[p] for p in self.period]
+        results = {
+            "Day": [d for d, _ in self.period],
+            "Time": [t for _, t in self.period],
+            "LMP": [self.rep_days_lmp[d][t] for d, t in self.period],
+        }
+
+        if var_list is not None:
+            # Return the values of selected variables and/or expressions
+            for v in var_list:
+                results[v] = [pyo_value(fs.find_component(v)) for fs in set_of_fs]
+
+        else:
+            # Return the values of all variables and expressions
+            blk = self.period[1, 1]  # Reference block to extract variable names
+            for v in blk.component_data_objects(Var):
+                # Variable name will be of the form period[d, t].var_name
+                v_name = v.name.split(".", maxsplit=1)[-1]
+                results[v_name] = [fs.find_component(v_name).value for fs in set_of_fs]
+
+            for v in blk.component_data_objects(Expression):
+                # Expression name will be of the form period[d, t].expr_name
+                v_name = v.name.split(".", maxsplit=1)[-1]
+                results[v_name] = [
+                    pyo_value(fs.find_component(v_name)) for fs in set_of_fs
+                ]
+
+        # Return the data as a DataFrame
+        return pd.DataFrame(results)
+
+    def get_design_var_values(self, var_list: Optional[list] = None):
+        """
+        Returns the values of non-time-varying variables and expressions.
+        This includes values in design blocks (DesignModel instances), and
+        the cashflows block.
+        """
+        result = {}
+        if var_list is not None:
+            # User specified the variables they would like to query
+            for v in var_list:
+                result[v] = pyo_value(self.find_component(v))
+
+            return result
+
+        # User did not specify variables, so return the values of all variables
+        # and expressions in this object, in DesignModel objects, and in cashflows
+        for v in self.component_data_objects((Var, Expression), descend_into=False):
+            # Get variables and expressions in this object
+            result[v.name] = pyo_value(v)
+
+        for blk in self.component_data_objects(Block):
+            # Get variables and expression in DesignModel instances
+            if not isinstance(blk, DesignModelData):
+                continue
+
+            for v in blk.component_data_objects((Var, Expression)):
+                result[v.name] = pyo_value(v)
+
+        if hasattr(self, "cashflows"):
+            # Get variables and expressions in cashflows
+            # pylint: disable = no-member
+            for v in self.cashflows.component_data_objects((Var, Expression)):
+                result[v.name] = pyo_value(v)
+
+        return result
+
+    def plot_operation_profile(
+        self,
+        operation_vars: List[str],
+        day: int = 1,
+        time: Optional[tuple] = None,
+        include_lmp: bool = False,
+    ):
+        data = self.get_operation_var_values(list(operation_vars))
+        data = data[data["Day"] == day]
+
+        if time is not None:
+            data = data[data["Time"] >= time[0]]
+            data = data[data["Time"] <= time[1]]
+
+        num_plots = len(operation_vars) if include_lmp else len(operation_vars) + 1
+        counter = 0
+        _colors = [
+            "blue",
+            "green",
+            "orange",
+            "purple",
+            "cyan",
+            "magenta",
+            "brown",
+            "pink",
+        ]
+
+        fig, axs = plt.subplots(num_plots, 1, sharex=True)
+
+        if not include_lmp:
+            # LMP data is not shown in the same plot as operation schedule.
+            # So, show LMP data at the top of the plot
+            axs[counter].plot(data["Time"], data["LMP"], color="red", drawstyle="steps")
+            axs[counter].set_title("Locational Marginal Price")
+            counter += 1
+
+        for v in operation_vars:
+            axs[counter].plot(
+                data["Time"], data[v], drawstyle="steps", color=_colors.pop(0)
+            )
+            axs[counter].set_title(v)
+
+            if include_lmp:
+                ax1 = axs[counter].twinx()
+                ax1.plot(data["Time"], data["LMP"], color="red", drawstyle="steps")
+                ax1.tick_params(axis="y", labelcolor="red")
+
+            counter += 1
+
+        plt.tight_layout()
+
+        return fig, axs
+
+    def plot_lmp_histogram(self):
+        """Returns a histogram of the specified LMP signal"""
+        assert self._assert_lmp_data_exists()
+        raise NotImplementedError()
