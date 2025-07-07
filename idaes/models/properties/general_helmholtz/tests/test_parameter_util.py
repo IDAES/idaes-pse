@@ -24,9 +24,13 @@ this density of a liquid near the triple point is insensitive to pressure, so to
 the pressure from density of a liquid at the triple point, a lot of significant figures 
 are needed. As long a I could add significant figures to the density and not change the 
 reported value when rounded, I assumed it was okay. 
+
+If you're adding more tests and run into the same problem, the function infer_rhol_value 
+can be uncommented to print out an inferred value for liquid density.
 """
 
 import pytest
+import math
 from idaes.models.properties.general_helmholtz.components.parameters.h2o import (
     main as h2o_main,
 )
@@ -64,11 +68,11 @@ def _common_sat(sat_thermo_data, we):
     # due to lack of sig. figs. in reported data
     for pnt in sat_thermo_data.values():
 
-        # Uncomment this if the tests are failing because the
-        # pressure calculated from rhol is not the same as rhov.
-        # This can infer a better value to use for rhol
-        # with more decimal places of precision
-        # calc_liq_value(pnt,we)
+        # The pressure is very sensitive to the liquid density (rhol) around the triple point.
+        # If you're finding we.calculate_pressure(rho=pnt["rhol"], T=pnt["T"]) is failing,
+        # uncomment the line below to infer a more precise value for rhol that you can use in
+        # your test.
+        # infer_rhol_value(pnt,we)
 
         assert we.calculate_pressure(rho=pnt["rhov"], T=pnt["T"]) == pytest.approx(
             pnt["p"], rel=1e-2, abs=1e-3
@@ -505,16 +509,13 @@ def test_isobutane():
     _common_sat(sat_thermo_data, we)
 
 
-def calc_liq_value(pnt, we):
-    import math
+def infer_rhol_value(pnt, we):
+    # Pressure is extremely sensitive to the liquid density (rhol) around the triple point.
+    # This method is used to infer additional decimal places for the liquid density
+    # so that the pressure calculated correctly.
 
-    # This method is used to infer the decimal places
-    # required in rhol to get the pressure correct
-    # for rhol and rhov
     pressure = pnt["p"]
     rhol_pressure = we.calculate_pressure(rho=pnt["rhol"], T=pnt["T"])
-    # shouldn't be any problems with rhov pressure
-    # rhov_pressure =we.calculate_pressure(rho=pnt["rhov"], T=pnt["T"])
 
     rhol = pnt["rhol"]
     rhol_max = math.ceil(pnt["rhol"])
