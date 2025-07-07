@@ -533,4 +533,8 @@ def infer_rhol_value(pnt, we):
         rhol = (rhol_max + rhol_min) / 2
         rhol_pressure = we.calculate_pressure(rho=rhol, T=pnt["T"])
 
-    print(f"update the rhol to this value: {rhol}")
+    print(
+        f"update the rhol in your test_[compound] method for\n"
+        f"T={pnt['T']} P={pnt['p']} to this value: {rhol} \n",
+        f"This adds additional precision to your original value of {pnt['rhol']}",
+    )
