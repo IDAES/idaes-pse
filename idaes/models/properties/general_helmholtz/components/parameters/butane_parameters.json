@@ -1,0 +1,57 @@
+{
+    "nl_file": "butane_expressions_eos.nl",
+    "expr_map": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        13,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        12,
+        11
+    ],
+    "var_map": [
+        0,
+        1,
+        1000,
+        1000
+    ],
+    "param": {
+        "R": 0.14305157,
+        "MW": 58.1222,
+        "T_star": 425.125,
+        "rho_star": 227.8,
+        "Tc": 425.125,
+        "rhoc": 228.0,
+        "Pc": 3792.67017594465,
+        "Tt": 134.895,
+        "Pt": 0.000653,
+        "rhot_l": 734.96,
+        "rhot_v": 3.45e-05,
+        "P_min": 0.000653,
+        "P_max": 69000000.0,
+        "rho_max": 750,
+        "T_min": 134.895,
+        "T_max": 575,
+        "reference_state_offset": [
+            0.0,
+            0.0
+        ]
+    },
+    "have_tcx": false,
+    "nl_file_st": "butane_expressions_st.nl",
+    "var_map_st": [
+        1,
+        1000,
+        1000,
+        1000
+    ],
+    "have_st": true,
+    "have_visc": false
+}
