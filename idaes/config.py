@@ -51,17 +51,13 @@ binary_distro_map = {
     "el9": "ubuntu2204",
     "rhel7": "el7",
     "rhel8": "el8",
-    "rhel9": "ubuntu2204",
     "scientific7": "el7",
     "centos7": "el7",
     "centos8": "el8",
     "rocky8": "el8",
-    "rocky9": "ubuntu2204",
     "almalinux8": "el8",
-    "almalinux9": "ubuntu2204",
     "debian9": "el7",
     "debian10": "el8",
-    "debian11": "ubuntu2004",
     "linuxmint20": "ubuntu2004",
     "kubuntu1804": "ubuntu1804",
     "kubuntu2004": "ubuntu2004",
@@ -70,6 +66,7 @@ binary_distro_map = {
     "xubuntu2004": "ubuntu2004",
     "xubuntu2204": "ubuntu2204",
     "pop22": "ubuntu2204",
+    "ubuntu2404": "ubuntu2204",
 }
 # Machine map
 binary_arch_map = {
