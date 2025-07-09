@@ -299,7 +299,7 @@ class OperationModelData(ProcessBlockData):
         ConfigValue(
             default=True,
             domain=Bool,
-            doc="Should op_mode, startup, shutdown vars be defined?",
+            doc="Boolean flag to determine if `op_mode`, `startup`, and `shutdown` vars should be defined",
         ),
     )
     CONFIG.declare(
@@ -307,7 +307,7 @@ class OperationModelData(ProcessBlockData):
         ConfigValue(
             default=True,
             domain=Bool,
-            doc="Should LMP data automatically be appended to the model?",
+            doc="Boolean flag to determine if LMP data should automatically be appended to the model",
         ),
     )
     CONFIG.declare(
