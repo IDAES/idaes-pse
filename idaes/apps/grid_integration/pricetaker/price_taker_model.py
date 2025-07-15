@@ -594,9 +594,8 @@ class PriceTakerModel(ConcreteModel):
         # Indexed blocks contain square brackets. This method replaces
         # them with underscores and returns a valid python variable name.
         bn = re.sub(r"[\[,\]]", "_", blk_name.split(".")[-1])
-        if bn[-1] == "_":
-            # Remove the trailing underscore, if it exists
-            return bn[:-1]
+        # Remove the trailing underscore(s), if it exists
+        bn = bn.rstrip("_")
         return bn
 
     def add_capacity_limits(
