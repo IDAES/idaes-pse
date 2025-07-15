@@ -144,14 +144,31 @@ def test_subc_power_plant():
 @pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.integration
 def test_dynamic_power_plant_build():
-    # constructing and initializing dynamic power plant
+    # constructing dynamic power plant
     # not solving due to simulation time >20 min
     m = subcrit_plant.get_model(dynamic=True, init=False)
     assert m.dynamic is True
     # Lost 11 degrees of freedom because PIDControllers.mv_eqn[t0]
     # is no longer deactivated if calculate_initial_integral=False
-    assert degrees_of_freedom(m) == 157
+    assert degrees_of_freedom(m) == 168
 
+
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
+@pytest.mark.integration
+def test_dynamic_power_plant_build_init():
+    # constructing and initializing dynamic power plant
+
+    num_step = [2, 2]
+    # The time step sizes for the two models are 30 s and 60 s, respectively
+    step_size = [30, 60]
+    m = subcrit_plant.get_model(
+        dynamic=True, time_set=[0, num_step[0] * step_size[0]], nstep=num_step[0]
+    )
+    assert m.dynamic is True
+
+    DOF = degrees_of_freedom(m)
+    if not DOF == 0:
+        raise ValueError(f"degrees of freedom was {DOF}")
 
 @pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.component

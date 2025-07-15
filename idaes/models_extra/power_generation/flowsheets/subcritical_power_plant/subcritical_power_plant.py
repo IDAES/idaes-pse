@@ -573,12 +573,15 @@ def main_dynamic():
     m_dyn.fs_main.fs_stc.spray_ctrl.mv_ref.value = (
         m_dyn.fs_main.fs_stc.spray_valve.valve_opening[t0].value
     )
+
+    #TODO: integral_component_ref was replaced with mv_integral_component_dot
+    # 'ref' does not exist anymore, not sure what this should be set to
     # For two bounded controllers, set the initial mv_integral_component
     m_dyn.fs_main.fs_stc.makeup_ctrl.mv_integral_component[:].value = pyo.value(
-        m_dyn.fs_main.fs_stc.makeup_ctrl.mv_integral_component_ref[t0]
+        m_dyn.fs_main.fs_stc.makeup_ctrl.mv_integral_component_dot[t0]
     )
     m_dyn.fs_main.fs_stc.spray_ctrl.mv_integral_component[:].value = pyo.value(
-        m_dyn.fs_main.fs_stc.spray_ctrl.mv_integral_component_ref[t0]
+        m_dyn.fs_main.fs_stc.spray_ctrl.mv_integral_component_dot[t0]
     )
 
     # Controllers on the main flowsheet
@@ -692,7 +695,7 @@ def main_dynamic():
     time_used = end_time - start_time
     _log.info("simulation time={}".format(time_used))
     write_data_to_txt_file(plot_data)
-    plot_results(plot_data)
+    # plot_results(plot_data)
     return m_dyn
 
 
@@ -2238,12 +2241,14 @@ def print_pfd_results(m):
         except AttributeError:
             pass
         try:
-            tags[i + "_yN2"] = s.mole_frac_comp["N2"]
-            tags[i + "_yO2"] = s.mole_frac_comp["O2"]
-            tags[i + "_yNO"] = s.mole_frac_comp["NO"]
-            tags[i + "_yCO2"] = s.mole_frac_comp["CO2"]
-            tags[i + "_yH2O"] = s.mole_frac_comp["H2O"]
-            tags[i + "_ySO2"] = s.mole_frac_comp["SO2"]
+            # Fix for missing components (just H20 in steam portion)
+            #TODO: Incorporate in logging system. 
+            print("Processing molecules for stream :{}".format(s))
+            for key in ['N2', 'O2', 'NO', 'CO2', 'H2O', 'SO2']:
+                if key in s.mole_frac_comp.keys():
+                    tags[i + "_y{}".format(key)] = s.mole_frac_comp[key]
+                else:
+                    print("{} was not found".format(key))
         except AttributeError:
             pass
 
@@ -2277,9 +2282,9 @@ if __name__ == "__main__":
     # to 100% load and holding for 20 minutes.
     # uncomment the code (line 1821) to run this simulation,
     # note that this simulation takes around ~60 minutes to complete
-    # m_dyn = main_dynamic()
+    m_dyn = main_dynamic()
 
     # This method builds and runs a steady state subcritical coal-fired power
     # plant, the simulation consists of a typical base load case.
-    m_ss = main_steady_state()
-    print_pfd_results(m_ss)
+    # m_ss = main_steady_state()
+    # print_pfd_results(m_ss)
