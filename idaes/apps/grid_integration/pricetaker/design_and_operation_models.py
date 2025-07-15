@@ -36,7 +36,7 @@ def _format_data(coeffs):
         return [0, coeffs]
 
     if isinstance(coeffs, (list, tuple)):
-        # Here, correlation is assumbe to be
+        # Here, correlation is assume to be
         # y = a_0 + a_1 * design_var + a_2 * design_var**2 + ...
         return coeffs
 
