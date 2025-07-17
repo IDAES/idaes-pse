@@ -42,7 +42,13 @@ References:
 from pyomo.environ import exp, log, units as pyunits, Var, Expression
 
 # Import IDAES cores
-from idaes.core import AqueousPhase, Solvent, Solute, Anion, Cation
+from idaes.core import (
+    AqueousPhase,
+    Solvent,
+    Solute,
+    Anion,
+    Cation,
+)
 
 from idaes.models.properties.modular_properties.state_definitions import FTPx
 from idaes.models.properties.modular_properties.base.generic_property import StateIndex
@@ -255,7 +261,7 @@ class N2OAnalogy:
 
 
 class PressureSatSolvent:
-    # Method for calculating saturation pressure ofsolvents
+    # Method for calculating saturation pressure of solvents
     @staticmethod
     def build_parameters(cobj):
         cobj.pressure_sat_comp_coeff_1 = Var(
@@ -334,16 +340,27 @@ class VolMolSolvent:
         return pyunits.convert(vol_mol, units.VOLUME / units.AMOUNT)
 
 
-class VolMolCO2:
-    # Weiland Method for calculating molar volume of dissolved CO2 [2]
-
+class VolMolMEA:
+    # Molar volume of MEA as calculated by Morgan [2]
     @staticmethod
     def build_parameters(cobj):
-        cobj.vol_mol_liq_comp_coeff_a = Var(
-            doc="Parameter a for liquid phase molar volume",
-            units=pyunits.mL / pyunits.mol,
+        cobj.dens_mol_liq_comp_coeff_1 = Var(
+            doc="Parameter 1 for liquid phase molar density",
+            units=pyunits.g / pyunits.mL / pyunits.K**2,
         )
-        set_param_from_config(cobj, param="vol_mol_liq_comp_coeff", index="a")
+        set_param_from_config(cobj, param="dens_mol_liq_comp_coeff", index="1")
+
+        cobj.dens_mol_liq_comp_coeff_2 = Var(
+            doc="Parameter 2 for liquid phase molar density",
+            units=pyunits.g / pyunits.mL / pyunits.K,
+        )
+        set_param_from_config(cobj, param="dens_mol_liq_comp_coeff", index="2")
+
+        cobj.dens_mol_liq_comp_coeff_3 = Var(
+            doc="Parameter 3 for liquid phase molar density",
+            units=pyunits.g / pyunits.mL,
+        )
+        set_param_from_config(cobj, param="dens_mol_liq_comp_coeff", index="3")
 
         cobj.vol_mol_liq_comp_coeff_b = Var(
             doc="Parameter b for liquid phase molar volume",
@@ -356,6 +373,39 @@ class VolMolCO2:
             units=pyunits.mL / pyunits.mol,
         )
         set_param_from_config(cobj, param="vol_mol_liq_comp_coeff", index="c")
+
+    @staticmethod
+    def return_expression(b, cobj, T):
+        units = b.params.get_metadata().derived_units
+        T = pyunits.convert(T, to_units=pyunits.K)
+        x = b.mole_frac_comp
+
+        rho = (
+            cobj.dens_mol_liq_comp_coeff_1 * T**2
+            + cobj.dens_mol_liq_comp_coeff_2 * T
+            + cobj.dens_mol_liq_comp_coeff_3
+        )
+        vol_mol_pure = pyunits.convert(cobj.mw / rho, units.VOLUME / units.AMOUNT)
+
+        vol_mol_interaction = x["H2O"] * (
+            cobj.vol_mol_liq_comp_coeff_b + cobj.vol_mol_liq_comp_coeff_c * x["MEA"]
+        )
+
+        return vol_mol_pure + pyunits.convert(
+            vol_mol_interaction, units.VOLUME / units.AMOUNT
+        )
+
+
+class VolMolCO2:
+    # Weiland Method for calculating molar volume of dissolved CO2 [2]
+
+    @staticmethod
+    def build_parameters(cobj):
+        cobj.vol_mol_liq_comp_coeff_a = Var(
+            doc="Parameter a for liquid phase molar volume",
+            units=pyunits.mL / pyunits.mol,
+        )
+        set_param_from_config(cobj, param="vol_mol_liq_comp_coeff", index="a")
 
         cobj.vol_mol_liq_comp_coeff_d = Var(
             doc="Parameter d for liquid phase molar volume",
@@ -375,10 +425,6 @@ class VolMolCO2:
 
         vol_mol = (
             cobj.vol_mol_liq_comp_coeff_a
-            + (cobj.vol_mol_liq_comp_coeff_b + cobj.vol_mol_liq_comp_coeff_c * x["MEA"])
-            * x["MEA"]
-            * x["H2O"]
-            / x["CO2"]
             + (cobj.vol_mol_liq_comp_coeff_d + cobj.vol_mol_liq_comp_coeff_e * x["MEA"])
             * x["MEA"]
         )
@@ -905,7 +951,7 @@ configuration = {
             "diffus_phase_comp": {"Liq": DiffusMEA},
             "enth_mol_liq_comp": EnthMolSolvent,
             "pressure_sat_comp": PressureSatSolvent,
-            "vol_mol_liq_comp": VolMolSolvent,
+            "vol_mol_liq_comp": VolMolMEA,
             "parameter_data": {
                 "mw": (0.06108, pyunits.kg / pyunits.mol),
                 "cp_mass_liq_comp_coeff": {
@@ -919,6 +965,10 @@ configuration = {
                     "1": (-5.35162e-7, pyunits.g / pyunits.mL / pyunits.K**2),  # [2]
                     "2": (-4.51417e-4, pyunits.g / pyunits.mL / pyunits.K),
                     "3": (1.19451, pyunits.g / pyunits.mL),
+                },
+                "vol_mol_liq_comp_coeff": {
+                    "b": (-2.2642, pyunits.mL / pyunits.mol),  # [2]
+                    "c": (3.0059, pyunits.mL / pyunits.mol),
                 },
                 "dh_vap": 58000,  # [3]
                 "diffus_phase_comp_coeff": {
@@ -966,8 +1016,6 @@ configuration = {
                 },
                 "vol_mol_liq_comp_coeff": {
                     "a": (10.2074, pyunits.mL / pyunits.mol),  # [2]
-                    "b": (-2.2642, pyunits.mL / pyunits.mol),
-                    "c": (3.0059, pyunits.mL / pyunits.mol),
                     "d": (207, pyunits.mL / pyunits.mol),
                     "e": (-563.3701, pyunits.mL / pyunits.mol),
                 },

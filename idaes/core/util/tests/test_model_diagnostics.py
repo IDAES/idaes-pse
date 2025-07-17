@@ -2868,6 +2868,20 @@ class TestIpoptConvergenceAnalysis:
         assert ca.config.solver_options is None
 
     @pytest.mark.unit
+    def test_init_solver_options(self, model):
+        solver_obj = SolverFactory("ipopt")
+        options = solver_obj.options["max_iter"] = 100
+        ca = IpoptConvergenceAnalysis(
+            model, solver_obj=solver_obj, solver_options=options
+        )
+
+        assert ca._model is model
+        assert isinstance(ca._psweep, SequentialSweepRunner)
+        assert isinstance(ca.results, dict)
+        assert ca.config.input_specification is None
+        assert ca.config.solver_options is not None
+
+    @pytest.mark.unit
     def test_build_model(self, model):
         ca = IpoptConvergenceAnalysis(model)
 
