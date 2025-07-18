@@ -370,3 +370,9 @@ class TestSVDRayleighRitz:
         _test_svd_quality(jac, Uhat, svals_hat, Vhat)
         _assert_subspace_containment(Uhat, Utrue, tol=1e-6)
         _assert_subspace_containment(Vhat, Vtrue, tol=1e-6)
+
+    @pytest.mark.integration
+    def test_degenerate_soc_scheduling_jac(self):
+        jac = load_npz(os.sep.join([svd_cache, "degenerate_soc_scheduling_jac.npz"]))
+        Uhat, svals_hat, Vhat, null_hat = svd_rayleigh_ritz(jac, seed=87, max_iter=200)
+        _test_svd_quality(jac, Uhat, svals_hat, Vhat, null_hat)

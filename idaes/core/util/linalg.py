@@ -267,13 +267,19 @@ def _aug_eig_processing(
     V = V @ VT_sub.T
 
     if m > n:
-        null_space = U[:, -p_hat:]
-        assert norm(null_space.T @ A) <= np.sqrt(m * n) * 1e-15
-        U = U[:, :-p_hat]
+        if p_hat > 0:
+            null_space = U[:, -p_hat:]
+            assert norm(null_space.T @ A) <= np.sqrt(m * n) * 1e-15
+            U = U[:, :-p_hat]
+        else:
+            null_space = np.zeros((U.shape[0], 0))
     elif m < n:
-        null_space = V[:, -p_hat:]
-        assert norm(A @ null_space) <= np.sqrt(m * n) * 1e-15
-        V = V[:, :-p_hat]
+        if p_hat > 0:
+            null_space = V[:, -p_hat:]
+            assert norm(A @ null_space) <= np.sqrt(m * n) * 1e-15
+            V = V[:, :-p_hat]
+        else:
+            null_space = np.zeros((V.shape[0], 0))
 
     # Sort singular values in ascending order
     U = U[:, ::-1]
