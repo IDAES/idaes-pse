@@ -1645,10 +1645,15 @@ class _GenericStateBlock(StateBlock):
 
         # Also need to deactivate sum of mole fraction constraint
         for k in self.values():
-            try:
-                k.sum_mole_frac_out.deactivate()
-            except AttributeError:
-                pass
+            if not k.config.defined_state:
+                try:
+                    k.sum_mole_frac_out.deactivate()
+                except AttributeError:
+                    try:
+                        k.equilibrium_constraint.deactivate()
+                    except AttributeError:
+                        pass
+                    pass
 
     def initialize(
         blk,
