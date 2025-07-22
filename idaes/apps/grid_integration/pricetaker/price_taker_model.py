@@ -12,6 +12,7 @@
 #################################################################################
 
 import re
+from collections import defaultdict
 from typing import Optional, Union, Callable, List
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -1099,47 +1100,34 @@ class PriceTakerModel(ConcreteModel):
             ) from msg
 
     # Utilities for reading the results
+    def _get_num(self, op_block_name: str, attribute: str):
+        """Returns the number of times the given operation block undergoes an event, indexed by day and time"""
+        op_blks = self._get_operation_blocks(
+            blk_name=op_block_name, attribute_list=[attribute]
+        )
+        event_count = defaultdict(dict)
+        
+        # pylint: disable = not-an-iterable
+        try:
+            for d, t in self.period:
+                event_count[d][t] = pyo_value(getattr(op_blks[d][t], attribute))
+            
+            return sum(
+                self.rep_days_weights[d] * sum(event_count[d].values())
+                for d in self.set_days
+            )
+        
+        except ValueError:
+            # Either the problem is not solved, or the attribute is not used
+            raise AttributeError(f"{attribute} variable value is not available. \n\t Either the model is not solved, or the {attribute} variable may not be used in the model.")
+
     def get_num_startups(self, op_block_name: str):
         """Returns the number of times the given operation block undergoes startup"""
-        op_blks = self._get_operation_blocks(
-            blk_name=op_block_name, attribute_list=["startup"]
-        )
-        startups = {d: {t: op_blks[d][t].startup.value} for d, t in self.period}
-
-        # pylint: disable = not-an-iterable
-        try:
-            return sum(
-                self.rep_days_weights[d] * sum(startups[d].values())
-                for d in self.set_days
-            )
-        except TypeError:
-            # Either the problem is not solved, or the startup variable is not used
-            _logger.warning(
-                "startup variable value is not available. \n\t Either the model "
-                "is not solved, or the startup variable maynot be used in the model."
-            )
-            return None
-
+        return self._get_num(op_block_name, "startup")
+    
     def get_num_shutdowns(self, op_block_name: str):
         """Returns the number of times the given operation block undergoes shutdown"""
-        op_blks = self._get_operation_blocks(
-            blk_name=op_block_name, attribute_list=["shutdown"]
-        )
-        shutdowns = {d: {t: op_blks[d][t].shutdown.value} for d, t in self.period}
-
-        # pylint: disable = not-an-iterable
-        try:
-            return sum(
-                self.rep_days_weights[d] * sum(shutdowns[d].values())
-                for d in self.set_days
-            )
-        except TypeError:
-            # Either the problem is not solved, or the shutdown variable is not used
-            _logger.warning(
-                "startup variable value is not available. \n\t Either the model "
-                "is not solved, or the startup variable maynot be used in the model."
-            )
-            return None
+        return self._get_num(op_block_name, "shutdown")
 
     def get_operation_var_values(self, var_list: Optional[list] = None):
         """

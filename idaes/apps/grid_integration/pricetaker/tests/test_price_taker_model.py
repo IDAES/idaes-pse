@@ -1146,7 +1146,7 @@ def test_get_valid_block_name(dummy_data):
 
 
 @pytest.mark.unit
-def test_get_num_startups(dummy_data):
+def test_get_num_startups_shutdowns(dummy_data):
     m = PriceTakerModel()
     m.append_lmp_data(lmp_data=dummy_data, num_representative_days=1, horizon_length=12)
     m.design_blk = DesignModel(
@@ -1173,15 +1173,39 @@ def test_get_num_startups(dummy_data):
         m.period[d, t].op_blk.startup.fix(startup_vals[t - 1])
         m.period[d, t].op_blk.shutdown.fix(shutdown_vals[t - 1])
 
-    # solver = pyo.SolverFactory("ipopt")
-    # solver = get_solver()
-    # solver = pyo.SolverFactory("glpk")
-    # solver.solve(m.op_blk_startup_shutdown[1])
-
+   
     num_startups = m.get_num_startups("op_blk")
-    print(f"Number of startups is {num_startups}")
-    # assert num_startups == 3
-
+    
+    # number of startups is 3 per horizon, and there are two 12-hour time horizons, so num_startups = 3*2
+    assert num_startups == 6
+    # number of shutdowns is 3 per horizon, and there are two 12-hour time horizons, so num_startups = 3*2
     num_shutdowns = m.get_num_shutdowns("op_blk")
-    print(f"Number of shutdowns is {num_shutdowns}")
-    # assert num_shutdowns == 3
+    assert num_shutdowns == 6
+
+@pytest.mark.unit
+def test_get_num_startups_shutdowns_exception(dummy_data):
+    m = PriceTakerModel()
+    m.append_lmp_data(lmp_data=dummy_data, num_representative_days=1, horizon_length=12)
+    m.design_blk = DesignModel(
+        model_func=foo_design_model, model_args={"max_power": 400, "min_power": 300}
+    )
+    # Build the multiperiod model
+    m.build_multiperiod_model(
+        flowsheet_func=build_foo_flowsheet,
+        flowsheet_options={"design_blk": m.design_blk},
+    )
+    with pytest.raises(
+        AttributeError,
+        match=(
+            "startup variable value is not available. \n\t Either the model is not solved, or the startup variable may not be used in the model."
+        ),
+    ):
+        m.get_num_startups("op_blk")
+    
+    with pytest.raises(
+        AttributeError,
+        match=(
+            "shutdown variable value is not available. \n\t Either the model is not solved, or the shutdown variable may not be used in the model."
+        ),
+    ):
+        m.get_num_shutdowns("op_blk")
