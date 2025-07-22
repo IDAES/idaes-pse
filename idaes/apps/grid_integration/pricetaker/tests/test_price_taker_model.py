@@ -1173,14 +1173,14 @@ def test_get_num_startups_shutdowns(dummy_data):
         m.period[d, t].op_blk.startup.fix(startup_vals[t - 1])
         m.period[d, t].op_blk.shutdown.fix(shutdown_vals[t - 1])
 
-   
     num_startups = m.get_num_startups("op_blk")
-    
+
     # number of startups is 3 per horizon, and there are two 12-hour time horizons, so num_startups = 3*2
     assert num_startups == 6
     # number of shutdowns is 3 per horizon, and there are two 12-hour time horizons, so num_startups = 3*2
     num_shutdowns = m.get_num_shutdowns("op_blk")
     assert num_shutdowns == 6
+
 
 @pytest.mark.unit
 def test_get_num_startups_shutdowns_exception(dummy_data):
@@ -1201,7 +1201,7 @@ def test_get_num_startups_shutdowns_exception(dummy_data):
         ),
     ):
         m.get_num_startups("op_blk")
-    
+
     with pytest.raises(
         AttributeError,
         match=(

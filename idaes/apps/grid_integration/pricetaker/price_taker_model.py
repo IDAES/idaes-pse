@@ -1106,25 +1106,27 @@ class PriceTakerModel(ConcreteModel):
             blk_name=op_block_name, attribute_list=[attribute]
         )
         event_count = defaultdict(dict)
-        
+
         # pylint: disable = not-an-iterable
         try:
             for d, t in self.period:
                 event_count[d][t] = pyo_value(getattr(op_blks[d][t], attribute))
-            
+
             return sum(
                 self.rep_days_weights[d] * sum(event_count[d].values())
                 for d in self.set_days
             )
-        
+
         except ValueError:
             # Either the problem is not solved, or the attribute is not used
-            raise AttributeError(f"{attribute} variable value is not available. \n\t Either the model is not solved, or the {attribute} variable may not be used in the model.")
+            raise AttributeError(
+                f"{attribute} variable value is not available. \n\t Either the model is not solved, or the {attribute} variable may not be used in the model."
+            )
 
     def get_num_startups(self, op_block_name: str):
         """Returns the number of times the given operation block undergoes startup"""
         return self._get_num(op_block_name, "startup")
-    
+
     def get_num_shutdowns(self, op_block_name: str):
         """Returns the number of times the given operation block undergoes shutdown"""
         return self._get_num(op_block_name, "shutdown")
