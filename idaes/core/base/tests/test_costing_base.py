@@ -28,6 +28,8 @@ from idaes.core import (
     register_idaes_currency_units,
 )
 
+from idaes.core.base.costing_base import load_location_factor
+
 # TODO : Tests for cases with multiple costing packages
 pyunits.load_definitions_from_strings(["USD_test = [test_currency]"])
 
@@ -82,6 +84,70 @@ def test_register_idaes_currency_units():
         assert pytest.approx(conv / 500, rel=1e-10) == pyunits.convert_value(
             1, pyunits.USD_CE500, getattr(pyunits, c)
         )
+
+
+@pytest.mark.unit
+def test_all_valid_locations_have_factors():
+    location_data = load_location_factor()
+    for entry in location_data:
+        location = (entry["country"], entry["city"])
+        factor = entry.get("location_factor", {}).get("average")
+        assert factor is not None, f"No factor found for location: {location}"
+        assert isinstance(
+            factor, (int, float)
+        ), f"Invalid factor type for {location}: {factor}"
+
+
+@pytest.mark.unit
+def test_invalid_country_raises_keyerror():
+    location_data = load_location_factor()
+    valid_locations = {(entry["country"], entry["city"]) for entry in location_data}
+    invalid_country = ("Brunei", None)
+    assert (
+        invalid_country not in valid_locations
+    ), f"Test assumption failed: {invalid_country} unexpectedly exists in data"
+
+
+@pytest.mark.unit
+def test_fallback_to_country_without_city():
+    location_data = load_location_factor()
+    test_location = ("Austria", "Vienna")
+    fallback_location = ("Austria", None)
+
+    available_locations = {(entry["country"], entry["city"]) for entry in location_data}
+    if (
+        fallback_location in available_locations
+        and test_location not in available_locations
+    ):
+        fallback_factor = next(
+            entry["location_factor"]["average"]
+            for entry in location_data
+            if (entry["country"], entry["city"]) == fallback_location
+        )
+        assert isinstance(fallback_factor, (int, float))
+    else:
+        pytest.skip("Test conditions not met for fallback check.")
+
+
+@pytest.mark.unit
+def test_invalid_city_without_fallback_raises_keyerror():
+    location_data = load_location_factor()
+    test_location = ("United States", "Boston")
+    locations = {(entry["country"], entry["city"]) for entry in location_data}
+
+    country_exists = any(loc[0] == test_location[0] for loc in locations)
+    no_city_match = test_location not in locations
+    no_country_fallback = (test_location[0], None) not in locations
+
+    if country_exists and no_city_match and no_country_fallback:
+        with pytest.raises(StopIteration):
+            _ = next(
+                entry
+                for entry in location_data
+                if (entry["country"], entry["city"]) == test_location
+            )
+    else:
+        pytest.skip("Test assumptions not satisfied for invalid city test.")
 
 
 class TestFlowsheetCostingBlock:

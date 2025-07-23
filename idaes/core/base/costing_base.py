@@ -101,6 +101,7 @@ def register_idaes_currency_units():
             ]
         )
 
+
 def load_location_factor():
     """
     Estimate the cost of constructing the same plant in different global locations using location factors.
@@ -134,6 +135,7 @@ def load_location_factor():
     with open(os.path.join(directory, "location_factors.json"), "r") as file:
         location_factors = json.load(file)
     return location_factors
+
 
 class DefaultCostingComponents(StrEnum):
     """
