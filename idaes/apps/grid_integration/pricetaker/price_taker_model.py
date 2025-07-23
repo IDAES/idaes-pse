@@ -449,14 +449,14 @@ class PriceTakerModel(ConcreteModel):
 
         return op_vars
 
-    def fix_operation_var(self, var_name: str, value: int | float):
+    def fix_operation_var(self, var_name: str, value: Union[int, float]):
         """
         Fixes the specified variable to the given value in all operation blocks
 
         Args:
             var_name : str
                 Variable name as a string
-            value : int | float
+            value : Union[int, float]
                 Value of the variable
         """
         op_vars = self._get_operation_vars(var_name)
