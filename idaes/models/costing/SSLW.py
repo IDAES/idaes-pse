@@ -53,8 +53,9 @@ from idaes.core.util.misc import StrEnum
 from idaes.core import (
     FlowsheetCostingBlockData,
     register_idaes_currency_units,
-    load_location_factor,
 )
+
+from idaes.core.base.costing_base import load_location_factor
 
 import idaes.logger as idaeslog
 
