@@ -83,8 +83,7 @@ class arrhenius:
                 )
 
             r_units = r_base * units.LENGTH**-3 * units.TIME**-1 * c_units**order
-        # print(order.value)
-        # print(r_units.value)
+
         rblock.arrhenius_const = Var(
             doc="Arrhenius constant (pre-exponential factor)", units=r_units
         )
