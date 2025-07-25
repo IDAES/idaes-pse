@@ -207,7 +207,7 @@ class FlowsheetCostingBlockData(ProcessBlockData):
         # Set the base year for all costs
         self.base_currency = None
         self.base_period = pyo.units.year
-        
+
         # Set the location factor
         self.location_factor = ("United States", "Washington DC")
 
