@@ -19,6 +19,7 @@ from typing import Union
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from scipy.interpolate import splrep, splev
 from pyomo.common.dependencies import attempt_import
 import idaes.logger as idaeslog
 
@@ -73,7 +74,11 @@ def generate_daily_data(raw_data: list, horizon_length: int):
 
 
 def cluster_lmp_data(
-    raw_data: list, horizon_length: int, n_clusters: int, seed: int = 42
+    raw_data: list,
+    horizon_length: int,
+    n_clusters: int,
+    seed: int = 42,
+    eps: float = 1e-4,
 ):
     """
     Clusters the given price signal into n_clusters using the k-means clustering
@@ -91,6 +96,9 @@ def cluster_lmp_data(
 
         seed: int,
             Seed value for initializing random number generator within Kmeans
+
+        eps: float,
+            Centroid values below this threshold are set to 0 to limit noise in the data
 
     Returns:
         lmp_data_clusters: dict
@@ -116,7 +124,7 @@ def cluster_lmp_data(
     labels = kmeans.labels_
 
     # Set any centroid values that are < 1e-4 to 0 to avoid noise
-    centroids = centroids * (abs(centroids) >= 1e-4)
+    centroids = centroids * (abs(centroids) >= eps)
 
     # Create dicts for lmp data and the weight of each cluster
     # By default, the data is of type numpy.int or numpy.float.
@@ -158,6 +166,9 @@ def get_optimal_num_clusters(
             Method for obtaining the optimal number of clusters.
             Supported methods are elbow and silhouette
 
+        sensitivity : int,
+            difficulty of detecting knees, where 0 detects knees the easiest
+
         generate_elbow_plot : bool,
             If True, generates an elbow plot for inertia as a function of
             number of clusters
@@ -186,22 +197,17 @@ def get_optimal_num_clusters(
     for k in k_values:
         kmeans = KMeans(n_clusters=k, random_state=seed).fit(samples)
         inertia_values.append(kmeans.inertia_)
+        mean_silhouette.append(silhouette_score(samples, kmeans.labels_))
 
-        if method == "silhouette":
-            # Calculate the average silhouette score, if the chosen method
-            # is silhouette
-            mean_silhouette.append(silhouette_score(samples, kmeans.labels_))
-
-    # Identify the optimal number of clusters
-    if method == "elbow":
-        raise NotImplementedError(
-            "elbow method is not supported currently for finding the optimal "
-            "number of clusters."
-        )
-
-    elif method == "silhouette":
+    # Identify the optimal number of clusters - the point at which adding more clusters has minimal impact on inertia
+    if method == "silhouette":
         max_index = mean_silhouette.index(max(mean_silhouette))
         n_clusters = k_values[max_index]
+
+    elif method == "elbow":
+        n_clusters = _elbow_method(
+            k_values=k_values, inertia_values=inertia_values, kmin=kmin, kmax=kmax
+        )
 
     else:
         raise ValueError(
@@ -229,24 +235,101 @@ def get_optimal_num_clusters(
     return n_clusters
 
 
-def locate_elbow(x: list, y: list):
-    """
-    Identifies the elbow/knee for the input/output data
-
-    Args:
-        x : list
-            List of independent variables
-        y : list
-            List of dependent variables
-
-    Returns:
-        opt_x : float
-            Optimal x at which curvature changes significantly
-    """
-    # The implementation is based on
+def _elbow_method(k_values, inertia_values, kmin, kmax, sensitivity: int = 1):
+    # The implementation below is based on
     # Ville Satopaa, Jeannie Albrecht, David Irwin, Barath Raghavan
     # Finding a “Kneedle” in a Haystack:
     # Detecting Knee Points in System Behavior
     # https://raghavan.usc.edu/papers/kneedle-simplex11.pdf
 
-    return len(np.array(x)) + len(np.array(y))
+    # Invert inertia values such that plot is concave down and increasing
+    inverted_inertia_values = [-y for y in inertia_values]
+    # Use a smoothing spline that removes noise while retaining the data's original shape
+    spline = splrep(k_values, inverted_inertia_values, k=3)
+    k_smooth = np.arange(kmin, kmax + 1)
+    inertia_smooth = splev(k_smooth, spline)
+
+    # TODO: Replace the legacy code above with the following after IDAES deprecates Python 3.9
+    # spline = make_splrep(k_values, inverted_inertia_values)
+    # k_smooth = np.arange(kmin, kmax + 1)
+    # inertia_smooth = spline(k_smooth)
+
+    # Normalize the k values and inertia values
+    k_norm = _normalize_values(k_smooth)
+    inertia_norm = _normalize_values(inertia_smooth)
+
+    # Compute the set of differences (x, y) -> (x, y-x)
+    inertia_diff = [inertia_norm[i] - k_norm[i] for i in range(len(inertia_norm))]
+
+    # Identify local maxima
+    local_maxima = [
+        (k_norm[i], inertia_diff[i])
+        for i in range(1, len(inertia_diff) - 1)
+        if inertia_diff[i] > inertia_diff[i - 1]
+        and inertia_diff[i] > inertia_diff[i + 1]
+    ]
+
+    # Calculate optimal # of clusters based on the # of local maxima
+    threshold_values = []
+    threshold_triggered = False
+    n_clusters = 0
+
+    if len(local_maxima) == 0:
+        raise RuntimeError(
+            "The optimal number of clusters cannot be determined with the elbow method for this dataset."
+            "Try the silhouette method instead."
+        )
+    elif len(local_maxima) == 1:
+        # Normalized optimal number of clusters is equivalent to that of the only local maxima
+        n_clusters_norm = local_maxima[0][0]
+        # Determine the index corresponding to the value for normalized optimal number of clusters
+        ind = k_norm.index(n_clusters_norm)
+        # Identify the un-normalized optimal number of clusters using the index identified above
+        n_clusters = k_values[ind]
+    else:
+        n = len(local_maxima)
+        summation = 0
+        for i in range(0, n - 1):
+            # Sum up the expression's value for each local maxima
+            summation += local_maxima[i + 1][0] - local_maxima[i][0]
+        # For each local maxima, compute the threshold and determine the index of the current and next local maxima
+        for i in range(0, n - 1):
+            threshold = local_maxima[i][1] - (sensitivity * summation / (n - 1))
+            threshold_values.append(threshold)
+            # Identify the inertia of the current local maximum & tie it back to the corresponding index in inertia_diff
+            l_max_index = inertia_diff.index(local_maxima[i][1])
+            # Identify the inertia of the next local maximum & tie it back to the corresponding index in inertia_diff
+            next_l_max_index = inertia_diff.index(local_maxima[i + 1][1])
+            # For each index between the current (not including) and next local maxima,
+            # determine if the inertia_diff falls below the threshold
+            for j in range(l_max_index + 1, next_l_max_index):
+                # If inertia_diff falls below the threshold, we can accurately determine the optimal number of clusters
+                if inertia_diff[j] < threshold:
+                    threshold_triggered = True
+                    # Normalized optimal number of clusters is equivalent to that of the local maxima
+                    normalized_optimal_n_clusters = local_maxima[i][0]
+                    # Determine the index corresponding to the value for normalized optimal number of clusters
+                    index = k_norm.index(normalized_optimal_n_clusters)
+                    # Identify the un-normalized optimal number of clusters using the index identified above
+                    n_clusters = k_values[index]
+            if threshold_triggered:
+                # If inertia_diff fell below the threshold, the solution has been found and the loop can be broken
+                break
+        # If inertia_diff never fell below the threshold after iterating through all of the local maxima,
+        # use the first local maxima as the optimal number of clusters rather than returning no solution
+        if not threshold_triggered:
+            normalized_optimal_n_clusters = local_maxima[0][0]
+            index = k_norm.index(normalized_optimal_n_clusters)
+            n_clusters = k_values[index]
+            _logger.warning(
+                "The number of optimal clusters could not be accurately identified. "
+                "Consider lowering the sensitivity."
+            )
+
+    return n_clusters
+
+
+def _normalize_values(values):
+    max_value = max(values)
+    min_value = min(values)
+    return [(i - min_value) / (max_value - min_value) for i in values]
