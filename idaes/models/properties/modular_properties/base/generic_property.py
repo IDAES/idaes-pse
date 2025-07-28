@@ -1661,7 +1661,6 @@ class _GenericStateBlock(StateBlock):
                         k.equilibrium_constraint.deactivate()
                     except AttributeError:
                         pass
-                    pass
 
     def initialize(
         blk,
