@@ -137,7 +137,7 @@ reference it here.""",
     CONFIG.declare(
         "time_set",
         ConfigValue(
-            default=[0],
+            default=None,
             domain=ListOf(float),
             description="Set of points for initializing time domain",
             doc="""Set of points for initializing time domain. This should be a
@@ -285,6 +285,31 @@ within this flowsheet if not otherwise specified,
         return self.stream_table(time_point)
 
     def _setup_dynamics(self):
+        def _create_time_domain():
+            if self.config.dynamic:
+                # Check if time_set has at least two points
+                if len(self.config.time_set) < 2:
+                    # Check if time_set is at default value
+                    if self.config.time_set == [0.0]:
+                        # If default, set default end point to be 1.0
+                        self.config.time_set = [0.0, 1.0]
+                    else:
+                        # Invalid user input, raise Exception
+                        raise DynamicError(
+                            "Flowsheet provided with invalid "
+                            "time_set attribute - must have at "
+                            "least two values (start and end)."
+                        )
+                # For dynamics, need a ContinuousSet
+                self._time = ContinuousSet(initialize=self.config.time_set)
+            else:
+                # For steady-state, use an ordered Set
+                self._time = pe.Set(initialize=self.config.time_set, ordered=True)
+            self._time_units = self.config.time_units
+
+            # Set time config argument as reference to time domain
+            self.config.time = self._time
+
         # Look for parent flowsheet
         fs = self.flowsheet()
 
@@ -340,35 +365,21 @@ within this flowsheet if not otherwise specified,
                     "{} was set as a dynamic flowsheet, but time domain "
                     "provided was not a ContinuousSet.".format(self.name)
                 )
+
             add_object_reference(self, "_time", self.config.time)
             self._time_units = self.config.time_units
         else:
             # If no parent flowsheet, set up time domain
             if fs is None:
+                # Set default time_set to [0] if not provided
+                if self.config.time_set is None:
+                    self.config.time_set = [0]
                 # Create time domain
-                if self.config.dynamic:
-                    # Check if time_set has at least two points
-                    if len(self.config.time_set) < 2:
-                        # Check if time_set is at default value
-                        if self.config.time_set == [0.0]:
-                            # If default, set default end point to be 1.0
-                            self.config.time_set = [0.0, 1.0]
-                        else:
-                            # Invalid user input, raise Exception
-                            raise DynamicError(
-                                "Flowsheet provided with invalid "
-                                "time_set attribute - must have at "
-                                "least two values (start and end)."
-                            )
-                    # For dynamics, need a ContinuousSet
-                    self._time = ContinuousSet(initialize=self.config.time_set)
-                else:
-                    # For steady-state, use an ordered Set
-                    self._time = pe.Set(initialize=self.config.time_set, ordered=True)
-                self._time_units = self.config.time_units
-
-                # Set time config argument as reference to time domain
-                self.config.time = self._time
+                _create_time_domain()
+            # Creates a new time domain for a sub-flowsheet with user provided time domain
+            elif self.config.time_set is not None:
+                # Create time domain from config.time_set
+                _create_time_domain()
             else:
                 # Set time config argument to parent time
                 self.config.time = fs.time
