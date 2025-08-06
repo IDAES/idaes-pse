@@ -676,6 +676,8 @@ class PriceTakerModel(ConcreteModel):
         start_shut_blk = getattr(self, start_shut_blk_name)
 
         # pylint: disable=not-an-iterable
+        startup_transition_time = None
+        startup_transition_time = {"type1": 6, "type2": 10}
         for d in self.set_days:
             startup_shutdown_constraints(
                 blk=start_shut_blk[d],
@@ -684,7 +686,7 @@ class PriceTakerModel(ConcreteModel):
                 minimum_up_time=minimum_up_time,
                 minimum_down_time=minimum_down_time,
                 set_time=self.set_time,
-                startup_transition_time={"type1": 6, "type2": 10},
+                startup_transition_time=startup_transition_time,
             )
 
         # Save the uptime and downtime data for reference

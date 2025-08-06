@@ -159,9 +159,11 @@ def startup_shutdown_constraints(
             startup_type_dict[key] = startup_transition_time[key]
 
         startup_names = list(startup_type_dict.keys())
+        
+        # define the startup type as a binary variable (in the op_block)
+        for t in set_time:
+            setattr(op_blocks[t], "startup_type", Var(startup_names, within=Binary))
 
-        # define the startup type as a binary variable
-        blk.startup_type = Var(set_time, startup_names, within=Binary)
         blk.startup_duration = Param(startup_names, initialize=startup_type_dict)
 
     @blk.Constraint(set_time)
@@ -203,7 +205,7 @@ def startup_shutdown_constraints(
             return Constraint.Skip
         
         return (
-            sum(blk.startup_type[t, k] for k in startup_names) == op_blocks[t].startup
+            sum(op_blocks[t].startup_type[k] for k in startup_names) == op_blocks[t].startup
         )
 
     if startup_transition_time is not None:
@@ -220,7 +222,7 @@ def startup_shutdown_constraints(
                 if t < blk.startup_duration[key]:
                     return Constraint.Skip
                 return (
-                    blk.startup_type[t, key] <= sum(
+                    op_blocks[t].startup_type[key] <= sum(
                         op_blocks[t - i].shutdown for i in range(
                             blk.startup_duration[prev_key], blk.startup_duration[key]
                         )
