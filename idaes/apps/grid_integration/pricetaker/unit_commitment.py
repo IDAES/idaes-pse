@@ -19,7 +19,7 @@ capacity limit constraints, and ramping constraints.
 
 from typing import Union, Optional
 from pyomo.common.config import ConfigDict, ConfigValue
-from pyomo.environ import Block, Constraint, Var, RangeSet
+from pyomo.environ import Block, Constraint, Var, Param, RangeSet, Binary
 from idaes.core.util.config import ConfigurationError, is_in_range
 
 
@@ -154,15 +154,15 @@ def startup_shutdown_constraints(
     # Default one startup type. If provided
     if startup_transition_time is not None:
         # at least two types of startup, assume the default one should be at least min_down_time
-        startup_types = {"default": minimum_down_time}
+        startup_type_dict = {"default": minimum_down_time}
         for key in startup_transition_time.keys():
-            startup_types[key] = startup_transition_time[key]
-    
-        startup_names = list(startup_types.keys())
+            startup_type_dict[key] = startup_transition_time[key]
+
+        startup_names = list(startup_type_dict.keys())
 
         # define the startup type as a binary variable
-        blk.startup_type = pyo.Var(set_time, startup_names, within=pyo.Binary)
-        blk.startup_duration = pyo.Param(startup_names, initialize=startup_types)
+        blk.startup_type = Var(set_time, startup_names, within=Binary)
+        blk.startup_duration = Param(startup_names, initialize=startup_type_dict)
 
     @blk.Constraint(set_time)
     def binary_relationship_con(_, t):
@@ -208,12 +208,12 @@ def startup_shutdown_constraints(
 
     if startup_transition_time is not None:
         # add the startup type constraints for each type of startup
-        for key in startup_types.keys():
+        for key in startup_type_dict.keys():
             if key == "default":
-                prev_key = "default"
+                prev_key = key
                 continue
             
-            def startup_type_rule(_, t, key=key):
+            def startup_type_rule(_, t, key=key, prev_key=prev_key):
                 '''
                 Eq 54 in Ben's paper
                 '''
@@ -228,9 +228,10 @@ def startup_shutdown_constraints(
                 )
             
             setattr(blk, 
-                    f"startup_type_{key}", 
-                    Constraint(rule=startup_type_rule)
+                    f"Startup_Type_Constraint_{key}", 
+                    Constraint(set_time, rule=startup_type_rule)
             )
+            prev_key = key
 
 
 def capacity_limits(

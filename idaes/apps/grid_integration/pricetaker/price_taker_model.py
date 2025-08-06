@@ -684,6 +684,7 @@ class PriceTakerModel(ConcreteModel):
                 minimum_up_time=minimum_up_time,
                 minimum_down_time=minimum_down_time,
                 set_time=self.set_time,
+                startup_transition_time={"type1": 6, "type2": 10},
             )
 
         # Save the uptime and downtime data for reference
