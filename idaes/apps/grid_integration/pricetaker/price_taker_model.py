@@ -622,6 +622,7 @@ class PriceTakerModel(ConcreteModel):
         des_block_name: Optional[str] = None,
         minimum_up_time: int = 1,
         minimum_down_time: int = 1,
+        startup_transition_time: Optional[dict] = None,
     ):
         """
         Adds minimum uptime/downtime constraints for a given unit/process
@@ -675,9 +676,14 @@ class PriceTakerModel(ConcreteModel):
         setattr(self, start_shut_blk_name, Block(self.set_days))
         start_shut_blk = getattr(self, start_shut_blk_name)
 
-        # pylint: disable=not-an-iterable
+        # 
         startup_transition_time = None
         startup_transition_time = {"type1": 6, "type2": 10}
+
+        if startup_transition_time is not None:
+            self._multiple_startup_types = True
+
+        # pylint: disable=not-an-iterable
         for d in self.set_days:
             startup_shutdown_constraints(
                 blk=start_shut_blk[d],

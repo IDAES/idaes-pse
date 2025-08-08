@@ -235,6 +235,15 @@ def startup_shutdown_constraints(
             )
             prev_key = key
 
+        # @op_blocks.Expression(set_time)
+        # def multiple_startup_type_cost(_, t):
+        #     """
+        #     Calculate the startup cost based on the startup type.
+        #     """
+        #     return sum(
+        #         op_blocks[t].startup_type[k] * blk.startup_costs[k]
+        #         for k in startup_names
+        #     )
 
 def capacity_limits(
     blk: Block,
