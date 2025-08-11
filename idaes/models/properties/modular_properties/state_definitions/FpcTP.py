@@ -182,6 +182,13 @@ def define_state(b):
     if b.params._electrolyte:
         define_electrolyte_state(b)
 
+    # # Add supporting constraints
+    # if b.config.defined_state is False:
+    #     # applied at outlet only
+    #     b.sum_mole_frac_out = Constraint(
+    #         expr=1.0 == sum(b.mole_frac_comp[i] for i in b.component_list)
+    #     )
+
     # -------------------------------------------------------------------------
     # General Methods
     def get_material_flow_terms_FpcTP(b, p, j):
