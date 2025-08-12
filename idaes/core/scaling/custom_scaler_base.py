@@ -13,17 +13,24 @@
 """
 Base class for custom scaling routines.
 
-Author: Andrew Lee
+Authors: Andrew Lee, Douglas Allan
 """
 from copy import copy
 
 from pyomo.environ import ComponentMap, units, value
 from pyomo.core.base.units_container import UnitsError
+from pyomo.core.base.indexed_component_slice import IndexedComponent_slice
+
+from pyomo.core.base.constraint import Constraint, ConstraintData
+from pyomo.core.base.var import Var, VarData
+from pyomo.core.base.expression import Expression, ExpressionData
+
 from pyomo.core.expr import identify_variables
 from pyomo.core.expr.calculus.derivatives import Modes, differentiate
+from pyomo.common.deprecation import deprecation_warning
 
 from idaes.core.scaling.scaling_base import CONFIG, ScalerBase
-from idaes.core.scaling.util import get_scaling_factor, NominalValueExtractionVisitor
+from idaes.core.scaling.util import get_scaling_factor, NominalValueExtractionVisitor, _filter_unknown
 import idaes.logger as idaeslog
 from idaes.core.util.misc import StrEnum
 
@@ -57,6 +64,23 @@ class ConstraintScalingScheme(StrEnum):
     inverseRSS = "inverse_root_sum_squared"
     inverseMaximum = "inverse_maximum"
     inverseMinimum = "inverse_minimum"
+
+class DefaultScalingRecommendation(StrEnum):
+    """
+    Enum to categorize how necessary it is for a user to set
+    a default scaling factor.
+
+    * userInputRecommended: While a value cannot be set a priori, there is a method to 
+        estimate the scaling factor for this variable/expression. It's still better for 
+        the user to supply the value.
+    * userInputRequired: The user must provide a scaling factor or an Exception is thrown.
+    * userSetManually: A way for a user to certify that they've set scaling factors on the
+        the appropriate variables and constraints directly using set_scaling_factor
+    """
+
+    userInputRecommended = "User input recommended"
+    userInputRequired = "User input required"
+    userSetManually = "User set manually"
 
 
 class CustomScalerBase(ScalerBase):
@@ -277,14 +301,29 @@ class CustomScalerBase(ScalerBase):
             None
         """
         sf = self.get_default_scaling_factor(variable)
-        if sf is not None:
+        if sf is None or sf == DefaultScalingRecommendation.userInputRequired:
+            # Check to see if the user manually set a scaling factor
+            sf = get_scaling_factor(variable)
+            if sf is None or overwrite:
+                # If the user told us to overwrite scaling factors, then
+                # accepting a preexisiting scaling factor is not good enough.
+                # They need to go manually alter the default entry to
+                # DefaultScalingRecommendation.userInputRecommended
+                raise KeyError(f"No default scaling factor set for {variable}.")
+            else:
+                # If a preexisting scaling factor exists, then we'll accept it
+                pass
+        elif (
+            sf == DefaultScalingRecommendation.userInputRecommended
+            or sf == DefaultScalingRecommendation.userSetManually
+        ):
+            # Either the user has already set scaling factors or 
+            # the scaling method is going to try to estimate the
+            # scaling factor
+            pass
+        else:
             self.set_variable_scaling_factor(
                 variable=variable, scaling_factor=sf, overwrite=overwrite
-            )
-        else:
-            _log.debug(
-                f"Could not set scaling factor for {variable.name}, "
-                f"no default scaling factor set."
             )
 
     def scale_variable_by_units(self, variable, overwrite: bool = False):
@@ -381,7 +420,49 @@ class CustomScalerBase(ScalerBase):
                 f"no default scaling factor set."
             )
 
+    def get_expression_nominal_value(self, expression):
+        """
+        Calculate nominal value for a Pyomo expression.
+
+        The nominal value of any Var is defined as the inverse of its scaling factor
+        (if assigned, else 1).
+
+        Args:
+            expression: Pyomo expression to obtain nominal value for
+
+        Returns:
+            float of nominal value
+        """
+        # Handles the case where we have equality constraints
+        # TODO is this the best way to handle things?
+        if hasattr(expression, "body"):
+            expression = expression.body
+        return sum(self.get_sum_terms_nominal_values(expression))
+
     def get_expression_nominal_values(self, expression):
+        """
+        Calculate nominal values for each additive term in a Pyomo expression.
+
+        The nominal value of any Var is defined as the inverse of its scaling factor
+        (if assigned, else 1).
+
+        Args:
+            expression: Pyomo expression to collect nominal values for
+
+        Returns:
+            list of nominal values for each additive term
+        """
+        deprecation_warning(
+            msg=(
+                "This method has been renamed 'get_sum_terms_nominal_values'."
+            ),
+            version="2.9",
+            remove_in="2.10",
+        )
+
+        return self.get_sum_terms_nominal_values(expression)
+
+    def get_sum_terms_nominal_values(self, expression):
         """
         Calculate nominal values for each additive term in a Pyomo expression.
 
@@ -421,7 +502,7 @@ class CustomScalerBase(ScalerBase):
         Returns:
             None
         """
-        nominal = self.get_expression_nominal_values(constraint.expr)
+        nominal = self.get_sum_terms_nominal_values(constraint.expr)
 
         # Remove any 0 terms
         nominal = [j for j in nominal if j != 0]
@@ -541,16 +622,36 @@ class CustomScalerBase(ScalerBase):
             None
         """
         for bidx, target_data in target_state.items():
-            target_vars = target_data.define_state_vars()
-            source_vars = source_state[bidx].define_state_vars()
+            self.propagate_state_data_scaling(
+                target_state_data=target_data,
+                source_state_data=source_state[bidx],
+                overwrite=overwrite
+            )
+    def propagate_state_data_scaling(
+        self, target_state_data, source_state_data, overwrite: bool = False
+    ):
+        """
+        Propagate scaling of state variables from one StateBlockData to another.
 
-            for state, var in target_vars.items():
-                for vidx, vardata in var.items():
-                    self.scale_variable_by_component(
-                        target_variable=vardata,
-                        scaling_component=source_vars[state][vidx],
-                        overwrite=overwrite,
-                    )
+        Args:
+            target_state_data: StateBlockData to set scaling factors on
+            source_state_data: StateBlockData to use as source for scaling factors
+            overwrite: whether to overwrite existing scaling factors
+
+        Returns:
+            None
+        """
+        target_vars = target_state_data.define_state_vars()
+        source_vars = source_state_data.define_state_vars()
+
+        for state, var in target_vars.items():
+            for vidx, vardata in var.items():
+                self.scale_variable_by_component(
+                    target_variable=vardata,
+                    scaling_component=source_vars[state][vidx],
+                    overwrite=overwrite,
+                )
+        
 
     def call_submodel_scaler_method(
         self,
@@ -585,7 +686,7 @@ class CustomScalerBase(ScalerBase):
                 if callable(scaler):
                     # Check to see if Scaler is callable - this implies it is a class and not an instance
                     # Call the class to create an instance
-                    scaler = scaler()
+                    scaler = scaler(**self.config)
                 _log.debug(f"Using user-defined Scaler for {submodel}.")
             else:
                 try:
@@ -595,18 +696,22 @@ class CustomScalerBase(ScalerBase):
                     _log.debug(
                         f"No default Scaler set for {submodel}. Cannot call {method}."
                     )
+                    # TODO Is it possible for one index to have a scaler and another
+                    # not without user insanity?
                     return
                 if scaler is not None:
-                    scaler = scaler()
+                    scaler = scaler(**self.config)
                 else:
+                    # TODO Why not return here but return above?
                     _log.debug(f"No Scaler found for {submodel}. Cannot call {method}.")
 
             # If a Scaler is found, call desired method
             if scaler is not None:
                 try:
                     smeth = getattr(scaler, method)
-                except AttributeError:
+                except AttributeError as err:
                     raise AttributeError(
                         f"Scaler for {submodel} does not have a method named {method}."
-                    )
-                smeth(smdata, overwrite=overwrite)
+                    ) from err
+                smeth(smdata, submodel_scalers=submodel_scalers, overwrite=overwrite)
+

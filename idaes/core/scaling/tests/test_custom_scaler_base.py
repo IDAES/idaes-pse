@@ -34,6 +34,7 @@ from pyomo.common.config import ConfigDict
 from idaes.core.scaling.custom_scaler_base import (
     CustomScalerBase,
     ConstraintScalingScheme,
+    DefaultScalingRecommendation
 )
 from idaes.core.util.constants import Constants
 from idaes.core.util.testing import PhysicalParameterTestBlock
@@ -66,7 +67,7 @@ class DummyScaler(CustomScalerBase):
     def fill_in_2(self, model):
         model._verification.append("fill_in_2")
 
-    def dummy_method(self, model, overwrite):
+    def dummy_method(self, model, overwrite, submodel_scalers):
         model._dummy_scaler_test = overwrite
 
 
@@ -263,18 +264,64 @@ class TestCustomScalerBase:
         assert model.scaling_factor[model.pressure] == 1
 
     @pytest.mark.unit
-    def test_scale_variable_by_default(self, model, caplog):
-        caplog.set_level(idaeslog.DEBUG, logger="idaes")
+    def test_scale_variable_by_default_no_default(self, model):
         sb = CustomScalerBase()
 
         # No defaults defined yet
+        with pytest.raises(
+            KeyError,
+            match=re.escape("No default scaling factor set for pressure.")
+        ):
+            sb.scale_variable_by_default(model.pressure)
+        assert model.pressure not in model.scaling_factor
+
+    @pytest.mark.unit
+    def test_scale_variable_by_default_user_input_required(self, model):
+        sb = CustomScalerBase()
+        sb.default_scaling_factors["pressure"] = DefaultScalingRecommendation.userInputRequired
+        # No defaults defined yet
+        with pytest.raises(
+            KeyError,
+            match=re.escape("No default scaling factor set for pressure.")
+        ):
+            sb.scale_variable_by_default(model.pressure)
+        assert model.pressure not in model.scaling_factor
+
+        # If a scaling factor is already set, then no exception is raised
+        sb.set_component_scaling_factor(model.pressure, 1e-4)
+        sb.scale_variable_by_default(model.pressure)
+        assert model.scaling_factor[model.pressure] == 1e-4
+
+        # If we tell it to overwrite the scaling factors, the existence of
+        # a preexisting scaling factor is no longer sufficient.
+        with pytest.raises(
+            KeyError,
+            match=re.escape("No default scaling factor set for pressure.")
+        ):
+            sb.scale_variable_by_default(model.pressure, overwrite=True)
+        assert model.scaling_factor[model.pressure] == 1e-4
+
+        # If user certifies that they set the scaling factor manually,
+        # then overwrite doesn't raise an exception
+        sb.default_scaling_factors["pressure"] = DefaultScalingRecommendation.userSetManually
+        sb.scale_variable_by_default(model.pressure, overwrite=True)
+        assert model.scaling_factor[model.pressure] == 1e-4
+
+    @pytest.mark.unit
+    def test_scale_variable_by_default_user_input_recommended(self, model):
+        sb = CustomScalerBase()
+        sb.default_scaling_factors["pressure"] = DefaultScalingRecommendation.userInputRecommended
+        # The scaling method is going to generate a guess for the scaling
+        # factor later, so no guess is necessary now.
         sb.scale_variable_by_default(model.pressure)
         assert model.pressure not in model.scaling_factor
-        assert (
-            "Could not set scaling factor for pressure, no default scaling factor set."
-            in caplog.text
-        )
+        
 
+    @pytest.mark.unit
+    def test_scale_variable_by_default(self, model, caplog):
+        caplog.set_level(idaeslog.DEBUG, logger="idaes")
+        sb = CustomScalerBase()
+        
         # Set a default
         sb.default_scaling_factors["pressure"] = 1e-4
         sb.scale_variable_by_default(model.pressure)
@@ -350,6 +397,24 @@ class TestCustomScalerBase:
         model.scaling_factor[model.temperature] = 1e-2
         model.scaling_factor[model.volume_mol] = 1e-1
 
+        nominal_value = sb.get_expression_nominal_value(model.ideal_gas.body)
+
+        # Nominal value will be P*V - R*T
+        assert nominal_value == pytest.approx(831.446 - 1e6, rel=1e-5)
+
+        # Check redirection for ConstraintData objects
+        nominal_value = sb.get_expression_nominal_value(model.ideal_gas)
+        assert nominal_value == pytest.approx(831.446 - 1e6, rel=1e-5)
+
+    @pytest.mark.unit
+    def test_get_sum_terms_nominal_value(self, model):
+        sb = CustomScalerBase()
+
+        # Set variable scaling factors for testing
+        model.scaling_factor[model.pressure] = 1e-5
+        model.scaling_factor[model.temperature] = 1e-2
+        model.scaling_factor[model.volume_mol] = 1e-1
+
         nominal_values = sb.get_expression_nominal_values(model.ideal_gas.expr)
 
         # Nominal values will be (R*T, P*V)
@@ -359,7 +424,31 @@ class TestCustomScalerBase:
         ]
 
         # Check redirection for ConstraintData objects
-        nominal_values = sb.get_expression_nominal_values(model.ideal_gas)
+        nominal_values = sb.get_sum_terms_nominal_values(model.ideal_gas)
+        assert nominal_values == [
+            pytest.approx(831.446, rel=1e-5),
+            pytest.approx(1e6, rel=1e-5),
+        ]
+
+    @pytest.mark.unit
+    def test_get_sum_terms_nominal_values(self, model):
+        sb = CustomScalerBase()
+
+        # Set variable scaling factors for testing
+        model.scaling_factor[model.pressure] = 1e-5
+        model.scaling_factor[model.temperature] = 1e-2
+        model.scaling_factor[model.volume_mol] = 1e-1
+
+        nominal_values = sb.get_sum_terms_nominal_values(model.ideal_gas.expr)
+
+        # Nominal values will be (R*T, P*V)
+        assert nominal_values == [
+            pytest.approx(831.446, rel=1e-5),
+            pytest.approx(1e6, rel=1e-5),
+        ]
+
+        # Check redirection for ConstraintData objects
+        nominal_values = sb.get_sum_terms_nominal_values(model.ideal_gas)
         assert nominal_values == [
             pytest.approx(831.446, rel=1e-5),
             pytest.approx(1e6, rel=1e-5),
@@ -680,3 +769,5 @@ class TestCustomScalerBase:
             assert not bd._dummy_scaler_test
 
         assert "Using user-defined Scaler for b." in caplog.text
+
+# TODO additional tests for nested submodel scalers.
