@@ -67,7 +67,7 @@ def test_model():
 
 
 class DummyScaler:
-    
+
     def __init__(self, **kwargs):
         pass
 
@@ -320,7 +320,8 @@ class TestMethaneScaling(object):
             model.fs.unit.control_volume.properties_in[0.0].flow_mol, 1 / 230
         )
         set_scaling_factor(
-            model.fs.unit.control_volume.properties_in[0.0].flow_mol_phase["Vap"], 1 / 230
+            model.fs.unit.control_volume.properties_in[0.0].flow_mol_phase["Vap"],
+            1 / 230,
         )  # Only 1 phase, so we "know" this
         set_scaling_factor(
             model.fs.unit.control_volume.properties_in[0.0].mole_frac_comp["H2"],
