@@ -30,7 +30,11 @@ from pyomo.core.expr.calculus.derivatives import Modes, differentiate
 from pyomo.common.deprecation import deprecation_warning
 
 from idaes.core.scaling.scaling_base import CONFIG, ScalerBase
-from idaes.core.scaling.util import get_scaling_factor, NominalValueExtractionVisitor, _filter_unknown
+from idaes.core.scaling.util import (
+    get_scaling_factor,
+    NominalValueExtractionVisitor,
+    _filter_unknown,
+)
 import idaes.logger as idaeslog
 from idaes.core.util.misc import StrEnum
 
@@ -65,13 +69,14 @@ class ConstraintScalingScheme(StrEnum):
     inverseMaximum = "inverse_maximum"
     inverseMinimum = "inverse_minimum"
 
+
 class DefaultScalingRecommendation(StrEnum):
     """
     Enum to categorize how necessary it is for a user to set
     a default scaling factor.
 
-    * userInputRecommended: While a value cannot be set a priori, there is a method to 
-        estimate the scaling factor for this variable/expression. It's still better for 
+    * userInputRecommended: While a value cannot be set a priori, there is a method to
+        estimate the scaling factor for this variable/expression. It's still better for
         the user to supply the value.
     * userInputRequired: The user must provide a scaling factor or an Exception is thrown.
     * userSetManually: A way for a user to certify that they've set scaling factors on the
@@ -317,7 +322,7 @@ class CustomScalerBase(ScalerBase):
             sf == DefaultScalingRecommendation.userInputRecommended
             or sf == DefaultScalingRecommendation.userSetManually
         ):
-            # Either the user has already set scaling factors or 
+            # Either the user has already set scaling factors or
             # the scaling method is going to try to estimate the
             # scaling factor
             pass
@@ -453,9 +458,7 @@ class CustomScalerBase(ScalerBase):
             list of nominal values for each additive term
         """
         deprecation_warning(
-            msg=(
-                "This method has been renamed 'get_sum_terms_nominal_values'."
-            ),
+            msg=("This method has been renamed 'get_sum_terms_nominal_values'."),
             version="2.9",
             remove_in="2.10",
         )
@@ -625,8 +628,9 @@ class CustomScalerBase(ScalerBase):
             self.propagate_state_data_scaling(
                 target_state_data=target_data,
                 source_state_data=source_state[bidx],
-                overwrite=overwrite
+                overwrite=overwrite,
             )
+
     def propagate_state_data_scaling(
         self, target_state_data, source_state_data, overwrite: bool = False
     ):
@@ -651,7 +655,6 @@ class CustomScalerBase(ScalerBase):
                     scaling_component=source_vars[state][vidx],
                     overwrite=overwrite,
                 )
-        
 
     def call_submodel_scaler_method(
         self,
@@ -714,4 +717,3 @@ class CustomScalerBase(ScalerBase):
                         f"Scaler for {submodel} does not have a method named {method}."
                     ) from err
                 smeth(smdata, submodel_scalers=submodel_scalers, overwrite=overwrite)
-

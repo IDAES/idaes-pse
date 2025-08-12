@@ -248,7 +248,7 @@ class ScalerBase:
     ):
         """
         Set scaling factor (or hint) for Pyomo variable, constraint, or expression.
-        This method determines the component type and appropriatenly limits the 
+        This method determines the component type and appropriatenly limits the
         scaling factor (or hint) by the corresponding config options
 
         Args:
@@ -269,7 +269,7 @@ class ScalerBase:
                 "Provided with indexed component. Call this method with its "
                 "ComponentData children instead."
             )
-        
+
         if isinstance(component, VarData):
             component_type = "variable"
         elif isinstance(component, ConstraintData):
@@ -286,9 +286,8 @@ class ScalerBase:
             component_type=component_type,
             scaling_factor=scaling_factor,
             overwrite=overwrite,
-            **kwargs
+            **kwargs,
         )
-        
 
     def _set_scaling_factor(
         self, component, component_type, scaling_factor, overwrite=None
