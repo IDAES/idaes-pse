@@ -12,7 +12,7 @@
 #################################################################################
 """Predefined expression for Helmholtz EoS functions
 """
-#Extended from phi_residual_type02.py by John Eslick
+# Extended from phi_residual_type02.py by John Eslick
 __author__ = "Ben Lincoln and Stephen Burroughs"
 
 import pyomo.environ as pyo
@@ -66,11 +66,14 @@ def phi_residual_expressions_type05(model, parameters):
             * model.delta ** d[i]
             * model.tau ** t[i]
             * pyo.exp(
-                -a[i] * (model.delta - e[i]) ** 2 +1/( b[i] * (model.tau - g[i]) ** 2+bi[i])
+                -a[i] * (model.delta - e[i]) ** 2
+                + 1 / (b[i] * (model.tau - g[i]) ** 2 + bi[i])
             )
             for i in rng[3]
         ),
-        "phir_d": sum(n[i] * d[i] * model.delta ** (d[i] - 1) * model.tau ** t[i] for i in rng[0])
+        "phir_d": sum(
+            n[i] * d[i] * model.delta ** (d[i] - 1) * model.tau ** t[i] for i in rng[0]
+        )
         + sum(
             n[i]
             * pyo.exp(-model.delta ** c[i])
@@ -94,9 +97,10 @@ def phi_residual_expressions_type05(model, parameters):
             * model.delta ** d[i]
             * model.tau ** t[i]
             * pyo.exp(
-                -a[i] * (model.delta - e[i]) ** 2 +1/( b[i] * (model.tau - g[i]) ** 2+bi[i])
+                -a[i] * (model.delta - e[i]) ** 2
+                + 1 / (b[i] * (model.tau - g[i]) ** 2 + bi[i])
             )
-            * (d[i] / model.delta - 2 * a[i] * (model.delta-e[i]))
+            * (d[i] / model.delta - 2 * a[i] * (model.delta - e[i]))
             for i in rng[3]
         ),
         "phir_dd": sum(
@@ -131,16 +135,16 @@ def phi_residual_expressions_type05(model, parameters):
         )
         + sum(
             n[i]
-            * model.delta ** (d[i]-2)
+            * model.delta ** (d[i] - 2)
             * model.tau ** t[i]
             * (
-                d[i] **2 + d[i] 
-                * (-4 * model.delta * a[i] * (model.delta - e[i]) -1)
-                + 2 * model.delta ** 2 * a[i] 
-                * (2 * a[i] * (model.delta - e[i]) ** 2 - 1)
+                d[i] ** 2
+                + d[i] * (-4 * model.delta * a[i] * (model.delta - e[i]) - 1)
+                + 2 * model.delta**2 * a[i] * (2 * a[i] * (model.delta - e[i]) ** 2 - 1)
             )
             * pyo.exp(
-                -a[i] * (model.delta - e[i]) ** 2 + 1 / ( b[i] * (model.tau - g[i]) ** 2 + bi[i])
+                -a[i] * (model.delta - e[i]) ** 2
+                + 1 / (b[i] * (model.tau - g[i]) ** 2 + bi[i])
             )
             for i in rng[3]
         ),
@@ -166,16 +170,22 @@ def phi_residual_expressions_type05(model, parameters):
             for i in rng[2]
         )
         + sum(
-            (n[i]
-            * model.delta ** d[i]
-            * model.tau ** (t[i] -1)
-            * (bi[i] ** 2 * t[i]
-               + 2 * b[i] * bi[i] * t[i] * (model.tau - g[i]) ** 2
-               - b[i] * (model.tau - g[i])
-               * (b[i] * t[i] * (model.tau - g[i]) ** 3 + 2 * model.tau))
-            * pyo.exp(
-                -a[i] * (model.delta - e[i]) ** 2 +1/( b[i] * (model.tau - g[i]) ** 2+bi[i])
-            ))
+            (
+                n[i]
+                * model.delta ** d[i]
+                * model.tau ** (t[i] - 1)
+                * (
+                    bi[i] ** 2 * t[i]
+                    + 2 * b[i] * bi[i] * t[i] * (model.tau - g[i]) ** 2
+                    - b[i]
+                    * (model.tau - g[i])
+                    * (b[i] * t[i] * (model.tau - g[i]) ** 3 + 2 * model.tau)
+                )
+                * pyo.exp(
+                    -a[i] * (model.delta - e[i]) ** 2
+                    + 1 / (b[i] * (model.tau - g[i]) ** 2 + bi[i])
+                )
+            )
             / (b[i] * (model.tau - g[i]) ** 2 + bi[i]) ** 2
             for i in rng[3]
         ),
@@ -208,18 +218,23 @@ def phi_residual_expressions_type05(model, parameters):
         )
         + sum(
             n[i]
-             * model.delta ** d[i]
-             * model.tau ** t[i]
-             * ((4 * b[i] ** 2 * (model.tau - g[i]) ** 2
-                 * (2 * b[i] * (model.tau - g[i]) ** 2 + 2 * bi[i] + 1))
-                    /(b[i] * (model.tau - g[i]) ** 2 + bi[i]) ** 4
-                 - (2 * b[i] * (-2 * g[i] * t[i] + 2 * t[i] * model.tau + model.tau))
-                    / (model.tau * (b[i] * (model.tau - g[i]) ** 2 + bi[i]) ** 2)
-                 + ((t[i] - 1) * t[i])
-                    / model.tau ** 2
+            * model.delta ** d[i]
+            * model.tau ** t[i]
+            * (
+                (
+                    4
+                    * b[i] ** 2
+                    * (model.tau - g[i]) ** 2
+                    * (2 * b[i] * (model.tau - g[i]) ** 2 + 2 * bi[i] + 1)
                 )
-             * pyo.exp(
-                -a[i] * (model.delta - e[i]) ** 2 +1/( b[i] * (model.tau - g[i]) ** 2+bi[i])
+                / (b[i] * (model.tau - g[i]) ** 2 + bi[i]) ** 4
+                - (2 * b[i] * (-2 * g[i] * t[i] + 2 * t[i] * model.tau + model.tau))
+                / (model.tau * (b[i] * (model.tau - g[i]) ** 2 + bi[i]) ** 2)
+                + ((t[i] - 1) * t[i]) / model.tau**2
+            )
+            * pyo.exp(
+                -a[i] * (model.delta - e[i]) ** 2
+                + 1 / (b[i] * (model.tau - g[i]) ** 2 + bi[i])
             )
             for i in rng[3]
         ),
@@ -249,16 +264,21 @@ def phi_residual_expressions_type05(model, parameters):
         )
         + sum(
             n[i]
-            * model.delta ** (d[i] -1)
-            * model.tau ** (t[i] -1)
-            * 1 / (b[i] * (model.tau - g[i]) ** 2 + bi[i]) ** 2 
+            * model.delta ** (d[i] - 1)
+            * model.tau ** (t[i] - 1)
+            * 1
+            / (b[i] * (model.tau - g[i]) ** 2 + bi[i]) ** 2
             * (d[i] - 2 * model.delta * a[i] * (model.delta - e[i]))
-            * (bi[i] ** 2 * t[i]
-               + 2 * b[i] * bi[i] * t[i] * (model.tau - g[i]) ** 2
-               - b[i] * (model.tau - g[i])
-               * (b[i] * t[i] * (model.tau - g[i]) ** 3 + 2 * model.tau))
+            * (
+                bi[i] ** 2 * t[i]
+                + 2 * b[i] * bi[i] * t[i] * (model.tau - g[i]) ** 2
+                - b[i]
+                * (model.tau - g[i])
+                * (b[i] * t[i] * (model.tau - g[i]) ** 3 + 2 * model.tau)
+            )
             * pyo.exp(
-                -a[i] * (model.delta - e[i]) ** 2 +1/( b[i] * (model.tau - g[i]) ** 2+bi[i])
+                -a[i] * (model.delta - e[i]) ** 2
+                + 1 / (b[i] * (model.tau - g[i]) ** 2 + bi[i])
             )
             for i in rng[3]
         ),
