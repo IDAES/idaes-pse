@@ -555,10 +555,10 @@ class TestMethane(object):
 
 # TODO: Replace once scaling deployed to property package
 class PropertyScaler(CustomScalerBase):
-    def variable_scaling_routine(self, model, overwrite):
+    def variable_scaling_routine(self, model, overwrite, submodel_scalers=None):
         pass
 
-    def constraint_scaling_routine(self, model, overwrite):
+    def constraint_scaling_routine(self, model, overwrite, submodel_scalers=None):
         for c in model.component_data_objects(ctype=Constraint, descend_into=True):
             self.scale_constraint_by_nominal_value(
                 c, scheme="inverse_sum", overwrite=overwrite
@@ -599,7 +599,7 @@ class TestInitializers:
 
         set_scaling_factor(m.fs.unit.control_volume.properties_out[0.0].flow_mol, 1e-2)
         set_scaling_factor(
-            m.fs.unit.control_volume.properties_out[0.0].flow_mol_phase, 1e-2
+            m.fs.unit.control_volume.properties_out[0.0].flow_mol_phase["Vap"], 1e-2
         )  # Only 1 phase, so we "know" this
         # N2 is inert, so will be order 0.1, assume CH4 and H2 are near-totally consumed, assume most O2 consumed
         # Assume moderate amounts of CO2 and H2O, small amounts of CO, trace NH3 NH3

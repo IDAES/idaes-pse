@@ -23,6 +23,7 @@ from pyomo.environ import (
     ComponentMap,
     ConcreteModel,
     Constraint,
+    Expression,
     Set,
     Suffix,
     units,
@@ -85,6 +86,9 @@ def model():
     )
     m.enthalpy_eq = Constraint(
         expr=4.81 * units.J / units.mol / units.K * m.temperature == m.enth_mol
+    )
+    m.enthalpy_expr = Expression(
+        expr=4.81 * units.J / units.mol / units.K * m.temperature
     )
 
     m.scaling_factor = Suffix(direction=Suffix.EXPORT)
@@ -275,6 +279,18 @@ class TestCustomScalerBase:
         assert model.pressure not in model.scaling_factor
 
     @pytest.mark.unit
+    def test_scale_variable_by_default_constraint(self, model):
+        sb = CustomScalerBase()
+
+        # No defaults defined yet
+        with pytest.raises(
+            TypeError,
+            match=re.escape("ideal_gas is not a variable/expression (or is indexed)."),
+        ):
+            sb.scale_variable_by_default(model.ideal_gas)
+        assert model.ideal_gas not in model.scaling_factor
+
+    @pytest.mark.unit
     def test_scale_variable_by_default_user_input_required(self, model):
         sb = CustomScalerBase()
         sb.default_scaling_factors["pressure"] = (
@@ -335,6 +351,10 @@ class TestCustomScalerBase:
         assert model.scaling_factor[model.pressure] == 1e-4
         sb.scale_variable_by_default(model.pressure, overwrite=True)
         assert model.scaling_factor[model.pressure] == 1e-5
+        sb.default_scaling_factors["enthalpy_expr"] = 1e-3
+
+        sb.scale_variable_by_default(model.enthalpy_expr)
+        assert model.scaling_hint[model.enthalpy_expr] == 1e-3
 
     @pytest.mark.unit
     def test_scale_variable_by_units(self, model, caplog):
@@ -366,17 +386,18 @@ class TestCustomScalerBase:
         assert model.scaling_factor[model.temperature] == 1e-2
 
     @pytest.mark.unit
+    def test_scale_constraint_by_default_no_default(self, model):
+        sb = CustomScalerBase()
+        with pytest.raises(
+            TypeError, match=re.escape("pressure is not a constraint (or is indexed).")
+        ):
+            sb.scale_constraint_by_default(model.pressure)
+        assert model.pressure not in model.scaling_factor
+
+    @pytest.mark.unit
     def test_scale_constraint_by_default(self, model, caplog):
         caplog.set_level(idaeslog.DEBUG, logger="idaes")
         sb = CustomScalerBase()
-
-        # No defaults defined yet
-        sb.scale_constraint_by_default(model.ideal_gas)
-        assert model.ideal_gas not in model.scaling_factor
-        assert (
-            "Could not set scaling factor for ideal_gas, no default scaling factor set."
-            in caplog.text
-        )
 
         # Set a default
         sb.default_scaling_factors["ideal_gas"] = 1e-3

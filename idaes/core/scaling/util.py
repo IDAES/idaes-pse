@@ -79,7 +79,7 @@ def get_scaling_factor_suffix(blk: BlockData):
         Pyomo scaling Suffix
 
     Raises:
-        TypeError is component is an IndexedBlock
+        TypeError if component is an IndexedBlock
     """
     if isinstance(blk, BlockData):
         pass
@@ -116,7 +116,7 @@ def get_scaling_hint_suffix(blk: BlockData):
         Pyomo scaling hint Suffix
 
     Raises:
-        TypeError is component is an IndexedBlock or non-block.
+        TypeError if component is an IndexedBlock or non-block.
     """
     if isinstance(blk, BlockData):
         pass
@@ -141,6 +141,21 @@ def get_scaling_hint_suffix(blk: BlockData):
 
 
 def get_component_scaling_suffix(component):
+    """
+    Get scaling suffix appropriate to component type from parent block.
+
+    Creates a new suffix if one is not found.
+
+    Args:
+        component: component to get suffix for
+
+    Returns:
+        Pyomo scaling factor Suffix (for VarData and ConstraintData)
+        or Pyomo scaling hint Suffix (for ExpressionData)
+
+    Raises:
+        TypeError if component isn't a VarData, ConstraintData, or ExpressionData.
+    """
     blk = component.parent_block()
     if isinstance(component, (VarData, ConstraintData)):
         return get_scaling_factor_suffix(blk)
@@ -942,6 +957,12 @@ class NominalValueExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
     }
 
     def beforeChild(self, node, child, child_idx):
+        """
+        Callback for :class:`pyomo.core.current.StreamBasedExpressionVisitor`. This method
+        is called before entering a child node. If we encounter a named Expression with
+        a scaling hint, then we use that scaling hint instead of descending further into
+        the expression tree.
+        """
         if isinstance(child, ExpressionData):
             sf = get_scaling_factor(child)
             if sf is not None:

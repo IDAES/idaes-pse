@@ -19,11 +19,10 @@ from copy import copy
 
 from pyomo.environ import ComponentMap, units, value
 from pyomo.core.base.units_container import UnitsError
-from pyomo.core.base.indexed_component_slice import IndexedComponent_slice
 
-from pyomo.core.base.constraint import Constraint, ConstraintData
-from pyomo.core.base.var import Var, VarData
-from pyomo.core.base.expression import Expression, ExpressionData
+from pyomo.core.base.constraint import ConstraintData
+from pyomo.core.base.var import VarData
+from pyomo.core.base.expression import ExpressionData
 
 from pyomo.core.expr import identify_variables
 from pyomo.core.expr.calculus.derivatives import Modes, differentiate
@@ -33,7 +32,6 @@ from idaes.core.scaling.scaling_base import CONFIG, ScalerBase
 from idaes.core.scaling.util import (
     get_scaling_factor,
     NominalValueExtractionVisitor,
-    _filter_unknown,
 )
 import idaes.logger as idaeslog
 from idaes.core.util.misc import StrEnum
@@ -294,27 +292,27 @@ class CustomScalerBase(ScalerBase):
             variable=variable, scaling_factor=sf, overwrite=overwrite
         )
 
-    def scale_variable_by_default(self, variable, overwrite: bool = False):
+    def _scale_component_by_default(self, component, overwrite: bool = False):
         """
-        Set scaling factor for variable based on default scaling factor.
+        Set scaling factor for component based on default scaling factor.
 
         Args:
-            variable: variable to set scaling factor for
+            component: Var, Constraint, or Expression to set scaling factor/hint for
             overwrite: whether to overwrite existing scaling factors
 
         Returns:
             None
         """
-        sf = self.get_default_scaling_factor(variable)
+        sf = self.get_default_scaling_factor(component)
         if sf is None or sf == DefaultScalingRecommendation.userInputRequired:
             # Check to see if the user manually set a scaling factor
-            sf = get_scaling_factor(variable)
+            sf = get_scaling_factor(component)
             if sf is None or overwrite:
                 # If the user told us to overwrite scaling factors, then
                 # accepting a preexisiting scaling factor is not good enough.
                 # They need to go manually alter the default entry to
                 # DefaultScalingRecommendation.userInputRecommended
-                raise KeyError(f"No default scaling factor set for {variable}.")
+                raise KeyError(f"No default scaling factor set for {component}.")
             else:
                 # If a preexisting scaling factor exists, then we'll accept it
                 pass
@@ -327,9 +325,25 @@ class CustomScalerBase(ScalerBase):
             # scaling factor
             pass
         else:
-            self.set_variable_scaling_factor(
-                variable=variable, scaling_factor=sf, overwrite=overwrite
+            self.set_component_scaling_factor(
+                component=component, scaling_factor=sf, overwrite=overwrite
             )
+
+    def scale_variable_by_default(self, variable, overwrite: bool = False):
+        """
+        Set scaling factor for variable or scaling hint for named expression
+        based on default scaling factor.
+
+        Args:
+            variable: variable/expression to set scaling factor for
+            overwrite: whether to overwrite existing scaling factors
+
+        Returns:
+            None
+        """
+        if not (isinstance(variable, VarData) or isinstance(variable, ExpressionData)):
+            raise TypeError(f"{variable} is not a variable/expression (or is indexed).")
+        self._scale_component_by_default(component=variable, overwrite=overwrite)
 
     def scale_variable_by_units(self, variable, overwrite: bool = False):
         """
@@ -414,16 +428,9 @@ class CustomScalerBase(ScalerBase):
         Returns:
             None
         """
-        sf = self.get_default_scaling_factor(constraint)
-        if sf is not None:
-            self.set_constraint_scaling_factor(
-                constraint=constraint, scaling_factor=sf, overwrite=overwrite
-            )
-        else:
-            _log.debug(
-                f"Could not set scaling factor for {constraint.name}, "
-                f"no default scaling factor set."
-            )
+        if not isinstance(constraint, ConstraintData):
+            raise TypeError(f"{constraint} is not a constraint (or is indexed).")
+        self._scale_component_by_default(component=constraint, overwrite=overwrite)
 
     def get_expression_nominal_value(self, expression):
         """
