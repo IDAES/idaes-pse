@@ -10,9 +10,9 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-"""Test the Helmholtz EoS parameter writing utility.  Property calculations 
+"""Test the Helmholtz EoS parameter writing utility.  Property calculations
 tested here do not use IDAES properties or the external functions. This directly
-tests the expressions created by the WriteParameters class that will be written 
+tests the expressions created by the WriteParameters class that will be written
 to parameter and expression files to verify they are generated correctly.
 
 The tests here use three points from the saturation curve near critical, near triple,
@@ -21,17 +21,19 @@ include citations.
 
 On some test points, I had to infer extra significant figures for density.  For example,
 this density of a liquid near the triple point is insensitive to pressure, so to calculate
-the pressure from density of a liquid at the triple point, a lot of significant figures 
-are needed. As long a I could add significant figures to the density and not change the 
-reported value when rounded, I assumed it was okay. 
+the pressure from density of a liquid at the triple point, a lot of significant figures
+are needed. As long a I could add significant figures to the density and not change the
+reported value when rounded, I assumed it was okay.
 """
-
 import pytest
 from idaes.models.properties.general_helmholtz.components.parameters.h2o import (
     main as h2o_main,
 )
 from idaes.models.properties.general_helmholtz.components.parameters.co2 import (
     main as co2_main,
+)
+from idaes.models.properties.general_helmholtz.components.parameters.nh3 import (
+    main as nh3_main,
 )
 from idaes.models.properties.general_helmholtz.components.parameters.propane import (
     main as propane_main,
@@ -56,6 +58,7 @@ from idaes.models.properties.general_helmholtz.components.parameters.r32 import 
 def _common_sat(sat_thermo_data, we):
     # Check the EoS expressions, the tolerance is a little loose
     # due to lack of sig. figs. in reported data
+
     for pnt in sat_thermo_data.values():
         assert we.calculate_pressure(rho=pnt["rhov"], T=pnt["T"]) == pytest.approx(
             pnt["p"], rel=1e-2, abs=1e-3
@@ -132,6 +135,48 @@ def test_h2o():
     }
 
     we = h2o_main(dry_run=True)
+    _common_sat(sat_thermo_data, we)
+
+
+@pytest.mark.unit
+def test_nh3():
+    # Some test data from:
+    #
+    # SKehui Gao (高克慧),Jiangtao Wu (吴江涛),Ian H. Bell, Allan H. Harvey, and Eric W. Lemmon (2023)
+    # A Reference Equation of State with an Associating Term for Thermodynamic Properties of Ammonia
+    sat_thermo_data = {
+        1: {  # near critical
+            "T": 405,
+            "p": 11252.87,
+            "rhol": 281.00858,
+            "hl": 1179.9637,
+            "sl": 3.8288,
+            "rhov": 188.1331,
+            "hv": 1318.9971,
+            "sv": 4.1722,
+        },
+        2: {  # between critical and triple point
+            "T": 380,
+            "p": 7139.7014,
+            "rhol": 436.2496,
+            "hl": 912.9600,
+            "sl": 3.1807,
+            "rhov": 67.3260,
+            "hv": 1559.7529,
+            "sv": 4.8828,
+        },
+        3: {  # near triple point
+            "T": 195.49,
+            "p": 6.055813,
+            "rhol": 733.8544,
+            "hl": 8.2544e-03,
+            "sl": 1.1792e-05,
+            "rhov": 0.06371,
+            "hv": 1489.120,
+            "sv": 7.6173,
+        },
+    }
+    we = nh3_main(dry_run=True)
     _common_sat(sat_thermo_data, we)
 
 
