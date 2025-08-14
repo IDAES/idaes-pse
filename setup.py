@@ -50,7 +50,7 @@ class ExtraDependencies:
         "gridx-prescient>=2.2.1",  # idaes.tests.prescient
     ]
     coolprop = [
-        "coolprop==6.8",  # idaes.generic_models.properties.general.coolprop
+        "coolprop>=7.0",  # idaes.generic_models.properties.general.coolprop
     ]
     testing = [
         "pytest",
