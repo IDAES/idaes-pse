@@ -621,7 +621,9 @@ class CustomScalerBase(ScalerBase):
         """
         Propagate scaling of state variables from one StateBlock to another.
 
-        Indexing of target and source StateBlocks must match.
+        If both source and target state are indexed, the index sets must match.
+        If the source state block is indexed, the target state block must also
+        be indexed.
 
         Args:
             target_state: StateBlock to set scaling factors on
@@ -631,14 +633,33 @@ class CustomScalerBase(ScalerBase):
         Returns:
             None
         """
-        for bidx, target_data in target_state.items():
-            self.propagate_state_data_scaling(
-                target_state_data=target_data,
-                source_state_data=source_state[bidx],
+        if target_state.is_indexed() and source_state.is_indexed():
+            for bidx, target_data in target_state.items():
+                self._propagate_state_data_scaling(
+                    target_state_data=target_data,
+                    source_state_data=source_state[bidx],
+                    overwrite=overwrite,
+                )
+        elif target_state.is_indexed() and not source_state.is_indexed():
+            for target_data in target_state.values():
+                self._propagate_state_data_scaling(
+                    target_state_data=target_data,
+                    source_state_data=source_state,
+                    overwrite=overwrite,
+                )
+        elif not target_state.is_indexed() and not source_state.is_indexed():
+            self._propagate_state_data_scaling(
+                target_state_data=target_state,
+                source_state_data=source_state,
                 overwrite=overwrite,
             )
+        else:
+            raise ValueError(
+                "Source state block is indexed but target state block is not indexed. "
+                "It is ambiguous which index should be used."
+            )
 
-    def propagate_state_data_scaling(
+    def _propagate_state_data_scaling(
         self, target_state_data, source_state_data, overwrite: bool = False
     ):
         """

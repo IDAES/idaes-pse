@@ -46,7 +46,6 @@ CONFIG.declare(
 CONFIG.declare(
     "max_variable_scaling_factor",
     ConfigValue(
-        # default=float("inf"),
         default=1e10,
         domain=float,
         description="Maximum value for variable scaling factors.",
@@ -55,7 +54,6 @@ CONFIG.declare(
 CONFIG.declare(
     "min_variable_scaling_factor",
     ConfigValue(
-        # default=0,
         default=1e-10,
         domain=float,
         description="Minimum value for variable scaling factors.",
@@ -64,7 +62,6 @@ CONFIG.declare(
 CONFIG.declare(
     "max_constraint_scaling_factor",
     ConfigValue(
-        # default=float("inf"),
         default=1e10,
         domain=float,
         description="Maximum value for constraint scaling factors.",
@@ -73,7 +70,6 @@ CONFIG.declare(
 CONFIG.declare(
     "min_constraint_scaling_factor",
     ConfigValue(
-        # default=0,
         default=1e-10,
         domain=float,
         description="Minimum value for constraint scaling factors.",
@@ -82,7 +78,6 @@ CONFIG.declare(
 CONFIG.declare(
     "max_expression_scaling_hint",
     ConfigValue(
-        # default=float("inf"),
         default=1e10,
         domain=float,
         description="Maximum value for expression scaling hints.",
@@ -91,7 +86,6 @@ CONFIG.declare(
 CONFIG.declare(
     "min_expression_scaling_hint",
     ConfigValue(
-        # default=0,
         default=1e-10,
         domain=float,
         description="Minimum value for constraint scaling hints.",
