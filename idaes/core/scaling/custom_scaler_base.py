@@ -20,6 +20,7 @@ from copy import copy
 from pyomo.environ import ComponentMap, units, value
 from pyomo.core.base.units_container import UnitsError
 
+from pyomo.core.base.block import Block, BlockData
 from pyomo.core.base.constraint import ConstraintData
 from pyomo.core.base.var import VarData
 from pyomo.core.base.expression import ExpressionData
@@ -199,7 +200,7 @@ class CustomScalerBase(ScalerBase):
             "Custom Scaler has not implemented a constraint_scaling_routine method."
         )
 
-    def get_default_scaling_factor(self, component):
+    def get_default_scaling_factor(self, component: VarData | ConstraintData | ExpressionData):
         """
         Get scaling factor for component from dict of default values.
 
@@ -226,7 +227,7 @@ class CustomScalerBase(ScalerBase):
 
     # Common methods for variable scaling
     def scale_variable_by_component(
-        self, target_variable, scaling_component, overwrite: bool = False
+        self, target_variable: VarData, scaling_component: VarData | ConstraintData | ExpressionData, overwrite: bool = False
     ):
         """
         Set scaling factor for target_variable equal to that of scaling_component.
@@ -251,7 +252,7 @@ class CustomScalerBase(ScalerBase):
                 f"no scaling factor set for {scaling_component.name}"
             )
 
-    def scale_variable_by_bounds(self, variable, overwrite: bool = False):
+    def scale_variable_by_bounds(self, variable: VarData, overwrite: bool = False):
         """
         Set scaling factor for variable based on bounds.
 
@@ -292,7 +293,7 @@ class CustomScalerBase(ScalerBase):
             variable=variable, scaling_factor=sf, overwrite=overwrite
         )
 
-    def _scale_component_by_default(self, component, overwrite: bool = False):
+    def _scale_component_by_default(self, component: VarData | ConstraintData | ExpressionData, overwrite: bool = False):
         """
         Set scaling factor for component based on default scaling factor.
 
@@ -312,7 +313,7 @@ class CustomScalerBase(ScalerBase):
                 # accepting a preexisiting scaling factor is not good enough.
                 # They need to go manually alter the default entry to
                 # DefaultScalingRecommendation.userInputRecommended
-                raise KeyError(f"No default scaling factor set for {component}.")
+                raise ValueError(f"No default scaling factor set for {component}.")
             else:
                 # If a preexisting scaling factor exists, then we'll accept it
                 pass
@@ -329,7 +330,7 @@ class CustomScalerBase(ScalerBase):
                 component=component, scaling_factor=sf, overwrite=overwrite
             )
 
-    def scale_variable_by_default(self, variable, overwrite: bool = False):
+    def scale_variable_by_default(self, variable: VarData | ExpressionData, overwrite: bool = False):
         """
         Set scaling factor for variable or scaling hint for named expression
         based on default scaling factor.
@@ -393,7 +394,7 @@ class CustomScalerBase(ScalerBase):
 
     # Common methods for constraint scaling
     def scale_constraint_by_component(
-        self, target_constraint, scaling_component, overwrite: bool = False
+        self, target_constraint: ConstraintData, scaling_component: VarData | ConstraintData | ExpressionData, overwrite: bool = False
     ):
         """
         Set scaling factor for target_constraint equal to that of scaling_component.
@@ -417,7 +418,7 @@ class CustomScalerBase(ScalerBase):
                 f"no scaling factor set for {scaling_component.name}"
             )
 
-    def scale_constraint_by_default(self, constraint, overwrite: bool = False):
+    def scale_constraint_by_default(self, constraint: ConstraintData, overwrite: bool = False):
         """
         Set scaling factor for constraint based on default scaling factor.
 
@@ -432,7 +433,7 @@ class CustomScalerBase(ScalerBase):
             raise TypeError(f"{constraint} is not a constraint (or is indexed).")
         self._scale_component_by_default(component=constraint, overwrite=overwrite)
 
-    def get_expression_nominal_value(self, expression):
+    def get_expression_nominal_value(self, expression: ConstraintData | ExpressionData):
         """
         Calculate nominal value for a Pyomo expression.
 
@@ -451,7 +452,7 @@ class CustomScalerBase(ScalerBase):
             expression = expression.body
         return sum(self.get_sum_terms_nominal_values(expression))
 
-    def get_expression_nominal_values(self, expression):
+    def get_expression_nominal_values(self, expression: ConstraintData | ExpressionData):
         """
         Calculate nominal values for each additive term in a Pyomo expression.
 
@@ -472,7 +473,7 @@ class CustomScalerBase(ScalerBase):
 
         return self.get_sum_terms_nominal_values(expression)
 
-    def get_sum_terms_nominal_values(self, expression):
+    def get_sum_terms_nominal_values(self, expression: ConstraintData | ExpressionData):
         """
         Calculate nominal values for each additive term in a Pyomo expression.
 
@@ -494,7 +495,7 @@ class CustomScalerBase(ScalerBase):
 
     def scale_constraint_by_nominal_value(
         self,
-        constraint,
+        constraint: ConstraintData,
         scheme: ConstraintScalingScheme = ConstraintScalingScheme.inverseMaximum,
         overwrite: bool = False,
     ):
@@ -541,7 +542,7 @@ class CustomScalerBase(ScalerBase):
         )
 
     def scale_constraint_by_nominal_derivative_norm(
-        self, constraint, norm: int = 2, overwrite: bool = False
+        self, constraint: ConstraintData, norm: int = 2, overwrite: bool = False
     ):
         """
         Scale constraint by norm of partial derivatives.
@@ -616,7 +617,7 @@ class CustomScalerBase(ScalerBase):
 
     # Other methods
     def propagate_state_scaling(
-        self, target_state, source_state, overwrite: bool = False
+        self, target_state: Block | BlockData, source_state: Block | BlockData, overwrite: bool = False
     ):
         """
         Propagate scaling of state variables from one StateBlock to another.
@@ -660,7 +661,7 @@ class CustomScalerBase(ScalerBase):
             )
 
     def _propagate_state_data_scaling(
-        self, target_state_data, source_state_data, overwrite: bool = False
+        self, target_state_data: BlockData, source_state_data: BlockData, overwrite: bool = False
     ):
         """
         Propagate scaling of state variables from one StateBlockData to another.

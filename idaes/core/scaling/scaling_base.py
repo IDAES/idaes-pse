@@ -188,7 +188,7 @@ class ScalerBase:
         Scaling factor is limited by min_expression_scaling_hint and max_expression_scaling_hint.
 
         Args:
-            variable: VarData component to set scaling factor for.
+            expression: ExpressionData component to set scaling factor for.
             scaling_factor: nominal scaling factor to apply. May be limited by max and min values.
             overwrite: whether to overwrite existing scaling factor (if present).
               Defaults to Scaler config setting.

@@ -273,7 +273,7 @@ class TestCustomScalerBase:
 
         # No defaults defined yet
         with pytest.raises(
-            KeyError, match=re.escape("No default scaling factor set for pressure.")
+            ValueError, match=re.escape("No default scaling factor set for pressure.")
         ):
             sb.scale_variable_by_default(model.pressure)
         assert model.pressure not in model.scaling_factor
@@ -298,7 +298,7 @@ class TestCustomScalerBase:
         )
         # No defaults defined yet
         with pytest.raises(
-            KeyError, match=re.escape("No default scaling factor set for pressure.")
+            ValueError, match=re.escape("No default scaling factor set for pressure.")
         ):
             sb.scale_variable_by_default(model.pressure)
         assert model.pressure not in model.scaling_factor
@@ -311,7 +311,7 @@ class TestCustomScalerBase:
         # If we tell it to overwrite the scaling factors, the existence of
         # a preexisting scaling factor is no longer sufficient.
         with pytest.raises(
-            KeyError, match=re.escape("No default scaling factor set for pressure.")
+            ValueError, match=re.escape("No default scaling factor set for pressure.")
         ):
             sb.scale_variable_by_default(model.pressure, overwrite=True)
         assert model.scaling_factor[model.pressure] == 1e-4
