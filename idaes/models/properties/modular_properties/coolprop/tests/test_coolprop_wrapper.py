@@ -53,6 +53,7 @@ solver = get_solver("ipopt_v2")
 
 CoolProp.set_config_bool(CoolProp.ENABLE_SUPERANCILLARIES, False)
 
+
 class TestWrapper:
     @pytest.mark.unit
     def test_load_component(self):
