@@ -185,6 +185,14 @@ class OperationModelData(ProcessBlockData):
         ),
     )
 
+    CONFIG.declare(
+        "startup_types",
+        ConfigValue(
+            domain=dict,
+            doc="Dictionary of startup types for the unit/process",
+        )
+    )
+
     # noinspection PyAttributeOutsideInit
     def build(self):
         super().build()
@@ -204,6 +212,13 @@ class OperationModelData(ProcessBlockData):
             self.shutdown = Var(
                 within=Binary,
                 doc="Binary: 1 if the shutdown is initiated, 0 otherwise",
+            )
+
+        if self.config.startup_types is not None:
+            self.startup_type_vars = Var(
+                list(self.config.startup_types.keys()),
+                within=Binary,
+                doc="Binary: 1 if the startup type is active, 0 otherwise",
             )
 
         if self.config.declare_lmp_param:

@@ -151,21 +151,6 @@ def startup_shutdown_constraints(
     Args:
         startup_transition_time (dict): A dictionary with keys as startup types and values are the time of startup transition.
     """
-    # Default one startup type. If provided
-    if startup_transition_time is not None:
-        # at least two types of startup, assume the default one should be at least min_down_time
-        startup_type_dict = {"default": minimum_down_time}
-        for key in startup_transition_time.keys():
-            startup_type_dict[key] = startup_transition_time[key]
-
-        startup_names = list(startup_type_dict.keys())
-        
-        # define the startup type as a binary variable (in the op_block)
-        for t in set_time:
-            setattr(op_blocks[t], "startup_type", Var(startup_names, within=Binary))
-
-        blk.startup_duration = Param(startup_names, initialize=startup_type_dict)
-
     @blk.Constraint(set_time)
     def binary_relationship_con(_, t):
         if t == 1:
@@ -195,55 +180,63 @@ def startup_shutdown_constraints(
             sum(op_blocks[i].shutdown for i in range(t - minimum_down_time + 1, t + 1))
             <= install_unit - op_blocks[t].op_mode
         )
+    
+    if startup_transition_time is None:
+        # if there is only one startup type, return
+        return
+
+    # multiple startup types
+    if startup_transition_time is not None:
+        # at least two types of startup
+        startup_names = list(startup_transition_time.keys())
+        # assume the first should be max(min_down_time, startup_transition_time["default"])
+        startup_transition_time[startup_names[0]] = max(minimum_down_time, startup_transition_time[startup_names[0]])
+        # add a check to ensure the startup time is monotonically increasing
+        for i in range(1, len(startup_names)):
+            startup_transition_time[startup_names[i]] = max(
+                startup_transition_time[startup_names[i]],
+                startup_transition_time[startup_names[i - 1]]
+            )
+
+        blk.startup_duration = Param(startup_names, initialize=startup_transition_time)
 
     @blk.Constraint(set_time)
     def tot_startup_type_rule(_, t):
         '''
         Eq 55 in Ben's paper
         '''
-        if startup_transition_time is None:
-            return Constraint.Skip
-        
+    
         return (
-            sum(op_blocks[t].startup_type[k] for k in startup_names) == op_blocks[t].startup
+            sum(op_blocks[t].startup_type_vars[k] for k in startup_names) == op_blocks[t].startup
         )
 
-    if startup_transition_time is not None:
-        # add the startup type constraints for each type of startup
-        for key in startup_type_dict.keys():
-            if key == "default":
-                prev_key = key
-                continue
-            
-            def startup_type_rule(_, t, key=key, prev_key=prev_key):
-                '''
-                Eq 54 in Ben's paper
-                '''
-                if t < blk.startup_duration[key]:
-                    return Constraint.Skip
-                return (
-                    op_blocks[t].startup_type[prev_key] <= sum(
-                        op_blocks[t - i].shutdown for i in range(
-                            blk.startup_duration[prev_key], blk.startup_duration[key]
-                        )
+    
+    # add the startup type constraints for each type of startup
+    for idx, key in enumerate(startup_names):
+        if idx == 0:
+            prev_key = key
+            continue
+        
+        def startup_type_rule(_, t, key=key, prev_key=prev_key):
+            '''
+            Eq 54 in Ben's paper
+            '''
+            if t < blk.startup_duration[key]:
+                return Constraint.Skip
+            return (
+                op_blocks[t].startup_type_vars[prev_key] <= sum(
+                    op_blocks[t - i].shutdown for i in range(
+                        blk.startup_duration[prev_key], blk.startup_duration[key]
                     )
                 )
-            
-            setattr(blk, 
-                    f"Startup_Type_Constraint_{key}", 
-                    Constraint(set_time, rule=startup_type_rule)
             )
-            prev_key = key
-
-        # @op_blocks.Expression(set_time)
-        # def multiple_startup_type_cost(_, t):
-        #     """
-        #     Calculate the startup cost based on the startup type.
-        #     """
-        #     return sum(
-        #         op_blocks[t].startup_type[k] * blk.startup_costs[k]
-        #         for k in startup_names
-        #     )
+            
+        setattr(blk, 
+                f"Startup_Type_Constraint_{key}", 
+                Constraint(set_time, rule=startup_type_rule)
+        )
+        prev_key = key
+        
 
 def capacity_limits(
     blk: Block,

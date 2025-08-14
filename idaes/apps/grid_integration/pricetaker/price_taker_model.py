@@ -150,6 +150,13 @@ CONFIG.declare(
     ),
 )
 
+CONFIG.declare(
+    "startup_types",
+    ConfigValue(
+        domain=dict,
+        doc="Dictionary of startup types and their transition times for the unit/process",
+    )
+)
 
 # pylint: disable = too-many-ancestors, too-many-instance-attributes
 class PriceTakerModel(ConcreteModel):
@@ -649,6 +656,8 @@ class PriceTakerModel(ConcreteModel):
         # Check minimum_up_time and minimum_down_time for validity
         self.config.minimum_up_time = minimum_up_time
         self.config.minimum_down_time = minimum_down_time
+        # Set startup transition times
+        self.config.startup_types = startup_transition_time
 
         op_blocks = self._get_operation_blocks(
             blk_name=op_block_name,
@@ -675,10 +684,6 @@ class PriceTakerModel(ConcreteModel):
 
         setattr(self, start_shut_blk_name, Block(self.set_days))
         start_shut_blk = getattr(self, start_shut_blk_name)
-
-        # 
-        startup_transition_time = None
-        startup_transition_time = {"type1": 6, "type2": 10}
 
         if startup_transition_time is not None:
             self._multiple_startup_types = True
