@@ -197,7 +197,7 @@ def startup_shutdown_constraints(
         )
 
     @blk.Constraint(set_time)
-    def startup_type_rule(_, t):
+    def tot_startup_type_rule(_, t):
         '''
         Eq 55 in Ben's paper
         '''
@@ -222,7 +222,7 @@ def startup_shutdown_constraints(
                 if t < blk.startup_duration[key]:
                     return Constraint.Skip
                 return (
-                    op_blocks[t].startup_type[key] <= sum(
+                    op_blocks[t].startup_type[prev_key] <= sum(
                         op_blocks[t - i].shutdown for i in range(
                             blk.startup_duration[prev_key], blk.startup_duration[key]
                         )
