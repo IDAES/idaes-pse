@@ -144,12 +144,12 @@ def startup_shutdown_constraints(
     startup_transition_time: Optional[dict],
 ):
     """
-    Appends startup and shutdown constraints for a given unit/process
-
+    Appends startup and shutdown constraints for a given unit/process.
     Supports multiples types of startup.
 
     Args:
         startup_transition_time (dict): A dictionary with keys as startup types and values are the time of startup transition.
+
     """
     @blk.Constraint(set_time)
     def binary_relationship_con(_, t):
@@ -187,17 +187,20 @@ def startup_shutdown_constraints(
 
     # multiple startup types
     if startup_transition_time is not None:
-        # at least two types of startup
+        # there will be at least two types of startup
         startup_names = list(startup_transition_time.keys())
-        # assume the first should be max(min_down_time, startup_transition_time["default"])
+        
+        # assume the first should be max(min_down_time, startup_transition_time["hot"])
         startup_transition_time[startup_names[0]] = max(minimum_down_time, startup_transition_time[startup_names[0]])
-        # add a check to ensure the startup time is monotonically increasing
+        
+        # add a check to ensure the startup time is monotonically increasing.
         for i in range(1, len(startup_names)):
             startup_transition_time[startup_names[i]] = max(
                 startup_transition_time[startup_names[i]],
                 startup_transition_time[startup_names[i - 1]]
             )
 
+        # this is necessary, because we have updated the startup_transition_time.
         blk.startup_duration = Param(startup_names, initialize=startup_transition_time)
 
     @blk.Constraint(set_time)
@@ -236,7 +239,7 @@ def startup_shutdown_constraints(
                 Constraint(set_time, rule=startup_type_rule)
         )
         prev_key = key
-        
+
 
 def capacity_limits(
     blk: Block,

@@ -189,7 +189,7 @@ class OperationModelData(ProcessBlockData):
         "startup_types",
         ConfigValue(
             domain=dict,
-            doc="Dictionary of startup types for the unit/process",
+            doc="Dictionary of startup types and transition times for the unit/process",
         )
     )
 
