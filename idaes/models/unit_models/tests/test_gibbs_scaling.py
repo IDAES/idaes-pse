@@ -67,10 +67,14 @@ def test_model():
 
 
 class DummyScaler:
-    def variable_scaling_routine(self, model, overwrite):
+
+    def __init__(self, **kwargs):
+        pass
+
+    def variable_scaling_routine(self, model, overwrite, submodel_scalers):
         model._dummy_scaler_test = overwrite
 
-    def constraint_scaling_routine(self, model, overwrite):
+    def constraint_scaling_routine(self, model, overwrite, submodel_scalers):
         model._dummy_scaler_test = overwrite
 
 
@@ -269,10 +273,10 @@ class TestConstraintScaling:
 
 # -----------------------------------------------------------------------------
 class SMScaler(CustomScalerBase):
-    def variable_scaling_routine(self, model, overwrite):
+    def variable_scaling_routine(self, model, overwrite, submodel_scalers):
         pass
 
-    def constraint_scaling_routine(self, model, overwrite):
+    def constraint_scaling_routine(self, model, overwrite, submodel_scalers):
         for c in model.component_data_objects(ctype=Constraint, descend_into=True):
             self.scale_constraint_by_nominal_value(
                 c, scheme="inverse_sum", overwrite=overwrite
@@ -316,7 +320,8 @@ class TestMethaneScaling(object):
             model.fs.unit.control_volume.properties_in[0.0].flow_mol, 1 / 230
         )
         set_scaling_factor(
-            model.fs.unit.control_volume.properties_in[0.0].flow_mol_phase, 1 / 230
+            model.fs.unit.control_volume.properties_in[0.0].flow_mol_phase["Vap"],
+            1 / 230,
         )  # Only 1 phase, so we "know" this
         set_scaling_factor(
             model.fs.unit.control_volume.properties_in[0.0].mole_frac_comp["H2"],
@@ -361,7 +366,7 @@ class TestMethaneScaling(object):
             model.fs.unit.control_volume.properties_out[0.0].flow_mol, 1e-2
         )
         set_scaling_factor(
-            model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase, 1e-2
+            model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase["Vap"], 1e-2
         )  # Only 1 phase, so we "know" this
         # N2 is inert, so will be order 0.1, assume CH4 and H2 are near-totally consumed, assume most O2 consumed
         # Assume moderate amounts of CO2 and H2O, small amounts of CO, trace NH3 NH3
@@ -420,7 +425,7 @@ class TestMethaneScaling(object):
             sf = get_scaling_factor(c)
             if sf is None:
                 count += 1
-        assert count == 52
+        assert count == 50
 
         assert scaled < unscaled
         assert scaled == pytest.approx(8.908989e16, rel=1e-5)
@@ -448,7 +453,7 @@ class TestMethaneScaling(object):
         assert count == 0
 
         assert scaled < unscaled
-        assert scaled == pytest.approx(9.316e15, rel=1e-2)
+        assert scaled == pytest.approx(9.0774e15, rel=1e-2)
 
     def test_full_scaling(self, methane):
         unscaled = jacobian_cond(methane, scaled=False)
@@ -466,4 +471,4 @@ class TestMethaneScaling(object):
         scaled = jacobian_cond(methane, scaled=True)
 
         assert scaled < unscaled
-        assert scaled == pytest.approx(7.653e15, rel=1e-2)
+        assert scaled == pytest.approx(6.945e15, rel=1e-2)

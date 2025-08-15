@@ -391,6 +391,9 @@ class TestInitializers:
 
 
 class DummyScaler:
+    def __init__(self, **kwargs):
+        pass
+
     def variable_scaling_routine(self, model, **kwargs):
         model._dummy_var_scaler = True
 
@@ -766,5 +769,5 @@ class TestEquilibriumReactorScaler:
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
         jac, _ = get_jacobian(sm, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            4.987e05, rel=1e-3
+            5.445e05, rel=1e-3
         )
