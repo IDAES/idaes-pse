@@ -1667,6 +1667,57 @@ class TestSetScalingFactor:
             set_scaling_factor(m.v, 0)
 
     @pytest.mark.unit
+    def test_set_scaling_factor_infinity(self):
+        m = ConcreteModel()
+        m.v = Var()
+
+        with pytest.raises(
+            ValueError,
+            match=re.escape(
+                "scaling factor for v is infinity. " "Scaling factors must be finite."
+            ),
+        ):
+            set_scaling_factor(m.v, float("inf"))
+
+    @pytest.mark.unit
+    def test_set_scaling_factor_NaN(self):
+        m = ConcreteModel()
+        m.v = Var()
+
+        with pytest.raises(
+            ValueError,
+            match=re.escape("scaling factor for v is NaN."),
+        ):
+            set_scaling_factor(m.v, float("NaN"))
+
+    @pytest.mark.unit
+    def test_set_scaling_factor_indexed(self, caplog):
+        caplog.set_level(
+            idaeslog.DEBUG,
+            logger="idaes",
+        )
+
+        m = ConcreteModel()
+        m.v = Var([1, 2, 3])
+
+        with pytest.raises(
+            TypeError,
+            match=re.escape(
+                "Component v is indexed. Set scaling factors for individual indices instead."
+            ),
+        ):
+            set_scaling_factor(m.v, 42)
+
+        set_scaling_factor(m.v[1], 42)
+
+        assert m.scaling_factor[m.v[1]] == 42.0
+        assert m.v[2] not in m.scaling_factor
+        assert m.v[3] not in m.scaling_factor
+        assert not hasattr(m, "scaling_hint")
+
+        assert "Created new scaling suffix for model" in caplog.text
+
+    @pytest.mark.unit
     def test_set_scaling_factor_overwrite_false(self, caplog):
         caplog.set_level(
             idaeslog.DEBUG,
