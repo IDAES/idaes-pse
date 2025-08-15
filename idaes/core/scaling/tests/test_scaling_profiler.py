@@ -20,6 +20,8 @@ from io import StringIO
 import os
 import pytest
 
+import numpy as np
+
 from pyomo.environ import ConcreteModel, Constraint, value, Var
 
 from idaes.core import FlowsheetBlock
@@ -568,6 +570,9 @@ def test_case_study_profiling():
     )
 
     results = sp.profile_scaling_methods()
+    import pdb
+
+    pdb.set_trace()
 
     for cmeth, stats in results.items():
         for vmeth in ["Manual", "Auto"]:
@@ -590,37 +595,16 @@ def test_case_study_profiling():
                 assert rstats[iters] == pytest.approx(xstats[iters], abs=10)
 
 
-# Commenting out this test becuase there's no easy way to make it robust to the number of iterations changing
-# and the number of iterations can change between different Python versions
-# @pytest.mark.integration
-# def test_report_scaling_profiles():
-#     sp = ScalingProfiler(
-#         build_model=build_model,
-#         user_scaling=scale_vars,
-#         perturb_state=perturb_solution,
-#     )
+@pytest.mark.integration
+def test_report_scaling_profiles():
+    sp = ScalingProfiler(
+        build_model=build_model,
+        user_scaling=scale_vars,
+        perturb_state=perturb_solution,
+    )
 
-#     stream = StringIO()
+    stream = StringIO()
 
-#     sp.report_scaling_profiles(stream=stream)
-
-#     expected = """
-# ============================================================================
-# Scaling Profile Report
-# ----------------------------------------------------------------------------
-# Scaling Method           || User Scaling           || Perfect Scaling
-# Unscaled                 || 5.703E+17 | Failed 57  ||
-# Vars Only                || 9.245E+16 | Failed 82  || 6.577E+14 | Solved 9
-# Harmonic                 || 3.788E+18 | Failed 135 || 2.839E+12 | Solved 17
-# Inverse Sum              || 9.077E+15 | Failed 200 || 1.502E+06 | Solved 6
-# Inverse Root Sum Squares || 1.083E+16 | Failed 200 || 9.600E+05 | Solved 6
-# Inverse Maximum          || 1.066E+16 | Failed 200 || 7.846E+05 | Solved 6
-# Inverse Minimum          || 7.543E+18 | Failed 200 || 5.599E+12 | Solved 16
-# Nominal L1 Norm          || 1.189E+16 | Failed 88  || 2.060E+06 | Solved 4
-# Nominal L2 Norm          || 1.188E+16 | Failed 63  || 3.074E+06 | Solved 4
-# Actual L1 Norm           || 1.509E+09 | Failed 39  || 2.987E+03 | Solved 6
-# Actual L2 Norm           || 6.625E+08 | Failed 29  || 2.511E+03 | Solved 6
-# ============================================================================
-# """
-
-#     assert stream.getvalue() == expected
+    # We already test profile_scaling_methods() and test_write_profile_report() independently
+    # All we need to do here is make sure that the function does not crash
+    sp.report_scaling_profiles(stream=stream)
