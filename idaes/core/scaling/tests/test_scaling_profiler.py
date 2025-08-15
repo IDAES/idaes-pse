@@ -570,9 +570,6 @@ def test_case_study_profiling():
     )
 
     results = sp.profile_scaling_methods()
-    import pdb
-
-    pdb.set_trace()
 
     for cmeth, stats in results.items():
         for vmeth in ["Manual", "Auto"]:
