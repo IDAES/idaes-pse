@@ -23,6 +23,7 @@ __author__ = "Andrew Lee"
 
 # Import Pyomo libraries
 from pyomo.environ import Constraint, Reals, units as pyunits, Var, value
+from pyomo.common.collections import ComponentMap
 from pyomo.dae import DerivativeVar
 from pyomo.common.deprecation import deprecation_warning
 
@@ -43,12 +44,95 @@ from idaes.core.util.exceptions import (
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util import scaling as iscale
 import idaes.logger as idaeslog
+from idaes.core.base.control_volume_base import ControlVolumeScalerBase
+
+from idaes.core.scaling import ConstraintScalingScheme, CustomScalerBase, get_scaling_factor
 
 _log = idaeslog.getLogger(__name__)
 
 # TODO : Custom terms in material balances, other types of material balances
 # TODO : Improve flexibility for get_material_flow_terms and associated
 
+class ControlVolume0DScaler(ControlVolumeScalerBase):
+    """
+    Scaler object for the ControlVolume0D
+    """
+    DEFAULT_SCALING_FACTORS = {
+        "volume": 1,
+        "phase_fraction": 10 # May have already been created by property package
+    }
+
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None
+    ):
+        """
+        Routine to apply scaling factors to variables in model.
+
+        Derived classes must overload this method.
+
+        Args:
+            model: model to be scaled
+            overwrite: whether to overwrite existing scaling factors
+            submodel_scalers: ComponentMap of Scalers to use for sub-models
+
+        Returns:
+            None
+        """
+        self.call_submodel_scaler_method(
+            submodel=model.properties_in,
+            submodel_scalers=submodel_scalers,
+            method="variable_scaling_routine",
+            overwrite=overwrite,
+        )
+        self.propagate_state_scaling(
+            target_state=model.properties_out,
+            source_state=model.properties_in,
+            overwrite=overwrite
+        )
+        self.call_submodel_scaler_method(
+            submodel=model.properties_out,
+            submodel_scalers=submodel_scalers,
+            method="variable_scaling_routine",
+            overwrite=overwrite,
+        )
+        if hasattr(model, "volume"):
+            for v in model.volume.values():
+                self.scale_variable_by_default(v, overwrite=overwrite)
+        if hasattr(model, "phase_fraction"):
+            for v in model.phase_fraction.values():
+                self.scale_variable_by_default(v, overwrite=overwrite)
+
+        super().variable_scaling_routine(
+            model, overwrite=overwrite, submodel_scalers=submodel_scalers
+        )
+
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None
+    ):
+        """
+        Routine to apply scaling factors to constraints in model.
+
+        Derived classes must overload this method.
+
+        Args:
+            model: model to be scaled
+            overwrite: whether to overwrite existing scaling factors
+            submodel_scalers: ComponentMap of Scalers to use for sub-models
+
+        Returns:
+            None
+        """
+        for props in [model.properties_in, model.properties_out]:
+            self.call_submodel_scaler_method(
+                submodel=props,
+                submodel_scalers=submodel_scalers,
+                method="constraint_scaling_routine",
+                overwrite=overwrite,
+            )
+
+        super().constraint_scaling_routine(
+            model, overwrite=overwrite, submodel_scalers=submodel_scalers
+        )
 
 @declare_process_block_class(
     "ControlVolume0DBlock",
@@ -70,6 +154,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
     momentum balances. The form of the terms used in these constraints is
     specified in the chosen property package.
     """
+    default_scaler = ControlVolume0DScaler
 
     def add_geometry(self):
         """

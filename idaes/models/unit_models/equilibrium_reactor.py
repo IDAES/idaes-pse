@@ -34,10 +34,49 @@ from idaes.core.util.config import (
 )
 from idaes.core.scaling import CustomScalerBase
 
-__author__ = "Andrew Lee"
-
+__author__ = "Andrew Lee, Douglas Allan"
 
 class EquilibriumReactorScaler(CustomScalerBase):
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        self.call_submodel_scaler_method(
+            model.control_volume,
+            method="variable_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite
+        )
+
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        """
+        Routine to apply scaling factors to constraints in model.
+
+        Submodel Scalers are called for the property and reaction blocks. All other constraints
+        are scaled using the inverse maximum shceme.
+
+        Args:
+            model: model to be scaled
+            overwrite: whether to overwrite existing scaling factors
+            submodel_scalers: dict of Scalers to use for sub-models, keyed by submodel local name
+
+        Returns:
+            None
+        """
+        self.call_submodel_scaler_method(
+            model.control_volume,
+            method="constraint_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite
+        )
+        if hasattr(model, "rate_reaction_constraint"):
+            for idx in model.rate_reaction_constraint:
+                self.scale_constraint_by_nominal_value(
+                    model.rate_reaction_constraint[idx],
+                    overwrite=overwrite
+                )
+class EquilibriumReactorScalerLegacy(CustomScalerBase):
     """
     Default modular scaler for Equilibrium reactors.
 
@@ -118,14 +157,10 @@ class EquilibriumReactorScaler(CustomScalerBase):
             for t in model.flowsheet().time:
                 h_in = 0
                 for p in model.control_volume.properties_in.phase_list:
-                    # The expression for enthalpy flow might include multiple terms,
-                    # so we will sum over all the terms provided
-                    h_in += sum(
-                        self.get_expression_nominal_values(
-                            model.control_volume.properties_in[
-                                t
-                            ].get_enthalpy_flow_terms(p)
-                        )
+                    h_in += self.get_expression_nominal_value(
+                        model.control_volume.properties_in[
+                            t
+                        ].get_enthalpy_flow_terms(p)
                     )
                 # Scale for heat is general one order of magnitude less than enthalpy flow
                 self.set_variable_scaling_factor(
