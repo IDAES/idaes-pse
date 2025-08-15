@@ -200,7 +200,9 @@ class CustomScalerBase(ScalerBase):
             "Custom Scaler has not implemented a constraint_scaling_routine method."
         )
 
-    def get_default_scaling_factor(self, component: VarData | ConstraintData | ExpressionData):
+    def get_default_scaling_factor(
+        self, component: VarData | ConstraintData | ExpressionData
+    ):
         """
         Get scaling factor for component from dict of default values.
 
@@ -227,7 +229,10 @@ class CustomScalerBase(ScalerBase):
 
     # Common methods for variable scaling
     def scale_variable_by_component(
-        self, target_variable: VarData, scaling_component: VarData | ConstraintData | ExpressionData, overwrite: bool = False
+        self,
+        target_variable: VarData,
+        scaling_component: VarData | ConstraintData | ExpressionData,
+        overwrite: bool = False,
     ):
         """
         Set scaling factor for target_variable equal to that of scaling_component.
@@ -293,7 +298,11 @@ class CustomScalerBase(ScalerBase):
             variable=variable, scaling_factor=sf, overwrite=overwrite
         )
 
-    def _scale_component_by_default(self, component: VarData | ConstraintData | ExpressionData, overwrite: bool = False):
+    def _scale_component_by_default(
+        self,
+        component: VarData | ConstraintData | ExpressionData,
+        overwrite: bool = False,
+    ):
         """
         Set scaling factor for component based on default scaling factor.
 
@@ -330,7 +339,9 @@ class CustomScalerBase(ScalerBase):
                 component=component, scaling_factor=sf, overwrite=overwrite
             )
 
-    def scale_variable_by_default(self, variable: VarData | ExpressionData, overwrite: bool = False):
+    def scale_variable_by_default(
+        self, variable: VarData | ExpressionData, overwrite: bool = False
+    ):
         """
         Set scaling factor for variable or scaling hint for named expression
         based on default scaling factor.
@@ -342,8 +353,14 @@ class CustomScalerBase(ScalerBase):
         Returns:
             None
         """
+        if variable.is_indexed():
+            raise TypeError(
+                f"{variable} is indexed. Call with ComponentData children instead."
+            )
         if not (isinstance(variable, VarData) or isinstance(variable, ExpressionData)):
-            raise TypeError(f"{variable} is not a variable/expression (or is indexed).")
+            raise TypeError(
+                f"{variable} is type {type(variable)}, but a variable or expression was expected."
+            )
         self._scale_component_by_default(component=variable, overwrite=overwrite)
 
     def scale_variable_by_units(self, variable, overwrite: bool = False):
@@ -394,7 +411,10 @@ class CustomScalerBase(ScalerBase):
 
     # Common methods for constraint scaling
     def scale_constraint_by_component(
-        self, target_constraint: ConstraintData, scaling_component: VarData | ConstraintData | ExpressionData, overwrite: bool = False
+        self,
+        target_constraint: ConstraintData,
+        scaling_component: VarData | ConstraintData | ExpressionData,
+        overwrite: bool = False,
     ):
         """
         Set scaling factor for target_constraint equal to that of scaling_component.
@@ -418,7 +438,9 @@ class CustomScalerBase(ScalerBase):
                 f"no scaling factor set for {scaling_component.name}"
             )
 
-    def scale_constraint_by_default(self, constraint: ConstraintData, overwrite: bool = False):
+    def scale_constraint_by_default(
+        self, constraint: ConstraintData, overwrite: bool = False
+    ):
         """
         Set scaling factor for constraint based on default scaling factor.
 
@@ -429,8 +451,14 @@ class CustomScalerBase(ScalerBase):
         Returns:
             None
         """
+        if constraint.is_indexed():
+            raise TypeError(
+                f"{constraint} is indexed. Call with ComponentData children instead."
+            )
         if not isinstance(constraint, ConstraintData):
-            raise TypeError(f"{constraint} is not a constraint (or is indexed).")
+            raise TypeError(
+                f"{constraint} is type {type(constraint)}, but a constraint was expected."
+            )
         self._scale_component_by_default(component=constraint, overwrite=overwrite)
 
     def get_expression_nominal_value(self, expression: ConstraintData | ExpressionData):
@@ -452,7 +480,9 @@ class CustomScalerBase(ScalerBase):
             expression = expression.body
         return sum(self.get_sum_terms_nominal_values(expression))
 
-    def get_expression_nominal_values(self, expression: ConstraintData | ExpressionData):
+    def get_expression_nominal_values(
+        self, expression: ConstraintData | ExpressionData
+    ):
         """
         Calculate nominal values for each additive term in a Pyomo expression.
 
@@ -617,7 +647,10 @@ class CustomScalerBase(ScalerBase):
 
     # Other methods
     def propagate_state_scaling(
-        self, target_state: Block | BlockData, source_state: Block | BlockData, overwrite: bool = False
+        self,
+        target_state: Block | BlockData,
+        source_state: Block | BlockData,
+        overwrite: bool = False,
     ):
         """
         Propagate scaling of state variables from one StateBlock to another.
@@ -661,7 +694,10 @@ class CustomScalerBase(ScalerBase):
             )
 
     def _propagate_state_data_scaling(
-        self, target_state_data: BlockData, source_state_data: BlockData, overwrite: bool = False
+        self,
+        target_state_data: BlockData,
+        source_state_data: BlockData,
+        overwrite: bool = False,
     ):
         """
         Propagate scaling of state variables from one StateBlockData to another.

@@ -285,10 +285,55 @@ class TestCustomScalerBase:
         # No defaults defined yet
         with pytest.raises(
             TypeError,
-            match=re.escape("ideal_gas is not a variable/expression (or is indexed)."),
+            match=re.escape(
+                "ideal_gas is type <class 'pyomo.core.base.constraint.ScalarConstraint'>, "
+                "but a variable or expression was expected."
+            ),
         ):
             sb.scale_variable_by_default(model.ideal_gas)
         assert model.ideal_gas not in model.scaling_factor
+
+    @pytest.mark.unit
+    def test_scale_variable_by_default_indexed(self, model):
+        model.mole_frac_comp = Var(["N2", "O2"])
+
+        @model.Constraint(["N2", "O2"])
+        def mole_frac_eqn(b, j):
+            return b.mole_frac_comp[j] == 0.5
+
+        sb = CustomScalerBase()
+
+        with pytest.raises(
+            TypeError,
+            match=re.escape(
+                "mole_frac_comp is indexed. Call with ComponentData children instead."
+            ),
+        ):
+            sb.scale_variable_by_default(model.mole_frac_comp)
+        with pytest.raises(
+            TypeError,
+            match=re.escape(
+                "mole_frac_eqn is indexed. Call with ComponentData children instead."
+            ),
+        ):
+            sb.scale_variable_by_default(model.mole_frac_eqn)
+        with pytest.raises(
+            ValueError,
+            match=re.escape("No default scaling factor set for mole_frac_comp[N2]."),
+        ):
+            sb.scale_variable_by_default(model.mole_frac_comp["N2"])
+        with pytest.raises(
+            TypeError,
+            match=re.escape(
+                "mole_frac_eqn[N2] is type <class 'pyomo.core.base.constraint.ConstraintData'>,"
+                " but a variable or expression was expected."
+            ),
+        ):
+            sb.scale_variable_by_default(model.mole_frac_eqn["N2"])
+        sb.default_scaling_factors["mole_frac_comp[N2]"] = 7
+        sb.scale_variable_by_default(model.mole_frac_comp["N2"])
+        assert model.scaling_factor[model.mole_frac_comp["N2"]] == 7
+        assert model.mole_frac_comp["O2"] not in model.scaling_factor
 
     @pytest.mark.unit
     def test_scale_variable_by_default_user_input_required(self, model):
@@ -389,14 +434,17 @@ class TestCustomScalerBase:
     def test_scale_constraint_by_default_no_default(self, model):
         sb = CustomScalerBase()
         with pytest.raises(
-            TypeError, match=re.escape("pressure is not a constraint (or is indexed).")
+            TypeError,
+            match=re.escape(
+                "pressure is type <class 'pyomo.core.base.var.ScalarVar'>, "
+                "but a constraint was expected."
+            ),
         ):
             sb.scale_constraint_by_default(model.pressure)
         assert model.pressure not in model.scaling_factor
 
     @pytest.mark.unit
-    def test_scale_constraint_by_default(self, model, caplog):
-        caplog.set_level(idaeslog.DEBUG, logger="idaes")
+    def test_scale_constraint_by_default(self, model):
         sb = CustomScalerBase()
 
         # Set a default
@@ -410,6 +458,49 @@ class TestCustomScalerBase:
         assert model.scaling_factor[model.ideal_gas] == 1e-3
         sb.scale_constraint_by_default(model.ideal_gas, overwrite=True)
         assert model.scaling_factor[model.ideal_gas] == 1e-5
+
+    @pytest.mark.unit
+    def test_scale_constraint_by_default_indexed(self, model):
+
+        model.mole_frac_comp = Var(["N2", "O2"])
+
+        @model.Constraint(["N2", "O2"])
+        def mole_frac_eqn(b, j):
+            return b.mole_frac_comp[j] == 0.5
+
+        sb = CustomScalerBase()
+
+        with pytest.raises(
+            TypeError,
+            match=re.escape(
+                "mole_frac_comp is indexed. Call with ComponentData children instead."
+            ),
+        ):
+            sb.scale_constraint_by_default(model.mole_frac_comp)
+        with pytest.raises(
+            TypeError,
+            match=re.escape(
+                "mole_frac_eqn is indexed. Call with ComponentData children instead."
+            ),
+        ):
+            sb.scale_constraint_by_default(model.mole_frac_eqn)
+        with pytest.raises(
+            TypeError,
+            match=re.escape(
+                "mole_frac_comp[N2] is type <class 'pyomo.core.base.var.VarData'>,"
+                " but a constraint was expected."
+            ),
+        ):
+            sb.scale_constraint_by_default(model.mole_frac_comp["N2"])
+        with pytest.raises(
+            ValueError,
+            match=re.escape("No default scaling factor set for mole_frac_eqn[N2]."),
+        ):
+            sb.scale_constraint_by_default(model.mole_frac_eqn["N2"])
+        sb.default_scaling_factors["mole_frac_eqn[N2]"] = 7
+        sb.scale_constraint_by_default(model.mole_frac_eqn["N2"])
+        assert model.scaling_factor[model.mole_frac_eqn["N2"]] == 7
+        assert model.mole_frac_eqn["O2"] not in model.scaling_factor
 
     @pytest.mark.unit
     def test_get_expression_nominal_values(self, model):
