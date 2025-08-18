@@ -431,6 +431,14 @@ class TestCustomScalerBase:
         assert model.scaling_factor[model.temperature] == 1e-2
 
     @pytest.mark.unit
+    def test_scale_variable_by_definition_constraint(self, model):
+        sb = CustomScalerBase()
+        sb.scale_variable_by_definition_constraint(
+            model.enth_mol,
+            model.enthalpy_eq,
+        )
+
+    @pytest.mark.unit
     def test_scale_constraint_by_default_no_default(self, model):
         sb = CustomScalerBase()
         with pytest.raises(

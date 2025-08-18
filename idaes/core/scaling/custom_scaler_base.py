@@ -27,6 +27,7 @@ from pyomo.core.base.var import VarData
 from pyomo.core.base.expression import ExpressionData
 
 from pyomo.core.expr import identify_variables
+from pyomo.core.expr.numeric_expr import MonomialTermExpression
 from pyomo.core.expr.calculus.derivatives import Modes, differentiate
 from pyomo.common.deprecation import deprecation_warning
 
@@ -460,15 +461,67 @@ class CustomScalerBase(ScalerBase):
         if not isinstance(constraint, ConstraintData):
             raise TypeError(f"{constraint} is not a constraint (or is indexed).")
 
+        def filter_monomial(expr):
+            """
+            Descend one more level into the expression tree to see if variable
+            appears multiplied by a constant factor
+            Args:
+                expr: expression to check for variable
+
+            Returns:
+                (flag, prefactor), in which flag is a boolean tracking whether
+                variable has been successfully identified and prefactor is the
+                absolute value of the factor multiplying variable
+            """
+            if not isinstance(expr, MonomialTermExpression):
+                return (False, 0)
+            if len(expr.args) != 2:
+                return (False, 0)
+            if expr.args[0] is variable:
+                # Test for numeric type
+                try:
+                    prefactor = float(expr.args[1])
+                except ValueError:
+                    return (False, 0)
+                return (True, abs(prefactor))
+            elif expr.args[1] is variable:
+                try:
+                    prefactor = float(expr.args[0])
+                except ValueError:
+                    return (False, 0)
+                return (True, abs(prefactor))
+            else:
+                return (False, 0)
+
         # TODO We could probably make this more general using an expression walker.
+        expr = None
         if not constraint.body.nargs() == 2:
             raise ValueError(f"{constraint} is not of the form {variable} == expression.")
         if constraint.body.args[0] is variable:
             expr = constraint.body.args[1]
+            prefactor = 1
         elif constraint.body.args[1] is variable:
             expr = constraint.body.args[0]
-        else:
-            raise ValueError(f"{variable} does not appear at the top level of the expression tree in {constraint}.")
+            prefactor = 1
+        
+        if expr is None:
+            flag, prefactor = filter_monomial(constraint.body.args[0])
+            if not flag:
+                flag, prefactor = filter_monomial(constraint.body.args[1])
+                if not flag:
+                    raise ValueError(f"{variable} does not appear at the top level of the expression tree in {constraint}.")
+                else:
+                    expr = constraint.body.args[0]
+            else:
+                expr = constraint.body.args[1]
+        
+        if not 0 < prefactor < float("inf"):
+            # Filter values of 0, inf, and NaN.
+            # Comparison of any number with NaN (including NaN itself)
+            # returns False. Negative values should have already been
+            # filtered out in filter_monomial.
+            raise ValueError(f"{variable} appears in constraint multiplied by invalid factor {prefactor}.")
+
 
         nom = abs(self.get_expression_nominal_value(expr))
         if nom == 0:
@@ -477,7 +530,7 @@ class CustomScalerBase(ScalerBase):
             )
 
         self.set_variable_scaling_factor(
-            variable=variable, scaling_factor=1/nom, overwrite=overwrite
+            variable=variable, scaling_factor=prefactor/nom, overwrite=overwrite
         )
 
     # Common methods for constraint scaling
