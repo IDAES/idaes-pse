@@ -46,7 +46,7 @@ from idaes.core.util import scaling as iscale
 import idaes.logger as idaeslog
 from idaes.core.base.control_volume_base import ControlVolumeScalerBase
 
-from idaes.core.scaling import ConstraintScalingScheme, CustomScalerBase, get_scaling_factor
+from idaes.core.scaling import DefaultScalingRecommendation, get_scaling_factor
 
 _log = idaeslog.getLogger(__name__)
 
@@ -58,7 +58,11 @@ class ControlVolume0DScaler(ControlVolumeScalerBase):
     Scaler object for the ControlVolume0D
     """
     DEFAULT_SCALING_FACTORS = {
-        "volume": 1,
+        # We could scale volume by magnitude if it were being fixed
+        # by the user, but we often have the volume given by an
+        # equality constraint involving geometry in the parent
+        # unit model.
+        "volume": DefaultScalingRecommendation.userInputRequired,
         "phase_fraction": 10 # May have already been created by property package
     }
 

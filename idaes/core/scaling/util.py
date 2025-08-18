@@ -710,6 +710,69 @@ def report_scaling_factors(
                 stream.write(f"{n + ' ' * (maxname - len(n))}{TAB}{i}\n")
 
 
+def unscaled_variables_generator(blk : Block, descend_into: Boolean = True, include_fixed: Boolean = False):
+    """Generator for unscaled variables
+
+    Args:
+        block
+
+    Yields:
+        variables with no scale factor
+    """
+    for v in blk.component_data_objects(Var, descend_into=descend_into):
+        if v.fixed and not include_fixed:
+            continue
+        if get_scaling_factor(v) is None:
+            yield v
+
+
+def list_unscaled_variables(
+    blk: Block, descend_into: bool = True, include_fixed: bool = False
+):
+    """
+    Return a list of variables which do not have a scaling factor assigned
+    Args:
+        blk: block to check for unscaled variables
+        descend_into: bool indicating whether to check variables in sub-blocks
+        include_fixed: bool indicating whether to include fixed Vars in list
+
+    Returns:
+        list of unscaled variable data objects
+    """
+    return [c for c in unscaled_variables_generator(blk, descend_into, include_fixed)]
+
+
+def unscaled_constraints_generator(blk: Block, descend_into=True):
+    """Generator for unscaled constraints
+
+    Args:
+        block
+
+    Yields:
+        constraints with no scale factor
+    """
+    for c in blk.component_data_objects(
+        Constraint, active=True, descend_into=descend_into
+    ):
+        if (
+            get_scaling_factor(c) is None
+        ):
+            yield c
+
+
+def list_unscaled_constraints(blk: Block, descend_into: bool = True):
+    """
+    Return a list of constraints which do not have a scaling factor assigned
+    Args:
+        blk: block to check for unscaled constraints
+        descend_into: bool indicating whether to check constraints in sub-blocks
+
+    Returns:
+        list of unscaled constraint data objects
+    """
+    return [c for c in unscaled_constraints_generator(blk, descend_into)]
+
+
 def get_nominal_value(component):
     """
     Get the signed nominal value for a VarData or ParamData component.

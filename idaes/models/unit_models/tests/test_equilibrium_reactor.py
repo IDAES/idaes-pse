@@ -512,7 +512,7 @@ class TestEquilibriumReactorScalerLegacy:
 
     @pytest.mark.component
     def test_variable_scaling_routine_submodel_scaler(self, model):
-        scaler = model.fs.unit.default_scaler()
+        scaler = EquilibriumReactorScalerLegacy()
 
         scaler_map = ComponentMap()
         scaler_map[model.fs.unit.control_volume.properties_in] = DummyScaler
@@ -743,7 +743,7 @@ class TestEquilibriumReactorScalerLegacy:
 
         set_scaling_factor(m.fs.equil.control_volume.properties_in[0].flow_vol, 1)
 
-        scaler = EquilibriumReactorScaler()
+        scaler = EquilibriumReactorScalerLegacy()
         scaler.scale_model(m.fs.equil)
 
         m.fs.equil.inlet.flow_vol.fix(1)

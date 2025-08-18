@@ -264,7 +264,7 @@ class ControlVolumeScalerBase(CustomScalerBase):
 
         # Inherent reaction
         if hasattr(model, "inherent_reaction_generation"):
-            stoich = params.inherent_reaction_stoichiomerty
+            stoich = params.inherent_reaction_stoichiometry
             inh_rxn_gen = getattr(model, "inherent_reaction_generation")
             inh_rxn_idx = params.inherent_reaction_idx
             # Material generation scaling is based on the magnitude of
@@ -413,6 +413,7 @@ class ControlVolumeScalerBase(CustomScalerBase):
                             props[prop_idx].get_enthalpy_flow_terms(p)
                         )
                     )
+                # TODO we need to do some validation so that nom isn't zero or near-zero
                 nom = max(nom_list)
                 if hasattr(model, "heat"):
                     self.set_component_scaling_factor(

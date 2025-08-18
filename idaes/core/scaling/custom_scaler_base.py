@@ -410,6 +410,35 @@ class CustomScalerBase(ScalerBase):
                 "in self.unit_scaling_factors"
             )
 
+    # def scale_variable_by_magnitude(self, variable: VarData, overwrite: bool = False):
+    #     """
+    #     Set scaling factor for variable based on its current magnitude.
+    #     This method does not support setting scaling hints for named 
+    #     Expressions because their magnitudes can be accessed through the 
+    #     NominalValueExtractionVisitor.
+
+    #     Args:
+    #         variable: variable to set scaling factor for
+    #         overwrite: whether to overwrite existing scaling factors
+
+    #     Returns:
+    #         None
+    #     """
+    #     try:
+    #         val = value(variable)
+    #     except ValueError as err:
+    #         raise ValueError(
+    #             "Attempt to scale variable {variable} by magnitude failed "
+    #             "because it has no assigned value."
+    #         ) from err
+    #     nom = abs(val)
+    #     if nom < self.config.zero_tolerance:
+    #         raise ValueError(
+    #             "Attempt to scale variable {variable} by magnitude failed "
+    #             "because its value is indistinguishable from zero."
+    #         )
+    #     self.set_component_scaling_factor(variable, overwrite=overwrite)
+
     # Common methods for constraint scaling
     def scale_constraint_by_component(
         self,
