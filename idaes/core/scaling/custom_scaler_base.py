@@ -439,6 +439,47 @@ class CustomScalerBase(ScalerBase):
     #         )
     #     self.set_component_scaling_factor(variable, overwrite=overwrite)
 
+    def scale_variable_by_definition_constraint(
+        self, variable, constraint, overwrite: bool = False
+    ):
+        """
+        Set scaling factor for variable via a constraint that defines it.
+        We expect a constraint of the form variable == expression, and set
+        a scaling factor for a variable based on the nominal value of the
+        expression. Note: this expression does not need to be a Pyomo
+        named Expression.
+
+        Args:
+            variable: variable to set scaling factor for
+            constraint: constraint defining this variable
+            overwrite: whether to overwrite existing scaling factors
+
+        Returns:
+            None
+        """
+        if not isinstance(constraint, ConstraintData):
+            raise TypeError(f"{constraint} is not a constraint (or is indexed).")
+
+        # TODO We could probably make this more general using an expression walker.
+        if not constraint.body.nargs() == 2:
+            raise ValueError(f"{constraint} is not of the form {variable} == expression.")
+        if constraint.body.args[0] is variable:
+            expr = constraint.body.args[1]
+        elif constraint.body.args[1] is variable:
+            expr = constraint.body.args[0]
+        else:
+            raise ValueError(f"{variable} does not appear at the top level of the expression tree in {constraint}.")
+
+        nom = abs(self.get_expression_nominal_value(expr))
+        if nom == 0:
+            raise RuntimeError(
+                "Nominal value is equal to zero and cannot be used as a scaling factor."
+            )
+
+        self.set_variable_scaling_factor(
+            variable=variable, scaling_factor=1/nom, overwrite=overwrite
+        )
+
     # Common methods for constraint scaling
     def scale_constraint_by_component(
         self,

@@ -466,6 +466,22 @@ class ControlVolumeScalerBase(CustomScalerBase):
         Returns:
             None
         """
+        if hasattr(model, "properties_out"):
+            # ControlVolume0D
+            phase_list = model.properties_out.phase_list
+            phase_component_set = model.properties_out.phase_component_set
+            props = model.properties_out
+        elif hasattr(model, "properties"):
+            # ControlVolume1D
+            phase_list = model.properties.phase_list
+            phase_component_set = model.properties.phase_component_set
+            props = model.properties
+        else:
+            raise RuntimeError(
+                "ControlVolumeScalerBase can scale only the ControlVolume0D "
+                "and ControlVolume1D classes."
+            )
+
         if hasattr(model, "reactions"):
             self.call_submodel_scaler_method(
                 model.reactions,
@@ -537,17 +553,25 @@ class ControlVolumeScalerBase(CustomScalerBase):
         #         iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         if hasattr(model, "enthalpy_balances"):
-            for con in model.enthalpy_balances.values():
-                self.scale_constraint_by_nominal_value(
-                    con,
-                    scheme=ConstraintScalingScheme.inverseMaximum,
+            for idx in props:
+                nom_list = []
+                for p in phase_list:
+                    nom_list.append(
+                        self.get_expression_nominal_value(
+                            props[idx].get_enthalpy_flow_terms(p)
+                        )
+                    )
+                nom = max(nom_list)
+                self.set_component_scaling_factor(
+                    model.enthalpy_balances[idx],
+                    1 / nom,
                     overwrite=overwrite
                 )
 
 
         if hasattr(model, "energy_holdup_calculation"):
             for idx in model.energy_holdup_calculation:
-                self.scale_constraint_from_component(
+                self.scale_constraint_by_component(
                     model.energy_holdup_calculation[idx],
                     model.energy_holdup[idx],
                     overwrite=overwrite
