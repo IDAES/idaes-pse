@@ -478,9 +478,9 @@ class TestCustomScalerBase:
     def test_scale_variable_by_definition_constraint_indexed(self, model):
         sb = CustomScalerBase()
 
-        # The fact that this constraint overdetermines the mode is
+        # The fact that this constraint overdetermines the model is
         # of no consequence. We don't even reach the computation
-        # stage.
+        # stage by the time an exception is thrown.
         @model.Constraint([1, 2, 3])
         def foo(b, idx):
             return b.pressure == 0
