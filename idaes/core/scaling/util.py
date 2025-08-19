@@ -710,7 +710,9 @@ def report_scaling_factors(
                 stream.write(f"{n + ' ' * (maxname - len(n))}{TAB}{i}\n")
 
 
-def unscaled_variables_generator(blk : Block, descend_into: Boolean = True, include_fixed: Boolean = False):
+def unscaled_variables_generator(
+    blk: Block, descend_into: Boolean = True, include_fixed: Boolean = False
+):
     """Generator for unscaled variables
 
     Args:
@@ -754,9 +756,7 @@ def unscaled_constraints_generator(blk: Block, descend_into=True):
     for c in blk.component_data_objects(
         Constraint, active=True, descend_into=descend_into
     ):
-        if (
-            get_scaling_factor(c) is None
-        ):
+        if get_scaling_factor(c) is None:
             yield c
 
 

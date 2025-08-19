@@ -36,6 +36,7 @@ from idaes.core.scaling import CustomScalerBase
 
 __author__ = "Andrew Lee, Douglas Allan"
 
+
 class EquilibriumReactorScaler(CustomScalerBase):
     def variable_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: dict = None
@@ -44,7 +45,7 @@ class EquilibriumReactorScaler(CustomScalerBase):
             model.control_volume,
             method="variable_scaling_routine",
             submodel_scalers=submodel_scalers,
-            overwrite=overwrite
+            overwrite=overwrite,
         )
 
     def constraint_scaling_routine(
@@ -68,14 +69,15 @@ class EquilibriumReactorScaler(CustomScalerBase):
             model.control_volume,
             method="constraint_scaling_routine",
             submodel_scalers=submodel_scalers,
-            overwrite=overwrite
+            overwrite=overwrite,
         )
         if hasattr(model, "rate_reaction_constraint"):
             for idx in model.rate_reaction_constraint:
                 self.scale_constraint_by_nominal_value(
-                    model.rate_reaction_constraint[idx],
-                    overwrite=overwrite
+                    model.rate_reaction_constraint[idx], overwrite=overwrite
                 )
+
+
 class EquilibriumReactorScalerLegacy(CustomScalerBase):
     """
     Default modular scaler for Equilibrium reactors.
@@ -158,9 +160,7 @@ class EquilibriumReactorScalerLegacy(CustomScalerBase):
                 h_in = 0
                 for p in model.control_volume.properties_in.phase_list:
                     h_in += self.get_expression_nominal_value(
-                        model.control_volume.properties_in[
-                            t
-                        ].get_enthalpy_flow_terms(p)
+                        model.control_volume.properties_in[t].get_enthalpy_flow_terms(p)
                     )
                 # Scale for heat is general one order of magnitude less than enthalpy flow
                 self.set_variable_scaling_factor(

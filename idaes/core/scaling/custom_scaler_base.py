@@ -43,6 +43,7 @@ from idaes.core.util.misc import StrEnum
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
+
 def _filter_scaling_factor(sf):
     # Cast sf to float to catch obvious garbage
     sf = float(sf)
@@ -52,9 +53,10 @@ def _filter_scaling_factor(sf):
     if not 0 < sf < float("inf"):
         raise ValueError(
             f"Scaling factors must be strictly positive and finite. Received "
-            f"value of {sf} instead." 
+            f"value of {sf} instead."
         )
     return sf
+
 
 CSCONFIG = CONFIG()
 
@@ -431,9 +433,9 @@ class CustomScalerBase(ScalerBase):
         """
         Set scaling factor for variable via a constraint that defines it.
         We expect a constraint of the form
-        variable == prod(v ** nu for v, nu in zip(other_variables, variable_exponents), 
+        variable == prod(v ** nu for v, nu in zip(other_variables, variable_exponents),
         and set a scaling factor for a variable based on the nominal value of the
-        righthand side. 
+        righthand side.
 
         This method may return a result even if the constraint does not have this
         expected form, but the resulting scaling factor may not be suitable.
@@ -452,8 +454,10 @@ class CustomScalerBase(ScalerBase):
                 "children instead."
             )
         if not isinstance(constraint, ConstraintData):
-            raise TypeError(f"{constraint} is not a constraint, but instead {type(constraint)}")
-        
+            raise TypeError(
+                f"{constraint} is not a constraint, but instead {type(constraint)}"
+            )
+
         if constraint.lb != constraint.ub:
             raise ValueError(
                 f"A definition constraint is an equality constraint, but {constraint} "
@@ -483,19 +487,15 @@ class CustomScalerBase(ScalerBase):
             )
 
         for v, _, sf in var_info:
-             if v is not variable:
+            if v is not variable:
                 v.value = 1 / sf
-
 
         try:
             # If constraint has the form variable == prod(v ** nu(v))
             # then 1 / sf = prod((1/sf(v)) ** nu(v)). Fixing all the
             # other variables v to their nominal values allows us to
             # calculate sf using calculate_variable_from_constraint.
-            calculate_variable_from_constraint(
-                variable=variable,
-                constraint=constraint
-            )
+            calculate_variable_from_constraint(variable=variable, constraint=constraint)
             nom = abs(variable.value)
 
         except (RuntimeError, ValueError) as err:
@@ -510,7 +510,6 @@ class CustomScalerBase(ScalerBase):
                 f"Could not calculate scaling factor from definition constraint {constraint}. "
                 f"Does {variable} appear nonlinearly in it or have a linear coefficient "
                 "equal to zero?"
-
             ) from err
         finally:
             # Revert values to what they were initially

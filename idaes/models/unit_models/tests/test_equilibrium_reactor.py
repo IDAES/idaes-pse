@@ -37,7 +37,7 @@ from idaes.core import (
 from idaes.models.unit_models.equilibrium_reactor import (
     EquilibriumReactor,
     EquilibriumReactorScaler,
-    EquilibriumReactorScalerLegacy
+    EquilibriumReactorScalerLegacy,
 )
 from idaes.models.properties.examples.saponification_thermo import (
     SaponificationParameterBlock,
@@ -767,6 +767,7 @@ class TestEquilibriumReactorScalerLegacy:
             1.030e4, rel=1e-3
         )
 
+
 class TestEquilibriumReactorScaler:
     @pytest.fixture
     def model(self):
@@ -801,7 +802,7 @@ class TestEquilibriumReactorScaler:
         m.fs.unit.deltaP.fix(0)
 
         return m
-    
+
     @pytest.mark.integration
     def test_example_case(self):
         m = ConcreteModel()
@@ -854,6 +855,4 @@ class TestEquilibriumReactorScaler:
         # Check condition number to confirm scaling
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
         jac, _ = get_jacobian(sm, scaled=False)
-        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            218.88, rel=1e-3
-        )
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(218.88, rel=1e-3)

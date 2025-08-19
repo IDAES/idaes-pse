@@ -39,7 +39,11 @@ from idaes.core.util.exceptions import (
     ConfigurationError,
     PropertyNotSupportedError,
 )
-from idaes.core.scaling import ConstraintScalingScheme, CustomScalerBase, get_scaling_factor
+from idaes.core.scaling import (
+    ConstraintScalingScheme,
+    CustomScalerBase,
+    get_scaling_factor,
+)
 import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
@@ -98,14 +102,16 @@ class FlowDirection(Enum):
     forward = 1
     backward = 2
 
+
 class ControlVolumeScalerBase(CustomScalerBase):
     """
     Scaler object for elements common to the ControlVolume0D and ControlVolume1D
     """
+
     # TODO can we extend this to the Mixer, Separator, and MSContactor?
 
     def variable_scaling_routine(
-        self, model, overwrite: bool = False, submodel_scalers = None
+        self, model, overwrite: bool = False, submodel_scalers=None
     ):
         """
         Routine to apply scaling factors to variables in model.
@@ -150,9 +156,7 @@ class ControlVolumeScalerBase(CustomScalerBase):
         if hasattr(model, "material_holdup"):
             for idx, v in model.material_holdup.items():
                 self.scale_variable_by_definition_constraint(
-                    v,
-                    model.material_holdup_calculation[idx],
-                    overwrite=overwrite
+                    v, model.material_holdup_calculation[idx], overwrite=overwrite
                 )
 
         # Material accumulation should be scaled by a global method for scaling
@@ -179,13 +183,11 @@ class ControlVolumeScalerBase(CustomScalerBase):
                     props[prop_idx].get_material_flow_terms(p, j)
                 )
                 self.set_component_scaling_factor(
-                    rate_rxn_gen[idx],
-                    1/nom,
-                    overwrite=overwrite
+                    rate_rxn_gen[idx], 1 / nom, overwrite=overwrite
                 )
 
-            # Extent of reaction scaling is based on the species in the 
-            # reaction which has the largest scaling factor (and thus is 
+            # Extent of reaction scaling is based on the species in the
+            # reaction which has the largest scaling factor (and thus is
             # the species whose concentration is the most sensitive).
             # This scaling may not work for systems with highly reactive
             # intermediates, in which multiple extents of reaction
@@ -210,9 +212,9 @@ class ControlVolumeScalerBase(CustomScalerBase):
                     self.set_component_scaling_factor(
                         model.rate_reaction_extent[prop_idx, rxn],
                         1 / nom_rxn,
-                        overwrite=overwrite
+                        overwrite=overwrite,
                     )
-            
+
         # Equilibrium reaction
         if hasattr(model, "equilibrium_reaction_generation"):
             stoich = rparam.equilibrium_reaction_stoichiometry
@@ -228,13 +230,11 @@ class ControlVolumeScalerBase(CustomScalerBase):
                     props[prop_idx].get_material_flow_terms(p, j)
                 )
                 self.set_component_scaling_factor(
-                    equil_rxn_gen[idx],
-                    1/nom,
-                    overwrite=overwrite
+                    equil_rxn_gen[idx], 1 / nom, overwrite=overwrite
                 )
 
-            # Extent of reaction scaling is based on the species in the 
-            # reaction which has the largest scaling factor (and thus is 
+            # Extent of reaction scaling is based on the species in the
+            # reaction which has the largest scaling factor (and thus is
             # the species whose concentration is the most sensitive).
             # This scaling may not work for systems with highly reactive
             # intermediates, in which multiple extents of reaction
@@ -259,7 +259,7 @@ class ControlVolumeScalerBase(CustomScalerBase):
                     self.set_component_scaling_factor(
                         model.equilibrium_reaction_extent[prop_idx, rxn],
                         1 / nom_rxn,
-                        overwrite=overwrite
+                        overwrite=overwrite,
                     )
 
         # Inherent reaction
@@ -277,13 +277,11 @@ class ControlVolumeScalerBase(CustomScalerBase):
                     props[prop_idx].get_material_flow_terms(p, j)
                 )
                 self.set_component_scaling_factor(
-                    inh_rxn_gen[idx],
-                    1/nom,
-                    overwrite=overwrite
+                    inh_rxn_gen[idx], 1 / nom, overwrite=overwrite
                 )
 
-            # Extent of reaction scaling is based on the species in the 
-            # reaction which has the largest scaling factor (and thus is 
+            # Extent of reaction scaling is based on the species in the
+            # reaction which has the largest scaling factor (and thus is
             # the species whose concentration is the most sensitive).
             # This scaling may not work for systems with highly reactive
             # intermediates, in which multiple extents of reaction
@@ -308,21 +306,19 @@ class ControlVolumeScalerBase(CustomScalerBase):
                     self.set_component_scaling_factor(
                         model.inherent_reaction_extent[prop_idx, rxn],
                         1 / nom_rxn,
-                        overwrite=overwrite
+                        overwrite=overwrite,
                     )
-
-
 
         if hasattr(model, "mass_transfer_term"):
             for prop_idx in props:
                 for p, j in phase_component_set:
                     nom = self.get_expression_nominal_value(
                         props[prop_idx].get_material_flow_terms(p, j)
-                    ) 
+                    )
                     self.set_component_scaling_factor(
                         model.mass_transfer_term[prop_idx, p, j],
-                        1/ nom,
-                        overwrite=overwrite
+                        1 / nom,
+                        overwrite=overwrite,
                     )
 
         # Set scaling factors for element balance variables
@@ -333,7 +329,6 @@ class ControlVolumeScalerBase(CustomScalerBase):
         #             flow_basis = model.properties_out[t].get_material_flow_basis()
         #             for p, j in phase_component_set:
 
-                    
         #             sf = iscale.min_scaling_factor(
         #                 [
         #                     model.properties_out[t].get_material_density_terms(p, j)
@@ -395,8 +390,7 @@ class ControlVolumeScalerBase(CustomScalerBase):
         if hasattr(model, "energy_holdup"):
             for idx in model.energy_holdup:
                 self.scale_variable_by_definition_constraint(
-                    model.energy_holdup[idx],
-                    model.energy_holdup_calculation[idx]
+                    model.energy_holdup[idx], model.energy_holdup_calculation[idx]
                 )
         # Energy accumulation should be scaled by a global method for scaling
         # time derivative variables
@@ -404,7 +398,11 @@ class ControlVolumeScalerBase(CustomScalerBase):
             pass
 
         # Energy transfer terms
-        if hasattr(model, "heat") or hasattr(model, "work") or hasattr(model, "enthalpy_transfer"):
+        if (
+            hasattr(model, "heat")
+            or hasattr(model, "work")
+            or hasattr(model, "enthalpy_transfer")
+        ):
             for prop_idx in props:
                 nom_list = []
                 for p in phase_list:
@@ -417,38 +415,26 @@ class ControlVolumeScalerBase(CustomScalerBase):
                 nom = max(nom_list)
                 if hasattr(model, "heat"):
                     self.set_component_scaling_factor(
-                        model.heat[prop_idx],
-                        1/nom,
-                        overwrite=overwrite
+                        model.heat[prop_idx], 1 / nom, overwrite=overwrite
                     )
                 if hasattr(model, "work"):
                     self.set_component_scaling_factor(
-                        model.work[prop_idx],
-                        1/nom,
-                        overwrite=overwrite
+                        model.work[prop_idx], 1 / nom, overwrite=overwrite
                     )
                 if hasattr(model, "enthalpy_transfer"):
                     self.set_component_scaling_factor(
-                        model.enthalpy_transfer[prop_idx],
-                        1/nom,
-                        overwrite=overwrite
+                        model.enthalpy_transfer[prop_idx], 1 / nom, overwrite=overwrite
                     )
-
 
         # Set scaling for momentum balance variables
         if hasattr(model, "deltaP"):
             for prop_idx in props:
-                sf_P = get_scaling_factor(
-                    props[prop_idx].pressure
-                )
+                sf_P = get_scaling_factor(props[prop_idx].pressure)
                 # TODO raise error if pressure scaling factor
                 # isn't set
                 self.set_component_scaling_factor(
-                    model.deltaP[prop_idx],
-                    sf_P,
-                    overwrite=overwrite
+                    model.deltaP[prop_idx], sf_P, overwrite=overwrite
                 )
-                
 
     def constraint_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None
@@ -495,15 +481,15 @@ class ControlVolumeScalerBase(CustomScalerBase):
                 self.scale_constraint_by_component(
                     model.material_holdup_calculation[idx],
                     model.material_holdup[idx],
-                    overwrite=overwrite
+                    overwrite=overwrite,
                 )
 
         if hasattr(model, "rate_reaction_stoichiometry_constraint"):
-            for idx in model.rate_reaction_stoichiometry_constraint: 
+            for idx in model.rate_reaction_stoichiometry_constraint:
                 self.scale_constraint_by_component(
                     model.rate_reaction_stoichiometry_constraint[idx],
                     model.rate_reaction_generation[idx],
-                    overwrite=overwrite
+                    overwrite=overwrite,
                 )
 
         if hasattr(model, "equilibrium_reaction_stoichiometry_constraint"):
@@ -511,7 +497,7 @@ class ControlVolumeScalerBase(CustomScalerBase):
                 self.scale_constraint_by_component(
                     model.equilibrium_reaction_stoichiometry_constraint[idx],
                     model.equilibrium_reaction_generation[idx],
-                    overwrite=overwrite
+                    overwrite=overwrite,
                 )
 
         if hasattr(model, "inherent_reaction_stoichiometry_constraint"):
@@ -519,7 +505,7 @@ class ControlVolumeScalerBase(CustomScalerBase):
                 self.scale_constraint_by_component(
                     model.inherent_reaction_stoichiometry_constraint[idx],
                     model.inherent_reaction_generation[idx],
-                    overwrite=overwrite
+                    overwrite=overwrite,
                 )
 
         if hasattr(model, "material_balances"):
@@ -532,7 +518,7 @@ class ControlVolumeScalerBase(CustomScalerBase):
                     self.scale_constraint_by_nominal_value(
                         model.material_balances[idx],
                         scheme=ConstraintScalingScheme.inverseMaximum,
-                        overwrite=overwrite
+                        overwrite=overwrite,
                     )
             else:
                 # There are some other material balance types but they create
@@ -563,18 +549,15 @@ class ControlVolumeScalerBase(CustomScalerBase):
                     )
                 nom = max(nom_list)
                 self.set_component_scaling_factor(
-                    model.enthalpy_balances[idx],
-                    1 / nom,
-                    overwrite=overwrite
+                    model.enthalpy_balances[idx], 1 / nom, overwrite=overwrite
                 )
-
 
         if hasattr(model, "energy_holdup_calculation"):
             for idx in model.energy_holdup_calculation:
                 self.scale_constraint_by_component(
                     model.energy_holdup_calculation[idx],
                     model.energy_holdup[idx],
-                    overwrite=overwrite
+                    overwrite=overwrite,
                 )
 
         if hasattr(model, "pressure_balance"):
@@ -582,7 +565,7 @@ class ControlVolumeScalerBase(CustomScalerBase):
                 self.scale_constraint_by_nominal_value(
                     con,
                     scheme=ConstraintScalingScheme.inverseMaximum,
-                    overwrite=overwrite
+                    overwrite=overwrite,
                 )
 
         if hasattr(model, "sum_of_phase_fractions"):
@@ -590,7 +573,7 @@ class ControlVolumeScalerBase(CustomScalerBase):
                 self.scale_constraint_by_nominal_value(
                     con,
                     scheme=ConstraintScalingScheme.inverseMaximum,
-                    overwrite=overwrite
+                    overwrite=overwrite,
                 )
 
         # Scaling for discretization equations
@@ -604,7 +587,6 @@ class ControlVolumeScalerBase(CustomScalerBase):
         if hasattr(model, "element_accumulation_disc_eq"):
             pass
 
-    
 
 # Set up example ConfigBlock that will work with ControlVolume autobuild method
 CONFIG_Template = ProcessBlockData.CONFIG()

@@ -53,17 +53,19 @@ _log = idaeslog.getLogger(__name__)
 # TODO : Custom terms in material balances, other types of material balances
 # TODO : Improve flexibility for get_material_flow_terms and associated
 
+
 class ControlVolume0DScaler(ControlVolumeScalerBase):
     """
     Scaler object for the ControlVolume0D
     """
+
     DEFAULT_SCALING_FACTORS = {
         # We could scale volume by magnitude if it were being fixed
         # by the user, but we often have the volume given by an
         # equality constraint involving geometry in the parent
         # unit model.
         "volume": DefaultScalingRecommendation.userInputRequired,
-        "phase_fraction": 10 # May have already been created by property package
+        "phase_fraction": 10,  # May have already been created by property package
     }
 
     def variable_scaling_routine(
@@ -91,7 +93,7 @@ class ControlVolume0DScaler(ControlVolumeScalerBase):
         self.propagate_state_scaling(
             target_state=model.properties_out,
             source_state=model.properties_in,
-            overwrite=overwrite
+            overwrite=overwrite,
         )
         self.call_submodel_scaler_method(
             submodel=model.properties_out,
@@ -138,6 +140,7 @@ class ControlVolume0DScaler(ControlVolumeScalerBase):
             model, overwrite=overwrite, submodel_scalers=submodel_scalers
         )
 
+
 @declare_process_block_class(
     "ControlVolume0DBlock",
     doc="""
@@ -158,6 +161,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
     momentum balances. The form of the terms used in these constraints is
     specified in the chosen property package.
     """
+
     default_scaler = ControlVolume0DScaler
 
     def add_geometry(self):
