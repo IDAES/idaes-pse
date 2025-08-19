@@ -239,7 +239,7 @@ def test_full_auto_scaling_dynamic():
         assert get_scaling_factor(c) == 1 / 13
 
     # Unscaled variables are DerivativeVars and unscaled constraints
-    # are time discreitzation equations. Both should be scaled by
+    # are time discretization equations. Both should be scaled by
     # some global method
     assert len(list_unscaled_variables(m, include_fixed=True)) == 24
     assert len(list_unscaled_constraints(m)) == 18

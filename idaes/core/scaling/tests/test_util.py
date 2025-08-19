@@ -2173,7 +2173,7 @@ def test_find_unscaled_vars_and_constraints():
     set_scaling_factor(m.c3, 1)
 
     a = [id(v) for v in unscaled_variables_generator(m)]
-    # Make sure we pick up the right variales
+    # Make sure we pick up the right variables
     assert id(m.x) not in a
     assert id(m.y) in a
     assert id(m.z) in a
