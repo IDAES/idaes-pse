@@ -455,12 +455,10 @@ class ControlVolumeScalerBase(CustomScalerBase):
         if hasattr(model, "properties_out"):
             # ControlVolume0D
             phase_list = model.properties_out.phase_list
-            phase_component_set = model.properties_out.phase_component_set
             props = model.properties_out
         elif hasattr(model, "properties"):
             # ControlVolume1D
             phase_list = model.properties.phase_list
-            phase_component_set = model.properties.phase_component_set
             props = model.properties
         else:
             raise RuntimeError(
@@ -509,7 +507,7 @@ class ControlVolumeScalerBase(CustomScalerBase):
                 )
 
         if hasattr(model, "material_balances"):
-            mb_type = model._constructed_material_balance_type
+            mb_type = model._constructed_material_balance_type  # pylint: disable=W0212
             if (
                 mb_type == MaterialBalanceType.componentPhase
                 or mb_type == MaterialBalanceType.componentTotal

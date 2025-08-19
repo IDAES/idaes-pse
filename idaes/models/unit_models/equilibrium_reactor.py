@@ -16,6 +16,7 @@ Standard IDAES Equilibrium Reactor model.
 
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
+from pyomo.common.collections import ComponentMap
 from pyomo.environ import Constraint, Reference, units
 
 # Import IDAES cores
@@ -38,8 +39,18 @@ __author__ = "Andrew Lee, Douglas Allan"
 
 
 class EquilibriumReactorScaler(CustomScalerBase):
+    """
+    Default modular scaler for Equilibrium reactors.
+
+    This Scaler relies on the modular scaler for the ControlVolume0D.
+    There are no unit model level variables to scale---those that do exist
+    are just References for the variables on the ControlVolume0D.
+    The only unit model level constraint is a constraint that sets the
+    rates of reaction for all rate reactions to zero, which is scaled here.
+    """
+
     def variable_scaling_routine(
-        self, model, overwrite: bool = False, submodel_scalers: dict = None
+        self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None
     ):
         self.call_submodel_scaler_method(
             model.control_volume,
@@ -49,13 +60,10 @@ class EquilibriumReactorScaler(CustomScalerBase):
         )
 
     def constraint_scaling_routine(
-        self, model, overwrite: bool = False, submodel_scalers: dict = None
+        self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None
     ):
         """
         Routine to apply scaling factors to constraints in model.
-
-        Submodel Scalers are called for the property and reaction blocks. All other constraints
-        are scaled using the inverse maximum shceme.
 
         Args:
             model: model to be scaled
@@ -80,7 +88,7 @@ class EquilibriumReactorScaler(CustomScalerBase):
 
 class EquilibriumReactorScalerLegacy(CustomScalerBase):
     """
-    Default modular scaler for Equilibrium reactors.
+    Old modular scaler for Equilibrium reactors.
 
     This Scaler relies on modular the associated property and reaction packages,
     either through user provided options (submodel_scalers argument) or by default
@@ -97,7 +105,7 @@ class EquilibriumReactorScalerLegacy(CustomScalerBase):
     }
 
     def variable_scaling_routine(
-        self, model, overwrite: bool = False, submodel_scalers: dict = None
+        self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None
     ):
         """
         Routine to apply scaling factors to variables in model.
@@ -168,7 +176,7 @@ class EquilibriumReactorScalerLegacy(CustomScalerBase):
                 )
 
     def constraint_scaling_routine(
-        self, model, overwrite: bool = False, submodel_scalers: dict = None
+        self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None
     ):
         """
         Routine to apply scaling factors to constraints in model.

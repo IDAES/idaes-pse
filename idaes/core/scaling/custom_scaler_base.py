@@ -27,7 +27,6 @@ from pyomo.core.base.var import VarData
 from pyomo.core.base.expression import ExpressionData
 
 from pyomo.core.expr import identify_variables
-from pyomo.core.expr.numeric_expr import MonomialTermExpression
 from pyomo.core.expr.calculus.derivatives import Modes, differentiate
 from pyomo.common.deprecation import deprecation_warning
 from pyomo.util.calc_var_value import calculate_variable_from_constraint

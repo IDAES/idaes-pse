@@ -46,7 +46,7 @@ from idaes.core.util import scaling as iscale
 import idaes.logger as idaeslog
 from idaes.core.base.control_volume_base import ControlVolumeScalerBase
 
-from idaes.core.scaling import DefaultScalingRecommendation, get_scaling_factor
+from idaes.core.scaling import DefaultScalingRecommendation
 
 _log = idaeslog.getLogger(__name__)
 
