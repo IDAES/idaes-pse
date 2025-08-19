@@ -13,7 +13,7 @@
 """
 Tests for scaling utility functions.
 
-Author: Andrew Lee
+Author: Andrew Lee, Douglas Allan
 """
 from io import StringIO
 import os
@@ -35,11 +35,15 @@ from idaes.core.scaling.util import (
     _suffix_from_dict,
     _collect_block_suffixes,
     _set_block_suffixes_from_dict,
+    list_unscaled_variables,
+    list_unscaled_constraints,
     scaling_factors_to_dict,
     scaling_factors_from_dict,
     scaling_factors_to_json_file,
     scaling_factors_from_json_file,
     report_scaling_factors,
+    unscaled_variables_generator,
+    unscaled_constraints_generator,
 )
 import idaes.logger as idaeslog
 
@@ -2144,3 +2148,52 @@ b[4].e2[4]    None
             "received foo.",
         ):
             report_scaling_factors(model, descend_into=True, stream=stream, ctype="foo")
+
+
+# Adopted from old scaling tools
+# originally by John Eslick
+@pytest.mark.unit
+def test_find_unscaled_vars_and_constraints():
+    m = ConcreteModel()
+    m.b = Block()
+    m.x = Var(initialize=1e6)
+    m.y = Var(initialize=1e-8)
+    m.z = Var(initialize=1e-20)
+    m.c1 = Constraint(expr=m.x == 0)
+    m.c2 = Constraint(expr=m.y == 0)
+    m.b.w = Var([1, 2, 3], initialize=1e10)
+    m.b.c1 = Constraint(expr=m.b.w[1] == 0)
+    m.b.c2 = Constraint(expr=m.b.w[2] == 0)
+    m.c3 = Constraint(expr=m.z == 0)
+
+    set_scaling_factor(m.x, 1)
+    set_scaling_factor(m.b.w[1], 2)
+    set_scaling_factor(m.c1, 1)
+    set_scaling_factor(m.b.c1, 1)
+    set_scaling_factor(m.c3, 1)
+
+    a = [id(v) for v in unscaled_variables_generator(m)]
+    # Make sure we pick up the right variales
+    assert id(m.x) not in a
+    assert id(m.y) in a
+    assert id(m.z) in a
+    assert id(m.b.w[1]) not in a
+    assert id(m.b.w[2]) in a
+    assert id(m.b.w[3]) in a
+    assert len(a) == 4  # make sure we didn't pick up any other random stuff
+
+    b = [id(v) for v in list_unscaled_variables(m)]
+    for foo, bar in zip(a, b):
+        assert foo == bar
+
+    a = [id(v) for v in unscaled_constraints_generator(m)]
+    assert id(m.c1) not in a
+    assert id(m.b.c1) not in a
+    assert id(m.c2) in a
+    assert id(m.b.c2) in a
+    assert id(m.c3) not in a
+    assert len(a) == 2  # make sure we didn't pick up any other random stuff
+
+    b = [id(v) for v in list_unscaled_constraints(m)]
+    for foo, bar in zip(a, b):
+        assert foo == bar

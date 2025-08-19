@@ -1,25 +1,35 @@
 {
-    "scaling_factor_suffix": {"v[3]": 15, "v[4]": 20, "c[3]": 125, "c[4]": 625},
+    "scaling_factor_suffix": {
+        "v[3]": 15,
+        "v[4]": 20,
+        "c[3]": 125,
+        "c[4]": 625
+    },
     "scaling_hint_suffix": {"e1": 13},
     "subblock_suffixes": {
         "b[1]": {
-            "scaling_factor_suffix": {"v2": 10},
+            "scaling_factor_suffix": {
+                "v2": 10
+            },
             "scaling_hint_suffix": {
                 "e2[1]": 1,
                 "e2[2]": 0.5,
                 "e2[3]": 0.3333333333333333,
-                "e2[4]": 0.25,
-            },
+                "e2[4]": 0.25
+            }
+
         },
         "b[2]": {
-            "scaling_factor_suffix": {"v2": 20},
+            "scaling_factor_suffix": {
+                "v2": 20
+            },
             "scaling_hint_suffix": {
                 "e2[1]": 1,
                 "e2[2]": 0.5,
                 "e2[3]": 0.3333333333333333,
-                "e2[4]": 0.25,
-            },
-        },
+                "e2[4]": 0.25
+            }
+        }
     },
-    "block_name": "unknown",
+    "block_name": "unknown"
 }

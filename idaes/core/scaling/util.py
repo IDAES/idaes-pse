@@ -710,6 +710,10 @@ def report_scaling_factors(
                 stream.write(f"{n + ' ' * (maxname - len(n))}{TAB}{i}\n")
 
 
+# Unscaled variables and constraints generators adopted from old scaling tools,
+# originally by John Eslick
+
+
 def unscaled_variables_generator(
     blk: Block, descend_into: Boolean = True, include_fixed: Boolean = False
 ):
