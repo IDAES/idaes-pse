@@ -30,6 +30,7 @@ from pyomo.core.expr import identify_variables
 from pyomo.core.expr.numeric_expr import MonomialTermExpression
 from pyomo.core.expr.calculus.derivatives import Modes, differentiate
 from pyomo.common.deprecation import deprecation_warning
+from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 from idaes.core.scaling.scaling_base import CONFIG, ScalerBase
 from idaes.core.scaling.util import (
@@ -41,6 +42,19 @@ from idaes.core.util.misc import StrEnum
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
+
+def _filter_scaling_factor(sf):
+    # Cast sf to float to catch obvious garbage
+    sf = float(sf)
+    # This comparison filters out negative numbers and infinity.
+    # It also filters out NaN values because comparisons involving
+    # NaN return False by default (including float("NaN") == float("NaN")).
+    if not 0 < sf < float("inf"):
+        raise ValueError(
+            f"Scaling factors must be strictly positive and finite. Received "
+            f"value of {sf} instead." 
+        )
+    return sf
 
 CSCONFIG = CONFIG()
 
@@ -411,44 +425,18 @@ class CustomScalerBase(ScalerBase):
                 "in self.unit_scaling_factors"
             )
 
-    # def scale_variable_by_magnitude(self, variable: VarData, overwrite: bool = False):
-    #     """
-    #     Set scaling factor for variable based on its current magnitude.
-    #     This method does not support setting scaling hints for named 
-    #     Expressions because their magnitudes can be accessed through the 
-    #     NominalValueExtractionVisitor.
-
-    #     Args:
-    #         variable: variable to set scaling factor for
-    #         overwrite: whether to overwrite existing scaling factors
-
-    #     Returns:
-    #         None
-    #     """
-    #     try:
-    #         val = value(variable)
-    #     except ValueError as err:
-    #         raise ValueError(
-    #             "Attempt to scale variable {variable} by magnitude failed "
-    #             "because it has no assigned value."
-    #         ) from err
-    #     nom = abs(val)
-    #     if nom < self.config.zero_tolerance:
-    #         raise ValueError(
-    #             "Attempt to scale variable {variable} by magnitude failed "
-    #             "because its value is indistinguishable from zero."
-    #         )
-    #     self.set_component_scaling_factor(variable, overwrite=overwrite)
-
     def scale_variable_by_definition_constraint(
         self, variable, constraint, overwrite: bool = False
     ):
         """
         Set scaling factor for variable via a constraint that defines it.
-        We expect a constraint of the form variable == expression, and set
-        a scaling factor for a variable based on the nominal value of the
-        expression. Note: this expression does not need to be a Pyomo
-        named Expression.
+        We expect a constraint of the form
+        variable == prod(v ** nu for v, nu in zip(other_variables, variable_exponents), 
+        and set a scaling factor for a variable based on the nominal value of the
+        righthand side. 
+
+        This method may return a result even if the constraint does not have this
+        expected form, but the resulting scaling factor may not be suitable.
 
         Args:
             variable: variable to set scaling factor for
@@ -458,80 +446,83 @@ class CustomScalerBase(ScalerBase):
         Returns:
             None
         """
+        if constraint.is_indexed():
+            raise TypeError(
+                f"Constraint {constraint} is indexed. Call with ConstraintData "
+                "children instead."
+            )
         if not isinstance(constraint, ConstraintData):
-            raise TypeError(f"{constraint} is not a constraint (or is indexed).")
-
-        def filter_monomial(expr):
-            """
-            Descend one more level into the expression tree to see if variable
-            appears multiplied by a constant factor
-            Args:
-                expr: expression to check for variable
-
-            Returns:
-                (flag, prefactor), in which flag is a boolean tracking whether
-                variable has been successfully identified and prefactor is the
-                absolute value of the factor multiplying variable
-            """
-            if not isinstance(expr, MonomialTermExpression):
-                return (False, 0)
-            if len(expr.args) != 2:
-                return (False, 0)
-            if expr.args[0] is variable:
-                # Test for numeric type
-                try:
-                    prefactor = float(expr.args[1])
-                except ValueError:
-                    return (False, 0)
-                return (True, abs(prefactor))
-            elif expr.args[1] is variable:
-                try:
-                    prefactor = float(expr.args[0])
-                except ValueError:
-                    return (False, 0)
-                return (True, abs(prefactor))
-            else:
-                return (False, 0)
-
-        # TODO We could probably make this more general using an expression walker.
-        expr = None
-        if not constraint.body.nargs() == 2:
-            raise ValueError(f"{constraint} is not of the form {variable} == expression.")
-        if constraint.body.args[0] is variable:
-            expr = constraint.body.args[1]
-            prefactor = 1
-        elif constraint.body.args[1] is variable:
-            expr = constraint.body.args[0]
-            prefactor = 1
+            raise TypeError(f"{constraint} is not a constraint, but instead {type(constraint)}")
         
-        if expr is None:
-            flag, prefactor = filter_monomial(constraint.body.args[0])
-            if not flag:
-                flag, prefactor = filter_monomial(constraint.body.args[1])
-                if not flag:
-                    raise ValueError(f"{variable} does not appear at the top level of the expression tree in {constraint}.")
-                else:
-                    expr = constraint.body.args[0]
-            else:
-                expr = constraint.body.args[1]
-        
-        if not 0 < prefactor < float("inf"):
-            # Filter values of 0, inf, and NaN.
-            # Comparison of any number with NaN (including NaN itself)
-            # returns False. Negative values should have already been
-            # filtered out in filter_monomial.
-            raise ValueError(f"{variable} appears in constraint multiplied by invalid factor {prefactor}.")
-
-
-        nom = abs(self.get_expression_nominal_value(expr))
-        if nom == 0:
-            raise RuntimeError(
-                "Nominal value is equal to zero and cannot be used as a scaling factor."
+        if constraint.lb != constraint.ub:
+            raise ValueError(
+                f"A definition constraint is an equality constraint, but {constraint} "
+                "is an inequality constraint. Cannot scale with this constraint."
             )
 
-        self.set_variable_scaling_factor(
-            variable=variable, scaling_factor=prefactor/nom, overwrite=overwrite
-        )
+        var_info = []
+        variable_in_constraint = False
+        # Iterate over all variables in constraint
+        for v in identify_variables(constraint.body):
+            # Store current value for restoration
+            ov = v.value  # original value
+            sf = self.get_scaling_factor(v)  # scaling factor
+            if sf is None:
+                # If no scaling factor set, use nominal value of 1
+                sf = 1
+            sf = _filter_scaling_factor(sf)
+
+            var_info.append((v, ov, sf))
+            if v is variable:
+                variable_in_constraint = True
+
+        if not variable_in_constraint:
+            raise ValueError(
+                f"Variable {variable} does not appear in constraint "
+                f"{constraint}, cannot calculate scaling factor."
+            )
+
+        for v, _, sf in var_info:
+             if v is not variable:
+                v.value = 1 / sf
+
+
+        try:
+            # If constraint has the form variable == prod(v ** nu(v))
+            # then 1 / sf = prod((1/sf(v)) ** nu(v)). Fixing all the
+            # other variables v to their nominal values allows us to
+            # calculate sf using calculate_variable_from_constraint.
+            calculate_variable_from_constraint(
+                variable=variable,
+                constraint=constraint
+            )
+            nom = abs(variable.value)
+
+        except (RuntimeError, ValueError) as err:
+            # RuntimeError:
+            # Reached the maximum number of iterations for calculate_variable_from_constraint().
+            # Since it converges in a single iteration if variable appears linearly in
+            # constraint, then constraint must have a different form than we were expecting.
+            # ValueError:
+            # variable possibly appears in constraint with derivative 0,
+            # so also not of the form we expected.
+            raise RuntimeError(
+                f"Could not calculate scaling factor from definition constraint {constraint}. "
+                f"Does {variable} appear nonlinearly in it or have a linear coefficient "
+                "equal to zero?"
+
+            ) from err
+        finally:
+            # Revert values to what they were initially
+            for v in var_info:
+                v[0].value = v[1]
+
+        if nom == 0:
+            raise ValueError(
+                "Calculated nominal value of zero from definition constraint."
+            )
+
+        self.set_variable_scaling_factor(variable, 1 / nom, overwrite=overwrite)
 
     # Common methods for constraint scaling
     def scale_constraint_by_component(
