@@ -25,11 +25,119 @@ from idaes.models.properties.modular_properties.base.utility import (
 )
 import idaes.core.util.scaling as iscale
 from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.scaling import ConstraintScalingScheme, CustomScalerBase, get_scaling_factor
 
+from idaes.core.scaling import CustomScalerBase, get_scaling_factor
+
+class IdealBubbleDewScaler(CustomScalerBase):
+    """
+    Scaling method for the Ideal equation of state.
+    It creates no new variables or constraints, so only scaling hints are necessary.
+    The scaling hint for enth_mol_phase is already set in the parent properties.
+    """
+    def variable_scaling_routine(
+        self, model, phase, overwrite: bool = False
+    ):
+        pass
+
+    def constraint_scaling_routine(
+        self, model, phase, overwrite: bool = False
+    ):
+        sf_P = get_scaling_factor(model.pressure)
+        sf_mf = {}
+        for i, v in model.mole_frac_phase_comp.items():
+            sf_mf[i] = get_scaling_factor(v)
+
+        for pp in model.params._pe_pairs:
+                (
+                    l_phase,
+                    v_phase,
+                    vl_comps,
+                    henry_comps,
+                    l_only_comps,
+                    v_only_comps,
+                ) = identify_VL_component_list(model, pp)
+                if l_phase is None or v_phase is None:
+                    continue
+
+
+
+                if len(v_only_comps) == 0 and model.is_property_constructed("eq_temperature_bubble"):
+                    self.set_component_scaling_factor(
+                        model.eq_temperature_bubble[pp[0], pp[1]],
+                        sf_P,
+                        overwrite=overwrite
+                    )
+                    for j in model.component_list:
+                        # TODO Henry
+                        if j in vl_comps:
+                            sf = sf_P * sf_mf
+                        else:
+                            sf = sf_mf
+                        self.set_component_scaling_factor(
+                            model.eq_mole_frac_tbub[pp[0], pp[1], j],
+                            sf,
+                            overwrite=overwrite
+                        )
+                        
+                if len(l_only_comps) == 0 and model.is_property_constructed("eq_temperature_dew"):
+                    # eq_temperature_dew is well-scaled by default
+                    self.set_component_scaling_factor(
+                        model.eq_temperature_dew[pp[0], pp[1]],
+                        1,
+                        overwrite=overwrite
+                    )
+                    for j in model.component_list:
+                        # TODO Henry
+                        if j in vl_comps:
+                            sf = sf_P * sf_mf
+                        else:
+                            sf = sf_mf
+                        self.set_component_scaling_factor(
+                            model.eq_mole_frac_tdew[pp[0], pp[1], j],
+                            sf,
+                            overwrite=overwrite
+                        )
+                
+                if len(v_only_comps) == 0 and model.is_property_constructed("eq_pressure_bubble"):
+                    self.set_component_scaling_factor(
+                        model.eq_pressure_bubble[pp[0], pp[1]],
+                        sf_P,
+                        overwrite=overwrite
+                    )
+                    for j in model.component_list:
+                        # TODO Henry
+                        if j in vl_comps:
+                            sf = sf_P * sf_mf
+                        else:
+                            sf = sf_mf
+                        self.set_component_scaling_factor(
+                            model.eq_mole_frac_pbub[pp[0], pp[1], j],
+                            sf,
+                            overwrite=overwrite
+                        )
+                if len(l_only_comps) == 0 and model.is_property_constructed("eq_pressure_dew"):
+                    # eq_pressure_dew is well-scaled by default
+                    self.set_component_scaling_factor(
+                        model.eq_pressure_dew[pp[0], pp[1]],
+                        1,
+                        overwrite=overwrite
+                    )                    
+                    for j in model.component_list:
+                        # TODO Henry
+                        if j in vl_comps:
+                            sf = sf_P * sf_mf
+                        else:
+                            sf = sf_mf
+                        self.set_component_scaling_factor(
+                            model.eq_mole_frac_pdew[pp[0], pp[1], j],
+                            sf,
+                            overwrite=overwrite
+                        )
 
 class IdealBubbleDew:
     """Bubble and dew point calculations for ideal systems."""
-
+    default_scaler = IdealBubbleDewScaler
     # -------------------------------------------------------------------------
     # Bubble temperature methods
     # This approach can only be used when both liquid and vapor phases use
@@ -507,9 +615,97 @@ class IdealBubbleDew:
                 )
 
 
+
+class LogBubbleDewScaler(CustomScalerBase):
+    """
+    Scaling method for the LogBubbleDew scaler
+    """
+    def variable_scaling_routine(
+        self, model, phase, overwrite: bool = False
+    ):
+        pass
+
+    def constraint_scaling_routine(
+        self, model, phase, overwrite: bool = False
+    ):
+        for pp in model.params._pe_pairs:
+            (
+                l_phase,
+                v_phase,
+                _,
+                _,
+                l_only_comps,
+                v_only_comps,
+            ) = identify_VL_component_list(model, pp)
+            if l_phase is None or v_phase is None:
+                continue
+            if len(v_only_comps) == 0 and model.is_property_constructed("eq_temperature_bubble"):
+                self.scale_constraint_by_nominal_value(
+                    model.eq_mole_frac_tbub[pp[0], pp[1]],
+                    scheme=ConstraintScalingScheme.inverseMaximum,
+                    overwrite=overwrite
+                )
+                for j in model.component_list:
+                    # Either a log-form constraint or setting
+                    # a mole fraction that is used in no other
+                    # equation to zero.
+                    self.set_component_scaling_factor(
+                        model.eq_temperature_bubble[pp[0], pp[1], j],
+                        1,
+                        overwrite=overwrite
+                    )
+            if len(l_only_comps) == 0 and model.is_property_constructed("eq_temperature_dew"):
+                self.scale_constraint_by_nominal_value(
+                    model.eq_mole_frac_tdew[pp[0], pp[1]],
+                    scheme=ConstraintScalingScheme.inverseMaximum,
+                    overwrite=overwrite
+                )
+                for j in model.component_list:
+                    # Either a log-form constraint or setting
+                    # a mole fraction that is used in no other
+                    # equation to zero.
+                    self.set_component_scaling_factor(
+                        model.eq_temperature_dew[pp[0], pp[1], j],
+                        1,
+                        overwrite=overwrite
+                    )
+            if len(v_only_comps) == 0 and model.is_property_constructed("eq_pressure_bubble"):
+                self.scale_constraint_by_nominal_value(
+                    model.eq_mole_frac_pbub[pp[0], pp[1]],
+                    scheme=ConstraintScalingScheme.inverseMaximum,
+                    overwrite=overwrite
+                )
+                for j in model.component_list:
+                    # Either a log-form constraint or setting
+                    # a mole fraction that is used in no other
+                    # equation to zero.
+                    self.set_component_scaling_factor(
+                        model.eq_pressure_bubble[pp[0], pp[1], j],
+                        1,
+                        overwrite=overwrite
+                    )
+
+            if len(l_only_comps) == 0 and model.is_property_constructed("eq_pressure_dew"):
+                self.scale_constraint_by_nominal_value(
+                    model.eq_mole_frac_pdew[pp[0], pp[1]],
+                    scheme=ConstraintScalingScheme.inverseMaximum,
+                    overwrite=overwrite
+                )
+                for j in model.component_list:
+                    # Either a log-form constraint or setting
+                    # a mole fraction that is used in no other
+                    # equation to zero.
+                    self.set_component_scaling_factor(
+                        model.eq_pressure_dew[pp[0], pp[1], j],
+                        1,
+                        overwrite=overwrite
+                    )
+
+
+
 class LogBubbleDew:
     """General bubble and dew point calculations (log formulation)."""
-
+    default_scaler = LogBubbleDewScaler
     # -------------------------------------------------------------------------
     # Bubble temperature methods
     @staticmethod

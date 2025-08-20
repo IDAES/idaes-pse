@@ -26,9 +26,11 @@ from idaes.core.solvers import get_solver
 
 from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
+    ModularPropertiesScaler
 )
 from idaes.models.properties.modular_properties.base.generic_reaction import (
     GenericReactionParameterBlock,
+    ModularReactionScaler
 )
 
 from idaes.models.properties.modular_properties.examples.reactions.reaction_example import (
@@ -116,6 +118,21 @@ class TestStateBlock(object):
         model.props[1].pressure.fix(101325)
 
         assert degrees_of_freedom(model) == 0
+
+    @pytest.mark.unit
+    def test_scaling(self, model):
+        assert model.props[1].default_scaler is ModularPropertiesScaler
+        assert model.rxns[1].default_scaler is ModularReactionScaler
+
+        prop_scaler = ModularPropertiesScaler()
+        prop_scaler.default_scaling_factors["flow_mol_phase"] =  0.01
+        prop_scaler.scale_model(model.props[1])
+
+        rxn_scaler = ModularReactionScaler()
+        rxn_scaler.scale_model(model.rxns[1])
+        from idaes.core.scaling import report_scaling_factors
+        report_scaling_factors(model, descend_into=True)
+        import pdb; pdb.set_trace()
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")

@@ -34,7 +34,7 @@ from idaes.models.properties.modular_properties.base.utility import (
     get_bounds_from_config,
 )
 from idaes.models.properties.modular_properties.state_definitions.FTPx import (
-    state_initialization,
+    state_initialization, FTPxScaler
 )
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
@@ -505,6 +505,39 @@ def calculate_scaling_factors(b):
     if b.params._electrolyte:
         calculate_electrolyte_scaling(b)
 
+class FPhxScaler(FTPxScaler):
+
+    # Inherit variable_scaling_routine from FTPx.
+    # enth_mol isn't scaled there, but will be scaled by the
+    # base ModularPropertiesScaler.
+
+    def constraint_scaling_routine(
+        self, model, index, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        if len(model.phase_list) <= 2:
+            self.scale_constraint_by_component(
+                model.total_flow_balance,
+                model.flow_mol,
+                overwrite=overwrite
+            )
+        
+        for condata in model.component_flow_balances.values():
+            self.scale_constraint_by_nominal_value(
+                condata,
+                overwrite=overwrite
+            )
+        if len(model.phase_list) > 1:
+            for condata in model.sum_mole_frac.values():
+                self.set_component_scaling_factor(
+                    condata,
+                    1, # Constraint is well-scaled by default,
+                    overwrite=overwrite
+                )
+        for condata in model.phase_fraction_constraint.values():
+            self.scale_constraint_by_nominal_value(
+                condata,
+                overwrite=overwrite
+            )
 
 # Inherit state_initialization from FTPX form, as the process is the same
 
@@ -521,3 +554,4 @@ class FPhx(object):
     do_not_initialize = do_not_initialize
     define_default_scaling_factors = define_default_scaling_factors
     calculate_scaling_factors = calculate_scaling_factors
+    default_scaler = FPhxScaler

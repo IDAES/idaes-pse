@@ -33,6 +33,7 @@ from pyomo.util.check_units import check_units_equivalent, assert_units_consiste
 # Need define_default_scaling_factors, even though it is not used directly
 from idaes.models.properties.modular_properties.state_definitions.FcPh import (
     FcPh,
+    FcPhScaler,
     define_state,
     set_metadata,
 )
@@ -1289,6 +1290,17 @@ class TestCommon(object):
         )
         assert frame.props[1].scaling_factor[frame.props[1].pressure] == 1e-5
         assert frame.props[1].scaling_factor[frame.props[1].temperature] == 1e-2
+
+    @pytest.mark.unit
+    def test_FcPhScaler(self, frame):
+        # Check that we don't have a scaling suffix from side effects
+        assert not hasattr(frame, "scaling_factor")
+        assert FcPh.default_scaler is FcPhScaler
+        scaler = frame.props[1].default_scaler()
+        scaler.scale_model(frame.props)
+        from idaes.core.scaling import report_scaling_factors
+        report_scaling_factors(frame.props[1], descend_into=True)
+        assert False
 
     # Test General Methods
     @pytest.mark.unit

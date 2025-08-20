@@ -30,9 +30,11 @@ from pyomo.environ import (
 )
 
 from idaes.core import MaterialFlowBasis, MaterialBalanceType, EnergyBalanceType
+from idaes.core.scaling import ConstraintScalingScheme
 
 from idaes.models.properties.modular_properties.state_definitions.FTPx import (
     state_initialization,
+    FTPxScaler
 )
 from idaes.models.properties.modular_properties.base.utility import (
     get_bounds_from_config,
@@ -507,6 +509,66 @@ def calculate_scaling_factors(b):
     if b.params._electrolyte:
         calculate_electrolyte_scaling(b)
 
+class FcPhScaler(FTPxScaler):
+    """
+    Scaler method for the FcPh set of state variables
+    """
+
+    # Inherit variable_scaling_routine from FTPx.
+    # enth_mol isn't scaled there, but will be scaled by the
+    # base ModularPropertiesScaler.
+
+    def constraint_scaling_routine(
+        self, model, index, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        for idx, condata in model.mole_frac_comp_eq.items():
+            self.scale_constraint_by_component(
+                condata,
+                model.flow_mol_comp[idx],
+                overwrite=overwrite
+            )
+        if len(model.phase_list) <= 2:
+            self.scale_constraint_by_component(
+                model.total_flow_balance,
+                model.flow_mol,
+                overwrite=overwrite
+            )
+        
+        for idx, condata in model.component_flow_balances.items():
+            if len(model.phase_list) == 1:
+                self.scale_constraint_by_component(
+                    condata,
+                    model.mole_frac_comp[idx],
+                    overwrite=overwrite
+                )
+            else:
+                self.scale_constraint_by_component(
+                    condata,
+                    model.flow_mol_comp[idx],
+                    overwrite=overwrite
+                )
+        
+        if len(model.phase_list) > 1:
+            for condata in model.sum_mole_frac.values():
+                self.set_component_scaling_factor(
+                    condata,
+                    1, # Constraint well-scaled by default
+                    overwrite=overwrite
+                )
+        if len(model.phase_list) == 1:
+            self.set_component_scaling_factor(
+                model.phase_fraction_constraint,
+                1, # Constraint well-scaled by default
+                overwrite=overwrite
+            )
+
+        else:
+            for idx, condata in model.flow_mol_phase.items():
+                self.scale_constraint_by_component(
+                    condata,
+                    model.flow_mol_phase[idx],
+                    overwrite=overwrite
+                )
 
 # Inherit state_initialization from FTPX form, as the process is the same
 
@@ -523,3 +585,4 @@ class FcPh(object):
     do_not_initialize = do_not_initialize
     define_default_scaling_factors = define_default_scaling_factors
     calculate_scaling_factors = calculate_scaling_factors
+    default_scaler = FcPhScaler
