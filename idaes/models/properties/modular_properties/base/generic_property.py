@@ -149,7 +149,7 @@ class ModularPropertiesScaler(ModularPropertiesScalerBase):
         # by phase and component. We have a value here as a fallback option
         "mole_frac_phase_comp": 10,
         "temperature": 1 / 300,
-        "pressure": 1e-3,
+        "pressure": 1e-5,
         # It is *vital* to be able to scale molar enthalpy if energy balances
         # are present. We can guess at the scaling factor if the user provides 
         # molecular weights, but it's better for the user to scale these directly

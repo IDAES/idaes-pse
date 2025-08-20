@@ -79,7 +79,8 @@ class ModularReactionScaler(ModularPropertiesScalerBase):
                     carg = model.params.config.equilibrium_reactions[idx]
                 else:
                     raise BurntToast(
-                        f"Reaction {idx} is neither a rate nor equilibrium reaction."
+                        f"Reaction {idx} is neither a rate nor equilibrium reaction. "
+                        "An end user should never encounter this error. "
                     )
                 self.call_module_scaling_method(
                     model,

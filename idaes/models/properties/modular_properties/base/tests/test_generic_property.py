@@ -30,6 +30,7 @@ from idaes.models.properties.modular_properties.base.generic_property import (
     GenericStateBlock,
     _initialize_critical_props,
     ModularPropertiesInitializer,
+    ModularPropertiesScaler,
 )
 from idaes.models.properties.modular_properties.base.tests.dummy_eos import DummyEoS
 
@@ -56,6 +57,7 @@ from idaes.models.properties.modular_properties.examples.BT_ideal import (
     configuration as BTconfig,
 )
 from idaes.models.unit_models.flash import Flash
+from idaes.core.scaling import get_scaling_factor
 
 import idaes.logger as idaeslog
 
@@ -1215,7 +1217,7 @@ class TestGenericStateBlock(object):
                     "visc_d_phase": dummy_method,
                 },
             },
-            state_definition=modules[__name__],
+            state_definition=modules[__name__], # What the heck?!
             pressure_ref=100000.0,
             temperature_ref=300,
             base_units=base_units,
@@ -1249,50 +1251,78 @@ class TestGenericStateBlock(object):
         assert frame.props[1].eos_common == 2
 
     @pytest.mark.unit
-    def test_basic_scaling(self, frame):
+    def test_basic_scaling_legacy(self, frame):
         frame.props[1].calculate_scaling_factors()
 
         assert frame.props[1].scaling_check
 
         assert len(frame.props[1].scaling_factor) == 8
-        assert frame.props[1].scaling_factor[frame.props[1].temperature] == 0.01
+        assert frame.props[1].scaling_factor[frame.props[1].temperature] == 1 / 300
         assert frame.props[1].scaling_factor[frame.props[1].pressure] == 1e-5
         assert (
             frame.props[1].scaling_factor[
                 frame.props[1].mole_frac_phase_comp["p1", "a"]
             ]
-            == 1000
+            == 10
         )
         assert (
             frame.props[1].scaling_factor[
                 frame.props[1].mole_frac_phase_comp["p1", "b"]
             ]
-            == 1000
+            == 10
         )
         assert (
             frame.props[1].scaling_factor[
                 frame.props[1].mole_frac_phase_comp["p1", "c"]
             ]
-            == 1000
+            == 10
         )
         assert (
             frame.props[1].scaling_factor[
                 frame.props[1].mole_frac_phase_comp["p2", "a"]
             ]
-            == 1000
+            == 10
         )
         assert (
             frame.props[1].scaling_factor[
                 frame.props[1].mole_frac_phase_comp["p2", "b"]
             ]
-            == 1000
+            == 10
         )
         assert (
             frame.props[1].scaling_factor[
                 frame.props[1].mole_frac_phase_comp["p2", "c"]
             ]
-            == 1000
+            == 10
         )
+
+    @pytest.mark.unit
+    def test_basic_scaler_object(self, frame):
+        scaler_class = frame.props[1].default_scaler
+        assert scaler_class is ModularPropertiesScaler
+        scaler_obj = scaler_class()
+        scaler_obj.default_scaling_factors["flow_mol_phase"] = 1
+        scaler_obj.scale_model(frame.props[1])
+
+        assert len(frame.props[1].scaling_factor) == 8
+        assert len(frame.props[1].scaling_hint) == 2
+
+        assert get_scaling_factor(frame.props[1].temperature) == 1/300
+        assert get_scaling_factor(frame.props[1].pressure) == 1e-5
+        for vardata in frame.props[1].mole_frac_phase_comp.values():
+            assert get_scaling_factor(vardata) == 10
+
+        for exprdata in frame.props[1].flow_mol_phase.values():
+            assert get_scaling_factor(exprdata) == 1
+
+    @pytest.mark.unit
+    def test_basic_scaler_object_no_default_set(self, frame):
+        scaler_obj = frame.props[1].default_scaler()
+        with pytest.raises(
+            ValueError,
+            match=re.escape("No default scaling factor set for props[1].flow_mol_phase[p1].")
+        ):
+            scaler_obj.scale_model(frame.props[1])
 
     @pytest.mark.unit
     def test_build_all(self, frame):
