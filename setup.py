@@ -50,7 +50,7 @@ class ExtraDependencies:
         "gridx-prescient>=2.2.1",  # idaes.tests.prescient
     ]
     coolprop = [
-        "coolprop",  # idaes.generic_models.properties.general.coolprop
+        "coolprop>=7.0",  # idaes.generic_models.properties.general.coolprop
     ]
     testing = [
         "pytest",
@@ -82,7 +82,7 @@ kwargs = dict(
     # Put abstract (non-versioned) deps here.
     # Concrete dependencies go in requirements[-dev].txt
     install_requires=[
-        "pyomo >= 6.9.2",
+        "pyomo >= 6.9.3",
         "pint >= 0.24.1",  # required to use Pyomo units. Pint 0.24.1 needed for Python 3.9 support
         "networkx",  # required to use Pyomo network
         "numpy>=1,<3",
