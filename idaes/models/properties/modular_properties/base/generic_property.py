@@ -508,7 +508,7 @@ class ModularPropertiesScaler(ModularPropertiesScalerBase):
                     # variable is likely unused and scale doesn't matter
                     self.set_component_scaling_factor(v, 1, overwrite=overwrite)
             else:
-                if (p, i[2]) in sf_mf:
+                if (p, i[2]) in sf_mf and log_eq is not None:
                     self.set_component_scaling_factor(
                         log_eq[i], sf_mf[p, i[2]], overwrite=False
                     )

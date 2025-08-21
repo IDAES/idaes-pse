@@ -563,7 +563,7 @@ class FcPhScaler(FTPxScaler):
             )
 
         else:
-            for idx, condata in model.flow_mol_phase.items():
+            for idx, condata in model.phase_fraction_constraint.items():
                 self.scale_constraint_by_component(
                     condata,
                     model.flow_mol_phase[idx],

@@ -247,7 +247,7 @@ class TestParamBlock(object):
         assert_units_consistent(model)
 
 
-class TestStateBlock(object):
+class TestStateBlockLegacyScaling(object):
     @pytest.fixture(scope="class")
     def model(self):
         model = ConcreteModel()
@@ -419,6 +419,136 @@ class TestStateBlock(object):
             model.props[1].scaling_factor[model.props[1].temperature_dew["Vap", "Liq"]]
             == 1e-2
         )
+
+    @pytest.mark.unit
+    def test_define_state_vars(self, model):
+        sv = model.props[1].define_state_vars()
+
+        assert len(sv) == 3
+        for i in sv:
+            assert i in ["flow_mol_comp", "enth_mol", "pressure"]
+
+    @pytest.mark.unit
+    def test_define_port_members(self, model):
+        sv = model.props[1].define_state_vars()
+
+        assert len(sv) == 3
+        for i in sv:
+            assert i in ["flow_mol_comp", "enth_mol", "pressure"]
+
+    @pytest.mark.unit
+    def test_define_display_vars(self, model):
+        sv = model.props[1].define_display_vars()
+
+        assert len(sv) == 3
+        for i in sv:
+            assert i in ["Molar Flowrate", "Molar Enthalpy", "Pressure"]
+
+    @pytest.mark.unit
+    def test_dof(self, model):
+        assert degrees_of_freedom(model.props[1]) == 0
+
+    @pytest.mark.component
+    def test_initialize(self, model):
+        orig_fixed_vars = fixed_variables_set(model)
+        orig_act_consts = activated_constraints_set(model)
+
+        model.props.initialize(optarg={"tol": 1e-6})
+
+        assert degrees_of_freedom(model) == 0
+
+        fin_fixed_vars = fixed_variables_set(model)
+        fin_act_consts = activated_constraints_set(model)
+
+        assert len(fin_act_consts) == len(orig_act_consts)
+        assert len(fin_fixed_vars) == len(orig_fixed_vars)
+
+        for c in fin_act_consts:
+            assert c in orig_act_consts
+        for v in fin_fixed_vars:
+            assert v in orig_fixed_vars
+
+    @pytest.mark.component
+    def test_solve(self, model):
+        results = solver.solve(model)
+
+        # Check for optimal solution
+        assert check_optimal_termination(results)
+
+    @pytest.mark.component
+    def test_solution(self, model):
+        # Check phase equilibrium results
+        assert model.props[1].mole_frac_phase_comp[
+            "Liq", "benzene"
+        ].value == pytest.approx(0.4121, abs=1e-4)
+        assert model.props[1].mole_frac_phase_comp[
+            "Vap", "benzene"
+        ].value == pytest.approx(0.6339, abs=1e-4)
+        assert model.props[1].phase_frac["Vap"].value == pytest.approx(0.3961, abs=1e-4)
+
+    @pytest.mark.unit
+    def test_report(self, model):
+        model.props[1].report()
+
+class TestStateBlockScalerObject(object):
+    @pytest.fixture(scope="class")
+    def model(self):
+        model = ConcreteModel()
+        model.params = GenericParameterBlock(**config_dict)
+
+        model.props = model.params.state_block_class(
+            [1], parameters=model.params, defined_state=True
+        )
+
+        scaler_obj = model.props[1].default_scaler()
+        scaler_obj.default_scaling_factors["flow_mol_phase"] = 1
+        scaler_obj.scale_model(model.props[1])
+
+        # Fix state
+        model.props[1].flow_mol_comp.fix(0.5)
+        model.props[1].enth_mol.fix(47297)
+        model.props[1].pressure.fix(101325)
+
+        return model
+
+    @pytest.mark.unit
+    def test_build(self, model):
+        # Check state variable values and bounds
+        assert isinstance(model.props[1].flow_mol, Expression)
+        assert isinstance(model.props[1].flow_mol_comp, Var)
+        for j in model.params.component_list:
+            assert value(model.props[1].flow_mol_comp[j]) == 0.5
+            assert model.props[1].flow_mol_comp[j].ub == 1000
+            assert model.props[1].flow_mol_comp[j].lb == 0
+
+        assert isinstance(model.props[1].pressure, Var)
+        assert value(model.props[1].pressure) == 101325
+        assert model.props[1].pressure.ub == 1e6
+        assert model.props[1].pressure.lb == 5e4
+
+        assert isinstance(model.props[1].enth_mol, Var)
+        assert value(model.props[1].enth_mol) == 47297
+        assert model.props[1].enth_mol.ub == 2e5
+        assert model.props[1].enth_mol.lb == 1e4
+
+        assert isinstance(model.props[1].temperature, Var)
+        assert value(model.props[1].temperature) == 300
+        assert model.props[1].temperature.ub == 450
+        assert model.props[1].temperature.lb == 273.15
+
+        assert isinstance(model.props[1].mole_frac_comp, Var)
+        assert len(model.props[1].mole_frac_comp) == 2
+        for i in model.props[1].mole_frac_comp:
+            assert value(model.props[1].mole_frac_comp[i]) == 0.5
+
+        assert_units_consistent(model)
+
+    @pytest.mark.unit
+    def test_basic_scaling(self, model):
+
+        from idaes.core.scaling import report_scaling_factors
+        report_scaling_factors(model, descend_into=True)
+        import pdb; pdb.set_trace()
 
     @pytest.mark.unit
     def test_define_state_vars(self, model):
