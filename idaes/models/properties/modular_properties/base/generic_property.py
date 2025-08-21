@@ -475,6 +475,10 @@ class ModularPropertiesScaler(ModularPropertiesScalerBase):
         x_var = getattr(model, "_mole_frac_" + abbrv)
 
         if model.is_property_constructed("log_mole_frac_" + abbrv):
+            log_mole_frac = getattr(model, "log_mole_frac_" + abbrv)
+            for vdata in log_mole_frac.values():
+                # Log variables well-scaled by default
+                self.set_component_scaling_factor(vdata, 1, overwrite=overwrite)
             log_eq = getattr(model, "log_mole_frac_" + abbrv + "_eqn")
         else:
             log_eq = None

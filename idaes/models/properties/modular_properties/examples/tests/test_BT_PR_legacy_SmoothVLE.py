@@ -34,6 +34,7 @@ from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
 )
 from idaes.core.solvers import get_solver
+from idaes.core.scaling import get_scaling_factor
 
 from idaes.models.properties.tests.test_harness import PropertyTestHarness
 from idaes.core import LiquidPhase, VaporPhase, Component
@@ -213,6 +214,68 @@ class TestBTExample(object):
         scaler.scale_model(m.fs.state[1])
 
         return m
+
+    @pytest.mark.component
+    def test_scaling(self, m):
+        assert len(m.fs.state[1].scaling_factor) == 57
+        assert len(m.fs.state[1].scaling_hint) == 6
+        
+        # Variables
+        assert get_scaling_factor(m.fs.state[1].flow_mol) == 1e-2
+        for vdata in m.fs.state[1].mole_frac_comp.values():
+            assert get_scaling_factor(vdata) == 10
+        assert get_scaling_factor(m.fs.state[1].pressure) == 1e-5
+        assert get_scaling_factor(m.fs.state[1].temperature) == 1/300
+        for vdata in m.fs.state[1].flow_mol_phase.values():
+            assert get_scaling_factor(vdata) == 1e-2
+        for vdata in m.fs.state[1].mole_frac_phase_comp.values():
+            assert get_scaling_factor(vdata) == 10
+        for vdata in m.fs.state[1].phase_frac.values():
+            assert get_scaling_factor(vdata) == 1
+        assert get_scaling_factor(m.fs.state[1]._teq["Vap","Liq"]) == 1/300
+        assert get_scaling_factor(m.fs.state[1]._t1_Vap_Liq) == 1/300
+        assert get_scaling_factor(m.fs.state[1].temperature_bubble["Vap","Liq"]) == 1/300
+        for vdata in m.fs.state[1]._mole_frac_tbub.values():
+            assert get_scaling_factor(vdata) == 10
+        for vdata in m.fs.state[1].log_mole_frac_comp.values():
+            assert get_scaling_factor(vdata) == 1
+        assert get_scaling_factor(m.fs.state[1].temperature_dew["Vap","Liq"]) == 1/300
+        for vdata in m.fs.state[1]._mole_frac_tdew.values():
+            assert get_scaling_factor(vdata) == 10
+        for vdata in m.fs.state[1].log_mole_frac_tdew.values():
+            assert get_scaling_factor(vdata) == 1
+        for vdata in m.fs.state[1].log_mole_frac_phase_comp.values():
+            assert get_scaling_factor(vdata) == 1 
+        
+        # Constraints
+        assert get_scaling_factor(m.fs.state[1].total_flow_balance) == 1e-2
+        for cdata in m.fs.state[1].component_flow_balances.values():
+            assert get_scaling_factor(cdata) == 1e-1
+        assert get_scaling_factor(m.fs.state[1].sum_mole_frac) == 10
+        for cdata in m.fs.state[1].phase_fraction_constraint.values():
+            assert get_scaling_factor(cdata) == 1e-2
+        assert get_scaling_factor(m.fs.state[1]._t1_constraint_Vap_Liq) == 1/300
+        for cdata in m.fs.state[1].eq_temperature_bubble.values():
+            assert get_scaling_factor(cdata) == 1
+        for cdata in m.fs.state[1].log_mole_frac_comp_eqn.values():
+            assert get_scaling_factor(cdata) == 10
+        for cdata in m.fs.state[1].log_mole_frac_tbub_eqn.values():
+            assert get_scaling_factor(cdata) == 10
+        assert get_scaling_factor(m.fs.state[1].eq_mole_frac_tbub["Vap","Liq"]) == 1
+        assert get_scaling_factor(m.fs.state[1]._teq_constraint_Vap_Liq) == 1/300
+        for cdata in m.fs.state[1].eq_temperature_dew.values():
+            assert get_scaling_factor(cdata) == 1
+        for cdata in m.fs.state[1].log_mole_frac_tdew_eqn.values():
+            assert get_scaling_factor(cdata) == 10
+        assert get_scaling_factor(m.fs.state[1].eq_mole_frac_tdew["Vap","Liq"]) == 1
+        for cdata in m.fs.state[1].equilibrium_constraint.values():
+            assert get_scaling_factor(cdata) == 1
+        for cdata in m.fs.state[1].log_mole_frac_phase_comp_eqn.values():
+            assert get_scaling_factor(cdata) == 10
+        
+        # Expressions
+        for edata in m.fs.state[1].flow_mol_phase_comp.values():
+            assert get_scaling_factor(edata) == 0.1
 
     @pytest.mark.integration
     def test_T_sweep(self, m):
