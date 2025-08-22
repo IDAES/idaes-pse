@@ -1217,7 +1217,7 @@ class TestGenericStateBlock(object):
                     "visc_d_phase": dummy_method,
                 },
             },
-            state_definition=modules[__name__], # What the heck?!
+            state_definition=modules[__name__],  # What the heck?!
             pressure_ref=100000.0,
             temperature_ref=300,
             base_units=base_units,
@@ -1307,7 +1307,7 @@ class TestGenericStateBlock(object):
         assert len(frame.props[1].scaling_factor) == 8
         assert len(frame.props[1].scaling_hint) == 2
 
-        assert get_scaling_factor(frame.props[1].temperature) == 1/300
+        assert get_scaling_factor(frame.props[1].temperature) == 1 / 300
         assert get_scaling_factor(frame.props[1].pressure) == 1e-5
         for vardata in frame.props[1].mole_frac_phase_comp.values():
             assert get_scaling_factor(vardata) == 10
@@ -1320,7 +1320,9 @@ class TestGenericStateBlock(object):
         scaler_obj = frame.props[1].default_scaler()
         with pytest.raises(
             ValueError,
-            match=re.escape("No default scaling factor set for props[1].flow_mol_phase[p1].")
+            match=re.escape(
+                "No default scaling factor set for props[1].flow_mol_phase[p1]."
+            ),
         ):
             scaler_obj.scale_model(frame.props[1])
 

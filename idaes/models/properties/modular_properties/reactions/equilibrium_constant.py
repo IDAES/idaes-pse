@@ -25,7 +25,11 @@ from idaes.models.properties.modular_properties.base.utility import Concentratio
 from idaes.core.util.misc import set_param_from_config
 from idaes.core.util.constants import Constants as c
 from idaes.core.util.exceptions import BurntToast, ConfigurationError
-from idaes.core.scaling import ConstraintScalingScheme, CustomScalerBase, get_scaling_factor
+from idaes.core.scaling import (
+    ConstraintScalingScheme,
+    CustomScalerBase,
+    get_scaling_factor,
+)
 from .dh_rxn import constant_dh_rxn
 
 
@@ -36,38 +40,37 @@ class ConstantKeqScaler(CustomScalerBase):
     Scaler object for the ConstantKeq method for calculating
     the equilibrium constant
     """
+
     def variable_scaling_routine(
-        self, model, reaction, overwrite: bool = False,
+        self,
+        model,
+        reaction,
+        overwrite: bool = False,
     ):
         rblock = getattr(model.params, "reaction_" + reaction)
         if model.is_property_constructed("k_eq"):
             self.set_component_scaling_factor(
                 model.k_eq[reaction],
                 scaling_factor=1 / value(rblock.k_eq_ref),
-                overwrite=overwrite
+                overwrite=overwrite,
             )
         if model.is_property_constructed("log_k_eq"):
             # Log variables well-scaled by default
             self.set_component_scaling_factor(
-                model.log_k_eq[reaction],
-                scaling_factor=1,
-                overwrite=overwrite
+                model.log_k_eq[reaction], scaling_factor=1, overwrite=overwrite
             )
 
-
-    def constraint_scaling_routine(
-        self, model, reaction, overwrite: bool = False
-    ):
+    def constraint_scaling_routine(self, model, reaction, overwrite: bool = False):
         if model.is_property_constructed("log_k_eq_constraint"):
             # log constraint is well scaled by default
             self.set_component_scaling_factor(
-                model.log_k_eq_constraint[reaction],
-                1,
-                overwrite=overwrite
+                model.log_k_eq_constraint[reaction], 1, overwrite=overwrite
             )
+
 
 class ConstantKeq:
     """Methods for invariant equilibrium constant."""
+
     default_scaler = ConstantKeqScaler
 
     @staticmethod
@@ -148,6 +151,7 @@ class ConstantKeq:
 # van't Hoff equation (constant dh_rxn)
 class van_t_hoff:
     """Methods for equilibrium constant using van t'Hoff equation"""
+
     # Just like the old scaling tools, use 1/K_ref as the
     # scaling factor for K_eq
     default_scaler = ConstantKeqScaler
@@ -250,9 +254,8 @@ class GibbsEnergyScaler(CustomScalerBase):
     """
     Scaler class for the gibbs_energy method for computing equilibrium constants
     """
-    def variable_scaling_routine(
-        self, model, reaction, overwrite: bool = False
-    ):
+
+    def variable_scaling_routine(self, model, reaction, overwrite: bool = False):
         rblock = getattr(model.params, "reaction_" + reaction)
         if model.is_property_constructed("k_eq"):
             units = model.parent_block().get_metadata().derived_units
@@ -263,26 +266,20 @@ class GibbsEnergyScaler(CustomScalerBase):
                 * rblock._keq_units
             )
             self.set_component_scaling_factor(
-                model.k_eq[reaction],
-                1 / keq_val,
-                overwrite=overwrite
+                model.k_eq[reaction], 1 / keq_val, overwrite=overwrite
             )
         if model.is_property_constructed("log_k_eq"):
             # Log variables well-scaled by default
             self.set_scaling_factor(model.log_k_eq[reaction], 1)
 
-
-    def constraint_scaling_routine(
-        self, model, reaction, overwrite: bool = False
-    ):
+    def constraint_scaling_routine(self, model, reaction, overwrite: bool = False):
         # No constraints generated
         if model.is_property_constructed("log_k_eq_constraint"):
             # log constraint is well scaled by default
             self.set_component_scaling_factor(
-                model.log_k_eq_constraint[reaction],
-                1,
-                overwrite=overwrite
+                model.log_k_eq_constraint[reaction], 1, overwrite=overwrite
             )
+
 
 class gibbs_energy:
     """Methods for equilibrium constant based of constant heat and entropy of reaction."""

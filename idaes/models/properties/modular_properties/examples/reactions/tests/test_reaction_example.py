@@ -27,11 +27,11 @@ from idaes.core.scaling import get_scaling_factor
 
 from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
-    ModularPropertiesScaler
+    ModularPropertiesScaler,
 )
 from idaes.models.properties.modular_properties.base.generic_reaction import (
     GenericReactionParameterBlock,
-    ModularReactionScaler
+    ModularReactionScaler,
 )
 
 from idaes.models.properties.modular_properties.examples.reactions.reaction_example import (
@@ -43,11 +43,7 @@ from idaes.models.properties.modular_properties.examples.reactions.reaction_exam
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_solver(
-    "ipopt_v2",
-    writer_config={
-        "linear_presolve": True,
-        "scale_model": True
-    }
+    "ipopt_v2", writer_config={"linear_presolve": True, "scale_model": True}
 )
 
 
@@ -132,12 +128,12 @@ class TestStateBlock(object):
         assert model.rxns[1].default_scaler is ModularReactionScaler
 
         prop_scaler = ModularPropertiesScaler()
-        prop_scaler.default_scaling_factors["flow_mol_phase"] =  0.01
+        prop_scaler.default_scaling_factors["flow_mol_phase"] = 0.01
         prop_scaler.scale_model(model.props[1])
 
         rxn_scaler = ModularReactionScaler()
         rxn_scaler.scale_model(model.rxns[1])
-        
+
         # Property Scaler
         assert len(model.props[1].scaling_factor) == 26
         assert len(model.props[1].scaling_hint) == 5
@@ -151,7 +147,7 @@ class TestStateBlock(object):
         for vdata in model.props[1].mole_frac_phase_comp.values():
             assert get_scaling_factor(vdata) == 10
         assert get_scaling_factor(model.props[1].phase_frac["Liq"]) == 1
-        assert get_scaling_factor(model.props[1].temperature) == 1/300
+        assert get_scaling_factor(model.props[1].temperature) == 1 / 300
         assert get_scaling_factor(model.props[1].pressure) == 1e-5
 
         # Constraints
@@ -180,7 +176,9 @@ class TestStateBlock(object):
 
         # Expressions
         for edata in model.rxns[1].dh_rxn.values():
-            assert get_scaling_factor(edata) == pytest.approx(1 / (300 * 8.3144), rel=1e-4)
+            assert get_scaling_factor(edata) == pytest.approx(
+                1 / (300 * 8.3144), rel=1e-4
+            )
         assert get_scaling_factor(model.rxns[1].k_eq["R2"]) == 1e-2
 
     @pytest.mark.solver

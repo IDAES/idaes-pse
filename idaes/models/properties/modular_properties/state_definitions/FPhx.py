@@ -34,7 +34,8 @@ from idaes.models.properties.modular_properties.base.utility import (
     get_bounds_from_config,
 )
 from idaes.models.properties.modular_properties.state_definitions.FTPx import (
-    state_initialization, FTPxScaler
+    state_initialization,
+    FTPxScaler,
 )
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
@@ -505,6 +506,7 @@ def calculate_scaling_factors(b):
     if b.params._electrolyte:
         calculate_electrolyte_scaling(b)
 
+
 class FPhxScaler(FTPxScaler):
 
     # Inherit variable_scaling_routine from FTPx.
@@ -517,34 +519,25 @@ class FPhxScaler(FTPxScaler):
         sf_enth = self.get_scaling_factor(model.enth_mol)
         if sf_enth is not None:
             self.set_component_scaling_factor(
-                model.enth_mol_eqn,
-                sf_enth,
-                overwrite=overwrite
+                model.enth_mol_eqn, sf_enth, overwrite=overwrite
             )
         if len(model.phase_list) <= 2:
             self.scale_constraint_by_component(
-                model.total_flow_balance,
-                model.flow_mol,
-                overwrite=overwrite
+                model.total_flow_balance, model.flow_mol, overwrite=overwrite
             )
-        
+
         for condata in model.component_flow_balances.values():
-            self.scale_constraint_by_nominal_value(
-                condata,
-                overwrite=overwrite
-            )
+            self.scale_constraint_by_nominal_value(condata, overwrite=overwrite)
         if len(model.phase_list) > 1:
             for condata in model.sum_mole_frac.values():
                 self.set_component_scaling_factor(
                     condata,
-                    1, # Constraint is well-scaled by default,
-                    overwrite=overwrite
+                    1,  # Constraint is well-scaled by default,
+                    overwrite=overwrite,
                 )
         for condata in model.phase_fraction_constraint.values():
-            self.scale_constraint_by_nominal_value(
-                condata,
-                overwrite=overwrite
-            )
+            self.scale_constraint_by_nominal_value(condata, overwrite=overwrite)
+
 
 # Inherit state_initialization from FTPX form, as the process is the same
 

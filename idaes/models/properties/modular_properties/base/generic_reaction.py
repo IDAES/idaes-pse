@@ -19,7 +19,15 @@ Framework for generic reaction packages
 from math import log
 
 # Import Pyomo libraries
-from pyomo.environ import Block, Constraint, Expression, Set, units as pyunits, value, Var
+from pyomo.environ import (
+    Block,
+    Constraint,
+    Expression,
+    Set,
+    units as pyunits,
+    value,
+    Var,
+)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.common.collections import ComponentMap
 
@@ -32,7 +40,10 @@ from idaes.core import (
     MaterialFlowBasis,
     ElectrolytePropertySet,
 )
-from idaes.models.properties.modular_properties.base.utility import ConcentrationForm, ModularPropertiesScalerBase
+from idaes.models.properties.modular_properties.base.utility import (
+    ConcentrationForm,
+    ModularPropertiesScalerBase,
+)
 from idaes.core.util.constants import Constants
 from idaes.core.util.exceptions import (
     BurntToast,
@@ -40,7 +51,11 @@ from idaes.core.util.exceptions import (
     PropertyPackageError,
 )
 import idaes.core.util.scaling as iscale
-from idaes.core.scaling import ConstraintScalingScheme, CustomScalerBase, get_scaling_factor
+from idaes.core.scaling import (
+    ConstraintScalingScheme,
+    CustomScalerBase,
+    get_scaling_factor,
+)
 
 import idaes.logger as idaeslog
 
@@ -66,6 +81,7 @@ class GenericReactionPackageError(PropertyPackageError):
             f"in the reaction parameter configuration."
         )
 
+
 class ModularReactionScaler(ModularPropertiesScalerBase):
     def variable_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None
@@ -87,11 +103,10 @@ class ModularReactionScaler(ModularPropertiesScalerBase):
                     carg["heat_of_reaction"],
                     index=idx,
                     method="variable_scaling_routine",
-                    overwrite=overwrite
+                    overwrite=overwrite,
                 )
-        if (
-            model.is_property_constructed("k_eq")
-            or model.is_property_constructed("log_k_eq")
+        if model.is_property_constructed("k_eq") or model.is_property_constructed(
+            "log_k_eq"
         ):
             for r in model.params.equilibrium_reaction_idx:
                 carg = model.params.config.equilibrium_reactions[r]
@@ -100,19 +115,18 @@ class ModularReactionScaler(ModularPropertiesScalerBase):
                     carg["equilibrium_constant"],
                     index=r,
                     method="variable_scaling_routine",
-                    overwrite=overwrite
+                    overwrite=overwrite,
                 )
         if model.is_property_constructed("equilibrium_constraint"):
-            for r in  model.params.equilibrium_reaction_idx:
+            for r in model.params.equilibrium_reaction_idx:
                 carg = model.params.config.equilibrium_reactions[r]
                 self.call_module_scaling_method(
                     model,
                     carg["equilibrium_form"],
                     index=r,
                     method="variable_scaling_routine",
-                    overwrite=overwrite
+                    overwrite=overwrite,
                 )
-
 
     def constraint_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: dict = None
@@ -132,12 +146,11 @@ class ModularReactionScaler(ModularPropertiesScalerBase):
                     carg["heat_of_reaction"],
                     index=idx,
                     method="constraint_scaling_routine",
-                    overwrite=overwrite
+                    overwrite=overwrite,
                 )
 
-        if (
-            model.is_property_constructed("k_eq")
-            or model.is_property_constructed("log_k_eq")
+        if model.is_property_constructed("k_eq") or model.is_property_constructed(
+            "log_k_eq"
         ):
             for r in model.params.equilibrium_reaction_idx:
                 carg = model.params.config.equilibrium_reactions[r]
@@ -146,19 +159,18 @@ class ModularReactionScaler(ModularPropertiesScalerBase):
                     carg["equilibrium_constant"],
                     index=r,
                     method="constraint_scaling_routine",
-                    overwrite=overwrite
+                    overwrite=overwrite,
                 )
         if model.is_property_constructed("equilibrium_constraint"):
-            for r in  model.params.equilibrium_reaction_idx:
+            for r in model.params.equilibrium_reaction_idx:
                 carg = model.params.config.equilibrium_reactions[r]
                 self.call_module_scaling_method(
                     model,
                     carg["equilibrium_form"],
                     index=r,
                     method="constraint_scaling_routine",
-                    overwrite=overwrite
+                    overwrite=overwrite,
                 )
-
 
 
 rxn_config = ConfigBlock()
@@ -616,6 +628,7 @@ class GenericReactionBlockData(ReactionBlockDataBase):
     """
     Modular Reaction Block class.
     """
+
     default_scaler = ModularReactionScaler
 
     def build(self):

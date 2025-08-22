@@ -27,31 +27,42 @@ from idaes.core.util.exceptions import ConfigurationError
 from idaes.models.properties.modular_properties.base.utility import (
     get_concentration_term,
 )
-from idaes.core.scaling import ConstraintScalingScheme, CustomScalerBase, get_scaling_factor
+from idaes.core.scaling import (
+    ConstraintScalingScheme,
+    CustomScalerBase,
+    get_scaling_factor,
+)
 
 
 # ----------------------------------------------------------------------------
 class PowerLawEquilScaler(CustomScalerBase):
-    def variable_scaling_routine(self, model, reaction, overwrite = False, submodel_scalers = None):
+    def variable_scaling_routine(
+        self, model, reaction, overwrite=False, submodel_scalers=None
+    ):
         pass
-    def constraint_scaling_routine(self, model, reaction, overwrite = False, submodel_scalers = None):
+
+    def constraint_scaling_routine(
+        self, model, reaction, overwrite=False, submodel_scalers=None
+    ):
         if model.is_property_constructed("equilibrium_constraint"):
             self.scale_constraint_by_nominal_value(
                 model.equilibrium_constraint[reaction],
                 scheme=ConstraintScalingScheme.inverseMaximum,
-                overwrite=overwrite
+                overwrite=overwrite,
             )
 
         if model.is_property_constructed("inherent_equilibrium_constraint"):
             self.scale_constraint_by_nominal_value(
                 model.inherent_equilibrium_constraint[reaction],
                 scheme=ConstraintScalingScheme.inverseMaximum,
-                overwrite=overwrite
+                overwrite=overwrite,
             )
+
 
 class power_law_equil:
     """Methods for power-law based equilibrium forms."""
-    default_scaler=PowerLawEquilScaler
+
+    default_scaler = PowerLawEquilScaler
 
     @staticmethod
     def build_parameters(rblock, config):
@@ -84,27 +95,34 @@ class power_law_equil:
 
 # ----------------------------------------------------------------------------
 class LogPowerLawEquilScaler(CustomScalerBase):
-    def variable_scaling_routine(self, model, reaction, overwrite = False, submodel_scalers = None):
+    def variable_scaling_routine(
+        self, model, reaction, overwrite=False, submodel_scalers=None
+    ):
         pass
-    def constraint_scaling_routine(self, model, reaction, overwrite = False, submodel_scalers = None):
+
+    def constraint_scaling_routine(
+        self, model, reaction, overwrite=False, submodel_scalers=None
+    ):
         # Log constraints are well-scaled by default
         if model.is_property_constructed("equilibrium_constraint"):
             self.set_component_scaling_factor(
                 model.equilibrium_constraint[reaction],
                 scaling_factor=1,
-                overwrite=overwrite
+                overwrite=overwrite,
             )
 
         if model.is_property_constructed("inherent_equilibrium_constraint"):
             self.set_component_scaling_factor(
                 model.inherent_equilibrium_constraint[reaction],
                 scaling_factor=1,
-                overwrite=overwrite
+                overwrite=overwrite,
             )
+
 
 class log_power_law_equil:
     """Methods for log formulation of power-law based equilibrium forms."""
-    default_scaler=LogPowerLawEquilScaler
+
+    default_scaler = LogPowerLawEquilScaler
 
     @staticmethod
     def return_expression(b, rblock, r_idx, T):

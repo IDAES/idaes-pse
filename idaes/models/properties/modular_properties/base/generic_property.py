@@ -119,6 +119,7 @@ _log_form_vars = [
     "pressure_phase_comp_true",
 ]
 
+
 def set_param_value(b, param, units):
     """Set parameter values from user provided dict"""
     # We cannot use the standard method in core.util.misc as here the parameter
@@ -137,10 +138,12 @@ def set_param_value(b, param, units):
         )
         param_obj.value = config
 
+
 class ModularPropertiesScaler(ModularPropertiesScalerBase):
     """
     Scaler for modular property framework.
     """
+
     DEFAULT_SCALING_FACTORS = {
         # Typically the inverse of expected magnitude provides good scaling for
         # molar flow rates, so long as the flow rates don't go to zero
@@ -151,15 +154,16 @@ class ModularPropertiesScaler(ModularPropertiesScalerBase):
         "temperature": 1 / 300,
         "pressure": 1e-5,
         # It is *vital* to be able to scale molar enthalpy if energy balances
-        # are present. We can guess at the scaling factor if the user provides 
+        # are present. We can guess at the scaling factor if the user provides
         # molecular weights, but it's better for the user to scale these directly
-        "enth_mol_phase": DefaultScalingRecommendation.userInputRecommended
+        "enth_mol_phase": DefaultScalingRecommendation.userInputRecommended,
     }
+
     def variable_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers=None
     ):
         units = model.params.get_metadata().derived_units
-        
+
         # This triggers building these properties.
         # All existing state variable options (as of 8/22/25)
         # create all of these by default, but some dummy
@@ -184,7 +188,7 @@ class ModularPropertiesScaler(ModularPropertiesScalerBase):
             model.params.config.state_definition,
             index=None,
             method="variable_scaling_routine",
-            overwrite=overwrite
+            overwrite=overwrite,
         )
 
         sf_T = get_scaling_factor(model.temperature)
@@ -204,10 +208,7 @@ class ModularPropertiesScaler(ModularPropertiesScalerBase):
                 mw_missing = True
                 continue
             mw_comp_dict[j] = value(
-                pyunits.convert(
-                    mw,
-                    to_units=units["MOLECULAR_WEIGHT"]
-                )
+                pyunits.convert(mw, to_units=units["MOLECULAR_WEIGHT"])
             )
 
         if not mw_missing:
@@ -217,19 +218,15 @@ class ModularPropertiesScaler(ModularPropertiesScalerBase):
             sf_mw_phase = {}
             for p in model.phase_list:
                 mw_phase = sum(
-                    mw_comp_dict[j]/sf_mf[p, j] for j in model.component_list
-                    ) / sum(1 / sf_mf[p, j] for j in model.component_list)
+                    mw_comp_dict[j] / sf_mf[p, j] for j in model.component_list
+                ) / sum(1 / sf_mf[p, j] for j in model.component_list)
                 if model.is_property_constructed("mw_phase"):
                     self.set_component_scaling_factor(
-                        model.mw_phase[p],
-                        1/mw_phase,
-                        overwrite=overwrite
+                        model.mw_phase[p], 1 / mw_phase, overwrite=overwrite
                     )
                     sf_mw_phase[p] = self.get_scaling_factor(model.mw_phase[p])
                 else:
-                    sf_mw_phase[p] = 1/mw_phase
-        
-
+                    sf_mw_phase[p] = 1 / mw_phase
 
         if model.is_property_constructed("enth_mol_phase"):
             for p in model.phase_list:
@@ -238,7 +235,7 @@ class ModularPropertiesScaler(ModularPropertiesScalerBase):
                     if not mw_missing:
                         # Most materials have a heat capacity around 2 J/(g*K).
                         # For liquids, water is 4.18, ethanol is 2.44, decane is 2.21
-                        # For solids, dry collagen is 1.29, parrafin wax is 2.5, 
+                        # For solids, dry collagen is 1.29, parrafin wax is 2.5,
                         # lithium is 3.58, steel is 0.466, gold is 0.129, and ice is 2.05
                         # For gases, steam is 2.05, air is 1.01, CO2 is 0.839, and hydrogen
                         # is 14.3 (due to its extremely low molecular weight)
@@ -246,15 +243,17 @@ class ModularPropertiesScaler(ModularPropertiesScalerBase):
                         # We change units from mass to moles by multiplying through by
                         # the implied molecular weight, then obtain a scaling factor
                         # for the enthalpy from the scaling factor for temperature
-                        sf_enth_phase=sf_T * sf_mw_phase[p] / pyunits.convert_value(
-                            2,
-                            from_units=pyunits.J / pyunits.g / pyunits.K,
-                            to_units=units["HEAT_CAPACITY_MASS"]
+                        sf_enth_phase = (
+                            sf_T
+                            * sf_mw_phase[p]
+                            / pyunits.convert_value(
+                                2,
+                                from_units=pyunits.J / pyunits.g / pyunits.K,
+                                to_units=units["HEAT_CAPACITY_MASS"],
+                            )
                         )
                         self.set_component_scaling_factor(
-                            model.enth_mol_phase[p],
-                            sf_enth_phase,
-                            overwrite=overwrite
+                            model.enth_mol_phase[p], sf_enth_phase, overwrite=overwrite
                         )
                     else:
                         _log.warning(
@@ -265,40 +264,54 @@ class ModularPropertiesScaler(ModularPropertiesScalerBase):
                         )
 
         if model.is_property_constructed("enth_mol"):
-            sf_enth_phase = {p: self.get_scaling_factor(model.enth_mol_phase[p]) for p in model.phase_list}
-            sf_pf = {p: self.get_scaling_factor(model.phase_frac[p]) for  p in model.phase_list}
-            if not ( 
+            sf_enth_phase = {
+                p: self.get_scaling_factor(model.enth_mol_phase[p])
+                for p in model.phase_list
+            }
+            sf_pf = {
+                p: self.get_scaling_factor(model.phase_frac[p])
+                for p in model.phase_list
+            }
+            if not (
                 any(sf_enth_phase[p] is None for p in model.phase_list)
                 or any(sf_pf[p] is None for p in model.phase_list)
             ):
-                sf_enth = (
-                    sum( 1 / sf_pf[p] for p in model.phase_list)
-                    / sum(1 / (sf_enth_phase[p]*sf_pf[p]) for p in model.phase_list)
+                sf_enth = sum(1 / sf_pf[p] for p in model.phase_list) / sum(
+                    1 / (sf_enth_phase[p] * sf_pf[p]) for p in model.phase_list
                 )
-                self.set_component_scaling_factor(model.enth_mol, sf_enth, overwrite=overwrite)
+                self.set_component_scaling_factor(
+                    model.enth_mol, sf_enth, overwrite=overwrite
+                )
 
         if model.is_property_constructed("enth_mol_phase_comp"):
             if not mw_missing:
                 for (_, j), comp_data in model.enth_mol_phase_comp.items():
-                    sf_enth_phase_comp = sf_T / pyunits.convert_value(
-                        2,
-                        from_units=pyunits.J / pyunits.g / pyunits.K,
-                        to_units=units["HEAT_CAPACITY_MASS"]
-                    ) / mw_comp_dict[j]
-                    self.set_component_scaling_factor(comp_data, sf_enth_phase_comp, overwrite=overwrite)
+                    sf_enth_phase_comp = (
+                        sf_T
+                        / pyunits.convert_value(
+                            2,
+                            from_units=pyunits.J / pyunits.g / pyunits.K,
+                            to_units=units["HEAT_CAPACITY_MASS"],
+                        )
+                        / mw_comp_dict[j]
+                    )
+                    self.set_component_scaling_factor(
+                        comp_data, sf_enth_phase_comp, overwrite=overwrite
+                    )
             else:
-                sf_enth_phase = {p: self.get_scaling_factor(model.enth_mol_phase[p]) for p in model.phase_list}
+                sf_enth_phase = {
+                    p: self.get_scaling_factor(model.enth_mol_phase[p])
+                    for p in model.phase_list
+                }
                 if not any(sf_enth_phase[p] is None for p in model.phase_list):
                     for (p, _), comp_data in model.enth_mol_phase_comp.items():
-                        self.set_component_scaling_factor(comp_data, sf_enth_phase[p], overwrite=overwrite)
+                        self.set_component_scaling_factor(
+                            comp_data, sf_enth_phase[p], overwrite=overwrite
+                        )
 
         if model.is_property_constructed("_teq"):
             for v in model._teq.values():
-                self.set_component_scaling_factor(
-                    v,
-                    sf_T,
-                    overwrite=overwrite
-                )
+                self.set_component_scaling_factor(v, sf_T, overwrite=overwrite)
 
         # Other EoS variables
         for p in model.phase_list:
@@ -308,7 +321,7 @@ class ModularPropertiesScaler(ModularPropertiesScalerBase):
                 pobj.config.equation_of_state,
                 index=p,
                 method="variable_scaling_routine",
-                overwrite=overwrite
+                overwrite=overwrite,
             )
         # Phase equilibrium
         # Right now (7/24/25) phase equilibrium methods don't create
@@ -322,7 +335,7 @@ class ModularPropertiesScaler(ModularPropertiesScalerBase):
                     pe_method,
                     index=pp,
                     method="variable_scaling_routine",
-                    overwrite=overwrite
+                    overwrite=overwrite,
                 )
                 for j in model.component_list:
                     cobj = model.params.get_component(j)
@@ -337,9 +350,9 @@ class ModularPropertiesScaler(ModularPropertiesScalerBase):
                             form,
                             index=(*pp, j),
                             method="variable_scaling_routine",
-                            overwrite=overwrite
+                            overwrite=overwrite,
                         )
-                    
+
         # Inherent reactions
         if model.is_property_constructed("inherent_equilibrium_constraint"):
             for r in self.params.inherent_reaction_idx:
@@ -349,20 +362,31 @@ class ModularPropertiesScaler(ModularPropertiesScalerBase):
                     carg["equilibrium_form"],
                     index=r,
                     method="variable_scaling_routine",
-                    overwrite=overwrite
+                    overwrite=overwrite,
                 )
         # Bubble and dew points
         if model.is_property_constructed("temperature_bubble"):
-            self._bubble_dew_scaling(model, model.temperature_bubble, scale_variables=True, overwrite=overwrite)
+            self._bubble_dew_scaling(
+                model,
+                model.temperature_bubble,
+                scale_variables=True,
+                overwrite=overwrite,
+            )
 
         if model.is_property_constructed("temperature_dew"):
-            self._bubble_dew_scaling(model, model.temperature_dew, scale_variables=True, overwrite=overwrite)
+            self._bubble_dew_scaling(
+                model, model.temperature_dew, scale_variables=True, overwrite=overwrite
+            )
 
         if model.is_property_constructed("pressure_bubble"):
-            self._bubble_dew_scaling(model, model.pressure_bubble, scale_variables=True, overwrite=overwrite)
+            self._bubble_dew_scaling(
+                model, model.pressure_bubble, scale_variables=True, overwrite=overwrite
+            )
 
         if model.is_property_constructed("pressure_dew"):
-            self._bubble_dew_scaling(model, model.pressure_dew, scale_variables=True, overwrite=overwrite)
+            self._bubble_dew_scaling(
+                model, model.pressure_dew, scale_variables=True, overwrite=overwrite
+            )
 
         # Log variables
         for varname in _log_form_vars:
@@ -370,20 +394,15 @@ class ModularPropertiesScaler(ModularPropertiesScalerBase):
                 log_var_obj = getattr(model, "log_" + varname)
                 # Log variables are scaled well by default
                 for vardata in log_var_obj.values():
-                    self.set_component_scaling_factor(
-                        vardata,
-                        1,
-                        overwrite=overwrite
-                    )
-        
+                    self.set_component_scaling_factor(vardata, 1, overwrite=overwrite)
+
         # Not porting these from the old scaler, we'll see if
         # the expression walker makes them obsolete
         if model.is_property_constructed("therm_cond_phase"):
             pass
         if model.is_property_constructed("visc_d_phase"):
             pass
-        
-    
+
     def constraint_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers=None
     ):
@@ -394,10 +413,10 @@ class ModularPropertiesScaler(ModularPropertiesScalerBase):
             param_config.state_definition,
             index=None,
             method="constraint_scaling_routine",
-            overwrite=overwrite
+            overwrite=overwrite,
         )
 
-        # Equation of State 
+        # Equation of State
         for p in model.phase_list:
             pobj = model.params.get_phase(p)
             self.call_module_scaling_method(
@@ -405,7 +424,7 @@ class ModularPropertiesScaler(ModularPropertiesScalerBase):
                 pobj.config.equation_of_state,
                 index=p,
                 method="constraint_scaling_routine",
-                overwrite=overwrite
+                overwrite=overwrite,
             )
 
         # Phase equilibrium
@@ -417,7 +436,7 @@ class ModularPropertiesScaler(ModularPropertiesScalerBase):
                     pe_method,
                     index=pp,
                     method="constraint_scaling_routine",
-                    overwrite=overwrite
+                    overwrite=overwrite,
                 )
                 for j in model.component_list:
                     cobj = model.params.get_component(j)
@@ -432,54 +451,61 @@ class ModularPropertiesScaler(ModularPropertiesScalerBase):
                             form,
                             index=(*pp, j),
                             method="constraint_scaling_routine",
-                            overwrite=overwrite
+                            overwrite=overwrite,
                         )
-        
+
         # Inherent reactions
         if model.is_property_constructed("inherent_equilibrium_constraint"):
-            for r in  model.params.inherent_reaction_idx:
+            for r in model.params.inherent_reaction_idx:
                 carg = model.params.config.inherent_reactions[r]
                 self.call_module_scaling_method(
                     model,
                     carg["equilibrium_form"],
                     index=r,
                     method="constraint_scaling_routine",
-                    overwrite=overwrite
+                    overwrite=overwrite,
                 )
-    
+
         # Bubble and dew points
         if model.is_property_constructed("temperature_bubble"):
-            self._bubble_dew_scaling(model, model.temperature_bubble, scale_variables=False, overwrite=overwrite)
+            self._bubble_dew_scaling(
+                model,
+                model.temperature_bubble,
+                scale_variables=False,
+                overwrite=overwrite,
+            )
 
         if model.is_property_constructed("temperature_dew"):
-            self._bubble_dew_scaling(model, model.temperature_dew, scale_variables=False, overwrite=overwrite)
+            self._bubble_dew_scaling(
+                model, model.temperature_dew, scale_variables=False, overwrite=overwrite
+            )
 
         if model.is_property_constructed("pressure_bubble"):
-            self._bubble_dew_scaling(model, model.pressure_bubble, scale_variables=False, overwrite=overwrite)
+            self._bubble_dew_scaling(
+                model, model.pressure_bubble, scale_variables=False, overwrite=overwrite
+            )
 
         if model.is_property_constructed("pressure_dew"):
-            self._bubble_dew_scaling(model, model.pressure_dew, scale_variables=False, overwrite=overwrite)
+            self._bubble_dew_scaling(
+                model, model.pressure_dew, scale_variables=False, overwrite=overwrite
+            )
 
         for varname in _log_form_vars:
             if model.is_property_constructed("log_" + varname):
                 var_obj = getattr(model, varname)
                 try:
-                    log_con_obj = getattr(model, "log_" + varname+  "_eq")
+                    log_con_obj = getattr(model, "log_" + varname + "_eq")
                 except AttributeError:
-                    log_con_obj = getattr(model, "log_" + varname+  "_eqn")
+                    log_con_obj = getattr(model, "log_" + varname + "_eqn")
                 for idx, vardata in var_obj.items():
                     sf = 1 / self.get_expression_nominal_value(vardata)
                     self.set_component_scaling_factor(
-                        log_con_obj[idx],
-                        sf,
-                        overwrite=overwrite
+                        log_con_obj[idx], sf, overwrite=overwrite
                     )
-        
-        
 
-
-
-    def _bubble_dew_scaling(self, model, pt_var, scale_variables, overwrite: bool=False):
+    def _bubble_dew_scaling(
+        self, model, pt_var, scale_variables, overwrite: bool = False
+    ):
         """
         scale_variables=True scales variables, scales_variables=False scales constraints
         """
@@ -538,7 +564,9 @@ class ModularPropertiesScaler(ModularPropertiesScalerBase):
                 p = i[0]
             if scale_variables:
                 if (p, i[2]) in sf_mf:
-                    self.set_component_scaling_factor(v, sf_mf[p, i[2]], overwrite=overwrite)
+                    self.set_component_scaling_factor(
+                        v, sf_mf[p, i[2]], overwrite=overwrite
+                    )
                 else:
                     # component i[2] is not in the new phase, so this
                     # variable is likely unused and scale doesn't matter
@@ -559,7 +587,7 @@ class ModularPropertiesScaler(ModularPropertiesScalerBase):
             model.params.config.bubble_dew_method,
             index=None,
             method=method,
-            overwrite=overwrite
+            overwrite=overwrite,
         )
 
 

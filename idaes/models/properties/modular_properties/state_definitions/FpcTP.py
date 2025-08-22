@@ -354,6 +354,7 @@ def calculate_scaling_factors(b):
 
 do_not_initialize = []
 
+
 class FpcTPScaler(FTPxScaler):
 
     # Inherit variable_scaling_routine from FTPx.
@@ -362,11 +363,8 @@ class FpcTPScaler(FTPxScaler):
         self, model, index, overwrite: bool = False, submodel_scalers: dict = None
     ):
         for condata in model.mole_frac_phase_comp_eq.values():
-            self.scale_constraint_by_nominal_value(
-                condata,
-                overwrite=overwrite
-            )
-        
+            self.scale_constraint_by_nominal_value(condata, overwrite=overwrite)
+
 
 class FpcTP(object):
     """Phase-component flow, temperature, pressure state."""

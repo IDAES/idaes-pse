@@ -491,6 +491,7 @@ class TestStateBlockLegacyScaling(object):
     def test_report(self, model):
         model.props[1].report()
 
+
 class TestStateBlockScalerObject(object):
     @pytest.fixture(scope="class")
     def model(self):
@@ -558,9 +559,9 @@ class TestStateBlockScalerObject(object):
             assert gsf(vdata) == 10
         assert gsf(sblock.pressure) == 1e-5
         sf_enth = 1 / (
-            2000 # J/(kg K)
-            * 0.085127 # average molecular weight of benzene and toluene in kg/mol
-            * 300 # scaling factor for temperature
+            2000  # J/(kg K)
+            * 0.085127  # average molecular weight of benzene and toluene in kg/mol
+            * 300  # scaling factor for temperature
         )
         assert gsf(sblock.enth_mol) == pytest.approx(sf_enth, rel=1e-4)
         for vdata in sblock.flow_mol_phase.values():
@@ -572,15 +573,15 @@ class TestStateBlockScalerObject(object):
             assert gsf(vdata) == 10
         for vdata in sblock.phase_frac.values():
             assert gsf(vdata) == 1
-        assert gsf(sblock._teq["Vap","Liq"]) == 1 / 300
+        assert gsf(sblock._teq["Vap", "Liq"]) == 1 / 300
         assert gsf(sblock._t1_Vap_Liq) == 1 / 300
         assert gsf(sblock.temperature_bubble["Vap", "Liq"]) == 1 / 300
         for vdata in sblock._mole_frac_tbub.values():
             assert gsf(vdata) == 10
-        assert gsf(sblock.temperature_dew["Vap", "Liq"]) == 1 /300
+        assert gsf(sblock.temperature_dew["Vap", "Liq"]) == 1 / 300
         for vdata in sblock._mole_frac_tdew.values():
             assert gsf(vdata) == 10
-        
+
         # Constraints
         for cdata in sblock.mole_frac_comp_eq.values():
             assert gsf(cdata) == 10
@@ -592,15 +593,17 @@ class TestStateBlockScalerObject(object):
             assert gsf(cdata) == 1
         assert gsf(sblock.enth_mol_eqn) == pytest.approx(sf_enth, rel=1e-4)
         assert gsf(sblock._t1_constraint_Vap_Liq) == 1 / 300
-        assert gsf(sblock.eq_temperature_bubble["Vap","Liq"]) == 1e-5 # Eqn in pressure units
+        assert (
+            gsf(sblock.eq_temperature_bubble["Vap", "Liq"]) == 1e-5
+        )  # Eqn in pressure units
         for cdata in sblock.eq_mole_frac_tbub.values():
-            assert gsf(cdata) == 1e-4 # Eqn in partial pressure
+            assert gsf(cdata) == 1e-4  # Eqn in partial pressure
         assert gsf(sblock._teq_constraint_Vap_Liq) == 1 / 300
-        assert gsf(sblock.eq_temperature_dew["Vap","Liq"]) == 1
+        assert gsf(sblock.eq_temperature_dew["Vap", "Liq"]) == 1
         for cdata in sblock.eq_mole_frac_tdew.values():
-            assert gsf(cdata) == 1e-4 # Eqn in partial pressure
+            assert gsf(cdata) == 1e-4  # Eqn in partial pressure
         for cdata in sblock.equilibrium_constraint.values():
-            assert gsf(cdata) == 1e-4 # Eqn in partial pressure
+            assert gsf(cdata) == 1e-4  # Eqn in partial pressure
 
         # Expressions
         assert gsf(sblock.flow_mol) == 1
@@ -610,9 +613,9 @@ class TestStateBlockScalerObject(object):
             assert gsf(edata) == pytest.approx(sf_enth, rel=1e-4)
         for (_, j), edata in sblock.enth_mol_phase_comp.items():
             sf_enth = 1 / (
-                2000 # J/(kg K)
+                2000  # J/(kg K)
                 * value(sblock.mw_comp[j])
-                * 300 # scaling factor for temperature
+                * 300  # scaling factor for temperature
             )
             assert gsf(edata) == pytest.approx(sf_enth, rel=1e-4)
 
