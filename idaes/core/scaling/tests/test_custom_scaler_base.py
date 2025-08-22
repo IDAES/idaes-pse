@@ -431,6 +431,109 @@ class TestCustomScalerBase:
         assert model.scaling_factor[model.temperature] == 1e-2
 
     @pytest.mark.unit
+    def test_scale_variable_by_definition_constraint(self, model):
+        sb = CustomScalerBase()
+        model.temperature.value = 7
+        sb.set_variable_scaling_factor(model.temperature, 1 / 300)
+        sb.scale_variable_by_definition_constraint(
+            model.enth_mol,
+            model.enthalpy_eq,
+        )
+        assert model.scaling_factor[model.enth_mol] == pytest.approx(
+            1 / (4.81 * 300), rel=1e-15
+        )
+        assert model.temperature.value == 7
+
+    @pytest.mark.unit
+    def test_scale_variable_by_definition_constraint_without_variable(self, model):
+        sb = CustomScalerBase()
+        with pytest.raises(
+            ValueError,
+            match=re.escape(
+                "Variable pressure does not appear in constraint "
+                "enthalpy_eq, cannot calculate scaling factor."
+            ),
+        ):
+            sb.scale_variable_by_definition_constraint(
+                model.pressure,
+                model.enthalpy_eq,
+            )
+
+    @pytest.mark.unit
+    def test_scale_variable_by_definition_constraint_not_constraint(self, model):
+        sb = CustomScalerBase()
+        with pytest.raises(
+            TypeError,
+            match=re.escape(
+                "enthalpy_expr is not a constraint, but instead "
+                "<class 'pyomo.core.base.expression.ScalarExpression'>"
+            ),
+        ):
+            sb.scale_variable_by_definition_constraint(
+                model.pressure,
+                model.enthalpy_expr,
+            )
+
+    @pytest.mark.unit
+    def test_scale_variable_by_definition_constraint_indexed(self, model):
+        sb = CustomScalerBase()
+
+        # The fact that this constraint overdetermines the model is
+        # of no consequence. We don't even reach the computation
+        # stage by the time an exception is thrown.
+        @model.Constraint([1, 2, 3])
+        def foo(b, idx):
+            return b.pressure == 0
+
+        with pytest.raises(
+            TypeError,
+            match=re.escape(
+                f"Constraint foo is indexed. Call with ConstraintData "
+                "children instead."
+            ),
+        ):
+            sb.scale_variable_by_definition_constraint(
+                model.pressure,
+                model.foo,
+            )
+
+    @pytest.mark.unit
+    def test_scale_variable_by_definition_constraint_zero_derivative(self, model):
+        sb = CustomScalerBase()
+        model.foo = Constraint(expr=1 == 0 * model.enth_mol)
+        model.enth_mol.value = 42
+        with pytest.raises(
+            RuntimeError,
+            match=re.escape(
+                "Could not calculate scaling factor from definition constraint foo. "
+                "Does enth_mol appear nonlinearly in it or have a linear coefficient "
+                "equal to zero?"
+            ),
+        ):
+            sb.scale_variable_by_definition_constraint(
+                model.enth_mol,
+                model.foo,
+            )
+        assert model.enth_mol.value == 42
+
+    @pytest.mark.unit
+    def test_scale_variable_by_definition_constraint_zero_derivative(self, model):
+        sb = CustomScalerBase()
+        model.enth_mol.value = 42
+        model.foo = Constraint(expr=0 == model.enth_mol)
+        with pytest.raises(
+            ValueError,
+            match=re.escape(
+                "Calculated nominal value of zero from definition constraint."
+            ),
+        ):
+            sb.scale_variable_by_definition_constraint(
+                model.enth_mol,
+                model.foo,
+            )
+        assert model.enth_mol.value == 42
+
+    @pytest.mark.unit
     def test_scale_constraint_by_default_no_default(self, model):
         sb = CustomScalerBase()
         with pytest.raises(

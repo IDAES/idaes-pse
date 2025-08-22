@@ -759,6 +759,53 @@ class TestNominalValueExtractionVisitor:
         ) == [1, 37]
 
     @pytest.mark.unit
+    def test_Expression_hint(self, m):
+        set_scaling_factor(m.expression, 1 / 17)
+        # Need dummy addition in order to make sure we don't immediately descend into
+        # the body of m.expression
+        assert NominalValueExtractionVisitor().walk_expression(
+            expr=(1 + m.expression)
+        ) == [1, 17]
+
+    @pytest.mark.unit
+    def test_Expression_constant(self, m):
+        m.expression2 = pyo.Expression(expr=2)
+        assert NominalValueExtractionVisitor().walk_expression(
+            expr=(1 + m.expression2)
+        ) == [1, 2]
+
+    @pytest.mark.unit
+    def test_Expression_constant_hint(self, m):
+        m.expression2 = pyo.Expression(expr=2)
+        set_scaling_factor(m.expression2, 1 / 3)
+        assert NominalValueExtractionVisitor().walk_expression(
+            expr=(1 + m.expression2)
+        ) == [1, 3]
+
+    @pytest.mark.unit
+    def test_Expression_evaluation_error(self, m):
+        m.z = pyo.Var()  # Leave uninitialized
+        m.expression3 = pyo.Expression(expr=m.z)
+        set_scaling_factor(m.expression3, 1 / 37)
+        assert NominalValueExtractionVisitor().walk_expression(
+            expr=(1 + m.expression3)
+        ) == [1, 37]
+
+    @pytest.mark.unit
+    def test_Expression_negative(self, m):
+        m.z.set_value(-2)
+        assert NominalValueExtractionVisitor().walk_expression(
+            expr=(1 + m.expression3)
+        ) == [1, -37]
+
+    @pytest.mark.unit
+    def test_Expression_zero(self, m):
+        m.z.set_value(0)
+        assert NominalValueExtractionVisitor().walk_expression(
+            expr=(1 + m.expression3)
+        ) == [1, 37]
+
+    @pytest.mark.unit
     def test_constraint(self, m):
         m.constraint = pyo.Constraint(expr=m.scalar_var == m.expression)
 
