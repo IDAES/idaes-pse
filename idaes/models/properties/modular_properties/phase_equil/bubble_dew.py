@@ -45,7 +45,7 @@ class IdealBubbleDewScaler(CustomScalerBase):
     ):
         sf_P = get_scaling_factor(model.pressure)
         sf_mf = {}
-        for i, v in model.mole_frac_phase_comp.items():
+        for i, v in model.mole_frac_comp.items():
             sf_mf[i] = get_scaling_factor(v)
 
         for pp in model.params._pe_pairs:
@@ -71,9 +71,9 @@ class IdealBubbleDewScaler(CustomScalerBase):
                     for j in model.component_list:
                         # TODO Henry
                         if j in vl_comps:
-                            sf = sf_P * sf_mf
+                            sf = sf_P * sf_mf[j]
                         else:
-                            sf = sf_mf
+                            sf = sf_mf[j]
                         self.set_component_scaling_factor(
                             model.eq_mole_frac_tbub[pp[0], pp[1], j],
                             sf,
@@ -90,9 +90,9 @@ class IdealBubbleDewScaler(CustomScalerBase):
                     for j in model.component_list:
                         # TODO Henry
                         if j in vl_comps:
-                            sf = sf_P * sf_mf
+                            sf = sf_P * sf_mf[j]
                         else:
-                            sf = sf_mf
+                            sf = sf_mf[j]
                         self.set_component_scaling_factor(
                             model.eq_mole_frac_tdew[pp[0], pp[1], j],
                             sf,

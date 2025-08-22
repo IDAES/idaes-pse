@@ -165,6 +165,7 @@ class ModularPropertiesScaler(ModularPropertiesScalerBase):
             model.mole_frac_phase_comp,
             model.temperature,
             model.pressure,
+            model.enth_mol_phase
         ]
 
         for var in vars_to_scale_by_default:
@@ -255,6 +256,34 @@ class ModularPropertiesScaler(ModularPropertiesScalerBase):
                             "capacity cannot be approximated. Please provide default scaling factors "
                             "for enth_mol_phase so that energy balances can be scaled."
                         )
+
+        if model.is_property_constructed("enth_mol"):
+            sf_enth_phase = {p: self.get_scaling_factor(model.enth_mol_phase[p]) for p in model.phase_list}
+            sf_pf = {p: self.get_scaling_factor(model.phase_frac[p]) for  p in model.phase_list}
+            if not ( 
+                any(sf_enth_phase[p] is None for p in model.phase_list)
+                or any(sf_pf[p] is None for p in model.phase_list)
+            ):
+                sf_enth = (
+                    sum( 1 / sf_pf[p] for p in model.phase_list)
+                    / sum(1 / (sf_enth_phase[p]*sf_pf[p]) for p in model.phase_list)
+                )
+                self.set_component_scaling_factor(model.enth_mol, sf_enth, overwrite=overwrite)
+
+        if model.is_property_constructed("enth_mol_phase_comp"):
+            if not mw_missing:
+                for (_, j), comp_data in model.enth_mol_phase_comp.items():
+                    sf_enth_phase_comp = sf_T / pyunits.convert_value(
+                        2,
+                        from_units=pyunits.J / pyunits.g / pyunits.K,
+                        to_units=units["HEAT_CAPACITY_MASS"]
+                    ) / mw_comp_dict[j]
+                    self.set_component_scaling_factor(comp_data, sf_enth_phase_comp, overwrite=overwrite)
+            else:
+                sf_enth_phase = {p: self.get_scaling_factor(model.enth_mol_phase[p]) for p in model.phase_list}
+                if not any(sf_enth_phase[p] is None for p in model.phase_list):
+                    for (p, _), comp_data in model.enth_mol_phase_comp.items():
+                        self.set_component_scaling_factor(comp_data, sf_enth_phase[p], overwrite=overwrite)
 
         if model.is_property_constructed("_teq"):
             for v in model._teq.values():
@@ -360,6 +389,19 @@ class ModularPropertiesScaler(ModularPropertiesScalerBase):
             method="constraint_scaling_routine",
             overwrite=overwrite
         )
+
+        # Presently (8/22/25) no set of state variables include enth_mol_phase
+        if (
+            "enth_mol" in model.define_state_vars()
+            or "enth_mol_phase" in model.define_state_vars()
+        ):
+            sf_enth = get_scaling_factor(model.enth_mol)
+            if sf_enth is not None:
+                self.set_component_scaling_factor(
+                    model.enth_mol_eqn,
+                    sf_enth,
+                    overwrite=overwrite
+                )
 
         # Equation of State
         for p in model.phase_list:

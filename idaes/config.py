@@ -385,7 +385,7 @@ def _new_idaes_config_block():
         "scale_model",
         pyomo.common.config.ConfigValue(
             domain=Bool,
-            default=False,  # TODO: Change to true once transition complete
+            default=True,  # TODO: Change to true once transition complete
             description="Whether to apply model scaling in writer",
         ),
     )
