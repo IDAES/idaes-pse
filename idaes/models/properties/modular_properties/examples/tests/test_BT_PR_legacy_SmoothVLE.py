@@ -217,7 +217,7 @@ class TestBTExample(object):
     @pytest.mark.component
     def test_scaling(self, m):
         assert len(m.fs.state[1].scaling_factor) == 57
-        assert len(m.fs.state[1].scaling_hint) == 8
+        assert len(m.fs.state[1].scaling_hint) == 6
 
         # Variables
         assert get_scaling_factor(m.fs.state[1].flow_mol) == 1e-2
