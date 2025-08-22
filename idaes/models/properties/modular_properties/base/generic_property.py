@@ -159,17 +159,24 @@ class ModularPropertiesScaler(ModularPropertiesScalerBase):
         self, model, overwrite: bool = False, submodel_scalers=None
     ):
         units = model.params.get_metadata().derived_units
-
+        
+        # This triggers building these properties.
+        # All existing state variable options (as of 8/22/25)
+        # create all of these by default, but some dummy
+        # state variables that exist only for testing
+        # do not.
         vars_to_scale_by_default = [
             model.flow_mol_phase,
             model.mole_frac_phase_comp,
             model.temperature,
             model.pressure,
-            model.enth_mol_phase
         ]
-
         for var in vars_to_scale_by_default:
             for v in var.values():
+                self.scale_variable_by_default(v, overwrite=overwrite)
+
+        if model.is_property_constructed("enth_mol_phase"):
+            for v in model.enth_mol_phase.values():
                 self.scale_variable_by_default(v, overwrite=overwrite)
 
         self.call_module_scaling_method(
@@ -390,20 +397,7 @@ class ModularPropertiesScaler(ModularPropertiesScalerBase):
             overwrite=overwrite
         )
 
-        # Presently (8/22/25) no set of state variables include enth_mol_phase
-        if (
-            "enth_mol" in model.define_state_vars()
-            or "enth_mol_phase" in model.define_state_vars()
-        ):
-            sf_enth = get_scaling_factor(model.enth_mol)
-            if sf_enth is not None:
-                self.set_component_scaling_factor(
-                    model.enth_mol_eqn,
-                    sf_enth,
-                    overwrite=overwrite
-                )
-
-        # Equation of State
+        # Equation of State 
         for p in model.phase_list:
             pobj = model.params.get_phase(p)
             self.call_module_scaling_method(

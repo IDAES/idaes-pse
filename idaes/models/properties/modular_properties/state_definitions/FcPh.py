@@ -521,6 +521,13 @@ class FcPhScaler(FTPxScaler):
     def constraint_scaling_routine(
         self, model, index, overwrite: bool = False, submodel_scalers: dict = None
     ):
+        sf_enth = self.get_scaling_factor(model.enth_mol)
+        if sf_enth is not None:
+            self.set_component_scaling_factor(
+                model.enth_mol_eqn,
+                sf_enth,
+                overwrite=overwrite
+            )
         for idx, condata in model.mole_frac_comp_eq.items():
             self.scale_constraint_by_component(
                 condata,

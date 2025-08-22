@@ -369,7 +369,7 @@ class PropertyTestHarness(object):
         ):
             name = v.getname().split("[")[0]
             index = v.index()
-            print(v)
+            # print(v)
             assert (
                 iscale.get_scaling_factor(v)
                 == frame.fs.props[1].config.parameters.get_default_scaling(name, index)

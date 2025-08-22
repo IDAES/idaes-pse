@@ -1257,43 +1257,43 @@ class TestGenericStateBlock(object):
         assert frame.props[1].scaling_check
 
         assert len(frame.props[1].scaling_factor) == 8
-        assert frame.props[1].scaling_factor[frame.props[1].temperature] == 1 / 300
+        assert frame.props[1].scaling_factor[frame.props[1].temperature] == 1e-2
         assert frame.props[1].scaling_factor[frame.props[1].pressure] == 1e-5
         assert (
             frame.props[1].scaling_factor[
                 frame.props[1].mole_frac_phase_comp["p1", "a"]
             ]
-            == 10
+            == 1e3
         )
         assert (
             frame.props[1].scaling_factor[
                 frame.props[1].mole_frac_phase_comp["p1", "b"]
             ]
-            == 10
+            == 1e3
         )
         assert (
             frame.props[1].scaling_factor[
                 frame.props[1].mole_frac_phase_comp["p1", "c"]
             ]
-            == 10
+            == 1e3
         )
         assert (
             frame.props[1].scaling_factor[
                 frame.props[1].mole_frac_phase_comp["p2", "a"]
             ]
-            == 10
+            == 1e3
         )
         assert (
             frame.props[1].scaling_factor[
                 frame.props[1].mole_frac_phase_comp["p2", "b"]
             ]
-            == 10
+            == 1e3
         )
         assert (
             frame.props[1].scaling_factor[
                 frame.props[1].mole_frac_phase_comp["p2", "c"]
             ]
-            == 10
+            == 1e3
         )
 
     @pytest.mark.unit

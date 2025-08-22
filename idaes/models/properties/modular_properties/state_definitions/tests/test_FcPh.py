@@ -1297,9 +1297,10 @@ class TestCommon(object):
         assert not hasattr(frame, "scaling_factor")
         assert FcPh.default_scaler is FcPhScaler
         scaler = frame.props[1].default_scaler()
-        scaler.scale_model(frame.props)
-        from idaes.core.scaling import report_scaling_factors
-        report_scaling_factors(frame.props[1], descend_into=True)
+        scaler.default_scaling_factors["flow_mol_phase"] = 1 / 100
+        scaler.scale_model(frame.props[1])
+        # from idaes.core.scaling import report_scaling_factors
+        # report_scaling_factors(frame.props[1], descend_into=True)
         assert False
 
     # Test General Methods

@@ -209,16 +209,16 @@ class TestBTExample(object):
         m.fs.state = m.fs.props.build_state_block([1], defined_state=True)
 
 
-        scaler = m.fs.state.default_scaler()
-        scaler.default_scaling_factors["flow_mol_phase"] = 0.01
-        scaler.scale_model(m.fs.state[1])
+        scaler_obj = m.fs.state.default_scaler()
+        scaler_obj.default_scaling_factors["flow_mol_phase"] = 0.01
+        scaler_obj.scale_model(m.fs.state[1])
 
         return m
 
     @pytest.mark.component
     def test_scaling(self, m):
         assert len(m.fs.state[1].scaling_factor) == 57
-        assert len(m.fs.state[1].scaling_hint) == 6
+        assert len(m.fs.state[1].scaling_hint) == 8
         
         # Variables
         assert get_scaling_factor(m.fs.state[1].flow_mol) == 1e-2
@@ -755,9 +755,6 @@ class TestBTExample(object):
             )
             == 0.3858262
         )
-
-        m.fs.state[1].mole_frac_phase_comp.display()
-        m.fs.state[1].enth_mol_phase_comp.display()
 
         assert (
             pytest.approx(value(m.fs.state[1].enth_mol_phase["Liq"]), 1e-5) == 38235.1

@@ -546,8 +546,6 @@ class TestStateBlockScalerObject(object):
 
     @pytest.mark.unit
     def test_basic_scaling(self, model):
-        from idaes.core.scaling import report_scaling_factors
-        report_scaling_factors(model, descend_into=True)
         sblock = model.props[1]
         gsf = get_scaling_factor
 
