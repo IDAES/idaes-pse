@@ -29,6 +29,7 @@ from pyomo.core.base.expression import ExpressionData
 from pyomo.core.expr import identify_variables
 from pyomo.core.expr.calculus.derivatives import Modes, differentiate
 from pyomo.common.deprecation import deprecation_warning
+from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 from idaes.core.scaling.scaling_base import CONFIG, ScalerBase
 from idaes.core.scaling.util import (
@@ -40,6 +41,21 @@ from idaes.core.util.misc import StrEnum
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
+
+
+def _filter_scaling_factor(sf):
+    # Cast sf to float to catch obvious garbage
+    sf = float(sf)
+    # This comparison filters out negative numbers and infinity.
+    # It also filters out NaN values because comparisons involving
+    # NaN return False by default (including float("NaN") == float("NaN")).
+    if not 0 < sf < float("inf"):
+        raise ValueError(
+            f"Scaling factors must be strictly positive and finite. Received "
+            f"value of {sf} instead."
+        )
+    return sf
+
 
 CSCONFIG = CONFIG()
 
@@ -409,6 +425,102 @@ class CustomScalerBase(ScalerBase):
                 f"No scaling factor set for {variable.name}; no match for units {uom} found "
                 "in self.unit_scaling_factors"
             )
+
+    def scale_variable_by_definition_constraint(
+        self, variable, constraint, overwrite: bool = False
+    ):
+        """
+        Set scaling factor for variable via a constraint that defines it.
+        We expect a constraint of the form
+        variable == prod(v ** nu for v, nu in zip(other_variables, variable_exponents),
+        and set a scaling factor for a variable based on the nominal value of the
+        righthand side.
+
+        This method may return a result even if the constraint does not have this
+        expected form, but the resulting scaling factor may not be suitable.
+
+        Args:
+            variable: variable to set scaling factor for
+            constraint: constraint defining this variable
+            overwrite: whether to overwrite existing scaling factors
+
+        Returns:
+            None
+        """
+        if constraint.is_indexed():
+            raise TypeError(
+                f"Constraint {constraint} is indexed. Call with ConstraintData "
+                "children instead."
+            )
+        if not isinstance(constraint, ConstraintData):
+            raise TypeError(
+                f"{constraint} is not a constraint, but instead {type(constraint)}"
+            )
+
+        if constraint.lb != constraint.ub:
+            raise ValueError(
+                f"A definition constraint is an equality constraint, but {constraint} "
+                "is an inequality constraint. Cannot scale with this constraint."
+            )
+
+        var_info = []
+        variable_in_constraint = False
+        # Iterate over all variables in constraint
+        for v in identify_variables(constraint.body):
+            # Store current value for restoration
+            ov = v.value  # original value
+            sf = self.get_scaling_factor(v)  # scaling factor
+            if sf is None:
+                # If no scaling factor set, use nominal value of 1
+                sf = 1
+            sf = _filter_scaling_factor(sf)
+
+            var_info.append((v, ov, sf))
+            if v is variable:
+                variable_in_constraint = True
+
+        if not variable_in_constraint:
+            raise ValueError(
+                f"Variable {variable} does not appear in constraint "
+                f"{constraint}, cannot calculate scaling factor."
+            )
+
+        for v, _, sf in var_info:
+            if v is not variable:
+                v.value = 1 / sf
+
+        try:
+            # If constraint has the form variable == prod(v ** nu(v))
+            # then 1 / sf = prod((1/sf(v)) ** nu(v)). Fixing all the
+            # other variables v to their nominal values allows us to
+            # calculate sf using calculate_variable_from_constraint.
+            calculate_variable_from_constraint(variable=variable, constraint=constraint)
+            nom = abs(variable.value)
+
+        except (RuntimeError, ValueError) as err:
+            # RuntimeError:
+            # Reached the maximum number of iterations for calculate_variable_from_constraint().
+            # Since it converges in a single iteration if variable appears linearly in
+            # constraint, then constraint must have a different form than we were expecting.
+            # ValueError:
+            # variable possibly appears in constraint with derivative 0,
+            # so also not of the form we expected.
+            raise RuntimeError(
+                f"Could not calculate scaling factor from definition constraint {constraint}. "
+                f"Does {variable} appear nonlinearly in it or have a linear coefficient "
+                "equal to zero?"
+            ) from err
+        finally:
+            # Revert values to what they were initially
+            for v in var_info:
+                v[0].value = v[1]
+
+        if nom == 0:
+            raise ValueError(
+                "Calculated nominal value of zero from definition constraint."
+            )
+
+        self.set_variable_scaling_factor(variable, 1 / nom, overwrite=overwrite)
 
     # Common methods for constraint scaling
     def scale_constraint_by_component(
