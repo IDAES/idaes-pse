@@ -239,7 +239,7 @@ def test_constraint_scaling_transform():
     with pytest.raises(
         RuntimeError,
         match=re.escape(
-            "Attempted to set constraint scaling factor for transformed constraint. "
+            "Attempted to set constraint scaling factor for transformed constraint c2. "
             "Please use only one of set_scaling_factor and constraint_scaling_transform "
             "per constraint to avoid double scaling."
         ),
@@ -255,7 +255,7 @@ def test_constraint_scaling_transform():
     with pytest.raises(
         RuntimeError,
         match=re.escape(
-            "Attempted to set constraint scaling factor for transformed constraint. "
+            "Attempted to set constraint scaling factor for transformed constraint c1. "
             "Please use only one of set_scaling_factor and constraint_scaling_transform "
             "per constraint to avoid double scaling."
         ),
