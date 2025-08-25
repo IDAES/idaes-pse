@@ -42,11 +42,13 @@ from pyomo.environ import (
 from pyomo.core.base.block import BlockData
 from pyomo.core.base.var import VarData
 from pyomo.core.base.param import ParamData
+from pyomo.core.base.constraint import ConstraintData
 from pyomo.core import expr as EXPR
 from pyomo.common.numeric_types import native_types
 from pyomo.core.base.units_container import _PyomoUnit
 
 from idaes.core.util.exceptions import BurntToast
+from idaes.core.util.scaling import get_constraint_transform_applied_scaling_factor
 import idaes.logger as idaeslog
 
 
@@ -377,6 +379,25 @@ def set_scaling_factor(component, scaling_factor: float, overwrite: bool = False
             f"scaling factor for {component.name} is zero. "
             "Scaling factors must be strictly positive."
         )
+
+    if isinstance(component, ConstraintData):
+        xform_factor = get_constraint_transform_applied_scaling_factor(component)
+        if xform_factor is not None:
+            raise RuntimeError(
+                "Attempted to set constraint scaling factor for transformed constraint."
+                "Please use only one of set_scaling_factor and constraint_scaling_transform "
+                "per constraint to avoid double scaling."
+            )
+    elif isinstance(component, Constraint):
+        for condata in component.values():
+            xform_factor = get_constraint_transform_applied_scaling_factor(condata)
+            if xform_factor is not None:
+                raise RuntimeError(
+                    "Attempted to set constraint scaling factor for indexed constraint "
+                    "with transformed ConstraintData children. Please use only one of "
+                    "set_scaling_factor and constraint_scaling_transform "
+                    "per constraint to avoid double scaling."
+                )
 
     # Get suffix and assign scaling factor
     sfx = get_scaling_suffix(component)

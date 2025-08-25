@@ -39,6 +39,7 @@ from idaes.core.scaling.util import (
     scaling_factors_from_json_file,
     report_scaling_factors,
 )
+from idaes.core.util.scaling import constraint_scaling_transform
 import idaes.logger as idaeslog
 
 currdir = this_file_dir()
@@ -1136,6 +1137,48 @@ class TestSetScalingFactor:
         )
         assert m.scaling_factor[m.v] == 10
 
+    @pytest.mark.unit
+    def test_set_scaling_factor_transformed_constraint(self):
+        m = ConcreteModel()
+        m.x = Var(initialize=500)
+        m.c1 = Constraint(expr=m.x <= 1e3)
+        m.c2 = Constraint(expr=m.x == 1e3)
+        m.c3 = Constraint(expr=m.x >= 1e3)
+        def indexed_constraint_rule(b, idx):
+            return b.x == 1e3
+        m.c4 = Constraint([1, 2, 3], rule=indexed_constraint_rule)
+        
+        match = re.escape(
+            "Attempted to set constraint scaling factor for transformed constraint."
+            "Please use only one of set_scaling_factor and constraint_scaling_transform "
+            "per constraint to avoid double scaling."
+        )
+
+        constraint_scaling_transform(m.c1, 1e-3)
+        constraint_scaling_transform(m.c2, 1e-3)
+        constraint_scaling_transform(m.c3, 1e-3)
+        for idx in m.c4:
+            constraint_scaling_transform(m.c4[idx], 1e-3)
+
+        with pytest.raises(RuntimeError, match=match):
+            set_scaling_factor(m.c1, 1e-3)
+        with pytest.raises(RuntimeError, match=match):
+            set_scaling_factor(m.c2, 1e-3)
+        with pytest.raises(RuntimeError, match=match):
+            set_scaling_factor(m.c3, 1e-3)
+        with pytest.raises(
+            RuntimeError,
+            match=re.escape(
+                "Attempted to set constraint scaling factor for indexed constraint "
+                "with transformed ConstraintData children. Please use only one of "
+                "set_scaling_factor and constraint_scaling_transform "
+                "per constraint to avoid double scaling."
+            )
+        ):
+            set_scaling_factor(m.c4, 1e-3)
+        for idx in m.c4:
+            with pytest.raises(RuntimeError, match=match):
+                set_scaling_factor(m.c4[idx], 1e-3)
 
 class TestDelScalingFactor:
     @pytest.mark.unit

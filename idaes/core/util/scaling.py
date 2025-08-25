@@ -41,7 +41,7 @@ from pyomo.network import Arc
 from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
 from pyomo.contrib.pynumero.asl import AmplInterface
 from pyomo.common.modeling import unique_component_name
-from pyomo.core.base.constraint import ConstraintData
+from pyomo.core.base.constraint import ConstraintData, Constraint
 from pyomo.common.collections import ComponentMap, ComponentSet
 from pyomo.dae import DerivativeVar
 from pyomo.dae.flatten import slice_component_along_sets
@@ -49,10 +49,13 @@ from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from pyomo.core import expr as EXPR
 from pyomo.common.numeric_types import native_types
 from pyomo.core.base.units_container import _PyomoUnit
+from pyomo.core.base.suffix import SuffixFinder
 
 import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
+
+sfFinder = SuffixFinder("scaling_factor")
 
 
 def __none_left_mult(x, y):
@@ -230,6 +233,26 @@ def set_scaling_factor(c, v, data_objects=True, overwrite=True):
         # doesn't exist.  This handles the case where you get a constant 0 and
         # need its scale factor to scale the mass balance.
         return 1
+
+    if isinstance(c, ConstraintData):
+        xform_factor = get_constraint_transform_applied_scaling_factor(c)
+        if xform_factor is not None:
+            raise RuntimeError(
+                "Attempted to set constraint scaling factor for transformed constraint."
+                "Please use only one of set_scaling_factor and constraint_scaling_transform "
+                "per constraint to avoid double scaling."
+            )
+    elif isinstance(c, Constraint):
+        for condata in c.values():
+            xform_factor = get_constraint_transform_applied_scaling_factor(condata)
+            if xform_factor is not None:
+                raise RuntimeError(
+                    "Attempted to set constraint scaling factor for indexed constraint "
+                    "with transformed ConstraintData children. Please use only one of "
+                    "set_scaling_factor and constraint_scaling_transform "
+                    "per constraint to avoid double scaling."
+                )
+
     try:
         suf = c.parent_block().scaling_factor
 
@@ -460,6 +483,14 @@ def constraint_scaling_transform(c, s, overwrite=True):
     s = pyo.value(s)
     if not isinstance(c, ConstraintData):
         raise TypeError(f"{c} is not a constraint or is an indexed constraint")
+    scaling_factor = sfFinder.find(component_data=c)
+    if scaling_factor is not None:
+        raise RuntimeError(
+            "Attempted to transform constraint with existing scaling factor!"
+            "Please use only one of set_scaling_factor and constraint_scaling_transform "
+            "per constraint to avoid double scaling."
+        )
+
     st = get_constraint_transform_applied_scaling_factor(c, default=None)
 
     if not overwrite and st is not None:

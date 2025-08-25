@@ -18,6 +18,7 @@ Author: Andrew Lee
 
 from io import StringIO
 import os
+import re
 import pytest
 
 from pyomo.environ import ConcreteModel, Constraint, value, Var
@@ -28,6 +29,7 @@ from idaes.models.properties.activity_coeff_models.methane_combustion_ideal impo
     MethaneParameterBlock as MethaneCombustionParameterBlock,
 )
 from idaes.core.util import from_json, StoreSpec
+from idaes.core.util.scaling import constraint_scaling_transform
 from idaes.core.scaling import set_scaling_factor
 from idaes.core.scaling.scaler_profiling import ScalingProfiler
 
@@ -203,6 +205,62 @@ class TestScalingProfiler:
             == "TerminationCondition.convergenceCriteriaSatisfied"
         )
         assert res["iterations"] == 0
+
+
+def demo_model_cst():
+    m = ConcreteModel()
+
+    m.v1 = Var(initialize=2)
+    m.v1.fix()
+    m.v2 = Var(initialize=4)
+    m.v3 = Var(initialize=-6)
+
+    m.c1 = Constraint(expr=m.v2 == m.v1**2)
+    m.c2 = Constraint(expr=0 == m.v1 + m.v2 + m.v3)
+
+    constraint_scaling_transform(m.c2, 0.5)
+
+    return m
+
+
+def demo_scaling_cst(model):
+    set_scaling_factor(model.v2, 0.5)
+    constraint_scaling_transform(model.c1, 0.5)
+
+
+@pytest.mark.unit
+def test_constraint_scaling_transform():
+    # In this case the user has put old-style scaling in the build_model method
+    sp = ScalingProfiler(
+        build_model=demo_model_cst,
+        user_scaling=demo_scaling,
+        perturb_state=demo_pertubration,
+    )
+    with pytest.raises(
+        RuntimeError,
+        match=re.escape(
+            "Attempted to set constraint scaling factor for transformed constraint."
+            "Please use only one of set_scaling_factor and constraint_scaling_transform "
+            "per constraint to avoid double scaling."
+        ),
+    ):
+        _ = sp.profile_scaling_methods()
+
+    # Here the user includes old-style scaling in the scaling method
+    sp = ScalingProfiler(
+        build_model=demo_model,
+        user_scaling=demo_scaling_cst,
+        perturb_state=demo_pertubration,
+    )
+    with pytest.raises(
+        RuntimeError,
+        match=re.escape(
+            "Attempted to set constraint scaling factor for transformed constraint."
+            "Please use only one of set_scaling_factor and constraint_scaling_transform "
+            "per constraint to avoid double scaling."
+        ),
+    ):
+        _ = sp.profile_scaling_methods()
 
 
 # Case study using Gibbs reactor model
