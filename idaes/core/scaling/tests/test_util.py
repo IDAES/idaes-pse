@@ -1144,12 +1144,14 @@ class TestSetScalingFactor:
         m.c1 = Constraint(expr=m.x <= 1e3)
         m.c2 = Constraint(expr=m.x == 1e3)
         m.c3 = Constraint(expr=m.x >= 1e3)
+
         def indexed_constraint_rule(b, idx):
             return b.x == 1e3
+
         m.c4 = Constraint([1, 2, 3], rule=indexed_constraint_rule)
-        
+
         match = re.escape(
-            "Attempted to set constraint scaling factor for transformed constraint."
+            "Attempted to set constraint scaling factor for transformed constraint. "
             "Please use only one of set_scaling_factor and constraint_scaling_transform "
             "per constraint to avoid double scaling."
         )
@@ -1173,12 +1175,13 @@ class TestSetScalingFactor:
                 "with transformed ConstraintData children. Please use only one of "
                 "set_scaling_factor and constraint_scaling_transform "
                 "per constraint to avoid double scaling."
-            )
+            ),
         ):
             set_scaling_factor(m.c4, 1e-3)
         for idx in m.c4:
             with pytest.raises(RuntimeError, match=match):
                 set_scaling_factor(m.c4[idx], 1e-3)
+
 
 class TestDelScalingFactor:
     @pytest.mark.unit

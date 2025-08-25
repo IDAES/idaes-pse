@@ -478,7 +478,7 @@ def test_set_scaling_factor_transformed_constraint():
     m.c4 = pyo.Constraint([1, 2, 3], rule=indexed_constraint_rule)
 
     match = re.escape(
-        "Attempted to set constraint scaling factor for transformed constraint."
+        "Attempted to set constraint scaling factor for transformed constraint. "
         "Please use only one of set_scaling_factor and constraint_scaling_transform "
         "per constraint to avoid double scaling."
     )
@@ -758,7 +758,7 @@ def test_constraint_scaling_transform_existing_scaling_factor():
     m.c4 = pyo.Constraint([1, 2, 3], rule=indexed_constraint_rule)
 
     match = re.escape(
-        "Attempted to transform constraint with existing scaling factor!"
+        "Attempted to transform constraint with existing scaling factor. "
         "Please use only one of set_scaling_factor and constraint_scaling_transform "
         "per constraint to avoid double scaling."
     )
