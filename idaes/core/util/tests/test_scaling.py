@@ -477,11 +477,12 @@ def test_set_scaling_factor_transformed_constraint():
 
     m.c4 = pyo.Constraint([1, 2, 3], rule=indexed_constraint_rule)
 
-    match = re.escape(
-        "Attempted to set constraint scaling factor for transformed constraint. "
-        "Please use only one of set_scaling_factor and constraint_scaling_transform "
-        "per constraint to avoid double scaling."
-    )
+    def match(cname):
+        return re.escape(
+            f"Attempted to set constraint scaling factor for transformed constraint {cname}. "
+            "Please use only one of set_scaling_factor and constraint_scaling_transform "
+            "per constraint to avoid double scaling."
+        )
 
     sc.constraint_scaling_transform(m.c1, 1e-3)
     sc.constraint_scaling_transform(m.c2, 1e-3)
@@ -489,16 +490,16 @@ def test_set_scaling_factor_transformed_constraint():
     for idx in m.c4:
         sc.constraint_scaling_transform(m.c4[idx], 1e-3)
 
-    with pytest.raises(RuntimeError, match=match):
+    with pytest.raises(RuntimeError, match=match("c1")):
         sc.set_scaling_factor(m.c1, 1e-3)
-    with pytest.raises(RuntimeError, match=match):
+    with pytest.raises(RuntimeError, match=match("c2")):
         sc.set_scaling_factor(m.c2, 1e-3)
-    with pytest.raises(RuntimeError, match=match):
+    with pytest.raises(RuntimeError, match=match("c3")):
         sc.set_scaling_factor(m.c3, 1e-3)
     with pytest.raises(
         RuntimeError,
         match=re.escape(
-            "Attempted to set constraint scaling factor for indexed constraint "
+            "Attempted to set constraint scaling factor for indexed constraint c4"
             "with transformed ConstraintData children. Please use only one of "
             "set_scaling_factor and constraint_scaling_transform "
             "per constraint to avoid double scaling."
@@ -506,7 +507,7 @@ def test_set_scaling_factor_transformed_constraint():
     ):
         sc.set_scaling_factor(m.c4, 1e-3)
     for idx in m.c4:
-        with pytest.raises(RuntimeError, match=match):
+        with pytest.raises(RuntimeError, match=match(f"c4[{idx}]")):
             sc.set_scaling_factor(m.c4[idx], 1e-3)
 
 
@@ -757,25 +758,26 @@ def test_constraint_scaling_transform_existing_scaling_factor():
 
     m.c4 = pyo.Constraint([1, 2, 3], rule=indexed_constraint_rule)
 
-    match = re.escape(
-        "Attempted to transform constraint with existing scaling factor. "
-        "Please use only one of set_scaling_factor and constraint_scaling_transform "
-        "per constraint to avoid double scaling."
-    )
+    def match(cname):
+        return re.escape(
+            f"Attempted to transform constraint {cname} with existing scaling factor. "
+            "Please use only one of set_scaling_factor and constraint_scaling_transform "
+            "per constraint to avoid double scaling."
+        )
 
     sc.set_scaling_factor(m.c1, 1e-3)
     sc.set_scaling_factor(m.c2, 1e-3)
     sc.set_scaling_factor(m.c3, 1e-3)
     sc.set_scaling_factor(m.c4, 1e-3)
 
-    with pytest.raises(RuntimeError, match=match):
+    with pytest.raises(RuntimeError, match=match("c1")):
         sc.constraint_scaling_transform(m.c1, 1e-3)
-    with pytest.raises(RuntimeError, match=match):
+    with pytest.raises(RuntimeError, match=match("c2")):
         sc.constraint_scaling_transform(m.c2, 1e-3)
-    with pytest.raises(RuntimeError, match=match):
+    with pytest.raises(RuntimeError, match=match("c3")):
         sc.constraint_scaling_transform(m.c3, 1e-3)
     for idx in range(1, 4):
-        with pytest.raises(RuntimeError, match=match):
+        with pytest.raises(RuntimeError, match=match(f"c4[{idx}]")):
             sc.constraint_scaling_transform(m.c4[idx], 1e-3)
 
 

@@ -238,7 +238,7 @@ def set_scaling_factor(c, v, data_objects=True, overwrite=True):
         xform_factor = get_constraint_transform_applied_scaling_factor(c)
         if xform_factor is not None:
             raise RuntimeError(
-                "Attempted to set constraint scaling factor for transformed constraint. "
+                f"Attempted to set constraint scaling factor for transformed constraint {c.name}. "
                 "Please use only one of set_scaling_factor and constraint_scaling_transform "
                 "per constraint to avoid double scaling."
             )
@@ -247,7 +247,7 @@ def set_scaling_factor(c, v, data_objects=True, overwrite=True):
             xform_factor = get_constraint_transform_applied_scaling_factor(condata)
             if xform_factor is not None:
                 raise RuntimeError(
-                    "Attempted to set constraint scaling factor for indexed constraint "
+                    f"Attempted to set constraint scaling factor for indexed constraint {c.name}"
                     "with transformed ConstraintData children. Please use only one of "
                     "set_scaling_factor and constraint_scaling_transform "
                     "per constraint to avoid double scaling."
@@ -486,7 +486,7 @@ def constraint_scaling_transform(c, s, overwrite=True):
     scaling_factor = sfFinder.find(component_data=c)
     if scaling_factor is not None:
         raise RuntimeError(
-            "Attempted to transform constraint with existing scaling factor. "
+            f"Attempted to transform constraint {c.name} with existing scaling factor. "
             "Please use only one of set_scaling_factor and constraint_scaling_transform "
             "per constraint to avoid double scaling."
         )

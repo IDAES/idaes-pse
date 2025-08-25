@@ -384,7 +384,7 @@ def set_scaling_factor(component, scaling_factor: float, overwrite: bool = False
         xform_factor = get_constraint_transform_applied_scaling_factor(component)
         if xform_factor is not None:
             raise RuntimeError(
-                "Attempted to set constraint scaling factor for transformed constraint. "
+                f"Attempted to set constraint scaling factor for transformed constraint {component.name}. "
                 "Please use only one of set_scaling_factor and constraint_scaling_transform "
                 "per constraint to avoid double scaling."
             )
@@ -394,8 +394,8 @@ def set_scaling_factor(component, scaling_factor: float, overwrite: bool = False
             if xform_factor is not None:
                 raise RuntimeError(
                     "Attempted to set constraint scaling factor for indexed constraint "
-                    "with transformed ConstraintData children. Please use only one of "
-                    "set_scaling_factor and constraint_scaling_transform "
+                    f"{component.name} with transformed ConstraintData children. Please "
+                    "use only one of set_scaling_factor and constraint_scaling_transform "
                     "per constraint to avoid double scaling."
                 )
 

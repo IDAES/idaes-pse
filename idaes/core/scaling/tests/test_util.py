@@ -1150,11 +1150,12 @@ class TestSetScalingFactor:
 
         m.c4 = Constraint([1, 2, 3], rule=indexed_constraint_rule)
 
-        match = re.escape(
-            "Attempted to set constraint scaling factor for transformed constraint. "
-            "Please use only one of set_scaling_factor and constraint_scaling_transform "
-            "per constraint to avoid double scaling."
-        )
+        def match(cname):
+            return re.escape(
+                f"Attempted to set constraint scaling factor for transformed constraint {cname}. "
+                "Please use only one of set_scaling_factor and constraint_scaling_transform "
+                "per constraint to avoid double scaling."
+            )
 
         constraint_scaling_transform(m.c1, 1e-3)
         constraint_scaling_transform(m.c2, 1e-3)
@@ -1162,16 +1163,16 @@ class TestSetScalingFactor:
         for idx in m.c4:
             constraint_scaling_transform(m.c4[idx], 1e-3)
 
-        with pytest.raises(RuntimeError, match=match):
+        with pytest.raises(RuntimeError, match=match("c1")):
             set_scaling_factor(m.c1, 1e-3)
-        with pytest.raises(RuntimeError, match=match):
+        with pytest.raises(RuntimeError, match=match("c2")):
             set_scaling_factor(m.c2, 1e-3)
-        with pytest.raises(RuntimeError, match=match):
+        with pytest.raises(RuntimeError, match=match("c3")):
             set_scaling_factor(m.c3, 1e-3)
         with pytest.raises(
             RuntimeError,
             match=re.escape(
-                "Attempted to set constraint scaling factor for indexed constraint "
+                "Attempted to set constraint scaling factor for indexed constraint c4 "
                 "with transformed ConstraintData children. Please use only one of "
                 "set_scaling_factor and constraint_scaling_transform "
                 "per constraint to avoid double scaling."
@@ -1179,7 +1180,7 @@ class TestSetScalingFactor:
         ):
             set_scaling_factor(m.c4, 1e-3)
         for idx in m.c4:
-            with pytest.raises(RuntimeError, match=match):
+            with pytest.raises(RuntimeError, match=match(f"c4[{idx}]")):
                 set_scaling_factor(m.c4[idx], 1e-3)
 
 
