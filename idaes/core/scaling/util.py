@@ -530,6 +530,11 @@ def set_scaling_factor(component, scaling_factor: float, overwrite: bool = False
                     "per constraint to avoid double scaling."
                 )
 
+    if component.is_indexed():
+        raise TypeError(
+            f"Component {component.name} is indexed. Set scaling factors for individual indices instead."
+        )
+
     # Get suffix and assign scaling factor
     sfx = get_component_scaling_suffix(component)
 
