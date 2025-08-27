@@ -1763,6 +1763,32 @@ class ModularPropertiesInitializer(InitializerBase):
             writer_config=self.config.solver_writer_config,
         )
 
+        scaler_block = [blk for blk in model.values()][0]
+
+        if hasattr(scaler_block, "inherent_equilibrium_constraint") and (
+            not scaler_block.params._electrolyte
+            or scaler_block.params.config.state_components == StateIndex.true
+        ):
+            init_log.debug(
+                "Cannot converge inherent reaction constraints "
+                "at the state block level. They need to be solved "
+                "at the control volume level, when material and "
+                "energy balances are included. Ignoring "
+                "constraints with large residuals."
+            )
+            self.config.constraint_tolerance = float("inf")
+
+        if "flow_mol_phase_comp"  in scaler_block.define_state_vars():
+            init_log.debug(
+                "Cannot converge phase equilibrium constraints "
+                "at the state block level due to using phase component "
+                "flows as state variables. These constraints need to be "
+                "solved at the control volume level, when material and "
+                "energy balances are included. Ignoring "
+                "constraints with large residuals."
+            )
+            self.config.constraint_tolerance = float("inf")
+
         init_log.info("Starting initialization routine")
 
         for k in model.values():
@@ -2128,12 +2154,16 @@ class _GenericStateBlock(StateBlock):
         # Fix state variables
         fix_state_vars(self)
 
-        # Also need to deactivate sum of mole fraction constraint
         for k in self.values():
+            # Also need to deactivate sum of mole fraction constraint
             try:
                 k.sum_mole_frac_out.deactivate()
             except AttributeError:
                 pass
+            # Don't need equilibrium constraint for phase component flows
+            if "flow_mol_phase_comp" in k.define_state_vars():
+                k.equilibrium_constraint.deactivate()
+            # TODO Inherent reactions with a true component basis will fail here too
 
     def initialize(
         blk,
