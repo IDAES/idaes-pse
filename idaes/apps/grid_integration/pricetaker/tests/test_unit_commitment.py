@@ -99,8 +99,8 @@ def test_startup_shutdown_constraints():
         blk=m.startup_shutdown,
         op_blocks=m.op_blk,
         install_unit=1,
-        up_time=3,
-        down_time=4,
+        minimum_up_time=3,
+        minimum_down_time=4,
         set_time=m.set_time,
     )
 
