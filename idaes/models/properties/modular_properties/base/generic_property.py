@@ -1290,7 +1290,7 @@ class ModularPropertiesInitializer(InitializerBase):
         scaler_block = [blk for blk in model.values()][0]
 
         if hasattr(scaler_block, "inherent_equilibrium_constraint") and (
-            not scaler_block.params._electrolyte
+            not scaler_block.params._electrolyte # TODO why do we need this check?
             or scaler_block.params.config.state_components == StateIndex.true
         ):
             init_log.debug(
