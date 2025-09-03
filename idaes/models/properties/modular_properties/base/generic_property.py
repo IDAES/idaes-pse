@@ -1290,7 +1290,7 @@ class ModularPropertiesInitializer(InitializerBase):
         scaler_block = [blk for blk in model.values()][0]
 
         if hasattr(scaler_block, "inherent_equilibrium_constraint") and (
-            not scaler_block.params._electrolyte # TODO why do we need this check?
+            not scaler_block.params._electrolyte  # TODO why do we need this check?
             or scaler_block.params.config.state_components == StateIndex.true
         ):
             init_log.debug(
@@ -1302,7 +1302,10 @@ class ModularPropertiesInitializer(InitializerBase):
             )
             self.config.constraint_tolerance = float("inf")
 
-        if "flow_mol_phase_comp" or "mole_frac_phase_comp" in scaler_block.define_state_vars():
+        if (
+            "flow_mol_phase_comp"
+            or "mole_frac_phase_comp" in scaler_block.define_state_vars()
+        ):
             init_log.debug(
                 "Cannot converge phase equilibrium constraints "
                 "at the state block level due to using phase component "
@@ -1516,8 +1519,8 @@ class ModularPropertiesInitializer(InitializerBase):
                         # phase equilibrium, we cannot activate the equilibrium
                         # constraint at this stage.
                         if (
-                           "flow_mol_phase_comp" not in b.define_state_vars()
-                           and "mole_frac_phase_comp" not in b.define_state_vars()
+                            "flow_mol_phase_comp" not in b.define_state_vars()
+                            and "mole_frac_phase_comp" not in b.define_state_vars()
                         ):
                             c.activate()
 
@@ -2307,18 +2310,14 @@ class GenericStateBlockData(StateBlockData):
             for idx in self.fug_phase_comp:
                 sf_x = iscale.get_scaling_factor(
                     self.mole_frac_phase_comp[idx],
-                    default=1e3, # I'd prefer 10, but this is consistent with existing scaling
-                    warning=True
+                    default=1e3,  # I'd prefer 10, but this is consistent with existing scaling
+                    warning=True,
                 )
                 sf_P = iscale.get_scaling_factor(
-                    self.pressure,
-                    default=1e-5,
-                    warning=True
+                    self.pressure, default=1e-5, warning=True
                 )
                 iscale.set_scaling_factor(
-                    self.fug_phase_comp[idx],
-                    sf_P*sf_x,
-                    overwrite=False
+                    self.fug_phase_comp[idx], sf_P * sf_x, overwrite=False
                 )
 
         # Phase equilibrium constraint

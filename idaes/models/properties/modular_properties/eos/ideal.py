@@ -256,7 +256,9 @@ class Ideal(EoSBase):
         else:
             log_mole_frac_phase_comp = b.log_mole_frac_phase_comp
         if pobj.is_vapor_phase():
-            return log_mole_frac_phase_comp[p, j] + log(b.pressure / base_units.PRESSURE)
+            return log_mole_frac_phase_comp[p, j] + log(
+                b.pressure / base_units.PRESSURE
+            )
         elif pobj.is_liquid_phase():
             if (
                 cobj(b, j).config.henry_component is not None
@@ -267,7 +269,9 @@ class Ideal(EoSBase):
             elif cobj(b, j).config.has_vapor_pressure:
                 # Use Raoult's Law
                 return b.log_mole_frac_phase_comp[p, j] + (
-                    get_method(b, "pressure_sat_comp", comp=j, log=True)(b, cobj(b, j), b._teq[pp])
+                    get_method(b, "pressure_sat_comp", comp=j, log=True)(
+                        b, cobj(b, j), b._teq[pp]
+                    )
                 )
             else:
                 return Expression.Skip
@@ -298,7 +302,9 @@ class Ideal(EoSBase):
         cobj = b.params.get_component(j)
         base_units = b.params.get_metadata().default_units
         if pobj.is_vapor_phase():
-            return b.log_mole_frac_tbub[pp[0], pp[1], j] + log(b.pressure / base_units.PRESSURE)
+            return b.log_mole_frac_tbub[pp[0], pp[1], j] + log(
+                b.pressure / base_units.PRESSURE
+            )
         elif pobj.is_liquid_phase():
             if (
                 cobj.config.henry_component is not None
@@ -313,9 +319,7 @@ class Ideal(EoSBase):
                 # TODO this probably is wrong for systems with inherent reactions
                 return b.log_mole_frac_comp[j] + get_method(
                     b, "pressure_sat_comp", j, log=True
-                )(
-                    b, cobj, b.temperature_bubble[pp]
-                )
+                )(b, cobj, b.temperature_bubble[pp])
         else:
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 
@@ -340,9 +344,7 @@ class Ideal(EoSBase):
             else:
                 return b.log_mole_frac_tdew[pp[0], pp[1], j] + get_method(
                     b, "pressure_sat_comp", comp=j, log=True
-                )(
-                    b, cobj, b.temperature_dew[pp]
-                )
+                )(b, cobj, b.temperature_dew[pp])
         else:
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 

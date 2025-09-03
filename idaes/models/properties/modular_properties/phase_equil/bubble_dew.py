@@ -131,7 +131,9 @@ class IdealBubbleDew:
         Scaling method for bubble temperature
         """
         sf_P = iscale.get_scaling_factor(b.pressure, default=1e-5, warning=True)
-        sf_mf = iscale.min_scaling_factor(b.mole_frac_comp.values(), default=1e3, warning=True)
+        sf_mf = iscale.min_scaling_factor(
+            b.mole_frac_comp.values(), default=1e3, warning=True
+        )
 
         for pp in b.params._pe_pairs:
             for j in b.component_list:
@@ -261,7 +263,9 @@ class IdealBubbleDew:
         Scaling method for dew temperature
         """
         sf_P = iscale.get_scaling_factor(b.pressure, default=1e-5, warning=True)
-        sf_mf = iscale.min_scaling_factor(b.mole_frac_comp.values(), default=1e3, warning=True)
+        sf_mf = iscale.min_scaling_factor(
+            b.mole_frac_comp.values(), default=1e3, warning=True
+        )
 
         for pp in b.params._pe_pairs:
             for j in b.component_list:

@@ -33,23 +33,19 @@ class fugacity:
 
     @staticmethod
     def calculate_scaling_factors(b, phase1, phase2, comp):
-            sf_xp1 = iscale.get_scaling_factor(
-                b.mole_frac_phase_comp[phase1, comp],
-                default=1e3, # I'd prefer 10, but this is consistent with existing scaling
-                warning=True
-            )
-            sf_xp2 = iscale.get_scaling_factor(
-                b.mole_frac_phase_comp[phase2, comp],
-                default=1e3, # I'd prefer 10, but this is consistent with existing scaling
-                warning=True
-            )
-            sf_x = min(sf_xp1, sf_xp2)
-            sf_P = iscale.get_scaling_factor(
-                b.pressure,
-                default=1e-5,
-                warning=True
-            )
-            return sf_x * sf_P
+        sf_xp1 = iscale.get_scaling_factor(
+            b.mole_frac_phase_comp[phase1, comp],
+            default=1e3,  # I'd prefer 10, but this is consistent with existing scaling
+            warning=True,
+        )
+        sf_xp2 = iscale.get_scaling_factor(
+            b.mole_frac_phase_comp[phase2, comp],
+            default=1e3,  # I'd prefer 10, but this is consistent with existing scaling
+            warning=True,
+        )
+        sf_x = min(sf_xp1, sf_xp2)
+        sf_P = iscale.get_scaling_factor(b.pressure, default=1e-5, warning=True)
+        return sf_x * sf_P
 
 
 class log_fugacity:

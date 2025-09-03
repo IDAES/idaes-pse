@@ -226,20 +226,19 @@ class RPP5(object):
             if dT:
                 return RPP5.pressure_sat_comp.dT_expression(b, cobj, T)
 
-            log_psat = (
-                log(10)
-                * (
-                    cobj.pressure_sat_comp_coeff_A
-                    - (
-                        cobj.pressure_sat_comp_coeff_B
-                        / (T + cobj.pressure_sat_comp_coeff_C - 273.15 * pyunits.degK)
-                    )
+            log_psat = log(10) * (
+                cobj.pressure_sat_comp_coeff_A
+                - (
+                    cobj.pressure_sat_comp_coeff_B
+                    / (T + cobj.pressure_sat_comp_coeff_C - 273.15 * pyunits.degK)
                 )
             )
             base_units = b.params.get_metadata().default_units
             p_units = base_units.PRESSURE
-            return log_psat +  log(pyunits.convert(1* pyunits.bar, to_units=p_units) / p_units)
-        
+            return log_psat + log(
+                pyunits.convert(1 * pyunits.bar, to_units=p_units) / p_units
+            )
+
         @staticmethod
         def dT_log_expression(b, cobj, T):
             log_p_sat_dT = (
@@ -248,4 +247,4 @@ class RPP5(object):
                 / (T + cobj.pressure_sat_comp_coeff_C - 273.15 * pyunits.degK) ** 2
             )
             base_units = b.params.get_metadata().default_units
-            return log_p_sat_dT  / base_units.TEMPERATURE
+            return log_p_sat_dT / base_units.TEMPERATURE
