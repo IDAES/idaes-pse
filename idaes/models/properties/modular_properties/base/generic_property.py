@@ -2251,7 +2251,7 @@ class GenericStateBlockData(StateBlockData):
                     iscale.set_scaling_factor(v, sf_rho * sf_x)
 
         if self.is_property_constructed("_energy_density_term"):
-            for k, v in self._enthalpy_flow_term.items():
+            for k, v in self._energy_density_term.items():
                 if iscale.get_scaling_factor(v) is None:
                     sf_rho = iscale.get_scaling_factor(
                         self.dens_mol_phase[k], default=1, warning=True
