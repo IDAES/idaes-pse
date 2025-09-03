@@ -1687,7 +1687,10 @@ class _GenericStateBlock(StateBlock):
             except AttributeError:
                 pass
             # Don't need equilibrium constraint for phase component flows
-            if "flow_mol_phase_comp" or "mole_frac_phase_comp" in k.define_state_vars():
+            if (
+                "flow_mol_phase_comp" in k.define_state_vars()
+                or "mole_frac_phase_comp" in k.define_state_vars()
+            ):
                 k.equilibrium_constraint.deactivate()
             # TODO Inherent reactions with a true component basis will fail here too
 
