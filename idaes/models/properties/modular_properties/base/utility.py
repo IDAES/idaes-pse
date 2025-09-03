@@ -58,7 +58,7 @@ class GenericPropertyPackageError(PropertyPackageError):
         )
 
 
-def get_method(self, config_arg, comp=None, phase=None):
+def get_method(self, config_arg, comp=None, phase=None, log=False):
     """
     Method to inspect configuration argument and return the user-defined
     construction method associated with it.
@@ -103,10 +103,13 @@ def get_method(self, config_arg, comp=None, phase=None):
 
     # Try to get the return_expression method from c_arg
     # Otherwise assume c_arg is the return_expression method
-    try:
-        mthd = c_arg.return_expression
-    except AttributeError:
-        mthd = c_arg
+    if not log:
+        try:
+            mthd = c_arg.return_expression
+        except AttributeError:
+            mthd = c_arg
+    else:
+        mthd = c_arg.return_log_expression
 
     # Call the return_expression method
     if callable(mthd):

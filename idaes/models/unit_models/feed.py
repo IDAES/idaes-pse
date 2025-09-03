@@ -22,7 +22,7 @@ from idaes.core import declare_process_block_class, UnitModelBlockData, useDefau
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.logger as idaeslog
-from idaes.core.initialization import InitializerBase
+from idaes.core.initialization import ModularInitializerBase
 
 
 __author__ = "Andrew Lee"
@@ -32,7 +32,7 @@ __author__ = "Andrew Lee"
 _log = idaeslog.getLogger(__name__)
 
 
-class FeedInitializer(InitializerBase):
+class FeedInitializer(ModularInitializerBase):
     """
     Initializer for blocks with a single state (Feed, Product, StateJunction).
 
@@ -56,9 +56,15 @@ class FeedInitializer(InitializerBase):
             None
         """
         # Get initializer for State Block
-        sinit = model.properties.default_initializer()
+        sinit = self.get_submodel_initializer(model.properties)
+        for key, val in self.config.items():
+            if key in sinit.config:
+                sinit.config[key] = val
 
-        sinit.initialize(model.properties)
+        sinit.initialize(
+            model.properties,
+            output_level=self.get_output_level()
+        )
 
 
 @declare_process_block_class("Feed")

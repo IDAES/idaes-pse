@@ -249,20 +249,25 @@ class Ideal(EoSBase):
     @staticmethod
     def log_fug_phase_comp_eq(b, p, j, pp):
         pobj = b.params.get_phase(p)
+        base_units = b.params.get_metadata().default_units
 
+        if b.params.has_inherent_reactions:
+            log_mole_frac_phase_comp = b.log_mole_frac_phase_comp_true
+        else:
+            log_mole_frac_phase_comp = b.log_mole_frac_phase_comp
         if pobj.is_vapor_phase():
-            return log(b.get_mole_frac(p)[p, j]) + log(b.pressure)
+            return log_mole_frac_phase_comp[p, j] + log(b.pressure / base_units.PRESSURE)
         elif pobj.is_liquid_phase():
             if (
                 cobj(b, j).config.henry_component is not None
                 and p in cobj(b, j).config.henry_component
             ):
                 # Use Henry's Law
-                return log_henry_pressure(b, p, j, b.temperature)
+                return log_henry_pressure(b, p, j, b._teq[pp])
             elif cobj(b, j).config.has_vapor_pressure:
                 # Use Raoult's Law
-                return log(b.get_mole_frac(p)[p, j]) + log(
-                    get_method(b, "pressure_sat_comp", j)(b, cobj(b, j), b.temperature)
+                return b.log_mole_frac_phase_comp[p, j] + (
+                    get_method(b, "pressure_sat_comp", comp=j, log=True)(b, cobj(b, j), b._teq[pp])
                 )
             else:
                 return Expression.Skip
@@ -291,8 +296,9 @@ class Ideal(EoSBase):
     def log_fug_phase_comp_Tbub(b, p, j, pp):
         pobj = b.params.get_phase(p)
         cobj = b.params.get_component(j)
+        base_units = b.params.get_metadata().default_units
         if pobj.is_vapor_phase():
-            return log(b._mole_frac_tbub[pp[0], pp[1], j]) + log(b.pressure)
+            return b.log_mole_frac_tbub[pp[0], pp[1], j] + log(b.pressure / base_units.PRESSURE)
         elif pobj.is_liquid_phase():
             if (
                 cobj.config.henry_component is not None
@@ -304,10 +310,11 @@ class Ideal(EoSBase):
                     )
                 )
             else:
-                return log(b.mole_frac_comp[j]) + log(
-                    get_method(b, "pressure_sat_comp", j)(
-                        b, cobj, b.temperature_bubble[pp]
-                    )
+                # TODO this probably is wrong for systems with inherent reactions
+                return b.log_mole_frac_comp[j] + get_method(
+                    b, "pressure_sat_comp", j, log=True
+                )(
+                    b, cobj, b.temperature_bubble[pp]
                 )
         else:
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
@@ -316,8 +323,10 @@ class Ideal(EoSBase):
     def log_fug_phase_comp_Tdew(b, p, j, pp):
         pobj = b.params.get_phase(p)
         cobj = b.params.get_component(j)
+        base_units = b.params.get_metadata().default_units
         if pobj.is_vapor_phase():
-            return log(b.mole_frac_comp[j]) + log(b.pressure)
+            # TODO this is probably wrong for systems with inherent reaction
+            return b.log_mole_frac_comp[j] + log(b.pressure / base_units.PRESSURE)
         elif pobj.is_liquid_phase():
             if (
                 cobj.config.henry_component is not None
@@ -329,14 +338,15 @@ class Ideal(EoSBase):
                     )
                 )
             else:
-                return log(b._mole_frac_tdew[pp[0], pp[1], j]) + log(
-                    get_method(b, "pressure_sat_comp", j)(
-                        b, cobj, b.temperature_dew[pp]
-                    )
+                return b.log_mole_frac_tdew[pp[0], pp[1], j] + get_method(
+                    b, "pressure_sat_comp", comp=j, log=True
+                )(
+                    b, cobj, b.temperature_dew[pp]
                 )
         else:
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 
+    # TODO fully support log variables here
     @staticmethod
     def log_fug_phase_comp_Pbub(b, p, j, pp):
         pobj = b.params.get_phase(p)
