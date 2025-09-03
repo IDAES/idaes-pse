@@ -61,10 +61,7 @@ class FeedInitializer(ModularInitializerBase):
             if key in sinit.config:
                 sinit.config[key] = val
 
-        sinit.initialize(
-            model.properties,
-            output_level=self.get_output_level()
-        )
+        sinit.initialize(model.properties, output_level=self.get_output_level())
 
 
 @declare_process_block_class("Feed")
