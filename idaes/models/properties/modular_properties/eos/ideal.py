@@ -459,9 +459,15 @@ def _log_fug_phase_comp(b, p, j, log_x, T, P):
             and p in cobj(b, j).config.henry_component
         ):
             # Use Henry's Law
-            raise NotImplementedError(
-                "VLE is not supported for Henry's Law components at present."
-            )
+            if P is b.pressure and log_x[j] is b.log_mole_frac_phase_comp[p, j]:
+                return log_henry_pressure(b, p, j, T)
+            else:
+                # There is no API for evaluating Henry's law relationships
+                # at concentrations other than mole_frac_phase_comp.
+                # We therefore do not support the bubble/dew methods.
+                raise NotImplementedError(
+                    "VLE is not supported for Henry's Law components at present."
+                )
         elif cobj(b, j).config.has_vapor_pressure:
             # Use Raoult's Law
             return log_x[j] + (
