@@ -36,8 +36,9 @@ if omlt_available:
     from omlt.linear_tree import (
         LinearTreeDefinition,
         LinearTreeGDPFormulation,
-        LinearTreeHybridBigMFormulation
+        LinearTreeHybridBigMFormulation,
     )
+
 
 class LinearTreeSurrogate(OMLTSurrogate):
     def __init__(
@@ -63,7 +64,7 @@ class LinearTreeSurrogate(OMLTSurrogate):
 
         Args:
            lt_model: Linear-tree model
-              This is the Linear-tree model that will be loaded. 
+              This is the Linear-tree model that will be loaded.
            input_labels: list of str
               The ordered list of labels corresponding to the inputs in the linear-tree model
            output_labels: list of str
@@ -96,7 +97,7 @@ class LinearTreeSurrogate(OMLTSurrogate):
               If not None, then should be a dict with the following keys;
               'formulation': LinearTreeSurrogate.Formulation
               The formulation to use with OMLT. Possible values are LINEAR_TREE_GDP_BIGM,
-              LINEAR_TREE_GDP_HULL, LINEAR_TREE_GDP_MBIGM, or LINEAR_TREE_HYBRID_BIGM 
+              LINEAR_TREE_GDP_HULL, LINEAR_TREE_GDP_MBIGM, or LINEAR_TREE_HYBRID_BIGM
               (default is LINEAR_TREE_GDP_BIGM)
         """
         formulation = additional_options.pop(
@@ -105,18 +106,21 @@ class LinearTreeSurrogate(OMLTSurrogate):
         omlt_scaling, scaled_input_bounds = self.generate_omlt_scaling_objecets()
         scaled_keys = list(scaled_input_bounds.keys())
         unscaled_keys = list(self.input_bounds().keys())
-        unscaled_input_bounds = {scaled_keys[idx]:self.input_bounds()[unscaled_keys[idx]] for idx, _ in enumerate(scaled_keys)}
+        unscaled_input_bounds = {
+            scaled_keys[idx]: self.input_bounds()[unscaled_keys[idx]]
+            for idx, _ in enumerate(scaled_keys)
+        }
         lt = LinearTreeDefinition(
             self._lt_model,
             scaling_object=omlt_scaling,
             scaled_input_bounds=scaled_input_bounds,
-            unscaled_input_bounds=unscaled_input_bounds
+            unscaled_input_bounds=unscaled_input_bounds,
         )
 
         if formulation == LinearTreeSurrogate.Formulation.LINEAR_TREE_GDP_BIGM:
-            formulation_object = LinearTreeGDPFormulation(lt, transformation='bigm')
+            formulation_object = LinearTreeGDPFormulation(lt, transformation="bigm")
         elif formulation == LinearTreeSurrogate.Formulation.LINEAR_TREE_GDP_HULL:
-            formulation_object = LinearTreeGDPFormulation(lt, transformation='hull')
+            formulation_object = LinearTreeGDPFormulation(lt, transformation="hull")
         elif formulation == LinearTreeSurrogate.Formulation.LINEAR_TREE_HYBRID_BIGM:
             formulation_object = LinearTreeHybridBigMFormulation(lt)
         else:
@@ -162,7 +166,7 @@ class LinearTreeSurrogate(OMLTSurrogate):
               The name of the folder to contain the linear-tree model and additional
               IDAES metadata
         """
-        with open( os.path.join(lt_folder_name, lt_model_name + ".pkl"), 'wb') as FILE:
+        with open(os.path.join(lt_folder_name, lt_model_name + ".pkl"), "wb") as FILE:
             pickle.dump(self._lt_model, FILE)
         info = dict()
         info["input_scaler"] = None
@@ -194,7 +198,7 @@ class LinearTreeSurrogate(OMLTSurrogate):
         Returns: an instance of LinearTreeSurrogate
         """
 
-        with open(os.path.join(lt_folder_name, lt_model_name + ".pkl"), 'rb') as FILE:
+        with open(os.path.join(lt_folder_name, lt_model_name + ".pkl"), "rb") as FILE:
             lt_model = pickle.load(FILE)
 
         with open(os.path.join(lt_folder_name, "idaes_info.json")) as fd:

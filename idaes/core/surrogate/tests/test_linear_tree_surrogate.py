@@ -31,7 +31,10 @@ from pyomo.environ import (
     value,
     Objective,
 )
-from idaes.core.surrogate.linear_tree_surrogate import LinearTreeSurrogate, load_linear_tree_pickle
+from idaes.core.surrogate.linear_tree_surrogate import (
+    LinearTreeSurrogate,
+    load_linear_tree_pickle,
+)
 from idaes.core.surrogate.surrogate_block import SurrogateBlock
 from idaes.core.surrogate.sampling.scaling import OffsetScaler
 
@@ -43,28 +46,28 @@ rtol = 1e-4
 atol = 1e-4
 
 X_small = np.array(
-[
-    [-0.68984135],
-    [0.91672866],
-    [-1.05874972],
-    [0.95275351],
-    [1.03796615],
-    [0.45117668],
-    [-0.14704376],
-    [1.66043409],
-    [-0.73972191],
-    [-0.8176603],
-    [0.96175973],
-    [-1.238874],
-    [-0.97492265],
-    [1.07121986],
-    [-0.95379269],
-    [-0.86546252],
-    [0.8277057],
-    [0.50486757],
-    [-1.38435899],
-    [1.54092856],
-]
+    [
+        [-0.68984135],
+        [0.91672866],
+        [-1.05874972],
+        [0.95275351],
+        [1.03796615],
+        [0.45117668],
+        [-0.14704376],
+        [1.66043409],
+        [-0.73972191],
+        [-0.8176603],
+        [0.96175973],
+        [-1.238874],
+        [-0.97492265],
+        [1.07121986],
+        [-0.95379269],
+        [-0.86546252],
+        [0.8277057],
+        [0.50486757],
+        [-1.38435899],
+        [1.54092856],
+    ]
 )
 
 y_small = np.array(
@@ -92,10 +95,12 @@ y_small = np.array(
     ]
 )
 
+
 def linear_model_tree(X, y):
     regr = LinearTreeRegressor(LinearRegression(), criterion="mse", max_depth=5)
     regr.fit(X, y)
     return regr
+
 
 def create_lt_model(return_lt_model_only=True):
 
@@ -113,9 +118,9 @@ def create_lt_model(return_lt_model_only=True):
         return lt_model
 
     inputs_scaler = OffsetScaler(
-    expected_columns=["X"],
-    offset_series=pd.Series({"X": mean_x_small}),
-    factor_series=pd.Series({"X": std_x_small}),
+        expected_columns=["X"],
+        offset_series=pd.Series({"X": mean_x_small}),
+        factor_series=pd.Series({"X": std_x_small}),
     )
 
     outputs_scaler = OffsetScaler(
@@ -205,15 +210,16 @@ def test_LinearTreeSurrogate_construction_exceptions():
 @pytest.mark.unit
 def test_lt_evaluate():
     x = pd.DataFrame({"X": [0.5]})
-    lt_surrogate = create_lt_model(
-        return_lt_model_only=False
-    )
-    lt_mod = create_lt_model(
-        return_lt_model_only=True
-    )
+    lt_surrogate = create_lt_model(return_lt_model_only=False)
+    lt_mod = create_lt_model(return_lt_model_only=True)
     y = lt_surrogate.evaluate_surrogate(x)
-    expected_y = lt_mod.predict(np.array([(0.5 - np.mean(X_small))/np.std(X_small)]).reshape(-1,1))
-    assert expected_y[0] == pytest.approx((y.to_numpy()[0][0] - np.mean(y_small))/np.std(y_small))
+    expected_y = lt_mod.predict(
+        np.array([(0.5 - np.mean(X_small)) / np.std(X_small)]).reshape(-1, 1)
+    )
+    assert expected_y[0] == pytest.approx(
+        (y.to_numpy()[0][0] - np.mean(y_small)) / np.std(y_small)
+    )
+
 
 @pytest.mark.unit
 @pytest.mark.skipif(not SolverFactory("glpk").available(False), reason="no glpk")
@@ -221,9 +227,7 @@ def test_keras_surrogate_auto_creating_variables_glpk():
     ###
     # Test Linear Tree
     ###
-    lt_surrogate = create_lt_model(
-        return_lt_model_only=False
-    )
+    lt_surrogate = create_lt_model(return_lt_model_only=False)
     x_test = pd.DataFrame({"X": [0.5]})
     y_test = lt_surrogate.evaluate_surrogate(x_test)
 
@@ -267,15 +271,14 @@ def test_keras_surrogate_auto_creating_variables_glpk():
     )
     pd.testing.assert_frame_equal(y_test, y_test_pyomo, rtol=rtol, atol=atol)
 
+
 @pytest.mark.unit
 @pytest.mark.skipif(not SolverFactory("scip").available(False), reason="no scip")
 def test_lt_surrogate_auto_creating_variables_scip():
     ###
     # Test 1->2 relu
     ###
-    lt_surrogate = create_lt_model(
-        return_lt_model_only=False
-    )
+    lt_surrogate = create_lt_model(return_lt_model_only=False)
     x_test = pd.DataFrame({"X": [0.5]})
     y_test = lt_surrogate.evaluate_surrogate(x_test)
 
@@ -303,9 +306,7 @@ def test_lt_surrogate_auto_creating_variables_scip():
 @pytest.mark.unit
 @pytest.mark.skipif(not SolverFactory("glpk").available(False), reason="no glpk")
 def test_lt_surrogate_with_variables():
-    lt_surrogate = create_lt_model(
-        return_lt_model_only=False
-    )
+    lt_surrogate = create_lt_model(return_lt_model_only=False)
     x_test = pd.DataFrame({"X": [0.5]})
     y_test = lt_surrogate.evaluate_surrogate(x_test)
 
@@ -386,9 +387,7 @@ def test_lt_surrogate_with_variables():
     status = solver.solve(m, tee=True)
     assert_optimal_termination(status)
 
-    y_test_pyomo = pd.DataFrame(
-        {"Y": [value(m.outputs["Y"])]}
-    )
+    y_test_pyomo = pd.DataFrame({"Y": [value(m.outputs["Y"])]})
     pd.testing.assert_frame_equal(y_test, y_test_pyomo, rtol=rtol, atol=atol)
 
     # Test provide scalar inputs, provide indexed outputs
@@ -408,18 +407,14 @@ def test_lt_surrogate_with_variables():
     status = solver.solve(m, tee=True)
     assert_optimal_termination(status)
 
-    y_test_pyomo = pd.DataFrame(
-        {"Y": [value(m.outputs["Y"])]}
-    )
+    y_test_pyomo = pd.DataFrame({"Y": [value(m.outputs["Y"])]})
     pd.testing.assert_frame_equal(y_test, y_test_pyomo, rtol=rtol, atol=atol)
 
 
 @pytest.mark.unit
 @pytest.mark.skipif(not SolverFactory("glpk").available(False), reason="no glpk")
 def test_save_load():
-    lt_surrogate = create_lt_model(
-        return_lt_model_only=False
-    )
+    lt_surrogate = create_lt_model(return_lt_model_only=False)
     lt_mod = create_lt_model()
     new_lt_surrogate = None
     dname = None
@@ -443,9 +438,7 @@ def test_save_load():
 
     # check input scaler
     expected_columns = ["X"]
-    offset_series = pd.Series(
-        {"X": np.mean(X_small)}
-    )
+    offset_series = pd.Series({"X": np.mean(X_small)})
     factor_series = pd.Series({"X": np.std(X_small)})
     scaler = new_lt_surrogate._input_scaler
     assert scaler._expected_columns == expected_columns
@@ -464,8 +457,12 @@ def test_save_load():
     # check evaluation
     x_test = pd.DataFrame({"X": [0.5]})
     y_test = lt_surrogate.evaluate_surrogate(x_test)
-    expected_y = lt_mod.predict(np.array([(0.5 - np.mean(X_small))/np.std(X_small)]).reshape(-1,1))
-    assert expected_y[0] == pytest.approx((y_test.to_numpy()[0][0] - np.mean(y_small))/np.std(y_small))
+    expected_y = lt_mod.predict(
+        np.array([(0.5 - np.mean(X_small)) / np.std(X_small)]).reshape(-1, 1)
+    )
+    assert expected_y[0] == pytest.approx(
+        (y_test.to_numpy()[0][0] - np.mean(y_small)) / np.std(y_small)
+    )
 
     # check solve with pyomo
     x_test = pd.DataFrame({"X": [0.5]})
@@ -534,9 +531,7 @@ def test_noscalers():
 
 @pytest.mark.unit
 def test_invalid_formulation():
-    lt_surrogate = create_lt_model(
-        return_lt_model_only=False
-    )
+    lt_surrogate = create_lt_model(return_lt_model_only=False)
     m = ConcreteModel()
     m.obj = Objective(expr=1)
     m.surrogate = SurrogateBlock()
