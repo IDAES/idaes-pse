@@ -18,7 +18,8 @@ Author: Andrew Lee
 import pytest
 from sys import modules
 
-from pyomo.environ import ConcreteModel, Var, units as pyunits, value
+from pyomo.environ import ConcreteModel, log, Var, units as pyunits, value
+from pyomo.core.expr.compare import compare_expressions
 from pyomo.util.check_units import assert_units_equivalent
 
 from idaes.core import (
@@ -45,6 +46,14 @@ def dummy_call(b, j, T):
 
 def dummy_call2(b, j, T):
     return 7.0
+
+
+class dummy_call_psat:
+    def return_expression(b, j, T):
+        return 11.0 * T
+
+    def return_log_expression(b, j, T):
+        return log(11.0) + log(T)
 
 
 # Dummy method to avoid errors when setting metadata dict
@@ -453,10 +462,10 @@ def test_entr_mol_phase_sol(m_sol):
 @pytest.mark.unit
 def test_fug_phase_comp_liq(m):
     for j in m.params.component_list:
-        m.params.get_component(j).config.pressure_sat_comp = dummy_call
+        m.params.get_component(j).config.pressure_sat_comp = dummy_call_psat
 
         assert str(Ideal.fug_phase_comp(m.props[1], "Liq", j)) == str(
-            m.props[1].mole_frac_phase_comp["Liq", j] * 42.0
+            m.props[1].mole_frac_phase_comp["Liq", j] * (11.0 * m.props[1].temperature)
         )
 
 
@@ -477,11 +486,14 @@ def test_fug_phase_comp_invalid_phase(m_sol):
 @pytest.mark.unit
 def test_fug_phase_comp_liq_eq(m):
     for j in m.params.component_list:
-        m.params.get_component(j).config.pressure_sat_comp = dummy_call
+        m.params.get_component(j).config.pressure_sat_comp = dummy_call_psat
 
         assert str(
             Ideal.fug_phase_comp_eq(m.props[1], "Liq", j, ("Vap", "Liq"))
-        ) == str(m.props[1].mole_frac_phase_comp["Liq", j] * 42.0)
+        ) == str(
+            m.props[1].mole_frac_phase_comp["Liq", j]
+            * (11.0 * m.props[1]._teq[("Vap", "Liq")])
+        )
 
 
 @pytest.mark.unit
@@ -509,6 +521,213 @@ def test_fug_coeff_phase_comp(m):
 def test_fug_coeff_phase_comp_invalid_phase(m_sol):
     with pytest.raises(PropertyNotSupportedError):
         Ideal.fug_coeff_phase_comp(m_sol.props[1], "Sol", "foo")
+
+
+@pytest.mark.unit
+def test_log_fug_phase_comp_liq(m):
+    m.props[1].log_mole_frac_phase_comp = Var(
+        m.params.phase_list, m.params.component_list, initialize=-1
+    )
+    for j in m.params.component_list:
+        m.params.get_component(j).config.pressure_sat_comp = dummy_call_psat
+
+        assert str(Ideal.log_fug_phase_comp(m.props[1], "Liq", j)) == str(
+            m.props[1].log_mole_frac_phase_comp["Liq", j]
+            + (log(11.0) + log(m.props[1].temperature))
+        )
+
+
+@pytest.mark.unit
+def test_log_fug_phase_comp_vap(m):
+    m.props[1].log_mole_frac_phase_comp = Var(
+        m.params.phase_list, m.params.component_list, initialize=-1
+    )
+    for j in m.params.component_list:
+        assert compare_expressions(
+            Ideal.log_fug_phase_comp(m.props[1], "Vap", j),
+            m.props[1].log_mole_frac_phase_comp["Vap", j]
+            + log(
+                1
+                / (pyunits.kg * pyunits.m ** (-1) * pyunits.s ** (-2))
+                * m.props[1].pressure
+            ),
+        )
+
+
+@pytest.mark.unit
+def test_log_fug_phase_comp_liq_eq(m):
+    m.props[1].log_mole_frac_phase_comp = Var(
+        m.params.phase_list, m.params.component_list, initialize=-1
+    )
+    for j in m.params.component_list:
+        m.params.get_component(j).config.pressure_sat_comp = dummy_call_psat
+
+        assert str(
+            Ideal.log_fug_phase_comp_eq(m.props[1], "Liq", j, ("Vap", "Liq"))
+        ) == str(
+            m.props[1].log_mole_frac_phase_comp["Liq", j]
+            + (log(11.0) + log(m.props[1]._teq[("Vap", "Liq")]))
+        )
+
+
+@pytest.mark.unit
+def test_log_fug_phase_comp_vap_eq(m):
+    m.props[1].log_mole_frac_phase_comp = Var(
+        m.params.phase_list, m.params.component_list, initialize=-1
+    )
+    for j in m.params.component_list:
+        assert compare_expressions(
+            Ideal.log_fug_phase_comp_eq(m.props[1], "Vap", j, ("Vap", "Liq")),
+            m.props[1].log_mole_frac_phase_comp["Vap", j]
+            + log(
+                1
+                / (pyunits.kg * pyunits.m ** (-1) * pyunits.s ** (-2))
+                * m.props[1].pressure
+            ),
+        )
+
+
+@pytest.mark.unit
+def test_log_fug_phase_comp_liq_Tdew(m):
+    m.props[1].temperature_dew = Var([("Vap", "Liq")], initialize=300)
+    m.props[1].log_mole_frac_tdew = Var(
+        [("Vap", "Liq")], m.params.component_list, initialize=-1
+    )
+    for j in m.params.component_list:
+        m.params.get_component(j).config.pressure_sat_comp = dummy_call_psat
+
+        assert str(
+            Ideal.log_fug_phase_comp_Tdew(m.props[1], "Liq", j, ("Vap", "Liq"))
+        ) == str(
+            m.props[1].log_mole_frac_tdew[("Vap", "Liq"), j]
+            + (log(11.0) + log(m.props[1].temperature_dew[("Vap", "Liq")]))
+        )
+
+
+@pytest.mark.unit
+def test_log_fug_phase_comp_vap_Tdew(m):
+    m.props[1].temperature_dew = Var([("Vap", "Liq")], initialize=300)
+    m.props[1].log_mole_frac_comp = Var(m.params.component_list, initialize=-1)
+    for j in m.params.component_list:
+        m.params.get_component(j).config.pressure_sat_comp = dummy_call_psat
+
+        assert str(
+            Ideal.log_fug_phase_comp_Tdew(m.props[1], "Vap", j, ("Vap", "Liq"))
+        ) == str(
+            m.props[1].log_mole_frac_comp[j]
+            + log(
+                1
+                / (pyunits.kg * pyunits.m ** (-1) * pyunits.s ** (-2))
+                * m.props[1].pressure
+            )
+        )
+
+
+@pytest.mark.unit
+def test_log_fug_phase_comp_liq_Tbub(m):
+    m.props[1].temperature_bubble = Var([("Vap", "Liq")], initialize=300)
+    m.props[1].log_mole_frac_comp = Var(m.params.component_list, initialize=-1)
+    for j in m.params.component_list:
+        m.params.get_component(j).config.pressure_sat_comp = dummy_call_psat
+
+        assert str(
+            Ideal.log_fug_phase_comp_Tbub(m.props[1], "Liq", j, ("Vap", "Liq"))
+        ) == str(
+            m.props[1].log_mole_frac_comp[j]
+            + (log(11.0) + log(m.props[1].temperature_bubble[("Vap", "Liq")]))
+        )
+
+
+@pytest.mark.unit
+def test_log_fug_phase_comp_vap_Tbub(m):
+    m.props[1].temperature_bubble = Var([("Vap", "Liq")], initialize=300)
+    m.props[1].log_mole_frac_tbub = Var(
+        [("Vap", "Liq")], m.params.component_list, initialize=-1
+    )
+    for j in m.params.component_list:
+        m.params.get_component(j).config.pressure_sat_comp = dummy_call_psat
+
+        assert str(
+            Ideal.log_fug_phase_comp_Tbub(m.props[1], "Vap", j, ("Vap", "Liq"))
+        ) == str(
+            m.props[1].log_mole_frac_tbub[("Vap", "Liq"), j]
+            + log(
+                1
+                / (pyunits.kg * pyunits.m ** (-1) * pyunits.s ** (-2))
+                * m.props[1].pressure
+            )
+        )
+
+
+@pytest.mark.unit
+def test_log_fug_phase_comp_liq_Pdew(m):
+    m.props[1].pressure_dew = Var([("Vap", "Liq")], initialize=1e5)
+    m.props[1].log_mole_frac_pdew = Var(
+        [("Vap", "Liq")], m.params.component_list, initialize=-1
+    )
+    for j in m.params.component_list:
+        m.params.get_component(j).config.pressure_sat_comp = dummy_call_psat
+
+        assert str(
+            Ideal.log_fug_phase_comp_Pdew(m.props[1], "Liq", j, ("Vap", "Liq"))
+        ) == str(
+            m.props[1].log_mole_frac_pdew[("Vap", "Liq"), j]
+            + (log(11.0) + log(m.props[1].temperature))
+        )
+
+
+@pytest.mark.unit
+def test_log_fug_phase_comp_vap_Pdew(m):
+    m.props[1].pressure_dew = Var([("Vap", "Liq")], initialize=1e5)
+    m.props[1].log_mole_frac_comp = Var(m.params.component_list, initialize=-1)
+    for j in m.params.component_list:
+        m.params.get_component(j).config.pressure_sat_comp = dummy_call_psat
+
+        assert str(
+            Ideal.log_fug_phase_comp_Pdew(m.props[1], "Vap", j, ("Vap", "Liq"))
+        ) == str(
+            m.props[1].log_mole_frac_comp[j]
+            + log(
+                1
+                / (pyunits.kg * pyunits.m ** (-1) * pyunits.s ** (-2))
+                * m.props[1].pressure_dew[("Vap", "Liq")]
+            )
+        )
+
+
+@pytest.mark.unit
+def test_log_fug_phase_comp_liq_Pbub(m):
+    m.props[1].pressure_bubble = Var([("Vap", "Liq")], initialize=1e5)
+    m.props[1].log_mole_frac_comp = Var(m.params.component_list, initialize=-1)
+    for j in m.params.component_list:
+        m.params.get_component(j).config.pressure_sat_comp = dummy_call_psat
+
+        assert str(
+            Ideal.log_fug_phase_comp_Pbub(m.props[1], "Liq", j, ("Vap", "Liq"))
+        ) == str(
+            m.props[1].log_mole_frac_comp[j] + (log(11.0) + log(m.props[1].temperature))
+        )
+
+
+@pytest.mark.unit
+def test_log_fug_phase_comp_vap_Pbub(m):
+    m.props[1].pressure_bubble = Var([("Vap", "Liq")], initialize=1e5)
+    m.props[1].log_mole_frac_pbub = Var(
+        [("Vap", "Liq")], m.params.component_list, initialize=-1
+    )
+    for j in m.params.component_list:
+        m.params.get_component(j).config.pressure_sat_comp = dummy_call_psat
+
+        assert str(
+            Ideal.log_fug_phase_comp_Pbub(m.props[1], "Vap", j, ("Vap", "Liq"))
+        ) == str(
+            m.props[1].log_mole_frac_pbub[("Vap", "Liq"), j]
+            + log(
+                1
+                / (pyunits.kg * pyunits.m ** (-1) * pyunits.s ** (-2))
+                * m.props[1].pressure_bubble[("Vap", "Liq")]
+            )
+        )
 
 
 @pytest.mark.unit

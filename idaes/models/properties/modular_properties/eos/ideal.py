@@ -247,36 +247,22 @@ class Ideal(EoSBase):
         return _fug_phase_comp(b, p, j, b._teq[pp])
 
     @staticmethod
-    def log_fug_phase_comp_eq(b, p, j, pp):
-        pobj = b.params.get_phase(p)
-        base_units = b.params.get_metadata().default_units
-
+    def log_fug_phase_comp(b, p, j):
         if b.params.has_inherent_reactions:
-            log_mole_frac_phase_comp = b.log_mole_frac_phase_comp_true
+            log_x = {j: b.log_mole_frac_phase_comp_true[p, j] for j in b.component_list}
         else:
-            log_mole_frac_phase_comp = b.log_mole_frac_phase_comp
-        if pobj.is_vapor_phase():
-            return log_mole_frac_phase_comp[p, j] + log(
-                b.pressure / base_units.PRESSURE
-            )
-        elif pobj.is_liquid_phase():
-            if (
-                cobj(b, j).config.henry_component is not None
-                and p in cobj(b, j).config.henry_component
-            ):
-                # Use Henry's Law
-                return log_henry_pressure(b, p, j, b._teq[pp])
-            elif cobj(b, j).config.has_vapor_pressure:
-                # Use Raoult's Law
-                return b.log_mole_frac_phase_comp[p, j] + (
-                    get_method(b, "pressure_sat_comp", comp=j, log=True)(
-                        b, cobj(b, j), b._teq[pp]
-                    )
-                )
-            else:
-                return Expression.Skip
+            log_x = {j: b.log_mole_frac_phase_comp[p, j] for j in b.component_list}
+        return _log_fug_phase_comp(b, p, j, log_x, b.temperature, b.pressure)
+
+    @staticmethod
+    def log_fug_phase_comp_eq(b, p, j, pp):
+        # TODO does allowing a calculation with
+        # inherent reactions make sense here?
+        if b.params.has_inherent_reactions:
+            log_x = {j: b.log_mole_frac_phase_comp_true[p, j] for j in b.component_list}
         else:
-            raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
+            log_x = {j: b.log_mole_frac_phase_comp[p, j] for j in b.component_list}
+        return _log_fug_phase_comp(b, p, j, log_x, b._teq[pp], b.pressure)
 
     @staticmethod
     def fug_coeff_phase_comp(b, p, j):
@@ -299,91 +285,84 @@ class Ideal(EoSBase):
     @staticmethod
     def log_fug_phase_comp_Tbub(b, p, j, pp):
         pobj = b.params.get_phase(p)
-        cobj = b.params.get_component(j)
-        base_units = b.params.get_metadata().default_units
-        if pobj.is_vapor_phase():
-            return b.log_mole_frac_tbub[pp[0], pp[1], j] + log(
-                b.pressure / base_units.PRESSURE
+        if b.params.has_inherent_reactions:
+            raise NotImplementedError(
+                "Bubble/dew calculations for systems with inherent "
+                "reactions are not supported at present."
             )
+        if pobj.is_vapor_phase():
+            log_x = {j: b.log_mole_frac_tbub[pp[0], pp[1], j] for j in b.component_list}
         elif pobj.is_liquid_phase():
-            if (
-                cobj.config.henry_component is not None
-                and p in cobj.config.henry_component
-            ):
-                return log(b.mole_frac_comp[j]) + log(
-                    get_method(b, "henry_component", j, p)(
-                        b, p, j, b.temperature_bubble[pp]
-                    )
-                )
-            else:
-                # TODO this probably is wrong for systems with inherent reactions
-                return b.log_mole_frac_comp[j] + get_method(
-                    b, "pressure_sat_comp", j, log=True
-                )(b, cobj, b.temperature_bubble[pp])
+            log_x = b.log_mole_frac_comp
         else:
-            raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
+            raise ConfigurationError(
+                "Bubble/dew calculations are supported only "
+                f"for liquid and vapor phases, but {p} is neither "
+                "a vapor nor a liquid phase."
+            )
+        return _log_fug_phase_comp(b, p, j, log_x, b.temperature_bubble[pp], b.pressure)
 
     @staticmethod
     def log_fug_phase_comp_Tdew(b, p, j, pp):
         pobj = b.params.get_phase(p)
-        cobj = b.params.get_component(j)
-        base_units = b.params.get_metadata().default_units
+        if b.params.has_inherent_reactions:
+            raise NotImplementedError(
+                "Bubble/dew calculations for systems with inherent "
+                "reactions are not supported at present."
+            )
         if pobj.is_vapor_phase():
-            # TODO this is probably wrong for systems with inherent reaction
-            return b.log_mole_frac_comp[j] + log(b.pressure / base_units.PRESSURE)
+            log_x = b.log_mole_frac_comp
         elif pobj.is_liquid_phase():
-            if (
-                cobj.config.henry_component is not None
-                and p in cobj.config.henry_component
-            ):
-                return log(b._mole_frac_tdew[pp[0], pp[1], j]) + log(
-                    get_method(b, "henry_component", j, p)(
-                        b, p, j, b.temperature_dew[pp]
-                    )
-                )
-            else:
-                return b.log_mole_frac_tdew[pp[0], pp[1], j] + get_method(
-                    b, "pressure_sat_comp", comp=j, log=True
-                )(b, cobj, b.temperature_dew[pp])
+            log_x = {j: b.log_mole_frac_tdew[pp[0], pp[1], j] for j in b.component_list}
         else:
-            raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
+            raise ConfigurationError(
+                "Bubble/dew calculations are supported only "
+                f"for liquid and vapor phases, but {p} is neither "
+                "a vapor nor a liquid phase."
+            )
+        return _log_fug_phase_comp(b, p, j, log_x, b.temperature_dew[pp], b.pressure)
 
-    # TODO fully support log variables here
     @staticmethod
     def log_fug_phase_comp_Pbub(b, p, j, pp):
         pobj = b.params.get_phase(p)
-        cobj = b.params.get_component(j)
+        if b.params.has_inherent_reactions:
+            raise NotImplementedError(
+                "Bubble/dew calculations for systems with inherent "
+                "reactions are not supported at present."
+            )
         if pobj.is_vapor_phase():
-            return log(b._mole_frac_pbub[pp[0], pp[1], j]) + log(b.pressure_bubble[pp])
+            log_x = {j: b.log_mole_frac_pbub[pp[0], pp[1], j] for j in b.component_list}
         elif pobj.is_liquid_phase():
-            if (
-                cobj.config.henry_component is not None
-                and p in cobj.config.henry_component
-            ):
-                return log(b.mole_frac_comp[j]) + log(b.henry[p, j])
-            else:
-                return log(b.mole_frac_comp[j]) + log(b.pressure_sat_comp[j])
+            log_x = b.log_mole_frac_comp
         else:
-            raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
+            raise ConfigurationError(
+                "Bubble/dew calculations are supported only "
+                f"for liquid and vapor phases, but {p} is neither "
+                "a vapor nor a liquid phase."
+            )
+
+        return _log_fug_phase_comp(b, p, j, log_x, b.temperature, b.pressure_bubble[pp])
 
     @staticmethod
     def log_fug_phase_comp_Pdew(b, p, j, pp):
         pobj = b.params.get_phase(p)
-        cobj = b.params.get_component(j)
+        if b.params.has_inherent_reactions:
+            raise NotImplementedError(
+                "Bubble/dew calculations for systems with inherent "
+                "reactions are not supported at present."
+            )
         if pobj.is_vapor_phase():
-            return log(b.mole_frac_comp[j]) + log(b.pressure_dew[pp])
+            log_x = b.log_mole_frac_comp
         elif pobj.is_liquid_phase():
-            if (
-                cobj.config.henry_component is not None
-                and p in cobj.config.henry_component
-            ):
-                return log(b._mole_frac_pdew[pp[0], pp[1], j]) + log(b.henry[p, j])
-            else:
-                return log(b._mole_frac_pdew[pp[0], pp[1], j]) + log(
-                    b.pressure_sat_comp[j]
-                )
+            log_x = {j: b.log_mole_frac_pdew[pp[0], pp[1], j] for j in b.component_list}
         else:
-            raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
+            raise ConfigurationError(
+                "Bubble/dew calculations are supported only "
+                f"for liquid and vapor phases, but {p} is neither "
+                "a vapor nor a liquid phase."
+            )
+
+        return _log_fug_phase_comp(b, p, j, log_x, b.temperature, b.pressure_dew[pp])
 
     @staticmethod
     def gibbs_mol_phase(b, p):
@@ -461,6 +440,34 @@ def _fug_phase_comp(b, p, j, T):
             # Use Raoult's Law
             return b.get_mole_frac(p)[p, j] * get_method(b, "pressure_sat_comp", j)(
                 b, cobj(b, j), T
+            )
+        else:
+            return Expression.Skip
+    else:
+        raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
+
+
+def _log_fug_phase_comp(b, p, j, log_x, T, P):
+    pobj = b.params.get_phase(p)
+    base_units = b.params.get_metadata().default_units
+
+    if pobj.is_vapor_phase():
+        return log_x[j] + log(P / base_units.PRESSURE)
+    elif pobj.is_liquid_phase():
+        if (
+            cobj(b, j).config.henry_component is not None
+            and p in cobj(b, j).config.henry_component
+        ):
+            # Use Henry's Law
+            raise NotImplementedError(
+                "VLE is not supported for Henry's Law components at present."
+            )
+        elif cobj(b, j).config.has_vapor_pressure:
+            # Use Raoult's Law
+            return log_x[j] + (
+                get_method(b, "pressure_sat_comp", comp=j, log_expression=True)(
+                    b, cobj(b, j), T
+                )
             )
         else:
             return Expression.Skip
