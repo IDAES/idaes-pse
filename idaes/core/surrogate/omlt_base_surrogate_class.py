@@ -42,8 +42,8 @@ class OMLTSurrogate(SurrogateBase):
         output_scaler=None,
     ):
         """
-        Standard SurrogateObject for surrogates based on Keras models.
-        Utilizes the OMLT framework for importing Keras models to IDAES.
+        Standard SurrogateObject for surrogates based on OMLT models.
+        Utilizes the OMLT framework for importing OMLT models to IDAES.
 
         Contains methods to both populate a Pyomo Block with constraints
         representing the surrogate and to evaluate the surrogate a set of user
@@ -56,9 +56,9 @@ class OMLTSurrogate(SurrogateBase):
         Args:
            onnx_model: Onnx model file to be loaded.
            input_labels: list of str
-              The ordered list of labels corresponding to the inputs in the keras model
+              The ordered list of labels corresponding to the inputs in the OMLT model
            output_labels: list of str
-              The ordered list of labels corresponding to the outputs in the keras model
+              The ordered list of labels corresponding to the outputs in the OMLT model
            input_bounds: None of dict of tuples
               Keys correspond to each of the input labels and values are the tuples of
               bounds (lb, ub)
@@ -80,12 +80,12 @@ class OMLTSurrogate(SurrogateBase):
             or output_scaler is not None
             and not isinstance(output_scaler, OffsetScaler)
         ):
-            raise NotImplementedError("KerasSurrogate only supports the OffsetScaler.")
+            raise NotImplementedError("OMLTSurrogate only supports the OffsetScaler.")
 
         # check that the input labels match
         if input_scaler is not None and input_scaler.expected_columns() != input_labels:
             raise ValueError(
-                "KerasSurrogate created with input_labels that do not match"
+                "OMLTSurrogate created with input_labels that do not match"
                 " the expected columns in the input_scaler.\n"
                 "input_labels={}\n"
                 "input_scaler.expected_columns()={}".format(
@@ -99,7 +99,7 @@ class OMLTSurrogate(SurrogateBase):
             and output_scaler.expected_columns() != output_labels
         ):
             raise ValueError(
-                "KerasSurrogate created with output_labels that do not match"
+                "OMLTSurrogate created with output_labels that do not match"
                 " the expected columns in the output_scaler.\n"
                 "output_labels={}\n"
                 "output_scaler.expected_columns()={}".format(
@@ -115,6 +115,9 @@ class OMLTSurrogate(SurrogateBase):
         REDUCED_SPACE = 2
         RELU_BIGM = 3
         RELU_COMPLEMENTARITY = 4
+        LINEAR_TREE_GDP_BIGM = 5
+        LINEAR_TREE_GDP_HULL = 6
+        LINEAR_TREE_HYBRID_BIGM = 7
 
     def generate_omlt_scaling_objecets(self):
         offset_inputs = np.zeros(self.n_inputs())
@@ -149,7 +152,7 @@ class OMLTSurrogate(SurrogateBase):
         scaled_input_bounds = {i: tuple(bnd) for i, bnd in scaled_input_bounds.items()}
         return omlt_scaling, scaled_input_bounds
 
-    def populate_block_with_net(self, block, formulation_object):
+    def populate_block_with_model(self, block, formulation_object):
         """
         Method to populate a Pyomo Block with the omlt model constraints and build its formulation.
 
@@ -159,8 +162,8 @@ class OMLTSurrogate(SurrogateBase):
            formulation_object: omlt loaded network formulation
         """
 
-        block.nn = OmltBlock()
-        block.nn.build_formulation(
+        block.omlt_mdl = OmltBlock()
+        block.omlt_mdl.build_formulation(
             formulation_object,
         )
 
@@ -173,7 +176,7 @@ class OMLTSurrogate(SurrogateBase):
         def input_surrogate_ties(m, input_label):
             return (
                 input_vars_as_dict[input_label]
-                == block.nn.inputs[input_idx_by_label[input_label]]
+                == block.omlt_mdl.inputs[input_idx_by_label[input_label]]
             )
 
         output_idx_by_label = {s: i for i, s in enumerate(self._output_labels)}
@@ -183,5 +186,5 @@ class OMLTSurrogate(SurrogateBase):
         def output_surrogate_ties(m, output_label):
             return (
                 output_vars_as_dict[output_label]
-                == block.nn.outputs[output_idx_by_label[output_label]]
+                == block.omlt_mdl.outputs[output_idx_by_label[output_label]]
             )

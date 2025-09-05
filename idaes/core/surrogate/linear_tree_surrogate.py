@@ -11,7 +11,7 @@
 # for full copyright and license information.
 #################################################################################
 """
-Interface for importing Keras models into IDAES
+Interface for importing Linear-tree models into IDAES
 """
 # TODO: Missing docstrings
 # pylint: disable=missing-class-docstring
@@ -19,6 +19,7 @@ Interface for importing Keras models into IDAES
 
 import json
 import os.path
+import pickle
 
 import pandas as pd
 
@@ -28,25 +29,20 @@ from idaes.core.surrogate.sampling.scaling import OffsetScaler
 
 from idaes.core.surrogate.omlt_base_surrogate_class import OMLTSurrogate
 
-keras, keras_available = attempt_import("tensorflow.keras")
+lt, lt_available = attempt_import("lineartree")
 omlt, omlt_available = attempt_import("omlt")
 
 if omlt_available:
-    from omlt.neuralnet.nn_formulation import (
-        FullSpaceSmoothNNFormulation,
-        ReducedSpaceSmoothNNFormulation,
-        ReluBigMFormulation,
-        ReluComplementarityFormulation,
+    from omlt.linear_tree import (
+        LinearTreeDefinition,
+        LinearTreeGDPFormulation,
+        LinearTreeHybridBigMFormulation
     )
 
-    if keras_available:
-        from omlt.io import load_keras_sequential
-
-
-class KerasSurrogate(OMLTSurrogate):
+class LinearTreeSurrogate(OMLTSurrogate):
     def __init__(
         self,
-        keras_model,
+        lt_model,
         input_labels,
         output_labels,
         input_bounds,
@@ -54,8 +50,8 @@ class KerasSurrogate(OMLTSurrogate):
         output_scaler=None,
     ):
         """
-        Standard SurrogateObject for surrogates based on Keras models.
-        Utilizes the OMLT framework for importing Keras models to IDAES.
+        Standard SurrogateObject for surrogates based on Linear Tree models.
+        Utilizes the OMLT framework for importing Linear Tree models to IDAES.
 
         Contains methods to both populate a Pyomo Block with constraints
         representing the surrogate and to evaluate the surrogate a set of user
@@ -66,13 +62,12 @@ class KerasSurrogate(OMLTSurrogate):
         with load_from_folder
 
         Args:
-           keras_model: Keras Sequential model
-              This is the Keras Sequential model that will be loaded. Note that
-              specialized layers may not be supported at this time.
+           lt_model: Linear-tree model
+              This is the Linear-tree model that will be loaded. 
            input_labels: list of str
-              The ordered list of labels corresponding to the inputs in the keras model
+              The ordered list of labels corresponding to the inputs in the linear-tree model
            output_labels: list of str
-              The ordered list of labels corresponding to the outputs in the keras model
+              The ordered list of labels corresponding to the outputs in the linear-tree model
            input_bounds: None of dict of tuples
               Keys correspond to each of the input labels and values are the tuples of
               bounds (lb, ub)
@@ -88,51 +83,53 @@ class KerasSurrogate(OMLTSurrogate):
             input_scaler=input_scaler,
             output_scaler=output_scaler,
         )
-        self._keras_model = keras_model
+        self._lt_model = lt_model
 
     def populate_block(self, block, additional_options=None):
         """
-        Method to populate a Pyomo Block with the keras model constraints.
+        Method to populate a Pyomo Block with the linear-tree model constraints.
 
         Args:
            block: Pyomo Block component
               The block to be populated with variables and/or constraints.
            additional_options: dict or None
               If not None, then should be a dict with the following keys;
-              'formulation': KerasSurrogate.Formulation
-              The formulation to use with OMLT. Possible values are FULL_SPACE,
-              REDUCED_SPACE, RELU_BIGM, or RELU_COMPLEMENTARITY (default is FULL_SPACE)
+              'formulation': LinearTreeSurrogate.Formulation
+              The formulation to use with OMLT. Possible values are LINEAR_TREE_GDP_BIGM,
+              LINEAR_TREE_GDP_HULL, LINEAR_TREE_GDP_MBIGM, or LINEAR_TREE_HYBRID_BIGM 
+              (default is LINEAR_TREE_GDP_BIGM)
         """
         formulation = additional_options.pop(
-            "formulation", KerasSurrogate.Formulation.FULL_SPACE
+            "formulation", LinearTreeSurrogate.Formulation.LINEAR_TREE_GDP_BIGM
         )
         omlt_scaling, scaled_input_bounds = self.generate_omlt_scaling_objecets()
-
-        net = load_keras_sequential(
-            self._keras_model,
+        scaled_keys = list(scaled_input_bounds.keys())
+        unscaled_keys = list(self.input_bounds().keys())
+        unscaled_input_bounds = {scaled_keys[idx]:self.input_bounds()[unscaled_keys[idx]] for idx, _ in enumerate(scaled_keys)}
+        lt = LinearTreeDefinition(
+            self._lt_model,
             scaling_object=omlt_scaling,
             scaled_input_bounds=scaled_input_bounds,
+            unscaled_input_bounds=unscaled_input_bounds
         )
 
-        if formulation == KerasSurrogate.Formulation.FULL_SPACE:
-            formulation_object = FullSpaceSmoothNNFormulation(net)
-        elif formulation == KerasSurrogate.Formulation.REDUCED_SPACE:
-            formulation_object = ReducedSpaceSmoothNNFormulation(net)
-        elif formulation == KerasSurrogate.Formulation.RELU_BIGM:
-            formulation_object = ReluBigMFormulation(net)
-        elif formulation == KerasSurrogate.Formulation.RELU_COMPLEMENTARITY:
-            formulation_object = ReluComplementarityFormulation(net)
+        if formulation == LinearTreeSurrogate.Formulation.LINEAR_TREE_GDP_BIGM:
+            formulation_object = LinearTreeGDPFormulation(lt, transformation='bigm')
+        elif formulation == LinearTreeSurrogate.Formulation.LINEAR_TREE_GDP_HULL:
+            formulation_object = LinearTreeGDPFormulation(lt, transformation='hull')
+        elif formulation == LinearTreeSurrogate.Formulation.LINEAR_TREE_HYBRID_BIGM:
+            formulation_object = LinearTreeHybridBigMFormulation(lt)
         else:
             raise ValueError(
                 'An unrecognized formulation "{}" was passed to '
-                "KerasSurrogate.populate_block. Please pass a valid "
+                "LinearTreeSurrogate.populate_block. Please pass a valid "
                 "formulation.".format(formulation)
             )
         self.populate_block_with_model(block, formulation_object)
 
     def evaluate_surrogate(self, inputs):
         """
-        Method to evaluate Keras model at a set of input values.
+        Method to evaluate linear-tree model at a set of input values.
 
         Args:
             inputs: numpy array of input values. First dimension of array
@@ -145,7 +142,7 @@ class KerasSurrogate(OMLTSurrogate):
         x = inputs
         if self._input_scaler is not None:
             x = self._input_scaler.scale(x)
-        y = self._keras_model.predict(x.to_numpy())
+        y = self._lt_model.predict(x.to_numpy())
 
         # y is a numpy array, make it a dataframe
         y = pd.DataFrame(
@@ -155,19 +152,18 @@ class KerasSurrogate(OMLTSurrogate):
             y = self._output_scaler.unscale(y)
         return y
 
-    def save_to_folder(self, keras_folder_name, keras_model_name="idaes_keras_model"):
+    def save_to_folder(self, lt_folder_name, lt_model_name="idaes_linear_tree_model"):
         """
         Save the surrogate object to disk by providing the name of the
-        folder to contain the keras model and additional IDAES metadata
+        folder to contain the linear-tree model and additional IDAES metadata
 
         Args:
            folder_name: str
-              The name of the folder to contain the Keras model and additional
+              The name of the folder to contain the linear-tree model and additional
               IDAES metadata
         """
-        self._keras_model.save(
-            os.path.join(keras_folder_name, keras_model_name + ".keras")
-        )
+        with open( os.path.join(lt_folder_name, lt_model_name + ".pkl"), 'wb') as FILE:
+            pickle.dump(self._lt_model, FILE)
         info = dict()
         info["input_scaler"] = None
         if self._input_scaler is not None:
@@ -181,28 +177,27 @@ class KerasSurrogate(OMLTSurrogate):
         info["output_labels"] = self.output_labels()
         info["input_bounds"] = self.input_bounds()
 
-        with open(os.path.join(keras_folder_name, "idaes_info.json"), "w") as fd:
+        with open(os.path.join(lt_folder_name, "idaes_info.json"), "w") as fd:
             json.dump(info, fd)
 
     @classmethod
-    def load_from_folder(cls, keras_folder_name, keras_model_name="idaes_keras_model"):
+    def load_from_folder(cls, lt_folder_name, lt_model_name="idaes_linear_tree_model"):
         """
         Load the surrogate object from disk by providing the name of the
-        folder holding the keras model
+        folder holding the linear-tree model
 
         Args:
            folder_name: str
-              The name of the folder containing the Keras model and additional
+              The name of the folder containing the Linear-tree model and additional
               IDAES metadata
 
-        Returns: an instance of KerasSurrogate
+        Returns: an instance of LinearTreeSurrogate
         """
 
-        keras_model = keras.models.load_model(
-            os.path.join(keras_folder_name, keras_model_name + ".keras")
-        )
+        with open(os.path.join(lt_folder_name, lt_model_name + ".pkl"), 'rb') as FILE:
+            lt_model = pickle.load(FILE)
 
-        with open(os.path.join(keras_folder_name, "idaes_info.json")) as fd:
+        with open(os.path.join(lt_folder_name, "idaes_info.json")) as fd:
             info = json.load(fd)
 
         input_scaler = None
@@ -213,8 +208,8 @@ class KerasSurrogate(OMLTSurrogate):
         if info["output_scaler"] is not None:
             output_scaler = OffsetScaler.from_dict(info["output_scaler"])
 
-        return KerasSurrogate(
-            keras_model=keras_model,
+        return LinearTreeSurrogate(
+            lt_model=lt_model,
             input_labels=info["input_labels"],
             output_labels=info["output_labels"],
             input_bounds=info["input_bounds"],
@@ -223,15 +218,12 @@ class KerasSurrogate(OMLTSurrogate):
         )
 
 
-def save_keras_json_hd5(nn, path, name):
-    json_model = nn.to_json()
-    with open(os.path.join(path, "{}.json".format(name)), "w") as json_file:
-        json_file.write(json_model)
-    nn.save(os.path.join(path, "{}.keras".format(name)))
-    nn.save_weights(os.path.join(path, "{}.weights.h5".format(name)))
+def save_linear_tree_pickle(lt, path, name):
+    with open(os.path.join(path, "{}.pickle".format(name)), "wb") as file:
+        pickle.dump(lt, file)
 
 
-def load_keras_json_hd5(path, name):
-    nn = keras.models.load_model(os.path.join(path, "{}.keras".format(name)))
-    nn.load_weights(os.path.join(path, "{}.weights.h5".format(name)))
-    return nn
+def load_linear_tree_pickle(path, name):
+    with open(os.path.join(path, "{}.pickle".format(name)), "rb") as file:
+        lt = pickle.load(file)
+    return lt
