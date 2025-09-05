@@ -11,7 +11,7 @@
 # for full copyright and license information.
 #################################################################################
 """
-Tests for KerasSurrogate
+Tests for LinearTreeSurrogate
 """
 import pytest
 
@@ -223,7 +223,7 @@ def test_lt_evaluate():
 
 @pytest.mark.unit
 @pytest.mark.skipif(not SolverFactory("glpk").available(False), reason="no glpk")
-def test_keras_surrogate_auto_creating_variables_glpk():
+def test_lt_surrogate_auto_creating_variables_glpk():
     ###
     # Test Linear Tree
     ###
