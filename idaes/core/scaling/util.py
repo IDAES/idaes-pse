@@ -463,7 +463,7 @@ def get_scaling_factor(component, default: float = None, warning: bool = True):
         )
     if component.is_expression_type() and not component.is_named_expression_type():
         raise TypeError(
-            f"Can only get scaling hints for named expressions, but component was an unnamed expression."
+            "Can only get scaling hints for named expressions, but component was an unnamed expression."
         )
     sfx = get_component_scaling_suffix(component)
 
