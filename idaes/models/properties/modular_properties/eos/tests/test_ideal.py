@@ -13,12 +13,13 @@
 """
 Tests for ideal equation of state methods
 
-Author: Andrew Lee
+Author: Andrew Lee, Douglas Allan
 """
 import pytest
 from sys import modules
+import re
 
-from pyomo.environ import ConcreteModel, log, Var, units as pyunits, value
+from pyomo.environ import ConcreteModel, Expression, log, Var, units as pyunits, value
 from pyomo.core.expr.compare import compare_expressions
 from pyomo.util.check_units import assert_units_equivalent
 
@@ -30,11 +31,15 @@ from idaes.core import (
     Solute,
     Solvent,
     Apparent,
+    PhaseType,
 )
 from idaes.models.properties.modular_properties.eos.ideal import Ideal
 from idaes.models.properties.modular_properties.base.generic_property import (
+    GenericParameterBlock,
     GenericParameterData,
 )
+from idaes.models.properties.modular_properties.state_definitions import FTPx
+from idaes.models.properties.modular_properties.phase_equil.henry import HenryType
 from idaes.core.util.exceptions import ConfigurationError, PropertyNotSupportedError
 from idaes.core.util.constants import Constants as const
 
@@ -904,3 +909,527 @@ def test_vol_mol_phase():
                 + 1 / 42.0 * m.props[1].mole_frac_phase_comp["Liq", "b"]
                 + 42.0 * m.props[1].mole_frac_phase_comp["Liq", "c"]
             )
+
+
+class DummyHenry:
+    @staticmethod
+    def build_parameters(*args, **kwargs):
+        pass
+
+    @staticmethod
+    def return_expression(b, p, j, T):
+        return 37.0 * pyunits.K / T * pyunits.Pa
+
+
+class TestFugacityHenry:
+    @pytest.fixture()
+    def model(self):
+        m = ConcreteModel()
+
+        # Dummy params block
+        m.params = GenericParameterBlock(
+            components={
+                "CO2": {
+                    "parameter_data": {
+                        "mw": (0.04401, pyunits.kg / pyunits.mol),
+                    },
+                    "henry_component": {
+                        "Liq": {"method": DummyHenry, "type": HenryType.Kpx}
+                    },
+                },
+                "H2O": {
+                    "parameter_data": {
+                        "mw": (0.01802, pyunits.kg / pyunits.mol),
+                    },
+                    "pressure_sat_comp": dummy_call_psat,
+                },
+                "N2": {
+                    "valid_phase_types": PhaseType.vaporPhase,
+                    "parameter_data": {
+                        "mw": (0.02801, pyunits.kg / pyunits.mol),
+                    },
+                },
+                "O2": {
+                    "valid_phase_types": PhaseType.vaporPhase,
+                    "parameter_data": {
+                        "mw": (0.032, pyunits.kg / pyunits.mol),
+                    },
+                },
+            },
+            phases={
+                "Liq": {
+                    "type": LiquidPhase,
+                    "equation_of_state": Ideal,
+                },
+                "Vap": {
+                    "type": VaporPhase,
+                    "equation_of_state": Ideal,
+                },
+            },
+            base_units={
+                "time": pyunits.s,
+                "length": pyunits.m,
+                "mass": pyunits.kg,
+                "amount": pyunits.mol,
+                "temperature": pyunits.K,
+            },
+            state_definition=FTPx,
+            pressure_ref=100000.0,
+            temperature_ref=300,
+        )
+
+        m.props = m.params.build_state_block(
+            [1], defined_state=True, parameters=m.params
+        )
+
+        # Fix state variables
+        m.props[1].flow_mol.fix(1)
+        m.props[1].pressure.fix(1e5)
+        m.props[1].temperature.fix(300)
+
+        m.props[1].mole_frac_comp["CO2"].fix(0.4)
+        m.props[1].mole_frac_comp["H2O"].fix(0.6)
+        m.props[1].mole_frac_comp["N2"].fix(1e-8)
+        m.props[1].mole_frac_comp["O2"].fix(1e-8)
+
+        return m
+
+    # Fugacity
+    @pytest.mark.unit
+    def test_fugacity_vap(self, model):
+        for comp in ["CO2", "H2O", "N2", "O2"]:
+            assert str(Ideal.fug_phase_comp(model.props[1], "Vap", comp)) == str(
+                model.props[1].mole_frac_phase_comp["Vap", comp]
+                * model.props[1].pressure
+            )
+
+    @pytest.mark.unit
+    def test_fugacity_liq(self, model):
+        for comp in ["N2", "O2"]:
+            with pytest.raises(
+                KeyError,
+                match=re.escape(f"Component {comp} is not present in phase Liq."),
+            ):
+                Ideal.fug_phase_comp(model.props[1], "Liq", comp)
+        assert str(Ideal.fug_phase_comp(model.props[1], "Liq", "H2O")) == str(
+            model.props[1].mole_frac_phase_comp["Liq", "H2O"]
+            * (11.0 * model.props[1].temperature)
+        )
+        assert str(Ideal.fug_phase_comp(model.props[1], "Liq", "CO2")) == str(
+            model.props[1].mole_frac_phase_comp["Liq", "CO2"]
+            * (37.0 * pyunits.K / model.props[1].temperature * pyunits.Pa)
+        )
+
+    @pytest.mark.unit
+    def test_fugacity_eq_vap(self, model):
+        model.props[1]._teq = Var([("Vap", "Liq")], initialize=300)
+        for comp in ["CO2", "H2O", "N2", "O2"]:
+            assert str(
+                Ideal.fug_phase_comp_eq(model.props[1], "Vap", comp, ("Vap", "Liq"))
+            ) == str(
+                model.props[1].mole_frac_phase_comp["Vap", comp]
+                * model.props[1].pressure
+            )
+
+    @pytest.mark.unit
+    def test_fugacity_eq_liq(self, model):
+        model.props[1]._teq = Var([("Vap", "Liq")], initialize=300)
+        for comp in ["N2", "O2"]:
+            with pytest.raises(
+                KeyError,
+                match=re.escape(f"Component {comp} is not present in phase Liq."),
+            ):
+                Ideal.fug_phase_comp_eq(model.props[1], "Liq", comp, ("Vap", "Liq"))
+        assert str(
+            Ideal.fug_phase_comp_eq(model.props[1], "Liq", "H2O", ("Vap", "Liq"))
+        ) == str(
+            model.props[1].mole_frac_phase_comp["Liq", "H2O"]
+            * (11.0 * model.props[1]._teq[("Vap", "Liq")])
+        )
+        assert str(
+            Ideal.fug_phase_comp_eq(model.props[1], "Liq", "CO2", ("Vap", "Liq"))
+        ) == str(
+            model.props[1].mole_frac_phase_comp["Liq", "CO2"]
+            * (37.0 * pyunits.K / model.props[1]._teq[("Vap", "Liq")] * pyunits.Pa)
+        )
+
+    # Log fugacity
+    @pytest.mark.unit
+    def test_log_fugacity_vap(self, model):
+        for comp in ["CO2", "H2O", "N2", "O2"]:
+            assert str(Ideal.log_fug_phase_comp(model.props[1], "Vap", comp)) == str(
+                model.props[1].log_mole_frac_phase_comp["Vap", comp]
+                + log(
+                    1
+                    / (pyunits.kg * pyunits.m ** (-1) * pyunits.s ** (-2))
+                    * model.props[1].pressure
+                )
+            )
+
+    @pytest.mark.unit
+    def test_log_fugacity_liq(self, model):
+        for comp in ["N2", "O2"]:
+            with pytest.raises(
+                KeyError,
+                match=re.escape(f"Component {comp} is not present in phase Liq."),
+            ):
+                Ideal.log_fug_phase_comp(model.props[1], "Liq", comp)
+        assert str(Ideal.log_fug_phase_comp(model.props[1], "Liq", "H2O")) == str(
+            model.props[1].log_mole_frac_phase_comp["Liq", "H2O"]
+            + (log(11.0) + log(model.props[1].temperature))
+        )
+        assert str(Ideal.log_fug_phase_comp(model.props[1], "Liq", "CO2")) == str(
+            model.props[1].log_mole_frac_phase_comp["Liq", "CO2"]
+            + log(37.0 * pyunits.K / model.props[1].temperature * pyunits.Pa)
+        )
+
+    @pytest.mark.unit
+    def test_log_fugacity_eq_vap(self, model):
+        model.props[1]._teq = Var([("Vap", "Liq")], initialize=300)
+        for comp in ["CO2", "H2O", "N2", "O2"]:
+            assert str(
+                Ideal.log_fug_phase_comp_eq(model.props[1], "Vap", comp, ("Vap", "Liq"))
+            ) == str(
+                model.props[1].log_mole_frac_phase_comp["Vap", comp]
+                + log(
+                    1
+                    / (pyunits.kg * pyunits.m ** (-1) * pyunits.s ** (-2))
+                    * model.props[1].pressure
+                )
+            )
+
+    @pytest.mark.unit
+    def test_log_fugacity_eq_liq(self, model):
+        model.props[1]._teq = Var([("Vap", "Liq")], initialize=300)
+        for comp in ["N2", "O2"]:
+            with pytest.raises(
+                KeyError,
+                match=re.escape(f"Component {comp} is not present in phase Liq."),
+            ):
+                Ideal.log_fug_phase_comp_eq(model.props[1], "Liq", comp, ("Vap", "Liq"))
+        assert str(
+            Ideal.log_fug_phase_comp_eq(model.props[1], "Liq", "H2O", ("Vap", "Liq"))
+        ) == str(
+            model.props[1].log_mole_frac_phase_comp["Liq", "H2O"]
+            + (log(11.0) + log(model.props[1]._teq[("Vap", "Liq")]))
+        )
+        assert str(
+            Ideal.log_fug_phase_comp_eq(model.props[1], "Liq", "CO2", ("Vap", "Liq"))
+        ) == str(
+            model.props[1].log_mole_frac_phase_comp["Liq", "CO2"]
+            + log(37.0 * pyunits.K / model.props[1]._teq[("Vap", "Liq")] * pyunits.Pa)
+        )
+
+    @pytest.mark.unit
+    def test_log_fugacity_phase_comp_Vap_Tdew(self, model):
+        model.props[1].temperature_dew = Var([("Vap", "Liq")])
+        model.props[1].log_mole_frac_comp = Var(["CO2", "H2O", "N2", "O2"])
+        for comp in ["CO2", "H2O", "N2", "O2"]:
+            assert str(
+                Ideal.log_fug_phase_comp_Tdew(
+                    model.props[1], "Vap", comp, ("Vap", "Liq")
+                )
+            ) == str(
+                model.props[1].log_mole_frac_comp[comp]
+                + log(
+                    1
+                    / (pyunits.kg * pyunits.m ** (-1) * pyunits.s ** (-2))
+                    * model.props[1].pressure
+                )
+            )
+
+    @pytest.mark.unit
+    def test_log_fugacity_phase_comp_Liq_Tdew(self, model):
+        model.props[1].temperature_dew = Var([("Vap", "Liq")])
+        model.props[1].log_mole_frac_tdew = Var(
+            [("Vap", "Liq")], ["H2O", "CO2"], initialize=-1
+        )
+        assert str(
+            Ideal.log_fug_phase_comp_Tdew(model.props[1], "Liq", "H2O", ("Vap", "Liq"))
+        ) == str(
+            model.props[1].log_mole_frac_tdew[("Vap", "Liq"), "H2O"]
+            + (log(11.0) + log(model.props[1].temperature_dew[("Vap", "Liq")]))
+        )
+        with pytest.raises(
+            NotImplementedError,
+            match=re.escape(
+                "Bubble/dew properties are not supported for Henry's Law components at present."
+            ),
+        ):
+            Ideal.log_fug_phase_comp_Tdew(model.props[1], "Liq", "CO2", ("Vap", "Liq"))
+
+    @pytest.mark.unit
+    def test_log_fugacity_phase_comp_Vap_Pdew(self, model):
+        model.props[1].pressure_dew = Var([("Vap", "Liq")])
+        model.props[1].log_mole_frac_comp = Var(["CO2", "H2O", "N2", "O2"])
+        for comp in ["CO2", "H2O", "N2", "O2"]:
+            assert str(
+                Ideal.log_fug_phase_comp_Pdew(
+                    model.props[1], "Vap", comp, ("Vap", "Liq")
+                )
+            ) == str(
+                model.props[1].log_mole_frac_comp[comp]
+                + log(
+                    1
+                    / (pyunits.kg * pyunits.m ** (-1) * pyunits.s ** (-2))
+                    * model.props[1].pressure_dew[("Vap", "Liq")]
+                )
+            )
+
+    @pytest.mark.unit
+    def test_log_fugacity_phase_comp_Liq_Pdew(self, model):
+        model.props[1].pressure_dew = Var([("Vap", "Liq")])
+        model.props[1].log_mole_frac_pdew = Var(
+            [("Vap", "Liq")], ["H2O", "CO2"], initialize=-1
+        )
+        assert str(
+            Ideal.log_fug_phase_comp_Pdew(model.props[1], "Liq", "H2O", ("Vap", "Liq"))
+        ) == str(
+            model.props[1].log_mole_frac_pdew[("Vap", "Liq"), "H2O"]
+            + (log(11.0) + log(model.props[1].temperature))
+        )
+        with pytest.raises(
+            NotImplementedError,
+            match=re.escape(
+                "Bubble/dew properties are not supported for Henry's Law components at present."
+            ),
+        ):
+            Ideal.log_fug_phase_comp_Pdew(model.props[1], "Liq", "CO2", ("Vap", "Liq"))
+
+
+class dummy_call_psat_nonvolatile:
+    def return_expression(b, j, T):
+        return 0
+
+    def return_log_expression(b, j, T):
+        return -37
+
+
+class TestFugacityLiquidOnlyComponent:
+    @pytest.fixture()
+    def model(self):
+        m = ConcreteModel()
+
+        # Dummy params block
+        m.params = GenericParameterBlock(
+            components={
+                "H2O": {
+                    "parameter_data": {
+                        "mw": (0.01802, pyunits.kg / pyunits.mol),
+                    },
+                    "pressure_sat_comp": dummy_call_psat,
+                },
+                "NaCl": {
+                    "valid_phase_types": PhaseType.liquidPhase,
+                    "parameter_data": {
+                        "mw": (0.05844, pyunits.kg / pyunits.mol),
+                    },
+                    "pressure_sat_comp": dummy_call_psat_nonvolatile,
+                },
+            },
+            phases={
+                "Liq": {
+                    "type": LiquidPhase,
+                    "equation_of_state": Ideal,
+                },
+                "Vap": {
+                    "type": VaporPhase,
+                    "equation_of_state": Ideal,
+                },
+            },
+            base_units={
+                "time": pyunits.s,
+                "length": pyunits.m,
+                "mass": pyunits.kg,
+                "amount": pyunits.mol,
+                "temperature": pyunits.K,
+            },
+            state_definition=FTPx,
+            pressure_ref=100000.0,
+            temperature_ref=300,
+        )
+
+        m.props = m.params.build_state_block(
+            [1], defined_state=True, parameters=m.params
+        )
+
+        # Fix state variables
+        m.props[1].flow_mol.fix(1)
+        m.props[1].pressure.fix(1e5)
+        m.props[1].temperature.fix(300)
+
+        m.props[1].mole_frac_comp["NaCl"].fix(0.4)
+        m.props[1].mole_frac_comp["H2O"].fix(0.6)
+
+        return m
+
+    # Fugacity
+    @pytest.mark.unit
+    def test_fugacity_vap(self, model):
+        assert str(Ideal.fug_phase_comp(model.props[1], "Vap", "H2O")) == str(
+            model.props[1].mole_frac_phase_comp["Vap", "H2O"] * model.props[1].pressure
+        )
+        with pytest.raises(
+            KeyError, match=re.escape("Component NaCl is not present in phase Vap")
+        ):
+            Ideal.fug_phase_comp(model.props[1], "Vap", "NaCl")
+
+    @pytest.mark.unit
+    def test_fugacity_liq(self, model):
+        assert str(Ideal.fug_phase_comp(model.props[1], "Liq", "H2O")) == str(
+            model.props[1].mole_frac_phase_comp["Liq", "H2O"]
+            * (11.0 * model.props[1].temperature)
+        )
+        assert str(Ideal.fug_phase_comp(model.props[1], "Liq", "NaCl")) == str(
+            0 * model.props[1].mole_frac_phase_comp["Liq", "NaCl"]
+        )
+
+    @pytest.mark.unit
+    def test_fugacity_eq_vap(self, model):
+        model.props[1]._teq = Var([("Vap", "Liq")], initialize=300)
+        assert str(
+            Ideal.fug_phase_comp_eq(model.props[1], "Vap", "H2O", ("Vap", "Liq"))
+        ) == str(
+            model.props[1].mole_frac_phase_comp["Vap", "H2O"] * model.props[1].pressure
+        )
+        with pytest.raises(
+            KeyError, match=re.escape("Component NaCl is not present in phase Vap")
+        ):
+            Ideal.fug_phase_comp_eq(model.props[1], "Vap", "NaCl", ("Vap", "Liq"))
+
+    @pytest.mark.unit
+    def test_fugacity_eq_liq(self, model):
+        model.props[1]._teq = Var([("Vap", "Liq")], initialize=300)
+        assert str(
+            Ideal.fug_phase_comp_eq(model.props[1], "Liq", "H2O", ("Vap", "Liq"))
+        ) == str(
+            model.props[1].mole_frac_phase_comp["Liq", "H2O"]
+            * (11.0 * model.props[1]._teq[("Vap", "Liq")])
+        )
+        assert str(
+            Ideal.fug_phase_comp_eq(model.props[1], "Liq", "NaCl", ("Vap", "Liq"))
+        ) == str(0 * model.props[1].mole_frac_phase_comp["Liq", "NaCl"])
+
+    # Log fugacity
+    @pytest.mark.unit
+    def test_log_fugacity_vap(self, model):
+        assert str(Ideal.log_fug_phase_comp(model.props[1], "Vap", "H2O")) == str(
+            model.props[1].log_mole_frac_phase_comp["Vap", "H2O"]
+            + log(
+                1
+                / (pyunits.kg * pyunits.m ** (-1) * pyunits.s ** (-2))
+                * model.props[1].pressure
+            )
+        )
+        with pytest.raises(
+            KeyError, match=re.escape("Component NaCl is not present in phase Vap")
+        ):
+            Ideal.log_fug_phase_comp(model.props[1], "Vap", "NaCl")
+
+    @pytest.mark.unit
+    def test_log_fugacity_liq(self, model):
+        assert str(Ideal.log_fug_phase_comp(model.props[1], "Liq", "H2O")) == str(
+            model.props[1].log_mole_frac_phase_comp["Liq", "H2O"]
+            + (log(11.0) + log(model.props[1].temperature))
+        )
+        assert str(Ideal.log_fug_phase_comp(model.props[1], "Liq", "NaCl")) == str(
+            model.props[1].log_mole_frac_phase_comp["Liq", "NaCl"] - 37
+        )
+
+    @pytest.mark.unit
+    def test_log_fugacity_eq_vap(self, model):
+        model.props[1]._teq = Var([("Vap", "Liq")], initialize=300)
+        assert str(
+            Ideal.log_fug_phase_comp_eq(model.props[1], "Vap", "H2O", ("Vap", "Liq"))
+        ) == str(
+            model.props[1].log_mole_frac_phase_comp["Vap", "H2O"]
+            + log(
+                1
+                / (pyunits.kg * pyunits.m ** (-1) * pyunits.s ** (-2))
+                * model.props[1].pressure
+            )
+        )
+        with pytest.raises(
+            KeyError, match=re.escape("Component NaCl is not present in phase Vap")
+        ):
+            Ideal.log_fug_phase_comp_eq(model.props[1], "Vap", "NaCl", ("Vap", "Liq"))
+
+    @pytest.mark.unit
+    def test_log_fugacity_eq_liq(self, model):
+        model.props[1]._teq = Var([("Vap", "Liq")], initialize=300)
+        assert str(
+            Ideal.log_fug_phase_comp_eq(model.props[1], "Liq", "H2O", ("Vap", "Liq"))
+        ) == str(
+            model.props[1].log_mole_frac_phase_comp["Liq", "H2O"]
+            + (log(11.0) + log(model.props[1]._teq[("Vap", "Liq")]))
+        )
+        assert str(
+            Ideal.log_fug_phase_comp_eq(model.props[1], "Liq", "NaCl", ("Vap", "Liq"))
+        ) == str(model.props[1].log_mole_frac_phase_comp["Liq", "NaCl"] - 37)
+
+    # Bubble methods
+    @pytest.mark.unit
+    def test_log_fugacity_phase_comp_Vap_Tbub(self, model):
+        model.props[1].temperature_bubble = Var([("Vap", "Liq")])
+        model.props[1].log_mole_frac_tbub = Var(
+            [("Vap", "Liq")], ["H2O"], initialize=-1
+        )
+
+        assert str(
+            Ideal.log_fug_phase_comp_Tbub(model.props[1], "Vap", "H2O", ("Vap", "Liq"))
+        ) == str(
+            model.props[1].log_mole_frac_tbub[("Vap", "Liq"), "H2O"]
+            + log(
+                1
+                / (pyunits.kg * pyunits.m ** (-1) * pyunits.s ** (-2))
+                * model.props[1].pressure
+            )
+        )
+
+    @pytest.mark.unit
+    def test_log_fugacity_phase_comp_Liq_Tbub(self, model):
+        model.props[1].temperature_bubble = Var([("Vap", "Liq")])
+        model.props[1].log_mole_frac_comp = Var(["H2O", "NaCl"])
+        assert str(
+            Ideal.log_fug_phase_comp_Tbub(model.props[1], "Liq", "H2O", ("Vap", "Liq"))
+        ) == str(
+            model.props[1].log_mole_frac_comp["H2O"]
+            + (log(11.0) + log(model.props[1].temperature_bubble[("Vap", "Liq")]))
+        )
+        assert str(
+            Ideal.log_fug_phase_comp_Tbub(model.props[1], "Liq", "NaCl", ("Vap", "Liq"))
+        ) == str(model.props[1].log_mole_frac_comp["NaCl"] - 37)
+
+    @pytest.mark.unit
+    def test_log_fugacity_phase_comp_Vap_Pbub(self, model):
+        model.props[1].pressure_bubble = Var([("Vap", "Liq")])
+        model.props[1].log_mole_frac_pbub = Var(
+            [("Vap", "Liq")], ["H2O"], initialize=-1
+        )
+        assert str(
+            Ideal.log_fug_phase_comp_Pbub(model.props[1], "Vap", "H2O", ("Vap", "Liq"))
+        ) == str(
+            model.props[1].log_mole_frac_pbub[("Vap", "Liq"), "H2O"]
+            + log(
+                1
+                / (pyunits.kg * pyunits.m ** (-1) * pyunits.s ** (-2))
+                * model.props[1].pressure_bubble[("Vap", "Liq")]
+            )
+        )
+
+    @pytest.mark.unit
+    def test_log_fugacity_phase_comp_Liq_Pbub(self, model):
+        model.props[1].pressure_bubble = Var([("Vap", "Liq")])
+        model.props[1].log_mole_frac_comp = Var(["H2O", "NaCl"])
+        assert str(
+            Ideal.log_fug_phase_comp_Pbub(model.props[1], "Liq", "H2O", ("Vap", "Liq"))
+        ) == str(
+            model.props[1].log_mole_frac_comp["H2O"]
+            + (log(11.0) + log(model.props[1].temperature))
+        )
+        assert str(
+            Ideal.log_fug_phase_comp_Pbub(model.props[1], "Liq", "NaCl", ("Vap", "Liq"))
+        ) == str(model.props[1].log_mole_frac_comp["NaCl"] - 37)
+
+
+# TODO need tests with inherent reactions
