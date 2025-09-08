@@ -1723,6 +1723,19 @@ class TestGetScalingFactor:
 
         assert get_scaling_factor(m.e) is None
 
+    @pytest.mark.unit
+    def test_get_scaling_factor_unnamed_expression(self):
+        m = ConcreteModel()
+        m.v = Var()
+        e = 2 * m.v
+        with pytest.raises(
+            TypeError,
+            match=re.escape(
+                "Can only get scaling hints for named expressions, but component was an unnamed expression."
+            ),
+        ):
+            get_scaling_factor(e)
+
 
 class TestSetScalingFactor:
     @pytest.mark.unit
