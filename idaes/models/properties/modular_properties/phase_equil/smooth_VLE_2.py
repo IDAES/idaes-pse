@@ -41,11 +41,31 @@ from idaes.models.properties.modular_properties.eos.ceos import (
     calculate_equilibrium_cubic_coefficients,
 )
 import idaes.core.util.scaling as iscale
+from idaes.core.scaling import CustomScalerBase
 
 
 # Small value for initializing slack variables
 EPS_INIT = 1e-4
 
+class CubicComplementarityVLEScaler(CustomScalerBase):
+    def variable_scaling_routine(self, model, phase_pair, overwrite: bool = False):
+        pass
+    def constraint_scaling_routine(self, model, phase_pair, overwrite: bool = False):
+        pass
+    def calculate_scaling_factors(b, phase_pair):
+        """
+        Method to calculate scaling factors for phase equilibrium
+        """
+        suffix = "_" + phase_pair[0] + "_" + phase_pair[1]
+        sf_T = iscale.get_scaling_factor(b.temperature, default=1, warning=True)
+
+        if hasattr(b, "_teq_constraint" + suffix):
+            teq_cons = getattr(b, "_teq_constraint" + suffix)
+            # pylint: disable-next=protected-access
+            iscale.set_scaling_factor(b._teq[phase_pair], sf_T)
+            iscale.constraint_scaling_transform(teq_cons, sf_T, overwrite=False)
+        else:
+            pass
 
 # -----------------------------------------------------------------------------
 class CubicComplementarityVLE:
@@ -220,12 +240,12 @@ class CubicComplementarityVLE:
         suffix = "_" + phase_pair[0] + "_" + phase_pair[1]
         sf_T = iscale.get_scaling_factor(b.temperature, default=1, warning=True)
 
-        try:
+        if hasattr(b, "_teq_constraint" + suffix):
             teq_cons = getattr(b, "_teq_constraint" + suffix)
             # pylint: disable-next=protected-access
             iscale.set_scaling_factor(b._teq[phase_pair], sf_T)
             iscale.constraint_scaling_transform(teq_cons, sf_T, overwrite=False)
-        except AttributeError:
+        else:
             pass
 
     @staticmethod
