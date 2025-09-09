@@ -246,5 +246,4 @@ class RPP5(object):
                 * log(10)
                 / (T + cobj.pressure_sat_comp_coeff_C - 273.15 * pyunits.degK) ** 2
             )
-            base_units = b.params.get_metadata().default_units
-            return log_p_sat_dT / base_units.TEMPERATURE
+            return log_p_sat_dT
