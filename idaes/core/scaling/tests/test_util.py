@@ -1528,7 +1528,22 @@ class TestGetScalingFactor:
             get_scaling_factor(m)
 
     @pytest.mark.unit
-    def test_get_scaling_factor(self):
+    def test_get_scaling_factor(self, caplog):
+        m = ConcreteModel()
+        m.v = Var()
+
+        m.scaling_factor = Suffix(direction=Suffix.EXPORT)
+        m.scaling_factor[m.v] = 10
+
+        m.scaling_hint = Suffix(direction=Suffix.EXPORT)
+        m.scaling_hint[m.v] = 13
+        with caplog.at_level(idaeslog.WARNING):
+            sf = get_scaling_factor(m.v, default=17, warning=True)
+        assert len(caplog.text) == 0
+        assert sf == 10
+
+    @pytest.mark.unit
+    def test_get_scaling_factor_warning_false(self, caplog):
         m = ConcreteModel()
         m.v = Var()
 
@@ -1538,10 +1553,14 @@ class TestGetScalingFactor:
         m.scaling_hint = Suffix(direction=Suffix.EXPORT)
         m.scaling_hint[m.v] = 13
 
-        assert get_scaling_factor(m.v) == 10
+        with caplog.at_level(idaeslog.WARNING):
+            sf = get_scaling_factor(m.v, default=17, warning=False)
+        assert len(caplog.text) == 0
+
+        assert sf == 10
 
     @pytest.mark.unit
-    def test_get_scaling_factor_none(self):
+    def test_get_scaling_factor_none_warning_true(self, caplog):
         m = ConcreteModel()
         m.v = Var()
 
@@ -1549,8 +1568,54 @@ class TestGetScalingFactor:
         m.scaling_hint[m.v] = 13
 
         m.scaling_factor = Suffix(direction=Suffix.EXPORT)
+        with caplog.at_level(idaeslog.WARNING):
+            sf = get_scaling_factor(m.v, warning=True)
+        assert len(caplog.records) == 1
+        assert "Missing scaling factor for v" in caplog.text
+        assert sf is None
 
-        assert get_scaling_factor(m.v) is None
+    @pytest.mark.unit
+    def test_get_scaling_factor_none_warning_false(self, caplog):
+        m = ConcreteModel()
+        m.v = Var()
+
+        m.scaling_hint = Suffix(direction=Suffix.EXPORT)
+        m.scaling_hint[m.v] = 13
+
+        m.scaling_factor = Suffix(direction=Suffix.EXPORT)
+        with caplog.at_level(idaeslog.WARNING):
+            sf = get_scaling_factor(m.v, warning=False)
+        assert len(caplog.text) == 0
+        assert sf is None
+
+    @pytest.mark.unit
+    def test_get_scaling_factor_none_warning_true_default(self, caplog):
+        m = ConcreteModel()
+        m.v = Var()
+
+        m.scaling_hint = Suffix(direction=Suffix.EXPORT)
+        m.scaling_hint[m.v] = 13
+
+        m.scaling_factor = Suffix(direction=Suffix.EXPORT)
+        with caplog.at_level(idaeslog.WARNING):
+            sf = get_scaling_factor(m.v, default=7, warning=True)
+        assert len(caplog.records) == 1
+        assert "Missing scaling factor for v" in caplog.text
+        assert sf == 7
+
+    @pytest.mark.unit
+    def test_get_scaling_factor_none_warning_false_default(self, caplog):
+        m = ConcreteModel()
+        m.v = Var()
+
+        m.scaling_hint = Suffix(direction=Suffix.EXPORT)
+        m.scaling_hint[m.v] = 13
+
+        m.scaling_factor = Suffix(direction=Suffix.EXPORT)
+        with caplog.at_level(idaeslog.WARNING):
+            sf = get_scaling_factor(m.v, default=7, warning=False)
+        assert len(caplog.text) == 0
+        assert sf == 7
 
     @pytest.mark.unit
     def test_get_scaling_factor_no_suffix(self):
@@ -1563,7 +1628,7 @@ class TestGetScalingFactor:
         assert get_scaling_factor(m.v) is None
 
     @pytest.mark.unit
-    def test_get_scaling_factor_expression(self):
+    def test_get_scaling_factor_expression(self, caplog):
         m = ConcreteModel()
         m.e = Expression(expr=4)
 
@@ -1576,11 +1641,13 @@ class TestGetScalingFactor:
 
         m.scaling_hint = Suffix(direction=Suffix.EXPORT)
         m.scaling_hint[m.e] = 10
-
-        assert get_scaling_factor(m.e) == 10
+        with caplog.at_level(idaeslog.WARNING):
+            sf = get_scaling_factor(m.e, default=17)
+        assert len(caplog.text) == 0
+        assert sf == 10
 
     @pytest.mark.unit
-    def test_get_scaling_factor_none(self):
+    def test_get_scaling_factor_none(self, caplog):
         m = ConcreteModel()
         m.e = Expression(expr=4)
         m.scaling_factor = Suffix(direction=Suffix.EXPORT)
@@ -1588,7 +1655,63 @@ class TestGetScalingFactor:
 
         m.scaling_hint = Suffix(direction=Suffix.EXPORT)
 
-        assert get_scaling_factor(m.e) is None
+        with caplog.at_level(idaeslog.WARNING):
+            sf = get_scaling_factor(m.e)
+        assert len(caplog.records) == 1
+        assert "Missing scaling factor for e" in caplog.text
+        assert sf is None
+
+    @pytest.mark.unit
+    def test_get_scaling_factor_expression_warning_false(self, caplog):
+        m = ConcreteModel()
+        m.e = Expression(expr=4)
+
+        # We don't want expression scaling hints to be
+        # stored in the scaling factor suffix, but in
+        # the event that one ends up there we want to
+        # guarantee good behavior
+        m.scaling_factor = Suffix(direction=Suffix.EXPORT)
+        m.scaling_factor[m.e] = 13
+
+        m.scaling_hint = Suffix(direction=Suffix.EXPORT)
+        m.scaling_hint[m.e] = 10
+        with caplog.at_level(idaeslog.WARNING):
+            sf = get_scaling_factor(m.e, warning=False)
+        assert len(caplog.text) == 0
+        assert sf == 10
+
+    @pytest.mark.unit
+    def test_get_scaling_factor_none_default(self, caplog):
+        m = ConcreteModel()
+        m.e = Expression(expr=4)
+        m.scaling_factor = Suffix(direction=Suffix.EXPORT)
+        m.scaling_factor[m.e] = 13
+
+        m.scaling_hint = Suffix(direction=Suffix.EXPORT)
+
+        with caplog.at_level(idaeslog.WARNING):
+            sf = get_scaling_factor(m.e, default=17)
+        assert len(caplog.records) == 1
+        assert "Missing scaling factor for e" in caplog.text
+        assert sf == 17
+
+    @pytest.mark.unit
+    def test_get_scaling_factor_expression_warning_false_default(self, caplog):
+        m = ConcreteModel()
+        m.e = Expression(expr=4)
+
+        # We don't want expression scaling hints to be
+        # stored in the scaling factor suffix, but in
+        # the event that one ends up there we want to
+        # guarantee good behavior
+        m.scaling_factor = Suffix(direction=Suffix.EXPORT)
+        m.scaling_factor[m.e] = 13
+
+        m.scaling_hint = Suffix(direction=Suffix.EXPORT)
+        with caplog.at_level(idaeslog.WARNING):
+            sf = get_scaling_factor(m.e, default=17, warning=False)
+        assert len(caplog.text) == 0
+        assert sf == 17
 
     @pytest.mark.unit
     def test_get_scaling_factor_no_suffix(self):
@@ -1599,6 +1722,19 @@ class TestGetScalingFactor:
         m.scaling_factor[m.e] = 13
 
         assert get_scaling_factor(m.e) is None
+
+    @pytest.mark.unit
+    def test_get_scaling_factor_unnamed_expression(self):
+        m = ConcreteModel()
+        m.v = Var()
+        e = 2 * m.v
+        with pytest.raises(
+            TypeError,
+            match=re.escape(
+                "Can only get scaling hints for named expressions, but component was an unnamed expression."
+            ),
+        ):
+            get_scaling_factor(e)
 
 
 class TestSetScalingFactor:

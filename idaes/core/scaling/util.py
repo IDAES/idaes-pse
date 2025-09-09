@@ -444,7 +444,7 @@ def _suffix_from_dict(
             )
 
 
-def get_scaling_factor(component, default=None):
+def get_scaling_factor(component, default: float = None, warning: bool = True):
     """
     Get scaling factor for component.
 
@@ -461,12 +461,18 @@ def get_scaling_factor(component, default=None):
         raise TypeError(
             f"Component {component.name} is indexed. It is ambiguous which scaling factor to return."
         )
+    if component.is_expression_type() and not component.is_named_expression_type():
+        raise TypeError(
+            "Can only get scaling hints for named expressions, but component was an unnamed expression."
+        )
     sfx = get_component_scaling_suffix(component)
 
     try:
         return sfx[component]
     except (AttributeError, KeyError):
         # No scaling factor found, return the default value
+        if warning:
+            _log.warning(f"Missing scaling factor for {component.name}")
         return default
 
 
