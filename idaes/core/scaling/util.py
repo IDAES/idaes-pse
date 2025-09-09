@@ -1037,7 +1037,7 @@ class NominalValueExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
         the expression tree.
         """
         if isinstance(child, ExpressionData):
-            sf = get_scaling_factor(child)
+            sf = get_scaling_factor(child, warning=False)
             if sf is not None:
                 # Crude way to determine sign of expression. Maybe fbbt could be used here?
                 try:
