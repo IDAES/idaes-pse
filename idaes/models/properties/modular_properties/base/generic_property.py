@@ -755,9 +755,8 @@ class GenericParameterData(PhysicalParameterBlock):
         "default_scaling_factors",
         ConfigValue(
             domain=dict,
-            description="User-defined default scaling factors",
-            doc="Dict of user-defined properties and associated default "
-            "scaling factors",
+            description="DEPRECATED: Set default scaling factors on the scaler object instead",
+            doc="DEPRECATED: Set default scaling factors on the scaler object instead",
         ),
     )
 
@@ -1778,7 +1777,7 @@ class ModularPropertiesInitializer(InitializerBase):
             )
             self.config.constraint_tolerance = float("inf")
 
-        if "flow_mol_phase_comp"  in scaler_block.define_state_vars():
+        if "flow_mol_phase_comp" in scaler_block.define_state_vars():
             init_log.debug(
                 "Cannot converge phase equilibrium constraints "
                 "at the state block level due to using phase component "
