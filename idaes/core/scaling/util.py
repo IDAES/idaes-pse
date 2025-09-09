@@ -444,7 +444,7 @@ def _suffix_from_dict(
             )
 
 
-def get_scaling_factor(component, default: float = None, warning: bool = True):
+def get_scaling_factor(component, default: float = None, warning: bool = False):
     """
     Get scaling factor for component.
 
