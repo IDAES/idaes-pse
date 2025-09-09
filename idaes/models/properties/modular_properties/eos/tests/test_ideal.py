@@ -19,7 +19,7 @@ import pytest
 from sys import modules
 import re
 
-from pyomo.environ import ConcreteModel, Expression, log, Var, units as pyunits, value
+from pyomo.environ import ConcreteModel, log, Var, units as pyunits, value
 from pyomo.core.expr.compare import compare_expressions
 from pyomo.util.check_units import assert_units_equivalent
 
@@ -143,7 +143,7 @@ def m_sol():
     # Add common variables
     m.props[1].pressure = Var(initialize=101325)
     m.props[1].temperature = Var(initialize=300)
-    m.props[1]._teq = Var([("Vap", "Liq")], initialize=300)
+    m.props[1]._teq = Var([("Sol", "Liq")], initialize=300)
     m.props[1].mole_frac_phase_comp = Var(
         m.params.phase_list, m.params.component_list, initialize=0.5
     )
@@ -512,7 +512,7 @@ def test_fug_phase_comp_vap_eq(m):
 @pytest.mark.unit
 def test_fug_phase_comp_invalid_phase_eq(m_sol):
     with pytest.raises(PropertyNotSupportedError):
-        Ideal.fug_phase_comp_eq(m_sol.props[1], "Sol", "a", ("Vap", "Liq"))
+        Ideal.fug_phase_comp_eq(m_sol.props[1], "Sol", "a", ("Sol", "Liq"))
 
 
 @pytest.mark.unit
@@ -525,7 +525,7 @@ def test_fug_coeff_phase_comp(m):
 @pytest.mark.unit
 def test_fug_coeff_phase_comp_invalid_phase(m_sol):
     with pytest.raises(PropertyNotSupportedError):
-        Ideal.fug_coeff_phase_comp(m_sol.props[1], "Sol", "foo")
+        Ideal.fug_coeff_phase_comp(m_sol.props[1], "Sol", "a")
 
 
 @pytest.mark.unit
@@ -560,6 +560,12 @@ def test_log_fug_phase_comp_vap(m):
 
 
 @pytest.mark.unit
+def test_log_fug_phase_comp_invalid_phase(m_sol):
+    with pytest.raises(PropertyNotSupportedError):
+        Ideal.log_fug_phase_comp(m_sol.props[1], "Sol", "a")
+
+
+@pytest.mark.unit
 def test_log_fug_phase_comp_liq_eq(m):
     m.props[1].log_mole_frac_phase_comp = Var(
         m.params.phase_list, m.params.component_list, initialize=-1
@@ -590,6 +596,19 @@ def test_log_fug_phase_comp_vap_eq(m):
                 * m.props[1].pressure
             ),
         )
+
+
+@pytest.mark.unit
+def test_log_fug_phase_comp_eq_invalid_phase(m_sol):
+    with pytest.raises(
+        PropertyNotSupportedError,
+        match=re.escape(
+            "Bubble/dew calculations are supported only "
+            "for liquid and vapor phases, but Sol is neither "
+            "a vapor nor a liquid phase."
+        ),
+    ):
+        Ideal.log_fug_phase_comp_eq(m_sol.props[1], "Sol", "a", ("Sol", "Liq"))
 
 
 @pytest.mark.unit
@@ -629,6 +648,19 @@ def test_log_fug_phase_comp_vap_Tdew(m):
 
 
 @pytest.mark.unit
+def test_log_fug_phase_comp_Tdew_invalid_phase(m_sol):
+    with pytest.raises(
+        PropertyNotSupportedError,
+        match=re.escape(
+            "Bubble/dew calculations are supported only "
+            "for liquid and vapor phases, but Sol is neither "
+            "a vapor nor a liquid phase."
+        ),
+    ):
+        Ideal.log_fug_phase_comp_Tdew(m_sol.props[1], "Sol", "a", ("Sol", "Liq"))
+
+
+@pytest.mark.unit
 def test_log_fug_phase_comp_liq_Tbub(m):
     m.props[1].temperature_bubble = Var([("Vap", "Liq")], initialize=300)
     m.props[1].log_mole_frac_comp = Var(m.params.component_list, initialize=-1)
@@ -662,6 +694,19 @@ def test_log_fug_phase_comp_vap_Tbub(m):
                 * m.props[1].pressure
             )
         )
+
+
+@pytest.mark.unit
+def test_log_fug_phase_comp_Tbub_invalid_phase(m_sol):
+    with pytest.raises(
+        PropertyNotSupportedError,
+        match=re.escape(
+            "Bubble/dew calculations are supported only "
+            "for liquid and vapor phases, but Sol is neither "
+            "a vapor nor a liquid phase."
+        ),
+    ):
+        Ideal.log_fug_phase_comp_Tbub(m_sol.props[1], "Sol", "a", ("Sol", "Liq"))
 
 
 @pytest.mark.unit
@@ -701,6 +746,19 @@ def test_log_fug_phase_comp_vap_Pdew(m):
 
 
 @pytest.mark.unit
+def test_log_fug_phase_comp_Tdew_invalid_phase(m_sol):
+    with pytest.raises(
+        PropertyNotSupportedError,
+        match=re.escape(
+            "Bubble/dew calculations are supported only "
+            "for liquid and vapor phases, but Sol is neither "
+            "a vapor nor a liquid phase."
+        ),
+    ):
+        Ideal.log_fug_phase_comp_Pdew(m_sol.props[1], "Sol", "a", ("Sol", "Liq"))
+
+
+@pytest.mark.unit
 def test_log_fug_phase_comp_liq_Pbub(m):
     m.props[1].pressure_bubble = Var([("Vap", "Liq")], initialize=1e5)
     m.props[1].log_mole_frac_comp = Var(m.params.component_list, initialize=-1)
@@ -733,6 +791,19 @@ def test_log_fug_phase_comp_vap_Pbub(m):
                 * m.props[1].pressure_bubble[("Vap", "Liq")]
             )
         )
+
+
+@pytest.mark.unit
+def test_log_fug_phase_comp_Pbub_invalid_phase(m_sol):
+    with pytest.raises(
+        PropertyNotSupportedError,
+        match=re.escape(
+            "Bubble/dew calculations are supported only "
+            "for liquid and vapor phases, but Sol is neither "
+            "a vapor nor a liquid phase."
+        ),
+    ):
+        Ideal.log_fug_phase_comp_Pbub(m_sol.props[1], "Sol", "a", ("Sol", "Liq"))
 
 
 @pytest.mark.unit
@@ -1151,7 +1222,7 @@ class TestFugacityHenry:
             + (log(11.0) + log(model.props[1].temperature_dew[("Vap", "Liq")]))
         )
         with pytest.raises(
-            NotImplementedError,
+            PropertyNotSupportedError,
             match=re.escape(
                 "Bubble/dew properties are not supported for Henry's Law components at present."
             ),
@@ -1189,7 +1260,7 @@ class TestFugacityHenry:
             + (log(11.0) + log(model.props[1].temperature))
         )
         with pytest.raises(
-            NotImplementedError,
+            PropertyNotSupportedError,
             match=re.escape(
                 "Bubble/dew properties are not supported for Henry's Law components at present."
             ),

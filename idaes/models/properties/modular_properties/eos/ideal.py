@@ -306,7 +306,7 @@ class Ideal(EoSBase):
     def log_fug_phase_comp_Tbub(b, p, j, pp):
         pobj = b.params.get_phase(p)
         if b.params.has_inherent_reactions:
-            raise NotImplementedError(
+            raise PropertyNotSupportedError(
                 "Bubble/dew calculations for systems with inherent "
                 "reactions are not supported at present."
             )
@@ -318,7 +318,7 @@ class Ideal(EoSBase):
         elif pobj.is_liquid_phase():
             log_x = b.log_mole_frac_comp
         else:
-            raise ConfigurationError(
+            raise PropertyNotSupportedError(
                 "Bubble/dew calculations are supported only "
                 f"for liquid and vapor phases, but {p} is neither "
                 "a vapor nor a liquid phase."
@@ -329,7 +329,7 @@ class Ideal(EoSBase):
     def log_fug_phase_comp_Tdew(b, p, j, pp):
         pobj = b.params.get_phase(p)
         if b.params.has_inherent_reactions:
-            raise NotImplementedError(
+            raise PropertyNotSupportedError(
                 "Bubble/dew calculations for systems with inherent "
                 "reactions are not supported at present."
             )
@@ -341,7 +341,7 @@ class Ideal(EoSBase):
                 for j in b.components_in_phase(p)
             }
         else:
-            raise ConfigurationError(
+            raise PropertyNotSupportedError(
                 "Bubble/dew calculations are supported only "
                 f"for liquid and vapor phases, but {p} is neither "
                 "a vapor nor a liquid phase."
@@ -352,7 +352,7 @@ class Ideal(EoSBase):
     def log_fug_phase_comp_Pbub(b, p, j, pp):
         pobj = b.params.get_phase(p)
         if b.params.has_inherent_reactions:
-            raise NotImplementedError(
+            raise PropertyNotSupportedError(
                 "Bubble/dew calculations for systems with inherent "
                 "reactions are not supported at present."
             )
@@ -364,7 +364,7 @@ class Ideal(EoSBase):
         elif pobj.is_liquid_phase():
             log_x = b.log_mole_frac_comp
         else:
-            raise ConfigurationError(
+            raise PropertyNotSupportedError(
                 "Bubble/dew calculations are supported only "
                 f"for liquid and vapor phases, but {p} is neither "
                 "a vapor nor a liquid phase."
@@ -376,7 +376,7 @@ class Ideal(EoSBase):
     def log_fug_phase_comp_Pdew(b, p, j, pp):
         pobj = b.params.get_phase(p)
         if b.params.has_inherent_reactions:
-            raise NotImplementedError(
+            raise PropertyNotSupportedError(
                 "Bubble/dew calculations for systems with inherent "
                 "reactions are not supported at present."
             )
@@ -388,7 +388,7 @@ class Ideal(EoSBase):
                 for j in b.components_in_phase(p)
             }
         else:
-            raise ConfigurationError(
+            raise PropertyNotSupportedError(
                 "Bubble/dew calculations are supported only "
                 f"for liquid and vapor phases, but {p} is neither "
                 "a vapor nor a liquid phase."
@@ -452,7 +452,7 @@ class Ideal(EoSBase):
 def _invalid_phase_msg(name, phase):
     return (
         "{} received unrecognised phase name {}. Ideal property "
-        "library only supports Vap and Liq phases.".format(name, phase)
+        "library supports Solid, Liquid, and Vapor phases.".format(name, phase)
     )
 
 
@@ -497,7 +497,7 @@ def _log_fug_phase_comp(b, p, j, log_x, T, P):
                 # There is no API for evaluating Henry's law relationships
                 # at concentrations other than mole_frac_phase_comp.
                 # We therefore do not support the bubble/dew methods.
-                raise NotImplementedError(
+                raise PropertyNotSupportedError(
                     "Bubble/dew properties are not supported for Henry's Law components at present."
                 )
         elif cobj(b, j).config.has_vapor_pressure:
@@ -510,4 +510,8 @@ def _log_fug_phase_comp(b, p, j, log_x, T, P):
         else:
             return Expression.Skip
     else:
-        raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
+        raise PropertyNotSupportedError(
+            "Bubble/dew calculations are supported only "
+            f"for liquid and vapor phases, but {p} is neither "
+            "a vapor nor a liquid phase."
+        )
