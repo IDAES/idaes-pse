@@ -444,7 +444,7 @@ def _suffix_from_dict(
             )
 
 
-def get_scaling_factor(component, default: float = None, warning: bool = True):
+def get_scaling_factor(component, default: float = None, warning: bool = False):
     """
     Get scaling factor for component.
 
@@ -1037,7 +1037,7 @@ class NominalValueExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
         the expression tree.
         """
         if isinstance(child, ExpressionData):
-            sf = get_scaling_factor(child)
+            sf = get_scaling_factor(child, warning=False)
             if sf is not None:
                 # Crude way to determine sign of expression. Maybe fbbt could be used here?
                 try:

@@ -1656,7 +1656,7 @@ class TestGetScalingFactor:
         m.scaling_hint = Suffix(direction=Suffix.EXPORT)
 
         with caplog.at_level(idaeslog.WARNING):
-            sf = get_scaling_factor(m.e)
+            sf = get_scaling_factor(m.e, warning=True)
         assert len(caplog.records) == 1
         assert "Missing scaling factor for e" in caplog.text
         assert sf is None
@@ -1690,7 +1690,7 @@ class TestGetScalingFactor:
         m.scaling_hint = Suffix(direction=Suffix.EXPORT)
 
         with caplog.at_level(idaeslog.WARNING):
-            sf = get_scaling_factor(m.e, default=17)
+            sf = get_scaling_factor(m.e, default=17, warning=True)
         assert len(caplog.records) == 1
         assert "Missing scaling factor for e" in caplog.text
         assert sf == 17
