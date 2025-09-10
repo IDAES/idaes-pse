@@ -746,10 +746,18 @@ class FTPxScaler(CustomScalerBase):
         for i in model.component_list:
             self.set_component_scaling_factor(
                 model.mole_frac_comp[i],
-                min(sf_mf[p, i] for p in model.phase_list),
+                min(
+                    sf_mf[p, i]
+                    for p in model.phase_list
+                    if i in model.components_in_phase(p)
+                ),
                 overwrite=overwrite,
             )
-            nom = max(1 / (sf_mf[p, i] * sf_Fp[p]) for p in model.phase_list)
+            nom = max(
+                1 / (sf_mf[p, i] * sf_Fp[p])
+                for p in model.phase_list
+                if i in model.components_in_phase(p)
+            )
             self.set_component_scaling_factor(
                 model.flow_mol_comp[i], 1 / nom, overwrite=overwrite
             )
