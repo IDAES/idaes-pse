@@ -183,6 +183,7 @@ class TestCustomScalerBase:
         caplog.set_level(idaeslog.DEBUG, logger="idaes")
         m = ConcreteModel()
         m.v = Var([1, 2, 3, 4])
+        m.w = Var(["a", "b", "c"], ["x", "y", "z"])
 
         sb = CustomScalerBase()
 
@@ -197,6 +198,21 @@ class TestCustomScalerBase:
         # Set a default for the specific element
         sb.default_scaling_factors["v[1]"] = 1e-8
         assert sb.get_default_scaling_factor(m.v[1]) == 1e-8
+
+        caplog.clear()
+        assert sb.get_default_scaling_factor(m.w["c", "y"]) is None
+        assert "No default scaling factor found for w[c,y]" in caplog.text
+
+        sb.default_scaling_factors["w[c,y]"] = 17
+        assert sb.get_default_scaling_factor(m.w["c", "y"]) == 17
+
+        caplog.clear()
+        assert sb.get_default_scaling_factor(m.w["a", "x"]) is None
+        assert "No default scaling factor found for w[a,x]" in caplog.text
+
+        # Make sure that entries with spaces between indices are still found
+        sb.default_scaling_factors["w[a, x]"] = 23
+        assert sb.get_default_scaling_factor(m.w["a", "x"]) == 23
 
     @pytest.mark.unit
     def test_scale_variable_by_component(self, model, caplog):
