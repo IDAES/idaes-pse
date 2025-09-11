@@ -35,12 +35,12 @@ class fugacity:
     def calculate_scaling_factors(b, phase1, phase2, comp):
         sf_xp1 = iscale.get_scaling_factor(
             b.mole_frac_phase_comp[phase1, comp],
-            default=1e3,  # I'd prefer 10, but this is consistent with existing scaling
+            default=1e3,
             warning=True,
         )
         sf_xp2 = iscale.get_scaling_factor(
             b.mole_frac_phase_comp[phase2, comp],
-            default=1e3,  # I'd prefer 10, but this is consistent with existing scaling
+            default=1e3,
             warning=True,
         )
         sf_x = min(sf_xp1, sf_xp2)

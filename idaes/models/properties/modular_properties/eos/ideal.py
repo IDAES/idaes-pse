@@ -271,8 +271,7 @@ class Ideal(EoSBase):
     def log_fug_phase_comp_eq(b, p, j, pp):
         if (p, j) not in b.phase_component_set:
             raise KeyError(f"Component {j} is not present in phase {p}.")
-        # TODO does allowing a calculation with
-        # inherent reactions make sense here?
+        # Does allowing a calculation with inherent reactions make sense here?
         if b.params.has_inherent_reactions:
             log_x = {
                 j: b.log_mole_frac_phase_comp_true[p, j]
