@@ -516,6 +516,11 @@ class FPhxScaler(FTPxScaler):
     def constraint_scaling_routine(
         self, model, index, overwrite: bool = False, submodel_scalers: dict = None
     ):
+        if model.config.defined_state is False:
+            self.set_component_scaling_factor(
+                model.sum_mole_frac_out, 1, overwrite=overwrite
+            )
+
         sf_enth = self.get_scaling_factor(model.enth_mol)
         if sf_enth is not None:
             self.set_component_scaling_factor(

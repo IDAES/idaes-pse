@@ -1244,16 +1244,12 @@ class TestCommon(object):
 
         blk = frame.props[1]
 
-        from idaes.core.scaling import report_scaling_factors
-
         scaler = blk.default_scaler()
         scaler.default_scaling_factors["flow_mol_phase"] = 1 / 100
         scaler.default_scaling_factors["enth_mol_phase"] = 1e-4
         with caplog.at_level(idaeslog.WARNING):
             scaler.scale_model(blk)
         assert len(caplog.text) == 0
-
-        report_scaling_factors(frame.props, descend_into=True)
 
         assert len(blk.scaling_factor) == 30
         assert len(blk.scaling_hint) == 7
