@@ -363,7 +363,7 @@ class TestStateBlockScalerObject(object):
         scaler_obj.scale_model(model.fs.props[1])
 
         assert len(model.fs.props[1].scaling_factor) == 42
-        assert len(model.fs.props[1].scaling_hint) == 7
+        assert len(model.fs.props[1].scaling_hint) == 5
 
         assert model.fs.props[1].scaling_factor[model.fs.props[1].flow_mol] == 1
         assert (
@@ -558,14 +558,6 @@ class TestStateBlockScalerObject(object):
                 model.fs.props[1].flow_mol_phase_comp["Vap", "carbon_dioxide"]
             ]
             == 1
-        )
-        assert (
-            model.fs.props[1].scaling_hint[model.fs.props[1].enth_mol_phase["Liq"]]
-            == 1e-4
-        )
-        assert (
-            model.fs.props[1].scaling_hint[model.fs.props[1].enth_mol_phase["Liq"]]
-            == 1e-4
         )
         assert (
             model.fs.props[1].scaling_hint[model.fs.props[1].flow_mol_comp["bmimPF6"]]
