@@ -1292,7 +1292,7 @@ class TestCommon(object):
         assert frame.props[1].scaling_factor[frame.props[1].temperature] == 1e-2
 
     @pytest.mark.unit
-    def test_FcPhScaler(self, frame, caplog):
+    def test_scaler_object(self, frame, caplog):
         # Check that we don't have a scaling suffix from side effects
         assert not hasattr(frame, "scaling_factor")
         assert FcPh.default_scaler is FcPhScaler
@@ -1302,9 +1302,6 @@ class TestCommon(object):
         with caplog.at_level(idaeslog.WARNING):
             scaler.scale_model(frame.props[1])
         assert len(caplog.text) == 0
-        from idaes.core.scaling import report_scaling_factors
-
-        report_scaling_factors(frame.props, descend_into=True)
 
         assert len(frame.props[1].scaling_factor) == 32
         assert len(frame.props[1].scaling_hint) == 7
