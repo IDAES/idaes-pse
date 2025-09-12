@@ -152,6 +152,7 @@ class log_power_law_equil:
 
 
 # ----------------------------------------------------------------------------
+# TODO add scaler objects for solubility product methods
 class solubility_product:
     """
     Complementarity formulation for solid precipitation
