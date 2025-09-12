@@ -34,6 +34,7 @@ from pyomo.util.check_units import check_units_equivalent, assert_units_consiste
 # Need define_default_scaling_factors, even though it is not used directly
 from idaes.models.properties.modular_properties.state_definitions.FTPx import (
     FTPx,
+    FTPxScaler,
     define_state,
     set_metadata,
     state_initialization,
@@ -1234,7 +1235,7 @@ class Test3PhaseDefinedStateTrueWithBounds(object):
 
 
 class TestCommon(object):
-    @pytest.fixture(scope="class")
+    @pytest.fixture()
     def frame(self):
         m = ConcreteModel()
 
@@ -1389,6 +1390,66 @@ class TestCommon(object):
         )
         assert frame.props[1].scaling_factor[frame.props[1].pressure] == 1e-5
         assert frame.props[1].scaling_factor[frame.props[1].temperature] == 1e-2
+
+    @pytest.mark.unit
+    def test_scaler_object(self, frame, caplog):
+        assert not hasattr(frame.props[1], "scaling_factor")
+        assert FTPx.default_scaler is FTPxScaler
+
+        blk = frame.props[1]
+
+        scaler = blk.default_scaler()
+        scaler.default_scaling_factors["flow_mol_phase"] = 1 / 100
+        scaler.default_scaling_factors["enth_mol_phase"] = 1e-4
+        with caplog.at_level(idaeslog.WARNING):
+            scaler.scale_model(blk)
+        assert len(caplog.text) == 0
+
+        assert len(blk.scaling_factor) == 25
+        assert len(blk.scaling_hint) == 9
+
+        # Variables
+        assert blk.scaling_factor[blk.flow_mol] == 1e-2
+        assert blk.scaling_factor[blk.flow_mol_phase["a"]] == 1e-2
+        assert blk.scaling_factor[blk.flow_mol_phase["b"]] == 1e-2
+
+        assert blk.scaling_factor[blk.mole_frac_comp["c1"]] == 10
+        assert blk.scaling_factor[blk.mole_frac_comp["c2"]] == 10
+        assert blk.scaling_factor[blk.mole_frac_comp["c3"]] == 10
+        assert blk.scaling_factor[blk.mole_frac_phase_comp["a", "c1"]] == 10
+        assert blk.scaling_factor[blk.mole_frac_phase_comp["a", "c2"]] == 10
+        assert blk.scaling_factor[blk.mole_frac_phase_comp["a", "c3"]] == 10
+        assert blk.scaling_factor[blk.mole_frac_phase_comp["b", "c1"]] == 10
+        assert blk.scaling_factor[blk.mole_frac_phase_comp["b", "c2"]] == 10
+        assert blk.scaling_factor[blk.mole_frac_phase_comp["b", "c3"]] == 10
+
+        assert blk.scaling_factor[blk.phase_frac["a"]] == 1
+        assert blk.scaling_factor[blk.phase_frac["b"]] == 1
+
+        assert blk.scaling_factor[blk.pressure] == 1e-5
+        assert blk.scaling_factor[blk.temperature] == 1 / 300
+
+        # Constraints
+        assert blk.scaling_factor[blk.total_flow_balance] == 1e-2
+        assert blk.scaling_factor[blk.component_flow_balances["c1"]] == 1e-1
+        assert blk.scaling_factor[blk.component_flow_balances["c2"]] == 1e-1
+        assert blk.scaling_factor[blk.component_flow_balances["c3"]] == 1e-1
+
+        assert blk.scaling_factor[blk.sum_mole_frac] == 10
+
+        assert blk.scaling_factor[blk.phase_fraction_constraint["a"]] == 1e-2
+        assert blk.scaling_factor[blk.phase_fraction_constraint["b"]] == 1e-2
+
+        # Expressions
+        assert blk.scaling_hint[blk.flow_mol_phase_comp["a", "c1"]] == 1e-1
+        assert blk.scaling_hint[blk.flow_mol_phase_comp["a", "c2"]] == 1e-1
+        assert blk.scaling_hint[blk.flow_mol_phase_comp["a", "c3"]] == 1e-1
+        assert blk.scaling_hint[blk.flow_mol_phase_comp["b", "c1"]] == 1e-1
+        assert blk.scaling_hint[blk.flow_mol_phase_comp["b", "c2"]] == 1e-1
+        assert blk.scaling_hint[blk.flow_mol_phase_comp["b", "c3"]] == 1e-1
+        assert blk.scaling_hint[blk.flow_mol_comp["c1"]] == 1e-1
+        assert blk.scaling_hint[blk.flow_mol_comp["c2"]] == 1e-1
+        assert blk.scaling_hint[blk.flow_mol_comp["c3"]] == 1e-1
 
     # Test General Methods
     @pytest.mark.unit
