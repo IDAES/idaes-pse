@@ -1239,7 +1239,7 @@ class TestCommon(object):
 
     @pytest.mark.unit
     def test_scaler_object(self, frame, caplog):
-        assert not hasattr(frame, "scaling_factor")
+        assert not hasattr(frame.props[1], "scaling_factor")
         assert FcTP.default_scaler is FcTPScaler
 
         blk = frame.props[1]
