@@ -230,6 +230,7 @@ class CustomScalerBase(ScalerBase):
             default scaling factor if it exists, else None
         """
         blk = component.parent_block()
+        comp_default = None
         parent_default = None
         # We're not just returning self.default_scaling_factors[component.local_name]
         # because the component finder has additional logic to handle, e.g., spaces
@@ -245,13 +246,27 @@ class CustomScalerBase(ScalerBase):
         # about this look-up process, but it's also probably not going to be the
         # rate limiting step, especially considering these default dictionaries
         # should be relatively short.
-        for key in self.default_scaling_factors:
-            comp2 = blk.find_component(key)
-            if comp2 is component:
-                return self.default_scaling_factors[key]
-            elif comp2 is component.parent_component():
-                parent_default = self.default_scaling_factors[key]
-        if parent_default is not None:
+
+        # Locking attribute creation context prevents build-on-demand properties
+        # from getting triggered through this lookup.
+        if hasattr(blk, "lock_attribute_creation_context"):
+            with blk.lock_attribute_creation_context():
+                for key in self.default_scaling_factors:
+                    comp2 = blk.find_component(key)
+                    if comp2 is component:
+                        comp_default = self.default_scaling_factors[key]
+                    elif comp2 is component.parent_component():
+                        parent_default = self.default_scaling_factors[key]
+        else:
+            for key in self.default_scaling_factors:
+                comp2 = blk.find_component(key)
+                if comp2 is component:
+                    comp_default = self.default_scaling_factors[key]
+                elif comp2 is component.parent_component():
+                    parent_default = self.default_scaling_factors[key]
+        if comp_default is not None:
+            return comp_default
+        elif parent_default is not None:
             return parent_default
         else:
             _log.debug(f"No default scaling factor found for {component.name}")
