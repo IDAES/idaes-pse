@@ -249,7 +249,15 @@ class CustomScalerBase(ScalerBase):
 
         # Locking attribute creation context prevents build-on-demand properties
         # from getting triggered through this lookup.
-        with blk.lock_attribute_creation_context():
+        if hasattr(blk, "lock_attribute_creation_context"):
+            with blk.lock_attribute_creation_context():
+                for key in self.default_scaling_factors:
+                    comp2 = blk.find_component(key)
+                    if comp2 is component:
+                        comp_default = self.default_scaling_factors[key]
+                    elif comp2 is component.parent_component():
+                        parent_default = self.default_scaling_factors[key]
+        else:
             for key in self.default_scaling_factors:
                 comp2 = blk.find_component(key)
                 if comp2 is component:
