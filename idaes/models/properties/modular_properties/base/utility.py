@@ -21,7 +21,7 @@ Author: A Lee
 
 from enum import Enum
 
-from pyomo.environ import units as pyunits, value
+from pyomo.environ import log, units as pyunits, value
 
 from idaes.core.util.exceptions import (
     BurntToast,
@@ -58,7 +58,7 @@ class GenericPropertyPackageError(PropertyPackageError):
         )
 
 
-def get_method(self, config_arg, comp=None, phase=None):
+def get_method(self, config_arg, comp=None, phase=None, log_expression=False):
     """
     Method to inspect configuration argument and return the user-defined
     construction method associated with it.
@@ -103,10 +103,26 @@ def get_method(self, config_arg, comp=None, phase=None):
 
     # Try to get the return_expression method from c_arg
     # Otherwise assume c_arg is the return_expression method
-    try:
-        mthd = c_arg.return_expression
-    except AttributeError:
-        mthd = c_arg
+    if not log_expression:
+        try:
+            mthd = c_arg.return_expression
+        except AttributeError:
+            mthd = c_arg
+    else:
+        if hasattr(c_arg, "return_log_expression"):
+            mthd = c_arg.return_log_expression
+        else:
+            _log.warning(
+                f"Failed to find log expression for {config_arg}."
+                "Reverting to use of the log function of the "
+                "non-log expression."
+            )
+
+            def mthd(*args, **kwargs):
+                exp_mthd = get_method(
+                    self, config_arg, comp=comp, phase=phase, log_expression=False
+                )
+                return log(exp_mthd(*args, **kwargs))
 
     # Call the return_expression method
     if callable(mthd):

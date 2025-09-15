@@ -275,9 +275,9 @@ class InitializerBase:
         Returns:
             None
         """
-        try:
+        if hasattr(model, "fix_initialization_states"):
             model.fix_initialization_states()
-        except AttributeError:
+        else:
             _log.info_high(
                 f"Model {model.name} does not have a fix_initialization_states method - attempting to continue."
             )
