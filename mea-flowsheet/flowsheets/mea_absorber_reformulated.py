@@ -16,7 +16,7 @@ from idaes.core import FlowsheetBlockData, declare_process_block_class
 
 from idaes.models.unit_models import Mixer, MomentumMixingType, Pump, HeatExchanger
 from idaes.models_extra.column_models.MEAsolvent_column import MEAColumn
-from intercooler_absorber import MEAAbsorberIntercooler
+# from intercooler_absorber import MEAAbsorberIntercooler
 
 from idaes.core.solvers.get_solver import get_solver
 import idaes.logger as idaeslog
