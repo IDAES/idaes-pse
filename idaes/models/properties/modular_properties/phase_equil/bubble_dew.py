@@ -238,7 +238,9 @@ class IdealBubbleDew:
         Scaling method for bubble temperature
         """
         sf_P = iscale.get_scaling_factor(b.pressure, default=1e-5, warning=True)
-        sf_mf = iscale.get_scaling_factor(b.mole_frac_comp, default=1e3, warning=True)
+        sf_mf = iscale.min_scaling_factor(
+            b.mole_frac_comp.values(), default=1e3, warning=True
+        )
 
         for pp in b.params._pe_pairs:
             for j in b.component_list:
@@ -368,7 +370,9 @@ class IdealBubbleDew:
         Scaling method for dew temperature
         """
         sf_P = iscale.get_scaling_factor(b.pressure, default=1e-5, warning=True)
-        sf_mf = iscale.get_scaling_factor(b.mole_frac_comp, default=1e3, warning=True)
+        sf_mf = iscale.min_scaling_factor(
+            b.mole_frac_comp.values(), default=1e3, warning=True
+        )
 
         for pp in b.params._pe_pairs:
             for j in b.component_list:
@@ -377,12 +381,12 @@ class IdealBubbleDew:
                     v_phase,
                     vl_comps,
                     _,
+                    l_only_comps,
                     _,
-                    v_only_comps,
                 ) = identify_VL_component_list(b, pp)
                 if l_phase is None or v_phase is None:
                     continue
-                elif v_only_comps != []:
+                elif l_only_comps != []:
                     continue
 
                 if j in vl_comps:

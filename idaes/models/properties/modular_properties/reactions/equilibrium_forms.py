@@ -78,6 +78,8 @@ class power_law_equil:
     def return_expression(b, rblock, r_idx, T):
         e = None
 
+        # TODO a system having inherent reactions should be
+        # disentangled from that system having electrolytes
         if hasattr(b.params, "_electrolyte") and b.params._electrolyte:
             pc_set = b.params.true_phase_component_set
         else:

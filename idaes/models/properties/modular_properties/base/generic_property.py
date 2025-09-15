@@ -1753,10 +1753,10 @@ class ModularPropertiesInitializer(InitializerBase):
         """
         # Setup loggers
         init_log = idaeslog.getInitLogger(
-            model.name, self.config.output_level, tag="properties"
+            model.name, self.get_output_level(), tag="properties"
         )
         solve_log = idaeslog.getSolveLogger(
-            model.name, self.config.output_level, tag="properties"
+            model.name, self.get_output_level(), tag="properties"
         )
 
         # Create solver object
@@ -1769,26 +1769,35 @@ class ModularPropertiesInitializer(InitializerBase):
         scaler_block = [blk for blk in model.values()][0]
 
         if hasattr(scaler_block, "inherent_equilibrium_constraint") and (
-            not scaler_block.params._electrolyte
+            not scaler_block.params._electrolyte  # Why do we need this check?
             or scaler_block.params.config.state_components == StateIndex.true
         ):
             init_log.debug(
                 "Cannot converge inherent reaction constraints "
-                "at the state block level. They need to be solved "
+                "at the state block level. They can only be solved "
                 "at the control volume level, when material and "
-                "energy balances are included. Ignoring "
-                "constraints with large residuals."
+                "energy balances are included. If initialization "
+                "of the control volume (or whichever block contains "
+                "material and energy balances) fails, a specialized "
+                "initialization method may be needed."
+                "Ignoring constraints with large residuals."
             )
             self.config.constraint_tolerance = float("inf")
 
-        if "flow_mol_phase_comp" in scaler_block.define_state_vars():
+        if (
+            "flow_mol_phase_comp"
+            or "mole_frac_phase_comp" in scaler_block.define_state_vars()
+        ):
             init_log.debug(
                 "Cannot converge phase equilibrium constraints "
                 "at the state block level due to using phase component "
                 "flows as state variables. These constraints need to be "
                 "solved at the control volume level, when material and "
-                "energy balances are included. Ignoring "
-                "constraints with large residuals."
+                "energy balances are included. If initialization "
+                "of the control volume (or whichever block contains "
+                "material and energy balances) fails, a specialized "
+                "initialization method may be needed. "
+                "Ignoring constraints with large residuals."
             )
             self.config.constraint_tolerance = float("inf")
 
@@ -1994,7 +2003,10 @@ class ModularPropertiesInitializer(InitializerBase):
                         # For systems where the state variables fully define the
                         # phase equilibrium, we cannot activate the equilibrium
                         # constraint at this stage.
-                        if "flow_mol_phase_comp" not in b.define_state_vars():
+                        if (
+                            "flow_mol_phase_comp" not in b.define_state_vars()
+                            and "mole_frac_phase_comp" not in b.define_state_vars()
+                        ):
                             c.activate()
 
                 for pp in b.params._pe_pairs:
@@ -2164,9 +2176,17 @@ class _GenericStateBlock(StateBlock):
             except AttributeError:
                 pass
             # Don't need equilibrium constraint for phase component flows
-            if "flow_mol_phase_comp" in k.define_state_vars():
+            if (
+                "flow_mol_phase_comp" in k.define_state_vars()
+                or "mole_frac_phase_comp" in k.define_state_vars()
+            ):
                 k.equilibrium_constraint.deactivate()
-            # TODO Inherent reactions with a true component basis will fail here too
+
+            if k.is_property_constructed("inherent_equilibrium_constraint") and (
+                not k.params._electrolyte
+                or k.params.config.state_components == StateIndex.true
+            ):
+                k.inherent_equilibrium_constraint.deactivate()
 
     def initialize(
         blk,
@@ -2226,11 +2246,11 @@ class _GenericStateBlock(StateBlock):
                 except AttributeError:
                     pass
 
-                if hasattr(k, "inherent_equilibrium_constraint") and (
-                    not k.params._electrolyte
-                    or k.params.config.state_components == StateIndex.true
-                ):
-                    k.inherent_equilibrium_constraint.deactivate()
+            if k.is_property_constructed("inherent_equilibrium_constraint") and (
+                not k.params._electrolyte
+                or k.params.config.state_components == StateIndex.true
+            ):
+                k.inherent_equilibrium_constraint.deactivate()
 
         # Fix state variables if not already fixed
         if state_vars_fixed is False:
@@ -2742,7 +2762,7 @@ class GenericStateBlockData(StateBlockData):
                     iscale.set_scaling_factor(v, sf_rho * sf_x)
 
         if self.is_property_constructed("_energy_density_term"):
-            for k, v in self._enthalpy_flow_term.items():
+            for k, v in self._energy_density_term.items():
                 if iscale.get_scaling_factor(v) is None:
                     sf_rho = iscale.get_scaling_factor(
                         self.dens_mol_phase[k], default=1, warning=True
@@ -2758,6 +2778,20 @@ class GenericStateBlockData(StateBlockData):
                 # for small molecules. For large molecules, this value will be inappropriate
                 iscale.set_scaling_factor(self.cp_mol_phase[p], 1 / 50, overwrite=False)
 
+        if self.is_property_constructed("fug_phase_comp"):
+            for idx in self.fug_phase_comp:
+                sf_x = iscale.get_scaling_factor(
+                    self.mole_frac_phase_comp[idx],
+                    default=1e3,
+                    warning=True,
+                )
+                sf_P = iscale.get_scaling_factor(
+                    self.pressure, default=1e-5, warning=True
+                )
+                iscale.set_scaling_factor(
+                    self.fug_phase_comp[idx], sf_P * sf_x, overwrite=False
+                )
+
         # Phase equilibrium constraint
         if hasattr(self, "equilibrium_constraint"):
             pe_form_config = self.params.config.phase_equilibrium_state
@@ -2771,7 +2805,6 @@ class GenericStateBlockData(StateBlockData):
                         .config.phase_equilibrium_form[(k[0], k[1])]
                         .calculate_scaling_factors(self, k[0], k[1], k[2])
                     )
-
                     iscale.constraint_scaling_transform(
                         self.equilibrium_constraint[k], sf_fug, overwrite=False
                     )

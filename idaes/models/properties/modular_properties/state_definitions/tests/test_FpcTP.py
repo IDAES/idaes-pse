@@ -1483,7 +1483,7 @@ thermo_config_no_rxn = {
 
 
 @pytest.mark.component
-def test_phase_equilibrium_initialization():
+def test_phase_equilibrium_legacy_initialization():
     # Create a pyomo model object
     model = ConcreteModel()
     model.fs = FlowsheetBlock(dynamic=False)
@@ -1507,6 +1507,50 @@ def test_phase_equilibrium_initialization():
     assert degrees_of_freedom(model) == 6 - 2
 
     model.fs.state.initialize()
+
+    # Check that degrees of freedom are still the same
+    assert degrees_of_freedom(model) == 6 - 2
+
+    # As the phase equilibrium constraints were not solved, we expect these to have a large residual
+    large_res = large_residuals_set(model.fs.state[0])
+    assert len(large_res) == 2
+    for i in large_res:
+        assert i.name in [
+            "fs.state[0.0].equilibrium_constraint[Vap,Liq,H2O]",
+            "fs.state[0.0].equilibrium_constraint[Vap,Liq,CO2]",
+        ]
+
+
+@pytest.mark.component
+def test_phase_equilibrium_initializer_object():
+    # Create a pyomo model object
+    model = ConcreteModel()
+    model.fs = FlowsheetBlock(dynamic=False)
+
+    model.fs.thermo_params = GenericParameterBlock(**thermo_config_no_rxn)
+
+    model.fs.state = model.fs.thermo_params.build_state_block(
+        model.fs.time, defined_state=False
+    )
+
+    model.fs.state[0].pressure.set_value(101325.0)
+    model.fs.state[0].temperature.set_value(298.0)
+
+    model.fs.state[0].flow_mol_phase_comp["Vap", "CO2"].set_value(0.0005 * 10)
+    model.fs.state[0].flow_mol_phase_comp["Liq", "CO2"].set_value(1e-8)
+    model.fs.state[0].flow_mol_phase_comp["Vap", "H2O"].set_value(1e-8)
+    model.fs.state[0].flow_mol_phase_comp["Liq", "H2O"].set_value((1 - 0.0005) * 10)
+
+    assert_units_consistent(model)
+    # We expect 6 state variables, but two additional constraints for phase equilibrium
+    assert degrees_of_freedom(model) == 6 - 2
+
+    initializer = model.fs.state.default_initializer()
+
+    initializer.initialize(model.fs.state)
+
+    # The initialization routine updates the tolerance to handle unconverged constraints
+    assert initializer.config.constraint_tolerance == float("inf")
 
     # Check that degrees of freedom are still the same
     assert degrees_of_freedom(model) == 6 - 2
