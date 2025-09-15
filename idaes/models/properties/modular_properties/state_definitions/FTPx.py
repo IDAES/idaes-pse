@@ -764,7 +764,7 @@ class FTPxScaler(CustomScalerBase):
     def constraint_scaling_routine(
         self, model, index, overwrite: bool = False, submodel_scalers: dict = None
     ):
-        if model.config.defined_state == False:
+        if model.config.defined_state is False:
             self.scale_constraint_by_nominal_value(
                 model.sum_mole_frac_out,
                 scheme=ConstraintScalingScheme.inverseMaximum,

@@ -33,8 +33,8 @@ from idaes.models.properties.modular_properties.phase_equil.henry import (
     henry_pressure,
     log_henry_pressure,
 )
-from .eos_base import EoSBase
 from idaes.core.scaling import CustomScalerBase, get_scaling_factor
+from .eos_base import EoSBase
 
 
 class IdealScaler(CustomScalerBase):

@@ -25,11 +25,7 @@ from idaes.models.properties.modular_properties.base.utility import Concentratio
 from idaes.core.util.misc import set_param_from_config
 from idaes.core.util.constants import Constants as c
 from idaes.core.util.exceptions import BurntToast, ConfigurationError
-from idaes.core.scaling import (
-    ConstraintScalingScheme,
-    CustomScalerBase,
-    get_scaling_factor,
-)
+from idaes.core.scaling import CustomScalerBase
 from .dh_rxn import constant_dh_rxn
 
 

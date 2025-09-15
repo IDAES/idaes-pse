@@ -19,7 +19,7 @@ Methods for calculating heat of reaction
 from pyomo.environ import units as pyunits, Var, value
 
 from idaes.core import MaterialFlowBasis
-from idaes.core.scaling import CustomScalerBase, get_scaling_factor
+from idaes.core.scaling import CustomScalerBase
 from idaes.core.util.constants import Constants
 from idaes.core.util.misc import set_param_from_config
 
@@ -38,9 +38,12 @@ class ConstantEnthalpyRxn(CustomScalerBase):
         reaction,
         overwrite: bool = False,
     ):
-        rblock = getattr(model.params, "reaction_" + reaction)
         units = model.params.get_metadata().derived_units
-        sf_T = get_scaling_factor(model.state_ref.temperature)
+        # Modular properties will have temperature scaled by default, but modular reactions
+        # might be used with a different property package
+        sf_T = self.get_scaling_factor(
+            model.state_ref.temperature, default=1 / 300, warning=True
+        )
         sf_R = value(
             1 / pyunits.convert(Constants.gas_constant, to_units=units["gas_constant"])
         )

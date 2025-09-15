@@ -190,9 +190,7 @@ class ModularPropertiesScaler(ModularPropertiesScalerBase):
             method="variable_scaling_routine",
             overwrite=overwrite,
         )
-
         sf_T = self.get_scaling_factor(model.temperature)
-        sf_P = self.get_scaling_factor(model.pressure)
 
         sf_mf = {}
         for i, v in model.mole_frac_phase_comp.items():
@@ -515,11 +513,11 @@ class ModularPropertiesScaler(ModularPropertiesScalerBase):
         """
         scale_variables=True scales variables, scales_variables=False scales constraints
         """
-        sf_T = get_scaling_factor(model.temperature)
-        sf_P = get_scaling_factor(model.pressure)
+        sf_T = self.get_scaling_factor(model.temperature)
+        sf_P = self.get_scaling_factor(model.pressure)
         sf_mf = {}
         for i, v in model.mole_frac_phase_comp.items():
-            sf_mf[i] = get_scaling_factor(v)
+            sf_mf[i] = self.get_scaling_factor(v)
 
         # Ditch the m.fs.unit.control_volume...
         short_name = pt_var.name.split(".")[-1]

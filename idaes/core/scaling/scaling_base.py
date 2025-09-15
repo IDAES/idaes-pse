@@ -133,7 +133,9 @@ class ScalerBase:
             width=66,
         )
 
-    def get_scaling_factor(self, component):
+    def get_scaling_factor(
+        self, component, default: float = None, warning: Bool = False
+    ):
         """
         Get scaling factor for component.
 
@@ -141,6 +143,10 @@ class ScalerBase:
 
         Args:
             component: component to get scaling factor for
+            default: scaling factor to return if no scaling factor
+                exists on component
+            warning: Bool to determine whether a warning should be
+                returned if no scaling factor is found
 
         Returns:
             float - scaling factor
@@ -148,7 +154,7 @@ class ScalerBase:
         Raises:
             TypeError if component is a Block
         """
-        return get_scaling_factor(component)
+        return get_scaling_factor(component, default=default, warning=warning)
 
     def set_variable_scaling_factor(
         self, variable, scaling_factor: float, overwrite: bool = None

@@ -28,34 +28,30 @@ from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.scaling import (
     ConstraintScalingScheme,
     CustomScalerBase,
-    get_scaling_factor,
 )
-
-from idaes.core.scaling import CustomScalerBase, get_scaling_factor
 
 
 class IdealBubbleDewScaler(CustomScalerBase):
     """
-    Scaling method for the Ideal equation of state.
-    It creates no new variables or constraints, so only scaling hints are necessary.
-    The scaling hint for enth_mol_phase is already set in the parent properties.
+    Scaling method for the IdealBubbleDew method for bubble/dew point calculations.
+    No new variables are created, so only constraints need to be scaled.
     """
 
     def variable_scaling_routine(self, model, phase, overwrite: bool = False):
         pass
 
     def constraint_scaling_routine(self, model, phase, overwrite: bool = False):
-        sf_P = get_scaling_factor(model.pressure)
+        sf_P = self.get_scaling_factor(model.pressure)
         sf_mf = {}
         for i, v in model.mole_frac_comp.items():
-            sf_mf[i] = get_scaling_factor(v)
+            sf_mf[i] = self.get_scaling_factor(v)
 
         for pp in model.params._pe_pairs:
             (
                 l_phase,
                 v_phase,
                 vl_comps,
-                henry_comps,
+                henry_comps,  # pylint: disable=W0612
                 l_only_comps,
                 v_only_comps,
             ) = identify_VL_component_list(model, pp)

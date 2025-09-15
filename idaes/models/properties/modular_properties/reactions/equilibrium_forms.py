@@ -30,15 +30,21 @@ from idaes.models.properties.modular_properties.base.utility import (
 from idaes.core.scaling import (
     ConstraintScalingScheme,
     CustomScalerBase,
-    get_scaling_factor,
 )
 
 
 # ----------------------------------------------------------------------------
 class PowerLawEquilScaler(CustomScalerBase):
+    """
+    Scaler for PowerLawEquil form of chemical equilibrium
+    """
+
     def variable_scaling_routine(
         self, model, reaction, overwrite=False, submodel_scalers=None
     ):
+        """
+        No variables to scale
+        """
         pass
 
     def constraint_scaling_routine(
@@ -95,6 +101,10 @@ class power_law_equil:
 
 # ----------------------------------------------------------------------------
 class LogPowerLawEquilScaler(CustomScalerBase):
+    """
+    Scaler for LogPowerLawEquil form of chemical equilibrium
+    """
+
     def variable_scaling_routine(
         self, model, reaction, overwrite=False, submodel_scalers=None
     ):

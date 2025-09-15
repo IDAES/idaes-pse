@@ -25,7 +25,6 @@ from pyomo.environ import (
     Expression,
     Set,
     units as pyunits,
-    value,
     Var,
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
@@ -44,18 +43,12 @@ from idaes.models.properties.modular_properties.base.utility import (
     ConcentrationForm,
     ModularPropertiesScalerBase,
 )
-from idaes.core.util.constants import Constants
 from idaes.core.util.exceptions import (
     BurntToast,
     ConfigurationError,
     PropertyPackageError,
 )
 import idaes.core.util.scaling as iscale
-from idaes.core.scaling import (
-    ConstraintScalingScheme,
-    CustomScalerBase,
-    get_scaling_factor,
-)
 
 import idaes.logger as idaeslog
 
@@ -83,6 +76,10 @@ class GenericReactionPackageError(PropertyPackageError):
 
 
 class ModularReactionScaler(ModularPropertiesScalerBase):
+    """
+    Scaler for reaction blocks created with the modular reaction framework
+    """
+
     def variable_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None
     ):

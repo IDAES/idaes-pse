@@ -27,11 +27,7 @@ from idaes.models.properties.modular_properties.base.utility import (
     identify_VL_component_list,
 )
 import idaes.core.util.scaling as iscale
-from idaes.core.scaling import (
-    ConstraintScalingScheme,
-    CustomScalerBase,
-    get_scaling_factor,
-)
+from idaes.core.scaling import CustomScalerBase
 
 
 class SmoothVLEScaler(CustomScalerBase):
@@ -41,7 +37,7 @@ class SmoothVLEScaler(CustomScalerBase):
 
     def variable_scaling_routine(self, model, phase_pair, overwrite: bool = False):
         suffix = "_" + phase_pair[0] + "_" + phase_pair[1]
-        sf_T = get_scaling_factor(model.temperature)
+        sf_T = self.get_scaling_factor(model.temperature)
 
         if model.is_property_constructed("_t1" + suffix):
             t1 = getattr(model, "_t1" + suffix)

@@ -508,6 +508,9 @@ def calculate_scaling_factors(b):
 
 
 class FPhxScaler(FTPxScaler):
+    """
+    Scaler for FPhx state variables
+    """
 
     # Inherit variable_scaling_routine from FTPx.
     # enth_mol isn't scaled there, but will be scaled by the

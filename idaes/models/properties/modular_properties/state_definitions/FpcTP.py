@@ -356,6 +356,9 @@ do_not_initialize = []
 
 
 class FpcTPScaler(FTPxScaler):
+    """
+    Scaler for FpcTP state variables
+    """
 
     # Inherit variable_scaling_routine from FTPx.
 
