@@ -218,8 +218,7 @@ class ModularPropertiesScaler(ModularPropertiesScalerBase):
             sf_mw_phase = {}
             for p in model.phase_list:
                 mw_phase = sum(
-                    mw_comp_dict[j]
-                    / sf_mf[p, j]
+                    mw_comp_dict[j] / sf_mf[p, j]
                     for j in model.component_list
                     if j in model.components_in_phase(p)
                 ) / sum(
