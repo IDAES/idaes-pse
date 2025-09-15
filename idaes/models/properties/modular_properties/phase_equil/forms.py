@@ -17,7 +17,7 @@ Library of common forms for phase equilibrium constraints
 # pylint: disable=missing-function-docstring
 
 import idaes.core.util.scaling as iscale
-from idaes.core.scaling import CustomScalerBase, get_scaling_factor
+from idaes.core.scaling import CustomScalerBase
 
 
 class FugacityScaler(CustomScalerBase):

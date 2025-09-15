@@ -49,26 +49,22 @@ EPS_INIT = 1e-4
 
 
 class CubicComplementarityVLEScaler(CustomScalerBase):
+    """
+    Scaler for CubicComplementarityVLE
+    """
+
     def variable_scaling_routine(self, model, phase_pair, overwrite: bool = False):
-        pass
+        suffix = "_" + phase_pair[0] + "_" + phase_pair[1]
+        sf_T = self.get_scaling_factor(model.temperature)
+        if model.is_property_constructed("_teq_constraint" + suffix):
+            self.set_component_scaling_factor(model._teq[phase_pair], sf_T)
 
     def constraint_scaling_routine(self, model, phase_pair, overwrite: bool = False):
-        pass
-
-    def calculate_scaling_factors(b, phase_pair):
-        """
-        Method to calculate scaling factors for phase equilibrium
-        """
         suffix = "_" + phase_pair[0] + "_" + phase_pair[1]
-        sf_T = iscale.get_scaling_factor(b.temperature, default=1, warning=True)
-
-        if hasattr(b, "_teq_constraint" + suffix):
-            teq_cons = getattr(b, "_teq_constraint" + suffix)
-            # pylint: disable-next=protected-access
-            iscale.set_scaling_factor(b._teq[phase_pair], sf_T)
-            iscale.constraint_scaling_transform(teq_cons, sf_T, overwrite=False)
-        else:
-            pass
+        sf_T = self.get_scaling_factor(model.temperature)
+        if model.is_property_constructed("_teq_constraint" + suffix):
+            teq_cons = getattr(model, "_teq_constraint" + suffix)
+            self.set_component_scaling_factor(teq_cons, sf_T, overwrite=overwrite)
 
 
 # -----------------------------------------------------------------------------

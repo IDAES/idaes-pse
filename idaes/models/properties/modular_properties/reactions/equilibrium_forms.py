@@ -42,9 +42,7 @@ class PowerLawEquilScaler(CustomScalerBase):
     def variable_scaling_routine(
         self, model, reaction, overwrite=False, submodel_scalers=None
     ):
-        """
-        No variables to scale
-        """
+        # No variables to scale
         pass
 
     def constraint_scaling_routine(
@@ -110,6 +108,7 @@ class LogPowerLawEquilScaler(CustomScalerBase):
     def variable_scaling_routine(
         self, model, reaction, overwrite=False, submodel_scalers=None
     ):
+        # No variables to scale
         pass
 
     def constraint_scaling_routine(

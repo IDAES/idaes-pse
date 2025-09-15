@@ -103,10 +103,6 @@ class RPP5(object):
             Tr = pyunits.convert(b.params.temperature_ref, to_units=pyunits.K)
 
             units = b.params.get_metadata().derived_units
-            if cobj.parent_block().config.include_enthalpy_of_formation:
-                h0 = cobj.enth_mol_form_vap_comp_ref
-            else:
-                h0 = 0 * units.ENERGY_MOLE
 
             h_form = (
                 cobj.enth_mol_form_vap_comp_ref
