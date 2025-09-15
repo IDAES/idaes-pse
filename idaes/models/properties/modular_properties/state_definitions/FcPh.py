@@ -30,7 +30,6 @@ from pyomo.environ import (
 )
 
 from idaes.core import MaterialFlowBasis, MaterialBalanceType, EnergyBalanceType
-from idaes.core.scaling import ConstraintScalingScheme
 
 from idaes.models.properties.modular_properties.state_definitions.FTPx import (
     state_initialization,

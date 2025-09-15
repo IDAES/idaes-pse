@@ -92,7 +92,7 @@ from idaes.models.properties.modular_properties.phase_equil.bubble_dew import (
     LogBubbleDew,
 )
 from idaes.models.properties.modular_properties.phase_equil.henry import HenryType
-from idaes.core.scaling import get_scaling_factor, DefaultScalingRecommendation
+from idaes.core.scaling import DefaultScalingRecommendation
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -191,12 +191,12 @@ class ModularPropertiesScaler(ModularPropertiesScalerBase):
             overwrite=overwrite,
         )
 
-        sf_T = get_scaling_factor(model.temperature)
-        sf_P = get_scaling_factor(model.pressure)
+        sf_T = self.get_scaling_factor(model.temperature)
+        sf_P = self.get_scaling_factor(model.pressure)
 
         sf_mf = {}
         for i, v in model.mole_frac_phase_comp.items():
-            sf_mf[i] = get_scaling_factor(v)
+            sf_mf[i] = self.get_scaling_factor(v)
 
         mw_comp_dict = {}
         mw_missing = False

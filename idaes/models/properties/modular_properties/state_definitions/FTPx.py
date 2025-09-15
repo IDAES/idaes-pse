@@ -48,7 +48,6 @@ import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 from idaes.core.scaling import (
     CustomScalerBase,
-    get_scaling_factor,
     ConstraintScalingScheme,
 )
 from .electrolyte_states import define_electrolyte_state, calculate_electrolyte_scaling
@@ -727,7 +726,7 @@ class FTPxScaler(CustomScalerBase):
     ):
         sf_Fp = {}
         for p in model.phase_list:
-            sf_Fp[p] = get_scaling_factor(model.flow_mol_phase[p])
+            sf_Fp[p] = self.get_scaling_factor(model.flow_mol_phase[p])
         sf_F = min(sf_Fp.values())
         self.set_component_scaling_factor(model.flow_mol, sf_F, overwrite=overwrite)
 
@@ -736,7 +735,7 @@ class FTPxScaler(CustomScalerBase):
 
         sf_mf = {}
         for idx, v in model.mole_frac_phase_comp.items():
-            sf_mf[idx] = get_scaling_factor(v)
+            sf_mf[idx] = self.get_scaling_factor(v)
             self.set_component_scaling_factor(
                 model.flow_mol_phase_comp[idx],
                 sf_mf[idx] * sf_Fp[idx[0]],

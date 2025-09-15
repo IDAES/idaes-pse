@@ -31,9 +31,7 @@ from pyomo.environ import (
 
 from idaes.core import MaterialFlowBasis, MaterialBalanceType, EnergyBalanceType
 from idaes.core.scaling import (
-    CustomScalerBase,
     ConstraintScalingScheme,
-    get_scaling_factor,
 )
 
 from idaes.models.properties.modular_properties.state_definitions.FTPx import (
