@@ -45,7 +45,7 @@ class ExtraDependencies:
         "omlt==1.2.2",  # fix the version for now as package evolves
         "tensorflow",
         "onnx",
-        "lineartree",
+        "linear-tree",
     ]
     grid = [
         "gridx-prescient>=2.2.1",  # idaes.tests.prescient
