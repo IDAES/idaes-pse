@@ -42,7 +42,7 @@ class ExtraDependencies:
         "idaes-ui @ git+https://github.com/IDAES/idaes-ui@main",
     ]
     omlt = [
-        "omlt==1.1",  # fix the version for now as package evolves
+        "omlt==1.2.2",  # fix the version for now as package evolves
         "tensorflow",
         "onnx",
     ]
