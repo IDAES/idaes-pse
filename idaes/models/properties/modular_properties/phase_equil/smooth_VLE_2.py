@@ -57,12 +57,16 @@ class CubicComplementarityVLEScaler(CustomScalerBase):
         suffix = "_" + phase_pair[0] + "_" + phase_pair[1]
         sf_T = self.get_scaling_factor(model.temperature)
         if model.is_property_constructed("_teq_constraint" + suffix):
-            self.set_component_scaling_factor(model._teq[phase_pair], sf_T)
+            # pylint: disable-next=protected-access
+            self.set_component_scaling_factor(
+                model._teq[phase_pair], sf_T, overwrite=overwrite
+            )
 
     def constraint_scaling_routine(self, model, phase_pair, overwrite: bool = False):
         suffix = "_" + phase_pair[0] + "_" + phase_pair[1]
-        sf_T = self.get_scaling_factor(model.temperature)
         if model.is_property_constructed("_teq_constraint" + suffix):
+            # pylint: disable-next=protected-access
+            sf_T = self.get_scaling_factor(model._teq[phase_pair])
             teq_cons = getattr(model, "_teq_constraint" + suffix)
             self.set_component_scaling_factor(teq_cons, sf_T, overwrite=overwrite)
 
