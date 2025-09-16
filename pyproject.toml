@@ -81,7 +81,7 @@ include-package-data = true
 py-version = "3.10"
 
 [tool.setuptools.packages.find]
-where = ["idaes*"]
+include = ["idaes*"]
 
 [tool.setuptools.package-data]
 "*" = [
