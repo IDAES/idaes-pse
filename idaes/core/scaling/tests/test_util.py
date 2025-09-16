@@ -1656,7 +1656,7 @@ class TestGetScalingFactor:
         m.scaling_hint = Suffix(direction=Suffix.EXPORT)
 
         with caplog.at_level(idaeslog.WARNING):
-            sf = get_scaling_factor(m.e)
+            sf = get_scaling_factor(m.e, warning=True)
         assert len(caplog.records) == 1
         assert "Missing scaling factor for e" in caplog.text
         assert sf is None
@@ -1690,7 +1690,7 @@ class TestGetScalingFactor:
         m.scaling_hint = Suffix(direction=Suffix.EXPORT)
 
         with caplog.at_level(idaeslog.WARNING):
-            sf = get_scaling_factor(m.e, default=17)
+            sf = get_scaling_factor(m.e, default=17, warning=True)
         assert len(caplog.records) == 1
         assert "Missing scaling factor for e" in caplog.text
         assert sf == 17
@@ -1722,6 +1722,19 @@ class TestGetScalingFactor:
         m.scaling_factor[m.e] = 13
 
         assert get_scaling_factor(m.e) is None
+
+    @pytest.mark.unit
+    def test_get_scaling_factor_unnamed_expression(self):
+        m = ConcreteModel()
+        m.v = Var()
+        e = 2 * m.v
+        with pytest.raises(
+            TypeError,
+            match=re.escape(
+                "Can only get scaling hints for named expressions, but component was an unnamed expression."
+            ),
+        ):
+            get_scaling_factor(e)
 
 
 class TestSetScalingFactor:
