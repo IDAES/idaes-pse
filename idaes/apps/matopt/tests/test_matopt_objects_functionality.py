@@ -74,8 +74,8 @@ from test_matopt_objects_construction import *
 
 
 @pytest.mark.unit
-def test_functionality_FCCLattice():
-    lattice = test_construct_FCCLattice()
+def test_functionality_FCCLattice(construct_FCCLattice):
+    lattice = construct_FCCLattice
     assert lattice.areNeighbors(np.zeros(3, dtype=float), np.array([0.0, -0.5, 0.5]))
     nbs = lattice.getNeighbors(np.zeros(3, dtype=float))
     for p in nbs:
@@ -87,8 +87,8 @@ def test_functionality_FCCLattice():
 
 
 @pytest.mark.unit
-def test_functionality_CubicLattice():
-    lattice = test_construct_CubicLattice()
+def test_functionality_CubicLattice(construct_CubicLattice):
+    lattice = construct_CubicLattice
     assert lattice.areNeighbors(np.zeros(3, dtype=float), np.array([1.0, 0.0, 0.0]))
     nbs = lattice.getNeighbors(np.zeros(3, dtype=float))
     for p in nbs:
@@ -97,8 +97,8 @@ def test_functionality_CubicLattice():
 
 
 @pytest.mark.unit
-def test_functionality_DiamondLattice():
-    lattice = test_construct_DiamondLattice()
+def test_functionality_DiamondLattice(construct_DiamondLattice):
+    lattice = construct_DiamondLattice
     assert lattice.areNeighbors(np.zeros(3, dtype=float), np.array([0.25, 0.25, 0.25]))
     nbs = lattice.getNeighbors(np.zeros(3, dtype=float))
     for p in nbs:
@@ -119,8 +119,8 @@ def test_functionality_DiamondLattice():
 
 
 @pytest.mark.unit
-def test_functionality_WurtziteLattice():
-    lattice = test_construct_WurtziteLattice()
+def test_functionality_WurtziteLattice(construct_WurtziteLattice):
+    lattice = construct_WurtziteLattice
     assert lattice.areNeighbors(
         np.zeros(3, dtype=float), np.array([0.0, 0.0, -3 / sqrt(24)])
     )
