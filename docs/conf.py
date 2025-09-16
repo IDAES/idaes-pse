@@ -8,6 +8,7 @@
 import os
 import sys
 import sphinx_book_theme as theme
+import importlib
 
 # For importing from idaes.<modules..>
 sys.path.insert(0, os.path.abspath(".."))
@@ -18,6 +19,18 @@ import idaes.ver
 # If your documentation needs a minimal Sphinx version, state it here.
 #
 # needs_sphinx = '1.0'
+
+
+# -- Project information -----------------------------------------------------
+
+project = "idaes-pse"
+# copyright = "2020-2025,..."
+# author = "..."
+
+# The full version, including alpha/beta/rc tags
+release = importlib.metadata.version("idaes-pse")
+# The short X.Y version
+version = importlib.metadata.version("idaes-pse")
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
