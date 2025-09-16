@@ -350,11 +350,11 @@ class TestStateBlockScalerObject(object):
 
         scaler_obj.default_scaling_factors["flow_mol_phase"] = 1
         scaler_obj.default_scaling_factors[
-            "mole_frac_phase_comp[Vap, carbon_dioxide]"
+            "mole_frac_phase_comp[Vap,carbon_dioxide]"
         ] = 1
-        scaler_obj.default_scaling_factors["mole_frac_phase_comp[Liq, bmimPF6]"] = 1
+        scaler_obj.default_scaling_factors["mole_frac_phase_comp[Liq,bmimPF6]"] = 1
         scaler_obj.default_scaling_factors[
-            "mole_frac_phase_comp[Liq, carbon_dioxide]"
+            "mole_frac_phase_comp[Liq,carbon_dioxide]"
         ] = 5
         scaler_obj.default_scaling_factors["temperature"] = 1e-2
         scaler_obj.default_scaling_factors["pressure"] = 1e-5

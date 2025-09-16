@@ -229,46 +229,18 @@ class CustomScalerBase(ScalerBase):
         Returns:
             default scaling factor if it exists, else None
         """
-        blk = component.parent_block()
-        comp_default = None
-        parent_default = None
-        # We're not just returning self.default_scaling_factors[component.local_name]
-        # because the component finder has additional logic to handle, e.g., spaces
-        # separating indices for elements of an indexed component. We want the user
-        # to be able to provide either "var[a,b]" or "var[a, b]" (with a space following
-        # the comma) and still find the right component
+        try:
+            return self.default_scaling_factors[component.local_name]
+        except KeyError:
+            # Might be indexed, see if parent component has default scaling
+            parent = component.parent_component()
+            try:
+                return self.default_scaling_factors[parent.local_name]
+            except KeyError:
+                # No default scaling found, give up
+                pass
 
-        # If the user provides both "var[a,b]" and "var[a, b]", then whichever is
-        # encountered first when iterating through the keys will be returned. This
-        # behavior is not ideal. TODO dictionary validation
-
-        # Iterating through every key is certainly not the most efficient way to go
-        # about this look-up process, but it's also probably not going to be the
-        # rate limiting step, especially considering these default dictionaries
-        # should be relatively short.
-
-        # Locking attribute creation context prevents build-on-demand properties
-        # from getting triggered through this lookup.
-        if hasattr(blk, "lock_attribute_creation_context"):
-            with blk.lock_attribute_creation_context():
-                for key in self.default_scaling_factors:
-                    comp2 = blk.find_component(key)
-                    if comp2 is component:
-                        comp_default = self.default_scaling_factors[key]
-                    elif comp2 is component.parent_component():
-                        parent_default = self.default_scaling_factors[key]
-        else:
-            for key in self.default_scaling_factors:
-                comp2 = blk.find_component(key)
-                if comp2 is component:
-                    comp_default = self.default_scaling_factors[key]
-                elif comp2 is component.parent_component():
-                    parent_default = self.default_scaling_factors[key]
-        if comp_default is not None:
-            return comp_default
-        elif parent_default is not None:
-            return parent_default
-        else:
+            # Log a message and return nothing
             _log.debug(f"No default scaling factor found for {component.name}")
             return None
 
