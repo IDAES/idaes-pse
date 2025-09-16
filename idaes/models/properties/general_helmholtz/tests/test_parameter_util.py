@@ -24,9 +24,13 @@ this density of a liquid near the triple point is insensitive to pressure, so to
 the pressure from density of a liquid at the triple point, a lot of significant figures 
 are needed. As long a I could add significant figures to the density and not change the 
 reported value when rounded, I assumed it was okay. 
+
+If you're adding more tests and run into the same problem, the function infer_rhol_value 
+can be uncommented to print out an inferred value for liquid density.
 """
 
 import pytest
+import math
 from idaes.models.properties.general_helmholtz.components.parameters.h2o import (
     main as h2o_main,
 )
@@ -51,12 +55,25 @@ from idaes.models.properties.general_helmholtz.components.parameters.r227ea impo
 from idaes.models.properties.general_helmholtz.components.parameters.r32 import (
     main as r32_main,
 )
+from idaes.models.properties.general_helmholtz.components.parameters.isobutane import (
+    main as isobutane_main,
+)
+from idaes.models.properties.general_helmholtz.components.parameters.butane import (
+    main as butane_main,
+)
 
 
 def _common_sat(sat_thermo_data, we):
     # Check the EoS expressions, the tolerance is a little loose
     # due to lack of sig. figs. in reported data
     for pnt in sat_thermo_data.values():
+
+        # The pressure is very sensitive to the liquid density (rhol) around the triple point.
+        # If you're finding we.calculate_pressure(rho=pnt["rhol"], T=pnt["T"]) is failing,
+        # uncomment the line below to infer a more precise value for rhol that you can use in
+        # your test.
+        # infer_rhol_value(pnt,we)
+
         assert we.calculate_pressure(rho=pnt["rhov"], T=pnt["T"]) == pytest.approx(
             pnt["p"], rel=1e-2, abs=1e-3
         )
@@ -402,3 +419,122 @@ def test_r32():
 
     we = r32_main(dry_run=True)
     _common_sat(sat_thermo_data, we)
+
+
+@pytest.mark.unit
+def test_butane():
+    # Some test data from:
+    #
+    # Reference Equations of State for the Thermodynamic
+    # Properties of Fluid Phase -Butane and Isobutane
+    # D. Bücker; W. Wagner
+    sat_thermo_data = {
+        1: {  # near triple point
+            "T": 136,
+            "p": 0.00082,
+            "rhol": 733.2830604395986,
+            "hl": -719.4384081295542,
+            "sl": -3.020002726615331,
+            "rhov": 4.2144648219014844e-05,
+            "hv": -224.476119878109,
+            "sv": 0.6193124379530769,
+        },
+        2: {  # Middle value
+            "T": 222,
+            "p": 8.829,
+            "rhol": 652.2556845646468,
+            "hl": -544.805042777869,
+            "sl": -2.0278638641793307,
+            "rhov": 0.27996277123216506,
+            "hv": -117.79829132234931,
+            "sv": -0.10453501347214404,
+        },
+        3: {  # near critical point
+            "T": 425,
+            "p": 3788.1,
+            "rhol": 264.7312031078,
+            "hl": 44.02839031370719,
+            "sl": -0.2505256333683984,
+            "rhov": 205.129236104155,
+            "hv": 74.05462506435113,
+            "sv": -0.17984390766126987,
+        },
+    }
+
+    we = butane_main(dry_run=True)
+    _common_sat(sat_thermo_data, we)
+
+
+@pytest.mark.unit
+def test_isobutane():
+    # Some test data from:
+    #
+    # Reference Equations of State for the Thermodynamic
+    # Properties of Fluid Phase -Butane and Isobutane
+    # D. Bücker; W. Wagner
+    sat_thermo_data = {
+        1: {  # as close to the triple point as I could get it to solve
+            "T": 244,
+            "p": 48.482,
+            "rhol": 612.7089159567313,
+            "hl": -466.15257329991033,
+            "sl": -1.7676822027038077,
+            "rhov": 1.4236413419350442,
+            "hv": -86.14006509543601,
+            "sv": -0.21025284166965258,
+        },
+        2: {  # middle value
+            "T": 266,
+            "p": 120.89,
+            "rhol": 588.6890683531155,
+            "hl": -417.8728759840798,
+            "sl": -1.5787731067716966,
+            "rhov": 3.333264026007927,
+            "hv": -56.91293931766913,
+            "sv": -0.22178473597968779,
+        },
+        3: {  # close to the critical point.
+            "T": 407,
+            "p": 3580.1,
+            "rhol": 276.81776780534676,
+            "hl": 7.291970261823228,
+            "sl": -0.3538117763443197,
+            "rhov": 173.4503046051935,
+            "hv": 59.64795727088574,
+            "sv": -0.22517272904982927,
+        },
+    }
+
+    we = isobutane_main(dry_run=True)
+    _common_sat(sat_thermo_data, we)
+
+
+def infer_rhol_value(pnt, we):
+    # Pressure is extremely sensitive to the liquid density (rhol) around the triple point.
+    # This method is used to infer additional decimal places for the liquid density
+    # so that the pressure calculated correctly.
+
+    pressure = pnt["p"]
+    rhol_pressure = we.calculate_pressure(rho=pnt["rhol"], T=pnt["T"])
+
+    rhol = pnt["rhol"]
+    rhol_max = math.ceil(pnt["rhol"])
+    rhol_min = math.floor(pnt["rhol"])
+
+    # If the pressure is not within 1e-3 of the true pressure,
+    # make it more precise
+    while abs(rhol_pressure - pressure) > 1e-5:
+        # Converge on the correct density by replacing the upper/lower bound
+        # (basic bisection solving method )
+        if rhol_pressure > pressure:
+            rhol_max = rhol
+        elif rhol_pressure < pressure:
+            rhol_min = rhol
+        rhol = (rhol_max + rhol_min) / 2
+        rhol_pressure = we.calculate_pressure(rho=rhol, T=pnt["T"])
+
+    print(
+        f"update the rhol in your test_[compound] method for\n"
+        f"T={pnt['T']} P={pnt['p']} to this value: {rhol} \n",
+        f"This adds additional precision to your original value of {pnt['rhol']}",
+    )

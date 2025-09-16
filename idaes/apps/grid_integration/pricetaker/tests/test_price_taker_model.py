@@ -707,9 +707,13 @@ def test_start_shut_no_install(dummy_data):
     )
 
     # Test if startup and shutdown constraints are added correctly
-    m.add_startup_shutdown(op_block_name="op_blk", up_time=3, down_time=4)
+    m.add_startup_shutdown(
+        op_block_name="op_blk", minimum_up_time=3, minimum_down_time=4
+    )
 
     assert hasattr(m, "op_blk_startup_shutdown")
+    assert hasattr(m.config, "minimum_up_time")
+    assert hasattr(m.config, "minimum_down_time")
     assert len(m.op_blk_startup_shutdown) == 1
     assert len(m.op_blk_startup_shutdown[1].binary_relationship_con) == 24 - 1
     assert len(m.op_blk_startup_shutdown[1].minimum_up_time_con) == 24 - (3 - 1)
@@ -730,7 +734,9 @@ def test_start_shut_no_install(dummy_data):
             "for operation block op_blk."
         ),
     ):
-        m.add_startup_shutdown(op_block_name="op_blk", up_time=5, down_time=3)
+        m.add_startup_shutdown(
+            op_block_name="op_blk", minimum_up_time=5, minimum_down_time=3
+        )
 
 
 @pytest.mark.unit
@@ -752,8 +758,8 @@ def test_start_shut_with_install(dummy_data):
     method_args = {
         "op_block_name": "op_blk",
         "des_block_name": "design_blk",
-        "up_time": 3,
-        "down_time": 4,
+        "minimum_up_time": 3,
+        "minimum_down_time": 4,
     }
     m.design_blk.del_component(m.design_blk.install_unit)
     assert m.find_component("design_blk.install_unit") is None
@@ -803,8 +809,8 @@ def test_start_shut_with_rep_days(dummy_data):
     m.add_startup_shutdown(
         op_block_name="op_blk",
         des_block_name="design_blk",
-        up_time=3,
-        down_time=4,
+        minimum_up_time=3,
+        minimum_down_time=4,
     )
 
     assert len(m.op_blk_startup_shutdown) == 2  # 2 representative days
