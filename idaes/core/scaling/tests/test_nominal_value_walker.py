@@ -721,11 +721,14 @@ class TestNominalValueExtractionVisitor:
         ) == [1, 17]
 
     @pytest.mark.unit
-    def test_Expression_constant(self, m):
+    def test_Expression_constant(self, m, caplog):
         m.expression2 = pyo.Expression(expr=2)
-        assert NominalValueExtractionVisitor().walk_expression(
-            expr=(1 + m.expression2)
-        ) == [1, 2]
+        with caplog.at_level(logging.WARNING):
+            out = NominalValueExtractionVisitor().walk_expression(
+                expr=(1 + m.expression2)
+            )
+        assert len(caplog.text) == 0
+        assert out == [1, 2]
 
     @pytest.mark.unit
     def test_Expression_constant_hint(self, m):
