@@ -75,7 +75,8 @@ class IdealScaler(CustomScalerBase):
                 sf_cp = sf_H / sf_T
             else:
                 sf_cp = value(
-                    mw / pyunits.convert_value(
+                    mw
+                    / pyunits.convert_value(
                         2,
                         from_units=pyunits.J / pyunits.g / pyunits.K,
                         to_units=units["HEAT_CAPACITY_MASS"],
@@ -112,7 +113,7 @@ class Ideal(EoSBase):
 
     # Add attribute indicating support for electrolyte systems
     electrolyte_support = True
-    # default_scaler = IdealScaler
+    default_scaler = IdealScaler
 
     @staticmethod
     def common(b, pobj):

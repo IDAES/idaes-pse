@@ -19,7 +19,13 @@ import pytest
 from numpy import logspace
 
 from pyomo.util.check_units import assert_units_consistent
-from pyomo.environ import assert_optimal_termination, ConcreteModel, Objective, value
+from pyomo.environ import (
+    assert_optimal_termination,
+    check_optimal_termination,
+    ConcreteModel,
+    Objective,
+    value,
+)
 
 from idaes.core import FlowsheetBlock
 from idaes.models.properties.modular_properties.eos.ceos import cubic_roots_available
@@ -757,11 +763,22 @@ class TestBTExampleScalerObject(object):
 
             results = solver.solve(m)
 
+            # Sometimes the slack variables can get stuck at their bounds,
+            # which causes the Jacobian to become singular. The bound
+            # push that results from restarting IPOPT can be enough
+            # to recover.
+            if not check_optimal_termination(results):
+                results = solver.solve(m)
+
             assert_optimal_termination(results)
 
             while m.fs.state[1].pressure.value <= 1e6:
 
                 results = solver.solve(m)
+
+                if not check_optimal_termination(results):
+                    results = solver.solve(m)
+
                 assert_optimal_termination(results)
 
                 m.fs.state[1].pressure.value = m.fs.state[1].pressure.value + 1e5
