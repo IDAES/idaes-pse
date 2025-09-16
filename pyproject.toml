@@ -79,7 +79,7 @@ py-version = "3.10"
 where = ["idaes"]
 
 [tool.setuptools.package-data]
-"idaes-pse" = [
+"*" = [
     "*.template",
     "*.json",
     "*.yaml",
