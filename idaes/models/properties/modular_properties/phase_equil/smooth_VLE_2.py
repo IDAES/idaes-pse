@@ -74,8 +74,9 @@ class CubicComplementarityVLE:
     """
     Improved Vapor-Liquid Equilibrium complementarity formulation for Cubic Equations of State.
     """
+
     default_scaler = CubicComplementarityVLEScaler
-    
+
     @staticmethod
     def phase_equil(b, phase_pair):
         """
