@@ -21,7 +21,7 @@ Currently only supports liquid and vapor phases
 # TODO: Look into protected access issues
 # pylint: disable=protected-access
 
-from pyomo.environ import Expression, log, units as pyunits
+from pyomo.environ import Expression, log, units as pyunits, value
 
 from idaes.core import Apparent
 from idaes.core.util.exceptions import ConfigurationError, PropertyNotSupportedError
@@ -54,7 +54,7 @@ class IdealScaler(CustomScalerBase):
         # based on the heat capacity.
         units = model.params.get_metadata().derived_units
         p = phase
-        sf_T = self.get_scaling_factor(self.temperature)
+        sf_T = self.get_scaling_factor(model.temperature)
 
         for j in model.components_in_phase(p):
             comp_obj = model.params.get_component(j)
@@ -63,9 +63,9 @@ class IdealScaler(CustomScalerBase):
             except AttributeError:
                 mw = None
             if mw is None:
-                if model.is_property_constructed(model.enth_mol_phase):
+                if model.is_property_constructed("enth_mol_phase"):
                     # Check to see if the user set a scaling factor
-                    sf_H = get_scaling_factor(model.enth_mol_phase[p])
+                    sf_H = self.get_scaling_factor(model.enth_mol_phase[p])
                 else:
                     sf_H = None
                 if sf_H is None:
@@ -74,25 +74,27 @@ class IdealScaler(CustomScalerBase):
                     continue
                 sf_cp = sf_H / sf_T
             else:
-                sf_cp = mw / pyunits.convert_value(
-                    2,
-                    from_units=pyunits.J / pyunits.g / pyunits.K,
-                    to_units=units["HEAT_CAPACITY_MASS"],
+                sf_cp = value(
+                    mw / pyunits.convert_value(
+                        2,
+                        from_units=pyunits.J / pyunits.g / pyunits.K,
+                        to_units=units["HEAT_CAPACITY_MASS"],
+                    )
                 )
                 sf_H = sf_T * sf_cp
-            if model.is_property_constructed(model.enth_mol_phase_comp):
+            if model.is_property_constructed("enth_mol_phase_comp"):
                 self.set_component_scaling_factor(
                     model.enth_mol_phase_comp[p, j], sf_H, overwrite=overwrite
                 )
-            if model.is_property_constructed(model.gibbs_mol_phase_comp):
+            if model.is_property_constructed("gibbs_mol_phase_comp"):
                 self.set_component_scaling_factor(
                     model.gibbs_mol_phase_comp[p, j], sf_H, overwrite=overwrite
                 )
-            if model.is_property_constructed(model.entr_mol_phase_comp):
+            if model.is_property_constructed("entr_mol_phase_comp"):
                 self.set_component_scaling_factor(
                     model.entr_mol_phase_comp[p, j], sf_cp, overwrite=overwrite
                 )
-            if model.is_property_constructed(model.energy_internal_mol_phase_comp):
+            if model.is_property_constructed("energy_internal_mol_phase_comp"):
                 self.set_component_scaling_factor(
                     model.energy_internal_mol_phase_comp[p, j],
                     sf_H,
@@ -110,6 +112,7 @@ class Ideal(EoSBase):
 
     # Add attribute indicating support for electrolyte systems
     electrolyte_support = True
+    # default_scaler = IdealScaler
 
     @staticmethod
     def common(b, pobj):
