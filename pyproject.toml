@@ -72,6 +72,11 @@ testing = [
 local_scheme = "node-and-date"
 version_scheme = "only-version"
 
+[tool.setuptools]
+zip-safe = false                     
+include-package-data = true   
+
+
 [tool.pylint.main]
 py-version = "3.10"
 
