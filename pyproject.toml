@@ -76,7 +76,7 @@ version_scheme = "only-version"
 py-version = "3.10"
 
 [tool.setuptools.packages.find]
-where = ["idaes"]
+where = ["idaes*"]
 
 [tool.setuptools.package-data]
 "*" = [
