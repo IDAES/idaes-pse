@@ -34,7 +34,7 @@ classifiers=[
     "Topic :: Scientific/Engineering :: Chemistry",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
-keywords=["IDEAS", "idaes-pse", "energy systems", "chemical engineering", "process modeling"]
+keywords=["IDAES", "idaes-pse", "energy systems", "chemical engineering", "process modeling"]
 dynamic = ["version"]
 dependencies = [
   "pyomo >= 6.9.3",
@@ -79,7 +79,7 @@ py-version = "3.10"
 where = ["idaes"]
 
 [tool.setuptools.package-data]
-"ideas" = [
+"idaes-pse" = [
     "*.template",
     "*.json",
     "*.yaml",
