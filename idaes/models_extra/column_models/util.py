@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -18,6 +18,8 @@ __author__ = "Jaffer Ghouse, Alejandro Garcia-Diego"
 
 # TODO: look into protected access issues - probably need to refactor
 # pylint: disable=protected-access
+
+from functools import partial
 
 # Import Pyomo libraries
 from pyomo.environ import (
@@ -123,36 +125,21 @@ def make_phase_split(
                         "supported with distillation unit models."
                     )
 
-                # Rule for mole fraction
-                def rule_mole_frac(model, t, i):
-                    if not flow_phase_comp:
-                        sum_flow_comp = sum(
-                            model.properties_out[t].component(local_name_frac)[p, i]
-                            * model.properties_out[t].component(local_name_flow)[p]
-                            for p in phase
-                        )
-
-                        return sum_flow_comp / sum(
-                            model.properties_out[t].component(local_name_flow)[p]
-                            for p in phase
-                        )
-
-                    else:
-                        sum_flow_comp = sum(
-                            model.properties_out[t].component(local_name_flow)[p, i]
-                            for p in phase
-                        )
-
-                        return sum_flow_comp / sum(
-                            model.properties_out[t].component(local_name_flow)[p, i]
-                            for p in phase
-                            for i in model.config.property_package.component_list
-                        )
-
+                if not flow_phase_comp:
+                    tmp_rule = partial(
+                        _rule_mole_frac_0,
+                        local_name_frac=local_name_frac,
+                        local_name_flow=local_name_flow,
+                        phase=phase,
+                    )
+                else:
+                    tmp_rule = partial(
+                        _rule_mole_frac_1,
+                        local_name_flow=local_name_flow,
+                        phase=phase,
+                    )
                 # add the reference and variable name to the port
-                expr = Expression(
-                    model.flowsheet().time, index_set, rule=rule_mole_frac
-                )
+                expr = Expression(model.flowsheet().time, index_set, rule=tmp_rule)
                 model.add_component("e_mole_frac_" + port.local_name, expr)
                 port.add(expr, k)
             else:
@@ -179,13 +166,13 @@ def make_phase_split(
                 if "total" in str(equipmentType):
                     if not member_list[k].is_indexed():
 
-                        def rule_flow(model, t):
-                            return (model.properties_out[t].component(local_name)) * (
-                                side_sf
-                            )
-
                         # add the reference and variable name to the port
-                        expr = Expression(model.flowsheet().time, rule=rule_flow)
+                        expr = Expression(
+                            model.flowsheet().time,
+                            rule=partial(
+                                _rule_flow_0, local_name=local_name, side_sf=side_sf
+                            ),
+                        )
                         model.add_component("e_flow_" + port.local_name, expr)
                         port.add(expr, k)
                     else:
@@ -193,15 +180,13 @@ def make_phase_split(
                         # This is for vars that are indexed by phase, comp or both.
                         index_set = member_list[k].index_set()
 
-                        # Rule to link the flow to the port
-                        def rule_flow(model, t, i):
-                            return (
-                                model.properties_out[t].component(local_name)[i]
-                            ) * (side_sf)
-
                         # add the reference and variable name to the port
                         expr = Expression(
-                            model.flowsheet().time, index_set, rule=rule_flow
+                            model.flowsheet().time,
+                            index_set,
+                            rule=partial(
+                                _rule_flow_1, local_name=local_name, side_sf=side_sf
+                            ),
                         )
                         model.add_component("e_flow_" + port.local_name, expr)
                         port.add(expr, k)
@@ -212,15 +197,16 @@ def make_phase_split(
                         # by phase
                         local_name_flow = local_name + "_phase"
 
-                        # Rule to link the flow to the port
-                        def rule_flow(model, t):
-                            return sum(
-                                model.properties_out[t].component(local_name_flow)[p]
-                                for p in phase
-                            ) * (side_sf)
-
                         # add the reference and variable name to the port
-                        expr = Expression(model.flowsheet().time, rule=rule_flow)
+                        expr = Expression(
+                            model.flowsheet().time,
+                            rule=partial(
+                                _rule_flow_2,
+                                local_name_flow=local_name_flow,
+                                side_sf=side_sf,
+                                phase=phase,
+                            ),
+                        )
                         model.add_component("e_flow_" + port.local_name, expr)
                         port.add(expr, k)
                     else:
@@ -234,15 +220,15 @@ def make_phase_split(
                         # Get the indexing set i.e. component list
                         index_set = member_list[k].index_set()
 
-                        # Rule to link the flow to the port
-                        def rule_flow(model, t, i):
-                            return sum(
-                                model.properties_out[t].component(local_name_flow)[p, i]
-                                for p in phase
-                            ) * (side_sf)
-
                         expr = Expression(
-                            model.flowsheet().time, index_set, rule=rule_flow
+                            model.flowsheet().time,
+                            index_set,
+                            rule=partial(
+                                _rule_flow_3,
+                                local_name_flow=local_name_flow,
+                                side_sf=side_sf,
+                                phase=phase,
+                            ),
                         )
                         model.add_component("e_flow_" + port.local_name, expr)
                         port.add(expr, local_name)
@@ -253,36 +239,17 @@ def make_phase_split(
 
                 phase_set = model.config.property_package.phase_list
 
-                # If statement to skip in case equipment is not a Tray
-                if equipmentType is None:
-
-                    def rule_flow(model, t, p, i):
-                        if (phase is model._liquid_set and p in model._liquid_set) or (
-                            phase is model._vapor_set and p in model._vapor_set
-                        ):
-                            # pass appropriate phase flow values to port
-                            return (
-                                model.properties_out[t].component(local_name)[p, i]
-                            ) * (side_sf)
-
-                        else:
-                            # return small number for phase that should not
-                            # be in the appropriate port. For example,
-                            # the state vars will be flow_mol_phase_comp
-                            # which will include all phases. The liq port
-                            # should have the correct references to the liq
-                            # phase flow but the vapor phase flow should be 0.
-                            return 1e-8
-
-                else:
-
-                    def rule_flow(model, t, p, i):
-                        return (model.properties_out[t].component(local_name)[p, i]) * (
-                            side_sf
-                        )
-
                 expr = Expression(
-                    model.flowsheet().time, phase_set, component_set, rule=rule_flow
+                    model.flowsheet().time,
+                    phase_set,
+                    component_set,
+                    rule=partial(
+                        _rule_flow_4,
+                        local_name=local_name,
+                        side_sf=side_sf,
+                        phase=phase,
+                        equipmentType=equipmentType,
+                    ),
                 )
 
                 model.add_component("e_" + local_name + port.local_name, expr)
@@ -304,14 +271,12 @@ def make_phase_split(
                         "in the documentation for state variables."
                     )
 
-                # Rule to link the phase enthalpy to the port.
-                def rule_enth(model, t):
-                    return sum(
-                        model.properties_out[t].component(local_name_phase)[p]
-                        for p in phase
-                    )
-
-                expr = Expression(model.flowsheet().time, rule=rule_enth)
+                expr = Expression(
+                    model.flowsheet().time,
+                    rule=partial(
+                        _rule_enth_0, local_name_phase=local_name_phase, phase=phase
+                    ),
+                )
                 model.add_component("e_enth_" + port.local_name, expr)
                 # add the reference and variable name to the port
                 port.add(expr, k)
@@ -331,3 +296,79 @@ def make_phase_split(
                 ref = Reference(var)
                 setattr(model, "_" + k + "_" + port.local_name + "_ref", ref)
                 port.add(ref, k)
+
+
+# Rule for mole fraction
+def _rule_mole_frac_0(model, t, i, local_name_frac, local_name_flow, phase):
+    sum_flow_comp = sum(
+        model.properties_out[t].component(local_name_frac)[p, i]
+        * model.properties_out[t].component(local_name_flow)[p]
+        for p in phase
+    )
+
+    return sum_flow_comp / sum(
+        model.properties_out[t].component(local_name_flow)[p] for p in phase
+    )
+
+
+# Rule for mole fraction
+def _rule_mole_frac_1(model, t, i, local_name_flow, phase):
+    sum_flow_comp = sum(
+        model.properties_out[t].component(local_name_flow)[p, i] for p in phase
+    )
+
+    return sum_flow_comp / sum(
+        model.properties_out[t].component(local_name_flow)[p, i]
+        for p in phase
+        for i in model.config.property_package.component_list
+    )
+
+
+def _rule_flow_0(model, t, local_name, side_sf):
+    return (model.properties_out[t].component(local_name)) * (side_sf)
+
+
+# Rule to link the flow to the port
+def _rule_flow_1(model, t, i, local_name, side_sf):
+    return (model.properties_out[t].component(local_name)[i]) * (side_sf)
+
+
+# Rule to link the flow to the port
+def _rule_flow_2(model, t, local_name_flow, side_sf, phase):
+    return sum(model.properties_out[t].component(local_name_flow)[p] for p in phase) * (
+        side_sf
+    )
+
+
+# Rule to link the flow to the port
+def _rule_flow_3(model, t, i, local_name_flow, side_sf, phase):
+    return sum(
+        model.properties_out[t].component(local_name_flow)[p, i] for p in phase
+    ) * (side_sf)
+
+
+def _rule_flow_4(model, t, p, i, local_name, side_sf, phase, equipmentType):
+    # If statement to skip in case equipment is not a Tray
+    if equipmentType is None:
+        if (phase is model._liquid_set and p in model._liquid_set) or (
+            phase is model._vapor_set and p in model._vapor_set
+        ):
+            # pass appropriate phase flow values to port
+            return (model.properties_out[t].component(local_name)[p, i]) * (side_sf)
+
+        else:
+            # return small number for phase that should not
+            # be in the appropriate port. For example,
+            # the state vars will be flow_mol_phase_comp
+            # which will include all phases. The liq port
+            # should have the correct references to the liq
+            # phase flow but the vapor phase flow should be 0.
+            # TODO this should be a param and probably also have units
+            return 1e-8
+    else:
+        return (model.properties_out[t].component(local_name)[p, i]) * (side_sf)
+
+
+# Rule to link the phase enthalpy to the port.
+def _rule_enth_0(model, t, local_name_phase, phase):
+    return sum(model.properties_out[t].component(local_name_phase)[p] for p in phase)

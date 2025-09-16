@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -17,6 +17,8 @@ import pytest
 import numpy as np
 
 import pyomo.environ as pyo
+from pyomo.util.check_units import assert_units_consistent
+
 from idaes.core import FlowsheetBlock
 from idaes.core.solvers import get_solver
 from idaes.models.unit_models.heat_exchanger import HeatExchangerFlowPattern
@@ -36,12 +38,14 @@ def build_tester(cell, nt, nz):
                 "temperature_z": nz * nt,
                 "length_z": 1,
                 "length_y": 1,
+                "total_current": nt,
             },
             pyo.Constraint: {
                 "mean_temperature_eqn": nz * nt,
                 "potential_eqn": nz * nt,
                 "no_heat_flux_fuel_interconnect_eqn": nz * nt,
                 "no_heat_flux_oxygen_interconnect_eqn": nz * nt,
+                "total_current_eqn": nt,
             },
             pyo.Expression: {
                 "dz": nz,
@@ -50,7 +54,7 @@ def build_tester(cell, nt, nz):
                 "voltage_drop_contact": nz * nt,
                 "voltage_drop_ohmic": nz * nt,
                 "electrical_work": 1,
-                "average_current_density": 1,
+                "average_current_density": nt,
                 "voltage_drop_interconnect": nz * nt,
             },
         },
@@ -330,6 +334,11 @@ def test_build(model):
     )
 
 
+@pytest.mark.component
+def test_units(model):
+    assert_units_consistent(model)
+
+
 @pytest.mark.build
 @pytest.mark.unit
 def test_build_no_contact_resistance(model_no_contact_resistance):
@@ -463,6 +472,11 @@ def test_build_no_contact_resistance(model_no_contact_resistance):
     )
 
 
+@pytest.mark.component
+def test_units_no_contact_resistance(model_no_contact_resistance):
+    assert_units_consistent(model_no_contact_resistance)
+
+
 def build_tester_interconnect(cell, nt, nz):
     soc_testing._build_test_utility(
         cell,
@@ -473,10 +487,12 @@ def build_tester_interconnect(cell, nt, nz):
                 "temperature_z": nz * nt,
                 "length_z": 1,
                 "length_y": 1,
+                "total_current": nt,
             },
             pyo.Constraint: {
                 "mean_temperature_eqn": nz * nt,
                 "potential_eqn": nz * nt,
+                "total_current_eqn": nt,
             },
             pyo.Expression: {
                 "cell_area": 1,
@@ -484,8 +500,8 @@ def build_tester_interconnect(cell, nt, nz):
                 "xface_area": nz,
                 "voltage_drop_contact": nz * nt,
                 "voltage_drop_ohmic": nz * nt,
-                "electrical_work": 1,
-                "average_current_density": 1,
+                "electrical_work": nt,
+                "average_current_density": nt,
                 "voltage_drop_interconnect": nz * nt,
             },
         },
@@ -752,6 +768,13 @@ def test_build_contact_resistance_and_interconnect(
     )
 
 
+@pytest.mark.component
+def test_units_contact_resistance_and_interconnect(
+    model_contact_resistance_and_interconnect,
+):
+    assert_units_consistent(model_contact_resistance_and_interconnect)
+
+
 @pytest.fixture
 def model_no_contact_resistance_but_interconnect():
     time_set = [0]
@@ -946,3 +969,10 @@ def test_build_no_contact_resistance_but_interconnect(
     )
     assert cell.oxygen_channel.heat_flux_x1 is cell.interconnect.heat_flux_x0.referent
     assert cell.fuel_channel.heat_flux_x0 is cell.interconnect.heat_flux_x1.referent
+
+
+@pytest.mark.component
+def test_units_no_contact_resistance_but_interconnect(
+    model_no_contact_resistance_but_interconnect,
+):
+    assert_units_consistent(model_no_contact_resistance_but_interconnect)

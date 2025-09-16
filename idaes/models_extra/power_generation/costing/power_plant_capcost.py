@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -326,11 +326,15 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                     self.maintenance_material_cost / 12  # 1 month materials
                     + self.non_fuel_and_waste_OC  # 1 month nonfuel consumables
                     + (
-                        self.waste_costs_OC if waste is not None else 0 * CE_index_units
+                        self.waste_costs_OC
+                        if waste is not None
+                        else 0 * CE_index_units / pyunits.year
                     )  # 1 month waste
                     # inventory capital costs
                     + (
-                        self.fuel_cost_OC if fuel is not None else 0 * CE_index_units
+                        self.fuel_cost_OC
+                        if fuel is not None
+                        else 0 * CE_index_units / pyunits.year
                     )  # 60 day fuel supply
                     # Other costs
                     + (
@@ -371,9 +375,10 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             )
 
             self.additional_cost_of_electricity = Var(
-                initialize=70.9e-6,
+                initialize=0,
                 doc="additional cost to be added to the COE calculations"
-                + " in millions",
+                + " in millions; use 70.9e-6 for NGCC baseline report, "
+                + " use 43.3e-6 for NGCC without carbon capture.",
                 units=CE_index_units / pyunits.MWh,
             )
 
@@ -399,7 +404,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             if tonne_CO2_capture is not None:
                 if not hasattr(self, "tonne_CO2_capture"):
                     self.tonne_CO2_capture = Param(
-                        initialize=tonne_CO2_capture, mutable=True, units=pyunits.ton
+                        initialize=tonne_CO2_capture, mutable=True, units=pyunits.tonne
                     )
                 self.cost_of_capture = Expression(
                     expr=(
@@ -413,21 +418,29 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 )
 
                 if transport_cost is not None:
-                    if isinstance(transport_cost, (Expression, ScalarExpression)) or (
-                        isinstance(transport_cost, (Param, Var))
-                        and transport_cost.get_units is None
+                    if (
+                        isinstance(transport_cost, (Expression, ScalarExpression))
+                        or (isinstance(transport_cost, (Param, Var, float, int)))
+                    ) and (
+                        pyunits.get_units(transport_cost) is None
+                        or pyunits.get_units(transport_cost) == pyunits.dimensionless
                     ):
                         self.transport_cost = (
                             transport_cost
                             * CE_index_units
-                            / pyunits.ton
+                            / pyunits.tonne
                             * self.tonne_CO2_capture
                         )
                     else:
-                        self.transport_cost = transport_cost * self.tonne_CO2_capture
+                        self.transport_cost = pyunits.convert(
+                            transport_cost * self.tonne_CO2_capture,
+                            to_units=CE_index_units,
+                        )
 
             else:  # except the case where transport_cost is passed but tonne_CO2_capture is not passed
                 if transport_cost is not None:
+                    # PYLINT-TODO
+                    # pylint: disable-next=broad-exception-raised
                     raise Exception(
                         "If a transport_cost is not None, "
                         "tonne_CO2_capture cannot be None."
@@ -679,7 +692,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             elif tech == 7:
                 cost_accounts = AUSC_preloaded_accounts[cost_accounts]
             else:
-                AttributeError("{} technology not supported".format(blk.name))
+                raise AttributeError("{} technology not supported".format(blk.name))
 
         # pull data for each account into dictionaries
         process_params = {}
@@ -937,6 +950,8 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                         try:
                             pyunits.convert(sp, ref_units)
                         except InconsistentUnitsError:
+                            # PYLINT-TODO
+                            # pylint: disable-next=broad-exception-raised
                             raise Exception(
                                 "Account %s uses units of %s. "
                                 "Units of %s were passed. "
@@ -1347,7 +1362,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                     units=pyunits.C,
                 )
 
-                self.temp_eq = Constraint(expr=(self.temperature == temp_C))
+                self.temp_eq = Constraint(expr=self.temperature == temp_C)
 
                 def temp_correction_rule(costing):  # rule for temp correction
                     return (
@@ -1712,7 +1727,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         b.other_fixed_costs.fix(0)
 
         # maintenance material cost is technically a variable cost, but it
-        # makes more sense to include with the fixed costs becuase it uses TPC
+        # makes more sense to include with the fixed costs because it uses TPC
         b.maintenance_material_cost = Var(
             initialize=2e-7,
             bounds=(0, 1e4),
@@ -1843,7 +1858,9 @@ class QGESSCostingData(FlowsheetCostingBlockData):
 
         # assert lists are the same length
         if len(resources) != len(rates):
-            raise Exception("resources and rates must be lists of the same" " length")
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
+            raise Exception("resources and rates must be lists of the same length")
 
         # dictionary of default prices
         # the currency units are millions of USD, so all prices need a 1e-6
@@ -1868,6 +1885,8 @@ class QGESSCostingData(FlowsheetCostingBlockData):
 
         # raise error if the user included a resource not in default_prices
         if not set(resources).issubset(default_prices.keys()):
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception(
                 "A resource was included that does not contain a "
                 "price. Prices exist for the following resources: "
@@ -1969,17 +1988,17 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         # b is the flowsheet-level costing block
         # initialization for power generation costs
         if hasattr(b, "variable_operating_costs"):
-            for i in b.variable_operating_costs.keys():
+            for k, v in b.variable_operating_costs.items():
                 if hasattr(b, "variable_cost_rule_power"):
                     calculate_variable_from_constraint(
-                        b.variable_operating_costs[i],
-                        b.variable_cost_rule_power[i],
+                        v,
+                        b.variable_cost_rule_power[k],
                     )
 
-            for i in b.total_variable_OM_cost.keys():
+            for k, v in b.total_variable_OM_cost.items():
                 calculate_variable_from_constraint(
-                    b.total_variable_OM_cost[i],
-                    b.total_variable_cost_rule_power[i],
+                    v,
+                    b.total_variable_cost_rule_power[k],
                 )
 
     # -----------------------------------------------------------------------------

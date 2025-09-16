@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -17,7 +17,7 @@
 import pyomo.environ as pyo
 from pyomo.core.base.transformation import TransformationFactory
 from pyomo.core.plugins.transform.hierarchy import NonIsomorphicTransformation
-from pyomo.core.expr import current as EXPR
+from pyomo.core import expr as EXPR
 from pyomo.contrib.fbbt.fbbt import compute_bounds_on_expr
 from pyomo.repn import generate_standard_repn
 import idaes.logger as idaeslog

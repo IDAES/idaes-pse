@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -22,6 +22,7 @@ from pyomo.environ import (
     check_optimal_termination,
     ConcreteModel,
     Constraint,
+    Param,
     Set,
     value,
     Var,
@@ -58,7 +59,6 @@ from idaes.core.util.exceptions import (
 )
 from idaes.core.util.initialization import (
     fix_state_vars,
-    revert_state_vars,
 )
 
 from idaes.models.properties.examples.saponification_thermo import (
@@ -77,7 +77,7 @@ from idaes.core.util.model_statistics import (
 )
 from idaes.core.util.testing import (
     PhysicalParameterTestBlock,
-    TestStateBlock,
+    StateBlockForTesting,
     initialization_tester,
 )
 from idaes.core.solvers import get_solver
@@ -86,11 +86,12 @@ from idaes.core.initialization import (
     BlockTriangularizationInitializer,
     InitializationStatus,
 )
+from idaes.core.util import DiagnosticsToolbox
 
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_solver()
+solver = get_solver("ipopt_v2")
 
 
 # -----------------------------------------------------------------------------
@@ -278,7 +279,7 @@ class TestBaseConstruction(object):
 
     @pytest.mark.unit
     def test_get_mixed_state_block(self, build):
-        build.fs.sb = TestStateBlock(build.fs.time, parameters=build.fs.pp)
+        build.fs.sb = StateBlockForTesting(build.fs.time, parameters=build.fs.pp)
 
         build.fs.sep.config.mixed_state_block = build.fs.sb
 
@@ -299,7 +300,7 @@ class TestBaseConstruction(object):
 
     @pytest.mark.unit
     def test_get_mixed_state_block_mismatch(self, build):
-        build.fs.sb = TestStateBlock(build.fs.time, parameters=build.fs.pp)
+        build.fs.sb = StateBlockForTesting(build.fs.time, parameters=build.fs.pp)
 
         # Change parameters arg to create mismatch
         build.fs.sb[0].config.parameters = None
@@ -329,7 +330,7 @@ class TestBaseScaling(object):
         return b
 
     def test_no_exception_scaling_calc_external_mixed_state(self, m):
-        m.fs.sb = TestStateBlock(m.fs.time, parameters=m.fs.pp)
+        m.fs.sb = StateBlockForTesting(m.fs.time, parameters=m.fs.pp)
         m.fs.sep1 = Separator(property_package=m.fs.pp, mixed_state_block=m.fs.sb)
         iscale.calculate_scaling_factors(m)
 
@@ -803,8 +804,8 @@ class TestSaponification(object):
         m.fs.unit.inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
         m.fs.unit.inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
         m.fs.unit.inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
-        m.fs.unit.inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
-        m.fs.unit.inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "SodiumAcetate"].fix(1e-8)
+        m.fs.unit.inlet.conc_mol_comp[0, "Ethanol"].fix(1e-8)
 
         m.fs.unit.inlet.temperature.fix(303.15)
         m.fs.unit.inlet.pressure.fix(101325.0)
@@ -853,12 +854,9 @@ class TestSaponification(object):
         assert number_unused_variables(sapon) == 0
 
     @pytest.mark.component
-    def test_units(self, sapon):
-        assert_units_consistent(sapon)
-
-    @pytest.mark.unit
-    def test_dof(self, sapon):
-        assert degrees_of_freedom(sapon) == 0
+    def test_structural_issues(self, sapon):
+        dt = DiagnosticsToolbox(sapon)
+        dt.assert_no_structural_warnings()
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -1111,6 +1109,13 @@ class TestSaponification(object):
             <= 1e-3
         )
 
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, sapon):
+        dt = DiagnosticsToolbox(sapon)
+        dt.assert_no_numerical_warnings()
+
 
 # -----------------------------------------------------------------------------
 class TestBTXIdeal(object):
@@ -1139,6 +1144,36 @@ class TestBTXIdeal(object):
 
         m.fs.unit.split_fraction[0, "outlet_1", "Vap"].fix(0.8)
         m.fs.unit.split_fraction[0, "outlet_2", "Liq"].fix(0.8)
+
+        # Legacy property package, does not bound many variables which triggers
+        # warnings for potential evaluation errors.
+        # Fixing property package is out of scope for now.
+        m.fs.unit.mixed_state[0.0].temperature_bubble.setlb(300)
+        m.fs.unit.mixed_state[0.0].temperature_bubble.setub(550)
+        m.fs.unit.mixed_state[0.0].temperature_dew.setlb(300)
+        m.fs.unit.mixed_state[0.0].temperature_dew.setub(550)
+        m.fs.unit.mixed_state[0.0]._temperature_equilibrium.setlb(300)
+        m.fs.unit.mixed_state[0.0]._temperature_equilibrium.setub(550)
+        m.fs.unit.mixed_state[0.0].pressure_sat_comp.setlb(1e4)
+        m.fs.unit.mixed_state[0.0].pressure_sat_comp.setub(5e6)
+
+        m.fs.unit.outlet_1_state[0.0].temperature_bubble.setlb(300)
+        m.fs.unit.outlet_1_state[0.0].temperature_bubble.setub(550)
+        m.fs.unit.outlet_1_state[0.0].temperature_dew.setlb(300)
+        m.fs.unit.outlet_1_state[0.0].temperature_dew.setub(550)
+        m.fs.unit.outlet_1_state[0.0]._temperature_equilibrium.setlb(300)
+        m.fs.unit.outlet_1_state[0.0]._temperature_equilibrium.setub(550)
+        m.fs.unit.outlet_1_state[0.0].pressure_sat_comp.setlb(1e4)
+        m.fs.unit.outlet_1_state[0.0].pressure_sat_comp.setub(5e6)
+
+        m.fs.unit.outlet_2_state[0.0].temperature_bubble.setlb(300)
+        m.fs.unit.outlet_2_state[0.0].temperature_bubble.setub(550)
+        m.fs.unit.outlet_2_state[0.0].temperature_dew.setlb(300)
+        m.fs.unit.outlet_2_state[0.0].temperature_dew.setub(550)
+        m.fs.unit.outlet_2_state[0.0]._temperature_equilibrium.setlb(300)
+        m.fs.unit.outlet_2_state[0.0]._temperature_equilibrium.setub(550)
+        m.fs.unit.outlet_2_state[0.0].pressure_sat_comp.setlb(1e4)
+        m.fs.unit.outlet_2_state[0.0].pressure_sat_comp.setub(5e6)
 
         return m
 
@@ -1173,12 +1208,9 @@ class TestBTXIdeal(object):
         assert number_unused_variables(btx) == 0
 
     @pytest.mark.component
-    def test_units(self, btx):
-        assert_units_consistent(btx)
-
-    @pytest.mark.unit
-    def test_dof(self, btx):
-        assert degrees_of_freedom(btx) == 0
+    def test_structural_issues(self, btx):
+        dt = DiagnosticsToolbox(btx)
+        dt.assert_no_structural_warnings()
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -1383,6 +1415,13 @@ class TestBTXIdeal(object):
             <= 1e-1
         )
 
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, btx):
+        dt = DiagnosticsToolbox(btx)
+        dt.assert_no_numerical_warnings()
+
 
 # -----------------------------------------------------------------------------
 @pytest.mark.iapws
@@ -1446,12 +1485,9 @@ class TestIAPWS(object):
         assert number_unused_variables(iapws) == 0
 
     @pytest.mark.component
-    def test_units(self, iapws):
-        assert_units_consistent(iapws)
-
-    @pytest.mark.unit
-    def test_dof(self, iapws):
-        assert degrees_of_freedom(iapws) == 0
+    def test_structural_issues(self, iapws):
+        dt = DiagnosticsToolbox(iapws)
+        dt.assert_no_structural_warnings()
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -1591,6 +1627,13 @@ class TestIAPWS(object):
             )
             <= 1e-2
         )
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, iapws):
+        dt = DiagnosticsToolbox(iapws)
+        dt.assert_no_numerical_warnings()
 
 
 # -----------------------------------------------------------------------------
@@ -2136,7 +2179,7 @@ class TestIdealConstruction(object):
             m.fs.sep.mixed_state[0].mole_frac_phase_comp
         )
 
-        with pytest.raises(AttributeError):
+        with pytest.raises(ConfigurationError):
             m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
     @pytest.mark.unit
@@ -2444,7 +2487,7 @@ class TestIdealConstruction(object):
             m.fs.sep.mixed_state[0].flow_mol_phase_comp
         )
 
-        with pytest.raises(AttributeError):
+        with pytest.raises(ConfigurationError):
             m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
     @pytest.mark.unit
@@ -2532,7 +2575,7 @@ class TestIdealConstruction(object):
             m.fs.sep.mixed_state[0].flow_mol_phase_comp
         )
 
-        with pytest.raises(AttributeError):
+        with pytest.raises(ConfigurationError):
             m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
     @pytest.mark.unit
@@ -2606,7 +2649,7 @@ class TestIdealConstruction(object):
             m.fs.sep.mixed_state[0].flow_mol_phase_comp
         )
 
-        with pytest.raises(AttributeError):
+        with pytest.raises(ConfigurationError):
             m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
     @pytest.mark.unit
@@ -2664,7 +2707,7 @@ class TestIdealConstruction(object):
             m.fs.sep.mixed_state[0].flow_mol_phase_comp
         )
 
-        with pytest.raises(AttributeError):
+        with pytest.raises(ConfigurationError):
             m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
     @pytest.mark.unit
@@ -2810,7 +2853,7 @@ class TestIdealConstruction(object):
             m.fs.sep.mixed_state[0].test_var_phase_comp
         )
 
-        with pytest.raises(AttributeError):
+        with pytest.raises(ConfigurationError):
             m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
     @pytest.mark.unit
@@ -2896,7 +2939,7 @@ class TestIdealConstruction(object):
             m.fs.sep.mixed_state[0].test_var_phase_comp
         )
 
-        with pytest.raises(AttributeError):
+        with pytest.raises(ConfigurationError):
             m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
     @pytest.mark.unit
@@ -2963,7 +3006,7 @@ class TestIdealConstruction(object):
             m.fs.sep.mixed_state[0].test_var_phase_comp
         )
 
-        with pytest.raises(AttributeError):
+        with pytest.raises(ConfigurationError):
             m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
 
@@ -2991,6 +3034,18 @@ class TestBTX_IdealSep(object):
 
         m.fs.unit.inlet.mole_frac_comp[0, "benzene"].fix(0.5)
         m.fs.unit.inlet.mole_frac_comp[0, "toluene"].fix(0.5)
+
+        # Legacy property package, does not bound many variables which triggers
+        # warnings for potential evaluation errors.
+        # Fixing property package is out of scope for now.
+        m.fs.unit.mixed_state[0.0].temperature_bubble.setlb(300)
+        m.fs.unit.mixed_state[0.0].temperature_bubble.setub(550)
+        m.fs.unit.mixed_state[0.0].temperature_dew.setlb(300)
+        m.fs.unit.mixed_state[0.0].temperature_dew.setub(550)
+        m.fs.unit.mixed_state[0.0]._temperature_equilibrium.setlb(300)
+        m.fs.unit.mixed_state[0.0]._temperature_equilibrium.setub(550)
+        m.fs.unit.mixed_state[0.0].pressure_sat_comp.setlb(1e4)
+        m.fs.unit.mixed_state[0.0].pressure_sat_comp.setub(5e6)
 
         return m
 
@@ -3023,12 +3078,9 @@ class TestBTX_IdealSep(object):
         assert number_unused_variables(btx) == 0
 
     @pytest.mark.component
-    def test_units(self, btx):
-        assert_units_consistent(btx)
-
-    @pytest.mark.unit
-    def test_dof(self, btx):
-        assert degrees_of_freedom(btx) == 0
+    def test_structural_issues(self, btx):
+        dt = DiagnosticsToolbox(btx)
+        dt.assert_no_structural_warnings()
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -3196,6 +3248,13 @@ class TestBTX_IdealSep(object):
         )
 
         # Assume energy conservation is covered by control volume tests
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, btx):
+        dt = DiagnosticsToolbox(btx)
+        dt.assert_no_numerical_warnings()
 
 
 @pytest.mark.unit
@@ -3760,3 +3819,461 @@ def test_material_only():
     assert value(m.fs.sep.outlet_2.conc_mass_solute[0, "Co"]) == pytest.approx(
         3, rel=1e-6
     )
+
+
+# -----------------------------------------------------------------------------
+# Inherent reaction case
+@declare_process_block_class("LeachSolutionParameters")
+class LeachSolutionParameterData(PhysicalParameterBlock):
+    def build(self):
+        super().build()
+
+        self.liquid = Phase()
+
+        # Solvent
+        self.H2O = Component()
+
+        # Acid related species
+        self.H = Component()
+        self.HSO4 = Component()
+        self.SO4 = Component()
+
+        self.mw = Param(
+            self.component_list,
+            units=pyunits.kg / pyunits.mol,
+            initialize={
+                "H2O": 18e-3,
+                "H": 1e-3,
+                "HSO4": 97e-3,
+                "SO4": 96e-3,
+            },
+        )
+
+        # Inherent reaction for partial dissociation of HSO4
+        self._has_inherent_reactions = True
+        self.inherent_reaction_idx = Set(initialize=["Ka2"])
+        self.inherent_reaction_stoichiometry = {
+            ("Ka2", "liquid", "H"): 1,
+            ("Ka2", "liquid", "HSO4"): -1,
+            ("Ka2", "liquid", "SO4"): 1,
+            ("Ka2", "liquid", "H2O"): 0,
+        }
+        self.Ka2 = Param(
+            initialize=10**-1.99,
+            mutable=True,
+            units=pyunits.mol / pyunits.L,
+        )
+
+        # Assume dilute acid, density of pure water
+        self.dens_mol = Param(
+            initialize=1,
+            units=pyunits.kg / pyunits.litre,
+            mutable=True,
+        )
+
+        self._state_block_class = LeachSolutionStateBlock
+
+    @classmethod
+    def define_metadata(cls, obj):
+        obj.add_properties(
+            {
+                "flow_vol": {"method": None},
+                "conc_mass_comp": {"method": None},
+                "conc_mol_comp": {"method": None},
+                "dens_mol": {"method": "_dens_mol"},
+            }
+        )
+        obj.add_default_units(
+            {
+                "time": pyunits.hour,
+                "length": pyunits.m,
+                "mass": pyunits.kg,
+                "amount": pyunits.mol,
+                "temperature": pyunits.K,
+            }
+        )
+
+
+class _LeachSolutionStateBlock(StateBlock):
+    def fix_initialization_states(self):
+        """
+        Fixes state variables for state blocks.
+
+        Returns:
+            None
+        """
+        # Fix state variables
+        fix_state_vars(self)
+
+        # Deactivate inherent reactions
+        for k in self:
+            if not self[k].config.defined_state:
+                self[k].h2o_concentration.deactivate()
+                self[k].hso4_dissociation.deactivate()
+
+
+@declare_process_block_class(
+    "LeachSolutionStateBlock", block_class=_LeachSolutionStateBlock
+)
+class LeachSolutionStateBlockData(StateBlockData):
+    def build(self):
+        super().build()
+
+        self.flow_vol = Var(
+            units=pyunits.L / pyunits.hour,
+            bounds=(1e-8, None),
+        )
+        self.conc_mass_comp = Var(
+            self.params.component_list,
+            units=pyunits.mg / pyunits.L,
+            bounds=(1e-10, None),
+        )
+        self.conc_mol_comp = Var(
+            self.params.component_list,
+            units=pyunits.mol / pyunits.L,
+            initialize=1e-5,
+            bounds=(1e-8, None),
+        )
+
+        # Concentration conversion constraint
+        @self.Constraint(self.params.component_list)
+        def molar_concentration_constraint(b, j):
+            return (
+                pyunits.convert(
+                    b.conc_mol_comp[j] * b.params.mw[j],
+                    to_units=pyunits.mg / pyunits.litre,
+                )
+                == b.conc_mass_comp[j]
+            )
+
+        if not self.config.defined_state:
+            # Concentration of H2O based on assumed density
+            self.h2o_concentration = Constraint(
+                expr=self.conc_mass_comp["H2O"] == 1e6 * pyunits.mg / pyunits.L
+            )
+            # Equilibrium for partial dissociation of HSO4
+            self.hso4_dissociation = Constraint(
+                expr=self.conc_mol_comp["HSO4"] * self.params.Ka2
+                == self.conc_mol_comp["H"] * self.conc_mol_comp["SO4"]
+            )
+
+    def get_material_flow_terms(self, p, j):
+        # Note conversion to mol/hour
+        if j == "H2O":
+            # Assume constant density of 1 kg/L
+            return self.flow_vol * self.params.dens_mol / self.params.mw[j]
+        else:
+            # Need to convert from moles to mass
+            return pyunits.convert(
+                self.flow_vol * self.conc_mass_comp[j] / self.params.mw[j],
+                to_units=pyunits.mol / pyunits.hour,
+            )
+
+    def get_material_flow_basis(self):
+        return MaterialFlowBasis.molar
+
+    def define_state_vars(self):
+        return {
+            "flow_vol": self.flow_vol,
+            "conc_mass_comp": self.conc_mass_comp,
+        }
+
+
+@pytest.mark.component
+@pytest.mark.solver
+def test_total_flow_w_inherent_rxns():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+
+    m.fs.properties = LeachSolutionParameters()
+
+    m.fs.sep = Separator(
+        property_package=m.fs.properties,
+        material_balance_type=MaterialBalanceType.componentPhase,
+        split_basis=SplittingType.totalFlow,
+        num_outlets=2,
+        energy_split_basis=EnergySplittingType.none,
+        momentum_balance_type=MomentumBalanceType.none,
+        ideal_separation=False,
+        has_phase_equilibrium=False,
+    )
+
+    m.fs.sep.inlet.flow_vol[0].fix(10)
+    m.fs.sep.inlet.conc_mass_comp[0, "H2O"].fix(1e6 * pyunits.mg / pyunits.L)
+    m.fs.sep.inlet.conc_mass_comp[0, "H"].fix(57.54848 * pyunits.mg / pyunits.L)
+    m.fs.sep.inlet.conc_mass_comp[0, "HSO4"].fix(4117.798 * pyunits.mg / pyunits.L)
+    m.fs.sep.inlet.conc_mass_comp[0, "SO4"].fix(724.6539 * pyunits.mg / pyunits.L)
+
+    m.fs.sep.split_fraction[0, "outlet_1"].fix(0.4)
+
+    assert degrees_of_freedom(m) == 0
+    assert_units_consistent(m)
+
+    initializer = BlockTriangularizationInitializer()
+    initializer.initialize(m.fs.sep)
+
+    results = solver.solve(m)
+    assert check_optimal_termination(results)
+
+    assert initializer.summary[m.fs.sep]["status"] == InitializationStatus.Ok
+
+    assert value(m.fs.sep.outlet_1.flow_vol[0]) == pytest.approx(4, rel=1e-6)
+    assert value(m.fs.sep.outlet_2.flow_vol[0]) == pytest.approx(6, rel=1e-6)
+
+    assert value(m.fs.sep.outlet_1.conc_mass_comp[0, "H2O"]) == pytest.approx(
+        1e6, rel=1e-6
+    )
+    assert value(m.fs.sep.outlet_1.conc_mass_comp[0, "H"]) == pytest.approx(
+        57.54848, rel=1e-6
+    )
+    assert value(m.fs.sep.outlet_1.conc_mass_comp[0, "HSO4"]) == pytest.approx(
+        4117.798, rel=1e-6
+    )
+    assert value(m.fs.sep.outlet_1.conc_mass_comp[0, "SO4"]) == pytest.approx(
+        724.6539, rel=1e-6
+    )
+
+    assert value(m.fs.sep.outlet_2.conc_mass_comp[0, "H2O"]) == pytest.approx(
+        1e6, rel=1e-6
+    )
+    assert value(m.fs.sep.outlet_2.conc_mass_comp[0, "H"]) == pytest.approx(
+        57.54848, rel=1e-6
+    )
+    assert value(m.fs.sep.outlet_2.conc_mass_comp[0, "HSO4"]) == pytest.approx(
+        4117.798, rel=1e-6
+    )
+    assert value(m.fs.sep.outlet_2.conc_mass_comp[0, "SO4"]) == pytest.approx(
+        724.6539, rel=1e-6
+    )
+
+    assert value(
+        m.fs.sep.inherent_reaction_extent[0, "outlet_1", "Ka2"]
+    ) == pytest.approx(0, abs=1e-6)
+    assert value(
+        m.fs.sep.inherent_reaction_extent[0, "outlet_2", "Ka2"]
+    ) == pytest.approx(0, abs=1e-6)
+
+
+@pytest.mark.component
+@pytest.mark.solver
+def test_component_flow_w_inherent_rxns():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+
+    m.fs.properties = LeachSolutionParameters()
+
+    m.fs.sep = Separator(
+        property_package=m.fs.properties,
+        material_balance_type=MaterialBalanceType.componentPhase,
+        split_basis=SplittingType.componentFlow,
+        num_outlets=2,
+        energy_split_basis=EnergySplittingType.none,
+        momentum_balance_type=MomentumBalanceType.none,
+        ideal_separation=False,
+        has_phase_equilibrium=False,
+    )
+
+    m.fs.sep.inlet.flow_vol[0].fix(10)
+    m.fs.sep.inlet.conc_mass_comp[0, "H2O"].fix(1e6 * pyunits.mg / pyunits.L)
+    m.fs.sep.inlet.conc_mass_comp[0, "H"].fix(57.54848 * pyunits.mg / pyunits.L)
+    m.fs.sep.inlet.conc_mass_comp[0, "HSO4"].fix(4117.798 * pyunits.mg / pyunits.L)
+    m.fs.sep.inlet.conc_mass_comp[0, "SO4"].fix(724.6539 * pyunits.mg / pyunits.L)
+
+    m.fs.sep.split_fraction[0, "outlet_1", :].fix(0.4)
+
+    assert degrees_of_freedom(m) == 0
+    assert_units_consistent(m)
+
+    initializer = BlockTriangularizationInitializer()
+    initializer.initialize(m.fs.sep)
+
+    results = solver.solve(m)
+    assert check_optimal_termination(results)
+
+    assert initializer.summary[m.fs.sep]["status"] == InitializationStatus.Ok
+
+    assert value(m.fs.sep.outlet_1.flow_vol[0]) == pytest.approx(4, rel=1e-6)
+    assert value(m.fs.sep.outlet_2.flow_vol[0]) == pytest.approx(6, rel=1e-6)
+
+    assert value(m.fs.sep.outlet_1.conc_mass_comp[0, "H2O"]) == pytest.approx(
+        1e6, rel=1e-6
+    )
+    assert value(m.fs.sep.outlet_1.conc_mass_comp[0, "H"]) == pytest.approx(
+        57.54848, rel=1e-6
+    )
+    assert value(m.fs.sep.outlet_1.conc_mass_comp[0, "HSO4"]) == pytest.approx(
+        4117.798, rel=1e-6
+    )
+    assert value(m.fs.sep.outlet_1.conc_mass_comp[0, "SO4"]) == pytest.approx(
+        724.6539, rel=1e-6
+    )
+
+    assert value(m.fs.sep.outlet_2.conc_mass_comp[0, "H2O"]) == pytest.approx(
+        1e6, rel=1e-6
+    )
+    assert value(m.fs.sep.outlet_2.conc_mass_comp[0, "H"]) == pytest.approx(
+        57.54848, rel=1e-6
+    )
+    assert value(m.fs.sep.outlet_2.conc_mass_comp[0, "HSO4"]) == pytest.approx(
+        4117.798, rel=1e-6
+    )
+    assert value(m.fs.sep.outlet_2.conc_mass_comp[0, "SO4"]) == pytest.approx(
+        724.6539, rel=1e-6
+    )
+
+    assert value(
+        m.fs.sep.inherent_reaction_extent[0, "outlet_1", "Ka2"]
+    ) == pytest.approx(0, abs=1e-6)
+    assert value(
+        m.fs.sep.inherent_reaction_extent[0, "outlet_2", "Ka2"]
+    ) == pytest.approx(0, abs=1e-6)
+
+
+@pytest.mark.component
+@pytest.mark.solver
+def test_phase_flow_w_inherent_rxns():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+
+    m.fs.properties = LeachSolutionParameters()
+
+    m.fs.sep = Separator(
+        property_package=m.fs.properties,
+        material_balance_type=MaterialBalanceType.componentPhase,
+        split_basis=SplittingType.phaseFlow,
+        num_outlets=2,
+        energy_split_basis=EnergySplittingType.none,
+        momentum_balance_type=MomentumBalanceType.none,
+        ideal_separation=False,
+        has_phase_equilibrium=False,
+    )
+
+    m.fs.sep.inlet.flow_vol[0].fix(10)
+    m.fs.sep.inlet.conc_mass_comp[0, "H2O"].fix(1e6 * pyunits.mg / pyunits.L)
+    m.fs.sep.inlet.conc_mass_comp[0, "H"].fix(57.54848 * pyunits.mg / pyunits.L)
+    m.fs.sep.inlet.conc_mass_comp[0, "HSO4"].fix(4117.798 * pyunits.mg / pyunits.L)
+    m.fs.sep.inlet.conc_mass_comp[0, "SO4"].fix(724.6539 * pyunits.mg / pyunits.L)
+
+    m.fs.sep.split_fraction[0, "outlet_1", :].fix(0.4)
+
+    assert degrees_of_freedom(m) == 0
+    assert_units_consistent(m)
+
+    initializer = BlockTriangularizationInitializer()
+    initializer.initialize(m.fs.sep)
+
+    results = solver.solve(m)
+    assert check_optimal_termination(results)
+
+    assert initializer.summary[m.fs.sep]["status"] == InitializationStatus.Ok
+
+    assert value(m.fs.sep.outlet_1.flow_vol[0]) == pytest.approx(4, rel=1e-6)
+    assert value(m.fs.sep.outlet_2.flow_vol[0]) == pytest.approx(6, rel=1e-6)
+
+    assert value(m.fs.sep.outlet_1.conc_mass_comp[0, "H2O"]) == pytest.approx(
+        1e6, rel=1e-6
+    )
+    assert value(m.fs.sep.outlet_1.conc_mass_comp[0, "H"]) == pytest.approx(
+        57.54848, rel=1e-6
+    )
+    assert value(m.fs.sep.outlet_1.conc_mass_comp[0, "HSO4"]) == pytest.approx(
+        4117.798, rel=1e-6
+    )
+    assert value(m.fs.sep.outlet_1.conc_mass_comp[0, "SO4"]) == pytest.approx(
+        724.6539, rel=1e-6
+    )
+
+    assert value(m.fs.sep.outlet_2.conc_mass_comp[0, "H2O"]) == pytest.approx(
+        1e6, rel=1e-6
+    )
+    assert value(m.fs.sep.outlet_2.conc_mass_comp[0, "H"]) == pytest.approx(
+        57.54848, rel=1e-6
+    )
+    assert value(m.fs.sep.outlet_2.conc_mass_comp[0, "HSO4"]) == pytest.approx(
+        4117.798, rel=1e-6
+    )
+    assert value(m.fs.sep.outlet_2.conc_mass_comp[0, "SO4"]) == pytest.approx(
+        724.6539, rel=1e-6
+    )
+
+    assert value(
+        m.fs.sep.inherent_reaction_extent[0, "outlet_1", "Ka2"]
+    ) == pytest.approx(0, abs=1e-6)
+    assert value(
+        m.fs.sep.inherent_reaction_extent[0, "outlet_2", "Ka2"]
+    ) == pytest.approx(0, abs=1e-6)
+
+
+@pytest.mark.component
+@pytest.mark.solver
+def test_phase_component_flow_w_inherent_rxns():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+
+    m.fs.properties = LeachSolutionParameters()
+
+    m.fs.sep = Separator(
+        property_package=m.fs.properties,
+        material_balance_type=MaterialBalanceType.componentPhase,
+        split_basis=SplittingType.phaseComponentFlow,
+        num_outlets=2,
+        energy_split_basis=EnergySplittingType.none,
+        momentum_balance_type=MomentumBalanceType.none,
+        ideal_separation=False,
+        has_phase_equilibrium=False,
+    )
+
+    m.fs.sep.inlet.flow_vol[0].fix(10)
+    m.fs.sep.inlet.conc_mass_comp[0, "H2O"].fix(1e6 * pyunits.mg / pyunits.L)
+    m.fs.sep.inlet.conc_mass_comp[0, "H"].fix(57.54848 * pyunits.mg / pyunits.L)
+    m.fs.sep.inlet.conc_mass_comp[0, "HSO4"].fix(4117.798 * pyunits.mg / pyunits.L)
+    m.fs.sep.inlet.conc_mass_comp[0, "SO4"].fix(724.6539 * pyunits.mg / pyunits.L)
+
+    m.fs.sep.split_fraction[0, "outlet_1", ...].fix(0.4)
+
+    assert degrees_of_freedom(m) == 0
+    assert_units_consistent(m)
+
+    initializer = BlockTriangularizationInitializer()
+    initializer.initialize(m.fs.sep)
+
+    results = solver.solve(m)
+    assert check_optimal_termination(results)
+
+    assert initializer.summary[m.fs.sep]["status"] == InitializationStatus.Ok
+
+    assert value(m.fs.sep.outlet_1.flow_vol[0]) == pytest.approx(4, rel=1e-6)
+    assert value(m.fs.sep.outlet_2.flow_vol[0]) == pytest.approx(6, rel=1e-6)
+
+    assert value(m.fs.sep.outlet_1.conc_mass_comp[0, "H2O"]) == pytest.approx(
+        1e6, rel=1e-6
+    )
+    assert value(m.fs.sep.outlet_1.conc_mass_comp[0, "H"]) == pytest.approx(
+        57.54848, rel=1e-6
+    )
+    assert value(m.fs.sep.outlet_1.conc_mass_comp[0, "HSO4"]) == pytest.approx(
+        4117.798, rel=1e-6
+    )
+    assert value(m.fs.sep.outlet_1.conc_mass_comp[0, "SO4"]) == pytest.approx(
+        724.6539, rel=1e-6
+    )
+
+    assert value(m.fs.sep.outlet_2.conc_mass_comp[0, "H2O"]) == pytest.approx(
+        1e6, rel=1e-6
+    )
+    assert value(m.fs.sep.outlet_2.conc_mass_comp[0, "H"]) == pytest.approx(
+        57.54848, rel=1e-6
+    )
+    assert value(m.fs.sep.outlet_2.conc_mass_comp[0, "HSO4"]) == pytest.approx(
+        4117.798, rel=1e-6
+    )
+    assert value(m.fs.sep.outlet_2.conc_mass_comp[0, "SO4"]) == pytest.approx(
+        724.6539, rel=1e-6
+    )
+
+    assert value(
+        m.fs.sep.inherent_reaction_extent[0, "outlet_1", "Ka2"]
+    ) == pytest.approx(0, abs=1e-6)
+    assert value(
+        m.fs.sep.inherent_reaction_extent[0, "outlet_2", "Ka2"]
+    ) == pytest.approx(0, abs=1e-6)

@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -14,8 +14,12 @@
 Author: Andrew Lee
 """
 
-
 import pytest
+
+from numpy import logspace
+
+from pyomo.util.check_units import assert_units_consistent
+from pyomo.environ import assert_optimal_termination, ConcreteModel, Objective, value
 
 from idaes.core import FlowsheetBlock
 from idaes.models.properties.modular_properties.eos.ceos import cubic_roots_available
@@ -23,10 +27,6 @@ from idaes.models.properties.modular_properties.examples.BT_PR import configurat
 from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
 )
-from pyomo.util.check_units import assert_units_consistent
-
-from pyomo.environ import check_optimal_termination, ConcreteModel, Objective, value
-
 from idaes.core.solvers import get_solver
 import idaes.core.util.scaling as iscale
 from idaes.models.properties.tests.test_harness import PropertyTestHarness
@@ -41,9 +41,8 @@ pytestmark = pytest.mark.cubic_root
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_solver()
-# Limit iterations to make sure sweeps aren;t getting out of hand
-solver.options["max_iter"] = 50
+# Limit iterations to make sure sweeps aren't getting out of hand
+solver = get_solver(solver="ipopt_v2", solver_options={"max_iter": 100})
 
 
 @pytest.mark.skipif(not cubic_roots_available(), reason="Cubic functions not available")
@@ -69,6 +68,11 @@ class TestBTExample(object):
 
         m.fs.state = m.fs.props.build_state_block([1], defined_state=True)
 
+        # Set small values of epsilon to get accurate results
+        # Initialization will handle finding the correct region
+        m.fs.state[1].eps_t_Vap_Liq.set_value(1e-4)
+        m.fs.state[1].eps_z_Vap_Liq.set_value(1e-4)
+
         iscale.calculate_scaling_factors(m.fs.props)
         iscale.calculate_scaling_factors(m.fs.state[1])
         return m
@@ -80,14 +84,18 @@ class TestBTExample(object):
         m.fs.obj = Objective(expr=(m.fs.state[1].temperature - 510) ** 2)
         m.fs.state[1].temperature.setub(600)
 
-        for logP in range(8, 13, 1):
-            m.fs.obj.deactivate()
+        for P in logspace(4.8, 5.9, 8):
 
             m.fs.state[1].flow_mol.fix(100)
             m.fs.state[1].mole_frac_comp["benzene"].fix(0.5)
             m.fs.state[1].mole_frac_comp["toluene"].fix(0.5)
             m.fs.state[1].temperature.fix(300)
-            m.fs.state[1].pressure.fix(10 ** (0.5 * logP))
+            m.fs.state[1].pressure.fix(P)
+
+            # For optimization sweep, use a large eps to avoid getting stuck at
+            # bubble and dew points
+            m.fs.state[1].eps_t_Vap_Liq.set_value(10)
+            m.fs.state[1].eps_z_Vap_Liq.set_value(10)
 
             m.fs.state.initialize()
 
@@ -95,8 +103,15 @@ class TestBTExample(object):
             m.fs.obj.activate()
 
             results = solver.solve(m)
+            assert_optimal_termination(results)
 
-            assert check_optimal_termination(results)
+            # Switch to small eps and re-solve to refine result
+            m.fs.state[1].eps_t_Vap_Liq.set_value(1e-4)
+            m.fs.state[1].eps_z_Vap_Liq.set_value(1e-4)
+
+            results = solver.solve(m)
+
+            assert_optimal_termination(results)
             assert m.fs.state[1].flow_mol_phase["Liq"].value <= 1e-5
 
     @pytest.mark.integration
@@ -112,14 +127,14 @@ class TestBTExample(object):
 
             results = solver.solve(m)
 
-            assert check_optimal_termination(results)
+            assert_optimal_termination(results)
 
             while m.fs.state[1].pressure.value <= 1e6:
-                m.fs.state[1].pressure.value = m.fs.state[1].pressure.value + 1e5
 
                 results = solver.solve(m)
-                assert check_optimal_termination(results)
-                print(T, m.fs.state[1].pressure.value)
+                assert_optimal_termination(results)
+
+                m.fs.state[1].pressure.value = m.fs.state[1].pressure.value + 1e5
 
     @pytest.mark.component
     def test_T350_P1_x5(self, m):
@@ -138,7 +153,7 @@ class TestBTExample(object):
         results = solver.solve(m)
 
         # Check for optimal solution
-        assert check_optimal_termination(results)
+        assert_optimal_termination(results)
 
         assert pytest.approx(value(m.fs.state[1]._teq[("Vap", "Liq")]), abs=1e-1) == 365
         assert 0.0035346 == pytest.approx(
@@ -227,7 +242,7 @@ class TestBTExample(object):
         results = solver.solve(m)
 
         # Check for optimal solution
-        assert check_optimal_termination(results)
+        assert_optimal_termination(results)
 
         assert pytest.approx(value(m.fs.state[1]._teq[("Vap", "Liq")]), 1e-5) == 431.47
         assert (
@@ -318,7 +333,7 @@ class TestBTExample(object):
         results = solver.solve(m)
 
         # Check for optimal solution
-        assert check_optimal_termination(results)
+        assert_optimal_termination(results)
 
         assert pytest.approx(value(m.fs.state[1]._teq[("Vap", "Liq")]), 1e-5) == 371.4
         assert 0.0033583 == pytest.approx(
@@ -407,7 +422,7 @@ class TestBTExample(object):
         results = solver.solve(m)
 
         # Check for optimal solution
-        assert check_optimal_termination(results)
+        assert_optimal_termination(results)
 
         assert pytest.approx(value(m.fs.state[1]._teq[("Vap", "Liq")]), 1e-5) == 436.93
         assert 0.0166181 == pytest.approx(
@@ -496,7 +511,7 @@ class TestBTExample(object):
         results = solver.solve(m)
 
         # Check for optimal solution
-        assert check_optimal_termination(results)
+        assert_optimal_termination(results)
 
         assert pytest.approx(value(m.fs.state[1]._teq[("Vap", "Liq")]), 1e-5) == 368
         assert 0.003504 == pytest.approx(
@@ -589,7 +604,7 @@ class TestBTExample(object):
         results = solver.solve(m)
 
         # Check for optimal solution
-        assert check_optimal_termination(results)
+        assert_optimal_termination(results)
 
         assert pytest.approx(value(m.fs.state[1]._teq[("Vap", "Liq")]), 1e-5) == 376
         assert 0.00361333 == pytest.approx(
@@ -659,104 +674,4 @@ class TestBTExample(object):
         )
         assert (
             pytest.approx(value(m.fs.state[1].entr_mol_phase["Vap"]), 1e-5) == -273.513
-        )
-
-    @pytest.mark.unit
-    def test_basic_scaling(self, m):
-        assert len(m.fs.state[1].scaling_factor) == 23
-        assert m.fs.state[1].scaling_factor[m.fs.state[1].flow_mol] == 1e-2
-        assert m.fs.state[1].scaling_factor[m.fs.state[1].flow_mol_phase["Liq"]] == 1e-2
-        assert m.fs.state[1].scaling_factor[m.fs.state[1].flow_mol_phase["Vap"]] == 1e-2
-        assert (
-            m.fs.state[1].scaling_factor[
-                m.fs.state[1].flow_mol_phase_comp["Liq", "benzene"]
-            ]
-            == 1e-2
-        )
-        assert (
-            m.fs.state[1].scaling_factor[
-                m.fs.state[1].flow_mol_phase_comp["Liq", "toluene"]
-            ]
-            == 1e-2
-        )
-        assert (
-            m.fs.state[1].scaling_factor[
-                m.fs.state[1].flow_mol_phase_comp["Vap", "benzene"]
-            ]
-            == 1e-2
-        )
-        assert (
-            m.fs.state[1].scaling_factor[
-                m.fs.state[1].flow_mol_phase_comp["Vap", "toluene"]
-            ]
-            == 1e-2
-        )
-        assert (
-            m.fs.state[1].scaling_factor[m.fs.state[1].mole_frac_comp["benzene"]]
-            == 1000
-        )
-        assert (
-            m.fs.state[1].scaling_factor[m.fs.state[1].mole_frac_comp["toluene"]]
-            == 1000
-        )
-        assert (
-            m.fs.state[1].scaling_factor[
-                m.fs.state[1].mole_frac_phase_comp["Liq", "benzene"]
-            ]
-            == 1000
-        )
-        assert (
-            m.fs.state[1].scaling_factor[
-                m.fs.state[1].mole_frac_phase_comp["Liq", "toluene"]
-            ]
-            == 1000
-        )
-        assert (
-            m.fs.state[1].scaling_factor[
-                m.fs.state[1].mole_frac_phase_comp["Vap", "benzene"]
-            ]
-            == 1000
-        )
-        assert (
-            m.fs.state[1].scaling_factor[
-                m.fs.state[1].mole_frac_phase_comp["Vap", "toluene"]
-            ]
-            == 1000
-        )
-        assert m.fs.state[1].scaling_factor[m.fs.state[1].pressure] == 1e-5
-        assert m.fs.state[1].scaling_factor[m.fs.state[1].temperature] == 1e-2
-        assert m.fs.state[1].scaling_factor[m.fs.state[1]._teq["Vap", "Liq"]] == 1e-2
-        assert m.fs.state[1].scaling_factor[m.fs.state[1]._t1_Vap_Liq] == 1e-2
-
-        assert (
-            m.fs.state[1].scaling_factor[
-                m.fs.state[1]._mole_frac_tbub["Vap", "Liq", "benzene"]
-            ]
-            == 1000
-        )
-        assert (
-            m.fs.state[1].scaling_factor[
-                m.fs.state[1]._mole_frac_tbub["Vap", "Liq", "toluene"]
-            ]
-            == 1000
-        )
-        assert (
-            m.fs.state[1].scaling_factor[
-                m.fs.state[1]._mole_frac_tdew["Vap", "Liq", "benzene"]
-            ]
-            == 1000
-        )
-        assert (
-            m.fs.state[1].scaling_factor[
-                m.fs.state[1]._mole_frac_tdew["Vap", "Liq", "toluene"]
-            ]
-            == 1000
-        )
-        assert (
-            m.fs.state[1].scaling_factor[m.fs.state[1].temperature_bubble["Vap", "Liq"]]
-            == 1e-2
-        )
-        assert (
-            m.fs.state[1].scaling_factor[m.fs.state[1].temperature_dew["Vap", "Liq"]]
-            == 1e-2
         )

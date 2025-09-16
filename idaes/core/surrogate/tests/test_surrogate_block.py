@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -14,6 +14,7 @@
 Tests for SurrogateBlock
 """
 import pytest
+import re
 
 from pyomo.environ import ConcreteModel, Set, Var
 
@@ -256,9 +257,11 @@ def test_setup_inputs_outputs_input_vars_mismatch():
 
     with pytest.raises(
         ValueError,
-        match="Specifying input_vars to a SurrogateBlock, but "
-        "the length of the input_vars \(after extracting all"
-        " the VarData objects\) does not match n_inputs",
+        match=re.escape(
+            "Specifying input_vars to a SurrogateBlock, but "
+            "the length of the input_vars (after extracting all"
+            " the VarData objects) does not match n_inputs"
+        ),
     ):
         m.sb._setup_inputs_outputs(4, 5, input_vars=m.inputs, output_vars=m.outputs)
 
@@ -273,9 +276,11 @@ def test_setup_inputs_outputs_input_vars_empty_list():
 
     with pytest.raises(
         ValueError,
-        match="Specifying input_vars to a SurrogateBlock, but "
-        "the length of the input_vars \(after extracting all"
-        " the VarData objects\) does not match n_inputs",
+        match=re.escape(
+            "Specifying input_vars to a SurrogateBlock, but "
+            "the length of the input_vars (after extracting all"
+            " the VarData objects) does not match n_inputs"
+        ),
     ):
         m.sb._setup_inputs_outputs(4, 5, input_vars=[], output_vars=m.outputs)
 
@@ -292,9 +297,11 @@ def test_setup_inputs_outputs_output_vars_mismatch():
 
     with pytest.raises(
         ValueError,
-        match="Specifying output_vars to a SurrogateBlock, but "
-        "the length of the output_vars \(after extracting all"
-        " the VarData objects\) does not match n_outputs",
+        match=re.escape(
+            "Specifying output_vars to a SurrogateBlock, but "
+            "the length of the output_vars (after extracting all"
+            " the VarData objects) does not match n_outputs"
+        ),
     ):
         m.sb._setup_inputs_outputs(4, 5, input_vars=m.inputs, output_vars=m.outputs)
 
@@ -309,9 +316,11 @@ def test_setup_inputs_outputs_output_vars_empty_list():
 
     with pytest.raises(
         ValueError,
-        match="Specifying output_vars to a SurrogateBlock, but "
-        "the length of the output_vars \(after extracting all"
-        " the VarData objects\) does not match n_outputs",
+        match=re.escape(
+            "Specifying output_vars to a SurrogateBlock, but "
+            "the length of the output_vars (after extracting all"
+            " the VarData objects) does not match n_outputs"
+        ),
     ):
         m.sb._setup_inputs_outputs(4, 5, input_vars=m.inputs, output_vars=[])
 
@@ -477,8 +486,10 @@ def test_build_model_unused_kwarg():
 
     with pytest.raises(
         ValueError,
-        match="Error in keyword arguments passed to "
-        "build_model. The following arguments were not used: "
-        "\['foo'\]",
+        match=re.escape(
+            "Error in keyword arguments passed to "
+            "build_model. The following arguments were not used: "
+            "['foo']"
+        ),
     ):
         m.sb.build_model(m.dummy, use_surrogate_bounds=False, foo=True)

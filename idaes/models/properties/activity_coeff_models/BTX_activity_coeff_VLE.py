@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -98,7 +98,7 @@ class BTXParameterData(ActivityCoeffParameterData):
         self.pressure_critical = Param(
             self.component_list,
             within=NonNegativeReals,
-            mutable=False,
+            mutable=True,
             initialize=extract_data(pressure_critical_data),
             doc="Critical pressure [Pa]",
             units=pyunits.Pa,
@@ -115,7 +115,7 @@ class BTXParameterData(ActivityCoeffParameterData):
         self.temperature_critical = Param(
             self.component_list,
             within=NonNegativeReals,
-            mutable=False,
+            mutable=True,
             initialize=extract_data(temperature_critical_data),
             doc="Critical temperature [K]",
             units=pyunits.K,
@@ -131,7 +131,7 @@ class BTXParameterData(ActivityCoeffParameterData):
 
         self.mw_comp = Param(
             self.component_list,
-            mutable=False,
+            mutable=True,
             initialize=extract_data(mw_comp_data),
             doc="molecular weight kg/mol",
             units=pyunits.kg / pyunits.mol,
@@ -288,7 +288,7 @@ class BTXParameterData(ActivityCoeffParameterData):
         self.dh_form = Param(
             self.phase_list,
             self.component_list,
-            mutable=False,
+            mutable=True,
             initialize=extract_data(dh_form_data),
             doc="Standard heats of formation [J/mol]",
             units=pyunits.J / pyunits.mol,
@@ -310,7 +310,7 @@ class BTXParameterData(ActivityCoeffParameterData):
         self.ds_form = Param(
             self.phase_list,
             self.component_list,
-            mutable=False,
+            mutable=True,
             initialize=extract_data(ds_form_data),
             doc="Standard entropy of formation [J/mol.K]",
             units=pyunits.J / pyunits.mol / pyunits.K,

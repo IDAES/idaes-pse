@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -14,8 +14,8 @@
 Tests for Plate Heat Exchnager  unit model.
 Author: Akula Paul
 """
-
 import pytest
+
 from pyomo.environ import (
     check_optimal_termination,
     ConcreteModel,
@@ -23,6 +23,8 @@ from pyomo.environ import (
     units as pyunits,
     value,
 )
+from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
+
 from idaes.core import FlowsheetBlock
 from idaes.models_extra.column_models.plate_heat_exchanger import (
     PlateHeatExchanger as PHE,
@@ -37,7 +39,6 @@ from idaes.models_extra.column_models.properties.MEA_solvent import (
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
 from idaes.core.solvers import get_solver
-from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 
 
 # -----------------------------------------------------------------------------
@@ -63,6 +64,13 @@ def test_config():
 
     # Check unit config arguments
     assert len(m.fs.unit.config) == 9
+
+
+workaround_for_1294 = pytest.mark.xfail(
+    # the failures only occur for Windows on GHA with Python <3.12, and Linux with Python 3.12
+    reason="These tests fail with Pyomo 6.7.0. See IDAES/idaes-pse#1294 for details",
+    strict=False,
+)
 
 
 # -----------------------------------------------------------------------------
@@ -166,6 +174,7 @@ class TestPHE(object):
             phe, duty=(245000, pyunits.W), optarg={"bound_push": 1e-8, "mu_init": 1e-8}
         )
 
+    @workaround_for_1294
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
@@ -175,6 +184,7 @@ class TestPHE(object):
         # Check for optimal solution
         assert check_optimal_termination(results)
 
+    @workaround_for_1294
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
@@ -214,6 +224,7 @@ class TestPHE(object):
             phe.fs.unit.cold_side_outlet.temperature[0]
         )
 
+    @workaround_for_1294
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component

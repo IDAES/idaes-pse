@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -27,7 +27,6 @@ from idaes.core import (
     ReactionParameterBlock,
     useDefault,
 )
-from idaes.core.base.phases import PhaseType as PT
 from idaes.core.util.config import (
     is_physical_parameter_block,
     is_reaction_parameter_block,
@@ -37,6 +36,7 @@ from idaes.core.util.config import (
     is_transformation_method,
     is_transformation_scheme,
     DefaultBool,
+    is_in_range,
 )
 from idaes.core.util.exceptions import ConfigurationError
 
@@ -111,7 +111,7 @@ def test_is_reaction_parameter_block_fails():
         is_reaction_parameter_block(1)  # int
 
 
-@declare_process_block_class("TestStateBlock", block_class=StateBlock)
+@declare_process_block_class("StateBlockForTesting", block_class=StateBlock)
 class StateTestBlockData(StateBlockData):
     def build(self):
         pass
@@ -119,10 +119,10 @@ class StateTestBlockData(StateBlockData):
 
 @pytest.mark.unit
 def test_is_state_block_passes():
-    # Make an instance of a TestStateBlock
-    s = TestStateBlock()
+    # Make an instance of a StateBlockForTesting
+    s = StateBlockForTesting()
 
-    # Check that is_state_block returns the TestStateBlock
+    # Check that is_state_block returns the StateBlockForTesting
     assert s == is_state_block(s)
 
 
@@ -220,3 +220,20 @@ def test_DefaultBool():
     assert not DefaultBool(False)
     with pytest.raises(ValueError):
         DefaultBool("foo")
+
+
+@pytest.mark.unit
+def test_is_in_range():
+    assert is_in_range(0, 1)(0) == 0
+    assert is_in_range(0, 1)(1) == 1
+    assert is_in_range(0, 1)(0.5) == 0.5
+    with pytest.raises(
+        ConfigurationError,
+        match="Value -1 lies outside the admissible range \\[0, 1\\]",
+    ):
+        is_in_range(0, 1)(-1)
+
+    with pytest.raises(
+        ConfigurationError, match="Value 2 lies outside the admissible range \\[0, 1\\]"
+    ):
+        is_in_range(0, 1)(2)

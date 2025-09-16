@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -14,6 +14,7 @@
 Tests for InitializerBase class
 """
 import pytest
+import re
 import types
 import os
 
@@ -411,8 +412,10 @@ class TestSubMethods:
         initializer = InitializerBase()
         with pytest.raises(
             InitializationError,
-            match="Degrees of freedom for unknown were not equal to zero during "
-            "initialization \(DoF = -1\).",
+            match=re.escape(
+                "Degrees of freedom for unknown were not equal to zero during "
+                "initialization (DoF = -1)."
+            ),
         ):
             initializer.precheck(model)
         assert initializer.summary[model]["status"] == InitializationStatus.DoF
@@ -598,9 +601,11 @@ class TestSubMethods:
 
         with pytest.raises(
             InitializationError,
-            match="Attempted to change the value of fixed variable v\[b\]. "
-            "Initialization from initial guesses does not support changing the value "
-            "of fixed variables.",
+            match=re.escape(
+                "Attempted to change the value of fixed variable v[b]. "
+                "Initialization from initial guesses does not support changing the value "
+                "of fixed variables."
+            ),
         ):
             initializer._load_values_from_dict(m, {m.v: 10})
 
@@ -648,9 +653,11 @@ class TestSubMethods:
 
         with pytest.raises(
             InitializationError,
-            match="Attempted to change the value of fixed variable v\[a\]. "
-            "Initialization from initial guesses does not support changing the value "
-            "of fixed variables.",
+            match=re.escape(
+                "Attempted to change the value of fixed variable v[a]. "
+                "Initialization from initial guesses does not support changing the value "
+                "of fixed variables."
+            ),
         ):
             initializer._load_values_from_dict(m, {'v["a"]': 10})
 
@@ -699,8 +706,9 @@ class TestModularInitializerBase:
         assert initializer.config.default_submodel_initializer is None
 
         assert initializer._solver is None
-        assert initializer.config.solver is None
+        assert initializer.config.solver == "ipopt_v2"
         assert initializer.config.solver_options == {}
+        assert initializer.config.writer_config == {}
 
     @pytest.mark.unit
     def test_get_submodel_initializer_specific_model(self):
@@ -774,7 +782,7 @@ class TestModularInitializerBase:
         )
 
     @pytest.mark.unit
-    def test_get_submodel_initializer_priorit(self):
+    def test_get_submodel_initializer_priority(self):
         # Progressively add higher priority initializers and ensure they are returned
         class DummyParam:
             def __init__(self):

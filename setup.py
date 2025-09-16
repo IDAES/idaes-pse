@@ -9,10 +9,6 @@ from setuptools import setup, find_namespace_packages
 from typing import List, Tuple
 
 
-def warn(s):
-    sys.stderr.write("*** WARNING *** {}\n".format(s))
-
-
 def get_version():
     code_file = os.path.join("idaes", "ver.py")
     code = open(code_file).read()
@@ -27,72 +23,28 @@ README = open("README.md").read()
 README = README[README.find("#") :]  # ignore everything before title
 
 
-def rglob(path, glob):
-    """Return list of paths from `path` matching `glob`."""
-    p = Path(path)
-    return list(map(str, p.rglob(glob)))
-
-
-# For included DMF data
-DMF_DATA_ROOT = "data"
-
-
-def dmf_data_files(root: str = DMF_DATA_ROOT) -> List[Tuple[str, List[str]]]:
-    """Generate a list of pairs (directory, [files..]), covering all the DMF data
-    files, for the `data_files` option to :func:`setup()`.
-    """
-    file_list = [
-        (
-            root,
-            [f"{root}/config.yaml", f"{root}/resourcedb.json"],
-        )
-    ]
-    files_root = Path(root) / "files"
-    for files_subdir in files_root.glob("*"):
-        file_names = [f.as_posix() for f in files_subdir.glob("*")]
-        if file_names:  # empty for non-directories and empty directories
-            file_list.append((files_subdir.as_posix(), file_names))
-    return file_list
-
-
 class ExtraDependencies:
     """
     A convenience shorthand to define and combine dependencies for ``extras_require``.
 
     >>> extras = ExtraDependencies()
-    >>> extras["ui"]
-    ['requests', 'pint']
+    >>> extras["testing"]
+    ['pytest', 'addheader', 'pyyaml']
     >>> list(extras)
-    ['ui', 'dmf', 'omlt', 'grid', 'coolprop', 'testing']
+    ['ui', 'omlt', 'grid', 'coolprop', 'testing']
     >>> dict(extras)
-    {'ui': ['requests', 'pint'], 'dmf': ['jsonschema', 'setuptools', 'traitlets', ...], ...}
+    {'testing': ['pytest', 'addheader', 'pyyaml'], 'omlt': ['omlt==1.1', 'tensorflow', ...], ...}
     """
 
     ui = [
-        "requests",
-        "pint",
-    ]
-    _ipython = [
-        'ipython <= 8.12; python_version == "3.8"',
-    ]
-    dmf = [
-        # all modules relative to idaes.core.dmf
-        "jsonschema",  # commands, resource, workspace
-        "setuptools",  # provides pkg_resources?
-        "traitlets",  # dmfbase
-        "lxml",  # help
-        "seaborn",  # model_data (optional^2)
-        "PyPDF2",  # model_data (optional^2)
-        "colorama",  # util
-        *_ipython,  # magics
-        "pyyaml",  # workspace
-        "tinydb",  # resourcedb
-        "xlrd",  # tables (implicitly by pandas.read_excel())
-        "openpyxl",  # tables (implicitly by pandas.read_excel())
+        # FIXME this must be changed to the PyPI distribution for the release
+        # "idaes-ui",
+        "idaes-ui @ git+https://github.com/IDAES/idaes-ui@main",
     ]
     omlt = [
         "omlt==1.1",  # fix the version for now as package evolves
         "tensorflow",
+        "onnx",
     ]
     grid = [
         "gridx-prescient>=2.2.1",  # idaes.tests.prescient
@@ -122,15 +74,21 @@ kwargs = dict(
     zip_safe=False,
     name=NAME,
     version=VERSION,
-    packages=find_namespace_packages(),
+    packages=find_namespace_packages(
+        include=[
+            "idaes*",
+        ]
+    ),
     # Put abstract (non-versioned) deps here.
     # Concrete dependencies go in requirements[-dev].txt
     install_requires=[
-        "pyomo @ https://github.com/IDAES/pyomo/archive/6.6.2.idaes.2023.07.28.zip",
-        "pint",  # required to use Pyomo units
+        "pyomo >= 6.9.2",
+        "pint >= 0.24.1",  # required to use Pyomo units. Pint 0.24.1 needed for Python 3.9 support
         "networkx",  # required to use Pyomo network
-        "numpy",
-        "pandas",
+        "numpy>=1,<3",
+        # pandas constraint added on 2023-08-30 b/c bug in v2.1
+        # see IDAES/idaes-pse#1253
+        "pandas!=2.1.0,<3",
         "scipy",
         "sympy",  # idaes.core.util.expr_doc
         "matplotlib",
@@ -138,9 +96,11 @@ kwargs = dict(
     ],
     entry_points={
         "console_scripts": [
-            "dmf = idaes.dmf.cli:base_command",
             "idaes = idaes.commands.base:command_base",
-        ]
+        ],
+        "idaes.flowsheets": [
+            "0D Fixed Bed TSA = idaes.models_extra.temperature_swing_adsorption.fixed_bed_tsa0d_ui",
+        ],
     },
     # Only installed if [<key>] is added to package name
     extras_require=dict(ExtraDependencies()),
@@ -166,12 +126,12 @@ kwargs = dict(
             "*.data-00000-of-00001",  # for Keras Surrogate folder
             "*.index",  # for Keras Surrogate folder
             "*.trc",
-            "*.xlsx",  # idaes/dmf/tests/data_files - tabular import test files
             "*.nl",
+            "*.keras",  # idaes/core/surrogate/tests/data/keras_models
+            "*.onnx",
         ]
     },
     include_package_data=True,
-    data_files=dmf_data_files(),
     maintainer="Keith Beattie",
     maintainer_email="ksbeattie@lbl.gov",
     url="https://idaes.org",
@@ -192,10 +152,10 @@ kwargs = dict(
         "Operating System :: Unix",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
         "Programming Language :: Python :: Implementation :: CPython",
         "Topic :: Scientific/Engineering :: Mathematics",
         "Topic :: Scientific/Engineering :: Chemistry",

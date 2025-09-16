@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -18,7 +18,6 @@
 
 # Imports from the python standard library
 import os.path
-import warnings
 import pickle
 
 # Imports from third parties
@@ -43,6 +42,9 @@ from pyomo.environ import (
 
 # Imports from IDAES namespace
 from idaes.core.surrogate.pysmo.sampling import FeatureScaling as fs
+import idaes.logger as idaeslog
+
+_log = idaeslog.getLogger(__name__)
 
 __author__ = "Oluwamayowa Amusat"
 
@@ -153,7 +155,7 @@ class FeatureScaling:
 
 
 class RadialBasisFunctions:
-    """
+    r"""
     The RadialBasisFunctions class generates a radial basis function fitting for a training data set.
 
     The class must first be initialized by calling **RadialBasisFunctions**. Regression is then carried out by calling the method ``training``.
@@ -198,7 +200,7 @@ class RadialBasisFunctions:
         fname=None,
         overwrite=False,
     ):
-        """
+        r"""
 
         Initialization of **RadialBasisFunctions** class.
 
@@ -252,6 +254,8 @@ class RadialBasisFunctions:
 
         """
         if not isinstance(overwrite, bool):
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception("overwrite must be boolean.")
         self.overwrite = overwrite
         if fname is None:
@@ -261,6 +265,8 @@ class RadialBasisFunctions:
             not isinstance(fname, str)
             or os.path.splitext(fname)[-1].lower() != ".pickle"
         ):
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception(
                 'fname must be a string with extension ".pickle". Please correct.'
             )
@@ -315,6 +321,8 @@ class RadialBasisFunctions:
             self.solution_method = solution_method
             print("Default parameter estimation method is used.")
         elif not isinstance(solution_method, str):
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception("Invalid solution method. Must be of type <str>.")
         elif (
             (solution_method.lower() == "algebraic")
@@ -324,6 +332,8 @@ class RadialBasisFunctions:
             solution_method = solution_method.lower()
             self.solution_method = solution_method
         else:
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception(
                 'Invalid solution method entered. Select one of ALGEBRAIC (solution_method="algebraic") , L-BFGS (solution_method="bfgs") or Pyomo optimization (solution_method="pyomo") methods. '
             )
@@ -334,6 +344,8 @@ class RadialBasisFunctions:
             self.basis_function = basis_function
             print("Gaussian basis function is used.")
         elif not isinstance(basis_function, str):
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception("Invalid basis_function. Must be of type <str>.")
         elif (
             (basis_function.lower() == "linear")
@@ -346,6 +358,8 @@ class RadialBasisFunctions:
             basis_function = basis_function.lower()
             self.basis_function = basis_function
         else:
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception(
                 "Invalid basis function entered. See manual for available options. "
             )
@@ -355,6 +369,8 @@ class RadialBasisFunctions:
             regularization = True
             self.regularization = regularization
         elif not isinstance(regularization, bool):
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception("Invalid basis_function. Must be boolean")
         elif (regularization is True) or (regularization is False):
             self.regularization = regularization
@@ -1015,7 +1031,7 @@ class RadialBasisFunctions:
         return r_best, lambda_best, error_best
 
     def training(self):
-        """
+        r"""
         Main function for RBF training.
 
         To train the RBF:
@@ -1091,7 +1107,7 @@ class RadialBasisFunctions:
         if x_condition_number < (1 / np.finfo(float).eps):
             self.solution_status = "ok"
         else:
-            warnings.warn(
+            _log.warning(
                 "The parameter matrix A in A.x=B is ill-conditioned (condition number > 1e10). The solution returned may be inaccurate or unstable - inspect rmse error. Regularization (if not already done) may improve solution"
             )
             self.solution_status = "unstable solution"
@@ -1286,6 +1302,8 @@ class RadialBasisFunctions:
             filehandler = open(solution_file, "rb")
             return pickle.load(filehandler)
         except:
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception("File could not be loaded.")
 
     def parity_residual_plots(self):

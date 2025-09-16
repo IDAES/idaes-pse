@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -36,7 +36,7 @@ Instances of ``Var`` that must be fixed:
 
 __author__ = "Douglas Allan"
 
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 import pyomo.environ as pyo
 
 
@@ -64,6 +64,14 @@ class SocContactResistorData(UnitModelBlockData):
         "has_holdup",
         ConfigValue(domain=In([False]), default=False),
     )
+    CONFIG.declare(
+        "voltage_drop_custom",
+        ConfigValue(
+            domain=Bool,
+            default=False,
+            description="If True, add voltage_drop_custom Var to be connected to degradation models",
+        ),
+    )
     common._submodel_boilerplate_config(CONFIG)
     common._thermal_boundary_conditions_config(CONFIG, thin=True)
 
@@ -87,6 +95,13 @@ class SocContactResistorData(UnitModelBlockData):
         self.contact_fraction = pyo.Var(
             initialize=1, units=pyo.units.dimensionless, bounds=(0, 1)
         )
+        if self.config.voltage_drop_custom:
+            self.voltage_drop_custom = pyo.Var(
+                tset,
+                iznodes,
+                units=pyo.units.volts,
+                doc="Custom voltage drop term for degradation modeling",
+            )
 
         @self.Expression(tset, iznodes)
         def contact_resistance(b, t, iz):
@@ -103,7 +118,13 @@ class SocContactResistorData(UnitModelBlockData):
 
         @self.Expression(tset, iznodes)
         def voltage_drop_total(b, t, iz):
-            return b.contact_resistance[t, iz] * b.current_density[t, iz]
+            if self.config.voltage_drop_custom:
+                return (
+                    b.contact_resistance[t, iz] * b.current_density[t, iz]
+                    + b.voltage_drop_custom[t, iz]
+                )
+            else:
+                return b.contact_resistance[t, iz] * b.current_density[t, iz]
 
         @self.Expression(tset, iznodes)
         def joule_heating_flux(b, t, iz):

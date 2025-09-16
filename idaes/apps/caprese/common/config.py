@@ -4,7 +4,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -16,7 +16,7 @@ A module of functions and classes for configuring NMPC/MHE problems
 """
 import enum
 from pyomo.environ import SolverFactory
-from pyomo.core.base.var import _GeneralVarData
+from pyomo.core.base.var import VarData
 
 
 class ControlInitOption(enum.Enum):
@@ -94,7 +94,7 @@ def validate_list_of_vardata(varlist):
     if not isinstance(varlist, list):
         raise TypeError("Not a list of VarData")
     for var in varlist:
-        if not isinstance(var, _GeneralVarData):
+        if not isinstance(var, VarData):
             raise TypeError("Not a list of VarData")
     return varlist
 
@@ -107,7 +107,7 @@ def validate_list_of_vardata_value_tuples(varvaluelist):
             raise TypeError("Item in list is not a tuple")
         if not len(item) == 2:
             raise ValueError("Tuple in list does not have correct length")
-        if not isinstance(item[0], _GeneralVarData):
+        if not isinstance(item[0], VarData):
             raise TypeError("First entry is not a VarData")
         item = (item[0], float(item[1]))
     return varvaluelist

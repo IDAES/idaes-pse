@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -105,7 +105,7 @@ class IsentropicPressureChangerInitializer(SingleControlVolumeUnitInitializer):
         )
 
         # Create solver
-        solver = get_solver(self.config.solver, self.config.solver_options)
+        solver = self._get_solver()
 
         cv = model.control_volume
 
@@ -530,7 +530,9 @@ see property package for documentation.}""",
             and self.config.thermodynamic_assumption == ThermodynamicAssumption.pump
             and eb is None
         ):
-            units = self.config.property_package.get_metadata().get_derived_units
+            units = (
+                self.control_volume.config.property_package.get_metadata().get_derived_units
+            )
             self.control_volume.work = Var(
                 self.flowsheet().time,
                 domain=Reals,
@@ -574,7 +576,7 @@ see property package for documentation.}""",
         Returns:
             None
         """
-        units_meta = self.config.property_package.get_metadata()
+        units_meta = self.control_volume.config.property_package.get_metadata()
 
         self.work_fluid = Var(
             self.flowsheet().time,
@@ -657,7 +659,7 @@ see property package for documentation.}""",
         Returns:
             None
         """
-        units_meta = self.config.property_package.get_metadata()
+        units_meta = self.control_volume.config.property_package.get_metadata()
 
         # Get indexing sets from control volume
         # Add isentropic variables

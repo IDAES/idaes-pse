@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -23,12 +23,12 @@ from pyomo.core.expr.sympy_tools import (
     _configure_sympy,
 )
 from pyomo.environ import ExternalFunction, Var, Expression, value, units as pu
-from pyomo.core.base.constraint import _ConstraintData, Constraint
-from pyomo.core.base.expression import _ExpressionData
-from pyomo.core.base.block import _BlockData
+from pyomo.core.base.constraint import ConstraintData, Constraint
+from pyomo.core.base.expression import ExpressionData
+from pyomo.core.base.block import BlockData
 from pyomo.core.expr.visitor import StreamBasedExpressionVisitor
 from pyomo.core.expr.numeric_expr import ExternalFunctionExpression
-from pyomo.core.expr import current as EXPR, native_types
+from pyomo.core import expr as EXPR, native_types
 from pyomo.common.collections import ComponentMap
 
 
@@ -129,6 +129,8 @@ class PyomoSympyBimap(object):
             i = self.i_func
             self.i_func += 1
         else:
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception("Should be Var, Expression, or ExternalFunction")
 
         if parent_object.is_indexed() and parent_object in self.parent_symbol:
@@ -305,8 +307,8 @@ def document_constraints(
     assuming the $$latex math$$ and $latex math$ syntax is supported.
 
     Args:
-        comp: A Pyomo component to document in {_ConstraintData, _ExpressionData,
-                _BlockData}.
+        comp: A Pyomo component to document in {ConstraintData, ExpressionData,
+                BlockData}.
         doc: True adds a documentation table for each constraint or expression.
                 Due to the way symbols are semi-automatiaclly generated, the
                 exact symbol definitions may be unique to each constraint or
@@ -320,7 +322,7 @@ def document_constraints(
     if to_doc is None:
         to_doc = []
     s = None
-    if isinstance(comp, _ExpressionData):
+    if isinstance(comp, ExpressionData):
         d = to_latex(comp)
         to_doc.append(d["object_map"])
         try:
@@ -341,28 +343,21 @@ def document_constraints(
                 s = "$${}$$\n{}".format(d["latex_expr"], d["where"])
             else:
                 s = "$${}$$".format(d["latex_expr"])
-    elif isinstance(comp, _ConstraintData):
+    elif isinstance(comp, ConstraintData):
         d = to_latex(comp.body)
         to_doc.append(d["object_map"])
         try:
             return f"$${comp.latex_nice_expr}$$"
         except AttributeError:
             pass
-        if comp.upper != comp.lower:
-            if doc:
-                s = "$${} \le {}\le {}$$\n{}".format(
-                    comp.lower, d["latex_expr"], comp.upper, d["where"]
-                )
-            else:
-                s = "$${} \le {}\le {}$$".format(
-                    comp.lower, d["latex_expr"], comp.upper
-                )
+        latex_expr = d["latex_expr"]
+        if comp.upper == comp.lower:
+            s = f"$${comp.lower} = {latex_expr}"
         else:
-            if doc:
-                s = "$${} = {}$$\n{}".format(comp.lower, d["latex_expr"], d["where"])
-            else:
-                s = "$${} = {}$$".format(comp.lower, d["latex_expr"])
-    elif isinstance(comp, _BlockData):
+            s = rf"$${comp.lower} \le {latex_expr} \le {comp.upper}$$"
+        if doc:
+            s += f"\n{d['where']}"
+    elif isinstance(comp, BlockData):
         cs = []
         for c in comp.component_data_objects(Constraint, descend_into=descend_into):
             if not c.active:

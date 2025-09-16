@@ -3,36 +3,37 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+import os
+from abc import ABC, abstractmethod
+import datetime
 import pandas as pd
 import pyomo.environ as pyo
 from pyomo.opt.base.solvers import OptSolver
-import os
-from abc import ABC, abstractmethod
-from idaes.apps.grid_integration.utils import convert_marginal_costs_to_actual_costs
-import datetime
 from pyomo.common.dependencies import attempt_import
+from idaes.apps.grid_integration.utils import convert_marginal_costs_to_actual_costs
+import idaes.logger as idaeslog
 
 egret, egret_avail = attempt_import("egret")
 if egret_avail:
     from egret.model_library.transmission import tx_utils
 
+_logger = idaeslog.getLogger(__name__)
+
 
 class AbstractBidder(ABC):
-
     """
     The abstract class for all the bidder and self-schedulers.
     """
 
     @abstractmethod
     def update_day_ahead_model(self, **kwargs):
-
         """
         Update the day-ahead model (advance timesteps) with necessary parameters in kwargs.
 
@@ -45,7 +46,6 @@ class AbstractBidder(ABC):
 
     @abstractmethod
     def update_real_time_model(self, **kwargs):
-
         """
         Update the real-time model (advance timesteps) with necessary parameters in kwargs.
 
@@ -58,7 +58,6 @@ class AbstractBidder(ABC):
 
     @abstractmethod
     def compute_day_ahead_bids(self, date, hour, **kwargs):
-
         """
         Solve the model to bid/self-schedule into the day-ahead market. After solving,
         record the schedule from the solve.
@@ -77,7 +76,6 @@ class AbstractBidder(ABC):
 
     @abstractmethod
     def compute_real_time_bids(self, date, hour, **kwargs):
-
         """
         Solve the model to bid/self-schedule into the real-time market. After solving,
         record the schedule from the solve.
@@ -96,7 +94,6 @@ class AbstractBidder(ABC):
 
     @abstractmethod
     def write_results(self, path):
-
         """
         This methods writes the saved results into an csv file.
 
@@ -109,7 +106,6 @@ class AbstractBidder(ABC):
 
     @abstractmethod
     def formulate_DA_bidding_problem(self):
-
         """
         Formulate the day-ahead bidding optimization problem by adding necessary
         parameters, constraints, and objective function.
@@ -123,7 +119,6 @@ class AbstractBidder(ABC):
 
     @abstractmethod
     def formulate_RT_bidding_problem(self):
-
         """
         Formulate the real-time bidding optimization problem by adding necessary
         parameters, constraints, and objective function.
@@ -137,7 +132,6 @@ class AbstractBidder(ABC):
 
     @abstractmethod
     def record_bids(self, bids, model, date, hour):
-
         """
         This function records the bids (schedule) and the details in the
         underlying bidding model.
@@ -162,7 +156,6 @@ class AbstractBidder(ABC):
         return "AbstractGenerator"
 
     def _check_inputs(self):
-
         """
         Check if the inputs to construct the tracker is valid. If not raise errors.
         """
@@ -172,7 +165,6 @@ class AbstractBidder(ABC):
         self._check_solver()
 
     def _check_bidding_model_object(self):
-
         """
         Check if tracking model object has the necessary methods and attributes.
         """
@@ -198,7 +190,6 @@ class AbstractBidder(ABC):
                 )
 
     def _check_n_scenario(self):
-
         """
         Check if the number of LMP scenarios is an integer and greater than 0.
         """
@@ -215,7 +206,6 @@ class AbstractBidder(ABC):
             )
 
     def _check_solver(self):
-
         """
         Check if provides solver is a valid Pyomo solver object.
         """
@@ -227,7 +217,6 @@ class AbstractBidder(ABC):
 
 
 class StochasticProgramBidder(AbstractBidder):
-
     """
     Template class for bidders that use scenario-based stochastic programs.
     """
@@ -242,7 +231,6 @@ class StochasticProgramBidder(AbstractBidder):
         forecaster,
         real_time_underbid_penalty,
     ):
-
         """
         Initializes the stochastic bidder object.
 
@@ -313,7 +301,6 @@ class StochasticProgramBidder(AbstractBidder):
         return model
 
     def formulate_DA_bidding_problem(self):
-
         """
         Set up the day-ahead stochastic programming bidding problems.
 
@@ -332,7 +319,6 @@ class StochasticProgramBidder(AbstractBidder):
         return model
 
     def formulate_RT_bidding_problem(self):
-
         """
         Set up the real-time stochastic programming bidding problems.
 
@@ -351,7 +337,6 @@ class StochasticProgramBidder(AbstractBidder):
         return model
 
     def _save_power_outputs(self, model):
-
         """
         Create references of the power output variable in each price scenario
         block.
@@ -373,7 +358,6 @@ class StochasticProgramBidder(AbstractBidder):
         return
 
     def _add_bidding_params(self, model):
-
         """
         Add necessary bidding parameters to the model, i.e., market energy price.
 
@@ -399,7 +383,6 @@ class StochasticProgramBidder(AbstractBidder):
         return
 
     def _add_bidding_vars(self, model):
-
         """
         Add necessary bidding parameters to the model, i.e., market energy price.
 
@@ -433,7 +416,6 @@ class StochasticProgramBidder(AbstractBidder):
         return
 
     def _add_bidding_objective(self, model):
-
         """
         Add objective function to the model, i.e., maximizing the expected profit
         of the energy system.
@@ -482,7 +464,6 @@ class StochasticProgramBidder(AbstractBidder):
         energy_price_param_name,
         market,
     ):
-
         """
         Solve the model to bid into the markets. After solving, record the bids from the solve.
 
@@ -525,7 +506,6 @@ class StochasticProgramBidder(AbstractBidder):
         return bids
 
     def compute_day_ahead_bids(self, date, hour=0):
-
         """
         Solve the model to bid into the day-ahead market. After solving, record
         the bids from the solve.
@@ -565,7 +545,6 @@ class StochasticProgramBidder(AbstractBidder):
     def compute_real_time_bids(
         self, date, hour, realized_day_ahead_prices, realized_day_ahead_dispatches
     ):
-
         """
         Solve the model to bid into the real-time market. After solving, record
         the bids from the solve.
@@ -603,7 +582,6 @@ class StochasticProgramBidder(AbstractBidder):
         )
 
     def _pass_realized_day_ahead_prices(self, realized_day_ahead_prices, date, hour):
-
         """
         Pass the realized day-ahead prices into model parameters.
 
@@ -642,7 +620,6 @@ class StochasticProgramBidder(AbstractBidder):
                     self.real_time_model.fs[s].day_ahead_energy_price[t] = price
 
     def _pass_realized_day_ahead_dispatches(self, realized_day_ahead_dispatches, hour):
-
         """
         Pass the realized day-ahead dispatches into model and fix the corresponding variables.
 
@@ -670,7 +647,6 @@ class StochasticProgramBidder(AbstractBidder):
                     self.real_time_model.fs[s].real_time_underbid_power[t].unfix()
 
     def update_day_ahead_model(self, **kwargs):
-
         """
         This method updates the parameters in the day-ahead model based on the implemented profiles.
 
@@ -684,7 +660,6 @@ class StochasticProgramBidder(AbstractBidder):
         self._update_model(self.day_ahead_model, **kwargs)
 
     def update_real_time_model(self, **kwargs):
-
         """
         This method updates the parameters in the real-time model based on the implemented profiles.
 
@@ -698,7 +673,6 @@ class StochasticProgramBidder(AbstractBidder):
         self._update_model(self.real_time_model, **kwargs)
 
     def _update_model(self, model, **kwargs):
-
         """
         Update the flowsheets in all the price scenario blocks to advance time
         step.
@@ -719,7 +693,6 @@ class StochasticProgramBidder(AbstractBidder):
         return
 
     def record_bids(self, bids, model, date, hour, market):
-
         """
         This function records the bids and the details in the underlying bidding model.
 
@@ -749,7 +722,6 @@ class StochasticProgramBidder(AbstractBidder):
         return
 
     def _pass_price_forecasts(self, model, day_ahead_price, real_time_energy_price):
-
         """
         Pass the price forecasts into model parameters.
 
@@ -786,8 +758,7 @@ class StochasticProgramBidder(AbstractBidder):
             None
         """
 
-        print("")
-        print("Saving bidding results to disk...")
+        _logger.info("Saving bidding results to disk.")
         pd.concat(self.bids_result_list).to_csv(
             os.path.join(path, "bidder_detail.csv"), index=False
         )
@@ -807,7 +778,6 @@ class StochasticProgramBidder(AbstractBidder):
 
 
 class SelfScheduler(StochasticProgramBidder):
-
     """
     Wrap a model object to self schedule into the market using stochastic programming.
     """
@@ -857,7 +827,6 @@ class SelfScheduler(StochasticProgramBidder):
         self.fixed_to_schedule = fixed_to_schedule
 
     def _add_DA_bidding_constraints(self, model):
-
         """
         Add bidding constraints to the model, i.e., power outputs in the first
         stage need to be the same across all the scenarios.
@@ -887,7 +856,6 @@ class SelfScheduler(StochasticProgramBidder):
         return
 
     def _add_RT_bidding_constraints(self, model):
-
         """
         Add bidding constraints to the model, i.e., power outputs in the first
         stage need to be the same across all the scenarios.
@@ -917,7 +885,6 @@ class SelfScheduler(StochasticProgramBidder):
         return
 
     def _assemble_bids(self, model, power_var_name, energy_price_param_name, hour):
-
         """
         This methods extract the bids out of the stochastic programming model and
         organize them into self-schedule bids.
@@ -988,7 +955,6 @@ class SelfScheduler(StochasticProgramBidder):
         return bids
 
     def _record_bids(self, bids, date, hour, **kwargs):
-
         """
         This function records the bids (schedule) we computed for the given date into a
         DataFrame and temporarily stores the DataFrame in an instance attribute
@@ -1032,7 +998,6 @@ class SelfScheduler(StochasticProgramBidder):
 
 
 class Bidder(StochasticProgramBidder):
-
     """
     Wrap a model object to bid into the market using stochastic programming.
     """
@@ -1047,7 +1012,6 @@ class Bidder(StochasticProgramBidder):
         forecaster,
         real_time_underbid_penalty=10000,
     ):
-
         """
         Initializes the bidder object.
 
@@ -1081,7 +1045,6 @@ class Bidder(StochasticProgramBidder):
         )
 
     def _add_DA_bidding_constraints(self, model):
-
         """
         Add bidding constraints to the model, i.e., the bid curves need to be
         nondecreasing.
@@ -1115,7 +1078,6 @@ class Bidder(StochasticProgramBidder):
         return
 
     def _add_RT_bidding_constraints(self, model):
-
         """
         Add bidding constraints to the model, i.e., the bid curves need to be
         nondecreasing.
@@ -1149,7 +1111,6 @@ class Bidder(StochasticProgramBidder):
         return
 
     def _assemble_bids(self, model, power_var_name, energy_price_param_name, hour):
-
         """
         This methods extract the bids out of the stochastic programming model and
         organize them into ( MWh, $ ) pairs.
@@ -1279,7 +1240,6 @@ class Bidder(StochasticProgramBidder):
         return full_bids
 
     def _record_bids(self, bids, date, hour, **kwargs):
-
         """
         This method records the bids we computed for the given date into a
         DataFrame. This DataFrame has the following columns: gen, date, hour,
@@ -1333,3 +1293,412 @@ class Bidder(StochasticProgramBidder):
         self.bids_result_list.append(pd.concat(df_list))
 
         return
+
+
+class ParametrizedBidder(AbstractBidder):
+    """
+    Create a parameterized bidder.
+    Bid the resource at different prices.
+    """
+
+    def __init__(
+        self,
+        bidding_model_object,
+        day_ahead_horizon,
+        real_time_horizon,
+        solver,
+        forecaster,
+    ):
+        """
+        Arguments:
+            bidding_model_object: pyomo model object,
+                the IES model object for bidding.
+            day_ahead_horizon: int,
+                number of time periods in the day-ahead bidding problem.
+            real_time_horizon: int,
+                number of time periods in the real-time bidding problem.
+            solver: a Pyomo mathematical programming solver object,
+                solver for solving the bidding problem. In this class we do not need a solver.
+            forecaster: forecaster object,
+                the forecaster to predict the generator/IES capacity factor.
+
+        """
+        self.bidding_model_object = bidding_model_object
+        self.day_ahead_horizon = day_ahead_horizon
+        self.real_time_horizon = real_time_horizon
+        self.solver = solver
+        self.forecaster = forecaster
+        # Because ParameterizedBidder is inherited from the AbstractBidder, and we want to
+        # use the _check_inputs() function to check the solver and bidding_model_object.
+        # We must have the self.scenario attribute. In this case, I set the self.n_scenario = 1 when initializing.
+        # However, self.n_scenario will never be used in this class.
+        self.n_scenario = 1
+        self._check_inputs()
+
+        self.generator = self.bidding_model_object.model_data.gen_name
+        self.bids_result_list = []
+
+    @property
+    def generator(self):
+        return self._generator
+
+    @generator.setter
+    def generator(self, name):
+        self._generator = name
+
+    def formulate_DA_bidding_problem(self):
+        """
+        No need to formulate a DA bidding problem here.
+
+        Arguments:
+            None
+
+        Returns:
+            None
+        """
+        pass
+
+    def formulate_RT_bidding_problem(self):
+        """
+        No need to formulate a RT bidding problem here.
+
+        Arguments:
+            None
+
+        Returns:
+            None
+        """
+        pass
+
+    def compute_day_ahead_bids(self, date, hour=0):
+        raise NotImplementedError
+
+    def compute_real_time_bids(
+        self,
+        date,
+        hour,
+        realized_day_ahead_prices,
+        realized_day_ahead_dispatches,
+        tracker_profile,
+    ):
+        raise NotImplementedError
+
+    def update_day_ahead_model(self, **kwargs):
+        """
+        No need to update the RT bidding problem here.
+
+        Arguments:
+            None
+
+        Returns:
+            None
+        """
+        pass
+
+    def update_real_time_model(self, **kwargs):
+        """
+        No need to update the RT bidding problem here.
+
+        Arguments:
+            None
+
+        Returns:
+            None
+        """
+        pass
+
+    def record_bids(self, bids: dict, model, date: str, hour: int, market):
+        """
+        This function records the bids and the details in the underlying bidding model.
+        The detailed bids of each time step at day-ahead and real-time planning horizon will
+        be recorded at bidder_detail.csv
+
+        Arguments:
+            bids: dictionary,
+                the obtained bids for this date. Keys are time step t, example as following:
+                bids = {t: {gen: {p_cost: float, p_max: float, p_min: float, startup_capacity: float, shutdown_capacity: float}}}
+            model: pyomo model object,
+                our bidding model.
+            date: str,
+                the date we bid into.
+            hour: int,
+                the hour we bid into.
+            market: str,
+                the market we participate.
+
+        Returns:
+            None
+
+        """
+
+        # record bids
+        self._record_bids(bids, date, hour, Market=market)
+
+        return
+
+    def _record_bids(self, bids: dict, date: str, hour: int, **kwargs):
+        """
+        Record the bis of each time period.
+
+        Arguments:
+            bids: dictionary,
+                the obtained bids for this date. Keys are time step t, example as following:
+                bids = {t: {gen: {p_cost: float, p_max: float, p_min: float, startup_capacity: float, shutdown_capacity: float}}}
+            date: str,
+                the date we bid into.
+            hour: int,
+                the hour we bid into.
+
+        Returns:
+            None
+
+        """
+        df_list = []
+        for t in bids:
+            for gen in bids[t]:
+
+                result_dict = {}
+                result_dict["Generator"] = gen
+                result_dict["Date"] = date
+                result_dict["Hour"] = t
+
+                for k, v in kwargs.items():
+                    result_dict[k] = v
+
+                num_bid_pairs = len(bids[t][gen]["p_cost"])
+
+                for idx, (power, cost) in enumerate(bids[t][gen]["p_cost"]):
+                    result_dict[f"Power {idx} [MW]"] = power
+                    result_dict[f"Cost {idx} [$]"] = cost
+
+                result_df = pd.DataFrame.from_dict(result_dict, orient="index")
+                df_list.append(result_df.T)
+
+        # save the result to object property
+        # wait to be written when simulation ends
+        self.bids_result_list.append(pd.concat(df_list))
+
+        return
+
+    def write_results(self, path):
+        """
+        This methods writes the saved operation stats into an csv file.
+
+        Arguments:
+            path: str or Pathlib object,
+                the path to write the results.
+
+        Return:
+            None
+        """
+
+        _logger.info("Saving bidding results to disk.")
+        pd.concat(self.bids_result_list).to_csv(
+            os.path.join(path, "bidder_detail.csv"), index=False
+        )
+        return
+
+
+class PEMParametrizedBidder(ParametrizedBidder):
+    """
+    Renewable (PV or Wind) + PEM bidder that uses parameterized bid curves.
+    """
+
+    def __init__(
+        self,
+        bidding_model_object,
+        day_ahead_horizon,
+        real_time_horizon,
+        solver,
+        forecaster,
+        renewable_mw,
+        pem_marginal_cost,
+        pem_mw,
+        real_time_bidding_only=False,
+    ):
+        """
+        Arguments:
+            bidding_model_object: pyomo model object,
+                the IES model object for bidding.
+            day_ahead_horizon: int,
+                number of time periods in the day-ahead bidding problem.
+            real_time_horizon: int,
+                number of time periods in the real-time bidding problem.
+            solver: a Pyomo mathematical programming solver object,
+                solver for solving the bidding problem. In this class we do not need a solver.
+            forecaster: forecaster object,
+                the forecaster to predict the generator/IES capacity factor.
+            renewable_mw: int or float,
+                maximum renewable energy system capacity.
+            pem_marginal_cost: int or float,
+                cost/MW, above which all available wind energy will be sold to grid;
+                below which, make hydrogen and sell remainder of wind to grid.
+            pem_mw: int or float,
+                maximum PEM capacity limits how much energy is bid at the `pem_marginal_cost`.
+            real_time_bidding_only: bool,
+                if True, do real-time bidding only.
+        """
+        super().__init__(
+            bidding_model_object,
+            day_ahead_horizon,
+            real_time_horizon,
+            solver,
+            forecaster,
+        )
+        self.renewable_mw = renewable_mw
+        self.renewable_marginal_cost = 0
+        self.pem_marginal_cost = pem_marginal_cost
+        self.pem_mw = pem_mw
+        self.real_time_bidding_only = real_time_bidding_only
+        self._check_power()
+
+    def _check_power(self):
+        """
+        Check the power of PEM should not exceed the power of renewables
+        """
+        if self.pem_mw >= self.renewable_mw:
+            raise ValueError(f"The power of PEM is greater than the renewable power.")
+
+    def compute_day_ahead_bids(self, date: str, hour=0):
+        """
+        DA Bid: from 0 MW to (Wind Resource - PEM capacity) MW, bid $0/MWh.
+        from (Wind Resource - PEM capacity) MW to Wind Resource MW, bid 'pem_marginal_cost'
+
+        If Wind resource at some time is less than PEM capacity, then reduce to available resource
+
+        Arguments:
+            date: str,
+                the date we bid into.
+            hour: int,
+                the hour we bid into.
+
+        Returns:
+            full_bids: dictionary,
+                the obtained bids. Keys are time step t, example as following:
+                bids = {t: {gen: {p_cost: float, p_max: float, p_min: float, startup_capacity: float, shutdown_capacity: float}}}
+        """
+        gen = self.generator
+        # Forecast the day-ahead wind generation
+        forecast = self.forecaster.forecast_day_ahead_capacity_factor(
+            date, hour, gen, self.day_ahead_horizon
+        )
+
+        full_bids = {}
+
+        for t_idx in range(self.day_ahead_horizon):
+            da_wind = forecast[t_idx] * self.renewable_mw
+            grid_wind = max(0, da_wind - self.pem_mw)
+            # grid wind are bidded at marginal cost = 0
+            # The rest of the power is bidded at the pem marginal cost
+            if grid_wind == 0:
+                bids = [(0, 0), (da_wind, self.pem_marginal_cost)]
+            else:
+                bids = [(0, 0), (grid_wind, 0), (da_wind, self.pem_marginal_cost)]
+            cost_curve = convert_marginal_costs_to_actual_costs(bids)
+
+            temp_curve = {
+                "data_type": "cost_curve",
+                "cost_curve_type": "piecewise",
+                "values": cost_curve,
+            }
+            tx_utils.validate_and_clean_cost_curve(
+                curve=temp_curve,
+                curve_type="cost_curve",
+                p_min=0,
+                p_max=max([p[0] for p in cost_curve]),
+                gen_name=gen,
+                t=t_idx,
+            )
+
+            t = t_idx + hour
+            full_bids[t] = {}
+            full_bids[t][gen] = {}
+            full_bids[t][gen]["p_cost"] = cost_curve
+            full_bids[t][gen]["p_min"] = 0
+            full_bids[t][gen]["p_max"] = da_wind
+            full_bids[t][gen]["startup_capacity"] = da_wind
+            full_bids[t][gen]["shutdown_capacity"] = da_wind
+
+        self._record_bids(full_bids, date, hour, Market="Day-ahead")
+        return full_bids
+
+    def compute_real_time_bids(
+        self, date, hour, realized_day_ahead_dispatches, realized_day_ahead_prices
+    ):
+        """
+        RT Bid: from 0 MW to (Wind Resource - PEM capacity) MW, bid $0/MWh.
+        from (Wind Resource - PEM capacity) MW to Wind Resource MW, bid 'pem_marginal_cost'
+
+        Arguments:
+            date: str,
+                the date we bid into
+            hour: int,
+                the hour we bid into
+
+        Returns:
+            full_bids: dictionary,
+                the obtained bids. Keys are time step t, example as following:
+                bids = {t: {gen: {p_cost: float, p_max: float, p_min: float, startup_capacity: float, shutdown_capacity: float}}}
+        """
+
+        gen = self.generator
+        forecast = self.forecaster.forecast_real_time_capacity_factor(
+            date, hour, gen, self.real_time_horizon
+        )
+        full_bids = {}
+
+        for t_idx in range(self.real_time_horizon):
+            rt_wind = forecast[t_idx] * self.renewable_mw
+            # if we participate in both DA and RT market
+            if not self.real_time_bidding_only:
+                try:
+                    da_dispatch = realized_day_ahead_dispatches[t_idx + hour]
+                except IndexError:
+                    # When having indexerror, it must be the period that we are looking ahead. It is ok to set da_dispatch to 0
+                    da_dispatch = 0
+            # if we only participates in the RT market, then we do not consider the DA commitment
+            else:
+                da_dispatch = 0
+
+            avail_rt_wind = max(0, rt_wind - da_dispatch)
+            grid_wind = max(0, avail_rt_wind - self.pem_mw)
+
+            if avail_rt_wind == 0:
+                bids = [(0, 0), (0, 0)]
+            else:
+                if grid_wind == 0:
+                    bids = [(0, 0), (avail_rt_wind, self.pem_marginal_cost)]
+                else:
+                    bids = [
+                        (0, 0),
+                        (grid_wind, 0),
+                        (avail_rt_wind, self.pem_marginal_cost),
+                    ]
+            cost_curve = convert_marginal_costs_to_actual_costs(bids)
+
+            temp_curve = {
+                "data_type": "cost_curve",
+                "cost_curve_type": "piecewise",
+                "values": cost_curve,
+            }
+            tx_utils.validate_and_clean_cost_curve(
+                curve=temp_curve,
+                curve_type="cost_curve",
+                p_min=0,
+                p_max=max([p[0] for p in cost_curve]),
+                gen_name=gen,
+                t=t_idx,
+            )
+
+            t = t_idx + hour
+            full_bids[t] = {}
+            full_bids[t][gen] = {}
+            full_bids[t][gen]["p_cost"] = cost_curve
+            full_bids[t][gen]["p_min"] = 0
+            full_bids[t][gen]["p_max"] = max([p[0] for p in cost_curve])
+            full_bids[t][gen]["startup_capacity"] = rt_wind
+            full_bids[t][gen]["shutdown_capacity"] = rt_wind
+
+            self._record_bids(full_bids, date, hour, Market="Real-time")
+
+        return full_bids

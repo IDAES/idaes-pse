@@ -18,7 +18,7 @@ detail with a link in their description.
     flowsheet/index
     property_package/index
     unit_model/index
-    dmf/index
+    ui/index
 
 .. rubric:: Flowsheet
 
@@ -37,8 +37,3 @@ properties of the process streams.
 
 :ref:`Unit models<explanations/components/unit_model/index:Unit Model>` 
 represent individual pieces of equipment and their processes.
-
-.. rubric:: Data Management Framework
-
-The :ref:`Data Management Framework <explanations/components/dmf/index:Data Management Framework>`
-is used to manage data needed by the platform. It stores metadata and data in persistent storage.

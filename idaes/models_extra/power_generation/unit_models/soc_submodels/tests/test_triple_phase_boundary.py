@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -17,6 +17,8 @@ import pytest
 import numpy as np
 
 import pyomo.environ as pyo
+from pyomo.util.check_units import assert_units_consistent
+
 from idaes.core import FlowsheetBlock
 from idaes.core.util.constants import Constants
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -198,6 +200,11 @@ def test_build_fuel(modelFuel):
     assert degrees_of_freedom(tpb) == 0
 
 
+@pytest.mark.component
+def test_units_model_fuel(modelFuel):
+    assert_units_consistent(modelFuel)
+
+
 @pytest.mark.build
 @pytest.mark.unit
 def test_build_oxygen(modelOxygen):
@@ -212,6 +219,11 @@ def test_build_oxygen(modelOxygen):
     )
 
     assert degrees_of_freedom(tpb) == 0
+
+
+@pytest.mark.component
+def test_units_model_oxygen(modelOxygen):
+    assert_units_consistent(modelOxygen)
 
 
 @pytest.mark.solver

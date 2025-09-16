@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -31,6 +31,10 @@ from pyomo.common.collections import ComponentSet
 
 from idaes.core.util.model_statistics import *
 from idaes.core.util.model_statistics import _iter_indexed_block_data_objects
+from pyomo.contrib.pynumero.interfaces.external_grey_box import (
+    ExternalGreyBoxBlock,
+    ExternalGreyBoxModel,
+)
 
 
 @pytest.mark.unit
@@ -312,76 +316,154 @@ def test_number_unfixed_variables(m):
 
 
 @pytest.mark.unit
-def test_variables_near_bounds_set(m):
-    tset = variables_near_bounds_set(m)
-    assert len(tset) == 6
-    for i in tset:
-        assert i in ComponentSet(
-            [
-                m.b2["a"].v1,
-                m.b2["b"].v1,
-                m.b2["a"].v2["a"],
-                m.b2["a"].v2["b"],
-                m.b2["b"].v2["a"],
-                m.b2["b"].v2["b"],
-            ]
-        )
+def test_variables_near_bounds_tol_deprecation(m, caplog):
+    variables_near_bounds_set(m, tol=1e-3)
 
-    m.b2["a"].v1.value = 1.001
-    tset = variables_near_bounds_set(m)
-    assert len(tset) == 5
-    for i in tset:
-        assert i in ComponentSet(
-            [
-                m.b2["b"].v1,
-                m.b2["a"].v2["a"],
-                m.b2["a"].v2["b"],
-                m.b2["b"].v2["a"],
-                m.b2["b"].v2["b"],
-            ]
-        )
+    msg = (
+        "DEPRECATED: variables_near_bounds_generator has deprecated the tol argument. "
+        "Please set abs_tol and rel_tol arguments instead.  (deprecated in "
+        "2.2.0, will be removed in (or after) 3.0.0)"
+    )
+    assert msg.replace(" ", "") in caplog.records[0].message.replace("\n", "").replace(
+        " ", ""
+    )
 
-    tset = variables_near_bounds_set(m, tol=1e-3)
-    assert len(tset) == 6
-    for i in tset:
-        assert i in ComponentSet(
-            [
-                m.b2["a"].v1,
-                m.b2["b"].v1,
-                m.b2["a"].v2["a"],
-                m.b2["a"].v2["b"],
-                m.b2["b"].v2["a"],
-                m.b2["b"].v2["b"],
-            ]
-        )
 
-    m.b2["a"].v1.setlb(None)
-    tset = variables_near_bounds_set(m)
-    assert len(tset) == 5
-    for i in tset:
-        assert i in ComponentSet(
-            [
-                m.b2["b"].v1,
-                m.b2["a"].v2["a"],
-                m.b2["a"].v2["b"],
-                m.b2["b"].v2["a"],
-                m.b2["b"].v2["b"],
-            ]
-        )
+@pytest.mark.unit
+def test_variables_near_bounds_relative_deprecation(m, caplog):
+    variables_near_bounds_set(m, relative=False)
 
-    m.b2["a"].v2["a"].setub(None)
-    tset = variables_near_bounds_set(m)
-    assert len(tset) == 4
-    for i in tset:
-        assert i in ComponentSet(
-            [m.b2["b"].v1, m.b2["a"].v2["b"], m.b2["b"].v2["a"], m.b2["b"].v2["b"]]
-        )
+    msg = (
+        "DEPRECATED: variables_near_bounds_generator has deprecated the relative argument. "
+        "Please set abs_tol and rel_tol arguments instead.  (deprecated in "
+        "2.2.0, will be removed in (or after) 3.0.0)"
+    )
+    assert msg.replace(" ", "") in caplog.records[0].message.replace("\n", "").replace(
+        " ", ""
+    )
 
-    m.b2["a"].v2["b"].value = None
-    tset = variables_near_bounds_set(m)
-    assert len(tset) == 3
-    for i in tset:
-        assert i in ComponentSet([m.b2["b"].v1, m.b2["b"].v2["a"], m.b2["b"].v2["b"]])
+
+@pytest.mark.unit
+def test_variables_near_bounds_set():
+    m = ConcreteModel()
+    m.v = Var(initialize=0.5, bounds=(0, 1))
+
+    # Small value, both bounds
+    # Away from bounds
+    vset = variables_near_bounds_set(m)
+    assert len(vset) == 0
+
+    # Near lower bound, relative
+    m.v.set_value(1e-6)
+    vset = variables_near_bounds_set(m, abs_tol=1e-8, rel_tol=1e-4)
+    assert len(vset) == 1
+
+    # Near lower bound, absolute
+    vset = variables_near_bounds_set(m, abs_tol=1e-4, rel_tol=1e-8)
+    assert len(vset) == 1
+
+    # Near upper bound, relative
+    m.v.set_value(1 - 1e-6)
+    vset = variables_near_bounds_set(m, abs_tol=1e-8, rel_tol=1e-4)
+    assert len(vset) == 1
+
+    # Near upper bound, absolute
+    vset = variables_near_bounds_set(m, abs_tol=1e-4, rel_tol=1e-8)
+    assert len(vset) == 1
+
+    # Small value, lower bound
+    # Away from bounds
+    m.v.set_value(0.5)
+    m.v.setub(None)
+    vset = variables_near_bounds_set(m)
+    assert len(vset) == 0
+
+    # Near lower bound, relative
+    m.v.set_value(1e-6)
+    vset = variables_near_bounds_set(m, abs_tol=1e-8, rel_tol=1e-4)
+    # Lower bound of 0 means relative tolerance is 0
+    assert len(vset) == 0
+
+    # Near lower bound, absolute
+    vset = variables_near_bounds_set(m, abs_tol=1e-4, rel_tol=1e-8)
+    assert len(vset) == 1
+
+    # Small value, upper bound
+    # Away from bounds
+    m.v.set_value(0.5)
+    m.v.setub(1)
+    m.v.setlb(None)
+    vset = variables_near_bounds_set(m)
+    assert len(vset) == 0
+
+    # Near upper bound, relative
+    m.v.set_value(1 - 1e-6)
+    vset = variables_near_bounds_set(m, abs_tol=1e-8, rel_tol=1e-4)
+    assert len(vset) == 1
+
+    # Near upper bound, absolute
+    vset = variables_near_bounds_set(m, abs_tol=1e-4, rel_tol=1e-8)
+    assert len(vset) == 1
+
+    # Large value, both bounds
+    # Relative tolerance based on magnitude of 100
+    m.v.setlb(450)
+    m.v.setub(550)
+    m.v.set_value(500)
+    vset = variables_near_bounds_set(m)
+    assert len(vset) == 0
+
+    # Near lower bound, relative
+    m.v.set_value(451)
+    vset = variables_near_bounds_set(m, rel_tol=1e-2)
+    assert len(vset) == 1
+
+    # Near lower bound, absolute
+    vset = variables_near_bounds_set(m, abs_tol=1)
+    assert len(vset) == 1
+
+    # Near upper bound, relative
+    m.v.set_value(549)
+    vset = variables_near_bounds_set(m, rel_tol=1e-2)
+    assert len(vset) == 1
+
+    # Near upper bound, absolute
+    vset = variables_near_bounds_set(m, abs_tol=1)
+    assert len(vset) == 1
+
+    # Large value, lower bound
+    # Relative tolerance based on magnitude of 450
+    m.v.setlb(450)
+    m.v.setub(None)
+    m.v.set_value(500)
+    vset = variables_near_bounds_set(m)
+    assert len(vset) == 0
+
+    # Near lower bound, relative
+    m.v.set_value(451)
+    vset = variables_near_bounds_set(m, rel_tol=1e-2)
+    assert len(vset) == 1
+
+    # Near lower bound, absolute
+    vset = variables_near_bounds_set(m, abs_tol=1)
+    assert len(vset) == 1
+
+    # Large value, upper bound
+    # Relative tolerance based on magnitude of 550
+    m.v.setlb(None)
+    m.v.setub(550)
+    m.v.set_value(500)
+    vset = variables_near_bounds_set(m)
+    assert len(vset) == 0
+
+    # Near upper bound, relative
+    m.v.set_value(549)
+    vset = variables_near_bounds_set(m, rel_tol=1e-2)
+    assert len(vset) == 1
+
+    # Near upper bound, absolute
+    vset = variables_near_bounds_set(m, abs_tol=1)
+    assert len(vset) == 1
 
 
 @pytest.mark.unit
@@ -548,6 +630,61 @@ def test_number_derivative_variables():
     assert number_derivative_variables(m) == 0
 
 
+@pytest.mark.unit
+def test_uninitialized_variables_in_activated_constraints():
+    m = ConcreteModel()
+    m.u = Var()
+    m.w = Var(initialize=1)
+    m.x = Var(initialize=1)
+    m.y = Var(range(3), initialize=[1, None, 2])
+    m.z = Var()
+
+    m.con_w = Constraint(expr=m.w == 0)
+    m.con_x = Constraint(expr=m.x == 1)
+
+    def rule_con_y(b, i):
+        return b.y[i] == 3
+
+    m.con_y = Constraint(range(3), rule=rule_con_y)
+    m.con_z = Constraint(expr=m.x + m.z == -1)
+
+    m.block1 = Block()
+    m.block1.a = Var()
+    m.block1.b = Var(initialize=7)
+    m.block1.c = Var(initialize=-5)
+    m.block1.d = Var()
+
+    m.block1.con_a = Constraint(expr=m.block1.a**2 + m.block1.b == 1)
+    m.block1.con_b = Constraint(expr=m.block1.b + m.block1.c == 3)
+    m.block1.con_c = Constraint(expr=m.block1.c + m.block1.a == -4)
+
+    active_uninit_set = ComponentSet([m.y[1], m.z, m.block1.a])
+
+    assert variables_with_none_value_in_activated_equalities_set(m) == active_uninit_set
+    assert number_variables_with_none_value_in_activated_equalities(m) == len(
+        active_uninit_set
+    )
+
+    m.block1.deactivate()
+
+    active_uninit_set = ComponentSet([m.y[1], m.z])
+
+    assert variables_with_none_value_in_activated_equalities_set(m) == active_uninit_set
+    assert number_variables_with_none_value_in_activated_equalities(m) == len(
+        active_uninit_set
+    )
+
+    m.block1.activate()
+    m.con_z.deactivate()
+
+    active_uninit_set = ComponentSet([m.y[1], m.block1.a])
+
+    assert variables_with_none_value_in_activated_equalities_set(m) == active_uninit_set
+    assert number_variables_with_none_value_in_activated_equalities(m) == len(
+        active_uninit_set
+    )
+
+
 # -------------------------------------------------------------------------
 # Objective methods
 @pytest.mark.unit
@@ -605,6 +742,68 @@ def test_number_expressions(m):
 def test_degrees_of_freedom(m):
     assert degrees_of_freedom(m) == 10
     assert degrees_of_freedom(m.b2) == -1
+
+
+@pytest.mark.unit
+def test_degrees_of_freedom_with_graybox():
+    """non functional graybox model added to m fixture, to test DOFs
+
+    GreyBoxModel has 3 inputs and 2 outputs calculated an unknown function,
+    input a1 and a2 are bound by equality constraint through internal graybox model"""
+
+    class BasicGrayBox(ExternalGreyBoxModel):
+        def input_names(self):
+            return ["a1", "a2", "a3"]
+
+        def output_names(self):
+            return ["o1", "o2"]
+
+        def equality_constraint_names(self):
+            return ["a_sum"]
+
+        def evaluate_equality_constraints(self):
+            a1 = self._input_values[0]
+            a2 = self._input_values[1]
+            return [a1 * 0.5 + a2]
+
+    m = ConcreteModel()
+
+    m.gb = ExternalGreyBoxBlock(external_model=BasicGrayBox())
+    m.gb_inactive = ExternalGreyBoxBlock(external_model=BasicGrayBox())
+    m.gb_inactive.deactivate()
+    # test counting functions
+    assert number_greybox_blocks(m) == 2
+    assert number_deactivated_greybox_block(m) == 1
+    assert number_activated_greybox_blocks(m) == 1
+    assert number_of_greybox_variables(m) == 5
+    assert number_of_unfixed_greybox_variables(m) == 5
+    assert number_activated_greybox_equalities(m) == 3
+    assert number_variables_in_activated_constraints(m) == 5
+    # verify DOFS works on stand alone greybox
+    assert degrees_of_freedom(m) == 2
+    m.gb.inputs.fix()
+    m.gb.inputs["a1"].unfix()
+    assert number_of_unfixed_greybox_variables(m) == 3
+    assert degrees_of_freedom(m) == 0
+    m.gb.outputs.fix()
+    assert degrees_of_freedom(m) == -2
+    m.gb.outputs.unfix()
+
+    # verify DOFs works on greybox connected to other vars on a model via constraints
+    m.a1 = Var(initialize=1)
+    m.a1.fix()
+    m.gb.inputs["a2"].unfix()
+    m.a1_eq = Constraint(expr=m.a1 == m.gb.inputs["a1"])
+    assert degrees_of_freedom(m) == 0
+    m.o1 = Var(initialize=1)
+    m.o1_eq = Constraint(expr=m.o1 == m.gb.outputs["o1"])
+    m.o1.fix()
+    assert degrees_of_freedom(m) == -1
+    assert number_variables_in_activated_constraints(m) == 7
+    assert number_total_constraints(m) == 5
+    assert number_total_equalities(m) == 5
+    assert number_deactivated_equalities(m) == 3
+    assert number_deactivated_constraints(m) == 3
 
 
 @pytest.mark.unit

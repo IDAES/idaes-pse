@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -15,16 +15,15 @@ Methods for cubic equations of state.
 
 Currently only supports liquid and vapor phases
 """
-# TODO: Missing docstrings
-# pylint: disable=missing-function-docstring
-
-# TODO: Look into protected access issues
+# TODO: Pylint complains about variables with _x names as they are built by other classes
 # pylint: disable=protected-access
+# pylint: disable=missing-function-docstring
 
 from enum import Enum
 from copy import deepcopy
 
 from pyomo.environ import (
+    Constraint,
     exp,
     Expression,
     log,
@@ -350,7 +349,7 @@ class Cubic(EoSBase):
         else:
             raise ConfigurationError(
                 "{} Unrecognized option for Equation of State "
-                "mixing_rule_a: {}. Must be an instance of MixingRuleB "
+                "mixing_rule_b: {}. Must be an instance of MixingRuleB "
                 "Enum.".format(b.name, mixing_rule_b)
             )
 
@@ -542,6 +541,9 @@ class Cubic(EoSBase):
 
     @staticmethod
     def compress_fact_phase(b, p):
+        """
+        Compressibility factor
+        """
         pobj = b.params.get_phase(p)
         cname = pobj._cubic_type.name
         A = getattr(b, cname + "_A")
@@ -561,10 +563,16 @@ class Cubic(EoSBase):
 
     @staticmethod
     def cp_mass_phase(blk, p):
+        """
+        Phase mass-specific heat capacity at constant pressure
+        """
         return blk.cp_mol_phase[p] / blk.mw_phase[p]
 
     @staticmethod
     def cp_mol_phase(blk, p):
+        """
+        Phase molar heat capacity at constant pressure
+        """
         pobj = blk.params.get_phase(p)
         cname = pobj._cubic_type.name
 
@@ -606,10 +614,16 @@ class Cubic(EoSBase):
 
     @staticmethod
     def cv_mass_phase(blk, p):
+        """
+        Phase mass-specific heat capacity at constant volume
+        """
         return blk.cv_mol_phase[p] / blk.mw_phase[p]
 
     @staticmethod
     def cv_mol_phase(blk, p):
+        """
+        Phase molar heat capacity at constant volume
+        """
         pobj = blk.params.get_phase(p)
         cname = pobj._cubic_type.name
         am = getattr(blk, cname + "_am")[p]
@@ -634,16 +648,25 @@ class Cubic(EoSBase):
 
     @staticmethod
     def dens_mass_phase(b, p):
+        """
+        Phase density (mass basis)
+        """
         return b.dens_mol_phase[p] * b.mw_phase[p]
 
     @staticmethod
     def dens_mol_phase(b, p):
+        """
+        Phase density (mole basis)
+        """
         return b.pressure / (
             Cubic.gas_constant(b) * b.temperature * b.compress_fact_phase[p]
         )
 
     @staticmethod
     def energy_internal_mol_phase(blk, p):
+        """
+        Phase molar internal energy
+        """
         pobj = blk.params.get_phase(p)
 
         cname = pobj._cubic_type.name
@@ -673,12 +696,18 @@ class Cubic(EoSBase):
 
     @staticmethod
     def energy_internal_mol_phase_comp(blk, p, j):
+        """
+        Phase partial molar internal energy
+        """
         return (
             blk.enth_mol_phase_comp[p, j] - blk.pressure * blk.vol_mol_phase_comp[p, j]
         )
 
     @staticmethod
     def enth_mol_phase(blk, p):
+        """
+        Phase molar enthalpy
+        """
         pobj = blk.params.get_phase(p)
 
         cname = pobj._cubic_type.name
@@ -708,6 +737,9 @@ class Cubic(EoSBase):
 
     @staticmethod
     def enth_mol_phase_comp(blk, p, j):
+        """
+        Phase partial molar enthalpy
+        """
         dlogphi_j_dT = _d_log_fug_coeff_dT_phase_comp(blk, p, j)
 
         enth_ideal_gas = get_method(blk, "enth_mol_ig_comp", j)(
@@ -720,6 +752,9 @@ class Cubic(EoSBase):
 
     @staticmethod
     def entr_mol_phase(blk, p):
+        """
+        Phase molar entropy
+        """
         pobj = blk.params.get_phase(p)
 
         cname = pobj._cubic_type.name
@@ -758,6 +793,9 @@ class Cubic(EoSBase):
 
     @staticmethod
     def entr_mol_phase_comp(blk, p, j):
+        """
+        Phase partial molar entropy
+        """
         logphi_j = _log_fug_coeff_phase_comp(blk, p, j)
         dlogphi_j_dT = _d_log_fug_coeff_dT_phase_comp(blk, p, j)
 
@@ -900,6 +938,125 @@ class Cubic(EoSBase):
             / b.pressure
             * (b.compress_fact_phase[p] + _N_dZ_dNj(b, p, j))
         )
+
+    @staticmethod
+    def build_critical_properties(m, ref_phase):
+        pobj = m.params.get_phase(ref_phase)
+        cname = pobj.config.equation_of_state_options["type"].name
+        ctype = pobj._cubic_type
+
+        # Add components for calculation of mixture critical properties
+        def func_a_crit(m, j):
+            cobj = m.params.get_component(j)
+            fw = getattr(m, cname + "_fw")
+            return (
+                EoS_param[ctype]["omegaA"]
+                * (
+                    (Cubic.gas_constant(m) * cobj.temperature_crit) ** 2
+                    / cobj.pressure_crit
+                )
+                * (
+                    (1 + fw[j] * (1 - sqrt(m.temperature_crit / cobj.temperature_crit)))
+                    ** 2
+                )
+            )
+
+        m.add_component(
+            "a_crit",
+            Expression(
+                m.component_list, rule=func_a_crit, doc="Component a coefficient"
+            ),
+        )
+
+        def rule_am_crit(m):
+            try:
+                rule = m.params.get_phase(ref_phase).config.equation_of_state_options[
+                    "mixing_rule_a"
+                ]
+            except (KeyError, TypeError):
+                rule = MixingRuleA.default
+
+            a_crit = getattr(m, "a_crit")
+            if rule == MixingRuleA.default:
+                return rule_am_crit_default(m, cname, a_crit)
+            else:
+                raise ConfigurationError(
+                    "{} Unrecognized option for Equation of State "
+                    "mixing_rule_a: {}. Must be an instance of MixingRuleA "
+                    "Enum.".format(m.name, rule)
+                )
+
+        m.add_component("am_crit", Expression(rule=rule_am_crit))
+
+        def rule_bm_crit(m):
+            try:
+                rule = m.params.get_phase(ref_phase).config.equation_of_state_options[
+                    "mixing_rule_b"
+                ]
+            except KeyError:
+                rule = MixingRuleB.default
+
+            b = getattr(m, cname + "_b")
+            if rule == MixingRuleB.default:
+                return rule_bm_crit_default(m, b)
+            else:
+                raise ConfigurationError(
+                    "{} Unrecognized option for Equation of State "
+                    "mixing_rule_b: {}. Must be an instance of MixingRuleB "
+                    "Enum.".format(m.name, rule)
+                )
+
+        m.add_component("bm_crit", Expression(rule=rule_bm_crit))
+
+        def rule_A_crit(m):
+            am_crit = getattr(m, "am_crit")
+            return EoS_param[ctype]["omegaA"] * (
+                Cubic.gas_constant(m) * m.temperature_crit
+            ) ** 2 == (am_crit * m.pressure_crit)
+
+        m.add_component("A_crit", Constraint(rule=rule_A_crit))
+
+        def rule_B_crit(m):
+            bm_crit = getattr(m, "bm_crit")
+            return EoS_param[ctype]["coeff_b"] * Cubic.gas_constant(
+                m
+            ) * m.temperature_crit == (bm_crit * m.pressure_crit)
+
+        m.add_component("B_crit", Constraint(rule=rule_B_crit))
+
+        Acrit = (
+            m.am_crit
+            * m.pressure_crit
+            / (Cubic.gas_constant(m) * m.temperature_crit) ** 2
+        )
+        Bcrit = (
+            m.bm_crit * m.pressure_crit / (Cubic.gas_constant(m) * m.temperature_crit)
+        )
+
+        expr_write = CubicThermoExpressions(m)
+        if pobj.is_vapor_phase():
+            Z_crit = expr_write.z_vap(eos=pobj._cubic_type, A=Acrit, B=Bcrit)
+        elif pobj.is_liquid_phase():
+            Z_crit = expr_write.z_liq(eos=pobj._cubic_type, A=Acrit, B=Bcrit)
+
+        m.compress_fact_crit_eq = Constraint(rule=m.compress_fact_crit == Z_crit)
+
+        m.dens_mol_crit_eq = Constraint(
+            rule=m.pressure_crit
+            == m.compress_fact_crit
+            * Cubic.gas_constant(m)
+            * m.temperature_crit
+            * m.dens_mol_crit
+        )
+
+    @staticmethod
+    def list_critical_property_constraint_names():
+        return [
+            "dens_mol_crit_eq",
+            "compress_fact_crit_eq",
+            "A_crit",
+            "B_crit",
+        ]
 
 
 def _dZ_dT(blk, p):
@@ -1235,27 +1392,109 @@ def _bubble_dew_log_fug_coeff_method(blk, p, j, pp, pt_var):
 
 # -----------------------------------------------------------------------------
 # Default rules for cubic expressions
+def calculate_equilibrium_cubic_coefficients(b, cubic_name, cubic_type, p1, p2, p3):
+    """
+    Calculates the coefficients b, c, and d of the cubic 0 = z**3 + b * z**2 + c * z + d
+    at the equilibrium conditions
+
+    Args:
+        b: StateBlock of interest
+        cubic_name: Name of Cubic EoS
+        cubic_type: Type of Cubic EoS
+        p1: Phase 1
+        p2: Phase 2
+        p3; Phase 3
+
+    Returns:
+        expressions for b, c, d
+    """
+
+    A_eq = getattr(b, "_" + cubic_name + "_A_eq")[p1, p2, p3]
+    B_eq = getattr(b, "_" + cubic_name + "_B_eq")[p1, p2, p3]
+    EoS_u = EoS_param[cubic_type]["u"]
+    EoS_w = EoS_param[cubic_type]["w"]
+
+    b = -(1 + B_eq - EoS_u * B_eq)
+    c = A_eq - EoS_u * B_eq - EoS_u * B_eq**2 + EoS_w * B_eq**2
+    d = -(A_eq * B_eq + EoS_w * B_eq**2 + EoS_w * B_eq**3)
+
+    return b, c, d
+
+
 def func_fw_PR(cobj):
+    """
+    f(omega) function for Peng-Robinson EoS.
+
+    Args:
+        cobj: Component object
+
+    Returns:
+        expression for fw
+
+    """
     return 0.37464 + 1.54226 * cobj.omega - 0.26992 * cobj.omega**2
 
 
 def func_fw_SRK(cobj):
+    """
+    f(omega) function for SRK EoS.
+
+    Args:
+        cobj: Component object
+
+    Returns:
+        expression for fw
+
+    """
     return 0.48 + 1.574 * cobj.omega - 0.176 * cobj.omega**2
 
 
 def func_alpha_soave(T, fw, cobj):
+    """
+    Soave alpha function.
+
+    Args:
+        fw: expression for fw
+        cobj: Component object
+
+    Returns:
+        expression for alpha
+
+    """
     Tc = cobj.temperature_crit
     Tr = T / Tc
     return (1 + fw * (1 - sqrt(Tr))) ** 2
 
 
 def func_dalpha_dT_soave(T, fw, cobj):
+    """
+    Function to get first partial derivative w.r.t. temperature of Soave alpha function.
+
+    Args:
+        fw: expression for fw
+        cobj: Component object
+
+    Returns:
+        expression for first derivative of alpha
+
+    """
     Tc = cobj.temperature_crit
     Tr = T / Tc
     return 1 / Tc * (-fw / sqrt(Tr)) * (1 + fw * (1 - sqrt(Tr)))
 
 
 def func_d2alpha_dT2_soave(T, fw, cobj):
+    """
+    Function to get 2nd partial derivative w.r.t. temperature of Soave alpha function.
+
+    Args:
+        fw: expression for fw
+        cobj: Component object
+
+    Returns:
+        expression for 2nd derivative of alpha
+
+    """
     Tc = cobj.temperature_crit
     Tr = T / Tc
     return 1 / Tc**2 * ((fw**2 + fw) / (2 * Tr * sqrt(Tr)))
@@ -1264,6 +1503,9 @@ def func_d2alpha_dT2_soave(T, fw, cobj):
 # -----------------------------------------------------------------------------
 # Mixing rules
 def rule_am_default(m, cname, a, p, pp=()):
+    """
+    Standard Van der Waals one-fluid mixing rule for a term
+    """
     k = getattr(m.params, cname + "_kappa")
     return sum(
         sum(
@@ -1277,5 +1519,32 @@ def rule_am_default(m, cname, a, p, pp=()):
     )
 
 
+def rule_am_crit_default(m, cname, a_crit):
+    """
+    Standard Van der Waals one-fluid mixing rule for a term evaluated at critical point
+    """
+    k = getattr(m.params, cname + "_kappa")
+    return sum(
+        sum(
+            m.mole_frac_comp[i]
+            * m.mole_frac_comp[j]
+            * sqrt(a_crit[i] * a_crit[j])
+            * (1 - k[i, j])
+            for j in m.component_list
+        )
+        for i in m.component_list
+    )
+
+
 def rule_bm_default(m, b, p):
+    """
+    Standard Van der Waals one-fluid mixing rule for b term
+    """
     return sum(m.mole_frac_phase_comp[p, i] * b[i] for i in m.components_in_phase(p))
+
+
+def rule_bm_crit_default(m, b):
+    """
+    Standard Van der Waals one-fluid mixing rule for b term evaluated at critical point
+    """
+    return sum(m.mole_frac_comp[i] * b[i] for i in m.component_list)

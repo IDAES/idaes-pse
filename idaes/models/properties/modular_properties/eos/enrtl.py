@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -322,8 +322,7 @@ class ENRTL(Ideal):
                 # Eqn 70
                 z = abs(cobj(b, j).config.charge)
                 return -A * (
-                    (2 * z**2 / rho)
-                    * log((1 + rho * Ix**0.5) / (1 + rho * I0**0.5))
+                    (2 * z**2 / rho) * log((1 + rho * Ix**0.5) / (1 + rho * I0**0.5))
                     + (z**2 * Ix**0.5 - 2 * Ix ** (3 / 2)) / (1 + rho * Ix**0.5)
                     - (2 * Ix * I0**-0.5)
                     / (1 + rho * I0**0.5)

@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -689,6 +689,8 @@ def test_add_phase_component_balances_dynamic():
     assert isinstance(m.fs.cv.material_accumulation, Var)
 
     assert_units_consistent(m)
+    assert_units_equivalent(m.fs.cv.material_holdup, units.mol)
+    assert_units_equivalent(m.fs.cv.material_accumulation, units.mol / units.s)
 
 
 @pytest.mark.unit
@@ -867,9 +869,9 @@ def test_add_phase_component_balances_in_rxns_no_idx():
 
     with pytest.raises(
         PropertyNotSupportedError,
-        match="fs.cv Property package does not contain a "
-        "list of inherent reactions \(inherent_reaction_idx\), "
-        "but include_inherent_reactions is True.",
+        match=r"fs.cv Property package does not contain a "
+        r"list of inherent reactions \(inherent_reaction_idx\), "
+        r"but include_inherent_reactions is True.",
     ):
         m.fs.cv.add_phase_component_balances()
 
@@ -1451,9 +1453,9 @@ def test_add_total_component_balances_in_rxns_no_idx():
 
     with pytest.raises(
         PropertyNotSupportedError,
-        match="fs.cv Property package does not contain a "
-        "list of inherent reactions \(inherent_reaction_idx\), "
-        "but include_inherent_reactions is True.",
+        match=r"fs.cv Property package does not contain a "
+        r"list of inherent reactions \(inherent_reaction_idx\), "
+        r"but include_inherent_reactions is True.",
     ):
         m.fs.cv.add_total_component_balances()
 
@@ -1909,6 +1911,7 @@ def test_add_total_element_balances_custom_term():
 
 @pytest.mark.unit
 def test_add_total_element_balances_lineraly_dependent(caplog):
+    caplog.set_level(idaeslog.INFO_LOW)
     m = ConcreteModel()
     m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
@@ -2275,6 +2278,20 @@ def test_add_total_energy_balances():
 
     with pytest.raises(BalanceTypeNotSupportedError):
         m.fs.cv.add_total_energy_balances()
+
+
+@pytest.mark.unit
+def test_add_isothermal_energy_balances():
+    m = ConcreteModel()
+    m.fs = Flowsheet(dynamic=False)
+    m.fs.pp = PhysicalParameterTestBlock()
+
+    m.fs.cv = ControlVolume0DBlock(property_package=m.fs.pp)
+
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
+
+    with pytest.raises(BalanceTypeNotSupportedError):
+        m.fs.cv.add_isothermal_constraint()
 
 
 # -----------------------------------------------------------------------------
@@ -2650,3 +2667,33 @@ def test_reports():
     m.fs.cv.add_momentum_balances(has_pressure_change=True)
 
     m.fs.cv.report()
+
+
+@pytest.mark.unit
+def test_dynamic_mass_basis():
+    m = ConcreteModel()
+    m.fs = Flowsheet(dynamic=True, time_units=units.s)
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
+    m.fs.pp.basis_switch = 2
+    m.fs.cv = ControlVolume0DBlock(
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        dynamic=True,
+    )
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
+
+    mb = m.fs.cv.add_phase_component_balances()
+
+    assert isinstance(mb, Constraint)
+    assert len(mb) == 8
+    assert isinstance(m.fs.cv.phase_fraction, Var)
+    assert isinstance(m.fs.cv.material_holdup, Var)
+    assert isinstance(m.fs.cv.material_accumulation, Var)
+
+    assert_units_consistent(m)
+    assert_units_equivalent(m.fs.cv.material_holdup, units.kg)
+    assert_units_equivalent(m.fs.cv.material_accumulation, units.kg / units.s)

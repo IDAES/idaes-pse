@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -13,7 +13,7 @@
 """
 Framework for generic property packages
 """
-# TODO: Look into protected access issues
+# TODO: Pylint complains about variables with _x names as they are built by sub-classes
 # pylint: disable=protected-access
 
 # Import Pyomo libraries
@@ -33,7 +33,6 @@ from pyomo.environ import (
 )
 from pyomo.common.config import ConfigBlock, ConfigDict, ConfigValue, In, Bool
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
-from pyomo.contrib.incidence_analysis import solve_strongly_connected_components
 
 # Import IDAES cores
 from idaes.core import (
@@ -82,10 +81,14 @@ from idaes.models.properties.modular_properties.base.utility import (
     get_phase_method,
     GenericPropertyPackageError,
     StateIndex,
+    identify_VL_component_list,
+    estimate_Tbub,
+    estimate_Tdew,
+    estimate_Pbub,
+    estimate_Pdew,
 )
 from idaes.models.properties.modular_properties.phase_equil.bubble_dew import (
     LogBubbleDew,
-    _valid_VL_component_list as bub_dew_VL_comp_list,
 )
 from idaes.models.properties.modular_properties.phase_equil.henry import HenryType
 
@@ -301,7 +304,8 @@ class GenericParameterData(PhysicalParameterBlock):
         # Add Phase objects
         if self.config.phases is None:
             raise ConfigurationError(
-                "{} was not provided with a phases argument.".format(self.name)
+                f"{self.name} was not provided with a phases argument. "
+                "Did you forget to unpack the configurations dictionary?"
             )
 
         # Add a flag indicating whether this is an electrolyte system or not
@@ -700,7 +704,7 @@ class GenericParameterData(PhysicalParameterBlock):
                         j,
                     ) in self._phase_component_set:
                         # Component j is in both phases, in equilibrium
-                        pe_dict["PE" + str(counter)] = {j: (pp[0], pp[1])}
+                        pe_dict["PE" + str(counter)] = [j, (pp[0], pp[1])]
                         pe_set.append("PE" + str(counter))
                         counter += 1
 
@@ -879,13 +883,10 @@ class GenericParameterData(PhysicalParameterBlock):
                 if build_parameters is not None:
                     try:
                         build_parameters(pobj)
-                    except KeyError:
+                    except KeyError as err:
                         raise ConfigurationError(
-                            "{} values were not defined for parameter {} in "
-                            "phase {}. Please check the parameter_data "
-                            "argument to ensure values are provided.".format(
-                                self.name, a, p
-                            )
+                            f"{self.name} - values were not defined for parameter {a} in "
+                            f"phase {p}. {str(err)}"
                         )
 
         # Next, add inherent reactions if they exist
@@ -1073,6 +1074,7 @@ class GenericParameterData(PhysicalParameterBlock):
                     "method": "_act_coeff_phase_comp_apparent"
                 },
                 "compress_fact_phase": {"method": "_compress_fact_phase"},
+                "compress_fact_crit": {"method": "_critical_props"},
                 "conc_mol_comp": {"method": "_conc_mol_comp"},
                 "conc_mol_phase_comp": {"method": "_conc_mol_phase_comp"},
                 "conc_mol_phase_comp_apparent": {
@@ -1094,6 +1096,7 @@ class GenericParameterData(PhysicalParameterBlock):
                 "dens_mass": {"method": "_dens_mass"},
                 "dens_mass_phase": {"method": "_dens_mass_phase"},
                 "dens_mol": {"method": "_dens_mol"},
+                "dens_mol_crit": {"method": "_critical_props"},
                 "dens_mol_phase": {"method": "_dens_mol_phase"},
                 "energy_internal_mol": {"method": "_energy_internal_mol"},
                 "energy_internal_mol_phase": {"method": "_energy_internal_mol_phase"},
@@ -1132,6 +1135,7 @@ class GenericParameterData(PhysicalParameterBlock):
                 "mw_comp": {"method": "_mw_comp"},
                 "mw_phase": {"method": "_mw_phase"},
                 "prandtl_number_phase": {"method": "_prandtl_number_phase"},
+                "pressure_crit": {"method": "_critical_props"},
                 "pressure_phase_comp": {"method": "_pressure_phase_comp"},
                 "pressure_phase_comp_true": {"method": "_pressure_phase_comp_true"},
                 "pressure_phase_comp_apparent": {
@@ -1142,6 +1146,7 @@ class GenericParameterData(PhysicalParameterBlock):
                 "pressure_osm_phase": {"method": "_pressure_osm_phase"},
                 "pressure_sat_comp": {"method": "_pressure_sat_comp"},
                 "surf_tens_phase": {"method": "_surf_tens_phase"},
+                "temperature_crit": {"method": "_critical_props"},
                 "temperature_bubble": {"method": "_temperature_bubble"},
                 "temperature_dew": {"method": "_temperature_dew"},
                 "therm_cond_phase": {"method": "_therm_cond_phase"},
@@ -1209,9 +1214,6 @@ class ModularPropertiesInitializer(InitializerBase):
     3. Solve for phase-equilibrium conditions
     4. Initialize all remaining properties
 
-    The Pyomo solve_strongly_connected_components method is used at each
-    step to converge the problem.
-
     Note that for systems without vapor-liquid equilibrium the generic
     BlockTriangularizationInitializer is probably sufficient for initializing
     the property package.
@@ -1222,7 +1224,7 @@ class ModularPropertiesInitializer(InitializerBase):
     CONFIG.declare(
         "solver",
         ConfigValue(
-            default=None,
+            default="ipopt_v2",
             description="Solver to use for initialization",
         ),
     )
@@ -1231,6 +1233,13 @@ class ModularPropertiesInitializer(InitializerBase):
         ConfigDict(
             implicit=True,
             description="Dict of options to pass to solver",
+        ),
+    )
+    CONFIG.declare(
+        "solver_writer_config",
+        ConfigDict(
+            implicit=True,
+            description="Dict of writer_config arguments to pass to solver",
         ),
     )
     CONFIG.declare(
@@ -1272,7 +1281,11 @@ class ModularPropertiesInitializer(InitializerBase):
         )
 
         # Create solver object
-        solver_obj = get_solver(self.config.solver, self.config.solver_options)
+        solver_obj = get_solver(
+            solver=self.config.solver,
+            solver_options=self.config.solver_options,
+            writer_config=self.config.solver_writer_config,
+        )
 
         init_log.info("Starting initialization routine")
 
@@ -1292,64 +1305,80 @@ class ModularPropertiesInitializer(InitializerBase):
                     k.inherent_equilibrium_constraint.deactivate()
 
         # ---------------------------------------------------------------------
-        # If present, initialize bubble and dew point calculations
+        # If present, initialize bubble, dew, and critical point calculations
         for k in model.values():
             T_units = k.params.get_metadata().default_units.TEMPERATURE
+
+            # List of bubble and dew point constraints
+            cons_list = [
+                "eq_pressure_dew",
+                "eq_pressure_bubble",
+                "eq_temperature_dew",
+                "eq_temperature_bubble",
+                "eq_mole_frac_tbub",
+                "eq_mole_frac_tdew",
+                "eq_mole_frac_pbub",
+                "eq_mole_frac_pdew",
+                "log_mole_frac_tbub_eqn",
+                "log_mole_frac_tdew_eqn",
+                "log_mole_frac_pbub_eqn",
+                "log_mole_frac_pdew_eqn",
+                "mole_frac_comp_eq",
+                "log_mole_frac_comp_eqn",
+            ]
+
+            # Critical point
+            with k.lock_attribute_creation_context():
+                # Only need to look for one, as it is all-or-nothing
+                if hasattr(k, "pressure_crit"):
+                    # Initialize critical point properties
+                    _initialize_critical_props(k)
+                    # Add critical point constraints to cons_list
+                    ref_phase = k._get_critical_ref_phase()
+                    p_config = k.params.get_phase(ref_phase).config
+                    cons_list += (
+                        p_config.equation_of_state.list_critical_property_constraint_names()
+                    )
+
             # Bubble temperature initialization
             if hasattr(k, "_mole_frac_tbub"):
-                model._init_Tbub(k, T_units)
+                _init_Tbub(k, T_units)
 
             # Dew temperature initialization
             if hasattr(k, "_mole_frac_tdew"):
-                model._init_Tdew(k, T_units)
+                _init_Tdew(k, T_units)
 
             # Bubble pressure initialization
             if hasattr(k, "_mole_frac_pbub"):
-                model._init_Pbub(k, T_units)
+                _init_Pbub(k)
 
             # Dew pressure initialization
             if hasattr(k, "_mole_frac_pdew"):
-                model._init_Pdew(k, T_units)
+                _init_Pdew(k)
 
-            # Solve bubble and dew point constraints
+            # Solve bubble, dew, and critical point constraints
             for c in k.component_objects(Constraint):
                 # Deactivate all constraints not associated with bubble and dew
-                # points
-                if c.local_name not in (
-                    "eq_pressure_dew",
-                    "eq_pressure_bubble",
-                    "eq_temperature_dew",
-                    "eq_temperature_bubble",
-                    "eq_mole_frac_tbub",
-                    "eq_mole_frac_tdew",
-                    "eq_mole_frac_pbub",
-                    "eq_mole_frac_pdew",
-                    "log_mole_frac_tbub_eqn",
-                    "log_mole_frac_tdew_eqn",
-                    "log_mole_frac_pbub_eqn",
-                    "log_mole_frac_pdew_eqn",
-                    "mole_frac_comp_eq",
-                    "log_mole_frac_comp_eqn",
-                ):
+                # points or critical points
+                if c.local_name not in cons_list:
                     c.deactivate()
 
-        # If StateBlock has active constraints (i.e. has bubble and/or dew
+        # If StateBlock has active constraints (i.e. has bubble, dew, or critical
         # point calculations), solve the block to converge these
+        solve_blocks = False
         for b in model.values():
             if number_activated_constraints(b) > 0:
                 if not degrees_of_freedom(b) == 0:
                     raise InitializationError(
                         f"{b.name} Unexpected degrees of freedom during "
-                        f"initialization at bubble and dew point step: {degrees_of_freedom(b)}."
+                        f"initialization at bubble, dew, and critical point step: "
+                        f"{degrees_of_freedom(b)}."
                     )
-                with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-                    solve_strongly_connected_components(
-                        b,
-                        solver=solver_obj,
-                        solve_kwds={"tee": slc.tee},
-                        calc_var_kwds=self.config.calculate_variable_options,
-                    )
-        init_log.info("Dew and bubble point initialization completed.")
+                solve_blocks = True
+        if solve_blocks > 0:
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                solve_indexed_blocks(solver_obj, model, tee=slc.tee)
+        init_log.info("Bubble, dew, and critical point initialization completed.")
 
         # ---------------------------------------------------------------------
         # Calculate _teq if required
@@ -1469,23 +1498,18 @@ class ModularPropertiesInitializer(InitializerBase):
                         pp
                     ].phase_equil_initialization(b, pp)
 
-            if number_activated_constraints(b) > 0:
-                dof = degrees_of_freedom(b)
-                if degrees_of_freedom(b) == 0:
-                    with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-                        solve_strongly_connected_components(
-                            b,
-                            solver=solver_obj,
-                            solve_kwds={"tee": slc.tee},
-                            calc_var_kwds=self.config.calculate_variable_options,
-                        )
-                elif dof > 0:
-                    raise InitializationError(
-                        f"{b.name} Unexpected degrees of freedom during "
-                        f"initialization at phase equilibrium step: {dof}."
-                    )
-                # Skip solve if DoF < 0 - this is probably due to a
-                # phase-component flow state with flash
+        if number_activated_constraints(model) > 0:
+            dof = degrees_of_freedom(model)
+            if dof == 0:
+                with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                    solve_indexed_blocks(solver_obj, [model], tee=slc.tee)
+            elif dof > 0:
+                raise InitializationError(
+                    f"{model.name} Unexpected degrees of freedom during "
+                    f"initialization at phase equilibrium step: {dof}."
+                )
+            # Skip solve if DoF < 0 - this is probably due to a
+            # phase-component flow state with flash
 
         init_log.info("Phase equilibrium initialization completed.")
 
@@ -1535,27 +1559,25 @@ class ModularPropertiesInitializer(InitializerBase):
                         lc = log(c)
                         v.set_value(value(lc))
 
-            if number_activated_constraints(b) > 0:
-                dof = degrees_of_freedom(b)
-                if degrees_of_freedom(b) == 0:
-                    with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-                        solve_strongly_connected_components(
-                            b,
-                            solver=solver_obj,
-                            solve_kwds={"tee": slc.tee},
-                            calc_var_kwds=self.config.calculate_variable_options,
-                        )
-                elif dof > 0:
-                    raise InitializationError(
-                        f"{b.name} Unexpected degrees of freedom during "
-                        f"initialization at phase equilibrium step: {dof}."
-                    )
-                # Skip solve if DoF < 0 - this is probably due to a
-                # phase-component flow state with flash
-
+        if number_activated_constraints(model) > 0:
+            dof = degrees_of_freedom(model)
+            if dof == 0:
+                with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                    result = solve_indexed_blocks(solver_obj, model, tee=slc.tee)
+            elif dof > 0:
+                raise InitializationError(
+                    f"{model.name} Unexpected degrees of freedom during "
+                    f"initialization at phase equilibrium step: {dof}."
+                )
+            else:
+                result = None
+            # Skip solve if DoF < 0 - this is probably due to a
+            # phase-component flow state with flash
+        else:
+            result = None
         init_log.info("Property initialization routine finished.")
 
-        return None
+        return result
 
 
 class _GenericStateBlock(StateBlock):
@@ -1563,6 +1585,8 @@ class _GenericStateBlock(StateBlock):
     This Class contains methods which should be applied to Property Blocks as a
     whole, rather than individual elements of indexed Property Blocks.
     """
+
+    default_initializer = ModularPropertiesInitializer
 
     def _return_component_list(self):
         # Overload the _return_component_list method to handle electrolyte
@@ -1719,6 +1743,8 @@ class _GenericStateBlock(StateBlock):
             # When state vars are fixed, check that DoF is 0
             for k in blk.values():
                 if degrees_of_freedom(k) != 0:
+                    # PYLINT-TODO
+                    # pylint: disable-next=broad-exception-raised
                     raise Exception(
                         "State vars fixed but degrees of "
                         "freedom for state block is not zero "
@@ -1729,48 +1755,61 @@ class _GenericStateBlock(StateBlock):
         opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
-        # If present, initialize bubble and dew point calculations
+        # If present, initialize bubble, dew , and critical point calculations
         for k in blk.values():
             T_units = k.params.get_metadata().default_units.TEMPERATURE
+
+            # List of bubble and dew point constraints
+            cons_list = [
+                "eq_pressure_dew",
+                "eq_pressure_bubble",
+                "eq_temperature_dew",
+                "eq_temperature_bubble",
+                "eq_mole_frac_tbub",
+                "eq_mole_frac_tdew",
+                "eq_mole_frac_pbub",
+                "eq_mole_frac_pdew",
+                "log_mole_frac_tbub_eqn",
+                "log_mole_frac_tdew_eqn",
+                "log_mole_frac_pbub_eqn",
+                "log_mole_frac_pdew_eqn",
+                "mole_frac_comp_eq",
+                "log_mole_frac_comp_eqn",
+            ]
+
+            # Critical point
+            with k.lock_attribute_creation_context():
+                # Only need to look for one, as it is all-or-nothing
+                if hasattr(k, "pressure_crit"):
+                    # Initialize critical point properties
+                    _initialize_critical_props(k)
+                    # Add critical point constraints to cons_list
+                    cons_list += k.list_critical_property_constraint_names()
+
             # Bubble temperature initialization
             if hasattr(k, "_mole_frac_tbub"):
-                blk._init_Tbub(k, T_units)
+                _init_Tbub(k, T_units)
 
             # Dew temperature initialization
             if hasattr(k, "_mole_frac_tdew"):
-                blk._init_Tdew(k, T_units)
+                _init_Tdew(k, T_units)
 
             # Bubble pressure initialization
             if hasattr(k, "_mole_frac_pbub"):
-                blk._init_Pbub(k, T_units)
+                _init_Pbub(k)
 
             # Dew pressure initialization
             if hasattr(k, "_mole_frac_pdew"):
-                blk._init_Pdew(k, T_units)
+                _init_Pdew(k)
 
-            # Solve bubble and dew point constraints
+            # Solve bubble, dew, and critical point constraints
             for c in k.component_objects(Constraint):
-                # Deactivate all constraints not associated with bubble and dew
-                # points
-                if c.local_name not in (
-                    "eq_pressure_dew",
-                    "eq_pressure_bubble",
-                    "eq_temperature_dew",
-                    "eq_temperature_bubble",
-                    "eq_mole_frac_tbub",
-                    "eq_mole_frac_tdew",
-                    "eq_mole_frac_pbub",
-                    "eq_mole_frac_pdew",
-                    "log_mole_frac_tbub_eqn",
-                    "log_mole_frac_tdew_eqn",
-                    "log_mole_frac_pbub_eqn",
-                    "log_mole_frac_pdew_eqn",
-                    "mole_frac_comp_eq",
-                    "log_mole_frac_comp_eqn",
-                ):
+                # Deactivate all constraints not associated with bubble, dew,
+                # or critical points
+                if c.local_name not in cons_list:
                     c.deactivate()
 
-        # If StateBlock has active constraints (i.e. has bubble and/or dew
+        # If StateBlock has active constraints (i.e. has bubble, dew, or critical
         # point calculations), solve the block to converge these
         n_cons = 0
         dof = 0
@@ -1781,12 +1820,12 @@ class _GenericStateBlock(StateBlock):
             if dof > 0:
                 raise InitializationError(
                     f"{blk.name} Unexpected degrees of freedom during "
-                    f"initialization at bubble and dew point step: {dof}."
+                    f"initialization at bubble, dew, and critical point step: {dof}."
                 )
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
             init_log.info(
-                "Dew and bubble point initialization: {}.".format(
+                "Bubble, dew, and critical point initialization: {}.".format(
                     idaeslog.condition(res)
                 )
             )
@@ -2038,334 +2077,6 @@ class _GenericStateBlock(StateBlock):
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
         init_log.info_high("State released.")
 
-    def _init_Tbub(self, blk, T_units):
-        for pp in blk.params._pe_pairs:
-            raoult_comps, henry_comps = _valid_VL_component_list(blk, pp)
-
-            if raoult_comps == []:
-                continue
-            if henry_comps != []:
-                # Need to get liquid phase name
-                # TODO This logic probably needs to be updated to break
-                # when LLE is added
-                if blk.params.get_phase(pp[0]).is_liquid_phase():
-                    l_phase = pp[0]
-                else:
-                    l_phase = pp[1]
-
-            # Use lowest component temperature_crit as starting point
-            # Starting high and moving down generally works better,
-            # as it under-predicts next step due to exponential form of
-            # Psat.
-            # Subtract 1 to avoid potential singularities at Tcrit
-            Tbub0 = (
-                min(
-                    blk.params.get_component(j).temperature_crit.value
-                    for j in raoult_comps
-                )
-                - 1
-            )
-
-            err = 1
-            counter = 0
-
-            # Newton solver with step limiter to prevent overshoot
-            # Tolerance only needs to be ~1e-1
-            # Iteration limit of 30
-            while err > 1e-1 and counter < 30:
-                f = value(
-                    sum(
-                        get_method(blk, "pressure_sat_comp", j)(
-                            blk, blk.params.get_component(j), Tbub0 * T_units
-                        )
-                        * blk.mole_frac_comp[j]
-                        for j in raoult_comps
-                    )
-                    + sum(
-                        blk.mole_frac_comp[j]
-                        * blk.params.get_component(j)
-                        .config.henry_component[l_phase]["method"]
-                        .return_expression(blk, l_phase, j, Tbub0 * T_units)
-                        for j in henry_comps
-                    )
-                    - blk.pressure
-                )
-                df = value(
-                    sum(
-                        get_method(blk, "pressure_sat_comp", j)(
-                            blk, blk.params.get_component(j), Tbub0 * T_units, dT=True
-                        )
-                        * blk.mole_frac_comp[j]
-                        for j in raoult_comps
-                    )
-                    + sum(
-                        blk.mole_frac_comp[j]
-                        * blk.params.get_component(j)
-                        .config.henry_component[l_phase]["method"]
-                        .dT_expression(blk, l_phase, j, Tbub0 * T_units)
-                        for j in henry_comps
-                    )
-                )
-
-                # Limit temperature step to avoid excessive overshoot
-                if f / df < -50:
-                    Tbub1 = Tbub0 + 50
-                elif f / df > 50:
-                    Tbub1 = Tbub0 - 50
-                else:
-                    Tbub1 = Tbub0 - f / df
-
-                err = abs(Tbub1 - Tbub0)
-                Tbub0 = Tbub1
-                counter += 1
-
-            blk.temperature_bubble[pp].value = Tbub0
-
-            for j in raoult_comps:
-                blk._mole_frac_tbub[pp, j].value = value(
-                    blk.mole_frac_comp[j]
-                    * get_method(blk, "pressure_sat_comp", j)(
-                        blk, blk.params.get_component(j), Tbub0 * T_units
-                    )
-                    / blk.pressure
-                )
-                if blk.is_property_constructed("log_mole_frac_tbub"):
-                    blk.log_mole_frac_tbub[pp, j].value = value(
-                        log(blk._mole_frac_tbub[pp, j])
-                    )
-
-            for j in henry_comps:
-                blk._mole_frac_tbub[pp, j].value = value(
-                    blk.mole_frac_comp[j]
-                    * blk.params.get_component(j)
-                    .config.henry_component[l_phase]["method"]
-                    .return_expression(blk, l_phase, j, Tbub0 * T_units)
-                    / blk.pressure
-                )
-                if blk.is_property_constructed("log_mole_frac_tbub"):
-                    blk.log_mole_frac_tbub[pp, j].value = value(
-                        log(blk._mole_frac_tbub[pp, j])
-                    )
-
-    def _init_Tdew(self, blk, T_units):
-        for pp in blk.params._pe_pairs:
-            raoult_comps, henry_comps = _valid_VL_component_list(blk, pp)
-
-            if raoult_comps == []:
-                continue
-            if henry_comps != []:
-                # Need to get liquid phase name
-                if blk.params.get_phase(pp[0]).is_liquid_phase():
-                    l_phase = pp[0]
-                else:
-                    l_phase = pp[1]
-
-            if (
-                hasattr(blk, "_mole_frac_tbub")
-                and blk.temperature_bubble[pp].value is not None
-            ):
-                # If Tbub has been calculated above, use this as the
-                # starting point
-                Tdew0 = blk.temperature_bubble[pp].value
-            else:
-                # Otherwise, use lowest component critical temperature
-                # as starting point
-                # Subtract 1 to avoid potential singularities at Tcrit
-                Tdew0 = (
-                    min(
-                        blk.params.get_component(j).temperature_crit.value
-                        for j in raoult_comps
-                    )
-                    - 1
-                )
-
-            err = 1
-            counter = 0
-
-            # Newton solver with step limiter to prevent overshoot
-            # Tolerance only needs to be ~1e-1
-            # Iteration limit of 30
-            while err > 1e-1 and counter < 30:
-                f = value(
-                    blk.pressure
-                    * (
-                        sum(
-                            blk.mole_frac_comp[j]
-                            / get_method(blk, "pressure_sat_comp", j)(
-                                blk, blk.params.get_component(j), Tdew0 * T_units
-                            )
-                            for j in raoult_comps
-                        )
-                        + sum(
-                            blk.mole_frac_comp[j]
-                            / blk.params.get_component(j)
-                            .config.henry_component[l_phase]["method"]
-                            .return_expression(blk, l_phase, j, Tdew0 * T_units)
-                            for j in henry_comps
-                        )
-                    )
-                    - 1
-                )
-                df = -value(
-                    blk.pressure
-                    * (
-                        sum(
-                            blk.mole_frac_comp[j]
-                            / get_method(blk, "pressure_sat_comp", j)(
-                                blk, blk.params.get_component(j), Tdew0 * T_units
-                            )
-                            ** 2
-                            * get_method(blk, "pressure_sat_comp", j)(
-                                blk,
-                                blk.params.get_component(j),
-                                Tdew0 * T_units,
-                                dT=True,
-                            )
-                            for j in raoult_comps
-                        )
-                        + sum(
-                            blk.mole_frac_comp[j]
-                            / blk.params.get_component(j)
-                            .config.henry_component[l_phase]["method"]
-                            .return_expression(blk, l_phase, j, Tdew0 * T_units)
-                            ** 2
-                            * blk.params.get_component(j)
-                            .config.henry_component[l_phase]["method"]
-                            .dT_expression(blk, l_phase, j, Tdew0 * T_units)
-                            for j in henry_comps
-                        )
-                    )
-                )
-
-                # Limit temperature step to avoid excessive overshoot
-                if f / df < -50:
-                    Tdew1 = Tdew0 + 50
-                elif f / df > 50:
-                    Tdew1 = Tdew0 - 50
-                else:
-                    Tdew1 = Tdew0 - f / df
-
-                err = abs(Tdew1 - Tdew0)
-                Tdew0 = Tdew1
-                counter += 1
-
-            blk.temperature_dew[pp].value = Tdew0
-
-            for j in raoult_comps:
-                blk._mole_frac_tdew[pp, j].value = value(
-                    blk.mole_frac_comp[j]
-                    * blk.pressure
-                    / get_method(blk, "pressure_sat_comp", j)(
-                        blk, blk.params.get_component(j), Tdew0 * T_units
-                    )
-                )
-                if blk.is_property_constructed("log_mole_frac_tdew"):
-                    blk.log_mole_frac_tdew[pp, j].value = value(
-                        log(blk._mole_frac_tdew[pp, j])
-                    )
-            for j in henry_comps:
-                blk._mole_frac_tdew[pp, j].value = value(
-                    blk.mole_frac_comp[j]
-                    * blk.pressure
-                    / blk.params.get_component(j)
-                    .config.henry_component[l_phase]["method"]
-                    .return_expression(blk, l_phase, j, Tdew0 * T_units)
-                )
-                if blk.is_property_constructed("log_mole_frac_tdew"):
-                    blk.log_mole_frac_tdew[pp, j].value = value(
-                        log(blk._mole_frac_tdew[pp, j])
-                    )
-
-    def _init_Pbub(self, blk, T_units):
-        for pp in blk.params._pe_pairs:
-            raoult_comps, henry_comps = _valid_VL_component_list(blk, pp)
-
-            if raoult_comps == []:
-                continue
-            if henry_comps != []:
-                # Need to get liquid phase name
-                if blk.params.get_phase(pp[0]).is_liquid_phase():
-                    l_phase = pp[0]
-                else:
-                    l_phase = pp[1]
-
-            blk.pressure_bubble[pp].value = value(
-                sum(
-                    blk.mole_frac_comp[j] * blk.pressure_sat_comp[j]
-                    for j in raoult_comps
-                )
-                + sum(
-                    blk.mole_frac_comp[j] * blk.henry[l_phase, j] for j in henry_comps
-                )
-            )
-
-            for j in raoult_comps:
-                blk._mole_frac_pbub[pp, j].value = value(
-                    blk.mole_frac_comp[j]
-                    * blk.pressure_sat_comp[j]
-                    / blk.pressure_bubble[pp]
-                )
-                if blk.is_property_constructed("log_mole_frac_pbub"):
-                    blk.log_mole_frac_pbub[pp, j].value = value(
-                        log(blk._mole_frac_pbub[pp, j])
-                    )
-            for j in henry_comps:
-                blk._mole_frac_pbub[pp, j].value = value(
-                    blk.mole_frac_comp[j]
-                    * blk.henry[l_phase, j]
-                    / blk.pressure_bubble[pp]
-                )
-                if blk.is_property_constructed("log_mole_frac_pbub"):
-                    blk.log_mole_frac_pbub[pp, j].value = value(
-                        log(blk._mole_frac_pbub[pp, j])
-                    )
-
-    def _init_Pdew(self, blk, T_units):
-        for pp in blk.params._pe_pairs:
-            raoult_comps, henry_comps = _valid_VL_component_list(blk, pp)
-
-            if raoult_comps == []:
-                continue
-            if henry_comps != []:
-                # Need to get liquid phase name
-                if blk.params.get_phase(pp[0]).is_liquid_phase():
-                    l_phase = pp[0]
-                else:
-                    l_phase = pp[1]
-
-            blk.pressure_dew[pp].value = value(
-                1
-                / (
-                    sum(
-                        blk.mole_frac_comp[j] / blk.pressure_sat_comp[j]
-                        for j in raoult_comps
-                    )
-                    + sum(
-                        blk.mole_frac_comp[j] / blk.henry[l_phase, j]
-                        for j in henry_comps
-                    )
-                )
-            )
-
-            for j in raoult_comps:
-                blk._mole_frac_pdew[pp, j].value = value(
-                    blk.mole_frac_comp[j]
-                    * blk.pressure_dew[pp]
-                    / blk.pressure_sat_comp[j]
-                )
-                if blk.is_property_constructed("log_mole_frac_pdew"):
-                    blk.log_mole_frac_pdew[pp, j].value = value(
-                        log(blk._mole_frac_pdew[pp, j])
-                    )
-            for j in henry_comps:
-                blk._mole_frac_pdew[pp, j].value = value(
-                    blk.mole_frac_comp[j] * blk.pressure_dew[pp] / blk.henry[l_phase, j]
-                )
-                if blk.is_property_constructed("log_mole_frac_pdew"):
-                    blk.log_mole_frac_pdew[pp, j].value = value(
-                        log(blk._mole_frac_pdew[pp, j])
-                    )
-
 
 @declare_process_block_class("GenericStateBlock", block_class=_GenericStateBlock)
 class GenericStateBlockData(StateBlockData):
@@ -2374,6 +2085,8 @@ class GenericStateBlockData(StateBlockData):
     """
 
     CONFIG = StateBlockData.CONFIG()
+
+    default_initializer = ModularPropertiesInitializer
 
     def build(self):
         super(GenericStateBlockData, self).build()
@@ -2387,9 +2100,13 @@ class GenericStateBlockData(StateBlockData):
         ):
 
             t_units = self.params.get_metadata().default_units.TEMPERATURE
+            if self.temperature.value is not None:
+                t_value = value(self.temperature)
+            else:
+                t_value = None
             self._teq = Var(
                 self.params._pe_pairs,
-                initialize=value(self.temperature),
+                initialize=t_value,
                 doc="Temperature for calculating phase equilibrium",
                 units=t_units,
             )
@@ -2398,6 +2115,15 @@ class GenericStateBlockData(StateBlockData):
         for p in self.phase_list:
             pobj = self.params.get_phase(p)
             pobj.config.equation_of_state.common(self, pobj)
+
+        # Check to see if state definition uses enthalpy
+        if self.is_property_constructed("enth_mol"):
+            # State definition uses enthalpy, need to add constraint on phase enthalpies
+            @self.Constraint(doc="Total molar enthalpy mixing rule")
+            def enth_mol_eqn(b):
+                return b.enth_mol == sum(
+                    b.enth_mol_phase[p] * b.phase_frac[p] for p in b.phase_list
+                )
 
         # Add phase equilibrium constraints if necessary
         if self.params.config.phases_in_equilibrium is not None and (
@@ -2919,6 +2645,78 @@ class GenericStateBlockData(StateBlockData):
                 ):
                     return self.mole_frac_phase_comp_apparent
             return self.mole_frac_phase_comp_true
+
+    # -------------------------------------------------------------------------
+    # Mixture critical point
+    # Critical properties will be based off liquid phase if present, as we assume
+    # supercritical fluid is liquid-like.
+    def _get_critical_ref_phase(self):
+        ref_phase = None
+        vap_phase = None
+        # First, look for VLE pair and use liquid phase if present
+        if self.params.config.phases_in_equilibrium is not None:
+            for pp in self.params.config.phases_in_equilibrium:
+                p1 = self.params.get_phase(pp[0])
+                p2 = self.params.get_phase(pp[1])
+
+                if p1.is_liquid_phase() and p2.is_vapor_phase():
+                    return pp[0]
+                elif p2.is_liquid_phase() and p1.is_vapor_phase():
+                    return pp[1]
+
+        # Next, iterate all phases and return either the first liquid phase
+        # Also collect vapor phase for final fall back
+        for p in self.params.phase_list:
+            if self.params.get_phase(p).is_liquid_phase():
+                return p
+            elif self.params.get_phase(p).is_vapor_phase():
+                vap_phase = p
+
+        if ref_phase is None and vap_phase is not None:
+            # Use vapor phase for reference phase
+            return vap_phase
+        if ref_phase is None:
+            # If still no reference phase, raise an exception
+            raise PropertyPackageError(
+                "No liquid or vapor phase found to use as reference phase "
+                "for calculating critical properties."
+            )
+
+    def _critical_props(self):
+        ref_phase = self._get_critical_ref_phase()
+
+        try:
+            base_units = self.params.get_metadata().default_units
+
+            self.compress_fact_crit = Var(
+                doc="Critical compressibility factor of mixture",
+                units=pyunits.dimensionless,
+            )
+
+            self.dens_mol_crit = Var(
+                doc="Critical molar density of mixture",
+                units=base_units.DENSITY_MOLE,
+            )
+
+            self.pressure_crit = Var(
+                doc="Critical pressure of mixture",
+                units=base_units.PRESSURE,
+            )
+
+            self.temperature_crit = Var(
+                doc="Critical temperature of mixture",
+                units=base_units.TEMPERATURE,
+            )
+
+            p_config = self.params.get_phase(ref_phase).config
+            p_config.equation_of_state.build_critical_properties(self, ref_phase)
+
+        except AttributeError:
+            self.del_component(self.compress_fact_crit)
+            self.del_component(self.dens_mol_crit)
+            self.del_component(self.pressure_crit)
+            self.del_component(self.temperature_crit)
+            raise
 
     # -------------------------------------------------------------------------
     # Bubble and Dew Points
@@ -3930,10 +3728,12 @@ class GenericStateBlockData(StateBlockData):
                 expr=sum(
                     self.phase_frac[p]
                     * sum(
-                        self.mole_frac_phase_comp[p, j]
-                        * self.params.get_component(j).mw
-                        if (p, j) in self.phase_component_set
-                        else 0
+                        (
+                            self.mole_frac_phase_comp[p, j]
+                            * self.params.get_component(j).mw
+                            if (p, j) in self.phase_component_set
+                            else 0
+                        )
                         for j in self.component_list
                     )
                     for p in self.phase_list
@@ -4053,9 +3853,11 @@ class GenericStateBlockData(StateBlockData):
 
             def rule_mw_phase(b, p):
                 return sum(
-                    b.mole_frac_phase_comp[p, j] * b.params.get_component(j).mw
-                    if (p, j) in b.phase_component_set
-                    else 0
+                    (
+                        b.mole_frac_phase_comp[p, j] * b.params.get_component(j).mw
+                        if (p, j) in b.phase_component_set
+                        else 0
+                    )
                     for j in b.component_list
                 )
 
@@ -4689,7 +4491,7 @@ class GenericStateBlockData(StateBlockData):
         try:
             self.log_mole_frac_phase_comp = Var(
                 self.phase_component_set,
-                initialize=0,
+                initialize=-1,
                 bounds=(-100, log(1.001)),
                 units=pyunits.dimensionless,
                 doc="Log of mole fractions of component by phase",
@@ -4714,8 +4516,8 @@ class GenericStateBlockData(StateBlockData):
         try:
             self.log_mole_frac_phase_comp_apparent = Var(
                 self.params.apparent_phase_component_set,
-                initialize=0,
-                bounds=(-50, 0),
+                initialize=-1,
+                bounds=(-100, log(1.001)),
                 units=pyunits.dimensionless,
                 doc="Log of mole fractions of component by phase",
             )
@@ -4739,8 +4541,8 @@ class GenericStateBlockData(StateBlockData):
         try:
             self.log_mole_frac_phase_comp_true = Var(
                 self.params.true_phase_component_set,
-                initialize=0,
-                bounds=(-50, 0),
+                initialize=-1,
+                bounds=(-100, log(1.001)),
                 units=pyunits.dimensionless,
                 doc="Log of mole fractions of component by phase",
             )
@@ -5008,7 +4810,7 @@ def _log_mole_frac_bubble_dew(b, name):
                 henry_comps,
                 l_only_comps,
                 v_only_comps,
-            ) = bub_dew_VL_comp_list(b, (p1, p2))
+            ) = identify_VL_component_list(b, (p1, p2))
 
             if l_phase is None or v_phase is None:
                 # Not a VLE pair
@@ -5045,3 +4847,173 @@ def _log_mole_frac_bubble_dew(b, name):
             eqn = getattr(b, "log_mole_frac_" + abbrv + "_eqn")
             b.del_component(eqn)
         raise
+
+
+def _initialize_critical_props(state_data):
+    params = state_data.params
+    # Use mole weighted sum of component critical properties
+    crit_props = [
+        "compress_fact_crit",
+        "dens_mol_crit",
+        "pressure_crit",
+        "temperature_crit",
+    ]
+
+    for prop in crit_props:
+        try:
+            getattr(state_data, prop).set_value(
+                sum(
+                    state_data.mole_frac_comp[j]
+                    * getattr(params.get_component(j), prop)
+                    for j in state_data.component_list
+                )
+            )
+        except AttributeError:
+            raise AttributeError(
+                f"Missing attribute found when initializing {prop}. "
+                f"Make sure you have provided values for {prop} in all Component "
+                "declarations."
+            )
+
+
+def _init_Tbub(blk, T_units):
+    for pp in blk.params._pe_pairs:
+        l_phase, _, raoult_comps, henry_comps, _, _ = identify_VL_component_list(
+            blk, pp
+        )
+
+        if raoult_comps == []:
+            continue
+
+        Tbub0 = estimate_Tbub(blk, T_units, raoult_comps, henry_comps, l_phase)
+
+        blk.temperature_bubble[pp].set_value(Tbub0)
+
+        for j in raoult_comps:
+            blk._mole_frac_tbub[pp, j].value = value(
+                blk.mole_frac_comp[j]
+                * get_method(blk, "pressure_sat_comp", j)(
+                    blk, blk.params.get_component(j), Tbub0 * T_units
+                )
+                / blk.pressure
+            )
+            if blk.is_property_constructed("log_mole_frac_tbub"):
+                blk.log_mole_frac_tbub[pp, j].value = value(
+                    log(blk._mole_frac_tbub[pp, j])
+                )
+
+        for j in henry_comps:
+            blk._mole_frac_tbub[pp, j].value = value(
+                blk.mole_frac_comp[j]
+                * blk.params.get_component(j)
+                .config.henry_component[l_phase]["method"]
+                .return_expression(blk, l_phase, j, Tbub0 * T_units)
+                / blk.pressure
+            )
+            if blk.is_property_constructed("log_mole_frac_tbub"):
+                blk.log_mole_frac_tbub[pp, j].value = value(
+                    log(blk._mole_frac_tbub[pp, j])
+                )
+
+
+def _init_Tdew(blk, T_units):
+    for pp in blk.params._pe_pairs:
+        l_phase, _, raoult_comps, henry_comps, _, _ = identify_VL_component_list(
+            blk, pp
+        )
+
+        if raoult_comps == []:
+            continue
+
+        Tdew0 = estimate_Tdew(blk, T_units, raoult_comps, henry_comps, l_phase)
+
+        blk.temperature_dew[pp].set_value(Tdew0)
+
+        for j in raoult_comps:
+            blk._mole_frac_tdew[pp, j].value = value(
+                blk.mole_frac_comp[j]
+                * blk.pressure
+                / get_method(blk, "pressure_sat_comp", j)(
+                    blk, blk.params.get_component(j), Tdew0 * T_units
+                )
+            )
+            if blk.is_property_constructed("log_mole_frac_tdew"):
+                blk.log_mole_frac_tdew[pp, j].value = value(
+                    log(blk._mole_frac_tdew[pp, j])
+                )
+        for j in henry_comps:
+            blk._mole_frac_tdew[pp, j].value = value(
+                blk.mole_frac_comp[j]
+                * blk.pressure
+                / blk.params.get_component(j)
+                .config.henry_component[l_phase]["method"]
+                .return_expression(blk, l_phase, j, Tdew0 * T_units)
+            )
+            if blk.is_property_constructed("log_mole_frac_tdew"):
+                blk.log_mole_frac_tdew[pp, j].value = value(
+                    log(blk._mole_frac_tdew[pp, j])
+                )
+
+
+def _init_Pbub(blk):
+    for pp in blk.params._pe_pairs:
+        l_phase, _, raoult_comps, henry_comps, _, _ = identify_VL_component_list(
+            blk, pp
+        )
+
+        if raoult_comps == []:
+            continue
+
+        blk.pressure_bubble[pp].set_value(
+            estimate_Pbub(blk, raoult_comps, henry_comps, l_phase)
+        )
+
+        for j in raoult_comps:
+            blk._mole_frac_pbub[pp, j].value = value(
+                blk.mole_frac_comp[j]
+                * blk.pressure_sat_comp[j]
+                / blk.pressure_bubble[pp]
+            )
+            if blk.is_property_constructed("log_mole_frac_pbub"):
+                blk.log_mole_frac_pbub[pp, j].value = value(
+                    log(blk._mole_frac_pbub[pp, j])
+                )
+        for j in henry_comps:
+            blk._mole_frac_pbub[pp, j].value = value(
+                blk.mole_frac_comp[j] * blk.henry[l_phase, j] / blk.pressure_bubble[pp]
+            )
+            if blk.is_property_constructed("log_mole_frac_pbub"):
+                blk.log_mole_frac_pbub[pp, j].value = value(
+                    log(blk._mole_frac_pbub[pp, j])
+                )
+
+
+def _init_Pdew(blk):
+    for pp in blk.params._pe_pairs:
+        l_phase, _, raoult_comps, henry_comps, _, _ = identify_VL_component_list(
+            blk, pp
+        )
+
+        if raoult_comps == []:
+            continue
+
+        blk.pressure_dew[pp].set_value(
+            estimate_Pdew(blk, raoult_comps, henry_comps, l_phase)
+        )
+
+        for j in raoult_comps:
+            blk._mole_frac_pdew[pp, j].value = value(
+                blk.mole_frac_comp[j] * blk.pressure_dew[pp] / blk.pressure_sat_comp[j]
+            )
+            if blk.is_property_constructed("log_mole_frac_pdew"):
+                blk.log_mole_frac_pdew[pp, j].value = value(
+                    log(blk._mole_frac_pdew[pp, j])
+                )
+        for j in henry_comps:
+            blk._mole_frac_pdew[pp, j].value = value(
+                blk.mole_frac_comp[j] * blk.pressure_dew[pp] / blk.henry[l_phase, j]
+            )
+            if blk.is_property_constructed("log_mole_frac_pdew"):
+                blk.log_mole_frac_pdew[pp, j].value = value(
+                    log(blk._mole_frac_pdew[pp, j])
+                )

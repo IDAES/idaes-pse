@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -16,6 +16,7 @@ Tests for generic reaction package core code
 Author: Andrew Lee
 """
 import pytest
+import re
 from sys import modules
 from math import log
 
@@ -156,7 +157,9 @@ class TestGenericReactionParameterBlock(object):
     def test_invalid_unit(self, m):
         with pytest.raises(
             PropertyPackageError,
-            match="Unrecognized units of measurement for quantity TIME " "\(foo\)",
+            match=re.escape(
+                "Unrecognized units of measurement for quantity TIME (foo)"
+            ),
         ):
             m.rxn_params = GenericReactionParameterBlock(
                 property_package=m.params,
@@ -189,6 +192,17 @@ class TestGenericReactionParameterBlock(object):
                 base_units=base_units,
                 rate_reactions={"r1": {"heat_of_reaction": "foo", "rate_form": "foo"}},
             )
+
+    @pytest.mark.unit
+    def test_packed_config_dict(self, m):
+        with pytest.raises(
+            ConfigurationError,
+            match=re.escape(
+                "rxn_params[property_package] was not assigned a property package. "
+                "Did you forget to unpack the configuration dictionary?"
+            ),
+        ):
+            m.rxn_params = GenericReactionParameterBlock({"property_package": m.params})
 
     @pytest.mark.unit
     def test_rate_build_invalid_phase_stoichiometry(self, m):
@@ -588,9 +602,11 @@ class TestGenericReactionBlock(object):
 
         with pytest.raises(
             ConfigurationError,
-            match="rblock\[1\] Generic Reaction r1 was not "
-            "provided with a rate_form configuration "
-            "argument.",
+            match=re.escape(
+                "rblock[1] Generic Reaction r1 was not "
+                "provided with a rate_form configuration "
+                "argument."
+            ),
         ):
             model.rblock[1].reaction_rate
 
@@ -633,8 +649,10 @@ class TestGenericReactionBlock(object):
         )
         assert value(model.rblock[1].equilibrium_constraint["e2"].body) == value(
             model.rblock[1].log_k_eq["e2"]
-            - model.sblock[1].log_mole_frac_phase_comp["p2", "c1"] * -5
-            + model.sblock[1].log_mole_frac_phase_comp["p2", "c2"] * 6
+            - (
+                model.sblock[1].log_mole_frac_phase_comp["p2", "c1"] * -5
+                + model.sblock[1].log_mole_frac_phase_comp["p2", "c2"] * 6
+            )
         )
 
     @pytest.mark.unit

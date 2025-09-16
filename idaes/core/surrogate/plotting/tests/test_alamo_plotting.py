@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -17,6 +17,7 @@ Tests for Surrogate Plotting Methods
 import pytest
 import os
 import pandas as pd
+import matplotlib.pyplot as plt
 
 from pyomo.common.fileutils import this_file_dir
 from pyomo.common.tempfiles import TempfileManager
@@ -73,9 +74,11 @@ def test_scatter2D_alamo(alamo_surrogate, data_validation):
         # create and step into new temporary directory
         dname = tf.mkdtemp()
         filename = os.path.join(dname, "results.pdf")
-        surrogate_scatter2D(
+        figs = surrogate_scatter2D(
             alamo_surrogate, data_validation, filename=filename, show=False
         )
+        for f in figs:
+            plt.close(f)
 
         assert os.path.exists(filename)  # PDF results file
 
@@ -91,9 +94,11 @@ def test_scatter3D_alamo(alamo_surrogate, data_validation):
         # create and step into new temporary directory
         dname = tf.mkdtemp()
         filename = os.path.join(dname, "results.pdf")
-        surrogate_scatter3D(
+        figs = surrogate_scatter3D(
             alamo_surrogate, data_validation, filename=filename, show=False
         )
+        for f in figs:
+            plt.close(f)
 
         assert os.path.exists(filename)  # PDF results file
 
@@ -109,9 +114,11 @@ def test_parity_alamo(alamo_surrogate, data_validation):
         # create and step into new temporary directory
         dname = tf.mkdtemp()
         filename = os.path.join(dname, "results.pdf")
-        surrogate_parity(
+        figs = surrogate_parity(
             alamo_surrogate, data_validation, filename=filename, show=False
         )
+        for f in figs:
+            plt.close(f)
 
         assert os.path.exists(filename)  # PDF results file
 
@@ -127,9 +134,11 @@ def test_residual_alamo(alamo_surrogate, data_validation):
         # create and step into new temporary directory
         dname = tf.mkdtemp()
         filename = os.path.join(dname, "results.pdf")
-        surrogate_residual(
+        figs = surrogate_residual(
             alamo_surrogate, data_validation, filename=filename, show=False
         )
+        for f in figs:
+            plt.close(f)
 
         assert os.path.exists(filename)  # PDF results file
 
@@ -144,7 +153,9 @@ def test_scatter2D_noPDF_alamo(alamo_surrogate, data_validation):
 
         # create and step into new temporary directory
         dname = tf.mkdtemp()
-        surrogate_scatter2D(alamo_surrogate, data_validation, show=False)
+        figs = surrogate_scatter2D(alamo_surrogate, data_validation, show=False)
+        for f in figs:
+            plt.close(f)
 
         for file in list(os.walk(dname)):  # check entire temp directory
             assert file[-4:] != ".pdf"  # no PDF files should be created
@@ -160,7 +171,9 @@ def test_scatter3D_noPDF_alamo(alamo_surrogate, data_validation):
 
         # create and step into new temporary directory
         dname = tf.mkdtemp()
-        surrogate_scatter3D(alamo_surrogate, data_validation, show=False)
+        figs = surrogate_scatter3D(alamo_surrogate, data_validation, show=False)
+        for f in figs:
+            plt.close(f)
 
         for file in list(os.walk(dname)):  # check entire temp directory
             assert file[-4:] != ".pdf"  # no PDF files should be created
@@ -176,7 +189,9 @@ def test_parity_noPDF_alamo(alamo_surrogate, data_validation):
 
         # create and step into new temporary directory
         dname = tf.mkdtemp()
-        surrogate_parity(alamo_surrogate, data_validation, show=False)
+        figs = surrogate_parity(alamo_surrogate, data_validation, show=False)
+        for f in figs:
+            plt.close(f)
 
         for file in list(os.walk(dname)):  # check entire temp directory
             assert file[-4:] != ".pdf"  # no PDF files should be created
@@ -192,7 +207,9 @@ def test_residual_noPDF_alamo(alamo_surrogate, data_validation):
 
         # create and step into new temporary directory
         dname = tf.mkdtemp()
-        surrogate_residual(alamo_surrogate, data_validation, show=False)
+        figs = surrogate_residual(alamo_surrogate, data_validation, show=False)
+        for f in figs:
+            plt.close(f)
 
         for file in list(os.walk(dname)):  # check entire temp directory
             assert file[-4:] != ".pdf"  # no PDF files should be created

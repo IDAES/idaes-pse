@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -19,7 +19,7 @@ where an Expression could be mistaken for a Var.
 # pylint: disable=missing-function-docstring
 
 import pyomo.environ as pyo
-from pyomo.core.base.expression import _GeneralExpressionData
+from pyomo.core.base.expression import ExpressionData
 from pyomo.core.base.component import ModelComponentFactory
 from pyomo.core.base.indexed_component import (
     UnindexedComponent_set,
@@ -28,9 +28,9 @@ from pyomo.core.base.disable_methods import disable_methods
 
 
 # Author: Andrew Lee
-class _GeneralVarLikeExpressionData(_GeneralExpressionData):
+class VarLikeExpressionData(ExpressionData):
     """
-    An object derived from _GeneralExpressionData which implements methods for
+    An object derived from ExpressionData which implements methods for
     common APIs on Vars.
 
     Constructor Arguments:
@@ -51,21 +51,21 @@ class _GeneralVarLikeExpressionData(_GeneralExpressionData):
         """
         Overload set_value method to provide meaningful error if user attempts
         to set the value of the Expression. In order to support changing the
-        expression (and setting it originally), if self._expr is None or
+        expression (and setting it originally), if self.expr is None or
         force=True, the value of the expression will be updated, otherwise a
         TypeError will be raised.
 
         Args:
-            value: value to set for _expr
-            force: force updating of _expr if True (default = False)
+            value: value to set for expr
+            force: force updating of expr if True (default = False)
 
         Returns:
             None
 
         Raises:
-            TypeError if _expr is not None and force=False
+            TypeError if expr is not None and force=False
         """
-        if self._expr is None or force:
+        if self.arg(0) is None or force:
             super().set_value(value)
         else:
             raise TypeError(
@@ -125,7 +125,7 @@ class VarLikeExpression(pyo.Expression):
         rule: A rule function used to initialize this object.
     """
 
-    _ComponentDataClass = _GeneralVarLikeExpressionData
+    _ComponentDataClass = VarLikeExpressionData
     NoConstraint = (1000,)
     Skip = (1000,)
 
@@ -140,9 +140,9 @@ class VarLikeExpression(pyo.Expression):
             return super(VarLikeExpression, cls).__new__(IndexedVarLikeExpression)
 
 
-class SimpleVarLikeExpression(_GeneralVarLikeExpressionData, VarLikeExpression):
+class SimpleVarLikeExpression(VarLikeExpressionData, VarLikeExpression):
     def __init__(self, *args, **kwds):
-        _GeneralVarLikeExpressionData.__init__(self, expr=None, component=self)
+        VarLikeExpressionData.__init__(self, expr=None, component=self)
         VarLikeExpression.__init__(self, *args, **kwds)
 
     #
@@ -184,7 +184,7 @@ class IndexedVarLikeExpression(VarLikeExpression):
         """Add an expression with a given index."""
         if isinstance(expr, tuple) and expr == pyo.Expression.Skip:
             return None
-        cdata = _GeneralVarLikeExpressionData(expr, component=self)
+        cdata = VarLikeExpressionData(expr, component=self)
         self._data[index] = cdata
         return cdata
 

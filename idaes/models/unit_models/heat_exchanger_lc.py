@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -21,7 +21,7 @@ from pyomo.dae import DerivativeVar
 from pyomo.common.config import ConfigValue
 from idaes.core import declare_process_block_class, useDefault
 from idaes.core.util.config import DefaultBool
-from idaes.core.util.exceptions import ConfigurationError, IdaesError
+from idaes.core.util.exceptions import ConfigurationError, IdaesError, DynamicError
 from .heat_exchanger import HeatExchangerData
 
 
@@ -53,7 +53,7 @@ be included in the overall energy balance,
     def _add_wall_variables(self):
 
         # Use the hot side as a reference
-        s1_metadata = self.config.hot_side.property_package.get_metadata()
+        s1_metadata = self.hot_side.config.property_package.get_metadata()
 
         # Unit system
         temp_units = s1_metadata.get_derived_units("temperature")
@@ -112,6 +112,60 @@ be included in the overall energy balance,
             "the center of the wall",
             units=ua_units,
         )
+
+    def _setup_dynamics(self):
+        """
+        The Lumped Capacitance Heat Exchanger model is different from other
+        unit models in that it allows for part of the heat balance to be dynamic
+        whilst the control volumes are steady state. Thus, we need a custom
+        _setup_dynamics method.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
+        # Get flowsheet dynamic flag
+        dynamic = self.flowsheet().config.dynamic
+
+        # First, check the dynamic_heat_balance argument
+        if self.config.dynamic_heat_balance is useDefault:
+            # If use default, use flowsheet flag
+            self.config.dynamic_heat_balance = dynamic
+        elif self.config.dynamic_heat_balance and not dynamic:
+            # If True, flowsheet must also be dynamic
+            raise DynamicError(
+                "{} trying to declare a dynamic model within "
+                "a steady-state flowsheet. This is not "
+                "supported by the IDAES framework. Try "
+                "creating a dynamic flowsheet instead, and "
+                "declaring some models as steady-state.".format(self.name)
+            )
+
+        # Next, check the dynamic flag
+        if self.config.dynamic == useDefault:
+            # Use same setting as dynamic_heat_balance
+            self.config.dynamic = self.config.dynamic_heat_balance
+        elif self.config.dynamic and not self.config.dynamic_heat_balance:
+            # If True, must also have dynamic_heat_balance = True
+            raise ConfigurationError(
+                "{} dynamic can only be True if dynamic_heat_balance "
+                "is also True.".format(self.name)
+            )
+
+        # Set and validate has_holdup argument
+        if self.config.has_holdup == useDefault:
+            # Default to same value as dynamic flag
+            self.config.has_holdup = self.config.dynamic
+        elif self.config.has_holdup is False:
+            if self.config.dynamic is True:
+                # Dynamic model must have has_holdup = True
+                raise ConfigurationError(
+                    "{} invalid arguments for dynamic and has_holdup. "
+                    "If dynamic = True, has_holdup must also be True "
+                    "(was False)".format(self.name)
+                )
 
     def _add_wall_variable_constraints(self):
         @self.Constraint(
@@ -192,6 +246,7 @@ be included in the overall energy balance,
 
         Args:
             None
+
         Returns:
             None
         """
@@ -202,16 +257,9 @@ be included in the overall energy balance,
 
         if self.config.dynamic_heat_balance:
 
-            s1_metadata = self.config.hot_side.property_package.get_metadata()
+            s1_metadata = self.hot_side.config.property_package.get_metadata()
             temp_units = s1_metadata.get_derived_units("temperature")
             time_units = s1_metadata.get_derived_units("time")
-
-            if not self.flowsheet().config.dynamic:
-                raise ConfigurationError(
-                    "{} dynamic heat balance cannot be "
-                    "used with a steady-state "
-                    "flowsheet".format(self.name)
-                )
 
             self.dT_wall_dt = DerivativeVar(
                 self.temperature_wall,

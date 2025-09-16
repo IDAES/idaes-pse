@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -49,6 +49,30 @@ class EoSBase:
     @staticmethod
     def build_parameters(b):
         raise NotImplementedError(_msg(b, "build_parameters"))
+
+    @staticmethod
+    def build_critical_properties(b, ref_phase):
+        """
+        This method is used to define the constraints used to calculate mixture
+        critical properties.
+        """
+        raise NotImplementedError(_msg(b, "build_critical_properties"))
+
+    @staticmethod
+    def list_critical_property_constraint_names():
+        """
+        If critical properties are supported, this method is required during
+        initialization to identify the constraints that are associated
+        with calculating the critical properties.
+
+        Returns:
+            list of constraint names
+        """
+        raise NotImplementedError(
+            "Equation of State module has not implemented a method for "
+            "list_critical_property_constraint_names. Please contact the "
+            "EoS developer or use a different module."
+        )
 
     @staticmethod
     def get_vol_mol_pure(b, phase, comp, temperature):

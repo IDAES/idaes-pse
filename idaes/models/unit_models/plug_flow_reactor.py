@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -349,7 +349,7 @@ domain,
         add_object_reference(self, "area", self.control_volume.area)
 
         # Add volume variable for full reactor
-        units = self.config.property_package.get_metadata()
+        units = self.control_volume.config.property_package.get_metadata()
         self.volume = Var(
             initialize=1, doc="Reactor Volume", units=units.get_derived_units("volume")
         )

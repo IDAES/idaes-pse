@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -449,6 +449,8 @@ class _GasPhaseStateBlock(StateBlock):
             # Check when the state vars are fixed already result in dof 0
             for k in blk.values():
                 if degrees_of_freedom(k) != 0:
+                    # PYLINT-TODO
+                    # pylint: disable-next=broad-exception-raised
                     raise Exception(
                         "State vars fixed but degrees of freedom "
                         "for state block is not zero during "
@@ -649,9 +651,7 @@ class GasPhaseStateBlockData(StateBlockData):
         def ideal_gas(b):
             pressure = pyunits.convert(b.pressure, to_units=pyunits.Pa)
             temperature = pyunits.convert(b.temperature, to_units=pyunits.K)
-            dens_mol = pyunits.convert(
-                b.dens_mol, to_units=pyunits.mol / pyunits.m**3
-            )
+            dens_mol = pyunits.convert(b.dens_mol, to_units=pyunits.mol / pyunits.m**3)
             gas_constant = pyunits.convert(
                 Constants.gas_constant, to_units=pyunits.J / pyunits.mol / pyunits.K
             )

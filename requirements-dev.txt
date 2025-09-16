@@ -1,36 +1,33 @@
---index-url https://pypi.python.org/simple/
-
 # Developer extra packages
 
 ### docs
-alabaster>=0.7.7
 # Newer sphinx needed for proper type hint support in docstrings
-sphinx>=3.0.0
-# note: 4/22/2020, removed the version requirement here
-sphinx-rtd-theme==1.0.0
+sphinx>=3.0.0,!=8.2.0
 sphinxcontrib-napoleon>=0.5.0
-sphinx-argparse
+# sphinx-argparse 0.4.0 is the last version to support Python 3.9
+# see https://sphinx-argparse.readthedocs.io/en/latest/changelog.html#id3
+sphinx-argparse==0.4.0
+sphinx-book-theme<=1.1.2,>=1.0.0
+sphinx-copybutton==0.5.2
 
 ### testing and linting
 # TODO/NOTE pytest is specified as a dependency in setup.py, but we might want to pin a specific version here
 pytest
 coverage
 pytest-cov
-black>=22.1.0
 # @lbianchi-lbl: both pylint and astroid should be tightly pinned; see .pylint/idaes_transform.py for more info
-pylint==2.12.2
-astroid==2.9.3
-flake8
-black==22.3.0
+pylint==3.0.3
+astroid==3.0.3
+black==24.3.0
 # pre-commit install, manage, and run pre-commit hooks
 pre-commit
 
 ### other/misc
-jsonschema
-jupyter_contrib_nbextensions
-snowballstemmer==1.2.1
 addheader>=0.2.2
 
 # this will install IDAES in editable mode using the dependencies defined under the `extras_require` tags defined in `setup.py`
---editable .[ui,dmf,grid,omlt,coolprop]
+--editable .[ui,grid,omlt,coolprop]
 # to customize this (e.g. to install a local clone of the Pyomo git repository), add the desired alternate requirements below
+
+# for flowsheet_processor
+idaes-flowsheet-processor>=0.1.dev4

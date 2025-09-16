@@ -1,8 +1,10 @@
 """
 pytest plugin for testing IDAES "through" IDAES/examples within the IDAES/idaes-pse CI
 """
+
 from contextlib import contextmanager
 from dataclasses import dataclass, field
+import fnmatch
 import logging
 import os
 from pathlib import Path
@@ -20,22 +22,18 @@ matchmarker = pytest.StashKey()
 marked = pytest.StashKey()
 
 
+def _matches_pattern(item: pytest.Item, pattern: str) -> bool:
+    to_match = os.fspath(item.path)
+    return fnmatch.fnmatch(to_match, pattern)
+
+
 def pytest_configure(config: pytest.Config):
     config.stash[matchmarker] = {
         "*/held/*": pytest.mark.xfail(run=False, reason="notebook has 'held' status"),
         "*/archive/*": pytest.mark.skip(reason="notebook is archived"),
-        # TODO: Need to fix this once the Python 3.11 issue is resolved in tensorflow
-        "*/surrogates/best_practices_optimization*": pytest.mark.xfail(
-            condition=sys.version_info > (3, 11),
-            run=True,
-            strict=False,
-            reason="tensorflow ImportError on 3.11",
-        ),
-        "*/surrogates/omlt/keras_flowsheet_optimization*": pytest.mark.xfail(
-            condition=sys.version_info > (3, 11),
-            run=True,
-            strict=False,
-            reason="tensorflow ImportError on 3.11",
+        "*/surrogates/sco2/alamo/*": pytest.mark.xfail(
+            run=False,
+            reason="notebooks require ALAMO to run",
         ),
     }
     config.stash[marked] = []
@@ -59,9 +57,8 @@ def pytest_ignore_collect(collection_path: Path, config: pytest.Config):
 
 def pytest_collection_modifyitems(config: pytest.Config, items):
     for item in items:
-        path = item.path
         for pattern, marker in config.stash[matchmarker].items():
-            if path.match(pattern):
+            if _matches_pattern(item, pattern):
                 item.add_marker(marker)
                 config.stash[marked].append((item, pattern, marker))
 

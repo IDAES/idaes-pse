@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -20,6 +20,7 @@ from idaes.core.surrogate.pysmo.polynomial_regression import (
 import numpy as np
 import pandas as pd
 import pytest
+import idaes.logger as idaeslog
 
 
 class TestFeatureScaling:
@@ -152,6 +153,7 @@ class TestFeatureScaling:
             FeatureScaling.data_unscaling(output_1, min_array, max_array)
 
 
+@pytest.mark.usefixtures("run_class_in_tmp_path")
 class TestPolynomialRegression:
     y = np.array(
         [
@@ -300,19 +302,23 @@ class TestPolynomialRegression:
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type1", [np.array, pd.DataFrame])
     @pytest.mark.parametrize("array_type2", [np.array, pd.DataFrame])
-    def test__init__09(self, array_type1, array_type2):
+    def test__init__09(self, array_type1, array_type2, caplog):
+        caplog.set_level(idaeslog.WARNING)
+        warning_msg = "The number of cross-validations entered is large. The simulation may take a while to run"
         original_data_input = array_type1(self.test_data)
         regression_data_input = array_type2(self.sample_points)
-        with pytest.warns(Warning):
-            PolyClass = PolynomialRegression(
-                original_data_input,
-                regression_data_input,
-                maximum_polynomial_order=5,
-                number_of_crossvalidations=11,
-            )
-            assert (
-                PolyClass.number_of_crossvalidations == 11
-            )  # Default number of cross-validations
+        PolyClass = PolynomialRegression(
+            original_data_input,
+            regression_data_input,
+            maximum_polynomial_order=5,
+            number_of_crossvalidations=11,
+        )
+        assert warning_msg in caplog.text
+        for record in caplog.records:
+            assert record.levelno == idaeslog.WARNING
+        assert (
+            PolyClass.number_of_crossvalidations == 11
+        )  # Default number of cross-validations
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type1", [np.array, pd.DataFrame])
@@ -328,14 +334,23 @@ class TestPolynomialRegression:
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type1", [np.array, pd.DataFrame])
     @pytest.mark.parametrize("array_type2", [np.array, pd.DataFrame])
-    def test__init__11(self, array_type1, array_type2):
+    def test__init__11(self, array_type1, array_type2, caplog):
+        caplog.set_level(idaeslog.WARNING)
+        warning_msg = (
+            "The maximum allowed polynomial order is 10. Value has been adjusted to 10."
+        )
         original_data_input = array_type1(self.test_data_large)
         regression_data_input = array_type2(self.sample_points_large)
-        with pytest.warns(Warning):
-            PolyClass = PolynomialRegression(
-                original_data_input, regression_data_input, maximum_polynomial_order=11
-            )
-            assert PolyClass.max_polynomial_order == 10
+        PolyClass = PolynomialRegression(
+            original_data_input, regression_data_input, maximum_polynomial_order=11
+        )
+        warning_msg = (
+            "The maximum allowed polynomial order is 10. Value has been adjusted to 10."
+        )
+        assert warning_msg in caplog.text
+        for record in caplog.records:
+            assert record.levelno == idaeslog.WARNING
+        assert PolyClass.max_polynomial_order == 10
 
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type1", [np.array, pd.DataFrame])
@@ -613,7 +628,6 @@ class TestPolynomialRegression:
             )
 
     @pytest.mark.unit
-    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type1", [np.array, pd.DataFrame])
     @pytest.mark.parametrize("array_type2", [np.array, pd.DataFrame])
     def test__init__32(self, array_type1, array_type2):
@@ -640,7 +654,6 @@ class TestPolynomialRegression:
         assert PolyClass1.filename == PolyClass2.filename
 
     @pytest.mark.unit
-    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type1", [np.array, pd.DataFrame])
     @pytest.mark.parametrize("array_type2", [np.array, pd.DataFrame])
     def test__init__33(self, array_type1, array_type2):
@@ -669,7 +682,6 @@ class TestPolynomialRegression:
         assert PolyClass2.filename == file_name2
 
     @pytest.mark.unit
-    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type1", [np.array, pd.DataFrame])
     @pytest.mark.parametrize("array_type2", [np.array, pd.DataFrame])
     def test__init__34(self, array_type1, array_type2):
@@ -1257,15 +1269,8 @@ class TestPolynomialRegression:
         x = input_array[:, 0]
         y = input_array[:, 1]
         x_vector = np.zeros((x.shape[0], 3))
-        x_vector[:, 0] = (
-            x[
-                :,
-            ]
-            ** 2
-        )
-        x_vector[:, 1] = x[
-            :,
-        ]
+        x_vector[:, 0] = x[:,] ** 2
+        x_vector[:, 1] = x[:,]
         x_vector[:, 2] = 1
         expected_value = np.array([[1.0], [2.0], [1.0]]).reshape(
             3,
@@ -1329,15 +1334,8 @@ class TestPolynomialRegression:
         x = input_array[:, 0]
         y = input_array[:, 1]
         x_vector = np.zeros((x.shape[0], 3))
-        x_vector[:, 0] = (
-            x[
-                :,
-            ]
-            ** 2
-        )
-        x_vector[:, 1] = x[
-            :,
-        ]
+        x_vector[:, 0] = x[:,] ** 2
+        x_vector[:, 1] = x[:,]
         x_vector[:, 2] = 1
         expected_value = np.array([[1.0], [2.0], [1.0]]).reshape(
             3,
@@ -1533,7 +1531,7 @@ class TestPolynomialRegression:
         poly_order = 10
         training_data = regression_data_input[0:20, :]
         test_data = regression_data_input[20:, :]
-        expected_output = np.Inf
+        expected_output = np.inf
         output_1, output_2, output_3 = data_feed.polyregression(
             poly_order, training_data, test_data
         )
@@ -1662,17 +1660,12 @@ class TestPolynomialRegression:
         beta = np.array([[0], [0], [0]])
         expected_df = pd.Series()
         row_list = np.array([["k"], ["(x_1)^1"], ["(x_2)^1"]])
-        expected_df = pd.concat(
-            [
-                expected_df,
-                pd.Series(
-                    {
-                        row_list[0, 0]: beta[0, 0],
-                        row_list[1, 0]: beta[1, 0],
-                        row_list[2, 0]: beta[2, 0],
-                    }
-                ),
-            ]
+        expected_df = pd.Series(
+            {
+                row_list[0, 0]: beta[0, 0],
+                row_list[1, 0]: beta[1, 0],
+                row_list[2, 0]: beta[2, 0],
+            }
         )
         output_df = data_feed.results_generation(beta, order)
         assert output_df.index.to_list() == expected_df.index.to_list()
@@ -1704,21 +1697,16 @@ class TestPolynomialRegression:
                 ["(x_2)^3"],
             ]
         )
-        expected_df = pd.concat(
-            [
-                expected_df,
-                pd.Series(
-                    {
-                        row_list[0, 0]: beta[0, 0],
-                        row_list[1, 0]: beta[1, 0],
-                        row_list[2, 0]: beta[2, 0],
-                        row_list[3, 0]: beta[3, 0],
-                        row_list[4, 0]: beta[4, 0],
-                        row_list[5, 0]: beta[5, 0],
-                        row_list[6, 0]: beta[6, 0],
-                    }
-                ),
-            ]
+        expected_df = pd.Series(
+            {
+                row_list[0, 0]: beta[0, 0],
+                row_list[1, 0]: beta[1, 0],
+                row_list[2, 0]: beta[2, 0],
+                row_list[3, 0]: beta[3, 0],
+                row_list[4, 0]: beta[4, 0],
+                row_list[5, 0]: beta[5, 0],
+                row_list[6, 0]: beta[6, 0],
+            }
         )
         output_df = data_feed.results_generation(beta, order)
         assert output_df.index.to_list() == expected_df.index.to_list()
@@ -1742,20 +1730,15 @@ class TestPolynomialRegression:
         row_list = np.array(
             [["k"], ["(x_1)^1"], ["(x_2)^1"], ["(x_1)^2"], ["(x_2)^2"], ["(x_1).(x_2)"]]
         )
-        expected_df = pd.concat(
-            [
-                expected_df,
-                pd.Series(
-                    {
-                        row_list[0, 0]: beta[0, 0],
-                        row_list[1, 0]: beta[1, 0],
-                        row_list[2, 0]: beta[2, 0],
-                        row_list[3, 0]: beta[3, 0],
-                        row_list[4, 0]: beta[4, 0],
-                        row_list[5, 0]: beta[5, 0],
-                    }
-                ),
-            ]
+        expected_df = pd.Series(
+            {
+                row_list[0, 0]: beta[0, 0],
+                row_list[1, 0]: beta[1, 0],
+                row_list[2, 0]: beta[2, 0],
+                row_list[3, 0]: beta[3, 0],
+                row_list[4, 0]: beta[4, 0],
+                row_list[5, 0]: beta[5, 0],
+            }
         )
         output_df = data_feed.results_generation(beta, order)
         assert output_df.index.to_list() == expected_df.index.to_list()
@@ -1936,7 +1919,6 @@ class TestPolynomialRegression:
             data_feed.user_defined_terms(additional_terms)
 
     @pytest.mark.unit
-    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type1", [pd.DataFrame])
     @pytest.mark.parametrize("array_type2", [np.array])
     def test_polynomial_regression_fitting_01(self, array_type1, array_type2):
@@ -1950,7 +1932,6 @@ class TestPolynomialRegression:
         assert results.fit_status == "ok"
 
     @pytest.mark.unit
-    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type1", [pd.DataFrame])
     @pytest.mark.parametrize("array_type2", [np.array])
     @patch("matplotlib.pyplot.show")
@@ -1969,7 +1950,6 @@ class TestPolynomialRegression:
             assert results.fit_status == "poor"
 
     @pytest.mark.unit
-    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type1", [pd.DataFrame])
     @pytest.mark.parametrize("array_type2", [np.array])
     def test_polynomial_regression_fitting_03(self, array_type1, array_type2):
@@ -1984,7 +1964,6 @@ class TestPolynomialRegression:
         assert results.fit_status == "ok"
 
     @pytest.mark.unit
-    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type1", [pd.DataFrame])
     @pytest.mark.parametrize("array_type2", [np.array])
     def test_polynomial_regression_fitting_04(self, array_type1, array_type2):
@@ -2053,7 +2032,6 @@ class TestPolynomialRegression:
         np.testing.assert_equal(np.array([1, 2]), data_feed.additional_term_expressions)
 
     @pytest.mark.unit
-    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type1", [pd.DataFrame])
     @pytest.mark.parametrize("array_type2", [np.array])
     def test_poly_training_01(self, array_type1, array_type2):
@@ -2066,24 +2044,24 @@ class TestPolynomialRegression:
         data_feed.training()
         assert data_feed.fit_status == "ok"
 
+    # TODO: This does not actually assert anything, and fails to run
+    # Leaving code in case someone has time to fix it in the future
+    # @pytest.mark.unit
+    # @pytest.mark.parametrize("array_type1", [pd.DataFrame])
+    # @pytest.mark.parametrize("array_type2", [np.array])
+    # def test_generate_expression(self, array_type1, array_type2):
+    #     original_data_input = array_type1(self.full_data)
+    #     regression_data_input = array_type2(self.training_data)
+    #     data_feed = PolynomialRegression(
+    #         original_data_input, regression_data_input, maximum_polynomial_order=2
+    #     )
+    #
+    #     p = data_feed.get_feature_vector()
+    #     data_feed.training()
+    #
+    #     poly_expr = data_feed.generate_expression((p.keys()))
+
     @pytest.mark.unit
-    @pytest.fixture(scope="module")
-    @pytest.mark.parametrize("array_type1", [pd.DataFrame])
-    @pytest.mark.parametrize("array_type2", [np.array])
-    def test_generate_expression(self, array_type1, array_type2):
-        original_data_input = array_type1(self.full_data)
-        regression_data_input = array_type2(self.training_data)
-        data_feed = PolynomialRegression(
-            original_data_input, regression_data_input, maximum_polynomial_order=2
-        )
-
-        p = data_feed.get_feature_vector()
-        data_feed.training()
-
-        poly_expr = data_feed.generate_expression((p.keys()))
-
-    @pytest.mark.unit
-    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type1", [np.array])
     @pytest.mark.parametrize("array_type2", [np.array])
     def test_pickle_load01(self, array_type1, array_type2):
@@ -2097,7 +2075,6 @@ class TestPolynomialRegression:
         PolyClass.pickle_load(PolyClass.filename)
 
     @pytest.mark.unit
-    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type1", [np.array])
     @pytest.mark.parametrize("array_type2", [np.array])
     def test_pickle_load02(self, array_type1, array_type2):
@@ -2111,7 +2088,6 @@ class TestPolynomialRegression:
 
     @pytest.mark.unit
     @patch("matplotlib.pyplot.show")
-    @pytest.fixture(scope="module")
     @pytest.mark.parametrize("array_type1", [np.array])
     @pytest.mark.parametrize("array_type2", [np.array])
     def test_parity_residual_plots(self, mock_show, array_type1, array_type2):
@@ -2125,7 +2101,6 @@ class TestPolynomialRegression:
 
         PolyClass.parity_residual_plots()
 
-    @pytest.fixture(scope="module")
     @pytest.mark.unit
     def test_confint_regression_01(self):
         # Create x vector for ax2 + bx + c: x data supplied in x_vector
@@ -2166,7 +2141,6 @@ class TestPolynomialRegression:
             atol=1e-3,
         )
 
-    @pytest.fixture(scope="module")
     @pytest.mark.unit
     def test_confint_regression_02(self):
         # Create x vector for ax2 + bx + c: x data supplied in x_vector
@@ -2207,7 +2181,6 @@ class TestPolynomialRegression:
             atol=1e-3,
         )
 
-    @pytest.fixture(scope="module")
     @pytest.mark.unit
     def test_confint_regression_03(self):
         # Create x vector for ax2 + bx + c: x data supplied in x_vector

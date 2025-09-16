@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -292,7 +292,7 @@ def test_StateBlock_config():
         m.p.config.has_equilibrium = 10
 
 
-@declare_process_block_class("TestStateBlock", block_class=StateBlock)
+@declare_process_block_class("DummyStateBlock", block_class=StateBlock)
 class StateTestBlockData(StateBlockData):
     def build(self):
         super(StateBlockData, self).build()
@@ -305,7 +305,7 @@ def test_validate_state_block_fail():
     m.p = PropertyParameterBlock()
     m.p2 = PropertyParameterBlock()
 
-    m.pb = TestStateBlock(parameters=m.p2)
+    m.pb = DummyStateBlock(parameters=m.p2)
 
     m.r = ReactionParameterBlock6(property_package=m.p)
     super(_ReactionParameterBlock6, m.r).build()
@@ -328,7 +328,7 @@ def test_build():
     m = ConcreteModel()
     m.p = PropertyParameterBlock()
 
-    m.pb = TestStateBlock(parameters=m.p)
+    m.pb = DummyStateBlock(parameters=m.p)
 
     m.r = ReactionParameterBlock6(property_package=m.p)
     super(_ReactionParameterBlock6, m.r).build()
@@ -380,6 +380,8 @@ class _Reaction(ReactionBlockDataBase):
         self.recursive_cons2 = Constraint(expr=self.recursion1 == 1)
 
     def _raise_exception(self):
+        # PYLINT-TODO
+        # pylint: disable-next=broad-exception-raised
         raise Exception()
 
     def _does_not_create_component(self):

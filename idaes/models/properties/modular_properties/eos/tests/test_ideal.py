@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -217,7 +217,6 @@ def test_cv_mol_phase_comp(m):
 
 @pytest.mark.unit
 def test_heat_capacity_ratio_phase(m):
-
     m.props[1].cp_mol_phase = Var(m.params.phase_list)
     m.props[1].cv_mol_phase = Var(m.params.phase_list)
 
@@ -564,7 +563,7 @@ def test_pressure_osm_phase(m):
     )
     subexpr = m.props[1].conc_mol_phase_comp["Liq", "b"]
     subexpr += m.props[1].conc_mol_phase_comp["Liq", "c"]
-    assert str(m.props[1].pressure_osm_phase["Liq"]._expr) == (
+    assert str(m.props[1].pressure_osm_phase["Liq"].expr) == (
         str(Ideal.gas_constant(m.props[1]) * m.props[1].temperature * subexpr)
     )
     assert len(m.props[1].pressure_osm_phase) == 1
@@ -619,7 +618,7 @@ def test_pressure_osm_phase_w_apparent_component():
 
     subexpr = m.props[1].conc_mol_phase_comp["Liq", "b"]
     subexpr += 2 * m.props[1].conc_mol_phase_comp["Liq", "c"]
-    assert str(m.props[1].pressure_osm_phase["Liq"]._expr) == (
+    assert str(m.props[1].pressure_osm_phase["Liq"].expr) == (
         str(Ideal.gas_constant(m.props[1]) * m.props[1].temperature * subexpr)
     )
     assert len(m.props[1].pressure_osm_phase) == 1

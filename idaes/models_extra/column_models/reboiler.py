@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -210,8 +210,8 @@ see property package for documentation.}""",
         # to be used below. Avoids repetition.
         _liquid_list = []
         _vapor_list = []
-        for p in self.config.property_package.phase_list:
-            pobj = self.config.property_package.get_phase(p)
+        for p in self.control_volume.config.property_package.phase_list:
+            pobj = self.control_volume.config.property_package.get_phase(p)
             if pobj.is_vapor_phase():
                 _vapor_list.append(p)
             elif pobj.is_liquid_phase():

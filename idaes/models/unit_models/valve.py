@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -85,7 +85,9 @@ def pressure_flow_default_callback(valve):
     Add the default pressure flow relation constraint.  This will be used in the
     valve model, a custom callback is provided.
     """
-    umeta = valve.config.property_package.get_metadata().get_derived_units
+    umeta = (
+        valve.control_volume.config.property_package.get_metadata().get_derived_units
+    )
 
     valve.Cv = pyo.Var(
         initialize=0.1,
@@ -252,6 +254,7 @@ variables, expressions, or constraints required can also be added by the callbac
         if hasattr(self, "pressure_flow_equation_scale"):
             ff = self.pressure_flow_equation_scale
         else:
+            # pylint: disable-next=unnecessary-lambda-assignment
             ff = lambda x: x
         # if the "flow_var" is not set raise an exception
         if not hasattr(self, "flow_var"):

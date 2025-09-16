@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -26,6 +26,7 @@ import idaes
 CRITICAL = logging.CRITICAL  # 50
 ERROR = logging.ERROR  # 40
 WARNING = logging.WARNING  # 30
+CAUTION = 25
 INFO_LOW = 21  # Most important info
 INFO = logging.INFO  # 20  #Medium info (default)
 INFO_HIGH = 19  # Less important important info
@@ -33,7 +34,8 @@ DEBUG = logging.DEBUG  # 10
 NOTSET = logging.NOTSET  # 0
 
 
-levelname = {  # the level name of all our extra info levels is "INFO"
+levelname = {
+    CAUTION: "CAUTION",
     INFO_HIGH: "INFO",
     INFO_LOW: "INFO",
 }
@@ -57,6 +59,10 @@ class _TagFilter(logging.Filter):
         return False
 
 
+def __caution(self, *args, **kwargs):
+    self.log(CAUTION, *args, **kwargs)
+
+
 def __info_low(self, *args, **kwargs):
     self.log(INFO_LOW, *args, **kwargs)
 
@@ -69,6 +75,7 @@ def __add_methods(log, tag=None):
     # pylint: disable=assignment-from-no-return,no-value-for-parameter
     log.addFilter(_TagFilter)
     log = logging.LoggerAdapter(log, {"tag": tag})
+    log.caution = __caution.__get__(log)
     log.info_high = __info_high.__get__(log)
     log.info_low = __info_low.__get__(log)
     # hopefully adding this multiple times is not a problem

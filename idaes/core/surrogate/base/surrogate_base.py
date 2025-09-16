@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -327,7 +327,7 @@ class SurrogateBase:
               The index of the output dataframe should match the index of the provided inputs.
         """
         raise NotImplementedError(
-            "SurrogateModel class has not implemented an evaluate_surrogate " "method."
+            "SurrogateModel class has not implemented an evaluate_surrogate method."
         )
 
     def save_to_file(self, filename, overwrite=False):
@@ -361,7 +361,7 @@ class SurrogateBase:
               of json data to the stream, but the format for derived classes need not be json.
         """
         raise NotImplementedError(
-            '"save" should be implemented in the' " class derived from SurrogateBase"
+            '"save" should be implemented in the class derived from SurrogateBase'
         )
 
     @classmethod
@@ -393,5 +393,5 @@ class SurrogateBase:
         Returns: an instance of the derived class or None if it failed to load
         """
         raise NotImplementedError(
-            '"load" should be implemented in the' " class derived from SurrogateBase"
+            '"load" should be implemented in the class derived from SurrogateBase'
         )

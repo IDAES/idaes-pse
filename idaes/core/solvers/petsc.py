@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -29,7 +29,7 @@ from pyomo.common.collections import ComponentSet, ComponentMap
 from pyomo.core.expr.visitor import identify_variables
 import pyomo.dae as pyodae
 from pyomo.common import Executable
-from pyomo.dae.flatten import flatten_dae_components
+from pyomo.dae.flatten import flatten_dae_components, slice_component_along_sets
 from pyomo.util.subsystems import (
     TemporarySubsystemManager,
     create_subsystem_block,
@@ -37,6 +37,7 @@ from pyomo.util.subsystems import (
 from pyomo.solvers.plugins.solvers.ASL import ASL
 from pyomo.common.tempfiles import TempfileManager
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
+from pyomo.common.deprecation import deprecation_warning
 
 import idaes
 import idaes.logger as idaeslog
@@ -420,15 +421,17 @@ def petsc_dae_by_time_element(
     initial_variables=None,
     detect_initial=True,
     skip_initial=False,
-    snes_solver="petsc_snes",
-    snes_options=None,
+    initial_solver="petsc_snes",
+    initial_solver_options=None,
     ts_options=None,
     keepfiles=False,
     symbolic_solver_labels=True,
     between=None,
     interpolate=True,
-    calculate_derivatives=True,
+    calculate_derivatives=False,
     previous_trajectory=None,
+    representative_time=None,
+    snes_options=None,
 ):
     """Solve a DAE problem step by step using the PETSc DAE solver.  This
     integrates from one time point to the next.
@@ -454,22 +457,16 @@ def petsc_dae_by_time_element(
             calculated. This can be useful, for example, if you read initial
             conditions from a separately solved steady state problem, or
             otherwise know the initial conditions.
-        snes_solver (str): default=petsc_snes, the nonlinear equations solver
+        initial_solver (str): default=petsc_snes, the nonlinear equations solver
             to use for the initial conditions (e.g. petsc_snes, ipopt, ...).
-        snes_options (dict): nonlinear equation solver options
+        initial_solver_options (dict): nonlinear equation solver options
         ts_options (dict): PETSc time-stepping solver options
         keepfiles (bool): pass to keepfiles arg for solvers
         symbolic_solver_labels (bool): pass to symbolic_solver_labels argument
             for solvers. If you want to read trajectory data from the
             time-stepping solver, this should be True.
         between (list or tuple): List of time points to integrate between. If
-            None use all time points in the model. Generally the list should
-            start with the first time point and end with the last time point;
-            however, this is not a requirement and there are situations where you
-            may not want to include them. If you are not including the first
-            time point, you should take extra care with the initial conditions.
-            If the initial conditions are already correct consider using the
-            ``skip_initial`` option if the first time point is not included.
+            None use all time points in the model.
         interpolate (bool): if True and trajectory is read, interpolate model
             values from the trajectory
         calculate_derivatives: (bool) if True, calculate the derivative values
@@ -477,10 +474,33 @@ def petsc_dae_by_time_element(
             Pyomo model.
         previous_trajectory: (PetscTrajectory) Trajectory from previous integration
             of this model. New results will be appended to this trajectory object.
+        representative_time: (element of Between) Time when all equations necessary to solve DAE are active. Often equations need
+            to be deactivated for the initial condition problem (for example, mole fractions summing to one)
+            because state variables (the individual mole fractions) are fixed. representative_time is a time
+            after the initial condition problem is solved and these equations are reactivated. Note that the
+            equations not active at this point are excluded from the DAE at future points. If no
+            representative_time is specified, it is assumed to be the second element of between.
+            Must be an element of between.
+        snes_options (dict): [DEPRECATED in favor of initial_solver_options] nonlinear equation solver options
 
     Returns (PetscDAEResults):
         See PetscDAEResults documentation for more information.
     """
+    if snes_options is not None and initial_solver_options is not None:
+        raise RuntimeError(
+            "Both (deprecated) snes_options and initial_solver_options keyword arguments were specified. "
+            "Please specify your initial solver options using only the initial_solver_options argument."
+        )
+    if snes_options is not None:
+        _log = idaeslog.getLogger(__name__)
+        deprecation_warning(
+            msg="Keyword argument snes_options has been DEPRECATED in favor of initial_solver_options.",
+            logger=_log,
+            version="2.2.0",
+            remove_in="3.0.0",
+        )
+        initial_solver_options = snes_options
+
     if interpolate:
         if ts_options is None:
             ts_options = {}
@@ -499,9 +519,29 @@ def petsc_dae_by_time_element(
         between = pyo.Set(initialize=sorted(between))
         between.construct()
 
+    # Make sure that time is a ContinuousSet that has been discretized
+    if not isinstance(time, pyodae.ContinuousSet):
+        raise RuntimeError("Argument time is not a Pyomo ContinuousSet")
+
+    if "scheme" not in time.get_discretization_info():
+        raise RuntimeError("The ContinuousSet time has not been discretized")
+
     solve_log = idaeslog.getSolveLogger("petsc-dae")
-    regular_vars, time_vars = flatten_dae_components(m, time, pyo.Var)
-    regular_cons, time_cons = flatten_dae_components(m, time, pyo.Constraint)
+
+    # Need a representative time for flatten_dae_components to work, because otherwise things like
+    # sums of mole fraction constraints being deactivated at t0 (because all the mole fractions are fixed),
+    # etc., cause flatten_dae_components to miss a constraint that is active at t>t0
+    if representative_time is None:
+        representative_time = between.at(2)  # Two because Pyomo sets start at one
+    elif representative_time not in between:
+        raise RuntimeError("representative_time is not element of between.")
+
+    regular_vars, time_vars = flatten_dae_components(
+        m, time, pyo.Var, active=True, indices=(representative_time,)
+    )
+    regular_cons, time_cons = flatten_dae_components(
+        m, time, pyo.Constraint, active=True, indices=(representative_time,)
+    )
     tdisc = find_discretization_equations(m, time)
 
     solver_dae = pyo.SolverFactory("petsc_ts", options=ts_options)
@@ -520,7 +560,9 @@ def petsc_dae_by_time_element(
 
     if not skip_initial:
         # Nonlinear equation solver for initial conditions
-        solver_snes = pyo.SolverFactory(snes_solver, options=snes_options)
+        initial_solver_obj = pyo.SolverFactory(
+            initial_solver, options=initial_solver_options
+        )
         # list of constraints to add to the initial condition problem
         if initial_constraints is None:
             initial_constraints = []
@@ -547,18 +589,21 @@ def petsc_dae_by_time_element(
                 # set up the scaling factor suffix
                 _sub_problem_scaling_suffix(m, t_block)
                 with idaeslog.solver_log(solve_log, idaeslog.INFO) as slc:
-                    res = solver_snes.solve(t_block, tee=slc.tee)
+                    res = initial_solver_obj.solve(
+                        t_block,
+                        tee=slc.tee,
+                        symbolic_solver_labels=symbolic_solver_labels,
+                    )
                 res_list.append(res)
 
     tprev = t0
-    fix_derivs = []
     tj = previous_trajectory
     if tj is not None:
         variables_prev = [var[t0] for var in time_vars]
 
     with TemporarySubsystemManager(
         to_deactivate=tdisc,
-        to_fix=initial_variables + fix_derivs,
+        to_fix=initial_variables,
     ):
         # Solver time steps
         deriv_diff_map = _get_derivative_differential_data_map(m, time)
@@ -666,17 +711,17 @@ def petsc_dae_by_time_element(
                         # May not have trajectory from fixed variables and they
                         # shouldn't change anyway, so only set not fixed vars
                         var[t].value = vec[i]
-        if calculate_derivatives:
-            # the petsc solver interface does not currently return time
-            # derivatives, and if it did, they would be estimated based on a
-            # smaller time step.  This option uses Pyomo.DAE's discretization
-            # equations to calculate the time derivative values
-            calculate_time_derivatives(m, time)
-        # return the solver results and trajectory if available
+    if calculate_derivatives:
+        # the petsc solver interface does not currently return time
+        # derivatives, and if it did, they would be estimated based on a
+        # smaller time step.  This option uses Pyomo.DAE's discretization
+        # equations to calculate the time derivative values
+        calculate_time_derivatives(m, time, between=between)
+    # return the solver results and trajectory if available
     return PetscDAEResults(results=res_list, trajectory=tj)
 
 
-def calculate_time_derivatives(m, time):
+def calculate_time_derivatives(m, time, between=None):
     """Calculate the derivative values from the discretization equations.
 
     Args:
@@ -686,19 +731,58 @@ def calculate_time_derivatives(m, time):
     Returns:
         None
     """
+    # Leave between an optional argument for backwards compatibility
+    if between is None:
+        between = time
     for var in m.component_objects(pyo.Var):
         if isinstance(var, pyodae.DerivativeVar):
             if time in ComponentSet(var.get_continuousset_list()):
-                parent = var.parent_block()
-                name = var.local_name + "_disc_eq"
-                disc_eq = getattr(parent, name)
-                for i, v in var.items():
-                    try:
-                        if disc_eq[i].active:
-                            v.value = 0  # Make sure there is a value
-                            calculate_variable_from_constraint(v, disc_eq[i])
-                    except KeyError:
-                        pass  # discretization equation may not exist at first time
+                parent_block = var.parent_block()
+                disc_eq = getattr(parent_block, var.local_name + "_disc_eq")
+
+                deriv_dict = dict(
+                    (key, pyo.Reference(slc))
+                    for key, slc in slice_component_along_sets(var, (time,))
+                )
+                disc_dict = dict(
+                    (key, pyo.Reference(slc))
+                    for key, slc in slice_component_along_sets(disc_eq, (time,))
+                )
+
+                for key, deriv in deriv_dict.items():
+                    # state = state_dict[key]
+                    disc_eq = disc_dict[key]
+                    for t in time:
+                        if t < between.first() or t > between.last():
+                            # Outside of integration range, skip calculation
+                            continue
+                        old_value = deriv[t].value
+                        try:
+                            # TODO This calculates the value of the derivative even
+                            # if one of the state var values is from outside the
+                            # integration range, so long as it's initialized. Is
+                            # this the desired behavior?
+                            if disc_eq[t].active and not deriv[t].fixed:
+                                deriv[t].value = 0  # Make sure there is a value
+                                calculate_variable_from_constraint(deriv[t], disc_eq[t])
+                        except KeyError as err:
+                            # Discretization and continuity equations may or may not exist at the first or last time
+                            # points depending on the method. Backwards skips first, forwards skips last, central skips
+                            # both (which means the user needs to provide additional equations)
+                            if t == time.first() or t == time.last():
+                                pass
+                            else:
+                                raise err
+                        except ValueError as err:
+                            # At edges of between, it's unclear which adjacent
+                            # values of state variables have been populated.
+                            # Therefore we might get hit with value errors.
+                            if t == between.first() or t == between.last():
+                                # Reset deriv value to old value
+                                if disc_eq[t].active and not deriv[t].fixed:
+                                    deriv[t].value = old_value
+                            else:
+                                raise err
 
 
 class PetscTrajectory(object):

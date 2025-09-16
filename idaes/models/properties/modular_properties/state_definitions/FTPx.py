@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -36,14 +36,14 @@ from idaes.models.properties.modular_properties.base.utility import (
     get_method,
     GenericPropertyPackageError,
 )
-from idaes.models.properties.modular_properties.phase_equil.bubble_dew import (
-    _valid_VL_component_list,
+from idaes.models.properties.modular_properties.base.utility import (
+    identify_VL_component_list,
 )
 from idaes.models.properties.modular_properties.phase_equil.henry import (
     HenryType,
     henry_equilibrium_ratio,
 )
-from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.exceptions import ConfigurationError, InitializationError
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 from .electrolyte_states import define_electrolyte_state, calculate_electrolyte_scaling
@@ -383,9 +383,8 @@ def state_initialization(b):
     else:
         _pe_pairs = b.params._pe_pairs
 
-    vl_comps = []
-    henry_comps = []
-    init_VLE = False
+    num_VLE = 0
+
     for pp in _pe_pairs:
         # Look for a VLE pair with this phase - should only be 1
         if (
@@ -395,7 +394,7 @@ def state_initialization(b):
             b.params.get_phase(pp[1]).is_liquid_phase()
             and b.params.get_phase(pp[0]).is_vapor_phase()
         ):
-            init_VLE = True
+            num_VLE += 1
             # Get bubble and dew points
             tbub = None
             tdew = None
@@ -409,10 +408,6 @@ def state_initialization(b):
                     tdew = b.temperature_dew[pp].value
                 except KeyError:
                     pass
-            if len(vl_comps) > 0:
-                # More than one VLE. Just use the default initialization for
-                # now
-                init_VLE = False
             (
                 l_phase,
                 v_phase,
@@ -420,10 +415,16 @@ def state_initialization(b):
                 henry_comps,
                 l_only_comps,
                 v_only_comps,
-            ) = _valid_VL_component_list(b, pp)
+            ) = identify_VL_component_list(b, pp)
             pp_VLE = pp
 
-    if init_VLE:
+    if num_VLE > 1:
+        raise InitializationError(
+            f"More than one VLE present in {b.name}. Initialization for multiple "
+            "VLE is not supported, so skipping VLE initialization."
+        )
+
+    elif num_VLE == 1:  # Only support initialization when a single VLE is present
         henry_mole_frac = []
         henry_conc = []
         henry_other = []
@@ -469,7 +470,9 @@ def state_initialization(b):
                 K = None
                 break
 
-    if init_VLE:
+    # Default is no initialization of VLE
+    vap_frac = None
+    if num_VLE == 1:
         raoult_init = False
         if tdew is not None and b.temperature.value > tdew:
             # Pure vapour
@@ -490,9 +493,7 @@ def state_initialization(b):
                 l_only_comps,
                 v_only_comps + henry_conc + henry_other,
             )
-        else:
-            # No way to estimate phase fraction
-            vap_frac = None
+        # else: No way to estimate phase fraction, do nothing
 
     if vap_frac is not None:
         b.phase_frac[v_phase] = vap_frac

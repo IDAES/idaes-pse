@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -13,11 +13,10 @@
 import pytest
 import pyomo.environ as pyo
 from idaes.apps.grid_integration.tracker import Tracker
-from idaes.apps.grid_integration.tests.util import TestingModel, testing_model_data
+from idaes.apps.grid_integration.tests.util import ExampleModel, testing_model_data
 
 
-class TestMissingModel:
-
+class MissingModel:
     """
     A class for testing missing methods and attributes.
     """
@@ -69,7 +68,7 @@ def test_model_object_missing_methods():
 
     # test if the correct error message is raised if a model misses necessary methods
     for m in method_list:
-        tracking_model_object = TestMissingModel(missing_method=m)
+        tracking_model_object = MissingModel(missing_method=m)
         with pytest.raises(AttributeError, match=r".*{}().*".format(m)):
             tracker_object = Tracker(
                 tracking_model_object=tracking_model_object,
@@ -88,7 +87,7 @@ def test_model_object_missing_attr():
 
     # test if the correct error message is raised if a model misses necessary attributes
     for a in attr_list:
-        tracking_model_object = TestMissingModel(missing_attr=a)
+        tracking_model_object = MissingModel(missing_attr=a)
         with pytest.raises(AttributeError, match=r".*{}.*".format(a)):
             tracker_object = Tracker(
                 tracking_model_object=tracking_model_object,
@@ -101,7 +100,7 @@ def test_model_object_missing_attr():
 @pytest.mark.unit
 def test_n_tracking_hour_checker():
     solver = pyo.SolverFactory("cbc")
-    tracking_model_object = TestingModel(model_data=testing_model_data)
+    tracking_model_object = ExampleModel(model_data=testing_model_data)
 
     # test if tracker raise error when negative number of hours is given
     n_tracking_hour = -1
@@ -127,7 +126,7 @@ def test_n_tracking_hour_checker():
 @pytest.mark.unit
 def test_solver_checker():
     n_tracking_hour = 1
-    tracking_model_object = TestingModel(model_data=testing_model_data)
+    tracking_model_object = ExampleModel(model_data=testing_model_data)
 
     # test if bidder raise error when invalid solver is provided
     invalid_solvers = [5, "cbc", "ipopt"]
@@ -147,7 +146,7 @@ def tracker_object():
     solver = pyo.SolverFactory("cbc")
 
     # create a tracker model
-    tracking_model_object = TestingModel(model_data=testing_model_data)
+    tracking_model_object = ExampleModel(model_data=testing_model_data)
     tracker_object = Tracker(
         tracking_model_object=tracking_model_object,
         tracking_horizon=horizon,

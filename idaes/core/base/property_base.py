@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -20,8 +20,8 @@ import sys
 
 # Import Pyomo libraries
 from pyomo.environ import Set, value, Var, Expression, Constraint, Reference
-from pyomo.core.base.var import _VarData
-from pyomo.core.base.expression import _ExpressionData
+from pyomo.core.base.var import VarData
+from pyomo.core.base.expression import ExpressionData
 from pyomo.common.config import ConfigBlock, ConfigValue, Bool
 from pyomo.common.formatting import tabular_writer
 from pyomo.network import Port
@@ -300,6 +300,10 @@ class StateBlock(ProcessBlock):
             self._block_data_config_default["parameters"] = param
         return param
 
+    @property
+    def params(self):
+        return self._get_parameter_block()
+
     def fix_initialization_states(self):
         """
         Fixes state variables for state blocks.
@@ -395,7 +399,7 @@ class StateBlock(ProcessBlock):
         ostream.write("\n" + "-" * max_str_length + "\n")
         ostream.write(f"{prefix}{tab}State Report")
 
-        if any(isinstance(v, _VarData) for k, v in stream_attributes.items()):
+        if any(isinstance(v, VarData) for k, v in stream_attributes.items()):
             ostream.write("\n" * 2)
             ostream.write(f"{prefix}{tab}Variables: \n\n")
             tabular_writer(
@@ -404,13 +408,13 @@ class StateBlock(ProcessBlock):
                 (
                     (k, v)
                     for k, v in stream_attributes.items()
-                    if isinstance(v, _VarData)
+                    if isinstance(v, VarData)
                 ),
                 ("Value", "Fixed", "Bounds"),
                 lambda k, v: ["{:#.5g}".format(value(v)), v.fixed, v.bounds],
             )
 
-        if any(isinstance(v, _ExpressionData) for k, v in stream_attributes.items()):
+        if any(isinstance(v, ExpressionData) for k, v in stream_attributes.items()):
             ostream.write("\n" * 2)
             ostream.write(f"{prefix}{tab}Expressions: \n\n")
             tabular_writer(
@@ -419,7 +423,7 @@ class StateBlock(ProcessBlock):
                 (
                     (k, v)
                     for k, v in stream_attributes.items()
-                    if isinstance(v, _ExpressionData)
+                    if isinstance(v, ExpressionData)
                 ),
                 ("Value",),
                 lambda k, v: ["{:#.5g}".format(value(v))],
@@ -588,6 +592,14 @@ should be constructed in this state block,
         # TODO: Should refactor parent so this is not private
         # pylint: disable-next=protected-access
         return self.parent_component()._include_inherent_reactions()
+
+    @property
+    def default_initializer(self):
+        return self.parent_component().default_initializer
+
+    @property
+    def default_scaler(self):
+        return self.parent_component().default_scaler
 
     def build(self):
         """

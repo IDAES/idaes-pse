@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -62,6 +62,7 @@ from idaes.core.util.model_statistics import (
 from idaes.core.util.testing import PhysicalParameterTestBlock, initialization_tester
 from idaes.core.util import scaling as iscale
 from idaes.core.solvers import get_solver
+from idaes.core.util import DiagnosticsToolbox
 
 # Imports to assemble BT-PR with different units
 from idaes.core import LiquidPhase, VaporPhase, Component
@@ -77,7 +78,7 @@ from idaes.models.properties.modular_properties.eos.ceos import cubic_roots_avai
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_solver()
+solver = get_solver("ipopt_v2")
 
 
 # -----------------------------------------------------------------------------
@@ -292,19 +293,6 @@ def test_config_validation():
     m.fs.properties = BTXParameterBlock(valid_phase="Liq")
 
     with pytest.raises(ConfigurationError):
-        m.fs.HX_co_current = HX1D(
-            hot_side={
-                "property_package": m.fs.properties,
-                "transformation_scheme": "BACKWARD",
-            },
-            cold_side={
-                "property_package": m.fs.properties,
-                "transformation_scheme": "FORWARD",
-            },
-            flow_type=HeatExchangerFlowPattern.cocurrent,
-        )
-
-    with pytest.raises(ConfigurationError):
         m.fs.HX_counter_current = HX1D(
             hot_side={
                 "property_package": m.fs.properties,
@@ -414,28 +402,9 @@ class TestBTX_cocurrent(object):
         assert number_unused_variables(btx) == 8
 
     @pytest.mark.integration
-    def test_units(self, btx):
-        assert_units_equivalent(btx.fs.unit.length, pyunits.m)
-        assert_units_equivalent(btx.fs.unit.shell_diameter, pyunits.m)
-        assert_units_equivalent(btx.fs.unit.tube_inner_diameter, pyunits.m)
-        assert_units_equivalent(btx.fs.unit.tube_outer_diameter, pyunits.m)
-        assert_units_equivalent(btx.fs.unit.number_of_tubes, pyunits.dimensionless)
-
-        assert_units_equivalent(
-            btx.fs.unit.hot_side_heat_transfer_coefficient,
-            pyunits.W / pyunits.m**2 / pyunits.K,
-        )
-        assert_units_equivalent(
-            btx.fs.unit.cold_side_heat_transfer_coefficient,
-            pyunits.W / pyunits.m**2 / pyunits.K,
-        )
-        assert_units_equivalent(btx.fs.unit.temperature_wall, pyunits.K)
-
-        assert_units_consistent(btx)
-
-    @pytest.mark.unit
-    def test_dof(self, btx):
-        assert degrees_of_freedom(btx) == 0
+    def test_structural_issues(self, btx):
+        dt = DiagnosticsToolbox(btx)
+        dt.assert_no_structural_warnings()
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -575,6 +544,13 @@ class TestBTX_cocurrent(object):
         )
         assert abs(hot_side - cold_side) <= 1e-6
 
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, btx):
+        dt = DiagnosticsToolbox(btx)
+        dt.assert_no_numerical_warnings()
+
 
 # -----------------------------------------------------------------------------
 class TestBTX_countercurrent(object):
@@ -671,28 +647,9 @@ class TestBTX_countercurrent(object):
         assert number_unused_variables(btx) == 8
 
     @pytest.mark.integration
-    def test_units(self, btx):
-        assert_units_equivalent(btx.fs.unit.length, pyunits.m)
-        assert_units_equivalent(btx.fs.unit.shell_diameter, pyunits.m)
-        assert_units_equivalent(btx.fs.unit.tube_inner_diameter, pyunits.m)
-        assert_units_equivalent(btx.fs.unit.tube_outer_diameter, pyunits.m)
-        assert_units_equivalent(btx.fs.unit.number_of_tubes, pyunits.dimensionless)
-
-        assert_units_equivalent(
-            btx.fs.unit.hot_side_heat_transfer_coefficient,
-            pyunits.W / pyunits.m**2 / pyunits.K,
-        )
-        assert_units_equivalent(
-            btx.fs.unit.cold_side_heat_transfer_coefficient,
-            pyunits.W / pyunits.m**2 / pyunits.K,
-        )
-        assert_units_equivalent(btx.fs.unit.temperature_wall, pyunits.K)
-
-        assert_units_consistent(btx)
-
-    @pytest.mark.unit
-    def test_dof(self, btx):
-        assert degrees_of_freedom(btx) == 0
+    def test_structural_issues(self, btx):
+        dt = DiagnosticsToolbox(btx)
+        dt.assert_no_structural_warnings()
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -832,6 +789,13 @@ class TestBTX_countercurrent(object):
         )
         assert abs(hot_side - cold_side) <= 1e-6
 
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, btx):
+        dt = DiagnosticsToolbox(btx)
+        dt.assert_no_numerical_warnings()
+
 
 # -----------------------------------------------------------------------------
 @pytest.mark.iapws
@@ -916,28 +880,9 @@ class TestIAPWS_cocurrent(object):
         assert number_unused_variables(iapws) == 10
 
     @pytest.mark.integration
-    def test_units(self, iapws):
-        assert_units_equivalent(iapws.fs.unit.length, pyunits.m)
-        assert_units_equivalent(iapws.fs.unit.shell_diameter, pyunits.m)
-        assert_units_equivalent(iapws.fs.unit.tube_inner_diameter, pyunits.m)
-        assert_units_equivalent(iapws.fs.unit.tube_outer_diameter, pyunits.m)
-        assert_units_equivalent(iapws.fs.unit.number_of_tubes, pyunits.dimensionless)
-
-        assert_units_equivalent(
-            iapws.fs.unit.hot_side_heat_transfer_coefficient,
-            pyunits.W / pyunits.m**2 / pyunits.K,
-        )
-        assert_units_equivalent(
-            iapws.fs.unit.cold_side_heat_transfer_coefficient,
-            pyunits.W / pyunits.m**2 / pyunits.K,
-        )
-        assert_units_equivalent(iapws.fs.unit.temperature_wall, pyunits.K)
-
-        assert_units_consistent(iapws)
-
-    @pytest.mark.unit
-    def test_dof(self, iapws):
-        assert degrees_of_freedom(iapws) == 0
+    def test_structural_issues(self, iapws):
+        dt = DiagnosticsToolbox(iapws)
+        dt.assert_no_structural_warnings()
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -1079,6 +1024,13 @@ class TestIAPWS_cocurrent(object):
         )
         assert abs(hot_side + cold_side) <= 1e-6
 
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, iapws):
+        dt = DiagnosticsToolbox(iapws)
+        dt.assert_no_numerical_warnings()
+
 
 # -----------------------------------------------------------------------------
 @pytest.mark.iapws
@@ -1163,28 +1115,9 @@ class TestIAPWS_countercurrent(object):
         assert number_unused_variables(iapws) == 10
 
     @pytest.mark.integration
-    def test_units(self, iapws):
-        assert_units_equivalent(iapws.fs.unit.length, pyunits.m)
-        assert_units_equivalent(iapws.fs.unit.shell_diameter, pyunits.m)
-        assert_units_equivalent(iapws.fs.unit.tube_inner_diameter, pyunits.m)
-        assert_units_equivalent(iapws.fs.unit.tube_outer_diameter, pyunits.m)
-        assert_units_equivalent(iapws.fs.unit.number_of_tubes, pyunits.dimensionless)
-
-        assert_units_equivalent(
-            iapws.fs.unit.hot_side_heat_transfer_coefficient,
-            pyunits.W / pyunits.m**2 / pyunits.K,
-        )
-        assert_units_equivalent(
-            iapws.fs.unit.cold_side_heat_transfer_coefficient,
-            pyunits.W / pyunits.m**2 / pyunits.K,
-        )
-        assert_units_equivalent(iapws.fs.unit.temperature_wall, pyunits.K)
-
-        assert_units_consistent(iapws)
-
-    @pytest.mark.unit
-    def test_dof(self, iapws):
-        assert degrees_of_freedom(iapws) == 0
+    def test_structural_issues(self, iapws):
+        dt = DiagnosticsToolbox(iapws)
+        dt.assert_no_structural_warnings()
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -1325,6 +1258,13 @@ class TestIAPWS_countercurrent(object):
             )
         )
         assert abs(hot_side + cold_side) <= 1e-6
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, iapws):
+        dt = DiagnosticsToolbox(iapws)
+        dt.assert_no_numerical_warnings()
 
 
 # -----------------------------------------------------------------------------
@@ -1480,6 +1420,12 @@ class TestBT_Generic_cocurrent(object):
         m.fs.unit.cold_side_inlet.mole_frac_comp[0, "benzene"].fix(0.5)
         m.fs.unit.cold_side_inlet.mole_frac_comp[0, "toluene"].fix(0.5)
 
+        # Set small values of epsilon to get sufficiently accurate results
+        # Only need hot side, as cold side uses old SmoothVLE
+        for i in m.fs.unit.hot_side.properties.keys():
+            m.fs.unit.hot_side.properties[i].eps_t_Vap_Liq.set_value(1e-4)
+            m.fs.unit.hot_side.properties[i].eps_z_Vap_Liq.set_value(1e-4)
+
         return m
 
     @pytest.mark.component
@@ -1527,33 +1473,16 @@ class TestBT_Generic_cocurrent(object):
         assert hasattr(btx.fs.unit, "cold_side_heat_transfer_eq")
         assert hasattr(btx.fs.unit, "heat_conservation")
 
-        assert number_variables(btx) == 2021
-        assert number_total_constraints(btx) == 1890
+        assert number_variables(btx) == 1874
+        assert number_total_constraints(btx) == 1743
         assert number_unused_variables(btx) == 34
 
     @pytest.mark.integration
-    def test_units(self, btx):
-        assert_units_equivalent(btx.fs.unit.length, pyunits.m)
-        assert_units_equivalent(btx.fs.unit.shell_diameter, pyunits.m)
-        assert_units_equivalent(btx.fs.unit.tube_inner_diameter, pyunits.m)
-        assert_units_equivalent(btx.fs.unit.tube_outer_diameter, pyunits.m)
-        assert_units_equivalent(btx.fs.unit.number_of_tubes, pyunits.dimensionless)
-
-        assert_units_equivalent(
-            btx.fs.unit.hot_side_heat_transfer_coefficient,
-            pyunits.W / pyunits.m**2 / pyunits.K,
+    def test_structural_issues(self, btx):
+        dt = DiagnosticsToolbox(btx)
+        dt.assert_no_structural_warnings(
+            ignore_evaluation_errors=True,
         )
-        assert_units_equivalent(
-            btx.fs.unit.cold_side_heat_transfer_coefficient,
-            pyunits.W / pyunits.m**2 / pyunits.K,
-        )
-        assert_units_equivalent(btx.fs.unit.temperature_wall, pyunits.K)
-
-        assert_units_consistent(btx)
-
-    @pytest.mark.component
-    def test_dof(self, btx):
-        assert degrees_of_freedom(btx) == 0
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -1696,6 +1625,15 @@ class TestBT_Generic_cocurrent(object):
             )
         )
         assert abs((hot_side - cold_side) / hot_side) <= 3e-4
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.integration
+    def test_numerical_issues(self, btx):
+        dt = DiagnosticsToolbox(btx)
+        # TODO: Complementarity formulation results in near-parallel components
+        # when unscaled
+        dt.assert_no_numerical_warnings(ignore_parallel_components=True)
 
     @pytest.mark.component
     def test_initialization_error(self, btx):

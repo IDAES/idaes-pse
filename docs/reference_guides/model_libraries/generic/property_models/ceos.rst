@@ -1,6 +1,9 @@
 Cubic Equations of State
 ========================
 
+.. deprecated:: 2.7
+   Use :class:`idaes.models.properties.modular_properties.eos.ceos` in the Modular Property Framework instead.
+
 This property package implements a general form of a cubic equation of state which can be used for most cubic-type equations of state. This package supports phase equilibrium calculations with a smooth phase transition formulation that makes it amenable for equation oriented optimization. The following equations of state are currently supported:
 
 * Peng-Robinson
@@ -183,7 +186,7 @@ List of Variables
    "``fug_phase_comp``", "Fugacity indexed by phase and component", "Pa"
    "``fug_coeff_phase_comp``", "Fugacity coefficient indexed by phase and component", "None"
    "``gibbs_mol_phase``", "Molar Gibbs energy indexed by phase", "J/mol"
-   "``heat_capacity_ratio_phase``", "Heat capcity ratio by phase", "-"
+   "``heat_capacity_ratio_phase``", "Heat capacity ratio by phase", "-"
    "``isothermal_speed_sound_phase``", "Isothermal speed of sound by phase", "m/s"
    "``isentropic_speed_sound_phase``", "Isentropic speed of sound by phase", "m/s"
    "``mw``", "Molecular weight of mixture", "kg/mol"

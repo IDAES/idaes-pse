@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -48,6 +48,7 @@ from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.math import smooth_min, smooth_max
 from idaes.core.solvers import get_solver
 from idaes.core.util.exceptions import InitializationError
+import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 from idaes.core.initialization import SingleControlVolumeUnitInitializer
 
@@ -129,7 +130,7 @@ class HXNTUInitializer(SingleControlVolumeUnitInitializer):
         )
 
         # Create solver
-        solver = get_solver(self.config.solver, self.config.solver_options)
+        solver = self._get_solver()
 
         self.initialize_control_volume(model.hot_side, copy_inlet_state)
         init_log.info_high("Initialization Step 1a (hot side) Complete.")
@@ -369,7 +370,7 @@ constructed,
         # ---------------------------------------------------------------------
         # Add performance equations
         # All units of measurement will be based on hot side
-        hunits = self.config.hot_side.property_package.get_metadata().get_derived_units
+        hunits = self.hot_side.config.property_package.get_metadata().get_derived_units
 
         # Common heat exchanger variables
         self.area = Var(
@@ -478,7 +479,19 @@ constructed,
 
         self.heat_duty_constraint = Constraint(self.flowsheet().time, rule=rule_entu)
 
-    # TODO : Add scaling methods
+    def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
+
+        for t in self.flowsheet().time:
+            sf_heat = iscale.get_scaling_factor(
+                self.hot_side.heat[t], default=1, warning=True
+            )
+            iscale.constraint_scaling_transform(
+                self.energy_balance_constraint[t], sf_heat, overwrite=False
+            )
+            iscale.constraint_scaling_transform(
+                self.heat_duty_constraint[t], sf_heat, overwrite=False
+            )
 
     def initialize_build(
         self,

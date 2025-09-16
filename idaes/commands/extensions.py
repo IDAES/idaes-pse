@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -19,45 +19,58 @@
 
 __author__ = "John Eslick"
 
+from collections import defaultdict
 import os
 import logging
+from platform import machine
 
 import click
 
 import idaes
+from idaes.config import base_platforms, binary_distro_map, binary_arch_map
+from idaes.config import canonical_arch, canonical_distro
 import idaes.commands.util.download_bin
 from idaes.commands import cb
 
 _log = logging.getLogger("idaes.commands.extensions")
 
 
-def print_extensions_version(library_only=False):
-    click.echo("---------------------------------------------------")
-    click.echo("IDAES Extensions Build Versions")
-    click.echo("===================================================")
+def print_header(title: str, echo=click.echo, width=65):
+    echo("-" * width)
+    echo(f"IDAES Extensions {title}")
+    echo("=" * width)
+
+
+def print_footer(echo=click.echo, width=65):
+    echo("")
+    echo("=" * width)
+
+
+def print_extensions_version(library_only=False, bin_directory=None):
+    print_header("Build Versions")
+    if bin_directory is None:
+        bin_directory = idaes.bin_directory
     if not library_only:
-        v = os.path.join(idaes.bin_directory, "version_solvers.txt")
+        v = os.path.join(bin_directory, "version_solvers.txt")
         try:
             with open(v, "r") as f:
                 v = f.readline().strip()
         except FileNotFoundError:
             v = "no version file found"
         click.echo("Solvers:  v{}".format(v))
-    v = os.path.join(idaes.bin_directory, "version_lib.txt")
+    v = os.path.join(bin_directory, "version_lib.txt")
     try:
         with open(v, "r") as f:
             v = f.readline().strip()
     except FileNotFoundError:
         v = "no version file found"
     click.echo("Library:  v{}".format(v))
-    click.echo("===================================================")
+    print_footer()
     return 0
 
 
 def print_license():
-    click.echo("---------------------------------------------------")
-    click.echo("IDAES Extensions License Information")
-    click.echo("===================================================")
+    print_header("License Information")
     fpath = os.path.join(idaes.bin_directory, "license.txt")
     try:
         with open(fpath, "r") as f:
@@ -66,8 +79,51 @@ def print_license():
     except FileNotFoundError:
         click.echo("no license file found")
     click.echo("")
-    click.echo("===================================================")
+    print_footer()
     return 0
+
+
+def print_build_info():
+    fd, _ = idaes.commands.util.download_bin._get_file_downloader(False, None)
+
+    print_header("Build Information")
+
+    print("\nAll Builds (Platform-Architecture):")
+    for build in base_platforms:
+        print(f"   {build}")
+
+    for name, data in zip(
+        ("Platform", "Architecture"),
+        (binary_distro_map, binary_arch_map),
+    ):
+        print(f"\n{name} aliases:")
+        rmap = defaultdict(list)
+        _ = {rmap[v].append(k) for k, v in data.items()}
+        w = max((len(name) for name in rmap))
+        name_fmt = f"{{name:>{w}s}}"
+        for name in sorted(rmap.keys()):
+            aliases = ", ".join(sorted(rmap[name]))
+            fname = name_fmt.format(name=name)
+            print(f"    {fname}: {aliases}")
+
+    print("\nCurrent system information:")
+    _, platform = idaes.commands.util.download_bin._get_arch_and_platform(fd, "auto")
+    arch = machine()
+    to_platform = canonical_distro(platform)
+    to_mach = canonical_arch(arch)
+    to_build = f"{to_platform}-{to_mach}"
+    has_build = to_build in base_platforms
+
+    alias = "" if to_platform == platform else f" -> {to_platform}"
+    print(f"       Platform: {platform}{alias}")
+    alias = "" if to_mach == arch else f" -> {to_mach}"
+    print(f"   Architecture: {arch}{alias}")
+    if has_build:
+        print(f"      Use build: {to_build}")
+    else:
+        print("   !! Unsupported platform/architecture combination")
+
+    print_footer()
 
 
 @cb.command(name="get-extensions", help="Get solvers and libraries")
@@ -99,6 +155,7 @@ def print_license():
     is_flag=True,
     help="Don't download anything, but report what would be done",
 )
+@click.option("--info", is_flag=True, help="List all builds")
 @click.option("--extra", multiple=True, help="Install extras")
 @click.option("--extras-only", is_flag=True, help="Only install extras")
 @click.option("--to", default=None, help="Put extensions in a alternate location")
@@ -113,10 +170,16 @@ def get_extensions(
     nochecksum,
     library_only,
     no_download,
+    info,
     extras_only,
     extra,
     to,
 ):
+    """Main sub-command."""
+    cmd_name = "idaes get-extensions"
+    if info:
+        print_build_info()
+        return
     if url is None and release is None:
         # the default release is only used if neither a release or url is given
         release = idaes.config.default_binary_release
@@ -144,13 +207,17 @@ def get_extensions(
             click.echo("")
             click.echo(e)
             click.echo("")
-            click.echo("Specify an os with --distro <os>:")
+            click.echo(
+                f"Use the command '{cmd_name} --distro <os>' to specify an OS distribution\n"
+                f"Use the command '{cmd_name} --info' to see supported platforms"
+            )
             return
         if no_download:
             for k, i in d.items():
                 click.echo(f"{k:14}: {i}")
         else:
-            print_extensions_version(library_only)
+            # If `to` is None, we default to idaes.bin_directory.
+            print_extensions_version(library_only=library_only, bin_directory=to)
     else:
         click.echo("\n* You must provide a download URL for IDAES binary files.")
 
@@ -200,7 +267,10 @@ def bin_platform(distro):
         )
         click.echo(idaes.commands.util.download_bin._get_release_platform(platform))
     except idaes.commands.util.download_bin.UnsupportedPlatformError:
-        click.echo(f"No supported binaries found for {platform}.")
+        click.echo(
+            f"No supported binaries found for {platform}. "
+            f"Use the command 'idaes get-extensions --info' to see supported platforms"
+        )
 
 
 @cb.command(name="extensions-license", help="show license info for binary extensions")

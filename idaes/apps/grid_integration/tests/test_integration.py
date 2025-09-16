@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -18,10 +18,6 @@ from typing import Dict, Union
 import os
 
 import pytest
-
-
-# define custom type for type hinting
-PrescientOptions = Dict[str, Union[str, bool, Number, dict]]
 
 from idaes.apps.grid_integration import DoubleLoopCoordinator
 from idaes.apps.grid_integration.tests.util import (
@@ -41,6 +37,9 @@ coordinator = DoubleLoopCoordinator(
     projection_tracker=thermal_projection_tracker,
 )
 
+# define custom type for type hinting
+PrescientOptions = Dict[str, Union[str, bool, Number, dict]]
+
 
 class TestDoubleLoopIntegration:
     "Integration test for the double loop using 5bus use case."
@@ -48,11 +47,12 @@ class TestDoubleLoopIntegration:
     @pytest.fixture
     def data_path(self) -> Path:
         # NOTE here we want the path to the entire 5bus directory
-        # we need to specify __init__.py as a workaround for Python 3.9,
-        # where importlib.resources.path() requires the resource to be a file
-        # directories are not supported and will raise an error if attempted
-        with resources.path("idaes.tests.prescient.5bus", "__init__.py") as pkg_file:
-            return Path(pkg_file).parent
+        # we need to specify __init__.py and then use `pathlib.Path.parent` since
+        # `importlib.resources.as_path()` only supports directories on Python 3.12+
+        with resources.as_file(
+            resources.files("idaes.tests.prescient.5bus").joinpath("__init__.py")
+        ) as pkg_file:
+            return pkg_file.parent
 
     @pytest.mark.unit
     def test_data_path_available(self, data_path: Path):
@@ -72,9 +72,10 @@ class TestDoubleLoopIntegration:
 
     @pytest.fixture
     def self_scheduler_plugin_path(self) -> Path:
-        with resources.path(
-            "idaes.apps.grid_integration.tests",
-            "self_scheduler_integration_test_plugin.py",
+        with resources.as_file(
+            resources.files("idaes.apps.grid_integration.tests").joinpath(
+                "self_scheduler_integration_test_plugin.py"
+            )
         ) as p:
             return Path(p)
 
@@ -175,7 +176,7 @@ class TestDoubleLoopIntegration:
     ):
         return self_scheduler_output_dir
 
-    @pytest.mark.unit
+    @pytest.mark.integration
     def test_prescient_outputs_exist(
         self, simulation_results_dir, self_scheduler_simulation_results_dir
     ):

@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -16,6 +16,7 @@ Tests for Component objects
 Author: Andrew Lee
 """
 import pytest
+import re
 import types
 
 from pyomo.environ import ConcreteModel, Set, Param, Var, units as pyunits
@@ -84,9 +85,11 @@ class TestComponent:
     def test_is_solute(self, m):
         with pytest.raises(
             TypeError,
-            match="comp Generic Component objects do not "
-            "support is_solute\(\) method. Use a Solvent or "
-            "Solute Component instead.",
+            match=re.escape(
+                "comp Generic Component objects do not "
+                "support is_solute() method. Use a Solvent or "
+                "Solute Component instead."
+            ),
         ):
             m.comp.is_solute()
 
@@ -94,9 +97,11 @@ class TestComponent:
     def test_is_solvent(self, m):
         with pytest.raises(
             TypeError,
-            match="comp Generic Component objects do not "
-            "support is_solvent\(\) method. Use a Solvent or "
-            "Solute Component instead.",
+            match=re.escape(
+                "comp Generic Component objects do not "
+                "support is_solvent() method. Use a Solvent or "
+                "Solute Component instead."
+            ),
         ):
             m.comp.is_solvent()
 
@@ -185,6 +190,8 @@ class TestComponent:
         m.comp = Component(
             parameter_data={
                 "mw": 10,
+                "compress_fact_crit": 1,
+                "dens_mol_crit": 55,
                 "pressure_crit": 1e5,
                 "temperature_crit": 500,
             }
@@ -192,6 +199,12 @@ class TestComponent:
 
         assert isinstance(m.comp.mw, Param)
         assert m.comp.mw.value == 10
+
+        assert isinstance(m.comp.compress_fact_crit, Var)
+        assert m.comp.compress_fact_crit.value == 1
+
+        assert isinstance(m.comp.dens_mol_crit, Var)
+        assert m.comp.dens_mol_crit.value == 55
 
         assert isinstance(m.comp.pressure_crit, Var)
         assert m.comp.pressure_crit.value == 1e5
@@ -499,7 +512,7 @@ class TestIon:
 
         with pytest.raises(
             PropertyPackageError,
-            match="comp Ion Component types should only be used with " "Aqueous Phases",
+            match="comp Ion Component types should only be used with Aqueous Phases",
         ):
             m.comp = Ion(_electrolyte=False)
 
@@ -525,7 +538,7 @@ class TestAnion:
 
         with pytest.raises(
             PropertyPackageError,
-            match="comp Ion Component types should only be used with " "Aqueous Phases",
+            match="comp Ion Component types should only be used with Aqueous Phases",
         ):
             m.comp = Anion(_electrolyte=False)
 
@@ -590,7 +603,7 @@ class TestAnion:
     @pytest.mark.unit
     def test_no_charge(self, m):
         with pytest.raises(
-            ConfigurationError, match="an was not provided with a value " "for charge."
+            ConfigurationError, match="an was not provided with a value for charge."
         ):
             m.an = Anion(_electrolyte=True)
 
@@ -628,7 +641,7 @@ class TestCation:
 
         with pytest.raises(
             PropertyPackageError,
-            match="comp Ion Component types should only be used with " "Aqueous Phases",
+            match="comp Ion Component types should only be used with Aqueous Phases",
         ):
             m.comp = Cation(_electrolyte=False)
 
@@ -693,7 +706,7 @@ class TestCation:
     @pytest.mark.unit
     def test_no_charge(self, m):
         with pytest.raises(
-            ConfigurationError, match="cat was not provided with a value " "for charge."
+            ConfigurationError, match="cat was not provided with a value for charge."
         ):
             m.cat = Cation(_electrolyte=True)
 

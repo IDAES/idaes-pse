@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -14,6 +14,7 @@
 Tests for general hierarchical initialization routines
 """
 import pytest
+import re
 import types
 
 from pyomo.environ import Block, ConcreteModel, Constraint, value, Var
@@ -249,8 +250,10 @@ def test_initialize_submodels_no_order():
 
     with pytest.raises(
         InitializationError,
-        match="Main model \(unknown\) was not initialized \(no results returned\). "
-        "This is likely due to an error in the model.initialization_order.",
+        match=re.escape(
+            "Main model (unknown) was not initialized (no results returned). "
+            "This is likely due to an error in the model.initialization_order."
+        ),
     ):
         initializer.initialize_submodels(m, {}, {}, copy_inlet_state=False)
 

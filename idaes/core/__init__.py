@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -33,6 +33,8 @@ from .base.control_volume_base import (
 )
 from .base.control_volume0d import ControlVolume0DBlock
 from .base.control_volume1d import ControlVolume1DBlock, DistributedVars
+from .base.extended_control_volume0d import ExtendedControlVolume0DBlock
+from .base.extended_control_volume1d import ExtendedControlVolume1DBlock
 from .base.phases import (
     Phase,
     LiquidPhase,

@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -19,10 +19,11 @@ import json
 import os
 
 import pyomo.common.config
+from pyomo.common.config import Bool
 
 _log = logging.getLogger(__name__)
 # Default release version if no options provided for get-extensions
-default_binary_release = "3.3.0"
+default_binary_release = "3.4.2"
 # Where to download releases from get-extensions
 release_base_url = "https://github.com/IDAES/idaes-ext/releases/download"
 # Where to get release checksums
@@ -50,17 +51,13 @@ binary_distro_map = {
     "el9": "ubuntu2204",
     "rhel7": "el7",
     "rhel8": "el8",
-    "rhel9": "ubuntu2204",
     "scientific7": "el7",
     "centos7": "el7",
     "centos8": "el8",
     "rocky8": "el8",
-    "rocky9": "ubuntu2204",
     "almalinux8": "el8",
-    "almalinux9": "ubuntu2204",
     "debian9": "el7",
     "debian10": "el8",
-    "debian11": "ubuntu2004",
     "linuxmint20": "ubuntu2004",
     "kubuntu1804": "ubuntu1804",
     "kubuntu2004": "ubuntu2004",
@@ -68,6 +65,8 @@ binary_distro_map = {
     "xubuntu1804": "ubuntu1804",
     "xubuntu2004": "ubuntu2004",
     "xubuntu2204": "ubuntu2204",
+    "pop22": "ubuntu2204",
+    "ubuntu2404": "ubuntu2204",
 }
 # Machine map
 binary_arch_map = {
@@ -319,6 +318,84 @@ def _new_idaes_config_block():
             default=200,
             description="Ipopt max_iter option",
             doc="Ipopt max_iter option",
+        ),
+    )
+
+    cfg.declare(
+        "ipopt_v2",
+        pyomo.common.config.ConfigBlock(
+            implicit=False,
+            description="Default config for 'ipopt' solver",
+        ),
+    )
+    cfg["ipopt_v2"].declare(
+        "options",
+        pyomo.common.config.ConfigBlock(
+            implicit=True,
+            description="Default solver options for 'ipopt'",
+        ),
+    )
+
+    cfg["ipopt_v2"]["options"].declare(
+        "nlp_scaling_method",
+        pyomo.common.config.ConfigValue(
+            domain=str,
+            default="gradient-based",
+            description="Ipopt NLP scaling method",
+        ),
+    )
+
+    cfg["ipopt_v2"]["options"].declare(
+        "tol",
+        pyomo.common.config.ConfigValue(
+            domain=float,
+            default=1e-6,
+            description="Ipopt tol option",
+        ),
+    )
+
+    cfg["ipopt_v2"]["options"].declare(
+        "max_iter",
+        pyomo.common.config.ConfigValue(
+            domain=int,
+            default=200,
+            description="Ipopt max_iter option",
+        ),
+    )
+
+    cfg["ipopt_v2"]["options"].declare(
+        "linear_solver",
+        pyomo.common.config.ConfigValue(
+            domain=str,
+            default="ma57",
+            description="Linear solver to be used by IPOPT",
+        ),
+    )
+
+    cfg["ipopt_v2"].declare(
+        "writer_config",
+        pyomo.common.config.ConfigBlock(
+            implicit=True,
+            description="Default writer configuration for 'ipopt'",
+        ),
+    )
+
+    # TODO: Remember to update BTInitializer to use get_solver once scaling tools are deployed.
+    cfg["ipopt_v2"]["writer_config"].declare(
+        "scale_model",
+        pyomo.common.config.ConfigValue(
+            domain=Bool,
+            default=False,  # TODO: Change to true once transition complete
+            description="Whether to apply model scaling in writer",
+        ),
+    )
+
+    cfg["ipopt_v2"]["writer_config"].declare(
+        "linear_presolve",
+        pyomo.common.config.ConfigValue(
+            domain=Bool,
+            default=True,
+            description="Whether to apply linear presolve in writer",
         ),
     )
 

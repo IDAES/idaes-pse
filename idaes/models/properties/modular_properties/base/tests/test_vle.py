@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -16,6 +16,7 @@ General tests for generic properties with Henry components present
 Author: Andrew Lee
 """
 # Import Python libraries
+from copy import deepcopy
 import pytest
 
 # Import Pyomo components
@@ -31,9 +32,17 @@ from pyomo.environ import (
 from idaes.core import LiquidPhase, VaporPhase, Component
 from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
+    ModularPropertiesInitializer,
 )
 from idaes.core.solvers import get_solver
+from idaes.core.util.exceptions import InitializationError
 
+from idaes.models.properties.modular_properties.base.generic_property import (
+    _init_Pbub,
+    _init_Pdew,
+    _init_Tbub,
+    _init_Tdew,
+)
 from idaes.models.properties.modular_properties.state_definitions import FTPx
 from idaes.models.properties.modular_properties.eos.ideal import Ideal
 from idaes.models.properties.modular_properties.phase_equil import SmoothVLE
@@ -50,7 +59,7 @@ import idaes.logger as idaeslog
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
-solver = get_solver()
+solver = get_solver("ipopt_v2")
 
 
 class TestNoHenryComps(object):
@@ -209,8 +218,8 @@ class TestNoHenryComps(object):
             assert i in ["PE1", "PE2"]
 
         assert model.params.phase_equilibrium_list == {
-            "PE1": {"A": ("Vap", "Liq")},
-            "PE2": {"B": ("Vap", "Liq")},
+            "PE1": ["A", ("Vap", "Liq")],
+            "PE2": ["B", ("Vap", "Liq")],
         }
 
         assert model.params.pressure_ref.value == 1e5
@@ -218,7 +227,7 @@ class TestNoHenryComps(object):
 
     @pytest.mark.unit
     def test_init_bubble_temperature(self, model):
-        model.props._init_Tbub(model.props[1], pyunits.K)
+        _init_Tbub(model.props[1], pyunits.K)
 
         assert pytest.approx(365.35, abs=0.01) == value(
             model.props[1].temperature_bubble[("Vap", "Liq")]
@@ -232,7 +241,7 @@ class TestNoHenryComps(object):
 
     @pytest.mark.unit
     def test_init_dew_temperature(self, model):
-        model.props._init_Tdew(model.props[1], pyunits.K)
+        _init_Tdew(model.props[1], pyunits.K)
 
         assert pytest.approx(372.02, abs=0.01) == value(
             model.props[1].temperature_dew[("Vap", "Liq")]
@@ -246,7 +255,7 @@ class TestNoHenryComps(object):
 
     @pytest.mark.unit
     def test_init_bubble_pressure(self, model):
-        model.props._init_Pbub(model.props[1], pyunits.K)
+        _init_Pbub(model.props[1])
 
         assert pytest.approx(109479, abs=1) == value(
             model.props[1].pressure_bubble[("Vap", "Liq")]
@@ -260,7 +269,7 @@ class TestNoHenryComps(object):
 
     @pytest.mark.unit
     def test_init_dew_pressure(self, model):
-        model.props._init_Pdew(model.props[1], pyunits.K)
+        _init_Pdew(model.props[1])
 
         assert pytest.approx(89820, abs=1) == value(
             model.props[1].pressure_dew[("Vap", "Liq")]
@@ -447,6 +456,45 @@ configuration = {
 }
 
 
+@pytest.mark.unit
+def test_multiple_VLE():
+    cfg = deepcopy(configuration)
+    cfg["phases_in_equilibrium"].append(("Liq", "Vap"))
+    cfg["phase_equilibrium_state"][("Liq", "Vap")] = SmoothVLE
+
+    model = ConcreteModel()
+    model.params = GenericParameterBlock(**cfg)
+
+    model.props = model.params.build_state_block([1], defined_state=True)
+
+    model.props[1].flow_mol.fix(1)
+    model.props[1].temperature.fix(368)
+    model.props[1].pressure.fix(101325)
+    model.props[1].mole_frac_comp["A"].fix(0.5)
+    model.props[1].mole_frac_comp["B"].fix(0.5)
+    model.props[1].mole_frac_comp["C"].fix(1e-10)
+
+    # Trigger construction of some things we will test later
+    model.props[1].pressure_bubble
+    model.props[1].pressure_dew
+
+    # In order to test this warning I need to get a square system
+    model.props[1].equilibrium_constraint["Liq", "Vap", "A"].deactivate()
+    model.props[1].equilibrium_constraint["Vap", "Liq", "A"].deactivate()
+    model.props[1].equilibrium_constraint["Liq", "Vap", "C"].deactivate()
+
+    initializer = ModularPropertiesInitializer()
+
+    with pytest.raises(
+        InitializationError,
+    ) as err:
+        initializer.initialize(model.props)
+    assert (
+        "More than one VLE present in props[1]. Initialization for multiple "
+        "VLE is not supported, so skipping VLE initialization." in str(err)
+    )
+
+
 class TestHenryComps0(object):
     @pytest.fixture(scope="class")
     def model(self):
@@ -513,9 +561,9 @@ class TestHenryComps0(object):
             assert i in ["PE1", "PE2", "PE3"]
 
         assert model.params.phase_equilibrium_list == {
-            "PE1": {"A": ("Vap", "Liq")},
-            "PE2": {"B": ("Vap", "Liq")},
-            "PE3": {"C": ("Vap", "Liq")},
+            "PE1": ["A", ("Vap", "Liq")],
+            "PE2": ["B", ("Vap", "Liq")],
+            "PE3": ["C", ("Vap", "Liq")],
         }
 
         assert model.params.pressure_ref.value == 1e5
@@ -524,7 +572,7 @@ class TestHenryComps0(object):
 
     @pytest.mark.unit
     def test_init_bubble_temperature(self, model):
-        model.props._init_Tbub(model.props[1], pyunits.K)
+        _init_Tbub(model.props[1], pyunits.K)
 
         assert pytest.approx(365.35, abs=0.01) == value(
             model.props[1].temperature_bubble[("Vap", "Liq")]
@@ -538,7 +586,7 @@ class TestHenryComps0(object):
 
     @pytest.mark.unit
     def test_init_dew_temperature(self, model):
-        model.props._init_Tdew(model.props[1], pyunits.K)
+        _init_Tdew(model.props[1], pyunits.K)
 
         assert pytest.approx(372.02, abs=0.01) == value(
             model.props[1].temperature_dew[("Vap", "Liq")]
@@ -552,7 +600,7 @@ class TestHenryComps0(object):
 
     @pytest.mark.unit
     def test_init_bubble_pressure(self, model):
-        model.props._init_Pbub(model.props[1], pyunits.K)
+        _init_Pbub(model.props[1])
 
         assert pytest.approx(109479, abs=1) == value(
             model.props[1].pressure_bubble[("Vap", "Liq")]
@@ -566,7 +614,7 @@ class TestHenryComps0(object):
 
     @pytest.mark.unit
     def test_init_dew_pressure(self, model):
-        model.props._init_Pdew(model.props[1], pyunits.K)
+        _init_Pdew(model.props[1])
 
         assert pytest.approx(89820, abs=1) == value(
             model.props[1].pressure_dew[("Vap", "Liq")]
@@ -692,9 +740,9 @@ class TestHenryComps(object):
             assert i in ["PE1", "PE2", "PE3"]
 
         assert model.params.phase_equilibrium_list == {
-            "PE1": {"A": ("Vap", "Liq")},
-            "PE2": {"B": ("Vap", "Liq")},
-            "PE3": {"C": ("Vap", "Liq")},
+            "PE1": ["A", ("Vap", "Liq")],
+            "PE2": ["B", ("Vap", "Liq")],
+            "PE3": ["C", ("Vap", "Liq")],
         }
 
         assert model.params.pressure_ref.value == 1e5
@@ -703,7 +751,7 @@ class TestHenryComps(object):
 
     @pytest.mark.unit
     def test_init_bubble_temperature(self, model):
-        model.props._init_Tbub(model.props[1], pyunits.K)
+        _init_Tbub(model.props[1], pyunits.K)
 
         assert pytest.approx(361.50, abs=0.01) == value(
             model.props[1].temperature_bubble[("Vap", "Liq")]
@@ -720,7 +768,7 @@ class TestHenryComps(object):
 
     @pytest.mark.unit
     def test_init_dew_temperature(self, model):
-        model.props._init_Tdew(model.props[1], pyunits.K)
+        _init_Tdew(model.props[1], pyunits.K)
 
         assert pytest.approx(370.23, abs=0.01) == value(
             model.props[1].temperature_dew[("Vap", "Liq")]
@@ -737,7 +785,7 @@ class TestHenryComps(object):
 
     @pytest.mark.unit
     def test_init_bubble_pressure(self, model):
-        model.props._init_Pbub(model.props[1], pyunits.K)
+        _init_Pbub(model.props[1])
 
         assert pytest.approx(118531, abs=1) == value(
             model.props[1].pressure_bubble[("Vap", "Liq")]
@@ -754,7 +802,7 @@ class TestHenryComps(object):
 
     @pytest.mark.unit
     def test_init_dew_pressure(self, model):
-        model.props._init_Pdew(model.props[1], pyunits.K)
+        _init_Pdew(model.props[1])
 
         assert pytest.approx(95056, abs=1) == value(
             model.props[1].pressure_dew[("Vap", "Liq")]

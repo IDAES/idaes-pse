@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -18,6 +18,8 @@ Base classes for process costing
 
 # This plays with some private attributes - most are necessary
 # pylint: disable=protected-access
+
+from functools import partial
 
 import pyomo.environ as pyo
 from pyomo.common.config import ConfigBlock, ConfigValue
@@ -90,6 +92,8 @@ def register_idaes_currency_units():
                 "USD_2019 = 500/607.5 * USD_CE500",
                 "USD_2020 = 500/596.2 * USD_CE500",
                 "USD_2021 = 500/708.0 * USD_CE500",
+                "USD_2022 = 500/816.0 * USD_CE500",
+                "USD_2023 = 500/797.9 * USD_CE500",
             ]
         )
 
@@ -442,6 +446,13 @@ class FlowsheetCostingBlockData(ProcessBlockData):
 
         # Aggregate flows
         # Units of flows will not be consistent, need separate Vars
+        def agg_flow_rule(blk, f, funits):
+            e = 0
+            for flow in blk._registered_flows[f]:
+                e += pyo.units.convert(flow, to_units=funits)
+            agg_flow = getattr(blk, f"aggregate_flow_{f}")
+            return agg_flow == e
+
         for f in self.flow_types:
             # We will use the first costed flow as representative of the whole
             if len(self._registered_flows[f]) > 0:
@@ -451,14 +462,9 @@ class FlowsheetCostingBlockData(ProcessBlockData):
                 agg_var = pyo.Var(units=funits, doc=f"Aggregate flow for {f}")
                 self.add_component(f"aggregate_flow_{f}", agg_var)
 
-                def agg_flow_rule(blk):
-                    e = 0
-                    for flow in self._registered_flows[f]:
-                        e += pyo.units.convert(flow, to_units=funits)
-                    agg_flow = getattr(blk, f"aggregate_flow_{f}")
-                    return agg_flow == e
-
-                agg_const = pyo.Constraint(rule=agg_flow_rule)
+                agg_const = pyo.Constraint(
+                    rule=partial(agg_flow_rule, f=f, funits=funits)
+                )
 
                 self.add_component(f"aggregate_flow_{f}_constraint", agg_const)
 

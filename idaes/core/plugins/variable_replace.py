@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -16,13 +16,13 @@
 
 from pyomo.core.base.transformation import TransformationFactory
 from pyomo.core.plugins.transform.hierarchy import NonIsomorphicTransformation
-from pyomo.core.expr import current as EXPR
+from pyomo.core import expr as EXPR
 from pyomo.common.config import (
     ConfigBlock,
     ConfigValue,
     document_kwargs_from_configdict,
 )
-from pyomo.core.base.var import _GeneralVarData, Var
+from pyomo.core.base.var import VarData, Var
 from pyomo.core.base.constraint import Constraint
 from pyomo.core.base.expression import Expression
 from pyomo.core.base.objective import Objective
@@ -32,7 +32,7 @@ __author__ = "John Eslick"
 
 
 def _is_var(v):
-    return isinstance(v, (_GeneralVarData, Var))
+    return isinstance(v, (VarData, Var))
 
 
 @TransformationFactory.register(
@@ -110,7 +110,7 @@ class ReplaceVariables(NonIsomorphicTransformation):
             instance: A block or model to apply the transformation to
             substitute: A list-like of two-element list-likes.  Each two element
                 list-like specifies a replacement of the first variable by the
-                second.  SimpleVar, IndexedVar, _GeneralVarData, and Reference are
+                second.  SimpleVar, IndexedVar, VarData, and Reference are
                 all accepted types.
 
         Returns:

@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -26,6 +26,7 @@ from pyomo.environ import (
 )
 from pyomo.util.check_units import assert_units_consistent
 
+import idaes.logger as idaeslog
 from idaes.models.properties.tests.test_harness import PropertyTestHarness
 from idaes.core.solvers import get_solver
 
@@ -37,7 +38,7 @@ prop_available = cubic_roots_available()
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_solver()
+solver = get_solver("ipopt_v2")
 
 
 # -----------------------------------------------------------------------------
@@ -76,12 +77,13 @@ class TestBasicV(PropertyTestHarness):
 @pytest.mark.skipif(not prop_available, reason="Cubic root finder not available")
 class TestBTExample(object):
     @pytest.mark.component
-    def test_units(self):
+    def test_units(self, caplog):
         m = ConcreteModel()
-
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.props = BT_PR.BTParameterBlock(valid_phase=("Vap", "Liq"))
+        with caplog.at_level(idaeslog.WARNING):
+            m.fs.props = BT_PR.BTParameterBlock(valid_phase=("Vap", "Liq"))
+        assert "May 2025 release." in caplog.text
 
         m.fs.state = m.fs.props.build_state_block([0], defined_state=True)
 
@@ -115,6 +117,10 @@ class TestBTExample(object):
 
     @pytest.mark.integration
     def test_T_sweep(self):
+        # TODO: This test fails if using MA57 with the linear_presolve
+        # This model is known to have some formulation issues.
+        solver = get_solver(solver="ipopt_v2", solver_options={"linear_solver": "ma27"})
+
         m = ConcreteModel()
 
         m.fs = FlowsheetBlock(dynamic=False)

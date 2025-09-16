@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -71,6 +71,7 @@ class EnergyBalanceType(Enum):
     enthalpyTotal = 2
     energyPhase = 3
     energyTotal = 4
+    isothermal = 5
 
 
 # Enumerate options for momentum balances
@@ -618,6 +619,8 @@ have a config block which derives from CONFIG_Base,
             eb = self.add_total_energy_balances(**kwargs)
         elif balance_type == EnergyBalanceType.energyPhase:
             eb = self.add_phase_energy_balances(**kwargs)
+        elif balance_type == EnergyBalanceType.isothermal:
+            eb = self.add_isothermal_constraint(**kwargs)
         else:
             raise ConfigurationError(
                 "{} invalid balance_type for add_energy_balances."
@@ -841,6 +844,18 @@ have a config block which derives from CONFIG_Base,
             "{} control volume class has not implemented a method for "
             "add_total_energy_balances. Please contact the "
             "developer of the ControlVolume class you are using.".format(self.name)
+        )
+
+    def add_isothermal_constraint(self, *args, **kwargs):
+        """
+        Method for adding an isothermal constraint to the control volume.
+
+        See specific control volume documentation for details.
+        """
+        raise NotImplementedError(
+            f"{self.name} control volume class has not implemented a method for "
+            "add_isothermal_constraint. Please contact the "
+            "developer of the ControlVolume class you are using."
         )
 
     def add_phase_pressure_balances(self, *args, **kwargs):

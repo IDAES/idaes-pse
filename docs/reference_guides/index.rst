@@ -1,3 +1,5 @@
+.. _API Reference:
+
 Reference Guides
 =================
 
@@ -6,7 +8,7 @@ Reference Guides
 
     model_libraries/index
     core/index
-    scaling
+    scaling/scaling
     initialization/index
     commands/index
     configuration

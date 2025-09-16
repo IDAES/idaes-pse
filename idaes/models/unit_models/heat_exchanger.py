@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -136,7 +136,7 @@ class HX0DInitializer(SingleControlVolumeUnitInitializer):
         )
 
         # Create solver
-        solver = get_solver(self.config.solver, self.config.solver_options)
+        solver = self._get_solver()
 
         self.initialize_control_volume(model.hot_side, copy_inlet_state)
         init_log.info_high("Initialization Step 1a (hot side) Complete.")
@@ -553,7 +553,7 @@ class HeatExchangerData(UnitModelBlockData):
         # Add variables                                                        #
         ########################################################################
         # Use hot side units as basis
-        s1_metadata = config.hot_side.property_package.get_metadata()
+        s1_metadata = self.hot_side.config.property_package.get_metadata()
 
         q_units = s1_metadata.get_derived_units("power")
         u_units = s1_metadata.get_derived_units("heat_transfer_coefficient")
@@ -814,11 +814,11 @@ class HeatExchangerData(UnitModelBlockData):
         var_dict["Heat Duty"] = self.heat_duty[time_point]
         if self.config.flow_pattern == HeatExchangerFlowPattern.crossflow:
             var_dict["Crossflow Factor"] = self.crossflow_factor[time_point]
+        var_dict["Delta T In"] = self.delta_temperature_in[time_point]
+        var_dict["Delta T Out"] = self.delta_temperature_out[time_point]
 
         expr_dict = {}
         expr_dict["Delta T Driving"] = self.delta_temperature[time_point]
-        expr_dict["Delta T In"] = self.delta_temperature_in[time_point]
-        expr_dict["Delta T Out"] = self.delta_temperature_out[time_point]
 
         return {"vars": var_dict, "exprs": expr_dict}
 

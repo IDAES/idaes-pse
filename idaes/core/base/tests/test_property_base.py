@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -230,13 +230,13 @@ def test_has_inherent_reactions():
 
 # -----------------------------------------------------------------------------
 # Test StateBlock
-@declare_process_block_class("TestStateBlock", block_class=StateBlock)
+@declare_process_block_class("DummyStateBlock", block_class=StateBlock)
 class _StateBlockData(StateBlockData):
     def build(self):
         super(StateBlockData, self).build()
 
 
-@declare_process_block_class("TestStateBlock2", block_class=StateBlock)
+@declare_process_block_class("DummyStateBlock2", block_class=StateBlock)
 class _StateBlockData2(StateBlockData):
     def build(self):
         super(StateBlockData, self).build()
@@ -251,7 +251,7 @@ def test_StateBlockBase_initialize():
     m = ConcreteModel()
     # Need to index block so that it does not do multiple inheritance
     m.s = Set(initialize=[1, 2])
-    m.p = TestStateBlock2(m.s)
+    m.p = DummyStateBlock2(m.s)
 
     with pytest.raises(NotImplementedError):
         m.p.initialize()
@@ -263,7 +263,7 @@ def test_StateBlockBase_report():
     m = ConcreteModel()
     # Need to index block so that it does not do multiple inheritance
     m.s = Set(initialize=[0, 1])
-    m.p = TestStateBlock2(m.s)
+    m.p = DummyStateBlock2(m.s)
 
     m.p.report(dof=True)
 
@@ -274,7 +274,7 @@ def test_StateBlockBase_report():
 def test_StateBlock_config():
     # Test that StateBlockData config has correct arguments
     m = ConcreteModel()
-    m.p = TestStateBlock()
+    m.p = DummyStateBlock()
 
     assert len(m.p.config) == 3
     assert hasattr(m.p.config, "has_phase_equilibrium")
@@ -300,7 +300,7 @@ def test_StateBlock_config():
 def test_StateBlock_NotImplementedErrors():
     # Test that placeholder methods return NotImplementedErrors
     m = ConcreteModel()
-    m.p = TestStateBlock()
+    m.p = DummyStateBlock()
 
     with pytest.raises(NotImplementedError):
         m.p.define_state_vars()
@@ -332,7 +332,7 @@ def test_StateBlock_NotImplementedErrors():
 def test_StateBlock_build_port_1index():
     m = ConcreteModel()
 
-    m.state_block = TestStateBlock([1, 2, 3])
+    m.state_block = DummyStateBlock([1, 2, 3])
 
     # Need to add define_port_members method to all state blocks
     def define_port_members(blk):
@@ -389,7 +389,7 @@ def test_StateBlock_build_port_1index():
 def test_StateBlock_build_port_2index():
     m = ConcreteModel()
 
-    m.state_block = TestStateBlock([1, 2, 3], [10, 20])
+    m.state_block = DummyStateBlock([1, 2, 3], [10, 20])
 
     # Need to add define_port_members method to all state blocks
     def define_port_members(blk):
@@ -448,7 +448,7 @@ def test_StateBlock_build_port_2index():
 def test_StateBlock_build_port_2index_subset():
     m = ConcreteModel()
 
-    m.state_block = TestStateBlock([1, 2, 3], [10, 20])
+    m.state_block = DummyStateBlock([1, 2, 3], [10, 20])
 
     # Need to add define_port_members method to all state blocks
     def define_port_members(blk):
@@ -596,6 +596,8 @@ class _State(StateBlockData):
         self.recursive_cons2 = Constraint(expr=self.recursion1 == 1)
 
     def _raise_exception(self):
+        # PYLINT-TODO
+        # pylint: disable-next=broad-exception-raised
         raise Exception()
 
     def _does_not_create_component(self):

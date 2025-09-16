@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -33,7 +33,7 @@ from idaes.models.properties.modular_properties.base.generic_property import (
 from idaes.models.properties.modular_properties.state_definitions import FTPx
 from idaes.models.properties.modular_properties.phase_equil import SmoothVLE
 from idaes.models.properties.modular_properties.phase_equil.forms import fugacity
-from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.exceptions import PropertyPackageError
 
 
 # Dummy EoS to use for fugacity calls
@@ -166,9 +166,8 @@ def test_non_VLE_pair():
     m.props = m.params.state_block_class([1], parameters=m.params)
 
     with pytest.raises(
-        ConfigurationError,
-        match="params Generic Property Package phase pair "
-        "Liq-Sol was set to use Smooth VLE formulation, "
-        "however this is not a vapor-liquid pair.",
+        PropertyPackageError,
+        match="Phase pair Liq-Sol was identified as being a VLE pair, however "
+        "Liq is liquid but Sol is not vapor.",
     ):
         SmoothVLE.phase_equil(m.props[1], ("Liq", "Sol"))

@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -160,8 +160,6 @@ def test_initialize():
     for c in eq_cons:
         assert abs(c.body() - c.lower) < 1e-4
 
-    return m
-
 
 @pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.component
@@ -270,5 +268,3 @@ def test_initialize_calc_cf():
         assert abs(c.body() - c.lower) < 1e-4
 
     assert pyo.value(m.fs.turb.inlet_split.inlet.flow_mol[0]) == pytest.approx(26000)
-
-    return m

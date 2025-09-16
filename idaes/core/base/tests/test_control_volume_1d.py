@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -16,6 +16,8 @@ Tests for ControlVolumeBlockData.
 Author: Andrew Lee
 """
 import pytest
+import re
+
 from pyomo.environ import (
     ConcreteModel,
     Constraint,
@@ -29,7 +31,7 @@ from pyomo.environ import (
 from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 from pyomo.dae import ContinuousSet, DerivativeVar
 from pyomo.common.config import ConfigBlock
-from pyomo.core.base.constraint import _GeneralConstraintData
+from pyomo.core.base.constraint import ConstraintData
 from idaes.core import (
     ControlVolume1DBlock,
     FlowsheetBlockData,
@@ -396,7 +398,7 @@ def test_add_geometry_length_var_invalid_type():
 
     with pytest.raises(
         ConfigurationError,
-        match="fs.cv length_var must be a Pyomo Var, Param or " "Expression.",
+        match="fs.cv length_var must be a Pyomo Var, Param or Expression.",
     ):
         m.fs.cv.add_geometry(length_var="foo")
 
@@ -418,7 +420,7 @@ def test_add_geometry_length_var_indexed():
 
     with pytest.raises(
         ConfigurationError,
-        match="fs.cv length_var must be a scalar \(unindexed\) " "component.",
+        match=re.escape("fs.cv length_var must be a scalar (unindexed) component."),
     ):
         m.fs.cv.add_geometry(length_var=m.fs.length)
 
@@ -1125,7 +1127,7 @@ def test_add_material_balances_default():
         for j in m.fs.pp.component_list:
             with pytest.raises(KeyError):
                 assert m.fs.cv.material_balances[0, 0, p, j]
-            assert type(m.fs.cv.material_balances[0, 1, p, j]) is _GeneralConstraintData
+            assert type(m.fs.cv.material_balances[0, 1, p, j]) is ConstraintData
 
     assert_units_consistent(m)
 
@@ -1310,7 +1312,7 @@ def test_add_phase_component_balances_default():
         for j in m.fs.pp.component_list:
             with pytest.raises(KeyError):
                 assert m.fs.cv.material_balances[0, 0, p, j]
-            assert type(m.fs.cv.material_balances[0, 1, p, j]) is _GeneralConstraintData
+            assert type(m.fs.cv.material_balances[0, 1, p, j]) is ConstraintData
 
     assert_units_consistent(m)
 
@@ -1342,7 +1344,7 @@ def test_add_phase_component_balances_default_FFD():
         for j in m.fs.pp.component_list:
             with pytest.raises(KeyError):
                 assert m.fs.cv.material_balances[0, 1, p, j]
-            assert type(m.fs.cv.material_balances[0, 0, p, j]) is _GeneralConstraintData
+            assert type(m.fs.cv.material_balances[0, 0, p, j]) is ConstraintData
 
     assert_units_consistent(m)
 
@@ -1988,7 +1990,7 @@ def test_add_total_component_balances_default():
     for j in m.fs.pp.component_list:
         with pytest.raises(KeyError):
             assert m.fs.cv.material_balances[0, 0, j]
-        assert type(m.fs.cv.material_balances[0, 1, j]) is _GeneralConstraintData
+        assert type(m.fs.cv.material_balances[0, 1, j]) is ConstraintData
 
     assert_units_consistent(m)
 
@@ -2020,7 +2022,7 @@ def test_add_total_component_balances_default_FFD():
     for j in m.fs.pp.component_list:
         with pytest.raises(KeyError):
             assert m.fs.cv.material_balances[0, 1, j]
-        assert type(m.fs.cv.material_balances[0, 0, j]) is _GeneralConstraintData
+        assert type(m.fs.cv.material_balances[0, 0, j]) is ConstraintData
 
     assert_units_consistent(m)
 
@@ -2310,9 +2312,11 @@ def test_add_total_component_balances_in_rxns_no_idx():
 
     with pytest.raises(
         PropertyNotSupportedError,
-        match="fs.cv Property package does not contain a "
-        "list of inherent reactions \(inherent_reaction_idx\), "
-        "but include_inherent_reactions is True.",
+        match=re.escape(
+            "fs.cv Property package does not contain a "
+            "list of inherent reactions (inherent_reaction_idx), "
+            "but include_inherent_reactions is True."
+        ),
     ):
         m.fs.cv.add_total_component_balances()
 
@@ -2658,7 +2662,7 @@ def test_add_total_element_balances_default():
     for j in m.fs.pp.element_list:
         with pytest.raises(KeyError):
             assert m.fs.cv.element_balances[0, 0, j]
-        assert type(m.fs.cv.element_balances[0, 1, j]) is _GeneralConstraintData
+        assert type(m.fs.cv.element_balances[0, 1, j]) is ConstraintData
 
     assert_units_consistent(m)
 
@@ -2690,7 +2694,7 @@ def test_add_total_element_balances_default_FFD():
     for j in m.fs.pp.element_list:
         with pytest.raises(KeyError):
             assert m.fs.cv.element_balances[0, 1, j]
-        assert type(m.fs.cv.element_balances[0, 0, j]) is _GeneralConstraintData
+        assert type(m.fs.cv.element_balances[0, 0, j]) is ConstraintData
 
     assert_units_consistent(m)
 
@@ -2909,6 +2913,7 @@ def test_add_total_element_balances_custom_term():
 
 @pytest.mark.unit
 def test_add_total_element_balances_lineraly_dependent(caplog):
+    caplog.set_level(idaeslog.INFO_LOW)
     m = ConcreteModel()
     m.fs = Flowsheet(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
@@ -3035,7 +3040,7 @@ def test_add_energy_balances_default():
 
     with pytest.raises(KeyError):
         assert m.fs.cv.enthalpy_balances[0, 0]
-    assert type(m.fs.cv.enthalpy_balances[0, 1]) is _GeneralConstraintData
+    assert type(m.fs.cv.enthalpy_balances[0, 1]) is ConstraintData
 
     assert_units_consistent(m)
 
@@ -3071,7 +3076,7 @@ def test_add_total_enthalpy_balances_default():
 
     with pytest.raises(KeyError):
         assert m.fs.cv.enthalpy_balances[0, 0]
-    assert type(m.fs.cv.enthalpy_balances[0, 1]) is _GeneralConstraintData
+    assert type(m.fs.cv.enthalpy_balances[0, 1]) is ConstraintData
 
     assert_units_consistent(m)
 
@@ -3105,7 +3110,7 @@ def test_add_total_enthalpy_balances_default_FFD():
 
     with pytest.raises(KeyError):
         assert m.fs.cv.enthalpy_balances[0, 1]
-    assert type(m.fs.cv.enthalpy_balances[0, 0]) is _GeneralConstraintData
+    assert type(m.fs.cv.enthalpy_balances[0, 0]) is ConstraintData
 
     assert_units_consistent(m)
 
@@ -3437,6 +3442,26 @@ def test_add_total_energy_balances():
         m.fs.cv.add_total_energy_balances()
 
 
+@pytest.mark.unit
+def test_add_isothermal_energy_balances():
+    m = ConcreteModel()
+    m.fs = Flowsheet(dynamic=False)
+    m.fs.pp = PhysicalParameterTestBlock()
+
+    m.fs.cv = ControlVolume1DBlock(
+        property_package=m.fs.pp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
+    )
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
+
+    with pytest.raises(BalanceTypeNotSupportedError):
+        m.fs.cv.add_isothermal_constraint()
+
+
 # -----------------------------------------------------------------------------
 # Test add total pressure balances
 @pytest.mark.unit
@@ -3467,7 +3492,7 @@ def test_add_total_pressure_balances_default():
 
     with pytest.raises(KeyError):
         assert m.fs.cv.pressure_balance[0, 0]
-    assert type(m.fs.cv.pressure_balance[0, 1]) is _GeneralConstraintData
+    assert type(m.fs.cv.pressure_balance[0, 1]) is ConstraintData
 
     assert_units_consistent(m)
 
@@ -3500,7 +3525,7 @@ def test_add_total_pressure_balances_default_FFD():
 
     with pytest.raises(KeyError):
         assert m.fs.cv.pressure_balance[0, 1]
-    assert type(m.fs.cv.pressure_balance[0, 0]) is _GeneralConstraintData
+    assert type(m.fs.cv.pressure_balance[0, 0]) is ConstraintData
 
     assert_units_consistent(m)
 
@@ -3845,3 +3870,35 @@ def test_estimate_states_backward():
             )
             assert value(state.pressure) == pytest.approx(2.5e5, rel=1e-8)
             assert value(state.temperature) == pytest.approx(345, rel=1e-8)
+
+
+@pytest.mark.unit
+def test_dynamic_mass_flow_basis_unit_consistency():
+    m = ConcreteModel()
+    m.fs = Flowsheet(dynamic=True, time_units=units.s)
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.pp.basis_switch = 2
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
+
+    m.fs.cv = ControlVolume1DBlock(
+        dynamic=True,
+        has_holdup=True,
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
+    )
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
+
+    m.fs.cv.add_phase_component_balances()
+    m.fs.cv.test_var = Var(
+        m.fs.cv.flowsheet().time, m.fs.pp.phase_list, m.fs.pp.component_list
+    )
+
+    assert_units_consistent(m)
+    assert_units_equivalent(m.fs.cv.material_holdup, units.kg / units.m)
+    assert_units_equivalent(m.fs.cv.material_accumulation, units.kg / units.s / units.m)

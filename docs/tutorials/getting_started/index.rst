@@ -8,7 +8,7 @@ Getting Started
 Installation
 ------------
 To install the IDAES PSE framework, follow the set of instructions below that are appropriate for 
-your needs. The OS specific instructions provide optional steps for installing Miniconda, which can be 
+your needs. The OS specific instructions provide optional steps for installing Miniforge, which can be 
 skipped. If you are an IDAES developer or expect to change IDAES code, we recommend following the
 :ref:`advanced user installation<tutorials/advanced_install/index:Advanced User Installation>`.
 Please contact `idaes-support@idaes.org <idaes-support@idaes.org>`_, if you have difficulty installing 
@@ -46,6 +46,12 @@ OS Specific Instructions
             several good options including 
             `conda environments <https://conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html>`_ 
             or `venv <https://docs.python.org/3/library/venv.html>`_.
+
+Installing optional dependencies
+--------------------------------
+
+To keep the base installation lighter and more flexible, some of the IDAES components are not installed by default, but can be installed as optional dependencies.
+For more information, refer to the :ref:`Installing optional dependencies <optional-dependencies>` page.
 
 .. _min_updating_install:
 

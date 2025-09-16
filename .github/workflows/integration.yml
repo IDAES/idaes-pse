@@ -33,6 +33,7 @@ concurrency:
 env:
   IDAES_CONDA_ENV_NAME_DEV: idaes-pse-dev
   PYTEST_ADDOPTS: "--color=yes"
+  DEFAULT_PYTHON_VERSION: '3.10'
 
 defaults:
   run:
@@ -42,7 +43,7 @@ defaults:
 jobs:
   precheck:
     name: (util) Check if should run
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     # the ">-" YAML syntax will result in a single string without terminating newline
     # it is used here to make the relatively complex if clause more readable by adding line breaks
     if: >-
@@ -63,7 +64,7 @@ jobs:
       is-pr-approved: ${{ steps.check-pr-approval.outputs.is-approved }}
       workflow-trigger: ${{ steps.determine-trigger.outputs.workflow-trigger }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/display-debug-info
       - id: check-pr-approval
         uses: ./.github/actions/check-pr-approval
@@ -131,29 +132,30 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11']
+        python-version: ['3.9', '3.10', '3.11', '3.12']
         os:
           - linux
           - win64
         include:
           - os: linux
-            runner-image: ubuntu-20.04
+            runner-image: ubuntu-24.04
           - os: win64
             runner-image: windows-2022
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/display-debug-info
       - name: Set up Conda environment
-        uses: conda-incubator/setup-miniconda@v2.1.1
+        uses: conda-incubator/setup-miniconda@v3
         with:
           activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
           python-version: ${{ matrix.python-version }}
+          miniforge-version: latest
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
         with:
           install-target: -r requirements-dev.txt
       - name: Run pytest (integration)
-        run: pytest -m integration
+        run: pytest --pyargs idaes -m integration
 
   examples:
     name: Run examples (py${{ matrix.python-version }}/${{ matrix.os }})
@@ -168,23 +170,24 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11']
+        python-version: ['3.9', '3.10', '3.11', '3.12']
         os:
           - linux
           - win64
         include:
           - os: linux
-            runner-image: ubuntu-20.04
+            runner-image: ubuntu-24.04
           - os: win64
             runner-image: windows-2022
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/display-debug-info
       - name: Set up Conda environment
-        uses: conda-incubator/setup-miniconda@v2.1.1
+        uses: conda-incubator/setup-miniconda@v3
         with:
           activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
           python-version: ${{ matrix.python-version }}
+          miniforge-version: latest
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
         with:
@@ -221,30 +224,31 @@ jobs:
           - linux
         include:
           - os: linux
-            runner-image: ubuntu-20.04
+            runner-image: ubuntu-24.04
           - install-mode: pip-default
             pip-install-target: '.'
           - install-mode: pip-complete
-            pip-install-target: .[ui,dmf,grid]
+            pip-install-target: .[ui,grid]
           - install-mode: pip-all
-            pip-install-target: .[ui,dmf,grid,omlt,coolprop]
+            pip-install-target: .[ui,grid,omlt,coolprop]
           - install-mode: conda-like
             pip-install-target: '.'
             dependencies-to-uninstall: omlt
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Set up Conda environment
-        uses: conda-incubator/setup-miniconda@v2.1.1
+        uses: conda-incubator/setup-miniconda@v3
         with:
           activate-environment: idaes-env
-          python-version: '3.8'
+          python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
+          miniforge-version: latest
       - name: Set up idaes (non-editable installation)
         uses: ./.github/actions/setup-idaes
         with:
           install-target: ${{ matrix.pip-install-target }}
       - name: Remove dependencies installable with pip but not with conda
         # NOTE some dependencies that are installed by default with pip are not available through conda
-        # so they're not installed if IDAES is installed with `conda -c conda-forge -c IDAES-PSE idaes-pse`
+        # so they're not installed if IDAES is installed with `conda -c conda-forge idaes-pse`
         # to ensure this scenario is handled properly, since we don't have (yet) the conda-build process integrated with the CI,
         # we manually remove the "pip-but-not-conda" dependencies after installing with pip
         # as an approximation of the enviroment that we'd get from `conda install`

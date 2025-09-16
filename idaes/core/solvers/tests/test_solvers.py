@@ -3,19 +3,20 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-import pyomo.environ as pyo
 import pytest
+
+import pyomo.environ as pyo
+from pyomo.contrib.solver.common.base import LegacySolverWrapper
+
 from idaes.core.solvers.features import lp, milp, nlp, minlp, nle, dae
-from idaes.core.solvers import ipopt_has_linear_solver
-from idaes.core.solvers import petsc
-from idaes.core.solvers import ipopt_l1
+from idaes.core.solvers import get_solver, ipopt_has_linear_solver, petsc
 
 
 @pytest.mark.unit
@@ -104,6 +105,7 @@ def test_ipopt_idaes_solve():
     assert pytest.approx(x) == pyo.value(m.x)
 
 
+@pytest.mark.usefixtures("run_in_tmp_path")
 @pytest.mark.unit
 @pytest.mark.skipif(
     not pyo.SolverFactory("ipopt_l1").available(False), reason="solver not available"
@@ -259,3 +261,76 @@ def test_clp_idaes_solve():
     solver = pyo.SolverFactory("clp")
     solver.solve(m)
     assert pytest.approx(x) == pyo.value(m.x)
+
+
+@pytest.mark.skipif(not pyo.SolverFactory("ipopt").available(False), reason="no Ipopt")
+@pytest.mark.unit
+def test_get_solver_default():
+    solver = get_solver()
+
+    assert not isinstance(solver, LegacySolverWrapper)
+
+    assert solver.options == {
+        "nlp_scaling_method": "gradient-based",
+        "tol": 1e-6,
+        "max_iter": 200,
+    }
+
+
+@pytest.mark.skipif(not pyo.SolverFactory("ipopt").available(False), reason="no Ipopt")
+@pytest.mark.unit
+def test_get_solver_default_solver_w_options():
+    with pytest.raises(
+        AttributeError,
+        match="'IPOPT' object has no attribute 'config'",
+    ):
+        get_solver(options={"foo": "bar", "tol": 1e-5}, writer_config={"foo": "bar"})
+
+
+@pytest.mark.skipif(not pyo.SolverFactory("ipopt").available(False), reason="no Ipopt")
+@pytest.mark.unit
+def test_get_solver_ipopt_v2():
+    solver = get_solver("ipopt_v2")
+
+    assert isinstance(solver, LegacySolverWrapper)
+
+    assert solver.options.nlp_scaling_method == "gradient-based"
+    assert solver.options.tol == 1e-6
+    assert solver.options.max_iter == 200
+
+    assert solver.config.writer_config.linear_presolve
+    assert not solver.config.writer_config.scale_model
+
+
+@pytest.mark.skipif(not pyo.SolverFactory("ipopt").available(False), reason="no Ipopt")
+@pytest.mark.unit
+def test_get_solver_ipopt_v2_w_options():
+    solver = get_solver(
+        "ipopt_v2",
+        options={"tol": 1e-5, "foo": "bar"},
+        writer_config={"linear_presolve": False},
+    )
+
+    assert isinstance(solver, LegacySolverWrapper)
+
+    print(solver.options)
+    assert solver.options.nlp_scaling_method == "gradient-based"
+    assert solver.options.tol == 1e-5
+    assert solver.options.max_iter == 200
+    assert solver.options.foo == "bar"
+
+    assert not solver.config.writer_config.linear_presolve
+    assert not solver.config.writer_config.scale_model
+
+
+@pytest.mark.unit
+def test_get_solver_ipopt_options_and_solver_options():
+    with pytest.raises(
+        ValueError,
+        match="Cannot provide both the 'options' and 'solver_options' argument. "
+        "'options' has been deprecated in favor of 'solver_options'.",
+    ):
+        get_solver(
+            options={"tol": 1e-5, "foo": "bar"},
+            solver_options={"tol": 1e-5, "foo": "bar"},
+        )

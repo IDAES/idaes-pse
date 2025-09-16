@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -287,7 +287,7 @@ argument).""",
                 )
             elif length_var.is_indexed():
                 raise ConfigurationError(
-                    f"{self.name} length_var must be a scalar (unindexed) " "component."
+                    f"{self.name} length_var must be a scalar (unindexed) component."
                 )
             add_object_reference(self, "length", length_var)
         else:
@@ -585,7 +585,7 @@ argument).""",
         self.material_flow_dx = DerivativeVar(
             self._flow_terms,
             wrt=self.length_domain,
-            doc="Partial derivative of material flow " "wrt to normalized length",
+            doc="Partial derivative of material flow wrt to normalized length",
             units=flow_units,
         )
 
@@ -673,7 +673,7 @@ argument).""",
                 pc_set,
                 domain=Reals,
                 initialize=0.0,
-                doc="Component material transfer into unit per unit " "length",
+                doc="Component material transfer into unit per unit length",
                 units=flow_l_units,
             )
 
@@ -1385,7 +1385,7 @@ argument).""",
         self.elemental_flow_dx = DerivativeVar(
             self.elemental_flow_term,
             wrt=self.length_domain,
-            doc="Partial derivative of " "elemental flow wrt normalized " "length",
+            doc="Partial derivative of elemental flow wrt normalized length",
             units=flow_units,
         )
 
@@ -1397,7 +1397,7 @@ argument).""",
                 e_index,
                 domain=Reals,
                 initialize=0.0,
-                doc="Element material transfer into unit per unit " "length",
+                doc="Element material transfer into unit per unit length",
                 units=flow_l_units,
             )
 
@@ -1735,6 +1735,16 @@ argument).""",
         raise BalanceTypeNotSupportedError(
             "{} OD control volumes do not support "
             "add_total_energy_balances.".format(self.name)
+        )
+
+    def add_isothermal_constraint(self, *args, **kwargs):
+        """
+        Requires ExtendedControlVolume1D
+        """
+        raise BalanceTypeNotSupportedError(
+            f"{self.name} ControlVolume1D does not support isothermal energy balances. "
+            "Please consider using ExtendedControlVolume1D in your model if you require "
+            "support for isothermal balances."
         )
 
     def add_total_pressure_balances(self, has_pressure_change=False, custom_term=None):

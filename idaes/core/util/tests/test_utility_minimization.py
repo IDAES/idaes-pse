@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -52,7 +52,7 @@ from idaes.core.util.utility_minimization import (
 #     Chemical Engineering Series - L. T. Biegler, I. E. Grossmann,
 #     A. W. Westerberg, page 529, Example 16.1
 # Get default solver for testing
-solver = get_solver()
+solver = get_solver("ipopt_v2")
 
 
 @pytest.mark.unit
@@ -127,7 +127,7 @@ class TestStateBlock(object):
             "state_definition": FTPx,
             "state_bounds": {
                 "flow_mol": (0, 100, 1000, pyunits.mol / pyunits.s),
-                "temperature": (273.15, 300, 450, pyunits.K),
+                "temperature": (100, 300, 450, pyunits.K),
                 "pressure": (5e4, 1e5, 1e6, pyunits.Pa),
             },
             "pressure_ref": (1e5, pyunits.Pa),
@@ -222,7 +222,6 @@ class TestStateBlock(object):
         # Check for optimal solution
         assert check_optimal_termination(results)
 
-    @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.unit

@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -127,7 +127,7 @@ class HelmNtuCondenserData(UnitModelBlockData):
         # Add variables                                                        #
         ########################################################################
         # Use hot side units as basis
-        s1_metadata = config.hot_side.property_package.get_metadata()
+        s1_metadata = self.hot_side.config.property_package.get_metadata()
 
         f_units = s1_metadata.get_derived_units("flow_mole")
         cp_units = s1_metadata.get_derived_units("heat_capacity_mole")
@@ -285,6 +285,8 @@ class HelmNtuCondenserData(UnitModelBlockData):
 
         """
         if unfix not in {"hot_flow", "cold_flow", "pressure"}:
+            # PYLINT-TODO
+            # pylint: disable-next=broad-exception-raised
             raise Exception(
                 "Condenser free variable must be in 'hot_flow', "
                 "'cold_flow', or 'pressure'"
@@ -296,7 +298,7 @@ class HelmNtuCondenserData(UnitModelBlockData):
         hot_side = getattr(self, self.config.hot_side_name)
         cold_side = getattr(self, self.config.cold_side_name)
 
-        # Store initial model specs, restored at the end of initializtion, so
+        # Store initial model specs, restored at the end of initialization, so
         # the problem is not altered.  This can restore fixed/free vars,
         # active/inactive constraints, and fixed variable values.
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)

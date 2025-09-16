@@ -4,7 +4,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -115,7 +115,7 @@ def is_port(arg):
     """
     if not isinstance(arg, Port):
         raise ConfigurationError(
-            "Invalid argument type. Expected an instance " "of a Pyomo Port object"
+            "Invalid argument type. Expected an instance of a Pyomo Port object"
         )
     return arg
 
@@ -192,3 +192,22 @@ def DefaultBool(arg):
         return arg
     else:
         return Bool(arg)
+
+
+def is_in_range(lb, ub):
+    """
+    Domain validator for 1D compact sets.
+
+    Args:
+        lb: float, lower bound
+        ub: float, upper bound
+    """
+
+    def _in_range(val):
+        if lb <= val <= ub:
+            return val
+        raise ConfigurationError(
+            f"Value {val} lies outside the admissible range {[lb, ub]}"
+        )
+
+    return _in_range
