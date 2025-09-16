@@ -46,6 +46,7 @@ class ExtraDependencies:
         "tensorflow",
         "onnx",
         "linear-tree",
+        "scikit-learn==1.6.1",
     ]
     grid = [
         "gridx-prescient>=2.2.1",  # idaes.tests.prescient
