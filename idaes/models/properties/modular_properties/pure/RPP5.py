@@ -104,6 +104,12 @@ class RPP5(object):
 
             units = b.params.get_metadata().derived_units
 
+            h_form = (
+                cobj.enth_mol_form_vap_comp_ref
+                if b.params.config.include_enthalpy_of_formation
+                else 0 * units.ENERGY_MOLE
+            )
+
             h = (
                 pyunits.convert(
                     (
@@ -116,7 +122,7 @@ class RPP5(object):
                     * const.gas_constant,
                     units.ENERGY_MOLE,
                 )
-                + cobj.enth_mol_form_vap_comp_ref
+                + h_form
             )
 
             return h
@@ -214,3 +220,30 @@ class RPP5(object):
             base_units = b.params.get_metadata().default_units
             dp_units = base_units.PRESSURE * base_units.TEMPERATURE**-1
             return pyunits.convert(p_sat_dT, to_units=dp_units)
+
+        @staticmethod
+        def return_log_expression(b, cobj, T, dT=False):
+            if dT:
+                return RPP5.pressure_sat_comp.dT_expression(b, cobj, T)
+
+            log_psat = log(10) * (
+                cobj.pressure_sat_comp_coeff_A
+                - (
+                    cobj.pressure_sat_comp_coeff_B
+                    / (T + cobj.pressure_sat_comp_coeff_C - 273.15 * pyunits.degK)
+                )
+            )
+            base_units = b.params.get_metadata().default_units
+            p_units = base_units.PRESSURE
+            return log_psat + log(
+                pyunits.convert(1 * pyunits.bar, to_units=p_units) / p_units
+            )
+
+        @staticmethod
+        def dT_log_expression(b, cobj, T):
+            log_p_sat_dT = (
+                cobj.pressure_sat_comp_coeff_B
+                * log(10)
+                / (T + cobj.pressure_sat_comp_coeff_C - 273.15 * pyunits.degK) ** 2
+            )
+            return log_p_sat_dT
