@@ -291,6 +291,32 @@ class ModularPropertiesScaler(ModularPropertiesScalerBase):
                     model.enth_mol, sf_enth, overwrite=overwrite
                 )
 
+        if model.is_property_constructed("enth_mol_phase_comp"):
+            if not mw_missing:
+                for (_, j), comp_data in model.enth_mol_phase_comp.items():
+                    sf_enth_phase_comp = (
+                        sf_T
+                        / pyunits.convert_value(
+                            2,
+                            from_units=pyunits.J / pyunits.g / pyunits.K,
+                            to_units=units["HEAT_CAPACITY_MASS"],
+                        )
+                        / mw_comp_dict[j]
+                    )
+                    self.set_component_scaling_factor(
+                        comp_data, sf_enth_phase_comp, overwrite=overwrite
+                    )
+            else:
+                sf_enth_phase = {
+                    p: self.get_scaling_factor(model.enth_mol_phase[p])
+                    for p in model.phase_list
+                }
+                if not any(sf_enth_phase[p] is None for p in model.phase_list):
+                    for (p, _), comp_data in model.enth_mol_phase_comp.items():
+                        self.set_component_scaling_factor(
+                            comp_data, sf_enth_phase[p], overwrite=overwrite
+                        )
+
         if model.is_property_constructed("_teq"):
             for v in model._teq.values():
                 self.set_component_scaling_factor(v, sf_T, overwrite=overwrite)
