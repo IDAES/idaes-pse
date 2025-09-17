@@ -280,6 +280,8 @@ class GibbsEnergyScaler(CustomScalerBase):
 class gibbs_energy:
     """Methods for equilibrium constant based of constant heat and entropy of reaction."""
 
+    default_scaler = GibbsEnergyScaler
+
     @staticmethod
     def build_parameters(rblock, config):
         parent = rblock.parent_block()
