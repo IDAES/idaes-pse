@@ -7,70 +7,54 @@ from idaes.models.properties.modular_properties import GenericParameterBlock
 from idaes.models_extra.column_models.properties.MEA_solvent import (
     configuration as liquid_config,
 )
-
 from idaes.models_extra.column_models.properties.MEA_vapor import (
     wet_co2 as vapor_config, flue_gas as flue_gas
 )
 
 parmest_parameters = {
-    'VLE': {
-        'bic_k_eq_coeff_1': 366.061867998774,
-        'bic_k_eq_coeff_2': -13326.25411,
-        'bic_k_eq_coeff_3': -55.68643292,
-        'bic_k_eq_coeff_4': 0.0,
-        'car_k_eq_coeff_1': 164.039636,
-        'car_k_eq_coeff_2': -707.0056712,
-        'car_k_eq_coeff_3': -26.40136817,
-        'car_k_eq_coeff_4': 0.0,
-        # From eNRTL fitting routine not including eNRTL interactions
-        # 'bic_k_eq_coeff_1': 176.8,
-        # 'bic_k_eq_coeff_2': -991.2,
-        # 'bic_k_eq_coeff_3': -29.5,
-        # 'bic_k_eq_coeff_4': .0129,
-        # 'car_k_eq_coeff_1': 234.2,
-        # 'car_k_eq_coeff_2': -1434.4,
-        # 'car_k_eq_coeff_3': -36.8,
-        # 'car_k_eq_coeff_4': -.0074,
-        'lwm_coeff_1': -2.076073001,
-        'lwm_coeff_2': 0.037322205,
-        'lwm_coeff_3': -0.00032721,
-        'lwm_coeff_4': -0.111102655,
-    },
-    'surface_tension': {
-        'surf_tens_CO2_coeff_1': -0.00589934906112609,
-        'surf_tens_CO2_coeff_2': 0.00175020536428591,
-        'surf_tens_CO2_coeff_3': 0.129650182728177,
-        'surf_tens_CO2_coeff_4': 0.0000126444768126308,
-        'surf_tens_CO2_coeff_5': -5.73954817199691E-06,
-        'surf_tens_CO2_coeff_6': -0.00018969005534195,
-        'surf_tens_F_coeff_a': 1070.65668317975,
-        'surf_tens_F_coeff_b': -2578.78134208703,
-        'surf_tens_F_coeff_c': 3399.24113311222,
-        'surf_tens_F_coeff_d': -2352.47410135319,
-        'surf_tens_F_coeff_e': 2960.24753687833,
-        'surf_tens_F_coeff_f': 3.06684894924048,
-        'surf_tens_F_coeff_g': -1.79435372759593,
-        'surf_tens_F_coeff_h': -7.2124219075848,
-        'surf_tens_F_coeff_i': 2.97502322396621,
-        'surf_tens_F_coeff_j': -10.5738529301824,
-    },
-    'molar_volume': {
-        'vol_mol_liq_comp_coeff_a': -10.5792012186177,
-        'vol_mol_liq_comp_coeff_b': -2.02049415703576,
-        'vol_mol_liq_comp_coeff_c': 3.1506793296904,
-        'vol_mol_liq_comp_coeff_d': 192.012600751473,
-        'vol_mol_liq_comp_coeff_e': -695.384861676286,
-    },
-    'viscosity': {
-        'visc_d_coeff_a': -0.0854041877181552,
-        'visc_d_coeff_b': 2.72913373574306,
-        'visc_d_coeff_c': 35.1158892542595,
-        'visc_d_coeff_d': 1805.52759876533,
-        'visc_d_coeff_e': 0.00716025669867574,
-        'visc_d_coeff_f': 0.0106488402285381,
-        'visc_d_coeff_g': -0.0854041877181552,
-    },
-}
+    'VLE': {'bic_k_eq_coeff_1': 366.061867998774,
+            'bic_k_eq_coeff_2': -13326.25411,
+            'bic_k_eq_coeff_3': -55.68643292,
+            'car_k_eq_coeff_1': 164.039636,
+            'car_k_eq_coeff_2': -707.0056712,
+            'car_k_eq_coeff_3': -26.40136817,
+            'lwm_coeff_1': -2.076073001,
+            'lwm_coeff_2': 0.037322205,
+            'lwm_coeff_3': -0.00032721,
+            'lwm_coeff_4': -0.111102655,
+            },
+    'surface_tension': {'surf_tens_CO2_coeff_1': -0.00589934906112609,
+                       'surf_tens_CO2_coeff_2': 0.00175020536428591,
+                       'surf_tens_CO2_coeff_3': 0.129650182728177,
+                       'surf_tens_CO2_coeff_4': 0.0000126444768126308,
+                       'surf_tens_CO2_coeff_5': -5.73954817199691E-06,
+                       'surf_tens_CO2_coeff_6': -0.00018969005534195,
+                       'surf_tens_F_coeff_a': 1070.65668317975,
+                       'surf_tens_F_coeff_b': -2578.78134208703,
+                       'surf_tens_F_coeff_c': 3399.24113311222,
+                       'surf_tens_F_coeff_d': -2352.47410135319,
+                       'surf_tens_F_coeff_e': 2960.24753687833,
+                       'surf_tens_F_coeff_f': 3.06684894924048,
+                       'surf_tens_F_coeff_g': -1.79435372759593,
+                       'surf_tens_F_coeff_h': -7.2124219075848,
+                       'surf_tens_F_coeff_i': 2.97502322396621,
+                       'surf_tens_F_coeff_j': -10.5738529301824,
+                       },
+    'molar_volume': {'vol_mol_liq_comp_coeff_a': -10.5792012186177,
+                     'vol_mol_liq_comp_coeff_b': -2.02049415703576,
+                     'vol_mol_liq_comp_coeff_c': 3.1506793296904,
+                     'vol_mol_liq_comp_coeff_d': 192.012600751473,
+                     'vol_mol_liq_comp_coeff_e': -695.384861676286,
+                     },
+    'viscosity': {'visc_d_coeff_a': -0.0854041877181552,
+                  'visc_d_coeff_b': 2.72913373574306,
+                  'visc_d_coeff_c': 35.1158892542595,
+                  'visc_d_coeff_d': 1805.52759876533,
+                  'visc_d_coeff_e': 0.00716025669867574,
+                  'visc_d_coeff_f': 0.0106488402285381,
+                  'visc_d_coeff_g': -0.0854041877181552,
+                  },
+    }
 
 state_bounds_default = ConfigDict(
     description="Dictionary containing state variable name as key, tuple containing lower "
@@ -89,7 +73,7 @@ state_bounds_default.declare(
     "temperature",
     ConfigValue(
         domain=tuple,
-        default=(0, 298.15, 500, pyunits.K)
+        default=(273.15, 298.15, 500, pyunits.K)
     )
 )
 
@@ -97,9 +81,10 @@ state_bounds_default.declare(
     "pressure",
     ConfigValue(
         domain=tuple,
-        default=(0, 1e5, 1e8, pyunits.Pa)
+        default=(1, 1e5, 1e8, pyunits.Pa)
     )
 )
+
 
 
 def remove_ions(mea_dict: dict):
@@ -215,17 +200,14 @@ def scale_mea_vapor_params(params, scaling_factor_flow_mol=3e-4):
     params.set_default_scaling("flow_mass_phase", scaling_factor_flow_mol / 24e-3)  # Say MW ~=24 g/mol
     params.set_default_scaling("visc_d_phase", 6e4)
 
-
 def switch_liquid_to_parmest_params(params, ions):
     if ions:
         params.reaction_bicarbonate.k_eq_coeff_1.set_value(parmest_parameters['VLE']['bic_k_eq_coeff_1'])
         params.reaction_bicarbonate.k_eq_coeff_2.set_value(parmest_parameters['VLE']['bic_k_eq_coeff_2'])
         params.reaction_bicarbonate.k_eq_coeff_3.set_value(parmest_parameters['VLE']['bic_k_eq_coeff_3'])
-        params.reaction_bicarbonate.k_eq_coeff_4.set_value(parmest_parameters['VLE']['bic_k_eq_coeff_4'])
         params.reaction_carbamate.k_eq_coeff_1.set_value(parmest_parameters['VLE']['car_k_eq_coeff_1'])
         params.reaction_carbamate.k_eq_coeff_2.set_value(parmest_parameters['VLE']['car_k_eq_coeff_2'])
         params.reaction_carbamate.k_eq_coeff_3.set_value(parmest_parameters['VLE']['car_k_eq_coeff_3'])
-        params.reaction_carbamate.k_eq_coeff_4.set_value(parmest_parameters['VLE']['car_k_eq_coeff_4'])
     params.CO2.lwm_coeff_1.set_value(parmest_parameters['VLE']['lwm_coeff_1'])
     params.CO2.lwm_coeff_2.set_value(parmest_parameters['VLE']['lwm_coeff_2'])
     params.CO2.lwm_coeff_3.set_value(parmest_parameters['VLE']['lwm_coeff_3'])
@@ -342,7 +324,7 @@ def initialize_inherent_reactions(blk):
             value(source.mole_frac_comp["CO2"]),
         )
 
-        F_lim_reag = value(source.flow_mol * x_lim_reag)
+        F_lim_reag = value(source.flow_mol*x_lim_reag)
 
         for k in blk.properties.keys():
             blk.properties[k].apparent_inherent_reaction_extent["bicarbonate"].value = 0.2 * F_lim_reag
@@ -354,7 +336,7 @@ def initialize_inherent_reactions(blk):
             value(source.mole_frac_comp["CO2"]),
         )
 
-        F_lim_reag = value(source.flow_mol * x_lim_reag)
+        F_lim_reag = value(source.flow_mol*x_lim_reag)
 
         for t in blk.flowsheet().time:
             blk.properties_in[t].apparent_inherent_reaction_extent["bicarbonate"].value = 0.2 * F_lim_reag
@@ -370,7 +352,8 @@ def initialize_inherent_reactions(blk):
                 value(sub_blk.mole_frac_comp["CO2"]),
             )
 
-            F_lim_reag = value(sub_blk.flow_mol * x_lim_reag)
+            F_lim_reag = value(sub_blk.flow_mol*x_lim_reag)
+
 
             sub_blk.apparent_inherent_reaction_extent["bicarbonate"].value = 0.2 * F_lim_reag
             sub_blk.apparent_inherent_reaction_extent["carbamate"].value = 0.1 * F_lim_reag
