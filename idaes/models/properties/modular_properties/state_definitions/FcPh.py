@@ -519,7 +519,7 @@ class FcPhScaler(FTPxScaler):
     # base ModularPropertiesScaler.
 
     def constraint_scaling_routine(
-        self, model, index, overwrite: bool = False, submodel_scalers: dict = None
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
     ):
         sf_enth = self.get_scaling_factor(model.enth_mol)
         if sf_enth is not None:

@@ -502,7 +502,7 @@ class FcTPScaler(FTPxScaler):
     # Safe to inherit variable_scaling_routine from FTPx
 
     def constraint_scaling_routine(
-        self, model, index, overwrite: bool = False, submodel_scalers: dict = None
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
     ):
 
         for idx, condata in model.mole_frac_comp_eq.items():

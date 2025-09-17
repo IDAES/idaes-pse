@@ -722,7 +722,7 @@ class FTPxScaler(CustomScalerBase):
     """
 
     def variable_scaling_routine(
-        self, model, index, overwrite: bool = False, submodel_scalers: dict = None
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
     ):
         sf_Fp = {}
         for p in model.phase_list:
@@ -762,7 +762,7 @@ class FTPxScaler(CustomScalerBase):
             )
 
     def constraint_scaling_routine(
-        self, model, index, overwrite: bool = False, submodel_scalers: dict = None
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
     ):
         if model.config.defined_state is False:
             self.scale_constraint_by_nominal_value(

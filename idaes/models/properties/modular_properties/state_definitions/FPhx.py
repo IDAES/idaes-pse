@@ -517,7 +517,7 @@ class FPhxScaler(FTPxScaler):
     # base ModularPropertiesScaler.
 
     def constraint_scaling_routine(
-        self, model, index, overwrite: bool = False, submodel_scalers: dict = None
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
     ):
         if model.config.defined_state is False:
             self.set_component_scaling_factor(

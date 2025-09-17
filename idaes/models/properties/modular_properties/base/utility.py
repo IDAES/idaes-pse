@@ -634,6 +634,11 @@ def estimate_Pdew(blk, raoult_comps, henry_comps, liquid_phase):
 
 
 class ModularPropertiesScalerBase(CustomScalerBase):
+    """
+    Base class for ModularPropertiesScaler and ModularReactionsScaler.
+    Handles the logic for calling scaling methods for each individual module.
+    """
+
     def call_module_scaling_method(
         self, model, module, index, method, overwrite: bool = False
     ):
@@ -651,4 +656,7 @@ class ModularPropertiesScalerBase(CustomScalerBase):
             raise AttributeError(
                 f"Could not find {method} method on scaler for module {module}."
             ) from err
-        method_func(model, index, overwrite=overwrite)
+        if index is None:
+            method_func(model, overwrite=overwrite)
+        else:
+            method_func(model, index, overwrite=overwrite)

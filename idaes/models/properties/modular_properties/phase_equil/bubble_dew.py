@@ -37,10 +37,10 @@ class IdealBubbleDewScaler(CustomScalerBase):
     No new variables are created, so only constraints need to be scaled.
     """
 
-    def variable_scaling_routine(self, model, phase, overwrite: bool = False):
+    def variable_scaling_routine(self, model, overwrite: bool = False):
         pass
 
-    def constraint_scaling_routine(self, model, phase, overwrite: bool = False):
+    def constraint_scaling_routine(self, model, overwrite: bool = False):
         sf_P = self.get_scaling_factor(model.pressure)
         sf_mf = {}
         for i, v in model.mole_frac_comp.items():
@@ -104,9 +104,9 @@ class IdealBubbleDewScaler(CustomScalerBase):
                 for j in model.component_list:
                     # TODO Henry
                     if j in vl_comps:
-                        sf = sf_P * sf_mf
+                        sf = sf_P * sf_mf[j]
                     else:
-                        sf = sf_mf
+                        sf = sf_mf[j]
                     self.set_component_scaling_factor(
                         model.eq_mole_frac_pbub[pp[0], pp[1], j],
                         sf,
@@ -122,9 +122,9 @@ class IdealBubbleDewScaler(CustomScalerBase):
                 for j in model.component_list:
                     # TODO Henry
                     if j in vl_comps:
-                        sf = sf_P * sf_mf
+                        sf = sf_P * sf_mf[j]
                     else:
-                        sf = sf_mf
+                        sf = sf_mf[j]
                     self.set_component_scaling_factor(
                         model.eq_mole_frac_pdew[pp[0], pp[1], j],
                         sf,
@@ -293,7 +293,7 @@ class IdealBubbleDew:
                     # Not a VLE pair
                     return Constraint.Skip
                 elif l_only_comps != []:
-                    # Non-vaporisables present, no dew point
+                    # Non-volatiles present, no dew point
                     return Constraint.Skip
 
                 return (
@@ -338,7 +338,7 @@ class IdealBubbleDew:
                 # Not a VLE pair
                 return Constraint.Skip
             elif l_only_comps != []:
-                # Non-vaporisables present, no dew point
+                # Non-volatiles present, no dew point
                 return Constraint.Skip
 
             if j in vl_comps:
@@ -534,7 +534,7 @@ class IdealBubbleDew:
                     # Not a VLE pair
                     return Constraint.Skip
                 elif l_only_comps != []:
-                    # Non-vaporisables present, no dew point
+                    # Non-volatiles present, no dew point
                     return Constraint.Skip
 
                 return 0 == 1 - b.pressure_dew[p1, p2] * (
@@ -564,7 +564,7 @@ class IdealBubbleDew:
                 # Not a VLE pair
                 return Constraint.Skip
             elif l_only_comps != []:
-                # Non-vaporisables present, no dew point
+                # Non-volatiles present, no dew point
                 return Constraint.Skip
 
             if j in vl_comps:
@@ -623,10 +623,10 @@ class LogBubbleDewScaler(CustomScalerBase):
     Scaling method for the LogBubbleDew scaler
     """
 
-    def variable_scaling_routine(self, model, phase, overwrite: bool = False):
+    def variable_scaling_routine(self, model, overwrite: bool = False):
         pass
 
-    def constraint_scaling_routine(self, model, phase, overwrite: bool = False):
+    def constraint_scaling_routine(self, model, overwrite: bool = False):
         for pp in model.params._pe_pairs:
             (
                 l_phase,
@@ -866,7 +866,7 @@ class LogBubbleDew:
                 # Not a VLE pair
                 return Constraint.Skip
             elif l_only_comps != []:
-                # Non-vaporisables present, no dew point
+                # Non-volatiles present, no dew point
                 return Constraint.Skip
 
             return 1 == (
@@ -1058,7 +1058,7 @@ class LogBubbleDew:
                 # Not a VLE pair
                 return Constraint.Skip
             elif l_only_comps != []:
-                # Non-vaporisables present, no dew point
+                # Non-volatiles present, no dew point
                 return Constraint.Skip
 
             return 1 == (
