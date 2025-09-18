@@ -21,7 +21,6 @@ Discretization based on tube rows
 from pyomo.environ import (
     assert_optimal_termination,
     Block,
-    Constraint,
     value,
     Var,
     log,
@@ -312,7 +311,10 @@ class CrossFlowHeatExchanger1DInitializer(SingleControlVolumeUnitInitializer):
         model.heat_tube_eqn.deactivate()
         model.heat_shell_eqn.deactivate()
 
-        if str.upper(model.config.hot_side.transformation_scheme) == "LAGRANGE-LEGENDRE":
+        if (
+            str.upper(model.config.hot_side.transformation_scheme)
+            == "LAGRANGE-LEGENDRE"
+        ):
             model.lagrange_legendre_deactivation()
             for x in model.hot_side.length_domain.get_finite_elements():
                 hot_side.properties[t, x].temperature.unfix()
@@ -359,7 +361,10 @@ class CrossFlowHeatExchanger1DInitializer(SingleControlVolumeUnitInitializer):
         model.heat_tube_eqn.activate()
         model.heat_shell_eqn.activate()
 
-        if str.upper(model.config.hot_side.transformation_scheme) == "LAGRANGE-LEGENDRE":
+        if (
+            str.upper(model.config.hot_side.transformation_scheme)
+            == "LAGRANGE-LEGENDRE"
+        ):
             model.lagrange_legendre_deactivation()
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
@@ -374,7 +379,10 @@ class CrossFlowHeatExchanger1DInitializer(SingleControlVolumeUnitInitializer):
         model.temp_wall_center.unfix()
         model.temp_wall_center_eqn.activate()
 
-        if str.upper(model.config.hot_side.transformation_scheme) == "LAGRANGE-LEGENDRE":
+        if (
+            str.upper(model.config.hot_side.transformation_scheme)
+            == "LAGRANGE-LEGENDRE"
+        ):
             model.lagrange_legendre_deactivation()
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
@@ -464,17 +472,17 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
         # That equation is deleted here because heat can accumulate in the wall.
         self.del_component(self.heat_conservation)
 
-
-
         if (
             str.upper(self.config.hot_side.transformation_scheme) == "LAGRANGE-LEGENDRE"
-            or str.upper(self.config.cold_side.transformation_scheme) == "LAGRANGE-LEGENDRE"
+            or str.upper(self.config.cold_side.transformation_scheme)
+            == "LAGRANGE-LEGENDRE"
         ) and (
             self.config.hot_side.has_pressure_change
             or self.config.cold_side.has_pressure_change
         ):
-            raise NotImplementedError("Pressure change is not implemented for Lagrange-Legendre collocation.")
-            
+            raise NotImplementedError(
+                "Pressure change is not implemented for Lagrange-Legendre collocation."
+            )
 
         # Create aliases for ports
         if self.config.shell_is_hot:
@@ -629,7 +637,7 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
             doc="tube side convective heat transfer coefficient",
         )
         self.vars_to_fix_for_all_element_boundaries.add(self.heat_transfer_coeff_tube)
-        
+
         # Heat transfer resistance due to the fouling on tube side
         self.rfouling_tube = Param(
             initialize=0.0,
@@ -736,6 +744,7 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
                 * tube.properties[t, x].dens_mol_phase["Vap"]
                 == tube.properties[t, x].flow_mol
             )
+
         self.cons_to_deactivate_for_all_element_boundaries.add(self.v_tube_eqn)
 
         # Reynolds number
@@ -752,6 +761,7 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
                 * tube.properties[t, x].dens_mol_phase["Vap"]
                 * tube.properties[t, x].mw
             )
+
         self.cons_to_deactivate_for_all_element_boundaries.add(self.N_Re_tube_eqn)
 
         if tube_has_pressure_change:
@@ -822,7 +832,10 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
                 * tube.properties[t, x].therm_cond_phase["Vap"]
                 * b.fcorrection_htc_tube
             )
-        self.cons_to_deactivate_for_all_element_boundaries.add(self.heat_transfer_coeff_tube_eqn)
+
+        self.cons_to_deactivate_for_all_element_boundaries.add(
+            self.heat_transfer_coeff_tube_eqn
+        )
 
         # Nusselts number
         @self.Constraint(
@@ -837,6 +850,7 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
                 * b.N_Re_tube[t, x] ** 0.8
                 * tube.properties[t, x].prandtl_number_phase["Vap"] ** 0.4
             )
+
         self.cons_to_deactivate_for_all_element_boundaries.add(self.N_Nu_tube_eqn)
 
         @self.Constraint(
@@ -852,6 +866,7 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
                 * b.N_Re_shell[t, x] ** 0.6
                 * shell.properties[t, x].prandtl_number_phase["Vap"] ** 0.333333
             )
+
         self.cons_to_deactivate_for_all_element_boundaries.add(self.N_Nu_shell_eqn)
 
         # Energy balance with tube wall
@@ -871,6 +886,7 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
                 * b.number_columns_per_pass
                 * (b.temp_wall_tube[t, x] - tube.properties[t, x].temperature)
             )
+
         self.cons_to_deactivate_for_all_element_boundaries.add(self.heat_tube_eqn)
 
         # Heat to wall per length on shell side
@@ -887,6 +903,7 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
             ] * const.pi * b.do_tube * b.number_rows_per_pass * b.number_columns_per_pass * (
                 b.temp_wall_shell[t, x] - shell.properties[t, x].temperature
             )
+
         self.cons_to_deactivate_for_all_element_boundaries.add(self.heat_shell_eqn)
 
         # Tube side wall temperature
@@ -910,7 +927,9 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
             ] - pyunits.convert(
                 b.temp_wall_center[t, x], to_units=tube_units["temperature"]
             )
+
         self.cons_to_deactivate_for_all_element_boundaries.add(self.temp_wall_tube_eqn)
+
         # Shell side wall temperature
         @self.Constraint(
             self.flowsheet().config.time,
@@ -924,6 +943,7 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
                 * (b.thickness_tube / 2 / b.therm_cond_wall + b.rfouling_shell)
                 == b.temp_wall_shell[t, x] - b.temp_wall_center[t, x]
             )
+
         self.cons_to_deactivate_for_all_element_boundaries.add(self.temp_wall_shell_eqn)
 
         def heat_accumulation_term(b, t, x):
@@ -944,11 +964,14 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
                 + pyunits.convert(
                     b.heat_tube[t, x],
                     to_units=shell_units["power"] / shell_units["length"],
-                ) 
+                )
                 * pyunits.convert(b.length_flow_tube, to_units=shell_units["length"])
                 / b.length_flow_shell
             )
-        self.cons_to_deactivate_for_all_element_boundaries.add(self.temp_wall_center_eqn)
+
+        self.cons_to_deactivate_for_all_element_boundaries.add(
+            self.temp_wall_center_eqn
+        )
 
         if not self.config.dynamic:
             z0 = shell.length_domain.first()
@@ -999,22 +1022,19 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
             material_balances_dict = dict(
                 (key, Reference(slc))
                 for key, slc in slice_component_along_sets(
-                    side.material_balances,
-                    (side.length_domain,)
+                    side.material_balances, (side.length_domain,)
                 )
             )
             material_flow_linking_cons_dict = dict(
                 (key, Reference(slc))
                 for key, slc in slice_component_along_sets(
-                    side.material_flow_linking_constraints,
-                    (side.length_domain,)
+                    side.material_flow_linking_constraints, (side.length_domain,)
                 )
             )
             enthalpy_flow_linking_cons_dict = dict(
                 (key, Reference(slc))
                 for key, slc in slice_component_along_sets(
-                    side.enthalpy_flow_linking_constraint,
-                    (side.length_domain,)
+                    side.enthalpy_flow_linking_constraint, (side.length_domain,)
                 )
             )
             for x in element_bounds:
@@ -1026,14 +1046,14 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
                         pass
                 if (
                     x != self.cold_side.length_domain.first()
-                    and x!= self.cold_side.length_domain.last()
+                    and x != self.cold_side.length_domain.last()
                 ):
                     pass
-                    
+
                 for t in self.flowsheet().time:
                     if (
                         x != self.cold_side.length_domain.first()
-                        and x!= self.cold_side.length_domain.last()
+                        and x != self.cold_side.length_domain.last()
                     ):
                         # Need to calculate properties at the first
                         # and last elements in order to communicate
@@ -1043,7 +1063,7 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
                         side.enthalpy_balances[t, x].deactivate()
                     except KeyError:
                         pass
-        
+
     def calculate_scaling_factors(self):
         def gsf(obj):
             return iscale.get_scaling_factor(obj, default=1, warning=True)
