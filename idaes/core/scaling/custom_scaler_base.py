@@ -250,7 +250,7 @@ class CustomScalerBase(ScalerBase):
         # Locking attribute creation context prevents build-on-demand properties
         # from getting triggered through this lookup.
         if hasattr(blk, "_lock_attribute_creation"):  # pylint: disable=protected-access
-            lock_attriute_creation_orig = (
+            lock_attribute_creation_orig = (
                 blk._lock_attribute_creation
             )  # pylint: disable=protected-access
             blk._lock_attribute_creation = True
@@ -262,7 +262,7 @@ class CustomScalerBase(ScalerBase):
                 parent_default = self.default_scaling_factors[key]
         if hasattr(blk, "_lock_attribute_creation"):  # pylint: disable=protected-access
             blk._lock_attribute_creation = (
-                lock_attriute_creation_orig  # pylint: disable=protected-access
+                lock_attribute_creation_orig  # pylint: disable=protected-access
             )
 
         if comp_default is not None:
