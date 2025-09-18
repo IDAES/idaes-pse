@@ -371,8 +371,8 @@ class TestInitializersSapon:
 
 class TestStoichiometricReactorScaler:
     @pytest.mark.unit
-    def test_default_scaler():
-        assert StoichiometricReactor.default_scaler == StoichiometricReactorScaler
+    def test_default_scaler(self):
+        assert StoichiometricReactor().default_scaler == StoichiometricReactorScaler
 
     @pytest.mark.integration
     def test_example_case(self):
