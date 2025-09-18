@@ -251,9 +251,9 @@ class CustomScalerBase(ScalerBase):
         # from getting triggered through this lookup.
         if hasattr(blk, "_lock_attribute_creation"):  # pylint: disable=protected-access
             lock_attribute_creation_orig = (
-                blk._lock_attribute_creation
-            )  # pylint: disable=protected-access
-            blk._lock_attribute_creation = True
+                blk._lock_attribute_creation  # pylint: disable=protected-access
+            )
+            blk._lock_attribute_creation = True  # pylint: disable=protected-access
         for key in self.default_scaling_factors:
             comp2 = blk.find_component(key)
             if comp2 is component:
@@ -261,8 +261,8 @@ class CustomScalerBase(ScalerBase):
             elif comp2 is component.parent_component():
                 parent_default = self.default_scaling_factors[key]
         if hasattr(blk, "_lock_attribute_creation"):  # pylint: disable=protected-access
-            blk._lock_attribute_creation = (
-                lock_attribute_creation_orig  # pylint: disable=protected-access
+            blk._lock_attribute_creation = (  # pylint: disable=protected-access
+                lock_attribute_creation_orig
             )
 
         if comp_default is not None:
