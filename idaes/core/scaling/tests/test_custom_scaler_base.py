@@ -292,7 +292,7 @@ class TestCustomScalerBase:
         assert sb.get_default_scaling_factor(m.w["a", "x"]) == 23
 
     @pytest.mark.unit
-    def test_get_default_scaling_factor_indexed(self, caplog):
+    def test_get_default_scaling_factor_indexed(self):
         m = ConcreteModel()
         m.params = Parameters()
         m.state = State(parameters=m.params)
