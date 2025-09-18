@@ -24,6 +24,7 @@ from pyomo.environ import (
     units,
     value,
     Var,
+    TransformationFactory,
 )
 from pyomo.util.check_units import assert_units_consistent
 from pyomo.core.expr.calculus.derivatives import differentiate
@@ -43,6 +44,7 @@ from idaes.models.unit_models.pressure_changer import (
     Pump,
     ThermodynamicAssumption,
     IsentropicPressureChangerInitializer,
+    PressureChangerScaler,
 )
 
 from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
@@ -69,6 +71,10 @@ from idaes.core.initialization import (
     InitializationStatus,
 )
 from idaes.core.util import DiagnosticsToolbox
+from idaes.core.util.scaling import (
+    get_jacobian,
+    jacobian_cond,
+)
 
 
 # -----------------------------------------------------------------------------
@@ -1052,3 +1058,57 @@ class TestInitializersTurbine1:
         assert not model.fs.unit.inlet.flow_mol[0].fixed
         assert not model.fs.unit.inlet.enth_mol[0].fixed
         assert not model.fs.unit.inlet.pressure[0].fixed
+
+
+class TestPressureChangerScaler:
+    @pytest.mark.integration
+    def test_example_case(self):
+        m = ConcreteModel()
+
+        m.fs = FlowsheetBlock(
+            dynamic=False
+        )  # dynamic or ss flowsheet needs to be specified here
+
+        # Add properties parameter block to the flowsheet with specifications
+        m.fs.properties = SaponificationParameterBlock()
+
+        # Create an instance of the pump unit, attaching it to the flowsheet
+        # Specify that the property package to be used with the pump is the one we created earlier.
+        m.fs.pump = Pump(property_package=m.fs.properties)
+
+        m.fs.pump.inlet.flow_vol[0].fix(1.0e-03 * units.m**3 / units.s)
+        m.fs.pump.inlet.conc_mol_comp[0, "H2O"].fix(55388.0 * units.mol / units.m**3)
+        m.fs.pump.inlet.conc_mol_comp[0, "NaOH"].fix(100.0 * units.mol / units.m**3)
+        m.fs.pump.inlet.conc_mol_comp[0, "EthylAcetate"].fix(
+            100.0 * units.mol / units.m**3
+        )
+        m.fs.pump.inlet.conc_mol_comp[0, "SodiumAcetate"].fix(
+            0.0 * units.mol / units.m**3
+        )
+        m.fs.pump.inlet.conc_mol_comp[0, "Ethanol"].fix(0.0 * units.mol / units.m**3)
+
+        m.fs.pump.inlet.temperature[0].fix(303.15 * units.K)
+        m.fs.pump.inlet.pressure[0].fix(101325.0 * units.Pa)
+
+        # Fix pump conditions
+        m.fs.pump.deltaP.fix(100000 * units.Pa)
+        m.fs.pump.efficiency_pump.fix(0.8)
+
+        ini = BlockTriangularizationInitializer()
+        ini.initialize(m.fs.pump)
+
+        scaler = PressureChangerScaler()
+        scaler.scale_model(m.fs.pump)
+
+        solver = get_solver(
+            "ipopt_v2", writer_config={"linear_presolve": True, "scale_model": True}
+        )
+        results = solver.solve(m, tee=True)
+        assert check_optimal_termination(results)
+
+        # Check condition number to confirm scaling
+        sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
+        jac, _ = get_jacobian(sm, scaled=False)
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+            1.393e02, rel=1e-3
+        )
