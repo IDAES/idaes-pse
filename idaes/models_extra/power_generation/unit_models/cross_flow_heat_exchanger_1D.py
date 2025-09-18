@@ -146,8 +146,6 @@ class CrossFlowHeatExchanger1DInitializer(SingleControlVolumeUnitInitializer):
         hot_side.properties[t0, 0].cp_mol  # pylint: disable=pointless-statement
         cold_side.properties[t0, 0].cp_mol  # pylint: disable=pointless-statement
 
-        # import pdb; pdb.set_trace()
-
         # ---------------------------------------------------------------------
         # Initialize shell block
         self.initialize_control_volume(tube, copy_inlet_state)
@@ -309,14 +307,10 @@ class CrossFlowHeatExchanger1DInitializer(SingleControlVolumeUnitInitializer):
         model.temp_wall_center_eqn.deactivate()
         if tube_has_pressure_change:
             model.deltaP_tube_eqn.deactivate()
-            # tube.pressure_dx_disc_eq.deactivate()
         if shell_has_pressure_change:
             model.deltaP_shell_eqn.deactivate()
-            # shell.pressure_dx_disc_eq.deactivate()
         model.heat_tube_eqn.deactivate()
         model.heat_shell_eqn.deactivate()
-        # model.hot_side.pressure_dx.fix()
-        # model.cold_side.pressure_dx.fix()
 
         if str.upper(model.config.hot_side.transformation_scheme) == "LAGRANGE-LEGENDRE":
             model.lagrange_legendre_deactivation()
@@ -325,7 +319,6 @@ class CrossFlowHeatExchanger1DInitializer(SingleControlVolumeUnitInitializer):
                 cold_side.properties[t, x].temperature.unfix()
             model.fix_initialization_states()
 
-        # import pdb; pdb.set_trace()
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solver_obj.solve(model, tee=slc.tee)
         try:
@@ -363,8 +356,6 @@ class CrossFlowHeatExchanger1DInitializer(SingleControlVolumeUnitInitializer):
 
         model.hot_side.pressure_dx_disc_eq.activate()
         model.cold_side.pressure_dx_disc_eq.activate()
-        # model.hot_side.pressure_dx.unfix()
-        # model.cold_side.pressure_dx.unfix()
         model.heat_tube_eqn.activate()
         model.heat_shell_eqn.activate()
 
@@ -1038,16 +1029,7 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
                     and x!= self.cold_side.length_domain.last()
                 ):
                     pass
-                    # for con in enthalpy_flow_linking_cons_dict.values():
-                    #     try:
-                    #         con[x].deactivate()
-                    #     except KeyError:
-                    #         pass
-                    # for con in material_flow_linking_cons_dict.values():
-                    #     try:
-                    #         con[x].deactivate()
-                    #     except KeyError:
-                    #         pass
+                    
                 for t in self.flowsheet().time:
                     if (
                         x != self.cold_side.length_domain.first()
@@ -1057,52 +1039,11 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
                         # and last elements in order to communicate
                         # state variables to ports
                         pass
-                        # side.properties[t, x].deactivate()
-                    # side.heat[t, x].fix()
                     try:
                         side.enthalpy_balances[t, x].deactivate()
                     except KeyError:
-                        # Constraint.skip
                         pass
-
-
-        # I *think* that all unit-model level constraints don't need to be active
-        # at finite element boundaries.
-        # for var in self.component_objects(ctype=Var, descend_into=False):
-        #     cont_set_set = ComponentSet(var.index_set().subsets())
-        #     if self.cold_side.length_domain in cont_set_set:
-        #         ld = self.cold_side.length_domain
-        #     elif self.hot_side.length_domain in cont_set_set:
-        #         ld = self.hot_side.length_domain
-        #     else:
-        #         continue
-        #     var_dict = dict(
-        #         (key, Reference(slc))
-        #         for key, slc in slice_component_along_sets(var, (ld,))
-        #     )
-        #     for var in var_dict.values():
-        #         for x in element_bounds:
-        #             var[x].fix()
-
-        # for con in self.component_objects(ctype=Constraint, descend_into=False):
-        #     cont_set_set = ComponentSet(con.index_set().subsets())
-        #     if self.cold_side.length_domain in cont_set_set:
-        #         ld = self.cold_side.length_domain
-        #     elif self.hot_side.length_domain in cont_set_set:
-        #         ld = self.hot_side.length_domain
-        #     else:
-        #         continue
-        #     con_dict = dict(
-        #         (key, Reference(slc))
-        #         for key, slc in slice_component_along_sets(con, (ld,))
-        #     )
-        #     for con in con_dict.values():
-        #         for x in element_bounds:
-        #             con[x].deactivate()
         
-
-
-
     def calculate_scaling_factors(self):
         def gsf(obj):
             return iscale.get_scaling_factor(obj, default=1, warning=True)

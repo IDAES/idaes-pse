@@ -1359,7 +1359,7 @@ class SolidOxideCellData(UnitModelBlockData):
                 1/3,
             )
 
-        # iscale.propagate_indexed_component_scaling_factors(self)
+        iscale.propagate_indexed_component_scaling_factors(self)
 
         # Need to scale material_flux_xes by component because inerts have much smaller
         # fluxes than actively reacting species.
