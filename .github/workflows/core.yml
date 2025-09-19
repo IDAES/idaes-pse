@@ -88,7 +88,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.9','3.10','3.11','3.12','3.13']
+        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
         os:
           - linux
           - win64
@@ -103,35 +103,14 @@ jobs:
             cov-report: true
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/display-debug-info
-
-      # Conda for <=3.12
       - name: Set up Conda environment
-        if: matrix.python-version != '3.13'
-        uses: conda-incubator/setup-miniconda@v3
-        with:
-          activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
-          python-version: ${{ matrix.python-version }}
-          miniforge-version: latest
-
-      # Python.org for 3.13
-      - name: Set up Python 3.13
-        if: matrix.python-version == '3.13'
         uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: ${{ matrix.python-version }}
 
-
-      # Install dependencies
-      - name: Set up idaes (conda)
-        if: matrix.python-version != '3.13'
-        uses: ./.github/actions/setup-idaes
-        with:
-          install-target: -r requirements-dev.txt
-
-      - name: Set up idaes (pip)
-        if: matrix.python-version == '3.13'
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements-dev.txt
