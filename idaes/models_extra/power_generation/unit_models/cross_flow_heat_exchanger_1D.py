@@ -316,9 +316,10 @@ class CrossFlowHeatExchanger1DInitializer(SingleControlVolumeUnitInitializer):
             == "LAGRANGE-LEGENDRE"
         ):
             model.lagrange_legendre_deactivation()
-            for x in model.hot_side.length_domain.get_finite_elements():
-                hot_side.properties[t, x].temperature.unfix()
-                cold_side.properties[t, x].temperature.unfix()
+            for t in model.flowsheet().time:
+                for x in model.hot_side.length_domain.get_finite_elements():
+                    hot_side.properties[t, x].temperature.unfix()
+                    cold_side.properties[t, x].temperature.unfix()
             model.fix_initialization_states()
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
@@ -1023,18 +1024,6 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
                 (key, Reference(slc))
                 for key, slc in slice_component_along_sets(
                     side.material_balances, (side.length_domain,)
-                )
-            )
-            material_flow_linking_cons_dict = dict(
-                (key, Reference(slc))
-                for key, slc in slice_component_along_sets(
-                    side.material_flow_linking_constraints, (side.length_domain,)
-                )
-            )
-            enthalpy_flow_linking_cons_dict = dict(
-                (key, Reference(slc))
-                for key, slc in slice_component_along_sets(
-                    side.enthalpy_flow_linking_constraint, (side.length_domain,)
                 )
             )
             for x in element_bounds:
