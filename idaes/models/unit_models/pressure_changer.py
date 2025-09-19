@@ -1379,7 +1379,13 @@ class PumpData(PressureChangerData):
 
 
 class PressureChangerScaler(CustomScalerBase):
-    """Scaler class for pressure_changer unit model"""
+    """
+    Default modular scaler for pressure changer unit models.
+
+    This scaler relies primarily on the ControlVolume0D scaler and the default properties scaler
+    for the isentropic properties set (when created). Efficiencies and pressure ratio variables are scaled by
+    default scaling factors. Unit model work variables are scaled using the control volume work variable.
+    """
 
     DEFAULT_SCALING_FACTORS = {
         "ratioP": 1,
