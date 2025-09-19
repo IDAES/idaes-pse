@@ -156,7 +156,7 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
             except KeyError:
                 # Default behavior is to not create heat loss term.
                 pass
-        
+
         self.number_cells = pyo.Var(
             initialize=1e5,
             units=pyo.units.dimensionless,
@@ -297,6 +297,7 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
                 b.total_current[t]
                 == b.solid_oxide_cell.total_current[t] * b.number_cells
             )
+
         if self.config.has_heat_loss_term:
             self.total_heat_loss = pyo.Var(
                 tset,
@@ -307,8 +308,10 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
 
             @self.Constraint(tset)
             def total_heat_loss_eqn(b, t):
-                return b.total_heat_loss[t] == b.solid_oxide_cell.total_heat_loss[t] * b.number_cells
-            
+                return (
+                    b.total_heat_loss[t]
+                    == b.solid_oxide_cell.total_heat_loss[t] * b.number_cells
+                )
 
     def initialize_build(
         self,
@@ -335,16 +338,12 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
 
         if self.config.has_heat_loss_term:
             total_heat_loss_fixed = {
-                t: self.total_heat_loss[t].fixed
-                for t in self.flowsheet().time
+                t: self.total_heat_loss[t].fixed for t in self.flowsheet().time
             }
             self.total_heat_loss.fix()
             for t in self.flowsheet().time:
                 self.solid_oxide_cell.total_heat_loss[t].set_value(
-                    pyo.value(
-                        self.total_heat_loss[t]
-                        / self.number_cells
-                    )
+                    pyo.value(self.total_heat_loss[t] / self.number_cells)
                 )
 
         flags = {}
@@ -464,7 +463,7 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
             ssf(self.total_current[t], sf_tot_current * s_num_cells)
             sf_tot_current = gsf(self.total_current[t])
             cst(self.total_current_eqn[t], sf_tot_current)
-            
+
             if self.config.has_heat_loss_term:
                 sf_total_heat_loss = gsf(self.solid_oxide_cell.total_heat_loss[t])
                 ssf(self.total_heat_loss[t], sf_total_heat_loss * s_num_cells)

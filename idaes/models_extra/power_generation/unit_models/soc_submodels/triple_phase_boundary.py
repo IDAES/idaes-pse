@@ -288,7 +288,7 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
                 tset,
                 iznodes,
                 units=pyo.units.dimensionless,
-                doc="Custom modifier to exchange current for degradation modeling",               
+                doc="Custom modifier to exchange current for degradation modeling",
             )
 
         @self.Expression(tset, iznodes, comps)
