@@ -1295,14 +1295,18 @@ class SolidOxideCellData(UnitModelBlockData):
                 + self.oxygen_channel.enth_mol_outlet[t]
                 * self.oxygen_channel.flow_mol_outlet[t]
             )
+            if self.config.has_heat_loss_term:
+                heat_loss = pyo.value(self.total_heat_loss[t])
+            else:
+                heat_loss = 0
             normal = max(
                 pyo.value(abs(enth_in)),
                 pyo.value(abs(enth_out)),
                 pyo.value(abs(self.electrical_work[t])),
                 1e-3,
-            )  # FIXME justify this value
+            )
             fraction_change = pyo.value(
-                (enth_out - enth_in - self.electrical_work[t]) / normal
+                (heat_loss + enth_out - enth_in - self.electrical_work[t]) / normal
             )
             if abs(fraction_change) > 3e-3:
                 raise RuntimeError(

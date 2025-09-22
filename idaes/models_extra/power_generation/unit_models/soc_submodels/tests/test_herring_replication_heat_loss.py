@@ -397,6 +397,118 @@ def test_initialization_cell(model):
 
 @pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.component
+def test_initialization_cell_heat_loss():
+    m = model_func()
+    cell = m.fs.cell
+
+    cell.potential.fix(1.288)
+    cell.fuel_inlet.temperature[0].fix(1103.15)
+    cell.fuel_inlet.pressure.fix(85910)
+    cell.fuel_inlet.flow_mol[0].fix(0.000484863)
+    cell.fuel_inlet.mole_frac_comp[0, "H2"].fix(0.0630491)
+    cell.fuel_inlet.mole_frac_comp[0, "H2O"].fix(0.6273812)
+    cell.fuel_inlet.mole_frac_comp[0, "N2"].fix(0.3095697)
+
+    cell.oxygen_inlet.temperature[0].fix(1103.15)
+    cell.oxygen_inlet.pressure.fix(85910)
+
+    cell.total_heat_loss.fix(0)
+
+    cell.recursive_scaling()
+
+    cell.initialize_build(
+        optarg={"nlp_scaling_method": "user-scaling"},
+        current_density_guess=0,
+        temperature_guess=1103.15,
+    )
+    cell.model_check()
+    # Test whether fixed degrees of freedom remain fixed
+    assert degrees_of_freedom(m.fs.cell) == 0
+
+    approx = lambda x: pytest.approx(x, 5e-3)
+    assert cell.current_density[0, 1].value == approx(-2394.77)
+    assert cell.current_density[0, 3].value == approx(-2326.71)
+    assert cell.current_density[0, 5].value == approx(-2268.31)
+    assert cell.current_density[0, 8].value == approx(-2191.66)
+    assert cell.current_density[0, 10].value == approx(-2145.27)
+
+    assert cell.fuel_outlet.temperature[0].value == approx(1103.40)
+    assert pyo.value(cell.fuel_outlet.pressure[0]) == approx(85910)
+    assert approx(484.863e-6) == pyo.value(cell.fuel_outlet.flow_mol[0])
+    assert approx(0.472735) == pyo.value(cell.fuel_outlet.mole_frac_comp[0, "H2O"])
+    assert approx(0.217695) == pyo.value(cell.fuel_outlet.mole_frac_comp[0, "H2"])
+    assert approx(0.309570) == pyo.value(cell.fuel_outlet.mole_frac_comp[0, "N2"])
+
+    assert cell.oxygen_outlet.temperature[0].value == approx(1103.42)
+    assert pyo.value(cell.oxygen_outlet.pressure[0]) == approx(85910)
+    assert approx(297.821e-6) == pyo.value(cell.oxygen_outlet.flow_mol[0])
+    assert approx(0.3094487) == pyo.value(cell.oxygen_outlet.mole_frac_comp[0, "O2"])
+    assert approx(0.690551) == pyo.value(cell.oxygen_outlet.mole_frac_comp[0, "N2"])
+
+    # Test whether unfixed degrees of freedom remain unfixed
+    cell.potential.unfix()
+    cell.fuel_inlet.temperature[0].unfix()
+    cell.fuel_inlet.pressure.unfix()
+    cell.fuel_inlet.flow_mol[0].unfix()
+    cell.fuel_inlet.mole_frac_comp[0, "H2"].unfix()
+    cell.fuel_inlet.mole_frac_comp[0, "H2O"].unfix()
+    cell.fuel_inlet.mole_frac_comp[0, "N2"].unfix()
+
+    cell.oxygen_inlet.temperature[0].unfix()
+    cell.oxygen_inlet.pressure.unfix()
+    cell.oxygen_inlet.mole_frac_comp[0, "O2"].unfix()
+    cell.oxygen_inlet.mole_frac_comp[0, "N2"].unfix()
+
+    assert degrees_of_freedom(cell) == 11
+
+    cell.initialize(current_density_guess=0, temperature_guess=1103.15)
+
+    assert degrees_of_freedom(cell) == 11
+
+    cell.potential.fix()
+    cell.fuel_inlet.temperature[0].fix()
+    cell.fuel_inlet.pressure.fix()
+    cell.fuel_inlet.flow_mol[0].fix()
+    cell.fuel_inlet.mole_frac_comp[0, "H2"].fix()
+    cell.fuel_inlet.mole_frac_comp[0, "H2O"].fix()
+    cell.fuel_inlet.mole_frac_comp[0, "N2"].fix()
+
+    cell.oxygen_inlet.temperature[0].fix()
+    cell.oxygen_inlet.pressure.fix()
+    cell.oxygen_inlet.mole_frac_comp[0, "O2"].fix()
+    cell.oxygen_inlet.mole_frac_comp[0, "N2"].fix()
+
+    solver_obj = get_solver("ipopt_v2", writer_config={"scale_model": True})
+
+    cell.total_heat_loss.fix(1.5)
+
+    results = solver_obj.solve(cell)
+    pyo.assert_optimal_termination(results)
+
+    cell.model_check()
+
+    assert cell.current_density[0, 1].value == approx(-2226.92)
+    assert cell.current_density[0, 3].value == approx(-2089.43)
+    assert cell.current_density[0, 5].value == approx(-1988.44)
+    assert cell.current_density[0, 8].value == approx(-1871.27)
+    assert cell.current_density[0, 10].value == approx(-1819.76)
+
+    assert cell.fuel_outlet.temperature[0].value == approx(1049.51)
+    assert pyo.value(cell.fuel_outlet.pressure[0]) == approx(85910)
+    assert approx(484.863e-6) == pyo.value(cell.fuel_outlet.flow_mol[0])
+    assert approx(0.4914364) == pyo.value(cell.fuel_outlet.mole_frac_comp[0, "H2O"])
+    assert approx(0.198994) == pyo.value(cell.fuel_outlet.mole_frac_comp[0, "H2"])
+    assert approx(0.309570) == pyo.value(cell.fuel_outlet.mole_frac_comp[0, "N2"])
+
+    assert cell.oxygen_outlet.temperature[0].value == approx(1049.44)
+    assert pyo.value(cell.oxygen_outlet.pressure[0]) == approx(85910)
+    assert approx(293.287e-6) == pyo.value(cell.oxygen_outlet.flow_mol[0])
+    assert approx(0.2987739) == pyo.value(cell.oxygen_outlet.mole_frac_comp[0, "O2"])
+    assert approx(0.701226) == pyo.value(cell.oxygen_outlet.mole_frac_comp[0, "N2"])
+
+
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
+@pytest.mark.component
 def test_initialization_stack(model_stack):
     m = model_stack
     stack = m.fs.stack
@@ -473,6 +585,162 @@ def test_initialization_stack(model_stack):
     # Clean up side effects for other tests
     stack.oxygen_inlet.mole_frac_comp[0, "O2"].fix()
     stack.oxygen_inlet.mole_frac_comp[0, "N2"].fix()
+
+
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
+@pytest.mark.component
+def test_initialization_stack_heat_loss():
+    m = pyo.ConcreteModel()
+    m.fs = FlowsheetBlock(
+        dynamic=False,
+        time_set=[0],
+        time_units=pyo.units.s,
+    )
+
+    m.fs.propertiesIapws95 = iapws95.Iapws95ParameterBlock()
+    m.fs.prop_Iapws95 = iapws95.Iapws95StateBlock(parameters=m.fs.propertiesIapws95)
+
+    m.fs.oxygen_params = GenericParameterBlock(
+        **get_prop(oxygen_comps, {"Vap"}, eos=EosType.IDEAL),
+    )
+    m.fs.fuel_params = GenericParameterBlock(
+        **get_prop(fuel_comps, {"Vap"}, eos=EosType.IDEAL),
+    )
+
+    m.fs.stack = SolidOxideModuleSimple(
+        solid_oxide_cell_config=cell_config,
+        fuel_property_package=m.fs.fuel_params,
+        oxygen_property_package=m.fs.oxygen_params,
+        has_heat_loss_term=True,
+    )
+
+    fix_cell_parameters(m.fs.stack.solid_oxide_cell)
+    m.fs.stack.number_cells.fix(10)
+    m.fs.stack.total_heat_loss.fix(0)
+    m.fs.stack.oxygen_inlet.flow_mol[0].fix(cccm_to_mps(3500))
+    m.fs.stack.oxygen_inlet.mole_frac_comp[0, "O2"].fix(0.21)
+    m.fs.stack.oxygen_inlet.mole_frac_comp[0, "N2"].fix(0.79)
+
+    for pp in [m.fs.fuel_params, m.fs.oxygen_params]:
+        pp.set_default_scaling("flow_mol", 1e3)
+        pp.set_default_scaling("flow_mol_phase", 1e3)
+        pp.set_default_scaling("mole_frac_comp", 10)
+        pp.set_default_scaling("mole_frac_phase_comp", 10)
+        pp.set_default_scaling("enth_mol_phase", 1e-3)
+        pp.set_default_scaling("pressure", 1e-5)
+        pp.set_default_scaling("temperature", 1e-2)
+
+    stack = m.fs.stack
+    cell = m.fs.stack.solid_oxide_cell
+
+    stack.potential_cell[0].fix(1.288)
+    stack.fuel_inlet.temperature[0].fix(1103.15)
+    stack.fuel_inlet.pressure.fix(85910)
+    stack.fuel_inlet.flow_mol[0].fix(0.00484863)
+    stack.fuel_inlet.mole_frac_comp[0, "H2"].fix(0.0630491)
+    stack.fuel_inlet.mole_frac_comp[0, "H2O"].fix(0.6273812)
+    stack.fuel_inlet.mole_frac_comp[0, "N2"].fix(0.3095697)
+
+    stack.oxygen_inlet.temperature[0].fix(1103.15)
+    stack.oxygen_inlet.pressure.fix(85910)
+
+    iscale.calculate_scaling_factors(m)
+
+    assert degrees_of_freedom(m.fs.stack) == 0
+
+    stack.initialize_build(
+        optarg={"nlp_scaling_method": "user-scaling"},
+        current_density_guess=0,
+        temperature_guess=1103.15,
+    )
+    cell.model_check()
+    # Test whether fixed degrees of freedom remain fixed
+    assert degrees_of_freedom(m.fs.stack) == 0
+
+    approx = lambda x: pytest.approx(x, 5e-3)
+    assert cell.current_density[0, 1].value == approx(-2394.77)
+    assert cell.current_density[0, 3].value == approx(-2326.71)
+    assert cell.current_density[0, 5].value == approx(-2268.31)
+    assert cell.current_density[0, 8].value == approx(-2191.66)
+    assert cell.current_density[0, 10].value == approx(-2145.27)
+
+    assert stack.fuel_outlet.temperature[0].value == approx(1103.40)
+    assert pyo.value(stack.fuel_outlet.pressure[0]) == approx(85910)
+    assert approx(484.863e-5) == pyo.value(stack.fuel_outlet.flow_mol[0])
+    assert approx(0.472735) == pyo.value(stack.fuel_outlet.mole_frac_comp[0, "H2O"])
+    assert approx(0.217695) == pyo.value(stack.fuel_outlet.mole_frac_comp[0, "H2"])
+    assert approx(0.309570) == pyo.value(stack.fuel_outlet.mole_frac_comp[0, "N2"])
+
+    assert stack.oxygen_outlet.temperature[0].value == approx(1103.42)
+    assert pyo.value(stack.oxygen_outlet.pressure[0]) == approx(85910)
+    assert approx(297.821e-5) == pyo.value(stack.oxygen_outlet.flow_mol[0])
+    assert approx(0.3094487) == pyo.value(stack.oxygen_outlet.mole_frac_comp[0, "O2"])
+    assert approx(0.690551) == pyo.value(stack.oxygen_outlet.mole_frac_comp[0, "N2"])
+
+    # Test whether unfixed degrees of freedom remain unfixed
+    stack.potential_cell.unfix()
+    stack.fuel_inlet.temperature[0].unfix()
+    stack.fuel_inlet.pressure.unfix()
+    stack.fuel_inlet.flow_mol[0].unfix()
+    stack.fuel_inlet.mole_frac_comp[0, "H2"].unfix()
+    stack.fuel_inlet.mole_frac_comp[0, "H2O"].unfix()
+    stack.fuel_inlet.mole_frac_comp[0, "N2"].unfix()
+
+    stack.oxygen_inlet.temperature[0].unfix()
+    stack.oxygen_inlet.pressure.unfix()
+    stack.oxygen_inlet.mole_frac_comp[0, "O2"].unfix()
+    stack.oxygen_inlet.mole_frac_comp[0, "N2"].unfix()
+
+    assert degrees_of_freedom(stack) == 11
+
+    stack.initialize_build(
+        optarg={"nlp_scaling_method": "user-scaling"},
+        current_density_guess=0,
+        temperature_guess=1103.15,
+    )
+
+    assert degrees_of_freedom(stack) == 11
+
+    stack.potential_cell.fix()
+    stack.fuel_inlet.temperature[0].fix()
+    stack.fuel_inlet.pressure.fix()
+    stack.fuel_inlet.flow_mol[0].fix()
+    stack.fuel_inlet.mole_frac_comp[0, "H2"].fix()
+    stack.fuel_inlet.mole_frac_comp[0, "H2O"].fix()
+    stack.fuel_inlet.mole_frac_comp[0, "N2"].fix()
+
+    stack.oxygen_inlet.temperature[0].fix()
+    stack.oxygen_inlet.pressure.fix()
+    stack.oxygen_inlet.mole_frac_comp[0, "O2"].fix()
+    stack.oxygen_inlet.mole_frac_comp[0, "N2"].fix()
+
+    stack.total_heat_loss.fix(1.5 * 10)
+
+    solver_obj = get_solver("ipopt_v2", writer_config={"scale_model": True})
+
+    results = solver_obj.solve(stack)
+
+    pyo.assert_optimal_termination(results)
+    cell.model_check()
+
+    assert cell.current_density[0, 1].value == approx(-2226.92)
+    assert cell.current_density[0, 3].value == approx(-2089.43)
+    assert cell.current_density[0, 5].value == approx(-1988.44)
+    assert cell.current_density[0, 8].value == approx(-1871.27)
+    assert cell.current_density[0, 10].value == approx(-1819.76)
+
+    assert stack.fuel_outlet.temperature[0].value == approx(1049.51)
+    assert pyo.value(stack.fuel_outlet.pressure[0]) == approx(85910)
+    assert approx(484.863e-5) == pyo.value(stack.fuel_outlet.flow_mol[0])
+    assert approx(0.4914364) == pyo.value(stack.fuel_outlet.mole_frac_comp[0, "H2O"])
+    assert approx(0.198994) == pyo.value(stack.fuel_outlet.mole_frac_comp[0, "H2"])
+    assert approx(0.309570) == pyo.value(stack.fuel_outlet.mole_frac_comp[0, "N2"])
+
+    assert stack.oxygen_outlet.temperature[0].value == approx(1049.44)
+    assert pyo.value(stack.oxygen_outlet.pressure[0]) == approx(85910)
+    assert approx(293.287e-5) == pyo.value(stack.oxygen_outlet.flow_mol[0])
+    assert approx(0.2987739) == pyo.value(stack.oxygen_outlet.mole_frac_comp[0, "O2"])
+    assert approx(0.701226) == pyo.value(stack.oxygen_outlet.mole_frac_comp[0, "N2"])
 
 
 def kazempoor_braun_replication(model):
