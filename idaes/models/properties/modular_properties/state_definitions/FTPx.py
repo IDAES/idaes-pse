@@ -771,17 +771,21 @@ class FTPxScaler(CustomScalerBase):
                 overwrite=overwrite,
             )
         if len(model.phase_list) == 1:
-            self.scale_constraint_by_variable(
+            self.scale_constraint_by_component(
                 model.total_flow_balance, model.flow_mol, overwrite=overwrite
             )
             for j, con in model.component_flow_balances.items():
-                self.scale_constraint_by_variable(
+                self.scale_constraint_by_component(
                     con,
                     # Molar flow doesn't appear in this constraint for a single phase
                     model.mole_frac_comp[j],
                     overwrite=False,
                 )
-            # model.phase_fraction_constraint is well-scaled
+            # model.phase_fraction_constraint is well-scaled by default
+            p = model.phase_list.first()
+            self.set_constraint_scaling_factor(
+                model.phase_fraction_constraint[p], 1, overwrite=False
+            )
 
         else:
             self.scale_constraint_by_nominal_value(
