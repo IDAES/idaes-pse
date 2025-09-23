@@ -1217,7 +1217,7 @@ class TestGenericStateBlock(object):
                     "visc_d_phase": dummy_method,
                 },
             },
-            state_definition=modules[__name__],  # What the heck?!
+            state_definition=modules[__name__],
             pressure_ref=100000.0,
             temperature_ref=300,
             base_units=base_units,

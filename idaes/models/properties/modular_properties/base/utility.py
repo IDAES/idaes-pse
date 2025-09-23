@@ -644,6 +644,7 @@ class ModularPropertiesScalerBase(CustomScalerBase):
     ):
         try:
             scaler_class = module.default_scaler
+        # TODO create interface where the user can provide custom scalers for individual modules
         except AttributeError:
             _log.debug(
                 f"No default Scaler set for module {module}. Cannot call {method}."

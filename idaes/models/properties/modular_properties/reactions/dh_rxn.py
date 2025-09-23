@@ -26,7 +26,7 @@ from idaes.core.util.misc import set_param_from_config
 
 # -----------------------------------------------------------------------------
 # Constant dh_rxn
-class ConstantEnthalpyRxn(CustomScalerBase):
+class ConstantEnthalpyRxnScaler(CustomScalerBase):
     """
     Scaler object for the constant_dh_rxn method for calculating
     the heat of reaction
@@ -61,7 +61,7 @@ class ConstantEnthalpyRxn(CustomScalerBase):
 class constant_dh_rxn:
     """Methods for constant heat of reaction."""
 
-    default_scaler = ConstantEnthalpyRxn
+    default_scaler = ConstantEnthalpyRxnScaler
 
     @staticmethod
     def build_parameters(rblock, config):
