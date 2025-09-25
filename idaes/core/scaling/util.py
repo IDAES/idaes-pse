@@ -45,11 +45,13 @@ from pyomo.core.base.var import VarData
 from pyomo.core.base.constraint import ConstraintData
 from pyomo.core.base.expression import ExpressionData
 from pyomo.core.base.param import ParamData
+from pyomo.core.base.constraint import ConstraintData
 from pyomo.core import expr as EXPR
 from pyomo.common.numeric_types import native_types
 from pyomo.core.base.units_container import _PyomoUnit
 
 from idaes.core.util.exceptions import BurntToast
+from idaes.core.util.scaling import get_constraint_transform_applied_scaling_factor
 import idaes.logger as idaeslog
 
 
@@ -515,14 +517,31 @@ def set_scaling_factor(component, scaling_factor: float, overwrite: bool = False
     elif math.isnan(scaling_factor):
         raise ValueError(f"scaling factor for {component.name} is NaN.")
 
+    if isinstance(component, ConstraintData):
+        xform_factor = get_constraint_transform_applied_scaling_factor(component)
+        if xform_factor is not None:
+            raise RuntimeError(
+                f"Attempted to set constraint scaling factor for transformed constraint {component.name}. "
+                "Please use only one of set_scaling_factor and constraint_scaling_transform "
+                "per constraint to avoid double scaling."
+            )
+    elif isinstance(component, Constraint):
+        for condata in component.values():
+            xform_factor = get_constraint_transform_applied_scaling_factor(condata)
+            if xform_factor is not None:
+                raise RuntimeError(
+                    "Attempted to set constraint scaling factor for indexed constraint "
+                    f"{component.name} with transformed ConstraintData children. Please "
+                    "use only one of set_scaling_factor and constraint_scaling_transform "
+                    "per constraint to avoid double scaling."
+                )
+
     if component.is_indexed():
-        # What if a scaling factor already exists for the indexed component?
-        # for idx in component:
-        #     set_scaling_factor(component[idx], scaling_factor=scaling_factor, overwrite=overwrite)
         raise TypeError(
             f"Component {component.name} is indexed. Set scaling factors for individual indices instead."
         )
 
+    # Get suffix and assign scaling factor
     sfx = get_component_scaling_suffix(component)
 
     if not overwrite and component in sfx:

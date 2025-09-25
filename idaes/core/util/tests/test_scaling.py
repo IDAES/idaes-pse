@@ -465,6 +465,53 @@ def test_set_get_unset(caplog):
 
 
 @pytest.mark.unit
+def test_set_scaling_factor_transformed_constraint():
+    m = pyo.ConcreteModel()
+    m.x = pyo.Var(initialize=500)
+    m.c1 = pyo.Constraint(expr=m.x <= 1e3)
+    m.c2 = pyo.Constraint(expr=m.x == 1e3)
+    m.c3 = pyo.Constraint(expr=m.x >= 1e3)
+
+    def indexed_constraint_rule(b, idx):
+        return b.x == 1e3
+
+    m.c4 = pyo.Constraint([1, 2, 3], rule=indexed_constraint_rule)
+
+    def match(cname):
+        return re.escape(
+            f"Attempted to set constraint scaling factor for transformed constraint {cname}. "
+            "Please use only one of set_scaling_factor and constraint_scaling_transform "
+            "per constraint to avoid double scaling."
+        )
+
+    sc.constraint_scaling_transform(m.c1, 1e-3)
+    sc.constraint_scaling_transform(m.c2, 1e-3)
+    sc.constraint_scaling_transform(m.c3, 1e-3)
+    for idx in m.c4:
+        sc.constraint_scaling_transform(m.c4[idx], 1e-3)
+
+    with pytest.raises(RuntimeError, match=match("c1")):
+        sc.set_scaling_factor(m.c1, 1e-3)
+    with pytest.raises(RuntimeError, match=match("c2")):
+        sc.set_scaling_factor(m.c2, 1e-3)
+    with pytest.raises(RuntimeError, match=match("c3")):
+        sc.set_scaling_factor(m.c3, 1e-3)
+    with pytest.raises(
+        RuntimeError,
+        match=re.escape(
+            "Attempted to set constraint scaling factor for indexed constraint c4"
+            "with transformed ConstraintData children. Please use only one of "
+            "set_scaling_factor and constraint_scaling_transform "
+            "per constraint to avoid double scaling."
+        ),
+    ):
+        sc.set_scaling_factor(m.c4, 1e-3)
+    for idx in m.c4:
+        with pytest.raises(RuntimeError, match=match(f"c4[{idx}]")):
+            sc.set_scaling_factor(m.c4[idx], 1e-3)
+
+
+@pytest.mark.unit
 def test_set_and_get_scaling_factor():
     m = pyo.ConcreteModel()
     m.x = pyo.Var()
@@ -696,6 +743,42 @@ class TestSingleConstraintScalingTransform:
         assert model.c2.upper.value == pytest.approx(1)
         assert sc.get_constraint_transform_applied_scaling_factor(model.c2) == 1e-3
         assert model.constraint_transformed_scaling_factor[model.c2] == 1e-3
+
+
+@pytest.mark.unit
+def test_constraint_scaling_transform_existing_scaling_factor():
+    m = pyo.ConcreteModel()
+    m.x = pyo.Var(initialize=500)
+    m.c1 = pyo.Constraint(expr=m.x <= 1e3)
+    m.c2 = pyo.Constraint(expr=m.x == 1e3)
+    m.c3 = pyo.Constraint(expr=m.x >= 1e3)
+
+    def indexed_constraint_rule(b, idx):
+        return b.x == 1e3
+
+    m.c4 = pyo.Constraint([1, 2, 3], rule=indexed_constraint_rule)
+
+    def match(cname):
+        return re.escape(
+            f"Attempted to transform constraint {cname} with existing scaling factor. "
+            "Please use only one of set_scaling_factor and constraint_scaling_transform "
+            "per constraint to avoid double scaling."
+        )
+
+    sc.set_scaling_factor(m.c1, 1e-3)
+    sc.set_scaling_factor(m.c2, 1e-3)
+    sc.set_scaling_factor(m.c3, 1e-3)
+    sc.set_scaling_factor(m.c4, 1e-3)
+
+    with pytest.raises(RuntimeError, match=match("c1")):
+        sc.constraint_scaling_transform(m.c1, 1e-3)
+    with pytest.raises(RuntimeError, match=match("c2")):
+        sc.constraint_scaling_transform(m.c2, 1e-3)
+    with pytest.raises(RuntimeError, match=match("c3")):
+        sc.constraint_scaling_transform(m.c3, 1e-3)
+    for idx in range(1, 4):
+        with pytest.raises(RuntimeError, match=match(f"c4[{idx}]")):
+            sc.constraint_scaling_transform(m.c4[idx], 1e-3)
 
 
 class TestScaleSingleConstraint:
