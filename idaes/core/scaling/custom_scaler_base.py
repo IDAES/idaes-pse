@@ -258,6 +258,7 @@ class CustomScalerBase(ScalerBase):
             comp2 = blk.find_component(key)
             if comp2 is component:
                 comp_default = self.default_scaling_factors[key]
+                break
             elif comp2 is component.parent_component():
                 parent_default = self.default_scaling_factors[key]
         if hasattr(blk, "_lock_attribute_creation"):  # pylint: disable=protected-access

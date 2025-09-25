@@ -450,6 +450,10 @@ def get_scaling_factor(component, default: float = None, warning: bool = False):
 
     Args:
         component: component to get scaling factor for
+        default: scaling factor to return if no scaling factor
+            exists for component
+        warning: Bool to determine whether a warning should be
+            returned if no scaling factor is found
 
     Returns:
         float scaling factor

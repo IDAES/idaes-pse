@@ -144,7 +144,7 @@ class ScalerBase:
         Args:
             component: component to get scaling factor for
             default: scaling factor to return if no scaling factor
-                exists on component
+                exists for component
             warning: Bool to determine whether a warning should be
                 returned if no scaling factor is found
 
