@@ -1061,6 +1061,10 @@ class TestInitializersTurbine1:
 
 
 class TestPressureChangerScaler:
+    @pytest.mark.unit
+    def test_default_scaler():
+        assert PressureChanger.default_scaler == PressureChangerScaler
+
     @pytest.mark.integration
     def test_example_case(self):
         m = ConcreteModel()
