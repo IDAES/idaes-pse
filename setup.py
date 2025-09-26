@@ -52,11 +52,7 @@ class ExtraDependencies:
     coolprop = [
         "coolprop>=7.0",  # idaes.generic_models.properties.general.coolprop
     ]
-    testing = [
-        "pytest",
-        "addheader",
-        "pyyaml"
-    ]
+    testing = ["pytest", "addheader", "pyyaml"]
 
     def __init__(self):
         self._data = dict(type(self).__dict__)
