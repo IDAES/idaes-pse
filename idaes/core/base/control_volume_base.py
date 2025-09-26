@@ -141,7 +141,7 @@ class ControlVolumeScalerBase(CustomScalerBase):
         """
         if self._state_block_ref is None:
             raise AttributeError(
-                "The _state_block_ref attribute was not overriden by the "
+                "The _state_block_ref attribute was not overridden by the "
                 "class inheriting from ControlVolumeScalerBase."
             )
         else:
@@ -511,7 +511,7 @@ class ControlVolumeScalerBase(CustomScalerBase):
         """
         if self._state_block_ref is None:
             raise AttributeError(
-                "The _state_block_ref attribute was not overriden by the "
+                "The _state_block_ref attribute was not overridden by the "
                 "class inheriting from ControlVolumeScalerBase."
             )
         else:

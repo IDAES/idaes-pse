@@ -925,7 +925,6 @@ class CustomScalerBase(ScalerBase):
                     ) from err
                 smeth(smdata, submodel_scalers=submodel_scalers, overwrite=overwrite)
 
-
         if submodel.is_indexed():
             # Iterate over indices of submodel
             for data in submodel.values():
