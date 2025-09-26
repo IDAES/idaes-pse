@@ -1185,5 +1185,26 @@ class TestCustomScalerBase:
 
         assert "Using user-defined Scaler for b." in caplog.text
 
+    @pytest.mark.unit
+    def test_call_submodel_scaler_method_default_scaler_blockdata(self, caplog):
+        caplog.set_level(idaeslog.DEBUG, logger="idaes")
+
+        # Dummy up a nested model
+        m = ConcreteModel()
+        m.b = Block([1, 2, 3])
+        for bd in m.b.values():
+            bd.default_scaler = DummyScaler
+
+        sb = CustomScalerBase()
+        sb.call_submodel_scaler_method(m.b[1], method="dummy_method", overwrite=True)
+
+        for i, bd in m.b.items():
+            if i == 1:
+                assert bd._dummy_scaler_test
+            else:
+                assert not hasattr(bd, "_dummy_scaler_test")
+
+        assert "Using default Scaler for b[1]." in caplog.text
+
 
 # TODO additional tests for nested submodel scalers.
