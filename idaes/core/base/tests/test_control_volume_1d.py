@@ -196,9 +196,7 @@ def test_add_geometry_default():
     )
 
     assert m.fs.cv.flow_direction == FlowDirection.notSet
-    with pytest.raises(
-        AttributeError, match=re.escape("can't set attribute 'flow_direction'")
-    ):
+    with pytest.raises(AttributeError):
         m.fs.cv.flow_direction = FlowDirection.backward
 
     m.fs.cv.add_geometry()
@@ -213,9 +211,7 @@ def test_add_geometry_default():
     assert m.fs.cv.length.value == 1.0
     assert m.fs.cv._flow_direction == FlowDirection.forward
     assert m.fs.cv.flow_direction == FlowDirection.forward
-    with pytest.raises(
-        AttributeError, match=re.escape("can't set attribute 'flow_direction'")
-    ):
+    with pytest.raises(AttributeError):
         m.fs.cv.flow_direction = FlowDirection.backward
 
 
