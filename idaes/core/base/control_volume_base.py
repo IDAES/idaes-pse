@@ -517,19 +517,6 @@ class ControlVolumeScalerBase(CustomScalerBase):
         else:
             props = getattr(model, self._state_block_ref)
             phase_list = props.phase_list
-            phase_component_set = props.phase_component_set
-
-        if self._weight_attr_name is None:
-            weight = 1
-        else:
-            # For ControlVolume1D, the weight is L and the
-            # terms have units of material per length or
-            # energy per length. The scaling factor of L has
-            # units of 1 / L, so we want to divide by the scaling
-            # factor to render the material or energy terms
-            # dimensionless.
-            weight_attr = getattr(model, self._weight_attr_name)
-            weight = 1 / self.get_scaling_factor(weight_attr, default=1, warning=True)
 
         if hasattr(model, "reactions"):
             self.call_submodel_scaler_method(
