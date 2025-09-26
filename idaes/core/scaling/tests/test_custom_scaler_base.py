@@ -13,7 +13,7 @@
 """
 Tests for CustomScalerBase.
 
-Author: Andrew Lee
+Author: Andrew Lee, Douglas Allan
 """
 import pytest
 import re
@@ -37,8 +37,18 @@ from idaes.core.scaling.custom_scaler_base import (
     ConstraintScalingScheme,
     DefaultScalingRecommendation,
 )
+from idaes.core import (
+    declare_process_block_class,
+    PhysicalParameterBlock,
+    Phase,
+    Component,
+    StateBlock,
+    StateBlockData,
+)
 from idaes.core.util.constants import Constants
 from idaes.core.util.testing import PhysicalParameterTestBlock
+
+# Dummy parameter block to test create-on-demand properties
 import idaes.logger as idaeslog
 
 
@@ -70,6 +80,73 @@ class DummyScaler(CustomScalerBase):
 
     def dummy_method(self, model, overwrite, submodel_scalers):
         model._dummy_scaler_test = overwrite
+
+
+# --------------------------------------------------------------------
+# Dummy parameter and state blocks to test interactions with
+# build-on-demand properties
+# --------------------------------------------------------------------
+
+
+@declare_process_block_class("Parameters")
+class _Parameters(PhysicalParameterBlock):
+    def build(self):
+        super(_Parameters, self).build()
+
+        self.p1 = Phase()
+        self.c1 = Component()
+
+    @classmethod
+    def define_metadata(cls, obj):
+        obj.define_custom_properties(
+            {
+                "a": {"method": "a_method"},
+                "b": {"method": "b_method"},
+                "recursion1": {"method": "_recursion1"},
+                "recursion2": {"method": "_recursion2"},
+                "not_callable": {"method": "test_obj"},
+                "raise_exception": {"method": "_raise_exception"},
+                "not_supported": {"supported": False},
+                "does_not_create_component": {"method": "_does_not_create_component"},
+            }
+        )
+        obj.add_default_units(
+            {
+                "time": units.s,
+                "mass": units.kg,
+                "length": units.m,
+                "amount": units.mol,
+                "temperature": units.K,
+            }
+        )
+
+
+@declare_process_block_class("State", block_class=StateBlock)
+class _State(StateBlockData):
+    def build(self):
+        super(StateBlockData, self).build()
+
+        self.test_obj = 1
+
+    def a_method(self):
+        self.a = Var(initialize=1)
+
+    def b_method(self):
+        self.b = Var(initialize=1)
+
+    def _recursion1(self):
+        self.recursive_cons1 = Constraint(expr=self.recursion2 == 1)
+
+    def _recursion2(self):
+        self.recursive_cons2 = Constraint(expr=self.recursion1 == 1)
+
+    def _raise_exception(self):
+        # PYLINT-TODO
+        # pylint: disable-next=broad-exception-raised
+        raise Exception()
+
+    def _does_not_create_component(self):
+        pass
 
 
 @pytest.fixture
@@ -183,6 +260,7 @@ class TestCustomScalerBase:
         caplog.set_level(idaeslog.DEBUG, logger="idaes")
         m = ConcreteModel()
         m.v = Var([1, 2, 3, 4])
+        m.w = Var(["a", "b", "c"], ["x", "y", "z"])
 
         sb = CustomScalerBase()
 
@@ -197,6 +275,51 @@ class TestCustomScalerBase:
         # Set a default for the specific element
         sb.default_scaling_factors["v[1]"] = 1e-8
         assert sb.get_default_scaling_factor(m.v[1]) == 1e-8
+
+        caplog.clear()
+        assert sb.get_default_scaling_factor(m.w["c", "y"]) is None
+        assert "No default scaling factor found for w[c,y]" in caplog.text
+
+        sb.default_scaling_factors["w[c,y]"] = 17
+        assert sb.get_default_scaling_factor(m.w["c", "y"]) == 17
+
+        caplog.clear()
+        assert sb.get_default_scaling_factor(m.w["a", "x"]) is None
+        assert "No default scaling factor found for w[a,x]" in caplog.text
+
+        # Make sure that entries with spaces between indices are still found
+        sb.default_scaling_factors["w[a, x]"] = 23
+        assert sb.get_default_scaling_factor(m.w["a", "x"]) == 23
+
+    @pytest.mark.unit
+    def test_get_default_scaling_factor_indexed(self):
+        m = ConcreteModel()
+        m.params = Parameters()
+        m.state = State(parameters=m.params)
+
+        # Trigger build-on-demand creation
+        m.state.a
+
+        sb = CustomScalerBase()
+        sb.default_scaling_factors["a"] = 7
+        sb.default_scaling_factors["b"] = 11
+        m.state._lock_attribute_creation = True
+
+        assert sb.get_default_scaling_factor(m.state.a) == 7
+        # Want to make sure that _lock_attribute_creation doesn't get
+        # changed to false upon exiting get_default_scaling_factor
+        assert m.state._lock_attribute_creation == True
+        assert not m.state.is_property_constructed("b")
+
+        m.state._lock_attribute_creation = False
+        assert sb.get_default_scaling_factor(m.state.a) == 7
+        assert m.state._lock_attribute_creation == False
+        assert not m.state.is_property_constructed("b")
+
+        # Now trigger creation of b
+        m.state.b
+        assert sb.get_default_scaling_factor(m.state.b) == 11
+        assert m.state._lock_attribute_creation == False
 
     @pytest.mark.unit
     def test_scale_variable_by_component(self, model, caplog):
