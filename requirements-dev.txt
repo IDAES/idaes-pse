@@ -15,6 +15,7 @@ sphinx-copybutton==0.5.2
 pytest
 coverage
 pytest-cov
+greenlet=3.2.1
 # @lbianchi-lbl: both pylint and astroid should be tightly pinned; see .pylint/idaes_transform.py for more info
 pylint==3.0.3
 astroid==3.0.3
