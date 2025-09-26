@@ -73,7 +73,7 @@ def test_momentum_balance_type():
 
 @pytest.mark.unit
 def testflow_direction():
-    assert len(FlowDirection) == 2
+    assert len(FlowDirection) == 3
 
     # Test that error is raised when given non-member
     with pytest.raises(AttributeError):
