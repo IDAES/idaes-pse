@@ -49,6 +49,8 @@ import idaes.config as icfg
 # pylint: disable=import-outside-toplevel
 # pylint: disable=protected-access
 
+DAE_DISC_SUFFIX = "_disc_eq"
+
 
 def petsc_binary_io():
     if petsc_binary_io.PetscBinaryIOTrajectory is not None:
@@ -351,6 +353,9 @@ def _get_derivative_differential_data_map(m, time):
         ):
             deriv = var
             diffvar = deriv.get_state_var()
+            block = deriv.parent_block()
+            con_disc = block.find_component(var.local_name + DAE_DISC_SUFFIX)
+
             for idx in var:
                 if deriv[idx].fixed and pyo.value(abs(deriv[idx])) > 1e-10:
                     raise RuntimeError(
@@ -360,7 +365,9 @@ def _get_derivative_differential_data_map(m, time):
                         f"derivative consider adding a constraint like "
                         f"dxdt = constant"
                     )
-                deriv_diff_list.append((deriv[idx], diffvar[idx]))
+                # TODO what behavior do we want for variables at 0?
+                if idx in con_disc and con_disc[idx].active:
+                    deriv_diff_list.append((deriv[idx], diffvar[idx]))
 
     # Get unfixed variables in active constraints
     active_con_vars = ComponentSet()
@@ -558,6 +565,14 @@ def petsc_dae_by_time_element(
         ivset = ComponentSet(initial_variables)
         initial_variables = list(ivset | rvset)
 
+        # Workaround for Pyomo bug in which the context manager activates
+        # all ConstraintData children of IndexedConstraint object upon
+        # exit of the context manager. See Pyomo issue #3734
+        disc_condata_list = []
+        for con in tdisc:
+            for condata in con.values():
+                disc_condata_list.append(condata)
+
     if not skip_initial:
         # Nonlinear equation solver for initial conditions
         initial_solver_obj = pyo.SolverFactory(
@@ -574,7 +589,7 @@ def petsc_dae_by_time_element(
             icset = ComponentSet(initial_constraints)
             initial_constraints = list(icset | rcset)
 
-        with TemporarySubsystemManager(to_deactivate=tdisc):
+        with TemporarySubsystemManager(to_deactivate=disc_condata_list):
             constraints = [
                 con[t0] for con in time_cons if t0 in con
             ] + initial_constraints
@@ -601,12 +616,15 @@ def petsc_dae_by_time_element(
     if tj is not None:
         variables_prev = [var[t0] for var in time_vars]
 
+    # TODO does moving this outside the context manager
+    # have any unexpected side effects?
+    deriv_diff_map = _get_derivative_differential_data_map(m, time)
+
     with TemporarySubsystemManager(
-        to_deactivate=tdisc,
+        to_deactivate=disc_condata_list,
         to_fix=initial_variables,
     ):
         # Solver time steps
-        deriv_diff_map = _get_derivative_differential_data_map(m, time)
         for t in between:
             if t == between.first():
                 # t == between.first() was handled above
