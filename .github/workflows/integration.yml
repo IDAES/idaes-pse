@@ -142,7 +142,7 @@ jobs:
           - os: win64
             runner-image: windows-2022
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/display-debug-info
       - name: Set up Conda environment
         uses: conda-incubator/setup-miniconda@v3
@@ -235,7 +235,7 @@ jobs:
             pip-install-target: '.'
             dependencies-to-uninstall: omlt
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up Conda environment
         uses: conda-incubator/setup-miniconda@v3
         with:
