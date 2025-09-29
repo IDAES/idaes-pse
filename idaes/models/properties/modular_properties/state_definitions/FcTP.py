@@ -499,7 +499,7 @@ class FcTPScaler(FTPxScaler):
     Scaler for constraints associated with FcTP state variables
     """
 
-    # Safe to inherit variable_scaling_routine from FTPx
+    # Inherit variable_scaling_routine from FTPx.
 
     def constraint_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: dict = None

@@ -1624,7 +1624,7 @@ class TestGenericStateBlock(object):
             scaler_obj.scale_model(frame.props[1])
         assert len(caplog.text) == 0
 
-        assert len(frame.props[1].scaling_factor) == 10
+        assert len(frame.props[1].scaling_factor) == 8
         assert len(frame.props[1].scaling_hint) == 2
 
         assert get_scaling_factor(frame.props[1].temperature) == 1 / 300

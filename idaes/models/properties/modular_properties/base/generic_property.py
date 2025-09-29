@@ -341,9 +341,9 @@ class ModularPropertiesScaler(ModularPropertiesScalerBase):
                 overwrite=overwrite,
             )
         # Phase equilibrium
-        # Right now (7/24/25) phase equilibrium methods don't create
-        # additional variables, so this method does nothing.
-        # It exists in case some future method does
+        # Right now (9/29/25) phase equilibrium methods don't create
+        # additional variables, so this method exists as a hook
+        # for functionality that may be added later
         if model.is_property_constructed("equilibrium_constraint"):
             for pp in model.params._pe_pairs:
                 pe_method = model.params.config.phase_equilibrium_state[pp]
@@ -409,7 +409,7 @@ class ModularPropertiesScaler(ModularPropertiesScalerBase):
         for varname in _log_form_vars:
             if model.is_property_constructed("log_" + varname):
                 log_var_obj = getattr(model, "log_" + varname)
-                # Log variables are scaled well by default
+                # Log variables are well-scaled by default
                 for vardata in log_var_obj.values():
                     self.set_component_scaling_factor(vardata, 1, overwrite=overwrite)
 
