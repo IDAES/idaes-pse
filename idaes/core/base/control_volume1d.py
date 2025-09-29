@@ -134,12 +134,6 @@ class ControlVolume1DScaler(ControlVolumeScalerBase):
                 "team with this error."
             )
 
-        self.call_submodel_scaler_method(
-            submodel=model.properties[x_in],
-            submodel_scalers=submodel_scalers,
-            method="variable_scaling_routine",
-            overwrite=overwrite,
-        )
         self.propagate_state_scaling(
             target_state=model.properties,
             source_state=model.properties[x_in],
@@ -151,9 +145,8 @@ class ControlVolume1DScaler(ControlVolumeScalerBase):
             method="variable_scaling_routine",
             overwrite=overwrite,
         )
-        if hasattr(model, "area"):
-            for v in model.area.values():
-                self.scale_variable_by_default(v, overwrite=overwrite)
+        for v in model.area.values():
+            self.scale_variable_by_default(v, overwrite=overwrite)
 
         self.scale_variable_by_default(model.length, overwrite=overwrite)
         if hasattr(model, "phase_fraction"):
@@ -174,7 +167,6 @@ class ControlVolume1DScaler(ControlVolumeScalerBase):
             for idx, v in model._flow_terms.items():  # pylint: disable=protected-access
                 # As domain is normalized, derivative should have same
                 # scale as flow
-                # TODO determine whether that's true or not
                 self.scale_variable_by_component(
                     model.material_flow_dx[idx], v, overwrite=overwrite
                 )
