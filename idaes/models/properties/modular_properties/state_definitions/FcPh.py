@@ -13,6 +13,8 @@
 """
 Methods for setting up FcPh as the state variables in a generic property
 package
+
+Authors: Andrew Lee, Douglas Allan
 """
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
