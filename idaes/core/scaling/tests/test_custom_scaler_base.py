@@ -396,7 +396,12 @@ class TestCustomScalerBase:
 
         # No defaults defined yet
         with pytest.raises(
-            ValueError, match=re.escape("No default scaling factor set for pressure.")
+            ValueError,
+            match=re.escape(
+                "This scaler requires the user to provide a default "
+                "scaling factor for pressure, but no default scaling "
+                "factor was set."
+            ),
         ):
             sb.scale_variable_by_default(model.pressure)
         assert model.pressure not in model.scaling_factor
@@ -442,7 +447,11 @@ class TestCustomScalerBase:
             sb.scale_variable_by_default(model.mole_frac_eqn)
         with pytest.raises(
             ValueError,
-            match=re.escape("No default scaling factor set for mole_frac_comp[N2]."),
+            match=re.escape(
+                "This scaler requires the user to provide a default "
+                f"scaling factor for mole_frac_comp[N2], but no default scaling "
+                "factor was set."
+            ),
         ):
             sb.scale_variable_by_default(model.mole_frac_comp["N2"])
         with pytest.raises(
@@ -466,7 +475,12 @@ class TestCustomScalerBase:
         )
         # No defaults defined yet
         with pytest.raises(
-            ValueError, match=re.escape("No default scaling factor set for pressure.")
+            ValueError,
+            match=re.escape(
+                "This scaler requires the user to provide a default "
+                "scaling factor for pressure, but no default scaling "
+                "factor was set."
+            ),
         ):
             sb.scale_variable_by_default(model.pressure)
         assert model.pressure not in model.scaling_factor
@@ -479,7 +493,12 @@ class TestCustomScalerBase:
         # If we tell it to overwrite the scaling factors, the existence of
         # a preexisting scaling factor is no longer sufficient.
         with pytest.raises(
-            ValueError, match=re.escape("No default scaling factor set for pressure.")
+            ValueError,
+            match=re.escape(
+                "This scaler requires the user to provide a default "
+                "scaling factor for pressure, but no default scaling "
+                "factor was set."
+            ),
         ):
             sb.scale_variable_by_default(model.pressure, overwrite=True)
         assert model.scaling_factor[model.pressure] == 1e-4
@@ -720,7 +739,11 @@ class TestCustomScalerBase:
             sb.scale_constraint_by_default(model.mole_frac_comp["N2"])
         with pytest.raises(
             ValueError,
-            match=re.escape("No default scaling factor set for mole_frac_eqn[N2]."),
+            match=re.escape(
+                "This scaler requires the user to provide a default "
+                "scaling factor for mole_frac_eqn[N2], but no default scaling "
+                "factor was set."
+            ),
         ):
             sb.scale_constraint_by_default(model.mole_frac_eqn["N2"])
         sb.default_scaling_factors["mole_frac_eqn[N2]"] = 7

@@ -369,7 +369,11 @@ class CustomScalerBase(ScalerBase):
                 # accepting a preexisiting scaling factor is not good enough.
                 # They need to go manually alter the default entry to
                 # DefaultScalingRecommendation.userInputRecommended
-                raise ValueError(f"No default scaling factor set for {component}.")
+                raise ValueError(
+                    "This scaler requires the user to provide a default "
+                    f"scaling factor for {component}, but no default scaling "
+                    "factor was set."
+                )
             else:
                 # If a preexisting scaling factor exists, then we'll accept it
                 pass
