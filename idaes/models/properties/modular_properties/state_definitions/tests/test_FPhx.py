@@ -12,7 +12,8 @@
 #################################################################################
 """
 Tests for FPhx state formulation.
-Authors: Andrew Lee
+
+Authors: Andrew Lee, Douglas Allan
 """
 
 import pytest

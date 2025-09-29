@@ -11,9 +11,9 @@
 # for full copyright and license information.
 #################################################################################
 """
-Tests for smooth VLE formulation
+Tests for methods for calculating bubble and dew points
 
-Authors: Andrew Lee
+Authors: Andrew Lee, Douglas Allan
 """
 
 import pytest

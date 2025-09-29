@@ -13,7 +13,7 @@
 """
 Tests for FcTP state formulation
 
-Authors: Andrew Lee
+Authors: Andrew Lee, Douglas Allan
 """
 
 import pytest

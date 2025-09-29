@@ -11,7 +11,7 @@
 # for full copyright and license information.
 #################################################################################
 """
-Author: Andrew Lee
+Authors: Andrew Lee, Douglas Allan
 """
 
 import pytest
