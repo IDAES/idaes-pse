@@ -13,7 +13,7 @@
 """
 Tests for generic property package core code
 
-Author: Andrew Lee
+Author: Andrew Lee, Douglas Allan
 """
 import functools
 import pytest
@@ -1560,6 +1560,82 @@ class TestGenericStateBlock(object):
         )
         for exprdata in frame.props[1].flow_mol_phase.values():
             assert get_scaling_factor(exprdata) == 1
+
+    @pytest.mark.unit
+    def test_basic_scaler_object_therm_cond_phase_default_scaling(self, frame, caplog):
+        frame.props[1].therm_cond_phase = Var(["p1", "p2"], initialize=0)
+        scaler_class = frame.props[1].default_scaler
+        assert scaler_class is ModularPropertiesScaler
+        scaler_obj = scaler_class()
+        scaler_obj.default_scaling_factors["flow_mol_phase"] = 1
+        scaler_obj.default_scaling_factors["therm_cond_phase[p1]"] = 1 / 71
+        scaler_obj.default_scaling_factors["therm_cond_phase[p2]"] = 1 / 479
+        with caplog.at_level(idaeslog.INFO_HIGH):
+            scaler_obj.scale_model(frame.props[1])
+        assert len(caplog.text) == 0
+
+        assert len(frame.props[1].scaling_factor) == 10
+        assert len(frame.props[1].scaling_hint) == 2
+
+        assert get_scaling_factor(frame.props[1].temperature) == 1 / 300
+        assert get_scaling_factor(frame.props[1].pressure) == 1e-5
+        for vardata in frame.props[1].mole_frac_phase_comp.values():
+            assert get_scaling_factor(vardata) == 10
+        for vardata in frame.props[1].enth_mol_phase.values():
+            assert get_scaling_factor(vardata) == 1 / 19
+        for exprdata in frame.props[1].flow_mol_phase.values():
+            assert get_scaling_factor(exprdata) == 1
+        assert get_scaling_factor(frame.props[1].therm_cond_phase["p1"]) == 1 / 71
+        assert get_scaling_factor(frame.props[1].therm_cond_phase["p2"]) == 1 / 479
+
+    @pytest.mark.unit
+    def test_basic_scaler_object_therm_cond_phase_default_scaling(self, frame, caplog):
+        frame.props[1].therm_cond_phase = Var(["p1", "p2"], initialize=0)
+        scaler_class = frame.props[1].default_scaler
+        assert scaler_class is ModularPropertiesScaler
+        scaler_obj = scaler_class()
+        scaler_obj.default_scaling_factors["flow_mol_phase"] = 1
+        scaler_obj.default_scaling_factors["therm_cond_phase[p1]"] = 1 / 71
+        scaler_obj.default_scaling_factors["therm_cond_phase[p2]"] = 1 / 479
+        with caplog.at_level(idaeslog.INFO_HIGH):
+            scaler_obj.scale_model(frame.props[1])
+        assert len(caplog.text) == 0
+
+        assert len(frame.props[1].scaling_factor) == 10
+        assert len(frame.props[1].scaling_hint) == 2
+
+        assert get_scaling_factor(frame.props[1].temperature) == 1 / 300
+        assert get_scaling_factor(frame.props[1].pressure) == 1e-5
+        for vardata in frame.props[1].mole_frac_phase_comp.values():
+            assert get_scaling_factor(vardata) == 10
+        for exprdata in frame.props[1].flow_mol_phase.values():
+            assert get_scaling_factor(exprdata) == 1
+        assert get_scaling_factor(frame.props[1].therm_cond_phase["p1"]) == 1 / 71
+        assert get_scaling_factor(frame.props[1].therm_cond_phase["p2"]) == 1 / 479
+
+    @pytest.mark.unit
+    def test_basic_scaler_object_therm_cond_phase_estimate_scaling(self, frame, caplog):
+        frame.props[1].therm_cond_phase = Var(["p1", "p2"], initialize=0)
+        scaler_class = frame.props[1].default_scaler
+        assert scaler_class is ModularPropertiesScaler
+        scaler_obj = scaler_class()
+        scaler_obj.default_scaling_factors["flow_mol_phase"] = 1
+        with caplog.at_level(idaeslog.INFO_HIGH):
+            scaler_obj.scale_model(frame.props[1])
+        assert len(caplog.text) == 0
+
+        assert len(frame.props[1].scaling_factor) == 10
+        assert len(frame.props[1].scaling_hint) == 2
+
+        assert get_scaling_factor(frame.props[1].temperature) == 1 / 300
+        assert get_scaling_factor(frame.props[1].pressure) == 1e-5
+        for vardata in frame.props[1].mole_frac_phase_comp.values():
+            assert get_scaling_factor(vardata) == 10
+        for exprdata in frame.props[1].flow_mol_phase.values():
+            assert get_scaling_factor(exprdata) == 1
+        # p1 and p2 have an unknown phase type, so no scaling factor/hint is set.
+        for vardata in frame.props[1].therm_cond_phase.values():
+            assert get_scaling_factor(vardata) is None
 
     @pytest.mark.unit
     def test_build_all(self, frame):

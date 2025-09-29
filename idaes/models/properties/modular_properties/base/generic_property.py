@@ -157,6 +157,15 @@ class ModularPropertiesScaler(ModularPropertiesScalerBase):
         # are present. We can guess at the scaling factor if the user provides
         # molecular weights, but it's better for the user to scale these directly
         "enth_mol_phase": DefaultScalingRecommendation.userInputRecommended,
+        # If viscosity is created, the user is recommended to provide a default
+        # scaling factor due to how sensitive the expression is to temperature
+        # and material composition
+        "visc_d_phase": DefaultScalingRecommendation.userInputRecommended,
+        # Initial guesses for thermal conductivity are based on the phase type.
+        # For vapor phases, a default value of 100 is used. For liquid phases,
+        # a default value of 10 is used. For solid phases, a default value
+        # of 1 / 10 is used.
+        "therm_cond_phase": DefaultScalingRecommendation.userInputRecommended,
     }
 
     def variable_scaling_routine(
@@ -404,12 +413,37 @@ class ModularPropertiesScaler(ModularPropertiesScalerBase):
                 for vardata in log_var_obj.values():
                     self.set_component_scaling_factor(vardata, 1, overwrite=overwrite)
 
-        # Not porting these from the old scaler, we'll see if
-        # the expression walker makes them obsolete
         if model.is_property_constructed("therm_cond_phase"):
-            pass
+            for p in model.phase_list:
+                self.scale_variable_by_default(
+                    model.therm_cond_phase[p], overwrite=overwrite
+                )
+                sf = self.get_scaling_factor(model.therm_cond_phase[p])
+                if sf is None:
+                    pobj = model.params.get_phase(p)
+                    if pobj.is_vapor_phase():
+                        sf_default = 100
+                    elif pobj.is_liquid_phase():
+                        sf_default = 10
+                    elif pobj.is_solid_phase():
+                        sf_default = 1 / 10
+                    else:
+                        # Fall back on using the expression walker by not
+                        # setting a scaling hint
+                        sf_default = None
+                    if sf_default is not None:
+                        self.set_component_scaling_factor(
+                            model.therm_cond_phase[p], sf_default, overwrite=overwrite
+                        )
         if model.is_property_constructed("visc_d_phase"):
-            pass
+            for p in model.phase_list:
+                # If the user provided a default scaling factor for viscosity
+                # then we'll use that. If they left it unset, no scaling hint
+                # will be set and the expression walker will descend into the
+                # Expression for visc_d_phase in any constraints containing it
+                self.scale_variable_by_default(
+                    model.visc_d_phase[p], overwrite=overwrite
+                )
 
     def constraint_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers=None
@@ -512,10 +546,21 @@ class ModularPropertiesScaler(ModularPropertiesScalerBase):
                     )
 
     def _bubble_dew_scaling(
-        self, model, pt_var, scale_variables, overwrite: bool = False
+        self, model, pt_var, scale_variables: bool, overwrite: bool = False
     ):
         """
-        scale_variables=True scales variables, scales_variables=False scales constraints
+        Method for reducing the amount of redundant code created when
+        scaling bubble-dew properties
+        Args:
+            model: Pyomo block to apply scaling to
+            pt_var: Var object which needs to be scaled
+            scale_variables: Flag about whether to apply variable
+                scaling routine or constraint scaling routine. True
+                performs the variable scaling routine, False performs
+                the constraint scaling routine.
+            overwrite: Flag about whether to overwrite existing scaling factors.
+        Returns:
+            None
         """
         sf_T = self.get_scaling_factor(model.temperature)
         sf_P = self.get_scaling_factor(model.pressure)

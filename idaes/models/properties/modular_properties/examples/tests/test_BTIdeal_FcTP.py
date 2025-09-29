@@ -417,7 +417,7 @@ class TestStateBlockLegacyScaling(object):
 
     @pytest.mark.unit
     def test_define_port_members(self, model):
-        sv = model.props[1].define_state_vars()
+        sv = model.props[1].define_port_members()
 
         assert len(sv) == 3
         for i in sv:
@@ -667,7 +667,7 @@ class TestStateBlockScalerObject(object):
 
     @pytest.mark.unit
     def test_define_port_members(self, model):
-        sv = model.props[1].define_state_vars()
+        sv = model.props[1].define_port_members()
 
         assert len(sv) == 3
         for i in sv:
