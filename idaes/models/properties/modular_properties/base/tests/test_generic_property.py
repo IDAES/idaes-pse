@@ -1323,7 +1323,9 @@ class TestGenericStateBlock(object):
         with pytest.raises(
             ValueError,
             match=re.escape(
-                "No default scaling factor set for props[1].flow_mol_phase[p1]."
+                "This scaler requires the user to provide a default "
+                "scaling factor for props[1].flow_mol_phase[p1], but "
+                "no default scaling factor was set."
             ),
         ):
             scaler_obj.scale_model(frame.props[1])
