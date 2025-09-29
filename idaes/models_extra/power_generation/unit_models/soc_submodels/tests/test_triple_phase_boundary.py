@@ -456,3 +456,107 @@ def test_conservation_solid_species():
     m = modelFuelAndOxygen(True)
     solver.solve(m)
     conservation_tester(m)
+
+
+@pytest.fixture
+def modelFuelExchangeCurrentModifier():
+    time_set = [0]
+    zfaces = np.linspace(0, 1, 6).tolist()
+    fuel_comps = ["H2", "N2", "H2O"]
+    m = soc_testing._cell_flowsheet_model(
+        dynamic=False, time_set=time_set, zfaces=zfaces
+    )
+    iznodes = m.fs.iznodes
+    # time_units = m.fs.time_units
+    tset = m.fs.config.time
+    comps = m.fs.comps = pyo.Set(initialize=fuel_comps)
+
+    m.fs.temperature_deviation_x = pyo.Var(
+        tset, iznodes, initialize=0, units=pyo.units.K
+    )
+    m.fs.conc_mol_comp_ref = pyo.Var(
+        tset, iznodes, comps, initialize=1, units=pyo.units.mol / pyo.units.m**3
+    )
+    m.fs.conc_mol_comp_deviation_x = pyo.Var(
+        tset, iznodes, comps, initialize=0, units=pyo.units.mol / pyo.units.m**3
+    )
+    m.fs.material_flux_x = pyo.Var(
+        tset,
+        iznodes,
+        comps,
+        initialize=0,
+        units=pyo.units.mol / (pyo.units.s * pyo.units.m**2),
+    )
+    m.fs.heat_flux_x0 = pyo.Var(
+        tset, iznodes, initialize=0, units=pyo.units.W / pyo.units.m**2
+    )
+    m.fs.fuel_triple_phase_boundary = soc.SocTriplePhaseBoundary(
+        control_volume_zfaces=zfaces,
+        length_z=m.fs.length_z,
+        length_y=m.fs.length_y,
+        component_list=fuel_comps,
+        reaction_stoichiometry={"H2": -0.5, "H2O": 0.5, "N2": 0, "e^-": 1.0},
+        inert_species=["N2"],
+        below_electrolyte=True,
+        current_density=m.fs.current_density,
+        temperature_z=m.fs.temperature_z,
+        temperature_deviation_x=m.fs.temperature_deviation_x,
+        heat_flux_x0=m.fs.heat_flux_x0,
+        conc_mol_comp_ref=m.fs.conc_mol_comp_ref,
+        conc_mol_comp_deviation_x=m.fs.conc_mol_comp_deviation_x,
+        material_flux_x=m.fs.material_flux_x,
+        log_exchange_current_modifier=True,
+    )
+    m.fs.temperature_deviation_x.fix(0)
+    m.fs.heat_flux_x0.fix(0)
+    m.fs.conc_mol_comp_ref.fix(1)
+    m.fs.conc_mol_comp_deviation_x.fix(0)
+
+    m.fs.fuel_triple_phase_boundary.exchange_current_log_preexponential_factor.fix(
+        pyo.log(1.375e10)
+    )
+    m.fs.fuel_triple_phase_boundary.exchange_current_activation_energy.fix(120e3)
+    m.fs.fuel_triple_phase_boundary.activation_potential_alpha1.fix(0.5)
+    m.fs.fuel_triple_phase_boundary.activation_potential_alpha2.fix(0.5)
+
+    m.fs.fuel_triple_phase_boundary.exchange_current_exponent_comp["H2"].fix(1)
+    m.fs.fuel_triple_phase_boundary.exchange_current_exponent_comp["H2O"].fix(1)
+
+    m.fs.fuel_triple_phase_boundary.log_exchange_current_modifier.fix(0)
+
+    return m
+
+
+@pytest.mark.build
+@pytest.mark.unit
+def test_build_fuel_exchange_current_modifier(modelFuelExchangeCurrentModifier):
+    tpb = modelFuelExchangeCurrentModifier.fs.fuel_triple_phase_boundary
+    nz = len(modelFuelExchangeCurrentModifier.fs.iznodes)
+    nt = len(modelFuelExchangeCurrentModifier.fs.time)
+    ncomp = len(tpb.component_list)
+    nreact = 2
+
+    comp_dict = common_components(nt, nz, ncomp, nreact)
+    comp_dict[pyo.Var]["log_exchange_current_modifier"] = nz * nt
+
+    soc_testing._build_test_utility(
+        block=tpb,
+        comp_dict=comp_dict,
+        references=[
+            "temperature_z",
+            "temperature_deviation_x",
+            "conc_mol_comp_ref",
+            "conc_mol_comp_deviation_x",
+            "material_flux_x",
+            "heat_flux_x0",
+            "current_density",
+            "length_z",
+            "length_y",
+        ],
+    )
+    assert degrees_of_freedom(tpb) == 0
+
+
+@pytest.mark.component
+def test_units_model_fuel(modelFuel):
+    assert_units_consistent(modelFuel)
