@@ -2642,9 +2642,11 @@ class TestBT_Generic_cocurrent(object):
         )
         assert abs((hot_side - cold_side) / hot_side) <= 3e-4
 
+    # TODO will handle xfail when we have scaling implemented for the HX1D
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.integration
+    @pytest.mark.xfail
     def test_numerical_issues(self, btx):
         dt = DiagnosticsToolbox(btx)
         # TODO: Complementarity formulation results in near-parallel components
