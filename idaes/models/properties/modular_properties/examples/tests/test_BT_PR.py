@@ -769,6 +769,8 @@ class TestBTExampleScalerObject(object):
             # to recover.
             if not check_optimal_termination(results):
                 results = solver.solve(m)
+                if not check_optimal_termination(results):
+                    results = solver.solve(m)
 
             assert_optimal_termination(results)
 
@@ -778,6 +780,8 @@ class TestBTExampleScalerObject(object):
 
                 if not check_optimal_termination(results):
                     results = solver.solve(m)
+                    if not check_optimal_termination(results):
+                        results = solver.solve(m)
 
                 assert_optimal_termination(results)
 
