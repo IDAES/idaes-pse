@@ -717,6 +717,162 @@ def test_full_auto_scaling_mbtype_phase():
         assert get_scaling_factor(c) == approx(1 / 43)
 
 
+@pytest.mark.unit
+def test_auto_scaling_just_material_balance():
+    m = pyo.ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
+    m.fs.cv = ControlVolume1DBlock(
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
+    )
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=True)
+
+    m.fs.cv.add_material_balances(
+        balance_type=MaterialBalanceType.componentTotal,
+        has_rate_reactions=True,
+        has_equilibrium_reactions=True,
+        has_phase_equilibrium=True,
+        has_mass_transfer=True,
+    )
+
+    m.fs.cv.apply_transformation()
+
+    scaler_obj = ControlVolume1DScaler()
+    scaler_obj.default_scaling_factors["area"] = 1 / 83
+    scaler_obj.default_scaling_factors["length"] = 1 / 599
+    scaler_obj.scale_model(m.fs.cv)
+
+    cv = m.fs.cv
+
+    # Variables
+    assert get_scaling_factor(cv.length) == 1 / 599
+    for v in cv.area.values():
+        assert get_scaling_factor(v) == 1 / 83
+
+    for v in cv._flow_terms.values():
+        assert get_scaling_factor(v) == 1 / 43
+
+    for v in cv.material_flow_dx.values():
+        assert get_scaling_factor(v) == 1 / 43
+
+    for v in cv.rate_reaction_generation.values():
+        assert get_scaling_factor(v) == approx(599 / 43)
+
+    for v in cv.rate_reaction_extent.values():
+        assert get_scaling_factor(v) == approx(599 / 43)
+
+    for v in cv.equilibrium_reaction_generation.values():
+        assert get_scaling_factor(v) == approx(599 / 43)
+
+    for v in cv.equilibrium_reaction_extent.values():
+        assert get_scaling_factor(v) == approx(599 / 43)
+
+    for v in cv.mass_transfer_term.values():
+        assert get_scaling_factor(v) == approx(599 / 43)
+
+    # Constraints
+    for v in cv.material_flow_dx_disc_eq.values():
+        assert get_scaling_factor(v) == 1 / 43
+    for c in cv.rate_reaction_stoichiometry_constraint.values():
+        assert get_scaling_factor(c) == approx(599 / 43)
+
+    for c in cv.equilibrium_reaction_stoichiometry_constraint.values():
+        assert get_scaling_factor(c) == approx(599 / 43)
+
+    for c in cv.material_balances.values():
+        assert get_scaling_factor(c) == approx(1 / 43)
+
+    assert len(list_unscaled_variables(m, include_fixed=True)) == 0
+    assert len(list_unscaled_constraints(m)) == 0
+
+
+@pytest.mark.unit
+def test_auto_scaling_enthalpy_and_pressure_balance():
+    m = pyo.ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
+    m.fs.cv = ControlVolume1DBlock(
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
+    )
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
+
+    m.fs.cv.add_energy_balances(
+        balance_type=EnergyBalanceType.enthalpyTotal,
+        has_heat_of_reaction=False,
+        has_heat_transfer=True,
+        has_work_transfer=True,
+        has_enthalpy_transfer=True,
+    )
+
+    m.fs.cv.add_momentum_balances(
+        balance_type=MomentumBalanceType.pressureTotal, has_pressure_change=True
+    )
+
+    m.fs.cv.apply_transformation()
+
+    scaler_obj = ControlVolume1DScaler()
+    scaler_obj.default_scaling_factors["area"] = 1 / 83
+    scaler_obj.default_scaling_factors["length"] = 1 / 599
+    scaler_obj.scale_model(m.fs.cv)
+
+    cv = m.fs.cv
+
+    # Variables
+    assert get_scaling_factor(cv.length) == 1 / 599
+    for v in cv.area.values():
+        assert get_scaling_factor(v) == 1 / 83
+
+    for v in cv._enthalpy_flow.values():
+        assert get_scaling_factor(v) == 1 / 37
+
+    for v in cv.enthalpy_flow_dx.values():
+        assert get_scaling_factor(v) == 1 / 37
+
+    for v in cv.pressure_dx.values():
+        assert get_scaling_factor(v) == 1 / 13
+
+    for v in cv.heat.values():
+        assert get_scaling_factor(v) == approx(599 / 37)
+
+    for v in cv.work.values():
+        assert get_scaling_factor(v) == approx(599 / 37)
+
+    for v in cv.enthalpy_transfer.values():
+        assert get_scaling_factor(v) == approx(599 / 37)
+
+    for v in cv.deltaP.values():
+        assert get_scaling_factor(v) == approx(599 / 13)
+
+    # Constraints
+    for v in cv.enthalpy_flow_dx_disc_eq.values():
+        assert get_scaling_factor(v) == 1 / 37
+
+    for v in cv.pressure_dx_disc_eq.values():
+        assert get_scaling_factor(v) == 1 / 13
+
+    for c in cv.enthalpy_balances.values():
+        assert get_scaling_factor(c) == approx(1 / 37)
+
+    for c in cv.pressure_balance.values():
+        assert get_scaling_factor(c) == approx(1 / 13)
+
+    assert len(list_unscaled_variables(m, include_fixed=True)) == 0
+    assert len(list_unscaled_constraints(m)) == 0
+
+
 # TODO element balance
 # @pytest.mark.unit
 # def test_full_auto_scaling_mbtype_element():

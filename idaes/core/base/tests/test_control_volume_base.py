@@ -95,6 +95,15 @@ def test_ControlVolumeScalerBase_no_state_block_ref():
     ):
         scaler_obj.scale_model(m)
 
+    with pytest.raises(
+        AttributeError,
+        match=re.escape(
+            "The _state_block_ref attribute was not overridden by the "
+            "class inheriting from ControlVolumeScalerBase."
+        ),
+    ):
+        scaler_obj.constraint_scaling_routine(m)
+
 
 # -----------------------------------------------------------------------------
 # Test CONFIG_Template
