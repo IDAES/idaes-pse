@@ -149,7 +149,7 @@ class ONNXSurrogate(OMLTSurrogate):
                 "ONNXSurrogate.populate_block. Please pass a valid "
                 "formulation.".format(formulation)
             )
-        self.populate_block_with_net(block, formulation_object)
+        self.populate_block_with_model(block, formulation_object)
 
     def evaluate_surrogate(self, inputs):
         """
