@@ -130,8 +130,8 @@ class ControlVolume1DScaler(ControlVolumeScalerBase):
             raise BurntToast(
                 "Unknown flow direction specified. This indicates "
                 "a new flow direction was added without support being "
-                "extended to the scaler. Please contact the development "
-                "team with this error."
+                "extended to the scaler. Please contact the IDAES "
+                "development team with this error."
             )
 
         self.propagate_state_scaling(

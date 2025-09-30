@@ -16,6 +16,7 @@ Tests for ControlVolume1D scaler object.
 Author: Douglas Allan
 """
 import pytest
+import re
 import pyomo.environ as pyo
 from idaes.core import (
     ControlVolume1DBlock,
@@ -23,12 +24,14 @@ from idaes.core import (
     EnergyBalanceType,
     MomentumBalanceType,
     FlowsheetBlock,
+    FlowDirection,
 )
 from idaes.core.base.control_volume1d import ControlVolume1DScaler
 from idaes.core.util.testing import (
     PhysicalParameterTestBlock,
     ReactionParameterTestBlock,
 )
+from idaes.core.util.exceptions import BurntToast
 from idaes.core.scaling import get_scaling_factor
 from idaes.core.scaling.util import list_unscaled_variables, list_unscaled_constraints
 
@@ -112,7 +115,7 @@ def test_basic_scaling():
 
 
 @pytest.mark.unit
-def test_user_set_scaling():
+def test_user_set_scaling_FD_forward():
     m = pyo.ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.pp = PhysicalParameterTestBlock()
@@ -140,6 +143,28 @@ def test_user_set_scaling():
     m.fs.cv.apply_transformation()
 
     scaler_obj = ControlVolume1DScaler()
+
+    # Scaling factors should get propagated from inlet state block to the other
+    # state blocks
+    scaler_obj.set_component_scaling_factor(
+        m.fs.cv.properties[0, 0].temperature, 1 / 1009
+    )
+    scaler_obj.set_component_scaling_factor(m.fs.cv.properties[0, 0].pressure, 1 / 1301)
+    scaler_obj.set_component_scaling_factor(
+        m.fs.cv.properties[0, 0].flow_mol_phase_comp["p1", "c1"], 1 / 1117
+    )
+    scaler_obj.set_component_scaling_factor(
+        m.fs.cv.properties[0, 0].flow_mol_phase_comp["p2", "c1"], 1 / 1931
+    )
+    scaler_obj.set_component_scaling_factor(
+        m.fs.cv.properties[0, 0].flow_mol_phase_comp["p1", "c2"], 1 / 1549
+    )
+    scaler_obj.set_component_scaling_factor(
+        m.fs.cv.properties[0, 0].flow_mol_phase_comp["p2", "c2"], 1 / 1999
+    )
+
+    scaler_obj.set_component_scaling_factor(m.fs.cv.properties[0, 1].pressure, 1 / 2251)
+
     scaler_obj.default_scaling_factors["area"] = 1 / 83
     scaler_obj.default_scaling_factors["length"] = 1 / 599
 
@@ -159,6 +184,224 @@ def test_user_set_scaling():
             else:
                 assert get_scaling_factor(m.fs.cv.heat[t, x]) == 1 / 73
             assert get_scaling_factor(m.fs.cv.work[t, x]) == 1 / 79
+
+            assert get_scaling_factor(m.fs.cv.properties[t, x].temperature) == 1 / 1009
+            if t == 0 and x == 1:
+                # Propagation from inlet state block shouldn't overwrite existing scaling factor
+                assert get_scaling_factor(m.fs.cv.properties[t, x].pressure) == 1 / 2251
+            else:
+                assert get_scaling_factor(m.fs.cv.properties[t, x].pressure) == 1 / 1301
+            assert (
+                get_scaling_factor(
+                    m.fs.cv.properties[t, x].flow_mol_phase_comp["p1", "c1"]
+                )
+                == 1 / 1117
+            )
+            assert (
+                get_scaling_factor(
+                    m.fs.cv.properties[t, x].flow_mol_phase_comp["p2", "c1"]
+                )
+                == 1 / 1931
+            )
+            assert (
+                get_scaling_factor(
+                    m.fs.cv.properties[t, x].flow_mol_phase_comp["p1", "c2"]
+                )
+                == 1 / 1549
+            )
+            assert (
+                get_scaling_factor(
+                    m.fs.cv.properties[t, x].flow_mol_phase_comp["p2", "c2"]
+                )
+                == 1 / 1999
+            )
+
+
+@pytest.mark.unit
+def test_user_set_scaling_FD_backward():
+    m = pyo.ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.cv = ControlVolume1DBlock(
+        property_package=m.fs.pp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
+    )
+    m.fs.cv.add_geometry(flow_direction=FlowDirection.backward)
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_material_balances(
+        balance_type=MaterialBalanceType.componentTotal, has_phase_equilibrium=False
+    )
+    m.fs.cv.add_energy_balances(
+        balance_type=EnergyBalanceType.enthalpyTotal,
+        has_heat_transfer=True,
+        has_work_transfer=True,
+    )
+    # add momentum balance
+    m.fs.cv.add_momentum_balances(
+        balance_type=MomentumBalanceType.pressureTotal, has_pressure_change=True
+    )
+
+    m.fs.cv.apply_transformation()
+
+    scaler_obj = ControlVolume1DScaler()
+
+    scaler_obj.set_component_scaling_factor(
+        m.fs.cv.properties[0, 0].temperature, 1 / 1009
+    )
+    scaler_obj.set_component_scaling_factor(m.fs.cv.properties[0, 0].pressure, 1 / 1301)
+    scaler_obj.set_component_scaling_factor(
+        m.fs.cv.properties[0, 0].flow_mol_phase_comp["p1", "c1"], 1 / 1117
+    )
+    scaler_obj.set_component_scaling_factor(
+        m.fs.cv.properties[0, 0].flow_mol_phase_comp["p2", "c1"], 1 / 1931
+    )
+    scaler_obj.set_component_scaling_factor(
+        m.fs.cv.properties[0, 0].flow_mol_phase_comp["p1", "c2"], 1 / 1549
+    )
+    scaler_obj.set_component_scaling_factor(
+        m.fs.cv.properties[0, 0].flow_mol_phase_comp["p2", "c2"], 1 / 1999
+    )
+
+    scaler_obj.set_component_scaling_factor(m.fs.cv.properties[0, 1].pressure, 1 / 2251)
+
+    scaler_obj.default_scaling_factors["area"] = 1 / 83
+    scaler_obj.default_scaling_factors["length"] = 1 / 599
+
+    # The scaling factors used for this test were selected to be easy values to
+    # test, they do not represent typical scaling factors.
+    for v in m.fs.cv.heat.values():
+        scaler_obj.set_component_scaling_factor(v, 1 / 73)
+    for v in m.fs.cv.work.values():
+        scaler_obj.set_component_scaling_factor(v, 1 / 79)
+    scaler_obj.set_component_scaling_factor(m.fs.cv.heat[0, 0], 17, overwrite=True)
+
+    scaler_obj.scale_model(m.fs.cv)
+    # Since the inlet state block is [0, 1] and the only scaling factor set on
+    # that block is for pressure, only that scaling factor is propagated to the
+    # other state blocks. All other state variables use default values
+    for t in m.fs.time:
+        for x in m.fs.cv.length_domain:
+            if t == 0 and x == 0:
+                assert get_scaling_factor(m.fs.cv.heat[t, x]) == 17
+            else:
+                assert get_scaling_factor(m.fs.cv.heat[t, x]) == 1 / 73
+            assert get_scaling_factor(m.fs.cv.work[t, x]) == 1 / 79
+
+            if t == 0 and x == 0:
+                # Scaling factors were specifically set at [0, 0], so those
+                # shouldn't get overwritten
+                assert (
+                    get_scaling_factor(m.fs.cv.properties[t, x].temperature) == 1 / 1009
+                )
+                assert get_scaling_factor(m.fs.cv.properties[t, x].pressure) == 1 / 1301
+                assert (
+                    get_scaling_factor(
+                        m.fs.cv.properties[t, x].flow_mol_phase_comp["p1", "c1"]
+                    )
+                    == 1 / 1117
+                )
+                assert (
+                    get_scaling_factor(
+                        m.fs.cv.properties[t, x].flow_mol_phase_comp["p2", "c1"]
+                    )
+                    == 1 / 1931
+                )
+                assert (
+                    get_scaling_factor(
+                        m.fs.cv.properties[t, x].flow_mol_phase_comp["p1", "c2"]
+                    )
+                    == 1 / 1549
+                )
+                assert (
+                    get_scaling_factor(
+                        m.fs.cv.properties[t, x].flow_mol_phase_comp["p2", "c2"]
+                    )
+                    == 1 / 1999
+                )
+            else:
+                assert (
+                    get_scaling_factor(m.fs.cv.properties[t, x].temperature) == 1 / 17
+                )
+                assert get_scaling_factor(m.fs.cv.properties[t, x].pressure) == 1 / 2251
+                assert (
+                    get_scaling_factor(
+                        m.fs.cv.properties[t, x].flow_mol_phase_comp["p1", "c1"]
+                    )
+                    == 1 / 7
+                )
+                assert (
+                    get_scaling_factor(
+                        m.fs.cv.properties[t, x].flow_mol_phase_comp["p2", "c1"]
+                    )
+                    == 1 / 7
+                )
+                assert (
+                    get_scaling_factor(
+                        m.fs.cv.properties[t, x].flow_mol_phase_comp["p1", "c2"]
+                    )
+                    == 1 / 7
+                )
+                assert (
+                    get_scaling_factor(
+                        m.fs.cv.properties[t, x].flow_mol_phase_comp["p2", "c2"]
+                    )
+                    == 1 / 7
+                )
+
+
+@pytest.mark.unit
+def test_user_set_scaling_FD_not_set():
+    m = pyo.ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.cv = ControlVolume1DBlock(
+        property_package=m.fs.pp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
+    )
+
+    scaler_obj = ControlVolume1DScaler()
+
+    with pytest.raises(
+        RuntimeError,
+        match=re.escape(
+            "Scaler called on ControlVolume1D without a flow "
+            "direction set. The unit model containing the ControlVolume1D "
+            "should use the add_geometry method to specify a flow direction "
+            "as part of model construction."
+        ),
+    ):
+        scaler_obj.scale_model(m.fs.cv)
+
+
+@pytest.mark.unit
+def test_user_set_scaling_FD_burnt_toast():
+    m = pyo.ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.cv = ControlVolume1DBlock(
+        property_package=m.fs.pp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
+    )
+    m.fs.cv._flow_direction = "foo"
+
+    scaler_obj = ControlVolume1DScaler()
+
+    with pytest.raises(
+        BurntToast,
+        match=re.escape(
+            "Unknown flow direction specified. This indicates "
+            "a new flow direction was added without support being "
+            "extended to the scaler. Please contact the IDAES "
+            "development team with this error."
+        ),
+    ):
+        scaler_obj.scale_model(m.fs.cv)
 
 
 @pytest.mark.unit
