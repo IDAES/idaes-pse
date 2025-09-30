@@ -15,6 +15,7 @@ Tests for ControlVolumeBlockData.
 
 Author: Andrew Lee
 """
+import re
 import inspect
 import pytest
 from types import MethodType
@@ -35,6 +36,7 @@ from idaes.core import (
     PhysicalParameterBlock,
     ReactionParameterBlock,
 )
+from idaes.core.base.control_volume_base import ControlVolumeScalerBase
 from idaes.core.util.exceptions import (
     ConfigurationError,
     DynamicError,
@@ -73,11 +75,34 @@ def test_momentum_balance_type():
 
 @pytest.mark.unit
 def testflow_direction():
-    assert len(FlowDirection) == 2
+    assert len(FlowDirection) == 3
 
     # Test that error is raised when given non-member
     with pytest.raises(AttributeError):
         FlowDirection.foo  # pylint: disable=no-member
+
+
+@pytest.mark.unit
+def test_ControlVolumeScalerBase_no_state_block_ref():
+    m = ConcreteModel()
+    scaler_obj = ControlVolumeScalerBase()
+    with pytest.raises(
+        AttributeError,
+        match=re.escape(
+            "The _state_block_ref attribute was not overridden by the "
+            "class inheriting from ControlVolumeScalerBase."
+        ),
+    ):
+        scaler_obj.scale_model(m)
+
+    with pytest.raises(
+        AttributeError,
+        match=re.escape(
+            "The _state_block_ref attribute was not overridden by the "
+            "class inheriting from ControlVolumeScalerBase."
+        ),
+    ):
+        scaler_obj.constraint_scaling_routine(m)
 
 
 # -----------------------------------------------------------------------------
