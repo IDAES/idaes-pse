@@ -19,6 +19,7 @@ from enum import Enum
 
 # Import Pyomo libraries
 from pyomo.environ import value
+from pyomo.common.collections import ComponentMap
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 
 # Import IDAES cores
@@ -37,6 +38,11 @@ from idaes.core.util.exceptions import (
     BurntToast,
     ConfigurationError,
     PropertyNotSupportedError,
+)
+from idaes.core.scaling import (
+    ConstraintScalingScheme,
+    CustomScalerBase,
+    get_scaling_factor,
 )
 import idaes.logger as idaeslog
 
@@ -95,6 +101,489 @@ class FlowDirection(Enum):
 
     forward = 1
     backward = 2
+
+
+class ControlVolumeScalerBase(CustomScalerBase):
+    """
+    Scaler object for elements common to the ControlVolume0D and ControlVolume1D
+    """
+
+    # TODO can we extend this to the Mixer, Separator, and MSContactor?
+
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers=None
+    ):
+        """
+        Routine to apply scaling factors to variables in model.
+
+        Derived classes must overload this method.
+
+        Args:
+            model: model to be scaled
+            overwrite: whether to overwrite existing scaling factors
+            submodel_scalers: ComponentMap of Scalers to use for sub-models
+
+        Returns:
+            None
+        """
+        if hasattr(model, "properties_out"):
+            # ControlVolume0D
+            phase_list = model.properties_out.phase_list
+            phase_component_set = model.properties_out.phase_component_set
+            props = model.properties_out
+        elif hasattr(model, "properties"):
+            # ControlVolume1D
+            phase_list = model.properties.phase_list
+            phase_component_set = model.properties.phase_component_set
+            props = model.properties
+        else:
+            raise RuntimeError(
+                "ControlVolumeScalerBase can scale only the ControlVolume0D "
+                "and ControlVolume1D classes."
+            )
+        idx0 = props.index_set().first()
+        params = props[idx0].params
+        if hasattr(model, "reactions"):
+            rparam = model.reactions[idx0].params
+            self.call_submodel_scaler_method(
+                model.reactions,
+                submodel_scalers=submodel_scalers,
+                method="variable_scaling_routine",
+                overwrite=overwrite,
+            )
+
+        # Set scaling factors for common material balance variables
+        if hasattr(model, "material_holdup"):
+            for idx, v in model.material_holdup.items():
+                self.scale_variable_by_definition_constraint(
+                    v, model.material_holdup_calculation[idx], overwrite=overwrite
+                )
+
+        # Material accumulation should be scaled by a global method for scaling
+        if hasattr(model, "material_accumulation"):
+            pass
+
+        # Using a heuristic to estimate scaling factors for reaction generation
+        # terms and extents of reaction. This heuristic may not be suitable when
+        # reactions generate and consume large quantities of an intermediate
+        # species
+
+        # Rate reactions
+        if hasattr(model, "rate_reaction_generation"):
+            stoich = rparam.rate_reaction_stoichiometry
+            rate_rxn_gen = getattr(model, "rate_reaction_generation")
+            rate_rxn_idx = model.config.reaction_package.rate_reaction_idx
+            # Material generation scaling is based on the magnitude of
+            # the material flow terms
+            for idx in rate_rxn_gen:
+                prop_idx = idx[:-2]
+                p = idx[-2]
+                j = idx[-1]
+                nom = self.get_expression_nominal_value(
+                    props[prop_idx].get_material_flow_terms(p, j)
+                )
+                self.set_component_scaling_factor(
+                    rate_rxn_gen[idx], 1 / nom, overwrite=overwrite
+                )
+
+            # Extent of reaction scaling is based on the species in the
+            # reaction which has the largest scaling factor (and thus is
+            # the species whose concentration is the most sensitive).
+            # This scaling may not work for systems with highly reactive
+            # intermediates, in which multiple extents of reaction
+            # cancel each other out (but if that's the case, we either
+            # should be able to eliminate the highly reactive species from
+            # the reaction system by combining reactions or we need to keep
+            # track of the concentration of this highly reactive intermediate.)
+            for prop_idx in props:
+                for rxn in rate_rxn_idx:
+                    nom_rxn = float("inf")
+                    for p, j in phase_component_set:
+                        sf_pc = get_scaling_factor(rate_rxn_gen[prop_idx, p, j])
+                        coeff = stoich[rxn, p, j]
+                        if coeff != 0:
+                            nom_rxn = min(abs(coeff) / sf_pc, nom_rxn)
+                    if nom_rxn == float("inf"):
+                        raise ConfigurationError(
+                            f"Reaction {rxn} has no nonzero stoichiometric coefficient."
+                        )
+                    # Note this scaling works only if we don't
+                    # have multiple reactions cancelling each other out
+                    self.set_component_scaling_factor(
+                        model.rate_reaction_extent[prop_idx, rxn],
+                        1 / nom_rxn,
+                        overwrite=overwrite,
+                    )
+
+        # Equilibrium reaction
+        if hasattr(model, "equilibrium_reaction_generation"):
+            stoich = rparam.equilibrium_reaction_stoichiometry
+            equil_rxn_gen = getattr(model, "equilibrium_reaction_generation")
+            equil_rxn_idx = model.config.reaction_package.equilibrium_reaction_idx
+            # Material generation scaling is based on the magnitude of
+            # the material flow terms
+            for idx in equil_rxn_gen:
+                prop_idx = idx[:-2]
+                p = idx[-2]
+                j = idx[-1]
+                nom = self.get_expression_nominal_value(
+                    props[prop_idx].get_material_flow_terms(p, j)
+                )
+                self.set_component_scaling_factor(
+                    equil_rxn_gen[idx], 1 / nom, overwrite=overwrite
+                )
+
+            # Extent of reaction scaling is based on the species in the
+            # reaction which has the largest scaling factor (and thus is
+            # the species whose concentration is the most sensitive).
+            # This scaling may not work for systems with highly reactive
+            # intermediates, in which multiple extents of reaction
+            # cancel each other out (but if that's the case, we either
+            # should be able to eliminate the highly reactive species from
+            # the reaction system by combining reactions or we need to keep
+            # track of the concentration of this highly reactive intermediate.)
+            for prop_idx in props:
+                for rxn in equil_rxn_idx:
+                    nom_rxn = float("inf")
+                    for p, j in phase_component_set:
+                        sf_pc = get_scaling_factor(equil_rxn_gen[prop_idx, p, j])
+                        coeff = stoich[rxn, p, j]
+                        if coeff != 0:
+                            nom_rxn = min(abs(coeff) / sf_pc, nom_rxn)
+                    if nom_rxn == float("inf"):
+                        raise ConfigurationError(
+                            f"Reaction {rxn} has no nonzero stoichiometric coefficient."
+                        )
+                    # Note this scaling works only if we don't
+                    # have multiple reactions cancelling each other out
+                    self.set_component_scaling_factor(
+                        model.equilibrium_reaction_extent[prop_idx, rxn],
+                        1 / nom_rxn,
+                        overwrite=overwrite,
+                    )
+
+        # Inherent reaction
+        if hasattr(model, "inherent_reaction_generation"):
+            stoich = params.inherent_reaction_stoichiometry
+            inh_rxn_gen = getattr(model, "inherent_reaction_generation")
+            inh_rxn_idx = params.inherent_reaction_idx
+            # Material generation scaling is based on the magnitude of
+            # the material flow terms
+            for idx in inh_rxn_gen:
+                prop_idx = idx[:-2]
+                p = idx[-2]
+                j = idx[-1]
+                nom = self.get_expression_nominal_value(
+                    props[prop_idx].get_material_flow_terms(p, j)
+                )
+                self.set_component_scaling_factor(
+                    inh_rxn_gen[idx], 1 / nom, overwrite=overwrite
+                )
+
+            # Extent of reaction scaling is based on the species in the
+            # reaction which has the largest scaling factor (and thus is
+            # the species whose concentration is the most sensitive).
+            # This scaling may not work for systems with highly reactive
+            # intermediates, in which multiple extents of reaction
+            # cancel each other out (but if that's the case, we either
+            # should be able to eliminate the highly reactive species from
+            # the reaction system by combining reactions or we need to keep
+            # track of the concentration of this highly reactive intermediate.)
+            for prop_idx in props:
+                for rxn in inh_rxn_idx:
+                    nom_rxn = float("inf")
+                    for p, j in phase_component_set:
+                        sf_pc = get_scaling_factor(inh_rxn_gen[prop_idx, p, j])
+                        coeff = stoich[rxn, p, j]
+                        if coeff != 0:
+                            nom_rxn = min(abs(coeff) / sf_pc, nom_rxn)
+                    if nom_rxn == float("inf"):
+                        raise ConfigurationError(
+                            f"Reaction {rxn} has no nonzero stoichiometric coefficient."
+                        )
+                    # Note this scaling works only if we don't
+                    # have multiple reactions cancelling each other out
+                    self.set_component_scaling_factor(
+                        model.inherent_reaction_extent[prop_idx, rxn],
+                        1 / nom_rxn,
+                        overwrite=overwrite,
+                    )
+
+        if hasattr(model, "mass_transfer_term"):
+            for prop_idx in props:
+                for p, j in phase_component_set:
+                    nom = self.get_expression_nominal_value(
+                        props[prop_idx].get_material_flow_terms(p, j)
+                    )
+                    self.set_component_scaling_factor(
+                        model.mass_transfer_term[prop_idx, p, j],
+                        1 / nom,
+                        overwrite=overwrite,
+                    )
+
+        # Set scaling factors for element balance variables
+        # TODO
+        # if hasattr(model, "elemental_flow_out"):
+        #     for prop_idx in props:
+        #         for e in params.element_list:
+        #             flow_basis = model.properties_out[t].get_material_flow_basis()
+        #             for p, j in phase_component_set:
+
+        #             sf = iscale.min_scaling_factor(
+        #                 [
+        #                     model.properties_out[t].get_material_density_terms(p, j)
+        #                     for (p, j) in phase_component_set
+        #                 ],
+        #                 default=1,
+        #                 warning=True,
+        #             )
+        #             if flow_basis == MaterialFlowBasis.molar:
+        #                 sf *= 1
+        #             elif flow_basis == MaterialFlowBasis.mass:
+        #                 # MW scaling factor is the inverse of its value
+        #                 sf *= value(model.properties_out[t].mw_comp[j])
+
+        #             iscale.set_scaling_factor(v, sf)
+        #             iscale.set_scaling_factor(model.elemental_flow_in[t, p, e], sf)
+
+        # if hasattr(model, "element_holdup"):
+        #     for (t, e), v in model.element_holdup.items():
+        #         flow_basis = model.properties_out[t].get_material_flow_basis()
+        #         sf_list = []
+        #         for p, j in phase_component_set:
+        #             if flow_basis == MaterialFlowBasis.molar:
+        #                 sf = 1
+        #             elif flow_basis == MaterialFlowBasis.mass:
+        #                 # MW scaling factor is the inverse of its value
+        #                 sf = value(model.properties_out[t].mw_comp[j])
+        #             sf *= get_scaling_factor(model.phase_fraction[t, p])
+        #             sf *= get_scaling_factor(
+        #                 model.properties_out[t].get_material_density_terms(p, j),
+        #                 default=1,
+        #                 warning=True,
+        #             )
+        #             sf *= value(model.properties_out[t].params.element_comp[j][e]) ** -1
+        #             sf_list.append(sf)
+        #         sf_h = min(sf_list) * get_scaling_factor(model.volume[t])
+        #         iscale.set_scaling_factor(v, sf_h)
+
+        # if hasattr(model, "element_accumulation"):
+        #     for (t, e), v in model.element_accumulation.items():
+        #         if get_scaling_factor(v) is None:
+        #             sf = iscale.min_scaling_factor(
+        #                 model.elemental_flow_out[t, ...], default=1, warning=True
+        #             )
+        #             iscale.set_scaling_factor(v, sf)
+
+        # if hasattr(model, "elemental_mass_transfer_term"):
+        #     for (t, e), v in model.elemental_mass_transfer_term.items():
+        #         # minimum scaling factor for elemental_flow terms
+        #         sf_list = []
+        #         flow_basis = model.properties_out[t].get_material_flow_basis()
+        #         if get_scaling_factor(v) is None:
+        #             sf = iscale.min_scaling_factor(
+        #                 model.elemental_flow_out[t, ...], default=1, warning=True
+        #             )
+        #             iscale.set_scaling_factor(v, sf)
+
+        # Set scaling factors for energy balance variables
+        if hasattr(model, "energy_holdup"):
+            for idx in model.energy_holdup:
+                self.scale_variable_by_definition_constraint(
+                    model.energy_holdup[idx], model.energy_holdup_calculation[idx]
+                )
+        # Energy accumulation should be scaled by a global method for scaling
+        # time derivative variables
+        if hasattr(model, "energy_accumulation"):
+            pass
+
+        # Energy transfer terms
+        if (
+            hasattr(model, "heat")
+            or hasattr(model, "work")
+            or hasattr(model, "enthalpy_transfer")
+        ):
+            for prop_idx in props:
+                nom_list = []
+                for p in phase_list:
+                    nom_list.append(
+                        self.get_expression_nominal_value(
+                            props[prop_idx].get_enthalpy_flow_terms(p)
+                        )
+                    )
+                # TODO we need to do some validation so that nom isn't zero or near-zero
+                nom = max(nom_list)
+                if hasattr(model, "heat"):
+                    self.set_component_scaling_factor(
+                        model.heat[prop_idx], 1 / nom, overwrite=overwrite
+                    )
+                if hasattr(model, "work"):
+                    self.set_component_scaling_factor(
+                        model.work[prop_idx], 1 / nom, overwrite=overwrite
+                    )
+                if hasattr(model, "enthalpy_transfer"):
+                    self.set_component_scaling_factor(
+                        model.enthalpy_transfer[prop_idx], 1 / nom, overwrite=overwrite
+                    )
+
+        # Set scaling for momentum balance variables
+        if hasattr(model, "deltaP"):
+            for prop_idx in props:
+                sf_P = get_scaling_factor(props[prop_idx].pressure)
+                # TODO raise error if pressure scaling factor
+                # isn't set
+                self.set_component_scaling_factor(
+                    model.deltaP[prop_idx], sf_P, overwrite=overwrite
+                )
+
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None
+    ):
+        """
+        Routine to apply scaling factors to constraints in model.
+
+        Derived classes must overload this method.
+
+        Args:
+            model: model to be scaled
+            overwrite: whether to overwrite existing scaling factors
+            submodel_scalers: ComponentMap of Scalers to use for sub-models
+
+        Returns:
+            None
+        """
+        if hasattr(model, "properties_out"):
+            # ControlVolume0D
+            phase_list = model.properties_out.phase_list
+            props = model.properties_out
+        elif hasattr(model, "properties"):
+            # ControlVolume1D
+            phase_list = model.properties.phase_list
+            props = model.properties
+        else:
+            raise RuntimeError(
+                "ControlVolumeScalerBase can scale only the ControlVolume0D "
+                "and ControlVolume1D classes."
+            )
+
+        if hasattr(model, "reactions"):
+            self.call_submodel_scaler_method(
+                model.reactions,
+                submodel_scalers=submodel_scalers,
+                method="constraint_scaling_routine",
+                overwrite=overwrite,
+            )
+        # Transform constraints in order of appearance
+        if hasattr(model, "material_holdup_calculation"):
+            for idx in model.material_holdup_calculation:
+                self.scale_constraint_by_component(
+                    model.material_holdup_calculation[idx],
+                    model.material_holdup[idx],
+                    overwrite=overwrite,
+                )
+
+        if hasattr(model, "rate_reaction_stoichiometry_constraint"):
+            for idx in model.rate_reaction_stoichiometry_constraint:
+                self.scale_constraint_by_component(
+                    model.rate_reaction_stoichiometry_constraint[idx],
+                    model.rate_reaction_generation[idx],
+                    overwrite=overwrite,
+                )
+
+        if hasattr(model, "equilibrium_reaction_stoichiometry_constraint"):
+            for idx in model.equilibrium_reaction_stoichiometry_constraint:
+                self.scale_constraint_by_component(
+                    model.equilibrium_reaction_stoichiometry_constraint[idx],
+                    model.equilibrium_reaction_generation[idx],
+                    overwrite=overwrite,
+                )
+
+        if hasattr(model, "inherent_reaction_stoichiometry_constraint"):
+            for idx in model.inherent_reaction_stoichiometry_constraint:
+                self.scale_constraint_by_component(
+                    model.inherent_reaction_stoichiometry_constraint[idx],
+                    model.inherent_reaction_generation[idx],
+                    overwrite=overwrite,
+                )
+
+        if hasattr(model, "material_balances"):
+            mb_type = model._constructed_material_balance_type  # pylint: disable=W0212
+            if (
+                mb_type == MaterialBalanceType.componentPhase
+                or mb_type == MaterialBalanceType.componentTotal
+            ):
+                for idx in model.material_balances:
+                    self.scale_constraint_by_nominal_value(
+                        model.material_balances[idx],
+                        scheme=ConstraintScalingScheme.inverseMaximum,
+                        overwrite=overwrite,
+                    )
+            else:
+                # There are some other material balance types but they create
+                # constraints with different names.
+                _log.warning(f"Unknown material balance type {mb_type}")
+
+        # TODO element balances
+        # if hasattr(self, "element_balances"):
+        #     for (t, e), c in self.element_balances.items():
+        #         sf = iscale.min_scaling_factor(
+        #             [self.elemental_flow_out[t, p, e] for p in phase_list]
+        #         )
+        #         iscale.constraint_scaling_transform(c, sf, overwrite=False)
+
+        # if hasattr(self, "elemental_holdup_calculation"):
+        #     for (t, e), c in self.elemental_holdup_calculation.items():
+        #         sf = iscale.get_scaling_factor(self.element_holdup[t, e])
+        #         iscale.constraint_scaling_transform(c, sf, overwrite=False)
+
+        if hasattr(model, "enthalpy_balances"):
+            for idx in props:
+                nom_list = []
+                for p in phase_list:
+                    nom_list.append(
+                        self.get_expression_nominal_value(
+                            props[idx].get_enthalpy_flow_terms(p)
+                        )
+                    )
+                nom = max(nom_list)
+                self.set_component_scaling_factor(
+                    model.enthalpy_balances[idx], 1 / nom, overwrite=overwrite
+                )
+
+        if hasattr(model, "energy_holdup_calculation"):
+            for idx in model.energy_holdup_calculation:
+                self.scale_constraint_by_component(
+                    model.energy_holdup_calculation[idx],
+                    model.energy_holdup[idx],
+                    overwrite=overwrite,
+                )
+
+        if hasattr(model, "pressure_balance"):
+            for con in model.pressure_balance.values():
+                self.scale_constraint_by_nominal_value(
+                    con,
+                    scheme=ConstraintScalingScheme.inverseMaximum,
+                    overwrite=overwrite,
+                )
+
+        if hasattr(model, "sum_of_phase_fractions"):
+            for con in model.sum_of_phase_fractions.values():
+                self.scale_constraint_by_nominal_value(
+                    con,
+                    scheme=ConstraintScalingScheme.inverseMaximum,
+                    overwrite=overwrite,
+                )
+
+        # Scaling for discretization equations
+        # These equations should be scaled by a global method to scale time discretization equations
+        if hasattr(model, "material_accumulation_disc_eq"):
+            pass
+
+        if hasattr(model, "energy_accumulation_disc_eq"):
+            pass
+
+        if hasattr(model, "element_accumulation_disc_eq"):
+            pass
 
 
 # Set up example ConfigBlock that will work with ControlVolume autobuild method

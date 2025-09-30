@@ -292,7 +292,6 @@ class Test_transport_properties_ideal(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.integration
     def test_solution(self, hx):
-        hx.fs.unit.temperature_wall.display()
         assert pytest.approx(5, rel=1e-5) == value(
             hx.fs.unit.hot_side_outlet.flow_mol[0]
         )
@@ -366,7 +365,6 @@ class Test_transport_properties_ideal_chung(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.integration
     def test_solution(self, hx):
-        hx.fs.unit.temperature_wall.display()
         assert pytest.approx(5, rel=1e-5) == value(
             hx.fs.unit.hot_side_outlet.flow_mol[0]
         )
@@ -441,7 +439,6 @@ class Test_transport_properties_PR(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.integration
     def test_solution(self, hx):
-        hx.fs.unit.temperature_wall.display()
         assert pytest.approx(5, rel=1e-5) == value(
             hx.fs.unit.hot_side_outlet.flow_mol[0]
         )

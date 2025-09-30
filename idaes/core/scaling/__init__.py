@@ -11,7 +11,11 @@
 # for full copyright and license information.
 #################################################################################
 from .autoscaling import AutoScaler
-from .custom_scaler_base import CustomScalerBase, ConstraintScalingScheme
+from .custom_scaler_base import (
+    CustomScalerBase,
+    ConstraintScalingScheme,
+    DefaultScalingRecommendation,
+)
 from .scaler_profiling import ScalingProfiler
 from .util import (
     scaling_factors_from_json_file,
@@ -19,7 +23,6 @@ from .util import (
     scaling_factors_from_dict,
     scaling_factors_to_dict,
     get_scaling_factor,
-    get_scaling_suffix,
     del_scaling_factor,
     set_scaling_factor,
     report_scaling_factors,

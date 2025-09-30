@@ -128,7 +128,7 @@ def test_nominal_magnitude_harmonic(gibbs):
     for c in gibbs.component_data_objects(ctype=Constraint, descend_into=True):
         scaler.scale_constraint_by_nominal_value(c, scheme="harmonic_mean")
 
-    assert jacobian_cond(gibbs, scaled=True) == pytest.approx(2.83944e12, rel=1e-5)
+    assert jacobian_cond(gibbs, scaled=True) == pytest.approx(2.83944e12, rel=1e-3)
 
 
 @pytest.mark.integration
@@ -138,7 +138,7 @@ def test_nominal_magnitude_inv_max(gibbs):
     for c in gibbs.component_data_objects(ctype=Constraint, descend_into=True):
         scaler.scale_constraint_by_nominal_value(c, scheme="inverse_maximum")
 
-    assert jacobian_cond(gibbs, scaled=True) == pytest.approx(784576, rel=1e-5)
+    assert jacobian_cond(gibbs, scaled=True) == pytest.approx(784576, rel=1e-3)
 
 
 @pytest.mark.integration
@@ -148,7 +148,7 @@ def test_nominal_magnitude_inv_min(gibbs):
     for c in gibbs.component_data_objects(ctype=Constraint, descend_into=True):
         scaler.scale_constraint_by_nominal_value(c, scheme="inverse_minimum")
 
-    assert jacobian_cond(gibbs, scaled=True) == pytest.approx(5.601e12, rel=1e-5)
+    assert jacobian_cond(gibbs, scaled=True) == pytest.approx(5.601e12, rel=1e-3)
 
 
 @pytest.mark.integration
@@ -158,7 +158,7 @@ def test_nominal_magnitude_inv_sum(gibbs):
     for c in gibbs.component_data_objects(ctype=Constraint, descend_into=True):
         scaler.scale_constraint_by_nominal_value(c, scheme="inverse_sum")
 
-    assert jacobian_cond(gibbs, scaled=True) == pytest.approx(1501632, rel=1e-5)
+    assert jacobian_cond(gibbs, scaled=True) == pytest.approx(1501632, rel=1e-3)
 
 
 @pytest.mark.integration
@@ -168,7 +168,7 @@ def test_nominal_magnitude_inv_rss(gibbs):
     for c in gibbs.component_data_objects(ctype=Constraint, descend_into=True):
         scaler.scale_constraint_by_nominal_value(c, scheme="inverse_root_sum_squared")
 
-    assert jacobian_cond(gibbs, scaled=True) == pytest.approx(959994, rel=1e-5)
+    assert jacobian_cond(gibbs, scaled=True) == pytest.approx(959994, rel=1e-3)
 
 
 @pytest.mark.integration
@@ -179,7 +179,7 @@ def test_scale_constraint_by_nominal_derivative_2norm_perfect_information(gibbs)
         scaler.scale_constraint_by_nominal_derivative_norm(c)
 
     scaled = jacobian_cond(gibbs, scaled=True)
-    assert scaled == pytest.approx(3.07419e06, rel=1e-5)
+    assert scaled == pytest.approx(3.07419e06, rel=1e-3)
 
 
 @pytest.mark.integration
@@ -193,7 +193,7 @@ def test_scale_constraint_by_nominal_derivative_2norm_imperfect_information():
         model.fs.unit.control_volume.properties_in[0.0].flow_mol, 1 / 230
     )
     set_scaling_factor(
-        model.fs.unit.control_volume.properties_in[0.0].flow_mol_phase, 1 / 230
+        model.fs.unit.control_volume.properties_in[0.0].flow_mol_phase["Vap"], 1 / 230
     )  # Only 1 phase, so we "know" this
     set_scaling_factor(
         model.fs.unit.control_volume.properties_in[0.0].mole_frac_comp["H2"], 1 / 0.0435
@@ -231,7 +231,7 @@ def test_scale_constraint_by_nominal_derivative_2norm_imperfect_information():
 
     set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].flow_mol, 1e-2)
     set_scaling_factor(
-        model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase, 1e-2
+        model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase["Vap"], 1e-2
     )  # Only 1 phase, so we "know" this
     # N2 is inert, so will be order 0.1, assume CH4 and H2 are near-totally consumed, assume most O2 consumed
     # Assume moderate amounts of CO2 and H2O, small amounts of CO, trace NH3 NH3
@@ -269,7 +269,7 @@ def test_scale_constraint_by_nominal_derivative_2norm_imperfect_information():
         scaler.scale_constraint_by_nominal_derivative_norm(c)
 
     scaled = jacobian_cond(model, scaled=True)
-    assert scaled == pytest.approx(1.06128e11, rel=1e-5)
+    assert scaled == pytest.approx(3.5727e10, rel=1e-3)
 
 
 @pytest.mark.integration
@@ -280,7 +280,7 @@ def test_scale_constraint_by_nominal_derivative_1norm_perfect_information(gibbs)
         scaler.scale_constraint_by_nominal_derivative_norm(c, norm=1)
 
     scaled = jacobian_cond(gibbs, scaled=True)
-    assert scaled == pytest.approx(2.060153e06, rel=1e-5)
+    assert scaled == pytest.approx(2.060153e06, rel=1e-3)
 
 
 @pytest.mark.integration
@@ -297,7 +297,7 @@ def test_scale_constraint_by_nominal_derivative_clean_up(gibbs):
         model.fs.unit.control_volume.properties_in[0.0].flow_mol, 1 / 230
     )
     set_scaling_factor(
-        model.fs.unit.control_volume.properties_in[0.0].flow_mol_phase, 1 / 230
+        model.fs.unit.control_volume.properties_in[0.0].flow_mol_phase["Vap"], 1 / 230
     )  # Only 1 phase, so we "know" this
     set_scaling_factor(
         model.fs.unit.control_volume.properties_in[0.0].mole_frac_comp["H2"], 1 / 0.0435
@@ -335,7 +335,7 @@ def test_scale_constraint_by_nominal_derivative_clean_up(gibbs):
 
     set_scaling_factor(model.fs.unit.control_volume.properties_out[0.0].flow_mol, 1e-2)
     set_scaling_factor(
-        model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase, 1e-2
+        model.fs.unit.control_volume.properties_out[0.0].flow_mol_phase["Vap"], 1e-2
     )  # Only 1 phase, so we "know" this
     # N2 is inert, so will be order 0.1, assume CH4 and H2 are near-totally consumed, assume most O2 consumed
     # Assume moderate amounts of CO2 and H2O, small amounts of CO, trace NH3

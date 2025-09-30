@@ -66,10 +66,32 @@ class TestScalerBase:
         assert not sb.config.overwrite
 
     @pytest.mark.unit
-    def test_get_scaling_factor(self, model):
+    def test_get_scaling_factor(self, model, caplog):
+        model.x = Var()
         sb = ScalerBase()
 
         assert sb.get_scaling_factor(model.v[1]) == 1
+
+        with caplog.at_level(idaeslog.WARNING):
+            sf = sb.get_scaling_factor(model.x)
+        assert len(caplog.text) == 0
+        assert sf is None
+
+        with caplog.at_level(idaeslog.WARNING):
+            sf = sb.get_scaling_factor(model.x, warning=True)
+        assert sf == None
+        assert "Missing scaling factor for x" in caplog.text
+        caplog.clear()
+
+        with caplog.at_level(idaeslog.WARNING):
+            sf = sb.get_scaling_factor(model.x, default=37, warning=False)
+        assert len(caplog.text) == 0
+        assert sf == 37
+
+        with caplog.at_level(idaeslog.WARNING):
+            sf = sb.get_scaling_factor(model.x, default=59, warning=True)
+        assert "Missing scaling factor for x" in caplog.text
+        assert sf == 59
 
     @pytest.mark.unit
     def test_set_scaling_factor(self, model):
