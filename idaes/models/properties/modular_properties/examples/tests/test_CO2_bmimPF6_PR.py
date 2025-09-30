@@ -11,7 +11,7 @@
 # for full copyright and license information.
 #################################################################################
 """
-Author: Andrew Lee, Alejandro Garciadiego
+Author: Andrew Lee, Alejandro Garciadiego, Douglas Allan
 """
 import pytest
 from pyomo.environ import (
@@ -125,7 +125,7 @@ class TestParamBlock(object):
 
 
 @pytest.mark.skipif(not cubic_roots_available(), reason="Cubic functions not available")
-class TestStateBlock(object):
+class TestStateBlockLegacyScaling(object):
     @pytest.fixture(scope="class")
     def model(self):
         model = ConcreteModel()
@@ -271,7 +271,316 @@ class TestStateBlock(object):
 
     @pytest.mark.unit
     def test_define_port_members(self, model):
+        sv = model.fs.props[1].define_port_members()
+
+        assert len(sv) == 4
+        for i in sv:
+            assert i in ["flow_mol", "mole_frac_comp", "temperature", "pressure"]
+
+    @pytest.mark.unit
+    def test_define_display_vars(self, model):
+        sv = model.fs.props[1].define_display_vars()
+
+        assert len(sv) == 4
+        for i in sv:
+            assert i in [
+                "Total Molar Flowrate",
+                "Total Mole Fraction",
+                "Temperature",
+                "Pressure",
+            ]
+
+    @pytest.mark.ui
+    @pytest.mark.unit
+    def test_report(self, model):
+        model.fs.props[1].report()
+
+
+@pytest.mark.skipif(not cubic_roots_available(), reason="Cubic functions not available")
+class TestStateBlockScalerObject(object):
+    @pytest.fixture(scope="class")
+    def model(self):
+        model = ConcreteModel()
+
+        model.fs = FlowsheetBlock(dynamic=False)
+
+        model.fs.param = GenericParameterBlock(**configuration)
+
+        model.fs.props = model.fs.param.build_state_block([1], defined_state=True)
+
+        # Fix state
+        model.fs.props[1].flow_mol.fix(1)
+        model.fs.props[1].temperature.fix(298.15)
+        model.fs.props[1].pressure.fix(1214713.75)
+        model.fs.props[1].mole_frac_comp["carbon_dioxide"].fix(0.2)
+        model.fs.props[1].mole_frac_comp["bmimPF6"].fix(0.8)
+
+        assert degrees_of_freedom(model.fs.props[1]) == 0
+
+        return model
+
+    @pytest.mark.unit
+    def test_build(self, model):
+        # Check state variable values and bounds
+        assert isinstance(model.fs.props[1].flow_mol, Var)
+        assert value(model.fs.props[1].flow_mol) == 1
+        assert model.fs.props[1].flow_mol.ub == 1000
+        assert model.fs.props[1].flow_mol.lb == 0
+
+        assert isinstance(model.fs.props[1].pressure, Var)
+        assert value(model.fs.props[1].pressure) == 1214713.75
+        assert model.fs.props[1].pressure.ub == 1e10
+        assert model.fs.props[1].pressure.lb == 5e-4
+
+        assert isinstance(model.fs.props[1].temperature, Var)
+        assert value(model.fs.props[1].temperature) == 298.15
+        assert model.fs.props[1].temperature.ub == 500
+        assert model.fs.props[1].temperature.lb == 10
+
+        assert isinstance(model.fs.props[1].mole_frac_comp, Var)
+        assert len(model.fs.props[1].mole_frac_comp) == 2
+        assert value(model.fs.props[1].mole_frac_comp["carbon_dioxide"]) == 0.2
+        assert value(model.fs.props[1].mole_frac_comp["bmimPF6"]) == 0.8
+
+        assert_units_consistent(model)
+
+    @pytest.mark.unit
+    def test_basic_scaling(self, model):
+        scaler_obj = model.fs.props[1].default_scaler()
+
+        scaler_obj.default_scaling_factors["flow_mol_phase"] = 1
+        scaler_obj.default_scaling_factors[
+            "mole_frac_phase_comp[Vap,carbon_dioxide]"
+        ] = 1
+        scaler_obj.default_scaling_factors["mole_frac_phase_comp[Liq,bmimPF6]"] = 1
+        scaler_obj.default_scaling_factors[
+            "mole_frac_phase_comp[Liq,carbon_dioxide]"
+        ] = 5
+        scaler_obj.default_scaling_factors["temperature"] = 1e-2
+        scaler_obj.default_scaling_factors["pressure"] = 1e-5
+        scaler_obj.default_scaling_factors["enth_mol_phase"] = 1e-4
+
+        scaler_obj.scale_model(model.fs.props[1])
+
+        assert len(model.fs.props[1].scaling_factor) == 42
+        assert len(model.fs.props[1].scaling_hint) == 5
+
+        assert model.fs.props[1].scaling_factor[model.fs.props[1].flow_mol] == 1
+        assert (
+            model.fs.props[1].scaling_factor[model.fs.props[1].flow_mol_phase["Liq"]]
+            == 1
+        )
+        assert (
+            model.fs.props[1].scaling_factor[model.fs.props[1].flow_mol_phase["Vap"]]
+            == 1
+        )
+        assert (
+            model.fs.props[1].scaling_factor[
+                model.fs.props[1].mole_frac_comp["bmimPF6"]
+            ]
+            == 1
+        )
+        assert (
+            model.fs.props[1].scaling_factor[
+                model.fs.props[1].mole_frac_comp["carbon_dioxide"]
+            ]
+            == 1
+        )
+        assert (
+            model.fs.props[1].scaling_factor[
+                model.fs.props[1].mole_frac_phase_comp["Liq", "bmimPF6"]
+            ]
+            == 1
+        )
+        assert (
+            model.fs.props[1].scaling_factor[
+                model.fs.props[1].mole_frac_phase_comp["Liq", "carbon_dioxide"]
+            ]
+            == 5
+        )
+        assert (
+            model.fs.props[1].scaling_factor[
+                model.fs.props[1].mole_frac_phase_comp["Vap", "carbon_dioxide"]
+            ]
+            == 1
+        )
+        assert model.fs.props[1].scaling_factor[model.fs.props[1].pressure] == 1e-5
+        assert model.fs.props[1].scaling_factor[model.fs.props[1].temperature] == 1e-2
+        assert (
+            model.fs.props[1].scaling_factor[model.fs.props[1].phase_frac["Liq"]] == 1
+        )
+        assert (
+            model.fs.props[1].scaling_factor[model.fs.props[1].phase_frac["Vap"]] == 1
+        )
+        assert (
+            model.fs.props[1].scaling_factor[model.fs.props[1]._teq["Vap", "Liq"]]
+            == 1e-2
+        )
+        assert model.fs.props[1].scaling_factor[model.fs.props[1]._t1_Vap_Liq] == 1e-2
+
+        assert (
+            model.fs.props[1].scaling_factor[
+                model.fs.props[1]._mole_frac_tbub["Vap", "Liq", "bmimPF6"]
+            ]
+            == 1
+        )
+        assert (
+            model.fs.props[1].scaling_factor[
+                model.fs.props[1]._mole_frac_tbub["Vap", "Liq", "carbon_dioxide"]
+            ]
+            == 1
+        )
+        assert (
+            model.fs.props[1].scaling_factor[
+                model.fs.props[1].temperature_bubble["Vap", "Liq"]
+            ]
+            == 1e-2
+        )
+        for suffix in ["comp", "tbub", "phase_comp"]:
+            name = "log_mole_frac_" + suffix
+            assert model.fs.props[1].is_property_constructed(name)
+            log_var = getattr(model.fs.props[1], name)
+            for var in log_var.values():
+                assert model.fs.props[1].scaling_factor[var] == 1
+
+        # Constraints
+        assert (
+            model.fs.props[1].scaling_factor[model.fs.props[1].total_flow_balance] == 1
+        )
+        assert (
+            model.fs.props[1].scaling_factor[
+                model.fs.props[1].component_flow_balances["bmimPF6"]
+            ]
+            == 1
+        )
+        assert (
+            model.fs.props[1].scaling_factor[
+                model.fs.props[1].component_flow_balances["carbon_dioxide"]
+            ]
+            == 1
+        )
+        assert (
+            model.fs.props[1].scaling_factor[
+                model.fs.props[1].phase_fraction_constraint["Liq"]
+            ]
+            == 1
+        )
+        assert (
+            model.fs.props[1].scaling_factor[
+                model.fs.props[1].phase_fraction_constraint["Vap"]
+            ]
+            == 1
+        )
+        assert (
+            model.fs.props[1].scaling_factor[model.fs.props[1]._t1_constraint_Vap_Liq]
+            == 1e-2
+        )
+        assert (
+            model.fs.props[1].scaling_factor[
+                model.fs.props[1].eq_temperature_bubble["Vap", "Liq", "bmimPF6"]
+            ]
+            == 1
+        )
+        assert (
+            model.fs.props[1].scaling_factor[
+                model.fs.props[1].eq_temperature_bubble["Vap", "Liq", "carbon_dioxide"]
+            ]
+            == 1
+        )
+        assert (
+            model.fs.props[1].scaling_factor[
+                model.fs.props[1].log_mole_frac_comp_eqn["bmimPF6"]
+            ]
+            == 1
+        )
+        assert (
+            model.fs.props[1].scaling_factor[
+                model.fs.props[1].log_mole_frac_comp_eqn["carbon_dioxide"]
+            ]
+            == 1
+        )
+        assert (
+            model.fs.props[1].scaling_factor[
+                model.fs.props[1].log_mole_frac_tbub_eqn["Vap", "Liq", "carbon_dioxide"]
+            ]
+            == 1
+        )
+        assert (
+            model.fs.props[1].scaling_factor[
+                model.fs.props[1].eq_mole_frac_tbub["Vap", "Liq"]
+            ]
+            == 1
+        )
+        assert (
+            model.fs.props[1].scaling_factor[model.fs.props[1]._teq_constraint_Vap_Liq]
+            == 1e-2
+        )
+        assert (
+            model.fs.props[1].scaling_factor[
+                model.fs.props[1].equilibrium_constraint["Vap", "Liq", "carbon_dioxide"]
+            ]
+            == 1
+        )
+        assert (
+            model.fs.props[1].scaling_factor[
+                model.fs.props[1].log_mole_frac_phase_comp_eqn["Liq", "bmimPF6"]
+            ]
+            == 1
+        )
+        assert (
+            model.fs.props[1].scaling_factor[
+                model.fs.props[1].log_mole_frac_phase_comp_eqn["Liq", "carbon_dioxide"]
+            ]
+            == 5
+        )
+        assert (
+            model.fs.props[1].scaling_factor[
+                model.fs.props[1].log_mole_frac_phase_comp_eqn["Vap", "carbon_dioxide"]
+            ]
+            == 1
+        )
+
+        # Expressions
+        assert (
+            model.fs.props[1].scaling_hint[
+                model.fs.props[1].flow_mol_phase_comp["Liq", "bmimPF6"]
+            ]
+            == 1
+        )
+        assert (
+            model.fs.props[1].scaling_hint[
+                model.fs.props[1].flow_mol_phase_comp["Liq", "carbon_dioxide"]
+            ]
+            == 5
+        )
+        assert (
+            model.fs.props[1].scaling_hint[
+                model.fs.props[1].flow_mol_phase_comp["Vap", "carbon_dioxide"]
+            ]
+            == 1
+        )
+        assert (
+            model.fs.props[1].scaling_hint[model.fs.props[1].flow_mol_comp["bmimPF6"]]
+            == 1
+        )
+        assert (
+            model.fs.props[1].scaling_hint[
+                model.fs.props[1].flow_mol_comp["carbon_dioxide"]
+            ]
+            == 1
+        )
+
+    @pytest.mark.unit
+    def test_define_state_vars(self, model):
         sv = model.fs.props[1].define_state_vars()
+
+        assert len(sv) == 4
+        for i in sv:
+            assert i in ["flow_mol", "mole_frac_comp", "temperature", "pressure"]
+
+    @pytest.mark.unit
+    def test_define_port_members(self, model):
+        sv = model.fs.props[1].define_port_members()
 
         assert len(sv) == 4
         for i in sv:
