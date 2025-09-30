@@ -761,16 +761,12 @@ class TestBTExampleScalerObject(object):
 
             m.fs.state.initialize()
 
-            results = solver.solve(m)
+            # Use a less strict complementarity condition
+            # to encourage convergence.
+            m.fs.state[1].eps_t_Vap_Liq.set_value(1e-2)
+            m.fs.state[1].eps_z_Vap_Liq.set_value(1e-2)
 
-            # Sometimes the slack variables can get stuck at their bounds,
-            # which causes the Jacobian to become singular. The bound
-            # push that results from restarting IPOPT can be enough
-            # to recover.
-            if not check_optimal_termination(results):
-                results = solver.solve(m)
-                if not check_optimal_termination(results):
-                    results = solver.solve(m)
+            results = solver.solve(m)
 
             assert_optimal_termination(results)
 
@@ -778,14 +774,14 @@ class TestBTExampleScalerObject(object):
 
                 results = solver.solve(m)
 
-                if not check_optimal_termination(results):
-                    results = solver.solve(m)
-                    if not check_optimal_termination(results):
-                        results = solver.solve(m)
-
                 assert_optimal_termination(results)
 
                 m.fs.state[1].pressure.value = m.fs.state[1].pressure.value + 1e5
+
+            # Clean up for later tests, which may require
+            # greater precision in the flash calculations
+            m.fs.state[1].eps_t_Vap_Liq.set_value(1e-4)
+            m.fs.state[1].eps_z_Vap_Liq.set_value(1e-4)
 
     @pytest.mark.component
     def test_T350_P1_x5(self, m):
