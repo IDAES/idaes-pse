@@ -671,7 +671,7 @@ class ControlVolumeScalerBase(CustomScalerBase):
             pb_eqn = model.pressure_balance
 
         if pb_eqn is not None:
-            for idx, con in pb_eqn.values():
+            for idx, con in pb_eqn.items():
                 self.scale_constraint_by_component(
                     con,
                     props[idx].pressure,
