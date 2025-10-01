@@ -20,11 +20,13 @@ import pandas
 
 from pyomo.environ import (
     check_optimal_termination,
+    ComponentMap,
     ConcreteModel,
     Constraint,
     Param,
     RangeSet,
     Set,
+    TransformationFactory,
     Var,
     value,
     units as pyunits,
@@ -45,6 +47,11 @@ from idaes.core import (
     Phase,
     Component,
     MaterialFlowBasis,
+)
+from idaes.core.scaling import CustomScalerBase
+from idaes.core.util.scaling import (
+    get_jacobian,
+    jacobian_cond,
 )
 from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
     BTXParameterBlock,
@@ -594,6 +601,10 @@ class TestMixer(object):
         m.fs.pp = PhysicalParameterTestBlock()
 
         m.fs.mix = Mixer(property_package=m.fs.pp)
+        inlet_dict = {key: val for key, val in m.fs.mix.inlet_blocks}
+        assert len(inlet_dict) == 2
+        assert inlet_dict["inlet_1"] is m.fs.mix.inlet_1_state
+        assert inlet_dict["inlet_2"] is m.fs.mix.inlet_2_state
 
         assert isinstance(m.fs.mix.material_mixing_equations, Constraint)
         assert len(m.fs.mix.material_mixing_equations) == 4
@@ -606,8 +617,9 @@ class TestMixer(object):
         assert isinstance(m.fs.mix.minimum_pressure, Var)
         assert len(m.fs.mix.minimum_pressure) == 2
         assert isinstance(m.fs.mix.eps_pressure, Param)
+        assert len(m.fs.mix.minimum_pressure_constraint) == 2
         assert isinstance(m.fs.mix.minimum_pressure_constraint, Constraint)
-        assert len(m.fs.mix.minimum_pressure) == 2
+        assert len(m.fs.mix.mixture_pressure) == 1
         assert isinstance(m.fs.mix.mixture_pressure, Constraint)
 
         assert isinstance(m.fs.mix.inlet_1, Port)
@@ -634,8 +646,9 @@ class TestMixer(object):
         assert isinstance(m.fs.mix.minimum_pressure, Var)
         assert len(m.fs.mix.minimum_pressure) == 2
         assert isinstance(m.fs.mix.eps_pressure, Param)
+        assert len(m.fs.mix.minimum_pressure_constraint) == 2
         assert isinstance(m.fs.mix.minimum_pressure_constraint, Constraint)
-        assert len(m.fs.mix.minimum_pressure) == 2
+        assert len(m.fs.mix.mixture_pressure) == 1
         assert isinstance(m.fs.mix.mixture_pressure, Constraint)
 
         assert isinstance(m.fs.mix.inlet_1, Port)
@@ -664,6 +677,41 @@ class TestMixer(object):
 
         assert isinstance(m.fs.mix.inlet_1, Port)
         assert isinstance(m.fs.mix.inlet_2, Port)
+        assert isinstance(m.fs.mix.outlet, Port)
+
+    @pytest.mark.build
+    @pytest.mark.unit
+    def test_build_named_inlets(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.pp = PhysicalParameterTestBlock()
+
+        m.fs.mix = Mixer(property_package=m.fs.pp, inlet_list=["foo", "bar", "biz"])
+        inlet_dict = {key: val for key, val in m.fs.mix.inlet_blocks}
+        assert len(inlet_dict) == 3
+        assert inlet_dict["foo"] is m.fs.mix.foo_state
+        assert inlet_dict["bar"] is m.fs.mix.bar_state
+        assert inlet_dict["biz"] is m.fs.mix.biz_state
+
+        assert isinstance(m.fs.mix.material_mixing_equations, Constraint)
+        assert len(m.fs.mix.material_mixing_equations) == 4
+        assert hasattr(m.fs.mix, "phase_equilibrium_idx_ref") is False
+
+        assert isinstance(m.fs.mix.enthalpy_mixing_equations, Constraint)
+        assert len(m.fs.mix.enthalpy_mixing_equations) == 1
+
+        assert m.fs.mix.inlet_idx.ctype is RangeSet
+        assert isinstance(m.fs.mix.minimum_pressure, Var)
+        assert len(m.fs.mix.minimum_pressure) == 3
+        assert isinstance(m.fs.mix.eps_pressure, Param)
+        assert len(m.fs.mix.minimum_pressure_constraint) == 3
+        assert isinstance(m.fs.mix.minimum_pressure_constraint, Constraint)
+        assert len(m.fs.mix.mixture_pressure) == 1
+        assert isinstance(m.fs.mix.mixture_pressure, Constraint)
+
+        assert isinstance(m.fs.mix.foo, Port)
+        assert isinstance(m.fs.mix.bar, Port)
+        assert isinstance(m.fs.mix.biz, Port)
         assert isinstance(m.fs.mix.outlet, Port)
 
     # -------------------------------------------------------------------------
@@ -1837,10 +1885,56 @@ class _LeachSolutionStateBlock(StateBlock):
                 self[k].hso4_dissociation.deactivate()
 
 
+class LeachSolutionScaler(CustomScalerBase):
+    """
+    Scaler object for leach solution properties
+    """
+
+    DEFAULT_SCALING_FACTORS = {
+        "flow_vol": 0.1,
+        "conc_mass_comp[H2O]": 1e-6,
+        "conc_mass_comp[H]": 1e-1,
+        "conc_mass_comp[HSO4]": 1e-2,
+        "conc_mass_comp[SO4]": 1e-1,
+    }
+
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None
+    ):
+        self.scale_variable_by_default(model.flow_vol, overwrite=overwrite)
+        for var in model.conc_mass_comp.values():
+            self.scale_variable_by_default(var, overwrite=overwrite)
+
+        for idx, var in model.conc_mol_comp.items():
+            self.scale_variable_by_definition_constraint(
+                var, model.molar_concentration_constraint[idx], overwrite=overwrite
+            )
+
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None
+    ):
+        for idx, con in model.molar_concentration_constraint.items():
+            # Constraint is on a mass basis
+            self.scale_constraint_by_component(
+                con, model.conc_mass_comp[idx], overwrite=overwrite
+            )
+        if not model.config.defined_state:
+            self.scale_constraint_by_component(
+                model.h2o_concentration,
+                model.conc_mass_comp["H2O"],
+                overwrite=overwrite,
+            )
+            self.scale_constraint_by_nominal_value(
+                model.hso4_dissociation, overwrite=overwrite
+            )
+
+
 @declare_process_block_class(
     "LeachSolutionStateBlock", block_class=_LeachSolutionStateBlock
 )
 class LeachSolutionStateBlockData(StateBlockData):
+    default_scaler = LeachSolutionScaler
+
     def build(self):
         super().build()
 
@@ -1904,62 +1998,153 @@ class LeachSolutionStateBlockData(StateBlockData):
         }
 
 
-@pytest.mark.component
-@pytest.mark.solver
-def test_component_phase_w_inherent_rxns():
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(dynamic=False)
+class TestComponentPhaseWithInherentReactions(object):
+    @pytest.fixture(scope="class")
+    def model(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.properties = LeachSolutionParameters()
+        m.fs.properties = LeachSolutionParameters()
 
-    m.fs.unit = Mixer(
-        property_package=m.fs.properties,
-        material_balance_type=MaterialBalanceType.componentPhase,
-        energy_mixing_type=MixingType.none,
-        momentum_mixing_type=MomentumMixingType.none,
-    )
+        m.fs.unit = Mixer(
+            property_package=m.fs.properties,
+            material_balance_type=MaterialBalanceType.componentPhase,
+            energy_mixing_type=MixingType.none,
+            momentum_mixing_type=MomentumMixingType.none,
+        )
 
-    m.fs.unit.inlet_1.flow_vol[0].fix(10)
-    m.fs.unit.inlet_1.conc_mass_comp[0, "H2O"].fix(1e6 * pyunits.mg / pyunits.L)
-    m.fs.unit.inlet_1.conc_mass_comp[0, "H"].fix(57.54848 * pyunits.mg / pyunits.L)
-    m.fs.unit.inlet_1.conc_mass_comp[0, "HSO4"].fix(4117.798 * pyunits.mg / pyunits.L)
-    m.fs.unit.inlet_1.conc_mass_comp[0, "SO4"].fix(724.6539 * pyunits.mg / pyunits.L)
+        m.fs.unit.inlet_1.flow_vol[0].fix(10)
+        m.fs.unit.inlet_1.conc_mass_comp[0, "H2O"].fix(1e6 * pyunits.mg / pyunits.L)
+        m.fs.unit.inlet_1.conc_mass_comp[0, "H"].fix(57.54848 * pyunits.mg / pyunits.L)
+        m.fs.unit.inlet_1.conc_mass_comp[0, "HSO4"].fix(
+            4117.798 * pyunits.mg / pyunits.L
+        )
+        m.fs.unit.inlet_1.conc_mass_comp[0, "SO4"].fix(
+            724.6539 * pyunits.mg / pyunits.L
+        )
 
-    m.fs.unit.inlet_2.flow_vol[0].fix(10)
-    m.fs.unit.inlet_2.conc_mass_comp[0, "H2O"].fix(1e6 * pyunits.mg / pyunits.L)
-    m.fs.unit.inlet_2.conc_mass_comp[0, "H"].fix(57.54848 * pyunits.mg / pyunits.L)
-    m.fs.unit.inlet_2.conc_mass_comp[0, "HSO4"].fix(4117.798 * pyunits.mg / pyunits.L)
-    m.fs.unit.inlet_2.conc_mass_comp[0, "SO4"].fix(724.6539 * pyunits.mg / pyunits.L)
+        m.fs.unit.inlet_2.flow_vol[0].fix(10)
+        m.fs.unit.inlet_2.conc_mass_comp[0, "H2O"].fix(1e6 * pyunits.mg / pyunits.L)
+        m.fs.unit.inlet_2.conc_mass_comp[0, "H"].fix(57.54848 * pyunits.mg / pyunits.L)
+        m.fs.unit.inlet_2.conc_mass_comp[0, "HSO4"].fix(
+            4117.798 * pyunits.mg / pyunits.L
+        )
+        m.fs.unit.inlet_2.conc_mass_comp[0, "SO4"].fix(
+            724.6539 * pyunits.mg / pyunits.L
+        )
 
-    assert degrees_of_freedom(m) == 0
-    assert_units_consistent(m)
+        return m
 
-    initializer = BlockTriangularizationInitializer()
-    initializer.initialize(m.fs.unit)
+    @pytest.mark.component
+    def test_structural_warnings(self, model):
+        dt = DiagnosticsToolbox(model)
+        dt.assert_no_structural_warnings()
 
-    results = solver.solve(m)
-    assert check_optimal_termination(results)
+    @pytest.mark.component
+    def test_scaling(self, model):
+        unit = model.fs.unit
+        assert unit.default_scaler is MixerScaler
+        MixerScaler().scale_model(unit)
 
-    assert initializer.summary[m.fs.unit]["status"] == InitializationStatus.Ok
+        assert len(unit.scaling_factor) == 13
 
-    assert value(m.fs.unit.outlet.flow_vol[0]) == pytest.approx(20, rel=1e-6)
+        # Variables
+        assert unit.scaling_factor[
+            unit.inherent_reaction_extent[0.0, "Ka2"]
+        ] == pytest.approx(960)
+        assert unit.scaling_factor[
+            unit.inherent_reaction_generation[0.0, "liquid", "H2O"]
+        ] == pytest.approx(1.8e-3)
+        assert unit.scaling_factor[
+            unit.inherent_reaction_generation[0.0, "liquid", "H"]
+        ] == pytest.approx(10)
+        assert unit.scaling_factor[
+            unit.inherent_reaction_generation[0.0, "liquid", "HSO4"]
+        ] == pytest.approx(97)
+        assert unit.scaling_factor[
+            unit.inherent_reaction_generation[0.0, "liquid", "SO4"]
+        ] == pytest.approx(960)
 
-    assert value(m.fs.unit.outlet.conc_mass_comp[0, "H2O"]) == pytest.approx(
-        1e6, rel=1e-6
-    )
-    assert value(m.fs.unit.outlet.conc_mass_comp[0, "H"]) == pytest.approx(
-        57.54848, rel=1e-6
-    )
-    assert value(m.fs.unit.outlet.conc_mass_comp[0, "HSO4"]) == pytest.approx(
-        4117.798, rel=1e-6
-    )
-    assert value(m.fs.unit.outlet.conc_mass_comp[0, "SO4"]) == pytest.approx(
-        724.6539, rel=1e-6
-    )
+        # Constraints
+        assert unit.scaling_factor[
+            unit.inherent_reaction_constraint[0.0, "liquid", "H2O"]
+        ] == pytest.approx(1.8e-3)
+        assert unit.scaling_factor[
+            unit.inherent_reaction_constraint[0.0, "liquid", "H"]
+        ] == pytest.approx(10)
+        assert unit.scaling_factor[
+            unit.inherent_reaction_constraint[0.0, "liquid", "HSO4"]
+        ] == pytest.approx(97)
+        assert unit.scaling_factor[
+            unit.inherent_reaction_constraint[0.0, "liquid", "SO4"]
+        ] == pytest.approx(960)
+        assert unit.scaling_factor[
+            unit.material_mixing_equations[0.0, "liquid", "H2O"]
+        ] == pytest.approx(1.8e-3)
+        assert unit.scaling_factor[
+            unit.material_mixing_equations[0.0, "liquid", "H"]
+        ] == pytest.approx(10)
+        assert unit.scaling_factor[
+            unit.material_mixing_equations[0.0, "liquid", "HSO4"]
+        ] == pytest.approx(97)
+        assert unit.scaling_factor[
+            unit.material_mixing_equations[0.0, "liquid", "SO4"]
+        ] == pytest.approx(960)
 
-    assert value(m.fs.unit.inherent_reaction_extent[0, "Ka2"]) == pytest.approx(
-        0, abs=1e-6
-    )
+        # Expressions
+        assert not hasattr(unit, "scaling_hint")
+
+    @pytest.mark.component
+    @pytest.mark.solver
+    def test_initialization(self, model):
+        initializer = BlockTriangularizationInitializer()
+        initializer.initialize(model.fs.unit)
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+    @pytest.mark.component
+    @pytest.mark.solver
+    def test_solve(self, model):
+        results = solver.solve(model)
+        assert check_optimal_termination(results)
+
+    # Mark this test with solver because it relies on the
+    # results of the previous test, which is also marked
+    # solver.
+    @pytest.mark.component
+    @pytest.mark.solver
+    def test_solution(self, model):
+        unit = model.fs.unit
+        assert value(unit.outlet.flow_vol[0]) == pytest.approx(20, rel=1e-6)
+
+        assert value(unit.outlet.conc_mass_comp[0, "H2O"]) == pytest.approx(
+            1e6, rel=1e-6
+        )
+        assert value(unit.outlet.conc_mass_comp[0, "H"]) == pytest.approx(
+            57.54848, rel=1e-6
+        )
+        assert value(unit.outlet.conc_mass_comp[0, "HSO4"]) == pytest.approx(
+            4117.798, rel=1e-6
+        )
+        assert value(unit.outlet.conc_mass_comp[0, "SO4"]) == pytest.approx(
+            724.6539, rel=1e-6
+        )
+
+        assert value(unit.inherent_reaction_extent[0, "Ka2"]) == pytest.approx(
+            0, abs=1e-6
+        )
+
+    @pytest.mark.component
+    @pytest.mark.solver
+    def test_no_numerical_warnings(self, model):
+        # TODO revisit once the diagnostics toolbox takes scaling into account
+        sm = TransformationFactory("core.scale_model").create_using(model, rename=False)
+        dt = DiagnosticsToolbox(sm)
+        dt.assert_no_numerical_warnings()
+
+        jac, _ = get_jacobian(sm, scaled=False)
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+            1.074e4, rel=1e-3
+        )
 
 
 @pytest.mark.component
