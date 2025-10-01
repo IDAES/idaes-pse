@@ -13,7 +13,7 @@
 """
 Tests for ControlVolumeBlockData.
 
-Author: Andrew Lee
+Author: Andrew Lee, Douglas Allan
 """
 import pytest
 import pandas
@@ -60,6 +60,7 @@ from idaes.models.unit_models.mixer import (
     MixingType,
     MomentumMixingType,
     MixerInitializer,
+    MixerScaler,
 )
 from idaes.core.util.exceptions import (
     BurntToast,
@@ -1242,61 +1243,185 @@ class TestIAPWS(object):
         dt.assert_no_numerical_warnings()
 
 
+def _make_sapon_model():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+
+    m.fs.properties = SaponificationParameterBlock()
+
+    m.fs.unit = Mixer(property_package=m.fs.properties)
+
+    m.fs.unit.inlet_1.flow_vol[0].fix(1e-3)
+    m.fs.unit.inlet_1.temperature[0].fix(320)
+    m.fs.unit.inlet_1.pressure[0].fix(101325)
+    m.fs.unit.inlet_1.conc_mol_comp[0, "H2O"].fix(55388.0)
+    m.fs.unit.inlet_1.conc_mol_comp[0, "NaOH"].fix(100.0)
+    m.fs.unit.inlet_1.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
+    m.fs.unit.inlet_1.conc_mol_comp[0, "SodiumAcetate"].fix(1e-8)
+    m.fs.unit.inlet_1.conc_mol_comp[0, "Ethanol"].fix(1e-8)
+
+    m.fs.unit.inlet_2.flow_vol[0].fix(1e-3)
+    m.fs.unit.inlet_2.temperature[0].fix(300)
+    m.fs.unit.inlet_2.pressure[0].fix(101325)
+    m.fs.unit.inlet_2.conc_mol_comp[0, "H2O"].fix(55388.0)
+    m.fs.unit.inlet_2.conc_mol_comp[0, "NaOH"].fix(100.0)
+    m.fs.unit.inlet_2.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
+    m.fs.unit.inlet_2.conc_mol_comp[0, "SodiumAcetate"].fix(1e-8)
+    m.fs.unit.inlet_2.conc_mol_comp[0, "Ethanol"].fix(1e-8)
+
+    return m
+
+
+_sapon_expected = pandas.DataFrame.from_dict(
+    {
+        "Units": {
+            "Volumetric Flowrate": getattr(pyunits.pint_registry, "m**3/second"),
+            "Molar Concentration H2O": getattr(pyunits.pint_registry, "mole/m**3"),
+            "Molar Concentration NaOH": getattr(pyunits.pint_registry, "mole/m**3"),
+            "Molar Concentration EthylAcetate": getattr(
+                pyunits.pint_registry, "mole/m**3"
+            ),
+            "Molar Concentration SodiumAcetate": getattr(
+                pyunits.pint_registry, "mole/m**3"
+            ),
+            "Molar Concentration Ethanol": getattr(pyunits.pint_registry, "mole/m**3"),
+            "Temperature": getattr(pyunits.pint_registry, "K"),
+            "Pressure": getattr(pyunits.pint_registry, "Pa"),
+        },
+        "inlet_1": {
+            "Volumetric Flowrate": 1e-3,
+            "Molar Concentration H2O": 55388,
+            "Molar Concentration NaOH": 100.00,
+            "Molar Concentration EthylAcetate": 100.00,
+            "Molar Concentration SodiumAcetate": 0,
+            "Molar Concentration Ethanol": 0,
+            "Temperature": 320,
+            "Pressure": 1.0132e05,
+        },
+        "inlet_2": {
+            "Volumetric Flowrate": 1e-3,
+            "Molar Concentration H2O": 55388,
+            "Molar Concentration NaOH": 100.00,
+            "Molar Concentration EthylAcetate": 100.00,
+            "Molar Concentration SodiumAcetate": 0,
+            "Molar Concentration Ethanol": 0,
+            "Temperature": 300,
+            "Pressure": 1.0132e05,
+        },
+        "Outlet": {
+            "Volumetric Flowrate": 1.00,
+            "Molar Concentration H2O": 100.00,
+            "Molar Concentration NaOH": 100.0,
+            "Molar Concentration EthylAcetate": 100.00,
+            "Molar Concentration SodiumAcetate": 100.00,
+            "Molar Concentration Ethanol": 100.00,
+            "Temperature": 298.15,
+            "Pressure": 1.0132e05,
+        },
+    }
+)
+
+
+def _test_build_sapon(sapon):
+    assert len(sapon.fs.unit.inlet_1.vars) == 4
+    assert hasattr(sapon.fs.unit.inlet_1, "flow_vol")
+    assert hasattr(sapon.fs.unit.inlet_1, "conc_mol_comp")
+    assert hasattr(sapon.fs.unit.inlet_1, "temperature")
+    assert hasattr(sapon.fs.unit.inlet_1, "pressure")
+
+    assert len(sapon.fs.unit.inlet_2.vars) == 4
+    assert hasattr(sapon.fs.unit.inlet_2, "flow_vol")
+    assert hasattr(sapon.fs.unit.inlet_2, "conc_mol_comp")
+    assert hasattr(sapon.fs.unit.inlet_2, "temperature")
+    assert hasattr(sapon.fs.unit.inlet_2, "pressure")
+
+    assert len(sapon.fs.unit.outlet.vars) == 4
+    assert hasattr(sapon.fs.unit.outlet, "flow_vol")
+    assert hasattr(sapon.fs.unit.outlet, "conc_mol_comp")
+    assert hasattr(sapon.fs.unit.outlet, "temperature")
+    assert hasattr(sapon.fs.unit.outlet, "pressure")
+
+    assert number_variables(sapon) == 26
+    assert number_total_constraints(sapon) == 10
+    assert number_unused_variables(sapon) == 0
+
+
+def _test_solution_sapon(sapon):
+    assert pytest.approx(2e-3, abs=1e-6) == value(sapon.fs.unit.outlet.flow_vol[0])
+
+    assert pytest.approx(55388.0, abs=1e0) == value(
+        sapon.fs.unit.outlet.conc_mol_comp[0, "H2O"]
+    )
+    assert pytest.approx(100.0, abs=1e-3) == value(
+        sapon.fs.unit.outlet.conc_mol_comp[0, "NaOH"]
+    )
+    assert pytest.approx(100.0, abs=1e-3) == value(
+        sapon.fs.unit.outlet.conc_mol_comp[0, "EthylAcetate"]
+    )
+    assert pytest.approx(0.0, abs=1e-3) == value(
+        sapon.fs.unit.outlet.conc_mol_comp[0, "SodiumAcetate"]
+    )
+    assert pytest.approx(0.0, abs=1e-3) == value(
+        sapon.fs.unit.outlet.conc_mol_comp[0, "Ethanol"]
+    )
+
+    assert pytest.approx(310.0, abs=1e-1) == value(sapon.fs.unit.outlet.temperature[0])
+
+    assert pytest.approx(101325, abs=1e2) == value(sapon.fs.unit.outlet.pressure[0])
+
+
+def _test_conservation_sapon(sapon):
+    assert (
+        abs(
+            value(
+                sapon.fs.unit.inlet_1.flow_vol[0]
+                + sapon.fs.unit.inlet_2.flow_vol[0]
+                - sapon.fs.unit.outlet.flow_vol[0]
+            )
+        )
+        <= 1e-6
+    )
+
+    assert (
+        abs(
+            value(
+                sapon.fs.unit.inlet_1.flow_vol[0]
+                * sapon.fs.properties.dens_mol
+                * sapon.fs.properties.cp_mol
+                * (
+                    sapon.fs.unit.inlet_1.temperature[0]
+                    - sapon.fs.properties.temperature_ref
+                )
+                + sapon.fs.unit.inlet_2.flow_vol[0]
+                * sapon.fs.properties.dens_mol
+                * sapon.fs.properties.cp_mol
+                * (
+                    sapon.fs.unit.inlet_2.temperature[0]
+                    - sapon.fs.properties.temperature_ref
+                )
+                - sapon.fs.unit.outlet.flow_vol[0]
+                * sapon.fs.properties.dens_mol
+                * sapon.fs.properties.cp_mol
+                * (
+                    sapon.fs.unit.outlet.temperature[0]
+                    - sapon.fs.properties.temperature_ref
+                )
+            )
+        )
+        <= 1e-3
+    )
+
+
 # -----------------------------------------------------------------------------
-class TestSaponification(object):
+class TestSaponificationLegacyScaling(object):
     @pytest.fixture(scope="class")
     def sapon(self):
-        m = ConcreteModel()
-        m.fs = FlowsheetBlock(dynamic=False)
-
-        m.fs.properties = SaponificationParameterBlock()
-
-        m.fs.unit = Mixer(property_package=m.fs.properties)
-
-        m.fs.unit.inlet_1.flow_vol[0].fix(1e-3)
-        m.fs.unit.inlet_1.temperature[0].fix(320)
-        m.fs.unit.inlet_1.pressure[0].fix(101325)
-        m.fs.unit.inlet_1.conc_mol_comp[0, "H2O"].fix(55388.0)
-        m.fs.unit.inlet_1.conc_mol_comp[0, "NaOH"].fix(100.0)
-        m.fs.unit.inlet_1.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
-        m.fs.unit.inlet_1.conc_mol_comp[0, "SodiumAcetate"].fix(1e-8)
-        m.fs.unit.inlet_1.conc_mol_comp[0, "Ethanol"].fix(1e-8)
-
-        m.fs.unit.inlet_2.flow_vol[0].fix(1e-3)
-        m.fs.unit.inlet_2.temperature[0].fix(300)
-        m.fs.unit.inlet_2.pressure[0].fix(101325)
-        m.fs.unit.inlet_2.conc_mol_comp[0, "H2O"].fix(55388.0)
-        m.fs.unit.inlet_2.conc_mol_comp[0, "NaOH"].fix(100.0)
-        m.fs.unit.inlet_2.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
-        m.fs.unit.inlet_2.conc_mol_comp[0, "SodiumAcetate"].fix(1e-8)
-        m.fs.unit.inlet_2.conc_mol_comp[0, "Ethanol"].fix(1e-8)
-
-        return m
+        return _make_sapon_model()
 
     @pytest.mark.build
     @pytest.mark.unit
     def test_build(self, sapon):
-        assert len(sapon.fs.unit.inlet_1.vars) == 4
-        assert hasattr(sapon.fs.unit.inlet_1, "flow_vol")
-        assert hasattr(sapon.fs.unit.inlet_1, "conc_mol_comp")
-        assert hasattr(sapon.fs.unit.inlet_1, "temperature")
-        assert hasattr(sapon.fs.unit.inlet_1, "pressure")
-
-        assert len(sapon.fs.unit.inlet_2.vars) == 4
-        assert hasattr(sapon.fs.unit.inlet_2, "flow_vol")
-        assert hasattr(sapon.fs.unit.inlet_2, "conc_mol_comp")
-        assert hasattr(sapon.fs.unit.inlet_2, "temperature")
-        assert hasattr(sapon.fs.unit.inlet_2, "pressure")
-
-        assert len(sapon.fs.unit.outlet.vars) == 4
-        assert hasattr(sapon.fs.unit.outlet, "flow_vol")
-        assert hasattr(sapon.fs.unit.outlet, "conc_mol_comp")
-        assert hasattr(sapon.fs.unit.outlet, "temperature")
-        assert hasattr(sapon.fs.unit.outlet, "pressure")
-
-        assert number_variables(sapon) == 26
-        assert number_total_constraints(sapon) == 10
-        assert number_unused_variables(sapon) == 0
+        _test_build_sapon(sapon)
 
     @pytest.mark.component
     def test_structural_issues(self, sapon):
@@ -1308,64 +1433,7 @@ class TestSaponification(object):
     def test_get_stream_table_contents(self, sapon):
         stable = sapon.fs.unit._get_stream_table_contents()
 
-        expected = pandas.DataFrame.from_dict(
-            {
-                "Units": {
-                    "Volumetric Flowrate": getattr(
-                        pyunits.pint_registry, "m**3/second"
-                    ),
-                    "Molar Concentration H2O": getattr(
-                        pyunits.pint_registry, "mole/m**3"
-                    ),
-                    "Molar Concentration NaOH": getattr(
-                        pyunits.pint_registry, "mole/m**3"
-                    ),
-                    "Molar Concentration EthylAcetate": getattr(
-                        pyunits.pint_registry, "mole/m**3"
-                    ),
-                    "Molar Concentration SodiumAcetate": getattr(
-                        pyunits.pint_registry, "mole/m**3"
-                    ),
-                    "Molar Concentration Ethanol": getattr(
-                        pyunits.pint_registry, "mole/m**3"
-                    ),
-                    "Temperature": getattr(pyunits.pint_registry, "K"),
-                    "Pressure": getattr(pyunits.pint_registry, "Pa"),
-                },
-                "inlet_1": {
-                    "Volumetric Flowrate": 1e-3,
-                    "Molar Concentration H2O": 55388,
-                    "Molar Concentration NaOH": 100.00,
-                    "Molar Concentration EthylAcetate": 100.00,
-                    "Molar Concentration SodiumAcetate": 0,
-                    "Molar Concentration Ethanol": 0,
-                    "Temperature": 320,
-                    "Pressure": 1.0132e05,
-                },
-                "inlet_2": {
-                    "Volumetric Flowrate": 1e-3,
-                    "Molar Concentration H2O": 55388,
-                    "Molar Concentration NaOH": 100.00,
-                    "Molar Concentration EthylAcetate": 100.00,
-                    "Molar Concentration SodiumAcetate": 0,
-                    "Molar Concentration Ethanol": 0,
-                    "Temperature": 300,
-                    "Pressure": 1.0132e05,
-                },
-                "Outlet": {
-                    "Volumetric Flowrate": 1.00,
-                    "Molar Concentration H2O": 100.00,
-                    "Molar Concentration NaOH": 100.0,
-                    "Molar Concentration EthylAcetate": 100.00,
-                    "Molar Concentration SodiumAcetate": 100.00,
-                    "Molar Concentration Ethanol": 100.00,
-                    "Temperature": 298.15,
-                    "Pressure": 1.0132e05,
-                },
-            }
-        )
-
-        pandas.testing.assert_frame_equal(stable, expected, rtol=1e-4, atol=1e-4)
+        pandas.testing.assert_frame_equal(stable, _sapon_expected, rtol=1e-4, atol=1e-4)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -1389,73 +1457,100 @@ class TestSaponification(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, sapon):
-        assert pytest.approx(2e-3, abs=1e-6) == value(sapon.fs.unit.outlet.flow_vol[0])
-
-        assert pytest.approx(55388.0, abs=1e0) == value(
-            sapon.fs.unit.outlet.conc_mol_comp[0, "H2O"]
-        )
-        assert pytest.approx(100.0, abs=1e-3) == value(
-            sapon.fs.unit.outlet.conc_mol_comp[0, "NaOH"]
-        )
-        assert pytest.approx(100.0, abs=1e-3) == value(
-            sapon.fs.unit.outlet.conc_mol_comp[0, "EthylAcetate"]
-        )
-        assert pytest.approx(0.0, abs=1e-3) == value(
-            sapon.fs.unit.outlet.conc_mol_comp[0, "SodiumAcetate"]
-        )
-        assert pytest.approx(0.0, abs=1e-3) == value(
-            sapon.fs.unit.outlet.conc_mol_comp[0, "Ethanol"]
-        )
-
-        assert pytest.approx(310.0, abs=1e-1) == value(
-            sapon.fs.unit.outlet.temperature[0]
-        )
-
-        assert pytest.approx(101325, abs=1e2) == value(sapon.fs.unit.outlet.pressure[0])
+        _test_solution_sapon(sapon)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_conservation(self, sapon):
-        assert (
-            abs(
-                value(
-                    sapon.fs.unit.inlet_1.flow_vol[0]
-                    + sapon.fs.unit.inlet_2.flow_vol[0]
-                    - sapon.fs.unit.outlet.flow_vol[0]
-                )
-            )
-            <= 1e-6
+        _test_conservation_sapon(sapon)
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, sapon):
+        dt = DiagnosticsToolbox(sapon)
+        dt.assert_no_numerical_warnings()
+
+
+class TestSaponificationScalerObject(object):
+    @pytest.fixture(scope="class")
+    def sapon(self):
+        return _make_sapon_model()
+
+    @pytest.mark.build
+    @pytest.mark.unit
+    def test_build(self, sapon):
+        _test_build_sapon(sapon)
+
+    @pytest.mark.component
+    def test_structural_issues(self, sapon):
+        dt = DiagnosticsToolbox(sapon)
+        dt.assert_no_structural_warnings()
+
+    @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_stream_table_contents(self, sapon):
+        stable = sapon.fs.unit._get_stream_table_contents()
+
+        pandas.testing.assert_frame_equal(stable, _sapon_expected, rtol=1e-4, atol=1e-4)
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_initialize(self, sapon):
+        initialization_tester(sapon)
+
+    @pytest.mark.component
+    def test_scaling(self, sapon):
+        unit = sapon.fs.unit
+        assert unit.default_scaler is MixerScaler
+        scaler_obj = MixerScaler()
+        scaler_obj.scale_model(unit)
+
+        assert len(unit.scaling_factor) == 11
+
+        # Variables
+        for v in unit.minimum_pressure.values():
+            assert unit.scaling_factor[v] == 1e-5
+
+        # Constraints
+        for idx, c in unit.material_mixing_equations.items():
+            if idx[-1] == "H2O":
+                assert unit.scaling_factor[c] == 1e-2
+            else:
+                assert unit.scaling_factor[c] == 1
+
+        assert unit.scaling_factor[unit.enthalpy_mixing_equations[0]] == pytest.approx(
+            1.917e-6, rel=1e-3
         )
 
-        assert (
-            abs(
-                value(
-                    sapon.fs.unit.inlet_1.flow_vol[0]
-                    * sapon.fs.properties.dens_mol
-                    * sapon.fs.properties.cp_mol
-                    * (
-                        sapon.fs.unit.inlet_1.temperature[0]
-                        - sapon.fs.properties.temperature_ref
-                    )
-                    + sapon.fs.unit.inlet_2.flow_vol[0]
-                    * sapon.fs.properties.dens_mol
-                    * sapon.fs.properties.cp_mol
-                    * (
-                        sapon.fs.unit.inlet_2.temperature[0]
-                        - sapon.fs.properties.temperature_ref
-                    )
-                    - sapon.fs.unit.outlet.flow_vol[0]
-                    * sapon.fs.properties.dens_mol
-                    * sapon.fs.properties.cp_mol
-                    * (
-                        sapon.fs.unit.outlet.temperature[0]
-                        - sapon.fs.properties.temperature_ref
-                    )
-                )
-            )
-            <= 1e-3
-        )
+        for c in unit.minimum_pressure_constraint.values():
+            assert unit.scaling_factor[c] == 1e-5
+
+        assert unit.scaling_factor[unit.mixture_pressure[0]] == 1e-5
+        # Expressions
+        assert not hasattr(unit, "scaling_hint")
+
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solve(self, sapon):
+        results = solver.solve(sapon)
+
+        # Check for optimal solution
+        assert check_optimal_termination(results)
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solution(self, sapon):
+        _test_solution_sapon(sapon)
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_conservation(self, sapon):
+        _test_conservation_sapon(sapon)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
