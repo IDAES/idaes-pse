@@ -34,6 +34,10 @@ from idaes.core.util.testing import (
 from idaes.core.base.control_volume0d import ControlVolume0DScaler
 
 
+def approx(x):
+    return pytest.approx(x, rel=1e-15, abs=0)
+
+
 @pytest.mark.unit
 def test_basic_scaling():
     m = pyo.ConcreteModel()
@@ -179,7 +183,7 @@ def test_full_auto_scaling_dynamic():
         assert get_scaling_factor(v) == 1 / 71
 
     for v in cv.material_holdup.values():
-        assert get_scaling_factor(v) == pytest.approx(10 / (47 * 71), rel=1e-15, abs=0)
+        assert get_scaling_factor(v) == approx(10 / (47 * 71))
 
     for v in cv.rate_reaction_generation.values():
         assert get_scaling_factor(v) == 1 / 43
@@ -200,7 +204,7 @@ def test_full_auto_scaling_dynamic():
         assert get_scaling_factor(v) == 10
 
     for v in cv.energy_holdup.values():
-        assert get_scaling_factor(v) == pytest.approx(10 / (41 * 71), rel=1e-15, abs=0)
+        assert get_scaling_factor(v) == approx(10 / (41 * 71))
 
     for v in cv.heat.values():
         assert get_scaling_factor(v) == 1 / 37
@@ -218,7 +222,7 @@ def test_full_auto_scaling_dynamic():
         assert get_scaling_factor(c) == 1
 
     for c in cv.material_holdup_calculation.values():
-        assert get_scaling_factor(c) == pytest.approx(10 / (47 * 71), rel=1e-15, abs=0)
+        assert get_scaling_factor(c) == approx(10 / (47 * 71))
 
     for c in cv.rate_reaction_stoichiometry_constraint.values():
         assert get_scaling_factor(c) == 1 / 43
@@ -233,7 +237,7 @@ def test_full_auto_scaling_dynamic():
         assert get_scaling_factor(c) == 1 / 37
 
     for c in cv.energy_holdup_calculation.values():
-        assert get_scaling_factor(c) == pytest.approx(10 / (41 * 71), rel=1e-15, abs=0)
+        assert get_scaling_factor(c) == approx(10 / (41 * 71))
 
     for c in cv.pressure_balance.values():
         assert get_scaling_factor(c) == 1 / 13
@@ -243,6 +247,101 @@ def test_full_auto_scaling_dynamic():
     # some global method
     assert len(list_unscaled_variables(m, include_fixed=True)) == 24
     assert len(list_unscaled_constraints(m)) == 18
+
+
+@pytest.mark.unit
+def test_full_auto_scaling_mbtype_phase():
+    m = pyo.ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(property_package=m.fs.pp)
+    m.fs.cv = ControlVolume0DBlock(
+        property_package=m.fs.pp,
+        reaction_package=m.fs.rp,
+    )
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=True)
+
+    m.fs.cv.add_material_balances(
+        balance_type=MaterialBalanceType.componentPhase,
+        has_rate_reactions=True,
+        has_equilibrium_reactions=True,
+        has_phase_equilibrium=True,
+        has_mass_transfer=True,
+    )
+
+    m.fs.cv.add_energy_balances(
+        balance_type=EnergyBalanceType.enthalpyTotal,
+        has_heat_of_reaction=True,
+        has_heat_transfer=True,
+        has_work_transfer=True,
+        has_enthalpy_transfer=True,
+    )
+
+    m.fs.cv.add_momentum_balances(
+        balance_type=MomentumBalanceType.pressureTotal, has_pressure_change=True
+    )
+
+    scaler_obj = ControlVolume0DScaler()
+    scaler_obj.default_scaling_factors["volume"] = 1 / 71
+
+    scaler_obj.scale_model(m.fs.cv)
+
+    assert len(list_unscaled_variables(m, include_fixed=True)) == 0
+    assert len(list_unscaled_constraints(m)) == 0
+
+    cv = m.fs.cv
+
+    # Variables
+    for v in cv.volume.values():
+        assert get_scaling_factor(v) == 1 / 71
+
+    for v in cv.rate_reaction_generation.values():
+        assert get_scaling_factor(v) == 1 / 43
+
+    for v in cv.rate_reaction_extent.values():
+        assert get_scaling_factor(v) == 1 / 43
+
+    for v in cv.equilibrium_reaction_generation.values():
+        assert get_scaling_factor(v) == 1 / 43
+
+    for v in cv.equilibrium_reaction_extent.values():
+        assert get_scaling_factor(v) == 1 / 43
+
+    for v in cv.mass_transfer_term.values():
+        assert get_scaling_factor(v) == 1 / 43
+
+    for v in cv.heat.values():
+        assert get_scaling_factor(v) == 1 / 37
+
+    for v in cv.work.values():
+        assert get_scaling_factor(v) == 1 / 37
+
+    for v in cv.enthalpy_transfer.values():
+        assert get_scaling_factor(v) == 1 / 37
+
+    for v in cv.deltaP.values():
+        assert get_scaling_factor(v) == 1 / 13
+
+    # Constraints
+    for c in cv.rate_reaction_stoichiometry_constraint.values():
+        assert get_scaling_factor(c) == 1 / 43
+
+    for c in cv.equilibrium_reaction_stoichiometry_constraint.values():
+        assert get_scaling_factor(c) == 1 / 43
+
+    for c in cv.material_balances.values():
+        assert get_scaling_factor(c) == 1 / 43
+
+    for c in cv.enthalpy_balances.values():
+        assert get_scaling_factor(c) == 1 / 37
+
+    for c in cv.pressure_balance.values():
+        assert get_scaling_factor(c) == 1 / 13
+
+    for c in cv.phase_equilibrium_generation.values():
+        assert get_scaling_factor(c) == 1 / 43
 
 
 # TODO test element balance when implemented

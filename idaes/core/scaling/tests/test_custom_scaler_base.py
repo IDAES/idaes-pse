@@ -1118,6 +1118,71 @@ class TestCustomScalerBase:
                 count += 1
 
     @pytest.mark.unit
+    def test_propagate_state_scaling_scalar_to_indexed_within_block(self):
+        # Dummy up two state blocks
+        m = ConcreteModel()
+
+        m.properties = PhysicalParameterTestBlock()
+
+        m.state1 = m.properties.build_state_block([1, 2, 3])
+
+        # Set scaling factors on state1
+        for t, sd in m.state1.items():
+            sd.scaling_factor = Suffix(direction=Suffix.EXPORT)
+            sd.scaling_factor[sd.temperature] = 100 * t
+            sd.scaling_factor[sd.pressure] = 1e5 * t
+
+            count = 1
+            for j in sd.flow_mol_phase_comp.values():
+                sd.scaling_factor[j] = 10 * t * count
+                count += 1
+
+        sb = CustomScalerBase()
+        sb.propagate_state_scaling(m.state1, m.state1[1])
+
+        for t, sd in m.state1.items():
+            assert sd.scaling_factor[sd.temperature] == 100 * t
+            assert sd.scaling_factor[sd.pressure] == 1e5 * t
+
+            count = 1
+            for j in sd.flow_mol_phase_comp.values():
+                assert sd.scaling_factor[j] == 10 * t * count
+                count += 1
+
+        # Test for overwrite=False
+        for t, sd in m.state1.items():
+            sd.scaling_factor[sd.temperature] = 200 * t
+            sd.scaling_factor[sd.pressure] = 2e5 * t
+
+            count = 1
+            for j in sd.flow_mol_phase_comp.values():
+                sd.scaling_factor[j] = 20 * t * count
+                count += 1
+
+        sb.propagate_state_scaling(m.state1, m.state1[1], overwrite=False)
+
+        for t, sd in m.state1.items():
+            assert sd.scaling_factor[sd.temperature] == 200 * t
+            assert sd.scaling_factor[sd.pressure] == 2e5 * t
+
+            count = 1
+            for j in sd.flow_mol_phase_comp.values():
+                assert sd.scaling_factor[j] == 20 * t * count
+                count += 1
+
+        # Test for overwrite=True
+        sb.propagate_state_scaling(m.state1, m.state1[2], overwrite=True)
+
+        for t, sd in m.state1.items():
+            assert sd.scaling_factor[sd.temperature] == 200 * 2
+            assert sd.scaling_factor[sd.pressure] == 2e5 * 2
+
+            count = 1
+            for j in sd.flow_mol_phase_comp.values():
+                assert sd.scaling_factor[j] == 20 * 2 * count
+                count += 1
+
+    @pytest.mark.unit
     def test_propagate_state_scaling_scalar_to_scalar(self):
         # Dummy up two state blocks
         m = ConcreteModel()
@@ -1265,6 +1330,27 @@ class TestCustomScalerBase:
             assert not bd._dummy_scaler_test
 
         assert "Using user-defined Scaler for b." in caplog.text
+
+    @pytest.mark.unit
+    def test_call_submodel_scaler_method_default_scaler_blockdata(self, caplog):
+        caplog.set_level(idaeslog.DEBUG, logger="idaes")
+
+        # Dummy up a nested model
+        m = ConcreteModel()
+        m.b = Block([1, 2, 3])
+        for bd in m.b.values():
+            bd.default_scaler = DummyScaler
+
+        sb = CustomScalerBase()
+        sb.call_submodel_scaler_method(m.b[1], method="dummy_method", overwrite=True)
+
+        for i, bd in m.b.items():
+            if i == 1:
+                assert bd._dummy_scaler_test
+            else:
+                assert not hasattr(bd, "_dummy_scaler_test")
+
+        assert "Using default Scaler for b[1]." in caplog.text
 
 
 # TODO additional tests for nested submodel scalers.
