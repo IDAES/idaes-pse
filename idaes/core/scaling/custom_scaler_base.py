@@ -299,6 +299,7 @@ class CustomScalerBase(ScalerBase):
                 variable=target_variable, scaling_factor=sf, overwrite=overwrite
             )
         else:
+            # TODO add infrastructure to log a warning
             _log.debug(
                 f"Could not set scaling factor for {target_variable.name}, "
                 f"no scaling factor set for {scaling_component.name}"
@@ -893,8 +894,7 @@ class CustomScalerBase(ScalerBase):
         if submodel_scalers is None:
             submodel_scalers = {}
 
-        # Iterate over indices of submodel
-        for smdata in submodel.values():
+        def scale_smdata(smdata):
             # Get Scaler for submodel
             if submodel in submodel_scalers:
                 scaler = submodel_scalers[submodel]
@@ -929,3 +929,10 @@ class CustomScalerBase(ScalerBase):
                         f"Scaler for {submodel} does not have a method named {method}."
                     ) from err
                 smeth(smdata, submodel_scalers=submodel_scalers, overwrite=overwrite)
+
+        if submodel.is_indexed():
+            # Iterate over indices of submodel
+            for data in submodel.values():
+                scale_smdata(data)
+        else:
+            scale_smdata(submodel)

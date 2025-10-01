@@ -60,7 +60,8 @@ class PhysicalParameterData(PhysicalParameterBlock):
     Property Parameter Block Class
 
     Contains parameters and indexing sets associated with properties for
-    superheated steam.
+    a dilute solution of NaOH, Ethyl Acetate, Sodium Acetate, and Ethanol
+    in water.
 
     """
 
