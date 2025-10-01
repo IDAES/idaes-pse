@@ -228,7 +228,7 @@ ValveFunctionType.custom}""",
         self.pressure_flow_equation = pyo.Constraint(self.flowsheet().time, rule=rule)
 
     def _get_performance_contents(self, time_point=0):
-        """This returns a dictionary of quntities to be used in IDAES unit model
+        """This returns a dictionary of quantities to be used in IDAES unit model
         report generation routines.
         """
         pc = super()._get_performance_contents(time_point=time_point)

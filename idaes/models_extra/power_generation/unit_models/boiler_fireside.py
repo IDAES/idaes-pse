@@ -341,7 +341,7 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
         self.atomic_mass_S = Param(initialize=0.0320652, doc="Atomic mass of S")
         # mole fractions of O2, H2O, CO2, SO2, and NO in air
         # at 25 C and relative humidity of 25% with SO2 and NO at 0.1 ppm
-        # change air compostion accordingly if relative humidity changes
+        # change air composition accordingly if relative humidity changes
         # N2 mole fraction not needed since summation of mole fractions of
         # all six species is 1. It is 0.7839958
         if self.config.calculate_PA_SA_flows is True:

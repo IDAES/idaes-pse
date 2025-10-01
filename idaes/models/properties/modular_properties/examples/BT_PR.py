@@ -15,7 +15,7 @@ Benzene-Toluene phase equilibrium package for liquid and vapor using the
 Peng-Robinson equation of state.
 
 Example property package using the Generic Property Package Framework.
-This exmample shows how to set up a property package to do benzene-toluene
+This example shows how to set up a property package to do benzene-toluene
 phase equilibrium in the generic framework using the Peng-Robinson equation of
 state for liquid and vapor phases along with methods drawn from the pre-built
 IDAES property libraries.
