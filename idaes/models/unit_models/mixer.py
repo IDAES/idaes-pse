@@ -83,6 +83,13 @@ class MomentumMixingType(Enum):
 
 
 class MixerScaler(ControlVolumeScalerBase):
+    """
+    Scaler object for the Mixer unit model
+    """
+
+    # This attribute gives the parent ControlVolumeScalerBase
+    # methods a state block with the same index as the material
+    # and energy balances to get scaling information from
     _state_block_ref = "mixed_state"
 
     def variable_scaling_routine(
@@ -483,6 +490,13 @@ objects linked to all inlet states and the mixed state,
 
     @property
     def inlet_blocks(self):
+        """
+        Allows the user to iterate over the inlet stream names and state blocks.
+
+        Returns:
+            dict_items with the inlet stream names as keys and the
+                inlet state blocks as values
+        """
         # Return an iterator so the user cannot
         # mutate _inlet_dict
         return self._inlet_dict.items()
