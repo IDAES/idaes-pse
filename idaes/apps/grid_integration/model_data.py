@@ -75,7 +75,7 @@ class RealValueValidator(BaseValidator):
         """
 
         if not isinstance(value, Real):
-            raise TypeError(f"Value for {self.prop_name} shoulde be real numbers.")
+            raise TypeError(f"Value for {self.prop_name} should be real numbers.")
 
         if (
             self.min_val is not None
@@ -118,11 +118,11 @@ class AtLeastPminValidator(BaseValidator):
             )
 
         if not isinstance(value, Real):
-            raise TypeError(f"Value for {self.prop_name} shoulde be real numbers.")
+            raise TypeError(f"Value for {self.prop_name} should be real numbers.")
 
         if value < pmin and not isclose(value, pmin):
             raise ValueError(
-                f"Value for {self.prop_name} shoulde be greater or equal to Pmin."
+                f"Value for {self.prop_name} should be greater or equal to Pmin."
             )
 
 
@@ -333,7 +333,7 @@ class ThermalGeneratorModelData(GeneratorModelData):
     @property
     def initial_status(self):
         """
-        Generator initial status proptery. If positive, the number of hours prior
+        Generator initial status property. If positive, the number of hours prior
         to (and including) t=0 that the unit has been on. If negative, the number
         of hours prior to (and including) t=0 that the unit has been off. The value
         cannot be 0, by definition.
@@ -344,11 +344,11 @@ class ThermalGeneratorModelData(GeneratorModelData):
     @initial_status.setter
     def initial_status(self, value):
         """
-        Generator initial status proptery setter. Validate the value before setting.
+        Generator initial status property setter. Validate the value before setting.
         """
 
         if not isinstance(value, Real):
-            raise TypeError("Value for initial_status shoulde be real numbers.")
+            raise TypeError("Value for initial_status should be real numbers.")
 
         if isclose(value, 0):
             raise ValueError("Value for initial_status cannot be zero.")
@@ -358,18 +358,18 @@ class ThermalGeneratorModelData(GeneratorModelData):
     @property
     def initial_p_output(self):
         """
-        Generator initial power output proptery.
+        Generator initial power output property.
         """
         return self._initial_p_output
 
     @initial_p_output.setter
     def initial_p_output(self, value):
         """
-        Generator initial power output proptery setter.
+        Generator initial power output property setter.
         """
 
         if not isinstance(value, Real):
-            raise TypeError("Value for initial_p_output shoulde be real numbers.")
+            raise TypeError("Value for initial_p_output should be real numbers.")
 
         if (
             self.initial_status > 0

@@ -14,7 +14,7 @@
 Benzene-Toluene phase equilibrium package using ideal liquid and vapor.
 
 Example property package using the Generic Property Package Framework.
-This exmample shows how to set up a property package to do benzene-toluene
+This example shows how to set up a property package to do benzene-toluene
 phase equilibrium in the generic framework using ideal liquid and vapor
 assumptions along with methods drawn from the pre-built IDAES property
 libraries.

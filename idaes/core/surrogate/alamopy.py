@@ -162,7 +162,7 @@ class AlamoTrainer(SurrogateTrainer):
 
     # The following ALAMO options are not (yet) supported
     # Returning model prediction, as we can do that in IDAES
-    # Iniital sampling of data, as SurrogateModelTrainer should do that
+    # Initial sampling of data, as SurrogateModelTrainer should do that
     # Similarly, adaptive sampling is better handled in Python
     # Single validation set, due to limitations of current API
     # Custom basis functions are not yet implemented

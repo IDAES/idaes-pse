@@ -242,7 +242,7 @@ by the Pyomo TransformationFactory,
         ConfigValue(
             default="BACKWARD",
             description="Scheme to use for DAE transformation",
-            doc="""Scheme to use when transformating domain. See Pyomo
+            doc="""Scheme to use when transforming domain. See Pyomo
 documentation for supported schemes,
 **default** - "BACKWARD".""",
         ),
