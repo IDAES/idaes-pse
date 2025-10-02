@@ -61,8 +61,6 @@ from idaes.models_extra.power_generation.properties.natural_gas_PR import (
     EosType,
 )
 
-from idaes_examples.mod.methanol import methanol_ideal_vapor
-
 from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
     ModularPropertiesScaler,
@@ -1266,34 +1264,46 @@ class TestPressureChangerScaler:
     @pytest.mark.integration
     def test_example_case_turbine(self):
         m = ConcreteModel()
+
+        # Add a steady state flowsheet block to the model
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.thermo_params_vapor = GenericParameterBlock(
-            **methanol_ideal_vapor.config_dict
+        # create gas phase properties block
+        flue_species = {"H2O", "CO2", "N2"}
+        prop_config = get_prop(flue_species, ["Vap"], eos=EosType.IDEAL)
+        prop_config["state_bounds"]["pressure"] = (
+            0.99 * 1e5,
+            1.02 * 1e5,
+            2.5 * 1e5,
+            units.Pa,
+        )
+        prop_config["state_bounds"]["temperature"] = (
+            25 + 273.15,
+            90 + 273.15,
+            300 + 273.15,
+            units.K,
         )
 
-        m.fs.T101 = Turbine(dynamic=False, property_package=m.fs.thermo_params_vapor)
+        m.fs.gas_props = GenericParameterBlock(
+            **prop_config,
+            doc="Flue gas properties",
+        )
 
-        m.fs.T101.inlet.enth_mol.fix(-1.3056e05 * units.J / units.mole)
-        m.fs.T101.inlet.pressure.fix(5.1000e06 * units.Pa)
-        m.fs.T101.inlet.flow_mol.fix(536.08 * units.mole / units.s)
-        mole_frac = {
-            "CH4": 1.7796e-05,
-            "CO": 0.10248,
-            "H2": 0.27209,
-        }
-        mole_frac["CH3OH"] = 1 - sum(mole_frac.values())
-        for k in mole_frac.keys():
-            m.fs.T101.inlet.mole_frac_comp[0, k].fix(mole_frac[k])
+        # Adding the compressor C101 to the flowsheet
+        m.fs.T101 = Turbine(dynamic=False, property_package=m.fs.gas_props)
 
-        m.fs.T101.outlet.pressure.fix(1.4872e06 * units.Pa)
-        m.fs.T101.efficiency_isentropic.fix(0.9 * units.dimensionless)
+        m.fs.T101.inlet.flow_mol.fix(8000 * units.mole / units.sec)
+        m.fs.T101.inlet.mole_frac_comp[0, "CO2"].fix(0.15)
+        m.fs.T101.inlet.mole_frac_comp[0, "H2O"].fix(0.02)
+        m.fs.T101.inlet.mole_frac_comp[0, "N2"].fix(0.83)
+        m.fs.T101.inlet.pressure.fix(2 * units.bar)
+        m.fs.T101.inlet.temperature.fix(500 * units.K)
 
-        ini = BlockTriangularizationInitializer()
-        ini.initialize(m.fs.T101)
+        m.fs.T101.outlet.pressure.fix(1.01325 * units.bar)
+        m.fs.T101.efficiency_isentropic.fix(0.85)
 
         submodel_scaler_obj = ModularPropertiesScaler()
-        submodel_scaler_obj.default_scaling_factors["flow_mol_phase"] = 1 / 536.08
+        submodel_scaler_obj.default_scaling_factors["flow_mol_phase"] = 1 / 8000
         submodel_scalers = ComponentMap()
         submodel_scalers[m.fs.T101.control_volume.properties_in] = submodel_scaler_obj
         submodel_scalers[m.fs.T101.control_volume.properties_out] = submodel_scaler_obj
@@ -1311,6 +1321,4 @@ class TestPressureChangerScaler:
         # Check condition number to confirm scaling
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
         jac, _ = get_jacobian(sm, scaled=False)
-        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            2.617e5, rel=1e-3
-        )
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(8.55e3, rel=1e-3)
