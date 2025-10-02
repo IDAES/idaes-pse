@@ -386,9 +386,9 @@ def generate_table(blocks, attributes, heading=None, exception=True):
                 try:
                     assert len(a) > 1
                 except AssertionError:
-                    _log.error(f"An index must be supplided for attribute {a[0]}")
+                    _log.error(f"An index must be supplied for attribute {a[0]}")
                     raise AssertionError(
-                        f"An index must be supplided for attribute {a[0]}"
+                        f"An index must be supplied for attribute {a[0]}"
                     )
                 j = a[1:]
                 a = a[0]

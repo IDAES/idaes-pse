@@ -319,7 +319,7 @@ class TestStateBlockSymmetric(object):
                     model.state[1].mole_frac_phase_comp_true["Liq", j]
                 )
             else:
-                # _X should be mutiplied by |charge|
+                # _X should be multiplied by |charge|
                 assert str(model.state[1].Liq_X[j].expr) == str(
                     model.state[1].mole_frac_phase_comp_true["Liq", j]
                     * abs(model.params.get_component(j).config.charge)
@@ -334,7 +334,7 @@ class TestStateBlockSymmetric(object):
                     model.state[1].Liq_x_ref[j]
                 )
             else:
-                # _X should be mutiplied by |charge|
+                # _X should be multiplied by |charge|
                 assert str(model.state[1].Liq_X_ref[j].expr) == str(
                     model.state[1].Liq_x_ref[j]
                     * abs(model.params.get_component(j).config.charge)

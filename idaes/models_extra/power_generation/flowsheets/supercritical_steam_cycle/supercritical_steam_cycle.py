@@ -944,7 +944,7 @@ def pfd_result(m, df, svg):
         tags[i + "_T"] = df.loc[i, "T"]
         tags[i + "_P"] = df.loc[i, "P"]
         tags[i + "_X"] = df.loc[i, "Vapor Fraction"]
-    # Add some additional quntities from the model to report
+    # Add some additional quantities from the model to report
     tags["gross_power"] = -pyo.value(m.fs.turb.power[0])
     tags["gross_power_mw"] = -pyo.value(m.fs.turb.power[0]) * 1e-6
     tags["steam_mass_flow"] = df.loc["STEAM_MAIN", "Mass Flow"]

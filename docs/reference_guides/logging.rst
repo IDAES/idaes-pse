@@ -157,7 +157,7 @@ logging information produced by IDAES loggers.
 ===================== ====== ============ ============================
 Constant Name         Value  Name         Log Method
 ===================== ====== ============ ============================
-CRITICAL              50     CRITICAL     ``critial()``
+CRITICAL              50     CRITICAL     ``critical()``
 ERROR                 40     ERROR        ``error()``, ``exception()``
 WARNING               30     WARNING      ``warning()``
 INFO_LOW              21     INFO         ``info_low()``

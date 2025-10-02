@@ -590,7 +590,7 @@ flows. Does not work with component or phase-component splitting.}""",
             domain=Bool,
             description="Ideal splitting flag",
             doc="""Argument indicating whether ideal splitting should be used.
-Ideal splitting assumes perfect spearation of material, and attempts to
+Ideal splitting assumes perfect separation of material, and attempts to
 avoid duplication of StateBlocks by directly partitioning outlet flows to
 ports,
 **default** - False.
@@ -2137,7 +2137,7 @@ def _e_rule_other(b, t, mixed_block, var_obj, outlet):
         else:
             _raise_split_unindexed_fail_err(b.name, l_name)
     else:
-        # Unrecognised split tupe
+        # Unrecognised split type
         raise BurntToast(
             "{} received unrecognised value for "
             "split_basis argument. This should never "

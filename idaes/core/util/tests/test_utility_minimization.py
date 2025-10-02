@@ -261,9 +261,9 @@ class TestStateBlock(object):
     def test_curve_data(self):
 
         T_test, Q_test = gen_curves([401, 341], [120, 120], [-280, -440])
-        Ttest = [120, 120, 341, 401]
-        for i in range(len(Ttest)):
-            assert T_test[i] == Ttest[i]
-        Qtest = [0, 0, -660.213, -720]
-        for i in range(len(Qtest)):
-            assert Q_test[i] == pytest.approx(Qtest[i], abs=1e-3)
+        t_test = [120, 120, 341, 401]
+        for i in range(len(t_test)):
+            assert T_test[i] == t_test[i]
+        q_test = [0, 0, -660.213, -720]
+        for i in range(len(q_test)):
+            assert Q_test[i] == pytest.approx(q_test[i], abs=1e-3)

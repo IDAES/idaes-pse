@@ -357,7 +357,7 @@ pressure of incoming streams,
 **Valid values:** {
 **MomentumMixingType.none** - do not include momentum mixing equations,
 **MomentumMixingType.minimize** - mixed stream has pressure equal to the
-minimimum pressure of the incoming streams (uses smoothMin operator),
+minimum pressure of the incoming streams (uses smoothMin operator),
 **MomentumMixingType.equality** - enforces equality of pressure in mixed and
 all incoming streams.,
 **MomentumMixingType.minimize_and_equality** - add constraints for pressure
