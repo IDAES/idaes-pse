@@ -356,7 +356,7 @@ Must be True if dynamic = True,
             sblock = block
             port, ref_name_list = sblock.build_port(doc)
 
-        # Add Port and References to unit moodel
+        # Add Port and References to unit model
         self.add_component(name, port)
         for ref, cname in ref_name_list:
             ref_name = sblock.get_port_reference_name(cname, name)
