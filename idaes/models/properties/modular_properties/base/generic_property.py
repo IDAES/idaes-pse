@@ -1691,15 +1691,14 @@ class _GenericStateBlock(StateBlock):
 
         for k in self.values():
             # Also need to deactivate sum of mole fraction constraint
-            try:
+            if k.is_property_constructed("sum_mole_frac_out"):
                 k.sum_mole_frac_out.deactivate()
-            except AttributeError:
-                pass
+
             # Don't need equilibrium constraint for phase component flows
             if (
                 "flow_mol_phase_comp" in k.define_state_vars()
                 or "mole_frac_phase_comp" in k.define_state_vars()
-            ):
+            ) and k.is_property_constructed("equilibrium_constraint"):
                 k.equilibrium_constraint.deactivate()
 
             if k.is_property_constructed("inherent_equilibrium_constraint") and (
@@ -1793,9 +1792,7 @@ class _GenericStateBlock(StateBlock):
             # When state vars are fixed, check that DoF is 0
             for k in blk.values():
                 if degrees_of_freedom(k) != 0:
-                    # PYLINT-TODO
-                    # pylint: disable-next=broad-exception-raised
-                    raise Exception(
+                    raise InitializationError(
                         "State vars fixed but degrees of "
                         "freedom for state block is not zero "
                         "during initialization."
