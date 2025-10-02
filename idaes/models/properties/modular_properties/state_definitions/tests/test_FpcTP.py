@@ -61,7 +61,7 @@ from idaes.models.properties.modular_properties.phase_equil import SmoothVLE
 from idaes.models.properties.modular_properties.phase_equil.bubble_dew import (
     IdealBubbleDew,
 )
-from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.exceptions import ConfigurationError, InitializationError
 import idaes.logger as idaeslog
 import idaes.core.util.model_statistics as mstat
 from idaes.core.util.model_statistics import degrees_of_freedom, large_residuals_set
@@ -1469,6 +1469,46 @@ def test_phase_equilibrium_legacy_initialization():
             "fs.state[0.0].equilibrium_constraint[Vap,Liq,H2O]",
             "fs.state[0.0].equilibrium_constraint[Vap,Liq,CO2]",
         ]
+
+
+@pytest.mark.component
+def test_legacy_initialization_dof_error():
+    # This test ensures that the correct exception is
+    # raised when there is a degree of freedom error
+    # during intialization
+    model = ConcreteModel()
+    model.fs = FlowsheetBlock(dynamic=False)
+
+    # Remove the liquid phase and phase equilibrium
+    # from the config dict
+    config = deepcopy(thermo_config_no_rxn)
+    config["phases"].pop("Liq")
+    config.pop("phases_in_equilibrium")
+    config.pop("phase_equilibrium_state")
+    config["components"]["H2O"].pop("phase_equilibrium_form")
+    config["components"]["CO2"].pop("phase_equilibrium_form")
+
+    model.fs.thermo_params = GenericParameterBlock(**config)
+
+    model.fs.state = model.fs.thermo_params.build_state_block(
+        model.fs.time, defined_state=False
+    )
+
+    model.fs.state[0].pressure.fix(101325.0)
+    model.fs.state[0].temperature.fix(398.0)
+
+    model.fs.state[0].flow_mol_phase_comp["Vap", "CO2"].fix(0.005)
+    model.fs.state[0].flow_mol_phase_comp["Vap", "H2O"].set_value(0.0005)
+
+    with pytest.raises(
+        InitializationError,
+        match=re.escape(
+            "State vars fixed but degrees of "
+            "freedom for state block is not zero "
+            "during initialization."
+        ),
+    ):
+        model.fs.state.initialize(state_vars_fixed=True)
 
 
 @pytest.mark.component
