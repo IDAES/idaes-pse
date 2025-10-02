@@ -28,6 +28,7 @@ from pyomo.environ import (
 )
 from pyomo.util.check_units import assert_units_consistent
 from pyomo.core.expr.calculus.derivatives import differentiate
+from pyomo.common.collections import ComponentMap
 
 from idaes.core import (
     FlowsheetBlock,
@@ -64,6 +65,7 @@ from idaes_examples.mod.methanol import methanol_ideal_vapor
 
 from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
+    ModularPropertiesScaler,
 )
 
 from idaes.core.util.model_statistics import (
@@ -1172,16 +1174,17 @@ class TestPressureChangerScaler:
 
         m.fs.C101.outlet.pressure.fix(2.0 * units.bar)
 
-        def_sfs = (
-            m.fs.gas_props.state_block_class.default_scaler.DEFAULT_SCALING_FACTORS
-        )
-        def_sfs["flow_mol_phase"] = 1 / 8000
-
         ini = BlockTriangularizationInitializer()
         ini.initialize(m.fs.C101)
 
+        submodel_scaler_obj = ModularPropertiesScaler()
+        submodel_scaler_obj.default_scaling_factors["flow_mol_phase"] = 1 / 8000
+        submodel_scalers = ComponentMap()
+        submodel_scalers[m.fs.C101.control_volume.properties_in] = submodel_scaler_obj
+        submodel_scalers[m.fs.C101.control_volume.properties_out] = submodel_scaler_obj
+
         scaler = PressureChangerScaler()
-        scaler.scale_model(m.fs.C101)
+        scaler.scale_model(model=m.fs.C101, submodel_scalers=submodel_scalers)
 
         solver = get_solver(
             "ipopt_v2", writer_config={"linear_presolve": True, "scale_model": True}
@@ -1192,8 +1195,7 @@ class TestPressureChangerScaler:
         # Check condition number to confirm scaling
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
         jac, _ = get_jacobian(sm, scaled=False)
-        print(jacobian_cond(jac=jac, scaled=False))
-        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(115.37, rel=1e-3)
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(170.82, rel=1e-3)
 
     @pytest.mark.integration
     def test_example_case_isentropic(self):
@@ -1240,16 +1242,15 @@ class TestPressureChangerScaler:
         m.fs.C101.outlet.pressure.fix(2.0 * units.bar)
         m.fs.C101.efficiency_isentropic.fix(0.85)
 
-        def_sfs = (
-            m.fs.gas_props.state_block_class.default_scaler.DEFAULT_SCALING_FACTORS
-        )
-        def_sfs["flow_mol_phase"] = 1 / 8000
-
-        ini = BlockTriangularizationInitializer()
-        ini.initialize(m.fs.C101)
+        submodel_scaler_obj = ModularPropertiesScaler()
+        submodel_scaler_obj.default_scaling_factors["flow_mol_phase"] = 1 / 8000
+        submodel_scalers = ComponentMap()
+        submodel_scalers[m.fs.C101.control_volume.properties_in] = submodel_scaler_obj
+        submodel_scalers[m.fs.C101.control_volume.properties_out] = submodel_scaler_obj
+        submodel_scalers[m.fs.C101.properties_isentropic] = submodel_scaler_obj
 
         scaler = PressureChangerScaler()
-        scaler.scale_model(m.fs.C101)
+        scaler.scale_model(model=m.fs.C101, submodel_scalers=submodel_scalers)
 
         solver = get_solver(
             "ipopt_v2", writer_config={"linear_presolve": True, "scale_model": True}
@@ -1260,10 +1261,7 @@ class TestPressureChangerScaler:
         # Check condition number to confirm scaling
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
         jac, _ = get_jacobian(sm, scaled=False)
-        print(jacobian_cond(jac=jac, scaled=False))
-        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            1964.30, rel=1e-3
-        )
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(9.71e3, rel=1e-3)
 
     @pytest.mark.integration
     def test_example_case_turbine(self):
@@ -1291,17 +1289,18 @@ class TestPressureChangerScaler:
         m.fs.T101.outlet.pressure.fix(1.4872e06 * units.Pa)
         m.fs.T101.efficiency_isentropic.fix(0.9 * units.dimensionless)
 
-        def_sfs = (
-            m.fs.thermo_params_vapor.state_block_class.default_scaler.DEFAULT_SCALING_FACTORS
-        )
-        def_sfs["flow_mol_phase"] = 1 / 536.08
-
         ini = BlockTriangularizationInitializer()
         ini.initialize(m.fs.T101)
 
-        scaler = PressureChangerScaler()
+        submodel_scaler_obj = ModularPropertiesScaler()
+        submodel_scaler_obj.default_scaling_factors["flow_mol_phase"] = 1 / 536.08
+        submodel_scalers = ComponentMap()
+        submodel_scalers[m.fs.T101.control_volume.properties_in] = submodel_scaler_obj
+        submodel_scalers[m.fs.T101.control_volume.properties_out] = submodel_scaler_obj
+        submodel_scalers[m.fs.T101.properties_isentropic] = submodel_scaler_obj
 
-        scaler.scale_model(m.fs.T101)
+        scaler = PressureChangerScaler()
+        scaler.scale_model(model=m.fs.T101, submodel_scalers=submodel_scalers)
 
         solver = get_solver(
             "ipopt_v2", writer_config={"linear_presolve": True, "scale_model": True}
@@ -1312,7 +1311,6 @@ class TestPressureChangerScaler:
         # Check condition number to confirm scaling
         sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
         jac, _ = get_jacobian(sm, scaled=False)
-        print(jacobian_cond(jac=jac, scaled=False))
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            1.772e4, rel=1e-3
+            2.617e5, rel=1e-3
         )
