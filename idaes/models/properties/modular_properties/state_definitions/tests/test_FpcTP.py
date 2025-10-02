@@ -1475,7 +1475,7 @@ def test_phase_equilibrium_legacy_initialization():
 def test_legacy_initialization_dof_error():
     # This test ensures that the correct exception is
     # raised when there is a degree of freedom error
-    # during intialization
+    # during initialization
     model = ConcreteModel()
     model.fs = FlowsheetBlock(dynamic=False)
 
