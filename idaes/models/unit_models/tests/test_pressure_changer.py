@@ -13,7 +13,7 @@
 """
 Tests for Pressure Changer unit model.
 
-Author: Andrew Lee, Emmanuel Ogbe
+Author: Andrew Lee, Emmanuel Ogbe, Ryan Hughes
 """
 import pytest
 
@@ -24,9 +24,11 @@ from pyomo.environ import (
     units,
     value,
     Var,
+    TransformationFactory,
 )
 from pyomo.util.check_units import assert_units_consistent
 from pyomo.core.expr.calculus.derivatives import differentiate
+from pyomo.common.collections import ComponentMap
 
 from idaes.core import (
     FlowsheetBlock,
@@ -43,6 +45,7 @@ from idaes.models.unit_models.pressure_changer import (
     Pump,
     ThermodynamicAssumption,
     IsentropicPressureChangerInitializer,
+    PressureChangerScaler,
 )
 
 from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
@@ -51,6 +54,16 @@ from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import
 from idaes.models.properties import iapws95
 from idaes.models.properties.examples.saponification_thermo import (
     SaponificationParameterBlock,
+)
+
+from idaes.models_extra.power_generation.properties.natural_gas_PR import (
+    get_prop,
+    EosType,
+)
+
+from idaes.models.properties.modular_properties.base.generic_property import (
+    GenericParameterBlock,
+    ModularPropertiesScaler,
 )
 
 from idaes.core.util.model_statistics import (
@@ -69,6 +82,10 @@ from idaes.core.initialization import (
     InitializationStatus,
 )
 from idaes.core.util import DiagnosticsToolbox
+from idaes.core.util.scaling import (
+    get_jacobian,
+    jacobian_cond,
+)
 
 
 # -----------------------------------------------------------------------------
@@ -1052,3 +1069,336 @@ class TestInitializersTurbine1:
         assert not model.fs.unit.inlet.flow_mol[0].fixed
         assert not model.fs.unit.inlet.enth_mol[0].fixed
         assert not model.fs.unit.inlet.pressure[0].fixed
+
+
+class TestPressureChangerScaler:
+    @pytest.mark.unit
+    def test_default_scaler(self):
+        assert PressureChanger().default_scaler == PressureChangerScaler
+
+    @pytest.fixture
+    def pump_model(self):
+        # pump thermodynamic assumption using saponification properties
+        m = ConcreteModel()
+
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.properties = SaponificationParameterBlock()
+        m.fs.pump = Pump(property_package=m.fs.properties)
+
+        m.fs.pump.inlet.flow_vol[0].fix(1.0e-03 * units.m**3 / units.s)
+        m.fs.pump.inlet.conc_mol_comp[0, "H2O"].fix(55388.0 * units.mol / units.m**3)
+        m.fs.pump.inlet.conc_mol_comp[0, "NaOH"].fix(100.0 * units.mol / units.m**3)
+        m.fs.pump.inlet.conc_mol_comp[0, "EthylAcetate"].fix(
+            100.0 * units.mol / units.m**3
+        )
+        m.fs.pump.inlet.conc_mol_comp[0, "SodiumAcetate"].fix(
+            0.0 * units.mol / units.m**3
+        )
+        m.fs.pump.inlet.conc_mol_comp[0, "Ethanol"].fix(0.0 * units.mol / units.m**3)
+
+        m.fs.pump.inlet.temperature[0].fix(303.15 * units.K)
+        m.fs.pump.inlet.pressure[0].fix(101325.0 * units.Pa)
+
+        m.fs.pump.deltaP.fix(100000 * units.Pa)
+        m.fs.pump.efficiency_pump.fix(0.8)
+
+        scaler = PressureChangerScaler()
+        scaler.scale_model(m.fs.pump)
+
+        return m
+
+    @pytest.mark.component
+    def test_pump_sfs(self, pump_model):
+        assert pump_model.fs.pump.scaling_factor[pump_model.fs.pump.ratioP[0.0]] == 1.0
+        assert (
+            pump_model.fs.pump.scaling_factor[pump_model.fs.pump.efficiency_pump[0.0]]
+            == 10
+        )
+        assert pump_model.fs.pump.scaling_factor[
+            pump_model.fs.pump.work_fluid[0.0]
+        ] == pytest.approx(1.917e-06, rel=1e-3)
+        assert (
+            pump_model.fs.pump.scaling_factor[
+                pump_model.fs.pump.ratioP_calculation[0.0]
+            ]
+            == 1e-5
+        )
+        assert pump_model.fs.pump.scaling_factor[
+            pump_model.fs.pump.fluid_work_calculation[0.0]
+        ] == pytest.approx(1.917e-06, rel=1e-3)
+        assert pump_model.fs.pump.scaling_factor[
+            pump_model.fs.pump.actual_work[0.0]
+        ] == pytest.approx(1.917e-06, rel=1e-3)
+
+    @pytest.mark.integration
+    def test_example_case_pump(self, pump_model):
+        ini = BlockTriangularizationInitializer()
+        ini.initialize(pump_model.fs.pump)
+
+        solver = get_solver(
+            "ipopt_v2", writer_config={"linear_presolve": True, "scale_model": True}
+        )
+        results = solver.solve(pump_model, tee=False)
+        assert check_optimal_termination(results)
+
+        # Check condition number to confirm scaling
+        sm = TransformationFactory("core.scale_model").create_using(
+            pump_model, rename=False
+        )
+        jac, _ = get_jacobian(sm, scaled=False)
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+            1.393e02, rel=1e-3
+        )
+
+    @pytest.fixture
+    def isothermal_model(self):
+        # compressor w/ isothermal thermodynamic assumption using generic property package for flue gas
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        flue_species = {"H2O", "CO2", "N2"}
+        prop_config = get_prop(flue_species, ["Vap"], eos=EosType.IDEAL)
+        prop_config["state_bounds"]["pressure"] = (
+            0.99 * 1e5,
+            1.02 * 1e5,
+            3 * 1e5,
+            units.Pa,
+        )
+        prop_config["state_bounds"]["temperature"] = (
+            25 + 273.15,
+            90 + 273.15,
+            180 + 273.15,
+            units.K,
+        )
+
+        m.fs.gas_props = GenericParameterBlock(
+            **prop_config,
+            doc="Flue gas properties",
+        )
+
+        m.fs.C101 = PressureChanger(
+            property_package=m.fs.gas_props,
+            compressor=True,
+            thermodynamic_assumption=ThermodynamicAssumption.isothermal,
+        )
+
+        m.fs.C101.inlet.flow_mol.fix(8000 * units.mole / units.sec)
+        m.fs.C101.inlet.mole_frac_comp[0, "CO2"].fix(0.15)
+        m.fs.C101.inlet.mole_frac_comp[0, "H2O"].fix(0.02)
+        m.fs.C101.inlet.mole_frac_comp[0, "N2"].fix(0.83)
+        m.fs.C101.inlet.pressure.fix(1.01325 * units.bar)
+        m.fs.C101.inlet.temperature.fix(300 * units.K)
+
+        m.fs.C101.outlet.pressure.fix(2.0 * units.bar)
+
+        submodel_scaler_obj = ModularPropertiesScaler()
+        submodel_scaler_obj.default_scaling_factors["flow_mol_phase"] = 1 / 8000
+        submodel_scalers = ComponentMap()
+        submodel_scalers[m.fs.C101.control_volume.properties_in] = submodel_scaler_obj
+        submodel_scalers[m.fs.C101.control_volume.properties_out] = submodel_scaler_obj
+
+        scaler = PressureChangerScaler()
+        scaler.scale_model(model=m.fs.C101, submodel_scalers=submodel_scalers)
+
+        return m
+
+    @pytest.mark.component
+    def test_isothermal_sfs(self, isothermal_model):
+        assert isothermal_model.fs.C101.scaling_factor[
+            isothermal_model.fs.C101.isothermal[0.0]
+        ] == pytest.approx(3.333e-3, rel=1e-3)
+
+    @pytest.mark.integration
+    def test_example_case_isothermal(self, isothermal_model):
+        ini = BlockTriangularizationInitializer()
+        ini.initialize(isothermal_model.fs.C101)
+
+        solver = get_solver(
+            "ipopt_v2", writer_config={"linear_presolve": True, "scale_model": True}
+        )
+        results = solver.solve(isothermal_model, tee=False)
+        assert check_optimal_termination(results)
+
+        # Check condition number to confirm scaling
+        sm = TransformationFactory("core.scale_model").create_using(
+            isothermal_model, rename=False
+        )
+        jac, _ = get_jacobian(sm, scaled=False)
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(170.82, rel=1e-3)
+
+    @pytest.fixture
+    def isentropic_model(self):
+        # compressor w/ isentropic thermodynamic assumption using generic property package for flue gas
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        flue_species = {"H2O", "CO2", "N2"}
+        prop_config = get_prop(flue_species, ["Vap"], eos=EosType.IDEAL)
+        prop_config["state_bounds"]["pressure"] = (
+            0.99 * 1e5,
+            1.02 * 1e5,
+            3 * 1e5,
+            units.Pa,
+        )
+        prop_config["state_bounds"]["temperature"] = (
+            25 + 273.15,
+            90 + 273.15,
+            180 + 273.15,
+            units.K,
+        )
+
+        m.fs.gas_props = GenericParameterBlock(
+            **prop_config,
+            doc="Flue gas properties",
+        )
+
+        m.fs.C101 = PressureChanger(
+            property_package=m.fs.gas_props,
+            compressor=True,
+            thermodynamic_assumption=ThermodynamicAssumption.isentropic,
+        )
+
+        m.fs.C101.inlet.flow_mol.fix(8000 * units.mole / units.sec)
+        m.fs.C101.inlet.mole_frac_comp[0, "CO2"].fix(0.15)
+        m.fs.C101.inlet.mole_frac_comp[0, "H2O"].fix(0.02)
+        m.fs.C101.inlet.mole_frac_comp[0, "N2"].fix(0.83)
+        m.fs.C101.inlet.pressure.fix(1.01325 * units.bar)
+        m.fs.C101.inlet.temperature.fix(300 * units.K)
+
+        m.fs.C101.outlet.pressure.fix(2.0 * units.bar)
+        m.fs.C101.efficiency_isentropic.fix(0.85)
+
+        submodel_scaler_obj = ModularPropertiesScaler()
+        submodel_scaler_obj.default_scaling_factors["flow_mol_phase"] = 1 / 8000
+        submodel_scalers = ComponentMap()
+        submodel_scalers[m.fs.C101.control_volume.properties_in] = submodel_scaler_obj
+        submodel_scalers[m.fs.C101.control_volume.properties_out] = submodel_scaler_obj
+        submodel_scalers[m.fs.C101.properties_isentropic] = submodel_scaler_obj
+
+        scaler = PressureChangerScaler()
+        scaler.scale_model(model=m.fs.C101, submodel_scalers=submodel_scalers)
+
+        return m
+
+    @pytest.mark.component
+    def test_isentropic_sfs(self, isentropic_model):
+        assert (
+            isentropic_model.fs.C101.scaling_factor[
+                isentropic_model.fs.C101.efficiency_isentropic[0.0]
+            ]
+            == 10.0
+        )
+        assert (
+            isentropic_model.fs.C101.scaling_factor[
+                isentropic_model.fs.C101.work_isentropic[0.0]
+            ]
+            == 1e-10
+        )
+        assert (
+            isentropic_model.fs.C101.scaling_factor[
+                isentropic_model.fs.C101.isentropic_pressure[0.0]
+            ]
+            == 1e-5
+        )
+        assert (
+            isentropic_model.fs.C101.scaling_factor[
+                isentropic_model.fs.C101.state_material_balances[0.0, "CO2"]
+            ]
+            == 1.25e-3
+        )
+        assert (
+            isentropic_model.fs.C101.scaling_factor[
+                isentropic_model.fs.C101.state_material_balances[0.0, "N2"]
+            ]
+            == 1.25e-3
+        )
+        assert (
+            isentropic_model.fs.C101.scaling_factor[
+                isentropic_model.fs.C101.state_material_balances[0.0, "H2O"]
+            ]
+            == 1.25e-3
+        )
+        assert isentropic_model.fs.C101.scaling_factor[
+            isentropic_model.fs.C101.isentropic[0.0]
+        ] == pytest.approx(0.1136, rel=1e-3)
+        assert (
+            isentropic_model.fs.C101.scaling_factor[
+                isentropic_model.fs.C101.isentropic_energy_balance[0.0]
+            ]
+            == 1e-10
+        )
+
+    @pytest.mark.integration
+    def test_example_case_isentropic(self, isentropic_model):
+        solver = get_solver(
+            "ipopt_v2", writer_config={"linear_presolve": True, "scale_model": True}
+        )
+        results = solver.solve(isentropic_model, tee=False)
+        assert check_optimal_termination(results)
+
+        # Check condition number to confirm scaling
+        sm = TransformationFactory("core.scale_model").create_using(
+            isentropic_model, rename=False
+        )
+        jac, _ = get_jacobian(sm, scaled=False)
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(9.71e3, rel=1e-3)
+
+    @pytest.mark.integration
+    def test_example_case_turbine(self):
+        # turbine using generic property package for flue gas
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        flue_species = {"H2O", "CO2", "N2"}
+        prop_config = get_prop(flue_species, ["Vap"], eos=EosType.IDEAL)
+        prop_config["state_bounds"]["pressure"] = (
+            0.99 * 1e5,
+            1.02 * 1e5,
+            2.5 * 1e5,
+            units.Pa,
+        )
+        prop_config["state_bounds"]["temperature"] = (
+            25 + 273.15,
+            90 + 273.15,
+            300 + 273.15,
+            units.K,
+        )
+
+        m.fs.gas_props = GenericParameterBlock(
+            **prop_config,
+            doc="Flue gas properties",
+        )
+
+        m.fs.T101 = Turbine(dynamic=False, property_package=m.fs.gas_props)
+
+        m.fs.T101.inlet.flow_mol.fix(8000 * units.mole / units.sec)
+        m.fs.T101.inlet.mole_frac_comp[0, "CO2"].fix(0.15)
+        m.fs.T101.inlet.mole_frac_comp[0, "H2O"].fix(0.02)
+        m.fs.T101.inlet.mole_frac_comp[0, "N2"].fix(0.83)
+        m.fs.T101.inlet.pressure.fix(2 * units.bar)
+        m.fs.T101.inlet.temperature.fix(500 * units.K)
+
+        m.fs.T101.outlet.pressure.fix(1.01325 * units.bar)
+        m.fs.T101.efficiency_isentropic.fix(0.85)
+
+        submodel_scaler_obj = ModularPropertiesScaler()
+        submodel_scaler_obj.default_scaling_factors["flow_mol_phase"] = 1 / 8000
+        submodel_scalers = ComponentMap()
+        submodel_scalers[m.fs.T101.control_volume.properties_in] = submodel_scaler_obj
+        submodel_scalers[m.fs.T101.control_volume.properties_out] = submodel_scaler_obj
+        submodel_scalers[m.fs.T101.properties_isentropic] = submodel_scaler_obj
+
+        scaler = PressureChangerScaler()
+        scaler.scale_model(model=m.fs.T101, submodel_scalers=submodel_scalers)
+
+        solver = get_solver(
+            "ipopt_v2", writer_config={"linear_presolve": True, "scale_model": True}
+        )
+        results = solver.solve(m, tee=False)
+        assert check_optimal_termination(results)
+
+        # Check condition number to confirm scaling
+        sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
+        jac, _ = get_jacobian(sm, scaled=False)
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(8.55e3, rel=1e-3)
