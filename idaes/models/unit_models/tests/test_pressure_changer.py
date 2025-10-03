@@ -1076,8 +1076,8 @@ class TestPressureChangerScaler:
     def test_default_scaler(self):
         assert PressureChanger().default_scaler == PressureChangerScaler
 
-    @pytest.mark.integration
-    def test_example_case_pump(self):
+    @pytest.fixture
+    def pump_model(self):
         m = ConcreteModel()
 
         m.fs = FlowsheetBlock(
@@ -1109,27 +1109,57 @@ class TestPressureChangerScaler:
         m.fs.pump.deltaP.fix(100000 * units.Pa)
         m.fs.pump.efficiency_pump.fix(0.8)
 
-        ini = BlockTriangularizationInitializer()
-        ini.initialize(m.fs.pump)
-
         scaler = PressureChangerScaler()
         scaler.scale_model(m.fs.pump)
+
+        return m
+
+    @pytest.mark.unit
+    def test_pump_sfs(self, pump_model):
+        assert pump_model.fs.pump.scaling_factor[pump_model.fs.pump.ratioP[0.0]] == 1.0
+        assert (
+            pump_model.fs.pump.scaling_factor[pump_model.fs.pump.efficiency_pump[0.0]]
+            == 10
+        )
+        assert pump_model.fs.pump.scaling_factor[
+            pump_model.fs.pump.work_fluid[0.0]
+        ] == pytest.approx(1.917e-06, rel=1e-3)
+        assert (
+            pump_model.fs.pump.scaling_factor[
+                pump_model.fs.pump.ratioP_calculation[0.0]
+            ]
+            == 1e-5
+        )
+        assert pump_model.fs.pump.scaling_factor[
+            pump_model.fs.pump.fluid_work_calculation[0.0]
+        ] == pytest.approx(1.917e-06, rel=1e-3)
+        assert pump_model.fs.pump.scaling_factor[
+            pump_model.fs.pump.actual_work[0.0]
+        ] == pytest.approx(1.917e-06, rel=1e-3)
+
+    @pytest.mark.integration
+    def test_example_case_pump(self, pump_model):
+
+        ini = BlockTriangularizationInitializer()
+        ini.initialize(pump_model.fs.pump)
 
         solver = get_solver(
             "ipopt_v2", writer_config={"linear_presolve": True, "scale_model": True}
         )
-        results = solver.solve(m, tee=False)
+        results = solver.solve(pump_model, tee=False)
         assert check_optimal_termination(results)
 
         # Check condition number to confirm scaling
-        sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
+        sm = TransformationFactory("core.scale_model").create_using(
+            pump_model, rename=False
+        )
         jac, _ = get_jacobian(sm, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
             1.393e02, rel=1e-3
         )
 
-    @pytest.mark.integration
-    def test_example_case_isothermal(self):
+    @pytest.fixture
+    def isothermal_model(self):
         m = ConcreteModel()
 
         # Add a steady state flowsheet block to the model
@@ -1172,9 +1202,6 @@ class TestPressureChangerScaler:
 
         m.fs.C101.outlet.pressure.fix(2.0 * units.bar)
 
-        ini = BlockTriangularizationInitializer()
-        ini.initialize(m.fs.C101)
-
         submodel_scaler_obj = ModularPropertiesScaler()
         submodel_scaler_obj.default_scaling_factors["flow_mol_phase"] = 1 / 8000
         submodel_scalers = ComponentMap()
@@ -1184,19 +1211,34 @@ class TestPressureChangerScaler:
         scaler = PressureChangerScaler()
         scaler.scale_model(model=m.fs.C101, submodel_scalers=submodel_scalers)
 
+        return m
+
+    @pytest.mark.unit
+    def test_isothermal_sfs(self, isothermal_model):
+        assert isothermal_model.fs.C101.scaling_factor[
+            isothermal_model.fs.C101.isothermal[0.0]
+        ] == pytest.approx(3.333e-3, rel=1e-3)
+
+    @pytest.mark.integration
+    def test_example_case_isothermal(self, isothermal_model):
+        ini = BlockTriangularizationInitializer()
+        ini.initialize(isothermal_model.fs.C101)
+
         solver = get_solver(
             "ipopt_v2", writer_config={"linear_presolve": True, "scale_model": True}
         )
-        results = solver.solve(m, tee=False)
+        results = solver.solve(isothermal_model, tee=False)
         assert check_optimal_termination(results)
 
         # Check condition number to confirm scaling
-        sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
+        sm = TransformationFactory("core.scale_model").create_using(
+            isothermal_model, rename=False
+        )
         jac, _ = get_jacobian(sm, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(170.82, rel=1e-3)
 
-    @pytest.mark.integration
-    def test_example_case_isentropic(self):
+    @pytest.fixture
+    def isentropic_model(self):
         m = ConcreteModel()
 
         # Add a steady state flowsheet block to the model
@@ -1250,14 +1292,68 @@ class TestPressureChangerScaler:
         scaler = PressureChangerScaler()
         scaler.scale_model(model=m.fs.C101, submodel_scalers=submodel_scalers)
 
+        return m
+
+    @pytest.mark.unit
+    def test_isentropic_sfs(self, isentropic_model):
+        assert (
+            isentropic_model.fs.C101.scaling_factor[
+                isentropic_model.fs.C101.efficiency_isentropic[0.0]
+            ]
+            == 10.0
+        )
+        assert (
+            isentropic_model.fs.C101.scaling_factor[
+                isentropic_model.fs.C101.work_isentropic[0.0]
+            ]
+            == 1e-10
+        )
+        assert (
+            isentropic_model.fs.C101.scaling_factor[
+                isentropic_model.fs.C101.isentropic_pressure[0.0]
+            ]
+            == 1e-5
+        )
+        assert (
+            isentropic_model.fs.C101.scaling_factor[
+                isentropic_model.fs.C101.state_material_balances[0.0, "CO2"]
+            ]
+            == 1.25e-3
+        )
+        assert (
+            isentropic_model.fs.C101.scaling_factor[
+                isentropic_model.fs.C101.state_material_balances[0.0, "N2"]
+            ]
+            == 1.25e-3
+        )
+        assert (
+            isentropic_model.fs.C101.scaling_factor[
+                isentropic_model.fs.C101.state_material_balances[0.0, "H2O"]
+            ]
+            == 1.25e-3
+        )
+        assert isentropic_model.fs.C101.scaling_factor[
+            isentropic_model.fs.C101.isentropic[0.0]
+        ] == pytest.approx(0.1136, rel=1e-3)
+        assert (
+            isentropic_model.fs.C101.scaling_factor[
+                isentropic_model.fs.C101.isentropic_energy_balance[0.0]
+            ]
+            == 1e-10
+        )
+
+    @pytest.mark.integration
+    def test_example_case_isentropic(self, isentropic_model):
         solver = get_solver(
             "ipopt_v2", writer_config={"linear_presolve": True, "scale_model": True}
         )
-        results = solver.solve(m, tee=False)
+        results = solver.solve(isentropic_model, tee=False)
         assert check_optimal_termination(results)
 
         # Check condition number to confirm scaling
-        sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
+        sm = TransformationFactory("core.scale_model").create_using(
+            isentropic_model, rename=False
+        )
         jac, _ = get_jacobian(sm, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(9.71e3, rel=1e-3)
 
