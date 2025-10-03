@@ -1078,17 +1078,12 @@ class TestPressureChangerScaler:
 
     @pytest.fixture
     def pump_model(self):
+        # pump thermodynamic assumption using saponification properties
         m = ConcreteModel()
 
-        m.fs = FlowsheetBlock(
-            dynamic=False
-        )  # dynamic or ss flowsheet needs to be specified here
+        m.fs = FlowsheetBlock(dynamic=False)
 
-        # Add properties parameter block to the flowsheet with specifications
         m.fs.properties = SaponificationParameterBlock()
-
-        # Create an instance of the pump unit, attaching it to the flowsheet
-        # Specify that the property package to be used with the pump is the one we created earlier.
         m.fs.pump = Pump(property_package=m.fs.properties)
 
         m.fs.pump.inlet.flow_vol[0].fix(1.0e-03 * units.m**3 / units.s)
@@ -1105,7 +1100,6 @@ class TestPressureChangerScaler:
         m.fs.pump.inlet.temperature[0].fix(303.15 * units.K)
         m.fs.pump.inlet.pressure[0].fix(101325.0 * units.Pa)
 
-        # Fix pump conditions
         m.fs.pump.deltaP.fix(100000 * units.Pa)
         m.fs.pump.efficiency_pump.fix(0.8)
 
@@ -1114,7 +1108,7 @@ class TestPressureChangerScaler:
 
         return m
 
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_pump_sfs(self, pump_model):
         assert pump_model.fs.pump.scaling_factor[pump_model.fs.pump.ratioP[0.0]] == 1.0
         assert (
@@ -1139,7 +1133,6 @@ class TestPressureChangerScaler:
 
     @pytest.mark.integration
     def test_example_case_pump(self, pump_model):
-
         ini = BlockTriangularizationInitializer()
         ini.initialize(pump_model.fs.pump)
 
@@ -1160,12 +1153,10 @@ class TestPressureChangerScaler:
 
     @pytest.fixture
     def isothermal_model(self):
+        # compressor w/ isothermal thermodynamic assumption using generic property package for flue gas
         m = ConcreteModel()
-
-        # Add a steady state flowsheet block to the model
         m.fs = FlowsheetBlock(dynamic=False)
 
-        # create gas phase properties block
         flue_species = {"H2O", "CO2", "N2"}
         prop_config = get_prop(flue_species, ["Vap"], eos=EosType.IDEAL)
         prop_config["state_bounds"]["pressure"] = (
@@ -1186,7 +1177,6 @@ class TestPressureChangerScaler:
             doc="Flue gas properties",
         )
 
-        # Adding the compressor C101 to the flowsheet
         m.fs.C101 = PressureChanger(
             property_package=m.fs.gas_props,
             compressor=True,
@@ -1213,7 +1203,7 @@ class TestPressureChangerScaler:
 
         return m
 
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_isothermal_sfs(self, isothermal_model):
         assert isothermal_model.fs.C101.scaling_factor[
             isothermal_model.fs.C101.isothermal[0.0]
@@ -1239,12 +1229,10 @@ class TestPressureChangerScaler:
 
     @pytest.fixture
     def isentropic_model(self):
+        # compressor w/ isentropic thermodynamic assumption using generic property package for flue gas
         m = ConcreteModel()
-
-        # Add a steady state flowsheet block to the model
         m.fs = FlowsheetBlock(dynamic=False)
 
-        # create gas phase properties block
         flue_species = {"H2O", "CO2", "N2"}
         prop_config = get_prop(flue_species, ["Vap"], eos=EosType.IDEAL)
         prop_config["state_bounds"]["pressure"] = (
@@ -1265,7 +1253,6 @@ class TestPressureChangerScaler:
             doc="Flue gas properties",
         )
 
-        # Adding the compressor C101 to the flowsheet
         m.fs.C101 = PressureChanger(
             property_package=m.fs.gas_props,
             compressor=True,
@@ -1294,7 +1281,7 @@ class TestPressureChangerScaler:
 
         return m
 
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_isentropic_sfs(self, isentropic_model):
         assert (
             isentropic_model.fs.C101.scaling_factor[
@@ -1359,12 +1346,10 @@ class TestPressureChangerScaler:
 
     @pytest.mark.integration
     def test_example_case_turbine(self):
+        # turbine using generic property package for flue gas
         m = ConcreteModel()
-
-        # Add a steady state flowsheet block to the model
         m.fs = FlowsheetBlock(dynamic=False)
 
-        # create gas phase properties block
         flue_species = {"H2O", "CO2", "N2"}
         prop_config = get_prop(flue_species, ["Vap"], eos=EosType.IDEAL)
         prop_config["state_bounds"]["pressure"] = (
@@ -1385,7 +1370,6 @@ class TestPressureChangerScaler:
             doc="Flue gas properties",
         )
 
-        # Adding the compressor C101 to the flowsheet
         m.fs.T101 = Turbine(dynamic=False, property_package=m.fs.gas_props)
 
         m.fs.T101.inlet.flow_mol.fix(8000 * units.mole / units.sec)

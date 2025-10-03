@@ -27,6 +27,8 @@ from pyomo.environ import (
     TransformationFactory,
 )
 
+from pyomo.common.collections import ComponentMap
+
 from idaes.core import (
     FlowsheetBlock,
     MaterialBalanceType,
@@ -376,6 +378,7 @@ class TestStoichiometricReactorScaler:
 
     @pytest.mark.integration
     def test_example_case(self):
+        # test saponification example
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
 
@@ -411,7 +414,7 @@ class TestStoichiometricReactorScaler:
 
         m.fs.R101.conversion = Var(
             initialize=0.90, bounds=(0, 1), units=units.dimensionless
-        )  # fraction
+        )
 
         m.fs.R101.conv_constraint = Constraint(
             expr=m.fs.R101.conversion * m.fs.R101.inlet.conc_mol_comp[0, "NaOH"]
@@ -423,19 +426,21 @@ class TestStoichiometricReactorScaler:
 
         m.fs.R101.conversion.fix(0.9)
 
-        initializer = BlockTriangularizationInitializer()
-        initializer.initialize(m.fs.R101)
-
         set_scaling_factor(m.fs.R101.conversion, 10)
         set_scaling_factor(m.fs.R101.conv_constraint, 10)
-        def_sfs = (
-            m.fs.properties.state_block_class.default_scaler.DEFAULT_SCALING_FACTORS
-        )
-        def_sfs["flow_vol"] = 1e3
-        def_sfs["conc_mol_comp"] = 0.1
+
+        submodel_scaler_obj = m.fs.properties.state_block_class.default_scaler()
+        submodel_scaler_obj.default_scaling_factors["flow_vol"] = 1e3
+        submodel_scaler_obj.default_scaling_factors["conc_mol_comp"] = 0.1
+        submodel_scalers = ComponentMap()
+        submodel_scalers[m.fs.R101.control_volume.properties_in] = submodel_scaler_obj
+        submodel_scalers[m.fs.R101.control_volume.properties_out] = submodel_scaler_obj
 
         scaler = StoichiometricReactorScaler()
-        scaler.scale_model(m.fs.R101)
+        scaler.scale_model(model=m.fs.R101, submodel_scalers=submodel_scalers)
+
+        initializer = BlockTriangularizationInitializer()
+        initializer.initialize(m.fs.R101)
 
         solver = get_solver(
             "ipopt_v2", writer_config={"linear_presolve": True, "scale_model": True}
