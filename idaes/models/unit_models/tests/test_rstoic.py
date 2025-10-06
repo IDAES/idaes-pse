@@ -376,9 +376,9 @@ class TestStoichiometricReactorScaler:
     def test_default_scaler(self):
         assert StoichiometricReactor().default_scaler == StoichiometricReactorScaler
 
-    @pytest.mark.integration
-    def test_example_case(self):
-        # test saponification example
+    @pytest.fixture
+    def sapon_model(self):
+        # saponification example
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
 
@@ -439,16 +439,51 @@ class TestStoichiometricReactorScaler:
         scaler = StoichiometricReactorScaler()
         scaler.scale_model(model=m.fs.R101, submodel_scalers=submodel_scalers)
 
+        return m
+
+    @pytest.mark.component
+    def test_sapon_sfs(self, sapon_model):
+        assert sapon_model.fs.R101.control_volume.scaling_factor[
+            sapon_model.fs.R101.control_volume.heat[0.0]
+        ] == pytest.approx(1.917e-5, rel=1e-3)
+        assert (
+            sapon_model.fs.R101.control_volume.scaling_factor[
+                sapon_model.fs.R101.control_volume.rate_reaction_stoichiometry_constraint[
+                    0.0, "Liq", "H2O"
+                ]
+            ]
+            == 0.1
+        )
+
+        assert (
+            sapon_model.fs.R101.control_volume.properties_in[0.0].scaling_factor[
+                sapon_model.fs.R101.control_volume.properties_in[0.0].flow_vol
+            ]
+            == 1e3
+        )
+
+        assert (
+            sapon_model.fs.R101.control_volume.properties_out[0.0].scaling_factor[
+                sapon_model.fs.R101.control_volume.properties_out[0.0].pressure
+            ]
+            == 1e-5
+        )
+
+    @pytest.mark.integration
+    def test_sapon_example_case(self, sapon_model):
+        # test condition number
         initializer = BlockTriangularizationInitializer()
-        initializer.initialize(m.fs.R101)
+        initializer.initialize(sapon_model.fs.R101)
 
         solver = get_solver(
             "ipopt_v2", writer_config={"linear_presolve": True, "scale_model": True}
         )
-        results = solver.solve(m, tee=False)
+        results = solver.solve(sapon_model, tee=False)
         assert check_optimal_termination(results)
 
         # Check condition number to confirm scaling
-        sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
+        sm = TransformationFactory("core.scale_model").create_using(
+            sapon_model, rename=False
+        )
         jac, _ = get_jacobian(sm, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(714.68, rel=1e-3)
