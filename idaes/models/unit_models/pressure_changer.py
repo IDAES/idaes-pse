@@ -399,12 +399,6 @@ class PressureChangerScaler(CustomScalerBase):
                 self.scale_variable_by_component(
                     model.work_isentropic[t], model.control_volume.work[t]
                 )
-
-        if hasattr(model, "work_mechanical"):
-            for t in model.flowsheet().time:
-                self.scale_variable_by_component(
-                    model.work_mechanical[t], model.control_volume.work[t]
-                )
         # ----------------------------------------------------------------------------------------------------------
 
     def constraint_scaling_routine(
