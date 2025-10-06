@@ -359,13 +359,17 @@ class PressureChangerScaler(CustomScalerBase):
         )
 
         # for the isentropic assumption, a duplicate properties block is created from the unit model's
-        # property package and can be scaled by calling the properties scaler
+        # property package. We can propagate scaling and then call the properties scaler.
         if hasattr(model, "properties_isentropic"):
+            self.propagate_state_scaling(
+                target_state=model.properties_isentropic,
+                source_state=model.control_volume.properties_in,
+                overwrite=overwrite,
+            )
             self.call_submodel_scaler_method(
                 submodel=model.properties_isentropic,
                 method="variable_scaling_routine",
                 submodel_scalers=submodel_scalers,
-                overwrite=overwrite,
             )
 
         # ratioP is present for all thermodynamic assumptions. Default scaling factor is 1 which should be
