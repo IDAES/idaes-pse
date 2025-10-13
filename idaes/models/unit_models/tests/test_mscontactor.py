@@ -56,10 +56,12 @@ from idaes.models.unit_models.mscontactor import (
     MSContactorData,
     _get_state_blocks,
     MSContactorInitializer,
+    MSContactorScaler,
 )
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.misc import add_object_reference
 from idaes.core.solvers import get_solver
+from idaes.core.scaling import CustomScalerBase
 from idaes.core.util.exceptions import ConfigurationError, PropertyNotSupportedError
 from idaes.core.util.initialization import (
     propagate_state,
@@ -78,9 +80,27 @@ from idaes.models.properties.examples.saponification_thermo import (
 
 solver = get_solver("ipopt_v2")
 
-
 # -----------------------------------------------------------------------------
 # Property packages for testing
+class Properties1Scaler(CustomScalerBase):
+    DEFAULT_SCALING_FACTORS = {
+        "flow_mol_phase_comp[phase1, solvent1]": 2,
+        "flow_mol_phase_comp[phase1, solute1]": 3,
+        "flow_mol_phase_comp[phase1, solute2]": 5,
+        "flow_mol_phase_comp[phase1, solute3]": 7,
+        "enth_flow": 11,
+        "pressure": 13
+    }
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        for vdata in model.flow_mol_phase_comp.values():
+            self.scale_variable_by_default(vdata, overwrite=overwrite)
+        self.scale_variable_by_default(model.enth_flow, overwrite=overwrite)
+        self.scale_variable_by_default(model.pressure, overwrite=overwrite)
+    def constraint_scaling_routine(self, model, overwrite: bool = False, submodel_scalers: dict = None):
+        model.constraints_scaled = True
+
 @declare_process_block_class("Parameters1")
 class Parameter1Data(PhysicalParameterBlock):
     def build(self):
@@ -109,6 +129,7 @@ class Parameter1Data(PhysicalParameterBlock):
 
 
 class SBlock1Base(StateBlock):
+    default_scaler = Properties1Scaler
     def initialize(blk, **kwargs):
         pass
 
@@ -154,6 +175,23 @@ class StateBlock1Data(StateBlockData):
             "pressure": self.pressure,
         }
 
+class Properties2Scaler(CustomScalerBase):
+    DEFAULT_SCALING_FACTORS = {
+        "flow_mol_phase_comp[phase1,solvent2]": 19,
+        "flow_mol_phase_comp[phase1,solute1]": 23,
+        "flow_mol_phase_comp[phase1,solute2]": 29,
+        "enth_flow": 37,
+        "pressure": 41
+    }
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        for vdata in model.flow_mol_phase_comp.values():
+            self.scale_variable_by_default(vdata, overwrite=overwrite)
+        self.scale_variable_by_default(model.enth_flow, overwrite=overwrite)
+        self.scale_variable_by_default(model.pressure, overwrite=overwrite)
+    def constraint_scaling_routine(self, model, overwrite: bool = False, submodel_scalers: dict = None):
+        model.constraints_scaled = True
 
 @declare_process_block_class("Parameters2")
 class Parameter2Data(PhysicalParameterBlock):
@@ -182,6 +220,7 @@ class Parameter2Data(PhysicalParameterBlock):
 
 
 class SBlock2Base(StateBlock):
+    default_scaler = Properties2Scaler
     def initialize(blk, **kwargs):
         pass
 
@@ -189,7 +228,7 @@ class SBlock2Base(StateBlock):
         pass
 
 
-@declare_process_block_class("StateBlock2", block_class=SBlock1Base)
+@declare_process_block_class("StateBlock2", block_class=SBlock2Base)
 class StateBlock2Data(StateBlockData):
     CONFIG = ConfigBlock(implicit=True)
 
@@ -260,7 +299,7 @@ class SBlock3Base(StateBlock):
         pass
 
 
-@declare_process_block_class("StateBlock3", block_class=SBlock1Base)
+@declare_process_block_class("StateBlock3", block_class=SBlock3Base)
 class StateBlock3Data(StateBlockData):
     CONFIG = ConfigBlock(implicit=True)
 
@@ -270,9 +309,31 @@ class StateBlock3Data(StateBlockData):
     def get_material_flow_basis(self):
         return MaterialFlowBasis.mass
 
+class Properties4Scaler(CustomScalerBase):
+    DEFAULT_SCALING_FACTORS = {
+        "flow_mol_phase_comp[phase1,solvent1]": 811,
+        "flow_mol_phase_comp[phase1,solute1]": 821,
+        "flow_mol_phase_comp[phase1,solute2]": 823,
+        "flow_mol_phase_comp[phase1,solute3]": 827,
+        "flow_mol_phase_comp[phase2,solvent1]": 829,
+        "flow_mol_phase_comp[phase2,solute1]": 839,
+        "flow_mol_phase_comp[phase2,solute2]": 853,
+        "flow_mol_phase_comp[phase2,solute3]": 857,
+        "enth_flow": 859,
+        "pressure": 863
+    }
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        for vdata in model.flow_mol_phase_comp.values():
+            self.scale_variable_by_default(vdata, overwrite=overwrite)
+        self.scale_variable_by_default(model.enth_flow, overwrite=overwrite)
+        self.scale_variable_by_default(model.pressure, overwrite=overwrite)
+    def constraint_scaling_routine(self, model, overwrite: bool = False, submodel_scalers: dict = None):
+        model.constraints_scaled = True
 
 @declare_process_block_class("Parameters4")
-class Parameter3Data(PhysicalParameterBlock):
+class Parameter4Data(PhysicalParameterBlock):
     def build(self):
         super().build()
 
@@ -298,8 +359,15 @@ class Parameter3Data(PhysicalParameterBlock):
             }
         )
 
+class SBlock4Base(StateBlock):
+    default_scaler = Properties4Scaler
+    def initialize(blk, **kwargs):
+        pass
 
-@declare_process_block_class("StateBlock4", block_class=SBlock1Base)
+    def release_state(blk, **kwargs):
+        pass
+
+@declare_process_block_class("StateBlock4", block_class=SBlock4Base)
 class StateBlock4Data(StateBlockData):
     CONFIG = ConfigBlock(implicit=True)
 
@@ -416,6 +484,10 @@ class TestBuild:
         assert model.fs.unit.config.streams["stream2"].has_energy_balance
         assert model.fs.unit.config.streams["stream2"].has_pressure_balance
         assert not model.fs.unit.config.streams["stream2"].has_pressure_change
+
+    @pytest.mark.unit
+    def test_default_scaler(self, model):
+        assert model.fs.unit.default_scaler is MSContactorScaler
 
     @pytest.mark.unit
     def test_verify_inputs_too_few_streams(self):
@@ -546,6 +618,45 @@ class TestBuild:
         assert not hasattr(model.fs.unit, "stream2_side_stream_state")
 
     @pytest.mark.unit
+    def test_scale_state_blocks(self, model):
+        unit = model.fs.unit
+        unit._verify_inputs()
+        unit._build_state_blocks()
+        scaler_obj = unit.default_scaler()
+
+        scaler_obj.set_component_scaling_factor(
+            unit.stream1_inlet_state[0].flow_mol_phase_comp["phase1", "solvent1"],
+            433
+        )
+        scaler_obj.set_component_scaling_factor(
+            unit.stream1_inlet_state[0].pressure,
+            1151
+        )
+
+        scaler_obj.set_component_scaling_factor(
+            unit.stream2_inlet_state[0].flow_mol_phase_comp["phase1", "solute2"],
+            577
+        )
+        scaler_obj.set_component_scaling_factor(
+            unit.stream2_inlet_state[0].enth_flow,
+            1423
+        )
+
+        scaler_obj.scale_model(unit)
+
+        for state in unit.stream1.values():
+            assert state.scaling_factor[state.flow_mol_phase_comp["phase1", "solvent1"]] == 433
+            assert state.scaling_factor[state.pressure] == 1151
+            assert state.scaling_factor[state.enth_flow] == 11
+            assert state.constraints_scaled
+
+        for state in unit.stream2.values():
+            assert state.scaling_factor[state.flow_mol_phase_comp["phase1", "solute2"]] == 577
+            assert state.scaling_factor[state.enth_flow] == 1423
+            assert state.scaling_factor[state.pressure] == 41
+            assert state.constraints_scaled
+
+    @pytest.mark.unit
     def test_build_state_blocks_no_feed(self, model):
         model.fs.unit.config.streams["stream2"].has_feed = False
         model.fs.unit._verify_inputs()
@@ -574,6 +685,37 @@ class TestBuild:
         assert not hasattr(model.fs.unit, "stream2_inlet_state")
         assert not hasattr(model.fs.unit, "stream2_side_stream_set")
         assert not hasattr(model.fs.unit, "stream2_side_stream_state")
+
+    @pytest.mark.unit
+    def test_scale_state_blocks_no_feed(self, model):
+        unit = model.fs.unit
+        unit.config.streams["stream2"].has_feed = False
+        unit._verify_inputs()
+        unit._build_state_blocks()
+        scaler_obj = unit.default_scaler()
+
+        scaler_obj.set_component_scaling_factor(
+            unit.stream1_inlet_state[0].flow_mol_phase_comp["phase1", "solvent1"],
+            433
+        )
+        scaler_obj.set_component_scaling_factor(
+            unit.stream1_inlet_state[0].pressure,
+            1151
+        )
+
+        scaler_obj.scale_model(unit)
+
+        for state in unit.stream1.values():
+            assert state.scaling_factor[state.flow_mol_phase_comp["phase1", "solvent1"]] == 433
+            assert state.scaling_factor[state.pressure] == 1151
+            assert state.scaling_factor[state.enth_flow] == 11
+            assert state.constraints_scaled
+
+        for state in unit.stream2.values():
+            assert state.scaling_factor[state.flow_mol_phase_comp["phase1", "solute2"]] == 29
+            assert state.scaling_factor[state.enth_flow] == 37
+            assert state.scaling_factor[state.pressure] == 41
+            assert state.constraints_scaled
 
     @pytest.mark.unit
     def test_build_state_blocks_side_stream(self, model):
@@ -610,6 +752,52 @@ class TestBuild:
         assert isinstance(model.fs.unit.stream2_side_stream_state, StateBlock2)
         assert len(model.fs.unit.stream2_side_stream_state) == 1
         assert not model.fs.unit.stream2_side_stream_state[0, 1].config.defined_state
+
+    @pytest.mark.unit
+    def test_scale_state_blocks_side_stream(self, model):
+        unit = model.fs.unit
+        unit.config.streams["stream2"].side_streams = [1]
+        unit._verify_inputs()
+        unit._build_state_blocks()
+        scaler_obj = unit.default_scaler()
+
+        scaler_obj.set_component_scaling_factor(
+            unit.stream1_inlet_state[0].flow_mol_phase_comp["phase1", "solvent1"],
+            433
+        )
+        scaler_obj.set_component_scaling_factor(
+            unit.stream1_inlet_state[0].pressure,
+            1151
+        )
+
+        scaler_obj.set_component_scaling_factor(
+            unit.stream2_inlet_state[0].flow_mol_phase_comp["phase1", "solute2"],
+            577
+        )
+        scaler_obj.set_component_scaling_factor(
+            unit.stream2_inlet_state[0].enth_flow,
+            1423
+        )
+
+        scaler_obj.scale_model(unit)
+
+        for state in unit.stream1.values():
+            assert state.scaling_factor[state.flow_mol_phase_comp["phase1", "solvent1"]] == 433
+            assert state.scaling_factor[state.pressure] == 1151
+            assert state.scaling_factor[state.enth_flow] == 11
+            assert state.constraints_scaled
+
+        for state in unit.stream2.values():
+            assert state.scaling_factor[state.flow_mol_phase_comp["phase1", "solute2"]] == 577
+            assert state.scaling_factor[state.enth_flow] == 1423
+            assert state.scaling_factor[state.pressure] == 41
+            assert state.constraints_scaled
+        
+        for state in unit.stream2_side_stream_state.values():
+            assert state.scaling_factor[state.flow_mol_phase_comp["phase1", "solute2"]] == 577
+            assert state.scaling_factor[state.enth_flow] == 1423
+            assert state.scaling_factor[state.pressure] == 41
+            assert state.constraints_scaled
 
     @pytest.mark.unit
     def test_build_state_blocks_side_stream_invalid(self, model):
@@ -794,6 +982,24 @@ class TestBuild:
             assert i.expr == 1
 
     @pytest.mark.unit
+    def test_scale_geometry_holdup_single_phase(self, dynamic):
+        unit = dynamic.fs.unit
+        unit._verify_inputs()
+        unit._build_state_blocks()
+        unit._add_geometry()
+        scaler_obj = unit.default_scaler()
+        scaler_obj.default_scaling_factors["volume"] = 1907
+
+        scaler_obj.scale_model(unit)
+
+        for vardata in unit.volume.values():
+            assert unit.scaling_factor[vardata] == 1907
+        for expdata in unit.stream1_phase_fraction.values():
+            assert unit.scaling_hint[expdata] == 10
+        for expdata in unit.stream2_phase_fraction.values():
+            assert unit.scaling_hint[expdata] == 10
+
+    @pytest.mark.unit
     def test_add_geometry_holdup_multi_phase(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(
@@ -843,6 +1049,48 @@ class TestBuild:
                     for p in ["phase1", "phase2"]
                 )
             )
+
+    @pytest.mark.unit
+    def test_scale_geometry_holdup_multi_phase(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(
+            dynamic=True,
+            time_set=[0, 1],
+            time_units=units.s,
+        )
+
+        m.fs.properties1 = Parameters1()
+        m.fs.properties2 = Parameters4()
+
+        m.fs.unit = ECFrame(
+            number_of_finite_elements=2,
+            streams={
+                "stream1": {"property_package": m.fs.properties1},
+                "stream2": {
+                    "property_package": m.fs.properties2,
+                    "flow_direction": FlowDirection.backward,
+                },
+            },
+        )
+
+        unit = m.fs.unit
+        unit._verify_inputs()
+        unit._build_state_blocks()
+        unit._add_geometry()
+        scaler_obj = unit.default_scaler()
+
+        scaler_obj.scale_model(unit)
+
+        for vardata in unit.volume.values():
+            assert unit.scaling_factor[vardata] == 1907
+        for vardata in unit.stream1_phase_fraction.values():
+            assert unit.scaling_factor[vardata] == 10
+        for condata in unit.stream1_sum_phase_fractions.values():
+            assert unit.scaling_factor[condata] == 1
+        for vardata in unit.stream2_phase_fraction.values():
+            assert unit.scaling_factor[vardata] == 10
+        for condata in unit.stream2_sum_phase_fractions.values():
+            assert unit.scaling_factor[condata] == 1
 
     @pytest.mark.unit
     def test_material_balances(self, model):
@@ -913,6 +1161,20 @@ class TestBuild:
                 - model.fs.unit.stream2[0, 1].flow_mol_phase_comp["phase1", j]
                 - model.fs.unit.material_transfer_term[0, 1, "stream1", "stream2", j]
             )
+
+    @pytest.mark.unit
+    def test_scaling_material_balances(self, model):
+        unit = model.fs.unit
+        unit._verify_inputs()
+        unit._build_state_blocks()
+        unit._build_material_balance_constraints()
+        assert unit.default_scaler is MSContactorScaler
+
+        scaler_obj = MSContactorScaler()
+        scaler_obj.scale_model(unit)
+        from idaes.core.scaling import report_scaling_factors
+        report_scaling_factors(unit, descend_into=True)
+        import pdb; pdb.set_trace()
 
     @pytest.mark.unit
     def test_material_balances_dynamic(self, dynamic):
