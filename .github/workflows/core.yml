@@ -225,7 +225,7 @@ jobs:
 
           grep "$pylint_todo_sentinel" "${grep_opts[@]}" "$pylint_target_dir" || echo "No \"$pylint_todo_sentinel\" comments found in $pylint_target_dir"
 
-  compat:
+compat:
     name: Compatibility tests
     runs-on: ubuntu-24.04
     steps:
@@ -237,7 +237,9 @@ jobs:
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
           miniforge-version: latest
       - name: Set up idaes
-        run: pip install .[dev]  
+        uses: ./.github/actions/setup-idaes
+        with:
+          install-target: -r requirements-dev.txt
       - name: Create empty pytest.ini file
         run: |
           echo "" > pytest.ini
