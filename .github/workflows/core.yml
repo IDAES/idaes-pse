@@ -225,7 +225,7 @@ jobs:
 
           grep "$pylint_todo_sentinel" "${grep_opts[@]}" "$pylint_target_dir" || echo "No \"$pylint_todo_sentinel\" comments found in $pylint_target_dir"
 
-compat:
+  compat:
     name: Compatibility tests
     runs-on: ubuntu-24.04
     steps:
