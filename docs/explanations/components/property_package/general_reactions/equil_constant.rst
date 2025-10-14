@@ -16,7 +16,7 @@ The method uses the van 't Hoff equation to calculate the equilibrium constant.
 .. csv-table::
    :header: "Symbol", "Parameter Name", "Units", "Description"
 
-   ":math:`k_{eq, ref}`", "k_eq_ref", "Varies, depends on equilibrium form", "Equlibrium constant at reference temperature"
+   ":math:`k_{eq, ref}`", "k_eq_ref", "Varies, depends on equilibrium form", "Equilibrium constant at reference temperature"
    ":math:`T_{ref, eq}`", "temperature_eq_ref", "Base units", "Reference temperature for calculating equilibrium constant"
 
 Gibbs Energy (gibbs_energy)

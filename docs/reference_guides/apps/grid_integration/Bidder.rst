@@ -181,7 +181,7 @@ PEMParametrizedBidder
 ============================================
 The ``PEMParametrizedBidder`` bids the renewable-PEM IES at a constant price. 
 The logic of ``PEMParametrizedBidder`` is to reserve a part of the renewable generation
-to co-prodcue the hydrogen. The reserved power can be sold at the marginal cost of the hydrogen
+to co-produce the hydrogen. The reserved power can be sold at the marginal cost of the hydrogen
 price. 
 
 .. autoclass:: PEMParametrizedBidder
