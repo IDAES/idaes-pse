@@ -2405,6 +2405,30 @@ class TestBuild:
         assert not hasattr(model.fs.unit, "stream2_side_stream_pressure_balance")
 
     @pytest.mark.unit
+    def test_pressure_balances_scaling(self, model):
+        unit = model.fs.unit
+        unit._verify_inputs()
+        unit._build_state_blocks()
+        unit._build_pressure_balance_constraints()
+
+        scaler_obj = unit.default_scaler()
+        scaler_obj.scale_model(unit)
+
+        assert len(unit.scaling_factor) == 4
+
+        # No variables
+
+        # Constraints
+        for condata in unit.stream1_pressure_balance.values():
+            assert unit.scaling_factor[condata] == 13
+
+        for condata in unit.stream2_pressure_balance.values():
+            assert unit.scaling_factor[condata] == 41
+
+        # Expressions
+        assert not hasattr(unit, "scaling_hint")
+
+    @pytest.mark.unit
     def test_pressure_balances_deltaP(self, model):
         model.fs.unit.config.streams["stream2"].has_pressure_change = True
         model.fs.unit._verify_inputs()
@@ -2464,6 +2488,32 @@ class TestBuild:
         assert not hasattr(model.fs.unit, "stream2_side_stream_pressure_balance")
 
     @pytest.mark.unit
+    def test_pressure_balances_deltaP_scaling(self, model):
+        unit = model.fs.unit
+        unit.config.streams["stream2"].has_pressure_change = True
+        unit._verify_inputs()
+        unit._build_state_blocks()
+        unit._build_pressure_balance_constraints()
+
+        scaler_obj = unit.default_scaler()
+        scaler_obj.scale_model(unit)
+
+        assert len(unit.scaling_factor) == 6
+        # Variables
+        for vardata in unit.stream2_deltaP.values():
+            assert unit.scaling_factor[vardata] == 41
+
+        # Constraints
+        for condata in unit.stream1_pressure_balance.values():
+            assert unit.scaling_factor[condata] == 13
+
+        for condata in unit.stream2_pressure_balance.values():
+            assert unit.scaling_factor[condata] == 41
+
+        # Expressions
+        assert not hasattr(unit, "scaling_hint")
+
+    @pytest.mark.unit
     def test_pressure_balances_no_feed(self, model):
         model.fs.unit.config.streams["stream2"].has_feed = False
         model.fs.unit._verify_inputs()
@@ -2508,6 +2558,31 @@ class TestBuild:
         assert not hasattr(model.fs.unit, "stream2_side_stream_pressure_balance")
 
     @pytest.mark.unit
+    def test_pressure_balances_no_feed_scaling(self, model):
+        unit = model.fs.unit
+        unit.config.streams["stream2"].has_feed = False
+        unit._verify_inputs()
+        unit._build_state_blocks()
+        unit._build_pressure_balance_constraints()
+
+        scaler_obj = unit.default_scaler()
+        scaler_obj.scale_model(unit)
+
+        assert len(unit.scaling_factor) == 3
+
+        # No variables
+
+        # Constraints
+        for condata in unit.stream1_pressure_balance.values():
+            assert unit.scaling_factor[condata] == 13
+
+        for condata in unit.stream2_pressure_balance.values():
+            assert unit.scaling_factor[condata] == 41
+
+        # Expressions
+        assert not hasattr(unit, "scaling_hint")
+
+    @pytest.mark.unit
     def test_pressure_balances_has_pressure_balance_false(self, model):
         model.fs.unit.config.streams["stream2"].has_pressure_balance = False
         model.fs.unit._verify_inputs()
@@ -2539,6 +2614,28 @@ class TestBuild:
 
         assert not hasattr(model.fs.unit, "stream1_side_stream_pressure_balance")
         assert not hasattr(model.fs.unit, "stream2_side_stream_pressure_balance")
+
+    @pytest.mark.unit
+    def test_pressure_balances_has_pressure_balance_false_scaling(self, model):
+        unit = model.fs.unit
+        unit.config.streams["stream2"].has_pressure_balance = False
+        unit._verify_inputs()
+        unit._build_state_blocks()
+        unit._build_pressure_balance_constraints()
+
+        scaler_obj = unit.default_scaler()
+        scaler_obj.scale_model(unit)
+
+        assert len(unit.scaling_factor) == 2
+
+        # No variables
+
+        # Constraints
+        for condata in unit.stream1_pressure_balance.values():
+            assert unit.scaling_factor[condata] == 13
+
+        # Expressions
+        assert not hasattr(unit, "scaling_hint")
 
     @pytest.mark.unit
     def test_pressure_balances_side_stream(self, model):
@@ -2600,6 +2697,34 @@ class TestBuild:
             model.fs.unit.stream2[0, 1].pressure
             == model.fs.unit.stream2_side_stream_state[0, 1].pressure
         )
+
+    @pytest.mark.unit
+    def test_pressure_balances_side_stream_scaling(self, model):
+        unit = model.fs.unit
+        unit.config.streams["stream2"].side_streams = [1]
+        unit._verify_inputs()
+        unit._build_state_blocks()
+        unit._build_pressure_balance_constraints()
+
+        scaler_obj = unit.default_scaler()
+        scaler_obj.scale_model(unit)
+
+        assert len(unit.scaling_factor) == 5
+
+        # No variables
+
+        # Constraints
+        for condata in unit.stream1_pressure_balance.values():
+            assert unit.scaling_factor[condata] == 13
+
+        for condata in unit.stream2_pressure_balance.values():
+            assert unit.scaling_factor[condata] == 41
+
+        for condata in unit.stream2_side_stream_pressure_balance.values():
+            assert unit.scaling_factor[condata] == 41
+
+        # Expressions
+        assert not hasattr(unit, "scaling_hint")
 
     @pytest.mark.unit
     def test_ports(self, model):
@@ -2896,6 +3021,59 @@ class TestReactions:
                     for p in ["p1", "p2"]
                 )
             )
+
+    @pytest.mark.unit
+    def test_inherent_reaction_scaling(self, model):
+        # Activate inherent reactions for testing
+        model.fs.properties._has_inherent_reactions = True
+
+        unit = model.fs.unit
+        unit._verify_inputs()
+        unit._build_state_blocks()
+        unit._build_material_balance_constraints()
+
+        scaler_obj = unit.default_scaler()
+        scaler_obj.scale_model(unit)
+
+        assert len(unit.scaling_factor) == 52
+
+        # Variables
+        for vardata in unit.material_transfer_term.values():
+            assert unit.scaling_factor[vardata] == approx(1 / (43*2))
+        
+        for t in model.fs.time:
+            for e in unit.elements:
+                unit.scaling_factor[
+                    unit.stream1_inherent_reaction_extent[t, e, "i1"]
+                ] == 1 / 43
+                unit.scaling_factor[
+                    unit.stream1_inherent_reaction_extent[t, e, "i2"]
+                ] == approx(7/43)
+
+                unit.scaling_factor[
+                    unit.stream2_inherent_reaction_extent[t, e, "i1"]
+                ] == 1 / 43
+                unit.scaling_factor[
+                    unit.stream2_inherent_reaction_extent[t, e, "i2"]
+                ] == approx(7/43)
+
+        
+        for vardata in unit.stream1_inherent_reaction_generation.values():
+            assert unit.scaling_factor[vardata] == 1 / 43
+        
+        for vardata in unit.stream2_inherent_reaction_generation.values():
+            assert unit.scaling_factor[vardata] == 1 / 43
+
+        # Constraints
+        for condata in unit.stream1_inherent_reaction_constraint.values():
+            assert unit.scaling_factor[condata] == 1 / 43
+        for condata in unit.stream2_inherent_reaction_constraint.values():
+            assert unit.scaling_factor[condata] == 1 / 43
+        
+        for condata in unit.stream1_material_balance.values():
+            assert unit.scaling_factor[condata] == approx(1/(43*2))
+        for condata in unit.stream2_material_balance.values():
+            assert unit.scaling_factor[condata] == approx(1/(43*2))
 
     @pytest.mark.unit
     def test_reaction_blocks(self, model):

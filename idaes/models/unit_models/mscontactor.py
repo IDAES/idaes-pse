@@ -106,9 +106,14 @@ class MSContactorScaler(CustomScalerBase):
         # Get stoichiometry dictionary
         if reaction_type == "inherent":
             idx0 = stream_state.index_set().first()
+            rxn_index = stream_state.params.inherent_reaction_idx
             stoich = stream_state[idx0].params.inherent_reaction_stoichiometry
         else:
             reaction_block = getattr(model, stream + "_reactions")
+            if reaction_type == "rate":
+                rxn_index = reaction_block.params.rate_reaction_idx
+            else:
+                rxn_index = reaction_block.params.equilibrium_reaction_idx
             idx0 = reaction_block.index_set().first()
             stoich = reaction_block[idx0].params.rate_reaction_stoichiometry
 
@@ -142,7 +147,7 @@ class MSContactorScaler(CustomScalerBase):
                             rxn_dict[rxn] = 1 / (abs(coeff) * sf)
             # Now that we've collected the sensitivities for each reaction
             # we can scale the reaction extent.
-            for rxn in rxn_extent:
+            for rxn in rxn_index:
                 if rxn not in rxn_dict:
                     raise ConfigurationError(
                         f"Reaction {rxn} does not have any nonzero stoichiometric coefficient."
@@ -469,9 +474,14 @@ class MSContactorScaler(CustomScalerBase):
         # Step 4a: Scale pressure difference
         for stream in model.config.streams.keys():
             if hasattr(model, stream + "_deltaP"):
-                raise NotImplementedError(
-                    "Scaling has not yet been impemented for pressure drop terms."
-                )
+                stream_state = getattr(model, stream)
+                deltaP = getattr(model, stream + "_deltaP")
+                for idx, vardata in deltaP.items():
+                    self.scale_variable_by_component(
+                        vardata,
+                        stream_state[idx].pressure,
+                        overwrite=overwrite
+                    )
 
     def constraint_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: dict = None
@@ -640,11 +650,22 @@ class MSContactorScaler(CustomScalerBase):
                         overwrite=overwrite,
                     )
             # Step 2f: Pressure balance
-            if hasattr(model, stream + "pressure_balance"):
-                raise NotImplementedError(
-                    "Scaling for pressure balance has not been implemented yet."
-                )
-                # pressure_balance, _side_stream_pressure_balance
+            if hasattr(model, stream + "_pressure_balance"):
+                pbal = getattr(model, stream + "_pressure_balance")
+                for condata in pbal.values():
+                    self.scale_constraint_by_nominal_value(
+                        condata,
+                        scheme=ConstraintScalingScheme.inverseMaximum,
+                        overwrite=overwrite
+                    )
+            if hasattr(model, stream + "_side_stream_pressure_balance"):
+                spbal = getattr(model, stream + "_side_stream_pressure_balance")
+                for condata in spbal.values():
+                    self.scale_constraint_by_nominal_value(
+                        condata,
+                        scheme=ConstraintScalingScheme.inverseMaximum,
+                        overwrite=overwrite
+                    )
 
 
 class MSContactorInitializer(ModularInitializerBase):
