@@ -76,6 +76,7 @@ class MSContactorScaler(CustomScalerBase):
         # equality constraint involving geometry in the parent
         # unit model.
         "volume": DefaultScalingRecommendation.userInputRequired,
+        "volume_frac_stream": 2,
         # Phase fraction may have already been created by the property package.
         # Also, no "phase_fraction" Var exists on the MSContactor, only
         # "stream_name_phase_fraction" Vars. Because we do not know the stream
@@ -241,7 +242,10 @@ class MSContactorScaler(CustomScalerBase):
         if hasattr(model, "volume"):
             for var in model.volume.values():
                 self.scale_variable_by_default(var, overwrite=overwrite)
-        for stream, sconfig in model.config.streams.items():
+        if hasattr(model, "volume_frac_stream"):
+            for var in model.volume_frac_stream.values():
+                self.scale_variable_by_default(var, overwrite=overwrite)
+        for stream in model.config.streams.keys():
             # Phase fraction
             if hasattr(model, stream + "_phase_fraction"):
                 # Copy default scaling factor for phase_fraction to use
@@ -257,7 +261,7 @@ class MSContactorScaler(CustomScalerBase):
             # Material holdup
             if hasattr(model, stream + "_material_holdup"):
                 material_holdup = getattr(model, stream + "_material_holdup")
-                material_holdup_con = getattr(stream + "_material_holdup_constraint")
+                material_holdup_con = getattr(model, stream + "_material_holdup_constraint")
                 for idx in material_holdup:
                     self.scale_variable_by_definition_constraint(
                         material_holdup[idx],
@@ -266,6 +270,8 @@ class MSContactorScaler(CustomScalerBase):
                     )
 
             # Energy Holdup
+            # TODO scale_variable_by_definition_constraint behaves badly
+            # when internal energy passes through zero
             if hasattr(model, stream + "_energy_holdup"):
                 energy_holdup = getattr(model, stream + "_energy_holdup")
                 energy_holdup_con = getattr(stream + "_energy_holdup_constraint")
@@ -504,17 +510,25 @@ class MSContactorScaler(CustomScalerBase):
 
         # Step 2: Scaling MSContactor level variables
         for stream in model.config.streams.keys():
+            stream_state = getattr(model, stream)
+
             # Step 2a: Holdup equations
+            if hasattr(model, "sum_volume_frac"):
+                sum_volume_frac_eqn = getattr(model, "sum_volume_frac")
+                # Register the fact this constraint is well-scaled by default
+                for condata in sum_volume_frac_eqn.values():
+                    self.set_component_scaling_factor(condata, 1, overwrite=overwrite)
+
             if hasattr(model, stream + "_sum_phase_fractions"):
                 sum_phase_frac_eqn = getattr(model, stream + "_sum_phase_fractions")
                 for condata in sum_phase_frac_eqn.values():
-                    # Registering the fact this constraint is well-scaled by default
+                    # Register the fact this constraint is well-scaled by default
                     self.set_component_scaling_factor(condata, 1, overwrite=overwrite)
             if hasattr(model, stream + "_material_holdup_constraint"):
                 holdup = getattr(model, stream + "_material_holdup")
                 holdup_eqn = getattr(model, stream + "_material_holdup_constraint")
                 for idx in holdup_eqn:
-                    self.scale_constraint_by_variable(
+                    self.scale_constraint_by_component(
                         holdup_eqn[idx], holdup[idx], overwrite=overwrite
                     )
             if hasattr(model, stream + "_energy_holdup_constraint"):
@@ -523,7 +537,7 @@ class MSContactorScaler(CustomScalerBase):
                     model, stream + "_energy_holdup_constraint"
                 )
                 for idx in energy_holdup_eqn:
-                    self.scale_constraint_by_variable(
+                    self.scale_constraint_by_component(
                         energy_holdup_eqn[idx],
                         energy_holdup[idx],
                         overwrite=overwrite,
@@ -579,19 +593,32 @@ class MSContactorScaler(CustomScalerBase):
             # Step 2d: Material balance
             if hasattr(model, stream + "_material_balance"):
                 mbal = getattr(model, stream + "_material_balance")
-                for idx in mbal:
-                    self.scale_constraint_by_nominal_value(
-                        mbal[idx],
-                        scheme=ConstraintScalingScheme.inverseMaximum,
+                for (t, e, comp) in mbal:
+                    nom = self.get_expression_nominal_value(
+                        sum(
+                            stream_state[t, e].get_material_flow_terms(p, comp)
+                            for p in stream_state[t, e].phase_list
+                            if (p, comp) in stream_state[t, e].phase_component_set
+                        )
+                    )
+                    self.set_component_scaling_factor(
+                        mbal[t, e, comp],
+                        1 / nom,
                         overwrite=overwrite,
                     )
             # Step 2e: Energy balance
             if hasattr(model, stream + "_energy_balance"):
                 ebal = getattr(model, stream + "_energy_balance")
-                for idx in ebal:
-                    self.scale_constraint_by_nominal_value(
-                        ebal[idx],
-                        scheme=ConstraintScalingScheme.inverseMaximum,
+                for (t, e) in ebal:
+                    nom = self.get_expression_nominal_value(
+                        sum(
+                            stream_state[t, e].get_enthalpy_flow_terms(p)
+                            for p in stream_state[t, e].phase_list
+                        )
+                    )
+                    self.set_component_scaling_factor(
+                        ebal[t, e],
+                        1 / nom,
                         overwrite=overwrite,
                     )
             # Step 2f: Pressure balance
