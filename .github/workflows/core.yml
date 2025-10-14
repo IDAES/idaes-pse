@@ -62,8 +62,7 @@ jobs:
         # but we still want to specify the Black version to use in requirements-dev.txt for local development
         # so we extract the relevant line and pass it to a simple `pip install`
         run: |
-          # we store the version
-          black_requirement="$(grep 'black==' requirements-dev.txt)"
+          pip install -e .[dev] 
           pip --no-cache-dir install --progress-bar off "$black_requirement"
       - name: Run Black to verify that the committed code is formatted
         run: |
@@ -114,8 +113,7 @@ jobs:
 
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
-        with:
-          install-target: -r requirements-dev.txt
+      
       - name: Add pytest CLI options for coverage
         if: matrix.cov-report
         run: |
@@ -174,7 +172,8 @@ jobs:
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
         with:
-          install-target: -r requirements-dev.txt
+          install-target: pip install .[dev,ui,grid,omlt,coolprop]  
+
       - name: Build Sphinx docs
         run: |
           which python
@@ -243,7 +242,7 @@ jobs:
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
         with:
-          install-target: -r requirements-dev.txt
+          install-target: pip install .[dev,ui,grid,omlt,coolprop]  
       - name: Create empty pytest.ini file
         run: |
           echo "" > pytest.ini

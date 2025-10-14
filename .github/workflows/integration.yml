@@ -147,7 +147,7 @@ jobs:
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
         with:
-          install-target: -r requirements-dev.txt
+          install-target: pip install .[dev,ui,grid,omlt,coolprop]  
       - name: Run pytest (integration)
         run: pytest --pyargs idaes -m integration
 
@@ -185,13 +185,14 @@ jobs:
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
         with:
-          install-target: -r requirements-dev.txt
+          install-target: pip install .[dev,ui,grid,omlt,coolprop]  
       - name: Fetch and run examples
         uses: ./.github/actions/run-examples
         with:
           examples-repository: IDAES/examples
           examples-ref: main
-          reinstall-target: -r requirements-dev.txt
+          reinstall-target: pip install .[dev,ui,grid,omlt,coolprop]  
+
           notebook-cell-exec-timeout: '600'
           working-dir: ${{ runner.temp }}
 
