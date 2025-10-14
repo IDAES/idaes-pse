@@ -370,6 +370,7 @@ class PressureChangerScaler(CustomScalerBase):
                 submodel=model.properties_isentropic,
                 method="variable_scaling_routine",
                 submodel_scalers=submodel_scalers,
+                overwrite=overwrite,
             )
 
         # ratioP is present for all thermodynamic assumptions. Default scaling factor is 1 which should be
