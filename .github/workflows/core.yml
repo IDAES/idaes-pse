@@ -209,7 +209,7 @@ jobs:
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
         with:
-          install-target: pip install .[ui,grid,omlt,coolprop]
+          install-target: pip install .[dev,ui,grid,omlt,coolprop]
 
       - name: Run pylint
         run: |
