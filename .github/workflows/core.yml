@@ -209,7 +209,8 @@ jobs:
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
         with:
-          install-target: -r requirements-dev.txt
+          install-target: pip install .[ui,grid,omlt,coolprop]
+
       - name: Run pylint
         run: |
           echo "::group::Display pylint version"
