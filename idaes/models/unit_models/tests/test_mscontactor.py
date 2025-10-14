@@ -63,7 +63,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.misc import add_object_reference
 from idaes.core.solvers import get_solver
 from idaes.core.scaling import CustomScalerBase
-from idaes.core.util.exceptions import ConfigurationError, PropertyNotSupportedError
+from idaes.core.util.exceptions import BurntToast, ConfigurationError, PropertyNotSupportedError
 from idaes.core.util.initialization import (
     propagate_state,
     fix_state_vars,
@@ -1405,9 +1405,6 @@ class TestBuild:
 
         scaler_obj.scale_model(unit)
 
-        from idaes.core.scaling import report_scaling_factors
-        report_scaling_factors(unit, descend_into=True)
-
         assert len(unit.scaling_factor) == 106
         # Variables
         for e in unit.elements:
@@ -1553,6 +1550,60 @@ class TestBuild:
             )
 
     @pytest.mark.unit
+    def test_material_balances_no_feed_scaling(self, model):
+        unit = model.fs.unit
+        unit.config.streams["stream2"].has_feed = False
+        unit._verify_inputs()
+        unit._build_state_blocks()
+        unit._build_material_balance_constraints()
+
+        scaler_obj = unit.default_scaler()
+        scaler_obj.scale_model(unit)
+
+
+        assert len(unit.scaling_factor) == 18
+        # Variables
+        for t in model.fs.time:
+            for e in unit.elements:
+                assert unit.scaling_factor[
+                    unit.material_transfer_term[t,e,"stream1","stream2","solute1"]
+                ] == 23
+                assert unit.scaling_factor[
+                    unit.material_transfer_term[t,e,"stream1","stream2","solute2"]
+                ] == 29
+
+        # Constraints
+        for t in model.fs.time:
+            for e in unit.elements:
+                # Stream 1
+                assert unit.scaling_factor[
+                    unit.stream1_material_balance[t,e,"solvent1"]
+                ] == 2
+                assert unit.scaling_factor[
+                    unit.stream1_material_balance[t,e,"solute1"]
+                ] == 3
+                assert unit.scaling_factor[
+                    unit.stream1_material_balance[t,e,"solute2"]
+                ] == 5
+                assert unit.scaling_factor[
+                    unit.stream1_material_balance[t,e,"solute3"]
+                ] == 7
+
+                # Stream 2
+                assert unit.scaling_factor[
+                    unit.stream2_material_balance[t,e,"solvent2"]
+                ] == 19
+                assert unit.scaling_factor[
+                    unit.stream2_material_balance[t,e,"solute1"]
+                ] == 23
+                assert unit.scaling_factor[
+                    unit.stream2_material_balance[t,e,"solute2"]
+                ] == 29                
+
+        # Expressions
+        assert not hasattr(unit, "scaling_hint")
+
+    @pytest.mark.unit
     def test_material_balances_side_stream(self, model):
         model.fs.unit.config.streams["stream2"].side_streams = [1]
         model.fs.unit._verify_inputs()
@@ -1630,6 +1681,60 @@ class TestBuild:
             )
 
     @pytest.mark.unit
+    def test_material_balances_side_stream_scaling(self, model):
+        unit = model.fs.unit
+        unit.config.streams["stream2"].side_streams = [1]
+        unit._verify_inputs()
+        unit._build_state_blocks()
+        unit._build_material_balance_constraints()
+
+        scaler_obj = unit.default_scaler()
+        scaler_obj.scale_model(unit)
+
+
+        assert len(unit.scaling_factor) == 18
+        # Variables
+        for t in model.fs.time:
+            for e in unit.elements:
+                assert unit.scaling_factor[
+                    unit.material_transfer_term[t,e,"stream1","stream2","solute1"]
+                ] == 23
+                assert unit.scaling_factor[
+                    unit.material_transfer_term[t,e,"stream1","stream2","solute2"]
+                ] == 29
+
+        # Constraints
+        for t in model.fs.time:
+            for e in unit.elements:
+                # Stream 1
+                assert unit.scaling_factor[
+                    unit.stream1_material_balance[t,e,"solvent1"]
+                ] == 2
+                assert unit.scaling_factor[
+                    unit.stream1_material_balance[t,e,"solute1"]
+                ] == 3
+                assert unit.scaling_factor[
+                    unit.stream1_material_balance[t,e,"solute2"]
+                ] == 5
+                assert unit.scaling_factor[
+                    unit.stream1_material_balance[t,e,"solute3"]
+                ] == 7
+
+                # Stream 2
+                assert unit.scaling_factor[
+                    unit.stream2_material_balance[t,e,"solvent2"]
+                ] == 19
+                assert unit.scaling_factor[
+                    unit.stream2_material_balance[t,e,"solute1"]
+                ] == 23
+                assert unit.scaling_factor[
+                    unit.stream2_material_balance[t,e,"solute2"]
+                ] == 29                
+
+        # Expressions
+        assert not hasattr(unit, "scaling_hint")
+
+    @pytest.mark.unit
     def test_energy_balances(self, model):
         model.fs.unit._verify_inputs()
         model.fs.unit._build_state_blocks()
@@ -1689,6 +1794,33 @@ class TestBuild:
             )
             - model.fs.unit.energy_transfer_term[0, 1, "stream1", "stream2"]
         )
+
+    @pytest.mark.unit
+    def test_energy_balances_scaling(self, model):
+        unit = model.fs.unit
+        unit._verify_inputs()
+        unit._build_state_blocks()
+        unit._build_energy_balance_constraints()
+
+        scaler_obj = unit.default_scaler()
+
+        scaler_obj.scale_model(unit)
+
+        assert len(unit.scaling_factor) == 6
+
+        # Variables
+        for vardata in unit.energy_transfer_term.values():
+            assert unit.scaling_factor[vardata] == 37
+        
+        # Constraints
+        for condata in unit.stream1_energy_balance.values():
+            assert unit.scaling_factor[condata] == 11
+
+        for condata in unit.stream2_energy_balance.values():
+            assert unit.scaling_factor[condata] == 37
+
+        # Expressions
+        assert not hasattr(unit, "scaling_hint")
 
     @pytest.mark.unit
     def test_energy_balances_dynamic(self, dynamic):
@@ -1795,6 +1927,83 @@ class TestBuild:
             )
 
     @pytest.mark.unit
+    def test_energy_balances_dynamic_scaling(self, dynamic):
+        unit = dynamic.fs.unit
+        unit._verify_inputs()
+        unit._build_state_blocks()
+        unit._add_geometry()
+        unit._build_energy_balance_constraints()
+
+        scaler_obj = unit.default_scaler()
+        scaler_obj.default_scaling_factors["volume"] = 2683
+
+        scaler_obj.scale_model(unit)
+
+        from idaes.core.scaling import report_scaling_factors
+        report_scaling_factors(unit, descend_into=True)
+
+        assert len(unit.scaling_factor) == 42
+
+        # Variables
+        for e in unit.elements:
+            assert unit.scaling_factor[
+                unit.volume[e]                      
+            ] == 2683
+        for t in dynamic.fs.time:
+            for e in unit.elements:
+                assert unit.scaling_factor[
+                    unit.volume_frac_stream[t, e, "stream1"]
+                ] == 2
+                assert unit.scaling_factor[
+                    unit.volume_frac_stream[t, e, "stream2"]
+                ] == 2
+
+                assert unit.scaling_factor[
+                    unit.energy_transfer_term[t,e,"stream1","stream2"]
+                ] == 37
+                assert unit.scaling_factor[
+                    unit.energy_transfer_term[t,e,"stream1","stream2"]
+                ] == 37
+
+        for vardata in unit.stream1_energy_holdup.values():
+            assert unit.scaling_factor[vardata] == approx(2683 * 2 / 43)
+
+        for vardata in unit.stream2_energy_holdup.values():
+            assert unit.scaling_factor[vardata] == approx(2683 * 2 / 53)
+
+
+        # Constraints
+        for t in dynamic.fs.time:
+            for e in unit.elements:
+                assert unit.scaling_factor[
+                    unit.sum_volume_frac[t, e]
+                ] == 1
+
+                # Stream 1
+                assert unit.scaling_factor[
+                    unit.stream1_energy_balance[t,e]
+                ] == 11
+
+                # Stream 2
+                assert unit.scaling_factor[
+                    unit.stream2_energy_balance[t,e]
+                ] == 37           
+
+        for condata in unit.stream1_energy_holdup_constraint.values():
+            assert unit.scaling_factor[condata] == approx(2683 * 2 / 43)
+
+        for condata in unit.stream2_energy_holdup_constraint.values():
+            assert unit.scaling_factor[condata] == approx(2683 * 2 / 53)
+
+        # Expressions
+        assert len(unit.scaling_hint) == 8
+        for expdata in unit.stream1_phase_fraction.values():
+            assert unit.scaling_hint[expdata] == 10
+
+        for expdata in unit.stream2_phase_fraction.values():
+            assert unit.scaling_hint[expdata] == 10
+
+    @pytest.mark.unit
     def test_energy_balances_has_heat_transfer(self, model):
         model.fs.unit.config.streams["stream2"].has_heat_transfer = True
         model.fs.unit._verify_inputs()
@@ -1855,6 +2064,33 @@ class TestBuild:
         )
 
     @pytest.mark.unit
+    def test_energy_balances_has_heat_transfer_scaling(self, model):
+        unit = model.fs.unit
+        unit.config.streams["stream2"].has_heat_transfer = True
+        unit._verify_inputs()
+        unit._build_state_blocks()
+        unit._build_energy_balance_constraints()
+
+        scaler_obj = unit.default_scaler()
+        scaler_obj.scale_model(unit)
+        assert len(unit.scaling_factor) == 8
+
+        # Variables
+        for vardata in unit.energy_transfer_term.values():
+            assert unit.scaling_factor[vardata] == 37
+        for vardata in unit.stream2_heat.values():
+            assert unit.scaling_factor[vardata] == 37
+
+        # Constraints
+        for condata in unit.stream1_energy_balance.values():
+            assert unit.scaling_factor[condata] == 11
+        for condata in unit.stream2_energy_balance.values():
+            assert unit.scaling_factor[condata] == 37
+
+        # Expressions
+        assert not hasattr(unit, "scaling_hint")
+
+    @pytest.mark.unit
     def test_energy_balances_no_feed(self, model):
         model.fs.unit.config.streams["stream2"].has_feed = False
         model.fs.unit._verify_inputs()
@@ -1907,6 +2143,33 @@ class TestBuild:
         )
 
     @pytest.mark.unit
+    def test_energy_balances_no_feed_scaling(self, model):
+        unit = model.fs.unit
+        unit.config.streams["stream2"].has_feed = False
+        unit._verify_inputs()
+        unit._build_state_blocks()
+        unit._build_energy_balance_constraints()
+
+        scaler_obj = unit.default_scaler()
+        scaler_obj.scale_model(unit)
+
+        assert len(unit.scaling_factor) == 6
+
+        # Variables
+        for vardata in unit.energy_transfer_term.values():
+            assert unit.scaling_factor[vardata] == 37
+        
+        # Constraints
+        for condata in unit.stream1_energy_balance.values():
+            assert unit.scaling_factor[condata] == 11
+
+        for condata in unit.stream2_energy_balance.values():
+            assert unit.scaling_factor[condata] == 37
+
+        # Expressions
+        assert not hasattr(unit, "scaling_hint")
+
+    @pytest.mark.unit
     def test_energy_balances_has_energy_balance_false(self, model):
         model.fs.unit.config.streams["stream2"].has_energy_balance = False
         model.fs.unit._verify_inputs()
@@ -1937,6 +2200,77 @@ class TestBuild:
         )
 
         assert not hasattr(model.fs.unit, "stream2_energy_balance")
+
+    @pytest.mark.unit
+    def test_energy_balances_has_energy_balance_false_scaling(self, model):
+        unit = model.fs.unit
+        unit.config.streams["stream2"].has_energy_balance = False
+        unit._verify_inputs()
+        unit._build_state_blocks()
+        unit._build_energy_balance_constraints()
+
+        scaler_obj = unit.default_scaler()
+        scaler_obj.scale_model(unit)
+
+        assert len(unit.scaling_factor) == 4
+
+        # Variables
+        for vardata in unit.energy_transfer_term.values():
+            assert unit.scaling_factor[vardata] == 11
+
+        # Constraints
+        for condata in unit.stream1_energy_balance.values():
+            assert unit.scaling_factor[condata] == 11
+
+        # Expressions
+        assert not hasattr(unit, "scaling_hint")
+
+    @pytest.mark.unit
+    def test_energy_balances_has_energy_balance_false_stream_1_scaling(self, model):
+        unit = model.fs.unit
+        unit.config.streams["stream1"].has_energy_balance = False
+        unit._verify_inputs()
+        unit._build_state_blocks()
+        unit._build_energy_balance_constraints()
+
+        scaler_obj = unit.default_scaler()
+        scaler_obj.scale_model(unit)
+
+        assert len(unit.scaling_factor) == 4
+
+        # Variables
+        for vardata in unit.energy_transfer_term.values():
+            assert unit.scaling_factor[vardata] == 37
+
+        # Constraints
+        for condata in unit.stream2_energy_balance.values():
+            assert unit.scaling_factor[condata] == 37
+
+        # Expressions
+        assert not hasattr(unit, "scaling_hint")
+
+    @pytest.mark.unit
+    def test_energy_balances_scaling_energy_transfer_burnt_toast(self, model):
+        unit = model.fs.unit
+        unit.config.streams["stream1"].has_energy_balance = False
+        unit.config.streams["stream2"].has_energy_balance = False
+        unit._verify_inputs()
+        unit._build_state_blocks()
+        unit._build_energy_balance_constraints()
+        unit.energy_transfer_term = Var()
+
+        scaler_obj = unit.default_scaler()
+        with pytest.raises(
+            BurntToast,
+            match=re.escape(
+                "Energy transfer term should not be constructed if "
+                "neither stream has an energy balance, please report "
+                "this problem to the IDAES developers."                
+            )
+        ):
+            scaler_obj.scale_model(unit)
+
+
 
     @pytest.mark.unit
     def test_energy_balances_side_stream(self, model):
@@ -1991,6 +2325,33 @@ class TestBuild:
             )
             - model.fs.unit.energy_transfer_term[0, 1, "stream1", "stream2"]
         )
+
+    @pytest.mark.unit
+    def test_energy_balances_side_stream_scaling(self, model):
+        unit = model.fs.unit
+        unit.config.streams["stream2"].side_streams = [1]
+        unit._verify_inputs()
+        unit._build_state_blocks()
+        unit._build_energy_balance_constraints()
+
+        scaler_obj = unit.default_scaler()
+        scaler_obj.scale_model(unit)
+
+        assert len(unit.scaling_factor) == 6
+
+        # Variables
+        for vardata in unit.energy_transfer_term.values():
+            assert unit.scaling_factor[vardata] == 37
+        
+        # Constraints
+        for condata in unit.stream1_energy_balance.values():
+            assert unit.scaling_factor[condata] == 11
+
+        for condata in unit.stream2_energy_balance.values():
+            assert unit.scaling_factor[condata] == 37
+
+        # Expressions
+        assert not hasattr(unit, "scaling_hint")
 
     @pytest.mark.unit
     def test_pressure_balances(self, model):

@@ -274,11 +274,12 @@ class MSContactorScaler(CustomScalerBase):
             # when internal energy passes through zero
             if hasattr(model, stream + "_energy_holdup"):
                 energy_holdup = getattr(model, stream + "_energy_holdup")
-                energy_holdup_con = getattr(stream + "_energy_holdup_constraint")
+                energy_holdup_con = getattr(model, stream + "_energy_holdup_constraint")
 
-                self.scale_variable_by_definition_constraint(
-                    energy_holdup[idx], energy_holdup_con[idx], overwrite=overwrite
-                )
+                for idx in energy_holdup:
+                    self.scale_variable_by_definition_constraint(
+                        energy_holdup[idx], energy_holdup_con[idx], overwrite=overwrite
+                    )
 
         # Step 2b: Scale stream interaction terms
         if hasattr(model, "material_transfer_term"):
@@ -412,19 +413,36 @@ class MSContactorScaler(CustomScalerBase):
 
                 for t in model.flowsheet().time:
                     for e in model.elements:
-                        nom1 = self.get_expression_nominal_value(
-                            sum(
-                                stream_state1[t, e].get_enthalpy_flow_terms(p)
-                                for p in stream_state1[t, e].phase_list
+                        if model.config.streams[stream1].has_energy_balance:
+                            nom1 = self.get_expression_nominal_value(
+                                sum(
+                                    stream_state1[t, e].get_enthalpy_flow_terms(p)
+                                    for p in stream_state1[t, e].phase_list
+                                )
                             )
-                        )
-                        nom2 = self.get_expression_nominal_value(
-                            sum(
-                                stream_state2[t, e].get_enthalpy_flow_terms(p)
-                                for p in stream_state2[t, e].phase_list
+                        else:
+                            nom1 = None
+                        if model.config.streams[stream2].has_energy_balance:
+                            nom2 = self.get_expression_nominal_value(
+                                sum(
+                                    stream_state2[t, e].get_enthalpy_flow_terms(p)
+                                    for p in stream_state2[t, e].phase_list
+                                )
                             )
-                        )
-                        sf = 1 / min(nom1, nom2)
+                        else:
+                            nom2 = None
+                        if nom1 is None and nom2 is None:
+                            raise BurntToast(
+                                "Energy transfer term should not be constructed if "
+                                "neither stream has an energy balance, please report "
+                                "this problem to the IDAES developers."
+                            )
+                        elif nom1 is None:
+                            sf = 1 / nom2
+                        elif nom2 is None:
+                            sf = 1 / nom1
+                        else:
+                            sf = 1 / min(nom1, nom2)
                         self.set_variable_scaling_factor(
                             model.energy_transfer_term[t, e, idx],
                             sf,
