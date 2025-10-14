@@ -146,8 +146,8 @@ jobs:
           miniforge-version: latest
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
-        with:
-          install-target: pip install .[dev,ui,grid,omlt,coolprop]  
+      - name: Install requirements
+        run: pip install .[test]  
       - name: Run pytest (integration)
         run: pytest --pyargs idaes -m integration
 
@@ -185,13 +185,13 @@ jobs:
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
         with:
-          install-target: pip install .[dev,ui,grid,omlt,coolprop]  
+          install-target: pip install .[dev]
       - name: Fetch and run examples
         uses: ./.github/actions/run-examples
         with:
           examples-repository: IDAES/examples
           examples-ref: main
-          reinstall-target: pip install .[dev,ui,grid,omlt,coolprop]  
+          reinstall-target: pip install .[dev]
 
           notebook-cell-exec-timeout: '600'
           working-dir: ${{ runner.temp }}

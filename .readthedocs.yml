@@ -18,5 +18,5 @@ sphinx:
 
 python:
     install:
-        - requirements: pip install .[dev,ui,grid,omlt,coolprop]  
+        - requirements: pip install .[dev]
 
