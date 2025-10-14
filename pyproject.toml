@@ -52,7 +52,7 @@ dependencies = [
 [project.optional-dependencies]
 # Developer extra packages
 
-dev = [
+requirements-dev = [
 ### docs
 # Newer sphinx needed for proper type hint support in docstrings
 'sphinx>=3.0.0,!=8.2.0',
@@ -75,7 +75,6 @@ dev = [
 'pre-commit',
 ### other/misc
 'addheader>=0.2.2',
-'--editable .[ui,grid,omlt,coolprop]',
 # to customize this (e.g. to install a local clone of the Pyomo git repository), add the desired alternate requirements below
 
 # for flowsheet_processor
@@ -100,7 +99,9 @@ testing = [
 ]
 
 # this will install IDAES in editable mode using the dependencies defined under the `extras_require` tags defined above
-all = ["--editable .[dev-requirements,ui,grid,omlt,coolprop]"]
+dev = [
+    "idaes-pse[requirements-dev,ui,grid,omlt,coolprop]"
+    ]
 
 [tool.setuptools_scm]
 # https://setuptools-scm.readthedocs.io/en/v8.1.0/extending/
