@@ -18,5 +18,4 @@ sphinx:
 
 python:
     install:
-        - requirements: pip install .[dev]
-
+        - requirements: requirements-dev.txt

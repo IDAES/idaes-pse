@@ -172,8 +172,9 @@ jobs:
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
           miniforge-version: latest
       - name: Set up idaes
-        run: pip install .[dev]  
-
+        uses: ./.github/actions/setup-idaes
+        with:
+          install-target: -r requirements-dev.txt
       - name: Build Sphinx docs
         run: |
           which python
@@ -206,7 +207,9 @@ jobs:
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
           miniforge-version: latest
       - name: Set up idaes
-        run: pip install .[dev]  
+        uses: ./.github/actions/setup-idaes
+        with:
+          install-target: -r requirements-dev.txt
       - name: Run pylint
         run: |
           echo "::group::Display pylint version"

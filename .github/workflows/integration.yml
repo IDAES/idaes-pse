@@ -145,7 +145,9 @@ jobs:
           python-version: ${{ matrix.python-version }}
           miniforge-version: latest
       - name: Set up idaes
-        run: pip install .[test]  
+        uses: ./.github/actions/setup-idaes
+        with:
+          install-target: -r requirements-dev.txt
       - name: Run pytest (integration)
         run: pytest --pyargs idaes -m integration
 
@@ -181,14 +183,15 @@ jobs:
           python-version: ${{ matrix.python-version }}
           miniforge-version: latest
       - name: Set up idaes
-        run: pip install .[dev]  
+        uses: ./.github/actions/setup-idaes
+        with:
+          install-target: -r requirements-dev.txt
       - name: Fetch and run examples
         uses: ./.github/actions/run-examples
         with:
           examples-repository: IDAES/examples
           examples-ref: main
-          reinstall-target: pip install .[dev]
-
+          reinstall-target: -r requirements-dev.txt
           notebook-cell-exec-timeout: '600'
           working-dir: ${{ runner.temp }}
 
