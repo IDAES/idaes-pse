@@ -55,7 +55,6 @@ from idaes.core.initialization.initializer_base import StoreState
 from idaes.core.util.model_serializer import to_json, from_json
 import idaes.logger as idaeslog
 from idaes.core.util.units_of_measurement import report_quantity
-from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.scaling import (
     ConstraintScalingScheme,
     CustomScalerBase,
@@ -392,21 +391,21 @@ class MSContactorScaler(CustomScalerBase):
         # Step 2d: Scale single-stream reactions
         for stream in model.config.streams.keys():
             stream_state = getattr(model, stream)
-            if hasattr(model, stream + f"_rate_reaction_extent"):
+            if hasattr(model, stream + "_rate_reaction_extent"):
                 self._scale_stream_reaction_variables(
                     model=model,
                     stream=stream,
                     reaction_type="rate",
                     overwrite=overwrite,
                 )
-            if hasattr(model, stream + f"_equilibrium_reaction_extent"):
+            if hasattr(model, stream + "_equilibrium_reaction_extent"):
                 self._scale_stream_reaction_variables(
                     model=model,
                     stream=stream,
                     reaction_type="equilibrium",
                     overwrite=overwrite,
                 )
-            if hasattr(model, stream + f"_inherent_reaction_extent"):
+            if hasattr(model, stream + "_inherent_reaction_extent"):
                 self._scale_stream_reaction_variables(
                     model=model,
                     stream=stream,
