@@ -110,12 +110,13 @@ class MSContactorScaler(CustomScalerBase):
             stoich = stream_state[idx0].params.inherent_reaction_stoichiometry
         else:
             reaction_block = getattr(model, stream + "_reactions")
-            if reaction_type == "rate":
-                rxn_index = reaction_block.params.rate_reaction_idx
-            else:
-                rxn_index = reaction_block.params.equilibrium_reaction_idx
             idx0 = reaction_block.index_set().first()
-            stoich = reaction_block[idx0].params.rate_reaction_stoichiometry
+            if reaction_type == "rate":
+                rxn_index = reaction_block[idx0].params.rate_reaction_idx
+                stoich = reaction_block[idx0].params.rate_reaction_stoichiometry
+            else:
+                rxn_index = reaction_block[idx0].params.equilibrium_reaction_idx
+                stoich = reaction_block[idx0].params.equilibrium_reaction_stoichiometry
 
         pc_set = stream_state.phase_component_set
         for t, e in stream_state:
@@ -358,7 +359,7 @@ class MSContactorScaler(CustomScalerBase):
                     rxn_dict = {}
                     for idx, coeff in stoich.items():
                         rxn, p, j = idx
-                        for stream, sconfig in model.config.streams.items():
+                        for stream in model.config.streams.keys():
                             stream_state = getattr(model, stream)[t, e]
                             het_rxn_gen = getattr(
                                 model, stream + "_heterogeneous_reactions_generation"
@@ -523,7 +524,7 @@ class MSContactorScaler(CustomScalerBase):
                 self.call_submodel_scaler_method(
                     submodel=getattr(model, stream + "_reactions"),
                     submodel_scalers=submodel_scalers,
-                    method="variable_scaling_routine",
+                    method="constraint_scaling_routine",
                     overwrite=overwrite,
                 )
 
@@ -613,7 +614,7 @@ class MSContactorScaler(CustomScalerBase):
                     model, stream + "_heterogeneous_reaction_constraint"
                 )
                 for idx in heterogeneous_reaction_eqn:
-                    self.scale_constraint_by_variable(
+                    self.scale_constraint_by_component(
                         heterogeneous_reaction_eqn[idx],
                         heterogeneous_reaction_generation[idx],
                         overwrite=overwrite,

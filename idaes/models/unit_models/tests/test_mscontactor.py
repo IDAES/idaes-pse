@@ -12,7 +12,7 @@
 #################################################################################
 """
 Tests for multi-state contactor unit model.
-Authors: Andrew Lee
+Authors: Andrew Lee, Douglas Allan
 """
 
 import pytest
@@ -35,7 +35,7 @@ from pyomo.environ import (
     Var,
 )
 from pyomo.network import Arc, Port
-from pyomo.common.config import ConfigBlock
+from pyomo.common.config import ConfigBlock, ConfigValue
 from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 from pyomo.dae import DerivativeVar
 
@@ -44,6 +44,8 @@ from idaes.core import (
     FlowDirection,
     declare_process_block_class,
     PhysicalParameterBlock,
+    ProcessBlockData,
+    ProcessBlock,
     StateBlock,
     StateBlockData,
     Component,
@@ -51,6 +53,7 @@ from idaes.core import (
     MaterialFlowBasis,
     MaterialBalanceType,
 )
+from idaes.core.base import property_meta
 from idaes.models.unit_models import Mixer, MixingType, MomentumMixingType
 from idaes.models.unit_models.mscontactor import (
     MSContactor,
@@ -73,6 +76,10 @@ from idaes.core.util.testing import (
     PhysicalParameterTestBlock,
     ReactionParameterTestBlock,
     ReactionBlock,
+)
+from idaes.core.util.scaling import (
+    get_jacobian,
+    jacobian_cond,
 )
 from idaes.core.initialization import InitializationStatus
 from idaes.models.properties.examples.saponification_thermo import (
@@ -405,6 +412,101 @@ class StateBlock4Data(StateBlockData):
             "enth_flow": self.enth_flow,
             "pressure": self.pressure,
         }
+
+class DummyHeterogeneousReactionsScaler(CustomScalerBase):
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        model.variables_scaled = True 
+    def constraint_scaling_routine(self, model, overwrite: bool = False, submodel_scalers: dict = None):
+        model.constraints_scaled = True    
+
+@declare_process_block_class("DummyHeterogeneousReactionsParameterBlock")
+class DummyHeterogeneousReactionsParameterData(
+    ProcessBlockData, property_meta.HasPropertyClassMetadata
+):
+    def build(self):
+        super().build()
+        
+        self._reaction_block_class = DummyHeterogeneousReactionsBlock
+
+        self.reaction_idx = Set(initialize=["R1", "R2", "R3", "R4"])
+
+        self.reaction_stoichiometry = {
+            ("R1", "p1", "c1"): 2749,
+            ("R2", "p1", "c2"): 2753,
+            ("R3", "p2", "c1"): 2767,
+            ("R4", "p2", "c2"): 2777,
+        }
+
+    @classmethod
+    def define_metadata(cls, obj):
+        obj.add_default_units(
+            {
+                "time": units.hour,
+                "length": units.m,
+                "mass": units.kg,
+                "amount": units.mol,
+                "temperature": units.K,
+            }
+        )
+
+    @property
+    def reaction_block_class(self):
+        return self._reaction_block_class
+
+    def build_reaction_block(self, *args, **kwargs):
+        """
+        Methods to construct a ReactionBlock associated with this
+        ReactionParameterBlock. This will automatically set the parameters
+        construction argument for the ReactionBlock.
+
+        Returns:
+            ReactionBlock
+
+        """
+        default = kwargs.pop("default", {})
+        initialize = kwargs.pop("initialize", {})
+
+        if initialize == {}:
+            default["parameters"] = self
+        else:
+            for i in initialize.keys():
+                initialize[i]["parameters"] = self
+
+        return self.reaction_block_class(  # pylint: disable=not-callable
+            *args, **kwargs, **default, initialize=initialize
+        )
+
+class _DummyHeterogeneousReactionsBlock(ProcessBlock):
+    default_scaler = DummyHeterogeneousReactionsScaler
+
+
+@declare_process_block_class(
+    "DummyHeterogeneousReactionsBlock", block_class=_DummyHeterogeneousReactionsBlock
+)
+class DummyHeterogeneousReactionsData(ProcessBlockData):
+    CONFIG = ProcessBlockData.CONFIG()
+    CONFIG.declare(
+        "parameters",
+        ConfigValue(
+            # TODO
+            # domain=is_reaction_parameter_block,
+            description="""A reference to an instance of the Heterogeneous Reaction Parameter
+    Block associated with this property package.""",
+        ),
+    )
+    def build(self):
+        super().build()
+        add_object_reference(self, "_params", self.config.parameters)
+
+    @property
+    def params(self):
+        return self._params
+    
+    @property
+    def default_scaler(self):
+        return self.parent_component().default_scaler
 
 # -----------------------------------------------------------------------------
 # Frame class for unit testing
@@ -3211,6 +3313,52 @@ class TestReactions:
             )
 
     @pytest.mark.unit
+    def test_equilibrium_reaction_scaling(self, model):
+        unit = model.fs.unit        
+        unit.config.streams["stream2"].reaction_package = model.fs.reactions
+        unit.config.streams["stream2"].has_equilibrium_reactions = True
+
+        unit._verify_inputs()
+        unit._build_state_blocks()
+        unit._build_material_balance_constraints()
+
+        scaler_obj = unit.default_scaler()
+        scaler_obj.scale_model(unit)
+
+        assert len(unit.scaling_factor) == 32
+
+        # Make sure reaction block is scaled
+        for blk in unit.stream2_reactions.values():
+            assert blk.variables_scaled
+            assert blk.constraints_scaled
+
+        # Variables
+        for vardata in unit.material_transfer_term.values():
+            assert unit.scaling_factor[vardata] == approx(1 / (43*2))
+        
+        for t in model.fs.time:
+            for e in unit.elements:
+                unit.scaling_factor[
+                    unit.stream2_equilibrium_reaction_extent[t, e, "e1"]
+                ] == 1 / 43
+                unit.scaling_factor[
+                    unit.stream2_equilibrium_reaction_extent[t, e, "e2"]
+                ] == 1 / 43
+
+        
+        for vardata in unit.stream2_equilibrium_reaction_generation.values():
+            assert unit.scaling_factor[vardata] == 1 / 43
+
+        # Constraints
+        for condata in unit.stream2_equilibrium_reaction_constraint.values():
+            assert unit.scaling_factor[condata] == 1 / 43
+        
+        for condata in unit.stream1_material_balance.values():
+            assert unit.scaling_factor[condata] == approx(1/(43*2))
+        for condata in unit.stream2_material_balance.values():
+            assert unit.scaling_factor[condata] == approx(1/(43*2))
+
+    @pytest.mark.unit
     def test_heterogeneous_reactions_no_build_method(self, model):
         model.fs.unit.config.heterogeneous_reactions = True
 
@@ -3252,31 +3400,13 @@ class TestReactions:
 
     @pytest.mark.unit
     def test_heterogeneous_reactions(self, model):
-        model.fs.hetero_dummy = Block()
-        model.fs.hetero_dummy.reaction_idx = Set(initialize=["R1", "R2", "R3", "R4"])
-        model.fs.hetero_dummy.reaction_stoichiometry = {
-            ("R1", "p1", "c1"): 1,
-            ("R2", "p1", "c2"): 1,
-            ("R3", "p2", "c1"): 1,
-            ("R4", "p2", "c2"): 1,
-        }
+        model.fs.hetero_dummy = DummyHeterogeneousReactionsParameterBlock()
 
         model.fs.unit.config.heterogeneous_reactions = model.fs.hetero_dummy
 
         model.fs.unit._verify_inputs()
         model.fs.unit._build_state_blocks()
-
-        model.fs.unit.heterogeneous_reactions = Block(
-            model.fs.time,
-            model.fs.unit.elements,
-        )
-        for e in model.fs.unit.elements:
-            add_object_reference(
-                model.fs.unit.heterogeneous_reactions[0, e],
-                "params",
-                model.fs.hetero_dummy,
-            )
-
+        model.fs.unit._build_heterogeneous_reaction_blocks()
         model.fs.unit._build_material_balance_constraints()
 
         assert isinstance(model.fs.unit.heterogeneous_reaction_extent, Var)
@@ -3331,7 +3461,9 @@ class TestReactions:
                     r = "R4"
 
                 expr = str(
-                    gen[k] - model.fs.unit.heterogeneous_reaction_extent[0, k[1], r]
+                    gen[k] 
+                    - model.fs.hetero_dummy.reaction_stoichiometry[r, k[2], k[3]]
+                    * model.fs.unit.heterogeneous_reaction_extent[0, k[1], r]
                 )
                 assert str(c.body) == expr
 
@@ -3408,6 +3540,70 @@ class TestReactions:
                     for p in ["p1", "p2"]
                 )
             )
+
+    @pytest.mark.unit
+    def test_heterogeneous_reaction_scaling(self, model):
+        model.fs.hetero_dummy = DummyHeterogeneousReactionsParameterBlock()
+        
+        unit = model.fs.unit
+
+        unit.config.heterogeneous_reactions = model.fs.hetero_dummy
+
+        unit._verify_inputs()
+        unit._build_state_blocks()
+        unit._build_heterogeneous_reaction_blocks()
+        unit._build_material_balance_constraints()
+
+        scaler_obj = unit.default_scaler()
+        scaler_obj.scale_model(unit)
+
+        # Test that heterogeneous reaction blocks are scaled
+        for blk in unit.heterogeneous_reactions.values():
+            assert blk.variables_scaled
+            assert blk.constraints_scaled
+
+        assert len(unit.scaling_factor) == 52
+        
+        # Variables
+        for vardata in unit.material_transfer_term.values():
+            assert unit.scaling_factor[vardata] == approx(1 / (43*2))
+        
+        for t in model.fs.time:
+            for e in unit.elements:
+                unit.scaling_factor[
+                    unit.heterogeneous_reaction_extent[t, e, "R1"]
+                ] == approx(2749 / 43)
+                unit.scaling_factor[
+                    unit.heterogeneous_reaction_extent[t, e, "R2"]
+                ] == approx(2753 / 43)
+
+                unit.scaling_factor[
+                    unit.heterogeneous_reaction_extent[t, e, "R3"]
+                ] == approx(2767 / 43)
+                unit.scaling_factor[
+                    unit.heterogeneous_reaction_extent[t, e, "R4"]
+                ] == approx(2777 / 43)
+
+        
+        for vardata in unit.stream1_heterogeneous_reactions_generation.values():
+            assert unit.scaling_factor[vardata] == 1 / 43
+        
+        for vardata in unit.stream2_heterogeneous_reactions_generation.values():
+            assert unit.scaling_factor[vardata] == 1 / 43
+
+        # Constraints
+        for condata in unit.stream1_heterogeneous_reaction_constraint.values():
+            assert unit.scaling_factor[condata] == 1 / 43
+        for condata in unit.stream2_heterogeneous_reaction_constraint.values():
+            assert unit.scaling_factor[condata] == 1 / 43
+        
+        for condata in unit.stream1_material_balance.values():
+            assert unit.scaling_factor[condata] == approx(1/(43*2))
+        for condata in unit.stream2_material_balance.values():
+            assert unit.scaling_factor[condata] == approx(1/(43*2))
+        
+        # Expressions
+        assert not hasattr(unit, "scaling_hint")
 
     @pytest.mark.unit
     def test_rate_reactions(self, model):
@@ -3520,6 +3716,54 @@ class TestReactions:
                     for p in ["p1", "p2"]
                 )
             )
+
+    @pytest.mark.unit
+    def test_rate_reaction_scaling(self, model):
+        unit = model.fs.unit        
+        unit.config.streams["stream2"].reaction_package = model.fs.reactions
+        unit.config.streams["stream2"].has_rate_reactions = True
+
+        unit._verify_inputs()
+        unit._build_state_blocks()
+        unit._build_material_balance_constraints()
+
+        
+
+        scaler_obj = unit.default_scaler()
+        scaler_obj.scale_model(unit)
+
+        assert len(unit.scaling_factor) == 32
+
+        # Make sure reaction block is scaled
+        for blk in unit.stream2_reactions.values():
+            assert blk.variables_scaled
+            assert blk.constraints_scaled
+
+        # Variables
+        for vardata in unit.material_transfer_term.values():
+            assert unit.scaling_factor[vardata] == approx(1 / (43*2))
+        
+        for t in model.fs.time:
+            for e in unit.elements:
+                unit.scaling_factor[
+                    unit.stream2_rate_reaction_extent[t, e, "r1"]
+                ] == 1 / 43
+                unit.scaling_factor[
+                    unit.stream2_rate_reaction_extent[t, e, "r2"]
+                ] == 1 / 43
+
+        
+        for vardata in unit.stream2_rate_reaction_generation.values():
+            assert unit.scaling_factor[vardata] == 1 / 43
+
+        # Constraints
+        for condata in unit.stream2_rate_reaction_constraint.values():
+            assert unit.scaling_factor[condata] == 1 / 43
+        
+        for condata in unit.stream1_material_balance.values():
+            assert unit.scaling_factor[condata] == approx(1/(43*2))
+        for condata in unit.stream2_material_balance.values():
+            assert unit.scaling_factor[condata] == approx(1/(43*2))
 
     @pytest.mark.unit
     def test_heat_of_reaction_rate(self, model):
@@ -3799,6 +4043,23 @@ class TestToyProblem:
 
 # -----------------------------------------------------------------------------
 # Li-Co Diafiltration example
+
+class LiCoPropertiesScaler(CustomScalerBase):
+    DEFAULT_SCALING_FACTORS = {
+        "flow_vol": -1,
+        "conc_mass_comp[Li]": -1,
+        "conc_mass_comp[Co]": -1,
+    }
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        for var in model.component_data_objects(ctype=Var):
+            self.scale_variable_by_default(var, overwrite=overwrite)
+    
+    def constraint_scaling_routine(self, model, overwrite: bool = False, submodel_scalers: dict = None):
+        pass   
+
+
 @declare_process_block_class("LiCoParameters")
 class LiCoParameterData(PhysicalParameterBlock):
     def build(self):
@@ -3826,6 +4087,8 @@ class LiCoParameterData(PhysicalParameterBlock):
 
 
 class LiCoSBlockBase(StateBlock):
+    default_scaler = LiCoPropertiesScaler
+
     def initialize(blk, *args, hold_state=False, **kwargs):
         flags = fix_state_vars(blk, {})
 
@@ -4002,6 +4265,23 @@ class TestMSContactorInitializer:
         assert not model.fs.contactor.s2_inlet.temperature[0].fixed
         assert not model.fs.contactor.s2_inlet.pressure[0].fixed
 
+    @pytest.mark.component
+    def test_MSScaler(self, model):
+        initializer = MSContactorInitializer()
+        initializer.initialize(model.fs.contactor)
+
+        jac, _ = get_jacobian(model, scaled=False)
+        assert jacobian_cond(jac=jac, scaled=False) == approx(4.757e12, rel=1e-2)
+
+        scaler_obj = model.fs.contactor.default_scaler()
+
+        scaler_obj.scale_model(model.fs.contactor)
+
+        sm = TransformationFactory("core.scale_model").create_using(model, rename=False)
+        jac, _ = get_jacobian(sm, scaled=False)
+        assert jacobian_cond(jac=jac, scaled=False)== approx(4573, rel=1e-2)
+
+
     @pytest.mark.ui
     @pytest.mark.unit
     def test_get_performance_contents(self, model):
@@ -4075,7 +4355,7 @@ class TestMSContactorInitializer:
 
         assert stable.to_dict() == expected
 
-
+# TODO this flowsheet test should really be put in a separate file
 class TestLiCODiafiltration:
     """
     Test case based on:
