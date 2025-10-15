@@ -34,6 +34,7 @@ from pyomo.environ import (
     Reals,
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
+from pyomo.common.collections import ComponentMap
 
 # Import IDAES cores
 from idaes.core import (
@@ -54,8 +55,10 @@ from idaes.core.solvers import get_solver
 from idaes.core.initialization import SingleControlVolumeUnitInitializer
 from idaes.core.util import to_json, from_json, StoreSpec
 
+from idaes.core.scaling import CustomScalerBase
 
-__author__ = "Emmanuel Ogbe, Andrew Lee"
+
+__author__ = "Emmanuel Ogbe, Andrew Lee, Ryan Hughes"
 _log = idaeslog.getLogger(__name__)
 
 
@@ -329,11 +332,115 @@ class IsentropicPerformanceCurveData(ProcessBlockData):
             self.config.build_callback(self)
 
 
+class PressureChangerScaler(CustomScalerBase):
+    """
+    Default modular scaler for pressure changer unit models.
+
+    This scaler relies primarily on the ControlVolume0D scaler and the default properties scaler
+    for the isentropic properties set (when created). Efficiencies and pressure ratio variables are scaled by
+    default scaling factors. Unit model work variables are scaled using the control volume work variable.
+    """
+
+    DEFAULT_SCALING_FACTORS = {
+        "ratioP": 1,
+        "efficiency_pump": 10,
+        "efficiency_isentropic": 10,
+    }
+
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None
+    ):
+        # Call scaling method for control volume sub-model
+        self.call_submodel_scaler_method(
+            submodel=model.control_volume,
+            method="variable_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+
+        # for the isentropic assumption, a duplicate properties block is created from the unit model's
+        # property package. We can propagate scaling and then call the properties scaler.
+        if hasattr(model, "properties_isentropic"):
+            self.propagate_state_scaling(
+                target_state=model.properties_isentropic,
+                source_state=model.control_volume.properties_in,
+                overwrite=overwrite,
+            )
+            self.call_submodel_scaler_method(
+                submodel=model.properties_isentropic,
+                method="variable_scaling_routine",
+                submodel_scalers=submodel_scalers,
+                overwrite=overwrite,
+            )
+
+        # ratioP is present for all thermodynamic assumptions. Default scaling factor is 1 which should be
+        # sufficient for most unit model applications.
+        for t in model.flowsheet().time:
+            self.scale_variable_by_default(model.ratioP[t], overwrite=overwrite)
+
+        # scale efficiencies. Default scaling factor is 10 which should be sufficient for most unit model applications -
+        if hasattr(model, "efficiency_pump"):
+            for t in model.flowsheet().time:
+                self.scale_variable_by_default(
+                    model.efficiency_pump[t], overwrite=overwrite
+                )
+
+        if hasattr(model, "efficiency_isentropic"):
+            for t in model.flowsheet().time:
+                self.scale_variable_by_default(
+                    model.efficiency_isentropic[t], overwrite=overwrite
+                )
+        # --------------------------------------------------------------------------------------------------------------
+
+        # for unit model work variables, we can simply use the scaling for the work variable in the control volume -
+        if hasattr(model, "work_fluid"):
+            for t in model.flowsheet().time:
+                self.scale_variable_by_component(
+                    model.work_fluid[t], model.control_volume.work[t]
+                )
+
+        if hasattr(model, "work_isentropic"):
+            for t in model.flowsheet().time:
+                self.scale_variable_by_component(
+                    model.work_isentropic[t], model.control_volume.work[t]
+                )
+        # ----------------------------------------------------------------------------------------------------------
+
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None
+    ):
+        # Call scaling method for control volume sub-model
+        self.call_submodel_scaler_method(
+            submodel=model.control_volume,
+            method="constraint_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+
+        # Call the scaling method for the duplicate properties method
+        if hasattr(model, "properties_isentropic"):
+            self.call_submodel_scaler_method(
+                submodel=model.properties_isentropic,
+                method="constraint_scaling_routine",
+                submodel_scalers=submodel_scalers,
+                overwrite=overwrite,
+            )
+
+        # scale remaining unit level constraints
+        for c in model.component_data_objects(Constraint, descend_into=False):
+            self.scale_constraint_by_nominal_value(
+                c,
+                overwrite=overwrite,
+            )
+
+
 @declare_process_block_class("PressureChanger")
 class PressureChangerData(UnitModelBlockData):
     """
     Standard Compressor/Expander Unit Model Class
     """
+
+    default_scaler = PressureChangerScaler
 
     CONFIG = UnitModelBlockData.CONFIG()
 
