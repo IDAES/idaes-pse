@@ -1796,6 +1796,50 @@ class TestInitializersIAPWSEquality:
 
 # -----------------------------------------------------------------------------
 # Inherent reaction case
+class LeachSolutionScaler(CustomScalerBase):
+    """
+    Scaler object for leach solution properties
+    """
+
+    DEFAULT_SCALING_FACTORS = {
+        "flow_vol": 0.1,
+        "conc_mass_comp[H2O]": 1e-6,
+        "conc_mass_comp[H]": 1e-1,
+        "conc_mass_comp[HSO4]": 1e-2,
+        "conc_mass_comp[SO4]": 1e-1,
+    }
+
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None
+    ):
+        self.scale_variable_by_default(model.flow_vol, overwrite=overwrite)
+        for var in model.conc_mass_comp.values():
+            self.scale_variable_by_default(var, overwrite=overwrite)
+
+        for idx, var in model.conc_mol_comp.items():
+            self.scale_variable_by_definition_constraint(
+                var, model.molar_concentration_constraint[idx], overwrite=overwrite
+            )
+
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None
+    ):
+        for idx, con in model.molar_concentration_constraint.items():
+            # Constraint is on a mass basis
+            self.scale_constraint_by_component(
+                con, model.conc_mass_comp[idx], overwrite=overwrite
+            )
+        if not model.config.defined_state:
+            self.scale_constraint_by_component(
+                model.h2o_concentration,
+                model.conc_mass_comp["H2O"],
+                overwrite=overwrite,
+            )
+            self.scale_constraint_by_nominal_value(
+                model.hso4_dissociation, overwrite=overwrite
+            )
+
+
 @declare_process_block_class("LeachSolutionParameters")
 class LeachSolutionParameterData(PhysicalParameterBlock):
     def build(self):
@@ -1868,6 +1912,8 @@ class LeachSolutionParameterData(PhysicalParameterBlock):
 
 
 class _LeachSolutionStateBlock(StateBlock):
+    default_scaler = LeachSolutionScaler
+
     def fix_initialization_states(self):
         """
         Fixes state variables for state blocks.
@@ -1885,56 +1931,10 @@ class _LeachSolutionStateBlock(StateBlock):
                 self[k].hso4_dissociation.deactivate()
 
 
-class LeachSolutionScaler(CustomScalerBase):
-    """
-    Scaler object for leach solution properties
-    """
-
-    DEFAULT_SCALING_FACTORS = {
-        "flow_vol": 0.1,
-        "conc_mass_comp[H2O]": 1e-6,
-        "conc_mass_comp[H]": 1e-1,
-        "conc_mass_comp[HSO4]": 1e-2,
-        "conc_mass_comp[SO4]": 1e-1,
-    }
-
-    def variable_scaling_routine(
-        self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None
-    ):
-        self.scale_variable_by_default(model.flow_vol, overwrite=overwrite)
-        for var in model.conc_mass_comp.values():
-            self.scale_variable_by_default(var, overwrite=overwrite)
-
-        for idx, var in model.conc_mol_comp.items():
-            self.scale_variable_by_definition_constraint(
-                var, model.molar_concentration_constraint[idx], overwrite=overwrite
-            )
-
-    def constraint_scaling_routine(
-        self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None
-    ):
-        for idx, con in model.molar_concentration_constraint.items():
-            # Constraint is on a mass basis
-            self.scale_constraint_by_component(
-                con, model.conc_mass_comp[idx], overwrite=overwrite
-            )
-        if not model.config.defined_state:
-            self.scale_constraint_by_component(
-                model.h2o_concentration,
-                model.conc_mass_comp["H2O"],
-                overwrite=overwrite,
-            )
-            self.scale_constraint_by_nominal_value(
-                model.hso4_dissociation, overwrite=overwrite
-            )
-
-
 @declare_process_block_class(
     "LeachSolutionStateBlock", block_class=_LeachSolutionStateBlock
 )
 class LeachSolutionStateBlockData(StateBlockData):
-    default_scaler = LeachSolutionScaler
-
     def build(self):
         super().build()
 
