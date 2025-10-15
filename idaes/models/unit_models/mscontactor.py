@@ -82,7 +82,7 @@ class MSContactorScaler(CustomScalerBase):
         # "stream_name_phase_fraction" Vars. Because we do not know the stream
         # names a priori, this value is copied for those streams as part of
         # the variable_scaling_routine (if the user hasn't already set a value)
-        "phase_fraction": 10, 
+        "phase_fraction": 10,
     }
 
     def _scale_stream_reaction_variables(
@@ -196,14 +196,14 @@ class MSContactorScaler(CustomScalerBase):
                             target_state=stream_state[t, e],
                             source_state=feed[t],
                             overwrite=overwrite,
-                         )
+                        )
                     if side_stream is not None:
                         for s in ss_set:
                             self.propagate_state_scaling(
-                                    target_state=side_stream[t, s],
-                                    source_state=feed[t],
-                                    overwrite=overwrite,
-                                )
+                                target_state=side_stream[t, s],
+                                source_state=feed[t],
+                                overwrite=overwrite,
+                            )
 
         # Step 1b: Call Scalers for state blocks and stream-specific reaction blocks
         for stream in model.streams:
@@ -267,7 +267,9 @@ class MSContactorScaler(CustomScalerBase):
             # Material holdup
             if hasattr(model, stream + "_material_holdup"):
                 material_holdup = getattr(model, stream + "_material_holdup")
-                material_holdup_con = getattr(model, stream + "_material_holdup_constraint")
+                material_holdup_con = getattr(
+                    model, stream + "_material_holdup_constraint"
+                )
                 for idx in material_holdup:
                     self.scale_variable_by_definition_constraint(
                         material_holdup[idx],
@@ -320,7 +322,9 @@ class MSContactorScaler(CustomScalerBase):
                         # smallest nominal value)
                         sf = 1 / min(nom1, nom2)
                         self.set_variable_scaling_factor(
-                            model.material_transfer_term[t, e, idx], sf, overwrite=overwrite
+                            model.material_transfer_term[t, e, idx],
+                            sf,
+                            overwrite=overwrite,
                         )
         # Step 2c: Scale heterogeneous reactions
         if hasattr(model, "heterogeneous_reactions"):
@@ -479,9 +483,7 @@ class MSContactorScaler(CustomScalerBase):
                 deltaP = getattr(model, stream + "_deltaP")
                 for idx, vardata in deltaP.items():
                     self.scale_variable_by_component(
-                        vardata,
-                        stream_state[idx].pressure,
-                        overwrite=overwrite
+                        vardata, stream_state[idx].pressure, overwrite=overwrite
                     )
 
     def constraint_scaling_routine(
@@ -562,9 +564,7 @@ class MSContactorScaler(CustomScalerBase):
                     )
             if hasattr(model, stream + "_energy_holdup_constraint"):
                 energy_holdup = getattr(model, stream + "_energy_holdup")
-                energy_holdup_eqn = getattr(
-                    model, stream + "_energy_holdup_constraint"
-                )
+                energy_holdup_eqn = getattr(model, stream + "_energy_holdup_constraint")
                 for idx in energy_holdup_eqn:
                     self.scale_constraint_by_component(
                         energy_holdup_eqn[idx],
@@ -622,7 +622,7 @@ class MSContactorScaler(CustomScalerBase):
             # Step 2d: Material balance
             if hasattr(model, stream + "_material_balance"):
                 mbal = getattr(model, stream + "_material_balance")
-                for (t, e, comp) in mbal:
+                for t, e, comp in mbal:
                     nom = self.get_expression_nominal_value(
                         sum(
                             stream_state[t, e].get_material_flow_terms(p, comp)
@@ -638,7 +638,7 @@ class MSContactorScaler(CustomScalerBase):
             # Step 2e: Energy balance
             if hasattr(model, stream + "_energy_balance"):
                 ebal = getattr(model, stream + "_energy_balance")
-                for (t, e) in ebal:
+                for t, e in ebal:
                     nom = self.get_expression_nominal_value(
                         sum(
                             stream_state[t, e].get_enthalpy_flow_terms(p)
@@ -657,7 +657,7 @@ class MSContactorScaler(CustomScalerBase):
                     self.scale_constraint_by_nominal_value(
                         condata,
                         scheme=ConstraintScalingScheme.inverseMaximum,
-                        overwrite=overwrite
+                        overwrite=overwrite,
                     )
             if hasattr(model, stream + "_side_stream_pressure_balance"):
                 spbal = getattr(model, stream + "_side_stream_pressure_balance")
@@ -665,7 +665,7 @@ class MSContactorScaler(CustomScalerBase):
                     self.scale_constraint_by_nominal_value(
                         condata,
                         scheme=ConstraintScalingScheme.inverseMaximum,
-                        overwrite=overwrite
+                        overwrite=overwrite,
                     )
 
 

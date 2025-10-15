@@ -66,7 +66,11 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.misc import add_object_reference
 from idaes.core.solvers import get_solver
 from idaes.core.scaling import CustomScalerBase
-from idaes.core.util.exceptions import BurntToast, ConfigurationError, PropertyNotSupportedError
+from idaes.core.util.exceptions import (
+    BurntToast,
+    ConfigurationError,
+    PropertyNotSupportedError,
+)
 from idaes.core.util.initialization import (
     propagate_state,
     fix_state_vars,
@@ -88,6 +92,7 @@ from idaes.models.properties.examples.saponification_thermo import (
 
 solver = get_solver("ipopt_v2")
 
+
 # -----------------------------------------------------------------------------
 # Property packages for testing
 class Properties1Scaler(CustomScalerBase):
@@ -97,8 +102,9 @@ class Properties1Scaler(CustomScalerBase):
         "flow_mol_phase_comp[phase1, solute2]": 5,
         "flow_mol_phase_comp[phase1, solute3]": 7,
         "enth_flow": 11,
-        "pressure": 13
+        "pressure": 13,
     }
+
     def variable_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: dict = None
     ):
@@ -106,8 +112,12 @@ class Properties1Scaler(CustomScalerBase):
             self.scale_variable_by_default(vdata, overwrite=overwrite)
         self.scale_variable_by_default(model.enth_flow, overwrite=overwrite)
         self.scale_variable_by_default(model.pressure, overwrite=overwrite)
-    def constraint_scaling_routine(self, model, overwrite: bool = False, submodel_scalers: dict = None):
+
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
         model.constraints_scaled = True
+
 
 @declare_process_block_class("Parameters1")
 class Parameter1Data(PhysicalParameterBlock):
@@ -138,6 +148,7 @@ class Parameter1Data(PhysicalParameterBlock):
 
 class SBlock1Base(StateBlock):
     default_scaler = Properties1Scaler
+
     def initialize(blk, **kwargs):
         pass
 
@@ -183,14 +194,16 @@ class StateBlock1Data(StateBlockData):
             "pressure": self.pressure,
         }
 
+
 class Properties2Scaler(CustomScalerBase):
     DEFAULT_SCALING_FACTORS = {
         "flow_mol_phase_comp[phase1,solvent2]": 19,
         "flow_mol_phase_comp[phase1,solute1]": 23,
         "flow_mol_phase_comp[phase1,solute2]": 29,
         "enth_flow": 37,
-        "pressure": 41
+        "pressure": 41,
     }
+
     def variable_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: dict = None
     ):
@@ -198,8 +211,12 @@ class Properties2Scaler(CustomScalerBase):
             self.scale_variable_by_default(vdata, overwrite=overwrite)
         self.scale_variable_by_default(model.enth_flow, overwrite=overwrite)
         self.scale_variable_by_default(model.pressure, overwrite=overwrite)
-    def constraint_scaling_routine(self, model, overwrite: bool = False, submodel_scalers: dict = None):
+
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
         model.constraints_scaled = True
+
 
 @declare_process_block_class("Parameters2")
 class Parameter2Data(PhysicalParameterBlock):
@@ -229,6 +246,7 @@ class Parameter2Data(PhysicalParameterBlock):
 
 class SBlock2Base(StateBlock):
     default_scaler = Properties2Scaler
+
     def initialize(blk, **kwargs):
         pass
 
@@ -317,6 +335,7 @@ class StateBlock3Data(StateBlockData):
     def get_material_flow_basis(self):
         return MaterialFlowBasis.mass
 
+
 class Properties4Scaler(CustomScalerBase):
     DEFAULT_SCALING_FACTORS = {
         "flow_mol_phase_comp[phase1,solvent1]": 811,
@@ -328,8 +347,9 @@ class Properties4Scaler(CustomScalerBase):
         "flow_mol_phase_comp[phase2,solute2]": 853,
         "flow_mol_phase_comp[phase2,solute3]": 857,
         "enth_flow": 859,
-        "pressure": 863
+        "pressure": 863,
     }
+
     def variable_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: dict = None
     ):
@@ -337,8 +357,12 @@ class Properties4Scaler(CustomScalerBase):
             self.scale_variable_by_default(vdata, overwrite=overwrite)
         self.scale_variable_by_default(model.enth_flow, overwrite=overwrite)
         self.scale_variable_by_default(model.pressure, overwrite=overwrite)
-    def constraint_scaling_routine(self, model, overwrite: bool = False, submodel_scalers: dict = None):
+
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
         model.constraints_scaled = True
+
 
 @declare_process_block_class("Parameters4")
 class Parameter4Data(PhysicalParameterBlock):
@@ -367,13 +391,16 @@ class Parameter4Data(PhysicalParameterBlock):
             }
         )
 
+
 class SBlock4Base(StateBlock):
     default_scaler = Properties4Scaler
+
     def initialize(blk, **kwargs):
         pass
 
     def release_state(blk, **kwargs):
         pass
+
 
 @declare_process_block_class("StateBlock4", block_class=SBlock4Base)
 class StateBlock4Data(StateBlockData):
@@ -413,13 +440,18 @@ class StateBlock4Data(StateBlockData):
             "pressure": self.pressure,
         }
 
+
 class DummyHeterogeneousReactionsScaler(CustomScalerBase):
     def variable_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: dict = None
     ):
-        model.variables_scaled = True 
-    def constraint_scaling_routine(self, model, overwrite: bool = False, submodel_scalers: dict = None):
-        model.constraints_scaled = True    
+        model.variables_scaled = True
+
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        model.constraints_scaled = True
+
 
 @declare_process_block_class("DummyHeterogeneousReactionsParameterBlock")
 class DummyHeterogeneousReactionsParameterData(
@@ -427,7 +459,7 @@ class DummyHeterogeneousReactionsParameterData(
 ):
     def build(self):
         super().build()
-        
+
         self._reaction_block_class = DummyHeterogeneousReactionsBlock
 
         self.reaction_idx = Set(initialize=["R1", "R2", "R3", "R4"])
@@ -478,6 +510,7 @@ class DummyHeterogeneousReactionsParameterData(
             *args, **kwargs, **default, initialize=initialize
         )
 
+
 class _DummyHeterogeneousReactionsBlock(ProcessBlock):
     default_scaler = DummyHeterogeneousReactionsScaler
 
@@ -496,6 +529,7 @@ class DummyHeterogeneousReactionsData(ProcessBlockData):
     Block associated with this property package.""",
         ),
     )
+
     def build(self):
         super().build()
         add_object_reference(self, "_params", self.config.parameters)
@@ -503,10 +537,11 @@ class DummyHeterogeneousReactionsData(ProcessBlockData):
     @property
     def params(self):
         return self._params
-    
+
     @property
     def default_scaler(self):
         return self.parent_component().default_scaler
+
 
 # -----------------------------------------------------------------------------
 # Frame class for unit testing
@@ -755,33 +790,35 @@ class TestBuild:
         scaler_obj = unit.default_scaler()
 
         scaler_obj.set_component_scaling_factor(
-            unit.stream1_inlet_state[0].flow_mol_phase_comp["phase1", "solvent1"],
-            433
+            unit.stream1_inlet_state[0].flow_mol_phase_comp["phase1", "solvent1"], 433
         )
         scaler_obj.set_component_scaling_factor(
-            unit.stream1_inlet_state[0].pressure,
-            1151
+            unit.stream1_inlet_state[0].pressure, 1151
         )
 
         scaler_obj.set_component_scaling_factor(
-            unit.stream2_inlet_state[0].flow_mol_phase_comp["phase1", "solute2"],
-            577
+            unit.stream2_inlet_state[0].flow_mol_phase_comp["phase1", "solute2"], 577
         )
         scaler_obj.set_component_scaling_factor(
-            unit.stream2_inlet_state[0].enth_flow,
-            1423
+            unit.stream2_inlet_state[0].enth_flow, 1423
         )
 
         scaler_obj.scale_model(unit)
 
         for state in unit.stream1.values():
-            assert state.scaling_factor[state.flow_mol_phase_comp["phase1", "solvent1"]] == 433
+            assert (
+                state.scaling_factor[state.flow_mol_phase_comp["phase1", "solvent1"]]
+                == 433
+            )
             assert state.scaling_factor[state.pressure] == 1151
             assert state.scaling_factor[state.enth_flow] == 11
             assert state.constraints_scaled
 
         for state in unit.stream2.values():
-            assert state.scaling_factor[state.flow_mol_phase_comp["phase1", "solute2"]] == 577
+            assert (
+                state.scaling_factor[state.flow_mol_phase_comp["phase1", "solute2"]]
+                == 577
+            )
             assert state.scaling_factor[state.enth_flow] == 1423
             assert state.scaling_factor[state.pressure] == 41
             assert state.constraints_scaled
@@ -825,24 +862,28 @@ class TestBuild:
         scaler_obj = unit.default_scaler()
 
         scaler_obj.set_component_scaling_factor(
-            unit.stream1_inlet_state[0].flow_mol_phase_comp["phase1", "solvent1"],
-            433
+            unit.stream1_inlet_state[0].flow_mol_phase_comp["phase1", "solvent1"], 433
         )
         scaler_obj.set_component_scaling_factor(
-            unit.stream1_inlet_state[0].pressure,
-            1151
+            unit.stream1_inlet_state[0].pressure, 1151
         )
 
         scaler_obj.scale_model(unit)
 
         for state in unit.stream1.values():
-            assert state.scaling_factor[state.flow_mol_phase_comp["phase1", "solvent1"]] == 433
+            assert (
+                state.scaling_factor[state.flow_mol_phase_comp["phase1", "solvent1"]]
+                == 433
+            )
             assert state.scaling_factor[state.pressure] == 1151
             assert state.scaling_factor[state.enth_flow] == 11
             assert state.constraints_scaled
 
         for state in unit.stream2.values():
-            assert state.scaling_factor[state.flow_mol_phase_comp["phase1", "solute2"]] == 29
+            assert (
+                state.scaling_factor[state.flow_mol_phase_comp["phase1", "solute2"]]
+                == 29
+            )
             assert state.scaling_factor[state.enth_flow] == 37
             assert state.scaling_factor[state.pressure] == 41
             assert state.constraints_scaled
@@ -892,39 +933,44 @@ class TestBuild:
         scaler_obj = unit.default_scaler()
 
         scaler_obj.set_component_scaling_factor(
-            unit.stream1_inlet_state[0].flow_mol_phase_comp["phase1", "solvent1"],
-            433
+            unit.stream1_inlet_state[0].flow_mol_phase_comp["phase1", "solvent1"], 433
         )
         scaler_obj.set_component_scaling_factor(
-            unit.stream1_inlet_state[0].pressure,
-            1151
+            unit.stream1_inlet_state[0].pressure, 1151
         )
 
         scaler_obj.set_component_scaling_factor(
-            unit.stream2_inlet_state[0].flow_mol_phase_comp["phase1", "solute2"],
-            577
+            unit.stream2_inlet_state[0].flow_mol_phase_comp["phase1", "solute2"], 577
         )
         scaler_obj.set_component_scaling_factor(
-            unit.stream2_inlet_state[0].enth_flow,
-            1423
+            unit.stream2_inlet_state[0].enth_flow, 1423
         )
 
         scaler_obj.scale_model(unit)
 
         for state in unit.stream1.values():
-            assert state.scaling_factor[state.flow_mol_phase_comp["phase1", "solvent1"]] == 433
+            assert (
+                state.scaling_factor[state.flow_mol_phase_comp["phase1", "solvent1"]]
+                == 433
+            )
             assert state.scaling_factor[state.pressure] == 1151
             assert state.scaling_factor[state.enth_flow] == 11
             assert state.constraints_scaled
 
         for state in unit.stream2.values():
-            assert state.scaling_factor[state.flow_mol_phase_comp["phase1", "solute2"]] == 577
+            assert (
+                state.scaling_factor[state.flow_mol_phase_comp["phase1", "solute2"]]
+                == 577
+            )
             assert state.scaling_factor[state.enth_flow] == 1423
             assert state.scaling_factor[state.pressure] == 41
             assert state.constraints_scaled
-        
+
         for state in unit.stream2_side_stream_state.values():
-            assert state.scaling_factor[state.flow_mol_phase_comp["phase1", "solute2"]] == 577
+            assert (
+                state.scaling_factor[state.flow_mol_phase_comp["phase1", "solute2"]]
+                == 577
+            )
             assert state.scaling_factor[state.enth_flow] == 1423
             assert state.scaling_factor[state.pressure] == 41
             assert state.constraints_scaled
@@ -1301,45 +1347,61 @@ class TestBuild:
         scaler_obj = unit.default_scaler()
         scaler_obj.scale_model(unit)
 
-
         assert len(unit.scaling_factor) == 18
         # Variables
         for t in model.fs.time:
             for e in unit.elements:
-                assert unit.scaling_factor[
-                    unit.material_transfer_term[t,e,"stream1","stream2","solute1"]
-                ] == 23
-                assert unit.scaling_factor[
-                    unit.material_transfer_term[t,e,"stream1","stream2","solute2"]
-                ] == 29
+                assert (
+                    unit.scaling_factor[
+                        unit.material_transfer_term[
+                            t, e, "stream1", "stream2", "solute1"
+                        ]
+                    ]
+                    == 23
+                )
+                assert (
+                    unit.scaling_factor[
+                        unit.material_transfer_term[
+                            t, e, "stream1", "stream2", "solute2"
+                        ]
+                    ]
+                    == 29
+                )
 
         # Constraints
         for t in model.fs.time:
             for e in unit.elements:
                 # Stream 1
-                assert unit.scaling_factor[
-                    unit.stream1_material_balance[t,e,"solvent1"]
-                ] == 2
-                assert unit.scaling_factor[
-                    unit.stream1_material_balance[t,e,"solute1"]
-                ] == 3
-                assert unit.scaling_factor[
-                    unit.stream1_material_balance[t,e,"solute2"]
-                ] == 5
-                assert unit.scaling_factor[
-                    unit.stream1_material_balance[t,e,"solute3"]
-                ] == 7
+                assert (
+                    unit.scaling_factor[unit.stream1_material_balance[t, e, "solvent1"]]
+                    == 2
+                )
+                assert (
+                    unit.scaling_factor[unit.stream1_material_balance[t, e, "solute1"]]
+                    == 3
+                )
+                assert (
+                    unit.scaling_factor[unit.stream1_material_balance[t, e, "solute2"]]
+                    == 5
+                )
+                assert (
+                    unit.scaling_factor[unit.stream1_material_balance[t, e, "solute3"]]
+                    == 7
+                )
 
                 # Stream 2
-                assert unit.scaling_factor[
-                    unit.stream2_material_balance[t,e,"solvent2"]
-                ] == 19
-                assert unit.scaling_factor[
-                    unit.stream2_material_balance[t,e,"solute1"]
-                ] == 23
-                assert unit.scaling_factor[
-                    unit.stream2_material_balance[t,e,"solute2"]
-                ] == 29                
+                assert (
+                    unit.scaling_factor[unit.stream2_material_balance[t, e, "solvent2"]]
+                    == 19
+                )
+                assert (
+                    unit.scaling_factor[unit.stream2_material_balance[t, e, "solute1"]]
+                    == 23
+                )
+                assert (
+                    unit.scaling_factor[unit.stream2_material_balance[t, e, "solute2"]]
+                    == 29
+                )
 
         # Expressions
         assert not hasattr(unit, "scaling_hint")
@@ -1510,24 +1572,32 @@ class TestBuild:
         assert len(unit.scaling_factor) == 106
         # Variables
         for e in unit.elements:
-            assert unit.scaling_factor[
-                unit.volume[e]                      
-            ] == 2683
+            assert unit.scaling_factor[unit.volume[e]] == 2683
         for t in dynamic.fs.time:
             for e in unit.elements:
-                assert unit.scaling_factor[
-                    unit.volume_frac_stream[t, e, "stream1"]
-                ] == 2
-                assert unit.scaling_factor[
-                    unit.volume_frac_stream[t, e, "stream2"]
-                ] == 2
+                assert (
+                    unit.scaling_factor[unit.volume_frac_stream[t, e, "stream1"]] == 2
+                )
+                assert (
+                    unit.scaling_factor[unit.volume_frac_stream[t, e, "stream2"]] == 2
+                )
 
-                assert unit.scaling_factor[
-                    unit.material_transfer_term[t,e,"stream1","stream2","solute1"]
-                ] == 23
-                assert unit.scaling_factor[
-                    unit.material_transfer_term[t,e,"stream1","stream2","solute2"]
-                ] == 29
+                assert (
+                    unit.scaling_factor[
+                        unit.material_transfer_term[
+                            t, e, "stream1", "stream2", "solute1"
+                        ]
+                    ]
+                    == 23
+                )
+                assert (
+                    unit.scaling_factor[
+                        unit.material_transfer_term[
+                            t, e, "stream1", "stream2", "solute2"
+                        ]
+                    ]
+                    == 29
+                )
 
         for vardata in unit.stream1_material_holdup.values():
             assert unit.scaling_factor[vardata] == approx(2683 * 2 / 42)
@@ -1535,38 +1605,42 @@ class TestBuild:
         for vardata in unit.stream2_material_holdup.values():
             assert unit.scaling_factor[vardata] == approx(2683 * 2 / 52)
 
-
         # Constraints
         for t in dynamic.fs.time:
             for e in unit.elements:
-                assert unit.scaling_factor[
-                    unit.sum_volume_frac[t, e]
-                ] == 1
+                assert unit.scaling_factor[unit.sum_volume_frac[t, e]] == 1
 
                 # Stream 1
-                assert unit.scaling_factor[
-                    unit.stream1_material_balance[t,e,"solvent1"]
-                ] == 2
-                assert unit.scaling_factor[
-                    unit.stream1_material_balance[t,e,"solute1"]
-                ] == 3
-                assert unit.scaling_factor[
-                    unit.stream1_material_balance[t,e,"solute2"]
-                ] == 5
-                assert unit.scaling_factor[
-                    unit.stream1_material_balance[t,e,"solute3"]
-                ] == 7
+                assert (
+                    unit.scaling_factor[unit.stream1_material_balance[t, e, "solvent1"]]
+                    == 2
+                )
+                assert (
+                    unit.scaling_factor[unit.stream1_material_balance[t, e, "solute1"]]
+                    == 3
+                )
+                assert (
+                    unit.scaling_factor[unit.stream1_material_balance[t, e, "solute2"]]
+                    == 5
+                )
+                assert (
+                    unit.scaling_factor[unit.stream1_material_balance[t, e, "solute3"]]
+                    == 7
+                )
 
                 # Stream 2
-                assert unit.scaling_factor[
-                    unit.stream2_material_balance[t,e,"solvent2"]
-                ] == 19
-                assert unit.scaling_factor[
-                    unit.stream2_material_balance[t,e,"solute1"]
-                ] == 23
-                assert unit.scaling_factor[
-                    unit.stream2_material_balance[t,e,"solute2"]
-                ] == 29                
+                assert (
+                    unit.scaling_factor[unit.stream2_material_balance[t, e, "solvent2"]]
+                    == 19
+                )
+                assert (
+                    unit.scaling_factor[unit.stream2_material_balance[t, e, "solute1"]]
+                    == 23
+                )
+                assert (
+                    unit.scaling_factor[unit.stream2_material_balance[t, e, "solute2"]]
+                    == 29
+                )
 
         for condata in unit.stream1_material_holdup_constraint.values():
             assert unit.scaling_factor[condata] == approx(2683 * 2 / 42)
@@ -1662,45 +1736,61 @@ class TestBuild:
         scaler_obj = unit.default_scaler()
         scaler_obj.scale_model(unit)
 
-
         assert len(unit.scaling_factor) == 18
         # Variables
         for t in model.fs.time:
             for e in unit.elements:
-                assert unit.scaling_factor[
-                    unit.material_transfer_term[t,e,"stream1","stream2","solute1"]
-                ] == 23
-                assert unit.scaling_factor[
-                    unit.material_transfer_term[t,e,"stream1","stream2","solute2"]
-                ] == 29
+                assert (
+                    unit.scaling_factor[
+                        unit.material_transfer_term[
+                            t, e, "stream1", "stream2", "solute1"
+                        ]
+                    ]
+                    == 23
+                )
+                assert (
+                    unit.scaling_factor[
+                        unit.material_transfer_term[
+                            t, e, "stream1", "stream2", "solute2"
+                        ]
+                    ]
+                    == 29
+                )
 
         # Constraints
         for t in model.fs.time:
             for e in unit.elements:
                 # Stream 1
-                assert unit.scaling_factor[
-                    unit.stream1_material_balance[t,e,"solvent1"]
-                ] == 2
-                assert unit.scaling_factor[
-                    unit.stream1_material_balance[t,e,"solute1"]
-                ] == 3
-                assert unit.scaling_factor[
-                    unit.stream1_material_balance[t,e,"solute2"]
-                ] == 5
-                assert unit.scaling_factor[
-                    unit.stream1_material_balance[t,e,"solute3"]
-                ] == 7
+                assert (
+                    unit.scaling_factor[unit.stream1_material_balance[t, e, "solvent1"]]
+                    == 2
+                )
+                assert (
+                    unit.scaling_factor[unit.stream1_material_balance[t, e, "solute1"]]
+                    == 3
+                )
+                assert (
+                    unit.scaling_factor[unit.stream1_material_balance[t, e, "solute2"]]
+                    == 5
+                )
+                assert (
+                    unit.scaling_factor[unit.stream1_material_balance[t, e, "solute3"]]
+                    == 7
+                )
 
                 # Stream 2
-                assert unit.scaling_factor[
-                    unit.stream2_material_balance[t,e,"solvent2"]
-                ] == 19
-                assert unit.scaling_factor[
-                    unit.stream2_material_balance[t,e,"solute1"]
-                ] == 23
-                assert unit.scaling_factor[
-                    unit.stream2_material_balance[t,e,"solute2"]
-                ] == 29                
+                assert (
+                    unit.scaling_factor[unit.stream2_material_balance[t, e, "solvent2"]]
+                    == 19
+                )
+                assert (
+                    unit.scaling_factor[unit.stream2_material_balance[t, e, "solute1"]]
+                    == 23
+                )
+                assert (
+                    unit.scaling_factor[unit.stream2_material_balance[t, e, "solute2"]]
+                    == 29
+                )
 
         # Expressions
         assert not hasattr(unit, "scaling_hint")
@@ -1793,45 +1883,61 @@ class TestBuild:
         scaler_obj = unit.default_scaler()
         scaler_obj.scale_model(unit)
 
-
         assert len(unit.scaling_factor) == 18
         # Variables
         for t in model.fs.time:
             for e in unit.elements:
-                assert unit.scaling_factor[
-                    unit.material_transfer_term[t,e,"stream1","stream2","solute1"]
-                ] == 23
-                assert unit.scaling_factor[
-                    unit.material_transfer_term[t,e,"stream1","stream2","solute2"]
-                ] == 29
+                assert (
+                    unit.scaling_factor[
+                        unit.material_transfer_term[
+                            t, e, "stream1", "stream2", "solute1"
+                        ]
+                    ]
+                    == 23
+                )
+                assert (
+                    unit.scaling_factor[
+                        unit.material_transfer_term[
+                            t, e, "stream1", "stream2", "solute2"
+                        ]
+                    ]
+                    == 29
+                )
 
         # Constraints
         for t in model.fs.time:
             for e in unit.elements:
                 # Stream 1
-                assert unit.scaling_factor[
-                    unit.stream1_material_balance[t,e,"solvent1"]
-                ] == 2
-                assert unit.scaling_factor[
-                    unit.stream1_material_balance[t,e,"solute1"]
-                ] == 3
-                assert unit.scaling_factor[
-                    unit.stream1_material_balance[t,e,"solute2"]
-                ] == 5
-                assert unit.scaling_factor[
-                    unit.stream1_material_balance[t,e,"solute3"]
-                ] == 7
+                assert (
+                    unit.scaling_factor[unit.stream1_material_balance[t, e, "solvent1"]]
+                    == 2
+                )
+                assert (
+                    unit.scaling_factor[unit.stream1_material_balance[t, e, "solute1"]]
+                    == 3
+                )
+                assert (
+                    unit.scaling_factor[unit.stream1_material_balance[t, e, "solute2"]]
+                    == 5
+                )
+                assert (
+                    unit.scaling_factor[unit.stream1_material_balance[t, e, "solute3"]]
+                    == 7
+                )
 
                 # Stream 2
-                assert unit.scaling_factor[
-                    unit.stream2_material_balance[t,e,"solvent2"]
-                ] == 19
-                assert unit.scaling_factor[
-                    unit.stream2_material_balance[t,e,"solute1"]
-                ] == 23
-                assert unit.scaling_factor[
-                    unit.stream2_material_balance[t,e,"solute2"]
-                ] == 29                
+                assert (
+                    unit.scaling_factor[unit.stream2_material_balance[t, e, "solvent2"]]
+                    == 19
+                )
+                assert (
+                    unit.scaling_factor[unit.stream2_material_balance[t, e, "solute1"]]
+                    == 23
+                )
+                assert (
+                    unit.scaling_factor[unit.stream2_material_balance[t, e, "solute2"]]
+                    == 29
+                )
 
         # Expressions
         assert not hasattr(unit, "scaling_hint")
@@ -1913,7 +2019,7 @@ class TestBuild:
         # Variables
         for vardata in unit.energy_transfer_term.values():
             assert unit.scaling_factor[vardata] == 37
-        
+
         # Constraints
         for condata in unit.stream1_energy_balance.values():
             assert unit.scaling_factor[condata] == 11
@@ -2042,30 +2148,35 @@ class TestBuild:
         scaler_obj.scale_model(unit)
 
         from idaes.core.scaling import report_scaling_factors
+
         report_scaling_factors(unit, descend_into=True)
 
         assert len(unit.scaling_factor) == 42
 
         # Variables
         for e in unit.elements:
-            assert unit.scaling_factor[
-                unit.volume[e]                      
-            ] == 2683
+            assert unit.scaling_factor[unit.volume[e]] == 2683
         for t in dynamic.fs.time:
             for e in unit.elements:
-                assert unit.scaling_factor[
-                    unit.volume_frac_stream[t, e, "stream1"]
-                ] == 2
-                assert unit.scaling_factor[
-                    unit.volume_frac_stream[t, e, "stream2"]
-                ] == 2
+                assert (
+                    unit.scaling_factor[unit.volume_frac_stream[t, e, "stream1"]] == 2
+                )
+                assert (
+                    unit.scaling_factor[unit.volume_frac_stream[t, e, "stream2"]] == 2
+                )
 
-                assert unit.scaling_factor[
-                    unit.energy_transfer_term[t,e,"stream1","stream2"]
-                ] == 37
-                assert unit.scaling_factor[
-                    unit.energy_transfer_term[t,e,"stream1","stream2"]
-                ] == 37
+                assert (
+                    unit.scaling_factor[
+                        unit.energy_transfer_term[t, e, "stream1", "stream2"]
+                    ]
+                    == 37
+                )
+                assert (
+                    unit.scaling_factor[
+                        unit.energy_transfer_term[t, e, "stream1", "stream2"]
+                    ]
+                    == 37
+                )
 
         for vardata in unit.stream1_energy_holdup.values():
             assert unit.scaling_factor[vardata] == approx(2683 * 2 / 43)
@@ -2073,23 +2184,16 @@ class TestBuild:
         for vardata in unit.stream2_energy_holdup.values():
             assert unit.scaling_factor[vardata] == approx(2683 * 2 / 53)
 
-
         # Constraints
         for t in dynamic.fs.time:
             for e in unit.elements:
-                assert unit.scaling_factor[
-                    unit.sum_volume_frac[t, e]
-                ] == 1
+                assert unit.scaling_factor[unit.sum_volume_frac[t, e]] == 1
 
                 # Stream 1
-                assert unit.scaling_factor[
-                    unit.stream1_energy_balance[t,e]
-                ] == 11
+                assert unit.scaling_factor[unit.stream1_energy_balance[t, e]] == 11
 
                 # Stream 2
-                assert unit.scaling_factor[
-                    unit.stream2_energy_balance[t,e]
-                ] == 37           
+                assert unit.scaling_factor[unit.stream2_energy_balance[t, e]] == 37
 
         for condata in unit.stream1_energy_holdup_constraint.values():
             assert unit.scaling_factor[condata] == approx(2683 * 2 / 43)
@@ -2260,7 +2364,7 @@ class TestBuild:
         # Variables
         for vardata in unit.energy_transfer_term.values():
             assert unit.scaling_factor[vardata] == 37
-        
+
         # Constraints
         for condata in unit.stream1_energy_balance.values():
             assert unit.scaling_factor[condata] == 11
@@ -2367,12 +2471,10 @@ class TestBuild:
             match=re.escape(
                 "Energy transfer term should not be constructed if "
                 "neither stream has an energy balance, please report "
-                "this problem to the IDAES developers."                
-            )
+                "this problem to the IDAES developers."
+            ),
         ):
             scaler_obj.scale_model(unit)
-
-
 
     @pytest.mark.unit
     def test_energy_balances_side_stream(self, model):
@@ -2444,7 +2546,7 @@ class TestBuild:
         # Variables
         for vardata in unit.energy_transfer_term.values():
             assert unit.scaling_factor[vardata] == 37
-        
+
         # Constraints
         for condata in unit.stream1_energy_balance.values():
             assert unit.scaling_factor[condata] == 11
@@ -3141,8 +3243,8 @@ class TestReactions:
 
         # Variables
         for vardata in unit.material_transfer_term.values():
-            assert unit.scaling_factor[vardata] == approx(1 / (43*2))
-        
+            assert unit.scaling_factor[vardata] == approx(1 / (43 * 2))
+
         for t in model.fs.time:
             for e in unit.elements:
                 unit.scaling_factor[
@@ -3150,19 +3252,18 @@ class TestReactions:
                 ] == 1 / 43
                 unit.scaling_factor[
                     unit.stream1_inherent_reaction_extent[t, e, "i2"]
-                ] == approx(7/43)
+                ] == approx(7 / 43)
 
                 unit.scaling_factor[
                     unit.stream2_inherent_reaction_extent[t, e, "i1"]
                 ] == 1 / 43
                 unit.scaling_factor[
                     unit.stream2_inherent_reaction_extent[t, e, "i2"]
-                ] == approx(7/43)
+                ] == approx(7 / 43)
 
-        
         for vardata in unit.stream1_inherent_reaction_generation.values():
             assert unit.scaling_factor[vardata] == 1 / 43
-        
+
         for vardata in unit.stream2_inherent_reaction_generation.values():
             assert unit.scaling_factor[vardata] == 1 / 43
 
@@ -3171,11 +3272,11 @@ class TestReactions:
             assert unit.scaling_factor[condata] == 1 / 43
         for condata in unit.stream2_inherent_reaction_constraint.values():
             assert unit.scaling_factor[condata] == 1 / 43
-        
+
         for condata in unit.stream1_material_balance.values():
-            assert unit.scaling_factor[condata] == approx(1/(43*2))
+            assert unit.scaling_factor[condata] == approx(1 / (43 * 2))
         for condata in unit.stream2_material_balance.values():
-            assert unit.scaling_factor[condata] == approx(1/(43*2))
+            assert unit.scaling_factor[condata] == approx(1 / (43 * 2))
 
     @pytest.mark.unit
     def test_reaction_blocks(self, model):
@@ -3314,7 +3415,7 @@ class TestReactions:
 
     @pytest.mark.unit
     def test_equilibrium_reaction_scaling(self, model):
-        unit = model.fs.unit        
+        unit = model.fs.unit
         unit.config.streams["stream2"].reaction_package = model.fs.reactions
         unit.config.streams["stream2"].has_equilibrium_reactions = True
 
@@ -3334,8 +3435,8 @@ class TestReactions:
 
         # Variables
         for vardata in unit.material_transfer_term.values():
-            assert unit.scaling_factor[vardata] == approx(1 / (43*2))
-        
+            assert unit.scaling_factor[vardata] == approx(1 / (43 * 2))
+
         for t in model.fs.time:
             for e in unit.elements:
                 unit.scaling_factor[
@@ -3345,18 +3446,17 @@ class TestReactions:
                     unit.stream2_equilibrium_reaction_extent[t, e, "e2"]
                 ] == 1 / 43
 
-        
         for vardata in unit.stream2_equilibrium_reaction_generation.values():
             assert unit.scaling_factor[vardata] == 1 / 43
 
         # Constraints
         for condata in unit.stream2_equilibrium_reaction_constraint.values():
             assert unit.scaling_factor[condata] == 1 / 43
-        
+
         for condata in unit.stream1_material_balance.values():
-            assert unit.scaling_factor[condata] == approx(1/(43*2))
+            assert unit.scaling_factor[condata] == approx(1 / (43 * 2))
         for condata in unit.stream2_material_balance.values():
-            assert unit.scaling_factor[condata] == approx(1/(43*2))
+            assert unit.scaling_factor[condata] == approx(1 / (43 * 2))
 
     @pytest.mark.unit
     def test_heterogeneous_reactions_no_build_method(self, model):
@@ -3461,7 +3561,7 @@ class TestReactions:
                     r = "R4"
 
                 expr = str(
-                    gen[k] 
+                    gen[k]
                     - model.fs.hetero_dummy.reaction_stoichiometry[r, k[2], k[3]]
                     * model.fs.unit.heterogeneous_reaction_extent[0, k[1], r]
                 )
@@ -3544,7 +3644,7 @@ class TestReactions:
     @pytest.mark.unit
     def test_heterogeneous_reaction_scaling(self, model):
         model.fs.hetero_dummy = DummyHeterogeneousReactionsParameterBlock()
-        
+
         unit = model.fs.unit
 
         unit.config.heterogeneous_reactions = model.fs.hetero_dummy
@@ -3563,11 +3663,11 @@ class TestReactions:
             assert blk.constraints_scaled
 
         assert len(unit.scaling_factor) == 52
-        
+
         # Variables
         for vardata in unit.material_transfer_term.values():
-            assert unit.scaling_factor[vardata] == approx(1 / (43*2))
-        
+            assert unit.scaling_factor[vardata] == approx(1 / (43 * 2))
+
         for t in model.fs.time:
             for e in unit.elements:
                 unit.scaling_factor[
@@ -3584,10 +3684,9 @@ class TestReactions:
                     unit.heterogeneous_reaction_extent[t, e, "R4"]
                 ] == approx(2777 / 43)
 
-        
         for vardata in unit.stream1_heterogeneous_reactions_generation.values():
             assert unit.scaling_factor[vardata] == 1 / 43
-        
+
         for vardata in unit.stream2_heterogeneous_reactions_generation.values():
             assert unit.scaling_factor[vardata] == 1 / 43
 
@@ -3596,12 +3695,12 @@ class TestReactions:
             assert unit.scaling_factor[condata] == 1 / 43
         for condata in unit.stream2_heterogeneous_reaction_constraint.values():
             assert unit.scaling_factor[condata] == 1 / 43
-        
+
         for condata in unit.stream1_material_balance.values():
-            assert unit.scaling_factor[condata] == approx(1/(43*2))
+            assert unit.scaling_factor[condata] == approx(1 / (43 * 2))
         for condata in unit.stream2_material_balance.values():
-            assert unit.scaling_factor[condata] == approx(1/(43*2))
-        
+            assert unit.scaling_factor[condata] == approx(1 / (43 * 2))
+
         # Expressions
         assert not hasattr(unit, "scaling_hint")
 
@@ -3719,15 +3818,13 @@ class TestReactions:
 
     @pytest.mark.unit
     def test_rate_reaction_scaling(self, model):
-        unit = model.fs.unit        
+        unit = model.fs.unit
         unit.config.streams["stream2"].reaction_package = model.fs.reactions
         unit.config.streams["stream2"].has_rate_reactions = True
 
         unit._verify_inputs()
         unit._build_state_blocks()
         unit._build_material_balance_constraints()
-
-        
 
         scaler_obj = unit.default_scaler()
         scaler_obj.scale_model(unit)
@@ -3741,8 +3838,8 @@ class TestReactions:
 
         # Variables
         for vardata in unit.material_transfer_term.values():
-            assert unit.scaling_factor[vardata] == approx(1 / (43*2))
-        
+            assert unit.scaling_factor[vardata] == approx(1 / (43 * 2))
+
         for t in model.fs.time:
             for e in unit.elements:
                 unit.scaling_factor[
@@ -3752,18 +3849,17 @@ class TestReactions:
                     unit.stream2_rate_reaction_extent[t, e, "r2"]
                 ] == 1 / 43
 
-        
         for vardata in unit.stream2_rate_reaction_generation.values():
             assert unit.scaling_factor[vardata] == 1 / 43
 
         # Constraints
         for condata in unit.stream2_rate_reaction_constraint.values():
             assert unit.scaling_factor[condata] == 1 / 43
-        
+
         for condata in unit.stream1_material_balance.values():
-            assert unit.scaling_factor[condata] == approx(1/(43*2))
+            assert unit.scaling_factor[condata] == approx(1 / (43 * 2))
         for condata in unit.stream2_material_balance.values():
-            assert unit.scaling_factor[condata] == approx(1/(43*2))
+            assert unit.scaling_factor[condata] == approx(1 / (43 * 2))
 
     @pytest.mark.unit
     def test_heat_of_reaction_rate(self, model):
@@ -4044,20 +4140,24 @@ class TestToyProblem:
 # -----------------------------------------------------------------------------
 # Li-Co Diafiltration example
 
+
 class LiCoPropertiesScaler(CustomScalerBase):
     DEFAULT_SCALING_FACTORS = {
         "flow_vol": -1,
         "conc_mass_comp[Li]": -1,
         "conc_mass_comp[Co]": -1,
     }
+
     def variable_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: dict = None
     ):
         for var in model.component_data_objects(ctype=Var):
             self.scale_variable_by_default(var, overwrite=overwrite)
-    
-    def constraint_scaling_routine(self, model, overwrite: bool = False, submodel_scalers: dict = None):
-        pass   
+
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        pass
 
 
 @declare_process_block_class("LiCoParameters")
@@ -4279,8 +4379,7 @@ class TestMSContactorInitializer:
 
         sm = TransformationFactory("core.scale_model").create_using(model, rename=False)
         jac, _ = get_jacobian(sm, scaled=False)
-        assert jacobian_cond(jac=jac, scaled=False)== approx(4573, rel=1e-2)
-
+        assert jacobian_cond(jac=jac, scaled=False) == approx(4573, rel=1e-2)
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -4354,6 +4453,7 @@ class TestMSContactorInitializer:
         }
 
         assert stable.to_dict() == expected
+
 
 # TODO this flowsheet test should really be put in a separate file
 class TestLiCODiafiltration:

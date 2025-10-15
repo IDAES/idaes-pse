@@ -441,6 +441,7 @@ class _ReactionParameterBlock(ReactionParameterBlock):
 
 class RBlockBase(ReactionBlockBase):
     default_scaler = ReactionTestScaler
+
     def initialize(
         blk, outlvl=idaeslog.NOTSET, optarg=None, solver=None, state_vars_fixed=False
     ):
