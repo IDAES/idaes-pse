@@ -120,7 +120,7 @@ class ControlVolumeScalerBase(CustomScalerBase):
     # terms. Presently (9/25/25), this attribute exists to take into
     # account the fact that all the material and energy terms in the
     # ControlVolume1D are given on the basis of material or energy per
-    # unit length, so we want to weigh them accordingly.
+    # unit length, so we want to weight them accordingly.
     _weight_attr_name = None
 
     def variable_scaling_routine(
