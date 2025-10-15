@@ -68,6 +68,8 @@ class ControlVolume0DScaler(ControlVolumeScalerBase):
         "phase_fraction": 10,  # May have already been created by property package
     }
 
+    _state_block_ref = "properties_out"
+
     def variable_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None
     ):
