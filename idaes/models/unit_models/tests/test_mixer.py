@@ -1796,6 +1796,7 @@ class TestInitializersIAPWSEquality:
 
 # -----------------------------------------------------------------------------
 # Inherent reaction case
+# We do not want to make this property package an example because it has non-SI units.
 class LeachSolutionScaler(CustomScalerBase):
     """
     Scaler object for leach solution properties
