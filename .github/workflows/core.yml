@@ -52,8 +52,6 @@ jobs:
     name: Check code formatting (Black)
     # OS and/or Python version don't make a difference, so we choose ubuntu and 3.10 for performance
     runs-on: ubuntu-latest
-    env:
-        black_requirement: "black==24.3.0"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -64,7 +62,8 @@ jobs:
         # but we still want to specify the Black version to use in requirements-dev.txt for local development
         # so we extract the relevant line and pass it to a simple `pip install`
         run: |
-          pip install -e .[dev] 
+          # we store the version
+          black_requirement="$(grep 'black==' requirements-dev.txt)"
           pip --no-cache-dir install --progress-bar off "$black_requirement"
       - name: Run Black to verify that the committed code is formatted
         run: |
@@ -114,8 +113,9 @@ jobs:
           miniforge-version: latest
 
       - name: Set up idaes
-        run: pip install .[dev]  
-      
+        uses: ./.github/actions/setup-idaes
+        with:
+          install-target: -r requirements-dev.txt
       - name: Add pytest CLI options for coverage
         if: matrix.cov-report
         run: |
