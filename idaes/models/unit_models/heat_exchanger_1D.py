@@ -352,7 +352,7 @@ Pyomo documentation for supported transformations.""",
         ConfigValue(
             default=useDefault,
             description="Discretization scheme to use for DAE transformation",
-            doc="""Discretization scheme to use when transformating domain. See
+            doc="""Discretization scheme to use when transforming domain. See
 Pyomo documentation for supported schemes.""",
         ),
     )

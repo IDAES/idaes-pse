@@ -18,7 +18,7 @@ are two models included here.
 1) FWHCondensing0D: this is a regular 0D heat exchanger model with a constraint
    added to ensure all the steam fed to the feedwater heater is condensed at
    the outlet. At the shell outlet the molar enthalpy is equal to the the
-   staurated liquid molar enthalpy.
+   saturated liquid molar enthalpy.
 2) FWH0D is a feedwater heater model with three sections and a mixer for
    combining another feedwater heater's drain outlet with steam extracted from
    the turbine.  The drain mixer, desuperheat, and drain cooling sections are
