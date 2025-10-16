@@ -66,11 +66,11 @@ def thermal_conductivity_rule(m):
     # Ts = T / 251.196
     rho = m.rho_star * m.delta
     G = sum(bval / T**i for i, bval in b.items())
-    cint_over_k = 4.0
-    +sum(
+    cint_over_k = (4.0
+    + sum(
         v[i] * (u[i] / T) ** 2 * pyo.exp(u[i] / T) / (pyo.exp(u[i] / T) - 1) ** 2
         for i in range(1, len(u.items()) + 1)
-    )
+    ))
     return 0.1351767 * pyo.sqrt(T) * cint_over_k / G + sum(
         (B[1][i] + B[2][i] * T) * rho**i for i in range(1, 6)
     )
