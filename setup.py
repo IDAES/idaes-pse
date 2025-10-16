@@ -37,9 +37,7 @@ class ExtraDependencies:
     """
 
     ui = [
-        # FIXME this must be changed to the PyPI distribution for the release
-        # "idaes-ui",
-        "idaes-ui @ git+https://github.com/IDAES/idaes-ui@main",
+        "idaes-ui",
     ]
     omlt = [
         "omlt==1.2.2",  # fix the version for now as package evolves
@@ -54,11 +52,7 @@ class ExtraDependencies:
     coolprop = [
         "coolprop>=7.0",  # idaes.generic_models.properties.general.coolprop
     ]
-    testing = [
-        "pytest",
-        "addheader",
-        "pyyaml",
-    ]
+    testing = ["pytest", "addheader", "pyyaml"]
 
     def __init__(self):
         self._data = dict(type(self).__dict__)
@@ -158,6 +152,7 @@ kwargs = dict(
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
         "Programming Language :: Python :: Implementation :: CPython",
         "Topic :: Scientific/Engineering :: Mathematics",
         "Topic :: Scientific/Engineering :: Chemistry",

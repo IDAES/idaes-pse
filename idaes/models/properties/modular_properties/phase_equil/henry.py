@@ -34,7 +34,7 @@ class HenryType(Enum):
     """
     'Henry Constant' types are numbered 1-50 (i.e. H = conc/pressure)
     'Henry Volatility' types are numbered 51-100 (i.e. K = pressure/conc)
-    We use this fact to simplify determining wheterh to multiply or divide
+    We use this fact to simplify determining whether to multiply or divide
     by Henry's constant
     Any different forms can use values 101+, but will need to add the custom
     code in if branches where necessary

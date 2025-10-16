@@ -633,7 +633,7 @@ class LatinHypercubeSampling(SamplingMethods):
     def lhs_points_generation(self):
         """
         Generate points within each strata for each variable based on stratification. When invoked, it:
-        1. Determines the mimumum and maximum value for each feature (column),
+        1. Determines the minimum and maximum value for each feature (column),
         2. Calls the variable_sample_creation function on each feature, passing in its mimmum and maximum
         3. Returns an array containing the points selected in each strata of each column
 
