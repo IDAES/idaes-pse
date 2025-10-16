@@ -112,20 +112,20 @@ class ModelTag:
 
     def keys(self):
         """Iterator of keys in the tag.  If scalar, is a single None."""
-        indx_set = self.indexes
-        for i in indx_set:
+        index_set = self.indexes
+        for i in index_set:
             yield i
 
     def values(self):
         """Iterator for scalar elements in a tag (The elements are scalar tags)"""
-        indx_set = self.indexes
-        for i in indx_set:
+        index_set = self.indexes
+        for i in index_set:
             yield self[i]
 
     def items(self):
         """Iterator for key scalar elements pairs in a tag"""
-        indx_set = self.indexes
-        for i in indx_set:
+        index_set = self.indexes
+        for i in index_set:
             yield i, self[i]
 
     def __str__(self):

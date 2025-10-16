@@ -138,7 +138,7 @@ of having to cost each account individually. If the accounts in the list do not 
 
 It is recognized that many users will be unfamiliar with the accounts in the Bituminous Baseline.
 For this reason the cost_accounts argument will also accept a string with the name of a pre-named
-account. Pre-nammed accounts aggregate the relevant accounts for certain systems. The pre-named
+account. Pre-named accounts aggregate the relevant accounts for certain systems. The pre-named
 accounts for each technology can be found in the tables below.
 
 Table 2. Pre-named Accounts for PC technologies

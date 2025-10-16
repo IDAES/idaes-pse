@@ -242,7 +242,7 @@ class TestUncertaintyPropagation:
 
         ### Analytic sensitivity
         """
-        Using the analytic solution above, we can compute the sensitivies of x and v to
+        Using the analytic solution above, we can compute the sensitivities of x and v to
         perturbations in p1 and p2.
         The matrix dx_dp constrains the sensitivities of x to perturbations in p
         """

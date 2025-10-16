@@ -21,6 +21,7 @@ from types import MethodType
 from pyomo.environ import Block, ConcreteModel, units as pyunits, Var
 from pyomo.common.config import ConfigBlock, ConfigValue
 
+import idaes.logger as idaeslog
 from idaes.core import declare_process_block_class
 from idaes.core import Component, LiquidPhase, SolidPhase, VaporPhase, PhaseType as PT
 from idaes.models.properties.modular_properties.base.utility import (
@@ -162,6 +163,32 @@ class TestGetMethod:
 
         mthd = get_method(frame, "test_arg")
         assert mthd() == "bar"
+
+    @pytest.mark.unit
+    def test_get_method_class_w_return_log_expression(self, frame):
+        class TestClass:
+            def return_expression(*args, **kwargs):
+                return "bar"
+
+            def return_log_expression(*args, **kwargs):
+                return "fiz"
+
+        frame.params.config.test_arg = TestClass
+
+        mthd = get_method(frame, "test_arg", log_expression=True)
+        assert mthd() == "fiz"
+
+    @pytest.mark.unit
+    def test_get_method_class_w_return_log_expression_no_log(self, frame, caplog):
+        class TestClass:
+            def return_expression(*args, **kwargs):
+                return 1.0
+
+        frame.params.config.test_arg = TestClass
+        with caplog.at_level(idaeslog.WARNING):
+            mthd = get_method(frame, "test_arg", log_expression=True)
+        assert "Reverting to use of the log function of the" in caplog.text
+        assert mthd() == 0.0
 
     @pytest.mark.unit
     def test_get_method_phase(self, frame):
