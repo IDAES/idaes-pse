@@ -43,6 +43,12 @@ fom = "fom"
 # Minimal Infeasible System
 mis = "mis"
 MIS = "MIS"
+# Commonly used in place of type
+typ = "typ"
+# Real heat-exchanger word
+cocurrent = "cocurrent"
+# Used for a regex
+deprecat = "deprecat"
 
 # false positive from 1.20.3
 RTO = "RTO"
