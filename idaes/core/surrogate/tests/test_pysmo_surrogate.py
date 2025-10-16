@@ -370,7 +370,7 @@ class TestTrainedSurrogate:
 
     @pytest.mark.unit
     def test_add_result(self, pysmo_outputs):
-        # These need to be tested this way to made sure ``add_result`` builds out model object propoerly.
+        # These need to be tested this way to made sure ``add_result`` builds out model object properly.
         out1, out2, out3, vars = pysmo_outputs
 
         init_func = PysmoTrainedSurrogate()

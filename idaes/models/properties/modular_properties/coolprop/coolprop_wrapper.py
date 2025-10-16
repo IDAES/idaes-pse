@@ -457,7 +457,7 @@ class CoolPropWrapper:
             expected_forms: list of expression forms supported by wrapper for
                               for property
             using_tau_r: (optional) flag indicating whether to check for use
-                          of tau_r in the epxression or not (default = False,
+                          of tau_r in the expression or not (default = False,
                           do not check).
 
         Returns:

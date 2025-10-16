@@ -568,7 +568,7 @@ class HelmTurbineMultistageData(UnitModelBlockData):
 
     def throttle_cv_fix(self, value):
         """
-        Fix the thottle valve coefficients.  These are generally the same for
+        Fix the throttle valve coefficients.  These are generally the same for
         each of the parallel stages so this provides a convenient way to set
         them.
 
