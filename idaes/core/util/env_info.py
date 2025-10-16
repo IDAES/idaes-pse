@@ -30,7 +30,7 @@ import idaes.ver as ver
 
 class EnvironmentInfo:
     """Get information about IDAES and the environment IDAES is running in,
-    including OS and Critial dependency versions."""
+    including OS and Critical dependency versions."""
 
     known_solvers = [
         "ipopt",

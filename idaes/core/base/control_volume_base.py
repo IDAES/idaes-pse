@@ -358,7 +358,7 @@ class ControlVolumeBlockData(ProcessBlockData):
     """
     The ControlVolumeBlockData Class forms the base class for all IDAES
     ControlVolume models. The purpose of this class is to automate the tasks
-    common to all control volume blockss and ensure that the necessary
+    common to all control volume blocks and ensure that the necessary
     attributes of a control volume block are present.
 
     The most signfiicant role of the ControlVolumeBlockData class is to set up

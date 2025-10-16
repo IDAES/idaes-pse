@@ -108,7 +108,7 @@ class TestStateBlock(object):
     @pytest.mark.unit
     def test_dof(self, model):
         # Fix state
-        # Note that flow of D cannot be specified due to equlibrium
+        # Note that flow of D cannot be specified due to equilibrium
         model.props[1].flow_mol_comp["A"].fix(1)
         model.props[1].flow_mol_comp["B"].fix(1)
         model.props[1].flow_mol_comp["C"].fix(1)

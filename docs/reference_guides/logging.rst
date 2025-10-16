@@ -157,7 +157,7 @@ logging information produced by IDAES loggers.
 ===================== ====== ============ ============================
 Constant Name         Value  Name         Log Method
 ===================== ====== ============ ============================
-CRITICAL              50     CRITICAL     ``critial()``
+CRITICAL              50     CRITICAL     ``critical()``
 ERROR                 40     ERROR        ``error()``, ``exception()``
 WARNING               30     WARNING      ``warning()``
 INFO_LOW              21     INFO         ``info_low()``
@@ -181,10 +181,38 @@ common in the IDAES framework.
 Logging Solver Output
 ---------------------
 
-The solver output can be captured and directed to a logger using the
-``idaes.logger.solver_log(logger, level)`` context manager, which uses
-``pyomo.common.tee.capture_output()`` to temporarily redirect
-``sys.stdout`` and ``sys.stderr`` to a string buffer.  The ``logger``
+The solver output can be captured directly as part of the ``solve``
+command by passing in a ``LogStream`` object and specifying the
+preferred logger and logging level. This can be combined with other
+supported ``tee`` values. Note that this **ONLY** works with the newest
+version of the Pyomo solvers (also known as ``v2`` solvers).
+
+*Example*
+
+.. testcode::
+
+  import sys, logging
+  import pyomo.environ as pyo
+  from pyomo.common.log import LogStream
+
+  logger = logging.getLogger("logging.demo")
+
+  # Only available with v2 solvers
+  solver = pyo.SolverFactory("ipopt_v2")
+
+  model = pyo.ConcreteModel()
+  model.x = pyo.Var()
+  model.y = pyo.Var()
+  model.x.fix(3)
+  model.c = pyo.Constraint(expr=model.y==model.x**2)
+
+  # Direct all output to a logger
+  res = solver.solve(model, tee=LogStream(level=logging.INFO, logger=logger))
+  # Direct output to both stdout and a logger
+  res = solver.solve(model, tee=[sys.stdout, LogStream(level=logging.INFO, logger=logger)])
+
+If you **MUST** use version 1 solvers, solver output can be captured using the
+``idaes.logger.solver_log(logger, level)`` context manager. The ``logger``
 argument is the logger to log to, and the ``level`` argument is the
 level at which records are sent to the logger. The output is logged by a
 separate logging thread, so output can be logged as it is produced

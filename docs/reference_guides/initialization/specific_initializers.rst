@@ -13,7 +13,6 @@ Property Package Initializers
 The following property packages have custom ``Initializers`` available for use:
 
 * :ref:`Activity Coefficient Property Packages <reference_guides/model_libraries/generic/property_models/activity_coefficient:Initialization>`
-* :ref:`Cubic Equation of State Property Packages <reference_guides/model_libraries/generic/property_models/ceos:Initialization>`
 * :ref:`Helmholtz Equation of State Property Packages <reference_guides/model_libraries/generic/property_models/helmholtz:Initialization>`
 * :ref:`Modular Property Packages <explanations/components/property_package/general/index:Initialization>`
 

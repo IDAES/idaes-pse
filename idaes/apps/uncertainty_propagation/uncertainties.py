@@ -385,7 +385,7 @@ def propagate_uncertainty(
         # Not sure if this is correct.
         # propagation_c = np.sum(np.matmul(cssp,cov)*cssp,axis=1)
 
-        # Updated to match propgation_f
+        # Updated to match propagation_f
         propagation_c = cssp @ cov_ @ cssp.transpose()
     else:
         propagation_c = np.array([])

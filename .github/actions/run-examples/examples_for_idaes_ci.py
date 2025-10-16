@@ -3,9 +3,7 @@ pytest plugin for testing IDAES "through" IDAES/examples within the IDAES/idaes-
 """
 
 from contextlib import contextmanager
-from dataclasses import dataclass, field
 import fnmatch
-import logging
 import os
 from pathlib import Path
 import sys
@@ -20,6 +18,12 @@ from idaes_examples import build
 
 matchmarker = pytest.StashKey()
 marked = pytest.StashKey()
+
+# Environment triggers for use either locally
+# or in GitHub Action
+_ENV_TRUE = {"1", "true", "yes", "on"}
+RUN_NOTEBOOKS = str(os.getenv("EXAMPLES_RUN_NOTEBOOKS", "1")).lower() in _ENV_TRUE
+RUN_PYFILES = str(os.getenv("EXAMPLES_RUN_PYFILES", "1")).lower() in _ENV_TRUE
 
 
 def _matches_pattern(item: pytest.Item, pattern: str) -> bool:
@@ -44,15 +48,30 @@ def pytest_sessionstart(session: pytest.Session):
 
 
 def pytest_ignore_collect(collection_path: Path, config: pytest.Config):
+    """Control what gets collected. By default, notebooks and tests; ignore other files."""
     if "_dev" in collection_path.parts:
         return True
     if not collection_path.is_file():
         return
-    if collection_path.suffix == ".py":
-        # specifically ignore python files
+
+    suffix = collection_path.suffix
+    # Notebook tests (only *_test.ipynb)
+    if suffix == ".ipynb":
+        if not RUN_NOTEBOOKS:
+            return True
+        return not collection_path.match("**/*_test.ipynb")
+
+    # Python tests (only test_*.py or *_test.py)
+    if suffix == ".py":
+        if not RUN_PYFILES:
+            return True
+        name = collection_path.name
+        if fnmatch.fnmatch(name, "test_*.py") or fnmatch.fnmatch(name, "*_test.py"):
+            return False
         return True
-    if not collection_path.match("**/*_test.ipynb"):
-        return True
+
+    # Ignore everything else
+    return True
 
 
 def pytest_collection_modifyitems(config: pytest.Config, items):
@@ -102,7 +121,7 @@ def run_pytest(
         empty_file_for_ignoring.write_text("")
         args += ["-c", empty_file_for_ignoring]
 
-    with _temp_cwd(rootdir) as p:
+    with _temp_cwd(rootdir):
         res = pytest.main(
             args,
             **kwargs,
@@ -114,6 +133,7 @@ def run_pytest(
 def main(args):
     rootdir = Path(idaes_examples.__path__[0])
 
+    # Always include --nbmake, but notebook collection can be disabled by env
     res = run_pytest(
         rootdir,
         [
