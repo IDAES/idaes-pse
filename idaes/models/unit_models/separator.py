@@ -21,6 +21,7 @@ from pandas import DataFrame
 from pyomo.environ import (
     Block,
     check_optimal_termination,
+    ComponentMap,
     Constraint,
     Param,
     Reals,
@@ -41,6 +42,7 @@ from idaes.core import (
     MaterialFlowBasis,
     VarLikeExpression,
 )
+from idaes.core.base.control_volume_base import ControlVolumeScalerBase
 from idaes.core.util.config import (
     is_physical_parameter_block,
     is_state_block,
@@ -51,6 +53,7 @@ from idaes.core.util.exceptions import (
     PropertyNotSupportedError,
     InitializationError,
 )
+from idaes.core.scaling.custom_scaler_base import DefaultScalingRecommendation
 from idaes.core.solvers import get_solver
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -89,10 +92,141 @@ class EnergySplittingType(Enum):
     equal_molar_enthalpy = 2
     enthalpy_split = 3
 
-class SeparatorScaler(CustomScalerBase):
+class SeparatorScaler(ControlVolumeScalerBase):
+    """
+    Scaler object for the Separator unit model
+    """
+
+    DEFAULT_SCALING_FACTORS = {
+        "split_fraction": 1
+    }
+
+    def _get_reference_state_block(self, model):
+        """
+        This method gives the parent class ControlVolumeScalerBase
+        methods a state block with the same index as the material
+        and energy balances to get scaling information from
+        """
+        if hasattr(model, "mixed_state"):
+            return model.mixed_state
+        else:
+            return model.get_mixed_state_block()
+
+
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None
+    ):
+        # Scale the mixed state block only if it has been
+        # created by the separator model, but not if it
+        # was passed via the config
+        if model.config.mixed_state_block is None:
+            mixed_state = model.mixed_state
+            self.call_submodel_scaler_method(
+                submodel=mixed_state,
+                submodel_scalers=submodel_scalers,
+                method="variable_scaling_routine",
+                overwrite=overwrite
+            )
+        else:
+            mixed_state = model.config.mixed_state_block
+
+        outlet_list = model.create_outlet_list()
+
+        for o in outlet_list:
+            self.propagate_state_scaling(
+                target_state=getattr(model, o + "_state"),
+                source_state=mixed_state,
+                overwrite=overwrite,
+            )
+            self.call_submodel_scaler_method(
+                submodel=getattr(model, o + "_state"),
+                submodel_scalers=submodel_scalers,
+                method="variable_scaling_routine",
+                overwrite=overwrite
+            )
+        
+        for vardata in model.split_fraction.values():
+            self.scale_variable_by_default(vardata, overwrite=overwrite)
+
+        super().variable_scaling_routine(
+            model, overwrite=overwrite, submodel_scalers=submodel_scalers
+        )
+
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None
+    ):
+        if model.config.mixed_state_block is None:
+            mixed_state = model.mixed_state
+            self.call_submodel_scaler_method(
+                submodel=mixed_state,
+                submodel_scalers=submodel_scalers,
+                method="constraint_scaling_routine",
+                overwrite=overwrite
+            )
+        else:
+            mixed_state = model.config.mixed_state_block
+
+        outlet_list = model.create_outlet_list()
+
+        for o in outlet_list:
+            self.call_submodel_scaler_method(
+                submodel=getattr(model, o + "_state"),
+                submodel_scalers=submodel_scalers,
+                method="constraint_scaling_routine",
+                overwrite=overwrite
+            )
+
+        super().constraint_scaling_routine(
+            model, overwrite=overwrite, submodel_scalers=submodel_scalers
+        )
+        
+        if hasattr(model, "material_splitting_eqn"):
+            mb_type = model._constructed_material_balance_type  # pylint: disable=W0212
+            pc_set = mixed_state.phase_component_set
+            if mb_type == MaterialBalanceType.componentPhase:
+                for (t, _, p, j), c in model.material_splitting_eqn.items():
+                    nom = self.get_expression_nominal_value(mixed_state[t].get_material_flow_terms(p, j))
+                    self.set_constraint_scaling_factor(c, 1 / nom, overwrite=overwrite)
+
+            elif mb_type == MaterialBalanceType.componentTotal:
+                for (t, _, j), c in model.material_splitting_eqn.items():
+                    nom = 0
+                    for p in mixed_state.phase_list:
+                        if (p, j) in pc_set:
+                            ft = mixed_state[t].get_material_flow_terms(p, j)
+                            nom = max(nom, self.get_expression_nominal_value(ft))
+                    self.set_constraint_scaling_factor(c, 1 / nom, overwrite=overwrite)
+            elif mb_type == MaterialBalanceType.total:
+                for (t, _), c in model.material_splitting_eqn.items():
+                    nom = 0
+                    for p, j in pc_set:
+                        ft = mixed_state[t].get_material_flow_terms(p, j)
+                        nom = max(nom, self.get_expression_nominal_value(ft))
+                    self.set_constraint_scaling_factor(c, 1 / nom, overwrite=overwrite)
+
+        if hasattr(model, "temperature_equality_eqn"):
+            for (t, _), c in model.temperature_equality_eqn.items():
+                self.scale_constraint_by_component(c, mixed_state[t].temperature, overwrite=overwrite)
+        elif hasattr(model, "molar_enthalpy_equality_eqn"):
+            for c in model.molar_enthalpy_equality_eqn.values():
+                self.scale_constraint_by_nominal_value(c, overwrite=overwrite)
+        elif hasattr(model, "molar_enthalpy_splitting_eqn"):
+            # This case is scaled in the ControlVolumeScalerBase
+            pass
+        if hasattr(model, "pressure_equality_eqn"):
+            for (t, _), c in model.pressure_equality_eqn.items():
+                self.scale_constraint_by_component(c, mixed_state[t].pressure, overwrite=overwrite)
+
+        if hasattr(model, "sum_split_frac"):
+            for c in model.sum_split_frac.values():
+                # Register the fact that this constraint is well-scaled by default
+                self.set_component_scaling_factor(c, 1, overwrite=overwrite)
+class SeparatorScalerLegacy(CustomScalerBase):
     """
     Scaler for the Separator.
     """
+
+
     def variable_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: dict = None
     ):
@@ -1099,6 +1233,8 @@ objects linked the mixed state and all outlet states,
         if mb_type == MaterialBalanceType.useDefault:
             t_ref = self.flowsheet().time.first()
             mb_type = mixed_block[t_ref].default_material_balance_type()
+
+        self._constructed_material_balance_type = mb_type
 
         # Get units from property package
         units_meta = mixed_block.params.get_metadata()

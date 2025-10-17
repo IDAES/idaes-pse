@@ -565,6 +565,9 @@ class ControlVolumeScalerBase(CustomScalerBase):
         elif hasattr(model, "material_mixing_equations"):
             # Mixer
             mb_eqn = model.material_mixing_equations
+        # elif hasattr(model, "material_splitting_eqn"):
+        #     # Separator
+        #     mb_eqn = model.material_splitting_eqn
 
         if mb_eqn is not None:
             mb_type = model._constructed_material_balance_type  # pylint: disable=W0212
@@ -573,11 +576,12 @@ class ControlVolumeScalerBase(CustomScalerBase):
                     c = idx[-1]
                     nom_list = []
                     for p in phase_list:
-                        nom_list.append(
-                            self.get_expression_nominal_value(
-                                props[idx[:-1]].get_material_flow_terms(p, c)
+                        if (p, c) in props.phase_component_set:
+                            nom_list.append(
+                                self.get_expression_nominal_value(
+                                    props[idx[:-1]].get_material_flow_terms(p, c)
+                                )
                             )
-                        )
                     nom = max(nom_list)
                     self.set_component_scaling_factor(
                         mb_eqn[idx], 1 / nom, overwrite=overwrite
@@ -630,7 +634,11 @@ class ControlVolumeScalerBase(CustomScalerBase):
         if hasattr(model, "enthalpy_balances"):
             eb_eqn = model.enthalpy_balances
         elif hasattr(model, "enthalpy_mixing_equations"):
+            # Mixer
             eb_eqn = model.enthalpy_mixing_equations
+        # elif hasattr(model, "molar_enthalpy_splitting_eqn"):
+        #     # Separator
+        #     eb_eqn = model.molar_enthalpy_splitting_eqn
 
         if eb_eqn is not None:
             # Phase enthalpy balances are not implemented
