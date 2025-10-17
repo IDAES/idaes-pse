@@ -50,8 +50,6 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# Developer extra packages
-
 ui = ["idaes-ui",]
 coolprop = [
   "coolprop>=7.0", # idaes.generic_models.properties.general.coolprop
@@ -70,7 +68,7 @@ testing = [
   "pyyaml",
 ]
 
-# this will install IDAES in editable mode using the dependencies defined under the `extras_require` tags defined above
+# this will install all optional dependencies
 all = ["idaes-pse[ui,grid,omlt,coolprop]"]
 
 [tool.setuptools_scm]
