@@ -58,8 +58,9 @@ import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 from idaes.core.util.units_of_measurement import report_quantity
 from idaes.core.initialization import ModularInitializerBase
+from idaes.core.scaling import get_scaling_factor, CustomScalerBase
 
-__author__ = "Andrew Lee"
+__author__ = "Andrew Lee, Douglas Allan"
 
 
 # Set up logger
@@ -87,6 +88,172 @@ class EnergySplittingType(Enum):
     equal_temperature = 1
     equal_molar_enthalpy = 2
     enthalpy_split = 3
+
+class SeparatorScaler(CustomScalerBase):
+    """
+    Scaler for the Separator.
+    """
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        # If the mixed state block is passed as part of the config,
+        # should it be scaled here?
+        mixed_state = model.get_mixed_state_block()
+        params = mixed_state.params
+        if model.config.mixed_state_block is None:
+            self.call_submodel_scaler_method(
+                submodel=mixed_state,
+                submodel_scalers=submodel_scalers,
+                method="variable_scaling_routine",
+                overwrite=overwrite
+            )
+
+        outlet_list = model.create_outlet_list()
+
+        for o in outlet_list:
+            # Get corresponding outlet StateBlock
+            self.call_submodel_scaler_method(
+                submodel=getattr(model, o + "_state"),
+                submodel_scalers=submodel_scalers,
+                method="variable_scaling_routine",
+                overwrite=overwrite
+            )
+
+        # Split fractions are well-scaled by default, so inherent reactions and
+        # phase equilibrium are the only unit-model level variables that need scaling
+
+        if hasattr(model, "phase_equilibrium_generation"):
+            for t in model.flowsheet().time:
+                for o in model.outlet_idx:
+                    for pe in params.phase_equilibrium_idx:
+                        j, p1, p2 = params.phase_equilibrium_list[pe]
+                        nom1 = self.get_expression_nominal_value(
+                            mixed_state[t].get_material_flow_terms(p1, j)
+                        )
+                        nom2 = self.get_expression_nominal_value(
+                            mixed_state[t].get_material_flow_terms(p2, j)
+                        )
+                        # Scale pe generation to the phase with the smallest
+                        # nominal flow.
+                        sf = 10 / min(nom1, nom2)
+                        self.set_variable_scaling_factor(
+                            self.phase_equilibrium_generation[t, o, pe],
+                            sf,
+                            overwrite=overwrite
+                        )
+
+
+
+        if mixed_state.include_inherent_reactions:
+            stoich = params.inherent_reaction_stoichiometry
+            for t in model.flowsheet().time:
+                for o in model.outlet_idx:
+                    rxn_dict = {rxn: float("inf") for rxn in params.inherent_reaction_idx}
+                    for (p, j) in mixed_state.phase_component_set:
+                        nom = self.get_expression_nominal_value(
+                            mixed_state[t].get_material_flow_terms(p, j)
+                        )
+
+                        self.set_variable_scaling_factor(
+                            model.inherent_reaction_generation[t, o, p, j],
+                            10/nom,
+                            overwrite=overwrite
+                        )
+                        for rxn in params.inherent_reaction_idx:
+                            if stoich[rxn, p, j] != 0:
+                                rxn_dict[rxn] = min(
+                                    rxn_dict[rxn] ,
+                                    nom / abs(stoich[rxn, p, j])
+                                )
+                    for rxn in params.inherent_reaction_idx:
+                        # TODO should we check if this is zero
+                        # Note this scaling works only if we don't
+                        # have multiple reactions cancelling each other out
+                        self.set_variable_scaling_factor(
+                            model.inherent_reaction_extent[t, o, rxn],
+                            10/rxn_dict[rxn],
+                            overwrite=overwrite
+                        )
+        
+            
+
+
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        mb_type = model.config.material_balance_type
+        mixed_state = model.get_mixed_state_block()
+        if mb_type == MaterialBalanceType.useDefault:
+            t_ref = model.flowsheet().time.first()
+            mb_type = mixed_state[t_ref].default_material_balance_type()
+
+        # Step 1: Scale state blocks
+
+        # If the mixed state block is passed as part of the config,
+        # should it be scaled here?
+        if model.config.mixed_state_block is None:
+            self.call_submodel_scaler_method(
+                submodel=mixed_state,
+                submodel_scalers=submodel_scalers,
+                method="constraint_scaling_routine",
+                overwrite=overwrite
+            )
+
+        outlet_list = model.create_outlet_list()
+
+        for o in outlet_list:
+            # Get corresponding outlet StateBlock
+            self.call_submodel_scaler_method(
+                submodel=getattr(model, o + "_state"),
+                submodel_scalers=submodel_scalers,
+                method="constraint_scaling_routine",
+                overwrite=overwrite
+            )
+
+        # Step 2: Scale splitting equations
+
+        if hasattr(model, "temperature_equality_eqn"):
+            for (t, i), c in model.temperature_equality_eqn.items():
+                self.scale_constraint_by_variable(c, mixed_state[t].temperature, overwrite=overwrite)
+
+        if hasattr(model, "pressure_equality_eqn"):
+            for (t, i), c in model.pressure_equality_eqn.items():
+                self.scale_constraint_by_variable(c, mixed_state[t].pressure, overwrite=overwrite)
+
+        if hasattr(model, "material_splitting_eqn"):
+            if mb_type == MaterialBalanceType.componentPhase:
+                for (t, _, p, j), c in model.material_splitting_eqn.items():
+                    nom = self.get_expression_nominal_value(mixed_state[t].get_material_flow_terms(p, j))
+                    self.set_constraint_scaling_factor(c, 1 / nom, overwrite=overwrite)
+
+            elif mb_type == MaterialBalanceType.componentTotal:
+                for (t, _, j), c in model.material_splitting_eqn.items():
+                    nom = 0
+                    for p in mixed_state.phase_list:
+                        try:
+                            ft = mixed_state[t].get_material_flow_terms(p, j)
+                        except KeyError:
+                            # This component does not exist in this phase
+                            continue
+                        nom = max(nom, self.get_expression_nominal_value(ft))
+                    self.set_constraint_scaling_factor(c, 1 / nom, overwrite=overwrite)
+            elif mb_type == MaterialBalanceType.total:
+                pc_set = mixed_state.phase_component_set
+                for (t, _), c in model.material_splitting_eqn.items():
+                    nom = 0
+                    for p, j in pc_set:
+                        ft = mixed_state[t].get_material_flow_terms(p, j)
+                        nom = max(nom, self.get_expression_nominal_value(ft))
+                    self.set_constraint_scaling_factor(c, 1 / nom, overwrite=overwrite)
+
+        if hasattr(model, "inherent_reaction_constraint"):
+            for idx, con in model.inherent_reaction_constraint.items():
+                self.scale_constraint_by_variable(
+                    con,
+                    model.inherent_reaction_generation[idx],
+                    overwrite=overwrite
+                )
+
 
 
 class SeparatorInitializer(ModularInitializerBase):
@@ -423,6 +590,7 @@ class SeparatorData(UnitModelBlockData):
     """
 
     default_initializer = SeparatorInitializer
+    default_scaler = SeparatorScaler
 
     CONFIG = ConfigBlock()
     CONFIG.declare(
@@ -590,7 +758,7 @@ flows. Does not work with component or phase-component splitting.}""",
             domain=Bool,
             description="Ideal splitting flag",
             doc="""Argument indicating whether ideal splitting should be used.
-Ideal splitting assumes perfect separation of material, and attempts to
+Ideal splitting assumes perfect spearation of material, and attempts to
 avoid duplication of StateBlocks by directly partitioning outlet flows to
 ports,
 **default** - False.
@@ -1020,6 +1188,14 @@ objects linked the mixed state and all outlet states,
                 rhs = o_block[t].get_material_flow_terms(p, j)
 
                 if self.config.has_phase_equilibrium:
+                    # phase_equilibrium_idx is a list of unique identifiers for each
+                    # component-phase equilibrium pair. phase_equilibrium_list is not a
+                    # list, but a dictionary mapping this identifier to the list
+                    # [j, (pp[0], pp[1])], in which j is the component, pp[0] is the first
+                    # phase in equilibrium, and pp[1] is the second phase in equilibrium.
+                    # This setup is probably so complex in order to ensure that we don't
+                    # generate phase equilibrium generation terms for components that do
+                    # not participate a given phase equilibrium.
                     rhs += -sum(
                         b.phase_equilibrium_generation[t, o, r]
                         for r in b.config.property_package.phase_equilibrium_idx
@@ -2137,7 +2313,7 @@ def _e_rule_other(b, t, mixed_block, var_obj, outlet):
         else:
             _raise_split_unindexed_fail_err(b.name, l_name)
     else:
-        # Unrecognised split type
+        # Unrecognised split tupe
         raise BurntToast(
             "{} received unrecognised value for "
             "split_basis argument. This should never "
