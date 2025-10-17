@@ -45,7 +45,7 @@ class InitializationStatus(Enum):
     """
 
     Ok = 1  # Successfully converged to tolerance
-    none = 0  # Initiazation has not yet been run
+    none = 0  # Initialization has not yet been run
     Failed = -1  # Run, but failed to converge to tolerance
     DoF = -2  # Failed due to Degrees of Freedom issue
     PrecheckFailed = -3  # Failed pre-check step (other than DoF)

@@ -184,7 +184,7 @@ and reference entropy are required.  The temperature and density can be calculat
 IDAES property functions possibly using the expression writer class. The reference enthalpy and
 entropy are chosen arbitrarily. The reference state offset is dimensionless and is added to the
 :math:`n^\circ_1` and :math:`n^\circ_2` parameters in the ideal part for the dimensionless Helmholtz free
-energy corelation.  
+energy correlation.  
 
 The following example shows how to set the reference state in the main parameter file::
 

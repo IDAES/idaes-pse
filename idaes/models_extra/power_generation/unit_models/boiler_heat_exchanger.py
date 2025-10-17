@@ -290,7 +290,7 @@ class BoilerHeatExchangerData(HeatExchangerData):
             add_object_reference(self, "volume_cold_side", self.cold_side.volume)
             add_object_reference(self, "volume_hot_side", self.hot_side.volume)
 
-            # Total tube side valume
+            # Total tube side volume
             def volume_cold_side_eqn(b):
                 return b.volume_cold_side == (
                     0.25
