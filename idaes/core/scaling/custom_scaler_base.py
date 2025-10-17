@@ -299,6 +299,7 @@ class CustomScalerBase(ScalerBase):
                 variable=target_variable, scaling_factor=sf, overwrite=overwrite
             )
         else:
+            # TODO add infrastructure to log a warning
             _log.debug(
                 f"Could not set scaling factor for {target_variable.name}, "
                 f"no scaling factor set for {scaling_component.name}"
