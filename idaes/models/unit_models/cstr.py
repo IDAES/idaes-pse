@@ -32,12 +32,15 @@ from idaes.core.util.config import (
     is_physical_parameter_block,
     is_reaction_parameter_block,
 )
-from idaes.core.scaling import CustomScalerBase
+from idaes.core.scaling import CustomScalerBase, get_scaling_factor, set_scaling_factor
 
 __author__ = "Andrew Lee, Vibhav Dabadghao, Brandon Paul"
 
 
 class CSTRScalerCustom(CustomScalerBase):
+    """
+    Custom scaler for CSTR unit model.
+    """
     DEFAULT_SCALING_FACTORS = {
         # "QuantityName: (reference units, scaling factor)
         "deltaP": 1e-5,
@@ -47,8 +50,27 @@ class CSTRScalerCustom(CustomScalerBase):
     def variable_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: dict = None
     ):
+        # Call scaling methods for sub-models
         self.call_submodel_scaler_method(
-            model.control_volume,
+            submodel=model.control_volume.properties_in,
+            method="variable_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+        self.propagate_state_scaling(
+            target_state=model.control_volume.properties_out,
+            source_state=model.control_volume.properties_in,
+            overwrite=overwrite,
+        )
+
+        self.call_submodel_scaler_method(
+            submodel=model.control_volume.properties_out,
+            method="variable_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+        self.call_submodel_scaler_method(
+            submodel=model.control_volume.reactions,
             method="variable_scaling_routine",
             submodel_scalers=submodel_scalers,
             overwrite=overwrite,
@@ -79,8 +101,21 @@ class CSTRScalerCustom(CustomScalerBase):
         Returns:
             None
         """
+        # Call scaling methods for sub-models
         self.call_submodel_scaler_method(
-            model.control_volume,
+            submodel=model.control_volume.properties_in,
+            method="constraint_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+        self.call_submodel_scaler_method(
+            submodel=model.control_volume.properties_out,
+            method="constraint_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+        self.call_submodel_scaler_method(
+            submodel=model.control_volume.reactions,
             method="constraint_scaling_routine",
             submodel_scalers=submodel_scalers,
             overwrite=overwrite,
@@ -200,6 +235,13 @@ class CSTRScaler(CustomScalerBase):
                     model.control_volume.volume[t], overwrite=overwrite
                 )
                 self.set_variable_scaling_factor(model.control_volume.volume[t], 1e3)
+
+        # Reaction rate
+        for t in model.flowsheet().time:
+            if hasattr(model.control_volume.reactions[t], "reaction_rate"):
+                for v in model.control_volume.reactions[t].reaction_rate.values():
+                    self.set_variable_scaling_factor(v, 1e-3)
+
 
     def constraint_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: dict = None
