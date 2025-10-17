@@ -33,6 +33,7 @@ from pyomo.environ import (
 )
 
 from idaes.core import MaterialFlowBasis, MaterialBalanceType, EnergyBalanceType
+from idaes.core.base.components import IonData, ApparentData
 from idaes.models.properties.modular_properties.base.utility import (
     get_bounds_from_config,
     get_method,
@@ -722,6 +723,99 @@ class FTPxScaler(CustomScalerBase):
     """
     Scaler for constraints associated with FTPx state variables
     """
+
+    def _apparent_basis_variable_scaling_routine(self, model, overwrite:bool):
+        """
+        Method to scale variables created when using an apparent species
+        basis for systems with inherent reactions.
+
+        Args:
+            model: GenericStateBlockData which is being scaled
+            overwrite: Boolean flag about whether or not to
+                overwrite existing scaling factors
+        Returns:
+            None
+        """
+        # First try to scale true phase component flow by default.
+        # If no default scaling factor exists, for species which 
+        # also appear as an apparent species, use that scaling factor
+        # instead.
+        for idx, vardata in model.mole_frac_phase_comp_true.items():
+            self.scale_variable_by_default(vardata, overwrite=overwrite)
+            if self.get_scaling_factor(vardata) is None:
+                if idx in model.mole_frac_phase_comp:
+                    sf = self.get_scaling_factor(model.mole_frac_phase_comp[idx])
+                    self.set_component_scaling_factor(vardata, sf, overwrite=overwrite)
+                elif "mole_frac_phase_comp" in self.default_scaling_factors:
+                    sf = self.default_scaling_factors["mole_frac_phase_comp"]
+                    
+
+        # First try to scale true phase component flow by default.
+        # If no default scaling factor exists, for species which 
+        # also appear as an apparent species, use that scaling factor
+        # instead.
+        for idx, vardata in model.flow_mol_phase_comp_true.items():
+            self.scale_variable_by_default(vardata, overwrite=overwrite)
+            if self.get_scaling_factor(vardata) is None:
+                if idx in model.flow_mol_phase_comp:
+                    sf = self.get_scaling_factor(model.flow_mol_phase_comp[idx])
+                    self.set_component_scaling_factor(vardata, sf, overwrite=overwrite)
+
+            
+
+    def _apparent_basis_constraint_scaling_routine(self, model, overwrite:bool):
+        """
+        Method to scale constraints created when using an apparent species
+        basis for systems with inherent reactions.
+
+        Args:
+            model: GenericStateBlockData which is being scaled
+            overwrite: Boolean flag about whether or not to
+                overwrite existing scaling factors
+        Returns:
+            None
+        """
+
+        for p, j in model.params.true_phase_component_set:
+            pobj = model.params.get_phase(p)
+            cobj = model.params.get_component(j)
+            if pobj.is_aqueous_phase and not isinstance(cobj, IonData):
+                self.scale_constraint_by_component(
+                    model.appr_to_true_species[p, j],
+                    model.flow_mol_phase_comp_apparent[p, j],
+                    overwrite=overwrite
+                )
+                self.scale_constraint_by_component(
+                    model.true_mole_frac_constraint[p, j],
+                    model.flow_mol_phase_comp_true[p, j],
+                    overwrite=overwrite
+                )
+            else:
+                self.scale_constraint_by_component(
+                    model.appr_to_true_species[p, j],
+                    model.flow_mol_phase_comp_true[p, j],
+                    overwrite=overwrite
+                )
+                self.scale_constraint_by_component(
+                    model.true_mole_frac_constraint[p, j],
+                    model.flow_mol_phase_comp_true[p, j],
+                    overwrite=overwrite
+                )
+
+    def _true_basis_constraint_scaling_routine(self, model, overwrite):
+        # Autoscaling for constraints from a true species basis
+        # was not implemented in the legacy scaling tools.
+        # Use default scaling until we can rework the true to apparent
+        # species conversion
+        self.scale_constraint_by_nominal_value(
+            model.true_to_appr_species,
+            overwrite=overwrite
+        )
+        self.scale_constraint_by_nominal_value(
+            model.appr_mole_frac_constraint,
+            overwrite=overwrite
+        )
+
 
     def variable_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: dict = None
