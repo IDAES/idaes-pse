@@ -32,7 +32,7 @@ from idaes.core.util.config import (
     is_physical_parameter_block,
     is_reaction_parameter_block,
 )
-from idaes.core.scaling import CustomScalerBase, get_scaling_factor, set_scaling_factor
+from idaes.core.scaling import CustomScalerBase
 
 __author__ = "Andrew Lee, Vibhav Dabadghao, Brandon Paul"
 
