@@ -144,7 +144,6 @@ class CSTRScaler(CustomScalerBase):
                 for v in model.control_volume.reactions[t].reaction_rate.values():
                     self.set_variable_scaling_factor(v, 1e-3)
 
-
     def constraint_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: dict = None
     ):
