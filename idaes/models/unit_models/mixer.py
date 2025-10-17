@@ -86,11 +86,16 @@ class MixerScaler(ControlVolumeScalerBase):
     """
     Scaler object for the Mixer unit model
     """
-
-    # This attribute gives the parent ControlVolumeScalerBase
-    # methods a state block with the same index as the material
-    # and energy balances to get scaling information from
-    _state_block_ref = "mixed_state"
+    def _get_reference_state_block(self, model):
+        """
+        This method gives the parent class ControlVolumeScalerBase
+        methods a state block with the same index as the material
+        and energy balances to get scaling information from
+        """
+        if hasattr(model, "mixed_state"):
+            return model.mixed_state
+        else:
+            return model.get_mixed_state_block()
 
     def variable_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None

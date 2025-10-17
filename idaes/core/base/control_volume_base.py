@@ -108,20 +108,23 @@ class ControlVolumeScalerBase(CustomScalerBase):
     """
     Scaler object for elements common to the ControlVolume0D and ControlVolume1D
     """
-
-    # TODO can we extend this to the Mixer, Separator, and MSContactor?
-
-    # String name of the reference state block to use when scaling
-    # balance equations and material/heat transfer terms. This should be
-    # set by the scaler object that inherits from this base
-    _state_block_ref = None
-
     # Attribute name to use as a weight when scaling material and energy
     # terms. Presently (9/25/25), this attribute exists to take into
     # account the fact that all the material and energy terms in the
     # ControlVolume1D are given on the basis of material or energy per
     # unit length, so we want to weight them accordingly.
     _weight_attr_name = None
+
+    def _get_reference_state_block(self, model):
+        """
+        This method gives the parent class ControlVolumeScalerBase
+        methods a state block with the same index as the material
+        and energy balances to get scaling information from
+        """
+        raise NotImplementedError(
+            "This method is intended to be overridden by other scaler "
+            "objects inheriting from it."
+        )
 
     def variable_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers=None
@@ -139,26 +142,20 @@ class ControlVolumeScalerBase(CustomScalerBase):
         Returns:
             None
         """
-        if self._state_block_ref is None:
-            raise AttributeError(
-                "The _state_block_ref attribute was not overridden by the "
-                "class inheriting from ControlVolumeScalerBase."
-            )
-        else:
-            props = getattr(model, self._state_block_ref)
-            phase_list = props.phase_list
-            phase_component_set = props.phase_component_set
+        props = self._get_reference_state_block(model)
+        phase_list = props.phase_list
+        phase_component_set = props.phase_component_set
 
-            phase_equilibrium_idx = getattr(
-                props.params,
-                "phase_equilibrium_idx",
-                None,  # Default value if attr does not exist
-            )
-            phase_equilibrium_list = getattr(
-                props.params,
-                "phase_equilibrium_list",
-                None,  # Default value if attr does not exist
-            )
+        phase_equilibrium_idx = getattr(
+            props.params,
+            "phase_equilibrium_idx",
+            None,  # Default value if attr does not exist
+        )
+        phase_equilibrium_list = getattr(
+            props.params,
+            "phase_equilibrium_list",
+            None,  # Default value if attr does not exist
+        )
 
         if self._weight_attr_name is None:
             weight = 1
@@ -509,15 +506,9 @@ class ControlVolumeScalerBase(CustomScalerBase):
         Returns:
             None
         """
-        if self._state_block_ref is None:
-            raise AttributeError(
-                "The _state_block_ref attribute was not overridden by the "
-                "class inheriting from ControlVolumeScalerBase."
-            )
-        else:
-            props = getattr(model, self._state_block_ref)
-            phase_list = props.phase_list
-            pc_set = props.phase_component_set
+        props = self._get_reference_state_block(model)
+        phase_list = props.phase_list
+        pc_set = props.phase_component_set
 
         if hasattr(model, "reactions"):
             self.call_submodel_scaler_method(
