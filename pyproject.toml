@@ -41,8 +41,8 @@ dependencies = [
   "pyomo >= 6.9.3",
   "pint >= 0.24.1", # required to use Pyomo units. Pint 0.24.1 needed for Python 3.9 support
   "networkx", # required to use Pyomo network
-  "numpy>=1,<3", # pandas constraint added on 2023-08-30 b/c bug in v2.1  # see IDAES/idaes-pse#1253
-  "pandas!=2.1.0,<3",
+  "numpy>=1,<3", 
+  "pandas!=2.1.0,<3", # pandas constraint added on 2023-08-30 b/c bug in v2.1. See IDAES/idaes-pse#1253
   "scipy",
   "sympy", # idaes.core.util.expr_doc
   "matplotlib",
