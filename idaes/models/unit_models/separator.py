@@ -148,9 +148,36 @@ class SeparatorScaler(ControlVolumeScalerBase):
         for vardata in model.split_fraction.values():
             self.scale_variable_by_default(vardata, overwrite=overwrite)
 
-        super().variable_scaling_routine(
-            model, overwrite=overwrite, submodel_scalers=submodel_scalers
-        )
+        # super().variable_scaling_routine(
+        #     model, overwrite=overwrite, submodel_scalers=submodel_scalers
+        # )
+        if hasattr(model, "phase_equilibrium_generation"):
+            phase_equilibrium_idx = getattr(
+                mixed_state.params,
+                "phase_equilibrium_idx",
+            )
+            phase_equilibrium_list = getattr(
+                mixed_state.params,
+                "phase_equilibrium_list",
+                None,  # Default value if attr does not exist
+            )
+            for prop_idx in mixed_state:
+                for outlet_idx in outlet_list:
+                    for pe_idx in phase_equilibrium_idx:
+                        j, pp = phase_equilibrium_list[pe_idx]
+                        
+                        nom1 = self.get_expression_nominal_value(
+                            mixed_state[prop_idx].get_material_flow_terms(pp[0], j)
+                        )
+                        nom2 = self.get_expression_nominal_value(
+                            mixed_state[prop_idx].get_material_flow_terms(pp[1], j)
+                        )
+                        nom = min(nom1, nom2)
+                        self.set_component_scaling_factor(
+                            model.phase_equilibrium_generation[prop_idx, outlet_idx, pe_idx],
+                            1 / nom,
+                            overwrite=False,
+                        )
 
     def constraint_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None
