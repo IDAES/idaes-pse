@@ -312,6 +312,7 @@ class SeparatorScaler(CustomScalerBase):
                     overwrite=overwrite,
                 )
 
+
 class SeparatorInitializer(ModularInitializerBase):
     """
     Initializer for Separator blocks.
