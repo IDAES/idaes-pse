@@ -93,23 +93,12 @@ class EnergySplittingType(Enum):
     enthalpy_split = 3
 
 
-class SeparatorScaler(ControlVolumeScalerBase):
+class SeparatorScaler(CustomScalerBase):
     """
     Scaler object for the Separator unit model
     """
 
     DEFAULT_SCALING_FACTORS = {"split_fraction": 1}
-
-    def _get_reference_state_block(self, model):
-        """
-        This method gives the parent class ControlVolumeScalerBase
-        methods a state block with the same index as the material
-        and energy balances to get scaling information from
-        """
-        if hasattr(model, "mixed_state"):
-            return model.mixed_state
-        else:
-            return model.get_mixed_state_block()
 
     def variable_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None
@@ -255,10 +244,6 @@ class SeparatorScaler(ControlVolumeScalerBase):
                     overwrite=overwrite,
                 )
 
-        super().constraint_scaling_routine(
-            model, overwrite=overwrite, submodel_scalers=submodel_scalers
-        )
-
         if hasattr(model, "material_splitting_eqn"):
             mb_type = model._constructed_material_balance_type  # pylint: disable=W0212
             pc_set = mixed_state.phase_component_set
@@ -294,8 +279,20 @@ class SeparatorScaler(ControlVolumeScalerBase):
             for c in model.molar_enthalpy_equality_eqn.values():
                 self.scale_constraint_by_nominal_value(c, overwrite=overwrite)
         elif hasattr(model, "molar_enthalpy_splitting_eqn"):
-            # This case is scaled in the ControlVolumeScalerBase
-            pass
+            for idx in model.molar_enthalpy_splitting_eqn:
+                nom_list = []
+                for p in mixed_state.phase_list:
+                    nom_list.append(
+                        self.get_expression_nominal_value(
+                            mixed_state[idx[:-1]].get_enthalpy_flow_terms(p)
+                        )
+                    )
+                nom = max(nom_list)
+                self.set_component_scaling_factor(
+                    model.molar_enthalpy_splitting_eqn[idx],
+                    1 / nom,
+                    overwrite=overwrite,
+                )
         if hasattr(model, "pressure_equality_eqn"):
             for (t, _), c in model.pressure_equality_eqn.items():
                 self.scale_constraint_by_component(
