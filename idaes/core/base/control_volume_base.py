@@ -108,6 +108,7 @@ class ControlVolumeScalerBase(CustomScalerBase):
     """
     Scaler object for elements common to the ControlVolume0D and ControlVolume1D
     """
+
     # Attribute name to use as a weight when scaling material and energy
     # terms. Presently (9/25/25), this attribute exists to take into
     # account the fact that all the material and energy terms in the
@@ -565,9 +566,6 @@ class ControlVolumeScalerBase(CustomScalerBase):
         elif hasattr(model, "material_mixing_equations"):
             # Mixer
             mb_eqn = model.material_mixing_equations
-        # elif hasattr(model, "material_splitting_eqn"):
-        #     # Separator
-        #     mb_eqn = model.material_splitting_eqn
 
         if mb_eqn is not None:
             mb_type = model._constructed_material_balance_type  # pylint: disable=W0212
@@ -636,9 +634,6 @@ class ControlVolumeScalerBase(CustomScalerBase):
         elif hasattr(model, "enthalpy_mixing_equations"):
             # Mixer
             eb_eqn = model.enthalpy_mixing_equations
-        # elif hasattr(model, "molar_enthalpy_splitting_eqn"):
-        #     # Separator
-        #     eb_eqn = model.molar_enthalpy_splitting_eqn
 
         if eb_eqn is not None:
             # Phase enthalpy balances are not implemented
