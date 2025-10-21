@@ -32,13 +32,15 @@ from idaes.core import (
     EnergyBalanceType,
     MomentumBalanceType,
 )
-from idaes.models.unit_models.flash import  EnergySplittingType, Flash, FlashScaler
+from idaes.models.unit_models.flash import EnergySplittingType, Flash, FlashScaler
 from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
     BTXParameterBlock,
 )
 from idaes.models.properties import iapws95
 from idaes.models.properties.modular_properties import GenericParameterBlock
-from idaes.models.properties.modular_properties.examples.BT_ideal import configuration as BTIdeal_config
+from idaes.models.properties.modular_properties.examples.BT_ideal import (
+    configuration as BTIdeal_config,
+)
 from idaes.core.util.model_statistics import (
     number_variables,
     number_total_constraints,
@@ -57,7 +59,6 @@ from idaes.core.util.scaling import (
     get_jacobian,
     jacobian_cond,
 )
-
 
 
 # -----------------------------------------------------------------------------
@@ -99,13 +100,14 @@ def test_legacy_scaling():
     m.fs.unit = Flash(property_package=m.fs.properties)
     iscale.calculate_scaling_factors(m)
 
+
 @pytest.mark.unit
 def test_scaler_object():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = PhysicalParameterTestBlock()
     m.fs.unit = Flash(property_package=m.fs.properties)
-    
+
     assert m.fs.unit.default_scaler is FlashScaler
 
     scaler_obj = m.fs.unit.default_scaler()
@@ -113,9 +115,10 @@ def test_scaler_object():
 
     assert m.fs.unit.control_volume.properties_in[0].variables_scaled
     assert m.fs.unit.control_volume.properties_in[0].constraints_scaled
-    
+
     assert m.fs.unit.control_volume.properties_out[0].variables_scaled
     assert m.fs.unit.control_volume.properties_out[0].constraints_scaled
+
 
 # -----------------------------------------------------------------------------
 class TestBTXIdeal(object):
@@ -347,7 +350,6 @@ class TestBTIdealModular(object):
         m.fs.unit.control_volume.properties_in[0.0]._teq.setlb(300)
         m.fs.unit.control_volume.properties_in[0.0]._teq.setub(550)
 
-
         m.fs.unit.control_volume.properties_out[0.0]._teq.setlb(300)
         m.fs.unit.control_volume.properties_out[0.0]._teq.setub(550)
 
@@ -522,22 +524,29 @@ class TestBTIdealModular(object):
             7.028667e7, rel=1e-3
         )
 
-        property_scaler = bt_modular.fs.unit.control_volume.properties_in[0].default_scaler()
+        property_scaler = bt_modular.fs.unit.control_volume.properties_in[
+            0
+        ].default_scaler()
         property_scaler.default_scaling_factors["flow_mol_phase"] = 1
 
         submodel_scalers = ComponentMap()
-        submodel_scalers[bt_modular.fs.unit.control_volume.properties_in] = property_scaler
-        submodel_scalers[bt_modular.fs.unit.control_volume.properties_out] = property_scaler
-        
+        submodel_scalers[bt_modular.fs.unit.control_volume.properties_in] = (
+            property_scaler
+        )
+        submodel_scalers[bt_modular.fs.unit.control_volume.properties_out] = (
+            property_scaler
+        )
+
         scaler_object = bt_modular.fs.unit.default_scaler()
         scaler_object.scale_model(bt_modular.fs.unit, submodel_scalers=submodel_scalers)
 
-        sm = TransformationFactory("core.scale_model").create_using(bt_modular, rename=False)
+        sm = TransformationFactory("core.scale_model").create_using(
+            bt_modular, rename=False
+        )
         jac, _ = get_jacobian(sm, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
             6.7221e4, rel=1e-3
         )
-
 
 
 # -----------------------------------------------------------------------------

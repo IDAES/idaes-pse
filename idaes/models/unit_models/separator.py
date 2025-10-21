@@ -92,14 +92,13 @@ class EnergySplittingType(Enum):
     equal_molar_enthalpy = 2
     enthalpy_split = 3
 
+
 class SeparatorScaler(ControlVolumeScalerBase):
     """
     Scaler object for the Separator unit model
     """
 
-    DEFAULT_SCALING_FACTORS = {
-        "split_fraction": 1
-    }
+    DEFAULT_SCALING_FACTORS = {"split_fraction": 1}
 
     def _get_reference_state_block(self, model):
         """
@@ -111,7 +110,6 @@ class SeparatorScaler(ControlVolumeScalerBase):
             return model.mixed_state
         else:
             return model.get_mixed_state_block()
-
 
     def variable_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None
@@ -125,7 +123,7 @@ class SeparatorScaler(ControlVolumeScalerBase):
                 submodel=mixed_state,
                 submodel_scalers=submodel_scalers,
                 method="variable_scaling_routine",
-                overwrite=overwrite
+                overwrite=overwrite,
             )
         else:
             mixed_state = model.config.mixed_state_block
@@ -143,7 +141,7 @@ class SeparatorScaler(ControlVolumeScalerBase):
                     submodel=getattr(model, o + "_state"),
                     submodel_scalers=submodel_scalers,
                     method="variable_scaling_routine",
-                    overwrite=overwrite
+                    overwrite=overwrite,
                 )
 
         # If an ideal separation is used, the split_fraction
@@ -166,7 +164,7 @@ class SeparatorScaler(ControlVolumeScalerBase):
                 for outlet_idx in outlet_list:
                     for pe_idx in phase_equilibrium_idx:
                         j, pp = phase_equilibrium_list[pe_idx]
-                        
+
                         nom1 = self.get_expression_nominal_value(
                             mixed_state[prop_idx].get_material_flow_terms(pp[0], j)
                         )
@@ -175,7 +173,9 @@ class SeparatorScaler(ControlVolumeScalerBase):
                         )
                         nom = min(nom1, nom2)
                         self.set_component_scaling_factor(
-                            model.phase_equilibrium_generation[prop_idx, outlet_idx, pe_idx],
+                            model.phase_equilibrium_generation[
+                                prop_idx, outlet_idx, pe_idx
+                            ],
                             1 / nom,
                             overwrite=False,
                         )
@@ -210,7 +210,9 @@ class SeparatorScaler(ControlVolumeScalerBase):
                     for rxn in inh_rxn_idx:
                         nom_rxn = float("inf")
                         for p, j in mixed_state.phase_component_set:
-                            sf_pc = get_scaling_factor(inh_rxn_gen[prop_idx, outlet_idx, p, j])
+                            sf_pc = get_scaling_factor(
+                                inh_rxn_gen[prop_idx, outlet_idx, p, j]
+                            )
                             coeff = stoich[rxn, p, j]
                             if coeff != 0:
                                 nom_rxn = min(abs(coeff) / sf_pc, nom_rxn)
@@ -237,7 +239,7 @@ class SeparatorScaler(ControlVolumeScalerBase):
                 submodel=mixed_state,
                 submodel_scalers=submodel_scalers,
                 method="constraint_scaling_routine",
-                overwrite=overwrite
+                overwrite=overwrite,
             )
         else:
             mixed_state = model.config.mixed_state_block
@@ -250,19 +252,21 @@ class SeparatorScaler(ControlVolumeScalerBase):
                     submodel=getattr(model, o + "_state"),
                     submodel_scalers=submodel_scalers,
                     method="constraint_scaling_routine",
-                    overwrite=overwrite
+                    overwrite=overwrite,
                 )
 
         super().constraint_scaling_routine(
             model, overwrite=overwrite, submodel_scalers=submodel_scalers
         )
-        
+
         if hasattr(model, "material_splitting_eqn"):
             mb_type = model._constructed_material_balance_type  # pylint: disable=W0212
             pc_set = mixed_state.phase_component_set
             if mb_type == MaterialBalanceType.componentPhase:
                 for (t, _, p, j), c in model.material_splitting_eqn.items():
-                    nom = self.get_expression_nominal_value(mixed_state[t].get_material_flow_terms(p, j))
+                    nom = self.get_expression_nominal_value(
+                        mixed_state[t].get_material_flow_terms(p, j)
+                    )
                     self.set_constraint_scaling_factor(c, 1 / nom, overwrite=overwrite)
 
             elif mb_type == MaterialBalanceType.componentTotal:
@@ -283,7 +287,9 @@ class SeparatorScaler(ControlVolumeScalerBase):
 
         if hasattr(model, "temperature_equality_eqn"):
             for (t, _), c in model.temperature_equality_eqn.items():
-                self.scale_constraint_by_component(c, mixed_state[t].temperature, overwrite=overwrite)
+                self.scale_constraint_by_component(
+                    c, mixed_state[t].temperature, overwrite=overwrite
+                )
         elif hasattr(model, "molar_enthalpy_equality_eqn"):
             for c in model.molar_enthalpy_equality_eqn.values():
                 self.scale_constraint_by_nominal_value(c, overwrite=overwrite)
@@ -292,7 +298,9 @@ class SeparatorScaler(ControlVolumeScalerBase):
             pass
         if hasattr(model, "pressure_equality_eqn"):
             for (t, _), c in model.pressure_equality_eqn.items():
-                self.scale_constraint_by_component(c, mixed_state[t].pressure, overwrite=overwrite)
+                self.scale_constraint_by_component(
+                    c, mixed_state[t].pressure, overwrite=overwrite
+                )
 
         if hasattr(model, "sum_split_frac"):
             for c in model.sum_split_frac.values():
@@ -306,11 +314,12 @@ class SeparatorScaler(ControlVolumeScalerBase):
                     model.inherent_reaction_generation[idx],
                     overwrite=overwrite,
                 )
+
+
 class SeparatorScalerLegacy(CustomScalerBase):
     """
     Scaler for the Separator.
     """
-
 
     def variable_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: dict = None
@@ -324,7 +333,7 @@ class SeparatorScalerLegacy(CustomScalerBase):
                 submodel=mixed_state,
                 submodel_scalers=submodel_scalers,
                 method="variable_scaling_routine",
-                overwrite=overwrite
+                overwrite=overwrite,
             )
 
         outlet_list = model.create_outlet_list()
@@ -335,7 +344,7 @@ class SeparatorScalerLegacy(CustomScalerBase):
                 submodel=getattr(model, o + "_state"),
                 submodel_scalers=submodel_scalers,
                 method="variable_scaling_routine",
-                overwrite=overwrite
+                overwrite=overwrite,
             )
 
         # Split fractions are well-scaled by default, so inherent reactions and
@@ -358,31 +367,30 @@ class SeparatorScalerLegacy(CustomScalerBase):
                         self.set_variable_scaling_factor(
                             self.phase_equilibrium_generation[t, o, pe],
                             sf,
-                            overwrite=overwrite
+                            overwrite=overwrite,
                         )
-
-
 
         if mixed_state.include_inherent_reactions:
             stoich = params.inherent_reaction_stoichiometry
             for t in model.flowsheet().time:
                 for o in model.outlet_idx:
-                    rxn_dict = {rxn: float("inf") for rxn in params.inherent_reaction_idx}
-                    for (p, j) in mixed_state.phase_component_set:
+                    rxn_dict = {
+                        rxn: float("inf") for rxn in params.inherent_reaction_idx
+                    }
+                    for p, j in mixed_state.phase_component_set:
                         nom = self.get_expression_nominal_value(
                             mixed_state[t].get_material_flow_terms(p, j)
                         )
 
                         self.set_variable_scaling_factor(
                             model.inherent_reaction_generation[t, o, p, j],
-                            10/nom,
-                            overwrite=overwrite
+                            10 / nom,
+                            overwrite=overwrite,
                         )
                         for rxn in params.inherent_reaction_idx:
                             if stoich[rxn, p, j] != 0:
                                 rxn_dict[rxn] = min(
-                                    rxn_dict[rxn] ,
-                                    nom / abs(stoich[rxn, p, j])
+                                    rxn_dict[rxn], nom / abs(stoich[rxn, p, j])
                                 )
                     for rxn in params.inherent_reaction_idx:
                         # TODO should we check if this is zero
@@ -390,12 +398,9 @@ class SeparatorScalerLegacy(CustomScalerBase):
                         # have multiple reactions cancelling each other out
                         self.set_variable_scaling_factor(
                             model.inherent_reaction_extent[t, o, rxn],
-                            10/rxn_dict[rxn],
-                            overwrite=overwrite
+                            10 / rxn_dict[rxn],
+                            overwrite=overwrite,
                         )
-        
-            
-
 
     def constraint_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: dict = None
@@ -415,7 +420,7 @@ class SeparatorScalerLegacy(CustomScalerBase):
                 submodel=mixed_state,
                 submodel_scalers=submodel_scalers,
                 method="constraint_scaling_routine",
-                overwrite=overwrite
+                overwrite=overwrite,
             )
 
         outlet_list = model.create_outlet_list()
@@ -426,23 +431,29 @@ class SeparatorScalerLegacy(CustomScalerBase):
                 submodel=getattr(model, o + "_state"),
                 submodel_scalers=submodel_scalers,
                 method="constraint_scaling_routine",
-                overwrite=overwrite
+                overwrite=overwrite,
             )
 
         # Step 2: Scale splitting equations
 
         if hasattr(model, "temperature_equality_eqn"):
             for (t, i), c in model.temperature_equality_eqn.items():
-                self.scale_constraint_by_variable(c, mixed_state[t].temperature, overwrite=overwrite)
+                self.scale_constraint_by_variable(
+                    c, mixed_state[t].temperature, overwrite=overwrite
+                )
 
         if hasattr(model, "pressure_equality_eqn"):
             for (t, i), c in model.pressure_equality_eqn.items():
-                self.scale_constraint_by_variable(c, mixed_state[t].pressure, overwrite=overwrite)
+                self.scale_constraint_by_variable(
+                    c, mixed_state[t].pressure, overwrite=overwrite
+                )
 
         if hasattr(model, "material_splitting_eqn"):
             if mb_type == MaterialBalanceType.componentPhase:
                 for (t, _, p, j), c in model.material_splitting_eqn.items():
-                    nom = self.get_expression_nominal_value(mixed_state[t].get_material_flow_terms(p, j))
+                    nom = self.get_expression_nominal_value(
+                        mixed_state[t].get_material_flow_terms(p, j)
+                    )
                     self.set_constraint_scaling_factor(c, 1 / nom, overwrite=overwrite)
 
             elif mb_type == MaterialBalanceType.componentTotal:
@@ -468,11 +479,8 @@ class SeparatorScalerLegacy(CustomScalerBase):
         if hasattr(model, "inherent_reaction_constraint"):
             for idx, con in model.inherent_reaction_constraint.items():
                 self.scale_constraint_by_variable(
-                    con,
-                    model.inherent_reaction_generation[idx],
-                    overwrite=overwrite
+                    con, model.inherent_reaction_generation[idx], overwrite=overwrite
                 )
-
 
 
 class SeparatorInitializer(ModularInitializerBase):

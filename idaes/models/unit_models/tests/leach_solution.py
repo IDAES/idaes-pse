@@ -31,6 +31,7 @@ from idaes.core.scaling import CustomScalerBase
 
 __author__ = "Andrew Lee, Douglas Allan"
 
+
 # -----------------------------------------------------------------------------------------
 # We do not want to make this property package an example because it has non-SI base units.
 # -----------------------------------------------------------------------------------------
@@ -83,6 +84,7 @@ class LeachSolutionParameterData(PhysicalParameterBlock):
     """
     Parameter block for simple property package that has an inherent reaction
     """
+
     def build(self):
         super().build()
 
@@ -179,6 +181,7 @@ class LeachSolutionStateBlockData(StateBlockData):
     """
     State block for simple property package that has an inherent reaction
     """
+
     def build(self):
         super().build()
 

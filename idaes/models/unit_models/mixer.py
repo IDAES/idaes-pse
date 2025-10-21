@@ -86,6 +86,7 @@ class MixerScaler(ControlVolumeScalerBase):
     """
     Scaler object for the Mixer unit model
     """
+
     def _get_reference_state_block(self, model):
         """
         This method gives the parent class ControlVolumeScalerBase
