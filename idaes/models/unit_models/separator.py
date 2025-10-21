@@ -145,9 +145,12 @@ class SeparatorScaler(ControlVolumeScalerBase):
                     method="variable_scaling_routine",
                     overwrite=overwrite
                 )
-        
-        for vardata in model.split_fraction.values():
-            self.scale_variable_by_default(vardata, overwrite=overwrite)
+
+        # If an ideal separation is used, the split_fraction
+        # variable is not created.
+        if hasattr(model, "split_fraction"):
+            for vardata in model.split_fraction.values():
+                self.scale_variable_by_default(vardata, overwrite=overwrite)
 
         if hasattr(model, "phase_equilibrium_generation"):
             phase_equilibrium_idx = getattr(
@@ -183,16 +186,15 @@ class SeparatorScaler(ControlVolumeScalerBase):
             # Material generation scaling is based on the magnitude of
             # the material flow terms
             for idx in inh_rxn_gen:
-                for outlet_idx in outlet_list:
-                    prop_idx = idx[:-2]
-                    p = idx[-2]
-                    j = idx[-1]
-                    nom = self.get_expression_nominal_value(
-                        mixed_state[prop_idx].get_material_flow_terms(p, j)
-                    )
-                    self.set_component_scaling_factor(
-                        inh_rxn_gen[idx, outlet_idx], 1 / nom, overwrite=overwrite
-                    )
+                prop_idx = idx[0]
+                p = idx[-2]
+                j = idx[-1]
+                nom = self.get_expression_nominal_value(
+                    mixed_state[prop_idx].get_material_flow_terms(p, j)
+                )
+                self.set_component_scaling_factor(
+                    inh_rxn_gen[idx], 1 / nom, overwrite=overwrite
+                )
 
             # Extent of reaction scaling is based on the species in the
             # reaction which has the largest scaling factor (and thus is
@@ -240,15 +242,16 @@ class SeparatorScaler(ControlVolumeScalerBase):
         else:
             mixed_state = model.config.mixed_state_block
 
-        outlet_list = model.create_outlet_list()
+        if not model.config.ideal_separation:
+            outlet_list = model.create_outlet_list()
 
-        for o in outlet_list:
-            self.call_submodel_scaler_method(
-                submodel=getattr(model, o + "_state"),
-                submodel_scalers=submodel_scalers,
-                method="constraint_scaling_routine",
-                overwrite=overwrite
-            )
+            for o in outlet_list:
+                self.call_submodel_scaler_method(
+                    submodel=getattr(model, o + "_state"),
+                    submodel_scalers=submodel_scalers,
+                    method="constraint_scaling_routine",
+                    overwrite=overwrite
+                )
 
         super().constraint_scaling_routine(
             model, overwrite=overwrite, submodel_scalers=submodel_scalers
@@ -295,6 +298,14 @@ class SeparatorScaler(ControlVolumeScalerBase):
             for c in model.sum_split_frac.values():
                 # Register the fact that this constraint is well-scaled by default
                 self.set_component_scaling_factor(c, 1, overwrite=overwrite)
+
+        if hasattr(model, "inherent_reaction_constraint"):
+            for idx in model.inherent_reaction_constraint:
+                self.scale_constraint_by_component(
+                    model.inherent_reaction_constraint[idx],
+                    model.inherent_reaction_generation[idx],
+                    overwrite=overwrite,
+                )
 class SeparatorScalerLegacy(CustomScalerBase):
     """
     Scaler for the Separator.

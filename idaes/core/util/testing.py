@@ -278,6 +278,8 @@ class SBlockBase(StateBlock):
 class StateTestBlockData(StateBlockData):
     CONFIG = ConfigBlock(implicit=True)
     default_scaler = PhysicalPropertiesTestScaler
+    variables_scaled = False
+    constraints_scaled = False
 
     def build(self):
         super(StateTestBlockData, self).build()
