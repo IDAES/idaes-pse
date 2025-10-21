@@ -12,7 +12,7 @@
 #################################################################################
 """
 Tests for Flash unit model.
-Author: Jaffer Ghouse
+Authors: Jaffer Ghouse, Douglas Allan
 """
 import pytest
 
@@ -30,7 +30,7 @@ from idaes.core import (
     EnergyBalanceType,
     MomentumBalanceType,
 )
-from idaes.models.unit_models.flash import Flash, EnergySplittingType
+from idaes.models.unit_models.flash import  EnergySplittingType, Flash, FlashScaler
 from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
     BTXParameterBlock,
 )
@@ -83,13 +83,28 @@ def test_config():
 
 # -----------------------------------------------------------------------------
 @pytest.mark.unit
-def test_calc_scale():
+def test_legacy_scaling():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = PhysicalParameterTestBlock()
     m.fs.unit = Flash(property_package=m.fs.properties)
     iscale.calculate_scaling_factors(m)
 
+@pytest.mark.unit
+def test_scaler_object():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = PhysicalParameterTestBlock()
+    m.fs.unit = Flash(property_package=m.fs.properties)
+    
+    assert m.fs.unit.default_scaler is FlashScaler
+
+    scaler_obj = m.fs.unit.default_scaler()
+    scaler_obj.scale_model(m.fs.unit)
+
+    assert len(m.fs.unit.scaling_factor) == 4
+    for condata in m.fs.split_fraction_eq.values():
+        assert m.fs.unit.scaling_factor[condata] == 1
 
 # -----------------------------------------------------------------------------
 class TestBTXIdeal(object):

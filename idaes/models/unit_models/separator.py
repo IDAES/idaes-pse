@@ -132,25 +132,23 @@ class SeparatorScaler(ControlVolumeScalerBase):
 
         outlet_list = model.create_outlet_list()
 
-        for o in outlet_list:
-            self.propagate_state_scaling(
-                target_state=getattr(model, o + "_state"),
-                source_state=mixed_state,
-                overwrite=overwrite,
-            )
-            self.call_submodel_scaler_method(
-                submodel=getattr(model, o + "_state"),
-                submodel_scalers=submodel_scalers,
-                method="variable_scaling_routine",
-                overwrite=overwrite
-            )
+        if not model.config.ideal_separation:
+            for o in outlet_list:
+                self.propagate_state_scaling(
+                    target_state=getattr(model, o + "_state"),
+                    source_state=mixed_state,
+                    overwrite=overwrite,
+                )
+                self.call_submodel_scaler_method(
+                    submodel=getattr(model, o + "_state"),
+                    submodel_scalers=submodel_scalers,
+                    method="variable_scaling_routine",
+                    overwrite=overwrite
+                )
         
         for vardata in model.split_fraction.values():
             self.scale_variable_by_default(vardata, overwrite=overwrite)
 
-        # super().variable_scaling_routine(
-        #     model, overwrite=overwrite, submodel_scalers=submodel_scalers
-        # )
         if hasattr(model, "phase_equilibrium_generation"):
             phase_equilibrium_idx = getattr(
                 mixed_state.params,
@@ -177,6 +175,55 @@ class SeparatorScaler(ControlVolumeScalerBase):
                             model.phase_equilibrium_generation[prop_idx, outlet_idx, pe_idx],
                             1 / nom,
                             overwrite=False,
+                        )
+        if hasattr(model, "inherent_reaction_generation"):
+            stoich = mixed_state.params.inherent_reaction_stoichiometry
+            inh_rxn_gen = getattr(model, "inherent_reaction_generation")
+            inh_rxn_idx = mixed_state.params.inherent_reaction_idx
+            # Material generation scaling is based on the magnitude of
+            # the material flow terms
+            for idx in inh_rxn_gen:
+                for outlet_idx in outlet_list:
+                    prop_idx = idx[:-2]
+                    p = idx[-2]
+                    j = idx[-1]
+                    nom = self.get_expression_nominal_value(
+                        mixed_state[prop_idx].get_material_flow_terms(p, j)
+                    )
+                    self.set_component_scaling_factor(
+                        inh_rxn_gen[idx, outlet_idx], 1 / nom, overwrite=overwrite
+                    )
+
+            # Extent of reaction scaling is based on the species in the
+            # reaction which has the largest scaling factor (and thus is
+            # the species whose concentration is the most sensitive).
+            # This scaling may not work for systems with highly reactive
+            # intermediates, in which multiple extents of reaction
+            # cancel each other out (but if that's the case, we either
+            # should be able to eliminate the highly reactive species from
+            # the reaction system by combining reactions or we need to keep
+            # track of the concentration of this highly reactive intermediate.)
+            for prop_idx in mixed_state:
+                for outlet_idx in outlet_list:
+                    for rxn in inh_rxn_idx:
+                        nom_rxn = float("inf")
+                        for p, j in mixed_state.phase_component_set:
+                            sf_pc = get_scaling_factor(inh_rxn_gen[prop_idx, outlet_idx, p, j])
+                            coeff = stoich[rxn, p, j]
+                            if coeff != 0:
+                                nom_rxn = min(abs(coeff) / sf_pc, nom_rxn)
+                        if nom_rxn == float("inf"):
+                            raise ConfigurationError(
+                                f"Reaction {rxn} has no nonzero stoichiometric coefficient."
+                            )
+                        # Note this scaling works only if we don't
+                        # have multiple reactions cancelling each other out
+                        # No need to weight here because the inh_rxn_gen
+                        # scaling factor is already weighted
+                        self.set_component_scaling_factor(
+                            model.inherent_reaction_extent[prop_idx, outlet_idx, rxn],
+                            1 / nom_rxn,
+                            overwrite=overwrite,
                         )
 
     def constraint_scaling_routine(

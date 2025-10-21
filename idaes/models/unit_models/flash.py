@@ -99,7 +99,8 @@ class FlashData(UnitModelBlockData):
     """
     Standard Flash Unit Model Class
     """
-
+    default_scaler = FlashScaler
+    
     CONFIG = ConfigBlock()
     CONFIG.declare(
         "dynamic",
