@@ -20,7 +20,6 @@ import pandas
 
 from pyomo.environ import (
     check_optimal_termination,
-    ComponentMap,
     ConcreteModel,
     Constraint,
     Param,
@@ -46,9 +45,7 @@ from idaes.core import (
     EnergyBalanceType,
     Phase,
     Component,
-    MaterialFlowBasis,
 )
-from idaes.core.scaling import CustomScalerBase
 from idaes.core.util.scaling import (
     get_jacobian,
     jacobian_cond,
@@ -94,9 +91,6 @@ from idaes.models.properties.modular_properties.eos.ceos import cubic_roots_avai
 from idaes.core.initialization import (
     BlockTriangularizationInitializer,
     InitializationStatus,
-)
-from idaes.core.util.initialization import (
-    fix_state_vars,
 )
 from idaes.core.util import DiagnosticsToolbox
 

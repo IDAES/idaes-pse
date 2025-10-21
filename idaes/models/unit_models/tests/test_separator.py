@@ -23,7 +23,6 @@ from pyomo.environ import (
     ComponentMap,
     ConcreteModel,
     Constraint,
-    Param,
     Set,
     TransformationFactory,
     value,

@@ -22,7 +22,6 @@ from pyomo.environ import (
     ConcreteModel,
     TransformationFactory,
     value,
-    units,
     units as pyunits,
 )
 
