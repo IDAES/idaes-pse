@@ -20,10 +20,12 @@ import pandas
 
 from pyomo.environ import (
     check_optimal_termination,
+    ComponentMap,
     ConcreteModel,
     Constraint,
     Param,
     Set,
+    TransformationFactory,
     value,
     Var,
     units as pyunits,
@@ -51,6 +53,7 @@ from idaes.models.unit_models.separator import (
     SplittingType,
     EnergySplittingType,
     SeparatorInitializer,
+    SeparatorScaler,
 )
 from idaes.core.util.exceptions import (
     BurntToast,
@@ -87,6 +90,10 @@ from idaes.core.initialization import (
     InitializationStatus,
 )
 from idaes.core.util import DiagnosticsToolbox
+from idaes.core.util.scaling import (
+    get_jacobian,
+    jacobian_cond,
+)
 
 
 # -----------------------------------------------------------------------------
@@ -329,15 +336,107 @@ class TestBaseScaling(object):
         b.fs.pp = PhysicalParameterTestBlock()
         return b
 
-    def test_no_exception_scaling_calc_external_mixed_state(self, m):
+    def test_no_exception_legacy_scaling_external_mixed_state(self, m):
         m.fs.sb = StateBlockForTesting(m.fs.time, parameters=m.fs.pp)
         m.fs.sep1 = Separator(property_package=m.fs.pp, mixed_state_block=m.fs.sb)
         iscale.calculate_scaling_factors(m)
 
-    def test_no_exception_scaling_calc_internal_mixed_state(self, m):
+    def test_no_exception_legacy_scaling_internal_mixed_state(self, m):
         m.fs.sep1 = Separator(property_package=m.fs.pp)
         iscale.calculate_scaling_factors(m)
 
+    def test_default_scaler_object(self, m):
+        m.fs.sep1 = Separator(property_package=m.fs.pp, mixed_state_block=m.fs.sb)
+        assert m.fs.sep1.default_scaler is SeparatorScaler
+
+    def test_scaler_object_external_mixed_state(self, m):
+        m.fs.sb = StateBlockForTesting(m.fs.time, parameters=m.fs.pp)
+        m.fs.sep1 = Separator(property_package=m.fs.pp, mixed_state_block=m.fs.sb)
+
+        scaler_object = m.fs.sep1.default_scaler()
+        scaler_object.set_component_scaling_factor(
+            m.fs.sb[0].flow_mol_phase_comp["p2", "c1"],
+            4649
+        )
+        scaler_object.set_component_scaling_factor(
+            m.fs.sb[0].flow_mol_phase_comp["p1", "c2"],
+            5683
+        )
+        scaler_object.set_component_scaling_factor(
+            m.fs.sb[0].pressure,
+            4051
+        )
+
+        scaler_object.scale_model(m.fs.sep1)
+
+        assert not hasattr(m.fs.sb, "variables_scaled")
+        assert not hasattr(m.fs.sb, "constraints_scaled")
+        for outlet in ["outlet_1", "outlet_2"]:
+            state = getattr(m.fs.sep1, outlet+"_state")
+            assert state[0].variables_scaled
+            assert state[0].constraints_scaled
+            assert scaler_object.get_scaling_factor(
+                state[0].flow_mol_phase_comp["p1", "c1"]
+            ) == 1/7
+            assert scaler_object.get_scaling_factor(
+                state[0].flow_mol_phase_comp["p1", "c2"]
+            ) == 5683
+            assert scaler_object.get_scaling_factor(
+                state[0].flow_mol_phase_comp["p2", "c1"]
+            ) == 4649
+            assert scaler_object.get_scaling_factor(
+                state[0].flow_mol_phase_comp["p2", "c2"]
+            ) == 1/7
+            assert scaler_object.get_scaling_factor(
+                state[0].temperature
+            ) == 1/17
+            assert scaler_object.get_scaling_factor(
+                state[0].pressure
+            ) == 4051
+
+    def test_scaler_object_internal_mixed_state(self, m):
+        m.fs.sep1 = Separator(property_package=m.fs.pp)
+
+        scaler_object = m.fs.sep1.default_scaler()
+        scaler_object.set_component_scaling_factor(
+            m.fs.sep1.mixed_state[0].flow_mol_phase_comp["p2", "c1"],
+            4649
+        )
+        scaler_object.set_component_scaling_factor(
+            m.fs.sep1.mixed_state[0].flow_mol_phase_comp["p1", "c2"],
+            5683
+        )
+        scaler_object.set_component_scaling_factor(
+            m.fs.sep1.mixed_state[0].pressure,
+            4051
+        )
+
+        scaler_object.scale_model(m.fs.sep1)
+
+        assert hasattr(m.fs.sep1.mixed_state[0], "variables_scaled")
+        assert hasattr(m.fs.sep1.mixed_state[0], "constraints_scaled")
+        for outlet in ["outlet_1", "outlet_2"]:
+            state = getattr(m.fs.sep1, outlet+"_state")
+            assert state[0].variables_scaled
+            assert state[0].constraints_scaled
+            assert scaler_object.get_scaling_factor(
+                state[0].flow_mol_phase_comp["p1", "c1"]
+            ) == 1/7
+            assert scaler_object.get_scaling_factor(
+                state[0].flow_mol_phase_comp["p1", "c2"]
+            ) == 5683
+            assert scaler_object.get_scaling_factor(
+                state[0].flow_mol_phase_comp["p2", "c1"]
+            ) == 4649
+            assert scaler_object.get_scaling_factor(
+                state[0].flow_mol_phase_comp["p2", "c2"]
+            ) == 1/7
+            assert scaler_object.get_scaling_factor(
+                state[0].temperature
+            ) == 1/17
+            assert scaler_object.get_scaling_factor(
+                state[0].pressure
+            ) == 4051
 
 # -----------------------------------------------------------------------------
 # Tests of Separator unit model non-ideal construction methods
@@ -386,7 +485,7 @@ class TestSplitConstruction(object):
             assert sep.scaling_factor[vardata] == 1
         
         # Constraints
-        for condata in sep.split_fraction.values():
+        for condata in sep.sum_split_frac.values():
             assert sep.scaling_factor[condata] == 1
 
         # Expressions
@@ -427,7 +526,7 @@ class TestSplitConstruction(object):
             assert sep.scaling_factor[vardata] == 1
         
         # Constraints
-        for condata in sep.split_fraction.values():
+        for condata in sep.sum_split_frac.values():
             assert sep.scaling_factor[condata] == 1
 
         # Expressions
@@ -468,7 +567,7 @@ class TestSplitConstruction(object):
             assert sep.scaling_factor[vardata] == 1
         
         # Constraints
-        for condata in sep.split_fraction.values():
+        for condata in sep.sum_split_frac.values():
             assert sep.scaling_factor[condata] == 1
 
         # Expressions
@@ -510,7 +609,7 @@ class TestSplitConstruction(object):
             assert sep.scaling_factor[vardata] == 1
         
         # Constraints
-        for condata in sep.split_fraction.values():
+        for condata in sep.sum_split_frac.values():
             assert sep.scaling_factor[condata] == 1
 
         # Expressions
@@ -542,7 +641,7 @@ class TestSplitConstruction(object):
             assert sep.scaling_factor[vardata] == 1
 
         # Constraints
-        for condata in sep.split_fraction.values():
+        for condata in sep.sum_split_frac.values():
             assert sep.scaling_factor[condata] == 1
 
         for vardata in sep.material_splitting_eqn.values():
@@ -580,7 +679,7 @@ class TestSplitConstruction(object):
             assert sep.scaling_factor[vardata] == 1
 
         # Constraints
-        for condata in sep.split_fraction.values():
+        for condata in sep.sum_split_frac.values():
             assert sep.scaling_factor[condata] == 1
 
         for vardata in sep.material_splitting_eqn.values():
@@ -618,7 +717,7 @@ class TestSplitConstruction(object):
             assert sep.scaling_factor[vardata] == 1
 
         # Constraints
-        for condata in sep.split_fraction.values():
+        for condata in sep.sum_split_frac.values():
             assert sep.scaling_factor[condata] == 1
 
         for vardata in sep.material_splitting_eqn.values():
@@ -660,7 +759,7 @@ class TestSplitConstruction(object):
             assert sep.scaling_factor[vardata] == 1
 
         # Constraints
-        for condata in sep.split_fraction.values():
+        for condata in sep.sum_split_frac.values():
             assert sep.scaling_factor[condata] == 1
 
         for vardata in sep.material_splitting_eqn.values():
@@ -698,7 +797,7 @@ class TestSplitConstruction(object):
             assert sep.scaling_factor[vardata] == 1 / 43
 
         # Constraints
-        for condata in sep.split_fraction.values():
+        for condata in sep.sum_split_frac.values():
             assert sep.scaling_factor[condata] == 1
 
         for vardata in sep.material_splitting_eqn.values():
@@ -741,7 +840,7 @@ class TestSplitConstruction(object):
             assert sep.scaling_factor[vardata] == 1 / 43
 
         # Constraints
-        for condata in sep.split_fraction.values():
+        for condata in sep.sum_split_frac.values():
             assert sep.scaling_factor[condata] == 1
 
         for vardata in sep.material_splitting_eqn.values():
@@ -784,7 +883,7 @@ class TestSplitConstruction(object):
             assert sep.scaling_factor[vardata] == 1 / 43
 
         # Constraints
-        for condata in sep.split_fraction.values():
+        for condata in sep.sum_split_frac.values():
             assert sep.scaling_factor[condata] == 1
 
         for vardata in sep.material_splitting_eqn.values():
@@ -827,7 +926,7 @@ class TestSplitConstruction(object):
             assert sep.scaling_factor[vardata] == 1 / 43
 
         # Constraints
-        for condata in sep.split_fraction.values():
+        for condata in sep.sum_split_frac.values():
             assert sep.scaling_factor[condata] == 1
 
         for vardata in sep.material_splitting_eqn.values():
@@ -864,7 +963,7 @@ class TestSplitConstruction(object):
             assert sep.scaling_factor[vardata] == 1
 
         # Constraints
-        for condata in sep.split_fraction.values():
+        for condata in sep.sum_split_frac.values():
             assert sep.scaling_factor[condata] == 1
 
         for vardata in sep.material_splitting_eqn.values():
@@ -903,7 +1002,7 @@ class TestSplitConstruction(object):
             assert sep.scaling_factor[vardata] == 1
 
         # Constraints
-        for condata in sep.split_fraction.values():
+        for condata in sep.sum_split_frac.values():
             assert sep.scaling_factor[condata] == 1
 
         for vardata in sep.material_splitting_eqn.values():
@@ -942,7 +1041,7 @@ class TestSplitConstruction(object):
             assert sep.scaling_factor[vardata] == 1
 
         # Constraints
-        for condata in sep.split_fraction.values():
+        for condata in sep.sum_split_frac.values():
             assert sep.scaling_factor[condata] == 1
 
         for vardata in sep.material_splitting_eqn.values():
@@ -981,7 +1080,7 @@ class TestSplitConstruction(object):
             assert sep.scaling_factor[vardata] == 1
 
         # Constraints
-        for condata in sep.split_fraction.values():
+        for condata in sep.sum_split_frac.values():
             assert sep.scaling_factor[condata] == 1
 
         for vardata in sep.material_splitting_eqn.values():
@@ -1018,7 +1117,7 @@ class TestSplitConstruction(object):
             assert sep.scaling_factor[vardata] == 1
 
         # Constraints
-        for condata in sep.split_fraction.values():
+        for condata in sep.sum_split_frac.values():
             assert sep.scaling_factor[condata] == 1
 
         for vardata in sep.material_splitting_eqn.values():
@@ -1057,7 +1156,7 @@ class TestSplitConstruction(object):
             assert sep.scaling_factor[vardata] == 1
 
         # Constraints
-        for condata in sep.split_fraction.values():
+        for condata in sep.sum_split_frac.values():
             assert sep.scaling_factor[condata] == 1
 
         for vardata in sep.material_splitting_eqn.values():
@@ -1096,7 +1195,7 @@ class TestSplitConstruction(object):
             assert sep.scaling_factor[vardata] == 1
 
         # Constraints
-        for condata in sep.split_fraction.values():
+        for condata in sep.sum_split_frac.values():
             assert sep.scaling_factor[condata] == 1
 
         for vardata in sep.material_splitting_eqn.values():
@@ -1135,7 +1234,7 @@ class TestSplitConstruction(object):
             assert sep.scaling_factor[vardata] == 1
 
         # Constraints
-        for condata in sep.split_fraction.values():
+        for condata in sep.sum_split_frac.values():
             assert sep.scaling_factor[condata] == 1
 
         for vardata in sep.material_splitting_eqn.values():
@@ -1180,7 +1279,7 @@ class TestSplitConstruction(object):
             assert sep.scaling_factor[vardata] == 1
 
         # Constraints
-        for condata in sep.split_fraction.values():
+        for condata in sep.sum_split_frac.values():
             assert sep.scaling_factor[condata] == 1
 
         # Expressions
@@ -1215,7 +1314,7 @@ class TestSplitConstruction(object):
             assert sep.scaling_factor[vardata] == 1
 
         # Constraints
-        for condata in sep.split_fraction.values():
+        for condata in sep.sum_split_frac.values():
             assert sep.scaling_factor[condata] == 1
 
         # Expressions
@@ -1250,7 +1349,7 @@ class TestSplitConstruction(object):
             assert sep.scaling_factor[vardata] == 1
 
         # Constraints
-        for condata in sep.split_fraction.values():
+        for condata in sep.sum_split_frac.values():
             assert sep.scaling_factor[condata] == 1
 
         # Expressions
@@ -1286,7 +1385,7 @@ class TestSplitConstruction(object):
             assert sep.scaling_factor[vardata] == 1
 
         # Constraints
-        for condata in sep.split_fraction.values():
+        for condata in sep.sum_split_frac.values():
             assert sep.scaling_factor[condata] == 1
 
         # Expressions
@@ -1317,6 +1416,75 @@ class TestSplitConstruction(object):
                     build.fs.sep.mixed_state
                 )
 
+    @pytest.mark.parametrize("balance_type", MomentumBalanceType)
+    @pytest.mark.parametrize("split_type", SplittingType)
+    @pytest.mark.unit
+    def test_scale_momentum_splitting(self, build, balance_type, split_type):
+        sep = build.fs.sep
+        sep.config.split_basis = split_type
+        sep.config.momentum_balance_type = balance_type
+        sep.add_split_fractions(build.outlet_list, sep.mixed_state)
+
+        if balance_type is MomentumBalanceType.none:
+            sep.add_momentum_splitting_constraints(sep.mixed_state)
+
+            scaler_obj = sep.default_scaler()
+            scaler_obj.scale_model(sep)
+
+            assert len(sep.scaling_factor) == (
+                len(sep.split_fraction)
+                + len(sep.sum_split_frac)
+            )
+
+            # Variables
+            for vardata in sep.split_fraction.values():
+                assert sep.scaling_factor[vardata] == 1
+
+            # Constraints
+            for condata in sep.sum_split_frac.values():
+                assert sep.scaling_factor[condata] == 1
+
+            # Expressions
+            assert not hasattr(sep, "scaling_hint")
+
+
+        elif balance_type is MomentumBalanceType.pressureTotal:
+            sep.add_momentum_splitting_constraints(sep.mixed_state)
+
+            scaler_obj = sep.default_scaler()
+            scaler_obj.scale_model(sep)
+
+            assert len(sep.scaling_factor) == (
+                len(sep.split_fraction)
+                + len(sep.sum_split_frac)
+                + 2
+            )
+
+            # Variables
+            for vardata in sep.split_fraction.values():
+                assert sep.scaling_factor[vardata] == 1
+
+            # Constraints
+            for condata in sep.sum_split_frac.values():
+                assert sep.scaling_factor[condata] == 1
+
+            for condata in sep.pressure_equality_eqn.values():
+                assert sep.scaling_factor[condata] == 1 / 13
+
+            # Expressions
+            assert not hasattr(sep, "scaling_hint")
+
+
+        else:
+            with pytest.raises(
+                NotImplementedError,
+                match=f"Separators do not yet support momentum balances of type "
+                f"{balance_type}",
+            ):
+                build.fs.sep.add_momentum_splitting_constraints(
+                    build.fs.sep.mixed_state
+                )
+
     @pytest.mark.unit
     def test_add_energy_splitting_constraints(self, build):
         assert (
@@ -1329,6 +1497,31 @@ class TestSplitConstruction(object):
 
         assert isinstance(build.fs.sep.temperature_equality_eqn, Constraint)
         assert len(build.fs.sep.temperature_equality_eqn) == 2
+
+    @pytest.mark.unit
+    def test_scale_energy_splitting_constraints(self, build):
+        sep = build.fs.sep
+        sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
+        sep.add_energy_splitting_constraints(build.fs.sep.mixed_state)
+
+        scaler_obj = sep.default_scaler()
+        scaler_obj.scale_model(sep)
+
+        assert len(sep.scaling_factor) == 5
+
+        # Variables
+        for vardata in sep.split_fraction.values():
+            assert sep.scaling_factor[vardata] == 1
+
+        # Constraints
+        for condata in sep.sum_split_frac.values():
+            assert sep.scaling_factor[condata] == 1
+
+        for condata in sep.temperature_equality_eqn.values():
+            assert sep.scaling_factor[condata] == 1 / 17
+
+        # Expressions
+        assert not hasattr(sep, "scaling_hint")
 
     @pytest.mark.unit
     def test_add_energy_splitting_constraints_enthalpy(self, build):
@@ -1347,6 +1540,35 @@ class TestSplitConstruction(object):
         assert len(build.fs.sep.molar_enthalpy_equality_eqn) == 2
 
     @pytest.mark.unit
+    def test_scale_energy_splitting_constraints_enthalpy(self, build):
+        sep = build.fs.sep
+        sep.config.energy_split_basis = (
+            EnergySplittingType.equal_molar_enthalpy
+        )
+        sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
+        sep.add_energy_splitting_constraints(build.fs.sep.mixed_state)
+
+        scaler_obj = sep.default_scaler()
+        scaler_obj.scale_model(sep)
+
+
+        assert len(sep.scaling_factor) == 5
+
+        # Variables
+        for vardata in sep.split_fraction.values():
+            assert sep.scaling_factor[vardata] == 1
+
+        # Constraints
+        for condata in sep.sum_split_frac.values():
+            assert sep.scaling_factor[condata] == 1
+
+        for condata in sep.molar_enthalpy_equality_eqn.values():
+            assert sep.scaling_factor[condata] == 1 / 19
+
+        # Expressions
+        assert not hasattr(sep, "scaling_hint")
+
+    @pytest.mark.unit
     def test_add_energy_splitting_constraints_none(self, build):
         build.fs.sep.config.energy_split_basis = EnergySplittingType.none
         assert build.fs.sep.config.energy_split_basis == EnergySplittingType.none
@@ -1356,6 +1578,26 @@ class TestSplitConstruction(object):
 
         assert not hasattr(build.fs.sep, "temperature_equality_eqn")
         assert not hasattr(build.fs.sep, "molar_enthalpy_equality_eqn")
+
+    @pytest.mark.unit
+    def test_scale_energy_splitting_constraints_none(self, build):
+        sep = build.fs.sep
+        sep.config.energy_split_basis = EnergySplittingType.none
+        sep.add_split_fractions(build.outlet_list, sep.mixed_state)
+        sep.add_energy_splitting_constraints(sep.mixed_state)
+
+        scaler_obj = sep.default_scaler()
+        scaler_obj.scale_model(sep)
+
+        assert len(sep.scaling_factor) == 3
+
+        # Variables
+        for vardata in sep.split_fraction.values():
+            assert sep.scaling_factor[vardata] == 1
+
+        # Constraints
+        for condata in sep.sum_split_frac.values():
+            assert sep.scaling_factor[condata] == 1
 
     @pytest.mark.unit
     def test_add_momentum_splitting_constraints(self, build):
@@ -1730,6 +1972,32 @@ class TestSaponification(object):
         dt = DiagnosticsToolbox(sapon)
         dt.assert_no_numerical_warnings()
 
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_scaling(self, sapon):
+
+        jac, _ = get_jacobian(sapon, scaled=False)
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+            1.450471e6, rel=1e-3
+        )
+        sapon_scaler = sapon.fs.unit.mixed_state[0].default_scaler()
+        sapon_scaler.default_scaling_factors["flow_vol"] = 1
+
+        submodel_scalers = ComponentMap()
+        submodel_scalers[sapon.fs.unit.mixed_state] = sapon_scaler
+        submodel_scalers[sapon.fs.unit.a_state] = sapon_scaler
+        submodel_scalers[sapon.fs.unit.B_state] = sapon_scaler
+        submodel_scalers[sapon.fs.unit.c_state] = sapon_scaler
+        
+        scaler_object = sapon.fs.unit.default_scaler()
+        scaler_object.scale_model(sapon.fs.unit, submodel_scalers=submodel_scalers)
+
+        sm = TransformationFactory("core.scale_model").create_using(sapon, rename=False)
+        jac, _ = get_jacobian(sm, scaled=False)
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+            157.69, rel=1e-3
+        )
 
 # -----------------------------------------------------------------------------
 class TestBTXIdeal(object):
