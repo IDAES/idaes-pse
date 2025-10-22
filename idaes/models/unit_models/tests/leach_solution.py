@@ -28,6 +28,7 @@ from idaes.core import (
     MaterialFlowBasis,
 )
 from idaes.core.scaling import CustomScalerBase
+from idaes.core.util.initialization import fix_state_vars
 
 __author__ = "Andrew Lee, Douglas Allan"
 

@@ -42,7 +42,6 @@ from idaes.core import (
     MaterialFlowBasis,
     VarLikeExpression,
 )
-from idaes.core.base.control_volume_base import ControlVolumeScalerBase
 from idaes.core.util.config import (
     is_physical_parameter_block,
     is_state_block,
@@ -53,7 +52,6 @@ from idaes.core.util.exceptions import (
     PropertyNotSupportedError,
     InitializationError,
 )
-from idaes.core.scaling.custom_scaler_base import DefaultScalingRecommendation
 from idaes.core.solvers import get_solver
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.model_statistics import degrees_of_freedom
