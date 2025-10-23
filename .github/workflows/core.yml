@@ -67,7 +67,7 @@ jobs:
           pip --no-cache-dir install --progress-bar off "$black_requirement"
       - name: Run Black to verify that the committed code is formatted
         run: |
-          black --check .
+          black --check --diff .
 
   spell-check:
     name: Check Spelling
