@@ -244,6 +244,7 @@ Must be True if dynamic = True,
                         _idx = block.length_domain.last()
 
                     port, ref_name_list = sblock.build_port(
+                        # pylint: disable-next=possibly-used-before-assignment
                         doc, slice_index=(slice(None), _idx)
                     )
 
@@ -342,6 +343,7 @@ Must be True if dynamic = True,
                         _idx = block.length_domain.last()
 
                     port, ref_name_list = sblock.build_port(
+                        # pylint: disable-next=possibly-used-before-assignment
                         doc, slice_index=(slice(None), _idx)
                     )
 

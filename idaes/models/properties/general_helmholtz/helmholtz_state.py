@@ -693,7 +693,9 @@ class HelmholtzStateBlockData(StateBlockData):
                 "p": self.p_kPa,
                 "x": self.vapor_frac,
             }
+        # pylint: disable-next=possibly-used-before-assignment
         sv_dict_liq = copy.copy(sv_dict)
+        # pylint: disable-next=possibly-used-before-assignment
         sv_dict_vap = copy.copy(sv_dict)
         if self.state_vars == StateVars.TPX and len(phlist) > 1:
             self.p_kPa_liq = pyo.Expression(

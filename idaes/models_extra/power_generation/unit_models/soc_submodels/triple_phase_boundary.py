@@ -496,6 +496,7 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
                     sqx1 = gsf(self.heat_flux_x1[t, iz].referent, 1e-2)
                 else:
                     sqx1 = sgsf(self.heat_flux_x1[t, iz], 1e-2)
+                # pylint: disable-next=possibly-used-before-assignment
                 sqx = min(sqx0, sqx1)
                 cst(self.heat_flux_x_eqn[t, iz], sqx)
 
