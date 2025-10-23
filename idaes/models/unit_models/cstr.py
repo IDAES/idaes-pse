@@ -77,29 +77,36 @@ class CSTRScaler(CustomScalerBase):
         """
         # Call scaling methods for sub-models
         self.call_submodel_scaler_method(
-            submodel=model.control_volume.properties_in,
+            model.control_volume,
             method="variable_scaling_routine",
             submodel_scalers=submodel_scalers,
-            overwrite=overwrite,
-        )
-        self.propagate_state_scaling(
-            target_state=model.control_volume.properties_out,
-            source_state=model.control_volume.properties_in,
             overwrite=overwrite,
         )
 
-        self.call_submodel_scaler_method(
-            submodel=model.control_volume.properties_out,
-            method="variable_scaling_routine",
-            submodel_scalers=submodel_scalers,
-            overwrite=overwrite,
-        )
-        self.call_submodel_scaler_method(
-            submodel=model.control_volume.reactions,
-            method="variable_scaling_routine",
-            submodel_scalers=submodel_scalers,
-            overwrite=overwrite,
-        )
+        # self.call_submodel_scaler_method(
+        #     submodel=model.control_volume.properties_in,
+        #     method="variable_scaling_routine",
+        #     submodel_scalers=submodel_scalers,
+        #     overwrite=overwrite,
+        # )
+        # self.propagate_state_scaling(
+        #     target_state=model.control_volume.properties_out,
+        #     source_state=model.control_volume.properties_in,
+        #     overwrite=overwrite,
+        # )
+
+        # self.call_submodel_scaler_method(
+        #     submodel=model.control_volume.properties_out,
+        #     method="variable_scaling_routine",
+        #     submodel_scalers=submodel_scalers,
+        #     overwrite=overwrite,
+        # )
+        # self.call_submodel_scaler_method(
+        #     submodel=model.control_volume.reactions,
+        #     method="variable_scaling_routine",
+        #     submodel_scalers=submodel_scalers,
+        #     overwrite=overwrite,
+        # )
 
         # Scaling control volume variables
 
@@ -133,9 +140,9 @@ class CSTRScaler(CustomScalerBase):
         # Volume
         if hasattr(model.control_volume, "volume"):
             for t in model.flowsheet().time:
-                self.scale_variable_by_default(
-                    model.control_volume.volume[t], overwrite=overwrite
-                )
+                # self.scale_variable_by_default(
+                #     model.control_volume.volume[t], overwrite=overwrite
+                # )
                 self.set_variable_scaling_factor(model.control_volume.volume[t], 1e3)
 
         # Reaction rate
@@ -163,23 +170,30 @@ class CSTRScaler(CustomScalerBase):
         """
         # Call scaling methods for sub-models
         self.call_submodel_scaler_method(
-            submodel=model.control_volume.properties_in,
+            model.control_volume,
             method="constraint_scaling_routine",
             submodel_scalers=submodel_scalers,
             overwrite=overwrite,
         )
-        self.call_submodel_scaler_method(
-            submodel=model.control_volume.properties_out,
-            method="constraint_scaling_routine",
-            submodel_scalers=submodel_scalers,
-            overwrite=overwrite,
-        )
-        self.call_submodel_scaler_method(
-            submodel=model.control_volume.reactions,
-            method="constraint_scaling_routine",
-            submodel_scalers=submodel_scalers,
-            overwrite=overwrite,
-        )
+
+        # self.call_submodel_scaler_method(
+        #     submodel=model.control_volume.properties_in,
+        #     method="constraint_scaling_routine",
+        #     submodel_scalers=submodel_scalers,
+        #     overwrite=overwrite,
+        # )
+        # self.call_submodel_scaler_method(
+        #     submodel=model.control_volume.properties_out,
+        #     method="constraint_scaling_routine",
+        #     submodel_scalers=submodel_scalers,
+        #     overwrite=overwrite,
+        # )
+        # self.call_submodel_scaler_method(
+        #     submodel=model.control_volume.reactions,
+        #     method="constraint_scaling_routine",
+        #     submodel_scalers=submodel_scalers,
+        #     overwrite=overwrite,
+        # )
 
         # Scale control volume constraints
         for c in model.control_volume.component_data_objects(
