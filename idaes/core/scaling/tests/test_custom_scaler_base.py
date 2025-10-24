@@ -799,6 +799,52 @@ class TestCustomScalerBase:
             assert model.foo[idx].value is None
 
     @pytest.mark.unit
+    def test_scale_variable_by_definition_no_hint_scalar(self, model):
+        sb = CustomScalerBase()
+
+        model.foo = Var()
+
+        @model.Expression()
+        def biz(b):
+            return 1
+
+        @model.Constraint()
+        def bar(b):
+            return b.foo == b.biz
+
+        sb.scale_variable_by_definition_constraint(
+            model.foo,
+            model.bar,
+        )
+
+        assert model.scaling_factor[model.foo] == pytest.approx(1)
+        assert model.foo.value is None
+
+    @pytest.mark.unit
+    def test_scale_variable_by_definition_no_hint_indexed(self, model):
+        sb = CustomScalerBase()
+
+        model.foo = Var([1, 2, 3])
+
+        @model.Expression([1, 2, 3])
+        def biz(b, idx):
+            return idx
+
+        @model.Constraint([1, 2, 3])
+        def bar(b, idx):
+            return b.foo[idx] == b.biz[idx]
+
+        for idx in model.foo:
+            sb.scale_variable_by_definition_constraint(
+                model.foo[idx],
+                model.bar[idx],
+            )
+
+        for idx in model.foo:
+            assert model.scaling_factor[model.foo[idx]] == pytest.approx(1 / idx)
+            assert model.foo[idx].value is None
+
+    @pytest.mark.unit
     def test_scale_variable_by_definition_constraint_zero_derivative(self, model):
         sb = CustomScalerBase()
         model.foo = Constraint(expr=1 == 0 * model.enth_mol)
