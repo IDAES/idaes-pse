@@ -22,7 +22,7 @@ from pyomo.environ import ComponentMap, units, value
 from pyomo.core.base.units_container import UnitsError
 
 from pyomo.core.base.block import Block, BlockData
-from pyomo.core.base.constraint import ConstraintData, Constraint
+from pyomo.core.base.constraint import ConstraintData
 from pyomo.core.base.var import VarData, ScalarVar
 from pyomo.core.base.expression import ExpressionData, ScalarExpression
 
