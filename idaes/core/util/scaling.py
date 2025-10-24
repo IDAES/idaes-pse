@@ -976,7 +976,9 @@ def scale_time_discretization_equations(blk, time_set, time_scaling_factor):
                                 if t != time_set.first():
                                     constraint_scaling_transform(
                                         # pylint: disable-next=possibly-used-before-assignment
-                                        cont[t], s_state, overwrite=False
+                                        cont[t],
+                                        s_state,
+                                        overwrite=False,
                                     )
 
 
