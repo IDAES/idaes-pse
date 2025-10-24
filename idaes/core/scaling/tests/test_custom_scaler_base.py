@@ -835,52 +835,46 @@ class TestCustomScalerBase:
         assert model.enth_mol.value == 42
 
     @pytest.mark.unit
-    def test_scale_variable_by_definition_constraint_max_scaling_factors(self, model):
-        sb = CustomScalerBase()
-        model.foo = Var()
-        model.bar = Var()
-        model.biz = Var()
-
-        @model.Constraint()
-        def con(b):
-            return b.biz == b.foo**2 / b.bar
-
-        sb.set_variable_scaling_factor(model.foo, 1e8)
-        sb.set_variable_scaling_factor(model.bar, 1e16)
-
-        sb.scale_variable_by_definition_constraint(
-            model.biz,
-            model.con,
-        )
-        assert model.foo.value is None
-        assert model.bar.value is None
-        assert model.biz.value is None
-
-        assert model.scaling_factor[model.biz] == pytest.approx(1e6)
-
-    @pytest.mark.unit
     def test_scale_variable_by_definition_constraint_min_scaling_factors(self, model):
         sb = CustomScalerBase()
-        model.foo = Var()
-        model.bar = Var()
+        model.foo = Var(initialize=1e8)
+        model.bar = Var(initialize=1e16)
         model.biz = Var()
 
         @model.Constraint()
         def con(b):
             return b.biz == b.foo**2 / b.bar
 
-        sb.set_variable_scaling_factor(model.foo, 1e-8)
-        sb.set_variable_scaling_factor(model.bar, 1e-16)
-
         sb.scale_variable_by_definition_constraint(
             model.biz,
             model.con,
         )
-        assert model.foo.value is None
-        assert model.bar.value is None
+        assert model.foo.value == 1e8
+        assert model.bar.value == 1e16
         assert model.biz.value is None
 
         assert model.scaling_factor[model.biz] == pytest.approx(1e-6)
+
+    @pytest.mark.unit
+    def test_scale_variable_by_definition_constraint_max_scaling_factors(self, model):
+        sb = CustomScalerBase()
+        model.foo = Var(initialize=1e-8)
+        model.bar = Var(initialize=1e-16)
+        model.biz = Var()
+
+        @model.Constraint()
+        def con(b):
+            return b.biz == b.foo**2 / b.bar
+
+        sb.scale_variable_by_definition_constraint(
+            model.biz,
+            model.con,
+        )
+        assert model.foo.value == 1e-8
+        assert model.bar.value == 1e-16
+        assert model.biz.value is None
+
+        assert model.scaling_factor[model.biz] == pytest.approx(1e6)
 
     @pytest.mark.unit
     def test_scale_constraint_by_default_no_default(self, model):
