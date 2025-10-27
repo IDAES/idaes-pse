@@ -571,7 +571,7 @@ class TestModelSerialize(unittest.TestCase):
 
     @pytest.mark.unit
     def test12(self):
-        """Test some odd set compoenents"""
+        """Test some odd set components"""
         model = self.setup_model03()
         self.assertIs(model.r.ctype, Var)
         model.r[1, 3] = 1
