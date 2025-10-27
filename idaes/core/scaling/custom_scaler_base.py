@@ -23,20 +23,20 @@ from pyomo.core.base.units_container import UnitsError
 
 from pyomo.core.base.block import Block, BlockData
 from pyomo.core.base.constraint import ConstraintData
-from pyomo.core.base.var import VarData
-from pyomo.core.base.expression import ExpressionData
+from pyomo.core.base.var import VarData, ScalarVar
+from pyomo.core.base.expression import ExpressionData, ScalarExpression
 
-from pyomo.core.expr import identify_variables
+from pyomo.common.collections import ComponentSet
+
+from pyomo.core.expr import identify_components, identify_variables, replace_expressions
 from pyomo.core.expr.calculus.derivatives import Modes, differentiate
 from pyomo.common.deprecation import deprecation_warning
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 from idaes.core.scaling.scaling_base import CONFIG, ScalerBase
-from idaes.core.scaling.util import (
-    get_scaling_factor,
-    NominalValueExtractionVisitor,
-)
+from idaes.core.scaling.util import NominalValueExtractionVisitor
 import idaes.logger as idaeslog
+from idaes.core.util.exceptions import BurntToast
 from idaes.core.util.misc import StrEnum
 
 # Set up logger
@@ -292,7 +292,7 @@ class CustomScalerBase(ScalerBase):
         Returns:
             None
         """
-        sf = get_scaling_factor(scaling_component)
+        sf = self.get_scaling_factor(scaling_component)
 
         if sf is not None:
             self.set_variable_scaling_factor(
@@ -364,7 +364,7 @@ class CustomScalerBase(ScalerBase):
         sf = self.get_default_scaling_factor(component)
         if sf is None or sf == DefaultScalingRecommendation.userInputRequired:
             # Check to see if the user manually set a scaling factor
-            sf = get_scaling_factor(component)
+            sf = self.get_scaling_factor(component)
             if sf is None or overwrite:
                 # If the user told us to overwrite scaling factors, then
                 # accepting a preexisiting scaling factor is not good enough.
@@ -461,6 +461,72 @@ class CustomScalerBase(ScalerBase):
                 "in self.unit_scaling_factors"
             )
 
+    def _build_replacement_map(self, variable, constraint, safety_mode: bool):
+        """
+        Helper function for scale_variable_by_definition_constraint.
+
+        Iterates over the constraint to build a map between Variables or Expressions
+        appearing in Constraint and the scaling factor or scaling hint assigned
+        to them. (Because constraints can contain non-local variables and expressions,
+        getting the scaling factor and scaling hint suffixes from the parent block of
+        the constraint is not good enough.)
+
+        Args:
+            variable: Variable we are scaling by the definition constraint "constraint".
+            constraint: Definition constraint that we are using to scale "variable" and
+                that is getting walked in this function.
+            safety_mode: Flag about whether or not to screen named expressions to see if
+                "variable" appears in them. Screening them takes longer (especially for
+                extremely deep expression trees), but if we do not screen them we run
+                the risk of removing "variable" from "constraint" entirely when we use
+                replacement_map in the replace_expressions function.
+
+        Returns:
+            replacement_map: dictionary with variable or expression IDs as keys and
+                nominal values (the inverse of the scaling factors/hints) as values.
+            variable_in_constraint: Boolean flag whether "variable" was encountered in
+                the body of "constraint"
+        """
+        replacement_map = {}
+        variable_in_constraint = False
+        # Iterate over all variables and named expressions in constraint
+        for data in identify_components(
+            constraint.expr, {ExpressionData, ScalarExpression, VarData, ScalarVar}
+        ):
+            if data is variable:
+                # We don't want to replace the value of "variable" with
+                # its nominal value---that's what we're trying to calculate
+                variable_in_constraint = True
+                continue
+            sf = self.get_scaling_factor(data)
+            if sf is None:
+                if isinstance(data, VarData):
+                    # We need to use some nominal value for the variable "data",
+                    # so use its current value
+                    if data.value is not None and data.value != 0:
+                        sf = 1 / data.value
+                        sf = min(sf, self.config.max_variable_scaling_factor)
+                        sf = max(sf, self.config.min_variable_scaling_factor)
+                    else:
+                        sf = 1
+                else:
+                    # No scaling hint for expression, so we
+                    # do not store a value
+                    continue
+
+            if safety_mode and isinstance(data, ExpressionData):
+                vars_in_expr = ComponentSet(var for var in identify_variables(data))
+                if variable in vars_in_expr:
+                    # If the variable we're trying to scale appears in the expression
+                    # "data", we shouldn't store a scaling hint because we don't want
+                    # to replace it.
+                    continue
+
+            sf = _filter_scaling_factor(sf)
+            replacement_map[id(data)] = 1 / sf
+
+        return (replacement_map, variable_in_constraint)
+
     def scale_variable_by_definition_constraint(
         self, variable, constraint, overwrite: bool = False
     ):
@@ -482,6 +548,17 @@ class CustomScalerBase(ScalerBase):
         Returns:
             None
         """
+        if variable.is_indexed():
+            raise TypeError(
+                f"Variable {variable} is indexed. Call with VarData "
+                "children instead."
+            )
+
+        if not isinstance(variable, VarData):
+            raise TypeError(
+                f"{variable} is not a variable, but instead {type(variable)}"
+            )
+
         if constraint.is_indexed():
             raise TypeError(
                 f"Constraint {constraint} is indexed. Call with ConstraintData "
@@ -498,21 +575,9 @@ class CustomScalerBase(ScalerBase):
                 "is an inequality constraint. Cannot scale with this constraint."
             )
 
-        var_info = []
-        variable_in_constraint = False
-        # Iterate over all variables in constraint
-        for v in identify_variables(constraint.body):
-            # Store current value for restoration
-            ov = v.value  # original value
-            sf = self.get_scaling_factor(v)  # scaling factor
-            if sf is None:
-                # If no scaling factor set, use nominal value of 1
-                sf = 1
-            sf = _filter_scaling_factor(sf)
-
-            var_info.append((v, ov, sf))
-            if v is variable:
-                variable_in_constraint = True
+        replacement_map, variable_in_constraint = self._build_replacement_map(
+            variable, constraint, safety_mode=False
+        )
 
         if not variable_in_constraint:
             raise ValueError(
@@ -520,16 +585,54 @@ class CustomScalerBase(ScalerBase):
                 f"{constraint}, cannot calculate scaling factor."
             )
 
-        for v, _, sf in var_info:
-            if v is not variable:
-                v.value = 1 / sf
+        # Replace variables other than "variable" with 1 / scaling_factor and
+        # replace named expressions with 1 / scaling_hint (when scaling hints
+        # exist)
+        replaced_expr = replace_expressions(
+            constraint.expr,
+            substitution_map=replacement_map,
+            descend_into_named_expressions=True,
+            remove_named_expressions=True,
+        )
+        # Make sure that we have replaced every variable
+        var_set = ComponentSet(var for var in identify_variables(replaced_expr))
+
+        if not (len(var_set) == 1 and variable in var_set):
+            # We know that "variable" must appear in "constraint" because we
+            # encountered it when building replacement_map. If it doesn't appear
+            # in "replaced_expr", then a named expression containing it
+            # must have been replaced by 1 / scaling_hint. Therefore we build
+            # a new replacement map, this time making sure that "variable" does
+            # not appear in a named expression before we add it to replacement_map
+            replacement_map, _ = self._build_replacement_map(
+                variable, constraint, safety_mode=True
+            )
+            replaced_expr = replace_expressions(
+                constraint.expr,
+                substitution_map=replacement_map,
+                descend_into_named_expressions=True,
+                remove_named_expressions=True,
+            )
+            var_set = ComponentSet(var for var in identify_variables(replaced_expr))
+            if not (len(var_set) == 1 and variable in var_set):
+                raise BurntToast(
+                    "An unexpected error has occurred in the variable replacement scheme. "
+                    "Please open an issue on the IDAES GitHub so that this problem "
+                    "can be addressed."
+                )
+
+        variable_original_value = variable.value
+        if variable_original_value is None:
+            variable.value = 1
 
         try:
             # If constraint has the form variable == prod(v ** nu(v))
             # then 1 / sf = prod((1/sf(v)) ** nu(v)). Fixing all the
             # other variables v to their nominal values allows us to
             # calculate sf using calculate_variable_from_constraint.
-            calculate_variable_from_constraint(variable=variable, constraint=constraint)
+            calculate_variable_from_constraint(
+                variable=variable, constraint=replaced_expr
+            )
             nom = abs(variable.value)
 
         except (RuntimeError, ValueError) as err:
@@ -547,8 +650,7 @@ class CustomScalerBase(ScalerBase):
             ) from err
         finally:
             # Revert values to what they were initially
-            for v in var_info:
-                v[0].value = v[1]
+            variable.set_value(variable_original_value)
 
         if nom == 0:
             raise ValueError(
@@ -575,7 +677,7 @@ class CustomScalerBase(ScalerBase):
         Returns:
             None
         """
-        sf = get_scaling_factor(scaling_component)
+        sf = self.get_scaling_factor(scaling_component)
         if sf is not None:
             self.set_constraint_scaling_factor(
                 constraint=target_constraint, scaling_factor=sf, overwrite=overwrite

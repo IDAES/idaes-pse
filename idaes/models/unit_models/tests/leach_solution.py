@@ -10,6 +10,15 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+"""
+A simple property package of sulfuric acid solution used for testing unit models'
+compatibility with inherent reactions.
+
+We do not want to make this property package an example because it uses hours for 
+units of time instead of seconds. As a result, the derived units for pressure are
+kg/(m * hr**2) instead of kg/(m * s**2), i.e. Pascals, which causes trouble when
+pressure drop terms are included.
+"""
 from pyomo.environ import (
     ComponentMap,
     Constraint,
@@ -33,9 +42,6 @@ from idaes.core.util.initialization import fix_state_vars
 __author__ = "Andrew Lee, Douglas Allan"
 
 
-# -----------------------------------------------------------------------------------------
-# We do not want to make this property package an example because it has non-SI base units.
-# -----------------------------------------------------------------------------------------
 class LeachSolutionScaler(CustomScalerBase):
     """
     Scaler object for leach solution properties
