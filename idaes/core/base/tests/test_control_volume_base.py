@@ -87,19 +87,28 @@ def test_ControlVolumeScalerBase_no_state_block_ref():
     m = ConcreteModel()
     scaler_obj = ControlVolumeScalerBase()
     with pytest.raises(
-        AttributeError,
+        NotImplementedError,
         match=re.escape(
-            "The _state_block_ref attribute was not overridden by the "
-            "class inheriting from ControlVolumeScalerBase."
+            "This method is intended to be overridden by other scaler "
+            "objects inheriting from it."
         ),
     ):
         scaler_obj.scale_model(m)
 
     with pytest.raises(
-        AttributeError,
+        NotImplementedError,
         match=re.escape(
-            "The _state_block_ref attribute was not overridden by the "
-            "class inheriting from ControlVolumeScalerBase."
+            "This method is intended to be overridden by other scaler "
+            "objects inheriting from it."
+        ),
+    ):
+        scaler_obj.variable_scaling_routine(m)
+
+    with pytest.raises(
+        NotImplementedError,
+        match=re.escape(
+            "This method is intended to be overridden by other scaler "
+            "objects inheriting from it."
         ),
     ):
         scaler_obj.constraint_scaling_routine(m)

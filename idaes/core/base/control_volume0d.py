@@ -19,7 +19,7 @@ Base class for control volumes.
 # We use some private attributes here to hide these from the user
 # pylint: disable=protected-access
 
-__author__ = "Andrew Lee"
+__author__ = "Andrew Lee, Douglas Allan"
 
 # Import Pyomo libraries
 from pyomo.environ import Constraint, Reals, units as pyunits, Var, value
@@ -68,7 +68,13 @@ class ControlVolume0DScaler(ControlVolumeScalerBase):
         "phase_fraction": 10,  # May have already been created by property package
     }
 
-    _state_block_ref = "properties_out"
+    def _get_reference_state_block(self, model):
+        """
+        This method gives the parent class ControlVolumeScalerBase
+        methods a state block with the same index as the material
+        and energy balances to get scaling information from
+        """
+        return model.properties_out
 
     def variable_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None

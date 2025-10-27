@@ -96,8 +96,15 @@ class ControlVolume1DScaler(ControlVolumeScalerBase):
         "phase_fraction": 10,  # May have already been created by property package
     }
 
-    _state_block_ref = "properties"
     _weight_attr_name = "length"
+
+    def _get_reference_state_block(self, model):
+        """
+        This method gives the parent class ControlVolumeScalerBase
+        methods a state block with the same index as the material
+        and energy balances to get scaling information from
+        """
+        return model.properties
 
     def variable_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None
