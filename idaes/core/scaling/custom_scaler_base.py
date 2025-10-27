@@ -478,11 +478,14 @@ class CustomScalerBase(ScalerBase):
             safety_mode: Flag about whether or not to screen named expressions to see if
                 "variable" appears in them. Screening them takes longer (especially for
                 extremely deep expression trees), but if we do not screen them we run
-                the risk of removing "variable" from "constraint" entirely.
+                the risk of removing "variable" from "constraint" entirely when we use
+                replacement_map in the replace_expressions function.
 
         Returns:
-            replacement map: dictionary with variable or expression IDs as keys and
+            replacement_map: dictionary with variable or expression IDs as keys and
                 nominal values (the inverse of the scaling factors/hints) as values.
+            variable_in_constraint: Boolean flag whether "variable" was encountered in
+                the body of "constraint"
         """
         replacement_map = {}
         variable_in_constraint = False
