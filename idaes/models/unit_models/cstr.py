@@ -83,31 +83,6 @@ class CSTRScaler(CustomScalerBase):
             overwrite=overwrite,
         )
 
-        # self.call_submodel_scaler_method(
-        #     submodel=model.control_volume.properties_in,
-        #     method="variable_scaling_routine",
-        #     submodel_scalers=submodel_scalers,
-        #     overwrite=overwrite,
-        # )
-        # self.propagate_state_scaling(
-        #     target_state=model.control_volume.properties_out,
-        #     source_state=model.control_volume.properties_in,
-        #     overwrite=overwrite,
-        # )
-
-        # self.call_submodel_scaler_method(
-        #     submodel=model.control_volume.properties_out,
-        #     method="variable_scaling_routine",
-        #     submodel_scalers=submodel_scalers,
-        #     overwrite=overwrite,
-        # )
-        # self.call_submodel_scaler_method(
-        #     submodel=model.control_volume.reactions,
-        #     method="variable_scaling_routine",
-        #     submodel_scalers=submodel_scalers,
-        #     overwrite=overwrite,
-        # )
-
         # Scaling control volume variables
 
         # Pressure drop
@@ -175,25 +150,6 @@ class CSTRScaler(CustomScalerBase):
             submodel_scalers=submodel_scalers,
             overwrite=overwrite,
         )
-
-        # self.call_submodel_scaler_method(
-        #     submodel=model.control_volume.properties_in,
-        #     method="constraint_scaling_routine",
-        #     submodel_scalers=submodel_scalers,
-        #     overwrite=overwrite,
-        # )
-        # self.call_submodel_scaler_method(
-        #     submodel=model.control_volume.properties_out,
-        #     method="constraint_scaling_routine",
-        #     submodel_scalers=submodel_scalers,
-        #     overwrite=overwrite,
-        # )
-        # self.call_submodel_scaler_method(
-        #     submodel=model.control_volume.reactions,
-        #     method="constraint_scaling_routine",
-        #     submodel_scalers=submodel_scalers,
-        #     overwrite=overwrite,
-        # )
 
         # Scale control volume constraints
         for c in model.control_volume.component_data_objects(
