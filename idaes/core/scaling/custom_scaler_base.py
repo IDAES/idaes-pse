@@ -465,7 +465,7 @@ class CustomScalerBase(ScalerBase):
         """
         Helper function for scale_variable_by_definition_constraint.
 
-        Walks the constraint to build a map between Variables or Expressions
+        Iterates over the constraint to build a map between Variables or Expressions
         appearing in Constraint and the scaling factor or scaling hint assigned
         to them. (Because constraints can contain non-local variables and expressions,
         getting the scaling factor and scaling hint suffixes from the parent block of
@@ -616,7 +616,7 @@ class CustomScalerBase(ScalerBase):
             var_set = ComponentSet(var for var in identify_variables(replaced_expr))
             if not (len(var_set) == 1 and variable in var_set):
                 raise BurntToast(
-                    "Something has gone wrong in the variable replacement scheme. "
+                    "An unexpected error has occurred in the variable replacement scheme. "
                     "Please open an issue on the IDAES GitHub so that this problem "
                     "can be addressed."
                 )
