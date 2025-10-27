@@ -13,17 +13,18 @@
 """
 Tests for Separator unit model.
 
-Author: Andrew Lee
+Author: Andrew Lee, Douglas Allan
 """
 import pytest
 import pandas
 
 from pyomo.environ import (
     check_optimal_termination,
+    ComponentMap,
     ConcreteModel,
     Constraint,
-    Param,
     Set,
+    TransformationFactory,
     value,
     Var,
     units as pyunits,
@@ -51,7 +52,9 @@ from idaes.models.unit_models.separator import (
     SplittingType,
     EnergySplittingType,
     SeparatorInitializer,
+    SeparatorScaler,
 )
+from idaes.models.unit_models.tests.leach_solution import LeachSolutionParameters
 from idaes.core.util.exceptions import (
     BurntToast,
     ConfigurationError,
@@ -60,6 +63,7 @@ from idaes.core.util.exceptions import (
 from idaes.core.util.initialization import (
     fix_state_vars,
 )
+from idaes.core.scaling import CustomScalerBase
 
 from idaes.models.properties.examples.saponification_thermo import (
     SaponificationParameterBlock,
@@ -87,6 +91,10 @@ from idaes.core.initialization import (
     InitializationStatus,
 )
 from idaes.core.util import DiagnosticsToolbox
+from idaes.core.util.scaling import (
+    get_jacobian,
+    jacobian_cond,
+)
 
 
 # -----------------------------------------------------------------------------
@@ -329,14 +337,115 @@ class TestBaseScaling(object):
         b.fs.pp = PhysicalParameterTestBlock()
         return b
 
-    def test_no_exception_scaling_calc_external_mixed_state(self, m):
+    def test_no_exception_legacy_scaling_external_mixed_state(self, m):
         m.fs.sb = StateBlockForTesting(m.fs.time, parameters=m.fs.pp)
         m.fs.sep1 = Separator(property_package=m.fs.pp, mixed_state_block=m.fs.sb)
         iscale.calculate_scaling_factors(m)
 
-    def test_no_exception_scaling_calc_internal_mixed_state(self, m):
+    def test_no_exception_legacy_scaling_internal_mixed_state(self, m):
         m.fs.sep1 = Separator(property_package=m.fs.pp)
         iscale.calculate_scaling_factors(m)
+
+    def test_default_scaler_object(self, m):
+        m.fs.sep1 = Separator(property_package=m.fs.pp)
+        assert m.fs.sep1.default_scaler is SeparatorScaler
+
+    def test_scaler_object_external_mixed_state(self, m):
+        m.fs.sb = StateBlockForTesting(m.fs.time, parameters=m.fs.pp)
+        m.fs.sep1 = Separator(property_package=m.fs.pp, mixed_state_block=m.fs.sb)
+
+        scaler_object = m.fs.sep1.default_scaler()
+        scaler_object.set_component_scaling_factor(
+            m.fs.sb[0].flow_mol_phase_comp["p2", "c1"], 4649
+        )
+        scaler_object.set_component_scaling_factor(
+            m.fs.sb[0].flow_mol_phase_comp["p1", "c2"], 5683
+        )
+        scaler_object.set_component_scaling_factor(m.fs.sb[0].pressure, 4051)
+
+        scaler_object.scale_model(m.fs.sep1)
+
+        assert not hasattr(m.fs.sb, "variables_scaled")
+        assert not hasattr(m.fs.sb, "constraints_scaled")
+        for outlet in ["outlet_1", "outlet_2"]:
+            state = getattr(m.fs.sep1, outlet + "_state")
+            assert state[0].variables_scaled
+            assert state[0].constraints_scaled
+            assert (
+                scaler_object.get_scaling_factor(
+                    state[0].flow_mol_phase_comp["p1", "c1"]
+                )
+                == 1 / 7
+            )
+            assert (
+                scaler_object.get_scaling_factor(
+                    state[0].flow_mol_phase_comp["p1", "c2"]
+                )
+                == 5683
+            )
+            assert (
+                scaler_object.get_scaling_factor(
+                    state[0].flow_mol_phase_comp["p2", "c1"]
+                )
+                == 4649
+            )
+            assert (
+                scaler_object.get_scaling_factor(
+                    state[0].flow_mol_phase_comp["p2", "c2"]
+                )
+                == 1 / 7
+            )
+            assert scaler_object.get_scaling_factor(state[0].temperature) == 1 / 17
+            assert scaler_object.get_scaling_factor(state[0].pressure) == 4051
+
+    def test_scaler_object_internal_mixed_state(self, m):
+        m.fs.sep1 = Separator(property_package=m.fs.pp)
+
+        scaler_object = m.fs.sep1.default_scaler()
+        scaler_object.set_component_scaling_factor(
+            m.fs.sep1.mixed_state[0].flow_mol_phase_comp["p2", "c1"], 4649
+        )
+        scaler_object.set_component_scaling_factor(
+            m.fs.sep1.mixed_state[0].flow_mol_phase_comp["p1", "c2"], 5683
+        )
+        scaler_object.set_component_scaling_factor(
+            m.fs.sep1.mixed_state[0].pressure, 4051
+        )
+
+        scaler_object.scale_model(m.fs.sep1)
+
+        assert hasattr(m.fs.sep1.mixed_state[0], "variables_scaled")
+        assert hasattr(m.fs.sep1.mixed_state[0], "constraints_scaled")
+        for outlet in ["outlet_1", "outlet_2"]:
+            state = getattr(m.fs.sep1, outlet + "_state")
+            assert state[0].variables_scaled
+            assert state[0].constraints_scaled
+            assert (
+                scaler_object.get_scaling_factor(
+                    state[0].flow_mol_phase_comp["p1", "c1"]
+                )
+                == 1 / 7
+            )
+            assert (
+                scaler_object.get_scaling_factor(
+                    state[0].flow_mol_phase_comp["p1", "c2"]
+                )
+                == 5683
+            )
+            assert (
+                scaler_object.get_scaling_factor(
+                    state[0].flow_mol_phase_comp["p2", "c1"]
+                )
+                == 4649
+            )
+            assert (
+                scaler_object.get_scaling_factor(
+                    state[0].flow_mol_phase_comp["p2", "c2"]
+                )
+                == 1 / 7
+            )
+            assert scaler_object.get_scaling_factor(state[0].temperature) == 1 / 17
+            assert scaler_object.get_scaling_factor(state[0].pressure) == 4051
 
 
 # -----------------------------------------------------------------------------
@@ -372,6 +481,27 @@ class TestSplitConstruction(object):
         assert len(build.fs.sep.sum_split_frac) == 1
 
     @pytest.mark.unit
+    def test_scale_split_fractions_total(self, build):
+        sep = build.fs.sep
+        sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
+
+        scaler_obj = sep.default_scaler()
+        scaler_obj.scale_model(sep)
+
+        assert len(sep.scaling_factor) == 3
+
+        # Variables
+        for vardata in sep.split_fraction.values():
+            assert sep.scaling_factor[vardata] == 1
+
+        # Constraints
+        for condata in sep.sum_split_frac.values():
+            assert sep.scaling_factor[condata] == 1
+
+        # Expressions
+        assert not hasattr(sep, "scaling_hint")
+
+    @pytest.mark.unit
     def test_add_split_fractions_phase(self, build):
         build.fs.sep.config.split_basis = SplittingType.phaseFlow
 
@@ -391,6 +521,28 @@ class TestSplitConstruction(object):
         assert len(build.fs.sep.sum_split_frac) == 2
 
     @pytest.mark.unit
+    def test_scale_split_fractions_phase(self, build):
+        sep = build.fs.sep
+        sep.config.split_basis = SplittingType.phaseFlow
+        sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
+
+        scaler_obj = sep.default_scaler()
+        scaler_obj.scale_model(sep)
+
+        assert len(sep.scaling_factor) == 6
+
+        # Variables
+        for vardata in sep.split_fraction.values():
+            assert sep.scaling_factor[vardata] == 1
+
+        # Constraints
+        for condata in sep.sum_split_frac.values():
+            assert sep.scaling_factor[condata] == 1
+
+        # Expressions
+        assert not hasattr(sep, "scaling_hint")
+
+    @pytest.mark.unit
     def test_add_split_fractions_component(self, build):
         build.fs.sep.config.split_basis = SplittingType.componentFlow
 
@@ -408,6 +560,28 @@ class TestSplitConstruction(object):
 
         assert isinstance(build.fs.sep.sum_split_frac, Constraint)
         assert len(build.fs.sep.sum_split_frac) == 2
+
+    @pytest.mark.unit
+    def test_scale_split_fractions_component(self, build):
+        sep = build.fs.sep
+        sep.config.split_basis = SplittingType.componentFlow
+        sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
+
+        scaler_obj = sep.default_scaler()
+        scaler_obj.scale_model(sep)
+
+        assert len(sep.scaling_factor) == 6
+
+        # Variables
+        for vardata in sep.split_fraction.values():
+            assert sep.scaling_factor[vardata] == 1
+
+        # Constraints
+        for condata in sep.sum_split_frac.values():
+            assert sep.scaling_factor[condata] == 1
+
+        # Expressions
+        assert not hasattr(sep, "scaling_hint")
 
     @pytest.mark.unit
     def test_add_split_fractions_phase_component(self, build):
@@ -430,6 +604,28 @@ class TestSplitConstruction(object):
         assert len(build.fs.sep.sum_split_frac) == 4
 
     @pytest.mark.unit
+    def test_scale_split_fractions_phase_component(self, build):
+        sep = build.fs.sep
+        sep.config.split_basis = SplittingType.phaseComponentFlow
+        sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
+
+        scaler_obj = sep.default_scaler()
+        scaler_obj.scale_model(sep)
+
+        assert len(sep.scaling_factor) == 12
+
+        # Variables
+        for vardata in sep.split_fraction.values():
+            assert sep.scaling_factor[vardata] == 1
+
+        # Constraints
+        for condata in sep.sum_split_frac.values():
+            assert sep.scaling_factor[condata] == 1
+
+        # Expressions
+        assert not hasattr(sep, "scaling_hint")
+
+    @pytest.mark.unit
     def test_add_material_splitting_constraints_pc_total_no_equil(self, build):
         build.fs.sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
 
@@ -438,6 +634,31 @@ class TestSplitConstruction(object):
         assert isinstance(build.fs.sep.material_splitting_eqn, Constraint)
         assert len(build.fs.sep.material_splitting_eqn) == 8
         assert not hasattr(build.fs.sep, "phase_equilibrium_generation")
+
+    @pytest.mark.unit
+    def test_scale_material_splitting_constraints_pc_total_no_equil(self, build):
+        sep = build.fs.sep
+        sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
+        sep.add_material_splitting_constraints(build.fs.sep.mixed_state)
+
+        scaler_obj = sep.default_scaler()
+        scaler_obj.scale_model(sep)
+
+        assert len(sep.scaling_factor) == 11
+
+        # Variables
+        for vardata in sep.split_fraction.values():
+            assert sep.scaling_factor[vardata] == 1
+
+        # Constraints
+        for condata in sep.sum_split_frac.values():
+            assert sep.scaling_factor[condata] == 1
+
+        for vardata in sep.material_splitting_eqn.values():
+            assert sep.scaling_factor[vardata] == 1 / 43
+
+        # Expressions
+        assert not hasattr(sep, "scaling_hint")
 
     @pytest.mark.unit
     def test_add_material_splitting_constraints_pc_phase_no_equil(self, build):
@@ -452,6 +673,32 @@ class TestSplitConstruction(object):
         assert not hasattr(build.fs.sep, "phase_equilibrium_generation")
 
     @pytest.mark.unit
+    def test_scale_material_splitting_constraints_pc_phase_no_equil(self, build):
+        sep = build.fs.sep
+        sep.config.split_basis = SplittingType.phaseFlow
+        sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
+        sep.add_material_splitting_constraints(build.fs.sep.mixed_state)
+
+        scaler_obj = sep.default_scaler()
+        scaler_obj.scale_model(sep)
+
+        assert len(sep.scaling_factor) == 14
+
+        # Variables
+        for vardata in sep.split_fraction.values():
+            assert sep.scaling_factor[vardata] == 1
+
+        # Constraints
+        for condata in sep.sum_split_frac.values():
+            assert sep.scaling_factor[condata] == 1
+
+        for vardata in sep.material_splitting_eqn.values():
+            assert sep.scaling_factor[vardata] == 1 / 43
+
+        # Expressions
+        assert not hasattr(sep, "scaling_hint")
+
+    @pytest.mark.unit
     def test_add_material_splitting_constraints_pc_component_no_equil(self, build):
         build.fs.sep.config.split_basis = SplittingType.componentFlow
 
@@ -462,6 +709,32 @@ class TestSplitConstruction(object):
         assert isinstance(build.fs.sep.material_splitting_eqn, Constraint)
         assert len(build.fs.sep.material_splitting_eqn) == 8
         assert not hasattr(build.fs.sep, "phase_equilibrium_generation")
+
+    @pytest.mark.unit
+    def test_scale_material_splitting_constraints_pc_component_no_equil(self, build):
+        sep = build.fs.sep
+        sep.config.split_basis = SplittingType.componentFlow
+        sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
+        sep.add_material_splitting_constraints(build.fs.sep.mixed_state)
+
+        scaler_obj = sep.default_scaler()
+        scaler_obj.scale_model(sep)
+
+        assert len(sep.scaling_factor) == 14
+
+        # Variables
+        for vardata in sep.split_fraction.values():
+            assert sep.scaling_factor[vardata] == 1
+
+        # Constraints
+        for condata in sep.sum_split_frac.values():
+            assert sep.scaling_factor[condata] == 1
+
+        for vardata in sep.material_splitting_eqn.values():
+            assert sep.scaling_factor[vardata] == 1 / 43
+
+        # Expressions
+        assert not hasattr(sep, "scaling_hint")
 
     @pytest.mark.unit
     def test_add_material_splitting_constraints_pc_phase_component_no_equil(
@@ -478,6 +751,31 @@ class TestSplitConstruction(object):
         assert not hasattr(build.fs.sep, "phase_equilibrium_generation")
 
     @pytest.mark.unit
+    def test_scale_material_splitting_constraints_pc_phase_component_no_equil(
+        self, build
+    ):
+        sep = build.fs.sep
+        sep.config.split_basis = SplittingType.phaseComponentFlow
+        sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
+        sep.add_material_splitting_constraints(build.fs.sep.mixed_state)
+
+        scaler_obj = sep.default_scaler()
+        scaler_obj.scale_model(sep)
+
+        assert len(sep.scaling_factor) == 20
+
+        # Variables
+        for vardata in sep.split_fraction.values():
+            assert sep.scaling_factor[vardata] == 1
+
+        # Constraints
+        for condata in sep.sum_split_frac.values():
+            assert sep.scaling_factor[condata] == 1
+
+        for vardata in sep.material_splitting_eqn.values():
+            assert sep.scaling_factor[vardata] == 1 / 43
+
+    @pytest.mark.unit
     def test_add_material_splitting_constraints_pc_total_equil(self, build):
         build.fs.sep.config.has_phase_equilibrium = True
 
@@ -489,6 +787,34 @@ class TestSplitConstruction(object):
         assert len(build.fs.sep.material_splitting_eqn) == 8
         assert isinstance(build.fs.sep.phase_equilibrium_generation, Var)
         assert len(build.fs.sep.phase_equilibrium_generation) == 4
+
+    @pytest.mark.unit
+    def test_scale_material_splitting_constraints_pc_total_equil(self, build):
+        sep = build.fs.sep
+        sep.config.has_phase_equilibrium = True
+        sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
+        sep.add_material_splitting_constraints(build.fs.sep.mixed_state)
+
+        scaler_obj = sep.default_scaler()
+        scaler_obj.scale_model(sep)
+
+        assert len(sep.scaling_factor) == 15
+
+        # Variables
+        for vardata in sep.split_fraction.values():
+            assert sep.scaling_factor[vardata] == 1
+        for vardata in sep.phase_equilibrium_generation.values():
+            assert sep.scaling_factor[vardata] == 1 / 43
+
+        # Constraints
+        for condata in sep.sum_split_frac.values():
+            assert sep.scaling_factor[condata] == 1
+
+        for vardata in sep.material_splitting_eqn.values():
+            assert sep.scaling_factor[vardata] == 1 / 43
+
+        # Expressions
+        assert not hasattr(sep, "scaling_hint")
 
     @pytest.mark.unit
     def test_add_material_splitting_constraints_pc_phase_equil(self, build):
@@ -505,6 +831,35 @@ class TestSplitConstruction(object):
         assert len(build.fs.sep.phase_equilibrium_generation) == 4
 
     @pytest.mark.unit
+    def test_scale_material_splitting_constraints_pc_phase_equil(self, build):
+        sep = build.fs.sep
+        sep.config.split_basis = SplittingType.phaseFlow
+        sep.config.has_phase_equilibrium = True
+        sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
+        sep.add_material_splitting_constraints(build.fs.sep.mixed_state)
+
+        scaler_obj = sep.default_scaler()
+        scaler_obj.scale_model(sep)
+
+        assert len(sep.scaling_factor) == 18
+
+        # Variables
+        for vardata in sep.split_fraction.values():
+            assert sep.scaling_factor[vardata] == 1
+        for vardata in sep.phase_equilibrium_generation.values():
+            assert sep.scaling_factor[vardata] == 1 / 43
+
+        # Constraints
+        for condata in sep.sum_split_frac.values():
+            assert sep.scaling_factor[condata] == 1
+
+        for vardata in sep.material_splitting_eqn.values():
+            assert sep.scaling_factor[vardata] == 1 / 43
+
+        # Expressions
+        assert not hasattr(sep, "scaling_hint")
+
+    @pytest.mark.unit
     def test_add_material_splitting_constraints_pc_component_equil(self, build):
         build.fs.sep.config.split_basis = SplittingType.componentFlow
         build.fs.sep.config.has_phase_equilibrium = True
@@ -517,6 +872,35 @@ class TestSplitConstruction(object):
         assert len(build.fs.sep.material_splitting_eqn) == 8
         assert isinstance(build.fs.sep.phase_equilibrium_generation, Var)
         assert len(build.fs.sep.phase_equilibrium_generation) == 4
+
+    @pytest.mark.unit
+    def test_scale_material_splitting_constraints_pc_component_equil(self, build):
+        sep = build.fs.sep
+        sep.config.split_basis = SplittingType.componentFlow
+        sep.config.has_phase_equilibrium = True
+        sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
+        sep.add_material_splitting_constraints(build.fs.sep.mixed_state)
+
+        scaler_obj = sep.default_scaler()
+        scaler_obj.scale_model(sep)
+
+        assert len(sep.scaling_factor) == 18
+
+        # Variables
+        for vardata in sep.split_fraction.values():
+            assert sep.scaling_factor[vardata] == 1
+        for vardata in sep.phase_equilibrium_generation.values():
+            assert sep.scaling_factor[vardata] == 1 / 43
+
+        # Constraints
+        for condata in sep.sum_split_frac.values():
+            assert sep.scaling_factor[condata] == 1
+
+        for vardata in sep.material_splitting_eqn.values():
+            assert sep.scaling_factor[vardata] == 1 / 43
+
+        # Expressions
+        assert not hasattr(sep, "scaling_hint")
 
     @pytest.mark.unit
     def test_add_material_splitting_constraints_pc_phase_component_equil(self, build):
@@ -533,6 +917,35 @@ class TestSplitConstruction(object):
         assert len(build.fs.sep.phase_equilibrium_generation) == 4
 
     @pytest.mark.unit
+    def test_scale_material_splitting_constraints_pc_phase_component_equil(self, build):
+        sep = build.fs.sep
+        sep.config.split_basis = SplittingType.phaseComponentFlow
+        sep.config.has_phase_equilibrium = True
+        sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
+        sep.add_material_splitting_constraints(build.fs.sep.mixed_state)
+
+        scaler_obj = sep.default_scaler()
+        scaler_obj.scale_model(sep)
+
+        assert len(sep.scaling_factor) == 24
+
+        # Variables
+        for vardata in sep.split_fraction.values():
+            assert sep.scaling_factor[vardata] == 1
+        for vardata in sep.phase_equilibrium_generation.values():
+            assert sep.scaling_factor[vardata] == 1 / 43
+
+        # Constraints
+        for condata in sep.sum_split_frac.values():
+            assert sep.scaling_factor[condata] == 1
+
+        for vardata in sep.material_splitting_eqn.values():
+            assert sep.scaling_factor[vardata] == 1 / 43
+
+        # Expressions
+        assert not hasattr(sep, "scaling_hint")
+
+    @pytest.mark.unit
     def test_add_material_splitting_constraints_tc_total(self, build):
         build.fs.sep.config.material_balance_type = MaterialBalanceType.componentTotal
 
@@ -542,6 +955,32 @@ class TestSplitConstruction(object):
 
         assert isinstance(build.fs.sep.material_splitting_eqn, Constraint)
         assert len(build.fs.sep.material_splitting_eqn) == 4
+
+    @pytest.mark.unit
+    def test_scale_material_splitting_constraints_tc_total(self, build):
+        sep = build.fs.sep
+        sep.config.material_balance_type = MaterialBalanceType.componentTotal
+        sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
+        sep.add_material_splitting_constraints(build.fs.sep.mixed_state)
+
+        scaler_obj = sep.default_scaler()
+        scaler_obj.scale_model(sep)
+
+        assert len(sep.scaling_factor) == 7
+
+        # Variables
+        for vardata in sep.split_fraction.values():
+            assert sep.scaling_factor[vardata] == 1
+
+        # Constraints
+        for condata in sep.sum_split_frac.values():
+            assert sep.scaling_factor[condata] == 1
+
+        for vardata in sep.material_splitting_eqn.values():
+            assert sep.scaling_factor[vardata] == 1 / 43
+
+        # Expressions
+        assert not hasattr(sep, "scaling_hint")
 
     @pytest.mark.unit
     def test_add_material_splitting_constraints_tc_phase(self, build):
@@ -556,6 +995,33 @@ class TestSplitConstruction(object):
         assert len(build.fs.sep.material_splitting_eqn) == 4
 
     @pytest.mark.unit
+    def test_scale_material_splitting_constraints_tc_phase(self, build):
+        sep = build.fs.sep
+        sep.config.split_basis = SplittingType.phaseFlow
+        sep.config.material_balance_type = MaterialBalanceType.componentTotal
+        sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
+        sep.add_material_splitting_constraints(build.fs.sep.mixed_state)
+
+        scaler_obj = sep.default_scaler()
+        scaler_obj.scale_model(sep)
+
+        assert len(sep.scaling_factor) == 10
+
+        # Variables
+        for vardata in sep.split_fraction.values():
+            assert sep.scaling_factor[vardata] == 1
+
+        # Constraints
+        for condata in sep.sum_split_frac.values():
+            assert sep.scaling_factor[condata] == 1
+
+        for vardata in sep.material_splitting_eqn.values():
+            assert sep.scaling_factor[vardata] == 1 / 43
+
+        # Expressions
+        assert not hasattr(sep, "scaling_hint")
+
+    @pytest.mark.unit
     def test_add_material_splitting_constraints_tc_component(self, build):
         build.fs.sep.config.split_basis = SplittingType.componentFlow
         build.fs.sep.config.material_balance_type = MaterialBalanceType.componentTotal
@@ -566,6 +1032,33 @@ class TestSplitConstruction(object):
 
         assert isinstance(build.fs.sep.material_splitting_eqn, Constraint)
         assert len(build.fs.sep.material_splitting_eqn) == 4
+
+    @pytest.mark.unit
+    def test_scale_material_splitting_constraints_tc_component(self, build):
+        sep = build.fs.sep
+        sep.config.split_basis = SplittingType.componentFlow
+        sep.config.material_balance_type = MaterialBalanceType.componentTotal
+        sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
+        sep.add_material_splitting_constraints(build.fs.sep.mixed_state)
+
+        scaler_obj = sep.default_scaler()
+        scaler_obj.scale_model(sep)
+
+        assert len(sep.scaling_factor) == 10
+
+        # Variables
+        for vardata in sep.split_fraction.values():
+            assert sep.scaling_factor[vardata] == 1
+
+        # Constraints
+        for condata in sep.sum_split_frac.values():
+            assert sep.scaling_factor[condata] == 1
+
+        for vardata in sep.material_splitting_eqn.values():
+            assert sep.scaling_factor[vardata] == 1 / 43
+
+        # Expressions
+        assert not hasattr(sep, "scaling_hint")
 
     @pytest.mark.unit
     def test_add_material_splitting_constraints_tc_phase_component(self, build):
@@ -580,6 +1073,33 @@ class TestSplitConstruction(object):
         assert len(build.fs.sep.material_splitting_eqn) == 4
 
     @pytest.mark.unit
+    def test_scale_material_splitting_constraints_tc_phase_component(self, build):
+        sep = build.fs.sep
+        sep.config.split_basis = SplittingType.phaseComponentFlow
+        sep.config.material_balance_type = MaterialBalanceType.componentTotal
+        sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
+        sep.add_material_splitting_constraints(build.fs.sep.mixed_state)
+
+        scaler_obj = sep.default_scaler()
+        scaler_obj.scale_model(sep)
+
+        assert len(sep.scaling_factor) == 16
+
+        # Variables
+        for vardata in sep.split_fraction.values():
+            assert sep.scaling_factor[vardata] == 1
+
+        # Constraints
+        for condata in sep.sum_split_frac.values():
+            assert sep.scaling_factor[condata] == 1
+
+        for vardata in sep.material_splitting_eqn.values():
+            assert sep.scaling_factor[vardata] == 1 / 43
+
+        # Expressions
+        assert not hasattr(sep, "scaling_hint")
+
+    @pytest.mark.unit
     def test_add_material_splitting_constraints_t_total(self, build):
         build.fs.sep.config.material_balance_type = MaterialBalanceType.total
 
@@ -589,6 +1109,32 @@ class TestSplitConstruction(object):
 
         assert isinstance(build.fs.sep.material_splitting_eqn, Constraint)
         assert len(build.fs.sep.material_splitting_eqn) == 2
+
+    @pytest.mark.unit
+    def test_scale_material_splitting_constraints_t_total(self, build):
+        sep = build.fs.sep
+        build.fs.sep.config.material_balance_type = MaterialBalanceType.total
+        build.fs.sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
+        build.fs.sep.add_material_splitting_constraints(build.fs.sep.mixed_state)
+
+        scaler_obj = sep.default_scaler()
+        scaler_obj.scale_model(sep)
+
+        assert len(sep.scaling_factor) == 5
+
+        # Variables
+        for vardata in sep.split_fraction.values():
+            assert sep.scaling_factor[vardata] == 1
+
+        # Constraints
+        for condata in sep.sum_split_frac.values():
+            assert sep.scaling_factor[condata] == 1
+
+        for vardata in sep.material_splitting_eqn.values():
+            assert sep.scaling_factor[vardata] == 1 / 43
+
+        # Expressions
+        assert not hasattr(sep, "scaling_hint")
 
     @pytest.mark.unit
     def test_add_material_splitting_constraints_t_phase(self, build):
@@ -603,6 +1149,33 @@ class TestSplitConstruction(object):
         assert len(build.fs.sep.material_splitting_eqn) == 2
 
     @pytest.mark.unit
+    def test_scale_material_splitting_constraints_t_phase(self, build):
+        sep = build.fs.sep
+        sep.config.split_basis = SplittingType.phaseFlow
+        sep.config.material_balance_type = MaterialBalanceType.total
+        sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
+        sep.add_material_splitting_constraints(build.fs.sep.mixed_state)
+
+        scaler_obj = sep.default_scaler()
+        scaler_obj.scale_model(sep)
+
+        assert len(sep.scaling_factor) == 8
+
+        # Variables
+        for vardata in sep.split_fraction.values():
+            assert sep.scaling_factor[vardata] == 1
+
+        # Constraints
+        for condata in sep.sum_split_frac.values():
+            assert sep.scaling_factor[condata] == 1
+
+        for vardata in sep.material_splitting_eqn.values():
+            assert sep.scaling_factor[vardata] == 1 / 43
+
+        # Expressions
+        assert not hasattr(sep, "scaling_hint")
+
+    @pytest.mark.unit
     def test_add_material_splitting_constraints_t_component(self, build):
         build.fs.sep.config.split_basis = SplittingType.componentFlow
         build.fs.sep.config.material_balance_type = MaterialBalanceType.total
@@ -615,6 +1188,33 @@ class TestSplitConstruction(object):
         assert len(build.fs.sep.material_splitting_eqn) == 2
 
     @pytest.mark.unit
+    def test_scale_material_splitting_constraints_t_component(self, build):
+        sep = build.fs.sep
+        sep.config.split_basis = SplittingType.componentFlow
+        sep.config.material_balance_type = MaterialBalanceType.total
+        sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
+        sep.add_material_splitting_constraints(build.fs.sep.mixed_state)
+
+        scaler_obj = sep.default_scaler()
+        scaler_obj.scale_model(sep)
+
+        assert len(sep.scaling_factor) == 8
+
+        # Variables
+        for vardata in sep.split_fraction.values():
+            assert sep.scaling_factor[vardata] == 1
+
+        # Constraints
+        for condata in sep.sum_split_frac.values():
+            assert sep.scaling_factor[condata] == 1
+
+        for vardata in sep.material_splitting_eqn.values():
+            assert sep.scaling_factor[vardata] == 1 / 43
+
+        # Expressions
+        assert not hasattr(sep, "scaling_hint")
+
+    @pytest.mark.unit
     def test_add_material_splitting_constraints_t_phase_component(self, build):
         build.fs.sep.config.split_basis = SplittingType.phaseComponentFlow
         build.fs.sep.config.material_balance_type = MaterialBalanceType.total
@@ -625,6 +1225,33 @@ class TestSplitConstruction(object):
 
         assert isinstance(build.fs.sep.material_splitting_eqn, Constraint)
         assert len(build.fs.sep.material_splitting_eqn) == 2
+
+    @pytest.mark.unit
+    def test_scale_material_splitting_constraints_t_phase_component(self, build):
+        sep = build.fs.sep
+        sep.config.split_basis = SplittingType.phaseComponentFlow
+        sep.config.material_balance_type = MaterialBalanceType.total
+        sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
+        sep.add_material_splitting_constraints(build.fs.sep.mixed_state)
+
+        scaler_obj = sep.default_scaler()
+        scaler_obj.scale_model(sep)
+
+        assert len(sep.scaling_factor) == 14
+
+        # Variables
+        for vardata in sep.split_fraction.values():
+            assert sep.scaling_factor[vardata] == 1
+
+        # Constraints
+        for condata in sep.sum_split_frac.values():
+            assert sep.scaling_factor[condata] == 1
+
+        for vardata in sep.material_splitting_eqn.values():
+            assert sep.scaling_factor[vardata] == 1 / 43
+
+        # Expressions
+        assert not hasattr(sep, "scaling_hint")
 
     @pytest.mark.unit
     def test_add_material_splitting_constraints_te_total(self, build):
@@ -646,6 +1273,29 @@ class TestSplitConstruction(object):
         assert not hasattr(build.fs.sep, "material_splitting_eqn")
 
     @pytest.mark.unit
+    def test_scale_material_splitting_constraints_none_total(self, build):
+        sep = build.fs.sep
+        sep.config.material_balance_type = MaterialBalanceType.none
+        sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
+        sep.add_material_splitting_constraints(build.fs.sep.mixed_state)
+
+        scaler_obj = sep.default_scaler()
+        scaler_obj.scale_model(sep)
+
+        assert len(sep.scaling_factor) == 3
+
+        # Variables
+        for vardata in sep.split_fraction.values():
+            assert sep.scaling_factor[vardata] == 1
+
+        # Constraints
+        for condata in sep.sum_split_frac.values():
+            assert sep.scaling_factor[condata] == 1
+
+        # Expressions
+        assert not hasattr(sep, "scaling_hint")
+
+    @pytest.mark.unit
     def test_add_material_splitting_constraints_none_phase(self, build):
         build.fs.sep.config.split_basis = SplittingType.phaseFlow
         build.fs.sep.config.material_balance_type = MaterialBalanceType.none
@@ -655,6 +1305,30 @@ class TestSplitConstruction(object):
         build.fs.sep.add_material_splitting_constraints(build.fs.sep.mixed_state)
 
         assert not hasattr(build.fs.sep, "material_splitting_eqn")
+
+    @pytest.mark.unit
+    def test_scale_material_splitting_constraints_none_phase(self, build):
+        sep = build.fs.sep
+        sep.config.split_basis = SplittingType.phaseFlow
+        sep.config.material_balance_type = MaterialBalanceType.none
+        sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
+        sep.add_material_splitting_constraints(build.fs.sep.mixed_state)
+
+        scaler_obj = sep.default_scaler()
+        scaler_obj.scale_model(sep)
+
+        assert len(sep.scaling_factor) == 6
+
+        # Variables
+        for vardata in sep.split_fraction.values():
+            assert sep.scaling_factor[vardata] == 1
+
+        # Constraints
+        for condata in sep.sum_split_frac.values():
+            assert sep.scaling_factor[condata] == 1
+
+        # Expressions
+        assert not hasattr(sep, "scaling_hint")
 
     @pytest.mark.unit
     def test_add_material_splitting_constraints_none_component(self, build):
@@ -668,6 +1342,30 @@ class TestSplitConstruction(object):
         assert not hasattr(build.fs.sep, "material_splitting_eqn")
 
     @pytest.mark.unit
+    def test_scale_material_splitting_constraints_none_component(self, build):
+        sep = build.fs.sep
+        sep.config.split_basis = SplittingType.componentFlow
+        sep.config.material_balance_type = MaterialBalanceType.none
+        sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
+        sep.add_material_splitting_constraints(build.fs.sep.mixed_state)
+
+        scaler_obj = sep.default_scaler()
+        scaler_obj.scale_model(sep)
+
+        assert len(sep.scaling_factor) == 6
+
+        # Variables
+        for vardata in sep.split_fraction.values():
+            assert sep.scaling_factor[vardata] == 1
+
+        # Constraints
+        for condata in sep.sum_split_frac.values():
+            assert sep.scaling_factor[condata] == 1
+
+        # Expressions
+        assert not hasattr(sep, "scaling_hint")
+
+    @pytest.mark.unit
     def test_add_material_splitting_constraints_none_phase_component(self, build):
         build.fs.sep.config.split_basis = SplittingType.phaseComponentFlow
         build.fs.sep.config.material_balance_type = MaterialBalanceType.none
@@ -677,6 +1375,30 @@ class TestSplitConstruction(object):
         build.fs.sep.add_material_splitting_constraints(build.fs.sep.mixed_state)
 
         assert not hasattr(build.fs.sep, "material_splitting_eqn")
+
+    @pytest.mark.unit
+    def test_scale_material_splitting_constraints_none_phase_component(self, build):
+        sep = build.fs.sep
+        sep.config.split_basis = SplittingType.phaseComponentFlow
+        sep.config.material_balance_type = MaterialBalanceType.none
+        sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
+        sep.add_material_splitting_constraints(build.fs.sep.mixed_state)
+
+        scaler_obj = sep.default_scaler()
+        scaler_obj.scale_model(sep)
+
+        assert len(sep.scaling_factor) == 12
+
+        # Variables
+        for vardata in sep.split_fraction.values():
+            assert sep.scaling_factor[vardata] == 1
+
+        # Constraints
+        for condata in sep.sum_split_frac.values():
+            assert sep.scaling_factor[condata] == 1
+
+        # Expressions
+        assert not hasattr(sep, "scaling_hint")
 
     @pytest.mark.parametrize("balance_type", MomentumBalanceType)
     @pytest.mark.parametrize("split_type", SplittingType)
@@ -703,6 +1425,70 @@ class TestSplitConstruction(object):
                     build.fs.sep.mixed_state
                 )
 
+    @pytest.mark.parametrize("balance_type", MomentumBalanceType)
+    @pytest.mark.parametrize("split_type", SplittingType)
+    @pytest.mark.unit
+    def test_scale_momentum_splitting(self, build, balance_type, split_type):
+        sep = build.fs.sep
+        sep.config.split_basis = split_type
+        sep.config.momentum_balance_type = balance_type
+        sep.add_split_fractions(build.outlet_list, sep.mixed_state)
+
+        if balance_type is MomentumBalanceType.none:
+            sep.add_momentum_splitting_constraints(sep.mixed_state)
+
+            scaler_obj = sep.default_scaler()
+            scaler_obj.scale_model(sep)
+
+            assert len(sep.scaling_factor) == (
+                len(sep.split_fraction) + len(sep.sum_split_frac)
+            )
+
+            # Variables
+            for vardata in sep.split_fraction.values():
+                assert sep.scaling_factor[vardata] == 1
+
+            # Constraints
+            for condata in sep.sum_split_frac.values():
+                assert sep.scaling_factor[condata] == 1
+
+            # Expressions
+            assert not hasattr(sep, "scaling_hint")
+
+        elif balance_type is MomentumBalanceType.pressureTotal:
+            sep.add_momentum_splitting_constraints(sep.mixed_state)
+
+            scaler_obj = sep.default_scaler()
+            scaler_obj.scale_model(sep)
+
+            assert len(sep.scaling_factor) == (
+                len(sep.split_fraction) + len(sep.sum_split_frac) + 2
+            )
+
+            # Variables
+            for vardata in sep.split_fraction.values():
+                assert sep.scaling_factor[vardata] == 1
+
+            # Constraints
+            for condata in sep.sum_split_frac.values():
+                assert sep.scaling_factor[condata] == 1
+
+            for condata in sep.pressure_equality_eqn.values():
+                assert sep.scaling_factor[condata] == 1 / 13
+
+            # Expressions
+            assert not hasattr(sep, "scaling_hint")
+
+        else:
+            with pytest.raises(
+                NotImplementedError,
+                match=f"Separators do not yet support momentum balances of type "
+                f"{balance_type}",
+            ):
+                build.fs.sep.add_momentum_splitting_constraints(
+                    build.fs.sep.mixed_state
+                )
+
     @pytest.mark.unit
     def test_add_energy_splitting_constraints(self, build):
         assert (
@@ -715,6 +1501,31 @@ class TestSplitConstruction(object):
 
         assert isinstance(build.fs.sep.temperature_equality_eqn, Constraint)
         assert len(build.fs.sep.temperature_equality_eqn) == 2
+
+    @pytest.mark.unit
+    def test_scale_energy_splitting_constraints(self, build):
+        sep = build.fs.sep
+        sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
+        sep.add_energy_splitting_constraints(build.fs.sep.mixed_state)
+
+        scaler_obj = sep.default_scaler()
+        scaler_obj.scale_model(sep)
+
+        assert len(sep.scaling_factor) == 5
+
+        # Variables
+        for vardata in sep.split_fraction.values():
+            assert sep.scaling_factor[vardata] == 1
+
+        # Constraints
+        for condata in sep.sum_split_frac.values():
+            assert sep.scaling_factor[condata] == 1
+
+        for condata in sep.temperature_equality_eqn.values():
+            assert sep.scaling_factor[condata] == 1 / 17
+
+        # Expressions
+        assert not hasattr(sep, "scaling_hint")
 
     @pytest.mark.unit
     def test_add_energy_splitting_constraints_enthalpy(self, build):
@@ -733,6 +1544,32 @@ class TestSplitConstruction(object):
         assert len(build.fs.sep.molar_enthalpy_equality_eqn) == 2
 
     @pytest.mark.unit
+    def test_scale_energy_splitting_constraints_enthalpy(self, build):
+        sep = build.fs.sep
+        sep.config.energy_split_basis = EnergySplittingType.equal_molar_enthalpy
+        sep.add_split_fractions(build.outlet_list, build.fs.sep.mixed_state)
+        sep.add_energy_splitting_constraints(build.fs.sep.mixed_state)
+
+        scaler_obj = sep.default_scaler()
+        scaler_obj.scale_model(sep)
+
+        assert len(sep.scaling_factor) == 5
+
+        # Variables
+        for vardata in sep.split_fraction.values():
+            assert sep.scaling_factor[vardata] == 1
+
+        # Constraints
+        for condata in sep.sum_split_frac.values():
+            assert sep.scaling_factor[condata] == 1
+
+        for condata in sep.molar_enthalpy_equality_eqn.values():
+            assert sep.scaling_factor[condata] == 1 / 19
+
+        # Expressions
+        assert not hasattr(sep, "scaling_hint")
+
+    @pytest.mark.unit
     def test_add_energy_splitting_constraints_none(self, build):
         build.fs.sep.config.energy_split_basis = EnergySplittingType.none
         assert build.fs.sep.config.energy_split_basis == EnergySplittingType.none
@@ -742,6 +1579,26 @@ class TestSplitConstruction(object):
 
         assert not hasattr(build.fs.sep, "temperature_equality_eqn")
         assert not hasattr(build.fs.sep, "molar_enthalpy_equality_eqn")
+
+    @pytest.mark.unit
+    def test_scale_energy_splitting_constraints_none(self, build):
+        sep = build.fs.sep
+        sep.config.energy_split_basis = EnergySplittingType.none
+        sep.add_split_fractions(build.outlet_list, sep.mixed_state)
+        sep.add_energy_splitting_constraints(sep.mixed_state)
+
+        scaler_obj = sep.default_scaler()
+        scaler_obj.scale_model(sep)
+
+        assert len(sep.scaling_factor) == 3
+
+        # Variables
+        for vardata in sep.split_fraction.values():
+            assert sep.scaling_factor[vardata] == 1
+
+        # Constraints
+        for condata in sep.sum_split_frac.values():
+            assert sep.scaling_factor[condata] == 1
 
     @pytest.mark.unit
     def test_add_momentum_splitting_constraints(self, build):
@@ -1115,6 +1972,30 @@ class TestSaponification(object):
     def test_numerical_issues(self, sapon):
         dt = DiagnosticsToolbox(sapon)
         dt.assert_no_numerical_warnings()
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_scaling(self, sapon):
+        jac, _ = get_jacobian(sapon, scaled=False)
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+            1.450471e6, rel=1e-3
+        )
+        sapon_scaler = sapon.fs.unit.mixed_state[0].default_scaler()
+        sapon_scaler.default_scaling_factors["flow_vol"] = 1
+
+        submodel_scalers = ComponentMap()
+        submodel_scalers[sapon.fs.unit.mixed_state] = sapon_scaler
+        submodel_scalers[sapon.fs.unit.a_state] = sapon_scaler
+        submodel_scalers[sapon.fs.unit.B_state] = sapon_scaler
+        submodel_scalers[sapon.fs.unit.c_state] = sapon_scaler
+
+        scaler_object = sapon.fs.unit.default_scaler()
+        scaler_object.scale_model(sapon.fs.unit, submodel_scalers=submodel_scalers)
+
+        sm = TransformationFactory("core.scale_model").create_using(sapon, rename=False)
+        jac, _ = get_jacobian(sm, scaled=False)
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(157.69, rel=1e-3)
 
 
 # -----------------------------------------------------------------------------
@@ -1638,6 +2519,18 @@ class TestIAPWS(object):
 
 # -----------------------------------------------------------------------------
 # Define some generic Property Block classes for testing ideal separations
+class IdealTestBlockScaler(CustomScalerBase):
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None
+    ):
+        model.variables_scaled = True
+
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None
+    ):
+        model.constraints_scaled = True
+
+
 @declare_process_block_class("IdealTestBlock")
 class _IdealParameterBlock(PhysicalParameterBlock):
     def build(self):
@@ -1669,6 +2562,9 @@ class _IdealParameterBlock(PhysicalParameterBlock):
 
 @declare_process_block_class("IdealStateBlock", block_class=StateBlock)
 class IdealTestBlockData(StateBlockData):
+    variables_scaled = False
+    constraints_scaled = False
+    default_scaler = IdealTestBlockScaler
     CONFIG = ConfigBlock(implicit=True)
 
     def build(self):
@@ -1810,6 +2706,16 @@ class TestIdealConstruction(object):
         assert value(m.fs.sep.outlet_4.temperature[0]) == 300
         assert value(m.fs.sep.outlet_4.pressure[0]) == 1e5
 
+        # No model-level variables or constraints are created,
+        # so just check that no errors are raised and that
+        # the mixed state block is scaled.
+        scaler_obj = m.fs.sep.default_scaler()
+        scaler_obj.scale_model(m.fs.sep)
+        assert not hasattr(m.fs.sep, "scaling_factor")
+        assert not hasattr(m.fs.sep, "scaling_hint")
+        assert m.fs.sep.mixed_state[0].variables_scaled
+        assert m.fs.sep.mixed_state[0].constraints_scaled
+
     @pytest.mark.unit
     def test_phase(self):
         m = ConcreteModel()
@@ -1849,6 +2755,16 @@ class TestIdealConstruction(object):
         assert value(m.fs.sep.outlet_2.temperature[0]) == 300
         assert value(m.fs.sep.outlet_2.pressure[0]) == 1e5
 
+        # No model-level variables or constraints are created,
+        # so just check that no errors are raised and that
+        # the mixed state block is scaled.
+        scaler_obj = m.fs.sep.default_scaler()
+        scaler_obj.scale_model(m.fs.sep)
+        assert not hasattr(m.fs.sep, "scaling_factor")
+        assert not hasattr(m.fs.sep, "scaling_hint")
+        assert m.fs.sep.mixed_state[0].variables_scaled
+        assert m.fs.sep.mixed_state[0].constraints_scaled
+
     @pytest.mark.unit
     def test_component(self):
         m = ConcreteModel()
@@ -1887,6 +2803,16 @@ class TestIdealConstruction(object):
         assert value(m.fs.sep.outlet_2.component_flow_phase[0, "p2", "c2"]) == 2.0
         assert value(m.fs.sep.outlet_2.temperature[0]) == 300
         assert value(m.fs.sep.outlet_2.pressure[0]) == 1e5
+
+        # No model-level variables or constraints are created,
+        # so just check that no errors are raised and that
+        # the mixed state block is scaled.
+        scaler_obj = m.fs.sep.default_scaler()
+        scaler_obj.scale_model(m.fs.sep)
+        assert not hasattr(m.fs.sep, "scaling_factor")
+        assert not hasattr(m.fs.sep, "scaling_hint")
+        assert m.fs.sep.mixed_state[0].variables_scaled
+        assert m.fs.sep.mixed_state[0].constraints_scaled
 
     @pytest.mark.unit
     def test_ideal_w_no_ports(self):
@@ -2091,6 +3017,16 @@ class TestIdealConstruction(object):
         assert value(m.fs.sep.outlet_2.mole_frac_comp[0, "c1"]) == 1e-8
         assert value(m.fs.sep.outlet_2.mole_frac_comp[0, "c2"]) == 1
 
+        # No model-level variables or constraints are created,
+        # so just check that no errors are raised and that
+        # the mixed state block is scaled.
+        scaler_obj = m.fs.sep.default_scaler()
+        scaler_obj.scale_model(m.fs.sep)
+        assert not hasattr(m.fs.sep, "scaling_factor")
+        assert not hasattr(m.fs.sep, "scaling_hint")
+        assert m.fs.sep.mixed_state[0].variables_scaled
+        assert m.fs.sep.mixed_state[0].constraints_scaled
+
     @pytest.mark.unit
     def test_mole_frac_w_phase_split(self):
         m = ConcreteModel()
@@ -2117,6 +3053,16 @@ class TestIdealConstruction(object):
         assert value(m.fs.sep.outlet_1.mole_frac_comp[0, "c2"]) == 0.7
         assert value(m.fs.sep.outlet_2.mole_frac_comp[0, "c1"]) == 0.5
         assert value(m.fs.sep.outlet_2.mole_frac_comp[0, "c2"]) == 0.3
+
+        # No model-level variables or constraints are created,
+        # so just check that no errors are raised and that
+        # the mixed state block is scaled.
+        scaler_obj = m.fs.sep.default_scaler()
+        scaler_obj.scale_model(m.fs.sep)
+        assert not hasattr(m.fs.sep, "scaling_factor")
+        assert not hasattr(m.fs.sep, "scaling_hint")
+        assert m.fs.sep.mixed_state[0].variables_scaled
+        assert m.fs.sep.mixed_state[0].constraints_scaled
 
     @pytest.mark.unit
     def test_mole_frac_w_phase_comp_split(self):
@@ -2153,6 +3099,16 @@ class TestIdealConstruction(object):
         assert value(m.fs.sep.outlet_3.mole_frac_comp[0, "c2"]) == 1e-8
         assert value(m.fs.sep.outlet_4.mole_frac_comp[0, "c1"]) == 1e-8
         assert value(m.fs.sep.outlet_4.mole_frac_comp[0, "c2"]) == 1
+
+        # No model-level variables or constraints are created,
+        # so just check that no errors are raised and that
+        # the mixed state block is scaled.
+        scaler_obj = m.fs.sep.default_scaler()
+        scaler_obj.scale_model(m.fs.sep)
+        assert not hasattr(m.fs.sep, "scaling_factor")
+        assert not hasattr(m.fs.sep, "scaling_hint")
+        assert m.fs.sep.mixed_state[0].variables_scaled
+        assert m.fs.sep.mixed_state[0].constraints_scaled
 
     @pytest.mark.unit
     def test_mole_frac_w_phase_split_no_fallback(self):
@@ -2216,6 +3172,16 @@ class TestIdealConstruction(object):
         assert value(m.fs.sep.outlet_2.mole_frac_phase_comp[0, "p2", "c1"]) == 1e-8
         assert value(m.fs.sep.outlet_2.mole_frac_phase_comp[0, "p2", "c2"]) == 1
 
+        # No model-level variables or constraints are created,
+        # so just check that no errors are raised and that
+        # the mixed state block is scaled.
+        scaler_obj = m.fs.sep.default_scaler()
+        scaler_obj.scale_model(m.fs.sep)
+        assert not hasattr(m.fs.sep, "scaling_factor")
+        assert not hasattr(m.fs.sep, "scaling_hint")
+        assert m.fs.sep.mixed_state[0].variables_scaled
+        assert m.fs.sep.mixed_state[0].constraints_scaled
+
     @pytest.mark.unit
     def test_mole_frac_phase_w_phase_split(self):
         m = ConcreteModel()
@@ -2249,6 +3215,16 @@ class TestIdealConstruction(object):
         assert value(m.fs.sep.outlet_2.mole_frac_phase_comp[0, "p1", "c2"]) == 0.7
         assert value(m.fs.sep.outlet_2.mole_frac_phase_comp[0, "p2", "c1"]) == 0.5
         assert value(m.fs.sep.outlet_2.mole_frac_phase_comp[0, "p2", "c2"]) == 0.3
+
+        # No model-level variables or constraints are created,
+        # so just check that no errors are raised and that
+        # the mixed state block is scaled.
+        scaler_obj = m.fs.sep.default_scaler()
+        scaler_obj.scale_model(m.fs.sep)
+        assert not hasattr(m.fs.sep, "scaling_factor")
+        assert not hasattr(m.fs.sep, "scaling_hint")
+        assert m.fs.sep.mixed_state[0].variables_scaled
+        assert m.fs.sep.mixed_state[0].constraints_scaled
 
     @pytest.mark.unit
     def test_mole_frac_phase_w_phase_comp_split(self):
@@ -2299,6 +3275,16 @@ class TestIdealConstruction(object):
         assert value(m.fs.sep.outlet_4.mole_frac_phase_comp[0, "p2", "c1"]) == 1e-8
         assert value(m.fs.sep.outlet_4.mole_frac_phase_comp[0, "p2", "c2"]) == 1
 
+        # No model-level variables or constraints are created,
+        # so just check that no errors are raised and that
+        # the mixed state block is scaled.
+        scaler_obj = m.fs.sep.default_scaler()
+        scaler_obj.scale_model(m.fs.sep)
+        assert not hasattr(m.fs.sep, "scaling_factor")
+        assert not hasattr(m.fs.sep, "scaling_hint")
+        assert m.fs.sep.mixed_state[0].variables_scaled
+        assert m.fs.sep.mixed_state[0].constraints_scaled
+
     @pytest.mark.unit
     def test_flow_phase_comp_w_phase_comp_split(self):
         m = ConcreteModel()
@@ -2348,6 +3334,16 @@ class TestIdealConstruction(object):
         assert value(m.fs.sep.outlet_4.flow_mol_phase_comp[0, "p2", "c1"]) == 1e-8
         assert value(m.fs.sep.outlet_4.flow_mol_phase_comp[0, "p2", "c2"]) == 4
 
+        # No model-level variables or constraints are created,
+        # so just check that no errors are raised and that
+        # the mixed state block is scaled.
+        scaler_obj = m.fs.sep.default_scaler()
+        scaler_obj.scale_model(m.fs.sep)
+        assert not hasattr(m.fs.sep, "scaling_factor")
+        assert not hasattr(m.fs.sep, "scaling_hint")
+        assert m.fs.sep.mixed_state[0].variables_scaled
+        assert m.fs.sep.mixed_state[0].constraints_scaled
+
     @pytest.mark.unit
     def test_flow_phase_comp_w_phase_split(self):
         m = ConcreteModel()
@@ -2382,6 +3378,16 @@ class TestIdealConstruction(object):
         assert value(m.fs.sep.outlet_2.flow_mol_phase_comp[0, "p2", "c1"]) == 3
         assert value(m.fs.sep.outlet_2.flow_mol_phase_comp[0, "p2", "c2"]) == 4
 
+        # No model-level variables or constraints are created,
+        # so just check that no errors are raised and that
+        # the mixed state block is scaled.
+        scaler_obj = m.fs.sep.default_scaler()
+        scaler_obj.scale_model(m.fs.sep)
+        assert not hasattr(m.fs.sep, "scaling_factor")
+        assert not hasattr(m.fs.sep, "scaling_hint")
+        assert m.fs.sep.mixed_state[0].variables_scaled
+        assert m.fs.sep.mixed_state[0].constraints_scaled
+
     @pytest.mark.unit
     def test_flow_phase_comp_w_comp_split(self):
         m = ConcreteModel()
@@ -2415,6 +3421,16 @@ class TestIdealConstruction(object):
         assert value(m.fs.sep.outlet_2.flow_mol_phase_comp[0, "p1", "c2"]) == 2
         assert value(m.fs.sep.outlet_2.flow_mol_phase_comp[0, "p2", "c1"]) == 1e-8
         assert value(m.fs.sep.outlet_2.flow_mol_phase_comp[0, "p2", "c2"]) == 4
+
+        # No model-level variables or constraints are created,
+        # so just check that no errors are raised and that
+        # the mixed state block is scaled.
+        scaler_obj = m.fs.sep.default_scaler()
+        scaler_obj.scale_model(m.fs.sep)
+        assert not hasattr(m.fs.sep, "scaling_factor")
+        assert not hasattr(m.fs.sep, "scaling_hint")
+        assert m.fs.sep.mixed_state[0].variables_scaled
+        assert m.fs.sep.mixed_state[0].constraints_scaled
 
     @pytest.mark.unit
     def test_flow_phase_w_phase_comp_split(self):
@@ -2456,6 +3472,16 @@ class TestIdealConstruction(object):
 
         assert value(m.fs.sep.outlet_4.flow_mol_phase[0, "p1"]) == 1e-8
         assert value(m.fs.sep.outlet_4.flow_mol_phase[0, "p2"]) == 4
+
+        # No model-level variables or constraints are created,
+        # so just check that no errors are raised and that
+        # the mixed state block is scaled.
+        scaler_obj = m.fs.sep.default_scaler()
+        scaler_obj.scale_model(m.fs.sep)
+        assert not hasattr(m.fs.sep, "scaling_factor")
+        assert not hasattr(m.fs.sep, "scaling_hint")
+        assert m.fs.sep.mixed_state[0].variables_scaled
+        assert m.fs.sep.mixed_state[0].constraints_scaled
 
     @pytest.mark.unit
     def test_flow_phase_w_phase_comp_split_no_fallback(self):
@@ -2520,6 +3546,16 @@ class TestIdealConstruction(object):
         assert value(m.fs.sep.outlet_2.flow_mol_phase[0, "p1"]) == 1e-8
         assert value(m.fs.sep.outlet_2.flow_mol_phase[0, "p2"]) == 6
 
+        # No model-level variables or constraints are created,
+        # so just check that no errors are raised and that
+        # the mixed state block is scaled.
+        scaler_obj = m.fs.sep.default_scaler()
+        scaler_obj.scale_model(m.fs.sep)
+        assert not hasattr(m.fs.sep, "scaling_factor")
+        assert not hasattr(m.fs.sep, "scaling_hint")
+        assert m.fs.sep.mixed_state[0].variables_scaled
+        assert m.fs.sep.mixed_state[0].constraints_scaled
+
     @pytest.mark.unit
     def test_flow_phase_w_comp_split(self):
         m = ConcreteModel()
@@ -2549,6 +3585,16 @@ class TestIdealConstruction(object):
 
         assert value(m.fs.sep.outlet_2.flow_mol_phase[0, "p1"]) == 2
         assert value(m.fs.sep.outlet_2.flow_mol_phase[0, "p2"]) == 4
+
+        # No model-level variables or constraints are created,
+        # so just check that no errors are raised and that
+        # the mixed state block is scaled.
+        scaler_obj = m.fs.sep.default_scaler()
+        scaler_obj.scale_model(m.fs.sep)
+        assert not hasattr(m.fs.sep, "scaling_factor")
+        assert not hasattr(m.fs.sep, "scaling_hint")
+        assert m.fs.sep.mixed_state[0].variables_scaled
+        assert m.fs.sep.mixed_state[0].constraints_scaled
 
     @pytest.mark.unit
     def test_flow_phase_w_comp_split_no_fallback(self):
@@ -2619,6 +3665,16 @@ class TestIdealConstruction(object):
         assert value(m.fs.sep.outlet_4.flow_mol_comp[0, "c1"]) == 1e-8
         assert value(m.fs.sep.outlet_4.flow_mol_comp[0, "c2"]) == 4
 
+        # No model-level variables or constraints are created,
+        # so just check that no errors are raised and that
+        # the mixed state block is scaled.
+        scaler_obj = m.fs.sep.default_scaler()
+        scaler_obj.scale_model(m.fs.sep)
+        assert not hasattr(m.fs.sep, "scaling_factor")
+        assert not hasattr(m.fs.sep, "scaling_hint")
+        assert m.fs.sep.mixed_state[0].variables_scaled
+        assert m.fs.sep.mixed_state[0].constraints_scaled
+
     @pytest.mark.unit
     def test_flow_comp_w_phase_comp_split_no_fallback(self):
         m = ConcreteModel()
@@ -2682,6 +3738,16 @@ class TestIdealConstruction(object):
         assert value(m.fs.sep.outlet_2.flow_mol_comp[0, "c1"]) == 3
         assert value(m.fs.sep.outlet_2.flow_mol_comp[0, "c2"]) == 4
 
+        # No model-level variables or constraints are created,
+        # so just check that no errors are raised and that
+        # the mixed state block is scaled.
+        scaler_obj = m.fs.sep.default_scaler()
+        scaler_obj.scale_model(m.fs.sep)
+        assert not hasattr(m.fs.sep, "scaling_factor")
+        assert not hasattr(m.fs.sep, "scaling_hint")
+        assert m.fs.sep.mixed_state[0].variables_scaled
+        assert m.fs.sep.mixed_state[0].constraints_scaled
+
     @pytest.mark.unit
     def test_flow_comp_w_phase_split_no_fallback(self):
         m = ConcreteModel()
@@ -2740,6 +3806,16 @@ class TestIdealConstruction(object):
         assert value(m.fs.sep.outlet_2.flow_mol_comp[0, "c1"]) == 1e-8
         assert value(m.fs.sep.outlet_2.flow_mol_comp[0, "c2"]) == 8
 
+        # No model-level variables or constraints are created,
+        # so just check that no errors are raised and that
+        # the mixed state block is scaled.
+        scaler_obj = m.fs.sep.default_scaler()
+        scaler_obj.scale_model(m.fs.sep)
+        assert not hasattr(m.fs.sep, "scaling_factor")
+        assert not hasattr(m.fs.sep, "scaling_hint")
+        assert m.fs.sep.mixed_state[0].variables_scaled
+        assert m.fs.sep.mixed_state[0].constraints_scaled
+
     @pytest.mark.unit
     def test_t_p(self):
         m = ConcreteModel()
@@ -2770,6 +3846,16 @@ class TestIdealConstruction(object):
         assert value(m.fs.sep.outlet_2.temperature[0]) == 300
         assert value(m.fs.sep.outlet_2.pressure[0]) == 1e5
 
+        # No model-level variables or constraints are created,
+        # so just check that no errors are raised and that
+        # the mixed state block is scaled.
+        scaler_obj = m.fs.sep.default_scaler()
+        scaler_obj.scale_model(m.fs.sep)
+        assert not hasattr(m.fs.sep, "scaling_factor")
+        assert not hasattr(m.fs.sep, "scaling_hint")
+        assert m.fs.sep.mixed_state[0].variables_scaled
+        assert m.fs.sep.mixed_state[0].constraints_scaled
+
     @pytest.mark.unit
     def test_general_comp_split(self):
         m = ConcreteModel()
@@ -2797,6 +3883,16 @@ class TestIdealConstruction(object):
         assert value(m.fs.sep.outlet_1.test_var[0]) == 2000
 
         assert value(m.fs.sep.outlet_2.test_var[0]) == 3000
+
+        # No model-level variables or constraints are created,
+        # so just check that no errors are raised and that
+        # the mixed state block is scaled.
+        scaler_obj = m.fs.sep.default_scaler()
+        scaler_obj.scale_model(m.fs.sep)
+        assert not hasattr(m.fs.sep, "scaling_factor")
+        assert not hasattr(m.fs.sep, "scaling_hint")
+        assert m.fs.sep.mixed_state[0].variables_scaled
+        assert m.fs.sep.mixed_state[0].constraints_scaled
 
     @pytest.mark.unit
     def test_general_comp_split_fallback(self):
@@ -2826,6 +3922,16 @@ class TestIdealConstruction(object):
         assert value(m.fs.sep.outlet_1.test_var[0]) == 14000
 
         assert value(m.fs.sep.outlet_2.test_var[0]) == 16000
+
+        # No model-level variables or constraints are created,
+        # so just check that no errors are raised and that
+        # the mixed state block is scaled.
+        scaler_obj = m.fs.sep.default_scaler()
+        scaler_obj.scale_model(m.fs.sep)
+        assert not hasattr(m.fs.sep, "scaling_factor")
+        assert not hasattr(m.fs.sep, "scaling_hint")
+        assert m.fs.sep.mixed_state[0].variables_scaled
+        assert m.fs.sep.mixed_state[0].constraints_scaled
 
     @pytest.mark.unit
     def test_general_comp_split_fallback_fail(self):
@@ -2884,6 +3990,16 @@ class TestIdealConstruction(object):
 
         assert value(m.fs.sep.outlet_2.test_var[0]) == 5000
 
+        # No model-level variables or constraints are created,
+        # so just check that no errors are raised and that
+        # the mixed state block is scaled.
+        scaler_obj = m.fs.sep.default_scaler()
+        scaler_obj.scale_model(m.fs.sep)
+        assert not hasattr(m.fs.sep, "scaling_factor")
+        assert not hasattr(m.fs.sep, "scaling_hint")
+        assert m.fs.sep.mixed_state[0].variables_scaled
+        assert m.fs.sep.mixed_state[0].constraints_scaled
+
     @pytest.mark.unit
     def test_general_phase_split_fallback(self):
         m = ConcreteModel()
@@ -2912,6 +4028,16 @@ class TestIdealConstruction(object):
         assert value(m.fs.sep.outlet_1.test_var[0]) == 13000
 
         assert value(m.fs.sep.outlet_2.test_var[0]) == 17000
+
+        # No model-level variables or constraints are created,
+        # so just check that no errors are raised and that
+        # the mixed state block is scaled.
+        scaler_obj = m.fs.sep.default_scaler()
+        scaler_obj.scale_model(m.fs.sep)
+        assert not hasattr(m.fs.sep, "scaling_factor")
+        assert not hasattr(m.fs.sep, "scaling_hint")
+        assert m.fs.sep.mixed_state[0].variables_scaled
+        assert m.fs.sep.mixed_state[0].constraints_scaled
 
     @pytest.mark.unit
     def test_general_phase_split_fallback_fail(self):
@@ -2975,6 +4101,16 @@ class TestIdealConstruction(object):
         assert value(m.fs.sep.outlet_2.test_var[0]) == 7000
         assert value(m.fs.sep.outlet_3.test_var[0]) == 8000
         assert value(m.fs.sep.outlet_4.test_var[0]) == 9000
+
+        # No model-level variables or constraints are created,
+        # so just check that no errors are raised and that
+        # the mixed state block is scaled.
+        scaler_obj = m.fs.sep.default_scaler()
+        scaler_obj.scale_model(m.fs.sep)
+        assert not hasattr(m.fs.sep, "scaling_factor")
+        assert not hasattr(m.fs.sep, "scaling_hint")
+        assert m.fs.sep.mixed_state[0].variables_scaled
+        assert m.fs.sep.mixed_state[0].constraints_scaled
 
     @pytest.mark.unit
     def test_general_phase_comp_split_fallback_fail(self):
@@ -3823,162 +4959,7 @@ def test_material_only():
 
 # -----------------------------------------------------------------------------
 # Inherent reaction case
-@declare_process_block_class("LeachSolutionParameters")
-class LeachSolutionParameterData(PhysicalParameterBlock):
-    def build(self):
-        super().build()
-
-        self.liquid = Phase()
-
-        # Solvent
-        self.H2O = Component()
-
-        # Acid related species
-        self.H = Component()
-        self.HSO4 = Component()
-        self.SO4 = Component()
-
-        self.mw = Param(
-            self.component_list,
-            units=pyunits.kg / pyunits.mol,
-            initialize={
-                "H2O": 18e-3,
-                "H": 1e-3,
-                "HSO4": 97e-3,
-                "SO4": 96e-3,
-            },
-        )
-
-        # Inherent reaction for partial dissociation of HSO4
-        self._has_inherent_reactions = True
-        self.inherent_reaction_idx = Set(initialize=["Ka2"])
-        self.inherent_reaction_stoichiometry = {
-            ("Ka2", "liquid", "H"): 1,
-            ("Ka2", "liquid", "HSO4"): -1,
-            ("Ka2", "liquid", "SO4"): 1,
-            ("Ka2", "liquid", "H2O"): 0,
-        }
-        self.Ka2 = Param(
-            initialize=10**-1.99,
-            mutable=True,
-            units=pyunits.mol / pyunits.L,
-        )
-
-        # Assume dilute acid, density of pure water
-        self.dens_mol = Param(
-            initialize=1,
-            units=pyunits.kg / pyunits.litre,
-            mutable=True,
-        )
-
-        self._state_block_class = LeachSolutionStateBlock
-
-    @classmethod
-    def define_metadata(cls, obj):
-        obj.add_properties(
-            {
-                "flow_vol": {"method": None},
-                "conc_mass_comp": {"method": None},
-                "conc_mol_comp": {"method": None},
-                "dens_mol": {"method": "_dens_mol"},
-            }
-        )
-        obj.add_default_units(
-            {
-                "time": pyunits.hour,
-                "length": pyunits.m,
-                "mass": pyunits.kg,
-                "amount": pyunits.mol,
-                "temperature": pyunits.K,
-            }
-        )
-
-
-class _LeachSolutionStateBlock(StateBlock):
-    def fix_initialization_states(self):
-        """
-        Fixes state variables for state blocks.
-
-        Returns:
-            None
-        """
-        # Fix state variables
-        fix_state_vars(self)
-
-        # Deactivate inherent reactions
-        for k in self:
-            if not self[k].config.defined_state:
-                self[k].h2o_concentration.deactivate()
-                self[k].hso4_dissociation.deactivate()
-
-
-@declare_process_block_class(
-    "LeachSolutionStateBlock", block_class=_LeachSolutionStateBlock
-)
-class LeachSolutionStateBlockData(StateBlockData):
-    def build(self):
-        super().build()
-
-        self.flow_vol = Var(
-            units=pyunits.L / pyunits.hour,
-            bounds=(1e-8, None),
-        )
-        self.conc_mass_comp = Var(
-            self.params.component_list,
-            units=pyunits.mg / pyunits.L,
-            bounds=(1e-10, None),
-        )
-        self.conc_mol_comp = Var(
-            self.params.component_list,
-            units=pyunits.mol / pyunits.L,
-            initialize=1e-5,
-            bounds=(1e-8, None),
-        )
-
-        # Concentration conversion constraint
-        @self.Constraint(self.params.component_list)
-        def molar_concentration_constraint(b, j):
-            return (
-                pyunits.convert(
-                    b.conc_mol_comp[j] * b.params.mw[j],
-                    to_units=pyunits.mg / pyunits.litre,
-                )
-                == b.conc_mass_comp[j]
-            )
-
-        if not self.config.defined_state:
-            # Concentration of H2O based on assumed density
-            self.h2o_concentration = Constraint(
-                expr=self.conc_mass_comp["H2O"] == 1e6 * pyunits.mg / pyunits.L
-            )
-            # Equilibrium for partial dissociation of HSO4
-            self.hso4_dissociation = Constraint(
-                expr=self.conc_mol_comp["HSO4"] * self.params.Ka2
-                == self.conc_mol_comp["H"] * self.conc_mol_comp["SO4"]
-            )
-
-    def get_material_flow_terms(self, p, j):
-        # Note conversion to mol/hour
-        if j == "H2O":
-            # Assume constant density of 1 kg/L
-            return self.flow_vol * self.params.dens_mol / self.params.mw[j]
-        else:
-            # Need to convert from moles to mass
-            return pyunits.convert(
-                self.flow_vol * self.conc_mass_comp[j] / self.params.mw[j],
-                to_units=pyunits.mol / pyunits.hour,
-            )
-
-    def get_material_flow_basis(self):
-        return MaterialFlowBasis.molar
-
-    def define_state_vars(self):
-        return {
-            "flow_vol": self.flow_vol,
-            "conc_mass_comp": self.conc_mass_comp,
-        }
-
-
+# -----------------------------------------------------------------------------
 @pytest.mark.component
 @pytest.mark.solver
 def test_total_flow_w_inherent_rxns():
@@ -4203,6 +5184,16 @@ def test_phase_flow_w_inherent_rxns():
         m.fs.sep.inherent_reaction_extent[0, "outlet_2", "Ka2"]
     ) == pytest.approx(0, abs=1e-6)
 
+    jac, _ = get_jacobian(m, scaled=False)
+    assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(6.11018e11, rel=1e-3)
+
+    scaler_object = m.fs.sep.default_scaler()
+    scaler_object.scale_model(m.fs.sep)  # , submodel_scalers=submodel_scalers)
+
+    sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
+    jac, _ = get_jacobian(sm, scaled=False)
+    assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(5.0297e4, rel=1e-3)
+
 
 @pytest.mark.component
 @pytest.mark.solver
@@ -4277,3 +5268,13 @@ def test_phase_component_flow_w_inherent_rxns():
     assert value(
         m.fs.sep.inherent_reaction_extent[0, "outlet_2", "Ka2"]
     ) == pytest.approx(0, abs=1e-6)
+
+    jac, _ = get_jacobian(m, scaled=False)
+    assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(6.11018e11, rel=1e-3)
+
+    scaler_object = m.fs.sep.default_scaler()
+    scaler_object.scale_model(m.fs.sep)  # , submodel_scalers=submodel_scalers)
+
+    sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
+    jac, _ = get_jacobian(sm, scaled=False)
+    assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(6.5233e4, rel=1e-3)

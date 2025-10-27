@@ -12,15 +12,16 @@
 #################################################################################
 """
 Tests for Flash unit model.
-Author: Jaffer Ghouse
+Authors: Jaffer Ghouse, Douglas Allan
 """
 import pytest
 
 from pyomo.environ import (
     check_optimal_termination,
+    ComponentMap,
     ConcreteModel,
+    TransformationFactory,
     value,
-    units,
     units as pyunits,
 )
 
@@ -30,11 +31,15 @@ from idaes.core import (
     EnergyBalanceType,
     MomentumBalanceType,
 )
-from idaes.models.unit_models.flash import Flash, EnergySplittingType
+from idaes.models.unit_models.flash import EnergySplittingType, Flash, FlashScaler
 from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
     BTXParameterBlock,
 )
 from idaes.models.properties import iapws95
+from idaes.models.properties.modular_properties import GenericParameterBlock
+from idaes.models.properties.modular_properties.examples.BT_ideal import (
+    configuration as BTIdeal_config,
+)
 from idaes.core.util.model_statistics import (
     number_variables,
     number_total_constraints,
@@ -49,6 +54,10 @@ from idaes.core.initialization import (
     InitializationStatus,
 )
 from idaes.core.util import DiagnosticsToolbox
+from idaes.core.util.scaling import (
+    get_jacobian,
+    jacobian_cond,
+)
 
 
 # -----------------------------------------------------------------------------
@@ -83,12 +92,31 @@ def test_config():
 
 # -----------------------------------------------------------------------------
 @pytest.mark.unit
-def test_calc_scale():
+def test_legacy_scaling():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = PhysicalParameterTestBlock()
     m.fs.unit = Flash(property_package=m.fs.properties)
     iscale.calculate_scaling_factors(m)
+
+
+@pytest.mark.unit
+def test_scaler_object():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = PhysicalParameterTestBlock()
+    m.fs.unit = Flash(property_package=m.fs.properties)
+
+    assert m.fs.unit.default_scaler is FlashScaler
+
+    scaler_obj = m.fs.unit.default_scaler()
+    scaler_obj.scale_model(m.fs.unit)
+
+    assert m.fs.unit.control_volume.properties_in[0].variables_scaled
+    assert m.fs.unit.control_volume.properties_in[0].constraints_scaled
+
+    assert m.fs.unit.control_volume.properties_out[0].variables_scaled
+    assert m.fs.unit.control_volume.properties_out[0].constraints_scaled
 
 
 # -----------------------------------------------------------------------------
@@ -293,6 +321,231 @@ class TestBTXIdeal(object):
     def test_numerical_issues(self, btx):
         dt = DiagnosticsToolbox(btx)
         dt.assert_no_numerical_warnings()
+
+
+# -----------------------------------------------------------------------------
+class TestBTIdealModular(object):
+    @pytest.fixture(scope="class")
+    def bt_modular(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.properties = GenericParameterBlock(**BTIdeal_config)
+
+        m.fs.unit = Flash(property_package=m.fs.properties)
+
+        m.fs.unit.inlet.flow_mol.fix(1)
+        m.fs.unit.inlet.temperature.fix(368)
+        m.fs.unit.inlet.pressure.fix(101325)
+        m.fs.unit.inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+        m.fs.unit.inlet.mole_frac_comp[0, "toluene"].fix(0.5)
+
+        m.fs.unit.heat_duty.fix(0)
+        m.fs.unit.deltaP.fix(0)
+
+        # Legacy property package, does not bound many variables which triggers
+        # warnings for potential evaluation errors.
+        # Fixing property package is out of scope for now.
+        m.fs.unit.control_volume.properties_in[0.0]._teq.setlb(300)
+        m.fs.unit.control_volume.properties_in[0.0]._teq.setub(550)
+
+        m.fs.unit.control_volume.properties_out[0.0]._teq.setlb(300)
+        m.fs.unit.control_volume.properties_out[0.0]._teq.setub(550)
+
+        return m
+
+    @pytest.mark.build
+    @pytest.mark.unit
+    def test_build(self, bt_modular):
+        assert hasattr(bt_modular.fs.unit.inlet, "flow_mol")
+        assert hasattr(bt_modular.fs.unit.inlet, "mole_frac_comp")
+        assert hasattr(bt_modular.fs.unit.inlet, "temperature")
+        assert hasattr(bt_modular.fs.unit.inlet, "pressure")
+
+        assert hasattr(bt_modular.fs.unit, "vap_outlet")
+        assert len(bt_modular.fs.unit.vap_outlet.vars) == 4
+        assert hasattr(bt_modular.fs.unit.vap_outlet, "flow_mol")
+        assert hasattr(bt_modular.fs.unit.vap_outlet, "mole_frac_comp")
+        assert hasattr(bt_modular.fs.unit.vap_outlet, "temperature")
+        assert hasattr(bt_modular.fs.unit.vap_outlet, "pressure")
+
+        assert hasattr(bt_modular.fs.unit, "liq_outlet")
+        assert len(bt_modular.fs.unit.liq_outlet.vars) == 4
+        assert hasattr(bt_modular.fs.unit.liq_outlet, "flow_mol")
+        assert hasattr(bt_modular.fs.unit.liq_outlet, "mole_frac_comp")
+        assert hasattr(bt_modular.fs.unit.liq_outlet, "temperature")
+        assert hasattr(bt_modular.fs.unit.liq_outlet, "pressure")
+
+        assert hasattr(bt_modular.fs.unit, "split")
+        assert hasattr(bt_modular.fs.unit, "heat_duty")
+        assert hasattr(bt_modular.fs.unit, "deltaP")
+
+        assert number_variables(bt_modular.fs.unit) == 44
+        assert number_total_constraints(bt_modular) == 37
+        assert number_unused_variables(bt_modular) == 0
+
+    @pytest.mark.component
+    def test_structural_issues(self, bt_modular):
+        dt = DiagnosticsToolbox(bt_modular)
+        dt.assert_no_structural_warnings()
+
+    @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_performance_contents(self, bt_modular):
+        perf_dict = bt_modular.fs.unit._get_performance_contents()
+
+        assert perf_dict == {
+            "vars": {
+                "Heat Duty": bt_modular.fs.unit.heat_duty[0],
+                "Pressure Change": bt_modular.fs.unit.deltaP[0],
+            }
+        }
+
+    # TODO the formatting for modular properties is broken (see #1684).
+    # This test can be fixed once that issue is fixed
+    # @pytest.mark.ui
+    # @pytest.mark.unit
+    # def test_get_stream_table_contents(self, bt_modular):
+    #     stable = bt_modular.fs.unit._get_stream_table_contents()
+
+    #     expected = {
+    #         "Units": {
+    #             "flow_mol": getattr(pyunits.pint_registry, "mole/s"),
+    #             "mole_frac_comp benzene": getattr(
+    #                 pyunits.pint_registry, "dimensionless"
+    #             ),
+    #             "mole_frac_comp toluene": getattr(
+    #                 pyunits.pint_registry, "dimensionless"
+    #             ),
+    #             "temperature": getattr(pyunits.pint_registry, "K"),
+    #             "pressure": getattr(pyunits.pint_registry, "Pa"),
+    #         },
+    #         "Inlet": {
+    #             "flow_mol": pytest.approx(1.00, rel=1e-4),
+    #             "mole_frac_comp benzene": pytest.approx(0.5, rel=1e-4),
+    #             "mole_frac_comp toluene": pytest.approx(0.5, rel=1e-4),
+    #             "temperature": pytest.approx(368, rel=1e-4),
+    #             "pressure": pytest.approx(101325, rel=1e-4),
+    #         },
+    #         "Vapor Outlet": {
+    #             "flow_mol": pytest.approx(0.5, rel=1e-4),
+    #             "mole_frac_comp benzene": pytest.approx(0.5, rel=1e-4),
+    #             "mole_frac_comp toluene": pytest.approx(0.5, rel=1e-4),
+    #             "temperature": pytest.approx(298.15, rel=1e-4),
+    #             "pressure": pytest.approx(101325.0, rel=1e-4),
+    #         },
+    #         "Liquid Outlet": {
+    #             "flow_mol": pytest.approx(0.5, rel=1e-4),
+    #             "mole_frac_comp benzene": pytest.approx(0.5, rel=1e-4),
+    #             "mole_frac_comp toluene": pytest.approx(0.5, rel=1e-4),
+    #             "temperature": pytest.approx(298.15, rel=1e-4),
+    #             "pressure": pytest.approx(101325.0, rel=1e-4),
+    #         },
+    #     }
+
+    #     assert stable.to_dict() == expected
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_initialize(self, bt_modular):
+        initialization_tester(bt_modular)
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solve(self, bt_modular):
+        results = solver.solve(bt_modular)
+
+        # Check for optimal solution
+        assert check_optimal_termination(results)
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solution(self, bt_modular):
+        assert pytest.approx(0.603, abs=1e-3) == value(
+            bt_modular.fs.unit.liq_outlet.flow_mol[0]
+        )
+        assert pytest.approx(0.396, abs=1e-3) == value(
+            bt_modular.fs.unit.vap_outlet.flow_mol[0]
+        )
+        assert pytest.approx(368, abs=1e-3) == value(
+            bt_modular.fs.unit.liq_outlet.temperature[0]
+        )
+        assert pytest.approx(101325, abs=1e-3) == value(
+            bt_modular.fs.unit.liq_outlet.pressure[0]
+        )
+
+        assert pytest.approx(0.412, abs=1e-3) == value(
+            bt_modular.fs.unit.liq_outlet.mole_frac_comp[0, "benzene"]
+        )
+        assert pytest.approx(0.588, abs=1e-3) == value(
+            bt_modular.fs.unit.liq_outlet.mole_frac_comp[0, "toluene"]
+        )
+        assert pytest.approx(0.634, abs=1e-3) == value(
+            bt_modular.fs.unit.vap_outlet.mole_frac_comp[0, "benzene"]
+        )
+        assert pytest.approx(0.366, abs=1e-3) == value(
+            bt_modular.fs.unit.vap_outlet.mole_frac_comp[0, "toluene"]
+        )
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_conservation(self, bt_modular):
+        assert (
+            abs(
+                value(
+                    bt_modular.fs.unit.inlet.flow_mol[0]
+                    - (
+                        bt_modular.fs.unit.vap_outlet.flow_mol[0]
+                        + bt_modular.fs.unit.liq_outlet.flow_mol[0]
+                    )
+                )
+            )
+            <= 1e-6
+        )
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, bt_modular):
+        dt = DiagnosticsToolbox(bt_modular)
+        dt.assert_no_numerical_warnings()
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_scaler_object(self, bt_modular):
+        jac, _ = get_jacobian(bt_modular, scaled=False)
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+            7.028667e7, rel=1e-3
+        )
+
+        property_scaler = bt_modular.fs.unit.control_volume.properties_in[
+            0
+        ].default_scaler()
+        property_scaler.default_scaling_factors["flow_mol_phase"] = 1
+
+        submodel_scalers = ComponentMap()
+        submodel_scalers[bt_modular.fs.unit.control_volume.properties_in] = (
+            property_scaler
+        )
+        submodel_scalers[bt_modular.fs.unit.control_volume.properties_out] = (
+            property_scaler
+        )
+
+        scaler_object = bt_modular.fs.unit.default_scaler()
+        scaler_object.scale_model(bt_modular.fs.unit, submodel_scalers=submodel_scalers)
+
+        sm = TransformationFactory("core.scale_model").create_using(
+            bt_modular, rename=False
+        )
+        jac, _ = get_jacobian(sm, scaled=False)
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+            6.7221e4, rel=1e-3
+        )
 
 
 # -----------------------------------------------------------------------------
