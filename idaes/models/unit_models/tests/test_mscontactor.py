@@ -1600,10 +1600,10 @@ class TestBuild:
                 )
 
         for vardata in unit.stream1_material_holdup.values():
-            assert unit.scaling_factor[vardata] == approx(2683 * 2 / 42)
+            assert unit.scaling_factor[vardata] == approx(2683 * 2 * 10 / 42)
 
         for vardata in unit.stream2_material_holdup.values():
-            assert unit.scaling_factor[vardata] == approx(2683 * 2 / 52)
+            assert unit.scaling_factor[vardata] == approx(2683 * 2 * 10 / 52)
 
         # Constraints
         for t in dynamic.fs.time:
@@ -1643,10 +1643,10 @@ class TestBuild:
                 )
 
         for condata in unit.stream1_material_holdup_constraint.values():
-            assert unit.scaling_factor[condata] == approx(2683 * 2 / 42)
+            assert unit.scaling_factor[condata] == approx(2683 * 2 * 10 / 42)
 
         for condata in unit.stream2_material_holdup_constraint.values():
-            assert unit.scaling_factor[condata] == approx(2683 * 2 / 52)
+            assert unit.scaling_factor[condata] == approx(2683 * 2 * 10 / 52)
 
         # Expressions
         assert len(unit.scaling_hint) == 8
@@ -2179,10 +2179,10 @@ class TestBuild:
                 )
 
         for vardata in unit.stream1_energy_holdup.values():
-            assert unit.scaling_factor[vardata] == approx(2683 * 2 / 43)
+            assert unit.scaling_factor[vardata] == approx(2683 * 2 * 10 / 43)
 
         for vardata in unit.stream2_energy_holdup.values():
-            assert unit.scaling_factor[vardata] == approx(2683 * 2 / 53)
+            assert unit.scaling_factor[vardata] == approx(2683 * 2 * 10 / 53)
 
         # Constraints
         for t in dynamic.fs.time:
@@ -2196,10 +2196,10 @@ class TestBuild:
                 assert unit.scaling_factor[unit.stream2_energy_balance[t, e]] == 37
 
         for condata in unit.stream1_energy_holdup_constraint.values():
-            assert unit.scaling_factor[condata] == approx(2683 * 2 / 43)
+            assert unit.scaling_factor[condata] == approx(2683 * 2 * 10 / 43)
 
         for condata in unit.stream2_energy_holdup_constraint.values():
-            assert unit.scaling_factor[condata] == approx(2683 * 2 / 53)
+            assert unit.scaling_factor[condata] == approx(2683 * 2 * 10 / 53)
 
         # Expressions
         assert len(unit.scaling_hint) == 8
