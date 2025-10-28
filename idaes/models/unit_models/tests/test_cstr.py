@@ -442,7 +442,7 @@ class TestCSTRScaler:
 
         return m
 
-    @pytest.mark.integration
+    @pytest.mark.component
     def test_example_case(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
