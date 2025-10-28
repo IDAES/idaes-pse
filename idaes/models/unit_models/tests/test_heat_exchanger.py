@@ -20,10 +20,13 @@ import pytest
 import pandas
 
 from pyomo.environ import (
+    assert_optimal_termination,
     check_optimal_termination,
     ConcreteModel,
     Constraint,
     Expression,
+    Suffix,
+    TransformationFactory,
     value,
     Var,
     units as pyunits,
@@ -44,6 +47,7 @@ from idaes.models.unit_models.heat_exchanger import (
     delta_temperature_underwood_callback,
     delta_temperature_lmtd_smooth_callback,
     HeatExchanger,
+    HeatExchangerScaler,
     HeatExchangerFlowPattern,
     HX0DInitializer,
 )
@@ -58,11 +62,16 @@ from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
 )
 from idaes.models.properties.modular_properties.examples.BT_PR import configuration
+from idaes.models.properties.modular_properties.examples.BT_ideal import configuration as configuration_ideal
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     number_variables,
     number_total_constraints,
     number_unused_variables,
+)
+from idaes.core.util.scaling import (
+    get_jacobian,
+    jacobian_cond,
 )
 from idaes.core.util.testing import PhysicalParameterTestBlock, initialization_tester
 from idaes.core.solvers import get_solver
@@ -274,6 +283,7 @@ def test_config():
     assert m.fs.unit.config.cold_side.property_package is m.fs.properties
 
     assert m.fs.unit.default_initializer is HX0DInitializer
+    assert m.fs.unit.defaul_scaler is HeatExchangerScaler
 
 
 def basic_model(cb=delta_temperature_lmtd_callback):
@@ -2262,3 +2272,168 @@ class TestInitializersIAPWS:
         assert not model.fs.unit.cold_side_inlet.flow_mol[0].fixed
         assert not model.fs.unit.cold_side_inlet.enth_mol[0].fixed
         assert not model.fs.unit.cold_side_inlet.pressure[0].fixed
+
+
+class TestHeatExchangerScaler:
+    @pytest.fixture
+    def model(self, request):
+
+        condition = request.param
+        m = ConcreteModel()
+
+        # Steady State Model
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.properties_shell = iapws95.Iapws95ParameterBlock()
+        m.fs.properties_tube = GenericParameterBlock(**configuration_ideal)
+        
+        m.fs.heat_exchanger = HeatExchanger(
+            delta_temperature_callback=delta_temperature_lmtd_callback,
+            hot_side_name="shell",
+            cold_side_name="tube",
+            shell={"property_package": m.fs.properties_shell},
+            tube={"property_package": m.fs.properties_tube},
+        )
+        
+        m.fs.heat_exchanger.shell_inlet.flow_mol.fix(100)  # mol/s
+        m.fs.heat_exchanger.tube_inlet.flow_mol.fix(250)  # mol/s
+
+
+        if condition == 1:
+            m.fs.heat_exchanger.shell_inlet.pressure.fix(101325)
+            m.fs.heat_exchanger.shell_inlet.enth_mol.fix(iapws95.htpx(450 * pyunits.K, P=101325 * pyunits.Pa))  # J/mol
+            m.fs.heat_exchanger.tube_inlet.mole_frac_comp[0, "benzene"].fix(0.4)
+            m.fs.heat_exchanger.tube_inlet.mole_frac_comp[0, "toluene"].fix(0.6)
+            m.fs.heat_exchanger.tube_inlet.pressure.fix(101325)  # Pa
+            m.fs.heat_exchanger.tube_inlet.temperature[0].fix(350)  # K
+            m.fs.heat_exchanger.overall_heat_transfer_coefficient[0].fix(500)  # W/m2/K
+        
+        if condition == 2:
+            m.fs.heat_exchanger.shell_inlet.pressure.fix(5e5)
+            # change the mole fractions of the tube inlet
+            m.fs.heat_exchanger.tube_inlet.mole_frac_comp[0, "benzene"].fix(0.1)
+            m.fs.heat_exchanger.tube_inlet.mole_frac_comp[0, "toluene"].fix(0.9)
+            m.fs.heat_exchanger.overall_heat_transfer_coefficient[0].fix(750)  # W/m2/K
+            # assume hot conditions
+            m.fs.heat_exchanger.tube_inlet.temperature[0].fix(400)  # K
+            m.fs.heat_exchanger.shell_inlet.enth_mol.fix(iapws95.htpx(700 * pyunits.K, P=5e5*pyunits.Pa))
+            m.fs.heat_exchanger.tube_inlet.pressure.fix(5e5)  # Pa
+
+        m.fs.heat_exchanger.area.fix(50)  # m2
+
+        m.fs.heat_exchanger.cold_side.properties_in.default_scaler.DEFAULT_SCALING_FACTORS["flow_mol_phase[Liq]"] = 1/100
+        m.fs.heat_exchanger.cold_side.properties_in.default_scaler.DEFAULT_SCALING_FACTORS["flow_mol_phase[Vap]"] = 1/100
+        return m
+    
+    @pytest.mark.integration
+    @pytest.mark.parametrize("model, expected_output", [(1, 78660), (2, 417100)], indirect=["model"])
+    def test_scaler_results(self, model, expected_output):
+                
+        scaler = HeatExchangerScaler()
+        scaler.scale_model(model.fs.heat_exchanger)
+        model.fs.heat_exchanger.initialize()
+        
+        solver = get_solver(
+            "ipopt_v2", writer_config={"scale_model": True, "linear_presolve": True}
+        )
+
+        results = solver.solve(model, tee=True)
+        assert_optimal_termination(results)
+
+        sm = TransformationFactory("core.scale_model").create_using(model, rename=False)
+
+        jac, _ = get_jacobian(sm.fs.heat_exchanger, scaled=False)
+        condition_number = jacobian_cond(jac=jac, scaled=False)
+        assert condition_number == pytest.approx(expected_output, rel=1e-3)
+
+    @pytest.mark.integration
+    @pytest.mark.parametrize("model, expected_output", [(1, None)], indirect=["model"])
+    def test_scaler_values(self, model, expected_output):
+        scaler = HeatExchangerScaler()
+        scaler.scale_model(model.fs.heat_exchanger)
+
+        scaling_suffix_heat_exchanger = model.fs.heat_exchanger.scaling_factor
+        # Variables - HX
+        assert scaling_suffix_heat_exchanger[
+            model.fs.heat_exchanger.delta_temperature_in[0]
+        ] == pytest.approx(1e-2, rel=1e-3)
+
+        assert scaling_suffix_heat_exchanger[
+            model.fs.heat_exchanger.delta_temperature_out[0]
+        ] == pytest.approx(1e-2*1.01, rel=1e-3)
+
+        assert scaling_suffix_heat_exchanger[
+            model.fs.heat_exchanger.area
+        ] == pytest.approx(2e-2, rel=1e-3)
+
+        assert scaling_suffix_heat_exchanger[ 
+            model.fs.heat_exchanger.overall_heat_transfer_coefficient[0]
+        ] == pytest.approx(2e-3, rel=1e-3)
+
+        # Variables - cold side
+        scaling_suffix_cold_side = model.fs.heat_exchanger.cold_side.scaling_factor
+        assert scaling_suffix_cold_side[ 
+            model.fs.heat_exchanger.cold_side.heat[0.0]
+        ] == pytest.approx(1.958e-06, rel=1e-2)
+
+        # Variables - hot side
+        scaling_suffix_hot_side = model.fs.heat_exchanger.hot_side.scaling_factor
+        assert scaling_suffix_hot_side[ 
+            model.fs.heat_exchanger.hot_side.heat[0.0]
+        ] == pytest.approx(1.962e-06, rel=1e-2)
+
+        # Constraints - HX
+        assert scaling_suffix_heat_exchanger[
+            model.fs.heat_exchanger.heat_transfer_equation[0.0]
+        ] == pytest.approx(4.02e-7, rel=1e-3)
+
+        assert scaling_suffix_heat_exchanger[
+            model.fs.heat_exchanger.delta_temperature_in_equation[0.0]
+        ] == pytest.approx(7.692e-04, rel=1e-3)
+
+        assert scaling_suffix_heat_exchanger[
+            model.fs.heat_exchanger.delta_temperature_out_equation[0.0]
+        ] == pytest.approx(7.692e-04, rel=1e-3)
+
+        assert scaling_suffix_heat_exchanger[
+            model.fs.heat_exchanger.unit_heat_balance[0.0]
+        ] == pytest.approx(1.958e-06, rel=1e-2)
+
+        # where do the scaling hints live?
+        # assert scaling_suffix_heat_exchanger[
+        #     model.fs.heat_exchanger.delta_temperature[0.0]
+        # ] == pytest.approx(1e-2, rel=1e-2)
+
+        # Constraints - cold side 
+        assert scaling_suffix_cold_side[
+            model.fs.heat_exchanger.cold_side.pressure_balance[0.0]
+        ] == pytest.approx(1e-05, rel=1e-2)
+
+        assert scaling_suffix_cold_side[
+            model.fs.heat_exchanger.cold_side.material_balances[0.0, "benzene"]
+        ] == pytest.approx(1e-1, rel=1e-3)
+
+        assert scaling_suffix_cold_side[
+            model.fs.heat_exchanger.cold_side.material_balances[0.0, "toluene"]
+        ] == pytest.approx(1e-1, rel=1e-3)
+
+        assert scaling_suffix_cold_side[
+            model.fs.heat_exchanger.cold_side.enthalpy_balances[0.0]
+        ] == pytest.approx(1.958e-07, rel=1e-3)
+
+
+        # Constraints - hot side
+        assert scaling_suffix_hot_side[
+            model.fs.heat_exchanger.hot_side.pressure_balance[0.0]
+        ] == pytest.approx(1e-05, rel=1e-2)
+
+        assert scaling_suffix_hot_side[
+            model.fs.heat_exchanger.hot_side.material_balances[0.0, "H2O"]
+        ] == pytest.approx(2e-03, rel=1e-3)
+
+        assert scaling_suffix_hot_side[
+            model.fs.heat_exchanger.hot_side.enthalpy_balances[0.0]
+        ] == pytest.approx(3.923e-10, rel=1e-2)
+
+
+
+
