@@ -54,9 +54,6 @@ class FeedFlashScaler(CustomScalerBase):
     This Scaler relies on the modular scaler for the ControlVolume0D.
     There are no unit model level variables to scale---those that do exist
     are just References for the variables on the ControlVolume0D.
-
-    NOTE: change this: The only unit model level constraint is a constraint that sets the
-    rates of reaction for all rate reactions to zero, which is scaled here.
     """
 
     def variable_scaling_routine(
