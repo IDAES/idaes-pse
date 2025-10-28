@@ -12,12 +12,19 @@
 #################################################################################
 """
 Tests for solid-liquid separator unit model.
-Authors: Andrew Lee
+Authors: Andrew Lee, Douglas Allan
 """
 
 import pytest
 
-from pyomo.environ import check_optimal_termination, ConcreteModel, units, value, Var
+from pyomo.environ import (
+    check_optimal_termination,
+    ConcreteModel,
+    TransformationFactory,
+    units,
+    value,
+    Var,
+)
 from pyomo.network import Port
 from pyomo.util.check_units import assert_units_consistent
 
@@ -26,7 +33,14 @@ from idaes.core import (
     MaterialBalanceType,
     MomentumBalanceType,
 )
-from idaes.models.unit_models.solid_liquid import SLSeparator
+from idaes.core.util.scaling import (
+    get_jacobian,
+    jacobian_cond,
+)
+from idaes.models.unit_models.solid_liquid.sl_separator import (
+    SLSeparator,
+    SLSeparatorScaler,
+)
 from idaes.models.unit_models.separator import (
     Separator,
     SeparatorData,
@@ -53,7 +67,7 @@ from idaes.core.util import DiagnosticsToolbox
 solver = get_solver("ipopt_v2")
 
 
-# TODO Why are we testing a solid-liquid separator using two 
+# TODO Why are we testing a solid-liquid separator using two
 # liquid-only property packages?
 # -----------------------------------------------------------------------------
 class TestSLSeparatorBasic:
@@ -114,6 +128,7 @@ class TestSLSeparatorBasic:
         assert model.fs.unit.config.liquid_property_package is model.fs.properties
 
         assert model.fs.unit.default_initializer is BlockTriangularizationInitializer
+        assert model.fs.unit.default_scaler is SLSeparatorScaler
 
     @pytest.mark.build
     @pytest.mark.unit
@@ -486,3 +501,23 @@ class TestSLSeparatorBasic:
         }
 
         assert stable.to_dict() == expected
+
+    @pytest.mark.component
+    def test_scaler_object(self, model):
+        jac, _ = get_jacobian(model, scaled=False)
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+            2.2408e7, rel=1e-3
+        )
+
+        scaler_obj = model.fs.unit.default_scaler()
+        scaler_obj.set_variable_scaling_factor(
+            model.fs.unit.solid_inlet.flow_vol[0], 0.1
+        )
+        scaler_obj.set_variable_scaling_factor(
+            model.fs.unit.liquid_inlet.flow_vol[0], 0.1
+        )
+        scaler_obj.scale_model(model.fs.unit)
+
+        sm = TransformationFactory("core.scale_model").create_using(model, rename=False)
+        jac, _ = get_jacobian(sm, scaled=False)
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(70.810, rel=1e-3)
