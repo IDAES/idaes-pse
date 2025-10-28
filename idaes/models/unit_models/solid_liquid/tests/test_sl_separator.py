@@ -53,6 +53,8 @@ from idaes.core.util import DiagnosticsToolbox
 solver = get_solver("ipopt_v2")
 
 
+# TODO Why are we testing a solid-liquid separator using two 
+# liquid-only property packages?
 # -----------------------------------------------------------------------------
 class TestSLSeparatorBasic:
     @pytest.fixture(scope="class")
