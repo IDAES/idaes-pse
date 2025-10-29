@@ -67,8 +67,12 @@ from idaes.core.util import DiagnosticsToolbox
 solver = get_solver("ipopt_v2")
 
 
-# TODO Why are we testing a solid-liquid separator using two
-# liquid-only property packages?
+# We are testing the solid-liquid separator using two
+# liquid-only property packages because the SLSeparator
+# is the combination of a splitter (for the "liquid"
+# phase) and a state junction (for the "solid" phase)
+# in a single unit model. The phase presentation does
+# not factor into any of the equations.
 # -----------------------------------------------------------------------------
 class TestSLSeparatorBasic:
     @pytest.fixture(scope="class")

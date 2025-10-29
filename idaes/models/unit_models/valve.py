@@ -34,6 +34,7 @@ from idaes.models.unit_models.pressure_changer import (
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
+from idaes.core.scaling import CustomScalerBase
 
 _log = idaeslog.getLogger(__name__)
 
@@ -114,6 +115,11 @@ class ValveData(PressureChangerData):
     """
     Basic valve model class.
     """
+
+    # Inherit default_scaler from the PressureChanger
+    # It iterates over all constraints and scales them by
+    # inverse maximum, which is adequate for all of
+    # these valve callbacks
 
     # Same settings as the default pressure changer, but force to expander with
     # isentropic efficiency
