@@ -34,7 +34,6 @@ from idaes.models.unit_models.pressure_changer import (
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
-from idaes.core.scaling import CustomScalerBase
 
 _log = idaeslog.getLogger(__name__)
 
