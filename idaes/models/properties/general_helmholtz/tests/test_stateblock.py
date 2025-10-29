@@ -25,7 +25,6 @@ from idaes.models.properties.general_helmholtz import (
     StateVars,
 )
 from idaes.core import FlowsheetBlock
-from idaes.core.util.scaling import get_jacobian, jacobian_cond
 
 
 @pytest.mark.unit
