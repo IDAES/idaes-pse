@@ -90,6 +90,8 @@ def test_scaler_object_mole_basis():
         1 / (137 * 18.015 / 1000 * pyo.sqrt(5 * 1000)), rel=1e-3
     )
 
+    # No constraints, so we cannot test condition number
+
 
 @pytest.mark.unit
 def test_scaler_object_mass_basis():
@@ -144,6 +146,8 @@ def test_scaler_object_mass_basis():
         1 / (137 * pyo.sqrt(5 * 1000)), rel=1e-3
     )
 
+    # No constraints, so we cannot test condition number
+
 
 @pytest.mark.unit
 def test_scaler_object_mole_basis_TPX():
@@ -188,6 +192,9 @@ def test_scaler_object_mole_basis_TPX():
     assert sb.scaling_hint[sb.flow_vol] == pytest.approx(
         1 / (137 * 18.015 / 1000 * pyo.sqrt(5 * 1000)), rel=1e-3
     )
+
+    # Only a single active constraint, the condition number
+    # is trivially 1
 
 
 @pytest.mark.unit

@@ -142,7 +142,7 @@ class HelmholtzEoSScaler(CustomScalerBase):
             )
 
         for varname in self.default_scaling_factors.keys():
-            if varname == "flow_mol" or varname == "flow_mass":
+            if varname == "flow_mol" or varname == "flow_mass" or varname == "flow_vol":
                 continue
             with model.lock_attribute_creation_context():
                 # Avoid triggering create-on-demand properties
