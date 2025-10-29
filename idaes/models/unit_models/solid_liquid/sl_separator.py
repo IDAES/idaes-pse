@@ -66,7 +66,7 @@ logger = logging.getLogger("idaes.unit_model")
 
 class SLSeparatorScaler(CustomScalerBase):
     """
-    Scaler for SLSepearator
+    Scaler for SLSeparator
     """
 
     def variable_scaling_routine(
