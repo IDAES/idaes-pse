@@ -522,14 +522,14 @@ class SolidOxideCellData(UnitModelBlockData):
             interconnect_heat_flux_x0 = (
                 self.contact_interconnect_oxygen_flow_mesh.heat_flux_x1
             )
-            interconnect_heat_flux_x1_no_loss = (
+            neighbor_of_interconnect_heat_flux_x0 = (
                 self.contact_interconnect_fuel_flow_mesh.heat_flux_x0
             )
         else:
             fuel_electrode_heat_flux_x0 = self.fuel_channel.heat_flux_x1
             oxygen_electrode_heat_flux_x1 = self.oxygen_channel.heat_flux_x0
             interconnect_heat_flux_x0 = self.oxygen_channel.heat_flux_x1
-            interconnect_heat_flux_x1_no_loss = self.fuel_channel.heat_flux_x0
+            neighbor_of_interconnect_heat_flux_x0 = self.fuel_channel.heat_flux_x0
 
         if self.config.thin_fuel_electrode:
             if self.config.control_volume_xfaces_fuel_electrode is not None:
@@ -772,7 +772,7 @@ class SolidOxideCellData(UnitModelBlockData):
                     None  # Submodel will automatically generate term
                 )
             else:
-                interconnect_heat_flux_x1 = interconnect_heat_flux_x1_no_loss
+                interconnect_heat_flux_x1 = neighbor_of_interconnect_heat_flux_x0
             if self.config.thin_interconnect:
                 if self.config.control_volume_xfaces_interconnect is not None:
                     raise ConfigurationError(
@@ -823,7 +823,7 @@ class SolidOxideCellData(UnitModelBlockData):
                 def heat_loss_eqn(b, t, iz):
                     return (
                         b.interconnect.heat_flux_x1[t, iz] + b.heat_loss_flux[t, iz]
-                        == interconnect_heat_flux_x1_no_loss[t, iz]
+                        == neighbor_of_interconnect_heat_flux_x0[t, iz]
                     )
 
                 @self.Constraint(tset, iznodes)
@@ -836,13 +836,13 @@ class SolidOxideCellData(UnitModelBlockData):
 
         else:
             interconnect_heat_flux_x0.value = 0
-            interconnect_heat_flux_x1_no_loss.value = 0
+            neighbor_of_interconnect_heat_flux_x0.value = 0
 
             @self.Constraint(tset, iznodes)
             def no_heat_flux_fuel_interconnect_eqn(b, t, iz):
                 return (
                     0 * pyo.units.W / pyo.units.m**2
-                    == interconnect_heat_flux_x1_no_loss[t, iz]
+                    == neighbor_of_interconnect_heat_flux_x0[t, iz]
                 )
 
             @self.Constraint(tset, iznodes)

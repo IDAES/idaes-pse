@@ -28,7 +28,6 @@ from pyomo.environ import (
     Reference,
     units as pyunits,
 )
-from pyomo.common.collections import ComponentSet
 from pyomo.common.config import ConfigValue, In, Bool
 from pyomo.network import Port
 from pyomo.dae.flatten import slice_component_along_sets
@@ -459,12 +458,6 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
         Returns:
             None
         """
-        # These sets help keep track of constraints and variables that need
-        # to be removed from the problem for Lagrange-Legendre collocation
-        self.vars_to_fix_for_interior_element_boundaries = ComponentSet()
-        self.vars_to_fix_for_all_element_boundaries = ComponentSet()
-        self.cons_to_deactivate_for_interior_element_boundaries = ComponentSet()
-        self.cons_to_deactivate_for_all_element_boundaries = ComponentSet()
 
         # Call HeatExchanger1DData build to make common components
         super().build()
@@ -637,7 +630,6 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
             units=tube_units["heat_transfer_coefficient"],
             doc="tube side convective heat transfer coefficient",
         )
-        self.vars_to_fix_for_all_element_boundaries.add(self.heat_transfer_coeff_tube)
 
         # Heat transfer resistance due to the fouling on tube side
         self.rfouling_tube = Param(
@@ -650,7 +642,6 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
         self.fcorrection_htc_tube = Var(
             initialize=1.0, doc="correction factor for convective HTC on tube side"
         )
-        self.vars_to_fix_for_all_element_boundaries.add(self.fcorrection_htc_tube)
         # Correction factor for tube side pressure drop due to friction
         if tube_has_pressure_change:
             # Loss coefficient for a 180 degree bend (u-turn), usually related to radius to inside diameter ratio
@@ -671,7 +662,6 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
             ],  # Want to be in shell units for consistency in equations
             doc="boundary wall temperature on tube side",
         )
-        self.vars_to_fix_for_all_element_boundaries.add(self.temp_wall_tube)
         # Tube side heat transfer coefficient and pressure drop
         # -----------------------------------------------------
         # Velocity on tube side
@@ -682,7 +672,6 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
             units=tube_units["velocity"],
             doc="velocity on tube side",
         )
-        self.vars_to_fix_for_all_element_boundaries.add(self.v_tube)
 
         # Reynalds number on tube side
         self.N_Re_tube = Var(
@@ -693,7 +682,6 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
             doc="Reynolds number on tube side",
             bounds=(1e-7, None),
         )
-        self.vars_to_fix_for_all_element_boundaries.add(self.N_Re_tube)
 
         if tube_has_pressure_change:
             # Friction factor on tube side
@@ -730,7 +718,6 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
             doc="Nusselts number on tube side",
             bounds=(1e-7, None),
         )
-        self.vars_to_fix_for_all_element_boundaries.add(self.N_Nu_tube)
 
         # Velocity equation
         @self.Constraint(
@@ -746,8 +733,6 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
                 == tube.properties[t, x].flow_mol
             )
 
-        self.cons_to_deactivate_for_all_element_boundaries.add(self.v_tube_eqn)
-
         # Reynolds number
         @self.Constraint(
             self.flowsheet().config.time,
@@ -762,8 +747,6 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
                 * tube.properties[t, x].dens_mol_phase["Vap"]
                 * tube.properties[t, x].mw
             )
-
-        self.cons_to_deactivate_for_all_element_boundaries.add(self.N_Re_tube_eqn)
 
         if tube_has_pressure_change:
             # Friction factor
@@ -834,10 +817,6 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
                 * b.fcorrection_htc_tube
             )
 
-        self.cons_to_deactivate_for_all_element_boundaries.add(
-            self.heat_transfer_coeff_tube_eqn
-        )
-
         # Nusselts number
         @self.Constraint(
             self.flowsheet().config.time,
@@ -852,8 +831,6 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
                 * tube.properties[t, x].prandtl_number_phase["Vap"] ** 0.4
             )
 
-        self.cons_to_deactivate_for_all_element_boundaries.add(self.N_Nu_tube_eqn)
-
         @self.Constraint(
             self.flowsheet().config.time,
             shell.length_domain,
@@ -867,8 +844,6 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
                 * b.N_Re_shell[t, x] ** 0.6
                 * shell.properties[t, x].prandtl_number_phase["Vap"] ** 0.333333
             )
-
-        self.cons_to_deactivate_for_all_element_boundaries.add(self.N_Nu_shell_eqn)
 
         # Energy balance with tube wall
         # ------------------------------------
@@ -888,8 +863,6 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
                 * (b.temp_wall_tube[t, x] - tube.properties[t, x].temperature)
             )
 
-        self.cons_to_deactivate_for_all_element_boundaries.add(self.heat_tube_eqn)
-
         # Heat to wall per length on shell side
         @self.Constraint(
             self.flowsheet().config.time,
@@ -905,10 +878,7 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
                 b.temp_wall_shell[t, x] - shell.properties[t, x].temperature
             )
 
-        self.cons_to_deactivate_for_all_element_boundaries.add(self.heat_shell_eqn)
-
         # Tube side wall temperature
-        # FIXME replace with deviation variables
         @self.Constraint(
             self.flowsheet().config.time,
             tube.length_domain,
@@ -929,8 +899,6 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
                 b.temp_wall_center[t, x], to_units=tube_units["temperature"]
             )
 
-        self.cons_to_deactivate_for_all_element_boundaries.add(self.temp_wall_tube_eqn)
-
         # Shell side wall temperature
         @self.Constraint(
             self.flowsheet().config.time,
@@ -944,8 +912,6 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
                 * (b.thickness_tube / 2 / b.therm_cond_wall + b.rfouling_shell)
                 == b.temp_wall_shell[t, x] - b.temp_wall_center[t, x]
             )
-
-        self.cons_to_deactivate_for_all_element_boundaries.add(self.temp_wall_shell_eqn)
 
         def heat_accumulation_term(b, t, x):
             return b.heat_accumulation[t, x] if b.config.dynamic else 0
@@ -969,10 +935,6 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
                 * pyunits.convert(b.length_flow_tube, to_units=shell_units["length"])
                 / b.length_flow_shell
             )
-
-        self.cons_to_deactivate_for_all_element_boundaries.add(
-            self.temp_wall_center_eqn
-        )
 
         if not self.config.dynamic:
             z0 = shell.length_domain.first()
