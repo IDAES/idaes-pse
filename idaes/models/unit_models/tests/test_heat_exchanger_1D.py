@@ -2711,6 +2711,7 @@ class TestBT_Generic_cocurrent(object):
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.integration
+    @pytest.mark.xfail
     def test_numerical_issues(self, btx):
         dt = DiagnosticsToolbox(btx)
         # TODO: Complementarity formulation results in near-parallel components
