@@ -557,13 +557,19 @@ class TestIAPWS(object):
             5.76015e6, rel=1e-3
         )
 
+        props_scaler = iapws.fs.unit.control_volume.properties_in.default_scaler()
+        props_scaler.default_scaling_factors["flow_mol"] = 1e-2
+        submodel_scalers = ComponentMap()
+        submodel_scalers[iapws.fs.unit.control_volume.properties_in] = props_scaler
+        submodel_scalers[iapws.fs.unit.control_volume.properties_out] = props_scaler
+
         scaler_object = iapws.fs.unit.default_scaler()
-        scaler_object.scale_model(iapws.fs.unit)
+        scaler_object.scale_model(iapws.fs.unit, submodel_scalers=submodel_scalers)
 
         sm = TransformationFactory("core.scale_model").create_using(iapws, rename=False)
         jac, _ = get_jacobian(sm, scaled=False)
         assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            2.418e4, rel=1e-3
+            72.58140, rel=1e-3
         )
 
 
