@@ -43,7 +43,7 @@ from idaes.models.properties.modular_properties.phase_equil.henry import (
     HenryType,
     henry_equilibrium_ratio,
 )
-from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.exceptions import ConfigurationError, InitializationError
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 from .electrolyte_states import define_electrolyte_state, calculate_electrolyte_scaling
@@ -383,9 +383,10 @@ def state_initialization(b):
     else:
         _pe_pairs = b.params._pe_pairs
 
-    vl_comps = []
-    henry_comps = []
-    init_VLE = False
+    num_VLE = 0
+    tbub = None
+    tdew = None
+
     for pp in _pe_pairs:
         # Look for a VLE pair with this phase - should only be 1
         if (
@@ -395,7 +396,7 @@ def state_initialization(b):
             b.params.get_phase(pp[1]).is_liquid_phase()
             and b.params.get_phase(pp[0]).is_vapor_phase()
         ):
-            init_VLE = True
+            num_VLE += 1
             # Get bubble and dew points
             tbub = None
             tdew = None
@@ -409,10 +410,6 @@ def state_initialization(b):
                     tdew = b.temperature_dew[pp].value
                 except KeyError:
                     pass
-            if len(vl_comps) > 0:
-                # More than one VLE. Just use the default initialization for
-                # now
-                init_VLE = False
             (
                 l_phase,
                 v_phase,
@@ -423,13 +420,21 @@ def state_initialization(b):
             ) = identify_VL_component_list(b, pp)
             pp_VLE = pp
 
-    if init_VLE:
+    if num_VLE > 1:
+        raise InitializationError(
+            f"More than one VLE present in {b.name}. Initialization for multiple "
+            "VLE is not supported, so skipping VLE initialization."
+        )
+
+    elif num_VLE == 1:  # Only support initialization when a single VLE is present
         henry_mole_frac = []
         henry_conc = []
         henry_other = []
         K = {}
 
+        # pylint: disable-next=possibly-used-before-assignment
         for j in henry_comps:
+            # pylint: disable-next=possibly-used-before-assignment
             henry_type = b.params.get_component(j).config.henry_component[l_phase][
                 "type"
             ]
@@ -456,6 +461,7 @@ def state_initialization(b):
                     )
                 )
                 henry_other.append(j)
+        # pylint: disable-next=possibly-used-before-assignment
         for j in vl_comps:
             try:
                 K[j] = value(
@@ -471,7 +477,7 @@ def state_initialization(b):
 
     # Default is no initialization of VLE
     vap_frac = None
-    if init_VLE:
+    if num_VLE == 1:
         raoult_init = False
         if tdew is not None and b.temperature.value > tdew:
             # Pure vapour
@@ -485,6 +491,7 @@ def state_initialization(b):
             vap_frac = value(b.temperature - tbub) / (tdew - tbub)
         elif K is not None:
             raoult_init = True
+            # pylint: disable=possibly-used-before-assignment
             vap_frac = _modified_rachford_rice(
                 b,
                 K,
@@ -495,6 +502,7 @@ def state_initialization(b):
         # else: No way to estimate phase fraction, do nothing
 
     if vap_frac is not None:
+        # pylint: disable=possibly-used-before-assignment
         b.phase_frac[v_phase] = vap_frac
         b.phase_frac[l_phase] = 1 - vap_frac
 

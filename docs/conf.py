@@ -90,7 +90,7 @@ exclude_patterns = ["apidoc/*tests*"]
 todo_include_todos = False
 
 # Global constants for supported Python versions
-IDAES_PV_MIN, IDAES_PV_MAX, IDAES_PV_DEFAULT = "3.9", "3.12", "3.10"
+IDAES_PV_MIN, IDAES_PV_MAX, IDAES_PV_DEFAULT = "3.9", "3.13", "3.10"
 
 # This block of text will be virtually present at the end of every file.
 # Used here to define substitutions for re-used URLs, e.g. just add "|examples-site|" to

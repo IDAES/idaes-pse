@@ -177,7 +177,7 @@ def propagate_indexed_component_scaling_factors(
         blk: The block on which to search for components
         typ: Component type(s) (default=(Var, Constraint, Expression, Param))
         overwrite: if a data object already has a scaling factor should it be
-            overwrittten (default=False)
+            overwritten (default=False)
         descend_into: descend into child blocks (default=True)
     """
     if typ is None:
@@ -975,7 +975,10 @@ def scale_time_discretization_equations(blk, time_set, time_scaling_factor):
                             except KeyError:
                                 if t != time_set.first():
                                     constraint_scaling_transform(
-                                        cont[t], s_state, overwrite=False
+                                        # pylint: disable-next=possibly-used-before-assignment
+                                        cont[t],
+                                        s_state,
+                                        overwrite=False,
                                     )
 
 

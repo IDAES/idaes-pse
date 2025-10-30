@@ -386,7 +386,7 @@ def find_comp_in_block(tgt_block, src_block, src_comp, allow_miss=False):
     local names and indices to try to find a corresponding component in a target
     block. This is used when we would like to verify that a component of the
     same name exists in the target block, as in model predictive control where
-    certain variables must be correllated between plant and controller model.
+    certain variables must be correlated between plant and controller model.
 
     Args:
         tgt_block : Target block that will be searched for component

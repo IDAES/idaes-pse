@@ -51,6 +51,8 @@ from idaes.models.properties.modular_properties.coolprop.coolprop_wrapper import
 
 solver = get_solver("ipopt_v2")
 
+CoolProp.set_config_bool(CoolProp.ENABLE_SUPERANCILLARIES, False)
+
 
 class TestWrapper:
     @pytest.mark.unit
@@ -875,6 +877,9 @@ class TestVerifyExcessLiq(object):
             m.fs.state[0].pressure.fix(101325)
             m.fs.state[0].temperature.fix(T)
 
+            m.fs.state[0].entr_mol_phase[
+                "Liq"
+            ]  # Touch variable to generate log_mole_phase_comp
             m.fs.state.initialize()
 
             S0_CP = CoolProp.PropsSI("SMOLAR", "T", T, "P", 101325, "PR::benzene")
@@ -1019,6 +1024,9 @@ class TestVerifyExcessVap(object):
             m.fs.state[0].pressure.fix(101325)
             m.fs.state[0].temperature.fix(T)
 
+            m.fs.state[0].entr_mol_phase[
+                "Vap"
+            ]  # Touch variable to generate log_mole_phase_comp
             m.fs.state.initialize()
 
             S0_CP = CoolProp.PropsSI("SMOLAR", "T", T, "P", 101325, "PR::benzene")

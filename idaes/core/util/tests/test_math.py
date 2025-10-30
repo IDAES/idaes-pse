@@ -23,6 +23,7 @@ from idaes.core.util.math import (
     smooth_max,
     safe_sqrt,
     safe_log,
+    smooth_heaviside,
 )
 
 __author__ = "Andrew Lee"
@@ -41,7 +42,7 @@ def simple_model():
 
 @pytest.mark.unit
 def test_smooth_abs_maths():
-    # Test basic smooth_abs functionalliy
+    # Test basic smooth_abs functionality
     assert smooth_abs(4, 0) == 4.0
     assert smooth_abs(-4, 0) == 4.0
     assert smooth_abs(10.0, 0.0) == 10.0
@@ -200,3 +201,20 @@ def test_smooth_min(simple_model):
     assert value(safe_log(simple_model.a, simple_model.e)) == pytest.approx(
         1.386294, abs=1e-4
     )
+
+
+@pytest.mark.unit
+def test_smooth_heaviside():
+    # Test that smooth_heaviside gives correct values
+    # Ensure that the slope of the function is sharper when k is larger
+    assert smooth_heaviside(-1, 1) == pytest.approx(0.2689414, abs=1e-4)
+    assert smooth_heaviside(-0.5, 1) == pytest.approx(0.37754067, abs=1e-4)
+    assert smooth_heaviside(0, 1) == pytest.approx(0.5, abs=1e-4)
+    assert smooth_heaviside(0.5, 1) == pytest.approx(0.6224593, abs=1e-4)
+    assert smooth_heaviside(1, 1) == pytest.approx(0.7310586, abs=1e-4)
+
+    assert smooth_heaviside(-1, 10) == pytest.approx(4.53979e-5, abs=1e-4)
+    assert smooth_heaviside(-0.5, 10) == pytest.approx(0.00669285, abs=1e-4)
+    assert smooth_heaviside(0, 10) == pytest.approx(0.5, abs=1e-4)
+    assert smooth_heaviside(0.5, 10) == pytest.approx(0.9933071, abs=1e-4)
+    assert smooth_heaviside(1, 10) == pytest.approx(0.9999546, rel=1e-4)

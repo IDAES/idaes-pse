@@ -334,11 +334,12 @@ should be constructed,
         units_meta_solid = solid_phase.property_package.get_metadata().get_derived_units
 
         # Set flow direction for the gas control volume
+        set_direction_gas = None
         # Gas flows from 0 to 1
         if self.config.flow_type == "forward_flow":
             set_direction_gas = FlowDirection.forward
         # Gas flows from 1 to 0
-        if self.config.flow_type == "reverse_flow":
+        elif self.config.flow_type == "reverse_flow":
             set_direction_gas = FlowDirection.backward
 
         # Consistency check for flow direction, transformation method and
