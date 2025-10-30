@@ -45,7 +45,6 @@ from idaes.models.properties.modular_properties.phase_equil.henry import (
     henry_equilibrium_ratio,
 )
 from idaes.core.util.exceptions import (
-    BurntToast,
     ConfigurationError,
     InitializationError,
 )

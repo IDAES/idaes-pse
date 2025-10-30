@@ -1,3 +1,21 @@
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES).
+#
+# Copyright (c) 2018-2024 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
+#################################################################################
+"""
+Config dictionaries used in testing of electrolyte states with and without
+inherent reactions.
+
+Authors: Andrew Lee, Douglas Allan
+"""
 # Import Pyomo units
 from pyomo.environ import units as pyunits
 
@@ -29,14 +47,24 @@ solver = get_solver("ipopt_v2")
 
 
 def dens_mol_H2O(*args, **kwargs):
+    """
+    Method returning density of water
+    """
     return 55e3
 
 
 def dummy_method(b, *args, **kwargs):
+    """
+    Dummy method for testing
+    """
     return 42
 
 
 def get_config_no_inherent_reactions():
+    """
+    Method to get a config file to test electrolyte states
+    without inherent reactions.
+    """
     config = {
         # Specifying components
         "components": {
@@ -100,6 +128,10 @@ def get_config_no_inherent_reactions():
 
 
 def get_config_with_inherent_reactions():
+    """
+    Method to get a config file to test electrolyte states
+    with inherent reactions.
+    """
     config = {
         # Specifying components
         "components": {
