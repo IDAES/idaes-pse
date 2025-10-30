@@ -14,7 +14,7 @@
 Heat Exchanger Models.
 """
 
-__author__ = "John Eslick, Will Stralhl, Douglas Allan"
+__author__ = "John Eslick, Will Strahl, Douglas Allan"
 
 from enum import Enum
 
@@ -92,35 +92,6 @@ class HX0DScaler(CustomScalerBase):
             submodel_scalers=submodel_scalers,
             overwrite=overwrite,
         )
-
-        # extract enthalpy flows for each time step for use in scaling
-        cold_side_h_in = {}
-        hot_side_h_in = {}
-        for t in model.flowsheet().time:
-            # cold side
-            h_in_cold = 0
-            for p in model.cold_side.properties_in.phase_list:
-                # The expression for enthalpy flow might include multiple terms,
-                # so we will sum over all the terms provided
-                h_in_cold += sum(
-                    self.get_sum_terms_nominal_values(
-                        model.cold_side.properties_in[t].get_enthalpy_flow_terms(p)
-                    )
-                )
-
-            # hot side
-            h_in_hot = 0
-            for p in model.hot_side.properties_in.phase_list:
-                # The expression for enthalpy flow might include multiple terms,
-                # so we will sum over all the terms provided
-                h_in_hot += sum(
-                    self.get_sum_terms_nominal_values(
-                        model.hot_side.properties_in[t].get_enthalpy_flow_terms(p)
-                    )
-                )
-
-            cold_side_h_in[t] = h_in_cold
-            hot_side_h_in[t] = h_in_hot
 
         # user input recommended for design variables
         design_variables = [model.area] + [
