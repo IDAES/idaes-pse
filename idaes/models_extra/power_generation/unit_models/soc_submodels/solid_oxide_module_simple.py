@@ -46,7 +46,7 @@ __author__ = "Douglas Allan"
 
 from functools import partial
 
-from pyomo.common.config import ConfigValue, ConfigBlock
+from pyomo.common.config import ConfigValue, ConfigBlock, Bool
 import pyomo.environ as pyo
 
 from idaes.core import declare_process_block_class, UnitModelBlockData
@@ -55,6 +55,7 @@ import idaes.models_extra.power_generation.unit_models.soc_submodels as soc
 import idaes.models_extra.power_generation.unit_models.soc_submodels.common as common
 import idaes.core.util.scaling as iscale
 from idaes.core.solvers import get_solver
+from idaes.core.util.exceptions import ConfigurationError
 
 import idaes.logger as idaeslog
 
@@ -122,10 +123,39 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
                         see property package for documentation.}""",
         ),
     )
+    CONFIG.declare(
+        "has_heat_loss_term",
+        ConfigValue(
+            domain=Bool,
+            default=False,
+            description="If True, add a term for heat lost to environment",
+        ),
+    )
 
     def build(self):
         super().build()
         tset = self.flowsheet().config.time
+
+        if self.config.has_heat_loss_term:
+            try:
+                if not self.config.solid_oxide_cell_config["has_heat_loss_term"]:
+                    raise ConfigurationError(
+                        "SOC module configured to create heat loss term but SOC cell "
+                        "configured to not create heat loss term."
+                    )
+            except KeyError:
+                # No entry in dictionary, make sure to add entry to cell config
+                self.config.solid_oxide_cell_config["has_heat_loss_term"] = True
+        else:
+            try:
+                if self.config.solid_oxide_cell_config["has_heat_loss_term"]:
+                    raise ConfigurationError(
+                        "SOC cell configured to create heat loss term but SOC module "
+                        "configured to not create heat loss term."
+                    )
+            except KeyError:
+                # Default behavior is to not create heat loss term.
+                pass
 
         self.number_cells = pyo.Var(
             initialize=1e5,
@@ -268,6 +298,21 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
                 == b.solid_oxide_cell.total_current[t] * b.number_cells
             )
 
+        if self.config.has_heat_loss_term:
+            self.total_heat_loss = pyo.Var(
+                tset,
+                units=pyo.units.W,
+                doc="Total heat loss from module (positive means heat leaving module)",
+                initialize=0,
+            )
+
+            @self.Constraint(tset)
+            def total_heat_loss_eqn(b, t):
+                return (
+                    b.total_heat_loss[t]
+                    == b.solid_oxide_cell.total_heat_loss[t] * b.number_cells
+                )
+
     def initialize_build(
         self,
         state_args_fuel=None,
@@ -290,6 +335,17 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
             self.potential_cell[t].fix()
 
         self.number_cells.fix()
+        has_heat_loss_term = self.config.has_heat_loss_term
+
+        if has_heat_loss_term:
+            total_heat_loss_fixed = {
+                t: self.total_heat_loss[t].fixed for t in self.flowsheet().time
+            }
+            self.total_heat_loss.fix()
+            for t in self.flowsheet().time:
+                self.solid_oxide_cell.total_heat_loss[t].set_value(
+                    pyo.value(self.total_heat_loss[t] / self.number_cells)
+                )
 
         flags = {}
         for side, state_args in zip(
@@ -349,6 +405,9 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
         for t in self.flowsheet().time:
             if not potential_cell_fixed[t]:
                 self.potential_cell[t].unfix()
+            # pylint: disable-next=possibly-used-before-assignment
+            if has_heat_loss_term and not total_heat_loss_fixed[t]:
+                self.total_heat_loss[t].unfix()
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
@@ -406,6 +465,12 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
             ssf(self.total_current[t], sf_tot_current * s_num_cells)
             sf_tot_current = gsf(self.total_current[t])
             cst(self.total_current_eqn[t], sf_tot_current)
+
+            if self.config.has_heat_loss_term:
+                sf_total_heat_loss = gsf(self.solid_oxide_cell.total_heat_loss[t])
+                ssf(self.total_heat_loss[t], sf_total_heat_loss * s_num_cells)
+                sf_total_heat_loss = gsf(self.total_heat_loss[t])
+                cst(self.total_heat_loss_eqn[t], sf_total_heat_loss)
 
     def model_check(self):
         pass

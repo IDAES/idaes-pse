@@ -322,17 +322,40 @@ class SolidOxideCellData(UnitModelBlockData):
             description="If True, add voltage_drop_custom Var to be connected to degradation models",
         ),
     )
+    CONFIG.declare(
+        "has_heat_loss_term",
+        ConfigValue(
+            domain=Bool,
+            default=False,
+            description="If True, add a heat loss variable at the x1 edge of either the interconnect (if present) or oxygen channel",
+        ),
+    )
+    CONFIG.declare(
+        "log_exchange_current_modifier",
+        ConfigValue(
+            domain=Bool,
+            default=False,
+            description="If True, add log_exchange_current_modifier Var to both triple phase boundaries "
+            "to be connected to degradation models",
+        ),
+    )
 
     def build(self):
         super().build()
         has_holdup = self.config.has_holdup
         has_gas_holdup = self.config.has_gas_holdup
+        has_heat_loss_term = self.config.has_heat_loss_term
         dynamic = self.config.dynamic
         tset = self.flowsheet().config.time
 
         if has_gas_holdup and not has_holdup:
             raise ConfigurationError(
                 "Creating gas holdup terms while not creating other holdup terms is not supported."
+            )
+
+        if has_heat_loss_term and not self.config.flux_through_interconnect:
+            raise ConfigurationError(
+                "Adding a heat loss term without flux through the interconnect is not supported."
             )
 
         if self.config.fuel_component_list is None:
@@ -393,6 +416,18 @@ class SolidOxideCellData(UnitModelBlockData):
             units=pyo.units.m,
             bounds=(0, None),
         )
+
+        @self.Expression(iznodes)
+        def dz(b, iz):
+            return b.zfaces.at(iz + 1) - b.zfaces.at(iz)
+
+        @self.Expression(iznodes)
+        def xface_area(b, iz):
+            return b.length_y * b.length_z * b.dz[iz]
+
+        @self.Expression()
+        def cell_area(b):
+            return b.length_y * b.length_z
 
         if self.config.flow_pattern == HeatExchangerFlowPattern.cocurrent:
             opposite_flow = False
@@ -487,14 +522,15 @@ class SolidOxideCellData(UnitModelBlockData):
             interconnect_heat_flux_x0 = (
                 self.contact_interconnect_oxygen_flow_mesh.heat_flux_x1
             )
-            interconnect_heat_flux_x1 = (
+            neighbor_of_interconnect_heat_flux_x0 = (
                 self.contact_interconnect_fuel_flow_mesh.heat_flux_x0
             )
         else:
             fuel_electrode_heat_flux_x0 = self.fuel_channel.heat_flux_x1
             oxygen_electrode_heat_flux_x1 = self.oxygen_channel.heat_flux_x0
             interconnect_heat_flux_x0 = self.oxygen_channel.heat_flux_x1
-            interconnect_heat_flux_x1 = self.fuel_channel.heat_flux_x0
+            neighbor_of_interconnect_heat_flux_x0 = self.fuel_channel.heat_flux_x0
+
         if self.config.thin_fuel_electrode:
             if self.config.control_volume_xfaces_fuel_electrode is not None:
                 raise ConfigurationError(
@@ -626,6 +662,7 @@ class SolidOxideCellData(UnitModelBlockData):
             include_temperature_x_thermo=include_temp_x_thermo,
             below_electrolyte=True,
             voltage_drop_custom=self.config.voltage_drop_custom,
+            log_exchange_current_modifier=self.config.log_exchange_current_modifier,
         )
         self.oxygen_triple_phase_boundary = soc.SocTriplePhaseBoundary(
             has_holdup=False,
@@ -646,6 +683,7 @@ class SolidOxideCellData(UnitModelBlockData):
             include_temperature_x_thermo=include_temp_x_thermo,
             below_electrolyte=False,
             voltage_drop_custom=self.config.voltage_drop_custom,
+            log_exchange_current_modifier=self.config.log_exchange_current_modifier,
         )
         if self.config.thin_electrolyte:
             if self.config.control_volume_xfaces_electrolyte is not None:
@@ -716,6 +754,25 @@ class SolidOxideCellData(UnitModelBlockData):
             )
 
         if self.config.flux_through_interconnect:
+            if has_heat_loss_term:
+                self.heat_loss_flux = pyo.Var(
+                    tset,
+                    iznodes,
+                    initialize=0,
+                    units=pyo.units.W / pyo.units.m**2,
+                    doc="Heat flux lost to the environment",
+                )
+                self.total_heat_loss = pyo.Var(
+                    tset,
+                    initialize=0,
+                    units=pyo.units.W,
+                    doc="Heat lost to the environment",
+                )
+                interconnect_heat_flux_x1 = (
+                    None  # Submodel will automatically generate term
+                )
+            else:
+                interconnect_heat_flux_x1 = neighbor_of_interconnect_heat_flux_x0
             if self.config.thin_interconnect:
                 if self.config.control_volume_xfaces_interconnect is not None:
                     raise ConfigurationError(
@@ -760,14 +817,32 @@ class SolidOxideCellData(UnitModelBlockData):
                     include_temperature_x_thermo=include_temp_x_thermo,
                     voltage_drop_custom=self.config.voltage_drop_custom,
                 )
+            if has_heat_loss_term:
+
+                @self.Constraint(tset, iznodes)
+                def heat_loss_eqn(b, t, iz):
+                    return (
+                        b.interconnect.heat_flux_x1[t, iz] + b.heat_loss_flux[t, iz]
+                        == neighbor_of_interconnect_heat_flux_x0[t, iz]
+                    )
+
+                @self.Constraint(tset, iznodes)
+                def total_heat_loss_eqn(b, t, iz):
+                    # Equal heat loss flux across the entire surface
+                    # Sign change in order to make "heat loss" positive
+                    return b.heat_loss_flux[t, iz] == (
+                        -b.total_heat_loss[t] / b.length_y / b.length_z
+                    )
+
         else:
             interconnect_heat_flux_x0.value = 0
-            interconnect_heat_flux_x1.value = 0
+            neighbor_of_interconnect_heat_flux_x0.value = 0
 
             @self.Constraint(tset, iznodes)
             def no_heat_flux_fuel_interconnect_eqn(b, t, iz):
                 return (
-                    0 * pyo.units.W / pyo.units.m**2 == interconnect_heat_flux_x1[t, iz]
+                    0 * pyo.units.W / pyo.units.m**2
+                    == neighbor_of_interconnect_heat_flux_x0[t, iz]
                 )
 
             @self.Constraint(tset, iznodes)
@@ -827,18 +902,6 @@ class SolidOxideCellData(UnitModelBlockData):
                     + b.oxygen_triple_phase_boundary.voltage_drop_total[t, iz]
                 )
             )
-
-        @self.Expression(iznodes)
-        def dz(b, iz):
-            return b.zfaces.at(iz + 1) - b.zfaces.at(iz)
-
-        @self.Expression(iznodes)
-        def xface_area(b, iz):
-            return b.length_y * b.length_z * b.dz[iz]
-
-        @self.Expression()
-        def cell_area(b):
-            return b.length_y * b.length_z
 
         # This is net flow of power *into* the cell. In fuel cell mode, this will
         # be negative
@@ -1112,6 +1175,22 @@ class SolidOxideCellData(UnitModelBlockData):
         self.temperature_z.unfix()
         self.mean_temperature_eqn.activate()
 
+        if self.config.has_heat_loss_term:
+            unfix_total_heat_loss = {
+                t: not self.total_heat_loss[t].is_fixed() for t in self.flowsheet().time
+            }
+            self.total_heat_loss.fix()
+            for t in self.flowsheet().time:
+                for iz in self.iznodes:
+                    self.heat_loss_flux[t, iz].set_value(
+                        pyo.value(
+                            self.dz[iz]
+                            * self.total_heat_loss[t]
+                            / self.length_y
+                            / self.length_z
+                        )
+                    )
+
         init_log.info_high("Solving cell with fixed current density")
         common._init_solve_block(self, solver_obj, solve_log)
 
@@ -1145,6 +1224,12 @@ class SolidOxideCellData(UnitModelBlockData):
         for t in tset:
             if unfix_potential[t]:
                 self.potential[t].unfix()
+
+        if self.config.has_heat_loss_term:
+            for t in self.flowsheet().time:
+                if unfix_total_heat_loss[t]:
+                    self.total_heat_loss[t].unfix()
+
         init_log.info(f"{self.name} initialization completed successfully.")
 
     def calculate_scaling_factors(self):
@@ -1210,14 +1295,18 @@ class SolidOxideCellData(UnitModelBlockData):
                 + self.oxygen_channel.enth_mol_outlet[t]
                 * self.oxygen_channel.flow_mol_outlet[t]
             )
+            if self.config.has_heat_loss_term:
+                heat_loss = pyo.value(self.total_heat_loss[t])
+            else:
+                heat_loss = 0
             normal = max(
                 pyo.value(abs(enth_in)),
                 pyo.value(abs(enth_out)),
                 pyo.value(abs(self.electrical_work[t])),
                 1e-3,
-            )  # FIXME justify this value
+            )
             fraction_change = pyo.value(
-                (enth_out - enth_in - self.electrical_work[t]) / normal
+                (heat_loss + enth_out - enth_in - self.electrical_work[t]) / normal
             )
             if abs(fraction_change) > 3e-3:
                 raise RuntimeError(
@@ -1273,6 +1362,11 @@ class SolidOxideCellData(UnitModelBlockData):
             self.total_current,
             1 / self.length_z.value * 1 / self.length_y.value * 1 / 4000,
         )
+        if self.config.has_heat_loss_term:
+            sdf(
+                self.total_heat_loss,
+                1 / 3,
+            )
 
         iscale.propagate_indexed_component_scaling_factors(self)
 
@@ -1364,6 +1458,31 @@ class SolidOxideCellData(UnitModelBlockData):
                             self.no_heat_flux_oxygen_interconnect_eqn[t, iz],
                             sq,
                         )
+                if self.config.has_heat_loss_term:
+                    if self.config.include_contact_resistance:
+                        sq1 = gsf(
+                            self.contact_interconnect_fuel_flow_mesh.heat_flux_x0[
+                                t, iz
+                            ],
+                            default=s_q_flux,
+                        )
+                    else:
+                        sq1 = gsf(
+                            self.fuel_channel.heat_flux_x0[t, iz],
+                            default=s_q_flux,
+                        )
+                    sq2 = gsf(
+                        self.interconnect.heat_flux_x1[t, iz],
+                        default=s_q_flux,
+                    )
+                    sq = min(sq1, sq2)
+                    ssf(self.heat_loss_flux[t, iz], sq)
+                    cst(
+                        self.heat_loss_eqn[t, iz],
+                        sq,
+                    )
+                    cst(self.total_heat_loss_eqn[t, iz], sq)
+
         for con in self.mean_temperature_eqn.values():
             cst(con, 1)
 
