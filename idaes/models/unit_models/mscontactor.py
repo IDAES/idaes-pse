@@ -1341,6 +1341,7 @@ class MSContactorData(UnitModelBlockData):
                     rule=partial(
                         _rate_reaction_rule,
                         stream=stream,
+                        # pylint: disable-next=possibly-used-before-assignment
                         rblock=reaction_block,
                         generation=rate_reaction_generation,
                         extent=rate_reaction_extent,

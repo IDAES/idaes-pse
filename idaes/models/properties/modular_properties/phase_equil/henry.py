@@ -66,6 +66,7 @@ def get_henry_concentration_term(blk, henry_dict, log=False):
         sub = ""
 
     henry_type = henry_dict["type"]
+    conc_type = ""
     if henry_type == HenryType.Hcp or henry_type == HenryType.Kpc:
         conc_type = "conc_mol_phase_comp"
     elif henry_type == HenryType.Hxp or henry_type == HenryType.Kpx:
@@ -99,6 +100,7 @@ def henry_pressure(b, p, j, T=None):
     else:
         _raise_henry_type_error(henry_def["type"])
 
+    # pylint: disable-next=possibly-used-before-assignment
     return h_press
 
 
@@ -126,6 +128,7 @@ def log_henry_pressure(b, p, j, T=None):
     else:
         _raise_henry_type_error(henry_def["type"])
 
+    # pylint: disable-next=possibly-used-before-assignment
     return log_h_press
 
 
@@ -172,6 +175,7 @@ def henry_equilibrium_ratio(b, p, j):
 
 # Define units for Henry's constant
 def henry_units(henry_type, units):
+    h_units = None
     if henry_type == HenryType.Hcp:
         h_units = units.DENSITY_MOLE / units.PRESSURE
     elif henry_type == HenryType.Kpc:
