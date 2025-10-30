@@ -335,8 +335,9 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
             self.potential_cell[t].fix()
 
         self.number_cells.fix()
+        has_heat_loss_term = self.config.has_heat_loss_term
 
-        if self.config.has_heat_loss_term:
+        if has_heat_loss_term:
             total_heat_loss_fixed = {
                 t: self.total_heat_loss[t].fixed for t in self.flowsheet().time
             }
@@ -404,7 +405,8 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
         for t in self.flowsheet().time:
             if not potential_cell_fixed[t]:
                 self.potential_cell[t].unfix()
-            if self.config.has_heat_loss_term and not total_heat_loss_fixed[t]:
+            # pylint: disable-next=possibly-used-before-assignment
+            if has_heat_loss_term and not total_heat_loss_fixed[t]:
                 self.total_heat_loss[t].unfix()
 
     def calculate_scaling_factors(self):
