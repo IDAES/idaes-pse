@@ -166,6 +166,16 @@ class ModularPropertiesScaler(ModularPropertiesScalerBase):
         # a default value of 10 is used. For solid phases, a default value
         # of 1 / 10 is used.
         "therm_cond_phase": DefaultScalingRecommendation.userInputRecommended,
+        # Scaling factors for true component mole fractions are necessary only
+        # if a system has dissociation species or inherent reactions and the
+        # option StateIndex.apparent is used. If StateIndex.true is used,
+        # these values will be ignored (set them using mole_frac_phase_comp instead).
+        "mole_frac_phase_comp_true": 10,
+        # Scaling factors for apparent component mole fractions are necessary only
+        # if a system has dissociation species or inherent reactions and the
+        # option StateIndex.true is used. If StateIndex.apparent is used,
+        # these values will be ignored (set them using mole_frac_phase_comp instead).
+        "mole_frac_phase_comp_apparent": 10,
     }
 
     def variable_scaling_routine(
