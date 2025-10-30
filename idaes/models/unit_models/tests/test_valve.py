@@ -41,8 +41,6 @@ from idaes.core.util.scaling import (
 )
 from idaes.core.solvers import get_solver
 
-# from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
-
 from idaes.models.properties import iapws95
 import idaes.core.util.scaling as iscale
 from idaes.models.properties.general_helmholtz import helmholtz_available
