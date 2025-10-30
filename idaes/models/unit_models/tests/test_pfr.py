@@ -17,14 +17,22 @@ Author: Andrew Lee
 """
 import pytest
 
-from pyomo.environ import check_optimal_termination, ConcreteModel, value, Var, units
+from pyomo.environ import (
+    check_optimal_termination,
+    ComponentMap,
+    ConcreteModel,
+    TransformationFactory,
+    units,
+    value,
+    Var,
+)
 from idaes.core import (
     FlowsheetBlock,
     MaterialBalanceType,
     EnergyBalanceType,
     MomentumBalanceType,
 )
-from idaes.models.unit_models.plug_flow_reactor import PFR
+from idaes.models.unit_models.plug_flow_reactor import PFR, PFRScaler
 
 from idaes.models.properties.examples.saponification_thermo import (
     SaponificationParameterBlock,
@@ -50,6 +58,10 @@ from idaes.core.initialization import (
     InitializationStatus,
 )
 from idaes.core.util import DiagnosticsToolbox
+from idaes.core.util.scaling import (
+    get_jacobian,
+    jacobian_cond,
+)
 
 
 # -----------------------------------------------------------------------------
@@ -87,6 +99,8 @@ def test_config():
     assert m.fs.unit.config.transformation_scheme == "BACKWARD"
     assert m.fs.unit.config.finite_elements == 20
     assert m.fs.unit.config.collocation_points == 3
+
+    assert m.fs.unit.default_scaler is PFRScaler
 
 
 # -----------------------------------------------------------------------------
@@ -271,6 +285,38 @@ class TestSaponification(object):
         perf_dict = sapon.fs.unit._get_performance_contents()
 
         assert perf_dict == {"vars": {"Area": sapon.fs.unit.area}}
+
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_scaling(self, sapon):
+        unit = sapon.fs.unit
+
+        jac, _ = get_jacobian(sapon, scaled=False)
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+            6.70241e15, rel=1e-3
+        )
+
+        sapon_rxn_scaler = unit.control_volume.reactions.default_scaler()
+        sapon_rxn_scaler.default_scaling_factors["reaction_rate"] = 1e-4
+
+        submodel_scalers = ComponentMap()
+        submodel_scalers[unit.control_volume.reactions] = sapon_rxn_scaler
+
+        scaler_obj = unit.default_scaler()
+        scaler_obj.default_scaling_factors["length"] = 2
+        scaler_obj.default_scaling_factors["area"] = 10
+        scaler_obj.set_variable_scaling_factor(unit.inlet.flow_vol[0], 1)
+
+        scaler_obj.scale_model(unit, submodel_scalers=submodel_scalers)
+
+        assert scaler_obj.get_scaling_factor(unit.length) == 2
+        assert scaler_obj.get_scaling_factor(unit.area) == 10
+
+        sm = TransformationFactory("core.scale_model").create_using(sapon, rename=False)
+        jac, _ = get_jacobian(sm, scaled=False)
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+            2.6161e4, rel=1e-3
+        )
 
 
 class TestInitializers:
