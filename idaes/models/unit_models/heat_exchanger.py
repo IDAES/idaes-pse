@@ -21,7 +21,6 @@ from enum import Enum
 # Import Pyomo libraries
 from pyomo.environ import (
     Block,
-    Constraint,
     Var,
     Param,
     log,
@@ -69,6 +68,10 @@ class HeatExchangerFlowPattern(Enum):
 
 
 class HX0DScaler(CustomScalerBase):
+    """
+    Default modular scaler for the zero-dimensional heat exchanger.
+    """
+
     DEFAULT_SCALING_FACTORS = {
         "area": DefaultScalingRecommendation.userInputRecommended,
         "overall_heat_transfer_coefficient": DefaultScalingRecommendation.userInputRecommended,
