@@ -410,6 +410,7 @@ argument).""",
         pc_set = self.properties.phase_component_set
 
         # Check that reaction block exists if required
+        rblock = None
         if has_rate_reactions or has_equilibrium_reactions:
             try:
                 rblock = self.reactions
@@ -496,6 +497,7 @@ argument).""",
             flow_l_units = None
 
         # Get units for accumulation term if required
+        acc_units = None
         if self.config.dynamic:
             f_time_units = self.flowsheet().time_units
             if (f_time_units is None) ^ (units("time") is None):
@@ -1263,6 +1265,7 @@ argument).""",
             flow_l_units = None
 
         # Get units for accumulation term if required
+        acc_units = None
         if self.config.dynamic:
             f_time_units = self.flowsheet().time_units
             if (f_time_units is None) ^ (units("time") is None):
@@ -1531,6 +1534,7 @@ argument).""",
             power_l_units = None
 
         # Get units for accumulation term if required
+        acc_units = None
         if self.config.dynamic:
             f_time_units = self.flowsheet().time_units
             if (f_time_units is None) ^ (units("time") is None):

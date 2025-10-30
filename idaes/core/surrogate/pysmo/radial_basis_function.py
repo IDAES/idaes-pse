@@ -892,6 +892,7 @@ class RadialBasisFunctions:
         y_train = self.y_data.reshape(self.y_data.shape[0], 1)
 
         # SOLVE RADIAL WEIGHTS FOR FULL X DATA
+        radial_weights = None
         if self.solution_method == "algebraic":
             radial_weights = self.explicit_linear_algebra_solution(
                 x_regularized, y_train
@@ -963,7 +964,7 @@ class RadialBasisFunctions:
         else:
             r_set = [0]
 
-        if self.regularization is True:
+        if self.regularization:
             # reg_parameter = [0.000001, 0.000005, 0.00001, 0.00005, 0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1]
             reg_parameter = [
                 0.00001,
@@ -988,7 +989,7 @@ class RadialBasisFunctions:
                 0.75,
                 1,
             ]
-        elif self.regularization is False:
+        else:
             reg_parameter = [0]
 
         machine_precision = np.finfo(float).eps
@@ -1066,6 +1067,7 @@ class RadialBasisFunctions:
         )
         x_condition_number = np.linalg.cond(x_transformed)
 
+        radial_weights = None
         if self.solution_method == "algebraic":
             radial_weights = self.explicit_linear_algebra_solution(
                 x_transformed, self.y_data
