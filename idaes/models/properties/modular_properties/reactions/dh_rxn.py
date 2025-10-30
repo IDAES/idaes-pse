@@ -39,6 +39,7 @@ class constant_dh_rxn:
 
         rblock.dh_rxn_ref = Var(
             doc="Specific heat of reaction at reference state",
+            # pylint: disable-next=possibly-used-before-assignment
             units=units["energy_" + basis],
         )
 
