@@ -28,6 +28,7 @@ from idaes.core.surrogate.sampling.scaling import OffsetScaler
 
 from idaes.core.surrogate.omlt_base_surrogate_class import OMLTSurrogate
 
+# pylint: disable=possibly-used-before-assignment
 onnx, onnx_available = attempt_import("onnx")
 omlt, omlt_available = attempt_import("omlt")
 
@@ -129,6 +130,7 @@ class ONNXSurrogate(OMLTSurrogate):
             "Tanh",
         ]
 
+        # pylint: disable-next=used-before-assignment
         net = load_onnx_neural_network(
             self._onnx_model,
             scaling_object=omlt_scaling,
@@ -178,6 +180,7 @@ class ONNXSurrogate(OMLTSurrogate):
                 The name for the model
         """
 
+        # pylint: disable-next=used-before-assignment
         write_onnx_model_with_bounds(
             os.path.join(save_location, "{}.onnx".format(save_name)),
             onnx_model=self._onnx_model,

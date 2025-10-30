@@ -134,6 +134,14 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
             description="If True, add voltage_drop_custom Var to be connected to degradation models",
         ),
     )
+    CONFIG.declare(
+        "log_exchange_current_modifier",
+        ConfigValue(
+            domain=Bool,
+            default=False,
+            description="If True, add log_exchange_current_modifier Var to be connected to degradation models",
+        ),
+    )
 
     common._submodel_boilerplate_config(CONFIG)
     common._thermal_boundary_conditions_config(CONFIG, thin=True)
@@ -275,6 +283,13 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
                 units=pyo.units.volts,
                 doc="Custom voltage drop term for degradation modeling",
             )
+        if self.config.log_exchange_current_modifier:
+            self.log_exchange_current_modifier = pyo.Var(
+                tset,
+                iznodes,
+                units=pyo.units.dimensionless,
+                doc="Custom modifier to exchange current for degradation modeling",
+            )
 
         @self.Expression(tset, iznodes, comps)
         def conc_mol_comp(b, t, iz, j):
@@ -360,6 +375,8 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
             out = log_k - E_A / (Constants.gas_constant * T)
             for j in b.reacting_gas_list:
                 out += expo[j] * b.log_mole_frac_comp[t, iz, j]
+            if b.config.log_exchange_current_modifier:
+                out += b.log_exchange_current_modifier[t, iz]
             return out
 
         # Butler Volmer equation
@@ -496,6 +513,7 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
                     sqx1 = gsf(self.heat_flux_x1[t, iz].referent, 1e-2)
                 else:
                     sqx1 = sgsf(self.heat_flux_x1[t, iz], 1e-2)
+                # pylint: disable-next=possibly-used-before-assignment
                 sqx = min(sqx0, sqx1)
                 cst(self.heat_flux_x_eqn[t, iz], sqx)
 
