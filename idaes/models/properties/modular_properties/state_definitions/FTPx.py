@@ -384,6 +384,8 @@ def state_initialization(b):
         _pe_pairs = b.params._pe_pairs
 
     num_VLE = 0
+    tbub = None
+    tdew = None
 
     for pp in _pe_pairs:
         # Look for a VLE pair with this phase - should only be 1
@@ -430,7 +432,9 @@ def state_initialization(b):
         henry_other = []
         K = {}
 
+        # pylint: disable-next=possibly-used-before-assignment
         for j in henry_comps:
+            # pylint: disable-next=possibly-used-before-assignment
             henry_type = b.params.get_component(j).config.henry_component[l_phase][
                 "type"
             ]
@@ -457,6 +461,7 @@ def state_initialization(b):
                     )
                 )
                 henry_other.append(j)
+        # pylint: disable-next=possibly-used-before-assignment
         for j in vl_comps:
             try:
                 K[j] = value(
@@ -486,6 +491,7 @@ def state_initialization(b):
             vap_frac = value(b.temperature - tbub) / (tdew - tbub)
         elif K is not None:
             raoult_init = True
+            # pylint: disable=possibly-used-before-assignment
             vap_frac = _modified_rachford_rice(
                 b,
                 K,
@@ -496,6 +502,7 @@ def state_initialization(b):
         # else: No way to estimate phase fraction, do nothing
 
     if vap_frac is not None:
+        # pylint: disable=possibly-used-before-assignment
         b.phase_frac[v_phase] = vap_frac
         b.phase_frac[l_phase] = 1 - vap_frac
 

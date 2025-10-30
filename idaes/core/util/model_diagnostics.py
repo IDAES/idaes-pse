@@ -4156,7 +4156,7 @@ def check_parallel_jacobian(
         csrjac = jac.tocsr()
         # Make everything a column vector (CSC) for consistency
         vectors = [csrjac[i, :].transpose().tocsc() for i in range(len(components))]
-    elif direction == "column":
+    else:  # direction == "column"
         components = nlp.get_pyomo_variables()
         cscjac = jac.tocsc()
         vectors = [cscjac[:, i] for i in range(len(components))]
@@ -4250,7 +4250,7 @@ def compute_ill_conditioning_certificate(
         components_set = RangeSet(0, len(components) - 1)
         results_set = RangeSet(0, nlp.n_primals() - 1)
         jac = jac.transpose().tocsr()
-    elif direction == "column":
+    else:  # direction == "column"
         components = nlp.get_pyomo_variables()
         components_set = RangeSet(0, len(components) - 1)
         results_set = RangeSet(0, nlp.n_constraints() - 1)
