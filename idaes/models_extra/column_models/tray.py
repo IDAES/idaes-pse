@@ -768,4 +768,5 @@ see property package for documentation.}""",
         else:
             self.properties_in_liq.release_state(flags=liq_in_flags, outlvl=outlvl)
             self.properties_in_vap.release_state(flags=vap_in_flags, outlvl=outlvl)
+            # pylint: disable-next=possibly-used-before-assignment
             return feed_flags

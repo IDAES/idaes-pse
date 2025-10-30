@@ -602,38 +602,40 @@ cold side flows from 1 to 0""",
         if self.config.flow_type == HeatExchangerFlowPattern.cocurrent:
             set_direction_hot = FlowDirection.forward
             set_direction_cold = FlowDirection.forward
-            if self.config.hot_side.transformation_scheme != "BACKWARD":
-                _log_upwinding_disclaimer(
-                    "hot_side",
-                    "cocurrent",
-                    self.config.hot_side.transformation_scheme,
-                    "BACKWARD",
-                )
-            if self.config.cold_side.transformation_scheme != "BACKWARD":
-                _log_upwinding_disclaimer(
-                    "cold_side",
-                    "cocurrent",
-                    self.config.cold_side.transformation_scheme,
-                    "BACKWARD",
-                )
+            if self.config.hot_side.transformation_method == "dae.finite_difference":
+                if self.config.hot_side.transformation_scheme != "BACKWARD":
+                    _log_upwinding_disclaimer(
+                        "hot_side",
+                        "cocurrent",
+                        self.config.hot_side.transformation_scheme,
+                        "BACKWARD",
+                    )
+                if self.config.cold_side.transformation_scheme != "BACKWARD":
+                    _log_upwinding_disclaimer(
+                        "cold_side",
+                        "cocurrent",
+                        self.config.cold_side.transformation_scheme,
+                        "BACKWARD",
+                    )
 
         elif self.config.flow_type == HeatExchangerFlowPattern.countercurrent:
             set_direction_hot = FlowDirection.forward
             set_direction_cold = FlowDirection.backward
-            if self.config.hot_side.transformation_scheme != "BACKWARD":
-                _log_upwinding_disclaimer(
-                    "hot_side",
-                    "countercurrent",
-                    self.config.hot_side.transformation_scheme,
-                    "BACKWARD",
-                )
-            if self.config.cold_side.transformation_scheme != "FORWARD":
-                _log_upwinding_disclaimer(
-                    "cold_side",
-                    "countercurrent",
-                    self.config.cold_side.transformation_scheme,
-                    "FORWARD",
-                )
+            if self.config.hot_side.transformation_method == "dae.finite_difference":
+                if self.config.hot_side.transformation_scheme != "BACKWARD":
+                    _log_upwinding_disclaimer(
+                        "hot_side",
+                        "countercurrent",
+                        self.config.hot_side.transformation_scheme,
+                        "BACKWARD",
+                    )
+                if self.config.cold_side.transformation_scheme != "FORWARD":
+                    _log_upwinding_disclaimer(
+                        "cold_side",
+                        "countercurrent",
+                        self.config.cold_side.transformation_scheme,
+                        "FORWARD",
+                    )
         else:
             raise ConfigurationError(
                 "{} HeatExchanger1D only supports cocurrent and "

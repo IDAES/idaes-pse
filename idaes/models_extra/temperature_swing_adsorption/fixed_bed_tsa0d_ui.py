@@ -34,6 +34,7 @@ from idaes.models_extra.temperature_swing_adsorption import (
 
 from idaes.models_extra.temperature_swing_adsorption.util import tsa_summary
 
+# pylint: disable=possibly-used-before-assignment
 _, flowsheet_processor_available = attempt_import("idaes_flowsheet_processor")
 if flowsheet_processor_available:
     from idaes_flowsheet_processor import api

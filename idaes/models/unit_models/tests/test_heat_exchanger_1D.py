@@ -518,6 +518,43 @@ def test_config_validation_mismatched_collocation(caplog):
         )
 
 
+@pytest.mark.unit
+def test_config_validation_collocation_no_warning(caplog):
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = BTXParameterBlock(valid_phase="Liq")
+    caplog.clear()
+
+    with caplog.at_level(idaeslog.INFO):
+        m.fs.HX_cocurrent = HX1D(
+            hot_side={
+                "property_package": m.fs.properties,
+                "transformation_method": "dae.collocation",
+                "transformation_scheme": "LAGRANGE-LEGENDRE",
+            },
+            cold_side={
+                "property_package": m.fs.properties,
+                "transformation_method": "dae.collocation",
+                "transformation_scheme": "LAGRANGE-LEGENDRE",
+            },
+            flow_type=HeatExchangerFlowPattern.cocurrent,
+        )
+        m.fs.HX_countercurrent = HX1D(
+            hot_side={
+                "property_package": m.fs.properties,
+                "transformation_method": "dae.collocation",
+                "transformation_scheme": "LAGRANGE-LEGENDRE",
+            },
+            cold_side={
+                "property_package": m.fs.properties,
+                "transformation_method": "dae.collocation",
+                "transformation_scheme": "LAGRANGE-LEGENDRE",
+            },
+            flow_type=HeatExchangerFlowPattern.countercurrent,
+        )
+    assert len(caplog.text) == 0
+
+
 # -----------------------------------------------------------------------------
 class TestBTX_cocurrent(object):
     @pytest.fixture(scope="class")

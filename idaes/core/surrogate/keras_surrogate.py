@@ -28,6 +28,7 @@ from idaes.core.surrogate.sampling.scaling import OffsetScaler
 
 from idaes.core.surrogate.omlt_base_surrogate_class import OMLTSurrogate
 
+# pylint: disable=possibly-used-before-assignment
 keras, keras_available = attempt_import("tensorflow.keras")
 omlt, omlt_available = attempt_import("omlt")
 
@@ -108,6 +109,7 @@ class KerasSurrogate(OMLTSurrogate):
         )
         omlt_scaling, scaled_input_bounds = self.generate_omlt_scaling_objecets()
 
+        # pylint: disable-next=used-before-assignment
         net = load_keras_sequential(
             self._keras_model,
             scaling_object=omlt_scaling,
