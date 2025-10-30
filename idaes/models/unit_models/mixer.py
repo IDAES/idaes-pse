@@ -18,6 +18,7 @@ from enum import Enum
 from pyomo.environ import (
     Block,
     check_optimal_termination,
+    ComponentMap,
     Constraint,
     Param,
     PositiveReals,
@@ -34,6 +35,7 @@ from idaes.core import (
     MaterialBalanceType,
     MaterialFlowBasis,
 )
+from idaes.core.base.control_volume_base import ControlVolumeScalerBase
 from idaes.core.util.config import (
     is_physical_parameter_block,
     is_state_block,
@@ -52,7 +54,7 @@ from idaes.core.initialization import ModularInitializerBase
 
 import idaes.logger as idaeslog
 
-__author__ = "Andrew Lee"
+__author__ = "Andrew Lee, Douglas Allan"
 
 
 # Set up logger
@@ -78,6 +80,102 @@ class MomentumMixingType(Enum):
     minimize = 1
     equality = 2
     minimize_and_equality = 3
+
+
+class MixerScaler(ControlVolumeScalerBase):
+    """
+    Scaler object for the Mixer unit model
+    """
+
+    def _get_reference_state_block(self, model):
+        """
+        This method gives the parent class ControlVolumeScalerBase
+        methods a state block with the same index as the material
+        and energy balances to get scaling information from
+        """
+        if hasattr(model, "mixed_state"):
+            return model.mixed_state
+        else:
+            return model.get_mixed_state_block()
+
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None
+    ):
+        for _, iblock in model.inlet_blocks:
+            self.call_submodel_scaler_method(
+                submodel=iblock,
+                submodel_scalers=submodel_scalers,
+                method="variable_scaling_routine",
+                overwrite=overwrite,
+            )
+
+        if model.config.mixed_state_block is None:
+            mblock = model.mixed_state
+        else:
+            mblock = model.config.mixed_state_block
+
+        self.call_submodel_scaler_method(
+            submodel=mblock,
+            submodel_scalers=submodel_scalers,
+            method="variable_scaling_routine",
+            overwrite=overwrite,
+        )
+
+        # Scale inherent reaction and phase equilibrium
+        # variables, if they exist
+        super().variable_scaling_routine(
+            model, overwrite=overwrite, submodel_scalers=submodel_scalers
+        )
+
+        if hasattr(model, "minimum_pressure"):
+            for (t, _), v in model.minimum_pressure.items():
+                self.scale_variable_by_component(
+                    v, model.mixed_state[t].pressure, overwrite=overwrite
+                )
+
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None
+    ):
+        for _, iblock in model.inlet_blocks:
+            self.call_submodel_scaler_method(
+                submodel=iblock,
+                submodel_scalers=submodel_scalers,
+                method="constraint_scaling_routine",
+                overwrite=overwrite,
+            )
+
+        if model.config.mixed_state_block is None:
+            mblock = model.mixed_state
+        else:
+            mblock = model.config.mixed_state_block
+
+        self.call_submodel_scaler_method(
+            submodel=mblock,
+            submodel_scalers=submodel_scalers,
+            method="constraint_scaling_routine",
+            overwrite=overwrite,
+        )
+
+        # Scale material and energy balance equations
+        super().constraint_scaling_routine(
+            model, overwrite=overwrite, submodel_scalers=submodel_scalers
+        )
+
+        if hasattr(model, "pressure_equality_constraints"):
+            for (t, _), con in model.pressure_equality_constraints.items():
+                self.scale_constraint_by_component(
+                    con, model.mixed_state[t].pressure, overwrite=overwrite
+                )
+        if hasattr(model, "minimum_pressure_constraint"):
+            for (t, _), con in model.minimum_pressure_constraint.items():
+                self.scale_constraint_by_component(
+                    con, model.mixed_state[t].pressure, overwrite=overwrite
+                )
+        if hasattr(model, "mixture_pressure"):
+            for t, con in model.mixture_pressure.items():
+                self.scale_constraint_by_component(
+                    con, model.mixed_state[t].pressure, overwrite=overwrite
+                )
 
 
 class MixerInitializer(ModularInitializerBase):
@@ -113,15 +211,11 @@ class MixerInitializer(ModularInitializerBase):
         solver = self._get_solver()
 
         # Initialize inlet state blocks
-        inlet_list = model.create_inlet_list()
         i_block_list = []
-        for i in inlet_list:
-            i_block = getattr(model, i + "_state")
+
+        for _, i_block in model.inlet_blocks:
             i_block_list.append(i_block)
-
-            # Get initializer for inlet
             iinit = self.get_submodel_initializer(i_block)
-
             iinit.initialize(i_block)
 
         # Initialize mixed state block
@@ -225,6 +319,9 @@ class MixerData(UnitModelBlockData):
     """
 
     default_initializer = MixerInitializer
+    default_scaler = MixerScaler
+
+    _inlet_dict = None
 
     CONFIG = ConfigBlock()
     CONFIG.declare(
@@ -357,7 +454,7 @@ pressure of incoming streams,
 **Valid values:** {
 **MomentumMixingType.none** - do not include momentum mixing equations,
 **MomentumMixingType.minimize** - mixed stream has pressure equal to the
-minimimum pressure of the incoming streams (uses smoothMin operator),
+minimum pressure of the incoming streams (uses smoothMin operator),
 **MomentumMixingType.equality** - enforces equality of pressure in mixed and
 all incoming streams.,
 **MomentumMixingType.minimize_and_equality** - add constraints for pressure
@@ -397,6 +494,19 @@ objects linked to all inlet states and the mixed state,
         ),
     )
 
+    @property
+    def inlet_blocks(self):
+        """
+        Allows the user to iterate over the inlet stream names and state blocks.
+
+        Returns:
+            dict_items with the inlet stream names as keys and the
+                inlet state blocks as values
+        """
+        # Return an iterator so the user cannot
+        # mutate _inlet_dict
+        return self._inlet_dict.items()
+
     def build(self):
         """
         General build method for MixerData. This method calls a number
@@ -423,6 +533,8 @@ objects linked to all inlet states and the mixed state,
 
         # Build StateBlocks
         inlet_blocks = self.add_inlet_state_blocks(inlet_list)
+
+        self._inlet_dict = {key: blk for key, blk in zip(inlet_list, inlet_blocks)}
 
         if self.config.mixed_state_block is None:
             mixed_block = self.add_mixed_state_block()
@@ -635,6 +747,7 @@ objects linked to all inlet states and the mixed state,
         else:
             # Let this pass for now with no units
             flow_units = None
+        self._constructed_material_balance_type = mb_type
 
         if mixed_block.include_inherent_reactions:
             if mb_type == MaterialBalanceType.total:

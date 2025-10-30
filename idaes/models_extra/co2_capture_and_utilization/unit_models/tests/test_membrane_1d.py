@@ -79,7 +79,7 @@ def test_config_countercurrent():
 
 
 @pytest.mark.unit
-def test_congif_cocurrent():
+def test_config_cocurrent():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
 

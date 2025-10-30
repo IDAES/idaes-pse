@@ -21,6 +21,7 @@ from pandas import DataFrame
 from pyomo.environ import (
     Block,
     check_optimal_termination,
+    ComponentMap,
     Constraint,
     Param,
     Reals,
@@ -58,8 +59,9 @@ import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 from idaes.core.util.units_of_measurement import report_quantity
 from idaes.core.initialization import ModularInitializerBase
+from idaes.core.scaling import get_scaling_factor, CustomScalerBase
 
-__author__ = "Andrew Lee"
+__author__ = "Andrew Lee, Douglas Allan"
 
 
 # Set up logger
@@ -87,6 +89,226 @@ class EnergySplittingType(Enum):
     equal_temperature = 1
     equal_molar_enthalpy = 2
     enthalpy_split = 3
+
+
+class SeparatorScaler(CustomScalerBase):
+    """
+    Scaler object for the Separator unit model
+    """
+
+    DEFAULT_SCALING_FACTORS = {"split_fraction": 1}
+
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None
+    ):
+        # Scale the mixed state block only if it has been
+        # created by the separator model, but not if it
+        # was passed via the config
+        if model.config.mixed_state_block is None:
+            mixed_state = model.mixed_state
+            self.call_submodel_scaler_method(
+                submodel=mixed_state,
+                submodel_scalers=submodel_scalers,
+                method="variable_scaling_routine",
+                overwrite=overwrite,
+            )
+        else:
+            mixed_state = model.config.mixed_state_block
+
+        outlet_list = model.create_outlet_list()
+
+        if not model.config.ideal_separation:
+            for o in outlet_list:
+                self.propagate_state_scaling(
+                    target_state=getattr(model, o + "_state"),
+                    source_state=mixed_state,
+                    overwrite=overwrite,
+                )
+                self.call_submodel_scaler_method(
+                    submodel=getattr(model, o + "_state"),
+                    submodel_scalers=submodel_scalers,
+                    method="variable_scaling_routine",
+                    overwrite=overwrite,
+                )
+
+        # If an ideal separation is used, the split_fraction
+        # variable is not created.
+        if hasattr(model, "split_fraction"):
+            for vardata in model.split_fraction.values():
+                self.scale_variable_by_default(vardata, overwrite=overwrite)
+
+        if hasattr(model, "phase_equilibrium_generation"):
+            phase_equilibrium_idx = getattr(
+                mixed_state.params,
+                "phase_equilibrium_idx",
+            )
+            phase_equilibrium_list = getattr(
+                mixed_state.params,
+                "phase_equilibrium_list",
+                None,  # Default value if attr does not exist
+            )
+            for prop_idx in mixed_state:
+                for outlet_idx in outlet_list:
+                    for pe_idx in phase_equilibrium_idx:
+                        j, pp = phase_equilibrium_list[pe_idx]
+
+                        nom1 = self.get_expression_nominal_value(
+                            mixed_state[prop_idx].get_material_flow_terms(pp[0], j)
+                        )
+                        nom2 = self.get_expression_nominal_value(
+                            mixed_state[prop_idx].get_material_flow_terms(pp[1], j)
+                        )
+                        nom = min(nom1, nom2)
+                        self.set_component_scaling_factor(
+                            model.phase_equilibrium_generation[
+                                prop_idx, outlet_idx, pe_idx
+                            ],
+                            1 / nom,
+                            overwrite=False,
+                        )
+        if hasattr(model, "inherent_reaction_generation"):
+            stoich = mixed_state.params.inherent_reaction_stoichiometry
+            inh_rxn_gen = getattr(model, "inherent_reaction_generation")
+            inh_rxn_idx = mixed_state.params.inherent_reaction_idx
+            # Material generation scaling is based on the magnitude of
+            # the material flow terms
+            for idx in inh_rxn_gen:
+                prop_idx = idx[0]
+                p = idx[-2]
+                j = idx[-1]
+                nom = self.get_expression_nominal_value(
+                    mixed_state[prop_idx].get_material_flow_terms(p, j)
+                )
+                self.set_component_scaling_factor(
+                    inh_rxn_gen[idx], 1 / nom, overwrite=overwrite
+                )
+
+            # Extent of reaction scaling is based on the species in the
+            # reaction which has the largest scaling factor (and thus is
+            # the species whose concentration is the most sensitive).
+            # This scaling may not work for systems with highly reactive
+            # intermediates, in which multiple extents of reaction
+            # cancel each other out (but if that's the case, we either
+            # should be able to eliminate the highly reactive species from
+            # the reaction system by combining reactions or we need to keep
+            # track of the concentration of this highly reactive intermediate.)
+            for prop_idx in mixed_state:
+                for outlet_idx in outlet_list:
+                    for rxn in inh_rxn_idx:
+                        nom_rxn = float("inf")
+                        for p, j in mixed_state.phase_component_set:
+                            sf_pc = get_scaling_factor(
+                                inh_rxn_gen[prop_idx, outlet_idx, p, j]
+                            )
+                            coeff = stoich[rxn, p, j]
+                            if coeff != 0:
+                                nom_rxn = min(abs(coeff) / sf_pc, nom_rxn)
+                        if nom_rxn == float("inf"):
+                            raise ConfigurationError(
+                                f"Reaction {rxn} has no nonzero stoichiometric coefficient."
+                            )
+                        # Note this scaling works only if we don't
+                        # have multiple reactions cancelling each other out
+                        # No need to weight here because the inh_rxn_gen
+                        # scaling factor is already weighted
+                        self.set_component_scaling_factor(
+                            model.inherent_reaction_extent[prop_idx, outlet_idx, rxn],
+                            1 / nom_rxn,
+                            overwrite=overwrite,
+                        )
+
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None
+    ):
+        if model.config.mixed_state_block is None:
+            mixed_state = model.mixed_state
+            self.call_submodel_scaler_method(
+                submodel=mixed_state,
+                submodel_scalers=submodel_scalers,
+                method="constraint_scaling_routine",
+                overwrite=overwrite,
+            )
+        else:
+            mixed_state = model.config.mixed_state_block
+
+        if not model.config.ideal_separation:
+            outlet_list = model.create_outlet_list()
+
+            for o in outlet_list:
+                self.call_submodel_scaler_method(
+                    submodel=getattr(model, o + "_state"),
+                    submodel_scalers=submodel_scalers,
+                    method="constraint_scaling_routine",
+                    overwrite=overwrite,
+                )
+
+        if hasattr(model, "material_splitting_eqn"):
+            mb_type = model._constructed_material_balance_type  # pylint: disable=W0212
+            pc_set = mixed_state.phase_component_set
+            if mb_type == MaterialBalanceType.componentPhase:
+                for (t, _, p, j), c in model.material_splitting_eqn.items():
+                    nom = self.get_expression_nominal_value(
+                        mixed_state[t].get_material_flow_terms(p, j)
+                    )
+                    self.set_constraint_scaling_factor(c, 1 / nom, overwrite=overwrite)
+
+            elif mb_type == MaterialBalanceType.componentTotal:
+                for (t, _, j), c in model.material_splitting_eqn.items():
+                    nom = 0
+                    for p in mixed_state.phase_list:
+                        if (p, j) in pc_set:
+                            ft = mixed_state[t].get_material_flow_terms(p, j)
+                            nom = max(nom, self.get_expression_nominal_value(ft))
+                    self.set_constraint_scaling_factor(c, 1 / nom, overwrite=overwrite)
+            elif mb_type == MaterialBalanceType.total:
+                for (t, _), c in model.material_splitting_eqn.items():
+                    nom = 0
+                    for p, j in pc_set:
+                        ft = mixed_state[t].get_material_flow_terms(p, j)
+                        nom = max(nom, self.get_expression_nominal_value(ft))
+                    self.set_constraint_scaling_factor(c, 1 / nom, overwrite=overwrite)
+
+        if hasattr(model, "temperature_equality_eqn"):
+            for (t, _), c in model.temperature_equality_eqn.items():
+                self.scale_constraint_by_component(
+                    c, mixed_state[t].temperature, overwrite=overwrite
+                )
+        elif hasattr(model, "molar_enthalpy_equality_eqn"):
+            for c in model.molar_enthalpy_equality_eqn.values():
+                self.scale_constraint_by_nominal_value(c, overwrite=overwrite)
+        elif hasattr(model, "molar_enthalpy_splitting_eqn"):
+            for idx in model.molar_enthalpy_splitting_eqn:
+                nom_list = []
+                for p in mixed_state.phase_list:
+                    nom_list.append(
+                        self.get_expression_nominal_value(
+                            mixed_state[idx[:-1]].get_enthalpy_flow_terms(p)
+                        )
+                    )
+                nom = max(nom_list)
+                self.set_component_scaling_factor(
+                    model.molar_enthalpy_splitting_eqn[idx],
+                    1 / nom,
+                    overwrite=overwrite,
+                )
+        if hasattr(model, "pressure_equality_eqn"):
+            for (t, _), c in model.pressure_equality_eqn.items():
+                self.scale_constraint_by_component(
+                    c, mixed_state[t].pressure, overwrite=overwrite
+                )
+
+        if hasattr(model, "sum_split_frac"):
+            for c in model.sum_split_frac.values():
+                # Register the fact that this constraint is well-scaled by default
+                self.set_component_scaling_factor(c, 1, overwrite=overwrite)
+
+        if hasattr(model, "inherent_reaction_constraint"):
+            for idx in model.inherent_reaction_constraint:
+                self.scale_constraint_by_component(
+                    model.inherent_reaction_constraint[idx],
+                    model.inherent_reaction_generation[idx],
+                    overwrite=overwrite,
+                )
 
 
 class SeparatorInitializer(ModularInitializerBase):
@@ -423,6 +645,7 @@ class SeparatorData(UnitModelBlockData):
     """
 
     default_initializer = SeparatorInitializer
+    default_scaler = SeparatorScaler
 
     CONFIG = ConfigBlock()
     CONFIG.declare(
@@ -932,6 +1155,8 @@ objects linked the mixed state and all outlet states,
             t_ref = self.flowsheet().time.first()
             mb_type = mixed_block[t_ref].default_material_balance_type()
 
+        self._constructed_material_balance_type = mb_type
+
         # Get units from property package
         units_meta = mixed_block.params.get_metadata()
         flow_basis = mixed_block[
@@ -1020,6 +1245,14 @@ objects linked the mixed state and all outlet states,
                 rhs = o_block[t].get_material_flow_terms(p, j)
 
                 if self.config.has_phase_equilibrium:
+                    # phase_equilibrium_idx is a list of unique identifiers for each
+                    # component-phase equilibrium pair. phase_equilibrium_list is not a
+                    # list, but a dictionary mapping this identifier to the list
+                    # [j, (pp[0], pp[1])], in which j is the component, pp[0] is the first
+                    # phase in equilibrium, and pp[1] is the second phase in equilibrium.
+                    # This setup is probably so complex in order to ensure that we don't
+                    # generate phase equilibrium generation terms for components that do
+                    # not participate a given phase equilibrium.
                     rhs += -sum(
                         b.phase_equilibrium_generation[t, o, r]
                         for r in b.config.property_package.phase_equilibrium_idx

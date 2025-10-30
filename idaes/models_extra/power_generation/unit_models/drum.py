@@ -355,7 +355,7 @@ see property package for documentation.}""",
             units=units_meta.get_derived_units("length"),
         )
         # Number of downcomers connected at the bottom of drum,
-        # used to calculate contrac
+        # used to calculate contraction
         self.number_downcomers = pyo.Var(
             initialize=4, doc="Number of downcomers connected to drum"
         )

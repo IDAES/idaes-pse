@@ -177,7 +177,7 @@ def propagate_indexed_component_scaling_factors(
         blk: The block on which to search for components
         typ: Component type(s) (default=(Var, Constraint, Expression, Param))
         overwrite: if a data object already has a scaling factor should it be
-            overwrittten (default=False)
+            overwritten (default=False)
         descend_into: descend into child blocks (default=True)
     """
     if typ is None:

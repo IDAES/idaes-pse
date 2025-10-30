@@ -1,7 +1,7 @@
 Unit Sets
 =========
 
-All property packages within IDAES are expected to define a metadata class as part of the package's ParameterBlock, which among other things contains a definition of the base units of measurement used by that property package.  The definition of units of measurement is held wihin a `UnitSet` object that defines a number of common quantities of interest in process applications.
+All property packages within IDAES are expected to define a metadata class as part of the package's ParameterBlock, which among other things contains a definition of the base units of measurement used by that property package.  The definition of units of measurement is held within a `UnitSet` object that defines a number of common quantities of interest in process applications.
 
 An example of defining the default units for a property package is shown below.
 
