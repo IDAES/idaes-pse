@@ -301,6 +301,32 @@ class TestIAPWS(object):
             <= 1e-6
         )
 
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues_and_scaling(self, iapws):
+        jac, _ = get_jacobian(iapws, scaled=False)
+        assert jacobian_cond(jac=jac, scaled=False) == pytest.approx(5.4080e8, rel=1e-3)
+
+        unit = iapws.fs.unit
+        prop_scaler = unit.control_volume.properties_in.default_scaler()
+
+        prop_scaler.default_scaling_factors["flow_mol"] = 1 / 5
+        submodel_scalers = ComponentMap()
+        submodel_scalers[unit.control_volume.properties_in] = prop_scaler
+        submodel_scalers[unit.control_volume.properties_out] = prop_scaler
+
+        scaler_obj = unit.default_scaler()
+        scaler_obj.scale_model(unit, submodel_scalers=submodel_scalers)
+
+        sm = TransformationFactory("core.scale_model").create_using(iapws, rename=False)
+
+        dt = DiagnosticsToolbox(sm)
+        dt.assert_no_numerical_warnings()
+
+        jac, _ = get_jacobian(sm, scaled=False)
+        assert jacobian_cond(jac=jac, scaled=False) == pytest.approx(2706.00, rel=1e-3)
+
     @pytest.mark.ui
     @pytest.mark.unit
     def test_get_performance_contents(self, iapws):
@@ -350,32 +376,6 @@ class TestIAPWS(object):
             assert Tout == pytest.approx(value(prop_out.temperature), rel=1e-3)
             assert Pout == pytest.approx(value(prop_out.pressure), rel=1e-3)
             assert xout == pytest.approx(value(prop_out.vapor_frac), rel=1e-3)
-
-    @pytest.mark.solver
-    @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.component
-    def test_numerical_issues_and_scaling(self, iapws):
-        jac, _ = get_jacobian(iapws, scaled=False)
-        assert jacobian_cond(jac=jac, scaled=False) == pytest.approx(5657.37, rel=1e-3)
-
-        unit = iapws.fs.unit
-        prop_scaler = unit.control_volume.properties_in.default_scaler()
-
-        prop_scaler.default_scaling_factors["flow_mol"] = 1 / 5
-        submodel_scalers = ComponentMap()
-        submodel_scalers[unit.control_volume.properties_in] = prop_scaler
-        submodel_scalers[unit.control_volume.properties_out] = prop_scaler
-
-        scaler_obj = unit.default_scaler()
-        scaler_obj.scale_model(unit, submodel_scalers=submodel_scalers)
-
-        sm = TransformationFactory("core.scale_model").create_using(iapws, rename=False)
-
-        dt = DiagnosticsToolbox(sm)
-        dt.assert_no_numerical_warnings()
-
-        jac, _ = get_jacobian(sm, scaled=False)
-        assert jacobian_cond(jac=jac, scaled=False) == pytest.approx(282.87, rel=1e-3)
 
 
 # -----------------------------------------------------------------------------
