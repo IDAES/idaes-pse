@@ -54,6 +54,7 @@ _log = logging.getLogger(__name__)
 # [3] Engineering Toolbox, https://www.engineeringtoolbox.com
 #     Retrieved 1st December, 2019
 
+# TODO Reevaluate whether cubic complementarity VLE is an improvement over the old SmoothVLE
 configuration = {
     # Specifying components
     "components": {
