@@ -33,8 +33,6 @@ from pyomo.environ import (
 )
 
 from idaes.core import MaterialFlowBasis, MaterialBalanceType, EnergyBalanceType
-from idaes.core.base.components import IonData, ApparentData
-from idaes.models.properties.modular_properties.base.generic_property import StateIndex
 
 from idaes.models.properties.modular_properties.base.utility import (
     get_bounds_from_config,
@@ -728,152 +726,6 @@ class FTPxScaler(CustomScalerBase):
     Scaler for constraints associated with FTPx state variables
     """
 
-    def _apparent_basis_variable_scaling_routine(self, model, overwrite: bool):
-        """
-        Method to scale variables created when using an apparent species
-        basis for systems with inherent reactions.
-
-        Args:
-            model: GenericStateBlockData which is being scaled
-            overwrite: Boolean flag about whether or not to
-                overwrite existing scaling factors
-        Returns:
-            None
-        """
-        sf_mole_frac_pc_true = {}
-        for idx, vardata in model.mole_frac_phase_comp_true.values():
-            self.scale_variable_by_default(vardata, overwrite=overwrite)
-            sf_mole_frac_pc_true[idx] = self.get_scaling_factor(vardata)
-
-        sf_flow_mol_phase = {}
-        for p in model.phase_list:
-            sf_flow_mol_phase[p] = self.get_scaling_factor(model.flow_mol_phase[p])
-
-        sf_flow_mol_pc_true = {}
-        for (p, j), vardata in model.flow_mol_phase_comp_true.items():
-            sf = sf_flow_mol_phase[p] * sf_mole_frac_pc_true[(p, j)]
-            self.set_variable_scaling_factor(vardata, sf, overwrite=overwrite)
-            sf_flow_mol_pc_true[(p, j)]
-
-        # Inherent reaction
-        if hasattr(model, "inherent_reaction_generation"):
-            stoich = model.params.inherent_reaction_stoichiometry
-            inh_rxn_idx = model.params.inherent_reaction_idx
-
-            # Extent of reaction scaling is based on the species in the
-            # reaction which has the largest scaling factor (and thus is
-            # the species whose concentration is the most sensitive).
-            # This scaling may not work for systems with highly reactive
-            # intermediates, in which multiple extents of reaction
-            # cancel each other out (but if that's the case, we either
-            # should be able to eliminate the highly reactive species from
-            # the reaction system by combining reactions or we need to keep
-            # track of the concentration of this highly reactive intermediate.)
-            for rxn in inh_rxn_idx:
-                nom_rxn = float("inf")
-                for p, j in model.params.true_phase_component_set:
-                    coeff = stoich[rxn, p, j]
-                    if coeff != 0:
-                        nom_rxn = min(abs(coeff) / sf_flow_mol_pc_true[(p, j)], nom_rxn)
-                if nom_rxn == float("inf"):
-                    raise ConfigurationError(
-                        f"Reaction {rxn} has no nonzero stoichiometric coefficient."
-                    )
-
-                self.set_component_scaling_factor(
-                    model.apparent_inherent_reaction_extent[rxn],
-                    1 / nom_rxn,
-                    overwrite=overwrite,
-                )
-
-    def _apparent_basis_constraint_scaling_routine(self, model, overwrite: bool):
-        """
-        Method to scale constraints created when using an apparent species
-        basis for systems with inherent reactions.
-
-        Args:
-            model: GenericStateBlockData which is being scaled
-            overwrite: Boolean flag about whether or not to
-                overwrite existing scaling factors
-        Returns:
-            None
-        """
-
-        for p, j in model.params.true_phase_component_set:
-            pobj = model.params.get_phase(p)
-            cobj = model.params.get_component(j)
-            if pobj.is_aqueous_phase and not isinstance(cobj, IonData):
-                self.scale_constraint_by_component(
-                    model.appr_to_true_species[p, j],
-                    model.flow_mol_phase_comp_apparent[p, j],
-                    overwrite=overwrite,
-                )
-                self.scale_constraint_by_component(
-                    model.true_mole_frac_constraint[p, j],
-                    model.flow_mol_phase_comp_true[p, j],
-                    overwrite=overwrite,
-                )
-            else:
-                self.scale_constraint_by_component(
-                    model.appr_to_true_species[p, j],
-                    model.flow_mol_phase_comp_true[p, j],
-                    overwrite=overwrite,
-                )
-                self.scale_constraint_by_component(
-                    model.true_mole_frac_constraint[p, j],
-                    model.flow_mol_phase_comp_true[p, j],
-                    overwrite=overwrite,
-                )
-
-    def _true_basis_variable_scaling_routine(self, model, overwrite):
-        """
-        Method to scale variables created when using a true species
-        basis for systems with inherent reactions.
-
-        Args:
-            model: GenericStateBlockData which is being scaled
-            overwrite: Boolean flag about whether or not to
-                overwrite existing scaling factors
-        Returns:
-            None
-        """
-        sf_mole_frac_pc_apparent = {}
-        for idx, vardata in model.mole_frac_phase_comp_apparent.values():
-            self.scale_variable_by_default(vardata, overwrite=overwrite)
-            sf_mole_frac_pc_apparent[idx] = self.get_scaling_factor(vardata)
-
-        sf_flow_mol_phase = {}
-        for p in model.phase_list:
-            sf_flow_mol_phase[p] = self.get_scaling_factor(model.flow_mol_phase[p])
-
-        sf_flow_mol_pc_true = {}
-        for (p, j), vardata in model.flow_mol_phase_comp_apparent.items():
-            sf = sf_flow_mol_phase[p] * sf_mole_frac_pc_apparent[(p, j)]
-            self.set_variable_scaling_factor(vardata, sf, overwrite=overwrite)
-
-    def _true_basis_constraint_scaling_routine(self, model, overwrite):
-        """
-        Method to scale variables created when using a true species
-        basis for systems with inherent reactions.
-
-        Args:
-            model: GenericStateBlockData which is being scaled
-            overwrite: Boolean flag about whether or not to
-                overwrite existing scaling factors
-        Returns:
-            None
-        """
-        # Autoscaling for constraints from a true species basis
-        # was not implemented in the legacy scaling tools.
-        # Use default scaling until we can rework the true to apparent
-        # species conversion
-        self.scale_constraint_by_nominal_value(
-            model.true_to_appr_species, overwrite=overwrite
-        )
-        self.scale_constraint_by_nominal_value(
-            model.appr_mole_frac_constraint, overwrite=overwrite
-        )
-
     def variable_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: dict = None
     ):
@@ -898,35 +750,17 @@ class FTPxScaler(CustomScalerBase):
         for i in model.component_list:
             self.set_component_scaling_factor(
                 model.mole_frac_comp[i],
-                min(
-                    sf_mf[p, i]
-                    for p in model.phase_list
-                    if i in model.components_in_phase(p)
-                ),
+                min(sf_mf[p, i] for p in model.phase_list if (p, i) in sf_mf),
                 overwrite=overwrite,
             )
             nom = max(
                 1 / (sf_mf[p, i] * sf_Fp[p])
                 for p in model.phase_list
-                if i in model.components_in_phase(p)
+                if (p, i) in sf_mf
             )
             self.set_component_scaling_factor(
                 model.flow_mol_comp[i], 1 / nom, overwrite=overwrite
             )
-        if model.params._electrolyte:
-            if model.params.config.state_components == StateIndex.true:
-                self._true_basis_variable_scaling_routine(model, overwrite=overwrite)
-            elif model.params.config.state_components == StateIndex.apparent:
-                self._apparent_basis_variable_scaling_routine(
-                    model, overwrite=overwrite
-                )
-            else:
-                raise BurntToast(
-                    "{} - unrecognized value for state_components "
-                    "argument - this should never happen. Please "
-                    "contact the IDAES developers".format(model.name)
-                )
-            calculate_electrolyte_scaling(model)
 
     def constraint_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: dict = None
@@ -977,21 +811,6 @@ class FTPxScaler(CustomScalerBase):
                     scheme=ConstraintScalingScheme.inverseMaximum,
                     overwrite=overwrite,
                 )
-
-        if model.params._electrolyte:
-            if model.params.config.state_components == StateIndex.true:
-                self._true_basis_constraint_scaling_routine(model, overwrite=overwrite)
-            elif model.params.config.state_components == StateIndex.apparent:
-                self._apparent_basis_constraint_scaling_routine(
-                    model, overwrite=overwrite
-                )
-            else:
-                raise BurntToast(
-                    "{} - unrecognized value for state_components "
-                    "argument - this should never happen. Please "
-                    "contact the IDAES developers".format(model.name)
-                )
-            calculate_electrolyte_scaling(model)
 
 
 do_not_initialize = ["sum_mole_frac_out"]
