@@ -13,7 +13,7 @@
 """
 Tests for 0D heat exchanger models.
 
-Author: John Eslick
+Authors: John Eslick, Will Stralhl, Douglas Allan
 """
 from copy import deepcopy
 import pytest
