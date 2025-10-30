@@ -248,9 +248,11 @@ class EoSBase:
             dU_form = delta_n * R * b.params.temperature_ref
 
             # For ideal (incompressible) liquids and solids, U = H + dU_form
+            # pylint: disable-next=possibly-used-before-assignment
             return mthd(b, cobj(b, j), b.temperature) + dU_form
         else:
             # If not including heat of formation, U = H
+            # pylint: disable-next=possibly-used-before-assignment
             return mthd(b, cobj(b, j), b.temperature)
 
     @staticmethod
