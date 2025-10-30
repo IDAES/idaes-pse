@@ -14,7 +14,7 @@
 Heat Exchanger Models.
 """
 
-__author__ = "John Eslick"
+__author__ = "John Eslick, Will Stralhl, Douglas Allan"
 
 from enum import Enum
 
@@ -52,7 +52,7 @@ from idaes.core.util import scaling as iscale
 from idaes.core.solvers import get_solver
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 from idaes.core.initialization import SingleControlVolumeUnitInitializer
-from idaes.core.scaling import ConstraintScalingScheme, CustomScalerBase, DefaultScalingRecommendation
+from idaes.core.scaling import CustomScalerBase, DefaultScalingRecommendation
 
 
 _log = idaeslog.getLogger(__name__)
@@ -67,38 +67,41 @@ class HeatExchangerFlowPattern(Enum):
     cocurrent = 2
     crossflow = 3
 
-class HeatExchangerScaler(CustomScalerBase):
-    UNIT_SCALING_FACTORS = {
-        # "QuantityName: (reference units, scaling factor)
-        "Pressure": (pyunits.Pa, 1e-5),
-        "Delta Temperature" : (pyunits.K, 1e-2)
-    }
 
+class HX0DScaler(CustomScalerBase):
     DEFAULT_SCALING_FACTORS = {
         "area": DefaultScalingRecommendation.userInputRecommended,
-        "overall_heat_transfer_coefficient": DefaultScalingRecommendation.userInputRecommended
+        "overall_heat_transfer_coefficient": DefaultScalingRecommendation.userInputRecommended,
     }
-
-
 
     def variable_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: dict = None
     ):
-        
+        self.call_submodel_scaler_method(
+            model.hot_side,
+            method="variable_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+        self.call_submodel_scaler_method(
+            model.cold_side,
+            method="variable_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+
         # extract enthalpy flows for each time step for use in scaling
         cold_side_h_in = {}
         hot_side_h_in = {}
-        for time in model.flowsheet().time:
+        for t in model.flowsheet().time:
             # cold side
-            h_in_cold = 0 
+            h_in_cold = 0
             for p in model.cold_side.properties_in.phase_list:
                 # The expression for enthalpy flow might include multiple terms,
                 # so we will sum over all the terms provided
                 h_in_cold += sum(
                     self.get_sum_terms_nominal_values(
-                        model.cold_side.properties_in[
-                            time
-                        ].get_enthalpy_flow_terms(p)
+                        model.cold_side.properties_in[t].get_enthalpy_flow_terms(p)
                     )
                 )
 
@@ -109,148 +112,55 @@ class HeatExchangerScaler(CustomScalerBase):
                 # so we will sum over all the terms provided
                 h_in_hot += sum(
                     self.get_sum_terms_nominal_values(
-                        model.hot_side.properties_in[
-                            time
-                        ].get_enthalpy_flow_terms(p)
+                        model.hot_side.properties_in[t].get_enthalpy_flow_terms(p)
                     )
                 )
 
-            cold_side_h_in[time] = h_in_cold
-            hot_side_h_in[time] = h_in_hot
-        
-        # raise the warning
-        self.scale_variable_by_default(model.area, overwrite=overwrite)
+            cold_side_h_in[t] = h_in_cold
+            hot_side_h_in[t] = h_in_hot
 
-        for var in model.overall_heat_transfer_coefficient.values():
-            self.scale_variable_by_default(var, overwrite=overwrite)
-        
         # user input recommended for design variables
-        design_variables = [model.area] + [model.overall_heat_transfer_coefficient[time]
-                                           for time in model.flowsheet().time]
-        
+        design_variables = [model.area] + [
+            model.overall_heat_transfer_coefficient[time]
+            for time in model.flowsheet().time
+        ]
+
         # use nominal value as a default
         for var in design_variables:
-            self.set_variable_scaling_factor(var, 1/var.value if var.value != 0 else 1, overwrite=overwrite)
+            self.scale_variable_by_default(var, overwrite=overwrite)
+            if self.get_scaling_factor(var) is None:
+                self.set_variable_scaling_factor(
+                    var, 1 / var.value if var.value != 0 else 1, overwrite=overwrite
+                )
 
-
-        for time in model.flowsheet().time:
-
+        for t in model.flowsheet().time:
+            T_scale = 10 * self.get_scaling_factor(
+                model.hot_side.properties_in[t].temperature,
+                default=1 / 300,  #  Assuming temperature is in K.
+                warning=True,
+            )
             # delta temperatures
             if hasattr(model, "delta_temperature_in"):
-                self.scale_variable_by_units(
-                    model.delta_temperature_in[time], overwrite=overwrite
+                self.set_component_scaling_factor(
+                    model.delta_temperature_in[t], T_scale, overwrite=overwrite
                 )
-            # 1.01 added to prevent divide by zero in lmtd denominator
             if hasattr(model, "delta_temperature_out"):
-                self.set_variable_scaling_factor(
-                    model.delta_temperature_out[time],
-                    1.01*self.UNIT_SCALING_FACTORS["Delta Temperature"][1], 
-                    overwrite=overwrite
+                self.set_component_scaling_factor(
+                    model.delta_temperature_out[t], T_scale, overwrite=overwrite
                 )
-        
-            # heat
-            if hasattr(model.cold_side, "heat"):
-                self.set_variable_scaling_factor(
-                    model.cold_side.heat[time], abs(1 / (0.1 * cold_side_h_in[time])),
-                        overwrite=overwrite
+            if hasattr(model, "delta_temperature"):
+                # Set scaling hint for expression to avoid
+                # division by zero in LMTD expression
+                self.set_component_scaling_factor(
+                    model.delta_temperature[t], T_scale, overwrite=overwrite
                 )
-
-
-            if hasattr(model.hot_side, "heat"):
-                self.set_variable_scaling_factor(
-                    model.hot_side.heat[time], abs(1 / (0.1 * hot_side_h_in[time]))
-                )
-            
-            # molar enthalpies
-            if hasattr(model.hot_side.properties_in[time], "enth_mol"):
-                # Scale for heat is generally one order of magnitude less than enthalpy flow
-                self.set_variable_scaling_factor(
-                    model.hot_side.properties_in[time].enth_mol, abs(1 / (hot_side_h_in[time])),
-                        overwrite=overwrite
-                )
-            if hasattr(model.hot_side.properties_out[time], "enth_mol"):
-                # Scale for heat is generally one order of magnitude less than enthalpy flow
-                self.set_variable_scaling_factor(
-                    model.hot_side.properties_out[time].enth_mol, abs(1 / (hot_side_h_in[time])),
-                        overwrite=overwrite
+            if hasattr(model, "crossflow_factor"):
+                self.set_component_scaling_factor(
+                    model.crossflow_factor[t],
+                    1,  # Register the fact that this variable is well-scaled by default
+                    overwrite=overwrite,
                 )
 
-            # I am not sure why this is not the same type as the hot side properties
-            # I get an error that it is not a variable or it is indexed.
-            # if hasattr(model.cold_side.properties_in[time], "enth_mol"):
-            #     # Scale for heat is generally one order of magnitude less than enthalpy flow
-            #     self.set_variable_scaling_factor(
-            #         model.cold_side.properties_in[time].enth_mol, abs(1 / (cold_side_h_in[time])),
-            #             overwrite=overwrite
-            #     )
-            # if hasattr(model.cold_side.properties_out[time], "enth_mol"):
-            #     # Scale for heat is generally one order of magnitude less than enthalpy flow
-            #     self.set_variable_scaling_factor(
-            #         model.cold_side.properties_out[time].enth_mol, abs(1 / (cold_side_h_in[time])),
-            #             overwrite=overwrite
-            #     )
-
-
-            # pressure
-            if hasattr(model.cold_side.properties_in[time], "pressure"):
-                self.scale_variable_by_units(
-                    model.cold_side.properties_in[time].pressure, overwrite=overwrite
-                )
-            
-            if hasattr(model.cold_side.properties_out[time], "pressure"):
-                self.scale_variable_by_units(
-                    model.cold_side.properties_out[time].pressure, overwrite=overwrite
-                )
-
-            if hasattr(model.hot_side.properties_in[time], "pressure"):
-                self.scale_variable_by_units(
-                    model.hot_side.properties_in[time].pressure, overwrite=overwrite
-                )
-            
-            if hasattr(model.hot_side.properties_out[time], "pressure"):
-                self.scale_variable_by_units(
-                    model.hot_side.properties_out[time].pressure, overwrite=overwrite
-                )
-
-            # flows - use nominal value
-            if hasattr(model.cold_side.properties_in[time], "flow_mol"):
-                self.set_variable_scaling_factor(
-                        model.cold_side.properties_in[time].flow_mol,  1/var.value if var.value != 0 else 1,
-                            overwrite=overwrite
-                    )
-            if hasattr(model.cold_side.properties_out[time], "flow_mol"):
-                self.set_variable_scaling_factor(
-                        model.cold_side.properties_out[time].flow_mol,  1/var.value if var.value != 0 else 1,
-                            overwrite=overwrite
-                    )
-            if hasattr(model.hot_side.properties_in[time], "flow_mol"):
-                self.set_variable_scaling_factor(
-                        model.hot_side.properties_in[time].flow_mol,  1/var.value if var.value != 0 else 1,
-                            overwrite=overwrite
-                    )
-            if hasattr(model.hot_side.properties_out[time], "flow_mol"):
-                self.set_variable_scaling_factor(
-                        model.hot_side.properties_out[time].flow_mol,  1/var.value if var.value != 0 else 1,
-                            overwrite=overwrite
-                    )
-            
-        # cold side scaling
-        self.call_submodel_scaler_method(
-            submodel=model.cold_side,
-            method="variable_scaling_routine",
-            submodel_scalers=submodel_scalers,
-            overwrite=overwrite,
-        )
-
-        # hot side scaling
-        self.call_submodel_scaler_method(
-            submodel=model.hot_side,
-            method="variable_scaling_routine",
-            submodel_scalers=submodel_scalers,
-            overwrite=overwrite,
-        )
-
-    
     def constraint_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: dict = None
     ):
@@ -268,37 +178,27 @@ class HeatExchangerScaler(CustomScalerBase):
             overwrite=overwrite,
         )
 
-        scheme = ConstraintScalingScheme.inverseMaximum
-
-        for time in model.flowsheet().time:
-            self.scale_constraint_by_nominal_value(
-                model.unit_heat_balance[time],
-                scheme=scheme,
-                overwrite=overwrite
+        for t in model.flowsheet().time:
+            self.scale_constraint_by_component(
+                model.unit_heat_balance[t], model.hot_side.heat[t], overwrite=overwrite
             )
 
-            self.scale_constraint_by_nominal_value(
-                model.heat_transfer_equation[time],
-                scheme=scheme,
-                overwrite=overwrite
+            self.scale_constraint_by_component(
+                model.heat_transfer_equation[t],
+                model.hot_side.heat[t],
+                overwrite=overwrite,
             )
 
-            self.scale_constraint_by_nominal_value(
-                model.delta_temperature_in_equation[time], 
-                scheme=scheme,
-                overwrite=overwrite  
-                )
-
-            self.scale_constraint_by_nominal_value(
-                model.delta_temperature_out_equation[time], 
-                scheme=scheme,
-                overwrite=overwrite  
+            self.scale_constraint_by_component(
+                model.delta_temperature_in_equation[t],
+                model.delta_temperature_in[t],
+                overwrite=overwrite,
             )
 
-            self.set_expression_scaling_hint(
-                model.delta_temperature[time],
-                self.UNIT_SCALING_FACTORS["Delta Temperature"][1],
-                overwrite=overwrite
+            self.scale_constraint_by_component(
+                model.delta_temperature_out_equation[t],
+                model.delta_temperature_out[t],
+                overwrite=overwrite,
             )
 
 
@@ -745,8 +645,8 @@ class HeatExchangerData(UnitModelBlockData):
     Simple 0D heat exchange unit.
     Unit model to transfer heat from one material to another.
     """
-    
-    default_scaler = HeatExchangerScaler
+
+    default_scaler = HX0DScaler
     default_initializer = HX0DInitializer
 
     CONFIG = UnitModelBlockData.CONFIG(implicit=True)
