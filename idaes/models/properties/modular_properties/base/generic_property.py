@@ -3080,6 +3080,8 @@ class GenericStateBlockData(StateBlockData):
             # Ditch the m.fs.unit.control_volume...
             short_name = pt_var.name.split(".")[-1]
 
+            abbrv = ""
+            sf_pt = 1
             if short_name.startswith("temperature"):
                 abbrv = "t"
                 sf_pt = sf_T
@@ -3111,8 +3113,10 @@ class GenericStateBlockData(StateBlockData):
             # Scale mole fractions for bubble/dew calcs
             for i, v in x_var.items():
                 if iscale.get_scaling_factor(v) is None:
+                    # pylint: disable-next=possibly-used-before-assignment
                     if b.params.config.phases[i[0]]["type"] is phase:
                         p = i[0]
+                    # pylint: disable-next=possibly-used-before-assignment
                     elif b.params.config.phases[i[1]]["type"] is phase:
                         p = i[1]
                     else:
@@ -5483,6 +5487,8 @@ def _temperature_pressure_bubble_dew(b, name):
     else:
         _raise_dev_burnt_toast()
 
+    bounds = (None, None)
+    units = None
     if splt[0] == "temperature":
         abbrv = "t" + abbrv
         bounds = (b.temperature.lb, b.temperature.ub)

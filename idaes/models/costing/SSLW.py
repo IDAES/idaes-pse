@@ -986,6 +986,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
             elif heat_source == HeaterSource.steamBoiler:
                 bc_expr = 0.367 * (Q / pyo.units.BTU * pyo.units.hr) ** 0.77
 
+            # pylint: disable-next=possibly-used-before-assignment
             return blk.base_cost_per_unit == bc_expr * pyo.units.USD_CE500
 
         @blk.Expression(doc="Base cost for all units installed")
@@ -1524,6 +1525,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
                     + 0.26986 * pyo.log(work / pyo.units.hp)
                     + 0.06718 * pyo.log(work / pyo.units.hp) ** 2
                 )
+            # pylint: disable-next=possibly-used-before-assignment
             return blk.base_pump_cost_per_unit == bpc * pyo.units.USD_CE394
 
         @blk.Expression(doc="Base cost for all pumps (less motors)")

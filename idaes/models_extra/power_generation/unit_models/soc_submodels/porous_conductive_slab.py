@@ -1031,6 +1031,7 @@ class PorousConductiveSlabData(UnitModelBlockData):
 
                 for ix in self.ixnodes:
                     sP = sgsf(self.pressure[t, ix, iz], 1e-4)
+                    # pylint: disable-next=possibly-used-before-assignment
                     sV = sR * sT / sP
 
                     sDT = sgsf(self.temperature_deviation_x[t, ix, iz], sqx * sLx / sk)

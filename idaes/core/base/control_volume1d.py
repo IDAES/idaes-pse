@@ -683,6 +683,7 @@ argument).""",
         pc_set = self.properties.phase_component_set
 
         # Check that reaction block exists if required
+        rblock = None
         if has_rate_reactions or has_equilibrium_reactions:
             try:
                 rblock = self.reactions
@@ -769,6 +770,7 @@ argument).""",
             flow_l_units = None
 
         # Get units for accumulation term if required
+        acc_units = None
         if self.config.dynamic:
             f_time_units = self.flowsheet().time_units
             if (f_time_units is None) ^ (units("time") is None):
@@ -1022,6 +1024,7 @@ argument).""",
                 doc="Kinetic reaction stoichiometry constraint",
             )
             def rate_reaction_stoichiometry_constraint(b, t, x, p, j):
+                # TODO what about collocation?
                 if (
                     b.config.transformation_scheme != "FORWARD"
                     and x == b.length_domain.first()
@@ -1103,6 +1106,7 @@ argument).""",
                 doc="Inherent reaction stoichiometry",
             )
             def inherent_reaction_stoichiometry_constraint(b, t, x, p, j):
+                # TODO Collocation
                 if (
                     b.config.transformation_scheme != "FORWARD"
                     and x == b.length_domain.first()
@@ -1183,6 +1187,7 @@ argument).""",
                 doc="Material balances",
             )
             def material_balances(b, t, x, p, j):
+                # TODO Collocation
                 if (
                     b.config.transformation_scheme != "FORWARD"
                     and x == b.length_domain.first()
@@ -1533,6 +1538,7 @@ argument).""",
             flow_l_units = None
 
         # Get units for accumulation term if required
+        acc_units = None
         if self.config.dynamic:
             f_time_units = self.flowsheet().time_units
             if (f_time_units is None) ^ (units("time") is None):
@@ -1801,6 +1807,7 @@ argument).""",
             power_l_units = None
 
         # Get units for accumulation term if required
+        acc_units = None
         if self.config.dynamic:
             f_time_units = self.flowsheet().time_units
             if (f_time_units is None) ^ (units("time") is None):
@@ -2791,6 +2798,14 @@ argument).""",
                     overwrite=False,
                 )
 
+        if hasattr(self, "_flow_terms_cont_eq"):
+            for (t, x, p, j), c in self._flow_terms_cont_eq.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(self._flow_terms[t, x, p, j]),
+                    overwrite=False,
+                )
+
         if hasattr(self, "material_accumulation_disc_eq"):
             for (t, x, p, j), c in self.material_accumulation_disc_eq.items():
                 iscale.constraint_scaling_transform(
@@ -2798,6 +2813,7 @@ argument).""",
                     iscale.get_scaling_factor(self.material_accumulation[t, x, p, j]),
                     overwrite=False,
                 )
+        # TODO continuity
 
         # Scaling for discretization equations
         if hasattr(self, "enthalpy_flow_dx_disc_eq"):
@@ -2805,6 +2821,13 @@ argument).""",
                 iscale.constraint_scaling_transform(
                     c,
                     iscale.get_scaling_factor(self.enthalpy_flow_dx[t, x, p]),
+                    overwrite=False,
+                )
+        if hasattr(self, "_enthalpy_flow_length_domain_cont_eq"):
+            for (t, x, p), c in self._enthalpy_flow_length_domain_cont_eq.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(self._enthalpy_flow[t, x, p]),
                     overwrite=False,
                 )
 
@@ -2815,12 +2838,20 @@ argument).""",
                     iscale.get_scaling_factor(self.energy_accumulation[t, x, p]),
                     overwrite=False,
                 )
+        # TODO continuity
 
         if hasattr(self, "pressure_dx_disc_eq"):
             for (t, x), c in self.pressure_dx_disc_eq.items():
                 iscale.constraint_scaling_transform(
                     c,
                     iscale.get_scaling_factor(self.pressure_dx[t, x]),
+                    overwrite=False,
+                )
+        if hasattr(self, "pressure_length_domain_cont_eq"):
+            for (t, x), c in self.pressure_length_domain_cont_eq.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(self.properties[t, x].pressure),
                     overwrite=False,
                 )
 
@@ -2839,3 +2870,5 @@ argument).""",
                     iscale.get_scaling_factor(self.element_accumulation[t, x, e]),
                     overwrite=False,
                 )
+
+        # TODO continuity equation
