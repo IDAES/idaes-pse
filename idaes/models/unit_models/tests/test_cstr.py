@@ -12,12 +12,17 @@
 #################################################################################
 """
 Tests for CSTR unit model.
-Authors: Andrew Lee, Vibhav Dabadghao
+Authors: Andrew Lee, Vibhav Dabadghao, Brandon Paul
 """
 
 import pytest
 
-from pyomo.environ import check_optimal_termination, ConcreteModel, units, value
+from pyomo.environ import (
+    assert_optimal_termination,
+    ConcreteModel,
+    TransformationFactory,
+    value,
+)
 
 from idaes.core import (
     FlowsheetBlock,
@@ -25,7 +30,7 @@ from idaes.core import (
     EnergyBalanceType,
     MomentumBalanceType,
 )
-from idaes.models.unit_models.cstr import CSTR
+from idaes.models.unit_models.cstr import CSTR, CSTRScaler
 from idaes.models.properties.examples.saponification_thermo import (
     SaponificationParameterBlock,
 )
@@ -36,6 +41,10 @@ from idaes.core.util.model_statistics import (
     number_variables,
     number_total_constraints,
     number_unused_variables,
+)
+from idaes.core.util.scaling import (
+    get_jacobian,
+    jacobian_cond,
 )
 from idaes.core.util.testing import (
     PhysicalParameterTestBlock,
@@ -49,7 +58,7 @@ from idaes.core.initialization import (
     InitializationStatus,
 )
 from idaes.core.util import DiagnosticsToolbox
-
+from idaes.core.scaling import set_scaling_factor
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -82,6 +91,7 @@ def test_config():
     assert m.fs.unit.config.reaction_package is m.fs.reactions
 
     assert m.fs.unit.default_initializer is SingleControlVolumeUnitInitializer
+    assert m.fs.unit.default_scaler is CSTRScaler
 
 
 # -----------------------------------------------------------------------------
@@ -115,9 +125,9 @@ class TestSaponification(object):
         m.fs.unit.inlet.temperature.fix(303.15)
         m.fs.unit.inlet.pressure.fix(101325.0)
 
-        m.fs.unit.volume.fix(1.5e-03)
-        m.fs.unit.heat_duty.fix(0)
-        m.fs.unit.deltaP.fix(0)
+        m.fs.unit.volume[0].fix(1.5e-03)
+        m.fs.unit.heat_duty[0].fix(0)
+        m.fs.unit.deltaP[0].fix(0)
 
         return m
 
@@ -166,7 +176,7 @@ class TestSaponification(object):
         results = solver.solve(sapon)
 
         # Check for optimal solution
-        assert check_optimal_termination(results)
+        assert_optimal_termination(results)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -378,3 +388,121 @@ class TestInitializers:
 
         assert not model.fs.unit.inlet.temperature[0].fixed
         assert not model.fs.unit.inlet.pressure[0].fixed
+
+
+class DummyScaler:
+
+    def __init__(self, **kwargs):
+        pass
+
+    def variable_scaling_routine(self, model, **kwargs):
+        model._dummy_var_scaler = True
+
+    def constraint_scaling_routine(self, model, **kwargs):
+        model._dummy_con_scaler = True
+
+
+class TestCSTRScaler:
+    @pytest.mark.unit
+    def test_default_scaler(self):
+        assert CSTR().default_scaler == CSTRScaler
+
+    @pytest.fixture
+    def model(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.properties = SaponificationParameterBlock()
+        m.fs.reactions = SaponificationReactionParameterBlock(
+            property_package=m.fs.properties
+        )
+
+        m.fs.unit = CSTR(
+            property_package=m.fs.properties,
+            reaction_package=m.fs.reactions,
+            has_equilibrium_reactions=False,
+            has_heat_transfer=True,
+            has_heat_of_reaction=True,
+            has_pressure_change=True,
+        )
+
+        m.fs.unit.inlet.flow_vol.fix(1.0e-03)
+        m.fs.unit.inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "SodiumAcetate"].fix(1e-8)
+        m.fs.unit.inlet.conc_mol_comp[0, "Ethanol"].fix(1e-8)
+
+        m.fs.unit.inlet.temperature.fix(303.15)
+        m.fs.unit.inlet.pressure.fix(101325.0)
+
+        m.fs.unit.volume.fix(1.5e-03)
+        m.fs.unit.heat_duty.fix(0)
+        m.fs.unit.deltaP.fix(0)
+
+        return m
+
+    @pytest.mark.component
+    def test_example_case(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.properties = SaponificationParameterBlock()
+        m.fs.reactions = SaponificationReactionParameterBlock(
+            property_package=m.fs.properties
+        )
+
+        m.fs.unit = CSTR(
+            property_package=m.fs.properties,
+            reaction_package=m.fs.reactions,
+            has_equilibrium_reactions=False,
+            has_heat_transfer=True,
+            has_heat_of_reaction=True,
+            has_pressure_change=True,
+        )
+
+        m.fs.unit.inlet.flow_vol.fix(1.0e-03)
+        m.fs.unit.inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "SodiumAcetate"].fix(1e-8)
+        m.fs.unit.inlet.conc_mol_comp[0, "Ethanol"].fix(1e-8)
+
+        m.fs.unit.inlet.temperature.fix(303.15)
+        m.fs.unit.inlet.pressure.fix(101325.0)
+
+        m.fs.unit.volume.fix(1.5e-03)
+        m.fs.unit.heat_duty.fix(0)
+        m.fs.unit.deltaP.fix(0)
+
+        initializer = BlockTriangularizationInitializer()
+        initializer.initialize(m.fs.unit)
+
+        set_scaling_factor(m.fs.unit.control_volume.properties_in[0].flow_vol, 1)
+        set_scaling_factor(m.fs.unit.control_volume.volume[0.0], 1e3)
+        for v in m.fs.unit.control_volume.reactions[0].reaction_rate.values():
+            set_scaling_factor(v, 1e-3)
+
+        scaler = CSTRScaler()
+        scaler.scale_model(m.fs.unit)
+
+        m.fs.unit.inlet.flow_vol.fix(1)
+        m.fs.unit.inlet.conc_mol_comp[0, "NaOH"].fix(200.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "SodiumAcetate"].fix(50)
+        m.fs.unit.inlet.conc_mol_comp[0, "Ethanol"].fix(1e-8)
+
+        m.fs.unit.inlet.temperature.fix(320)
+
+        solver = get_solver(
+            "ipopt_v2", writer_config={"linear_presolve": True, "scale_model": True}
+        )
+        results = solver.solve(m, tee=True)
+        assert_optimal_termination(results)
+
+        # Check condition number to confirm scaling
+        sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
+        jac, _ = get_jacobian(sm, scaled=False)
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+            4.9972e2, rel=1e-3
+        )

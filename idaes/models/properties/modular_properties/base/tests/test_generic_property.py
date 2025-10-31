@@ -13,7 +13,7 @@
 """
 Tests for generic property package core code
 
-Author: Andrew Lee
+Author: Andrew Lee, Douglas Allan
 """
 import functools
 import pytest
@@ -30,6 +30,7 @@ from idaes.models.properties.modular_properties.base.generic_property import (
     GenericStateBlock,
     _initialize_critical_props,
     ModularPropertiesInitializer,
+    ModularPropertiesScaler,
 )
 from idaes.models.properties.modular_properties.base.tests.dummy_eos import DummyEoS
 
@@ -56,6 +57,7 @@ from idaes.models.properties.modular_properties.examples.BT_ideal import (
     configuration as BTconfig,
 )
 from idaes.models.unit_models.flash import Flash
+from idaes.core.scaling import get_scaling_factor
 
 import idaes.logger as idaeslog
 
@@ -1249,13 +1251,13 @@ class TestGenericStateBlock(object):
         assert frame.props[1].eos_common == 2
 
     @pytest.mark.unit
-    def test_basic_scaling(self, frame):
+    def test_basic_scaling_legacy(self, frame):
         frame.props[1].calculate_scaling_factors()
 
         assert frame.props[1].scaling_check
 
         assert len(frame.props[1].scaling_factor) == 8
-        assert frame.props[1].scaling_factor[frame.props[1].temperature] == 0.01
+        assert frame.props[1].scaling_factor[frame.props[1].temperature] == 1e-2
         assert frame.props[1].scaling_factor[frame.props[1].pressure] == 1e-5
         assert (
             frame.props[1].scaling_factor[
@@ -1293,6 +1295,349 @@ class TestGenericStateBlock(object):
             ]
             == 1000
         )
+
+    @pytest.mark.unit
+    def test_basic_scaler_object(self, frame, caplog):
+        scaler_class = frame.props[1].default_scaler
+        assert scaler_class is ModularPropertiesScaler
+        scaler_obj = scaler_class()
+        scaler_obj.default_scaling_factors["flow_mol_phase"] = 1
+        with caplog.at_level(idaeslog.INFO_HIGH):
+            scaler_obj.scale_model(frame.props[1])
+        assert len(caplog.text) == 0
+
+        assert len(frame.props[1].scaling_factor) == 8
+        assert len(frame.props[1].scaling_hint) == 2
+
+        assert get_scaling_factor(frame.props[1].temperature) == 1 / 300
+        assert get_scaling_factor(frame.props[1].pressure) == 1e-5
+        for vardata in frame.props[1].mole_frac_phase_comp.values():
+            assert get_scaling_factor(vardata) == 10
+
+        for exprdata in frame.props[1].flow_mol_phase.values():
+            assert get_scaling_factor(exprdata) == 1
+
+    @pytest.mark.unit
+    def test_basic_scaler_object_no_default_set(self, frame):
+        scaler_obj = frame.props[1].default_scaler()
+        with pytest.raises(
+            ValueError,
+            match=re.escape(
+                "This scaler requires the user to provide a default "
+                "scaling factor for props[1].flow_mol_phase[p1], but "
+                "no default scaling factor was set."
+            ),
+        ):
+            scaler_obj.scale_model(frame.props[1])
+
+    @pytest.mark.unit
+    def test_basic_scaler_object_enth_mol_phase_default_scaling(self, frame, caplog):
+        frame.params.a.mw = 5e-3 * pyunits.kg / pyunits.mol
+        frame.params.b.mw = 7e-3 * pyunits.kg / pyunits.mol
+        frame.params.c.mw = 11e-3 * pyunits.kg / pyunits.mol
+        frame.props[1].enth_mol_phase = Var(["p1", "p2"], initialize=0)
+        scaler_class = frame.props[1].default_scaler
+        assert scaler_class is ModularPropertiesScaler
+        scaler_obj = scaler_class()
+        scaler_obj.default_scaling_factors["flow_mol_phase"] = 1
+        scaler_obj.default_scaling_factors["enth_mol_phase"] = 1 / 19
+        with caplog.at_level(idaeslog.INFO_HIGH):
+            scaler_obj.scale_model(frame.props[1])
+        assert len(caplog.text) == 0
+
+        assert len(frame.props[1].scaling_factor) == 10
+        assert len(frame.props[1].scaling_hint) == 2
+
+        assert get_scaling_factor(frame.props[1].temperature) == 1 / 300
+        assert get_scaling_factor(frame.props[1].pressure) == 1e-5
+        for vardata in frame.props[1].mole_frac_phase_comp.values():
+            assert get_scaling_factor(vardata) == 10
+        for vardata in frame.props[1].enth_mol_phase.values():
+            assert get_scaling_factor(vardata) == 1 / 19
+        for exprdata in frame.props[1].flow_mol_phase.values():
+            assert get_scaling_factor(exprdata) == 1
+
+    @pytest.mark.unit
+    def test_basic_scaler_object_enth_mol_phase_partial_scaling(self, frame, caplog):
+        frame.params.a.mw = 5e-3 * pyunits.kg / pyunits.mol
+        frame.params.b.mw = 7e-3 * pyunits.kg / pyunits.mol
+        frame.params.c.mw = 11e-3 * pyunits.kg / pyunits.mol
+        frame.props[1].enth_mol_phase = Var(["p1", "p2"], initialize=0)
+        scaler_class = frame.props[1].default_scaler
+        assert scaler_class is ModularPropertiesScaler
+        scaler_obj = scaler_class()
+        scaler_obj.default_scaling_factors["flow_mol_phase"] = 1
+        scaler_obj.default_scaling_factors["enth_mol_phase"] = 1 / 19
+        scaler_obj.set_component_scaling_factor(
+            frame.props[1].enth_mol_phase["p2"], 1 / 23
+        )
+        with caplog.at_level(idaeslog.INFO_HIGH):
+            scaler_obj.scale_model(frame.props[1])
+        assert len(caplog.text) == 0
+
+        assert len(frame.props[1].scaling_factor) == 10
+        assert len(frame.props[1].scaling_hint) == 2
+
+        assert get_scaling_factor(frame.props[1].temperature) == 1 / 300
+        assert get_scaling_factor(frame.props[1].pressure) == 1e-5
+        for vardata in frame.props[1].mole_frac_phase_comp.values():
+            assert get_scaling_factor(vardata) == 10
+        get_scaling_factor(frame.props[1].enth_mol_phase["p1"]) == 1 / 19
+        get_scaling_factor(frame.props[1].enth_mol_phase["p2"]) == 1 / 23
+        for exprdata in frame.props[1].flow_mol_phase.values():
+            assert get_scaling_factor(exprdata) == 1
+
+    @pytest.mark.unit
+    def test_basic_scaler_object_enth_mol_phase_manual_scaling(self, frame, caplog):
+        frame.params.a.mw = 5e-3 * pyunits.kg / pyunits.mol
+        frame.params.b.mw = 7e-3 * pyunits.kg / pyunits.mol
+        frame.params.c.mw = 11e-3 * pyunits.kg / pyunits.mol
+        frame.props[1].enth_mol_phase = Var(["p1", "p2"], initialize=0)
+        scaler_class = frame.props[1].default_scaler
+        assert scaler_class is ModularPropertiesScaler
+        scaler_obj = scaler_class()
+        scaler_obj.default_scaling_factors["flow_mol_phase"] = 1
+        scaler_obj.default_scaling_factors["enth_mol"] = 1 / 31  # Should be ignored
+        scaler_obj.set_component_scaling_factor(
+            frame.props[1].enth_mol_phase["p1"], 1 / 19
+        )
+        scaler_obj.set_component_scaling_factor(
+            frame.props[1].enth_mol_phase["p2"], 1 / 23
+        )
+        with caplog.at_level(idaeslog.INFO_HIGH):
+            scaler_obj.scale_model(frame.props[1])
+        assert len(caplog.text) == 0
+
+        assert len(frame.props[1].scaling_factor) == 10
+        assert len(frame.props[1].scaling_hint) == 2
+
+        assert get_scaling_factor(frame.props[1].temperature) == 1 / 300
+        assert get_scaling_factor(frame.props[1].pressure) == 1e-5
+        for vardata in frame.props[1].mole_frac_phase_comp.values():
+            assert get_scaling_factor(vardata) == 10
+        get_scaling_factor(frame.props[1].enth_mol_phase["p1"]) == 1 / 19
+        get_scaling_factor(frame.props[1].enth_mol_phase["p2"]) == 1 / 23
+        for exprdata in frame.props[1].flow_mol_phase.values():
+            assert get_scaling_factor(exprdata) == 1
+
+    @pytest.mark.unit
+    def test_basic_scaler_object_enth_mol_phase_no_default_scaling_warning(
+        self, frame, caplog
+    ):
+        frame.props[1].enth_mol_phase = Var(["p1", "p2"], initialize=0)
+        scaler_class = frame.props[1].default_scaler
+        assert scaler_class is ModularPropertiesScaler
+        scaler_obj = scaler_class()
+        scaler_obj.default_scaling_factors["flow_mol_phase"] = 1
+        scaler_obj.default_scaling_factors["enth_mol"] = 1 / 19  # Not enth_mol_phase
+        with caplog.at_level(idaeslog.WARNING):
+            scaler_obj.scale_model(frame.props[1])
+        assert "Default scaling factor for molar enthalpy not set." in caplog.text
+
+        assert len(frame.props[1].scaling_factor) == 10
+        assert len(frame.props[1].scaling_hint) == 2
+
+        assert get_scaling_factor(frame.props[1].temperature) == 1 / 300
+        assert get_scaling_factor(frame.props[1].pressure) == 1e-5
+        for vardata in frame.props[1].mole_frac_phase_comp.values():
+            assert get_scaling_factor(vardata) == 10
+        for vardata in frame.props[1].enth_mol_phase.values():
+            assert get_scaling_factor(vardata) == 1
+        for exprdata in frame.props[1].flow_mol_phase.values():
+            assert get_scaling_factor(exprdata) == 1
+
+    @pytest.mark.unit
+    def test_basic_scaler_object_enth_mol_phase_partial_scaling_warning(
+        self, frame, caplog
+    ):
+        frame.props[1].enth_mol_phase = Var(["p1", "p2"], initialize=0)
+        scaler_class = frame.props[1].default_scaler
+        assert scaler_class is ModularPropertiesScaler
+        scaler_obj = scaler_class()
+        scaler_obj.default_scaling_factors["flow_mol_phase"] = 1
+        scaler_obj.set_component_scaling_factor(
+            frame.props[1].enth_mol_phase["p2"], 1 / 23
+        )
+        with caplog.at_level(idaeslog.WARNING):
+            scaler_obj.scale_model(frame.props[1])
+        assert "Default scaling factor for molar enthalpy not set." in caplog.text
+
+        assert len(frame.props[1].scaling_factor) == 10
+        assert len(frame.props[1].scaling_hint) == 2
+
+        assert get_scaling_factor(frame.props[1].temperature) == 1 / 300
+        assert get_scaling_factor(frame.props[1].pressure) == 1e-5
+        for vardata in frame.props[1].mole_frac_phase_comp.values():
+            assert get_scaling_factor(vardata) == 10
+        assert get_scaling_factor(frame.props[1].enth_mol_phase["p1"]) == 1
+        assert get_scaling_factor(frame.props[1].enth_mol_phase["p2"]) == 1 / 23
+        for exprdata in frame.props[1].flow_mol_phase.values():
+            assert get_scaling_factor(exprdata) == 1
+
+    @pytest.mark.unit
+    def test_basic_scaler_object_enth_mol_phase_mw_estimate(self, frame, caplog):
+        frame.params.a.mw = 5e-3 * pyunits.kg / pyunits.mol
+        frame.params.b.mw = 7e-3 * pyunits.kg / pyunits.mol
+        frame.params.c.mw = 11e-3 * pyunits.kg / pyunits.mol
+        frame.props[1].enth_mol_phase = Var(["p1", "p2"], initialize=0)
+        scaler_class = frame.props[1].default_scaler
+        assert scaler_class is ModularPropertiesScaler
+        scaler_obj = scaler_class()
+        scaler_obj.default_scaling_factors["flow_mol_phase"] = 1
+        with caplog.at_level(idaeslog.INFO_HIGH):
+            scaler_obj.scale_model(frame.props[1])
+        assert len(caplog.text) == 0
+
+        assert len(frame.props[1].scaling_factor) == 10
+        assert len(frame.props[1].scaling_hint) == 2
+
+        assert get_scaling_factor(frame.props[1].temperature) == 1 / 300
+        assert get_scaling_factor(frame.props[1].pressure) == 1e-5
+        for vardata in frame.props[1].mole_frac_phase_comp.values():
+            assert get_scaling_factor(vardata) == 10
+        for vardata in frame.props[1].enth_mol_phase.values():
+            assert get_scaling_factor(vardata) == pytest.approx(1 / (15 + 1 / 3) / 300)
+        for exprdata in frame.props[1].flow_mol_phase.values():
+            assert get_scaling_factor(exprdata) == 1
+
+    @pytest.mark.unit
+    def test_basic_scaler_object_enth_mol_phase_mw_estimate_partial_scaling(
+        self, frame, caplog
+    ):
+        frame.params.a.mw = 5e-3 * pyunits.kg / pyunits.mol
+        frame.params.b.mw = 7e-3 * pyunits.kg / pyunits.mol
+        frame.params.c.mw = 11e-3 * pyunits.kg / pyunits.mol
+        frame.props[1].enth_mol_phase = Var(["p1", "p2"], initialize=0)
+        scaler_class = frame.props[1].default_scaler
+        assert scaler_class is ModularPropertiesScaler
+        scaler_obj = scaler_class()
+        scaler_obj.default_scaling_factors["flow_mol_phase"] = 1
+        scaler_obj.set_component_scaling_factor(
+            frame.props[1].enth_mol_phase["p2"], 1 / 23
+        )
+        with caplog.at_level(idaeslog.INFO_HIGH):
+            scaler_obj.scale_model(frame.props[1])
+        assert len(caplog.text) == 0
+
+        assert len(frame.props[1].scaling_factor) == 10
+        assert len(frame.props[1].scaling_hint) == 2
+
+        assert get_scaling_factor(frame.props[1].temperature) == 1 / 300
+        assert get_scaling_factor(frame.props[1].pressure) == 1e-5
+        for vardata in frame.props[1].mole_frac_phase_comp.values():
+            assert get_scaling_factor(vardata) == 10
+        assert get_scaling_factor(frame.props[1].enth_mol_phase["p1"]) == pytest.approx(
+            1 / (15 + 1 / 3) / 300
+        )
+        assert get_scaling_factor(frame.props[1].enth_mol_phase["p2"]) == 1 / 23
+        for exprdata in frame.props[1].flow_mol_phase.values():
+            assert get_scaling_factor(exprdata) == 1
+
+    @pytest.mark.unit
+    def test_basic_scaler_object_mw_phase(self, frame, caplog):
+        frame.params.a.mw = 5e-3 * pyunits.kg / pyunits.mol
+        frame.params.b.mw = 7e-3 * pyunits.kg / pyunits.mol
+        frame.params.c.mw = 11e-3 * pyunits.kg / pyunits.mol
+        frame.props[1].mw_phase = Var(["p1", "p2"], initialize=0)
+        scaler_class = frame.props[1].default_scaler
+        assert scaler_class is ModularPropertiesScaler
+        scaler_obj = scaler_class()
+        scaler_obj.default_scaling_factors["flow_mol_phase"] = 1
+        with caplog.at_level(idaeslog.INFO_HIGH):
+            scaler_obj.scale_model(frame.props[1])
+        assert len(caplog.text) == 0
+
+        assert len(frame.props[1].scaling_factor) == 10
+        assert len(frame.props[1].scaling_hint) == 2
+
+        assert get_scaling_factor(frame.props[1].temperature) == 1 / 300
+        assert get_scaling_factor(frame.props[1].pressure) == 1e-5
+        for vardata in frame.props[1].mole_frac_phase_comp.values():
+            assert get_scaling_factor(vardata) == 10
+        assert get_scaling_factor(frame.props[1].mw_phase["p1"]) == pytest.approx(
+            1e3 / (7 + 2 / 3)
+        )
+        assert get_scaling_factor(frame.props[1].mw_phase["p2"]) == pytest.approx(
+            1e3 / (7 + 2 / 3)
+        )
+        for exprdata in frame.props[1].flow_mol_phase.values():
+            assert get_scaling_factor(exprdata) == 1
+
+    @pytest.mark.unit
+    def test_basic_scaler_object_therm_cond_phase_default_scaling(self, frame, caplog):
+        frame.props[1].therm_cond_phase = Var(["p1", "p2"], initialize=0)
+        scaler_class = frame.props[1].default_scaler
+        assert scaler_class is ModularPropertiesScaler
+        scaler_obj = scaler_class()
+        scaler_obj.default_scaling_factors["flow_mol_phase"] = 1
+        scaler_obj.default_scaling_factors["therm_cond_phase[p1]"] = 1 / 71
+        scaler_obj.default_scaling_factors["therm_cond_phase[p2]"] = 1 / 479
+        with caplog.at_level(idaeslog.INFO_HIGH):
+            scaler_obj.scale_model(frame.props[1])
+        assert len(caplog.text) == 0
+
+        assert len(frame.props[1].scaling_factor) == 10
+        assert len(frame.props[1].scaling_hint) == 2
+
+        assert get_scaling_factor(frame.props[1].temperature) == 1 / 300
+        assert get_scaling_factor(frame.props[1].pressure) == 1e-5
+        for vardata in frame.props[1].mole_frac_phase_comp.values():
+            assert get_scaling_factor(vardata) == 10
+        for vardata in frame.props[1].enth_mol_phase.values():
+            assert get_scaling_factor(vardata) == 1 / 19
+        for exprdata in frame.props[1].flow_mol_phase.values():
+            assert get_scaling_factor(exprdata) == 1
+        assert get_scaling_factor(frame.props[1].therm_cond_phase["p1"]) == 1 / 71
+        assert get_scaling_factor(frame.props[1].therm_cond_phase["p2"]) == 1 / 479
+
+    @pytest.mark.unit
+    def test_basic_scaler_object_therm_cond_phase_default_scaling(self, frame, caplog):
+        frame.props[1].therm_cond_phase = Var(["p1", "p2"], initialize=0)
+        scaler_class = frame.props[1].default_scaler
+        assert scaler_class is ModularPropertiesScaler
+        scaler_obj = scaler_class()
+        scaler_obj.default_scaling_factors["flow_mol_phase"] = 1
+        scaler_obj.default_scaling_factors["therm_cond_phase[p1]"] = 1 / 71
+        scaler_obj.default_scaling_factors["therm_cond_phase[p2]"] = 1 / 479
+        with caplog.at_level(idaeslog.INFO_HIGH):
+            scaler_obj.scale_model(frame.props[1])
+        assert len(caplog.text) == 0
+
+        assert len(frame.props[1].scaling_factor) == 10
+        assert len(frame.props[1].scaling_hint) == 2
+
+        assert get_scaling_factor(frame.props[1].temperature) == 1 / 300
+        assert get_scaling_factor(frame.props[1].pressure) == 1e-5
+        for vardata in frame.props[1].mole_frac_phase_comp.values():
+            assert get_scaling_factor(vardata) == 10
+        for exprdata in frame.props[1].flow_mol_phase.values():
+            assert get_scaling_factor(exprdata) == 1
+        assert get_scaling_factor(frame.props[1].therm_cond_phase["p1"]) == 1 / 71
+        assert get_scaling_factor(frame.props[1].therm_cond_phase["p2"]) == 1 / 479
+
+    @pytest.mark.unit
+    def test_basic_scaler_object_therm_cond_phase_estimate_scaling(self, frame, caplog):
+        frame.props[1].therm_cond_phase = Var(["p1", "p2"], initialize=0)
+        scaler_class = frame.props[1].default_scaler
+        assert scaler_class is ModularPropertiesScaler
+        scaler_obj = scaler_class()
+        scaler_obj.default_scaling_factors["flow_mol_phase"] = 1
+        with caplog.at_level(idaeslog.INFO_HIGH):
+            scaler_obj.scale_model(frame.props[1])
+        assert len(caplog.text) == 0
+
+        assert len(frame.props[1].scaling_factor) == 8
+        assert len(frame.props[1].scaling_hint) == 2
+
+        assert get_scaling_factor(frame.props[1].temperature) == 1 / 300
+        assert get_scaling_factor(frame.props[1].pressure) == 1e-5
+        for vardata in frame.props[1].mole_frac_phase_comp.values():
+            assert get_scaling_factor(vardata) == 10
+        for exprdata in frame.props[1].flow_mol_phase.values():
+            assert get_scaling_factor(exprdata) == 1
+        # p1 and p2 have an unknown phase type, so no scaling factor/hint is set.
+        for vardata in frame.props[1].therm_cond_phase.values():
+            assert get_scaling_factor(vardata) is None
 
     @pytest.mark.unit
     def test_build_all(self, frame):

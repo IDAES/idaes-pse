@@ -299,7 +299,7 @@ def test_get_solver_ipopt_v2():
     assert solver.options.max_iter == 200
 
     assert solver.config.writer_config.linear_presolve
-    assert not solver.config.writer_config.scale_model
+    assert solver.config.writer_config.scale_model
 
 
 @pytest.mark.skipif(not pyo.SolverFactory("ipopt").available(False), reason="no Ipopt")
@@ -308,7 +308,7 @@ def test_get_solver_ipopt_v2_w_options():
     solver = get_solver(
         "ipopt_v2",
         options={"tol": 1e-5, "foo": "bar"},
-        writer_config={"linear_presolve": False},
+        writer_config={"linear_presolve": False, "scale_model": False},
     )
 
     assert isinstance(solver, LegacySolverWrapper)

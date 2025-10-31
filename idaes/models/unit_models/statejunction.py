@@ -23,7 +23,10 @@ import idaes.logger as idaeslog
 
 # Product blocks can reuse the Feed initializer
 # For consistency and future proofing, import with new name
-from idaes.models.unit_models.feed import FeedInitializer as StateJunctionInitializer
+from idaes.models.unit_models.feed import (
+    FeedInitializer as StateJunctionInitializer,
+    FeedScaler as StateJunctionScaler,
+)
 
 __author__ = "Andrew Lee"
 
@@ -38,6 +41,7 @@ class StateJunctionData(UnitModelBlockData):
     """
 
     default_initializer = StateJunctionInitializer
+    default_scaler = StateJunctionScaler
 
     CONFIG = ConfigBlock()
     CONFIG.declare(

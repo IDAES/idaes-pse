@@ -62,6 +62,7 @@ __author__ = "Andrew Lee"
 logger = logging.getLogger("idaes.unit_model")
 
 
+# TODO Evaluate whether this unit model would be better in WaterTap or PrOMMiS
 @declare_process_block_class("Thickener0D")
 class Thickener0DData(UnitModelBlockData):
     """

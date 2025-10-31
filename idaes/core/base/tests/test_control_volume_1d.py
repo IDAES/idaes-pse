@@ -195,6 +195,10 @@ def test_add_geometry_default():
         finite_elements=10,
     )
 
+    assert m.fs.cv.flow_direction == FlowDirection.notSet
+    with pytest.raises(AttributeError):
+        m.fs.cv.flow_direction = FlowDirection.backward
+
     m.fs.cv.add_geometry()
 
     assert isinstance(m.fs.cv.length_domain, ContinuousSet)
@@ -206,6 +210,9 @@ def test_add_geometry_default():
     assert len(m.fs.cv.length) == 1.0
     assert m.fs.cv.length.value == 1.0
     assert m.fs.cv._flow_direction == FlowDirection.forward
+    assert m.fs.cv.flow_direction == FlowDirection.forward
+    with pytest.raises(AttributeError):
+        m.fs.cv.flow_direction = FlowDirection.backward
 
 
 @pytest.mark.unit

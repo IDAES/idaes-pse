@@ -23,6 +23,7 @@ from idaes.core import FlowsheetBlock
 from idaes.models.unit_models.statejunction import (
     StateJunction,
     StateJunctionInitializer,
+    StateJunctionScaler,
 )
 
 from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
@@ -70,6 +71,12 @@ def test_config():
     assert m.fs.unit.config.property_package is m.fs.properties
 
     assert m.fs.unit.default_initializer is StateJunctionInitializer
+    assert m.fs.unit.default_scaler is StateJunctionScaler
+
+    scaler_obj = m.fs.unit.default_scaler()
+    scaler_obj.scale_model(m.fs.unit)
+    assert m.fs.unit.properties[0].variables_scaled
+    assert m.fs.unit.properties[0].constraints_scaled
 
 
 # -----------------------------------------------------------------------------

@@ -26,7 +26,10 @@ import idaes.logger as idaeslog
 
 # Product blocks can reuse the Feed initializer
 # For consistency and future proofing, import with new name
-from idaes.models.unit_models.feed import FeedInitializer as ProductInitializer
+from idaes.models.unit_models.feed import (
+    FeedInitializer as ProductInitializer,
+    FeedScaler as ProductScaler,
+)
 
 __author__ = "Andrew Lee"
 
@@ -43,6 +46,7 @@ class ProductData(UnitModelBlockData):
 
     # Set default initializer
     default_initializer = ProductInitializer
+    default_scaler = ProductScaler
 
     CONFIG = ConfigBlock()
     CONFIG.declare(

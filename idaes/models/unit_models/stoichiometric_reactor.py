@@ -17,6 +17,7 @@ Standard IDAES STOICHIOMETRIC reactor model
 # Import Pyomo libraries
 from pyomo.environ import Reference
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
+from pyomo.common.collections import ComponentMap
 
 # Import IDAES cores
 from idaes.core import (
@@ -32,8 +33,50 @@ from idaes.core.util.config import (
     is_physical_parameter_block,
     is_reaction_parameter_block,
 )
+from idaes.core.scaling import CustomScalerBase
 
-__author__ = "Chinedu Okoli, Andrew Lee"
+__author__ = "Chinedu Okoli, Andrew Lee, Ryan Hughes"
+
+
+class StoichiometricReactorScaler(CustomScalerBase):
+    """
+    Default modular scaler for Stoichiometric reactors.
+
+    This Scaler relies on the modular scaler for the ControlVolume0D.
+    There are no unit model level variables or constraints to scale---those that do exist
+    are just References for the variables on the ControlVolume0D.
+    """
+
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None
+    ):
+        self.call_submodel_scaler_method(
+            model.control_volume,
+            method="variable_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None
+    ):
+        """
+        Routine to apply scaling factors to constraints in model.
+
+        Args:
+            model: model to be scaled
+            overwrite: whether to overwrite existing scaling factors
+            submodel_scalers: dict of Scalers to use for sub-models, keyed by submodel local name
+
+        Returns:
+            None
+        """
+        self.call_submodel_scaler_method(
+            model.control_volume,
+            method="constraint_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
 
 
 @declare_process_block_class("StoichiometricReactor")
@@ -44,6 +87,8 @@ class StoichiometricReactorData(UnitModelBlockData):
     reaction has a fixed rate_reaction extent which has to be specified by the
     user.
     """
+
+    default_scaler = StoichiometricReactorScaler
 
     CONFIG = UnitModelBlockData.CONFIG()
 

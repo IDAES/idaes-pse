@@ -13,7 +13,7 @@
 """
 Tests for FcPh state formulation
 
-Authors: Andrew Lee
+Authors: Andrew Lee, Douglas Allan
 """
 
 import pytest
@@ -33,6 +33,7 @@ from pyomo.util.check_units import check_units_equivalent, assert_units_consiste
 # Need define_default_scaling_factors, even though it is not used directly
 from idaes.models.properties.modular_properties.state_definitions.FcPh import (
     FcPh,
+    FcPhScaler,
     define_state,
     set_metadata,
 )
@@ -1289,6 +1290,140 @@ class TestCommon(object):
         )
         assert frame.props[1].scaling_factor[frame.props[1].pressure] == 1e-5
         assert frame.props[1].scaling_factor[frame.props[1].temperature] == 1e-2
+
+    @pytest.mark.unit
+    def test_scaler_object(self, frame, caplog):
+        # Check that we don't have a scaling suffix from side effects
+        assert not hasattr(frame, "scaling_factor")
+        assert FcPh.default_scaler is FcPhScaler
+        scaler = frame.props[1].default_scaler()
+        scaler.default_scaling_factors["flow_mol_phase"] = 1 / 100
+        scaler.default_scaling_factors["enth_mol_phase"] = 1e-4
+        with caplog.at_level(idaeslog.WARNING):
+            scaler.scale_model(frame.props[1])
+        assert len(caplog.text) == 0
+
+        assert len(frame.props[1].scaling_factor) == 32
+        assert len(frame.props[1].scaling_hint) == 7
+
+        assert frame.props[1].scaling_factor[frame.props[1].enth_mol] == 1e-4
+
+        assert frame.props[1].scaling_factor[frame.props[1].flow_mol_comp["c1"]] == 1e-1
+        assert frame.props[1].scaling_factor[frame.props[1].flow_mol_comp["c2"]] == 1e-1
+        assert frame.props[1].scaling_factor[frame.props[1].flow_mol_comp["c3"]] == 1e-1
+        assert frame.props[1].scaling_factor[frame.props[1].flow_mol_phase["a"]] == 1e-2
+        assert frame.props[1].scaling_factor[frame.props[1].flow_mol_phase["b"]] == 1e-2
+        assert frame.props[1].dens_mol_phase["a"] not in frame.props[1].scaling_factor
+        assert frame.props[1].dens_mol_phase["b"] not in frame.props[1].scaling_factor
+
+        assert frame.props[1].scaling_factor[frame.props[1].mole_frac_comp["c1"]] == 10
+        assert frame.props[1].scaling_factor[frame.props[1].mole_frac_comp["c2"]] == 10
+        assert frame.props[1].scaling_factor[frame.props[1].mole_frac_comp["c3"]] == 10
+        assert (
+            frame.props[1].scaling_factor[
+                frame.props[1].mole_frac_phase_comp["a", "c1"]
+            ]
+            == 10
+        )
+        assert (
+            frame.props[1].scaling_factor[
+                frame.props[1].mole_frac_phase_comp["a", "c2"]
+            ]
+            == 10
+        )
+        assert (
+            frame.props[1].scaling_factor[
+                frame.props[1].mole_frac_phase_comp["a", "c3"]
+            ]
+            == 10
+        )
+        assert (
+            frame.props[1].scaling_factor[
+                frame.props[1].mole_frac_phase_comp["b", "c1"]
+            ]
+            == 10
+        )
+        assert (
+            frame.props[1].scaling_factor[
+                frame.props[1].mole_frac_phase_comp["b", "c2"]
+            ]
+            == 10
+        )
+        assert (
+            frame.props[1].scaling_factor[
+                frame.props[1].mole_frac_phase_comp["b", "c3"]
+            ]
+            == 10
+        )
+        assert frame.props[1].scaling_factor[frame.props[1].pressure] == 1e-5
+        assert frame.props[1].scaling_factor[frame.props[1].temperature] == 1 / 300
+
+        # Constraints
+        assert (
+            frame.props[1].scaling_factor[frame.props[1].mole_frac_comp_eq["c1"]]
+            == 1e-1
+        )
+        assert (
+            frame.props[1].scaling_factor[frame.props[1].mole_frac_comp_eq["c2"]]
+            == 1e-1
+        )
+        assert (
+            frame.props[1].scaling_factor[frame.props[1].mole_frac_comp_eq["c3"]]
+            == 1e-1
+        )
+        assert frame.props[1].scaling_factor[frame.props[1].total_flow_balance] == 1e-2
+
+        assert (
+            frame.props[1].scaling_factor[frame.props[1].component_flow_balances["c1"]]
+            == 1e-1
+        )
+        assert (
+            frame.props[1].scaling_factor[frame.props[1].component_flow_balances["c2"]]
+            == 1e-1
+        )
+        assert (
+            frame.props[1].scaling_factor[frame.props[1].component_flow_balances["c3"]]
+            == 1e-1
+        )
+
+        assert frame.props[1].scaling_factor[frame.props[1].sum_mole_frac] == 1
+        assert (
+            frame.props[1].scaling_factor[frame.props[1].phase_fraction_constraint["a"]]
+            == 1e-2
+        )
+        assert (
+            frame.props[1].scaling_factor[frame.props[1].phase_fraction_constraint["b"]]
+            == 1e-2
+        )
+
+        assert frame.props[1].scaling_factor[frame.props[1].enth_mol_eqn] == 1e-4
+
+        # Expressions
+        assert frame.props[1].scaling_hint[frame.props[1].flow_mol] == 1e-2
+        assert (
+            frame.props[1].scaling_hint[frame.props[1].flow_mol_phase_comp["a", "c1"]]
+            == 1e-1
+        )
+        assert (
+            frame.props[1].scaling_hint[frame.props[1].flow_mol_phase_comp["a", "c2"]]
+            == 1e-1
+        )
+        assert (
+            frame.props[1].scaling_hint[frame.props[1].flow_mol_phase_comp["a", "c3"]]
+            == 1e-1
+        )
+        assert (
+            frame.props[1].scaling_hint[frame.props[1].flow_mol_phase_comp["b", "c1"]]
+            == 1e-1
+        )
+        assert (
+            frame.props[1].scaling_hint[frame.props[1].flow_mol_phase_comp["b", "c2"]]
+            == 1e-1
+        )
+        assert (
+            frame.props[1].scaling_hint[frame.props[1].flow_mol_phase_comp["b", "c3"]]
+            == 1e-1
+        )
 
     # Test General Methods
     @pytest.mark.unit

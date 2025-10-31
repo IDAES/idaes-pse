@@ -19,7 +19,9 @@ import pytest
 
 from pyomo.environ import (
     check_optimal_termination,
+    ComponentMap,
     ConcreteModel,
+    TransformationFactory,
     value,
     units as pyunits,
 )
@@ -58,6 +60,10 @@ from idaes.core.initialization import (
     InitializationStatus,
 )
 from idaes.core.util import DiagnosticsToolbox
+from idaes.core.util.scaling import (
+    get_jacobian,
+    jacobian_cond,
+)
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -298,9 +304,28 @@ class TestIAPWS(object):
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
-    def test_numerical_issues(self, iapws):
-        dt = DiagnosticsToolbox(iapws)
+    def test_numerical_issues_and_scaling(self, iapws):
+        jac, _ = get_jacobian(iapws, scaled=False)
+        assert jacobian_cond(jac=jac, scaled=False) == pytest.approx(5.4080e8, rel=1e-3)
+
+        unit = iapws.fs.unit
+        prop_scaler = unit.control_volume.properties_in.default_scaler()
+
+        prop_scaler.default_scaling_factors["flow_mol"] = 1 / 5
+        submodel_scalers = ComponentMap()
+        submodel_scalers[unit.control_volume.properties_in] = prop_scaler
+        submodel_scalers[unit.control_volume.properties_out] = prop_scaler
+
+        scaler_obj = unit.default_scaler()
+        scaler_obj.scale_model(unit, submodel_scalers=submodel_scalers)
+
+        sm = TransformationFactory("core.scale_model").create_using(iapws, rename=False)
+
+        dt = DiagnosticsToolbox(sm)
         dt.assert_no_numerical_warnings()
+
+        jac, _ = get_jacobian(sm, scaled=False)
+        assert jacobian_cond(jac=jac, scaled=False) == pytest.approx(2706.00, rel=1e-3)
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -475,19 +500,35 @@ class TestSaponification(object):
             <= 1e-3
         )
 
-    @pytest.mark.solver
-    @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.component
-    def test_numerical_issues(self, sapon):
-        dt = DiagnosticsToolbox(sapon)
-        dt.assert_no_numerical_warnings()
-
     @pytest.mark.ui
     @pytest.mark.unit
     def test_get_performance_contents(self, sapon):
         perf_dict = sapon.fs.unit._get_performance_contents()
 
         assert perf_dict == {"vars": {"Heat Duty": sapon.fs.unit.heat_duty[0]}}
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues_and_scaling(self, sapon):
+        jac, _ = get_jacobian(sapon, scaled=False)
+        assert jacobian_cond(jac=jac, scaled=False) == pytest.approx(
+            1.8433e11, rel=1e-3
+        )
+        unit = sapon.fs.unit
+
+        scaler_obj = unit.default_scaler()
+        scaler_obj.scale_model(unit)
+
+        sm = TransformationFactory("core.scale_model").create_using(sapon, rename=False)
+
+        dt = DiagnosticsToolbox(sm)
+        dt.assert_no_numerical_warnings()
+
+        jac, _ = get_jacobian(sm, scaled=False)
+        assert jacobian_cond(jac=jac, scaled=False) == pytest.approx(
+            1.34157e2, rel=1e-3
+        )
 
 
 # -----------------------------------------------------------------------------

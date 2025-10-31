@@ -12,7 +12,7 @@
 #################################################################################
 """
 Tests for feed block.
-Authors: Andrew Lee
+Authors: Andrew Lee, Douglas Allan
 """
 
 import pytest
@@ -20,7 +20,7 @@ import pytest
 from pyomo.environ import ConcreteModel, value, units as pyunits
 
 from idaes.core import FlowsheetBlock
-from idaes.models.unit_models.feed import Feed, FeedInitializer
+from idaes.models.unit_models.feed import Feed, FeedInitializer, FeedScaler
 from idaes.models.properties.examples.saponification_thermo import (
     SaponificationParameterBlock,
 )
@@ -63,6 +63,12 @@ def test_config():
     assert m.fs.unit.config.property_package is m.fs.properties
 
     assert m.fs.unit.default_initializer is FeedInitializer
+    assert m.fs.unit.default_scaler is FeedScaler
+
+    scaler_obj = m.fs.unit.default_scaler()
+    scaler_obj.scale_model(m.fs.unit)
+    assert m.fs.unit.properties[0].variables_scaled
+    assert m.fs.unit.properties[0].constraints_scaled
 
 
 # -----------------------------------------------------------------------------

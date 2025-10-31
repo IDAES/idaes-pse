@@ -18,6 +18,7 @@ from enum import Enum
 # Import Pyomo libraries
 from pyomo.environ import Reference
 from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.collections import ComponentMap
 
 # Import IDAES cores
 from idaes.core import (
@@ -31,8 +32,9 @@ from idaes.core import (
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.initialization import fix_state_vars
+from idaes.core.scaling import CustomScalerBase
 
-__author__ = "Andrew Lee"
+__author__ = "Andrew Lee, Daison Caballero"
 
 
 # Enumerate options for material balances
@@ -45,11 +47,64 @@ class FlashType(Enum):
     isenthalpic = 2
 
 
+class FeedFlashScaler(CustomScalerBase):
+    """
+    Default modular scaler for FeedFlash unit model.
+
+    This Scaler relies on the modular scaler for the ControlVolume0D.
+    There are no unit model level variables to scale---those that do exist
+    are just References for the variables on the ControlVolume0D.
+    """
+
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None
+    ):
+        self.call_submodel_scaler_method(
+            model.control_volume,
+            method="variable_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None
+    ):
+        """
+        Routine to apply scaling factors to constraints in model.
+
+        Args:
+            model: model to be scaled
+            overwrite: whether to overwrite existing scaling factors
+            submodel_scalers: dict of Scalers to use for sub-models, keyed by submodel local name
+
+        Returns:
+            None
+        """
+        self.call_submodel_scaler_method(
+            model.control_volume,
+            method="constraint_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+        if hasattr(model, "isothermal"):
+            for t in model.flowsheet().time:
+                self.scale_constraint_by_nominal_value(
+                    model.isothermal[t], overwrite=overwrite
+                )
+        if hasattr(model, "isenthalpic"):
+            for t in model.flowsheet().time:
+                self.scale_constraint_by_nominal_value(
+                    model.isenthalpic[t], overwrite=overwrite
+                )
+
+
 @declare_process_block_class("FeedFlash")
 class FeedFlashData(UnitModelBlockData):
     """
     Standard Feed block with phase equilibrium
     """
+
+    default_scaler = FeedFlashScaler
 
     CONFIG = ConfigBlock()
     CONFIG.declare(

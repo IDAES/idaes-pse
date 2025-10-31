@@ -26,7 +26,7 @@ from pyomo.environ import (
 )
 
 from idaes.core import FlowsheetBlock
-from idaes.models.unit_models.product import Product, ProductInitializer
+from idaes.models.unit_models.product import Product, ProductInitializer, ProductScaler
 
 from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
     BTXParameterBlock,
@@ -73,6 +73,12 @@ def test_config():
     assert m.fs.unit.config.property_package is m.fs.properties
 
     assert m.fs.unit.default_initializer is ProductInitializer
+    assert m.fs.unit.default_scaler is ProductScaler
+
+    scaler_obj = m.fs.unit.default_scaler()
+    scaler_obj.scale_model(m.fs.unit)
+    assert m.fs.unit.properties[0].variables_scaled
+    assert m.fs.unit.properties[0].constraints_scaled
 
 
 # -----------------------------------------------------------------------------
