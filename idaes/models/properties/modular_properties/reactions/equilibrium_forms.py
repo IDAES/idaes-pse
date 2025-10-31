@@ -27,10 +27,7 @@ from idaes.core.util.exceptions import ConfigurationError
 from idaes.models.properties.modular_properties.base.utility import (
     get_concentration_term,
 )
-from idaes.core.scaling import (
-    ConstraintScalingScheme,
-    CustomScalerBase,
-)
+from idaes.core.scaling import CustomScalerBase
 
 
 # ----------------------------------------------------------------------------
