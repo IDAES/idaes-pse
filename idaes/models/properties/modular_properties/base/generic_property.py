@@ -578,7 +578,11 @@ class ModularPropertiesScaler(ModularPropertiesScalerBase):
             abbrv = "p"
             sf_pt = sf_P
         else:
-            _raise_dev_burnt_toast()
+            raise ValueError(
+                "This method should be called with only bubble/dew "
+                "temperatures or pressures. Instead, it was called "
+                f"on {short_name}."
+            )
 
         if short_name.endswith("bubble"):
             phase = VaporPhase
@@ -586,6 +590,12 @@ class ModularPropertiesScaler(ModularPropertiesScalerBase):
         elif short_name.endswith("dew"):
             phase = LiquidPhase
             abbrv += "dew"
+        else:
+            raise ValueError(
+                "This method should be called with only bubble/dew "
+                "temperatures or pressures. Instead, it was called "
+                f"on {short_name}."
+            )
 
         x_var = getattr(model, "_mole_frac_" + abbrv)
 
