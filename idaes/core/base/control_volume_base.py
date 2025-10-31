@@ -173,7 +173,6 @@ class ControlVolumeScalerBase(CustomScalerBase):
         idx0 = props.index_set().first()
         params = props[idx0].params
         if hasattr(model, "reactions"):
-            rparam = model.reactions[idx0].params
             self.call_submodel_scaler_method(
                 model.reactions,
                 submodel_scalers=submodel_scalers,
@@ -200,7 +199,7 @@ class ControlVolumeScalerBase(CustomScalerBase):
 
         # Rate reactions
         if hasattr(model, "rate_reaction_generation"):
-            stoich = rparam.rate_reaction_stoichiometry
+            stoich = model.reactions[idx0].params.rate_reaction_stoichiometry
             rate_rxn_gen = getattr(model, "rate_reaction_generation")
             rate_rxn_idx = model.config.reaction_package.rate_reaction_idx
             # Material generation scaling is based on the magnitude of
@@ -249,7 +248,7 @@ class ControlVolumeScalerBase(CustomScalerBase):
 
         # Equilibrium reaction
         if hasattr(model, "equilibrium_reaction_generation"):
-            stoich = rparam.equilibrium_reaction_stoichiometry
+            stoich = model.reactions[idx0].params.equilibrium_reaction_stoichiometry
             equil_rxn_gen = getattr(model, "equilibrium_reaction_generation")
             equil_rxn_idx = model.config.reaction_package.equilibrium_reaction_idx
             # Material generation scaling is based on the magnitude of
