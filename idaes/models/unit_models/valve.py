@@ -115,6 +115,11 @@ class ValveData(PressureChangerData):
     Basic valve model class.
     """
 
+    # Inherit default_scaler from the PressureChanger
+    # It iterates over all constraints and scales them by
+    # inverse maximum, which is adequate for all of
+    # these valve callbacks
+
     # Same settings as the default pressure changer, but force to expander with
     # isentropic efficiency
     CONFIG = PressureChangerData.CONFIG()
