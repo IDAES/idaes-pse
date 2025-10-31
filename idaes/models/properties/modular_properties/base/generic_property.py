@@ -734,7 +734,7 @@ class ModularPropertiesScaler(ModularPropertiesScalerBase):
             sf_flow_mol_pc_true[(p, j)] = sf
 
         # Inherent reaction
-        if hasattr(model, "inherent_reaction_generation"):
+        if hasattr(model, "apparent_inherent_reaction_extent"):
             stoich = model.params.inherent_reaction_stoichiometry
             inh_rxn_idx = model.params.inherent_reaction_idx
 
