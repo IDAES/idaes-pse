@@ -21,6 +21,13 @@ This model assumes separate property packages and ports for the solid and liquid
 streams and thus two inlet Ports (solid and liquid) and three outlet Ports (solids,
 liquid with solids, separated liquids).
 
+The solid phase is not affected by this unit model---the state variables in the
+solid_outlet port are equal to those in the solid_inlet port. The liquid phase 
+is split between the recovered_liquid_outlet and retained_liquid_outlet ports.
+The liquid_recovery variable is the fraction of the liquid_inlet stream that
+is spent to the recovered_liquid_outlet stream. This variable either needs to
+be fixed by the user or a constraint needs to be written that links this 
+variable to the state of the solid and liquid streams.
 """
 # Import Python libraries
 import logging
@@ -47,13 +54,68 @@ from idaes.models.unit_models.separator import (
 from idaes.core.initialization import BlockTriangularizationInitializer
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.units_of_measurement import report_quantity
+from idaes.core.scaling import CustomScalerBase
 
 
-__author__ = "Andrew Lee"
+__author__ = "Andrew Lee, Douglas Allan"
 
 
 # Set up logger
 logger = logging.getLogger("idaes.unit_model")
+
+
+class SLSeparatorScaler(CustomScalerBase):
+    """
+    Scaler for SLSeparator
+    """
+
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        self.call_submodel_scaler_method(
+            submodel=model.solid_state,
+            submodel_scalers=submodel_scalers,
+            method="variable_scaling_routine",
+            overwrite=overwrite,
+        )
+
+        self.call_submodel_scaler_method(
+            submodel=model.liquid_inlet_state,
+            submodel_scalers=submodel_scalers,
+            method="variable_scaling_routine",
+            overwrite=overwrite,
+        )
+
+        self.call_submodel_scaler_method(
+            submodel=model.split,
+            submodel_scalers=submodel_scalers,
+            method="variable_scaling_routine",
+            overwrite=overwrite,
+        )
+
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        self.call_submodel_scaler_method(
+            submodel=model.solid_state,
+            submodel_scalers=submodel_scalers,
+            method="constraint_scaling_routine",
+            overwrite=overwrite,
+        )
+
+        self.call_submodel_scaler_method(
+            submodel=model.liquid_inlet_state,
+            submodel_scalers=submodel_scalers,
+            method="constraint_scaling_routine",
+            overwrite=overwrite,
+        )
+
+        self.call_submodel_scaler_method(
+            submodel=model.split,
+            submodel_scalers=submodel_scalers,
+            method="constraint_scaling_routine",
+            overwrite=overwrite,
+        )
 
 
 @declare_process_block_class("SLSeparator")
@@ -61,6 +123,9 @@ class SLSeparatorData(UnitModelBlockData):
     """
     Standard Solid-Liquid Separator Unit Model Class
     """
+
+    default_initializer = BlockTriangularizationInitializer
+    default_scaler = SLSeparatorScaler
 
     CONFIG = ConfigBlock()
     CONFIG.declare(
@@ -187,8 +252,6 @@ see property package for documentation.}""",
     see property package for documentation.}""",
         ),
     )
-
-    default_initializer = BlockTriangularizationInitializer
 
     def build(self):
         """
