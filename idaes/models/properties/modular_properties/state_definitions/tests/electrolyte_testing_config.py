@@ -50,7 +50,7 @@ def dens_mol_H2O(*args, **kwargs):
     """
     Method returning density of water
     """
-    return 55e3
+    return 55e3 * pyunits.mol / pyunits.m**3
 
 
 def dummy_method(b, *args, **kwargs):

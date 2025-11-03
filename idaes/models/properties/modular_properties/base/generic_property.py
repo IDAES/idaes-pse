@@ -840,7 +840,7 @@ class ModularPropertiesScaler(ModularPropertiesScalerBase):
         Returns:
             None
         """
-        # Autoscaling for constraints from a true species basis
+        # TODO: Autoscaling for constraints from a true species basis
         # was not implemented in the legacy scaling tools.
         # Use default scaling until we can rework the true to apparent
         # species conversion
