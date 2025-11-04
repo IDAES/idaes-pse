@@ -1157,11 +1157,11 @@ def get_jacobian(
     # Get lists of variables and constraints to translate Jacobian indexes
     # save them on the NLP for later, since generating them seems to take a while
     if equality_constraints_only:
-        clist = nlp.get_pyomo_equality_constraints()
+        clist = nlp.clist = nlp.get_pyomo_equality_constraints()
     else:
-        clist = nlp.get_pyomo_constraints()
+        clist = nlp.clist = nlp.get_pyomo_constraints()
 
-    vlist = nlp.get_pyomo_variables()
+    vlist = nlp.vlist = nlp.get_pyomo_variables()
 
     if include_scaling_factors:
         # Preallocaying arrays with NaNs to make it apparent if

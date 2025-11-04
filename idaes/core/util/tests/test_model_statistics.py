@@ -1180,45 +1180,132 @@ def test_large_residuals_set(m):
     # Initialize derivative var values so no errors occur
     for v in m.dv.keys():
         m.dv[v] = 0
-    # Contains b2[b].c1 and b2[b].c2
-    assert len(large_residuals_set(m)) == 2
+
+    lrs = large_residuals_set(m)
+    assert len(lrs) == 2
+    assert m.b2["b"].c1 in lrs
+    assert m.b2["b"].c2 in lrs
 
     m.b2["b"].c1.deactivate()
-    assert len(large_residuals_set(m)) == 1
+    lrs = large_residuals_set(m)
+    assert len(lrs) == 1
+    assert m.b2["b"].c2 in lrs
 
     m.b1.sb.v1.fix(0)
     # m.b1.sb.c1 now is not satisfied, but because
     # b1 is deactivated it should not be counted
-    assert len(large_residuals_set(m)) == 1
+    lrs = large_residuals_set(m)
+    assert len(lrs) == 1
+    assert m.b2["b"].c2 in lrs
 
     m.b1.activate()
-    assert len(large_residuals_set(m)) == 2
+    lrs = large_residuals_set(m)
+    assert len(lrs) == 2
+    assert m.b1.sb.c1 in lrs
+    assert m.b2["b"].c2 in lrs
 
     m.b1.sb.v1.unfix()
-    assert len(large_residuals_set(m)) == 2
+    lrs = large_residuals_set(m)
+    assert len(lrs) == 2
+    assert m.b1.sb.c1 in lrs
+    assert m.b2["b"].c2 in lrs
 
     # m.b1.sb.c2 now is not satisfied
     m.b1.sb.v1.set_value(2)
-    assert len(large_residuals_set(m)) == 3
+    lrs = large_residuals_set(m)
+    assert len(lrs) == 3
+    assert m.b1.sb.c1 in lrs
+    assert m.b1.sb.c2 in lrs
+    assert m.b2["b"].c2 in lrs
 
     # The tiny scaling factor on c1 means we can
     # get away with extremely large errors
     set_scaling_factor(m.b1.sb.c1, 1e-10)
-    assert len(large_residuals_set(m)) == 2
+    lrs = large_residuals_set(m)
+    assert len(lrs) == 2
+    assert m.b1.sb.c2 in lrs
+    assert m.b2["b"].c2 in lrs
 
     # m.b.sb.c2 is not satisfied, but the residual
     # is less than the tolerance
+    # Testing above upper bound
     m.b1.sb.v1.set_value(1 + 1e-6)
-    assert len(large_residuals_set(m)) == 1
+    lrs = large_residuals_set(m)
+    assert len(lrs) == 1
+    assert m.b2["b"].c2 in lrs
 
     # By setting a huge scaling factor on c2,
     # the constraint is no longer satisfied
     set_scaling_factor(m.b1.sb.c2, 1e10)
-    assert len(large_residuals_set(m)) == 2
+    lrs = large_residuals_set(m)
+    assert len(lrs) == 2
+    assert m.b1.sb.c2 in lrs
+    assert m.b2["b"].c2 in lrs
 
-    # Now get back to the correct side of the bound
+    # Testing below upper bound
     m.b1.sb.v1.set_value(1 - 1e-6)
-    assert len(large_residuals_set(m)) == 1
+    lrs = large_residuals_set(m)
+    assert len(lrs) == 1
+    assert m.b2["b"].c2 in lrs
+
+    # Upset this variable to make m.b1.c1 and m.b1.c2
+    # not satisfied.
+    m.b1.v1.fix(1 - 0.1)
+    lrs = large_residuals_set(m)
+    assert len(lrs) == 3
+    assert m.b1.c1 in lrs
+    assert m.b1.c2 in lrs
+    assert m.b2["b"].c2 in lrs
+
+    # Variable scaling shouldn't affect anything
+    set_scaling_factor(m.b1.v1, 1e-12, overwrite=True)
+    lrs = large_residuals_set(m)
+    assert len(lrs) == 3
+    assert m.b1.c1 in lrs
+    assert m.b1.c2 in lrs
+    assert m.b2["b"].c2 in lrs
+
+    set_scaling_factor(m.b1.v1, 1e12, overwrite=True)
+    lrs = large_residuals_set(m)
+    assert len(lrs) == 3
+    assert m.b1.c1 in lrs
+    assert m.b1.c2 in lrs
+    assert m.b2["b"].c2 in lrs
+
+    # Constraint scaling lets us ignore the residual
+    set_scaling_factor(m.b1.c1, 1e-6, overwrite=True)
+    lrs = large_residuals_set(m)
+    assert len(lrs) == 2
+    assert m.b1.c2 in lrs
+    assert m.b2["b"].c2 in lrs
+
+    assert len(large_residuals_set(m, tol=1)) == 0
+    set_scaling_factor(m.b1.c1, 1e5, overwrite=True)
+    lrs = large_residuals_set(m, tol=1)
+    assert len(lrs) == 1
+    assert m.b1.c1 in lrs
+
+    set_scaling_factor(m.b1.c1, 1, overwrite=True)
+
+    # Now try the inequality constraint
+    set_scaling_factor(m.b1.c2, 1e-5, overwrite=True)
+    lrs = large_residuals_set(m)
+    assert len(lrs) == 2
+    assert m.b1.c1 in lrs
+    assert m.b2["b"].c2 in lrs
+
+    assert len(large_residuals_set(m, tol=1)) == 0
+    set_scaling_factor(m.b1.c2, 1e5, overwrite=True)
+    lrs = large_residuals_set(m, tol=1)
+    assert len(lrs) == 1
+    assert m.b1.c2 in lrs
+
+    # Put us on the other side of the inequality constraint
+    m.b1.v1.fix(1 + 0.1)
+    lrs = large_residuals_set(m)
+    assert len(lrs) == 2
+    assert m.b1.c1 in lrs
+    assert m.b2["b"].c2 in lrs
 
 
 @pytest.mark.unit
@@ -1228,7 +1315,13 @@ def test_large_residuals_set_none(m):
     # to the large residuals set.
     # Contains b2[b].c1, b2[b].c2, and dv_disc_eq[j]
     # from j=0.1 to j=1.
-    assert len(large_residuals_set(m)) == 12
+    lrs = large_residuals_set(m)
+    assert len(lrs) == 12
+    assert m.b2["b"].c1 in lrs
+    assert m.b2["b"].c2 in lrs
+    assert len(m.dv_disc_eq) == 10
+    for condata in m.dv_disc_eq.values():
+        assert condata in lrs
 
 
 @pytest.mark.unit

@@ -1637,12 +1637,11 @@ def large_residuals_set(block, tol=1e-5, return_residual_values=False):
             val = value(c.body)
         except ValueError:
             val = None
-        # import pdb; pdb.set_trace()
         if val is not None:
             if c.lb is None:
                 r = 0
             else:
-                r = abs(c.lb - val)
+                r = max(c.lb - val, 0)
 
             if c.ub is not None:
                 r = max(r, val - c.ub)
