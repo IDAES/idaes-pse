@@ -28,13 +28,14 @@ from pyomo.environ import (
 )
 from pyomo.dae import ContinuousSet, DerivativeVar
 from pyomo.common.collections import ComponentSet
-
-from idaes.core.util.model_statistics import *
-from idaes.core.util.model_statistics import _iter_indexed_block_data_objects
 from pyomo.contrib.pynumero.interfaces.external_grey_box import (
     ExternalGreyBoxBlock,
     ExternalGreyBoxModel,
 )
+
+from idaes.core.util.model_statistics import *
+from idaes.core.util.model_statistics import _iter_indexed_block_data_objects
+from idaes.core.scaling.util import set_scaling_factor
 
 
 @pytest.mark.unit
@@ -322,7 +323,7 @@ def test_variables_near_bounds_tol_deprecation(m, caplog):
     msg = (
         "DEPRECATED: variables_near_bounds_generator has deprecated the tol argument. "
         "Please set abs_tol and rel_tol arguments instead.  (deprecated in "
-        "2.2.0, will be removed in (or after) 3.0.0)"
+        "2.2.0, will be removed in (or after) 2.11.0)"
     )
     assert msg.replace(" ", "") in caplog.records[0].message.replace("\n", "").replace(
         " ", ""
@@ -336,7 +337,7 @@ def test_variables_near_bounds_relative_deprecation(m, caplog):
     msg = (
         "DEPRECATED: variables_near_bounds_generator has deprecated the relative argument. "
         "Please set abs_tol and rel_tol arguments instead.  (deprecated in "
-        "2.2.0, will be removed in (or after) 3.0.0)"
+        "2.2.0, will be removed in (or after) 2.11.0)"
     )
     assert msg.replace(" ", "") in caplog.records[0].message.replace("\n", "").replace(
         " ", ""
@@ -464,6 +465,374 @@ def test_variables_near_bounds_set():
     # Near upper bound, absolute
     vset = variables_near_bounds_set(m, abs_tol=1)
     assert len(vset) == 1
+
+
+@pytest.mark.unit
+def test_variables_near_bounds_set_scaled():
+    m = ConcreteModel()
+    m.v = Var(initialize=0.5, bounds=(0, 1))
+
+    # Small value, both bounds
+    # Away from bounds
+    vset = variables_near_bounds_set(m)
+    assert len(vset) == 0
+
+    # Small value, large scaling factor, both bounds
+    set_scaling_factor(m.v, 1e6)
+    vset = variables_near_bounds_set(m, rel_tol=0)
+    assert len(vset) == 0
+    vset = variables_near_bounds_set(m)
+    assert len(vset) == 0
+
+    # Small value, tiny scaling factor, both bounds
+    set_scaling_factor(m.v, 1e-6, overwrite=True)
+    vset = variables_near_bounds_set(m, rel_tol=0)
+    assert len(vset) == 1
+    vset = variables_near_bounds_set(m)
+    assert len(vset) == 1
+    vset = variables_near_bounds_set(m, abs_tol=1e-8, rel_tol=0)
+    assert len(vset) == 0
+
+    # Near lower bound, relative
+    set_scaling_factor(m.v, 1, overwrite=True)
+    m.v.set_value(1e-6)
+    vset = variables_near_bounds_set(m, abs_tol=1e-8, rel_tol=1e-4)
+    assert len(vset) == 1
+
+    # Near lower bound, enormous scaling factor
+    set_scaling_factor(m.v, 1e8, overwrite=True)
+    vset = variables_near_bounds_set(m, abs_tol=1e-8, rel_tol=0)
+    assert len(vset) == 0
+    vset = variables_near_bounds_set(m, abs_tol=1e-8, rel_tol=1e-4)
+    assert len(vset) == 1
+
+    # Near lower bound, tiny scaling factor
+    set_scaling_factor(m.v, 1e-8, overwrite=True)
+    vset = variables_near_bounds_set(m, abs_tol=1e-8, rel_tol=0)
+    assert len(vset) == 1
+    vset = variables_near_bounds_set(m, abs_tol=1e-8, rel_tol=1e-4)
+    assert len(vset) == 1
+
+    # Near lower bound, absolute
+    set_scaling_factor(m.v, 1, overwrite=True)
+    vset = variables_near_bounds_set(m, abs_tol=1e-4, rel_tol=1e-8)
+    assert len(vset) == 1
+
+    # Near upper bound, relative
+    m.v.set_value(1 - 1e-6)
+    vset = variables_near_bounds_set(m, abs_tol=1e-8, rel_tol=1e-4)
+    assert len(vset) == 1
+
+    # Near upper bound, relative, enormous scaling factor
+    set_scaling_factor(m.v, 1e8, overwrite=True)
+    vset = variables_near_bounds_set(m, abs_tol=1e-8, rel_tol=0)
+    assert len(vset) == 0
+    vset = variables_near_bounds_set(m, abs_tol=1e-8, rel_tol=1e-4)
+    assert len(vset) == 1
+
+    # Near upper bound, tiny scaling factor
+    set_scaling_factor(m.v, 1e-8, overwrite=True)
+    vset = variables_near_bounds_set(m, abs_tol=1e-8, rel_tol=0)
+    assert len(vset) == 1
+    vset = variables_near_bounds_set(m, abs_tol=1e-8, rel_tol=1e-4)
+    assert len(vset) == 1
+
+    # Near upper bound, absolute
+    set_scaling_factor(m.v, 1, overwrite=True)
+    vset = variables_near_bounds_set(m, abs_tol=1e-4, rel_tol=1e-8)
+    assert len(vset) == 1
+
+    # Small value, lower bound
+    # Away from bounds
+    m.v.set_value(0.5)
+    m.v.setub(None)
+    vset = variables_near_bounds_set(m)
+    assert len(vset) == 0
+
+    # Small value, lower bound
+    # Away from bounds
+    # Enormous scaling factor
+    set_scaling_factor(m.v, 1e8, overwrite=True)
+    m.v.setub(None)
+    vset = variables_near_bounds_set(m)
+    assert len(vset) == 0
+    vset = variables_near_bounds_set(m, rel_tol=0)
+    assert len(vset) == 0
+
+    # Small value, lower bound
+    # Away from bounds
+    # Tiny scaling factor
+    set_scaling_factor(m.v, 1e-8, overwrite=True)
+    m.v.setub(None)
+    vset = variables_near_bounds_set(m)
+    assert len(vset) == 1
+    vset = variables_near_bounds_set(m, rel_tol=0)
+    assert len(vset) == 1
+
+    # Near lower bound, relative
+    set_scaling_factor(m.v, 1, overwrite=True)
+    m.v.set_value(1e-6)
+    vset = variables_near_bounds_set(m, abs_tol=1e-8, rel_tol=1e-4)
+    # Lower bound of 0 means relative tolerance is 0
+    assert len(vset) == 0
+
+    # Near lower bound, absolute
+    vset = variables_near_bounds_set(m, abs_tol=1e-4, rel_tol=1e-8)
+    assert len(vset) == 1
+
+    # Near lower bound, tiny scaling factor
+    set_scaling_factor(m.v, 1e-8, overwrite=True)
+    vset = variables_near_bounds_set(m, abs_tol=1e-4, rel_tol=1e-4)
+    assert len(vset) == 1
+    vset = variables_near_bounds_set(m, abs_tol=1e-4, rel_tol=0)
+    assert len(vset) == 1
+
+    # Near lower bound, enormous scaling factor
+    set_scaling_factor(m.v, 1e8, overwrite=True)
+    vset = variables_near_bounds_set(m, abs_tol=1e-8, rel_tol=1e-4)
+    assert len(vset) == 0
+    vset = variables_near_bounds_set(m, abs_tol=1e-8, rel_tol=0)
+    assert len(vset) == 0
+
+    # Small value, upper bound
+    # Away from bounds
+    m.v.set_value(0.5)
+    m.v.setub(1)
+    m.v.setlb(None)
+    set_scaling_factor(m.v, 1, overwrite=True)
+    vset = variables_near_bounds_set(m)
+    assert len(vset) == 0
+
+    # Small value, upper bound
+    # Away from bounds
+    # Tiny scaling factor
+    set_scaling_factor(m.v, 1e-8, overwrite=True)
+    vset = variables_near_bounds_set(m)
+    assert len(vset) == 1
+    vset = variables_near_bounds_set(m, rel_tol=0)
+    assert len(vset) == 1
+
+    # Small value, upper bound
+    # Away from bounds
+    # Enormous scaling factor
+    set_scaling_factor(m.v, 1e8, overwrite=True)
+    vset = variables_near_bounds_set(m)
+    assert len(vset) == 0
+    vset = variables_near_bounds_set(m, rel_tol=0)
+    assert len(vset) == 0
+
+    # Near upper bound, relative
+    set_scaling_factor(m.v, 1, overwrite=True)
+    m.v.set_value(1 - 1e-6)
+    vset = variables_near_bounds_set(m, abs_tol=1e-8, rel_tol=1e-4)
+    assert len(vset) == 1
+
+    # Near upper bound, absolute
+    vset = variables_near_bounds_set(m, abs_tol=1e-4, rel_tol=1e-8)
+    assert len(vset) == 1
+
+    # Near upper bound, absolute, tiny scaling factor
+    set_scaling_factor(m.v, 1e-8, overwrite=True)
+    vset = variables_near_bounds_set(m, abs_tol=1e-4, rel_tol=1e-8)
+    assert len(vset) == 1
+    vset = variables_near_bounds_set(m, abs_tol=1e-4, rel_tol=0)
+    assert len(vset) == 1
+
+    # Near upper bound, absolute, enormous scaling factor
+    set_scaling_factor(m.v, 1e8, overwrite=True)
+    vset = variables_near_bounds_set(m, abs_tol=1e-4, rel_tol=1e-8)
+    assert len(vset) == 0
+    vset = variables_near_bounds_set(m, abs_tol=1e-4, rel_tol=0)
+    assert len(vset) == 0
+
+    # Large value, both bounds
+    # Relative tolerance based on magnitude of 100
+    set_scaling_factor(m.v, 1, overwrite=True)
+    m.v.setlb(450)
+    m.v.setub(550)
+    m.v.set_value(500)
+    vset = variables_near_bounds_set(m)
+    assert len(vset) == 0
+
+    # Large value, both bounds
+    # Tiny scaling factor
+    set_scaling_factor(m.v, 1e-8, overwrite=True)
+    vset = variables_near_bounds_set(m)
+    assert len(vset) == 1
+    vset = variables_near_bounds_set(m, rel_tol=0)
+    assert len(vset) == 1
+
+    # Large value, both bounds
+    # Enormous scaling factor
+    set_scaling_factor(m.v, 1e8, overwrite=True)
+    vset = variables_near_bounds_set(m)
+    assert len(vset) == 0
+    vset = variables_near_bounds_set(m, rel_tol=0)
+    assert len(vset) == 0
+
+    # Near lower bound, relative
+    set_scaling_factor(m.v, 1, overwrite=True)
+    m.v.set_value(451)
+    vset = variables_near_bounds_set(m, rel_tol=1e-2)
+    assert len(vset) == 1
+
+    # Near lower bound, absolute
+    vset = variables_near_bounds_set(m, abs_tol=1)
+    assert len(vset) == 1
+
+    # Near lower bound, absolute, tiny scaling factor
+    set_scaling_factor(m.v, 1e-8, overwrite=True)
+    vset = variables_near_bounds_set(m, abs_tol=1)
+    assert len(vset) == 1
+    vset = variables_near_bounds_set(m, abs_tol=1, rel_tol=0)
+    assert len(vset) == 1
+
+    # Near lower bound, absolute, enormous scaling factor
+    set_scaling_factor(m.v, 1e8, overwrite=True)
+    vset = variables_near_bounds_set(m, abs_tol=1)
+    assert len(vset) == 0
+    vset = variables_near_bounds_set(m, abs_tol=1, rel_tol=0)
+    assert len(vset) == 0
+
+    # Near upper bound, relative
+    set_scaling_factor(m.v, 1, overwrite=True)
+    m.v.set_value(549)
+    vset = variables_near_bounds_set(m, rel_tol=1e-2)
+    assert len(vset) == 1
+
+    # Near upper bound, absolute
+    vset = variables_near_bounds_set(m, abs_tol=1)
+    assert len(vset) == 1
+
+    # Near upper bound, absolute, tiny scaling factor
+    set_scaling_factor(m.v, 1e-8, overwrite=True)
+    vset = variables_near_bounds_set(m, abs_tol=1e-6)
+    assert len(vset) == 1
+    vset = variables_near_bounds_set(m, abs_tol=1e-6, rel_tol=0)
+    assert len(vset) == 1
+
+    # Near upper bound, absolute, enormous scaling factor
+    set_scaling_factor(m.v, 1e8, overwrite=True)
+    vset = variables_near_bounds_set(m, abs_tol=1)
+    assert len(vset) == 0
+    vset = variables_near_bounds_set(m, abs_tol=1, rel_tol=0)
+    assert len(vset) == 0
+
+    # Large value, lower bound
+    # Relative tolerance based on magnitude of 450
+    set_scaling_factor(m.v, 1, overwrite=True)
+    m.v.setlb(450)
+    m.v.setub(None)
+    m.v.set_value(500)
+    vset = variables_near_bounds_set(m)
+    assert len(vset) == 0
+
+    # Large value, lower bound, tiny scaling factor
+    set_scaling_factor(m.v, 1e-8, overwrite=True)
+    vset = variables_near_bounds_set(m)
+    assert len(vset) == 1
+    vset = variables_near_bounds_set(m, rel_tol=0)
+    assert len(vset) == 1
+    vset = variables_near_bounds_set(m, abs_tol=0)
+    assert len(vset) == 0
+
+    # Large value, lower bound, enormous scaling factor
+    set_scaling_factor(m.v, 1e8, overwrite=True)
+    vset = variables_near_bounds_set(m)
+    assert len(vset) == 0
+    vset = variables_near_bounds_set(m, rel_tol=0)
+    assert len(vset) == 0
+    vset = variables_near_bounds_set(m, abs_tol=0)
+    assert len(vset) == 0
+
+    # Near lower bound, relative
+    set_scaling_factor(m.v, 1, overwrite=True)
+    m.v.set_value(451)
+    vset = variables_near_bounds_set(m, rel_tol=1e-2)
+    assert len(vset) == 1
+
+    # Near lower bound, absolute
+    vset = variables_near_bounds_set(m, abs_tol=1)
+    assert len(vset) == 1
+
+    # Near lower bound, absolute, tiny scaling factor
+    set_scaling_factor(m.v, 1e-8, overwrite=True)
+    vset = variables_near_bounds_set(m, abs_tol=1e-6)
+    assert len(vset) == 1
+    vset = variables_near_bounds_set(m, abs_tol=1e-6, rel_tol=0)
+    assert len(vset) == 1
+    vset = variables_near_bounds_set(m, abs_tol=0)
+    assert len(vset) == 0
+
+    # Near lower bound, absolute, enormous scaling factor
+    set_scaling_factor(m.v, 1e8, overwrite=True)
+    vset = variables_near_bounds_set(m, abs_tol=1e-6)
+    assert len(vset) == 0
+    vset = variables_near_bounds_set(m, abs_tol=1e-6, rel_tol=0)
+    assert len(vset) == 0
+    vset = variables_near_bounds_set(m, abs_tol=0, rel_tol=1e-2)
+    assert len(vset) == 1
+
+    # Large value, upper bound
+    # Relative tolerance based on magnitude of 550
+    set_scaling_factor(m.v, 1, overwrite=True)
+    m.v.setlb(None)
+    m.v.setub(550)
+    m.v.set_value(500)
+    vset = variables_near_bounds_set(m)
+    assert len(vset) == 0
+
+    # Large value, upper bound
+    # Tiny scaling factor
+    set_scaling_factor(m.v, 1e-8, overwrite=True)
+    vset = variables_near_bounds_set(m)
+    assert len(vset) == 1
+    vset = variables_near_bounds_set(m, rel_tol=0, abs_tol=1e-6)
+    assert len(vset) == 1
+    vset = variables_near_bounds_set(m, abs_tol=0)
+    assert len(vset) == 0
+
+    # Large value, upper bound
+    # Enormous scaling factor
+    set_scaling_factor(m.v, 1e8, overwrite=True)
+    vset = variables_near_bounds_set(m)
+    assert len(vset) == 0
+    vset = variables_near_bounds_set(m, rel_tol=0, abs_tol=1e-6)
+    assert len(vset) == 0
+    vset = variables_near_bounds_set(m, abs_tol=0)
+    assert len(vset) == 0
+
+    # Near upper bound, relative
+    set_scaling_factor(m.v, 1, overwrite=True)
+    m.v.set_value(549)
+    vset = variables_near_bounds_set(m, rel_tol=1e-2)
+    assert len(vset) == 1
+
+    # Near upper bound, absolute
+    vset = variables_near_bounds_set(m, abs_tol=1)
+    assert len(vset) == 1
+
+    # Near upper bound, absolute, tiny scaling factor
+    set_scaling_factor(m.v, 1e-8, overwrite=True)
+    vset = variables_near_bounds_set(m, abs_tol=1e-6)
+    assert len(vset) == 1
+    vset = variables_near_bounds_set(m, abs_tol=1e-6, rel_tol=0)
+    assert len(vset) == 1
+    vset = variables_near_bounds_set(m, abs_tol=0)
+    assert len(vset) == 0
+    vset = variables_near_bounds_set(m, abs_tol=0, rel_tol=1e-2)
+    assert len(vset) == 1
+
+    # Near upper bound, absolute, enormous scaling factor
+    set_scaling_factor(m.v, 1e8, overwrite=True)
+    vset = variables_near_bounds_set(m, abs_tol=1e-6)
+    assert len(vset) == 0
+    vset = variables_near_bounds_set(m, abs_tol=1e-6, rel_tol=1e-2)
+    assert len(vset) == 1
+    vset = variables_near_bounds_set(m, abs_tol=1e-6, rel_tol=0)
+    assert len(vset) == 0
+    vset = variables_near_bounds_set(m, abs_tol=0)
+    assert len(vset) == 0
 
 
 @pytest.mark.unit
@@ -811,7 +1180,55 @@ def test_large_residuals_set(m):
     # Initialize derivative var values so no errors occur
     for v in m.dv.keys():
         m.dv[v] = 0
+    # Contains b2[b].c1 and b2[b].c2
     assert len(large_residuals_set(m)) == 2
+
+    m.b2["b"].c1.deactivate()
+    assert len(large_residuals_set(m)) == 1
+
+    m.b1.sb.v1.fix(0)
+    # m.b1.sb.c1 now is not satisfied, but because
+    # b1 is deactivated it should not be counted
+    assert len(large_residuals_set(m)) == 1
+
+    m.b1.activate()
+    assert len(large_residuals_set(m)) == 2
+
+    m.b1.sb.v1.unfix()
+    assert len(large_residuals_set(m)) == 2
+
+    # m.b1.sb.c2 now is not satisfied
+    m.b1.sb.v1.set_value(2)
+    assert len(large_residuals_set(m)) == 3
+
+    # The tiny scaling factor on c1 means we can
+    # get away with extremely large errors
+    set_scaling_factor(m.b1.sb.c1, 1e-10)
+    assert len(large_residuals_set(m)) == 2
+
+    # m.b.sb.c2 is not satisfied, but the residual
+    # is less than the tolerance
+    m.b1.sb.v1.set_value(1 + 1e-6)
+    assert len(large_residuals_set(m)) == 1
+
+    # By setting a huge scaling factor on c2,
+    # the constraint is no longer satisfied
+    set_scaling_factor(m.b1.sb.c2, 1e10)
+    assert len(large_residuals_set(m)) == 2
+
+    # Now get back to the correct side of the bound
+    m.b1.sb.v1.set_value(1 - 1e-6)
+    assert len(large_residuals_set(m)) == 1
+
+
+@pytest.mark.unit
+def test_large_residuals_set_none(m):
+    # Without initializing the derivative variables,
+    # all the discretization equations get added
+    # to the large residuals set.
+    # Contains b2[b].c1, b2[b].c2, and dv_disc_eq[j]
+    # from j=0.1 to j=1.
+    assert len(large_residuals_set(m)) == 12
 
 
 @pytest.mark.unit

@@ -22,6 +22,12 @@ import sys
 
 import json
 
+import numpy as np
+
+from scipy.linalg import inv, norm
+from scipy.sparse import diags
+from scipy.sparse.linalg import inv as spinv, norm as spnorm
+
 from pyomo.environ import (
     Binary,
     Block,
@@ -34,6 +40,7 @@ from pyomo.environ import (
     NonNegativeReals,
     NonPositiveIntegers,
     NonPositiveReals,
+    Objective,
     PositiveIntegers,
     PositiveReals,
     Suffix,
@@ -46,8 +53,12 @@ from pyomo.core.base.constraint import ConstraintData
 from pyomo.core.base.expression import ExpressionData
 from pyomo.core.base.param import ParamData
 from pyomo.core import expr as EXPR
+
+from pyomo.common.modeling import unique_component_name
 from pyomo.common.numeric_types import native_types
 from pyomo.core.base.units_container import _PyomoUnit
+from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
+from pyomo.contrib.pynumero.asl import AmplInterface
 
 from idaes.core.util.exceptions import BurntToast
 import idaes.logger as idaeslog
@@ -1092,3 +1103,124 @@ class NominalValueExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
             f"An unhandled expression node type: {str(nodetype)} was encountered while "
             f"retrieving the nominal value of expression {str(node)}"
         )
+
+
+# Based off of John Eslick's functions in the old scaling tools
+def get_jacobian(
+    m,
+    include_scaling_factors=True,
+    include_ipopt_autoscaling=False,
+    equality_constraints_only=False,
+    max_grad=100,
+    min_scale=1e-8,
+):
+    """
+    Get the Jacobian matrix at the current model values. This function also
+    returns the Pynumero NLP which can be used to identify the constraints and
+    variables corresponding to the rows and columns.
+
+    Args:
+        m: model to get Jacobian from
+        include_scaling_factors: if True scale the rows and columns of the Jacobian
+            using the user-defined scaling factors in the scaling_factor suffix.
+        include_ipopt_autoscaling: if True, include the gradient-based autoscaling
+            step that IPOPT uses to scale the rows of the Jacobian
+        equality_constraints_only: Option to include only equality constraints
+            in the calculated Jacobian.
+        max_grad: The value of the norm of the constraint gradient above which
+            gradient-based autoscaling will be performed by IPOPT. This option
+            corresponds to the IPOPT option nlp_scaling_max_gradient. Used
+            only if include_ipopt_autoscaling is True.
+        min_scale: The smallest scaling factor that IPOPT gradient-based scaling
+            is allowed to produce. This option corresponds to the IPOPT option
+            nlp_scaling_min_value. Used only if include_ipopt_autoscaling is True.
+
+    Returns:
+        Jacobian matrix in Scipy CSR format, Pynumero nlp
+    """
+    # Pynumero requires an objective, but I don't, so let's see if we have one
+    n_obj = 0
+    for _ in m.component_data_objects(Objective, active=True):
+        n_obj += 1
+    # Add an objective if there isn't one
+    if n_obj == 0:
+        dummy_objective_name = unique_component_name(m, "objective")
+        setattr(m, dummy_objective_name, Objective(expr=0))
+    # Create NLP and calculate the objective
+    if not AmplInterface.available():
+        raise RuntimeError("Pynumero not available.")
+    nlp = PyomoNLP(m)
+    if equality_constraints_only:
+        jac = nlp.evaluate_jacobian_eq().tocsr()
+    else:
+        jac = nlp.evaluate_jacobian().tocsr()
+    # Get lists of variables and constraints to translate Jacobian indexes
+    # save them on the NLP for later, since generating them seems to take a while
+    if equality_constraints_only:
+        clist = nlp.get_pyomo_equality_constraints()
+    else:
+        clist = nlp.get_pyomo_constraints()
+
+    vlist = nlp.get_pyomo_variables()
+
+    if include_scaling_factors:
+        # Preallocaying arrays with NaNs to make it apparent if
+        # some element doesn't get set for some reason
+        var_scaling_factors = np.nan * np.ones(len(vlist))
+        for i, var in enumerate(vlist):
+            var_scaling_factors[i] = get_scaling_factor(var, default=1, warning=False)
+
+        con_scaling_factors = np.nan * np.ones(len(clist))
+        for i, con in enumerate(clist):
+            con_scaling_factors[i] = get_scaling_factor(con, default=1, warning=False)
+
+        # Scale the jacobian by multiplying each row/constraint by its scaling factor
+        # and dividing each column/variable by its scaling factor.
+        # Perform sparse matrix multiplication to take advantage of vectorized
+        # operations implemented in C++.
+        jac = diags(con_scaling_factors) @ (jac @ diags(1 / var_scaling_factors))
+
+    if include_ipopt_autoscaling:
+        row_norms = spnorm(jac, ord=np.inf, axis=1)
+        grad_scaling_factors = np.ones(len(clist))
+        for i, _ in enumerate(clist):
+            if row_norms[i] > max_grad:
+                grad_scaling_factors[i] = max(min_scale, max_grad / row_norms[i])
+
+        jac = diags(grad_scaling_factors) @ jac
+
+    # delete dummy objective
+    if n_obj == 0:
+        delattr(m, dummy_objective_name)
+    return jac, nlp
+
+
+def jacobian_cond(m=None, scaled=True, order=None, pinv=False, jac=None):
+    """
+    Get the Frobenius condition number of the scaled or unscaled Jacobian matrix
+    of a model.
+
+    Args:
+        m: calculate the condition number of the Jacobian from this model.
+        scaled: if True use scaled Jacobian, else use unscaled
+        order: norm order, None = Frobenius, see scipy.sparse.linalg.norm for more
+        pinv: Use pseudoinverse, works for non-square matrices
+        jac: (optional) previously calculated Jacobian
+
+    Returns:
+        (float) Condition number
+    """
+    if jac is None:
+        jac, _ = get_jacobian(m, scaled)
+    jac = jac.tocsc()
+    if jac.shape[0] != jac.shape[1] and not pinv:
+        _log.warning(
+            "Nonsquare Jacobian. Using pseudoinverse to calculate Frobenius norm."
+        )
+        pinv = True
+    if not pinv:
+        jac_inv = spinv(jac)
+        return spnorm(jac, order) * spnorm(jac_inv, order)
+    else:
+        jac_inv = pinv(jac.toarray())
+        return spnorm(jac, order) * norm(jac_inv, order)

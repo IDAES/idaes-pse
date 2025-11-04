@@ -24,8 +24,11 @@ from copy import deepcopy
 from pyomo.environ import Block, Constraint, ConcreteModel, Expression, Set, Suffix, Var
 from pyomo.common.fileutils import this_file_dir
 from pyomo.common.tempfiles import TempfileManager
+from pyomo.contrib.pynumero.asl import AmplInterface
 
 from idaes.core.scaling.util import (
+    get_jacobian,
+    jacobian_cond,
     get_scaling_factor_suffix,
     get_scaling_hint_suffix,
     get_scaling_factor,
@@ -45,6 +48,7 @@ from idaes.core.scaling.util import (
     unscaled_variables_generator,
     unscaled_constraints_generator,
 )
+from idaes.core.util.model_statistics import number_activated_objectives
 import idaes.logger as idaeslog
 
 currdir = this_file_dir()
@@ -2333,3 +2337,186 @@ def test_find_unscaled_vars_and_constraints():
     b = [id(v) for v in list_unscaled_constraints(m)]
     for foo, bar in zip(a, b):
         assert foo == bar
+
+
+# Tests based on John Eslick's
+@pytest.mark.skipif(
+    not AmplInterface.available(), reason="pynumero_ASL is not available"
+)
+class TestGetJacobian:
+    def model(self):
+        m = ConcreteModel()
+        x = m.x = Var(initialize=1e3)
+        y = m.y = Var(initialize=1e6)
+        z = m.z = Var(initialize=1e4)
+        m.c1 = Constraint(expr=0 == -x * y + z)
+        m.c2 = Constraint(expr=0 == 3 * x + 4 * y + 2 * z)
+        m.c3 = Constraint(expr=0 <= z**3)
+        return m
+
+    @pytest.mark.unit
+    def test_jacobian(self):
+        """Make sure the Jacobian from Pynumero matches expectation.  This is
+        mostly to ensure we understand the interface and catch if things change.
+        """
+        m = self.model()
+        assert number_activated_objectives(m) == 0
+        jac, nlp = get_jacobian(m)
+        # get_scaling_factor creates the suffix if it doesn't exist
+        assert len(m.scaling_factor) == 0
+        assert not hasattr(m, "scaling_hint")
+        assert number_activated_objectives(m) == 0
+
+        c1_row = nlp._condata_to_idx[m.c1]
+        c2_row = nlp._condata_to_idx[m.c2]
+        c3_row = nlp._condata_to_idx[m.c3]
+        x_col = nlp._vardata_to_idx[m.x]
+        y_col = nlp._vardata_to_idx[m.y]
+        z_col = nlp._vardata_to_idx[m.z]
+
+        assert jac[c1_row, x_col] == pytest.approx(-1e6)
+        assert jac[c1_row, y_col] == pytest.approx(-1e3)
+        assert jac[c1_row, z_col] == pytest.approx(1)
+
+        assert jac[c2_row, x_col] == pytest.approx(3)
+        assert jac[c2_row, y_col] == pytest.approx(4)
+        assert jac[c2_row, z_col] == pytest.approx(2)
+
+        assert jac[c3_row, z_col] == pytest.approx(3e8)
+
+        # Make sure scaling factors don't affect the result
+        set_scaling_factor(m.c1, 1e-6)
+        set_scaling_factor(m.x, 1e-3)
+        set_scaling_factor(m.y, 1e-6)
+        set_scaling_factor(m.z, 1e-4)
+        jac, _ = get_jacobian(m, include_scaling_factors=False)
+        assert len(m.scaling_factor) == 4
+        assert not hasattr(m, "scaling_hint")
+        assert jac[c1_row, x_col] == pytest.approx(-1e6)
+
+        # Check the scaled jacobian calculation
+        jac_scaled, _ = get_jacobian(m)
+        assert len(m.scaling_factor) == 4
+        assert not hasattr(m, "scaling_hint")
+        assert jac_scaled[c1_row, x_col] == pytest.approx(-1000)
+        assert jac_scaled[c1_row, y_col] == pytest.approx(-1000)
+        assert jac_scaled[c1_row, z_col] == pytest.approx(0.01)
+
+    @pytest.mark.unit
+    def test_scale_no_var_scale(self):
+        m = self.model()
+        jac_scaled, nlp = get_jacobian(
+            m,
+            include_scaling_factors=False,
+            include_ipopt_autoscaling=True,
+            min_scale=1e-6,
+        )
+        # get_scaling_factor isn't called here so the suffix shouldn't exist
+        assert not hasattr(m, "scaling_factor")
+        assert not hasattr(m, "scaling_hint")
+
+        c1_row = nlp._condata_to_idx[m.c1]
+        c2_row = nlp._condata_to_idx[m.c2]
+        c3_row = nlp._condata_to_idx[m.c3]
+        x_col = nlp._vardata_to_idx[m.x]
+        y_col = nlp._vardata_to_idx[m.y]
+        z_col = nlp._vardata_to_idx[m.z]
+
+        assert jac_scaled[c1_row, x_col] == pytest.approx(-100)
+        assert jac_scaled[c1_row, y_col] == pytest.approx(-0.1)
+        assert jac_scaled[c1_row, z_col] == pytest.approx(1e-4)
+
+        assert jac_scaled[c2_row, x_col] == pytest.approx(3)
+        assert jac_scaled[c2_row, y_col] == pytest.approx(4)
+        assert jac_scaled[c2_row, z_col] == pytest.approx(2)
+
+        assert jac_scaled[c3_row, z_col] == pytest.approx(3e2)
+
+    @pytest.mark.unit
+    def test_scale_with_var_scale(self):
+        m = self.model()
+        m.scaling_factor = Suffix(direction=Suffix.EXPORT)
+        m.scaling_factor[m.x] = 1e-3
+        m.scaling_factor[m.y] = 1e-6
+        m.scaling_factor[m.z] = 1e-4
+
+        # In these tests derived from the old scaling tools, we use
+        # min_scale=1e-6 because that's what the old tools use as a
+        # default. However, we're using a new default of 1e-8
+        # because that's what appears to be IPOPT's actual default.
+        jac_scaled, nlp = get_jacobian(
+            m,
+            include_scaling_factors=True,
+            include_ipopt_autoscaling=True,
+            min_scale=1e-6,
+        )
+        assert len(m.scaling_factor) == 3
+        assert not hasattr(m, "scaling_hint")
+
+        c1_row = nlp._condata_to_idx[m.c1]
+        c2_row = nlp._condata_to_idx[m.c2]
+        c3_row = nlp._condata_to_idx[m.c3]
+        x_col = nlp._vardata_to_idx[m.x]
+        y_col = nlp._vardata_to_idx[m.y]
+        z_col = nlp._vardata_to_idx[m.z]
+
+        assert jac_scaled[c1_row, x_col] == pytest.approx(-1000)
+        assert jac_scaled[c1_row, y_col] == pytest.approx(-1000)
+        assert jac_scaled[c1_row, z_col] == pytest.approx(1e-2)
+
+        assert jac_scaled[c2_row, x_col] == pytest.approx(0.075)
+        assert jac_scaled[c2_row, y_col] == pytest.approx(100)
+        assert jac_scaled[c2_row, z_col] == pytest.approx(0.5)
+
+        assert jac_scaled[c3_row, z_col] == pytest.approx(3e6)
+
+    @pytest.mark.unit
+    def test_exclude_scaling_factors_variables(self):
+        m = self.model()
+        m.scaling_factor = Suffix(direction=Suffix.EXPORT)
+        m.scaling_factor[m.x] = 1e-3
+        m.scaling_factor[m.y] = 1e-6
+        m.scaling_factor[m.z] = 1e-4
+
+        jac_scaled, nlp = get_jacobian(
+            m,
+            include_scaling_factors=False,
+            include_ipopt_autoscaling=True,
+            min_scale=1e-6,
+        )
+        assert len(m.scaling_factor) == 3
+        assert not hasattr(m, "scaling_hint")
+
+        c1_row = nlp._condata_to_idx[m.c1]
+        c2_row = nlp._condata_to_idx[m.c2]
+        c3_row = nlp._condata_to_idx[m.c3]
+        x_col = nlp._vardata_to_idx[m.x]
+        y_col = nlp._vardata_to_idx[m.y]
+        z_col = nlp._vardata_to_idx[m.z]
+
+        assert jac_scaled[c1_row, x_col] == pytest.approx(-100)
+        assert jac_scaled[c1_row, y_col] == pytest.approx(-0.1)
+        assert jac_scaled[c1_row, z_col] == pytest.approx(1e-4)
+
+        assert jac_scaled[c2_row, x_col] == pytest.approx(3)
+        assert jac_scaled[c2_row, y_col] == pytest.approx(4)
+        assert jac_scaled[c2_row, z_col] == pytest.approx(2)
+
+        assert jac_scaled[c3_row, z_col] == pytest.approx(3e2)
+
+    @pytest.mark.unit
+    def test_condition_number(self):
+        """Calculate the condition number of the Jacobian"""
+        m = self.model()
+        m.scaling_factor = Suffix(direction=Suffix.EXPORT)
+        m.scaling_factor[m.x] = 1e-3
+        m.scaling_factor[m.y] = 1e-6
+        m.scaling_factor[m.z] = 1e-4
+        m.scaling_factor[m.c1] = 1e-6
+        m.scaling_factor[m.c2] = 1e-6
+        m.scaling_factor[m.c3] = 1e-12
+
+        n = jacobian_cond(m, scaled=True)
+        assert n == pytest.approx(500, abs=200)
+        n = jacobian_cond(m, scaled=False)
+        assert n == pytest.approx(7.5e7, abs=5e6)
