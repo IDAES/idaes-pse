@@ -117,7 +117,8 @@ def get_config_no_inherent_reactions():
             "amount": pyunits.mol,
             "temperature": pyunits.K,
         },
-        # Leave state definition and bounds to be specified elsewhere
+        # Leave the state definition and bounds to be
+        # specified in each individual test file.
         # "state_definition": None,
         # "state_bounds": None,
         # "state_components": None,
@@ -202,7 +203,8 @@ def get_config_with_inherent_reactions():
             "amount": pyunits.mol,
             "temperature": pyunits.K,
         },
-        # Leave state definition and bounds to be specified elsewhere
+        # Leave the state definition and bounds to be
+        # specified in each individual test file.
         # "state_definition": None,
         # "state_bounds": None,
         # "state_components": None,

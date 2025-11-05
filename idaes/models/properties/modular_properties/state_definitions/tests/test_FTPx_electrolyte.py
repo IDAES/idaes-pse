@@ -204,10 +204,6 @@ class TestApparentSpeciesBasisNoInherentLegacyScaling:
 
 
 # -----------------------------------------------------------------------------
-def dens_mol_h2o(*args, **kwargs):
-    return 55e3
-
-
 class TestApparentSpeciesBasisInherentLegacyScaling:
     config = get_config_with_inherent_reactions()
     config["state_components"] = StateIndex.apparent
@@ -1301,10 +1297,6 @@ class TestApparentSpeciesBasisNoInherentScalerObject:
 
 
 # -----------------------------------------------------------------------------
-def dens_mol_h2o(*args, **kwargs):
-    return 55e3
-
-
 class TestApparentSpeciesBasisInherentScalerObject:
     config = get_config_with_inherent_reactions()
     config["state_components"] = StateIndex.apparent
