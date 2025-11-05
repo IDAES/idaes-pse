@@ -24,7 +24,7 @@ import json
 
 import numpy as np
 
-from scipy.linalg import inv, norm
+from scipy.linalg import norm, pinv
 from scipy.sparse import diags
 from scipy.sparse.linalg import inv as spinv, norm as spnorm
 
@@ -53,6 +53,7 @@ from pyomo.core.base.constraint import ConstraintData
 from pyomo.core.base.expression import ExpressionData
 from pyomo.core.base.param import ParamData
 from pyomo.core import expr as EXPR
+from pyomo.core.base.suffix import SuffixFinder
 
 from pyomo.common.modeling import unique_component_name
 from pyomo.common.numeric_types import native_types
@@ -111,6 +112,13 @@ def get_scaling_factor_suffix(blk: BlockData):
         _log.debug(f"Created new scaling suffix for {_filter_unknown(blk)}")
         sfx = blk.scaling_factor = Suffix(direction=Suffix.EXPORT)
 
+    if not sfx.active:
+        raise RuntimeError(
+            f"The scaling suffix on {_filter_unknown(blk)} has been deactivated. "
+            "Typically, this means that the user has performed a scaling transformation "
+            "on the model."
+        )
+
     return sfx
 
 
@@ -146,7 +154,7 @@ def get_scaling_hint_suffix(blk: BlockData):
     except AttributeError:
         # No existing suffix, create one
         _log.debug(f"Created new scaling hint suffix for {_filter_unknown(blk)}")
-        sfx = blk.scaling_hint = Suffix(direction=Suffix.EXPORT)
+        sfx = blk.scaling_hint = Suffix()
 
     return sfx
 
@@ -174,7 +182,7 @@ def get_component_scaling_suffix(component):
         return get_scaling_hint_suffix(blk)
     else:
         raise TypeError(
-            "Can only get scaling factors for VarData, ConstraintData, and (hints from) ExpressionData. "
+            "Can get scaling factors for only VarData, ConstraintData, and (hints from) ExpressionData. "
             f"Component {component.name} is instead {type(component)}."
         )
 
@@ -480,15 +488,23 @@ def get_scaling_factor(component, default: float = None, warning: bool = False):
         raise TypeError(
             "Can only get scaling hints for named expressions, but component was an unnamed expression."
         )
-    sfx = get_component_scaling_suffix(component)
 
-    try:
-        return sfx[component]
-    except (AttributeError, KeyError):
-        # No scaling factor found, return the default value
+    if isinstance(component, (VarData, ConstraintData)):
+        sfx_finder = SuffixFinder("scaling_factor")
+    elif isinstance(component, ExpressionData):
+        sfx_finder = SuffixFinder("scaling_hint")
+    else:
+        raise TypeError(
+            f"Can get scaling factors for only VarData, ConstraintData, and (hints from) ExpressionData. "
+            f"Component {component.name} is instead {type(component)}."
+        )
+    sf = sfx_finder.find(component_data=component)
+    if sf is None:
         if warning:
             _log.warning(f"Missing scaling factor for {component.name}")
         return default
+    else:
+        return sf
 
 
 def set_scaling_factor(component, scaling_factor: float, overwrite: bool = False):
@@ -514,21 +530,21 @@ def set_scaling_factor(component, scaling_factor: float, overwrite: bool = False
     # Check for negative or 0 scaling factors
     if scaling_factor < 0:
         raise ValueError(
-            f"scaling factor for {component.name} is negative ({scaling_factor}). "
+            f"Scaling factor for {component.name} is negative ({scaling_factor}). "
             "Scaling factors must be strictly positive."
         )
     elif scaling_factor == 0:
         raise ValueError(
-            f"scaling factor for {component.name} is zero. "
+            f"Scaling factor for {component.name} is zero. "
             "Scaling factors must be strictly positive."
         )
     elif scaling_factor == float("inf"):
         raise ValueError(
-            f"scaling factor for {component.name} is infinity. "
+            f"Scaling factor for {component.name} is infinity. "
             "Scaling factors must be finite."
         )
     elif math.isnan(scaling_factor):
-        raise ValueError(f"scaling factor for {component.name} is NaN.")
+        raise ValueError(f"Scaling factor for {component.name} is NaN.")
 
     if component.is_indexed():
         # What if a scaling factor already exists for the indexed component?
@@ -537,8 +553,13 @@ def set_scaling_factor(component, scaling_factor: float, overwrite: bool = False
         raise TypeError(
             f"Component {component.name} is indexed. Set scaling factors for individual indices instead."
         )
-
-    sfx = get_component_scaling_suffix(component)
+    try:
+        sfx = get_component_scaling_suffix(component)
+    except RuntimeError as err:
+        raise RuntimeError(
+            f"Cannot set a scaling factor for {component.name} because the scaling_factor "
+            "suffix has been deactivated."
+        ) from err
 
     if not overwrite and component in sfx:
         _log.debug(
@@ -1195,7 +1216,9 @@ def get_jacobian(
     return jac, nlp
 
 
-def jacobian_cond(m=None, scaled=True, order=None, pinv=False, jac=None):
+# TODO should we calculate the 2-norm condition number from the SVD
+# once #1566 is merged?
+def jacobian_cond(m=None, scaled=True, jac=None):
     """
     Get the Frobenius condition number of the scaled or unscaled Jacobian matrix
     of a model.
@@ -1203,24 +1226,25 @@ def jacobian_cond(m=None, scaled=True, order=None, pinv=False, jac=None):
     Args:
         m: calculate the condition number of the Jacobian from this model.
         scaled: if True use scaled Jacobian, else use unscaled
-        order: norm order, None = Frobenius, see scipy.sparse.linalg.norm for more
-        pinv: Use pseudoinverse, works for non-square matrices
         jac: (optional) previously calculated Jacobian
 
     Returns:
         (float) Condition number
     """
     if jac is None:
+        if m is None:
+            raise RuntimeError(
+                "User must provide either a Pyomo model or a Jacobian "
+                "to calculate the condition number."
+            )
         jac, _ = get_jacobian(m, scaled)
     jac = jac.tocsc()
-    if jac.shape[0] != jac.shape[1] and not pinv:
-        _log.warning(
+    if jac.shape[0] != jac.shape[1]:
+        _log.info(
             "Nonsquare Jacobian. Using pseudoinverse to calculate Frobenius norm."
         )
-        pinv = True
-    if not pinv:
-        jac_inv = spinv(jac)
-        return spnorm(jac, order) * spnorm(jac_inv, order)
-    else:
         jac_inv = pinv(jac.toarray())
-        return spnorm(jac, order) * norm(jac_inv, order)
+        return spnorm(jac, ord="fro") * norm(jac_inv, ord="fro")
+    else:
+        jac_inv = spinv(jac)
+        return spnorm(jac, ord="fro") * spnorm(jac_inv, ord="fro")

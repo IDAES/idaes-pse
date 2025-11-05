@@ -130,6 +130,21 @@ class TestGetScalingFactorSuffix:
             in str(eobj)
         )
 
+    @pytest.mark.unit
+    def test_get_scaling_factor_suffix_deactivated(self):
+        m = ConcreteModel()
+        m.scaling_factor = Suffix(direction=Suffix.EXPORT)
+        m.scaling_factor.deactivate()
+        with pytest.raises(
+            RuntimeError,
+            match=re.escape(
+                f"The scaling suffix on model has been deactivated. "
+                "Typically, this means that the user has performed a scaling transformation "
+                "on the model."
+            ),
+        ):
+            _ = get_scaling_factor_suffix(m)
+
 
 class TestGetScalingHintSuffix:
     @pytest.mark.unit
@@ -1526,7 +1541,7 @@ class TestGetScalingFactor:
         with pytest.raises(
             TypeError,
             match=re.escape(
-                "Can only get scaling factors for VarData, ConstraintData, and (hints from) ExpressionData. Component unknown is instead <class 'pyomo.core.base.PyomoModel.ConcreteModel'>"
+                "Can get scaling factors for only VarData, ConstraintData, and (hints from) ExpressionData. Component unknown is instead <class 'pyomo.core.base.PyomoModel.ConcreteModel'>."
             ),
         ):
             get_scaling_factor(m)
@@ -1740,6 +1755,15 @@ class TestGetScalingFactor:
         ):
             get_scaling_factor(e)
 
+    @pytest.mark.unit
+    def test_get_scaling_factor_deactivated_suffix(self):
+        m = ConcreteModel()
+        m.v = Var()
+        m.scaling_factor = Suffix(direction=Suffix.EXPORT)
+        m.scaling_factor[m.v] = 17
+        m.scaling_factor.deactivate()
+        assert get_scaling_factor(m.v) is None
+
 
 class TestSetScalingFactor:
     @pytest.mark.unit
@@ -1790,7 +1814,7 @@ class TestSetScalingFactor:
         with pytest.raises(
             ValueError,
             match=re.escape(
-                "scaling factor for v is negative (-42.0). "
+                "Scaling factor for v is negative (-42.0). "
                 "Scaling factors must be strictly positive."
             ),
         ):
@@ -1804,7 +1828,7 @@ class TestSetScalingFactor:
         with pytest.raises(
             ValueError,
             match=re.escape(
-                "scaling factor for v is zero. "
+                "Scaling factor for v is zero. "
                 "Scaling factors must be strictly positive."
             ),
         ):
@@ -1818,7 +1842,7 @@ class TestSetScalingFactor:
         with pytest.raises(
             ValueError,
             match=re.escape(
-                "scaling factor for v is infinity. " "Scaling factors must be finite."
+                "Scaling factor for v is infinity. " "Scaling factors must be finite."
             ),
         ):
             set_scaling_factor(m.v, float("inf"))
@@ -1830,7 +1854,7 @@ class TestSetScalingFactor:
 
         with pytest.raises(
             ValueError,
-            match=re.escape("scaling factor for v is NaN."),
+            match=re.escape("Scaling factor for v is NaN."),
         ):
             set_scaling_factor(m.v, float("NaN"))
 
@@ -1931,7 +1955,7 @@ class TestSetScalingFactor:
         with pytest.raises(
             ValueError,
             match=re.escape(
-                "scaling factor for e is negative (-42.0). "
+                "Scaling factor for e is negative (-42.0). "
                 "Scaling factors must be strictly positive."
             ),
         ):
@@ -1944,7 +1968,7 @@ class TestSetScalingFactor:
         with pytest.raises(
             ValueError,
             match=re.escape(
-                "scaling factor for e is zero. "
+                "Scaling factor for e is zero. "
                 "Scaling factors must be strictly positive."
             ),
         ):
@@ -1969,6 +1993,22 @@ class TestSetScalingFactor:
             "Scaling factor unchanged." in caplog.text
         )
         assert m.scaling_hint[m.e] == 10
+
+    @pytest.mark.unit
+    def test_set_scaling_factor_deactivated_suffix(self):
+        m = ConcreteModel()
+        m.scaling_factor = Suffix(direction=Suffix.EXPORT)
+        m.scaling_factor.deactivate()
+        m.v = Var()
+        with pytest.raises(
+            RuntimeError,
+            match=re.escape(
+                "Cannot set a scaling factor for v because the scaling_factor suffix has been deactivated."
+            ),
+        ):
+            set_scaling_factor(m.v, 42)
+
+        assert m.v not in m.scaling_factor
 
 
 class TestDelScalingFactor:
@@ -2344,6 +2384,7 @@ def test_find_unscaled_vars_and_constraints():
     not AmplInterface.available(), reason="pynumero_ASL is not available"
 )
 class TestGetJacobian:
+    @pytest.fixture
     def model(self):
         m = ConcreteModel()
         x = m.x = Var(initialize=1e3)
@@ -2355,11 +2396,11 @@ class TestGetJacobian:
         return m
 
     @pytest.mark.unit
-    def test_jacobian(self):
+    def test_jacobian(self, model):
         """Make sure the Jacobian from Pynumero matches expectation.  This is
         mostly to ensure we understand the interface and catch if things change.
         """
-        m = self.model()
+        m = model
         assert number_activated_objectives(m) == 0
         jac, nlp = get_jacobian(m)
         # get_scaling_factor creates the suffix if it doesn't exist
@@ -2403,8 +2444,8 @@ class TestGetJacobian:
         assert jac_scaled[c1_row, z_col] == pytest.approx(0.01)
 
     @pytest.mark.unit
-    def test_scale_no_var_scale(self):
-        m = self.model()
+    def test_scale_no_var_scale(self, model):
+        m = model
         jac_scaled, nlp = get_jacobian(
             m,
             include_scaling_factors=False,
@@ -2433,8 +2474,8 @@ class TestGetJacobian:
         assert jac_scaled[c3_row, z_col] == pytest.approx(3e2)
 
     @pytest.mark.unit
-    def test_scale_with_var_scale(self):
-        m = self.model()
+    def test_scale_with_var_scale(self, model):
+        m = model
         m.scaling_factor = Suffix(direction=Suffix.EXPORT)
         m.scaling_factor[m.x] = 1e-3
         m.scaling_factor[m.y] = 1e-6
@@ -2471,8 +2512,8 @@ class TestGetJacobian:
         assert jac_scaled[c3_row, z_col] == pytest.approx(3e6)
 
     @pytest.mark.unit
-    def test_exclude_scaling_factors_variables(self):
-        m = self.model()
+    def test_exclude_scaling_factors_variables(self, model):
+        m = model
         m.scaling_factor = Suffix(direction=Suffix.EXPORT)
         m.scaling_factor[m.x] = 1e-3
         m.scaling_factor[m.y] = 1e-6
@@ -2505,9 +2546,9 @@ class TestGetJacobian:
         assert jac_scaled[c3_row, z_col] == pytest.approx(3e2)
 
     @pytest.mark.unit
-    def test_condition_number(self):
+    def test_condition_number(self, model, caplog):
         """Calculate the condition number of the Jacobian"""
-        m = self.model()
+        m = model
         m.scaling_factor = Suffix(direction=Suffix.EXPORT)
         m.scaling_factor[m.x] = 1e-3
         m.scaling_factor[m.y] = 1e-6
@@ -2517,6 +2558,36 @@ class TestGetJacobian:
         m.scaling_factor[m.c3] = 1e-12
 
         n = jacobian_cond(m, scaled=True)
-        assert n == pytest.approx(500, abs=200)
+        assert n == pytest.approx(687.47, rel=1e-3)
         n = jacobian_cond(m, scaled=False)
-        assert n == pytest.approx(7.5e7, abs=5e6)
+        assert n == pytest.approx(7.50567e7, rel=1e-3)
+
+        # Nonsquare condition number
+        m.c3.deactivate()
+
+        # Scaled
+        with caplog.at_level(idaeslog.INFO):
+            n = jacobian_cond(m, scaled=True)
+        assert (
+            "Nonsquare Jacobian. Using pseudoinverse to calculate Frobenius norm."
+        ) in caplog.text
+        assert n == pytest.approx(500.367, rel=1e-3)
+
+        # Unscaled
+        with caplog.at_level(idaeslog.INFO):
+            n = jacobian_cond(m, scaled=False)
+        assert (
+            "Nonsquare Jacobian. Using pseudoinverse to calculate Frobenius norm."
+        ) in caplog.text
+        assert n == pytest.approx(2.23741e5, rel=1e-3)
+
+    @pytest.mark.unit
+    def test_condition_number_none(self, model):
+        with pytest.raises(
+            RuntimeError,
+            match=re.escape(
+                "User must provide either a Pyomo model or a Jacobian "
+                "to calculate the condition number."
+            ),
+        ):
+            n = jacobian_cond()
