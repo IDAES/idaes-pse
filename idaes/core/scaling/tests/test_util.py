@@ -2379,11 +2379,11 @@ def test_find_unscaled_vars_and_constraints():
         assert foo == bar
 
 
-# Tests based on John Eslick's
+# Tests based on John Eslick's originals for the old scaling tools
 @pytest.mark.skipif(
     not AmplInterface.available(), reason="pynumero_ASL is not available"
 )
-class TestGetJacobian:
+class TestJacobianMethods:
     @pytest.fixture
     def model(self):
         m = ConcreteModel()
@@ -2403,8 +2403,7 @@ class TestGetJacobian:
         m = model
         assert number_activated_objectives(m) == 0
         jac, nlp = get_jacobian(m)
-        # get_scaling_factor creates the suffix if it doesn't exist
-        assert len(m.scaling_factor) == 0
+        assert not hasattr(m, "scaling_factor")
         assert not hasattr(m, "scaling_hint")
         assert number_activated_objectives(m) == 0
 
@@ -2590,4 +2589,4 @@ class TestGetJacobian:
                 "to calculate the condition number."
             ),
         ):
-            n = jacobian_cond()
+            _ = jacobian_cond()
