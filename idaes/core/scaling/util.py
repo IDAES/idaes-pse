@@ -1185,7 +1185,7 @@ def get_jacobian(
     vlist = nlp.vlist = nlp.get_pyomo_variables()
 
     if include_scaling_factors:
-        # Preallocaying arrays with NaNs to make it apparent if
+        # Preallocating arrays with NaNs to make it apparent if
         # some element doesn't get set for some reason
         var_scaling_factors = np.nan * np.ones(len(vlist))
         for i, var in enumerate(vlist):
