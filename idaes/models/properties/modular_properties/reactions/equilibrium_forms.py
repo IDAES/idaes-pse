@@ -27,10 +27,7 @@ from idaes.core.util.exceptions import ConfigurationError
 from idaes.models.properties.modular_properties.base.utility import (
     get_concentration_term,
 )
-from idaes.core.scaling import (
-    ConstraintScalingScheme,
-    CustomScalerBase,
-)
+from idaes.core.scaling import CustomScalerBase
 
 
 # ----------------------------------------------------------------------------
@@ -48,17 +45,18 @@ class PowerLawEquilScaler(CustomScalerBase):
     def constraint_scaling_routine(
         self, model, reaction, overwrite=False, submodel_scalers=None
     ):
+        sf_keq = self.get_scaling_factor(model.k_eq[reaction], default=1, warning=True)
         if model.is_property_constructed("equilibrium_constraint"):
-            self.scale_constraint_by_nominal_value(
+            self.set_component_scaling_factor(
                 model.equilibrium_constraint[reaction],
-                scheme=ConstraintScalingScheme.inverseMaximum,
+                sf_keq,
                 overwrite=overwrite,
             )
 
         if model.is_property_constructed("inherent_equilibrium_constraint"):
-            self.scale_constraint_by_nominal_value(
+            self.set_component_scaling_factor(
                 model.inherent_equilibrium_constraint[reaction],
-                scheme=ConstraintScalingScheme.inverseMaximum,
+                sf_keq,
                 overwrite=overwrite,
             )
 
