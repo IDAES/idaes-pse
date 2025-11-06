@@ -537,11 +537,8 @@ class TestEquilibriumReactorScalerLegacy:
         scaler.constraint_scaling_routine(model.fs.unit)
 
         # Check that sub-models have suffixes - we will assume they are right at this point
-        sfx_in = model.fs.unit.control_volume.properties_in[0].scaling_factor
-        assert isinstance(sfx_in, Suffix)
-        assert (
-            len(sfx_in) == 0
-        )  # inlet has no constraints. Not quite sure why the Suffix exists
+        # No constraints on the inlet properties, so no scaling suffix generated
+        # sfx_in = model.fs.unit.control_volume.properties_in[0].scaling_factor
 
         sfx_out = model.fs.unit.control_volume.properties_out[0].scaling_factor
         assert isinstance(sfx_out, Suffix)

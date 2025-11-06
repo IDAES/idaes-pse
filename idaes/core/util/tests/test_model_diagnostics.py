@@ -112,7 +112,7 @@ from idaes.core.surrogate.pysmo.sampling import (
 )
 from idaes.core.util.testing import _enable_scip_solver_for_testing
 from idaes.models.properties import iapws95
-
+from idaes.core.scaling import set_scaling_factor
 
 __author__ = "Alex Dowling, Douglas Allan, Andrew Lee"
 
@@ -183,6 +183,19 @@ def test_vars_near_zero(model):
     assert len(near_zero_vars) == 1
     for i in near_zero_vars:
         assert i is model.v1
+
+    set_scaling_factor(model.v3, 1e5)
+    near_zero_vars = _vars_near_zero(model, variable_zero_value_tolerance=1e-5)
+    assert isinstance(near_zero_vars, ComponentSet)
+    assert len(near_zero_vars) == 1
+    for i in near_zero_vars:
+        assert i is model.v1
+
+    near_zero_vars = _vars_near_zero(model, variable_zero_value_tolerance=1)
+    assert isinstance(near_zero_vars, ComponentSet)
+    assert len(near_zero_vars) == 2
+    for i in near_zero_vars:
+        assert i.local_name in ["v1", "v3"]
 
 
 class TestVariablesWithNoneValue:
@@ -335,11 +348,92 @@ def test_vars_with_bounds_issues(model):
         assert i.local_name in ["v1", "v4"]
 
     m = ConcreteModel()
-    m.v = Var(initialize=-1e-8, bounds=(0, 1))
+    m.v = Var(initialize=-1e-4, bounds=(0, 1))
 
+    # Just outside lower bound
+    bounds_issue = _vars_violating_bounds(m, tolerance=1e-6)
+    assert isinstance(bounds_issue, ComponentSet)
+    assert len(bounds_issue) == 1
+
+    bounds_issue = _vars_violating_bounds(m, tolerance=1e3)
+    assert isinstance(bounds_issue, ComponentSet)
+    assert len(bounds_issue) == 0
+
+    set_scaling_factor(m.v, 1e-10, overwrite=True)
+    bounds_issue = _vars_violating_bounds(m, tolerance=1e3)
+    assert isinstance(bounds_issue, ComponentSet)
+    assert len(bounds_issue) == 0
+
+    set_scaling_factor(m.v, 1e10, overwrite=True)
+    bounds_issue = _vars_violating_bounds(m, tolerance=1e-6)
+    assert isinstance(bounds_issue, ComponentSet)
+    assert len(bounds_issue) == 1
+
+    # Just inside lower bound
+    m.v.set_value(1e-4)
+
+    set_scaling_factor(m.v, 1, overwrite=True)
     bounds_issue = _vars_violating_bounds(m, tolerance=1e-6)
     assert isinstance(bounds_issue, ComponentSet)
     assert len(bounds_issue) == 0
+
+    bounds_issue = _vars_violating_bounds(m, tolerance=1e3)
+    assert isinstance(bounds_issue, ComponentSet)
+    assert len(bounds_issue) == 0
+
+    set_scaling_factor(m.v, 1e-10, overwrite=True)
+    bounds_issue = _vars_violating_bounds(m, tolerance=1e3)
+    assert isinstance(bounds_issue, ComponentSet)
+    assert len(bounds_issue) == 0
+
+    set_scaling_factor(m.v, 1e10, overwrite=True)
+    bounds_issue = _vars_violating_bounds(m, tolerance=1e-6)
+    assert isinstance(bounds_issue, ComponentSet)
+    assert len(bounds_issue) == 0
+
+    # Just inside upper bound
+    m.v.set_value(1 - 1e-4)
+
+    set_scaling_factor(m.v, 1, overwrite=True)
+    bounds_issue = _vars_violating_bounds(m, tolerance=1e-6)
+    assert isinstance(bounds_issue, ComponentSet)
+    assert len(bounds_issue) == 0
+
+    bounds_issue = _vars_violating_bounds(m, tolerance=1e3)
+    assert isinstance(bounds_issue, ComponentSet)
+    assert len(bounds_issue) == 0
+
+    set_scaling_factor(m.v, 1e-10, overwrite=True)
+    bounds_issue = _vars_violating_bounds(m, tolerance=1e3)
+    assert isinstance(bounds_issue, ComponentSet)
+    assert len(bounds_issue) == 0
+
+    set_scaling_factor(m.v, 1e10, overwrite=True)
+    bounds_issue = _vars_violating_bounds(m, tolerance=1e-6)
+    assert isinstance(bounds_issue, ComponentSet)
+    assert len(bounds_issue) == 0
+
+    # Just outside upper bound
+    m.v.set_value(1 + 1e-4)
+
+    set_scaling_factor(m.v, 1, overwrite=True)
+    bounds_issue = _vars_violating_bounds(m, tolerance=1e-6)
+    assert isinstance(bounds_issue, ComponentSet)
+    assert len(bounds_issue) == 1
+
+    bounds_issue = _vars_violating_bounds(m, tolerance=1e3)
+    assert isinstance(bounds_issue, ComponentSet)
+    assert len(bounds_issue) == 0
+
+    set_scaling_factor(m.v, 1e-10, overwrite=True)
+    bounds_issue = _vars_violating_bounds(m, tolerance=1e3)
+    assert isinstance(bounds_issue, ComponentSet)
+    assert len(bounds_issue) == 0
+
+    set_scaling_factor(m.v, 1e10, overwrite=True)
+    bounds_issue = _vars_violating_bounds(m, tolerance=1e-6)
+    assert isinstance(bounds_issue, ComponentSet)
+    assert len(bounds_issue) == 1
 
 
 @pytest.mark.unit
@@ -351,13 +445,25 @@ def test_vars_with_extreme_values():
     m.v4 = Var(initialize=1e0)
     m.v5 = Var(initialize=1e4)
     m.v6 = Var(initialize=1e8)
-    m.v6 = Var(initialize=1e12)  # large
+    m.v7 = Var(initialize=1e12)  # large
 
     xvars = _vars_with_extreme_values(m, large=1e9, small=1e-7, zero=1e-10)
 
     assert len(xvars) == 2
     for i in xvars:
-        assert i.name in ["v2", "v6"]
+        assert i.name in ["v2", "v7"]
+
+    set_scaling_factor(m.v1, 1e3)
+    set_scaling_factor(m.v2, 1e6)
+    set_scaling_factor(m.v4, 1e-12)
+    set_scaling_factor(m.v6, 1e3)
+    set_scaling_factor(m.v7, 1e-12)
+
+    xvars = _vars_with_extreme_values(m, large=1e9, small=1e-7, zero=1e-10)
+
+    assert len(xvars) == 2
+    for i in xvars:
+        assert i.name in ["v1", "v6"]
 
 
 @pytest.mark.unit
@@ -1292,6 +1398,42 @@ The following terms in c2 are potentially problematic:
 
 ====================================================================================
 """
+
+        # Variable scaling doesn't affect anything
+        assert stream.getvalue() == expected
+
+        set_scaling_factor(m.v5, 1e-5, overwrite=True)
+
+        stream = StringIO()
+        dt.display_problematic_constraint_terms(m.c2, stream=stream)
+
+        assert stream.getvalue() == expected
+
+        set_scaling_factor(m.v5, 1e5, overwrite=True)
+
+        stream = StringIO()
+        dt.display_problematic_constraint_terms(m.c2, stream=stream)
+
+        assert stream.getvalue() == expected
+
+        # Constraint scaling affects only the zero tolerance
+        set_scaling_factor(m.c2, 1e-5, overwrite=True)
+
+        stream = StringIO()
+        dt.display_problematic_constraint_terms(m.c2, stream=stream)
+
+        assert stream.getvalue() == expected
+
+        set_scaling_factor(m.c2, 1e5, overwrite=True)
+
+        expected = """====================================================================================
+The following terms in c2 are potentially problematic:
+
+
+====================================================================================
+"""
+        stream = StringIO()
+        dt.display_problematic_constraint_terms(m.c2, stream=stream)
 
         assert stream.getvalue() == expected
 
