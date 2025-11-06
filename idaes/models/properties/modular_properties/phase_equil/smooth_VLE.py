@@ -27,11 +27,42 @@ from idaes.models.properties.modular_properties.base.utility import (
     identify_VL_component_list,
 )
 import idaes.core.util.scaling as iscale
+from idaes.core.scaling import CustomScalerBase
+
+
+class SmoothVLEScaler(CustomScalerBase):
+    """
+    Scaling method for the SmoothVLE method for phase equilibrium
+    """
+
+    def variable_scaling_routine(self, model, phase_pair, overwrite: bool = False):
+        suffix = "_" + phase_pair[0] + "_" + phase_pair[1]
+        sf_T = self.get_scaling_factor(model.temperature)
+
+        if model.is_property_constructed("_t1" + suffix):
+            t1 = getattr(model, "_t1" + suffix)
+            self.set_component_scaling_factor(t1, sf_T, overwrite=overwrite)
+        # _teq is scaled in main method
+
+    def constraint_scaling_routine(self, model, phase_pair, overwrite: bool = False):
+        suffix = "_" + phase_pair[0] + "_" + phase_pair[1]
+
+        if model.is_property_constructed("_t1_constraint" + suffix):
+            t1 = getattr(model, "_t1" + suffix)
+            t1_con = getattr(model, "_t1_constraint" + suffix)
+            self.scale_constraint_by_component(t1_con, t1, overwrite=overwrite)
+
+        _teq_cons = getattr(model, "_teq_constraint" + suffix)
+        self.scale_constraint_by_component(
+            _teq_cons, model._teq[phase_pair], overwrite=overwrite
+        )
 
 
 # -----------------------------------------------------------------------------
 class SmoothVLE(object):
     """Methods for constructing equations associated with Smooth VLE formulation."""
+
+    default_scaler = SmoothVLEScaler
 
     @staticmethod
     def phase_equil(b, phase_pair):

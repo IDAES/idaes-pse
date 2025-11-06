@@ -14,6 +14,7 @@
 Tests for constructing and using component lists in electrolyte systems
 """
 # Import Python libraries
+from copy import deepcopy
 import pytest
 
 # Import Pyomo units
@@ -29,21 +30,11 @@ from pyomo.environ import (
 )
 
 # Import IDAES cores
-from idaes.core import AqueousPhase, VaporPhase
-from idaes.core.base.components import *
-
 from idaes.models.properties.modular_properties.state_definitions import FcTP
-from idaes.models.properties.modular_properties.base.tests.dummy_eos import DummyEoS
-from idaes.models.properties.modular_properties.eos.ideal import Ideal
-from idaes.models.properties.modular_properties.reactions.dh_rxn import constant_dh_rxn
-from idaes.models.properties.modular_properties.reactions.equilibrium_constant import (
-    van_t_hoff,
+from idaes.models.properties.modular_properties.state_definitions.tests.electrolyte_testing_config import (
+    get_config_no_inherent_reactions,
+    get_config_with_inherent_reactions,
 )
-from idaes.models.properties.modular_properties.reactions.equilibrium_forms import (
-    power_law_equil,
-)
-from idaes.models.properties.modular_properties.base.utility import ConcentrationForm
-
 from idaes.core import FlowsheetBlock
 from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
@@ -55,68 +46,19 @@ from idaes.core.solvers import get_solver
 
 solver = get_solver("ipopt_v2")
 
+state_bounds = {
+    "flow_mol_comp": (0, 100, 1000, pyunits.mol / pyunits.s),
+    "temperature": (273.15, 300, 500, pyunits.K),
+    "pressure": (5e4, 1e5, 1e6, pyunits.Pa),
+}
+
 
 # -----------------------------------------------------------------------------
 class TestApparentSpeciesBasisNoInherent:
-    config = {
-        # Specifying components
-        "components": {
-            "H2O": {
-                "type": Solvent,
-                "parameter_data": {"mw": (18e-3, pyunits.kg / pyunits.mol)},
-            },
-            "CO2": {
-                "type": Solute,
-                "parameter_data": {"mw": (44e-3, pyunits.kg / pyunits.mol)},
-            },
-            "KHCO3": {
-                "type": Apparent,
-                "dissociation_species": {"K+": 1, "HCO3-": 1},
-                "parameter_data": {"mw": (100.1e-3, pyunits.kg / pyunits.mol)},
-            },
-            "K+": {
-                "type": Cation,
-                "charge": +1,
-                "parameter_data": {"mw": (39.1e-3, pyunits.kg / pyunits.mol)},
-            },
-            "HCO3-": {
-                "type": Anion,
-                "charge": -1,
-                "parameter_data": {"mw": (61e-3, pyunits.kg / pyunits.mol)},
-            },
-            "N2": {
-                "type": Component,
-                "parameter_data": {"mw": (28e-3, pyunits.kg / pyunits.mol)},
-            },
-        },
-        # Specifying phases
-        "phases": {
-            "Liq": {
-                "type": AqueousPhase,
-                "equation_of_state": DummyEoS,
-                "equation_of_state_options": {"pH_range": "basic"},
-            },
-            "Vap": {"type": VaporPhase, "equation_of_state": Ideal},
-        },
-        # Set base units of measurement
-        "base_units": {
-            "time": pyunits.s,
-            "length": pyunits.m,
-            "mass": pyunits.kg,
-            "amount": pyunits.mol,
-            "temperature": pyunits.K,
-        },
-        # Specifying state definition
-        "state_definition": FcTP,
-        "state_bounds": {
-            "flow_mol_comp": (0, 100, 1000, pyunits.mol / pyunits.s),
-            "temperature": (273.15, 300, 500, pyunits.K),
-            "pressure": (5e4, 1e5, 1e6, pyunits.Pa),
-        },
-        "state_components": StateIndex.apparent,
-        "pressure_ref": (101325, pyunits.Pa),
-        "temperature_ref": (298.15, pyunits.K),
-    }
+    config = get_config_no_inherent_reactions()
+    config["state_components"] = StateIndex.apparent
+    config["state_definition"] = FcTP
+    config["state_bounds"] = deepcopy(state_bounds)
 
     @pytest.fixture(scope="class")
     def frame(self):
@@ -266,128 +208,10 @@ def dens_mol_H2O(*args, **kwargs):
 
 
 class TestApparentSpeciesBasisInherent:
-    config = {
-        # Specifying components
-        "components": {
-            "H2O": {
-                "type": Solvent,
-                "dens_mol_liq_comp": dens_mol_H2O,
-                "parameter_data": {"mw": (18e-3, pyunits.kg / pyunits.mol)},
-            },
-            "KHCO3": {
-                "type": Apparent,
-                "dissociation_species": {"K+": 1, "HCO3-": 1},
-                "parameter_data": {"mw": (100.1e-3, pyunits.kg / pyunits.mol)},
-            },
-            "K2CO3": {
-                "type": Apparent,
-                "dissociation_species": {"K+": 2, "CO3--": 1},
-                "parameter_data": {"mw": (138.2e-3, pyunits.kg / pyunits.mol)},
-            },
-            "KOH": {
-                "type": Apparent,
-                "dissociation_species": {"K+": 1, "OH-": 1},
-                "parameter_data": {"mw": (56.1e-3, pyunits.kg / pyunits.mol)},
-            },
-            "H+": {
-                "type": Cation,
-                "charge": +1,
-                "dens_mol_liq_comp": dens_mol_H2O,
-                "parameter_data": {"mw": (1e-3, pyunits.kg / pyunits.mol)},
-            },
-            "K+": {
-                "type": Cation,
-                "charge": +1,
-                "dens_mol_liq_comp": dens_mol_H2O,
-                "parameter_data": {"mw": (39.1e-3, pyunits.kg / pyunits.mol)},
-            },
-            "OH-": {
-                "type": Anion,
-                "charge": -1,
-                "dens_mol_liq_comp": dens_mol_H2O,
-                "parameter_data": {"mw": (17e-3, pyunits.kg / pyunits.mol)},
-            },
-            "HCO3-": {
-                "type": Anion,
-                "charge": -1,
-                "dens_mol_liq_comp": dens_mol_H2O,
-                "parameter_data": {"mw": (61e-3, pyunits.kg / pyunits.mol)},
-            },
-            "CO3--": {
-                "type": Anion,
-                "charge": -2,
-                "dens_mol_liq_comp": dens_mol_H2O,
-                "parameter_data": {"mw": (60e-3, pyunits.kg / pyunits.mol)},
-            },
-        },
-        # Specifying phases
-        "phases": {
-            "Liq": {
-                "type": AqueousPhase,
-                "equation_of_state": DummyEoS,
-                "equation_of_state_options": {"pH_range": "basic"},
-            }
-        },
-        # Set base units of measurement
-        "base_units": {
-            "time": pyunits.s,
-            "length": pyunits.m,
-            "mass": pyunits.kg,
-            "amount": pyunits.mol,
-            "temperature": pyunits.K,
-        },
-        # Specifying state definition
-        "state_definition": FcTP,
-        "state_bounds": {
-            "flow_mol_comp": (0, 100, 1000, pyunits.mol / pyunits.s),
-            "temperature": (273.15, 300, 500, pyunits.K),
-            "pressure": (5e4, 1e5, 1e6, pyunits.Pa),
-        },
-        "state_components": StateIndex.apparent,
-        "pressure_ref": (101325, pyunits.Pa),
-        "temperature_ref": (298.15, pyunits.K),
-        "inherent_reactions": {
-            "H2O_si": {
-                "stoichiometry": {
-                    ("Liq", "H2O"): -1,
-                    ("Liq", "H+"): 1,
-                    ("Liq", "OH-"): 1,
-                },
-                "heat_of_reaction": constant_dh_rxn,
-                "equilibrium_constant": van_t_hoff,
-                "equilibrium_form": power_law_equil,
-                "concentration_form": ConcentrationForm.molarity,
-                "parameter_data": {
-                    "reaction_order": {("Liq", "H+"): 1, ("Liq", "OH-"): 1},
-                    "dh_rxn_ref": 1,
-                    "k_eq_ref": 1e-14,
-                    "T_eq_ref": 350,
-                },
-            },
-            "co3_hco3": {
-                "stoichiometry": {
-                    ("Liq", "CO3--"): -1,
-                    ("Liq", "H2O"): -1,
-                    ("Liq", "HCO3-"): 1,
-                    ("Liq", "OH-"): 1,
-                },
-                "heat_of_reaction": constant_dh_rxn,
-                "equilibrium_constant": van_t_hoff,
-                "equilibrium_form": power_law_equil,
-                "concentration_form": ConcentrationForm.molarity,
-                "parameter_data": {
-                    "reaction_order": {
-                        ("Liq", "CO3--"): -1,
-                        ("Liq", "HCO3-"): 1,
-                        ("Liq", "OH-"): 1,
-                    },
-                    "dh_rxn_ref": 1,
-                    "k_eq_ref": 5e-11,
-                    "T_eq_ref": 350,
-                },
-            },
-        },
-    }
+    config = get_config_with_inherent_reactions()
+    config["state_components"] = StateIndex.apparent
+    config["state_definition"] = FcTP
+    config["state_bounds"] = deepcopy(state_bounds)
 
     @pytest.fixture(scope="class")
     def frame(self):
@@ -490,7 +314,7 @@ class TestApparentSpeciesBasisInherent:
         assert isinstance(m.fs.state[1].params.inherent_reaction_idx, Set)
         assert len(m.fs.state[1].params.inherent_reaction_idx) == 2
         for i in m.fs.state[1].params.inherent_reaction_idx:
-            assert i in ["H2O_si", "co3_hco3"]
+            assert i in ["h2o_si", "co3_hco3"]
 
         assert isinstance(m.fs.state[1].apparent_inherent_reaction_extent, Var)
         assert len(m.fs.state[1].apparent_inherent_reaction_extent) == 2
@@ -594,65 +418,10 @@ class TestApparentSpeciesBasisInherent:
 
 # -----------------------------------------------------------------------------
 class TestTrueSpeciesBasisNoInherent:
-    config = {
-        # Specifying components
-        "components": {
-            "H2O": {
-                "type": Solvent,
-                "parameter_data": {"mw": (18e-3, pyunits.kg / pyunits.mol)},
-            },
-            "CO2": {
-                "type": Solute,
-                "parameter_data": {"mw": (44e-3, pyunits.kg / pyunits.mol)},
-            },
-            "KHCO3": {
-                "type": Apparent,
-                "dissociation_species": {"K+": 1, "HCO3-": 1},
-                "parameter_data": {"mw": (100.1e-3, pyunits.kg / pyunits.mol)},
-            },
-            "K+": {
-                "type": Cation,
-                "charge": +1,
-                "parameter_data": {"mw": (39.1e-3, pyunits.kg / pyunits.mol)},
-            },
-            "HCO3-": {
-                "type": Anion,
-                "charge": -1,
-                "parameter_data": {"mw": (61e-3, pyunits.kg / pyunits.mol)},
-            },
-            "N2": {
-                "type": Component,
-                "parameter_data": {"mw": (28e-3, pyunits.kg / pyunits.mol)},
-            },
-        },
-        # Specifying phases
-        "phases": {
-            "Liq": {
-                "type": AqueousPhase,
-                "equation_of_state": DummyEoS,
-                "equation_of_state_options": {"pH_range": "basic"},
-            },
-            "Vap": {"type": VaporPhase, "equation_of_state": Ideal},
-        },
-        # Set base units of measurement
-        "base_units": {
-            "time": pyunits.s,
-            "length": pyunits.m,
-            "mass": pyunits.kg,
-            "amount": pyunits.mol,
-            "temperature": pyunits.K,
-        },
-        # Specifying state definition
-        "state_definition": FcTP,
-        "state_bounds": {
-            "flow_mol_comp": (0, 100, 1000, pyunits.mol / pyunits.s),
-            "temperature": (273.15, 300, 500, pyunits.K),
-            "pressure": (5e4, 1e5, 1e6, pyunits.Pa),
-        },
-        "state_components": StateIndex.true,
-        "pressure_ref": (101325, pyunits.Pa),
-        "temperature_ref": (298.15, pyunits.K),
-    }
+    config = get_config_no_inherent_reactions()
+    config["state_components"] = StateIndex.true
+    config["state_definition"] = FcTP
+    config["state_bounds"] = deepcopy(state_bounds)
 
     @pytest.fixture(scope="class")
     def frame(self):
@@ -747,133 +516,10 @@ class TestTrueSpeciesBasisNoInherent:
 
 # -----------------------------------------------------------------------------
 class TestTrueSpeciesBasisInherent:
-    config = {
-        # Specifying components
-        "components": {
-            "H2O": {
-                "type": Solvent,
-                "dens_mol_liq_comp": dens_mol_H2O,
-                "parameter_data": {"mw": (18e-3, pyunits.kg / pyunits.mol)},
-            },
-            "KHCO3": {
-                "type": Apparent,
-                "dissociation_species": {"K+": 1, "HCO3-": 1},
-                "parameter_data": {"mw": (100.1e-3, pyunits.kg / pyunits.mol)},
-            },
-            "K2CO3": {
-                "type": Apparent,
-                "dissociation_species": {"K+": 2, "CO3--": 1},
-                "parameter_data": {"mw": (138.2e-3, pyunits.kg / pyunits.mol)},
-            },
-            "KOH": {
-                "type": Apparent,
-                "dissociation_species": {"K+": 1, "OH-": 1},
-                "parameter_data": {"mw": (56.1e-3, pyunits.kg / pyunits.mol)},
-            },
-            "H+": {
-                "type": Cation,
-                "charge": +1,
-                "dens_mol_liq_comp": dens_mol_H2O,
-                "parameter_data": {"mw": (1e-3, pyunits.kg / pyunits.mol)},
-            },
-            "K+": {
-                "type": Cation,
-                "charge": +1,
-                "dens_mol_liq_comp": dens_mol_H2O,
-                "parameter_data": {"mw": (39.1e-3, pyunits.kg / pyunits.mol)},
-            },
-            "OH-": {
-                "type": Anion,
-                "charge": -1,
-                "dens_mol_liq_comp": dens_mol_H2O,
-                "parameter_data": {"mw": (17e-3, pyunits.kg / pyunits.mol)},
-            },
-            "HCO3-": {
-                "type": Anion,
-                "charge": -1,
-                "dens_mol_liq_comp": dens_mol_H2O,
-                "parameter_data": {"mw": (61e-3, pyunits.kg / pyunits.mol)},
-            },
-            "CO3--": {
-                "type": Anion,
-                "charge": -2,
-                "dens_mol_liq_comp": dens_mol_H2O,
-                "parameter_data": {"mw": (60e-3, pyunits.kg / pyunits.mol)},
-            },
-        },
-        # Specifying phases
-        "phases": {
-            "Liq": {
-                "type": AqueousPhase,
-                "equation_of_state": DummyEoS,
-                "equation_of_state_options": {"pH_range": "basic"},
-            }
-        },
-        # Set base units of measurement
-        "base_units": {
-            "time": pyunits.s,
-            "length": pyunits.m,
-            "mass": pyunits.kg,
-            "amount": pyunits.mol,
-            "temperature": pyunits.K,
-        },
-        # Specifying state definition
-        "state_definition": FcTP,
-        "state_bounds": {
-            "flow_mol_comp": (0, 100, 1000, pyunits.mol / pyunits.s),
-            "temperature": (273.15, 300, 500, pyunits.K),
-            "pressure": (5e4, 1e5, 1e6, pyunits.Pa),
-        },
-        "state_components": StateIndex.true,
-        "pressure_ref": (101325, pyunits.Pa),
-        "temperature_ref": (298.15, pyunits.K),
-        "inherent_reactions": {
-            "H2O_si": {
-                "stoichiometry": {
-                    ("Liq", "H2O"): -1,
-                    ("Liq", "H+"): 1,
-                    ("Liq", "OH-"): 1,
-                },
-                "heat_of_reaction": constant_dh_rxn,
-                "equilibrium_constant": van_t_hoff,
-                "equilibrium_form": power_law_equil,
-                "concentration_form": ConcentrationForm.molarity,
-                "parameter_data": {
-                    "reaction_order": {("Liq", "H+"): 1, ("Liq", "OH-"): 1},
-                    "dh_rxn_ref": 1,
-                    "k_eq_ref": 1e-14,
-                    "T_eq_ref": 350,
-                },
-            },
-            "co3_hco3": {
-                "stoichiometry": {
-                    ("Liq", "CO3--"): -1,
-                    ("Liq", "H2O"): -1,
-                    ("Liq", "HCO3-"): 1,
-                    ("Liq", "OH-"): 1,
-                },
-                "heat_of_reaction": constant_dh_rxn,
-                "equilibrium_constant": van_t_hoff,
-                "equilibrium_form": power_law_equil,
-                "concentration_form": ConcentrationForm.molarity,
-                "parameter_data": {
-                    "reaction_order": {
-                        ("Liq", "CO3--"): -1,
-                        ("Liq", "HCO3-"): 1,
-                        ("Liq", "OH-"): 1,
-                    },
-                    "dh_rxn_ref": 1,
-                    "k_eq_ref": 5e-11,
-                    "T_eq_ref": 350,
-                },
-            },
-        },
-        "default_scaling_factors": {
-            ("mole_frac_comp", "OH-"): 1e8,
-            ("mole_frac_comp", "HCO3-"): 1e8,
-            ("mole_frac_comp", "H+"): 1e16,
-        },
-    }
+    config = get_config_with_inherent_reactions()
+    config["state_components"] = StateIndex.true
+    config["state_definition"] = FcTP
+    config["state_bounds"] = deepcopy(state_bounds)
 
     @pytest.fixture(scope="class")
     def frame(self):
@@ -975,7 +621,7 @@ class TestTrueSpeciesBasisInherent:
         assert isinstance(m.fs.state[1].params.inherent_reaction_idx, Set)
         assert len(m.fs.state[1].params.inherent_reaction_idx) == 2
         for i in m.fs.state[1].params.inherent_reaction_idx:
-            assert i in ["H2O_si", "co3_hco3"]
+            assert i in ["h2o_si", "co3_hco3"]
 
         assert not hasattr(m.fs.state[1], "apparent_inherent_reaction_extent")
 

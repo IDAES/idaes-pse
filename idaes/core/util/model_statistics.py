@@ -28,6 +28,7 @@ from pyomo.common.deprecation import deprecation_warning
 from pyomo.contrib.pynumero.interfaces.external_grey_box import ExternalGreyBoxBlock
 
 import idaes.logger as idaeslog
+from idaes.core.scaling import get_scaling_factor
 
 _log = idaeslog.getLogger(__name__)
 
@@ -881,13 +882,13 @@ def variables_near_bounds_generator(
             "variables_near_bounds_generator has deprecated the relative argument. "
             "Please set abs_tol and rel_tol arguments instead."
         )
-        deprecation_warning(msg=msg, logger=_log, version="2.2.0", remove_in="3.0.0")
+        deprecation_warning(msg=msg, logger=_log, version="2.2.0", remove_in="2.11.0")
     if tol is not None:
         msg = (
             "variables_near_bounds_generator has deprecated the tol argument. "
             "Please set abs_tol and rel_tol arguments instead."
         )
-        deprecation_warning(msg=msg, logger=_log, version="2.2.0", remove_in="3.0.0")
+        deprecation_warning(msg=msg, logger=_log, version="2.2.0", remove_in="2.11.0")
         # Set tolerances using the provided value
         abs_tol = tol
         rel_tol = tol
@@ -898,7 +899,7 @@ def variables_near_bounds_generator(
         # To avoid errors, check that v has a value
         if v.value is None:
             continue
-
+        sf = get_scaling_factor(v, default=1, warning=False)
         # First, magnitude of variable
         if v.ub is not None and v.lb is not None:
             # Both upper and lower bounds, apply tol to (upper - lower)
@@ -913,7 +914,7 @@ def variables_near_bounds_generator(
             mag = 0
 
         # Calculate largest tolerance from absolute and relative
-        tol = max(abs_tol, mag * rel_tol)
+        tol = max(abs_tol / sf, mag * rel_tol)
 
         if v.ub is not None and not skip_ub and value(v.ub - v.value) <= tol:
             yield v
@@ -1631,35 +1632,25 @@ def large_residuals_set(block, tol=1e-5, return_residual_values=False):
     for c in _iter_indexed_block_data_objects(
         block, ctype=Constraint, active=True, descend_into=True
     ):
+        sf = get_scaling_factor(c, default=1, warning=False)
         try:
-            r = 0.0  # residual
-
-            # skip if no lower bound set
-            if c.lower is None:
-                r_temp = 0
+            val = value(c.body)
+        except ValueError:
+            val = None
+        if val is not None:
+            if c.lb is None:
+                r = 0
             else:
-                r_temp = value(c.lower - c.body())
-            # update the residual
-            if r_temp > r:
-                r = r_temp
+                r = max(c.lb - val, 0)
 
-            # skip if no upper bound set
-            if c.upper is None:
-                r_temp = 0
-            else:
-                r_temp = value(c.body() - c.upper)
+            if c.ub is not None:
+                r = max(r, val - c.ub)
 
-            # update the residual
-            if r_temp > r:
-                r = r_temp
-
-            # save residual if it is above threshold
-            if r > tol:
+            if r * sf > tol:
                 large_residuals_set.add(c)
-
                 if return_residual_values:
                     residual_values[c] = r
-        except (AttributeError, TypeError, ValueError):
+        else:
             large_residuals_set.add(c)
 
             if return_residual_values:

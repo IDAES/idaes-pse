@@ -26,6 +26,7 @@ from idaes.models.properties.modular_properties.eos.ceos_common import (
     CubicThermoExpressions,
     CubicType as CubicEoS,
 )
+from idaes.models.properties import iapws95
 
 __author__ = "Andrew Lee"
 
@@ -64,35 +65,10 @@ class TestNominalValueExtractionVisitor:
 
     @pytest.mark.unit
     def test_scalar_param_no_scale(self, m):
-        m.scalar_param = pyo.Param(initialize=1, mutable=True)
-        assert NominalValueExtractionVisitor().walk_expression(expr=m.scalar_param) == [
-            1
-        ]
-
-    @pytest.mark.unit
-    def test_scalar_param_w_scale(self, m):
-        m.scalar_param = pyo.Param(default=12, mutable=True)
-        set_scaling_factor(m.scalar_param, 1 / 10)
+        m.scalar_param = pyo.Param(initialize=12, mutable=True)
         assert NominalValueExtractionVisitor().walk_expression(expr=m.scalar_param) == [
             12
         ]
-
-    @pytest.mark.unit
-    def test_indexed_param_w_scale(self, m):
-        m.indexed_param = pyo.Param(m.set, initialize=1, mutable=True)
-        set_scaling_factor(m.indexed_param["a"], 1 / 13)
-        set_scaling_factor(m.indexed_param["b"], 1 / 14)
-        set_scaling_factor(m.indexed_param["c"], 1 / 15)
-
-        assert NominalValueExtractionVisitor().walk_expression(
-            expr=m.indexed_param["a"]
-        ) == [1]
-        assert NominalValueExtractionVisitor().walk_expression(
-            expr=m.indexed_param["b"]
-        ) == [1]
-        assert NominalValueExtractionVisitor().walk_expression(
-            expr=m.indexed_param["c"]
-        ) == [1]
 
     @pytest.mark.unit
     def test_scalar_var_no_scale(self, m):
@@ -153,7 +129,7 @@ class TestNominalValueExtractionVisitor:
         set_scaling_factor(m.var, 1 / 4)
 
         # Nominal value should be value
-        assert NominalValueExtractionVisitor().walk_expression(expr=m.var) == [-1]
+        assert NominalValueExtractionVisitor().walk_expression(expr=m.var) == [-4]
 
     @pytest.mark.unit
     def test_var_pos_bounds(self):
@@ -229,7 +205,7 @@ class TestNominalValueExtractionVisitor:
 
         assert NominalValueExtractionVisitor().walk_expression(
             expr=m.indexed_var["a"]
-        ) == [20]
+        ) == [22]
         assert NominalValueExtractionVisitor().walk_expression(
             expr=m.indexed_var["b"]
         ) == [23]
@@ -726,6 +702,19 @@ class TestNominalValueExtractionVisitor:
         m.b.set_value(4)
         assert pyo.value(Z) == pytest.approx(expected_mag, rel=1e-8)
 
+    @pytest.mark.component
+    @pytest.mark.skipif(
+        not iapws95.iapws95_available(), reason="IAPWS95 is not available"
+    )
+    def test_external_function_w_string_argument(self):
+        m = pyo.ConcreteModel()
+        m.properties = iapws95.Iapws95ParameterBlock()
+        m.state = m.properties.build_state_block([0])
+
+        assert NominalValueExtractionVisitor().walk_expression(
+            expr=m.state[0].temperature
+        ) == [pytest.approx(270.4877112932626, rel=1e-8)]
+
     @pytest.mark.unit
     def test_Expression(self, m):
         m.expression = pyo.Expression(
@@ -737,9 +726,106 @@ class TestNominalValueExtractionVisitor:
         ]
 
     @pytest.mark.unit
+    def test_Expression_hint(self, m):
+        set_scaling_factor(m.expression, 1 / 17)
+        # Need dummy addition in order to make sure we don't immediately descend into
+        # the body of m.expression
+        assert NominalValueExtractionVisitor().walk_expression(
+            expr=(1 + m.expression)
+        ) == [1, 17]
+
+    @pytest.mark.unit
+    def test_Expression_constant(self, m, caplog):
+        m.expression2 = pyo.Expression(expr=2)
+        with caplog.at_level(logging.WARNING):
+            out = NominalValueExtractionVisitor().walk_expression(
+                expr=(1 + m.expression2)
+            )
+        assert len(caplog.text) == 0
+        assert out == [1, 2]
+
+    @pytest.mark.unit
+    def test_Expression_constant_hint(self, m):
+        m.expression2 = pyo.Expression(expr=2)
+        set_scaling_factor(m.expression2, 1 / 3)
+        assert NominalValueExtractionVisitor().walk_expression(
+            expr=(1 + m.expression2)
+        ) == [1, 3]
+
+    @pytest.mark.unit
+    def test_Expression_evaluation_error(self, m):
+        m.z = pyo.Var()  # Leave uninitialized
+        m.expression3 = pyo.Expression(expr=m.z)
+        set_scaling_factor(m.expression3, 1 / 37)
+        assert NominalValueExtractionVisitor().walk_expression(
+            expr=(1 + m.expression3)
+        ) == [1, 37]
+
+    @pytest.mark.unit
+    def test_Expression_negative(self, m):
+        m.z.set_value(-2)
+        assert NominalValueExtractionVisitor().walk_expression(
+            expr=(1 + m.expression3)
+        ) == [1, -37]
+
+    @pytest.mark.unit
+    def test_Expression_zero(self, m):
+        m.z.set_value(0)
+        assert NominalValueExtractionVisitor().walk_expression(
+            expr=(1 + m.expression3)
+        ) == [1, 37]
+
+    @pytest.mark.unit
+    def test_Expression_hint(self, m):
+        set_scaling_factor(m.expression, 1 / 17)
+        # Need dummy addition in order to make sure we don't immediately descend into
+        # the body of m.expression
+        assert NominalValueExtractionVisitor().walk_expression(
+            expr=(1 + m.expression)
+        ) == [1, 17]
+
+    @pytest.mark.unit
+    def test_Expression_constant(self, m):
+        m.expression2 = pyo.Expression(expr=2)
+        assert NominalValueExtractionVisitor().walk_expression(
+            expr=(1 + m.expression2)
+        ) == [1, 2]
+
+    @pytest.mark.unit
+    def test_Expression_constant_hint(self, m):
+        m.expression2 = pyo.Expression(expr=2)
+        set_scaling_factor(m.expression2, 1 / 3)
+        assert NominalValueExtractionVisitor().walk_expression(
+            expr=(1 + m.expression2)
+        ) == [1, 3]
+
+    @pytest.mark.unit
+    def test_Expression_evaluation_error(self, m):
+        m.z = pyo.Var()  # Leave uninitialized
+        m.expression3 = pyo.Expression(expr=m.z)
+        set_scaling_factor(m.expression3, 1 / 37)
+        assert NominalValueExtractionVisitor().walk_expression(
+            expr=(1 + m.expression3)
+        ) == [1, 37]
+
+    @pytest.mark.unit
+    def test_Expression_negative(self, m):
+        m.z.set_value(-2)
+        assert NominalValueExtractionVisitor().walk_expression(
+            expr=(1 + m.expression3)
+        ) == [1, -37]
+
+    @pytest.mark.unit
+    def test_Expression_zero(self, m):
+        m.z.set_value(0)
+        assert NominalValueExtractionVisitor().walk_expression(
+            expr=(1 + m.expression3)
+        ) == [1, 37]
+
+    @pytest.mark.unit
     def test_constraint(self, m):
         m.constraint = pyo.Constraint(expr=m.scalar_var == m.expression)
 
         assert NominalValueExtractionVisitor().walk_expression(
             expr=m.constraint.expr
-        ) == [21, 0.5 ** (22 + 23 + 24)]
+        ) == [21, 17]

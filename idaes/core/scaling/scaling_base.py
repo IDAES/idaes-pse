@@ -24,6 +24,7 @@ from pyomo.common.config import (
 )
 from pyomo.core.base.constraint import ConstraintData
 from pyomo.core.base.var import VarData
+from pyomo.core.base.expression import ExpressionData
 
 from idaes.core.scaling.util import get_scaling_factor, set_scaling_factor
 import idaes.logger as idaeslog
@@ -75,6 +76,22 @@ CONFIG.declare(
     ),
 )
 CONFIG.declare(
+    "max_expression_scaling_hint",
+    ConfigValue(
+        default=1e10,
+        domain=float,
+        description="Maximum value for expression scaling hints.",
+    ),
+)
+CONFIG.declare(
+    "min_expression_scaling_hint",
+    ConfigValue(
+        default=1e-10,
+        domain=float,
+        description="Minimum value for constraint scaling hints.",
+    ),
+)
+CONFIG.declare(
     "overwrite",
     ConfigValue(
         default=False,
@@ -116,7 +133,9 @@ class ScalerBase:
             width=66,
         )
 
-    def get_scaling_factor(self, component):
+    def get_scaling_factor(
+        self, component, default: float = None, warning: Bool = False
+    ):
         """
         Get scaling factor for component.
 
@@ -124,6 +143,10 @@ class ScalerBase:
 
         Args:
             component: component to get scaling factor for
+            default: scaling factor to return if no scaling factor
+                exists for component
+            warning: Bool to determine whether a warning should be
+                returned if no scaling factor is found
 
         Returns:
             float - scaling factor
@@ -131,7 +154,7 @@ class ScalerBase:
         Raises:
             TypeError if component is a Block
         """
-        return get_scaling_factor(component)
+        return get_scaling_factor(component, default=default, warning=warning)
 
     def set_variable_scaling_factor(
         self, variable, scaling_factor: float, overwrite: bool = None
@@ -158,6 +181,35 @@ class ScalerBase:
         self._set_scaling_factor(
             component=variable,
             component_type="variable",
+            scaling_factor=scaling_factor,
+            overwrite=overwrite,
+        )
+
+    def set_expression_scaling_hint(
+        self, expression, scaling_factor: float, overwrite: bool = None
+    ):
+        """
+        Set scaling hint for expression.
+
+        Scaling factor is limited by min_expression_scaling_hint and max_expression_scaling_hint.
+
+        Args:
+            expression: ExpressionData component to set scaling factor for.
+            scaling_factor: nominal scaling factor to apply. May be limited by max and min values.
+            overwrite: whether to overwrite existing scaling factor (if present).
+              Defaults to Scaler config setting.
+
+        Returns:
+            None
+
+        Raises:
+            TypeError if variable is not an instance of VarData
+        """
+        if not isinstance(expression, ExpressionData):
+            raise TypeError(f"{expression} is not a named Expression (or is indexed).")
+        self._set_scaling_factor(
+            component=expression,
+            component_type="expression",
             scaling_factor=scaling_factor,
             overwrite=overwrite,
         )
@@ -191,6 +243,52 @@ class ScalerBase:
             overwrite=overwrite,
         )
 
+    def set_component_scaling_factor(
+        self, component, scaling_factor: float, overwrite: bool = None, **kwargs
+    ):
+        """
+        Set scaling factor (or hint) for Pyomo variable, constraint, or expression.
+        This method determines the component type and appropriatenly limits the
+        scaling factor (or hint) by the corresponding config options
+
+        Args:
+            component: Component to set scaling factor for.
+            scaling_factor: nominal scaling factor to apply. May be limited by max and min values.
+            overwrite: whether to overwrite existing scaling factor (if present).
+              Defaults to Scaler config setting.
+            kwargs: Hook to allow additional arguments in subclasses
+
+        Returns:
+            None
+
+        Raises:
+            TypeError if component is not an instance of VarData, ConstraintData, or ExpressionData
+        """
+        if component.is_indexed():
+            raise TypeError(
+                "Provided with indexed component. Call this method with its "
+                "ComponentData children instead."
+            )
+
+        if isinstance(component, VarData):
+            component_type = "variable"
+        elif isinstance(component, ConstraintData):
+            component_type = "constraint"
+        elif isinstance(component, ExpressionData):
+            component_type = "expression"
+        else:
+            raise TypeError(
+                f"Provided with component of type {type(component)}, which is not "
+                "able to be scaled."
+            )
+        self._set_scaling_factor(
+            component=component,
+            component_type=component_type,
+            scaling_factor=scaling_factor,
+            overwrite=overwrite,
+            **kwargs,
+        )
+
     def _set_scaling_factor(
         self, component, component_type, scaling_factor, overwrite=None
     ):
@@ -212,6 +310,9 @@ class ScalerBase:
         elif component_type == "constraint":
             maxsf = self.config.max_constraint_scaling_factor
             minsf = self.config.min_constraint_scaling_factor
+        elif component_type == "expression":
+            maxsf = self.config.max_expression_scaling_hint
+            minsf = self.config.min_expression_scaling_hint
         else:
             raise ValueError("Invalid value for component_type.")
 
