@@ -33,19 +33,21 @@ from pyomo.environ import (
 )
 
 from idaes.core import MaterialFlowBasis, MaterialBalanceType, EnergyBalanceType
+
 from idaes.models.properties.modular_properties.base.utility import (
     get_bounds_from_config,
     get_method,
     GenericPropertyPackageError,
-)
-from idaes.models.properties.modular_properties.base.utility import (
     identify_VL_component_list,
 )
 from idaes.models.properties.modular_properties.phase_equil.henry import (
     HenryType,
     henry_equilibrium_ratio,
 )
-from idaes.core.util.exceptions import ConfigurationError, InitializationError
+from idaes.core.util.exceptions import (
+    ConfigurationError,
+    InitializationError,
+)
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 from idaes.core.scaling import (
@@ -754,17 +756,13 @@ class FTPxScaler(CustomScalerBase):
         for i in model.component_list:
             self.set_component_scaling_factor(
                 model.mole_frac_comp[i],
-                min(
-                    sf_mf[p, i]
-                    for p in model.phase_list
-                    if i in model.components_in_phase(p)
-                ),
+                min(sf_mf[p, i] for p in model.phase_list if (p, i) in sf_mf),
                 overwrite=overwrite,
             )
             nom = max(
                 1 / (sf_mf[p, i] * sf_Fp[p])
                 for p in model.phase_list
-                if i in model.components_in_phase(p)
+                if (p, i) in sf_mf
             )
             self.set_component_scaling_factor(
                 model.flow_mol_comp[i], 1 / nom, overwrite=overwrite
@@ -819,11 +817,6 @@ class FTPxScaler(CustomScalerBase):
                     scheme=ConstraintScalingScheme.inverseMaximum,
                     overwrite=overwrite,
                 )
-
-        if model.params._electrolyte:
-            raise NotImplementedError(
-                "Scaling has not yet been implemented for electrolyte systems."
-            )
 
 
 do_not_initialize = ["sum_mole_frac_out"]
