@@ -1000,9 +1000,11 @@ class DiagnosticsToolbox:
         if stream is None:
             stream = sys.stdout
 
+        jac, nlp = get_jacobian(self._model)
+
         xjc = extreme_jacobian_columns(
-            m=self._model,
-            scaled=False,
+            jac=jac,
+            nlp=nlp,
             large=self.config.jacobian_large_value_caution,
             small=self.config.jacobian_small_value_caution,
         )
@@ -1037,9 +1039,11 @@ class DiagnosticsToolbox:
         if stream is None:
             stream = sys.stdout
 
+        jac, nlp = get_jacobian(self._model)
+
         xjr = extreme_jacobian_rows(
-            m=self._model,
-            scaled=False,
+            jac=jac,
+            nlp=nlp,
             large=self.config.jacobian_large_value_caution,
             small=self.config.jacobian_small_value_caution,
         )

@@ -19,7 +19,7 @@ from pyomo.contrib.incidence_analysis import (
     IncidenceGraphInterface,
     solve_strongly_connected_components,
 )
-
+from idaes.core.solvers import get_solver
 from idaes.core.initialization.initializer_base import (
     InitializerBase,
     InitializationStatus,
@@ -92,7 +92,7 @@ class BlockTriangularizationInitializer(InitializerBase):
     CONFIG.block_solver_writer_config.declare(
         "scale_model",
         ConfigValue(
-            default=False,
+            default=True,
             domain=Bool,
             description="Whether to apply model scaling with block solver",
         ),
@@ -152,7 +152,13 @@ class BlockTriangularizationInitializer(InitializerBase):
         # TODO: For now, go directly through solver factory as default solver
         # options cause failures. Most of these appear to be due to scaling,
         # so hopefully we can fix these later.
-        solver = SolverFactory(
+        # solver = SolverFactory(
+        #     self.config.block_solver,
+        #     options=self.config.block_solver_options,
+        #     writer_config=self.config.block_solver_writer_config,
+        # )
+
+        solver = get_solver(
             self.config.block_solver,
             options=self.config.block_solver_options,
             writer_config=self.config.block_solver_writer_config,
@@ -180,3 +186,7 @@ class BlockTriangularizationInitializer(InitializerBase):
                 raise InitializationError(
                     f"Block Triangularization failed with solver status: {results['Solver']}."
                 )
+            
+        self.postcheck(
+            block_data, results_obj=results, exclude_unused_vars=True
+        )
