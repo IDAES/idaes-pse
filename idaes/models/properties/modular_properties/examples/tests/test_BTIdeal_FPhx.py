@@ -11,7 +11,7 @@
 # for full copyright and license information.
 #################################################################################
 """
-Author: Andrew Lee
+Authors: Andrew Lee, Douglas Allan
 """
 import pytest
 from pyomo.environ import (
@@ -34,6 +34,8 @@ from idaes.core.util.model_statistics import (
 from idaes.core.solvers import get_solver
 
 from idaes.core import LiquidPhase, VaporPhase
+
+from idaes.core.scaling import get_scaling_factor
 
 from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
@@ -246,7 +248,7 @@ class TestParamBlock(object):
         assert_units_consistent(model)
 
 
-class TestStateBlock(object):
+class TestStateBlockLegacyScaler(object):
     @pytest.fixture(scope="class")
     def model(self):
         model = ConcreteModel()
@@ -420,7 +422,211 @@ class TestStateBlock(object):
 
     @pytest.mark.unit
     def test_define_port_members(self, model):
+        sv = model.props[1].define_port_members()
+
+        assert len(sv) == 4
+        for i in sv:
+            assert i in ["flow_mol", "enth_mol", "pressure", "mole_frac_comp"]
+
+    @pytest.mark.unit
+    def test_define_display_vars(self, model):
+        sv = model.props[1].define_display_vars()
+
+        assert len(sv) == 4
+        for i in sv:
+            assert i in [
+                "Total Molar Flowrate",
+                "Molar Enthalpy",
+                "Pressure",
+                "Total Mole Fraction",
+            ]
+
+    @pytest.mark.unit
+    def test_dof(self, model):
+        assert degrees_of_freedom(model.props[1]) == 0
+
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_initialize(self, model):
+        orig_fixed_vars = fixed_variables_set(model)
+        orig_act_consts = activated_constraints_set(model)
+
+        model.props.initialize(optarg={"tol": 1e-6})
+
+        assert degrees_of_freedom(model) == 0
+
+        fin_fixed_vars = fixed_variables_set(model)
+        fin_act_consts = activated_constraints_set(model)
+
+        assert len(fin_act_consts) == len(orig_act_consts)
+        assert len(fin_fixed_vars) == len(orig_fixed_vars)
+
+        for c in fin_act_consts:
+            assert c in orig_act_consts
+        for v in fin_fixed_vars:
+            assert v in orig_fixed_vars
+
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solve(self, model):
+        results = solver.solve(model)
+
+        # Check for optimal solution
+        assert check_optimal_termination(results)
+
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solution(self, model):
+        # Check phase equilibrium results
+        assert model.props[1].mole_frac_phase_comp[
+            "Liq", "benzene"
+        ].value == pytest.approx(0.4121, abs=1e-4)
+        assert model.props[1].mole_frac_phase_comp[
+            "Vap", "benzene"
+        ].value == pytest.approx(0.6339, abs=1e-4)
+        assert model.props[1].phase_frac["Vap"].value == pytest.approx(0.3961, abs=1e-4)
+
+    @pytest.mark.ui
+    @pytest.mark.unit
+    def test_report(self, model):
+        model.props[1].report()
+
+
+class TestStateBlockScalerObject(object):
+    @pytest.fixture(scope="class")
+    def model(self):
+        model = ConcreteModel()
+        model.params = GenericParameterBlock(**config_dict)
+
+        model.props = model.params.state_block_class(
+            [1], parameters=model.params, defined_state=True
+        )
+
+        scaler_obj = model.props[1].default_scaler()
+        scaler_obj.default_scaling_factors["flow_mol_phase"] = 1
+        scaler_obj.scale_model(model.props[1])
+
+        # Fix state
+        model.props[1].flow_mol.fix(1)
+        model.props[1].enth_mol.fix(47297)
+        model.props[1].pressure.fix(101325)
+        model.props[1].mole_frac_comp["benzene"].fix(0.5)
+        model.props[1].mole_frac_comp["toluene"].fix(0.5)
+
+        return model
+
+    @pytest.mark.unit
+    def test_build(self, model):
+        # Check state variable values and bounds
+        assert isinstance(model.props[1].flow_mol, Var)
+        assert value(model.props[1].flow_mol) == 1
+        assert model.props[1].flow_mol.ub == 1000
+        assert model.props[1].flow_mol.lb == 0
+
+        assert isinstance(model.props[1].pressure, Var)
+        assert value(model.props[1].pressure) == 101325
+        assert model.props[1].pressure.ub == 1e6
+        assert model.props[1].pressure.lb == 5e4
+
+        assert isinstance(model.props[1].enth_mol, Var)
+        assert value(model.props[1].enth_mol) == 47297
+        assert model.props[1].enth_mol.ub == 2e5
+        assert model.props[1].enth_mol.lb == 1e4
+
+        assert isinstance(model.props[1].temperature, Var)
+        assert value(model.props[1].temperature) == 300
+        assert model.props[1].temperature.ub == 450
+        assert model.props[1].temperature.lb == 273.15
+
+        assert isinstance(model.props[1].mole_frac_comp, Var)
+        assert len(model.props[1].mole_frac_comp) == 2
+        for i in model.props[1].mole_frac_comp:
+            assert value(model.props[1].mole_frac_comp[i]) == 0.5
+
+        assert_units_consistent(model)
+
+    @pytest.mark.unit
+    def test_basic_scaling(self, model):
+        sblock = model.props[1]
+        gsf = get_scaling_factor
+
+        assert len(sblock.scaling_factor) == 39
+        assert len(sblock.scaling_hint) == 12
+
+        # Variables
+        assert gsf(sblock.flow_mol) == 1
+        assert gsf(sblock.pressure) == 1e-5
+        sf_enth = 1 / (
+            2000  # J/(kg K)
+            * 0.085127  # average molecular weight of benzene and toluene in kg/mol
+            * 300  # scaling factor for temperature
+        )
+        assert gsf(sblock.enth_mol) == pytest.approx(sf_enth, rel=1e-4)
+        for vdata in sblock.flow_mol_phase.values():
+            assert gsf(vdata) == 1
+        assert gsf(sblock.temperature) == 1 / 300
+        for vdata in sblock.mole_frac_comp.values():
+            assert gsf(vdata) == 10
+        for vdata in sblock.mole_frac_phase_comp.values():
+            assert gsf(vdata) == 10
+        for vdata in sblock.phase_frac.values():
+            assert gsf(vdata) == 1
+        assert gsf(sblock._teq["Vap", "Liq"]) == 1 / 300
+        assert gsf(sblock._t1_Vap_Liq) == 1 / 300
+        assert gsf(sblock.temperature_bubble["Vap", "Liq"]) == 1 / 300
+        for vdata in sblock._mole_frac_tbub.values():
+            assert gsf(vdata) == 10
+        assert gsf(sblock.temperature_dew["Vap", "Liq"]) == 1 / 300
+        for vdata in sblock._mole_frac_tdew.values():
+            assert gsf(vdata) == 10
+
+        # Constraints
+        assert gsf(sblock.total_flow_balance) == 1
+        for cdata in sblock.component_flow_balances.values():
+            assert gsf(cdata) == 10
+        assert gsf(sblock.sum_mole_frac) == 1
+        for cdata in sblock.phase_fraction_constraint.values():
+            assert gsf(cdata) == 1
+        assert gsf(sblock.enth_mol_eqn) == pytest.approx(sf_enth, rel=1e-4)
+        assert gsf(sblock._t1_constraint_Vap_Liq) == 1 / 300
+        assert (
+            gsf(sblock.eq_temperature_bubble["Vap", "Liq"]) == 1e-5
+        )  # Eqn in pressure units
+        for cdata in sblock.eq_mole_frac_tbub.values():
+            assert gsf(cdata) == 1e-4  # Eqn in partial pressure
+        assert gsf(sblock._teq_constraint_Vap_Liq) == 1 / 300
+        assert gsf(sblock.eq_temperature_dew["Vap", "Liq"]) == 1
+        for cdata in sblock.eq_mole_frac_tdew.values():
+            assert gsf(cdata) == 1e-4  # Eqn in partial pressure
+        for cdata in sblock.equilibrium_constraint.values():
+            assert gsf(cdata) == 1e-4  # Eqn in partial pressure
+
+        # Expressions
+        for edata in sblock.flow_mol_phase_comp.values():
+            assert gsf(edata) == 10
+        for edata in sblock.flow_mol_comp.values():
+            assert gsf(edata) == 10
+        for edata in sblock.enth_mol_phase.values():
+            assert gsf(edata) == pytest.approx(sf_enth, rel=1e-4)
+        for (_, j), edata in sblock.enth_mol_phase_comp.items():
+            sf_enth = 1 / (
+                2000  # J/(kg K)
+                * value(sblock.mw_comp[j])
+                * 300  # scaling factor for temperature
+            )
+            assert gsf(edata) == pytest.approx(sf_enth, rel=1e-4)
+
+    @pytest.mark.unit
+    def test_define_state_vars(self, model):
         sv = model.props[1].define_state_vars()
+
+        assert len(sv) == 4
+        for i in sv:
+            assert i in ["flow_mol", "enth_mol", "pressure", "mole_frac_comp"]
+
+    @pytest.mark.unit
+    def test_define_port_members(self, model):
+        sv = model.props[1].define_port_members()
 
         assert len(sv) == 4
         for i in sv:

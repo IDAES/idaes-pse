@@ -16,16 +16,52 @@ Methods for calculating heat of reaction
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 
-from pyomo.environ import Var, value
+from pyomo.environ import units as pyunits, Var, value
 
 from idaes.core import MaterialFlowBasis
+from idaes.core.scaling import CustomScalerBase
+from idaes.core.util.constants import Constants
 from idaes.core.util.misc import set_param_from_config
 
 
 # -----------------------------------------------------------------------------
 # Constant dh_rxn
+class ConstantEnthalpyRxnScaler(CustomScalerBase):
+    """
+    Scaler object for the constant_dh_rxn method for calculating
+    the heat of reaction
+    """
+
+    def variable_scaling_routine(
+        self,
+        model,
+        reaction,
+        overwrite: bool = False,
+    ):
+        units = model.params.get_metadata().derived_units
+        # Modular properties will have temperature scaled by default, but modular reactions
+        # might be used with a different property package
+        sf_T = self.get_scaling_factor(
+            model.state_ref.temperature, default=1 / 300, warning=True
+        )
+        sf_R = value(
+            1 / pyunits.convert(Constants.gas_constant, to_units=units["gas_constant"])
+        )
+
+        if model.is_property_constructed("dh_rxn"):
+            self.set_component_scaling_factor(
+                model.dh_rxn[reaction], sf_T * sf_R, overwrite=overwrite
+            )
+
+    def constraint_scaling_routine(self, model, reaction, overwrite: bool = False):
+        # No constraints generated
+        pass
+
+
 class constant_dh_rxn:
     """Methods for constant heat of reaction."""
+
+    default_scaler = ConstantEnthalpyRxnScaler
 
     @staticmethod
     def build_parameters(rblock, config):
@@ -39,6 +75,7 @@ class constant_dh_rxn:
 
         rblock.dh_rxn_ref = Var(
             doc="Specific heat of reaction at reference state",
+            # pylint: disable-next=possibly-used-before-assignment
             units=units["energy_" + basis],
         )
 

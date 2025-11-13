@@ -19,10 +19,11 @@ Base class for control volumes.
 # We use some private attributes here to hide these from the user
 # pylint: disable=protected-access
 
-__author__ = "Andrew Lee"
+__author__ = "Andrew Lee, Douglas Allan"
 
 # Import Pyomo libraries
 from pyomo.environ import Constraint, Reals, units as pyunits, Var, value
+from pyomo.common.collections import ComponentMap
 from pyomo.dae import DerivativeVar
 from pyomo.common.deprecation import deprecation_warning
 
@@ -43,11 +44,109 @@ from idaes.core.util.exceptions import (
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util import scaling as iscale
 import idaes.logger as idaeslog
+from idaes.core.base.control_volume_base import ControlVolumeScalerBase
+
+from idaes.core.scaling import DefaultScalingRecommendation
 
 _log = idaeslog.getLogger(__name__)
 
 # TODO : Custom terms in material balances, other types of material balances
 # TODO : Improve flexibility for get_material_flow_terms and associated
+
+
+class ControlVolume0DScaler(ControlVolumeScalerBase):
+    """
+    Scaler object for the ControlVolume0D
+    """
+
+    DEFAULT_SCALING_FACTORS = {
+        # We could scale volume by magnitude if it were being fixed
+        # by the user, but we often have the volume given by an
+        # equality constraint involving geometry in the parent
+        # unit model.
+        "volume": DefaultScalingRecommendation.userInputRequired,
+        "phase_fraction": 10,  # May have already been created by property package
+    }
+
+    def _get_reference_state_block(self, model):
+        """
+        This method gives the parent class ControlVolumeScalerBase
+        methods a state block with the same index as the material
+        and energy balances to get scaling information from
+        """
+        return model.properties_out
+
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None
+    ):
+        """
+        Routine to apply scaling factors to variables in model.
+
+        Derived classes must overload this method.
+
+        Args:
+            model: model to be scaled
+            overwrite: whether to overwrite existing scaling factors
+            submodel_scalers: ComponentMap of Scalers to use for sub-models
+
+        Returns:
+            None
+        """
+        self.call_submodel_scaler_method(
+            submodel=model.properties_in,
+            submodel_scalers=submodel_scalers,
+            method="variable_scaling_routine",
+            overwrite=overwrite,
+        )
+        self.propagate_state_scaling(
+            target_state=model.properties_out,
+            source_state=model.properties_in,
+            overwrite=overwrite,
+        )
+        self.call_submodel_scaler_method(
+            submodel=model.properties_out,
+            submodel_scalers=submodel_scalers,
+            method="variable_scaling_routine",
+            overwrite=overwrite,
+        )
+        if hasattr(model, "volume"):
+            for v in model.volume.values():
+                self.scale_variable_by_default(v, overwrite=overwrite)
+        if hasattr(model, "phase_fraction"):
+            for v in model.phase_fraction.values():
+                self.scale_variable_by_default(v, overwrite=overwrite)
+
+        super().variable_scaling_routine(
+            model, overwrite=overwrite, submodel_scalers=submodel_scalers
+        )
+
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None
+    ):
+        """
+        Routine to apply scaling factors to constraints in model.
+
+        Derived classes must overload this method.
+
+        Args:
+            model: model to be scaled
+            overwrite: whether to overwrite existing scaling factors
+            submodel_scalers: ComponentMap of Scalers to use for sub-models
+
+        Returns:
+            None
+        """
+        for props in [model.properties_in, model.properties_out]:
+            self.call_submodel_scaler_method(
+                submodel=props,
+                submodel_scalers=submodel_scalers,
+                method="constraint_scaling_routine",
+                overwrite=overwrite,
+            )
+
+        super().constraint_scaling_routine(
+            model, overwrite=overwrite, submodel_scalers=submodel_scalers
+        )
 
 
 @declare_process_block_class(
@@ -70,6 +169,8 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
     momentum balances. The form of the terms used in these constraints is
     specified in the chosen property package.
     """
+
+    default_scaler = ControlVolume0DScaler
 
     def add_geometry(self):
         """
@@ -203,6 +304,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         pc_set = self.properties_in.phase_component_set
 
         # Check that reaction block exists if required
+        rblock = None
         if has_rate_reactions or has_equilibrium_reactions:
             try:
                 rblock = self.reactions
@@ -276,6 +378,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             flow_units = None
 
         # Get units for accumulation term if required
+        acc_units = None
         if self.config.dynamic:
             f_time_units = self.flowsheet().time_units
             if (f_time_units is None) ^ (units("time") is None):
@@ -942,6 +1045,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         units = self.config.property_package.get_metadata().get_derived_units
 
         # Get units for accumulation term if required
+        acc_units = None
         if self.config.dynamic:
             f_time_units = self.flowsheet().time_units
             if (f_time_units is None) ^ (units("time") is None):
@@ -1194,6 +1298,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         units = self.config.property_package.get_metadata().get_derived_units
 
         # Get units for accumulation term if required
+        acc_units = None
         if self.config.dynamic:
             f_time_units = self.flowsheet().time_units
             if (f_time_units is None) ^ (units("time") is None):

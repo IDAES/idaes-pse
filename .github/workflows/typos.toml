@@ -20,6 +20,8 @@ Attemp = "Attemp"
 attemp = "attemp"
 # Ficks Law
 Ficks = "Ficks"
+# inh == inherent
+inh = "inh"
 # scaling - ue
 ue = "ue"
 # Nd in Atom

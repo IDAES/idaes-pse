@@ -18,7 +18,7 @@ import logging
 from pandas import DataFrame
 
 # Import Pyomo libraries
-from pyomo.environ import Constraint, Reference
+from pyomo.environ import ComponentMap, Constraint, Reference
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.network import Port
 
@@ -32,6 +32,7 @@ from idaes.core import (
     UnitModelBlockData,
     useDefault,
 )
+from idaes.core.scaling import CustomScalerBase
 from idaes.models.unit_models.separator import (
     Separator,
     SplittingType,
@@ -42,11 +43,54 @@ from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.units_of_measurement import report_quantity
 
 
-__author__ = "Andrew Lee, Jaffer Ghouse"
+__author__ = "Andrew Lee, Jaffer Ghouse, Douglas Allan"
 
 
 # Set up logger
 logger = logging.getLogger("idaes.unit_model")
+
+
+class FlashScaler(CustomScalerBase):
+    """
+    Scaler object for the flash unit model
+    """
+
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None
+    ):
+        self.call_submodel_scaler_method(
+            model.control_volume,
+            method="variable_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+        self.call_submodel_scaler_method(
+            model.split,
+            method="variable_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None
+    ):
+        self.call_submodel_scaler_method(
+            model.control_volume,
+            method="constraint_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+        self.call_submodel_scaler_method(
+            model.split,
+            method="constraint_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+        if hasattr(model, "split_fraction_eq"):
+            # Register fact that this equation is
+            # well-scaled by default
+            for condata in model.split_fraction_eq.values():
+                self.set_component_scaling_factor(condata, 1, overwrite=overwrite)
 
 
 @declare_process_block_class("Flash")
@@ -54,6 +98,8 @@ class FlashData(UnitModelBlockData):
     """
     Standard Flash Unit Model Class
     """
+
+    default_scaler = FlashScaler
 
     CONFIG = ConfigBlock()
     CONFIG.declare(

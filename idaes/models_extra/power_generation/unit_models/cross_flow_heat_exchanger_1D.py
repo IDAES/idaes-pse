@@ -30,6 +30,7 @@ from pyomo.environ import (
 )
 from pyomo.common.config import ConfigValue, In, Bool
 from pyomo.network import Port
+from pyomo.dae.flatten import slice_component_along_sets
 
 # Import IDAES cores
 from idaes.core import declare_process_block_class
@@ -309,6 +310,17 @@ class CrossFlowHeatExchanger1DInitializer(SingleControlVolumeUnitInitializer):
         model.heat_tube_eqn.deactivate()
         model.heat_shell_eqn.deactivate()
 
+        if (
+            str.upper(model.config.hot_side.transformation_scheme)
+            == "LAGRANGE-LEGENDRE"
+        ):
+            model.lagrange_legendre_deactivation()
+            for t in model.flowsheet().time:
+                for x in model.hot_side.length_domain.get_finite_elements():
+                    hot_side.properties[t, x].temperature.unfix()
+                    cold_side.properties[t, x].temperature.unfix()
+            model.fix_initialization_states()
+
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solver_obj.solve(model, tee=slc.tee)
         try:
@@ -343,8 +355,17 @@ class CrossFlowHeatExchanger1DInitializer(SingleControlVolumeUnitInitializer):
             model.deltaP_tube_eqn.activate()
         if shell_has_pressure_change:
             model.deltaP_shell_eqn.activate()
+
+        model.hot_side.pressure_dx_disc_eq.activate()
+        model.cold_side.pressure_dx_disc_eq.activate()
         model.heat_tube_eqn.activate()
         model.heat_shell_eqn.activate()
+
+        if (
+            str.upper(model.config.hot_side.transformation_scheme)
+            == "LAGRANGE-LEGENDRE"
+        ):
+            model.lagrange_legendre_deactivation()
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solver_obj.solve(model, tee=slc.tee)
@@ -357,6 +378,12 @@ class CrossFlowHeatExchanger1DInitializer(SingleControlVolumeUnitInitializer):
 
         model.temp_wall_center.unfix()
         model.temp_wall_center_eqn.activate()
+
+        if (
+            str.upper(model.config.hot_side.transformation_scheme)
+            == "LAGRANGE-LEGENDRE"
+        ):
+            model.lagrange_legendre_deactivation()
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solver_obj.solve(model, tee=slc.tee)
@@ -431,12 +458,25 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
         Returns:
             None
         """
+
         # Call HeatExchanger1DData build to make common components
         super().build()
 
         # The HeatExchanger1DData equates the heat lost by the hot side and heat gained by the cold side.
         # That equation is deleted here because heat can accumulate in the wall.
         self.del_component(self.heat_conservation)
+
+        if (
+            str.upper(self.config.hot_side.transformation_scheme) == "LAGRANGE-LEGENDRE"
+            or str.upper(self.config.cold_side.transformation_scheme)
+            == "LAGRANGE-LEGENDRE"
+        ) and (
+            self.config.hot_side.has_pressure_change
+            or self.config.cold_side.has_pressure_change
+        ):
+            raise NotImplementedError(
+                "Pressure change is not implemented for Lagrange-Legendre collocation."
+            )
 
         # Create aliases for ports
         if self.config.shell_is_hot:
@@ -642,6 +682,7 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
             doc="Reynolds number on tube side",
             bounds=(1e-7, None),
         )
+
         if tube_has_pressure_change:
             # Friction factor on tube side
             self.friction_factor_tube = Var(
@@ -838,7 +879,6 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
             )
 
         # Tube side wall temperature
-        # FIXME replace with deviation variables
         @self.Constraint(
             self.flowsheet().config.time,
             tube.length_domain,
@@ -888,12 +928,12 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
             # on heat_accumulation_term
             return -heat_accumulation_term(b, t, x) == (
                 b.heat_shell[t, x]
-                * b.length_flow_shell
-                / pyunits.convert(b.length_flow_tube, to_units=shell_units["length"])
                 + pyunits.convert(
                     b.heat_tube[t, x],
                     to_units=shell_units["power"] / shell_units["length"],
                 )
+                * pyunits.convert(b.length_flow_tube, to_units=shell_units["length"])
+                / b.length_flow_shell
             )
 
         if not self.config.dynamic:
@@ -927,6 +967,53 @@ class CrossFlowHeatExchanger1DData(HeatExchanger1DData):
                 return b.total_heat_duty[t] / (
                     b.total_heat_transfer_area * b.log_mean_delta_temperature[t]
                 )
+
+    def lagrange_legendre_deactivation(self):
+        """
+        Deactivates variables and fixes constraints at finite element
+        boundaries. This process is necessary so that the system of
+        equations is not structurally singular if Lagrange-Legendre
+        collocation is used.
+        """
+
+        element_bounds = self.cold_side.length_domain.get_finite_elements()
+
+        # This section should be expanded into a method on the
+        # ControlVolume1D, but that requires including many more
+        # variables and constraints
+        for side in [self.cold_side, self.hot_side]:
+            material_balances_dict = dict(
+                (key, Reference(slc))
+                for key, slc in slice_component_along_sets(
+                    side.material_balances, (side.length_domain,)
+                )
+            )
+            for x in element_bounds:
+                for con in material_balances_dict.values():
+                    try:
+                        con[x].deactivate()
+                    except KeyError:
+                        # Constraint.skip
+                        pass
+                if (
+                    x != self.cold_side.length_domain.first()
+                    and x != self.cold_side.length_domain.last()
+                ):
+                    pass
+
+                for t in self.flowsheet().time:
+                    if (
+                        x != self.cold_side.length_domain.first()
+                        and x != self.cold_side.length_domain.last()
+                    ):
+                        # Need to calculate properties at the first
+                        # and last elements in order to communicate
+                        # state variables to ports
+                        pass
+                    try:
+                        side.enthalpy_balances[t, x].deactivate()
+                    except KeyError:
+                        pass
 
     def calculate_scaling_factors(self):
         def gsf(obj):

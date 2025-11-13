@@ -1039,6 +1039,7 @@ class Cubic(EoSBase):
         elif pobj.is_liquid_phase():
             Z_crit = expr_write.z_liq(eos=pobj._cubic_type, A=Acrit, B=Bcrit)
 
+        # pylint: disable-next=possibly-used-before-assignment
         m.compress_fact_crit_eq = Constraint(rule=m.compress_fact_crit == Z_crit)
 
         m.dens_mol_crit_eq = Constraint(
@@ -1129,7 +1130,9 @@ def _N_dZ_dNj(blk, p, j):
     EoS_u = EoS_param[pobj._cubic_type]["u"]
     EoS_w = EoS_param[pobj._cubic_type]["w"]
 
+    # pylint: disable-next=possibly-used-before-assignment
     N_dA_dNj = P / (R * T) ** 2 * N_dam_dNj
+    # pylint: disable-next=possibly-used-before-assignment
     N_dB_dNj = P / (R * T) * N_dbm_dNj
 
     K2 = (EoS_u - 1) * B - 1
@@ -1384,6 +1387,7 @@ def _bubble_dew_log_fug_coeff_method(blk, p, j, pp, pt_var):
         Z = expr_write.z_liq(eos=pobj._cubic_type, A=A, B=B)
 
     return (
+        # pylint: disable-next=possibly-used-before-assignment
         _log_fug_coeff_method(A, b[j], bm, B, delta, Z, ctype)
         + log_mole_frac[xidx, j]
         + log(P / blk.params.pressure_ref)
