@@ -40,6 +40,11 @@ class Runner:
     """Run a set of defined steps."""
 
     def __init__(self, steps: Sequence[str]):
+        """Constructor.
+
+        Args:
+            steps: List of step names
+        """
         self._actions: dict[str, ActionType] = {}
         self._step_names = list(steps)
         self._steps: dict[str, Step] = {}
@@ -107,6 +112,7 @@ class Runner:
             raise ValueError(
                 "Steps out of order: {names[0]}={step_range[0]} > {names[1]}={step_range[1]}"
             )
+
         for action in self._actions.values():
             action.before_run()
 
