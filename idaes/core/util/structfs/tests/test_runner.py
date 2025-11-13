@@ -11,7 +11,7 @@
 # for full copyright and license information.
 ###############################################################################
 import pytest
-from structured_notebook.runner import Runner
+from ..runner import Runner
 
 ## -- setup --
 
@@ -60,3 +60,9 @@ def test_runner_actions():
     rn.remove_action("nothing")
     with pytest.raises(KeyError):
         rn.get_action("nothing")
+
+
+@pytest.mark.unit
+def test_run_steps_order():
+    with pytest.raises(ValueError):
+        simple.run_steps("world", "hello")

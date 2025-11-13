@@ -13,7 +13,7 @@
 import pytest
 from pytest import approx
 
-from structured_notebook import runner_actions, runner
+from .. import runner_actions, runner
 import time
 
 

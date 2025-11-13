@@ -71,9 +71,20 @@ class Runner:
         step.add_substep(substep_name, func)
 
     def run_step(self, name):
+        """Syntactic sugar for calling `run_steps` for a single step."""
         self.run_steps(from_name=name, to_name=name)
 
     def run_steps(self, from_name: str = "", to_name: str = ""):
+        """Run steps from `from_name` to step `to_name`.
+
+        Args:
+            from_name: First step to run
+            to_name: Last step to run
+
+        Raises:
+            KeyError: Unknown or undefined step given
+            ValueError: Steps out of order (`from` after `to`)
+        """
         if not self._steps:
             return  # nothing to do, no steps defined
 
@@ -92,6 +103,10 @@ class Runner:
                     raise KeyError(f"Empty step: {step_name}")
             step_range[i] = idx
 
+        if step_range[0] > step_range[1]:
+            raise ValueError(
+                "Steps out of order: {names[0]}={step_range[0]} > {names[1]}={step_range[1]}"
+            )
         for action in self._actions.values():
             action.before_run()
 

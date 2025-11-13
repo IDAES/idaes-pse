@@ -10,12 +10,17 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 ###############################################################################
+# stdlib
 from typing import Sequence
+
+# third-party
 from pyomo.environ import ConcreteModel
 from idaes.core import FlowsheetBlock
 from pyomo.network.port import ScalarPort
 from idaes.core.util.model_statistics import degrees_of_freedom
-from structured_notebook.runner import Runner
+
+# package
+from .runner import Runner
 
 
 class Context(dict):

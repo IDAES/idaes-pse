@@ -11,7 +11,7 @@
 # for full copyright and license information.
 ###############################################################################
 import pytest
-from structured_notebook.fsrunner import FlowsheetRunner
+from ..fsrunner import FlowsheetRunner
 
 # -- setup --
 
@@ -55,16 +55,20 @@ def test_run_all():
 
 @pytest.mark.unit
 def test_rerun():
+
     fsr.run_steps()
     first_model = fsr.model
+
     # model not changed
     fsr.run_steps("solve_optimization")
     assert fsr.model == first_model
+
     # reset forces new model
     fsr.reset()
     fsr.run_steps("solve_optimization")
     assert fsr.model != first_model
     second_model = fsr.model
+
     # running from build also creates new model
     fsr.run_steps("build", "add_costing")
     assert fsr.model != second_model
