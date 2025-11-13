@@ -16,7 +16,7 @@ Run functions in a module in a defined, named, sequence.
 
 # stdlib
 import logging
-from typing import Callable, Optional, Tuple, Sequence
+from typing import Callable, Tuple, Sequence, TypeVar
 
 __author__ = "Dan Gunter (LBNL)"
 
@@ -33,7 +33,8 @@ class Step:
         self.substeps.append((name, func))
 
 
-type ActionType = Action
+# Python 3.9-compatible forward reference
+ActionType = TypeVar("ActionType", bound="Action")
 
 
 class Runner:
