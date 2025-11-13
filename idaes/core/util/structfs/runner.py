@@ -16,7 +16,7 @@ Run functions in a module in a defined, named, sequence.
 
 # stdlib
 import logging
-from typing import Callable, Tuple, Sequence, TypeVar
+from typing import Callable, Optional, Tuple, Sequence, TypeVar
 
 __author__ = "Dan Gunter (LBNL)"
 
@@ -26,7 +26,7 @@ _log = logging.Logger(__name__)
 class Step:
     def __init__(self, name: str, func: Callable):
         self.name: str = name
-        self.func: Callable | None = func
+        self.func: Callable = func
         self.substeps: list[Tuple[str, Callable]] = []
 
     def add_substep(self, name: str, func: Callable):
@@ -46,12 +46,14 @@ class Runner:
         Args:
             steps: List of step names
         """
+        self._context = {}
         self._actions: dict[str, ActionType] = {}
         self._step_names = list(steps)
         self._steps: dict[str, Step] = {}
         self.reset()
 
     def __getitem__(self, key):
+        """Look for key in `context`"""
         return self._context[key]
 
     def add_step(self, name: str, func: Callable):
@@ -155,7 +157,7 @@ class Runner:
         return -1
 
     @staticmethod
-    def _norm_name(s: str | None) -> str:
+    def _norm_name(s: Optional[str]) -> str:
         return "" if s is None else s.lower()
 
     def _step_begin(self, name: str):
@@ -240,7 +242,7 @@ class Action:
     ```
     """
 
-    def __init__(self, runner: Runner, log: logging.Logger | None = None):
+    def __init__(self, runner: Runner, log: Optional[logging.Logger] = None):
         self._runner = runner
         if log is None:
             log = _log

@@ -11,13 +11,11 @@
 # for full copyright and license information.
 ###############################################################################
 # stdlib
-from typing import Sequence
+from typing import Optional
 
 # third-party
 from pyomo.environ import ConcreteModel
 from idaes.core import FlowsheetBlock
-from pyomo.network.port import ScalarPort
-from idaes.core.util.model_statistics import degrees_of_freedom
 
 # package
 from .runner import Runner
@@ -59,7 +57,7 @@ class FlowsheetRunner(Runner):
     def __init__(self, solver=None, tee=False):
         self.build_step = self.STEPS[0]
         self._solver, self._tee = solver, tee
-        super().__init__(self.STEPS)
+        super().__init__(self.STEPS)  # needs to be last
 
     def run_steps(self, from_name: str = "", to_name: str = ""):
         from_step_name = self._norm_name(from_name)
@@ -87,32 +85,3 @@ class FlowsheetRunner(Runner):
     @property
     def results(self):
         return self._context["results"]
-
-    def component_degrees_of_freedom(self):
-        return self._component_dof
-
-    def check_dof(self, block, fix_inlets: bool = True, expected: int | None = 0):
-        name = block.name
-        if fix_inlets:
-            inlets = [
-                c
-                for c in block.component_objects(descend_into=False)
-                if isinstance(c, ScalarPort)
-                and (c.name.endswith("inlet") or c.name.endswith("recycle"))
-            ]
-            free_me = []
-            for inlet in inlets:
-                if not inlet.is_fixed():
-                    inlet.fix()
-                    free_me.append(inlet)
-        dof = degrees_of_freedom(block)
-        self._component_dof[name] = dof
-        if fix_inlets:
-            for inlet in free_me:
-                inlet.free()
-        if expected is not None:
-            assert dof == expected, (
-                f"Degrees of freedom for component "
-                f"{name} ({dof}) does not match "
-                f"expected ({expected})"
-            )
