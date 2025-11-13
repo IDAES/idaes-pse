@@ -40,9 +40,11 @@ class ExtraDependencies:
         "idaes-ui",
     ]
     omlt = [
-        "omlt==1.1",  # fix the version for now as package evolves
+        "omlt==1.2.2",  # fix the version for now as package evolves
         "tensorflow",
         "onnx",
+        "linear-tree",
+        "scikit-learn==1.6.1",
     ]
     grid = [
         "gridx-prescient>=2.2.1",  # idaes.tests.prescient

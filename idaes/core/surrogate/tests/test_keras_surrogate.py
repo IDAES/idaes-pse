@@ -121,7 +121,7 @@ def test_KerasSurrogate_construction_exceptions():
         )
     assert (
         str(excinfo.value)
-        == "KerasSurrogate created with input_labels that do not match the expected columns in the input_scaler.\n"
+        == "OMLTSurrogate created with input_labels that do not match the expected columns in the input_scaler.\n"
         "input_labels=['Temperature']\n"
         "input_scaler.expected_columns()=['Temperature_K']"
     )
@@ -137,7 +137,7 @@ def test_KerasSurrogate_construction_exceptions():
         )
     assert (
         str(excinfo.value)
-        == "KerasSurrogate created with output_labels that do not match the expected columns in the output_scaler.\n"
+        == "OMLTSurrogate created with output_labels that do not match the expected columns in the output_scaler.\n"
         "output_labels=['EnthMol', 'VapFraction']\n"
         "output_scaler.expected_columns()=['EnthMol', 'VapFrac']"
     )
