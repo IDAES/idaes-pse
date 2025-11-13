@@ -159,14 +159,17 @@ def git_hash():
         if ref_match:
             head_ref = ref_match.group(1)
             break
+    head.close()
     if head_ref is None:
         raise ValueError(f"no ref found in HEAD '{head}'")
     # read value of ref in <path> found previously
-    ref_file = os.path.join(git_root, head_ref)
+    ref_file_path = os.path.join(git_root, head_ref)
     try:
-        ref = open(ref_file).read().strip()
+        ref_file = open(ref_file_path)
     except FileNotFoundError:
-        raise ValueError(f"ref file '{ref_file}' not found")
+        raise ValueError(f"ref file '{ref_file_path}' not found")
+    ref = ref_file.read().strip()
+    ref_file.close()
     return ref
 
 
