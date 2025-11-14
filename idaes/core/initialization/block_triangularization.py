@@ -13,7 +13,7 @@
 """
 Initializer class for implementing Block Triangularization initialization
 """
-from pyomo.environ import SolverFactory, check_optimal_termination
+from pyomo.environ import check_optimal_termination
 from pyomo.common.config import Bool, ConfigDict, ConfigValue
 from pyomo.contrib.incidence_analysis import (
     IncidenceGraphInterface,
@@ -24,6 +24,7 @@ from idaes.core.initialization.initializer_base import (
     InitializerBase,
     InitializationStatus,
 )
+from idaes.core.solvers import get_solver
 from idaes.core.util.exceptions import InitializationError
 
 __author__ = "Andrew Lee"
@@ -92,7 +93,7 @@ class BlockTriangularizationInitializer(InitializerBase):
     CONFIG.block_solver_writer_config.declare(
         "scale_model",
         ConfigValue(
-            default=False,
+            default=True,
             domain=Bool,
             description="Whether to apply model scaling with block solver",
         ),
@@ -149,12 +150,9 @@ class BlockTriangularizationInitializer(InitializerBase):
         """
         Call Block Triangularization solver on model.
         """
-        # TODO: For now, go directly through solver factory as default solver
-        # options cause failures. Most of these appear to be due to scaling,
-        # so hopefully we can fix these later.
-        solver = SolverFactory(
+        solver = get_solver(
             self.config.block_solver,
-            options=self.config.block_solver_options,
+            solver_options=self.config.block_solver_options,
             writer_config=self.config.block_solver_writer_config,
         )
 
@@ -180,3 +178,12 @@ class BlockTriangularizationInitializer(InitializerBase):
                 raise InitializationError(
                     f"Block Triangularization failed with solver status: {results['Solver']}."
                 )
+
+        # Until Pyomo issue #3785 is addressed, solve_strongly_connected_components
+        # does not take scaling into account. However, the postcheck does, so we
+        # perform an extra solve to make sure all constraint residuals are small enough.
+        results = solver.solve(block_data)
+        if not check_optimal_termination(results):
+            raise InitializationError(
+                f"Could not solve {block_data.name} after block triangularization finished."
+            )
