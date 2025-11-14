@@ -3702,7 +3702,7 @@ def test_deprecate_degeneracy_hunter(caplog):
 
     msg = (
         "DEPRECATED: DegeneracyHunter is being deprecated in favor of the new "
-        "DiagnosticsToolbox.  (deprecated in 2.2.0, will be removed in (or after) 3.0.0)"
+        "DiagnosticsToolbox.  (deprecated in 2.2.0, will be removed in (or after) 2.11.0)"
     )
     assert msg.replace(" ", "") in caplog.records[0].message.replace("\n", "").replace(
         " ", ""
@@ -5964,7 +5964,7 @@ class TestExtremeJacobianMethods:
         m = model
 
         def assert_unscaled_jacobian_correct(m, scaled=False):
-            jac, nlp = get_jacobian(m, scaled=scaled)
+            jac, nlp = get_jacobian(m, include_scaling_factors=scaled)
             out = _extreme_jacobian_rows(jac, nlp)
             assert type(out) == list
             assert len(out) == 2
@@ -6030,7 +6030,7 @@ class TestExtremeJacobianMethods:
         m = model
 
         def assert_unscaled_jacobian_correct(m, scaled=False):
-            jac, nlp = get_jacobian(m, scaled=scaled)
+            jac, nlp = get_jacobian(m, include_scaling_factors=scaled)
             out = _extreme_jacobian_columns(jac, nlp)
             assert type(out) == list
             assert len(out) == 1
@@ -6092,7 +6092,7 @@ class TestExtremeJacobianMethods:
         m = model
 
         def assert_unscaled_jacobian_correct(m, scaled=False):
-            jac, nlp = get_jacobian(m, scaled=scaled)
+            jac, nlp = get_jacobian(m, include_scaling_factors=scaled)
             out = _extreme_jacobian_entries(jac, nlp)
             assert type(out) == list
             assert len(out) == 2
