@@ -23,13 +23,12 @@ import os
 import copy
 import logging
 from typing import Optional, List
-import importlib
-
+from importlib.metadata import version, metadata
 from pyomo.common.fileutils import find_library
 
 from . import config
 
-__version__ =importlib.metadata.version("idaes-pse")
+__version__ = version("idaes-pse")
 
 def _handle_optional_compat_activation(
     env_var: str = "IDAES_ACTIVATE_V1_COMPAT",

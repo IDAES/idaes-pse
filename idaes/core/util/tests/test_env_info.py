@@ -15,19 +15,19 @@ Tests get environment info
 """
 import json
 import pytest
-import idaes.ver as ver
 from idaes.core.util.env_info import EnvironmentInfo
 
 
 @pytest.mark.unit
 def test_env_info():
+    __version__ = importlib.metadata.version("idaes-pse")
     x = EnvironmentInfo()
     d = x.to_dict()
     assert "IDAES" in d
     assert "Pyomo" in d
     assert "OS" in d
     assert hasattr(x, "package_version")
-    assert x.version_string == ver.__version__
+    assert x.version_string == __version__
     s = x.to_json()
     d = json.loads(s)
     assert "IDAES" in d
