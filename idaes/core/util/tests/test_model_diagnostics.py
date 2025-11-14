@@ -1783,11 +1783,11 @@ The following constraints have no free variables:
 
         assert len(warnings) == 4
         assert (
-            "WARNING: 2 Variables with extreme Jacobian values (<1.0E-08 or >1.0E+08)"
+            "WARNING: 2 Variables with extreme Jacobian column norms (<1.0E-08 or >1.0E+08)"
             in warnings
         )
         assert (
-            "WARNING: 1 Constraint with extreme Jacobian values (<1.0E-08 or >1.0E+08)"
+            "WARNING: 1 Constraint with extreme Jacobian row norms (<1.0E-08 or >1.0E+08)"
             in warnings
         )
         assert "WARNING: 1 Constraint with large residuals (>1.0E-05)" in warnings
@@ -1834,11 +1834,11 @@ The following constraints have no free variables:
         assert len(cautions) == 4
         assert "Caution: 3 Variables with value close to zero (tol=1.0E-08)" in cautions
         assert (
-            "Caution: 3 Variables with extreme Jacobian values (<1.0E-04 or >1.0E+04)"
+            "Caution: 3 Variables with extreme Jacobian column norms (<1.0E-04 or >1.0E+04)"
             in cautions
         )
         assert (
-            "Caution: 1 Constraint with extreme Jacobian values (<1.0E-04 or >1.0E+04)"
+            "Caution: 1 Constraint with extreme Jacobian row norms (<1.0E-04 or >1.0E+04)"
             in cautions
         )
         assert "Caution: 4 extreme Jacobian Entries (<1.0E-04 or >1.0E+04)" in cautions
@@ -2175,16 +2175,16 @@ Model Statistics
 4 WARNINGS
 
     WARNING: 1 Constraint with large residuals (>1.0E-05)
-    WARNING: 2 Variables with extreme Jacobian values (<1.0E-08 or >1.0E+08)
-    WARNING: 1 Constraint with extreme Jacobian values (<1.0E-08 or >1.0E+08)
+    WARNING: 2 Variables with extreme Jacobian column norms (<1.0E-08 or >1.0E+08)
+    WARNING: 1 Constraint with extreme Jacobian row norms (<1.0E-08 or >1.0E+08)
     WARNING: 3 pairs of variables are parallel (to tolerance 1.0E-08)
 
 ------------------------------------------------------------------------------------
 4 Cautions
 
     Caution: 3 Variables with value close to zero (tol=1.0E-08)
-    Caution: 3 Variables with extreme Jacobian values (<1.0E-04 or >1.0E+04)
-    Caution: 1 Constraint with extreme Jacobian values (<1.0E-04 or >1.0E+04)
+    Caution: 3 Variables with extreme Jacobian column norms (<1.0E-04 or >1.0E+04)
+    Caution: 1 Constraint with extreme Jacobian row norms (<1.0E-04 or >1.0E+04)
     Caution: 4 extreme Jacobian Entries (<1.0E-04 or >1.0E+04)
 
 ------------------------------------------------------------------------------------
@@ -2195,6 +2195,42 @@ Suggested next steps:
     display_variables_with_extreme_jacobians()
     display_constraints_with_extreme_jacobians()
     display_near_parallel_variables()
+
+====================================================================================
+"""
+
+        assert stream.getvalue() == expected
+
+        # Test that scaled Jacobian is used
+        set_scaling_factor(model.c3, 1e-8)
+        set_scaling_factor(model.v3, 1e-6)
+
+        stream = StringIO()
+        dt.report_numerical_issues(stream)
+
+        expected = """====================================================================================
+Model Statistics
+
+    Jacobian Condition Number: 1.225E+04
+
+------------------------------------------------------------------------------------
+0 WARNINGS
+
+    No warnings found!
+
+------------------------------------------------------------------------------------
+2 Cautions
+
+    Caution: 3 Variables with value close to zero (tol=1.0E-08)
+    Caution: 1 extreme Jacobian Entry (<1.0E-04 or >1.0E+04)
+
+------------------------------------------------------------------------------------
+Suggested next steps:
+
+    If you still have issues converging your model consider:
+
+        prepare_degeneracy_hunter()
+        prepare_svd_toolbox()
 
 ====================================================================================
 """

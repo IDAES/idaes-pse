@@ -1074,7 +1074,7 @@ class DiagnosticsToolbox:
         if stream is None:
             stream = sys.stdout
 
-        jac, nlp = get_jacobian(self._model, scaled=True)
+        jac, nlp = get_jacobian(self._model, include_scaling_factors=True)
         xje = _extreme_jacobian_entries(
             jac,
             nlp,
@@ -1575,7 +1575,7 @@ class DiagnosticsToolbox:
             if len(jac_col) == 1:
                 cstring = "Variable"
             warnings.append(
-                f"WARNING: {len(jac_col)} {cstring} with extreme Jacobian values "
+                f"WARNING: {len(jac_col)} {cstring} with extreme Jacobian column norms "
                 f"(<{self.config.jacobian_small_value_warning:.1E} or "
                 f">{self.config.jacobian_large_value_warning:.1E})"
             )
@@ -1594,7 +1594,7 @@ class DiagnosticsToolbox:
             if len(jac_row) == 1:
                 cstring = "Constraint"
             warnings.append(
-                f"WARNING: {len(jac_row)} {cstring} with extreme Jacobian values "
+                f"WARNING: {len(jac_row)} {cstring} with extreme Jacobian row norms "
                 f"(<{self.config.jacobian_small_value_warning:.1E} or "
                 f">{self.config.jacobian_large_value_warning:.1E})"
             )
@@ -1731,7 +1731,7 @@ class DiagnosticsToolbox:
             if len(jac_col) == 1:
                 cstring = "Variable"
             cautions.append(
-                f"Caution: {len(jac_col)} {cstring} with extreme Jacobian values "
+                f"Caution: {len(jac_col)} {cstring} with extreme Jacobian column norms "
                 f"(<{self.config.jacobian_small_value_caution:.1E} or "
                 f">{self.config.jacobian_large_value_caution:.1E})"
             )
@@ -1747,7 +1747,7 @@ class DiagnosticsToolbox:
             if len(jac_row) == 1:
                 cstring = "Constraint"
             cautions.append(
-                f"Caution: {len(jac_row)} {cstring} with extreme Jacobian values "
+                f"Caution: {len(jac_row)} {cstring} with extreme Jacobian row norms "
                 f"(<{self.config.jacobian_small_value_caution:.1E} or "
                 f">{self.config.jacobian_large_value_caution:.1E})"
             )
@@ -1894,7 +1894,7 @@ class DiagnosticsToolbox:
         stats = []
         try:
             stats.append(
-                f"Jacobian Condition Number: {jacobian_cond(jac=jac, scaled=False):.3E}"
+                f"Jacobian Condition Number: {jacobian_cond(jac=jac, scaled=True):.3E}"
             )
         except RuntimeError as err:
             if "Factor is exactly singular" in str(err):
