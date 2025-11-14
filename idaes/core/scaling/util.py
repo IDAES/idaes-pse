@@ -1129,7 +1129,7 @@ class NominalValueExtractionVisitor(EXPR.StreamBasedExpressionVisitor):
 # Based off of John Eslick's functions in the old scaling tools
 def get_jacobian(
     m,
-    include_scaling_factors=True,
+    scaled=True,
     include_ipopt_autoscaling=False,
     equality_constraints_only=False,
     max_grad=100,
@@ -1142,7 +1142,7 @@ def get_jacobian(
 
     Args:
         m: model to get Jacobian from
-        include_scaling_factors: if True scale the rows and columns of the Jacobian
+        scaled: if True scale the rows and columns of the Jacobian
             using the user-defined scaling factors in the scaling_factor suffix.
         include_ipopt_autoscaling: if True, include the gradient-based autoscaling
             step that IPOPT uses to scale the rows of the Jacobian
@@ -1184,7 +1184,7 @@ def get_jacobian(
 
     vlist = nlp.vlist = nlp.get_pyomo_variables()
 
-    if include_scaling_factors:
+    if scaled:
         # Preallocating arrays with NaNs to make it apparent if
         # some element doesn't get set for some reason
         var_scaling_factors = np.nan * np.ones(len(vlist))

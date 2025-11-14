@@ -102,6 +102,9 @@ from idaes.core.util.model_diagnostics import (
     check_parallel_jacobian,
     compute_ill_conditioning_certificate,
     ConstraintTermAnalysisVisitor,
+    _extreme_jacobian_rows,
+    _extreme_jacobian_columns,
+    _extreme_jacobian_entries,
 )
 from idaes.core.util.parameter_sweep import (
     SequentialSweepRunner,
@@ -113,6 +116,7 @@ from idaes.core.surrogate.pysmo.sampling import (
 from idaes.core.util.testing import _enable_scip_solver_for_testing
 from idaes.models.properties import iapws95
 from idaes.core.scaling import set_scaling_factor
+from idaes.core.scaling.util import get_jacobian
 
 __author__ = "Alex Dowling, Douglas Allan, Andrew Lee"
 
@@ -1218,7 +1222,7 @@ Dulmage-Mendelsohn Over-Constrained Set
         dt.display_variables_with_extreme_jacobians(stream)
 
         expected = """====================================================================================
-The following variable(s) are associated with extreme Jacobian values (<1.0E-04 or>1.0E+04):
+The following variable(s) correspond to Jacobian columns with extreme norms(<1.0E-04 or>1.0E+04):
 
     v2: 1.000E+10
     v1: 1.000E+08
@@ -1228,6 +1232,21 @@ The following variable(s) are associated with extreme Jacobian values (<1.0E-04 
 """
 
         assert stream.getvalue() == expected
+
+        # Test to make sure scaled Jacobian is used
+        set_scaling_factor(model.v3, 1e-6)
+
+        stream = StringIO()
+        dt.display_variables_with_extreme_jacobians(stream)
+
+        expected = """====================================================================================
+The following variable(s) correspond to Jacobian columns with extreme norms(<1.0E-04 or>1.0E+04):
+
+    v2: 1.000E+10
+    v1: 1.000E+08
+
+====================================================================================
+"""
 
     @pytest.mark.component
     def test_display_constraints_with_extreme_jacobians(self):
@@ -1246,13 +1265,27 @@ The following variable(s) are associated with extreme Jacobian values (<1.0E-04 
         dt.display_constraints_with_extreme_jacobians(stream)
 
         expected = """====================================================================================
-The following constraint(s) are associated with extreme Jacobian values (<1.0E-04 or>1.0E+04):
+The following constraint(s) correspond to Jacobian rows with extreme norms (<1.0E-04 or>1.0E+04):
 
     c3: 1.000E+10
 
 ====================================================================================
 """
 
+        assert stream.getvalue() == expected
+
+        # Test to make sure scaled Jacobian is used
+        set_scaling_factor(model.c3, 1e-8)
+
+        stream = StringIO()
+        dt.display_constraints_with_extreme_jacobians(stream)
+
+        expected = """====================================================================================
+The following constraint(s) correspond to Jacobian rows with extreme norms (<1.0E-04 or>1.0E+04):
+
+
+====================================================================================
+"""
         assert stream.getvalue() == expected
 
     @pytest.mark.component
@@ -1273,12 +1306,30 @@ The following constraint(s) are associated with extreme Jacobian values (<1.0E-0
 
         expected = """====================================================================================
 The following constraint(s) and variable(s) are associated with extreme Jacobian
-values (<1.0E-04 or>1.0E+04):
+entries (<1.0E-04 or>1.0E+04):
 
     c3, v2: 1.000E+10
     c2, v3: 1.000E-08
     c3, v1: 1.000E+08
     c3, v3: 1.000E-06
+
+====================================================================================
+"""
+
+        assert stream.getvalue() == expected
+
+        # Test to make sure scaled Jacobian is used
+        set_scaling_factor(model.c3, 1e-8)
+
+        stream = StringIO()
+        dt.display_extreme_jacobian_entries(stream)
+
+        expected = """====================================================================================
+The following constraint(s) and variable(s) are associated with extreme Jacobian
+entries (<1.0E-04 or>1.0E+04):
+
+    c3, v3: 1.000E-14
+    c2, v3: 1.000E-08
 
 ====================================================================================
 """
@@ -5846,3 +5897,246 @@ class TestConstraintTermAnalysisVisitor:
         assert len(cc) == 0
         assert not k
         assert not tr
+
+
+class TestExtremeJacobianMethods:
+    @pytest.fixture
+    def model(self):
+        m = ConcreteModel()
+
+        m.I = Set(initialize=[i for i in range(5)])
+
+        m.x = Var(m.I, initialize=1.0)
+
+        diag = [1e7, 1, 10, 0.1, 1e-7]
+        out = [1, 1, 1, 1, 1]
+
+        @m.Constraint(m.I)
+        def dummy_eqn(b, i):
+            if i == 0:
+                # Off-diagonal element so that extreme
+                # rows and extreme columns are different
+                rhs = b.x[4]
+            else:
+                rhs = 0
+            return out[i] == diag[i] * b.x[i] + rhs
+
+        return m
+
+    @pytest.mark.unit
+    def test_extreme_jacobian_rows(self, model):
+        m = model
+
+        def assert_unscaled_jacobian_correct(m, scaled=False):
+            jac, nlp = get_jacobian(m, scaled=scaled)
+            out = _extreme_jacobian_rows(jac, nlp)
+            assert type(out) == list
+            assert len(out) == 2
+            assert out[0][0] == pytest.approx(1e7)
+            assert out[0][1] is m.dummy_eqn[0]
+            assert out[1][0] == pytest.approx(1e-7)
+            assert out[1][1] is m.dummy_eqn[4]
+
+        # No scaling
+        assert_unscaled_jacobian_correct(m, scaled=False)
+        assert_unscaled_jacobian_correct(m, scaled=True)
+
+        jac, nlp = get_jacobian(m)
+        out = _extreme_jacobian_rows(jac, nlp, large=1e8)
+        assert len(out) == 1
+        assert out[0][0] == pytest.approx(1e-7)
+        assert out[0][1] is m.dummy_eqn[4]
+
+        out = _extreme_jacobian_rows(jac, nlp, small=1e-8)
+        assert len(out) == 1
+        assert out[0][0] == pytest.approx(1e7)
+        assert out[0][1] is m.dummy_eqn[0]
+
+        out = _extreme_jacobian_rows(jac, nlp, large=1e8, small=1e-8)
+        assert len(out) == 0
+
+        # Constraint scaling
+        set_scaling_factor(m.dummy_eqn[0], 1e-7)
+        set_scaling_factor(m.dummy_eqn[4], 1e7)
+
+        assert_unscaled_jacobian_correct(m, scaled=False)
+
+        jac, nlp = get_jacobian(m)
+        out = _extreme_jacobian_rows(jac, nlp)
+        assert len(out) == 0
+
+        # Variable scaling
+        set_scaling_factor(m.x[1], 1e7)
+        set_scaling_factor(m.x[2], 1e-7)
+
+        assert_unscaled_jacobian_correct(m, scaled=False)
+
+        jac, nlp = get_jacobian(m)
+        out = _extreme_jacobian_rows(jac, nlp)
+        assert len(out) == 2
+        assert out[0][0] == pytest.approx(1e-7)
+        assert out[0][1] is m.dummy_eqn[1]
+        assert out[1][0] == pytest.approx(1e8)
+        assert out[1][1] is m.dummy_eqn[2]
+
+        # More constraint scaling
+        set_scaling_factor(m.dummy_eqn[1], 1e7)
+        set_scaling_factor(m.dummy_eqn[2], 1e-8)
+
+        assert_unscaled_jacobian_correct(m, scaled=False)
+
+        jac, nlp = get_jacobian(m)
+        out = _extreme_jacobian_rows(jac, nlp)
+        assert len(out) == 0
+
+    @pytest.mark.unit
+    def test_extreme_jacobian_columns(self, model):
+        m = model
+
+        def assert_unscaled_jacobian_correct(m, scaled=False):
+            jac, nlp = get_jacobian(m, scaled=scaled)
+            out = _extreme_jacobian_columns(jac, nlp)
+            assert type(out) == list
+            assert len(out) == 1
+            assert out[0][0] == pytest.approx(1e7)
+            assert out[0][1] is m.x[0]
+
+        # No scaling
+        assert_unscaled_jacobian_correct(m, scaled=True)
+        assert_unscaled_jacobian_correct(m, scaled=False)
+
+        jac, nlp = get_jacobian(m)
+        out = _extreme_jacobian_columns(jac, nlp, large=1e8)
+        assert len(out) == 0
+
+        out = _extreme_jacobian_columns(jac, nlp, small=1e-8)
+        assert len(out) == 1
+        assert out[0][0] == pytest.approx(1e7)
+        assert out[0][1] is m.x[0]
+
+        out = _extreme_jacobian_columns(jac, nlp, large=1e8, small=1e-8)
+        assert len(out) == 0
+
+        # Constraint scaling
+        set_scaling_factor(m.dummy_eqn[0], 1e-7)
+        set_scaling_factor(m.dummy_eqn[4], 1e7)
+
+        assert_unscaled_jacobian_correct(m, scaled=False)
+
+        jac, nlp = get_jacobian(m)
+        out = _extreme_jacobian_columns(jac, nlp)
+        assert len(out) == 0
+
+        # Variable scaling
+        set_scaling_factor(m.x[1], 1e7)
+        set_scaling_factor(m.x[2], 1e-7)
+
+        assert_unscaled_jacobian_correct(m, scaled=False)
+
+        jac, nlp = get_jacobian(m)
+        out = _extreme_jacobian_columns(jac, nlp)
+        assert len(out) == 2
+        assert out[0][0] == pytest.approx(1e-7)
+        assert out[0][1] is m.x[1]
+        assert out[1][0] == pytest.approx(1e8)
+        assert out[1][1] is m.x[2]
+
+        # More constraint scaling
+        set_scaling_factor(m.dummy_eqn[1], 1e7)
+        set_scaling_factor(m.dummy_eqn[2], 1e-8)
+
+        assert_unscaled_jacobian_correct(m, scaled=False)
+
+        jac, nlp = get_jacobian(m)
+        out = _extreme_jacobian_columns(jac, nlp)
+        assert len(out) == 0
+
+    @pytest.mark.unit
+    def test_extreme_jacobian_entries(self, model):
+        m = model
+
+        def assert_unscaled_jacobian_correct(m, scaled=False):
+            jac, nlp = get_jacobian(m, scaled=scaled)
+            out = _extreme_jacobian_entries(jac, nlp)
+            assert type(out) == list
+            assert len(out) == 2
+            assert out[0][0] == pytest.approx(1e7)
+            assert out[0][1] is m.dummy_eqn[0]
+            assert out[0][2] is m.x[0]
+            assert out[1][0] == pytest.approx(1e-7)
+            assert out[1][1] is m.dummy_eqn[4]
+            assert out[1][2] is m.x[4]
+
+        # No scaling
+        assert_unscaled_jacobian_correct(m, scaled=False)
+        assert_unscaled_jacobian_correct(m, scaled=True)
+
+        jac, nlp = get_jacobian(m)
+        out = _extreme_jacobian_entries(jac, nlp, large=1e8)
+        assert len(out) == 1
+        assert out[0][0] == pytest.approx(1e-7)
+        assert out[0][1] is m.dummy_eqn[4]
+        assert out[0][2] is m.x[4]
+
+        out = _extreme_jacobian_entries(jac, nlp, small=1e-8)
+        assert len(out) == 1
+        assert out[0][0] == pytest.approx(1e7)
+        assert out[0][1] is m.dummy_eqn[0]
+        assert out[0][2] is m.x[0]
+
+        out = _extreme_jacobian_entries(jac, nlp, zero=1e-6)
+        assert len(out) == 1
+        assert out[0][0] == pytest.approx(1e7)
+        assert out[0][1] is m.dummy_eqn[0]
+        assert out[0][2] is m.x[0]
+
+        # Constraint scaling
+        set_scaling_factor(m.dummy_eqn[0], 1e-7)
+        set_scaling_factor(m.dummy_eqn[4], 1e7)
+
+        assert_unscaled_jacobian_correct(m, scaled=False)
+
+        jac, nlp = get_jacobian(m)
+        out = _extreme_jacobian_entries(jac, nlp)
+        assert len(out) == 1
+        assert out[0][0] == pytest.approx(1e-7)
+        assert out[0][1] is m.dummy_eqn[0]
+        assert out[0][2] is m.x[4]
+
+        out = _extreme_jacobian_entries(jac, nlp, zero=1e-6)
+        assert len(out) == 0
+
+        out = _extreme_jacobian_entries(jac, nlp, small=1e-8)
+        assert len(out) == 0
+
+        # Variable scaling
+        set_scaling_factor(m.x[1], 1e7)
+        set_scaling_factor(m.x[2], 1e-7)
+
+        assert_unscaled_jacobian_correct(m, scaled=False)
+
+        jac, nlp = get_jacobian(m)
+        out = _extreme_jacobian_entries(jac, nlp)
+        assert len(out) == 3
+        assert out[0][0] == pytest.approx(1e-7)
+        assert out[0][1] is m.dummy_eqn[0]
+        assert out[0][2] is m.x[4]
+        assert out[1][0] == pytest.approx(1e-7)
+        assert out[1][1] is m.dummy_eqn[1]
+        assert out[1][2] is m.x[1]
+        assert out[2][0] == pytest.approx(1e8)
+        assert out[2][1] is m.dummy_eqn[2]
+        assert out[2][2] is m.x[2]
+
+        # More constraint scaling
+        set_scaling_factor(m.dummy_eqn[1], 1e7)
+        set_scaling_factor(m.dummy_eqn[2], 1e-8)
+
+        assert_unscaled_jacobian_correct(m, scaled=False)
+
+        jac, nlp = get_jacobian(m)
+        out = _extreme_jacobian_entries(jac, nlp)
+        assert len(out) == 1
+        assert out[0][0] == pytest.approx(1e-7)
+        assert out[0][1] is m.dummy_eqn[0]
+        assert out[0][2] is m.x[4]

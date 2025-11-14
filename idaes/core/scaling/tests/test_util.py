@@ -29,6 +29,9 @@ from pyomo.contrib.pynumero.asl import AmplInterface
 from idaes.core.scaling.util import (
     get_jacobian,
     jacobian_cond,
+    extreme_jacobian_rows,
+    extreme_jacobian_columns,
+    extreme_jacobian_entries,
     get_scaling_factor_suffix,
     get_scaling_hint_suffix,
     get_scaling_factor,
@@ -2429,7 +2432,7 @@ class TestJacobianMethods:
         set_scaling_factor(m.x, 1e-3)
         set_scaling_factor(m.y, 1e-6)
         set_scaling_factor(m.z, 1e-4)
-        jac, _ = get_jacobian(m, include_scaling_factors=False)
+        jac, _ = get_jacobian(m, scaled=False)
         assert len(m.scaling_factor) == 4
         assert not hasattr(m, "scaling_hint")
         assert jac[c1_row, x_col] == pytest.approx(-1e6)
@@ -2447,7 +2450,7 @@ class TestJacobianMethods:
         m = model
         jac_scaled, nlp = get_jacobian(
             m,
-            include_scaling_factors=False,
+            scaled=False,
             include_ipopt_autoscaling=True,
             min_scale=1e-6,
         )
@@ -2486,7 +2489,7 @@ class TestJacobianMethods:
         # because that's what appears to be IPOPT's actual default.
         jac_scaled, nlp = get_jacobian(
             m,
-            include_scaling_factors=True,
+            scaled=True,
             include_ipopt_autoscaling=True,
             min_scale=1e-6,
         )
@@ -2520,7 +2523,7 @@ class TestJacobianMethods:
 
         jac_scaled, nlp = get_jacobian(
             m,
-            include_scaling_factors=False,
+            scaled=False,
             include_ipopt_autoscaling=True,
             min_scale=1e-6,
         )
@@ -2581,7 +2584,7 @@ class TestJacobianMethods:
         assert n == pytest.approx(2.23741e5, rel=1e-3)
 
     @pytest.mark.unit
-    def test_condition_number_none(self, model):
+    def test_condition_number_none(self):
         with pytest.raises(
             RuntimeError,
             match=re.escape(
