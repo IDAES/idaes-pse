@@ -13,13 +13,19 @@
 """
 Predefined Actions for the generic Runner.
 """
-
+# stdlib
 from collections import defaultdict
+from collections.abc import Callable
 import time
+from typing import Union, Optional
 
-from pyomo.network.port import ScalarPort
+# third-party
 from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.base.unit_model import ProcessBlockData
+import pandas as pd
+from pyomo.network.port import ScalarPort
 
+# package
 from .runner import Action
 from .fsrunner import FlowsheetRunner
 
@@ -89,48 +95,117 @@ class Timer(Action):
         return data
 
 
-class DOFChecker(Action):
-    def __init__(self, runner: FlowsheetRunner, **kwargs):
+# Hold degrees of freedom for one FlowsheetRunner 'step'
+# {key=component: value=dof}
+UnitDofType = dict[str, int]
+
+
+class UnitDofChecker(Action):
+    """Check degrees of freedom on unit models."""
+
+    def __init__(
+        self,
+        runner: FlowsheetRunner,
+        flowsheet: str,
+        steps: Union[str, list[str]],
+        step_func: Optional[Callable[[str, UnitDofType], None]],
+        run_func: Optional[Callable[[dict[str, UnitDofType], int], None]],
+        **kwargs,
+    ):
         """Constructor.
 
         Args:
-            runner: Associated Runner object
+            runner: Associated Runner object (provided by `add_action`)
+            flowsheet: Variable name for flowsheet, e.g. "fs"
+            steps: Step or steps at which to run the checking action
+            step_func: Function to call with calculated DoF values for one step.
+                  Takes name of step and dictionary with per-unit degrees of freedom
+                  (see `UnitDofType` alias).
+            run_func: Function to call with calculated DoF values for each step, as well
+                  as overall model DoF.
             kwargs: Additional optional arguments for Action constructor
+
+        Raises:
+            ValueError: if `steps` list is empty, or no callback functions provided
         """
         super().__init__(runner, **kwargs)
+        if hasattr(steps, "lower"):  # string-like
+            self._steps = {steps}
+        else:  # assume it is list-like
+            if len(steps) == 0:
+                raise ValueError("At least one step name must be provided")
+            self._steps = set(steps)
+        self._steps_dof: dict[str, UnitDofType] = {}
+        self._step_func, self._run_func = step_func, run_func
+        self._fs = flowsheet
 
     def after_step(self, step_name: str):
+        step_name = self._runner._norm_name(step_name)
+        if step_name not in self._steps:
+            return
+
+        fs = self._get_flowsheet()
+
+        units_dof = {}
+        for unit in fs.component_objects(descend_into=True):
+            if self._is_unit_model(unit):
+                units_dof[unit.name] = self._get_dof(unit)
+        self._steps_dof[step_name] = units_dof  # save
+        if self._step_func:
+            self._step_func(step_name, units_dof)
+
+    def after_run(self):
+        if self._run_func:
+            fs = self._get_flowsheet()
+            model_dof = degrees_of_freedom(fs)
+            self._run_func(self._steps_dof, model_dof)
+
+    def _get_flowsheet(self):
         m = self._runner.model
-        if step_name == "special step":
-            unit_dof = {}
-            for unit in m.component_objects(descend_into=False):
-                # XXX: Check whether really IDAES unit model
-                unit_dof[unit.name] = self._get_dof(unit)
-        # XXX: check that DOF is what was wanted?
+        if self._fs:
+            return getattr(m, self._fs)
+        return m
 
+    @staticmethod
+    def _is_unit_model(block):
+        return isinstance(block, ProcessBlockData)
 
-def _get_dof(self, block, fix_inlets: bool = True):
-    name = block.name
-    if fix_inlets:
-        inlets = [
-            c
-            for c in block.component_objects(descend_into=False)
-            if isinstance(c, ScalarPort)
-            and (c.name.endswith("inlet") or c.name.endswith("recycle"))
-        ]
-        free_me = []
-        for inlet in inlets:
-            if not inlet.is_fixed():
-                inlet.fix()
-                free_me.append(inlet)
-    dof = degrees_of_freedom(block)
-    self._component_dof[name] = dof
-    if fix_inlets:
-        for inlet in free_me:
-            inlet.free()
-    # if expected is not None:
-    #     assert dof == expected, (
-    #         f"Degrees of freedom for component "
-    #         f"{name} ({dof}) does not match "
-    #         f"expected ({expected})"
-    #     )
+    def as_dataframe(self) -> pd.DataFrame:
+        """Format per-step DoF as a Pandas `DataFrame`.
+
+        Returns:
+            DataFrame: Step (str), Unit (str), DoF (int)
+        """
+        step_names, unit_names, dofs = [], [], []
+        for sn, data in self._steps_dof.items():
+            for un, dof in data.items():
+                step_names.append(sn)
+                unit_names.append(un)
+                dofs.append(dof)
+        return pd.DataFrame(
+            {"after_step": step_names, "unit_name": unit_names, "dof": dofs}
+        )
+
+    @staticmethod
+    def _get_dof(block, fix_inlets: bool = True):
+        name = block.name
+        if fix_inlets:
+            inlets = [
+                c
+                for c in block.component_objects(descend_into=False)
+                if isinstance(c, ScalarPort)
+                and (c.name.endswith("inlet") or c.name.endswith("recycle"))
+            ]
+            free_me = []
+            for inlet in inlets:
+                if not inlet.is_fixed():
+                    inlet.fix()
+                    free_me.append(inlet)
+
+        dof = degrees_of_freedom(block)
+
+        if fix_inlets:
+            for inlet in free_me:
+                inlet.free()
+
+        return dof

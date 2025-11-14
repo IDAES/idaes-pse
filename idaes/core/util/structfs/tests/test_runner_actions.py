@@ -10,16 +10,19 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 ###############################################################################
+import pprint
+import time
+
 import pytest
 from pytest import approx
-
-from .. import runner_actions, runner
-import time
+from .. import runner
+from ..runner_actions import Timer, UnitDofChecker
+from . import flash_flowsheet
 
 
 @pytest.mark.unit
 def test_class_timer():
-    timer = runner_actions.Timer(runner.Runner([]))
+    timer = Timer(runner.Runner([]))
     n, m = 2, 3
     for i in range(n):
         timer.before_run()
@@ -61,7 +64,7 @@ def test_timer_runner():
     rn.add_step("step2", sleepy)
     rn.add_step("step3", sleepy)
 
-    rn.add_action("timer", runner_actions.Timer)
+    rn.add_action("timer", Timer)
 
     rn.run_steps()
 
@@ -74,3 +77,30 @@ def test_timer_runner():
         for i, (name, t) in enumerate(r["steps"]):
             assert name == f"step{i + 1}"
             assert t == approx(0.1, abs=eps)
+
+
+@pytest.mark.unit
+def test_unit_dof_action():
+    rn = flash_flowsheet.FS
+
+    def check_step(name, data):
+        # print(f"@@ check_step {name} data: {data}")
+        assert "fs.flash" in data
+        if name == "solve_initial":
+            assert data["fs.flash"] == 0
+
+    def check_run(step_dof, model_dof):
+        assert model_dof == 0
+
+    rn.add_action(
+        "check_dof",
+        UnitDofChecker,
+        "fs",
+        ["build", "solve_initial"],
+        check_step,
+        check_run,
+    )
+
+    rn.run_steps("build", "solve_initial")
+
+    pprint.pprint(rn.get_action("check_dof").as_dataframe())
