@@ -140,14 +140,11 @@ class Runner:
     def remove_action(self, name: str):
         del self._actions[name]
 
-    def _step_index(self, name: str):
-        return self._step_names.index(name)
-
     def _first_step(self):
         for i, name in enumerate(self._step_names):
             if name in self._steps:
                 return i
-        return -1
+        assert False, "No first step defined"  # should not get here
 
     def _last_step(self):
         for i in range(len(self._step_names) - 1, -1, -1):

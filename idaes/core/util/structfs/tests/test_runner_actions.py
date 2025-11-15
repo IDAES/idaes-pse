@@ -80,8 +80,9 @@ def test_timer_runner():
 
 
 @pytest.mark.unit
-def test_unit_dof_action():
+def test_unit_dof_action_base():
     rn = flash_flowsheet.FS
+    rn.reset()
 
     def check_step(name, data):
         # print(f"@@ check_step {name} data: {data}")
@@ -104,3 +105,30 @@ def test_unit_dof_action():
     rn.run_steps("build", "solve_initial")
 
     pprint.pprint(rn.get_action("check_dof").as_dataframe())
+
+
+@pytest.mark.unit
+def test_unit_dof_action_getters():
+    rn = flash_flowsheet.FS
+    rn.reset()
+
+    aname = "check_dof"
+    rn.add_action(
+        aname,
+        UnitDofChecker,
+        "fs",
+        ["build", "solve_initial"],
+    )
+    rn.run_steps()
+
+    act = rn.get_action(aname)
+
+    steps = act.steps()
+    dofs = []
+    for s in steps:
+        step_dof = act.get_unit_dof(s)
+        assert step_dof
+        dofs.append(step_dof)
+    assert dofs[0] != dofs[1]
+
+    assert act.steps() == act.steps(only_with_data=True)

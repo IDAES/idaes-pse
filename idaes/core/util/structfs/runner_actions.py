@@ -101,15 +101,25 @@ UnitDofType = dict[str, int]
 
 
 class UnitDofChecker(Action):
-    """Check degrees of freedom on unit models."""
+    """Check degrees of freedom on unit models.
+
+    After a (caller-named) step or steps, check the degrees
+    of freedom on each unit model by the method of
+    fixing the inlet, applying the `degrees_of_freedom()` function,
+    and unfixing the inlet again. The calculated values are
+    saved and passed to an optional caller-provided function.
+
+    At the end of a run, the degrees of freedom for the entire
+    model are checked, saved, and passed to an optional function.
+    """
 
     def __init__(
         self,
         runner: FlowsheetRunner,
         flowsheet: str,
         steps: Union[str, list[str]],
-        step_func: Optional[Callable[[str, UnitDofType], None]],
-        run_func: Optional[Callable[[dict[str, UnitDofType], int], None]],
+        step_func: Optional[Callable[[str, UnitDofType], None]] = None,
+        run_func: Optional[Callable[[dict[str, UnitDofType], int], None]] = None,
         **kwargs,
     ):
         """Constructor.
@@ -136,6 +146,7 @@ class UnitDofChecker(Action):
                 raise ValueError("At least one step name must be provided")
             self._steps = set(steps)
         self._steps_dof: dict[str, UnitDofType] = {}
+        self._model_dof = None
         self._step_func, self._run_func = step_func, run_func
         self._fs = flowsheet
 
@@ -155,9 +166,10 @@ class UnitDofChecker(Action):
             self._step_func(step_name, units_dof)
 
     def after_run(self):
+        fs = self._get_flowsheet()
+        model_dof = degrees_of_freedom(fs)
+        self._model_dof = model_dof
         if self._run_func:
-            fs = self._get_flowsheet()
-            model_dof = degrees_of_freedom(fs)
             self._run_func(self._steps_dof, model_dof)
 
     def _get_flowsheet(self):
@@ -177,14 +189,56 @@ class UnitDofChecker(Action):
             DataFrame: Step (str), Unit (str), DoF (int)
         """
         step_names, unit_names, dofs = [], [], []
+
+        # add DoF for each step
         for sn, data in self._steps_dof.items():
             for un, dof in data.items():
                 step_names.append(sn)
                 unit_names.append(un)
                 dofs.append(dof)
+
+        # add model DoF
+        step_names.append("RUN")
+        unit_names.append(self._fs)
+        dofs.append(self._model_dof)
+
         return pd.DataFrame(
             {"after_step": step_names, "unit_name": unit_names, "dof": dofs}
         )
+
+    def get_unit_dof(self, step_name: str) -> UnitDofType:
+        """Get DoF for each unit, as measured after the given step.
+
+        Args:
+            step_name: Step for which to get the per-unit degrees of freedom.
+
+        Returns:
+            UnitDofType
+
+        Raises:
+            KeyError: If `step_name` is unknown, or has no data
+            ValueError: There is no degrees_of_freedom data at all
+        """
+        if not self._steps_dof:
+            raise ValueError("No degrees of freedom have been calculated")
+        if step_name not in self._steps:
+            raise KeyError(
+                f"Unknown step. name={step_name} " f"known={','.join(self._steps)}"
+            )
+        return self._steps_dof[step_name]
+
+    def steps(self, only_with_data: bool = False) -> list[str]:
+        """Get list of steps for which unit degrees of freedom are calculated.
+
+        Args:
+            only_with_data: If True, do not return steps with no data
+
+        Returns:
+            list of step names
+        """
+        if only_with_data:
+            return [s for s in self._steps if s in self._steps_dof]
+        return list(self._steps)
 
     @staticmethod
     def _get_dof(block, fix_inlets: bool = True):

@@ -36,6 +36,8 @@ def say_to_world(context):
     context["greeting"] = msg
 
 
+empty = Runner(("hi", "bye"))
+
 # -- end setup --
 
 
@@ -66,3 +68,60 @@ def test_runner_actions():
 def test_run_steps_order():
     with pytest.raises(ValueError):
         simple.run_steps("world", "hello")
+
+
+@pytest.mark.unit
+def test_run_steps_args():
+    simple.run_steps(from_name="hello")
+    simple.run_steps(to_name="world")
+
+
+@pytest.mark.unit
+def test_run_1step():
+    simple.run_step("hello")
+
+
+@pytest.mark.unit
+def test_run_empty_steps():
+    empty.run_steps()
+
+
+@pytest.mark.unit
+def test_run_bad_steps():
+    with pytest.raises(KeyError):
+        simple.run_steps("howdy", "pardner")
+
+    with pytest.raises(KeyError):
+        simple.run_step("notrun-1")
+
+
+@pytest.mark.unit
+def test_runner_context():
+    simple.run_steps()
+    assert simple["greeting"]
+
+
+@pytest.mark.unit
+def test_add_bad_step():
+    with pytest.raises(KeyError):
+
+        @simple.step("bad")
+        def do_bad(ctx):
+            return
+
+    with pytest.raises(KeyError):
+
+        @simple.substep("bad", "sub")
+        def do_bad2(ctx):
+            return
+
+    # undefined step cannot have a substep
+
+    with pytest.raises(ValueError):
+
+        @simple.substep("notrun-1", "sub")
+        def do_bad3(ctx):
+            return
+
+
+# 64, 76, 143, 146, 179, 223, 225
