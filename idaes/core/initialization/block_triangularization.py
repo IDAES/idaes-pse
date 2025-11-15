@@ -26,6 +26,7 @@ from idaes.core.initialization.initializer_base import (
 )
 from idaes.core.solvers import get_solver
 from idaes.core.util.exceptions import InitializationError
+from idaes.core.util.model_statistics import number_activated_constraints
 
 __author__ = "Andrew Lee"
 
@@ -166,6 +167,12 @@ class BlockTriangularizationInitializer(InitializerBase):
         """
         Call solve_strongly_connected_components on a given BlockData.
         """
+        if number_activated_constraints(block_data) == 0:
+            # Nothing to solve. Additionally, the .nl writer
+            # throws an exception if a solver is called on a
+            # block with no active constraints.
+            return
+
         # TODO: Can we get more diagnostic output from this method?
         results_list = solve_strongly_connected_components(
             block_data,
