@@ -219,40 +219,40 @@ class Runner:
 
 
 class Action:
-    """Do something before and/or after each step / run.
-
-    ```
-    class GreetingAction(Action):
-        def before_step(self, name, runner):
-            print(f"Hello, step {name}")
-        def after_step(self, name, runner):
-            print(f"Goodbye, step {name}")
-
-    class DivaAction(Action):
-        def after_step(self, name, runner):
-            if name == "act":
-                print(f"I am now an ac-TORRRR!")
-
-    myrunner = Runner(steps=["plan", "act", "inspect", "revise"])
-    myrunner.add_action(GreetingAction)
-    myrunner.add_action(DivaAction)
-    ```
-    """
+    """Do something before and/or after each step and/or run performed by a `Runner`."""
 
     def __init__(self, runner: Runner, log: Optional[logging.Logger] = None):
+        """Constructor
+
+        Args:
+            runner: Reference to the runner that will trigger this action.
+            log: Logger to use when logging informational or error messages
+        """
         self._runner = runner
         if log is None:
             log = _log
         self.log = log
 
     def before_step(self, step_name: str):
+        """Perform this action before the named step.
+
+        Args:
+            step_name: Name of the step
+        """
         return
 
     def after_step(self, step_name: str):
+        """Perform this action after the named step.
+
+        Args:
+            step_name: Name of the step
+        """
         return
 
     def before_run(self):
+        """Perform this action before a run starts."""
         return
 
     def after_run(self):
+        """Perform this action after a run ends."""
         return
