@@ -11,7 +11,7 @@
 # for full copyright and license information.
 ###############################################################################
 # stdlib
-from typing import Optional
+# none
 
 # third-party
 from pyomo.environ import ConcreteModel

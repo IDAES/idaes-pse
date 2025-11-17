@@ -73,7 +73,7 @@ class Timer(Action):
     def after_run(self):
         t1 = time.time()
         if self._run_begin is None:
-            self.log.warning(f"Timer: run end without begin")
+            self.log.warning("Timer: run end without begin")
         else:
             dt = t1 - self._run_begin
             self.run_times.append(dt)
@@ -223,7 +223,7 @@ class UnitDofChecker(Action):
             raise ValueError("No degrees of freedom have been calculated")
         if step_name not in self._steps:
             raise KeyError(
-                f"Unknown step. name={step_name} " f"known={','.join(self._steps)}"
+                f"Unknown step. name={step_name} known={','.join(self._steps)}"
             )
         return self._steps_dof[step_name]
 

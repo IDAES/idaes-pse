@@ -13,7 +13,7 @@
 ###############################################################################
 
 
-from pyomo.environ import ConcreteModel, SolverFactory, Constraint, value
+from pyomo.environ import ConcreteModel, SolverFactory
 from idaes.core import FlowsheetBlock
 
 # Import idaes logger to set output levels
@@ -71,4 +71,4 @@ def set_solver(ctx):
 
 @FS.step("solve_initial")
 def solve(ctx):
-    status = ctx.solver.solve(ctx.model, tee=ctx["tee"])
+    ctx["status"] = ctx.solver.solve(ctx.model, tee=ctx["tee"])
