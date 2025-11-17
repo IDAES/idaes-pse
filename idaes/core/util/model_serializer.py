@@ -844,6 +844,7 @@ def _read_component_data(sd, o, wts, lookup=None, suffixes=None):
 
     alist = []  # list of attributes to read
     c = 0  # counter of data items in component
+    ff = None  # filter function
     try:
         item_keys = o.keys()
     except AttributeError:
@@ -865,7 +866,7 @@ def _read_component_data(sd, o, wts, lookup=None, suffixes=None):
                 return  # if ignore missing option its okay
             else:
                 raise e  # else raise exception
-        if ff is not None:  # if a filer function was given, use it to make a
+        if ff is not None:  # if a filter function was given, use it to make a
             # new a list based on the model and whats stored for the state
             # this lets you conditionally load things, for example only load
             # values for unfixed variables.

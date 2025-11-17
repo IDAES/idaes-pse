@@ -34,6 +34,8 @@ from pyomo.environ import (
 from pyomo.util.check_units import assert_units_equivalent
 
 from idaes.core.base.property_meta import UnitSet
+from idaes.core.scaling import get_scaling_factor, set_scaling_factor
+
 from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
 )
@@ -42,6 +44,7 @@ from idaes.models.properties.modular_properties.base.tests.dummy_eos import Dumm
 from idaes.models.properties.modular_properties.base.generic_reaction import (
     GenericReactionParameterBlock,
     ConcentrationForm,
+    ModularReactionScaler,
 )
 from idaes.models.properties.modular_properties.reactions.dh_rxn import constant_dh_rxn
 from idaes.models.properties.modular_properties.reactions.rate_constant import arrhenius
@@ -656,7 +659,7 @@ class TestGenericReactionBlock(object):
         )
 
     @pytest.mark.unit
-    def test_basic_scaling(self, model):
+    def test_basic_scaling_legacy(self, model):
         model.rblock[1].calculate_scaling_factors()
 
         assert len(model.rblock[1].scaling_factor) == 7
@@ -696,3 +699,40 @@ class TestGenericReactionBlock(object):
             )
             * log(0.01)
         )
+
+    @pytest.mark.unit
+    def test_basic_scaler_object(self, model):
+        # Reaction scaler expects temperature to be scaled
+        set_scaling_factor(model.sblock[1].temperature, 1 / 300)
+
+        scaler_class = model.rblock[1].default_scaler
+        assert scaler_class is ModularReactionScaler
+
+        scaler_obj = scaler_class()
+        scaler_obj.scale_model(model.rblock[1])
+
+        assert len(model.rblock[1].scaling_factor) == 6
+        assert len(model.rblock[1].scaling_hint) == 5
+
+        # Scaling factors
+        assert get_scaling_factor(model.rblock[1].equilibrium_constraint["e1"]) == 0.01
+        assert (
+            get_scaling_factor(model.rblock[1].equilibrium_constraint["e2"]) == 1
+        )  # log constraint
+        assert get_scaling_factor(model.rblock[1].log_k_eq["e1"]) == 1
+        assert get_scaling_factor(model.rblock[1].log_k_eq["e2"]) == 1
+        assert get_scaling_factor(model.rblock[1].log_k_eq_constraint["e1"]) == 1
+        assert get_scaling_factor(model.rblock[1].log_k_eq_constraint["e2"]) == 1
+
+        # Scaling hints
+        assert get_scaling_factor(model.rblock[1].dh_rxn["e1"]) == pytest.approx(
+            1 / (300 * 8.3144), rel=1e-3
+        )
+        assert get_scaling_factor(model.rblock[1].dh_rxn["e2"]) == pytest.approx(
+            1 / (300 * 8.3144), rel=1e-3
+        )
+        assert get_scaling_factor(model.rblock[1].dh_rxn["r1"]) == pytest.approx(
+            1 / (300 * 8.3144), rel=1e-3
+        )
+        assert get_scaling_factor(model.rblock[1].k_eq["e1"]) == 0.01
+        assert get_scaling_factor(model.rblock[1].k_eq["e2"]) == 0.01

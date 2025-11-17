@@ -110,7 +110,7 @@ class ConstantAlpha(object):
 
 
 class ConstantTau(object):
-    """Class for methods assuming consant tau"""
+    """Class for methods assuming constant tau"""
 
     @staticmethod
     def build_parameters(b):

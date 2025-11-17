@@ -67,7 +67,7 @@ jobs:
           pip --no-cache-dir install --progress-bar off "$black_requirement"
       - name: Run Black to verify that the committed code is formatted
         run: |
-          black --check .
+          black --check --diff .
 
   spell-check:
     name: Check Spelling
@@ -88,7 +88,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.9', '3.10', '3.11', '3.12']
+        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
         os:
           - linux
           - win64
@@ -101,8 +101,9 @@ jobs:
             # only generate coverage report for a single python version in the matrix
             # to avoid overloading Codecov
             cov-report: true
+
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/display-debug-info
       - name: Set up Conda environment
         uses: conda-incubator/setup-miniconda@v3
@@ -110,6 +111,7 @@ jobs:
           activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
           python-version: ${{ matrix.python-version }}
           miniforge-version: latest
+
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
         with:
@@ -128,7 +130,7 @@ jobs:
           name: coverage-report-${{ matrix.os }}
           path: coverage.xml
           if-no-files-found: error
-
+          
   upload-coverage:
     name: Upload coverage report (Codecov)
     needs: [pytest]

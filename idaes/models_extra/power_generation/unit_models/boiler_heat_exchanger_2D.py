@@ -183,7 +183,7 @@ documentation for supported transformations.""",
         ConfigValue(
             default="BACKWARD",
             description="Discretization scheme to use for DAE transformation",
-            doc="""Discretization scheme to use when transformating domain.
+            doc="""Discretization scheme to use when transforming domain.
 See Pyomo documentation for supported schemes.""",
         ),
     )
@@ -2817,7 +2817,8 @@ tube side flows from 1 to 0""",
 
             # location P2
             @self.Expression(
-                self.flowsheet().time, doc="Total Stress at Critial Point P2 for Header"
+                self.flowsheet().time,
+                doc="Total Stress at Critical Point P2 for Header",
             )
             def sigma_notch_P2(b, t):
                 return (

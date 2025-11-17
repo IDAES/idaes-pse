@@ -11,7 +11,7 @@
 # for full copyright and license information.
 #################################################################################
 """
-Example property package for the VLE calucations for a Benzene-Toluene-o-Xylene
+Example property package for the VLE calculations for a Benzene-Toluene-o-Xylene
 system. If using the activity coefficient models (NRTL or Wilson), the user is
 expected to provide the parameters necessary for these models. Please note that
 these parameters are declared as variables here to allow for use in a parameter
