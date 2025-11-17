@@ -72,15 +72,42 @@ class Runner:
         return self._context[key]
 
     def add_step(self, name: str, func: Callable):
-        step_name = self._norm_name(name)
+        """Add a step.
+
+        Steps are executed by calling `func(context)`,
+        where `context` is a dict (or dict-like) object
+        that is used to pass state between steps.
+
+        Args:
+            name: Add a step to be executed
+            func: Function to execute for the step.
+
+        Raises:
+            KeyError: _description_
+        """
+        step_name = self.normalize_name(name)
 
         if step_name not in self._step_names:
             raise KeyError(f"Unknown step: {step_name}")
         self._steps[step_name] = Step(step_name, func)
 
     def add_substep(self, base_name, name, func):
-        substep_name = self._norm_name(name)
-        base_step_name = self._norm_name(base_name)
+        """Add a substep for a given step.
+
+        Substeps are all executed, in the order added,
+        immediately after their base step is executed.
+
+        Args:
+            base_name: Step name
+            name: Substep name_
+            func: Function to execute
+
+        Raises:
+            KeyError: Base step or substep is not found
+            ValueError: Base step does not have any substeps
+        """
+        substep_name = self.normalize_name(name)
+        base_step_name = self.normalize_name(base_name)
         if base_step_name not in self._step_names:
             raise KeyError(
                 f"Unknown base step {base_step_name} for substep {substep_name}"
@@ -111,7 +138,7 @@ class Runner:
         if not self._steps:
             return  # nothing to do, no steps defined
 
-        names = (self._norm_name(from_name), self._norm_name(to_name))
+        names = (self.normalize_name(from_name), self.normalize_name(to_name))
 
         step_range = [-1, -1]
         for i, step_name in enumerate(names):
@@ -197,7 +224,14 @@ class Runner:
         return -1
 
     @staticmethod
-    def _norm_name(s: Optional[str]) -> str:
+    def normalize_name(s: Optional[str]) -> str:
+        """Normalize a step name.
+        Args:
+            s: Step name
+
+        Returns:
+            normalized name
+        """
         return "" if s is None else s.lower()
 
     def _step_begin(self, name: str):

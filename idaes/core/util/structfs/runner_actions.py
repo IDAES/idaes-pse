@@ -160,7 +160,7 @@ class UnitDofChecker(Action):
         self._fs = flowsheet
 
     def after_step(self, step_name: str):
-        step_name = self._runner._norm_name(step_name)
+        step_name = self._runner.normalize_name(step_name)
         if step_name not in self._steps:
             return
 

@@ -87,7 +87,7 @@ class FlowsheetRunner(Runner):
         if so, creates an empty Pyomo ConcreteModel to use as
         the base model for the flowsheet.
         """
-        from_step_name = self._norm_name(from_name)
+        from_step_name = self.normalize_name(from_name)
         if (
             from_step_name == ""
             or from_step_name == self.build_step

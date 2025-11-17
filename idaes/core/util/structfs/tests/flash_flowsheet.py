@@ -11,7 +11,9 @@
 # for full copyright and license information.
 #
 ###############################################################################
-
+"""
+Simple Flash flowsheet for use in testing.
+"""
 
 from pyomo.environ import ConcreteModel, SolverFactory
 from idaes.core import FlowsheetBlock
@@ -36,6 +38,7 @@ FS = FlowsheetRunner()
 
 @FS.step("build")
 def build_model(ctx):
+    """Build the model."""
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = BTXParameterBlock(
@@ -48,6 +51,7 @@ def build_model(ctx):
 
 @FS.step("set_operating_conditions")
 def set_operating_conditions(ctx):
+    """Set operating conditions."""
     m = ctx.model
     m.fs.flash.inlet.flow_mol.fix(1)
     m.fs.flash.inlet.temperature.fix(368)
@@ -60,15 +64,18 @@ def set_operating_conditions(ctx):
 
 @FS.step("initialize")
 def init_model(ctx):
+    """ "Initialize the model."""
     m = ctx.model
     m.fs.flash.initialize(outlvl=idaeslog.INFO)
 
 
 @FS.step("set_solver")
 def set_solver(ctx):
+    """Set the solver."""
     ctx.solver = SolverFactory("ipopt")
 
 
 @FS.step("solve_initial")
 def solve(ctx):
+    """Perform the initial model solve."""
     ctx["status"] = ctx.solver.solve(ctx.model, tee=ctx["tee"])
