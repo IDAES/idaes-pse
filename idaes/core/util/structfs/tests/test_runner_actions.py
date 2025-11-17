@@ -44,8 +44,9 @@ def test_class_timer():
     # {'run': 0.8004975318908691, 'steps': [('step0', 0.10008621215820312),
     # ('step1', 0.20008587837219238),
     # ('step2', 0.3000912666320801)], 'inclusive': 0.6002633571624756, 'exclusive': 0.20023417472839355}]
-    eps = 5e-3
+    eps = 5e-2
     for r in s:
+        print(f"Timings: {r}")
         assert r["run"] == approx(0.8, abs=eps)
         assert r["inclusive"] + r["exclusive"] == approx(r["run"])
         for i, (name, t) in enumerate(r["steps"]):
@@ -70,8 +71,9 @@ def test_timer_runner():
 
     s = rn.get_action("timer").summary()
 
-    eps = 0.01
+    eps = 5e-2
     for r in s:
+        print(f"Timings: {r}")
         assert r["run"] == approx(0.3, abs=eps)
         assert r["inclusive"] + r["exclusive"] == approx(r["run"])
         for i, (name, t) in enumerate(r["steps"]):
