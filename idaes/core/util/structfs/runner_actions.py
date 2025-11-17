@@ -20,12 +20,12 @@ import time
 from typing import Union, Optional
 
 # third-party
-from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.base.unit_model import ProcessBlockData
 import pandas as pd
 from pyomo.network.port import ScalarPort
 
 # package
+from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.base.unit_model import ProcessBlockData
 from .runner import Action
 from .fsrunner import FlowsheetRunner
 
@@ -79,7 +79,16 @@ class Timer(Action):
             self.run_times.append(dt)
             self._run_begin = None
 
-    def summary(self):
+    def summary(self) -> list[dict]:
+        """Summarize timings
+
+        Returns:
+            dict: Summary of timings (in seconds) for each run in `run_times`:
+              - 'run': Time for the run
+              - 'steps': list of (step_name, time) for each step (in order)
+              - 'inclusive': total time spent in the steps
+              - 'exclusive': difference between run time and inclusive time
+        """
         data = []
         for i, run_time in enumerate(self.run_times):
             step_times = [(k, self.step_times[k][i]) for k in self._step_order]
@@ -242,7 +251,6 @@ class UnitDofChecker(Action):
 
     @staticmethod
     def _get_dof(block, fix_inlets: bool = True):
-        name = block.name
         if fix_inlets:
             inlets = [
                 c

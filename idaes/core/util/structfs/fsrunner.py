@@ -10,6 +10,10 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 ###############################################################################
+"""
+Specialize the generic `Runner` class to running a flowsheet,
+in `FlowsheetRunner`.
+"""
 # stdlib
 # none
 
@@ -22,24 +26,40 @@ from .runner import Runner
 
 
 class Context(dict):
+    """Syntactic sugar for the dictionary for the 'context' passed into each
+    step of the `FlowsheetRunner` class.
+    """
+
     @property
     def model(self):
+        """The model being run."""
         return self["model"]
 
     @model.setter
     def model(self, value):
+        """The model being run."""
         self["model"] = value
 
     @property
     def solver(self):
+        """The solver used to solve the model."""
         return self["solver"]
 
     @solver.setter
     def solver(self, value):
+        """The solver used to solve the model."""
         self["solver"] = value
 
 
 class FlowsheetRunner(Runner):
+    """Specialize the base `Runner` to handle IDAES flowsheets.
+
+    This class pre-determine the name and order of steps to run
+
+    Attributes:
+        STEPS: List of defined step names.
+    """
+
     STEPS = (
         "build",
         "set_operating_conditions",
@@ -60,6 +80,13 @@ class FlowsheetRunner(Runner):
         super().__init__(self.STEPS)  # needs to be last
 
     def run_steps(self, from_name: str = "", to_name: str = ""):
+        """Run the steps.
+
+        Before it calls the superclass to run the steps, checks
+        if the step name matches the `build_step` attribute and,
+        if so, creates an empty Pyomo ConcreteModel to use as
+        the base model for the flowsheet.
+        """
         from_step_name = self._norm_name(from_name)
         if (
             from_step_name == ""
@@ -71,7 +98,6 @@ class FlowsheetRunner(Runner):
 
     def reset(self):
         self._context = Context(solver=self._solver, tee=self._tee, model=None)
-        self._component_dof = {}
 
     def _create_model(self):
         m = ConcreteModel()
@@ -80,8 +106,10 @@ class FlowsheetRunner(Runner):
 
     @property
     def model(self):
+        """Syntactic sugar to return the model."""
         return self._context.model
 
     @property
     def results(self):
+        """Syntactic sugar to return the `results` in the context."""
         return self._context["results"]

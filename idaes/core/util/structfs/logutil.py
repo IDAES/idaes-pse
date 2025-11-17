@@ -34,7 +34,7 @@ def quiet(roots=("idaes", "pyomo"), level=logging.CRITICAL):
         for root in roots:
             if lg.name.startswith(root + "."):
                 g_quiet[lg.name] = lg.level
-                lg.setLevel(logging.CRITICAL)
+                lg.setLevel(level)
 
 
 def unquiet():

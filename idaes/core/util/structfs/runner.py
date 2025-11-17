@@ -24,12 +24,27 @@ _log = logging.Logger(__name__)
 
 
 class Step:
+    """Step to run by the `Runner`."""
+
     def __init__(self, name: str, func: Callable):
+        """Constructor
+
+        Args:
+            name: Name of the step
+            func: Function to call to execute the step
+        """
         self.name: str = name
         self.func: Callable = func
         self.substeps: list[Tuple[str, Callable]] = []
 
     def add_substep(self, name: str, func: Callable):
+        """Add a sub-step to this step.
+        Substeps are run in the order given.
+
+        Args:
+            name: Name of substep
+            func: Function to call to execute this substep
+        """
         self.substeps.append((name, func))
 
 
@@ -128,16 +143,44 @@ class Runner:
             action.after_run()
 
     def reset(self):
+        """Reset runner internal state, especially the context."""
         self._context = {}
 
     def add_action(self, name: str, action_class: type, *args, **kwargs):
+        """Add a named action.
+
+        Args:
+            name: Arbitrary name for the action, used to get/remove it
+            action_class: Subclass of Action to use
+            args: Positional arguments passed to `action_class` constructor
+            kwargs: Keyword arguments passed to `action_class` constructor
+        """
         obj = action_class(self, *args, **kwargs)
         self._actions[name] = obj
 
     def get_action(self, name: str) -> ActionType:
+        """Get an action object.
+
+        Args:
+            name: Name of action (as provided to `add_action`)
+
+        Returns:
+            ActionType: Action object
+
+        Raises:
+            KeyError: If action name does not match any known action
+        """
         return self._actions[name]
 
     def remove_action(self, name: str):
+        """Remove an action object.
+
+        Args:
+            name: Name of action (as provided to `add_action`)
+
+        Raises:
+            KeyError: If action name does not match any known action
+        """
         del self._actions[name]
 
     def _first_step(self):
