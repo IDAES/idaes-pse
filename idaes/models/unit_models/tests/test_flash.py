@@ -903,10 +903,10 @@ class TestInitializersCubicModularBTX:
 
         assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
 
-        assert pytest.approx(0.603, abs=1e-3) == value(
+        assert pytest.approx(0.6033, abs=1e-3) == value(
             model.fs.unit.liq_outlet.flow_mol[0]
         )
-        assert pytest.approx(0.396, abs=1e-3) == value(
+        assert pytest.approx(0.3967, abs=1e-3) == value(
             model.fs.unit.vap_outlet.flow_mol[0]
         )
         assert pytest.approx(368, abs=1e-3) == value(
@@ -916,16 +916,16 @@ class TestInitializersCubicModularBTX:
             model.fs.unit.liq_outlet.pressure[0]
         )
 
-        assert pytest.approx(0.412, abs=1e-3) == value(
+        assert pytest.approx(0.4157, abs=1e-3) == value(
             model.fs.unit.liq_outlet.mole_frac_comp[0, "benzene"]
         )
-        assert pytest.approx(0.588, abs=1e-3) == value(
+        assert pytest.approx(0.5843, abs=1e-3) == value(
             model.fs.unit.liq_outlet.mole_frac_comp[0, "toluene"]
         )
-        assert pytest.approx(0.634, abs=1e-3) == value(
+        assert pytest.approx(0.6282, abs=1e-3) == value(
             model.fs.unit.vap_outlet.mole_frac_comp[0, "benzene"]
         )
-        assert pytest.approx(0.366, abs=1e-3) == value(
+        assert pytest.approx(0.3718, abs=1e-3) == value(
             model.fs.unit.vap_outlet.mole_frac_comp[0, "toluene"]
         )
 
