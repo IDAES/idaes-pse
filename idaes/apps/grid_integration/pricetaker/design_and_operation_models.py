@@ -16,7 +16,6 @@ from pyomo.common.config import (
     Bool,
     ConfigDict,
     ConfigValue,
-    IsInstance,
     NonNegativeFloat,
 )
 from idaes.core.base.process_base import declare_process_block_class
@@ -41,7 +40,7 @@ def _format_data(coeffs):
         return coeffs
 
     raise ConfigurationError(
-        f"Unrecognized data structure {coeffs} for auxiliary variable coefficients."
+        f"Unrecognized data structure {type(coeffs)} for auxiliary variable coefficients."
     )
 
 
@@ -232,16 +231,11 @@ class DesignModelData(ProcessBlockData):
         )
 
         # Build a polynomial correlation for all auxiliary variables
-        def _polynomial_expression_rule(coeffs):
-            def _rule(_):
-                return coeffs[0] * self.install_unit + sum(
-                    coeffs[i] * design_var**i for i in range(1, len(coeffs))
-                )
-
-            return _rule
-
         for var_name, coeff in data["auxiliary_vars"].items():
-            setattr(self, var_name, Expression(rule=_polynomial_expression_rule(coeff)))
+            expr = coeff[0] * self.install_unit + sum(
+                coeff[i] * design_var**i for i in range(1, len(coeff))
+            )
+            setattr(self, var_name, Expression(expr=expr))
 
 
 @declare_process_block_class("OperationModel")
@@ -299,7 +293,10 @@ class OperationModelData(ProcessBlockData):
         ConfigValue(
             default=True,
             domain=Bool,
-            doc="Boolean flag to determine if `op_mode`, `startup`, and `shutdown` vars should be defined",
+            doc=(
+                "Boolean flag to determine if `op_mode`, `startup`, "
+                "and `shutdown` vars should be defined"
+            ),
         ),
     )
     CONFIG.declare(
@@ -307,7 +304,10 @@ class OperationModelData(ProcessBlockData):
         ConfigValue(
             default=True,
             domain=Bool,
-            doc="Boolean flag to determine if LMP data should automatically be appended to the model",
+            doc=(
+                "Boolean flag to determine if LMP data should "
+                "automatically be appended to the model"
+            ),
         ),
     )
     CONFIG.declare(
@@ -394,7 +394,31 @@ class OperationModelData(ProcessBlockData):
 
             else:
                 # Declare the expression as a Pyomo Expression
-                setattr(self, expr_name, expr)
+                setattr(self, expr_name, Expression(expr=expr))
+
+
+def _is_valid_data_type_for_storage_model(obj):
+    """Domain validator for config arguments of the storage model"""
+    if isinstance(obj, (int, float, Param, Var, Expression)):
+        # If the input is an unnamed expression, this check fails.
+        # It also fails if the input is an indexed Var, Param, Expression
+        return obj
+
+    # Doing the following for unnamed expressions and indexed components
+    try:
+        # Assume that the input argument is a Pyomo component
+        if any(
+            (obj.is_expression_type(), obj.is_variable_type(), obj.is_parameter_type())
+        ):
+            return obj
+
+        raise ConfigurationError(
+            "Received an invalid Pyomo component as an argument for StorageModel"
+        )
+
+    # pylint: disable = raise-missing-from
+    except AttributeError:
+        raise ConfigurationError("Received an unsupported data type for StorageModel")
 
 
 @declare_process_block_class("StorageModel")
@@ -431,28 +455,28 @@ class StorageModelData(ProcessBlockData):
     CONFIG.declare(
         "min_holdup",
         ConfigValue(
-            domain=IsInstance(int, float, Param, Var, Expression),
+            domain=_is_valid_data_type_for_storage_model,
             doc="Minimum holdup required",
         ),
     )
     CONFIG.declare(
         "max_holdup",
         ConfigValue(
-            domain=IsInstance(int, float, Param, Var, Expression),
+            domain=_is_valid_data_type_for_storage_model,
             doc="Maximum holdup feasible",
         ),
     )
     CONFIG.declare(
         "max_charge_rate",
         ConfigValue(
-            domain=IsInstance(int, float, Param, Var, Expression),
+            domain=_is_valid_data_type_for_storage_model,
             doc="Maximum charge rate allowed",
         ),
     )
     CONFIG.declare(
         "max_discharge_rate",
         ConfigValue(
-            domain=IsInstance(int, float, Param, Var, Expression),
+            domain=_is_valid_data_type_for_storage_model,
             doc="Maximum discharge rate allowed",
         ),
     )
@@ -472,18 +496,21 @@ class StorageModelData(ProcessBlockData):
         self.discharge_rate = Var(within=NonNegativeReals, doc="Discharge rate")
 
         def _add_upper_bound(var_name, bound):
-            if isinstance(bound, (Var, Expression)):
+            if isinstance(bound, (int, float)) or bound is None:
+                # Set it as a bound if the input is either an int or a float.
+                # But if a Pyomo component (Param, Var, Expression) is provided, then
+                # set it as a constraint.
+                getattr(self, var_name).setub(bound)
+
+            else:
                 setattr(
                     self,
-                    var_name + "ub_con",
+                    var_name + "_ub_con",
                     Constraint(
                         expr=getattr(self, var_name) <= bound,
                         doc=f"Constrains the maximum value of {var_name}",
                     ),
                 )
-
-            else:
-                getattr(self, var_name).setub(bound)
 
         _add_upper_bound("charge_rate", self.config.max_charge_rate)
         _add_upper_bound("discharge_rate", self.config.max_discharge_rate)
@@ -491,7 +518,14 @@ class StorageModelData(ProcessBlockData):
         _add_upper_bound("initial_holdup", self.config.max_holdup)
 
         # pylint: disable = no-member
-        if isinstance(self.config.min_holdup, (Var, Expression)):
+        if (
+            isinstance(self.config.min_holdup, (int, float))
+            or self.config.min_holdup is None
+        ):
+            self.final_holdup.setlb(self.config.min_holdup)
+            self.initial_holdup.setlb(self.config.min_holdup)
+
+        else:
             # Set a lower bound on holdup
             self.final_holdup_lb_con = Constraint(
                 expr=self.final_holdup >= self.config.min_holdup,
@@ -501,9 +535,6 @@ class StorageModelData(ProcessBlockData):
                 expr=self.initial_holdup >= self.config.min_holdup,
                 doc="Constrains the minimum value of initial_holdup",
             )
-        else:
-            self.final_holdup.setlb(self.config.min_holdup)
-            self.initial_holdup.setlb(self.config.min_holdup)
 
         # Mass balance/charge balance/tracking holdup
         self.track_holdup_constraint = Constraint(
