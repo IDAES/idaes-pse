@@ -32,6 +32,7 @@ from pyomo.environ import (
 from pyomo.common.config import ConfigDict, ConfigValue, Bool, In
 from pyomo.contrib.incidence_analysis import solve_strongly_connected_components
 from pyomo.dae import DerivativeVar
+from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 # Import IDAES cores
 from idaes.core import (
@@ -729,6 +730,8 @@ class MSContactorInitializer(ModularInitializerBase):
 
         # Isolate streams by fixing inter-stream variables
         model.material_transfer_term.fix()
+        if hasattr(model, "volume_frac_stream"):
+            model.volume_frac_stream.fix()
 
         # Deactivate any constraints that are not part of the base model
         # First, build list of names for known constraints
@@ -776,9 +779,29 @@ class MSContactorInitializer(ModularInitializerBase):
         # Revert state
         from_json(model, sd=initial_state, wts=StoreState)
 
-        # Solve full model
+        if model.config.has_holdup:
+            for stream in model.streams:
+                holdup_var = getattr(model, stream + "_material_holdup")
+                holdup_eqn = getattr(model, stream + "_material_holdup_constraint")
+                # calculate_variable_from_constraint(holdup_var, holdup_eqn)
+                holdup_eqn.deactivate()
+                holdup_var.fix()
+        # Solve full model (without holdup)
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solver.solve(model, tee=slc.tee)
+
+        if model.config.has_holdup:
+            # Solving the model without holdup before adding holdup afterward
+            # seemed to be more robust for the LeachTrain unit model in PrOMMiS
+            from_json(model, sd=initial_state, wts=StoreState)
+            for stream in model.streams:
+                holdup_var = getattr(model, stream + "_material_holdup")
+                holdup_eqn = getattr(model, stream + "_material_holdup_constraint")
+                for idx in holdup_var:
+                    calculate_variable_from_constraint(holdup_var[idx], holdup_eqn[idx])
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                res = solver.solve(model, tee=slc.tee)
+
         init_log.info(f"Initialization Completed, {idaeslog.condition(res)}")
 
         return res
