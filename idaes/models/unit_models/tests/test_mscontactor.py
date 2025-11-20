@@ -4291,7 +4291,7 @@ def create_sapon_model(has_holdup):
     return m
 
 
-def test_solution(model):
+def validate_solution(model):
     for x in model.fs.contactor.elements:
         assert value(model.fs.contactor.s1[0, x].flow_vol) == pytest.approx(
             1.0e-03, rel=1e-6
@@ -4434,7 +4434,7 @@ class TestMSContactorInitializerNoHoldup:
         assert (
             initializer.summary[model.fs.contactor]["status"] == InitializationStatus.Ok
         )
-        test_solution(model)
+        validate_solution(model)
 
     @pytest.mark.component
     def test_MSScaler(self, model):
@@ -4479,7 +4479,7 @@ class TestMSContactorInitializerWithHoldup:
         assert (
             initializer.summary[model.fs.contactor]["status"] == InitializationStatus.Ok
         )
-        test_solution(model)
+        validate_solution(model)
         assert degrees_of_freedom(model) == 16
 
         for vardata in model.fs.contactor.volume.values():
