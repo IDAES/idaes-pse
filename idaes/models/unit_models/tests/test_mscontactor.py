@@ -4472,12 +4472,60 @@ class TestMSContactorInitializerWithHoldup:
     @pytest.mark.component
     def test_MSInitializer(self, model):
         initializer = MSContactorInitializer()
+
+        assert degrees_of_freedom(model) == 16
         initializer.initialize(model.fs.contactor)
 
         assert (
             initializer.summary[model.fs.contactor]["status"] == InitializationStatus.Ok
         )
         test_solution(model)
+        assert degrees_of_freedom(model) == 16
+
+        for vardata in model.fs.contactor.volume.values():
+            assert vardata.fixed
+            assert vardata.value == 1
+        for (_, _, s), vardata in model.fs.contactor.volume_frac_stream.items():
+            if s == "s1":
+                assert vardata.fixed
+            else:
+                assert not vardata.fixed
+            assert vardata.value == 0.5
+
+        def approx(x):
+            return pytest.approx(x, rel=1e-4)
+
+        assert model.fs.contactor.s1_material_holdup[
+            0.0, 1, "Liq", "Ethanol"
+        ].value == approx(0)
+        assert model.fs.contactor.s1_material_holdup[
+            0.0, 3, "Liq", "H2O"
+        ].value == approx(27694.0)
+        assert model.fs.contactor.s1_material_holdup[
+            0.0, 5, "Liq", "EthylAcetate"
+        ].value == approx(50)
+        assert model.fs.contactor.s1_material_holdup[
+            0.0, 9, "Liq", "NaOH"
+        ].value == approx(50)
+        assert model.fs.contactor.s1_material_holdup[
+            0.0, 8, "Liq", "SodiumAcetate"
+        ].value == approx(0)
+
+        assert model.fs.contactor.s2_material_holdup[
+            0.0, 1, "Liq", "Ethanol"
+        ].value == approx(25)
+        assert model.fs.contactor.s2_material_holdup[
+            0.0, 3, "Liq", "H2O"
+        ].value == approx(27694.0)
+        assert model.fs.contactor.s2_material_holdup[
+            0.0, 5, "Liq", "EthylAcetate"
+        ].value == approx(25)
+        assert model.fs.contactor.s2_material_holdup[
+            0.0, 9, "Liq", "NaOH"
+        ].value == approx(25)
+        assert model.fs.contactor.s2_material_holdup[
+            0.0, 8, "Liq", "SodiumAcetate"
+        ].value == approx(25)
 
     @pytest.mark.component
     def test_MSScaler(self, model):
