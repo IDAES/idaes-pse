@@ -32,6 +32,7 @@ from pyomo.environ import (
 from pyomo.common.config import ConfigDict, ConfigValue, Bool, In
 from pyomo.contrib.incidence_analysis import solve_strongly_connected_components
 from pyomo.dae import DerivativeVar
+from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 # Import IDAES cores
 from idaes.core import (
@@ -729,6 +730,8 @@ class MSContactorInitializer(ModularInitializerBase):
 
         # Isolate streams by fixing inter-stream variables
         model.material_transfer_term.fix()
+        if hasattr(model, "volume_frac_stream"):
+            model.volume_frac_stream.fix()
 
         # Deactivate any constraints that are not part of the base model
         # First, build list of names for known constraints
@@ -746,6 +749,8 @@ class MSContactorInitializer(ModularInitializerBase):
             const_names.append(model.name + "." + s + "_energy_balance")
             const_names.append(model.name + "." + s + "_pressure_balance")
             const_names.append(model.name + "." + s + "_side_stream_pressure_balance")
+
+            # const_names.append(model.name + "." + s + "_material_holdup_constraint")
 
             try:
                 # If has rate reactions ,fi extent to 0 for first pass
@@ -776,9 +781,27 @@ class MSContactorInitializer(ModularInitializerBase):
         # Revert state
         from_json(model, sd=initial_state, wts=StoreState)
 
+        if model.config.has_holdup:
+            for stream in model.streams:
+                holdup_var = getattr(model, stream + "_material_holdup")
+                holdup_eqn = getattr(model, stream + "_material_holdup_constraint")
+                # calculate_variable_from_constraint(holdup_var, holdup_eqn)
+                holdup_eqn.deactivate()
+                holdup_var.fix()
         # Solve full model
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solver.solve(model, tee=slc.tee)
+
+        if model.config.has_holdup:
+            from_json(model, sd=initial_state, wts=StoreState)
+            for stream in model.streams:
+                holdup_var = getattr(model, stream + "_material_holdup")
+                holdup_eqn = getattr(model, stream + "_material_holdup_constraint")
+                for idx in holdup_var:
+                    calculate_variable_from_constraint(holdup_var[idx], holdup_eqn[idx])
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                res = solver.solve(model, tee=slc.tee)
+
         init_log.info(f"Initialization Completed, {idaeslog.condition(res)}")
 
         return res
