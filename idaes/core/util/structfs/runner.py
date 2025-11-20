@@ -42,7 +42,7 @@ class Step:
         Substeps are run in the order given.
 
         Args:
-            name: Name of substep
+            name: The name of substep
             func: Function to call to execute this substep
         """
         self.substeps.append((name, func))
@@ -99,7 +99,7 @@ class Runner:
 
         Args:
             base_name: Step name
-            name: Substep name_
+            name: Substep name
             func: Function to execute
 
         Raises:
