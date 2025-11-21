@@ -35,7 +35,9 @@ from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import
 )
 from idaes.models.properties.modular_properties import GenericParameterBlock
 from idaes.models.properties.modular_properties.state_definitions import FpTPxpc
-from idaes.models.properties.modular_properties.examples.BT_ideal_FpTPxpc import configuration
+from idaes.models.properties.modular_properties.examples.BT_ideal_FpTPxpc import (
+    configuration,
+)
 
 from idaes.models.properties.modular_properties.phase_equil import SmoothVLE
 from idaes.models.properties.tests.test_harness import PropertyTestHarness
@@ -46,13 +48,13 @@ from idaes.core.solvers import get_solver
 from idaes.core.util import DiagnosticsToolbox
 
 
-
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_solver("ipopt_v2")
 
 
 # -----------------------------------------------------------------------------
+
 
 def _as_quantity(x):
     unit = pyunits.get_units(x)
@@ -137,6 +139,7 @@ class TestParamBlock(object):
 
         assert_units_consistent(model)
 
+
 # -----------------------------------------------------------------------------
 class TestBTIdeal_FpTPxpc(object):
     @pytest.fixture(scope="class")
@@ -182,7 +185,7 @@ class TestBTIdeal_FpTPxpc(object):
         assert model.fs.unit.temperature[0].lb == 273.15
 
         assert isinstance(model.fs.unit.mole_frac_phase_comp, Var)
-        for (j, p, i) in model.fs.unit.mole_frac_phase_comp:
+        for j, p, i in model.fs.unit.mole_frac_phase_comp:
             assert value(model.fs.unit.mole_frac_phase_comp[j, p, i]) == 0.5
 
         assert_units_consistent(model)
@@ -206,28 +209,28 @@ class TestBTIdeal_FpTPxpc(object):
     # def test_get_stream_table_contents(self, model):
     #     stable = model.fs.unit._get_stream_table_contents()
 
-        # expected = {
-        #     "Units": {
-        #         "flow_mol_phase": getattr(pyunits.pint_registry, "mole/second"),
-        #         "mole_frac_phase_comp Liq benzene": getattr(
-        #             pyunits.pint_registry, "dimensionless"
-        #         ),
-        #         "mole_frac_phase_comp Liq toluene": getattr(
-        #             pyunits.pint_registry, "dimensionless"
-        #         ),
-        #         "temperature": getattr(pyunits.pint_registry, "K"),
-        #         "pressure": getattr(pyunits.pint_registry, "Pa"),
-        #     },
-        #     "Outlet": {
-        #         "flow_mol": pytest.approx(1.0, rel=1e-4),
-        #         "mole_frac_comp benzene": pytest.approx(0.5, rel=1e-4),
-        #         "mole_frac_comp toluene": pytest.approx(0.5, rel=1e-4),
-        #         "temperature": pytest.approx(368.0, rel=1e-4),
-        #         "pressure": pytest.approx(101325.0, rel=1e-4),
-        #     },
-        # }
-        #
-        # assert stable.to_dict() == expected
+    # expected = {
+    #     "Units": {
+    #         "flow_mol_phase": getattr(pyunits.pint_registry, "mole/second"),
+    #         "mole_frac_phase_comp Liq benzene": getattr(
+    #             pyunits.pint_registry, "dimensionless"
+    #         ),
+    #         "mole_frac_phase_comp Liq toluene": getattr(
+    #             pyunits.pint_registry, "dimensionless"
+    #         ),
+    #         "temperature": getattr(pyunits.pint_registry, "K"),
+    #         "pressure": getattr(pyunits.pint_registry, "Pa"),
+    #     },
+    #     "Outlet": {
+    #         "flow_mol": pytest.approx(1.0, rel=1e-4),
+    #         "mole_frac_comp benzene": pytest.approx(0.5, rel=1e-4),
+    #         "mole_frac_comp toluene": pytest.approx(0.5, rel=1e-4),
+    #         "temperature": pytest.approx(368.0, rel=1e-4),
+    #         "pressure": pytest.approx(101325.0, rel=1e-4),
+    #     },
+    # }
+    #
+    # assert stable.to_dict() == expected
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -254,7 +257,7 @@ class TestBTIdeal_FpTPxpc(object):
         assert pytest.approx(368.0, abs=1e-3) == value(
             model.fs.unit.outlet.temperature[0]
         )
-        
+
         assert pytest.approx(1.0, abs=1e-3) == value(
             model.fs.unit.control_volume.properties_out[0].flow_mol
         )
@@ -267,24 +270,16 @@ class TestBTIdeal_FpTPxpc(object):
         )
 
         assert pytest.approx(0.412, abs=1e-3) == value(
-            model.fs.unit.outlet.mole_frac_phase_comp[0,
-                "Liq", "benzene"
-            ]
+            model.fs.unit.outlet.mole_frac_phase_comp[0, "Liq", "benzene"]
         )
         assert pytest.approx(0.588, abs=1e-3) == value(
-            model.fs.unit.outlet.mole_frac_phase_comp[0,
-                "Liq", "toluene"
-            ]
+            model.fs.unit.outlet.mole_frac_phase_comp[0, "Liq", "toluene"]
         )
         assert pytest.approx(0.634, abs=1e-3) == value(
-            model.fs.unit.outlet.mole_frac_phase_comp[0,
-                "Vap", "benzene"
-            ]
+            model.fs.unit.outlet.mole_frac_phase_comp[0, "Vap", "benzene"]
         )
         assert pytest.approx(0.366, abs=1e-3) == value(
-            model.fs.unit.outlet.mole_frac_phase_comp[0,
-                "Vap", "toluene"
-            ]
+            model.fs.unit.outlet.mole_frac_phase_comp[0, "Vap", "toluene"]
         )
 
     @pytest.mark.solver

@@ -161,9 +161,11 @@ def define_state(blk):
         # applied at outlet only
         @blk.Constraint(blk.phase_list)
         def sum_mole_frac_out(b, p):
-            return 1.0 == sum(blk.mole_frac_phase_comp[p, j]
-                              for j in b.component_list
-                              if (p, j) in b.phase_component_set)
+            return 1.0 == sum(
+                blk.mole_frac_phase_comp[p, j]
+                for j in b.component_list
+                if (p, j) in b.phase_component_set
+            )
 
     @blk.Constraint(blk.component_list, doc="Defines mole_frac_comp")
     def mole_frac_comp_eq(b, j):
@@ -174,11 +176,13 @@ def define_state(blk):
         )
 
     if len(blk.phase_list) == 1:
+
         @blk.Constraint(blk.phase_list, doc="Defines phase_frac")
         def phase_frac_eqn(b, p):
             return b.phase_frac[p] == 1.0
 
     else:
+
         def rule_phase_frac(b, p):
             return b.phase_frac[p] * b.flow_mol == b.flow_mol_phase[p]
 
@@ -279,6 +283,7 @@ def define_state(blk):
 
     blk.define_display_vars = MethodType(define_display_vars_FpTPxpc, blk)
 
+
 # TODO flash initialization---needs to be a separate method because
 # we need to build a ControlVolume0D to enforce material balances
 def state_initialization(b):
@@ -289,10 +294,7 @@ def state_initialization(b):
     for j in b.component_list:
         # Linear in mole_frac_comp when all other variables
         # are fixed---this should converge in one iteration
-        calculate_variable_from_constraint(
-            b.mole_frac_comp[j],
-            b.mole_frac_comp_eq[j]
-        )
+        calculate_variable_from_constraint(b.mole_frac_comp[j], b.mole_frac_comp_eq[j])
 
 
 def define_default_scaling_factors(b):
@@ -353,7 +355,9 @@ def define_default_scaling_factors(b):
 def calculate_scaling_factors(blk):
     sf_flow_phase = {}
     for p, v in blk.flow_mol_phase.items():
-        sf_flow_phase[p] = iscale.get_scaling_factor(blk.flow_mol_phase[p], default=1, warning=True)
+        sf_flow_phase[p] = iscale.get_scaling_factor(
+            blk.flow_mol_phase[p], default=1, warning=True
+        )
     sf_mf = {}
     for i, v in blk.mole_frac_phase_comp.items():
         sf_mf[i] = iscale.get_scaling_factor(v, default=1e3, warning=True)
@@ -361,9 +365,11 @@ def calculate_scaling_factors(blk):
     for i in blk.mole_frac_comp:
         sf = iscale.get_scaling_factor(blk.mole_frac_comp[i])
         if sf is None:
-            sf = min(sf_mf[p, j] for j, p in blk.phase_component_set if i==j)
+            sf = min(sf_mf[p, j] for j, p in blk.phase_component_set if i == j)
             iscale.set_scaling_factor(sf, blk.mole_frac_comp[i])
-        iscale.constraint_scaling_transform(blk.mole_frac_comp_eq[i], sf, overwrite=False)
+        iscale.constraint_scaling_transform(
+            blk.mole_frac_comp_eq[i], sf, overwrite=False
+        )
 
     if blk.config.defined_state is False:
         for p in blk.phase_list:
@@ -375,16 +381,12 @@ def calculate_scaling_factors(blk):
     if len(blk.phase_list) == 1:
         for p in blk.phase_list:
             iscale.constraint_scaling_transform(
-                blk.phase_frac_eqn[p],
-                1,
-                overwrite=False
+                blk.phase_frac_eqn[p], 1, overwrite=False
             )
     else:
         for p in blk.phase_list:
             iscale.constraint_scaling_transform(
-                blk.phase_frac_eqn[p],
-                sf_flow_phase[p],
-                overwrite=False
+                blk.phase_frac_eqn[p], sf_flow_phase[p], overwrite=False
             )
 
     if blk.params._electrolyte:
