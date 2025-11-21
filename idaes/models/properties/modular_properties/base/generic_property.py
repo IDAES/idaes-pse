@@ -2873,6 +2873,7 @@ class GenericStateBlockData(StateBlockData):
                 initialize=t_value,
                 doc="Temperature for calculating phase equilibrium",
                 units=t_units,
+                bounds=self.temperature.bounds,
             )
 
         # Create common components for each property package
@@ -5504,11 +5505,13 @@ def _temperature_pressure_bubble_dew(b, name):
         abbrv = "t" + abbrv
         bounds = (b.temperature.lb, b.temperature.ub)
         units = b.params.get_metadata().default_units.TEMPERATURE
+        init = b.temperature.value
     elif splt[0] == "pressure":
         abbrv = "p" + abbrv
         bounds = (b.pressure.lb, b.pressure.ub)
         units_meta = b.params.get_metadata().derived_units
         units = units_meta.PRESSURE
+        init = b.pressure.value
     else:
         _raise_dev_burnt_toast()
 
@@ -5522,7 +5525,7 @@ def _temperature_pressure_bubble_dew(b, name):
         setattr(
             b,
             name,
-            Var(b.params._pe_pairs, doc=docstring_var, bounds=bounds, units=units),
+            Var(b.params._pe_pairs, doc=docstring_var, bounds=bounds, initialize=init, units=units),
         )
         setattr(
             b,
