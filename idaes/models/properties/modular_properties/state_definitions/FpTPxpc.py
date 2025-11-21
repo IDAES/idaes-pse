@@ -161,14 +161,16 @@ def define_state(blk):
         # applied at outlet only
         @blk.Constraint(blk.phase_list)
         def sum_mole_frac_out(b, p):
-            return 1.0 == sum(blk.mole_frac_phase_comp[p, j] for j in b.components_in_phase(p))
+            return 1.0 == sum(blk.mole_frac_phase_comp[p, j]
+                              for j in b.component_list
+                              if (p, j) in b.phase_component_set)
 
     @blk.Constraint(blk.component_list, doc="Defines mole_frac_comp")
     def mole_frac_comp_eq(b, j):
         return b.mole_frac_comp[j] * b.flow_mol == sum(
             b.mole_frac_phase_comp[p, j] * b.flow_mol_phase[p]
             for p in b.phase_list
-            if j in b.components_in_phase(p)
+            if (p, j) in b.phase_component_set
         )
 
     if len(blk.phase_list) == 1:
