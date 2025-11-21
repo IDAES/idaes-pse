@@ -20,6 +20,8 @@ in `FlowsheetRunner`.
 # third-party
 from pyomo.environ import ConcreteModel
 from idaes.core import FlowsheetBlock
+from idaes_connectivity.base import Connectivity
+from idaes_connectivity.jupyter import display_connectivity
 
 # package
 from .runner import Runner
@@ -51,7 +53,7 @@ class Context(dict):
         self["solver"] = value
 
 
-class FlowsheetRunner(Runner):
+class BaseFlowsheetRunner(Runner):
     """Specialize the base `Runner` to handle IDAES flowsheets.
 
     This class pre-determine the name and order of steps to run
@@ -113,3 +115,18 @@ class FlowsheetRunner(Runner):
     def results(self):
         """Syntactic sugar to return the `results` in the context."""
         return self._context["results"]
+
+
+class FlowsheetRunner(BaseFlowsheetRunner):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def build(self):
+        """Run just the build step"""
+        self.run_step("build")
+
+    def solve_initial(self):
+        self.run_steps(last="solve_initial")
+
+    def show_diagram(self):
+        return display_connectivity(input_model=self.model)

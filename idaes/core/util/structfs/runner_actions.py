@@ -52,13 +52,11 @@ class Timer(Action):
         self.run_times = []
         self._step_begin = {}
         self._run_begin = None
-        self._step_order = []
+        self._step_order = runner.list_steps()
         self._run_steps = set()
 
     def before_step(self, step_name):
         self._step_begin[step_name] = time.time()
-        if len(self.run_times) == 0:
-            self._step_order.append(step_name)
 
     def after_step(self, step_name):
         t1 = time.time()
@@ -83,7 +81,9 @@ class Timer(Action):
             dt = t1 - self._run_begin
             self.run_times.append(dt)
             self._run_begin = None
-            for step in self._runner.list_steps()
+            for step in self._runner.list_steps():
+                if step not in self._run_steps:
+                    self.step_times[step].append(-1)  # no timing collected
 
     def get_summary(self) -> list[dict]:
         """Summarize timings
@@ -98,7 +98,11 @@ class Timer(Action):
         data = []
         for i, run_time in enumerate(self.run_times):
             step_times = [(k, self.step_times[k][i]) for k in self._step_order]
-            step_total = sum((item[1] for item in step_times))
+            step_total = 0
+            for item in step_times:
+                seconds = item[1]
+                if seconds >= 0:
+                    step_total += seconds
             data.append(
                 {
                     "run": run_time,
@@ -118,12 +122,14 @@ class Timer(Action):
         stream.write("Time per step:\n\n")
         slen, ttot = -1, 0
         for s, t in d["steps"]:
-            slen = max(slen, len(s))
-            ttot += t
-        sfmt = "{{s:{slen}s}} : {{t:8.3f}}  {{p:4.1f}}%\n"
+            if t >= 0:
+                slen = max(slen, len(s))
+                ttot += t
+        sfmt = "  {{s:{slen}s}} : {{t:8.3f}}  {{p:4.1f}}%\n"
         for s, t in d["steps"]:
-            fmt = sfmt.format(slen=slen)
-            stream.write(fmt.format(s=s, t=t, p=t / ttot * 100))
+            if t >= 0:
+                fmt = sfmt.format(slen=slen)
+                stream.write(fmt.format(s=s, t=t, p=(t / ttot * 100)))
 
         stream.write(f"\nTotal time: {d['run']:.3f} s\n")
 
