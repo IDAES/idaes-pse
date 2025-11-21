@@ -19,7 +19,7 @@ __author__ = "John Eslick"
 import sys
 import platform
 import json
-from importlib import metadata
+import importlib
 import pkg_resources
 
 import pyomo
@@ -27,8 +27,8 @@ import pyomo.environ as pyo
 import idaes.ver as ver
 import idaes
 
-__version__ = metadata.version("idaes-pse")
-__metadata__ = metadata.metadata("idaes-pse")
+__version__ = importlib.metadata.version("idaes-pse")
+__metadata__ = importlib.metadata.metadata("idaes-pse")
 
 
 class EnvironmentInfo:
