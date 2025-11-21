@@ -282,6 +282,15 @@ Parameters for the type 3 version are similar to type 1.
     \log_e \delta + n^\circ_1 + n^\circ_2 \tau + n^\circ_3 \log_e \tau  + 
     \sum_{i = 4}^{h} n^\circ_i  \tau^{\gamma^\circ_i}
 
+**Type 4**
+
+Parameters for the type 4 version are similar to type 1
+
+.. math::
+     \log_e \delta + n^\circ_1 + n^\circ_2 \tau + (n^\circ_3 - 1) \log_e \tau + 
+     \sum_{i = 4}^h n^\circ_i \log_e \left[ 1 - \exp(\frac{-\gamma^\circ_i  \tau}{T_c})\right]
+
+     
 Residual Part of Dimensionless Helmholtz Free Energy
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -378,6 +387,16 @@ free energy expression::
 	\phi^r(\delta, \tau) = 
 	\sum^{h_0}_{i=1} n_i \delta^{d_i} \tau^{t_1} + 
 	\sum^m_{j=1} \left[ \exp(-\delta^j) \sum^{h_j}_{i = h_{j-1} + 1} n_i \delta^{d_i} \tau^{t_1} \right]
+
+
+**Type 5**
+
+.. math::
+    \phi^r(\delta, \tau) = \sum^{h_1}_{i=1} n_i \delta^{d_i} \tau^{t_1} + 
+	\sum_{i =h_1 + 1}^{h_2} n_i \delta^{d_i} \tau^{t_1} \exp(-\delta^{c_i}) + 
+	\sum_{i = h_2 + 1}^{h_3} n_i \delta^{d_i} \tau^{t_1} \exp\left[-\alpha_i(\delta - \varepsilon_i)^2 - \beta_i(\tau - \gamma_i)^2 \right] +
+    \sum_{i = h_3+1}^{h_4} n_i \delta^{d_i} \tau^{t_1} \exp\left[-\alpha_i(\delta - \varepsilon_i)^2 - \frac{1}{\beta_i(\tau - \gamma_i)^2 + b_i} \right]
+    
 
 Approximate Saturated Reduced Density
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
