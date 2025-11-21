@@ -92,6 +92,7 @@ class SmoothVLE(object):
                     initialize=b.temperature.value,
                     doc="Intermediate temperature for calculating Teq",
                     units=t_units,
+                    bounds=b.temperature.bounds,
                 ),
             )
             _t1 = getattr(b, "_t1" + suffix)
