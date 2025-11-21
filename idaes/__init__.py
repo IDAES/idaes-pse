@@ -69,7 +69,7 @@ config.testing_directory = testing_directory
 
 # Set the path for the global and local config files
 if data_directory is not None:
-    _global_config_file = os.path.oin(data_directory, "idaes.conf")
+    _global_config_file = os.path.join(data_directory, "idaes.conf")
 else:
     _global_config_file = None
 _local_config_file = "idaes.conf"
