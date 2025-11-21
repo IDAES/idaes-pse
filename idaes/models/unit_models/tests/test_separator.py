@@ -32,7 +32,7 @@ from pyomo.environ import (
 from pyomo.core.expr.calculus.derivatives import differentiate
 from pyomo.network import Port
 from pyomo.common.config import ConfigBlock
-from pyomo.util.check_units import assert_units_consistent
+from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 
 from idaes.core import (
     FlowsheetBlock,
@@ -2087,6 +2087,20 @@ class TestBTXIdeal(object):
         assert number_variables(btx) == 59
         assert number_total_constraints(btx) == 52
         assert number_unused_variables(btx) == 0
+
+    @pytest.mark.unit
+    def test_mole_frac_units(self, btx):
+        m = btx
+        t0 = m.fs.time.first()
+        comp = next(iter(m.fs.properties.component_list))
+
+        mf_in = m.fs.unit.inlet.mole_frac_comp[t0, comp]
+        mf_out1 = m.fs.unit.outlet_1.mole_frac_comp[t0, comp]
+        mf_out2 = m.fs.unit.outlet_2.mole_frac_comp[t0, comp]
+
+        assert_units_equivalent(mf_in, pyunits.dimensionless)
+        assert_units_equivalent(mf_out1, pyunits.dimensionless)
+        assert_units_equivalent(mf_out2, pyunits.dimensionless)
 
     @pytest.mark.component
     def test_structural_issues(self, btx):
