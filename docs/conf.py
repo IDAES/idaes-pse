@@ -5,14 +5,14 @@
 # This file is execfile()d with the current directory set to its
 # containing dir.
 
+import importlib
 import os
 import sys
 import sphinx_book_theme as theme
 
 # For importing from idaes.<modules..>
 sys.path.insert(0, os.path.abspath(".."))
-import idaes.ver
-import importlib
+
 
 # -- General configuration ------------------------------------------------
 
