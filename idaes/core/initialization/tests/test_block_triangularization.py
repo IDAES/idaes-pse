@@ -83,3 +83,19 @@ class TestBTSubMethods:
         assert not model.v1.fixed
 
         assert status == InitializationStatus.Ok
+
+    # Smoke test to make sure skip_final_solve option doesn't raise an error
+    @pytest.mark.component
+    def test_skip_final_solve(self, model):
+        initializer = BlockTriangularizationInitializer(skip_final_solve=True)
+
+        status = initializer.initialize(model)
+
+        assert model.v1.value == 4
+        assert model.v2.value == 4
+        assert model.v3.value == 4
+        assert model.v4.value == 4
+
+        assert not model.v1.fixed
+
+        assert status == InitializationStatus.Ok

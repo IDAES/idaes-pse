@@ -126,7 +126,7 @@ class BlockTriangularizationInitializer(InitializerBase):
             doc="Skip solving the block after block triangularization finishes."
             "This solve may be necessary to decrease the scaled constraint residuals "
             "below the specified tolerance because, until Pyomo issue #3785 is addressed, "
-            "solve_strongly_connected_components does not take scaling into account."
+            "solve_strongly_connected_components does not take scaling into account.",
         ),
     )
 
