@@ -66,6 +66,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.misc import add_object_reference
 from idaes.core.solvers import get_solver
 from idaes.core.scaling import CustomScalerBase
+from idaes.core.scaling.util import jacobian_cond
 from idaes.core.util.exceptions import (
     BurntToast,
     ConfigurationError,
@@ -81,10 +82,7 @@ from idaes.core.util.testing import (
     ReactionParameterTestBlock,
     ReactionBlock,
 )
-from idaes.core.util.scaling import (
-    get_jacobian,
-    jacobian_cond,
-)
+
 from idaes.core.initialization import InitializationStatus
 from idaes.models.properties.examples.saponification_thermo import (
     SaponificationParameterBlock,
@@ -4221,6 +4219,13 @@ class LiCoStateBlock1Data(StateBlockData):
             bounds=(1e-8, None),
         )
 
+    def get_material_density_terms(self, p, j):
+        if j == "solvent":
+            # Assume constant density of pure water
+            return 1000 * units.kg / units.m**3
+        else:
+            return self.conc_mass_solute[j]
+
     def get_material_flow_terms(self, p, j):
         if j == "solvent":
             # Assume constant density of pure water
@@ -4238,49 +4243,183 @@ class LiCoStateBlock1Data(StateBlockData):
         }
 
 
-class TestMSContactorInitializer:
-    @pytest.fixture
-    def model(self):
-        m = ConcreteModel()
-        m.fs = FlowsheetBlock(dynamic=False)
+def create_sapon_model(has_holdup):
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.properties = SaponificationParameterBlock()
+    m.fs.properties = SaponificationParameterBlock()
 
-        # Add separation stages
-        m.fs.contactor = MSContactor(
-            number_of_finite_elements=10,
-            streams={
-                "s1": {
-                    "property_package": m.fs.properties,
-                },
-                "s2": {
-                    "property_package": m.fs.properties,
-                },
+    # Add separation stages
+    m.fs.contactor = MSContactor(
+        number_of_finite_elements=10,
+        streams={
+            "s1": {
+                "property_package": m.fs.properties,
             },
+            "s2": {
+                "property_package": m.fs.properties,
+            },
+        },
+        has_holdup=has_holdup,
+    )
+
+    m.fs.contactor.s1_inlet.flow_vol[0].set_value(1.0e-03)
+    m.fs.contactor.s1_inlet.conc_mol_comp[0, "H2O"].set_value(55388.0)
+    m.fs.contactor.s1_inlet.conc_mol_comp[0, "NaOH"].set_value(100.0)
+    m.fs.contactor.s1_inlet.conc_mol_comp[0, "EthylAcetate"].set_value(100.0)
+    m.fs.contactor.s1_inlet.conc_mol_comp[0, "SodiumAcetate"].set_value(0.0)
+    m.fs.contactor.s1_inlet.conc_mol_comp[0, "Ethanol"].set_value(0.0)
+    m.fs.contactor.s1_inlet.temperature[0].set_value(303.15)
+    m.fs.contactor.s1_inlet.pressure[0].set_value(101325.0)
+
+    m.fs.contactor.s2_inlet.flow_vol[0].set_value(2.0e-03)
+    m.fs.contactor.s2_inlet.conc_mol_comp[0, "H2O"].set_value(55388.0)
+    m.fs.contactor.s2_inlet.conc_mol_comp[0, "NaOH"].set_value(50.0)
+    m.fs.contactor.s2_inlet.conc_mol_comp[0, "EthylAcetate"].set_value(50.0)
+    m.fs.contactor.s2_inlet.conc_mol_comp[0, "SodiumAcetate"].set_value(50.0)
+    m.fs.contactor.s2_inlet.conc_mol_comp[0, "Ethanol"].set_value(50.0)
+    m.fs.contactor.s2_inlet.temperature[0].set_value(323.15)
+    m.fs.contactor.s2_inlet.pressure[0].set_value(2e5)
+
+    m.fs.contactor.material_transfer_term.fix(0)
+    m.fs.contactor.energy_transfer_term.fix(0)
+
+    if has_holdup:
+        m.fs.contactor.volume.fix(1)
+        m.fs.contactor.volume_frac_stream[:, :, "s1"].fix(0.5)
+
+    return m
+
+
+def validate_solution(model):
+    for x in model.fs.contactor.elements:
+        assert value(model.fs.contactor.s1[0, x].flow_vol) == pytest.approx(
+            1.0e-03, rel=1e-6
+        )
+        assert value(model.fs.contactor.s1[0, x].conc_mol_comp["H2O"]) == pytest.approx(
+            55388, rel=1e-6
+        )
+        assert value(
+            model.fs.contactor.s1[0, x].conc_mol_comp["NaOH"]
+        ) == pytest.approx(1e2, rel=1e-6)
+        assert value(
+            model.fs.contactor.s1[0, x].conc_mol_comp["EthylAcetate"]
+        ) == pytest.approx(1e2, rel=1e-6)
+        assert value(
+            model.fs.contactor.s1[0, x].conc_mol_comp["SodiumAcetate"]
+        ) == pytest.approx(0, abs=1e-4)
+        assert value(
+            model.fs.contactor.s1[0, x].conc_mol_comp["Ethanol"]
+        ) == pytest.approx(0, abs=1e-4)
+        assert value(model.fs.contactor.s1[0, x].temperature) == pytest.approx(
+            303.15, rel=1e-6
+        )
+        assert value(model.fs.contactor.s1[0, x].pressure) == pytest.approx(
+            101325, rel=1e-6
         )
 
-        m.fs.contactor.s1_inlet.flow_vol[0].set_value(1.0e-03)
-        m.fs.contactor.s1_inlet.conc_mol_comp[0, "H2O"].set_value(55388.0)
-        m.fs.contactor.s1_inlet.conc_mol_comp[0, "NaOH"].set_value(100.0)
-        m.fs.contactor.s1_inlet.conc_mol_comp[0, "EthylAcetate"].set_value(100.0)
-        m.fs.contactor.s1_inlet.conc_mol_comp[0, "SodiumAcetate"].set_value(0.0)
-        m.fs.contactor.s1_inlet.conc_mol_comp[0, "Ethanol"].set_value(0.0)
-        m.fs.contactor.s1_inlet.temperature[0].set_value(303.15)
-        m.fs.contactor.s1_inlet.pressure[0].set_value(101325.0)
+        assert value(model.fs.contactor.s2[0, x].flow_vol) == pytest.approx(
+            2.0e-03, rel=1e-6
+        )
+        assert value(model.fs.contactor.s2[0, x].conc_mol_comp["H2O"]) == pytest.approx(
+            55388, rel=1e-6
+        )
+        assert value(
+            model.fs.contactor.s2[0, x].conc_mol_comp["NaOH"]
+        ) == pytest.approx(50, rel=1e-6)
+        assert value(
+            model.fs.contactor.s2[0, x].conc_mol_comp["EthylAcetate"]
+        ) == pytest.approx(50, rel=1e-6)
+        assert value(
+            model.fs.contactor.s2[0, x].conc_mol_comp["SodiumAcetate"]
+        ) == pytest.approx(50, rel=1e-6)
+        assert value(
+            model.fs.contactor.s2[0, x].conc_mol_comp["Ethanol"]
+        ) == pytest.approx(50, rel=1e-6)
+        assert value(model.fs.contactor.s2[0, x].temperature) == pytest.approx(
+            323.15, rel=1e-6
+        )
+        assert value(model.fs.contactor.s2[0, x].pressure) == pytest.approx(
+            2e5, rel=1e-6
+        )
 
-        m.fs.contactor.s2_inlet.flow_vol[0].set_value(2.0e-03)
-        m.fs.contactor.s2_inlet.conc_mol_comp[0, "H2O"].set_value(55388.0)
-        m.fs.contactor.s2_inlet.conc_mol_comp[0, "NaOH"].set_value(50.0)
-        m.fs.contactor.s2_inlet.conc_mol_comp[0, "EthylAcetate"].set_value(50.0)
-        m.fs.contactor.s2_inlet.conc_mol_comp[0, "SodiumAcetate"].set_value(50.0)
-        m.fs.contactor.s2_inlet.conc_mol_comp[0, "Ethanol"].set_value(50.0)
-        m.fs.contactor.s2_inlet.temperature[0].set_value(323.15)
-        m.fs.contactor.s2_inlet.pressure[0].set_value(2e5)
+    assert not model.fs.contactor.s1_inlet.flow_vol[0].fixed
+    assert not model.fs.contactor.s1_inlet.conc_mol_comp[0, "H2O"].fixed
+    assert not model.fs.contactor.s1_inlet.conc_mol_comp[0, "NaOH"].fixed
+    assert not model.fs.contactor.s1_inlet.conc_mol_comp[0, "EthylAcetate"].fixed
+    assert not model.fs.contactor.s1_inlet.conc_mol_comp[0, "SodiumAcetate"].fixed
+    assert not model.fs.contactor.s1_inlet.conc_mol_comp[0, "Ethanol"].fixed
+    assert not model.fs.contactor.s1_inlet.temperature[0].fixed
+    assert not model.fs.contactor.s1_inlet.pressure[0].fixed
 
-        m.fs.contactor.material_transfer_term.fix(0)
-        m.fs.contactor.energy_transfer_term.fix(0)
+    assert not model.fs.contactor.s2_inlet.flow_vol[0].fixed
+    assert not model.fs.contactor.s2_inlet.conc_mol_comp[0, "H2O"].fixed
+    assert not model.fs.contactor.s2_inlet.conc_mol_comp[0, "NaOH"].fixed
+    assert not model.fs.contactor.s2_inlet.conc_mol_comp[0, "EthylAcetate"].fixed
+    assert not model.fs.contactor.s2_inlet.conc_mol_comp[0, "SodiumAcetate"].fixed
+    assert not model.fs.contactor.s2_inlet.conc_mol_comp[0, "Ethanol"].fixed
+    assert not model.fs.contactor.s2_inlet.temperature[0].fixed
+    assert not model.fs.contactor.s2_inlet.pressure[0].fixed
 
-        return m
+
+expected = {
+    "Units": {
+        "Volumetric Flowrate": getattr(units.pint_registry, "m**3/second"),
+        "Molar Concentration H2O": getattr(units.pint_registry, "mole/m**3"),
+        "Molar Concentration NaOH": getattr(units.pint_registry, "mole/m**3"),
+        "Molar Concentration EthylAcetate": getattr(units.pint_registry, "mole/m**3"),
+        "Molar Concentration SodiumAcetate": getattr(units.pint_registry, "mole/m**3"),
+        "Molar Concentration Ethanol": getattr(units.pint_registry, "mole/m**3"),
+        "Temperature": getattr(units.pint_registry, "K"),
+        "Pressure": getattr(units.pint_registry, "Pa"),
+    },
+    "s1 Inlet": {
+        "Volumetric Flowrate": pytest.approx(0.001, rel=1e-4),
+        "Molar Concentration H2O": pytest.approx(5.5388e4, rel=1e-4),
+        "Molar Concentration NaOH": pytest.approx(100, rel=1e-4),
+        "Molar Concentration EthylAcetate": pytest.approx(100, rel=1e-4),
+        "Molar Concentration SodiumAcetate": pytest.approx(0, abs=1e-6),
+        "Molar Concentration Ethanol": pytest.approx(0, abs=1e-6),
+        "Temperature": pytest.approx(303.15, rel=1e-4),
+        "Pressure": pytest.approx(101325, rel=1e-4),
+    },
+    "s1 Outlet": {
+        "Volumetric Flowrate": pytest.approx(0.001, rel=1e-4),
+        "Molar Concentration H2O": pytest.approx(55388.0, rel=1e-4),
+        "Molar Concentration NaOH": pytest.approx(100, rel=1e-4),
+        "Molar Concentration EthylAcetate": pytest.approx(100, rel=1e-4),
+        "Molar Concentration SodiumAcetate": pytest.approx(0, abs=1e-6),
+        "Molar Concentration Ethanol": pytest.approx(0, abs=1e-6),
+        "Temperature": pytest.approx(303.15, rel=1e-4),
+        "Pressure": pytest.approx(101325, rel=1e-4),
+    },
+    "s2 Inlet": {
+        "Volumetric Flowrate": pytest.approx(0.002, rel=1e-4),
+        "Molar Concentration H2O": pytest.approx(5.5388e4, rel=1e-4),
+        "Molar Concentration NaOH": pytest.approx(50, rel=1e-4),
+        "Molar Concentration EthylAcetate": pytest.approx(50, rel=1e-4),
+        "Molar Concentration SodiumAcetate": pytest.approx(50, rel=1e-4),
+        "Molar Concentration Ethanol": pytest.approx(50, rel=1e-4),
+        "Temperature": pytest.approx(323.15, rel=1e-4),
+        "Pressure": pytest.approx(2e5, rel=1e-4),
+    },
+    "s2 Outlet": {
+        "Volumetric Flowrate": pytest.approx(0.002, rel=1e-4),
+        "Molar Concentration H2O": pytest.approx(5.5388e4, rel=1e-4),
+        "Molar Concentration NaOH": pytest.approx(50, rel=1e-4),
+        "Molar Concentration EthylAcetate": pytest.approx(50, rel=1e-4),
+        "Molar Concentration SodiumAcetate": pytest.approx(50, rel=1e-4),
+        "Molar Concentration Ethanol": pytest.approx(50, rel=1e-4),
+        "Temperature": pytest.approx(323.15, rel=1e-4),
+        "Pressure": pytest.approx(2e5, rel=1e-4),
+    },
+}
+
+
+class TestMSContactorInitializerNoHoldup:
+    @pytest.fixture(scope="class")
+    def model(self):
+        return create_sapon_model(has_holdup=False)
 
     @pytest.mark.unit
     def test_default_initializer(self, model):
@@ -4295,91 +4434,16 @@ class TestMSContactorInitializer:
         assert (
             initializer.summary[model.fs.contactor]["status"] == InitializationStatus.Ok
         )
-
-        for x in model.fs.contactor.elements:
-            assert value(model.fs.contactor.s1[0, x].flow_vol) == pytest.approx(
-                1.0e-03, rel=1e-6
-            )
-            assert value(
-                model.fs.contactor.s1[0, x].conc_mol_comp["H2O"]
-            ) == pytest.approx(55388, rel=1e-6)
-            assert value(
-                model.fs.contactor.s1[0, x].conc_mol_comp["NaOH"]
-            ) == pytest.approx(1e2, rel=1e-6)
-            assert value(
-                model.fs.contactor.s1[0, x].conc_mol_comp["EthylAcetate"]
-            ) == pytest.approx(1e2, rel=1e-6)
-            assert value(
-                model.fs.contactor.s1[0, x].conc_mol_comp["SodiumAcetate"]
-            ) == pytest.approx(0, abs=1e-4)
-            assert value(
-                model.fs.contactor.s1[0, x].conc_mol_comp["Ethanol"]
-            ) == pytest.approx(0, abs=1e-4)
-            assert value(model.fs.contactor.s1[0, x].temperature) == pytest.approx(
-                303.15, rel=1e-6
-            )
-            assert value(model.fs.contactor.s1[0, x].pressure) == pytest.approx(
-                101325, rel=1e-6
-            )
-
-            assert value(model.fs.contactor.s2[0, x].flow_vol) == pytest.approx(
-                2.0e-03, rel=1e-6
-            )
-            assert value(
-                model.fs.contactor.s2[0, x].conc_mol_comp["H2O"]
-            ) == pytest.approx(55388, rel=1e-6)
-            assert value(
-                model.fs.contactor.s2[0, x].conc_mol_comp["NaOH"]
-            ) == pytest.approx(50, rel=1e-6)
-            assert value(
-                model.fs.contactor.s2[0, x].conc_mol_comp["EthylAcetate"]
-            ) == pytest.approx(50, rel=1e-6)
-            assert value(
-                model.fs.contactor.s2[0, x].conc_mol_comp["SodiumAcetate"]
-            ) == pytest.approx(50, rel=1e-6)
-            assert value(
-                model.fs.contactor.s2[0, x].conc_mol_comp["Ethanol"]
-            ) == pytest.approx(50, rel=1e-6)
-            assert value(model.fs.contactor.s2[0, x].temperature) == pytest.approx(
-                323.15, rel=1e-6
-            )
-            assert value(model.fs.contactor.s2[0, x].pressure) == pytest.approx(
-                2e5, rel=1e-6
-            )
-
-        assert not model.fs.contactor.s1_inlet.flow_vol[0].fixed
-        assert not model.fs.contactor.s1_inlet.conc_mol_comp[0, "H2O"].fixed
-        assert not model.fs.contactor.s1_inlet.conc_mol_comp[0, "NaOH"].fixed
-        assert not model.fs.contactor.s1_inlet.conc_mol_comp[0, "EthylAcetate"].fixed
-        assert not model.fs.contactor.s1_inlet.conc_mol_comp[0, "SodiumAcetate"].fixed
-        assert not model.fs.contactor.s1_inlet.conc_mol_comp[0, "Ethanol"].fixed
-        assert not model.fs.contactor.s1_inlet.temperature[0].fixed
-        assert not model.fs.contactor.s1_inlet.pressure[0].fixed
-
-        assert not model.fs.contactor.s2_inlet.flow_vol[0].fixed
-        assert not model.fs.contactor.s2_inlet.conc_mol_comp[0, "H2O"].fixed
-        assert not model.fs.contactor.s2_inlet.conc_mol_comp[0, "NaOH"].fixed
-        assert not model.fs.contactor.s2_inlet.conc_mol_comp[0, "EthylAcetate"].fixed
-        assert not model.fs.contactor.s2_inlet.conc_mol_comp[0, "SodiumAcetate"].fixed
-        assert not model.fs.contactor.s2_inlet.conc_mol_comp[0, "Ethanol"].fixed
-        assert not model.fs.contactor.s2_inlet.temperature[0].fixed
-        assert not model.fs.contactor.s2_inlet.pressure[0].fixed
+        validate_solution(model)
 
     @pytest.mark.component
     def test_MSScaler(self, model):
-        initializer = MSContactorInitializer()
-        initializer.initialize(model.fs.contactor)
-
-        jac, _ = get_jacobian(model, scaled=False)
-        assert jacobian_cond(jac=jac, scaled=False) == approx(4.757e12, rel=1e-2)
+        assert jacobian_cond(model, scaled=False) == approx(4.757e12, rel=1e-2)
 
         scaler_obj = model.fs.contactor.default_scaler()
-
         scaler_obj.scale_model(model.fs.contactor)
 
-        sm = TransformationFactory("core.scale_model").create_using(model, rename=False)
-        jac, _ = get_jacobian(sm, scaled=False)
-        assert jacobian_cond(jac=jac, scaled=False) == approx(4573, rel=1e-2)
+        assert jacobian_cond(model, scaled=True) == approx(4573, rel=1e-2)
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -4392,71 +4456,103 @@ class TestMSContactorInitializer:
     @pytest.mark.unit
     def test_get_stream_table_contents(self, model):
         stable = model.fs.contactor._get_stream_table_contents()
+        assert stable.to_dict() == expected
 
-        expected = {
-            "Units": {
-                "Volumetric Flowrate": getattr(units.pint_registry, "m**3/second"),
-                "Molar Concentration H2O": getattr(units.pint_registry, "mole/m**3"),
-                "Molar Concentration NaOH": getattr(units.pint_registry, "mole/m**3"),
-                "Molar Concentration EthylAcetate": getattr(
-                    units.pint_registry, "mole/m**3"
-                ),
-                "Molar Concentration SodiumAcetate": getattr(
-                    units.pint_registry, "mole/m**3"
-                ),
-                "Molar Concentration Ethanol": getattr(
-                    units.pint_registry, "mole/m**3"
-                ),
-                "Temperature": getattr(units.pint_registry, "K"),
-                "Pressure": getattr(units.pint_registry, "Pa"),
-            },
-            "s1 Inlet": {
-                "Volumetric Flowrate": pytest.approx(0.001, rel=1e-4),
-                "Molar Concentration H2O": pytest.approx(5.5388e4, rel=1e-4),
-                "Molar Concentration NaOH": pytest.approx(100, rel=1e-4),
-                "Molar Concentration EthylAcetate": pytest.approx(100, rel=1e-4),
-                "Molar Concentration SodiumAcetate": pytest.approx(0, abs=1e-6),
-                "Molar Concentration Ethanol": pytest.approx(0, abs=1e-6),
-                "Temperature": pytest.approx(303.15, rel=1e-4),
-                "Pressure": pytest.approx(101325, rel=1e-4),
-            },
-            "s1 Outlet": {
-                "Volumetric Flowrate": pytest.approx(1, rel=1e-4),
-                "Molar Concentration H2O": pytest.approx(100, rel=1e-4),
-                "Molar Concentration NaOH": pytest.approx(100, rel=1e-4),
-                "Molar Concentration EthylAcetate": pytest.approx(100, rel=1e-4),
-                "Molar Concentration SodiumAcetate": pytest.approx(100, rel=1e-4),
-                "Molar Concentration Ethanol": pytest.approx(100, rel=1e-4),
-                "Temperature": pytest.approx(298.15, rel=1e-4),
-                "Pressure": pytest.approx(101325, rel=1e-4),
-            },
-            "s2 Inlet": {
-                "Volumetric Flowrate": pytest.approx(0.002, rel=1e-4),
-                "Molar Concentration H2O": pytest.approx(5.5388e4, rel=1e-4),
-                "Molar Concentration NaOH": pytest.approx(50, rel=1e-4),
-                "Molar Concentration EthylAcetate": pytest.approx(50, rel=1e-4),
-                "Molar Concentration SodiumAcetate": pytest.approx(50, rel=1e-4),
-                "Molar Concentration Ethanol": pytest.approx(50, rel=1e-4),
-                "Temperature": pytest.approx(323.15, rel=1e-4),
-                "Pressure": pytest.approx(2e5, rel=1e-4),
-            },
-            "s2 Outlet": {
-                "Volumetric Flowrate": pytest.approx(1, rel=1e-4),
-                "Molar Concentration H2O": pytest.approx(100, rel=1e-4),
-                "Molar Concentration NaOH": pytest.approx(100, rel=1e-4),
-                "Molar Concentration EthylAcetate": pytest.approx(100, rel=1e-4),
-                "Molar Concentration SodiumAcetate": pytest.approx(100, rel=1e-4),
-                "Molar Concentration Ethanol": pytest.approx(100, rel=1e-4),
-                "Temperature": pytest.approx(298.15, rel=1e-4),
-                "Pressure": pytest.approx(101325, rel=1e-4),
-            },
-        }
 
+class TestMSContactorInitializerWithHoldup:
+    @pytest.fixture(scope="class")
+    def model(self):
+        return create_sapon_model(has_holdup=True)
+
+    @pytest.mark.unit
+    def test_default_initializer(self, model):
+        assert MSContactorData.default_initializer is MSContactorInitializer
+        assert model.fs.contactor.default_initializer is MSContactorInitializer
+
+    @pytest.mark.component
+    def test_MSInitializer(self, model):
+        initializer = MSContactorInitializer()
+
+        assert degrees_of_freedom(model) == 16
+        initializer.initialize(model.fs.contactor)
+
+        assert (
+            initializer.summary[model.fs.contactor]["status"] == InitializationStatus.Ok
+        )
+        validate_solution(model)
+        assert degrees_of_freedom(model) == 16
+
+        for vardata in model.fs.contactor.volume.values():
+            assert vardata.fixed
+            assert vardata.value == 1
+        for (_, _, s), vardata in model.fs.contactor.volume_frac_stream.items():
+            if s == "s1":
+                assert vardata.fixed
+            else:
+                assert not vardata.fixed
+            assert vardata.value == 0.5
+
+        def approx(x):
+            return pytest.approx(x, rel=1e-4)
+
+        assert model.fs.contactor.s1_material_holdup[
+            0.0, 1, "Liq", "Ethanol"
+        ].value == approx(0)
+        assert model.fs.contactor.s1_material_holdup[
+            0.0, 3, "Liq", "H2O"
+        ].value == approx(27694.0)
+        assert model.fs.contactor.s1_material_holdup[
+            0.0, 5, "Liq", "EthylAcetate"
+        ].value == approx(50)
+        assert model.fs.contactor.s1_material_holdup[
+            0.0, 9, "Liq", "NaOH"
+        ].value == approx(50)
+        assert model.fs.contactor.s1_material_holdup[
+            0.0, 8, "Liq", "SodiumAcetate"
+        ].value == approx(0)
+
+        assert model.fs.contactor.s2_material_holdup[
+            0.0, 1, "Liq", "Ethanol"
+        ].value == approx(25)
+        assert model.fs.contactor.s2_material_holdup[
+            0.0, 3, "Liq", "H2O"
+        ].value == approx(27694.0)
+        assert model.fs.contactor.s2_material_holdup[
+            0.0, 5, "Liq", "EthylAcetate"
+        ].value == approx(25)
+        assert model.fs.contactor.s2_material_holdup[
+            0.0, 9, "Liq", "NaOH"
+        ].value == approx(25)
+        assert model.fs.contactor.s2_material_holdup[
+            0.0, 8, "Liq", "SodiumAcetate"
+        ].value == approx(25)
+
+    @pytest.mark.component
+    def test_MSScaler(self, model):
+        assert jacobian_cond(model, scaled=False) == approx(3.26980160e13, rel=1e-2)
+
+        scaler_obj = model.fs.contactor.default_scaler()
+        scaler_obj.default_scaling_factors["volume"] = 1
+        scaler_obj.scale_model(model.fs.contactor)
+
+        assert jacobian_cond(model, scaled=True) == approx(1.242418e6, rel=1e-2)
+
+    @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_performance_contents(self, model):
+        perf_dict = model.fs.contactor._get_performance_contents()
+
+        assert perf_dict == {}
+
+    @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_stream_table_contents(self, model):
+        stable = model.fs.contactor._get_stream_table_contents()
         assert stable.to_dict() == expected
 
 
 # TODO this flowsheet test should really be put in a separate file
-class TestLiCODiafiltration:
+class TestLiCoDiafiltration:
     """
     Test case based on:
 
@@ -4468,8 +4564,7 @@ class TestLiCODiafiltration:
     Configuration and results based on Figure 2, Case III
     """
 
-    @pytest.fixture
-    def model(self):
+    def create_model(self, has_holdup):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
 
@@ -4491,6 +4586,7 @@ class TestLiCODiafiltration:
                     "has_pressure_balance": False,
                 },
             },
+            has_holdup=has_holdup,
         )
 
         m.fs.stage2 = MSContactor(
@@ -4508,6 +4604,7 @@ class TestLiCODiafiltration:
                     "has_pressure_balance": False,
                 },
             },
+            has_holdup=has_holdup,
         )
 
         m.fs.stage3 = MSContactor(
@@ -4526,6 +4623,7 @@ class TestLiCODiafiltration:
                     "has_pressure_balance": False,
                 },
             },
+            has_holdup=has_holdup,
         )
 
         # Add mixers
@@ -4586,6 +4684,17 @@ class TestLiCODiafiltration:
         )
         m.fs.sieving_coefficient["Li"].fix(1.3)
         m.fs.sieving_coefficient["Co"].fix(0.5)
+
+        if has_holdup:
+            # Try initializing with range of volume fractions
+            # A real diafiltration model would have a constraint
+            # linking volume to stage length
+            m.fs.stage1.volume_frac_stream[:, :, "retentate"].fix(0.1)
+            m.fs.stage1.volume.fix(0.1)
+            m.fs.stage2.volume_frac_stream[:, :, "retentate"].fix(0.5)
+            m.fs.stage2.volume.fix(1)
+            m.fs.stage3.volume_frac_stream[:, :, "retentate"].fix(0.9)
+            m.fs.stage3.volume.fix(10)
 
         m.fs.stage1.length = Var(units=units.m)
         m.fs.stage2.length = Var(units=units.m)
@@ -4677,16 +4786,7 @@ class TestLiCODiafiltration:
 
         return m
 
-    @pytest.mark.component
-    def test_diafiltration_build(self, model):
-        # TODO: More checks here
-        assert isinstance(model.fs.stage3.retentate_inlet, Port)
-        assert isinstance(model.fs.stage3.retentate_outlet, Port)
-        assert not hasattr(model.fs.stage3, "permeate_inlet")
-        assert isinstance(model.fs.stage3.permeate_outlet, Port)
-
-    @pytest.mark.integration
-    def test_initialize_and_solve(self, model):
+    def initialize_model(self, model):
         # Start with stage 3
         # Initial feed guess is pure diafiltrate (no recycle)
         model.fs.stage3.retentate_inlet.flow_vol[0].fix(30)
@@ -4807,6 +4907,19 @@ class TestLiCODiafiltration:
         res = solver.solve(model, tee=True)
         assert_optimal_termination(res)
 
+    @pytest.mark.component
+    def test_diafiltration_build(self):
+        model = self.create_model(has_holdup=False)
+        assert isinstance(model.fs.stage3.retentate_inlet, Port)
+        assert isinstance(model.fs.stage3.retentate_outlet, Port)
+        assert not hasattr(model.fs.stage3, "permeate_inlet")
+        assert isinstance(model.fs.stage3.permeate_outlet, Port)
+
+    @pytest.mark.integration
+    def test_initialize_and_solve_no_holdup(self):
+        model = self.create_model(has_holdup=False)
+        self.initialize_model(model)
+
         # Check conservation
         # Solvent
         assert value(
@@ -4877,3 +4990,160 @@ class TestLiCODiafiltration:
         )
         assert R_Li == pytest.approx(0.9451, rel=1e-4)
         assert R_Co == pytest.approx(0.6378, rel=1e-4)
+
+    @pytest.mark.integration
+    def test_initialize_and_solve_with_holdup(self):
+        model = self.create_model(has_holdup=True)
+        self.initialize_model(model)
+        # Check conservation
+        # Solvent
+        assert value(
+            model.fs.mix2.inlet_1.flow_vol[0]
+            + model.fs.stage3.retentate_side_stream_state[0, 10].flow_vol
+        ) == pytest.approx(
+            value(
+                model.fs.stage3.permeate_outlet.flow_vol[0]
+                + model.fs.stage1.retentate_outlet.flow_vol[0]
+            ),
+            rel=1e-5,
+        )
+        # Lithium
+        assert value(
+            model.fs.mix2.inlet_1.flow_vol[0]
+            * model.fs.mix2.inlet_1.conc_mass_solute[0, "Li"]
+            + model.fs.stage3.retentate_side_stream_state[0, 10].flow_vol
+            * model.fs.stage3.retentate_side_stream_state[0, 10].conc_mass_solute["Li"]
+        ) == pytest.approx(
+            value(
+                model.fs.stage3.permeate_outlet.flow_vol[0]
+                * model.fs.stage3.permeate_outlet.conc_mass_solute[0, "Li"]
+                + model.fs.stage1.retentate_outlet.flow_vol[0]
+                * model.fs.stage1.retentate_outlet.conc_mass_solute[0, "Li"]
+            ),
+            rel=1e-5,
+        )
+        # Cobalt
+        assert value(
+            model.fs.mix2.inlet_1.flow_vol[0]
+            * model.fs.mix2.inlet_1.conc_mass_solute[0, "Co"]
+            + model.fs.stage3.retentate_side_stream_state[0, 10].flow_vol
+            * model.fs.stage3.retentate_side_stream_state[0, 10].conc_mass_solute["Co"]
+        ) == pytest.approx(
+            value(
+                model.fs.stage3.permeate_outlet.flow_vol[0]
+                * model.fs.stage3.permeate_outlet.conc_mass_solute[0, "Co"]
+                + model.fs.stage1.retentate_outlet.flow_vol[0]
+                * model.fs.stage1.retentate_outlet.conc_mass_solute[0, "Co"]
+            ),
+            rel=1e-5,
+        )
+
+        # Calculate recovery
+        R_Li = value(
+            model.fs.stage3.permeate_outlet.flow_vol[0]
+            * model.fs.stage3.permeate_outlet.conc_mass_solute[0, "Li"]
+            / (
+                model.fs.mix2.inlet_1.flow_vol[0]
+                * model.fs.mix2.inlet_1.conc_mass_solute[0, "Li"]
+                + model.fs.stage3.retentate_side_stream_state[0, 10].flow_vol
+                * model.fs.stage3.retentate_side_stream_state[0, 10].conc_mass_solute[
+                    "Li"
+                ]
+            )
+        )
+        R_Co = value(
+            model.fs.stage1.retentate_outlet.flow_vol[0]
+            * model.fs.stage1.retentate_outlet.conc_mass_solute[0, "Co"]
+            / (
+                model.fs.mix2.inlet_1.flow_vol[0]
+                * model.fs.mix2.inlet_1.conc_mass_solute[0, "Co"]
+                + model.fs.stage3.retentate_side_stream_state[0, 10].flow_vol
+                * model.fs.stage3.retentate_side_stream_state[0, 10].conc_mass_solute[
+                    "Co"
+                ]
+            )
+        )
+        assert R_Li == pytest.approx(0.9451, rel=1e-4)
+        assert R_Co == pytest.approx(0.6378, rel=1e-4)
+
+        for stage, vol_frac, volume in zip(
+            [model.fs.stage1, model.fs.stage2, model.fs.stage3],
+            [0.1, 0.5, 0.9],
+            [0.1, 1, 10],
+        ):
+            for vardata in stage.volume_frac_stream[:, :, "retentate"]:
+                assert vardata.fixed
+                assert vardata.value == vol_frac
+            for vardata in stage.volume_frac_stream[:, :, "permeate"]:
+                assert not vardata.fixed
+                assert vardata.value == pytest.approx(1 - vol_frac)
+            for vardata in stage.volume.values():
+                assert vardata.fixed
+                assert vardata.value == volume
+
+        def approx(x):
+            return pytest.approx(x, rel=1e-4)
+
+        # Spot test a few holdup values
+        # Stage 1
+        assert model.fs.stage1.retentate_material_holdup[
+            0, 1, "phase1", "solvent"
+        ].value == approx(10)
+        assert model.fs.stage1.retentate_material_holdup[
+            0.0, 3, "phase1", "Co"
+        ].value == approx(0.273115)
+        assert model.fs.stage1.retentate_material_holdup[
+            0.0, 8, "phase1", "Li"
+        ].value == approx(0.0074371075)
+
+        assert model.fs.stage1.permeate_material_holdup[
+            0, 8, "phase1", "solvent"
+        ].value == approx(90)
+        assert model.fs.stage1.permeate_material_holdup[
+            0.0, 2, "phase1", "Co"
+        ].value == approx(1.106536)
+        assert model.fs.stage1.permeate_material_holdup[
+            0.0, 6, "phase1", "Li"
+        ].value == approx(0.113279772)
+
+        # Stage 2
+        assert model.fs.stage2.retentate_material_holdup[
+            0, 7, "phase1", "solvent"
+        ].value == approx(500)
+        assert model.fs.stage2.retentate_material_holdup[
+            0.0, 6, "phase1", "Co"
+        ].value == approx(10.101154)
+        assert model.fs.stage2.retentate_material_holdup[
+            0.0, 7, "phase1", "Li"
+        ].value == approx(0.5711698)
+
+        assert model.fs.stage2.permeate_material_holdup[
+            0, 3, "phase1", "solvent"
+        ].value == approx(500)
+        assert model.fs.stage2.permeate_material_holdup[
+            0.0, 6, "phase1", "Co"
+        ].value == approx(4.6373872)
+        assert model.fs.stage2.permeate_material_holdup[
+            0.0, 5, "phase1", "Li"
+        ].value == approx(0.80491291)
+
+        # Stage 3
+        assert model.fs.stage3.retentate_material_holdup[
+            0, 7, "phase1", "solvent"
+        ].value == approx(9000)
+        assert model.fs.stage3.retentate_material_holdup[
+            0.0, 8, "phase1", "Co"
+        ].value == approx(116.9801)
+        assert model.fs.stage3.retentate_material_holdup[
+            0.0, 4, "phase1", "Li"
+        ].value == approx(9.9399983)
+
+        assert model.fs.stage3.permeate_material_holdup[
+            0, 1, "phase1", "solvent"
+        ].value == approx(1000)
+        assert model.fs.stage3.permeate_material_holdup[
+            0.0, 5, "phase1", "Co"
+        ].value == approx(4.4315796)
+        assert model.fs.stage3.permeate_material_holdup[
+            0.0, 2, "phase1", "Li"
+        ].value == approx(1.56961)
