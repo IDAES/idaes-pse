@@ -10,47 +10,6 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-"""The API in this module is mostly for internal use, e.g. from 'setup.py' to get the version of
-the package. But :class:`Version` has been written to be usable as a general
-versioning interface.
-
-Example of using the class directly:
-
-.. doctest::
-
-    >>> from idaes.ver import Version
-    >>> my_version = Version(1, 2, 3)
-    >>> print(my_version)
-    1.2.3
-    >>> tuple(my_version)
-    (1, 2, 3)
-    >>> my_version = Version(1, 2, 3, 'alpha')
-    >>> print(my_version)
-    1.2.3.a
-    >>> tuple(my_version)
-    (1, 2, 3, 'alpha')
-    >>> my_version = Version(1, 2, 3, 'candidate', 1)
-    >>> print(my_version)
-    1.2.3.rc1
-    >>> tuple(my_version)
-    (1, 2, 3, 'candidate', 1)
-
-If you want to add a version to a class, e.g. a model, then
-simply inherit from ``HasVersion`` and initialize it with the
-same arguments you would give the :class:`Version` constructor:
-
-.. doctest::
-
-    >>> from idaes.ver import HasVersion
-    >>> class MyClass(HasVersion):
-    ...     def __init__(self):
-    ...         super(MyClass, self).__init__(1, 2, 3, 'alpha')
-    ...
-    >>> obj = MyClass()
-    >>> print(obj.version)
-    1.2.3.a
-
-"""
 import os
 import re
 import sys
