@@ -31,6 +31,7 @@ from . import config
 
 __version__ = version("idaes-pse")
 
+
 def _handle_optional_compat_activation(
     env_var: str = "IDAES_ACTIVATE_V1_COMPAT",
 ):
