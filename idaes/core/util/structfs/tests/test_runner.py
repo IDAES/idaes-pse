@@ -72,8 +72,8 @@ def test_run_steps_order():
 
 @pytest.mark.unit
 def test_run_steps_args():
-    simple.run_steps(from_name="hello")
-    simple.run_steps(to_name="world")
+    simple.run_steps(first="hello")
+    simple.run_steps(last="world")
 
 
 @pytest.mark.unit

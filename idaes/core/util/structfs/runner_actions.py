@@ -16,6 +16,8 @@ Predefined Actions for the generic Runner.
 # stdlib
 from collections import defaultdict
 from collections.abc import Callable
+from io import StringIO
+import sys
 import time
 from typing import Union, Optional
 
@@ -51,6 +53,7 @@ class Timer(Action):
         self._step_begin = {}
         self._run_begin = None
         self._step_order = []
+        self._run_steps = set()
 
     def before_step(self, step_name):
         self._step_begin[step_name] = time.time()
@@ -66,9 +69,11 @@ class Timer(Action):
             dt = t1 - t0
             self.step_times[step_name].append(dt)
             self._step_begin[step_name] = None
+            self._run_steps.add(step_name)
 
     def before_run(self):
         self._run_begin = time.time()
+        self._run_steps = set()
 
     def after_run(self):
         t1 = time.time()
@@ -78,12 +83,13 @@ class Timer(Action):
             dt = t1 - self._run_begin
             self.run_times.append(dt)
             self._run_begin = None
+            for step in self._runner.list_steps()
 
-    def summary(self) -> list[dict]:
+    def get_summary(self) -> list[dict]:
         """Summarize timings
 
         Returns:
-            dict: Summary of timings (in seconds) for each run in `run_times`:
+            Summary of timings (in seconds) for each run in `run_times`:
               - 'run': Time for the run
               - 'steps': list of (step_name, time) for each step (in order)
               - 'inclusive': total time spent in the steps
@@ -102,6 +108,30 @@ class Timer(Action):
                 }
             )
         return data
+
+    def summary(self, stream=None) -> str:
+        if stream is None:
+            stream = StringIO()
+
+        d = self.get_summary()[-1]
+
+        stream.write("Time per step:\n\n")
+        slen, ttot = -1, 0
+        for s, t in d["steps"]:
+            slen = max(slen, len(s))
+            ttot += t
+        sfmt = "{{s:{slen}s}} : {{t:8.3f}}  {{p:4.1f}}%\n"
+        for s, t in d["steps"]:
+            fmt = sfmt.format(slen=slen)
+            stream.write(fmt.format(s=s, t=t, p=t / ttot * 100))
+
+        stream.write(f"\nTotal time: {d['run']:.3f} s\n")
+
+        if isinstance(stream, StringIO):
+            return stream.getvalue()
+
+    def _ipython_display_(self):
+        print(self.summary())
 
 
 # Hold degrees of freedom for one FlowsheetRunner 'step'
@@ -162,11 +192,13 @@ class UnitDofChecker(Action):
     def after_step(self, step_name: str):
         step_name = self._runner.normalize_name(step_name)
         if step_name not in self._steps:
+            self.log.debug(f"Do not check DoF for step: {step_name}")
             return
 
         fs = self._get_flowsheet()
 
-        units_dof = {}
+        model_dof = degrees_of_freedom(self._get_flowsheet())
+        units_dof = {self._fs: model_dof}
         for unit in fs.component_objects(descend_into=True):
             if self._is_unit_model(unit):
                 units_dof[unit.name] = self._get_dof(unit)
@@ -191,29 +223,36 @@ class UnitDofChecker(Action):
     def _is_unit_model(block):
         return isinstance(block, ProcessBlockData)
 
-    def as_dataframe(self) -> pd.DataFrame:
-        """Format per-step DoF as a Pandas `DataFrame`.
+    def summary(self, stream=sys.stdout, step=None):
+        if stream is None:
+            stream = StringIO()
 
-        Returns:
-            DataFrame: Step (str), Unit (str), DoF (int)
-        """
-        step_names, unit_names, dofs = [], [], []
+        def write_step(sdof, indent=4):
+            sdof = self._steps_dof[step]
+            istr = " " * indent
+            unit_names = list(sdof.keys())
+            ulen = max((len(u) for u in unit_names))
+            dfmt = f"{istr}{{u:{ulen}s}} : {{d}}\n"
+            unit_names.sort()
+            for unit in unit_names:
+                dof = sdof[unit]
+                stream.write(dfmt.format(u=unit, d=dof))
 
-        # add DoF for each step
-        for sn, data in self._steps_dof.items():
-            for un, dof in data.items():
-                step_names.append(sn)
-                unit_names.append(un)
-                dofs.append(dof)
+        stream.write(f"Degrees of freedom: {self._model_dof}\n\n")
+        if step is None:
+            stream.write("Degrees of freedom after steps:\n")
+            for step in self._runner._steps:
+                if step in self._steps_dof:
+                    stream.write(f"  {step}:\n")
+                    write_step(self._steps_dof[step])
+        else:
+            write_step(self._steps_dof[step], indent=0)
 
-        # add model DoF
-        step_names.append("RUN")
-        unit_names.append(self._fs)
-        dofs.append(self._model_dof)
+        if isinstance(stream, StringIO):
+            return stream.getvalue()
 
-        return pd.DataFrame(
-            {"after_step": step_names, "unit_name": unit_names, "dof": dofs}
-        )
+    def _ipython_display_(self):
+        self.summary()
 
     def get_unit_dof(self, step_name: str) -> UnitDofType:
         """Get DoF for each unit, as measured after the given step.

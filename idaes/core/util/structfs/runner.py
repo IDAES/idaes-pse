@@ -122,14 +122,14 @@ class Runner:
 
     def run_step(self, name):
         """Syntactic sugar for calling `run_steps` for a single step."""
-        self.run_steps(from_name=name, to_name=name)
+        self.run_steps(first=name, last=name)
 
-    def run_steps(self, from_name: str = "", to_name: str = ""):
-        """Run steps from `from_name` to step `to_name`.
+    def run_steps(self, first: str = "", last: str = ""):
+        """Run steps from `first` to step `last`.
 
         Args:
-            from_name: First step to run
-            to_name: Last step to run
+            first: First step to run
+            last: Last step to run
 
         Raises:
             KeyError: Unknown or undefined step given
@@ -138,7 +138,7 @@ class Runner:
         if not self._steps:
             return  # nothing to do, no steps defined
 
-        names = (self.normalize_name(from_name), self.normalize_name(to_name))
+        names = (self.normalize_name(first), self.normalize_name(last))
 
         step_range = [-1, -1]
         for i, step_name in enumerate(names):
@@ -172,6 +172,14 @@ class Runner:
     def reset(self):
         """Reset runner internal state, especially the context."""
         self._context = {}
+
+    def list_steps(self, all_steps=False) -> list[str]:
+        """Get list of [runnable] steps."""
+        result = []
+        for n in self._step_names:
+            if all_steps or (n in self._steps):
+                result.append(n)
+        return result
 
     def add_action(self, name: str, action_class: type, *args, **kwargs):
         """Add a named action.

@@ -75,6 +75,7 @@ Contents
     tutorials/index
     how_to_guides/index
     explanations/index
+    examples/index
     reference_guides/index
     archived_features/index
     explanations/faq

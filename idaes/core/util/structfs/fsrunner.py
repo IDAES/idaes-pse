@@ -79,7 +79,7 @@ class FlowsheetRunner(Runner):
         self._solver, self._tee = solver, tee
         super().__init__(self.STEPS)  # needs to be last
 
-    def run_steps(self, from_name: str = "", to_name: str = ""):
+    def run_steps(self, first: str = "", last: str = ""):
         """Run the steps.
 
         Before it calls the superclass to run the steps, checks
@@ -87,14 +87,14 @@ class FlowsheetRunner(Runner):
         if so, creates an empty Pyomo ConcreteModel to use as
         the base model for the flowsheet.
         """
-        from_step_name = self.normalize_name(from_name)
+        from_step_name = self.normalize_name(first)
         if (
             from_step_name == ""
             or from_step_name == self.build_step
             or self._context.model is None
         ):
             self._context.model = self._create_model()
-        super().run_steps(from_name, to_name)
+        super().run_steps(first, last)
 
     def reset(self):
         self._context = Context(solver=self._solver, tee=self._tee, model=None)
