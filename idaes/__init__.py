@@ -24,7 +24,7 @@ import copy
 import logging
 from typing import Optional, List
 
-from importlib.metadata import version, metadata
+from importlib.metadata import version
 
 from pyomo.common.fileutils import find_library
 
