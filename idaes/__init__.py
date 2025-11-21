@@ -24,10 +24,13 @@ import copy
 import logging
 from typing import Optional, List
 
+from importlib.metadata import version, metadata
+
 from pyomo.common.fileutils import find_library
 
 from . import config
-from .ver import __version__  # noqa
+
+__version__ = version("idaes-pse")
 
 
 def _handle_optional_compat_activation(
@@ -66,7 +69,7 @@ config.testing_directory = testing_directory
 
 # Set the path for the global and local config files
 if data_directory is not None:
-    _global_config_file = os.path.join(data_directory, "idaes.conf")
+    _global_config_file = os.path.oin(data_directory, "idaes.conf")
 else:
     _global_config_file = None
 _local_config_file = "idaes.conf"

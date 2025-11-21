@@ -19,13 +19,16 @@ __author__ = "John Eslick"
 import sys
 import platform
 import json
+from importlib import metadata
 import pkg_resources
 
 import pyomo
 import pyomo.environ as pyo
 
 import idaes
-import idaes.ver as ver
+
+__version__ = metadata.version("idaes-pse")
+__metadata__ = metadata.metadata("idaes-pse")
 
 
 class EnvironmentInfo:
@@ -51,9 +54,9 @@ class EnvironmentInfo:
         # Get idaes version from ver module.  This works even if you just
         # check a new version our from github, have IDAES installed in-place
         # and don't reinstall, which is likely mode for a lot of developers
-        self.git_hash = ver.gh
-        self.package_version = ver.package_version
-        self.version_string = ver.__version__
+        self.git_hash = __metadata__.gh
+        self.package_version = __version__
+        self.version_string = __version__
         self.bin_directory = idaes.bin_directory
         self.data_directory = idaes.data_directory
         self.global_config = idaes._global_config_file
