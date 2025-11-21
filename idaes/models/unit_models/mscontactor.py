@@ -783,7 +783,6 @@ class MSContactorInitializer(ModularInitializerBase):
             for stream in model.streams:
                 holdup_var = getattr(model, stream + "_material_holdup")
                 holdup_eqn = getattr(model, stream + "_material_holdup_constraint")
-                # calculate_variable_from_constraint(holdup_var, holdup_eqn)
                 holdup_eqn.deactivate()
                 holdup_var.fix()
         # Solve full model (without holdup)
