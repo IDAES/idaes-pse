@@ -271,8 +271,8 @@ def define_state(blk):
     def define_display_vars_FpTPxpc(b):
         """Define display vars."""
         return {
-            "Total Molar Flowrate": b.flow_mol,
-            "Total Mole Fraction": b.mole_frac_comp,
+            "Total Molar Flowrate": b.flow_mol_phase,
+            "Total Mole Fraction": b.mole_frac_phase_comp,
             "Temperature": b.temperature,
             "Pressure": b.pressure,
         }
