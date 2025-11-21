@@ -13,7 +13,7 @@
 """
 Tests for Separator unit model.
 
-Author: Andrew Lee, Douglas Allan
+Author: Andrew Lee, Douglas Allan, Lingyan Deng
 """
 import pytest
 import pandas

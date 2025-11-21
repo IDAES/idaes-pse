@@ -61,7 +61,7 @@ from idaes.core.util.units_of_measurement import report_quantity
 from idaes.core.initialization import ModularInitializerBase
 from idaes.core.scaling import get_scaling_factor, CustomScalerBase
 
-__author__ = "Andrew Lee, Douglas Allan"
+__author__ = "Andrew Lee, Douglas Allan, Lingyan Deng"
 
 
 # Set up logger
