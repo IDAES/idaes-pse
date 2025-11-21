@@ -10,135 +10,11 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-"""The API in this module is mostly for internal use, e.g. from 'setup.py' to get the version of
-the package. But :class:`Version` has been written to be usable as a general
-versioning interface.
-
-Example of using the class directly:
-
-.. doctest::
-
-    >>> from idaes.ver import Version
-    >>> my_version = Version(1, 2, 3)
-    >>> print(my_version)
-    1.2.3
-    >>> tuple(my_version)
-    (1, 2, 3)
-    >>> my_version = Version(1, 2, 3, 'alpha')
-    >>> print(my_version)
-    1.2.3.a
-    >>> tuple(my_version)
-    (1, 2, 3, 'alpha')
-    >>> my_version = Version(1, 2, 3, 'candidate', 1)
-    >>> print(my_version)
-    1.2.3.rc1
-    >>> tuple(my_version)
-    (1, 2, 3, 'candidate', 1)
-
-If you want to add a version to a class, e.g. a model, then
-simply inherit from ``HasVersion`` and initialize it with the
-same arguments you would give the :class:`Version` constructor:
-
-.. doctest::
-
-    >>> from idaes.ver import HasVersion
-    >>> class MyClass(HasVersion):
-    ...     def __init__(self):
-    ...         super(MyClass, self).__init__(1, 2, 3, 'alpha')
-    ...
-    >>> obj = MyClass()
-    >>> print(obj.version)
-    1.2.3.a
-
-"""
 import os
 import re
 import sys
 
 __author__ = "Dan Gunter"
-
-
-class Version(object):
-    """This class attempts to be compliant with a subset of
-    `PEP 440 <https://www.python.org/dev/peps/pep-0440/>`_.
-
-    Note: If you actually happen to read the PEP, you will notice
-    that pre- and post- releases, as well as "release epochs", are not
-    supported.
-    """
-
-    _specifiers = {
-        "alpha": "a",
-        "beta": "b",
-        "candidate": "rc",
-        "development": "dev",
-        "final": "",  # this is the default
-    }
-
-    def __init__(
-        self, major, minor, micro, releaselevel="final", serial=None, label=None
-    ):
-        """Create new version object.
-
-        Provided arguments are stored in public class
-        attributes by the same name.
-
-        Args:
-            major (int): Major version
-            minor (int):  Minor version
-            micro (int):  Micro (aka patchlevel) version
-            releaselevel (str): Optional PEP 440 specifier
-            serial (int): Optional number associated with releaselevel
-            label (str): Optional local version label
-        """
-        if releaselevel not in self._specifiers:
-            raise ValueError(
-                f'Value "{releaselevel}" for releaselevel not in '
-                f'({",".join(sorted(self._specifiers.keys()))})'
-            )
-        self.major, self.minor, self.micro = major, minor, micro
-        self.releaselevel, self.serial, self.label = releaselevel, serial, label
-
-    def __iter__(self):
-        """Return version information as a sequence."""
-        items = [self.major, self.minor, self.micro]
-        if self.releaselevel != "final":
-            items.append(self.releaselevel)
-            if self.serial is not None:
-                items.append(self.serial)
-                if self.label is not None:
-                    items.append(self.label)
-            elif self.label is not None:
-                items.append(0)  # placeholder for serial
-                items.append(self.label)
-        for it in items:
-            yield it
-
-    def __str__(self):
-        """Return version information as a string."""
-        if self.releaselevel == "final":
-            tag = ""
-        else:
-            tag = (
-                "."
-                + self._specifiers[self.releaselevel]
-                + ("" if self.serial is None else str(self.serial))
-                + ("" if self.label is None else "+" + self.label)
-            )
-        return f"{self.major}.{self.minor}.{self.micro}{tag}"
-
-
-class HasVersion(object):
-    """Interface for a versioned class."""
-
-    def __init__(self, *args):
-        """Constructor creates a `version` attribute that is
-        an instance of :class:`Version` initialized with the provided args.
-
-        Args:
-            *args: Arguments to be passed to Version constructor.
-        """
-        self.version = Version(*args)
 
 
 def git_hash():
@@ -185,9 +61,3 @@ try:
             print(f"git_hash() error: {err}", file=sys.stderr)
 except NameError:  # eg, if invoked from setup.py
     pass
-
-#: Package's version as an object
-package_version = Version(2, 10, 0, "development", 0, gh)
-
-#: Package's version as a simple string
-__version__ = str(package_version)

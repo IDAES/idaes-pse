@@ -14,8 +14,8 @@
 Tests get environment info
 """
 import json
+import importlib
 import pytest
-import idaes.ver as ver
 from idaes.core.util.env_info import EnvironmentInfo
 
 
@@ -27,7 +27,7 @@ def test_env_info():
     assert "Pyomo" in d
     assert "OS" in d
     assert hasattr(x, "package_version")
-    assert x.version_string == ver.__version__
+    assert x.version_string == importlib.metadata.version("idaes-pse")
     s = x.to_json()
     d = json.loads(s)
     assert "IDAES" in d
