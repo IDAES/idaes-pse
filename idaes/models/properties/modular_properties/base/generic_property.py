@@ -5524,7 +5524,13 @@ def _temperature_pressure_bubble_dew(b, name):
         setattr(
             b,
             name,
-            Var(b.params._pe_pairs, doc=docstring_var, bounds=bounds, initialize=init, units=units),
+            Var(
+                b.params._pe_pairs,
+                doc=docstring_var,
+                bounds=bounds,
+                initialize=init,
+                units=units,
+            ),
         )
         setattr(
             b,

@@ -148,14 +148,28 @@ class TestApparentSpeciesBasisNoInherent:
         m = frame
 
         m.fs.state[1].flow_mol_phase["Liq"].fix(1.0)
-        m.fs.state[1].flow_mol_phase["Vap"].fix(.5 + (1 / 6) * 3)
-        m.fs.state[1].mole_frac_phase_comp["Liq", "H2O"].fix(1 / 3 / value(m.fs.state[1].flow_mol_phase["Liq"]))
-        m.fs.state[1].mole_frac_phase_comp["Liq", "CO2"].fix(1 / 3 / value(m.fs.state[1].flow_mol_phase["Liq"]))
-        m.fs.state[1].mole_frac_phase_comp["Liq", "KHCO3"].fix(1 / 3 / value(m.fs.state[1].flow_mol_phase["Liq"]))
-        m.fs.state[1].mole_frac_phase_comp["Vap", "H2O"].fix(1 / 6 / value(m.fs.state[1].flow_mol_phase["Vap"]))
-        m.fs.state[1].mole_frac_phase_comp["Vap", "CO2"].fix(1 / 6 / value(m.fs.state[1].flow_mol_phase["Vap"]))
-        m.fs.state[1].mole_frac_phase_comp["Vap", "KHCO3"].fix(1 / 6 / value(m.fs.state[1].flow_mol_phase["Vap"]))
-        m.fs.state[1].mole_frac_phase_comp["Vap", "N2"].fix(0.5 / value(m.fs.state[1].flow_mol_phase["Vap"]))
+        m.fs.state[1].flow_mol_phase["Vap"].fix(0.5 + (1 / 6) * 3)
+        m.fs.state[1].mole_frac_phase_comp["Liq", "H2O"].fix(
+            1 / 3 / value(m.fs.state[1].flow_mol_phase["Liq"])
+        )
+        m.fs.state[1].mole_frac_phase_comp["Liq", "CO2"].fix(
+            1 / 3 / value(m.fs.state[1].flow_mol_phase["Liq"])
+        )
+        m.fs.state[1].mole_frac_phase_comp["Liq", "KHCO3"].fix(
+            1 / 3 / value(m.fs.state[1].flow_mol_phase["Liq"])
+        )
+        m.fs.state[1].mole_frac_phase_comp["Vap", "H2O"].fix(
+            1 / 6 / value(m.fs.state[1].flow_mol_phase["Vap"])
+        )
+        m.fs.state[1].mole_frac_phase_comp["Vap", "CO2"].fix(
+            1 / 6 / value(m.fs.state[1].flow_mol_phase["Vap"])
+        )
+        m.fs.state[1].mole_frac_phase_comp["Vap", "KHCO3"].fix(
+            1 / 6 / value(m.fs.state[1].flow_mol_phase["Vap"])
+        )
+        m.fs.state[1].mole_frac_phase_comp["Vap", "N2"].fix(
+            0.5 / value(m.fs.state[1].flow_mol_phase["Vap"])
+        )
         m.fs.state[1].temperature.fix(300)
         m.fs.state[1].pressure.fix(1e5)
 
@@ -306,10 +320,18 @@ class TestApparentSpeciesBasisInherent:
         m = frame
 
         m.fs.state[1].flow_mol_phase["Liq"].fix(1.6 + 0.4 + 1e-8 + 1e-8)
-        m.fs.state[1].mole_frac_phase_comp["Liq", "H2O"].fix(1.6 / value(m.fs.state[1].flow_mol_phase["Liq"]))
-        m.fs.state[1].mole_frac_phase_comp["Liq", "K2CO3"].fix(0.4 / value(m.fs.state[1].flow_mol_phase["Liq"]))
-        m.fs.state[1].mole_frac_phase_comp["Liq", "KHCO3"].fix(1e-8 / value(m.fs.state[1].flow_mol_phase["Liq"]))
-        m.fs.state[1].mole_frac_phase_comp["Liq", "KOH"].fix(1e-8 / value(m.fs.state[1].flow_mol_phase["Liq"]))
+        m.fs.state[1].mole_frac_phase_comp["Liq", "H2O"].fix(
+            1.6 / value(m.fs.state[1].flow_mol_phase["Liq"])
+        )
+        m.fs.state[1].mole_frac_phase_comp["Liq", "K2CO3"].fix(
+            0.4 / value(m.fs.state[1].flow_mol_phase["Liq"])
+        )
+        m.fs.state[1].mole_frac_phase_comp["Liq", "KHCO3"].fix(
+            1e-8 / value(m.fs.state[1].flow_mol_phase["Liq"])
+        )
+        m.fs.state[1].mole_frac_phase_comp["Liq", "KOH"].fix(
+            1e-8 / value(m.fs.state[1].flow_mol_phase["Liq"])
+        )
         m.fs.state[1].temperature.fix(350)
         m.fs.state[1].pressure.fix(1e5)
 
@@ -326,9 +348,7 @@ class TestApparentSpeciesBasisInherent:
         for j in m.fs.state[1].mole_frac_comp:
             print()
             print(j)
-            print(value(
-                m.fs.state[1].flow_mol_phase_comp_apparent["Liq", j]
-            ))
+            print(value(m.fs.state[1].flow_mol_phase_comp_apparent["Liq", j]))
             print(value(m.fs.state[1].flow_mol), value(m.fs.state[1].mole_frac_comp[j]))
             assert value(
                 m.fs.state[1].flow_mol_phase_comp_apparent["Liq", j]
@@ -602,23 +622,40 @@ class TestTrueSpeciesBasisInherent:
         m.fs.state[1].temperature.fix(350)
         m.fs.state[1].pressure.fix(1e5)
 
-        flow_mol_phase_comp_H2O = (0.5716 * 2)
-        flow_mol_phase_comp_K = (0.2858 * 2)
-        flow_mol_phase_comp_H = (2.9e-16 * 2)
-        flow_mol_phase_comp_HCO3 = (1.14e-8 * 2)
-        flow_mol_phase_comp_CO3 = (0.1429 * 2)
-        flow_mol_phase_comp_OH = (1.14e-8 * 2)
+        flow_mol_phase_comp_H2O = 0.5716 * 2
+        flow_mol_phase_comp_K = 0.2858 * 2
+        flow_mol_phase_comp_H = 2.9e-16 * 2
+        flow_mol_phase_comp_HCO3 = 1.14e-8 * 2
+        flow_mol_phase_comp_CO3 = 0.1429 * 2
+        flow_mol_phase_comp_OH = 1.14e-8 * 2
 
-        m.fs.state[1].flow_mol_phase["Liq"].fix(flow_mol_phase_comp_H2O + flow_mol_phase_comp_K +
-                                                flow_mol_phase_comp_H + flow_mol_phase_comp_HCO3 +
-                                                flow_mol_phase_comp_CO3 + flow_mol_phase_comp_OH)
+        m.fs.state[1].flow_mol_phase["Liq"].fix(
+            flow_mol_phase_comp_H2O
+            + flow_mol_phase_comp_K
+            + flow_mol_phase_comp_H
+            + flow_mol_phase_comp_HCO3
+            + flow_mol_phase_comp_CO3
+            + flow_mol_phase_comp_OH
+        )
 
-        m.fs.state[1].mole_frac_phase_comp["Liq", "H2O"].fix(flow_mol_phase_comp_H2O / value(m.fs.state[1].flow_mol_phase["Liq"]))
-        m.fs.state[1].mole_frac_phase_comp["Liq", "K+"].fix(flow_mol_phase_comp_K / value(m.fs.state[1].flow_mol_phase["Liq"]))
-        m.fs.state[1].mole_frac_phase_comp["Liq", "H+"].fix(flow_mol_phase_comp_H / value(m.fs.state[1].flow_mol_phase["Liq"]))
-        m.fs.state[1].mole_frac_phase_comp["Liq", "HCO3-"].fix(flow_mol_phase_comp_HCO3 / value(m.fs.state[1].flow_mol_phase["Liq"]))
-        m.fs.state[1].mole_frac_phase_comp["Liq", "CO3--"].fix(flow_mol_phase_comp_CO3 / value(m.fs.state[1].flow_mol_phase["Liq"]))
-        m.fs.state[1].mole_frac_phase_comp["Liq", "OH-"].fix(flow_mol_phase_comp_OH / value(m.fs.state[1].flow_mol_phase["Liq"]))
+        m.fs.state[1].mole_frac_phase_comp["Liq", "H2O"].fix(
+            flow_mol_phase_comp_H2O / value(m.fs.state[1].flow_mol_phase["Liq"])
+        )
+        m.fs.state[1].mole_frac_phase_comp["Liq", "K+"].fix(
+            flow_mol_phase_comp_K / value(m.fs.state[1].flow_mol_phase["Liq"])
+        )
+        m.fs.state[1].mole_frac_phase_comp["Liq", "H+"].fix(
+            flow_mol_phase_comp_H / value(m.fs.state[1].flow_mol_phase["Liq"])
+        )
+        m.fs.state[1].mole_frac_phase_comp["Liq", "HCO3-"].fix(
+            flow_mol_phase_comp_HCO3 / value(m.fs.state[1].flow_mol_phase["Liq"])
+        )
+        m.fs.state[1].mole_frac_phase_comp["Liq", "CO3--"].fix(
+            flow_mol_phase_comp_CO3 / value(m.fs.state[1].flow_mol_phase["Liq"])
+        )
+        m.fs.state[1].mole_frac_phase_comp["Liq", "OH-"].fix(
+            flow_mol_phase_comp_OH / value(m.fs.state[1].flow_mol_phase["Liq"])
+        )
 
         assert degrees_of_freedom(m.fs) == 0
 

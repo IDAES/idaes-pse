@@ -91,13 +91,13 @@ class TestInvalidBounds(object):
         )
 
         with pytest.raises(
-                ConfigurationError,
-                match=re.escape(
-                    "props[1] - found unexpected state_bounds key foo. "
-                    "Please ensure bounds are provided only for expected state "
-                    "variables and that you have typed the variable names "
-                    "correctly."
-                ),
+            ConfigurationError,
+            match=re.escape(
+                "props[1] - found unexpected state_bounds key foo. "
+                "Please ensure bounds are provided only for expected state "
+                "variables and that you have typed the variable names "
+                "correctly."
+            ),
         ):
             # Build state block
             m.props = m.params.build_state_block([1], defined_state=True)
@@ -240,7 +240,8 @@ class Test1PhaseDefinedStateFalseNoBounds(object):
         for p, i in frame.props[1].flow_mol_phase_comp:
             assert (p, i) in frame.props[1].params._phase_component_set
             assert str(frame.props[1].flow_mol_phase_comp[p, i].expr) == str(
-                frame.props[1].flow_mol_phase[p] * frame.props[1].mole_frac_phase_comp[p, i]
+                frame.props[1].flow_mol_phase[p]
+                * frame.props[1].mole_frac_phase_comp[p, i]
             )
 
     @pytest.mark.unit
@@ -253,7 +254,11 @@ class Test1PhaseDefinedStateFalseNoBounds(object):
         for p in frame.props[1].phase_frac:
             assert p in frame.params.phase_list
             assert str(frame.props[1].sum_mole_frac_out[p].body) == str(
-                sum(frame.props[1].mole_frac_phase_comp[p, i] for i in frame.props[1].params.component_list if (p, i) in frame.props[1].params._phase_component_set)
+                sum(
+                    frame.props[1].mole_frac_phase_comp[p, i]
+                    for i in frame.props[1].params.component_list
+                    if (p, i) in frame.props[1].params._phase_component_set
+                )
             )
 
         # mole_frac_comp_eq Constraint line 183
@@ -261,9 +266,10 @@ class Test1PhaseDefinedStateFalseNoBounds(object):
         assert len(frame.props[1].mole_frac_comp_eq) == 3
         for i in frame.props[1].mole_frac_comp_eq:
             assert str(frame.props[1].mole_frac_comp_eq[i].body) == str(
-                frame.props[1].mole_frac_comp[i] * frame.props[1].flow_mol -
-                sum(
-                    frame.props[1].mole_frac_phase_comp[p, i] * frame.props[1].flow_mol_phase[p]
+                frame.props[1].mole_frac_comp[i] * frame.props[1].flow_mol
+                - sum(
+                    frame.props[1].mole_frac_phase_comp[p, i]
+                    * frame.props[1].flow_mol_phase[p]
                     for p in frame.props[1].params.phase_list
                     if (p, i) in frame.props[1].params._phase_component_set
                 )
@@ -274,7 +280,9 @@ class Test1PhaseDefinedStateFalseNoBounds(object):
         assert len(frame.props[1].phase_frac_eqn) == 1
         for p in frame.props[1].phase_frac_eqn:
             assert p in frame.params.phase_list
-            assert str(frame.props[1].phase_frac_eqn[p].body) == str(frame.props[1].phase_frac[p])
+            assert str(frame.props[1].phase_frac_eqn[p].body) == str(
+                frame.props[1].phase_frac[p]
+            )
 
         assert_units_consistent(frame.props[1])
 
@@ -395,7 +403,8 @@ class Test1PhaseDefinedStateTrueWithBounds(object):
         for p, i in frame.props[1].flow_mol_phase_comp:
             assert (p, i) in frame.props[1].params._phase_component_set
             assert str(frame.props[1].flow_mol_phase_comp[p, i].expr) == str(
-                frame.props[1].flow_mol_phase[p] * frame.props[1].mole_frac_phase_comp[p, i]
+                frame.props[1].flow_mol_phase[p]
+                * frame.props[1].mole_frac_phase_comp[p, i]
             )
 
     @pytest.mark.unit
@@ -407,21 +416,23 @@ class Test1PhaseDefinedStateTrueWithBounds(object):
         assert len(frame.props[1].mole_frac_comp_eq) == 3
         for i in frame.props[1].mole_frac_comp_eq:
             assert str(frame.props[1].mole_frac_comp_eq[i].body) == str(
-                frame.props[1].mole_frac_comp[i] * frame.props[1].flow_mol -
-                sum(
-                    frame.props[1].mole_frac_phase_comp[p, i] * frame.props[1].flow_mol_phase[p]
+                frame.props[1].mole_frac_comp[i] * frame.props[1].flow_mol
+                - sum(
+                    frame.props[1].mole_frac_phase_comp[p, i]
+                    * frame.props[1].flow_mol_phase[p]
                     for p in frame.props[1].params.phase_list
                     if (p, i) in frame.props[1].params._phase_component_set
                 )
             )
-
 
         # phase_frac_eqn Constraint line 200
         assert isinstance(frame.props[1].phase_frac_eqn, Constraint)
         assert len(frame.props[1].phase_frac_eqn) == 1
         for p in frame.props[1].phase_frac_eqn:
             assert p in frame.params.phase_list
-            assert str(frame.props[1].phase_frac_eqn[p].body) == str(frame.props[1].phase_frac[p])
+            assert str(frame.props[1].phase_frac_eqn[p].body) == str(
+                frame.props[1].phase_frac[p]
+            )
 
         assert_units_consistent(frame.props[1])
 
@@ -534,9 +545,9 @@ class Test2PhaseDefinedStateFalseNoBounds(object):
         for p, i in frame.props[1].flow_mol_phase_comp:
             assert (p, i) in frame.props[1].params._phase_component_set
             assert str(frame.props[1].flow_mol_phase_comp[p, i].expr) == str(
-                frame.props[1].flow_mol_phase[p] * frame.props[1].mole_frac_phase_comp[p, i]
+                frame.props[1].flow_mol_phase[p]
+                * frame.props[1].mole_frac_phase_comp[p, i]
             )
-
 
     @pytest.mark.unit
     def test_constraints(self, frame):
@@ -548,7 +559,11 @@ class Test2PhaseDefinedStateFalseNoBounds(object):
         for p in frame.props[1].phase_frac:
             assert p in frame.params.phase_list
             assert str(frame.props[1].sum_mole_frac_out[p].body) == str(
-                sum(frame.props[1].mole_frac_phase_comp[p, i] for i in frame.props[1].params.component_list if (p, i) in frame.props[1].params._phase_component_set)
+                sum(
+                    frame.props[1].mole_frac_phase_comp[p, i]
+                    for i in frame.props[1].params.component_list
+                    if (p, i) in frame.props[1].params._phase_component_set
+                )
             )
 
         # mole_frac_comp_eq Constraint line 183
@@ -556,9 +571,10 @@ class Test2PhaseDefinedStateFalseNoBounds(object):
         assert len(frame.props[1].mole_frac_comp_eq) == 3
         for i in frame.props[1].mole_frac_comp_eq:
             assert str(frame.props[1].mole_frac_comp_eq[i].body) == str(
-                frame.props[1].mole_frac_comp[i] * frame.props[1].flow_mol -
-                sum(
-                    frame.props[1].mole_frac_phase_comp[p, i] * frame.props[1].flow_mol_phase[p]
+                frame.props[1].mole_frac_comp[i] * frame.props[1].flow_mol
+                - sum(
+                    frame.props[1].mole_frac_phase_comp[p, i]
+                    * frame.props[1].flow_mol_phase[p]
                     for p in frame.props[1].params.phase_list
                     if (p, i) in frame.props[1].params._phase_component_set
                 )
@@ -569,11 +585,12 @@ class Test2PhaseDefinedStateFalseNoBounds(object):
         assert len(frame.props[1].phase_frac_eqn) == 2
         for p in frame.props[1].phase_frac_eqn:
             assert p in frame.params.phase_list
-            assert str(frame.props[1].phase_frac_eqn[p].body) == str(frame.props[1].phase_frac[p] * frame.props[1].flow_mol - frame.props[1].flow_mol_phase[p])
+            assert str(frame.props[1].phase_frac_eqn[p].body) == str(
+                frame.props[1].phase_frac[p] * frame.props[1].flow_mol
+                - frame.props[1].flow_mol_phase[p]
+            )
 
         assert_units_consistent(frame.props[1])
-
-
 
 
 class Test2PhaseDefinedStateTrueWithBounds(object):
@@ -695,7 +712,8 @@ class Test2PhaseDefinedStateTrueWithBounds(object):
         for p, i in frame.props[1].flow_mol_phase_comp:
             assert (p, i) in frame.props[1].params._phase_component_set
             assert str(frame.props[1].flow_mol_phase_comp[p, i].expr) == str(
-                frame.props[1].flow_mol_phase[p] * frame.props[1].mole_frac_phase_comp[p, i]
+                frame.props[1].flow_mol_phase[p]
+                * frame.props[1].mole_frac_phase_comp[p, i]
             )
 
     @pytest.mark.unit
@@ -707,9 +725,10 @@ class Test2PhaseDefinedStateTrueWithBounds(object):
         assert len(frame.props[1].mole_frac_comp_eq) == 3
         for i in frame.props[1].mole_frac_comp_eq:
             assert str(frame.props[1].mole_frac_comp_eq[i].body) == str(
-                frame.props[1].mole_frac_comp[i] * frame.props[1].flow_mol -
-                sum(
-                    frame.props[1].mole_frac_phase_comp[p, i] * frame.props[1].flow_mol_phase[p]
+                frame.props[1].mole_frac_comp[i] * frame.props[1].flow_mol
+                - sum(
+                    frame.props[1].mole_frac_phase_comp[p, i]
+                    * frame.props[1].flow_mol_phase[p]
                     for p in frame.props[1].params.phase_list
                     if (p, i) in frame.props[1].params._phase_component_set
                 )
@@ -720,7 +739,10 @@ class Test2PhaseDefinedStateTrueWithBounds(object):
         assert len(frame.props[1].phase_frac_eqn) == 2
         for p in frame.props[1].phase_frac_eqn:
             assert p in frame.params.phase_list
-            assert str(frame.props[1].phase_frac_eqn[p].body) == str(frame.props[1].phase_frac[p] * frame.props[1].flow_mol - frame.props[1].flow_mol_phase[p])
+            assert str(frame.props[1].phase_frac_eqn[p].body) == str(
+                frame.props[1].phase_frac[p] * frame.props[1].flow_mol
+                - frame.props[1].flow_mol_phase[p]
+            )
 
         assert_units_consistent(frame.props[1])
 
@@ -815,7 +837,6 @@ class Test3PhaseDefinedStateFalseNoBounds(object):
             assert frame.props[1].phase_frac[i].value == 1 / 3
         assert check_units_equivalent(frame.props[1].phase_frac, None)
 
-
     @pytest.mark.unit
     def test_expressions(self, frame):
 
@@ -835,7 +856,8 @@ class Test3PhaseDefinedStateFalseNoBounds(object):
         for p, i in frame.props[1].flow_mol_phase_comp:
             assert (p, i) in frame.props[1].params._phase_component_set
             assert str(frame.props[1].flow_mol_phase_comp[p, i].expr) == str(
-                frame.props[1].flow_mol_phase[p] * frame.props[1].mole_frac_phase_comp[p, i]
+                frame.props[1].flow_mol_phase[p]
+                * frame.props[1].mole_frac_phase_comp[p, i]
             )
 
     @pytest.mark.unit
@@ -848,18 +870,22 @@ class Test3PhaseDefinedStateFalseNoBounds(object):
         for p in frame.props[1].phase_frac:
             assert p in frame.params.phase_list
             assert str(frame.props[1].sum_mole_frac_out[p].body) == str(
-                sum(frame.props[1].mole_frac_phase_comp[p, i] for i in frame.props[1].params.component_list if (p, i) in frame.props[1].params._phase_component_set)
+                sum(
+                    frame.props[1].mole_frac_phase_comp[p, i]
+                    for i in frame.props[1].params.component_list
+                    if (p, i) in frame.props[1].params._phase_component_set
+                )
             )
-
 
         # mole_frac_comp_eq Constraint line 183
         assert isinstance(frame.props[1].mole_frac_comp_eq, Constraint)
         assert len(frame.props[1].mole_frac_comp_eq) == 3
         for i in frame.props[1].mole_frac_comp_eq:
             assert str(frame.props[1].mole_frac_comp_eq[i].body) == str(
-                frame.props[1].mole_frac_comp[i] * frame.props[1].flow_mol -
-                sum(
-                    frame.props[1].mole_frac_phase_comp[p, i] * frame.props[1].flow_mol_phase[p]
+                frame.props[1].mole_frac_comp[i] * frame.props[1].flow_mol
+                - sum(
+                    frame.props[1].mole_frac_phase_comp[p, i]
+                    * frame.props[1].flow_mol_phase[p]
                     for p in frame.props[1].params.phase_list
                     if (p, i) in frame.props[1].params._phase_component_set
                 )
@@ -870,10 +896,12 @@ class Test3PhaseDefinedStateFalseNoBounds(object):
         assert len(frame.props[1].phase_frac_eqn) == 3
         for p in frame.props[1].phase_frac_eqn:
             assert p in frame.params.phase_list
-            assert str(frame.props[1].phase_frac_eqn[p].body) == str(frame.props[1].phase_frac[p] * frame.props[1].flow_mol - frame.props[1].flow_mol_phase[p])
+            assert str(frame.props[1].phase_frac_eqn[p].body) == str(
+                frame.props[1].phase_frac[p] * frame.props[1].flow_mol
+                - frame.props[1].flow_mol_phase[p]
+            )
 
         assert_units_consistent(frame.props[1])
-
 
 
 class Test3PhaseDefinedStateTrueWithBounds(object):
@@ -977,7 +1005,6 @@ class Test3PhaseDefinedStateTrueWithBounds(object):
             assert frame.props[1].phase_frac[i].value == 1 / 3
         assert check_units_equivalent(frame.props[1].phase_frac, None)
 
-
     @pytest.mark.unit
     def test_expressions(self, frame):
 
@@ -997,7 +1024,8 @@ class Test3PhaseDefinedStateTrueWithBounds(object):
         for p, i in frame.props[1].flow_mol_phase_comp:
             assert (p, i) in frame.props[1].params._phase_component_set
             assert str(frame.props[1].flow_mol_phase_comp[p, i].expr) == str(
-                frame.props[1].flow_mol_phase[p] * frame.props[1].mole_frac_phase_comp[p, i]
+                frame.props[1].flow_mol_phase[p]
+                * frame.props[1].mole_frac_phase_comp[p, i]
             )
 
     @pytest.mark.unit
@@ -1009,9 +1037,10 @@ class Test3PhaseDefinedStateTrueWithBounds(object):
         assert len(frame.props[1].mole_frac_comp_eq) == 3
         for i in frame.props[1].mole_frac_comp_eq:
             assert str(frame.props[1].mole_frac_comp_eq[i].body) == str(
-                frame.props[1].mole_frac_comp[i] * frame.props[1].flow_mol -
-                sum(
-                    frame.props[1].mole_frac_phase_comp[p, i] * frame.props[1].flow_mol_phase[p]
+                frame.props[1].mole_frac_comp[i] * frame.props[1].flow_mol
+                - sum(
+                    frame.props[1].mole_frac_phase_comp[p, i]
+                    * frame.props[1].flow_mol_phase[p]
                     for p in frame.props[1].params.phase_list
                     if (p, i) in frame.props[1].params._phase_component_set
                 )
@@ -1022,7 +1051,10 @@ class Test3PhaseDefinedStateTrueWithBounds(object):
         assert len(frame.props[1].phase_frac_eqn) == 3
         for p in frame.props[1].phase_frac_eqn:
             assert p in frame.params.phase_list
-            assert str(frame.props[1].phase_frac_eqn[p].body) == str(frame.props[1].phase_frac[p] * frame.props[1].flow_mol - frame.props[1].flow_mol_phase[p])
+            assert str(frame.props[1].phase_frac_eqn[p].body) == str(
+                frame.props[1].phase_frac[p] * frame.props[1].flow_mol
+                - frame.props[1].flow_mol_phase[p]
+            )
 
         assert_units_consistent(frame.props[1])
 
@@ -1102,8 +1134,6 @@ class TestCommon(object):
         assert isinstance(frame.props[1].phase_frac_eqn, Constraint)
         assert len(frame.props[1].phase_frac_eqn) == 2
 
-
-
     @pytest.mark.unit
     def test_calculate_scaling_factors(self, frame):
         frame.props[1].calculate_scaling_factors()
@@ -1115,28 +1145,28 @@ class TestCommon(object):
         assert frame.props[1].scaling_factor[frame.props[1].flow_mol_phase["a"]] == 1e-2
         assert frame.props[1].scaling_factor[frame.props[1].flow_mol_phase["b"]] == 1e-2
         assert (
-                frame.props[1].scaling_factor[frame.props[1].flow_mol_phase_comp["a", "c1"]]
-                == 1e-2
+            frame.props[1].scaling_factor[frame.props[1].flow_mol_phase_comp["a", "c1"]]
+            == 1e-2
         )
         assert (
-                frame.props[1].scaling_factor[frame.props[1].flow_mol_phase_comp["a", "c2"]]
-                == 1e-2
+            frame.props[1].scaling_factor[frame.props[1].flow_mol_phase_comp["a", "c2"]]
+            == 1e-2
         )
         assert (
-                frame.props[1].scaling_factor[frame.props[1].flow_mol_phase_comp["a", "c3"]]
-                == 1e-2
+            frame.props[1].scaling_factor[frame.props[1].flow_mol_phase_comp["a", "c3"]]
+            == 1e-2
         )
         assert (
-                frame.props[1].scaling_factor[frame.props[1].flow_mol_phase_comp["b", "c1"]]
-                == 1e-2
+            frame.props[1].scaling_factor[frame.props[1].flow_mol_phase_comp["b", "c1"]]
+            == 1e-2
         )
         assert (
-                frame.props[1].scaling_factor[frame.props[1].flow_mol_phase_comp["b", "c2"]]
-                == 1e-2
+            frame.props[1].scaling_factor[frame.props[1].flow_mol_phase_comp["b", "c2"]]
+            == 1e-2
         )
         assert (
-                frame.props[1].scaling_factor[frame.props[1].flow_mol_phase_comp["b", "c3"]]
-                == 1e-2
+            frame.props[1].scaling_factor[frame.props[1].flow_mol_phase_comp["b", "c3"]]
+            == 1e-2
         )
         assert frame.props[1].scaling_factor[frame.props[1].dens_mol_phase["a"]] == 1e-2
         assert frame.props[1].scaling_factor[frame.props[1].dens_mol_phase["b"]] == 1e-2
@@ -1144,40 +1174,40 @@ class TestCommon(object):
         assert frame.props[1].scaling_factor[frame.props[1].mole_frac_comp["c2"]] == 1e3
         assert frame.props[1].scaling_factor[frame.props[1].mole_frac_comp["c3"]] == 1e3
         assert (
-                frame.props[1].scaling_factor[
-                    frame.props[1].mole_frac_phase_comp["a", "c1"]
-                ]
-                == 1e3
+            frame.props[1].scaling_factor[
+                frame.props[1].mole_frac_phase_comp["a", "c1"]
+            ]
+            == 1e3
         )
         assert (
-                frame.props[1].scaling_factor[
-                    frame.props[1].mole_frac_phase_comp["a", "c2"]
-                ]
-                == 1e3
+            frame.props[1].scaling_factor[
+                frame.props[1].mole_frac_phase_comp["a", "c2"]
+            ]
+            == 1e3
         )
         assert (
-                frame.props[1].scaling_factor[
-                    frame.props[1].mole_frac_phase_comp["a", "c3"]
-                ]
-                == 1e3
+            frame.props[1].scaling_factor[
+                frame.props[1].mole_frac_phase_comp["a", "c3"]
+            ]
+            == 1e3
         )
         assert (
-                frame.props[1].scaling_factor[
-                    frame.props[1].mole_frac_phase_comp["b", "c1"]
-                ]
-                == 1e3
+            frame.props[1].scaling_factor[
+                frame.props[1].mole_frac_phase_comp["b", "c1"]
+            ]
+            == 1e3
         )
         assert (
-                frame.props[1].scaling_factor[
-                    frame.props[1].mole_frac_phase_comp["b", "c2"]
-                ]
-                == 1e3
+            frame.props[1].scaling_factor[
+                frame.props[1].mole_frac_phase_comp["b", "c2"]
+            ]
+            == 1e3
         )
         assert (
-                frame.props[1].scaling_factor[
-                    frame.props[1].mole_frac_phase_comp["b", "c3"]
-                ]
-                == 1e3
+            frame.props[1].scaling_factor[
+                frame.props[1].mole_frac_phase_comp["b", "c3"]
+            ]
+            == 1e3
         )
         assert frame.props[1].scaling_factor[frame.props[1].pressure] == 1e-5
         assert frame.props[1].scaling_factor[frame.props[1].temperature] == 1e-2
@@ -1225,15 +1255,15 @@ class TestCommon(object):
     @pytest.mark.unit
     def test_default_material_balance_type(self, frame):
         assert (
-                frame.props[1].default_material_balance_type()
-                == MaterialBalanceType.componentTotal
+            frame.props[1].default_material_balance_type()
+            == MaterialBalanceType.componentTotal
         )
 
     @pytest.mark.unit
     def test_default_energy_balance_type(self, frame):
         assert (
-                frame.props[1].default_energy_balance_type()
-                == EnergyBalanceType.enthalpyTotal
+            frame.props[1].default_energy_balance_type()
+            == EnergyBalanceType.enthalpyTotal
         )
 
     @pytest.mark.unit
@@ -1270,27 +1300,27 @@ class TestCommon(object):
         # Test get_material_flow_terms method
         for p, j in blk.params._phase_component_set:
             assert (
-                    blk.props[1].get_material_flow_terms(p, j).parent_block()
-                    is blk.props[1]
+                blk.props[1].get_material_flow_terms(p, j).parent_block()
+                is blk.props[1]
             )
 
         # Test get_enthalpy_flow_terms method
         for p in blk.params.phase_list:
             assert (
-                    blk.props[1].get_enthalpy_flow_terms(p).parent_block() is blk.props[1]
+                blk.props[1].get_enthalpy_flow_terms(p).parent_block() is blk.props[1]
             )
 
         # Test get_material_density_terms
         for p, j in blk.params._phase_component_set:
             assert (
-                    blk.props[1].get_material_density_terms(p, j).parent_block()
-                    is blk.props[1]
+                blk.props[1].get_material_density_terms(p, j).parent_block()
+                is blk.props[1]
             )
 
         # Test get_energy_Density_terms
         for p in blk.params.phase_list:
             assert (
-                    blk.props[1].get_energy_density_terms(p).parent_block() is blk.props[1]
+                blk.props[1].get_energy_density_terms(p).parent_block() is blk.props[1]
             )
 
         for i in blk.props[1].define_state_vars().values():
@@ -1324,7 +1354,7 @@ thermo_config_no_rxn = {
                 # Comes from Perry's Handbook:  p. 2-98
                 "dens_mol_liq_comp_coeff": {
                     "eqn_type": 1,
-                    "1": (5.459, pyunits.kmol * pyunits.m ** -3),
+                    "1": (5.459, pyunits.kmol * pyunits.m**-3),
                     "2": (0.30542, pyunits.dimensionless),
                     "3": (647.13, pyunits.K),
                     "4": (0.081, pyunits.dimensionless),
@@ -1334,28 +1364,28 @@ thermo_config_no_rxn = {
                 # Comes from Perry's Handbook:  p. 2-174
                 "cp_mol_liq_comp_coeff": {
                     "1": (2.7637e5, pyunits.J / pyunits.kmol / pyunits.K),
-                    "2": (-2.0901e3, pyunits.J / pyunits.kmol / pyunits.K ** 2),
-                    "3": (8.125, pyunits.J / pyunits.kmol / pyunits.K ** 3),
-                    "4": (-1.4116e-2, pyunits.J / pyunits.kmol / pyunits.K ** 4),
-                    "5": (9.3701e-6, pyunits.J / pyunits.kmol / pyunits.K ** 5),
+                    "2": (-2.0901e3, pyunits.J / pyunits.kmol / pyunits.K**2),
+                    "3": (8.125, pyunits.J / pyunits.kmol / pyunits.K**3),
+                    "4": (-1.4116e-2, pyunits.J / pyunits.kmol / pyunits.K**4),
+                    "5": (9.3701e-6, pyunits.J / pyunits.kmol / pyunits.K**5),
                 },
                 "cp_mol_ig_comp_coeff": {
                     "A": (30.09200, pyunits.J / pyunits.mol / pyunits.K),
                     "B": (
                         6.832514,
-                        pyunits.J * pyunits.mol ** -1 * pyunits.K ** -1 * pyunits.kiloK ** -1,
+                        pyunits.J * pyunits.mol**-1 * pyunits.K**-1 * pyunits.kiloK**-1,
                     ),
                     "C": (
                         6.793435,
-                        pyunits.J * pyunits.mol ** -1 * pyunits.K ** -1 * pyunits.kiloK ** -2,
+                        pyunits.J * pyunits.mol**-1 * pyunits.K**-1 * pyunits.kiloK**-2,
                     ),
                     "D": (
                         -2.534480,
-                        pyunits.J * pyunits.mol ** -1 * pyunits.K ** -1 * pyunits.kiloK ** -3,
+                        pyunits.J * pyunits.mol**-1 * pyunits.K**-1 * pyunits.kiloK**-3,
                     ),
                     "E": (
                         0.082139,
-                        pyunits.J * pyunits.mol ** -1 * pyunits.K ** -1 * pyunits.kiloK ** 2,
+                        pyunits.J * pyunits.mol**-1 * pyunits.K**-1 * pyunits.kiloK**2,
                     ),
                     "F": (-250.8810, pyunits.kJ / pyunits.mol),
                     "G": (223.3967, pyunits.J / pyunits.mol / pyunits.K),
@@ -1387,7 +1417,7 @@ thermo_config_no_rxn = {
                 "temperature_crit": (304.23, pyunits.K),
                 "dens_mol_liq_comp_coeff": {
                     "eqn_type": 1,
-                    "1": (0.000789, pyunits.kmol * pyunits.m ** -3),
+                    "1": (0.000789, pyunits.kmol * pyunits.m**-3),
                     "2": (0.000956, pyunits.dimensionless),
                     "3": (500.78, pyunits.K),
                     "4": (0.94599, pyunits.dimensionless),
@@ -1396,19 +1426,19 @@ thermo_config_no_rxn = {
                     "A": (24.99735, pyunits.J / pyunits.mol / pyunits.K),
                     "B": (
                         55.18696,
-                        pyunits.J * pyunits.mol ** -1 * pyunits.K ** -1 * pyunits.kiloK ** -1,
+                        pyunits.J * pyunits.mol**-1 * pyunits.K**-1 * pyunits.kiloK**-1,
                     ),
                     "C": (
                         -33.69137,
-                        pyunits.J * pyunits.mol ** -1 * pyunits.K ** -1 * pyunits.kiloK ** -2,
+                        pyunits.J * pyunits.mol**-1 * pyunits.K**-1 * pyunits.kiloK**-2,
                     ),
                     "D": (
                         7.948387,
-                        pyunits.J * pyunits.mol ** -1 * pyunits.K ** -1 * pyunits.kiloK ** -3,
+                        pyunits.J * pyunits.mol**-1 * pyunits.K**-1 * pyunits.kiloK**-3,
                     ),
                     "E": (
                         -0.136638,
-                        pyunits.J * pyunits.mol ** -1 * pyunits.K ** -1 * pyunits.kiloK ** 2,
+                        pyunits.J * pyunits.mol**-1 * pyunits.K**-1 * pyunits.kiloK**2,
                     ),
                     "F": (-403.6075, pyunits.kJ / pyunits.mol),
                     "G": (228.2431, pyunits.J / pyunits.mol / pyunits.K),
@@ -1416,10 +1446,10 @@ thermo_config_no_rxn = {
                 },
                 "cp_mol_liq_comp_coeff": {
                     "1": (-8.3043e6, pyunits.J / pyunits.kmol / pyunits.K),
-                    "2": (1.0437e5, pyunits.J / pyunits.kmol / pyunits.K ** 2),
-                    "3": (4.333e2, pyunits.J / pyunits.kmol / pyunits.K ** 3),
-                    "4": (6.0052e-1, pyunits.J / pyunits.kmol / pyunits.K ** 4),
-                    "5": (0, pyunits.J / pyunits.kmol / pyunits.K ** 5),
+                    "2": (1.0437e5, pyunits.J / pyunits.kmol / pyunits.K**2),
+                    "3": (4.333e2, pyunits.J / pyunits.kmol / pyunits.K**3),
+                    "4": (6.0052e-1, pyunits.J / pyunits.kmol / pyunits.K**4),
+                    "5": (0, pyunits.J / pyunits.kmol / pyunits.K**5),
                 },
                 "enth_mol_form_liq_comp_ref": (-285.83, pyunits.kJ / pyunits.mol),
                 "enth_mol_form_vap_comp_ref": (-393.52, pyunits.kJ / pyunits.mol),
