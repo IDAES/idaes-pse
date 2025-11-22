@@ -35,6 +35,7 @@ extensions = [
     "sphinxarg.ext",
     "sphinx.ext.doctest",
     "sphinx_copybutton",
+    "nbsphinx",
 ]
 
 # Put type hints in the description, not signature
@@ -50,8 +51,7 @@ templates_path = ["_templates"]
 # You can specify multiple suffix as a list of string:
 #
 # source_suffix = ['.rst', '.md']
-source_suffix = ".rst"
-
+source_suffix = [".rst"]
 # The encoding of source files.
 #
 # source_encoding = 'utf-8-sig'
