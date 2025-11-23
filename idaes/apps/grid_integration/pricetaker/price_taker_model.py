@@ -12,7 +12,6 @@
 #################################################################################
 
 import re
-from collections import defaultdict
 from typing import Optional, Union, Callable, List
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -1101,27 +1100,31 @@ class PriceTakerModel(ConcreteModel):
 
     # Utilities for reading the results
     def _get_num(self, op_block_name: str, attribute: str):
-        """Returns the number of times the given operation block undergoes an event, indexed by day and time"""
+        """
+        Returns the number of times the given operation block undergoes an event,
+        indexed by day and time
+        """
         op_blks = self._get_operation_blocks(
             blk_name=op_block_name, attribute_list=[attribute]
         )
-        event_count = defaultdict(dict)
-
         # pylint: disable = not-an-iterable
-        try:
-            for d, t in self.period:
-                event_count[d][t] = pyo_value(getattr(op_blks[d][t], attribute))
+        event_count = {
+            d: {t: getattr(op_blks[d][t], attribute).value for t in self.set_time}
+            for d in self.set_days
+        }
 
+        try:
             return sum(
                 self.rep_days_weights[d] * sum(event_count[d].values())
                 for d in self.set_days
             )
 
-        except ValueError:
+        except TypeError as exc:
             # Either the problem is not solved, or the attribute is not used
             raise AttributeError(
-                f"{attribute} variable value is not available. \n\t Either the model is not solved, or the {attribute} variable may not be used in the model."
-            )
+                f"{attribute} variable value is not available. \n\t Either the model "
+                f"is not solved, or the {attribute} variable may not be used in the model."
+            ) from exc
 
     def get_num_startups(self, op_block_name: str):
         """Returns the number of times the given operation block undergoes startup"""
@@ -1130,6 +1133,18 @@ class PriceTakerModel(ConcreteModel):
     def get_num_shutdowns(self, op_block_name: str):
         """Returns the number of times the given operation block undergoes shutdown"""
         return self._get_num(op_block_name, "shutdown")
+
+    @staticmethod
+    def _get_pyomo_obj_value(var_or_expr: Union[Var, Expression]):
+        """Returns the value of a given variable/expression"""
+        # If a variable is not initialized, Pyomo's value function
+        # raises an error. This creates an issue for get_design_var_values
+        # and get_operation_var_Values functions. This function helps to avoid the issue
+        try:
+            return pyo_value(var_or_expr)
+        except ValueError:
+            # One or more variables is not initialized. In this case, return None
+            return None
 
     def get_operation_var_values(self, var_list: Optional[list] = None):
         """
@@ -1151,7 +1166,9 @@ class PriceTakerModel(ConcreteModel):
         if var_list is not None:
             # Return the values of selected variables and/or expressions
             for v in var_list:
-                results[v] = [pyo_value(fs.find_component(v)) for fs in set_of_fs]
+                results[v] = [
+                    self._get_pyomo_obj_value(fs.find_component(v)) for fs in set_of_fs
+                ]
 
         else:
             # Return the values of all variables and expressions
@@ -1165,7 +1182,8 @@ class PriceTakerModel(ConcreteModel):
                 # Expression name will be of the form period[d, t].expr_name
                 v_name = v.name.split(".", maxsplit=1)[-1]
                 results[v_name] = [
-                    pyo_value(fs.find_component(v_name)) for fs in set_of_fs
+                    self._get_pyomo_obj_value(fs.find_component(v_name))
+                    for fs in set_of_fs
                 ]
 
         # Return the data as a DataFrame
@@ -1181,7 +1199,7 @@ class PriceTakerModel(ConcreteModel):
         if var_list is not None:
             # User specified the variables they would like to query
             for v in var_list:
-                result[v] = pyo_value(self.find_component(v))
+                result[v] = self._get_pyomo_obj_value(self.find_component(v))
 
             return result
 
@@ -1189,7 +1207,7 @@ class PriceTakerModel(ConcreteModel):
         # and expressions in this object, in DesignModel objects, and in cashflows
         for v in self.component_data_objects((Var, Expression), descend_into=False):
             # Get variables and expressions in this object
-            result[v.name] = pyo_value(v)
+            result[v.name] = self._get_pyomo_obj_value(v)
 
         for blk in self.component_data_objects(Block):
             # Get variables and expression in DesignModel instances
@@ -1197,13 +1215,13 @@ class PriceTakerModel(ConcreteModel):
                 continue
 
             for v in blk.component_data_objects((Var, Expression)):
-                result[v.name] = pyo_value(v)
+                result[v.name] = self._get_pyomo_obj_value(v)
 
         if hasattr(self, "cashflows"):
             # Get variables and expressions in cashflows
             # pylint: disable = no-member
             for v in self.cashflows.component_data_objects((Var, Expression)):
-                result[v.name] = pyo_value(v)
+                result[v.name] = self._get_pyomo_obj_value(v)
 
         return result
 
@@ -1214,6 +1232,32 @@ class PriceTakerModel(ConcreteModel):
         time: Optional[tuple] = None,
         include_lmp: bool = False,
     ):
+        """
+        Returns a plot object containing operational profiles for a specific
+        representative day.
+        Args:
+            lifetime: int, default=30,
+                Lifetime of the unit/process [in years]
+
+            discount_rate: float, default=0.08,
+                Discount rate [fraction] for calculating the current value
+                of the cashflow. It is also used to compute the annualization
+                factor. Must be between 0 and 1.
+
+        Args:
+            operation_var: List[str],
+                List of operation variable names that need to be plotted
+
+            day: int, default=1,
+                Choice of represntative day for plotting
+
+            time: Optional[tuple], default=None,
+                Time horizon of interest (Initial time index, final time index). If it
+                is not specified, then the entire time horizon will be plotted.
+
+            include_lmp: bool, default=False,
+                Should LMP profile be shown along with each operational profile?
+        """
         data = self.get_operation_var_values(list(operation_vars))
         data = data[data["Day"] == day]
 
@@ -1262,5 +1306,5 @@ class PriceTakerModel(ConcreteModel):
 
     def plot_lmp_histogram(self):
         """Returns a histogram of the specified LMP signal"""
-        assert self._assert_lmp_data_exists()
-        raise NotImplementedError()
+        self._assert_lmp_data_exists()
+        raise NotImplementedError("LMP histograms are not supported currently")
