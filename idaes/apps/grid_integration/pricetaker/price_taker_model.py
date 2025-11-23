@@ -1236,15 +1236,6 @@ class PriceTakerModel(ConcreteModel):
         Returns a plot object containing operational profiles for a specific
         representative day.
         Args:
-            lifetime: int, default=30,
-                Lifetime of the unit/process [in years]
-
-            discount_rate: float, default=0.08,
-                Discount rate [fraction] for calculating the current value
-                of the cashflow. It is also used to compute the annualization
-                factor. Must be between 0 and 1.
-
-        Args:
             operation_var: List[str],
                 List of operation variable names that need to be plotted
 
