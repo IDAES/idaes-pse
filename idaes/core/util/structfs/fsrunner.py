@@ -20,6 +20,7 @@ in `FlowsheetRunner`.
 # third-party
 from pyomo.environ import ConcreteModel
 from idaes.core import FlowsheetBlock
+
 from idaes_connectivity.base import Connectivity
 from idaes_connectivity.jupyter import display_connectivity
 
@@ -118,8 +119,63 @@ class BaseFlowsheetRunner(Runner):
 
 
 class FlowsheetRunner(BaseFlowsheetRunner):
+
+    class DegreesOfFreedom:
+        def __init__(self, runner):
+            from .runner_actions import UnitDofChecker
+
+            self._a = runner.add_action(
+                "dof",
+                UnitDofChecker,
+                "fs",
+                ["build", "solve_initial", "solve_optimization"],
+            )
+            self._rnr = runner
+
+        def model(self):
+            return self._a.get_dof_model()
+
+        def __getattr__(self, name):
+            """Naming the step prints a summary of that step."""
+            if name not in set(self._rnr.list_steps()):
+                raise AttributeError(f"No step named '{name}'")
+            self._a.summary(step=name)
+
+        def __str__(self):
+            return self._a.summary(stream=None)
+
+        def _ipython_display_(self):
+            self._a.summary()
+
+    class Timings:
+        def __init__(self, runner):
+            from .runner_actions import Timer
+
+            self._a: Timer = runner.add_action("t", Timer)
+
+        @property
+        def values(self) -> list[dict]:
+            return self._a.get_history()
+
+        @property
+        def history(self) -> str:
+            h = []
+            for i in range(len(self._a)):
+                h.append(f"== Run {i + 1} ==")
+                h.append("")
+                h.append(self._a.summary(run_idx=i))
+            return "\n".join(h)
+
+        def __str__(self):
+            return self._a.summary()
+
+        def _ipython_display_(self):
+            self._a._ipython_display_()
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.dof = self.DegreesOfFreedom(self)
+        self.timings = self.Timings(self)
 
     def build(self):
         """Run just the build step"""

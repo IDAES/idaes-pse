@@ -181,7 +181,7 @@ class Runner:
                 result.append(n)
         return result
 
-    def add_action(self, name: str, action_class: type, *args, **kwargs):
+    def add_action(self, name: str, action_class: type, *args, **kwargs) -> object:
         """Add a named action.
 
         Args:
@@ -192,6 +192,7 @@ class Runner:
         """
         obj = action_class(self, *args, **kwargs)
         self._actions[name] = obj
+        return obj
 
     def get_action(self, name: str) -> ActionType:
         """Get an action object.

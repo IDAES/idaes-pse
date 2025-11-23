@@ -48,12 +48,10 @@ class Timer(Action):
             run_times: List of timings for a run (sequence of steps)
         """
         super().__init__(runner, **kwargs)
-        self.step_times = defaultdict(list)
-        self.run_times = []
-        self._step_begin = {}
-        self._run_begin = None
+        self.step_times: list[dict[str, float]] = []
+        self.run_times: list[float] = []
+        self._run_begin, self._step_begin = None, {}
         self._step_order = runner.list_steps()
-        self._run_steps = set()
 
     def before_step(self, step_name):
         self._step_begin[step_name] = time.time()
@@ -64,69 +62,68 @@ class Timer(Action):
         if t0 is None:
             self.log.warning(f"Timer: step {step_name} end without begin")
         else:
-            dt = t1 - t0
-            self.step_times[step_name].append(dt)
+            self._cur_step_times[step_name] = t1 - t0
             self._step_begin[step_name] = None
-            self._run_steps.add(step_name)
 
     def before_run(self):
         self._run_begin = time.time()
-        self._run_steps = set()
+        self._cur_step_times = {}
+        self._step_begin = {}
 
     def after_run(self):
         t1 = time.time()
         if self._run_begin is None:
             self.log.warning("Timer: run end without begin")
         else:
-            dt = t1 - self._run_begin
-            self.run_times.append(dt)
+            self.run_times.append(t1 - self._run_begin)
             self._run_begin = None
+            filled_times = {}
             for step in self._runner.list_steps():
-                if step not in self._run_steps:
-                    self.step_times[step].append(-1)  # no timing collected
+                filled_times[step] = self._cur_step_times.get(step, -1)
+            self.step_times.append(filled_times)
 
-    def get_summary(self) -> list[dict]:
+    def __len__(self):
+        return len(self.run_times)
+
+    def get_history(self) -> list[dict]:
         """Summarize timings
 
         Returns:
             Summary of timings (in seconds) for each run in `run_times`:
               - 'run': Time for the run
-              - 'steps': list of (step_name, time) for each step (in order)
+              - 'steps': dict of `{<step_name>: <time(sec)>}`
               - 'inclusive': total time spent in the steps
               - 'exclusive': difference between run time and inclusive time
         """
-        data = []
-        for i, run_time in enumerate(self.run_times):
-            step_times = [(k, self.step_times[k][i]) for k in self._step_order]
-            step_total = 0
-            for item in step_times:
-                seconds = item[1]
-                if seconds >= 0:
-                    step_total += seconds
-            data.append(
-                {
-                    "run": run_time,
-                    "steps": step_times,
-                    "inclusive": step_total,
-                    "exclusive": run_time - step_total,
-                }
-            )
-        return data
+        return [self._get_summary(i) for i in range(0, len(self.run_times))]
 
-    def summary(self, stream=None) -> str:
+    def _get_summary(self, i):
+        rt, st = self.run_times[i], self.step_times[i]
+        step_total = sum((max(t, 0) for t in st.values()))
+        return {
+            "run": rt,
+            "steps": st,
+            "inclusive": step_total,
+            "exclusive": rt - step_total,
+        }
+
+    def summary(self, stream=None, run_idx=-1) -> str:
         if stream is None:
             stream = StringIO()
 
-        d = self.get_summary()[-1]
+        if len(self.run_times) == 0:
+            return ""  # nothing to summarize
+
+        d = self._get_summary(run_idx)
 
         stream.write("Time per step:\n\n")
         slen, ttot = -1, 0
-        for s, t in d["steps"]:
+        for s, t in d["steps"].items():
             if t >= 0:
                 slen = max(slen, len(s))
                 ttot += t
         sfmt = "  {{s:{slen}s}} : {{t:8.3f}}  {{p:4.1f}}%\n"
-        for s, t in d["steps"]:
+        for s, t in d["steps"].items():
             if t >= 0:
                 fmt = sfmt.format(slen=slen)
                 stream.write(fmt.format(s=s, t=t, p=(t / ttot * 100)))
@@ -260,26 +257,22 @@ class UnitDofChecker(Action):
     def _ipython_display_(self):
         self.summary()
 
-    def get_unit_dof(self, step_name: str) -> UnitDofType:
-        """Get DoF for each unit, as measured after the given step.
-
-        Args:
-            step_name: Step for which to get the per-unit degrees of freedom.
+    def get_dof(self) -> dict[str, UnitDofType]:
+        """Get degrees of freedom
 
         Returns:
-            UnitDofType
-
-        Raises:
-            KeyError: If `step_name` is unknown, or has no data
-            ValueError: There is no degrees_of_freedom data at all
+            dict[str, UnitDofType]: Mapping of step name to per-unit DoF when
+               the step completed.
         """
-        if not self._steps_dof:
-            raise ValueError("No degrees of freedom have been calculated")
-        if step_name not in self._steps:
-            raise KeyError(
-                f"Unknown step. name={step_name} known={','.join(self._steps)}"
-            )
-        return self._steps_dof[step_name]
+        return self._steps_dof.copy()
+
+    def get_dof_model(self) -> int:
+        """Get degrees of freedom for the model.
+
+        Returns:
+            int: Last calculated DoF for the model.
+        """
+        return self._model_dof
 
     def steps(self, only_with_data: bool = False) -> list[str]:
         """Get list of steps for which unit degrees of freedom are calculated.

@@ -35,22 +35,24 @@ def test_class_timer():
         time.sleep(0.1)
         timer.after_run()
 
-    s = timer.summary()
-    # tests/test_runner_actions.py [
-    # {'run': 0.8005404472351074,
-    # 'steps': [('step0', 0.10010385513305664), ('step1', 0.20009303092956543),
-    # ('step2', 0.3000965118408203)], 'inclusive': 0.6002933979034424, 'exclusive': 0.20024704933166504},
-    #
-    # {'run': 0.8004975318908691, 'steps': [('step0', 0.10008621215820312),
-    # ('step1', 0.20008587837219238),
-    # ('step2', 0.3000912666320801)], 'inclusive': 0.6002633571624756, 'exclusive': 0.20023417472839355}]
+    s = timer.get_history()
+    # [ {'run': 0.8005404472351074,
+    #    'steps': {
+    #       'step0': 0.10010385513305664,
+    #       'step2': 0.3000965118408203,
+    #       'step1': 0.20009303092956543
+    #      },
+    #     'inclusive': 0.6002933979034424,
+    #     'exclusive': 0.20024704933166504
+    #    },
+    #    ...
+    # ]
     eps = 0.1  # big variance needed for Windows
     for r in s:
         print(f"Timings: {r}")
         assert r["run"] == approx(0.8, abs=eps)
         assert r["inclusive"] + r["exclusive"] == approx(r["run"])
-        for i, (name, t) in enumerate(r["steps"]):
-            assert name == f"step{i}"
+        for name, t in r["steps"].items():
             assert t == approx(0.1 + 0.1 * i, abs=eps)
 
 
@@ -58,26 +60,31 @@ def test_class_timer():
 def test_timer_runner():
     rn = runner.Runner(["step1", "step2", "step3"])
 
-    def sleepy(context):
+    @rn.step("step1")
+    def sleepy1(context):
         time.sleep(0.1)
 
-    rn.add_step("step1", sleepy)
-    rn.add_step("step2", sleepy)
-    rn.add_step("step3", sleepy)
+    @rn.step("step2")
+    def sleepy2(context):
+        time.sleep(0.1)
+
+    @rn.step("step3")
+    def sleepy3(context):
+        time.sleep(0.1)
 
     rn.add_action("timer", Timer)
 
     rn.run_steps()
 
-    s = rn.get_action("timer").summary()
+    s = rn.get_action("timer").get_history()
 
     eps = 0.1  # big variance needed for Windows
     for r in s:
         print(f"Timings: {r}")
         assert r["run"] == approx(0.3, abs=eps)
         assert r["inclusive"] + r["exclusive"] == approx(r["run"])
-        for i, (name, t) in enumerate(r["steps"]):
-            assert name == f"step{i + 1}"
+        for name, t in r["steps"].items():
+            # assert name == f"step{i + 1}"
             assert t == approx(0.1, abs=eps)
 
 
@@ -87,7 +94,7 @@ def test_unit_dof_action_base():
     rn.reset()
 
     def check_step(name, data):
-        # print(f"@@ check_step {name} data: {data}")
+        print(f"check_step {name} data: {data}")
         assert "fs.flash" in data
         if name == "solve_initial":
             assert data["fs.flash"] == 0
@@ -106,7 +113,7 @@ def test_unit_dof_action_base():
 
     rn.run_steps("build", "solve_initial")
 
-    pprint.pprint(rn.get_action("check_dof").as_dataframe())
+    pprint.pprint(rn.get_action("check_dof").get_dof())
 
 
 @pytest.mark.unit
@@ -128,7 +135,7 @@ def test_unit_dof_action_getters():
     steps = act.steps()
     dofs = []
     for s in steps:
-        step_dof = act.get_unit_dof(s)
+        step_dof = act.get_dof()[s]
         assert step_dof
         dofs.append(step_dof)
     assert dofs[0] != dofs[1]
