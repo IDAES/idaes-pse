@@ -1249,7 +1249,7 @@ class PriceTakerModel(ConcreteModel):
                 List of operation variable names that need to be plotted
 
             day: int, default=1,
-                Choice of represntative day for plotting
+                Choice of representative day for plotting
 
             time: Optional[tuple], default=None,
                 Time horizon of interest (Initial time index, final time index). If it

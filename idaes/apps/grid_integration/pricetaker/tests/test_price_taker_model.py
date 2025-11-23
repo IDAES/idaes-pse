@@ -508,12 +508,11 @@ def test_get_operation_vars_rep_days(dummy_data):
 
     m.fix_operation_var(var_name="blk.power", value=10)
     for d, t in m.period:
-        if pyo.value(op_vars[d][t]) != 10:
-            assert False
+        assert pyo.value(op_vars[d][t]) == 10
 
     m.unfix_operation_var(var_name="blk.power")
     for d, t in m.period:
-        assert not op_vars[d][t].fixed
+        assert not op_vars[d][t].is_fixed()
 
 
 @pytest.mark.unit
@@ -641,7 +640,6 @@ def test_add_periodic_constraints_rep_days(dummy_data):
     m.add_periodic_constraints(initial_time_var="blk.power", final_time_var="blk.power")
 
     assert len(m.variable_linking_constraints_1) == 3
-    print("Variable Linking Constraint Value")
     m.variable_linking_constraints_1.pprint()
     assert str(m.variable_linking_constraints_1[1].expr) == (
         "period[1,1].blk.power  ==  period[1,6].blk.power"
