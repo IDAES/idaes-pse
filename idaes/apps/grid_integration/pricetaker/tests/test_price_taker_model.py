@@ -87,6 +87,40 @@ def build_foo_flowsheet(m, design_blk):
     m.fixed_cost = pyo.Expression(expr=50)
 
 
+def build_power_cycle_with_storage(m):
+    """Builds a simple model for a cycle integrated with storage system"""
+    m.ngcc = OperationModel(
+        polynomial_surrogate_data={
+            "operation_var": "power",
+            "ng_flow": [1, 2],
+            "vom": 5,
+        },
+        minimum_up_time=3,
+        minimum_down_time=3,
+        capacity=500,
+        commodity="power",
+        op_range_lb=0.3,
+        startup_rate=0.3,
+        shutdown_rate=0.3,
+        rampup_rate=0.5,
+        rampdown_rate=0.5,
+    )
+
+    # Including this block to test the addition of startup/shutdown
+    # constraints, and to exclude capacity and ramping constraints
+    m.coal_pp = OperationModel(
+        polynomial_surrogate_data={
+            "operation_var": "power",
+            "ng_flow": [1, 2],
+            "vom": 5,
+        },
+        minimum_up_time=3,
+        minimum_down_time=3,
+    )
+
+    m.battery = StorageModel()
+
+
 @pytest.fixture(name="initialized_foo_flowsheet")
 def initialized_foo_flowsheet_fixture():
     """Creates a multiperiod model and initializes it"""
@@ -451,6 +485,14 @@ def test_get_operation_vars(dummy_data):
     ):
         m._get_operation_vars(var_name="foo_blk.foo")
 
+    m.fix_operation_var(var_name="blk.power", value=10)
+    for d, t in m.period:
+        assert pyo.value(op_vars[d][t]) == 10
+
+    m.unfix_operation_var(var_name="blk.power")
+    for d, t in m.period:
+        assert not op_vars[d][t].is_fixed()
+
 
 @pytest.mark.unit
 @pytest.mark.skipif(
@@ -485,7 +527,7 @@ def test_get_operation_vars_rep_days(dummy_data):
 def test_update_operation_params(dummy_data):
     """Tests the update_operation_params method"""
     m = PriceTakerModel()
-    m.append_lmp_data(lmp_data=dummy_data, horizon_length=5, num_representative_days=1)
+    m.append_lmp_data(lmp_data=dummy_data[:5])
     m.build_multiperiod_model(flowsheet_func=simple_flowsheet_func)
 
     updated_power_data = [100, 200, 300, 400, 500]
@@ -495,37 +537,29 @@ def test_update_operation_params(dummy_data):
     for d, t in m.period:
         assert pyo.value(m.period[d, t].blk.power == updated_power_data[t - 1])
 
+    with pytest.raises(
+        ConfigurationError,
+        match="Number of elements for blk.power exceeds the horizon length.",
+    ):
+        m.update_operation_params({"blk.power": updated_power_data + [600]})
+
 
 @pytest.mark.unit
+@pytest.mark.skipif(
+    not sklearn_avail, reason="sklearn (optional dependency) not available"
+)
 def test_update_operation_params_errors(dummy_data):
     """Tests the update_operation_params error logs"""
+    m = PriceTakerModel()
+    m.append_lmp_data(lmp_data=dummy_data, horizon_length=4, num_representative_days=3)
+    m.build_multiperiod_model(flowsheet_func=simple_flowsheet_func)
+
     # Test operational block not found error
     with pytest.raises(
         NotImplementedError,
         match="This method is not supported for num_representative_days > 1",
     ):
-        m = PriceTakerModel()
-        m.append_lmp_data(
-            lmp_data=dummy_data, horizon_length=5, num_representative_days=3
-        )
-        m.build_multiperiod_model(flowsheet_func=simple_flowsheet_func)
-
         updated_power_data = [100, 200, 300, 400, 500]
-
-        m.update_operation_params({"blk.power": updated_power_data})
-
-    with pytest.raises(
-        ConfigurationError,
-        match="Number of elements for blk.power exceeds the horizon length.",
-    ):
-        m = PriceTakerModel()
-        m.append_lmp_data(
-            lmp_data=dummy_data, horizon_length=3, num_representative_days=1
-        )
-        m.build_multiperiod_model(flowsheet_func=simple_flowsheet_func)
-
-        updated_power_data = [100, 200, 300, 400, 500]
-
         m.update_operation_params({"blk.power": updated_power_data})
 
 
@@ -967,6 +1001,53 @@ def test_start_shut_with_rep_days(dummy_data):
 
 
 @pytest.mark.unit
+def test_automatic_addition_operational_constr(dummy_data):
+    """Tests automatic addition of operational constraints if the required data is present"""
+    m = PriceTakerModel()
+    m.append_lmp_data(lmp_data=dummy_data)
+    m.build_multiperiod_model(
+        flowsheet_func=build_power_cycle_with_storage,
+        add_linking_constraints=True,
+        add_periodic_constraints=True,
+    )
+
+    assert hasattr(m, "ngcc_power_limits")
+    assert hasattr(m, "ngcc_power_ramping")
+    assert hasattr(m, "ngcc_startup_shutdown")
+    assert len(m.variable_linking_constraints_1) == 23  # linking constraints
+    assert len(m.variable_linking_constraints_2) == 1  # Periodic constraints
+
+    assert hasattr(m, "coal_pp_startup_shutdown")
+    assert not hasattr(m, "coal_pp_power_limits")
+    assert not hasattr(m, "coal_pp_power_ramping")
+
+
+@pytest.mark.unit
+@pytest.mark.skipif(
+    not sklearn_avail, reason="sklearn (optional dependency) not available"
+)
+def test_automatic_addition_operational_rep_days(dummy_data):
+    """Tests automatic addition of operational constraints if the required data is present"""
+    m = PriceTakerModel()
+    m.append_lmp_data(lmp_data=dummy_data, horizon_length=12, num_representative_days=2)
+    m.build_multiperiod_model(
+        flowsheet_func=build_power_cycle_with_storage,
+        add_linking_constraints=True,
+        add_periodic_constraints=True,
+    )
+
+    assert hasattr(m, "ngcc_power_limits")
+    assert hasattr(m, "ngcc_power_ramping")
+    assert hasattr(m, "ngcc_startup_shutdown")
+    assert len(m.variable_linking_constraints_1) == 22  # linking constraints
+    assert len(m.variable_linking_constraints_2) == 2  # Periodic constraints
+
+    assert hasattr(m, "coal_pp_startup_shutdown")
+    assert not hasattr(m, "coal_pp_power_limits")
+    assert not hasattr(m, "coal_pp_power_ramping")
+
+
+@pytest.mark.unit
 def test_add_hourly_cashflows_warnings(dummy_data, caplog):
     """Tests the add_hourly_cashflows method with empty args"""
 
@@ -1188,6 +1269,34 @@ def test_get_valid_block_name():
 def test_get_num_startups_shutdowns(dummy_data):
     """Tests the get_num_startups and get_num_shutdowns methods"""
     m = PriceTakerModel()
+    m.append_lmp_data(lmp_data=dummy_data[:12])
+    m.design_blk = DesignModel(
+        model_func=foo_design_model, model_args={"max_power": 400, "min_power": 300}
+    )
+    # Build the multiperiod model
+    m.build_multiperiod_model(
+        flowsheet_func=build_foo_flowsheet,
+        flowsheet_options={"design_blk": m.design_blk},
+    )
+
+    startup_vals = [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0]
+    shutdown_vals = [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0]
+
+    for d, t in m.period:
+        m.period[d, t].op_blk.startup.fix(startup_vals[t - 1])
+        m.period[d, t].op_blk.shutdown.fix(shutdown_vals[t - 1])
+
+    assert m.get_num_startups("op_blk") == 3
+    assert m.get_num_shutdowns("op_blk") == 3
+
+
+@pytest.mark.unit
+@pytest.mark.skipif(
+    not sklearn_avail, reason="sklearn (optional dependency) not available"
+)
+def test_get_num_startups_shutdowns_rep_days(dummy_data):
+    """Tests the get_num_startups and get_num_shutdowns methods"""
+    m = PriceTakerModel()
     m.append_lmp_data(lmp_data=dummy_data, num_representative_days=1, horizon_length=12)
     m.design_blk = DesignModel(
         model_func=foo_design_model, model_args={"max_power": 400, "min_power": 300}
@@ -1205,23 +1314,20 @@ def test_get_num_startups_shutdowns(dummy_data):
         m.period[d, t].op_blk.startup.fix(startup_vals[t - 1])
         m.period[d, t].op_blk.shutdown.fix(shutdown_vals[t - 1])
 
-    num_startups = m.get_num_startups("op_blk")
-
     # number of startups is 3 per horizon, and there are
     # two 12-hour time horizons, so num_startups = 3*2
-    assert num_startups == 6
+    assert m.get_num_startups("op_blk") == 6
 
     # number of shutdowns is 3 per horizon, and there are
     # two 12-hour time horizons, so num_startups = 3*2
-    num_shutdowns = m.get_num_shutdowns("op_blk")
-    assert num_shutdowns == 6
+    assert m.get_num_shutdowns("op_blk") == 6
 
 
 @pytest.mark.unit
 def test_get_num_startups_shutdowns_exception(dummy_data):
     """Tests the get_num_startups and get_num_shutdowns methods"""
     m = PriceTakerModel()
-    m.append_lmp_data(lmp_data=dummy_data, num_representative_days=1, horizon_length=12)
+    m.append_lmp_data(lmp_data=dummy_data)
     m.design_blk = DesignModel(
         model_func=foo_design_model, model_args={"max_power": 400, "min_power": 300}
     )

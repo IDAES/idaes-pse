@@ -16,6 +16,7 @@ from pyomo.common.config import (
     Bool,
     ConfigDict,
     ConfigValue,
+    PositiveInt,
     NonNegativeFloat,
 )
 from idaes.core.base.process_base import declare_process_block_class
@@ -315,6 +316,82 @@ class OperationModelData(ProcessBlockData):
         ConfigValue(
             domain=is_valid_polynomial_surrogate_data,
             doc="Dictionary containing polynomial surrogate data",
+        ),
+    )
+
+    CONFIG.declare(
+        "design_block_name",
+        ConfigValue(
+            domain=str,
+            doc="Object containing design model",
+        ),
+    )
+    CONFIG.declare(
+        "commodity",
+        ConfigValue(
+            domain=str,
+            doc="Variable on which capacity and ramping limits are needed",
+        ),
+    )
+    CONFIG.declare(
+        "capacity",
+        ConfigValue(doc="Maximum capacity of the commodity"),
+    )
+    CONFIG.declare(
+        "op_range_lb",
+        ConfigValue(
+            domain=is_in_range(0, 1),
+            doc="Minimum stable operation of the commodity as a fraction of capacity",
+        ),
+    )
+    CONFIG.declare(
+        "minimum_up_time",
+        ConfigValue(
+            domain=PositiveInt,
+            doc=(
+                "Total uptime (must be >= 1), e.g., 4 time periods. "
+                "Uptime must include the minimum uptime and the time "
+                "required for shutdown."
+            ),
+        ),
+    )
+    CONFIG.declare(
+        "minimum_down_time",
+        ConfigValue(
+            domain=PositiveInt,
+            doc=(
+                "Total downtime (must be >= 1), e.g., 4 time periods. "
+                "Downtime must include the minimum downtime and the time "
+                "required for startup"
+            ),
+        ),
+    )
+    CONFIG.declare(
+        "startup_rate",
+        ConfigValue(
+            domain=is_in_range(0, 1),
+            doc="Startup rate as a fraction of the maximum capacity",
+        ),
+    )
+    CONFIG.declare(
+        "shutdown_rate",
+        ConfigValue(
+            domain=is_in_range(0, 1),
+            doc="Shutdown rate as a fraction of the maximum capacity",
+        ),
+    )
+    CONFIG.declare(
+        "rampup_rate",
+        ConfigValue(
+            domain=is_in_range(0, 1),
+            doc="Ramp up rate as a fraction of the maximum capacity",
+        ),
+    )
+    CONFIG.declare(
+        "rampdown_rate",
+        ConfigValue(
+            domain=is_in_range(0, 1),
+            doc="Ramp down rate as a fraction of the maximum capacity",
         ),
     )
 
