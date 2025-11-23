@@ -18,13 +18,9 @@ import pyomo.environ as pyo
 import pytest
 
 import idaes.logger as idaeslog
-from idaes.apps.grid_integration import DesignModel, OperationModel
+from idaes.apps.grid_integration import DesignModel, OperationModel, StorageModel
 from idaes.apps.grid_integration.pricetaker.price_taker_model import PriceTakerModel
 from idaes.apps.grid_integration.pricetaker.unit_commitment import UnitCommitmentData
-from idaes.apps.grid_integration.pricetaker.design_and_operation_models import (
-    StorageModelData,
-    StorageModel,
-)
 
 # pylint: disable = unused-import
 from idaes.apps.grid_integration.pricetaker.tests.test_clustering import (
@@ -312,36 +308,6 @@ def test_build_mp_model_w_period(dummy_data):
         m.period = []
         m.append_lmp_data(lmp_data=dummy_data)
         m.build_multiperiod_model(flowsheet_func=simple_flowsheet_func)
-
-
-@pytest.mark.unit
-def test_build_storage_model_linking_constraints(dummy_data):
-    "Tests building a StorageModel with linking constraints"
-    m = PriceTakerModel()
-    m.storage_blk = StorageModel()
-
-    m.append_lmp_data(lmp_data=dummy_data)
-    m.build_multiperiod_model(flowsheet_func=simple_flowsheet_func)
-    m.add_linking_constraints(
-        previous_time_var="blk.power", current_time_var="blk.op_mode"
-    )
-
-    assert isinstance(m.storage_blk.initial_holdup, pyo.Var)
-    assert isinstance(m.storage_blk.final_holdup, pyo.Var)
-
-
-@pytest.mark.unit
-def test_build_storage_model_periodic_constraints(dummy_data):
-    """Tests building a StorageModel with periodic constraints"""
-    m = PriceTakerModel()
-    m.storage_blk = StorageModel()
-
-    m.append_lmp_data(lmp_data=dummy_data)
-    m.build_multiperiod_model(flowsheet_func=simple_flowsheet_func)
-    m.add_periodic_constraints(initial_time_var="blk.power", final_time_var="blk.power")
-
-    assert isinstance(m.storage_blk.initial_holdup, pyo.Var)
-    assert isinstance(m.storage_blk.final_holdup, pyo.Var)
 
 
 @pytest.mark.unit

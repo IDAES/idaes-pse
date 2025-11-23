@@ -40,6 +40,7 @@ from pyomo.common.config import (
 
 from idaes.apps.grid_integration.pricetaker.design_and_operation_models import (
     DesignModelData,
+    OperationModelData,
     StorageModelData,
 )
 from idaes.apps.grid_integration.pricetaker.clustering import (
@@ -369,24 +370,76 @@ class PriceTakerModel(ConcreteModel):
 
         # Check if storage blocks are present in the flowsheet. If yes,
         # then add constraints linking successive time period holdups
-        storage_blocks = [
-            blk.name
-            for blk in flowsheet_blk.component_data_objects(Block)
-            if isinstance(blk, StorageModelData)
-        ]
-        for storage_blk in storage_blocks:
-            _logger.info(f"Found a StorageModel named {storage_blk} in the flowsheet")
+        for blk in flowsheet_blk.component_data_objects(Block):
+            if not isinstance(blk, StorageModelData):
+                continue
+
+            _logger.info(f"Found a StorageModel named {blk.name} in the flowsheet")
 
             if add_linking_constraints:
                 self.add_linking_constraints(
-                    previous_time_var=storage_blk + ".final_holdup",
-                    current_time_var=storage_blk + ".initial_holdup",
+                    previous_time_var=blk.name + ".final_holdup",
+                    current_time_var=blk.name + ".initial_holdup",
                 )
 
             if add_periodic_constraints:
                 self.add_periodic_constraints(
-                    initial_time_var=storage_blk + ".initial_holdup",
-                    final_time_var=storage_blk + ".final_holdup",
+                    initial_time_var=blk.name + ".initial_holdup",
+                    final_time_var=blk.name + ".final_holdup",
+                )
+
+        for blk in flowsheet_blk.component_data_objects(Block):
+            if not isinstance(blk, OperationModelData):
+                # Non-OperationModel objects may not contain required attributes
+                # In that case, the user needs to call the methods manually
+                continue
+
+            if None not in [blk.config.minimum_up_time, blk.config.minimum_down_time]:
+                _logger.info(
+                    f"Found minimum uptime/downtime data for {blk.name} "
+                    f"- Adding minimum uptime/downtime constraints."
+                )
+                self.add_startup_shutdown(
+                    op_block_name=blk.name,
+                    des_block_name=blk.config.design_block_name,
+                    minimum_up_time=blk.config.minimum_up_time,
+                    minimum_down_time=blk.config.minimum_down_time,
+                )
+
+            if blk.config.capacity is None or blk.config.commodity is None:
+                # Capacity/commodity is not specified, so operational limits,
+                # and ramping constraints cannot be constructed
+                continue
+
+            if blk.config.op_range_lb is not None:
+                _logger.info(
+                    f"Found capacity limits data for {blk.name} "
+                    f"- Adding capacity limit constraints."
+                )
+                self.add_capacity_limits(
+                    op_block_name=blk.name,
+                    commodity=blk.config.commodity,
+                    capacity=blk.config.capacity,
+                    op_range_lb=blk.config.op_range_lb,
+                )
+
+            if None not in [
+                blk.config.rampup_rate,
+                blk.config.rampdown_rate,
+                blk.config.startup_rate,
+                blk.config.shutdown_rate,
+            ]:
+                _logger.info(
+                    f"Found ramping data for {blk.name} - Adding ramping constraints."
+                )
+                self.add_ramping_limits(
+                    op_block_name=blk.name,
+                    commodity=blk.config.commodity,
+                    capacity=blk.config.capacity,
+                    startup_rate=blk.config.startup_rate,
+                    shutdown_rate=blk.config.shutdown_rate,
+                    rampup_rate=blk.config.rampup_rate,
+                    rampdown_rate=blk.config.rampdown_rate,
                 )
 
     def _get_operation_blocks(
@@ -1235,6 +1288,7 @@ class PriceTakerModel(ConcreteModel):
         """
         Returns a plot object containing operational profiles for a specific
         representative day.
+
         Args:
             operation_var: List[str],
                 List of operation variable names that need to be plotted
