@@ -1282,8 +1282,8 @@ class TestCommon(object):
     @pytest.mark.unit
     def test_define_display_vars(self, frame):
         assert frame.props[1].define_display_vars() == {
-            "Total Molar Flowrate": frame.props[1].flow_mol,
-            "Total Mole Fraction": frame.props[1].mole_frac_comp,
+            "Total Molar Flowrate": frame.props[1].flow_mol_phase,
+            "Total Mole Fraction": frame.props[1].mole_frac_phase_comp,
             "Temperature": frame.props[1].temperature,
             "Pressure": frame.props[1].pressure,
         }
