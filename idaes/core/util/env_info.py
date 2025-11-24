@@ -24,7 +24,6 @@ import pkg_resources
 
 import pyomo
 import pyomo.environ as pyo
-import idaes.ver as ver
 import idaes
 
 __version__ = importlib.metadata.version("idaes-pse")
@@ -55,7 +54,7 @@ class EnvironmentInfo:
         # check a new version our from github, have IDAES installed in-place
         # and don't reinstall, which is likely mode for a lot of developers
         print(__metadata__.keys())
-        self.git_hash = ver.gh
+        self.git_hash = None  # gh ; as part of removing ideas ver.py (pr 1708)
         self.package_version = __version__
         self.version_string = __version__
         self.bin_directory = idaes.bin_directory
