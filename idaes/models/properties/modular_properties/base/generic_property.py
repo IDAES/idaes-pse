@@ -5512,6 +5512,7 @@ def _temperature_pressure_bubble_dew(b, name):
         units = units_meta.PRESSURE
         init = b.pressure.value
     else:
+        init = None
         _raise_dev_burnt_toast()
 
     docstring_var += splt[0]
