@@ -35,7 +35,7 @@ from idaes.models.properties.modular_properties.base.utility import (
     get_bounds_from_config,
 )
 
-from idaes.core.util.exceptions import ConfigurationError, InitializationError
+from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 from .electrolyte_states import define_electrolyte_state, calculate_electrolyte_scaling
