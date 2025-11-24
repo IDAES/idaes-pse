@@ -14,7 +14,7 @@
 Heat Exchanger Models.
 """
 
-__author__ = "John Eslick"
+__author__ = "John Eslick, Will Strahl, Douglas Allan"
 
 from enum import Enum
 
@@ -51,6 +51,7 @@ from idaes.core.util import scaling as iscale
 from idaes.core.solvers import get_solver
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 from idaes.core.initialization import SingleControlVolumeUnitInitializer
+from idaes.core.scaling import CustomScalerBase, DefaultScalingRecommendation
 
 
 _log = idaeslog.getLogger(__name__)
@@ -64,6 +65,115 @@ class HeatExchangerFlowPattern(Enum):
     countercurrent = 1
     cocurrent = 2
     crossflow = 3
+
+
+class HX0DScaler(CustomScalerBase):
+    """
+    Default modular scaler for the zero-dimensional heat exchanger.
+    """
+
+    DEFAULT_SCALING_FACTORS = {
+        "area": DefaultScalingRecommendation.userInputRecommended,
+        "overall_heat_transfer_coefficient": DefaultScalingRecommendation.userInputRecommended,
+    }
+
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        self.call_submodel_scaler_method(
+            model.hot_side,
+            method="variable_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+        self.call_submodel_scaler_method(
+            model.cold_side,
+            method="variable_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+
+        # user input recommended for design variables
+        design_variables = [model.area] + [
+            model.overall_heat_transfer_coefficient[time]
+            for time in model.flowsheet().time
+        ]
+
+        # use nominal value as a default
+        for var in design_variables:
+            self.scale_variable_by_default(var, overwrite=overwrite)
+            if self.get_scaling_factor(var) is None:
+                self.set_variable_scaling_factor(
+                    var, 1 / var.value if var.value != 0 else 1, overwrite=overwrite
+                )
+
+        for t in model.flowsheet().time:
+            T_scale = 10 * self.get_scaling_factor(
+                model.hot_side.properties_in[t].temperature,
+                default=1 / 300,  #  Assuming temperature is in K.
+                warning=True,
+            )
+            # delta temperatures
+            if hasattr(model, "delta_temperature_in"):
+                self.set_component_scaling_factor(
+                    model.delta_temperature_in[t], T_scale, overwrite=overwrite
+                )
+            if hasattr(model, "delta_temperature_out"):
+                self.set_component_scaling_factor(
+                    model.delta_temperature_out[t], T_scale, overwrite=overwrite
+                )
+            if hasattr(model, "delta_temperature"):
+                # Set scaling hint for expression to avoid
+                # division by zero in LMTD expression
+                self.set_component_scaling_factor(
+                    model.delta_temperature[t], T_scale, overwrite=overwrite
+                )
+            if hasattr(model, "crossflow_factor"):
+                self.set_component_scaling_factor(
+                    model.crossflow_factor[t],
+                    1,  # Register the fact that this variable is well-scaled by default
+                    overwrite=overwrite,
+                )
+
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+
+        self.call_submodel_scaler_method(
+            submodel=model.cold_side,
+            method="constraint_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+        self.call_submodel_scaler_method(
+            submodel=model.hot_side,
+            method="constraint_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+
+        for t in model.flowsheet().time:
+            self.scale_constraint_by_component(
+                model.unit_heat_balance[t], model.hot_side.heat[t], overwrite=overwrite
+            )
+
+            self.scale_constraint_by_component(
+                model.heat_transfer_equation[t],
+                model.hot_side.heat[t],
+                overwrite=overwrite,
+            )
+
+            self.scale_constraint_by_component(
+                model.delta_temperature_in_equation[t],
+                model.delta_temperature_in[t],
+                overwrite=overwrite,
+            )
+
+            self.scale_constraint_by_component(
+                model.delta_temperature_out_equation[t],
+                model.delta_temperature_out[t],
+                overwrite=overwrite,
+            )
 
 
 class HX0DInitializer(SingleControlVolumeUnitInitializer):
@@ -510,6 +620,7 @@ class HeatExchangerData(UnitModelBlockData):
     Unit model to transfer heat from one material to another.
     """
 
+    default_scaler = HX0DScaler
     default_initializer = HX0DInitializer
 
     CONFIG = UnitModelBlockData.CONFIG(implicit=True)

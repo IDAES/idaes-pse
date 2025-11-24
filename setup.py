@@ -37,9 +37,7 @@ class ExtraDependencies:
     """
 
     ui = [
-        # FIXME this must be changed to the PyPI distribution for the release
-        # "idaes-ui",
-        "idaes-ui @ git+https://github.com/IDAES/idaes-ui@main",
+        "idaes-ui",
     ]
     omlt = [
         "omlt==1.1",  # fix the version for now as package evolves
@@ -50,13 +48,9 @@ class ExtraDependencies:
         "gridx-prescient>=2.2.1",  # idaes.tests.prescient
     ]
     coolprop = [
-        "coolprop",  # idaes.generic_models.properties.general.coolprop
+        "coolprop>=7.0",  # idaes.generic_models.properties.general.coolprop
     ]
-    testing = [
-        "pytest",
-        "addheader",
-        "pyyaml",
-    ]
+    testing = ["pytest", "addheader", "pyyaml"]
 
     def __init__(self):
         self._data = dict(type(self).__dict__)
@@ -82,7 +76,7 @@ kwargs = dict(
     # Put abstract (non-versioned) deps here.
     # Concrete dependencies go in requirements[-dev].txt
     install_requires=[
-        "pyomo >= 6.9.2",
+        "pyomo >= 6.9.5",
         "pint >= 0.24.1",  # required to use Pyomo units. Pint 0.24.1 needed for Python 3.9 support
         "networkx",  # required to use Pyomo network
         "numpy>=1,<3",
@@ -156,6 +150,7 @@ kwargs = dict(
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
         "Programming Language :: Python :: Implementation :: CPython",
         "Topic :: Scientific/Engineering :: Mathematics",
         "Topic :: Scientific/Engineering :: Chemistry",

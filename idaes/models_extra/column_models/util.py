@@ -75,6 +75,8 @@ def make_phase_split(
 
             # if state var is not mole/mass frac by phase
             if "phase" not in local_name:
+                local_name_flow = ""
+                local_name_frac = ""
                 if "mole" in local_name:  # check mole basis/mass basis
 
                     # The following conditionals are required when a

@@ -138,6 +138,25 @@ def test_enth_mol_ig_comp(frame):
 
 
 @pytest.mark.unit
+def test_enth_mol_ig_comp_no_enthalpy_of_formation(frame):
+    frame.params.config.include_enthalpy_of_formation = False
+    frame.config.include_enthalpy_of_formation = False
+    RPP5.enth_mol_ig_comp.build_parameters(frame.params)
+
+    assert not hasattr(frame.params, "enth_mol_form_vap_comp_ref")
+
+    expr = RPP5.enth_mol_ig_comp.return_expression(
+        frame.props[1], frame.params, frame.props[1].temperature
+    )
+    assert value(expr) == pytest.approx(-240973.683 + 241.81e3, abs=1e-3)
+
+    frame.props[1].temperature.value = 400
+    assert value(expr) == pytest.approx(-237521.691 + 241.81e3, abs=1e-3)
+
+    assert_units_equivalent(expr, pyunits.J / pyunits.mol)
+
+
+@pytest.mark.unit
 def test_entr_mol_ig_comp(frame):
     RPP5.entr_mol_ig_comp.build_parameters(frame.params)
 
@@ -170,11 +189,17 @@ def test_pressure_sat_comp(frame):
         frame.props[1], frame.params, frame.props[1].temperature
     )
     assert value(expr) == pytest.approx(3173.066, abs=1e-3)
+    log_expr = RPP5.pressure_sat_comp.return_log_expression(
+        frame.props[1], frame.params, frame.props[1].temperature
+    )
+    assert value(log_expr) == pytest.approx(log(3173.066), abs=1e-3)
 
     frame.props[1].temperature.value = 373.15
     assert value(expr) == pytest.approx(100939.248, rel=1e-3)
+    assert value(log_expr) == pytest.approx(log(100939.248), abs=1e-3)
 
     assert_units_equivalent(expr, pyunits.Pa)
+    assert_units_equivalent(log_expr, pyunits.dimensionless)
 
 
 @pytest.mark.unit
@@ -184,30 +209,50 @@ def test_pressure_sat_comp_dT(frame):
     expr = RPP5.pressure_sat_comp.dT_expression(
         frame.props[1], frame.params, frame.props[1].temperature
     )
+    log_expr = RPP5.pressure_sat_comp.dT_log_expression(
+        frame.props[1], frame.params, frame.props[1].temperature
+    )
 
     delta = 1e-4 * pyunits.K
     val = RPP5.pressure_sat_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature
     )
+    log_val = RPP5.pressure_sat_comp.return_log_expression(
+        frame.props[1], frame.params, frame.props[1].temperature
+    )
     val_p = RPP5.pressure_sat_comp.return_expression(
+        frame.props[1], frame.params, frame.props[1].temperature + delta
+    )
+    log_val_p = RPP5.pressure_sat_comp.return_log_expression(
         frame.props[1], frame.params, frame.props[1].temperature + delta
     )
 
     dPdT = value((val - val_p) / -delta)
+    dlogPdT = value((log_val - log_val_p) / -delta)
 
     assert value(expr) == pytest.approx(dPdT, 1e-4)
+    assert value(log_expr) == pytest.approx(dlogPdT, 1e-4)
 
     frame.props[1].temperature.value = 373.15
 
     val = RPP5.pressure_sat_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature
     )
+    log_val = RPP5.pressure_sat_comp.return_log_expression(
+        frame.props[1], frame.params, frame.props[1].temperature
+    )
     val_p = RPP5.pressure_sat_comp.return_expression(
+        frame.props[1], frame.params, frame.props[1].temperature + delta
+    )
+    log_val_p = RPP5.pressure_sat_comp.return_log_expression(
         frame.props[1], frame.params, frame.props[1].temperature + delta
     )
 
     dPdT = value((val - val_p) / -delta)
+    dlogPdT = value((log_val - log_val_p) / -delta)
 
     assert value(expr) == pytest.approx(dPdT, 1e-4)
+    assert value(log_expr) == pytest.approx(dlogPdT, 1e-4)
 
     assert_units_equivalent(expr, pyunits.Pa / pyunits.degK)
+    assert_units_equivalent(log_expr, 1 / pyunits.K)

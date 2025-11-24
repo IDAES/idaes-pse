@@ -31,6 +31,16 @@ inputs:
     required: false
     default: ''
 
+  run-notebooks:
+    description: "Run notebook tests (via nbmake)"
+    required: false
+    default: 'true'
+
+  run-pyfiles:
+    description: "Run Python *.py tests (test_*.py, *_test.py)"
+    required: false
+    default: 'true'
+
 runs:
   using: composite
   steps:
@@ -63,6 +73,8 @@ runs:
       shell: bash -l {0}
       env:
         PYTHONPATH: ${{ github.action_path }}
+        EXAMPLES_RUN_NOTEBOOKS: ${{ inputs.run-notebooks }}
+        EXAMPLES_RUN_PYFILES: ${{ inputs.run-pyfiles }}
         PYTEST_ADDOPTS: >-
           --color=yes
           --durations=0

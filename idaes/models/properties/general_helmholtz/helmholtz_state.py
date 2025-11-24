@@ -50,8 +50,117 @@ from idaes.core.initialization.initializer_base import (
     InitializerBase,
     InitializationStatus,
 )
+from idaes.core.scaling import CustomScalerBase, DefaultScalingRecommendation
 
 _log = idaeslog.getLogger(__name__)
+
+
+class HelmholtzEoSScaler(CustomScalerBase):
+    """
+    General scaler for the Helmholtz properties
+    """
+
+    DEFAULT_SCALING_FACTORS = {
+        # Most of these scaling factors were taken directly from
+        # the default scaling factors for the old tools. They
+        # could probably be condensed and updated.
+        # The user needs to specify a default scaing factor only
+        # for the flow variable corresponding to their AmountBasis:
+        # flow_mol for AmountBasis.MOLE and flow_mass for AmountBasis.MASS
+        "flow_mol": DefaultScalingRecommendation.userInputRequired,
+        "flow_mass": DefaultScalingRecommendation.userInputRequired,
+        # Because volumetric flow changes dramatically between liquid
+        # and gas phases, the user should provide a value if possible
+        "flow_vol": DefaultScalingRecommendation.userInputRecommended,
+        "enth_mol": 1e-3,
+        "enth_mass": 1e-3,
+        "temperature": 1e-1,
+        "pressure": 1e-6,
+        "vapor_frac": 10,
+        "dens_mass_phase[Liq]": 1e-2,
+        "dens_mass_phase": 10,  # Vap or Mix
+        "temperature_sat": 1e-2,
+        "pressure_sat": 1e-5,
+        "enth_mol_sat_phase[Liq]": 1e-2,
+        "enth_mol_sat_phase[Vap]": 1e-4,
+        "enth_mass_sat_phase[Liq]": 1e-2,
+        "enth_mass_sat_phase[Vap]": 1e-4,
+        "dh_vap_mol": 1e-4,
+        "dh_vap_mass": 1e-4,
+        "energy_internal_mol_phase[Liq]": 1e-2,
+        "energy_internal_mol_phase": 1e-4,  # Vap or Mix
+        "energy_internal_mass_phase[Liq]": 1e-2,
+        "energy_internal_mass_phase": 1e-4,  # Vap or Mix
+        "enth_mol_phase[Liq]": 1e-2,
+        "enth_mol_phase[Vap]": 1e-4,
+        "entr_mol_phase[Liq]": 1e-1,
+        "entr_mol_phase[Vap]": 1e-1,
+        "enth_mass_phase[Liq]": 1e-2,
+        "enth_mass_phase[Vap]": 1e-4,
+        "entr_mass_phase[Liq]": 1e-1,
+        "entr_mass_phase[Vap]": 1e-1,
+        "cp_mol_phase[Liq]": 1e-2,
+        "cp_mol_phase[Vap]": 1e-2,
+        "cv_mol_phase[Liq]": 1e-2,
+        "cv_mol_phase[Vap]": 1e-2,
+        "cp_mass_phase[Liq]": 1e-3,
+        "cp_mass_phase[Vap]": 1e-3,
+        "cv_mass_phase[Liq]": 1e-3,
+        "cv_mass_phase[Vap]": 1e-3,
+        "dens_mol_phase[Liq]": 1e-2,
+        "dens_mol_phase[Vap]": 1,
+        "phase_frac": 10,
+        "energy_internal_mol": 1e-3,
+        "energy_internal_mass": 1e-3,
+        "entr_mol": 1e-1,
+        "entr_mass": 1e-1,
+        "cp_mol": 1e-2,
+        "cv_mol": 1e-2,
+        "cp_mass": 1e-2,
+        "cv_mass": 1e-2,
+        "dens_mass": 1,
+        "dens_mol": 1e-3,
+        "heat_capacity_ratio": 10,
+    }
+
+    def variable_scaling_routine(self, model, overwrite=False, submodel_scalers=None):
+        if model.amount_basis == AmountBasis.MOLE:
+            self.scale_variable_by_default(model.flow_mol, overwrite=overwrite)
+        elif model.amount_basis == AmountBasis.MASS:
+            self.scale_variable_by_default(model.flow_mass, overwrite=overwrite)
+        else:
+            raise NotImplementedError(
+                f"Scaling has been not been implemented for the AmountBasis {model.amount_basis}."
+            )
+        self.scale_variable_by_default(model.flow_vol, overwrite=overwrite)
+        if self.get_scaling_factor(model.flow_vol) is None:
+            nom_flow_mass = self.get_expression_nominal_value(model.flow_mass)
+            # Geometric mean of the mass density of steam at 100 C and 1 MPa and liquid water
+            nom_dens_mass = pyo.sqrt(1000 * 5)
+            self.set_component_scaling_factor(
+                model.flow_vol, 1 / (nom_flow_mass * nom_dens_mass), overwrite=overwrite
+            )
+
+        for varname in self.default_scaling_factors.keys():
+            if varname == "flow_mol" or varname == "flow_mass" or varname == "flow_vol":
+                continue
+            with model.lock_attribute_creation_context():
+                # Avoid triggering create-on-demand properties
+                var = model.find_component(varname)
+            if var is None:
+                continue
+            if var.is_indexed():
+                for vardata in var.values():
+                    self.scale_variable_by_default(vardata, overwrite=overwrite)
+            else:
+                self.scale_variable_by_default(var, overwrite=overwrite)
+
+    def constraint_scaling_routine(self, model, overwrite=False, submodel_scalers=None):
+        sf_pres = self.get_scaling_factor(model.pressure)
+        if model.is_property_constructed("eq_sat"):
+            self.set_component_scaling_factor(model.eq_sat, sf_pres / 1000)
+        if model.is_property_constructed("eq_complementarity"):
+            self.set_component_scaling_factor(model.eq_complementarity, sf_pres / 10)
 
 
 class HelmholtzEoSInitializer(InitializerBase):
@@ -93,6 +202,7 @@ class _StateBlock(StateBlock):
 
     # Set default initializer
     default_initializer = HelmholtzEoSInitializer
+    default_scaler = HelmholtzEoSScaler
 
     @staticmethod
     def _set_fixed(v, f):
@@ -693,7 +803,9 @@ class HelmholtzStateBlockData(StateBlockData):
                 "p": self.p_kPa,
                 "x": self.vapor_frac,
             }
+        # pylint: disable-next=possibly-used-before-assignment
         sv_dict_liq = copy.copy(sv_dict)
+        # pylint: disable-next=possibly-used-before-assignment
         sv_dict_vap = copy.copy(sv_dict)
         if self.state_vars == StateVars.TPX and len(phlist) > 1:
             self.p_kPa_liq = pyo.Expression(

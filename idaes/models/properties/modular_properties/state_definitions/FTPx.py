@@ -13,6 +13,8 @@
 """
 Methods for setting up FTPx as the state variables in a generic property
 package
+
+Authors: Andrew Lee, Douglas Allan
 """
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
@@ -31,21 +33,27 @@ from pyomo.environ import (
 )
 
 from idaes.core import MaterialFlowBasis, MaterialBalanceType, EnergyBalanceType
+
 from idaes.models.properties.modular_properties.base.utility import (
     get_bounds_from_config,
     get_method,
     GenericPropertyPackageError,
-)
-from idaes.models.properties.modular_properties.base.utility import (
     identify_VL_component_list,
 )
 from idaes.models.properties.modular_properties.phase_equil.henry import (
     HenryType,
     henry_equilibrium_ratio,
 )
-from idaes.core.util.exceptions import ConfigurationError, InitializationError
+from idaes.core.util.exceptions import (
+    ConfigurationError,
+    InitializationError,
+)
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
+from idaes.core.scaling import (
+    CustomScalerBase,
+    ConstraintScalingScheme,
+)
 from .electrolyte_states import define_electrolyte_state, calculate_electrolyte_scaling
 
 
@@ -384,6 +392,8 @@ def state_initialization(b):
         _pe_pairs = b.params._pe_pairs
 
     num_VLE = 0
+    tbub = None
+    tdew = None
 
     for pp in _pe_pairs:
         # Look for a VLE pair with this phase - should only be 1
@@ -430,7 +440,9 @@ def state_initialization(b):
         henry_other = []
         K = {}
 
+        # pylint: disable-next=possibly-used-before-assignment
         for j in henry_comps:
+            # pylint: disable-next=possibly-used-before-assignment
             henry_type = b.params.get_component(j).config.henry_component[l_phase][
                 "type"
             ]
@@ -457,6 +469,7 @@ def state_initialization(b):
                     )
                 )
                 henry_other.append(j)
+        # pylint: disable-next=possibly-used-before-assignment
         for j in vl_comps:
             try:
                 K[j] = value(
@@ -486,6 +499,7 @@ def state_initialization(b):
             vap_frac = value(b.temperature - tbub) / (tdew - tbub)
         elif K is not None:
             raoult_init = True
+            # pylint: disable=possibly-used-before-assignment
             vap_frac = _modified_rachford_rice(
                 b,
                 K,
@@ -496,6 +510,7 @@ def state_initialization(b):
         # else: No way to estimate phase fraction, do nothing
 
     if vap_frac is not None:
+        # pylint: disable=possibly-used-before-assignment
         b.phase_frac[v_phase] = vap_frac
         b.phase_frac[l_phase] = 1 - vap_frac
 
@@ -712,6 +727,98 @@ def calculate_scaling_factors(b):
         calculate_electrolyte_scaling(b)
 
 
+class FTPxScaler(CustomScalerBase):
+    """
+    Scaler for constraints associated with FTPx state variables
+    """
+
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        sf_Fp = {}
+        for p in model.phase_list:
+            sf_Fp[p] = self.get_scaling_factor(model.flow_mol_phase[p])
+        sf_F = min(sf_Fp.values())
+        self.set_component_scaling_factor(model.flow_mol, sf_F, overwrite=overwrite)
+
+        for p in model.phase_list:
+            self.set_component_scaling_factor(model.phase_frac[p], sf_Fp[p] / sf_F)
+
+        sf_mf = {}
+        for idx, v in model.mole_frac_phase_comp.items():
+            sf_mf[idx] = self.get_scaling_factor(v)
+            self.set_component_scaling_factor(
+                model.flow_mol_phase_comp[idx],
+                sf_mf[idx] * sf_Fp[idx[0]],
+                overwrite=overwrite,
+            )
+
+        for i in model.component_list:
+            self.set_component_scaling_factor(
+                model.mole_frac_comp[i],
+                min(sf_mf[p, i] for p in model.phase_list if (p, i) in sf_mf),
+                overwrite=overwrite,
+            )
+            nom = max(
+                1 / (sf_mf[p, i] * sf_Fp[p])
+                for p in model.phase_list
+                if (p, i) in sf_mf
+            )
+            self.set_component_scaling_factor(
+                model.flow_mol_comp[i], 1 / nom, overwrite=overwrite
+            )
+
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        if model.config.defined_state is False:
+            self.scale_constraint_by_nominal_value(
+                model.sum_mole_frac_out,
+                scheme=ConstraintScalingScheme.inverseMaximum,
+                overwrite=overwrite,
+            )
+        if len(model.phase_list) == 1:
+            self.scale_constraint_by_component(
+                model.total_flow_balance, model.flow_mol, overwrite=overwrite
+            )
+            for j, con in model.component_flow_balances.items():
+                self.scale_constraint_by_component(
+                    con,
+                    # Molar flow doesn't appear in this constraint for a single phase
+                    model.mole_frac_comp[j],
+                    overwrite=False,
+                )
+            # model.phase_fraction_constraint is well-scaled by default
+            p = model.phase_list.first()
+            self.set_constraint_scaling_factor(
+                model.phase_fraction_constraint[p], 1, overwrite=False
+            )
+
+        else:
+            self.scale_constraint_by_nominal_value(
+                model.total_flow_balance,
+                scheme=ConstraintScalingScheme.inverseMaximum,
+                overwrite=overwrite,
+            )
+            for con in model.component_flow_balances.values():
+                self.scale_constraint_by_nominal_value(
+                    con,
+                    scheme=ConstraintScalingScheme.inverseMaximum,
+                    overwrite=overwrite,
+                )
+            self.scale_constraint_by_nominal_value(
+                model.sum_mole_frac,
+                scheme=ConstraintScalingScheme.inverseMaximum,
+                overwrite=overwrite,
+            )
+            for con in model.phase_fraction_constraint.values():
+                self.scale_constraint_by_nominal_value(
+                    con,
+                    scheme=ConstraintScalingScheme.inverseMaximum,
+                    overwrite=overwrite,
+                )
+
+
 do_not_initialize = ["sum_mole_frac_out"]
 
 
@@ -724,6 +831,7 @@ class FTPx(object):
     do_not_initialize = do_not_initialize
     define_default_scaling_factors = define_default_scaling_factors
     calculate_scaling_factors = calculate_scaling_factors
+    default_scaler = FTPxScaler
 
 
 def _set_mole_fractions_vle(

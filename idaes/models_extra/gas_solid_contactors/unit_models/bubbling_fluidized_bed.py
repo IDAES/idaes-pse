@@ -362,12 +362,14 @@ see reaction package for documentation.}""",
             )
 
         # Set flow directions for the control volume blocks
+        set_direction_gas = None
+        set_direction_solid = None
         # Gas flows from 0 to 1, solid flows from 0 to 1
         if self.config.flow_type == "co_current":
             set_direction_gas = FlowDirection.forward
             set_direction_solid = FlowDirection.forward
-            # Gas flows from 0 to 1, solid flows from 1 to 0
-        if self.config.flow_type == "counter_current":
+        # Gas flows from 0 to 1, solid flows from 1 to 0
+        elif self.config.flow_type == "counter_current":
             set_direction_gas = FlowDirection.forward
             set_direction_solid = FlowDirection.backward
 

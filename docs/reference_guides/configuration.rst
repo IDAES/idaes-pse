@@ -83,7 +83,7 @@ can provide additional debugging information.
 
 Changes require ``idaes.reconfig()``.  The default setting is ``False``.
 
-depracation_to_exception
+deprecation_to_exception
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 If this option is True, any log messages at level warning or above that contain

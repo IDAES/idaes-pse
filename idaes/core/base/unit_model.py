@@ -244,7 +244,9 @@ Must be True if dynamic = True,
                         _idx = block.length_domain.last()
 
                     port, ref_name_list = sblock.build_port(
-                        doc, slice_index=(slice(None), _idx)
+                        doc,
+                        # pylint: disable-next=possibly-used-before-assignment
+                        slice_index=(slice(None), _idx),
                     )
 
                 except AttributeError:
@@ -342,7 +344,9 @@ Must be True if dynamic = True,
                         _idx = block.length_domain.last()
 
                     port, ref_name_list = sblock.build_port(
-                        doc, slice_index=(slice(None), _idx)
+                        doc,
+                        # pylint: disable-next=possibly-used-before-assignment
+                        slice_index=(slice(None), _idx),
                     )
 
                 except AttributeError:
@@ -356,7 +360,7 @@ Must be True if dynamic = True,
             sblock = block
             port, ref_name_list = sblock.build_port(doc)
 
-        # Add Port and References to unit moodel
+        # Add Port and References to unit model
         self.add_component(name, port)
         for ref, cname in ref_name_list:
             ref_name = sblock.get_port_reference_name(cname, name)

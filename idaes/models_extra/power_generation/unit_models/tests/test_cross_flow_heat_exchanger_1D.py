@@ -12,8 +12,9 @@
 #################################################################################
 
 import pytest
+import re
+
 import pyomo.environ as pyo
-from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
 import idaes.core.util.scaling as iscale
@@ -43,17 +44,17 @@ optarg = {
 }
 
 
-def _create_model(pressure_drop):
+def _create_model(pressure_drop, lagrange_legendre=False):
     m = pyo.ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.h2_side_prop_params = GenericParameterBlock(
         **get_prop(["H2", "H2O", "Ar", "N2"], {"Vap"}, eos=EosType.IDEAL),
         doc="H2O + H2 gas property parameters",
     )
-    m.fs.heat_exchanger = CrossFlowHeatExchanger1D(
-        has_holdup=True,
-        dynamic=False,
-        cold_side={
+    config = {
+        "has_holdup": True,
+        "dynamic": False,
+        "cold_side": {
             "property_package": m.fs.h2_side_prop_params,
             "has_holdup": False,
             "dynamic": False,
@@ -61,7 +62,7 @@ def _create_model(pressure_drop):
             "transformation_method": "dae.finite_difference",
             "transformation_scheme": "FORWARD",
         },
-        hot_side={
+        "hot_side": {
             "property_package": m.fs.h2_side_prop_params,
             "has_holdup": False,
             "dynamic": False,
@@ -69,11 +70,20 @@ def _create_model(pressure_drop):
             "transformation_method": "dae.finite_difference",
             "transformation_scheme": "BACKWARD",
         },
-        shell_is_hot=True,
-        flow_type=HeatExchangerFlowPattern.countercurrent,
-        finite_elements=12,
-        tube_arrangement="staggered",
-    )
+        "shell_is_hot": True,
+        "flow_type": HeatExchangerFlowPattern.countercurrent,
+        "finite_elements": 12,
+        "tube_arrangement": "staggered",
+    }
+    if lagrange_legendre:
+        config["cold_side"]["transformation_method"] = "dae.collocation"
+        config["cold_side"]["transformation_scheme"] = "LAGRANGE-LEGENDRE"
+        config["hot_side"]["transformation_method"] = "dae.collocation"
+        config["hot_side"]["transformation_scheme"] = "LAGRANGE-LEGENDRE"
+        config["finite_elements"] = 4
+        config["collocation_points"] = 3
+
+    m.fs.heat_exchanger = CrossFlowHeatExchanger1D(**config)
 
     hx = m.fs.heat_exchanger
 
@@ -307,3 +317,64 @@ def test_numerical_issues_dP(model_dP):
 
     dt = DiagnosticsToolbox(m_scaled)
     dt.assert_no_numerical_warnings()
+
+
+@pytest.fixture
+def model_LL():
+    m = _create_model(pressure_drop=False, lagrange_legendre=True)
+    m.fs.heat_exchanger.lagrange_legendre_deactivation()
+    return m
+
+
+@pytest.mark.component
+def test_initialization_LL(model_LL):
+    m = model_LL
+
+    assert degrees_of_freedom(m) == 0
+
+    initializer = m.fs.heat_exchanger.default_initializer(
+        solver="ipopt", solver_options=optarg
+    )
+    assert isinstance(initializer, CrossFlowHeatExchanger1DInitializer)
+    initializer.initialize(m.fs.heat_exchanger)
+
+    assert pyo.value(
+        m.fs.heat_exchanger.hot_side_outlet.temperature[0]
+    ) == pytest.approx(476.51, abs=1e-1)
+    assert pyo.value(
+        m.fs.heat_exchanger.cold_side_outlet.temperature[0]
+    ) == pytest.approx(895.69, abs=1e-1)
+
+
+@pytest.mark.integration
+def test_structural_issues_LL(model_LL):
+    dt = DiagnosticsToolbox(model_LL)
+    dt.assert_no_structural_warnings(ignore_evaluation_errors=True)
+
+
+@pytest.mark.integration
+def test_numerical_issues_LL(model_LL):
+    # Model will already be initialized if the component test is run,
+    # but reinitialize in case integration tests are run alone
+    initializer = model_LL.fs.heat_exchanger.default_initializer(
+        solver="ipopt", solver_options=optarg
+    )
+    initializer.initialize(model=model_LL.fs.heat_exchanger)
+
+    m_scaled = pyo.TransformationFactory("core.scale_model").create_using(
+        model_LL, rename=False
+    )
+
+    dt = DiagnosticsToolbox(m_scaled)
+    dt.assert_no_numerical_warnings()
+
+
+@pytest.mark.component
+def test_dP_LL_error():
+    with pytest.raises(
+        NotImplementedError,
+        match=re.escape(
+            "Pressure change is not implemented for Lagrange-Legendre collocation."
+        ),
+    ):
+        m = _create_model(pressure_drop=True, lagrange_legendre=True)

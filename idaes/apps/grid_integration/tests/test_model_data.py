@@ -110,7 +110,7 @@ def test_create_renewable_model_data_object(
 def test_create_model_data_with_non_real_numbers(param_name, value, generator_params):
     generator_params[param_name] = value
     with pytest.raises(
-        TypeError, match=f"Value for {param_name} shoulde be real numbers."
+        TypeError, match=f"Value for {param_name} should be real numbers."
     ):
         ThermalGeneratorModelData(**generator_params)
 
@@ -142,7 +142,7 @@ def test_create_model_data_with_less_than_pmin_data(
 ):
     generator_params[param_name] = value
     with pytest.raises(
-        ValueError, match=f"Value for {param_name} shoulde be greater or equal to Pmin."
+        ValueError, match=f"Value for {param_name} should be greater or equal to Pmin."
     ):
         ThermalGeneratorModelData(**generator_params)
 
@@ -258,7 +258,7 @@ def test_model_data_iterator(generator_data_object):
 @pytest.mark.parametrize(
     "value, error, msg",
     [
-        ("1", TypeError, "Value for initial_status shoulde be real numbers"),
+        ("1", TypeError, "Value for initial_status should be real numbers"),
         (0, ValueError, "Value for initial_status cannot be zero"),
     ],
 )
@@ -273,7 +273,7 @@ def test_invalid_initial_status(value, error, msg, generator_params):
 @pytest.mark.parametrize(
     "initial_status, initial_p_output, error, msg",
     [
-        (9, "1", TypeError, "Value for initial_p_output shoulde be real numbers"),
+        (9, "1", TypeError, "Value for initial_p_output should be real numbers"),
         (
             9,
             29,
