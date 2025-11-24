@@ -26,7 +26,6 @@ from pyomo.environ import (
     Expression,
     NonNegativeReals,
     Var,
-    value,
     units as pyunits,
 )
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
@@ -34,16 +33,8 @@ from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from idaes.core import MaterialFlowBasis, MaterialBalanceType, EnergyBalanceType
 from idaes.models.properties.modular_properties.base.utility import (
     get_bounds_from_config,
-    get_method,
-    GenericPropertyPackageError,
 )
-from idaes.models.properties.modular_properties.base.utility import (
-    identify_VL_component_list,
-)
-from idaes.models.properties.modular_properties.phase_equil.henry import (
-    HenryType,
-    henry_equilibrium_ratio,
-)
+
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
