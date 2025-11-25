@@ -122,7 +122,7 @@ jobs:
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
         with:
-          install-target: -e . -r requirements-dev.txt
+          install-target:  -r requirements-dev.txt
       - name: Add pytest CLI options for coverage
         if: matrix.cov-report
         run: |
@@ -222,7 +222,7 @@ jobs:
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
         with:
-          install-target: -e . -r requirements-dev.txt
+          install-target:  -r requirements-dev.txt
       - name: Run pylint
         run: |
           echo "::group::Display pylint version"
@@ -257,7 +257,7 @@ jobs:
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
         with:
-          install-target: -e . -r requirements-dev.txt
+          install-target:  -r requirements-dev.txt
       - name: Create empty pytest.ini file
         run: |
           echo "" > pytest.ini

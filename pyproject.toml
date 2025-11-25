@@ -36,7 +36,8 @@ classifiers=[
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 keywords=["IDAES", "idaes-pse", "energy systems", "chemical engineering", "process modeling"]
-dynamic = ["version"]
+version = "2.10.0dev0"
+# dynamic = ["version"]
 dependencies = [
   "pyomo >= 6.9.3",
   "pint >= 0.24.1", # required to use Pyomo units. Pint 0.24.1 needed for Python 3.9 support
@@ -71,10 +72,11 @@ testing = [
 # this will install all optional dependencies
 all = ["idaes-pse[ui,grid,omlt,coolprop]"]
 
-[tool.setuptools_scm]
-# https://setuptools-scm.readthedocs.io/en/v8.1.0/extending/
-local_scheme = "node-and-date"
-version_scheme = "only-version"
+# we have to investigate why scm_tools is not working as expected
+# [tool.setuptools_scm]
+# # https://setuptools-scm.readthedocs.io/en/v8.1.0/extending/
+# local_scheme = "node-and-date"
+# version_scheme = "only-version"
 
 [tool.setuptools]
 zip-safe = false                     
