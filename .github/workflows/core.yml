@@ -54,8 +54,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+        
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
@@ -77,8 +76,7 @@ jobs:
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+        
       - name: Run Spell Checker
         uses: crate-ci/typos@v1.24.5
         with: 
@@ -109,8 +107,7 @@ jobs:
             
     steps:
       - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
+        
       - uses: ./.github/actions/display-debug-info
       - name: Set up Conda environment
         uses: conda-incubator/setup-miniconda@v3
@@ -149,8 +146,7 @@ jobs:
     steps:
       # the checkout step is needed to have access to codecov.yml
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+        
       - uses: actions/download-artifact@v4
         with:
           name: coverage-report-${{ matrix.report-variant }}
@@ -174,8 +170,7 @@ jobs:
     needs: [code-formatting, spell-check]
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+        
       - name: Set up Conda environment
         uses: conda-incubator/setup-miniconda@v3
         with:
@@ -211,8 +206,7 @@ jobs:
       # NOTE: using Conda instead of actions/setup-python in this job is not strictly necessary
       # as it doesn't need to run on Windows or use the setup-idaes local action,
       # but we do it for consistency with the other jobs
-        with:
-          fetch-depth: 0
+        
       - name: Set up Conda environment
         uses: conda-incubator/setup-miniconda@v3
         with:
@@ -246,8 +240,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+        
       - name: Set up Conda environment
         uses: conda-incubator/setup-miniconda@v3
         with:
