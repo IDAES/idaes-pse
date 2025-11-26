@@ -26,6 +26,8 @@ _log = logging.Logger(__name__)
 class Step:
     """Step to run by the `Runner`."""
 
+    SEP = "::"  # when printing out step::substep
+
     def __init__(self, name: str, func: Callable):
         """Constructor
 
@@ -124,12 +126,18 @@ class Runner:
         """Syntactic sugar for calling `run_steps` for a single step."""
         self.run_steps(first=name, last=name)
 
-    def run_steps(self, first: str = "", last: str = ""):
+    def run_steps(
+        self,
+        first: str = "",
+        last: str = "",
+        endpoints: tuple[bool, bool] = (True, True),
+    ):
         """Run steps from `first` to step `last`.
 
         Args:
             first: First step to run
             last: Last step to run
+            endpoints: Whether to include (first, last) in steps (default=True for both)
 
         Raises:
             KeyError: Unknown or undefined step given
@@ -162,6 +170,10 @@ class Runner:
             action.before_run()
 
         for i in range(step_range[0], step_range[1] + 1):
+            if (i == step_range[0] and not endpoints[0]) or (
+                i == step_range[1] and not endpoints[1]
+            ):
+                continue
             step = self._steps.get(self._step_names[i], None)
             if step:
                 step.func(self._context)
@@ -247,9 +259,17 @@ class Runner:
         for action in self._actions.values():
             action.before_step(name)
 
+    def _substep_begin(self, base: str, name: str):
+        for action in self._actions.values():
+            action.before_substep(base, name)
+
     def _step_end(self, name: str):
         for action in self._actions.values():
             action.after_step(name)
+
+    def _substep_end(self, base: str, name: str):
+        for action in self._actions.values():
+            action.after_substep(base, name)
 
     def step(self, name: str):
         """Decorator function for creating a new step.
@@ -292,9 +312,9 @@ class Runner:
         def step_decorator(func):
 
             def wrapper(*args, **kwargs):
-                self._step_begin(name)
+                self._substep_begin(base, name)
                 result = func(*args, **kwargs)
-                self._step_end(name)
+                self._substep_end(base, name)
                 return result
 
             self.add_substep(base, name, wrapper)
@@ -327,12 +347,18 @@ class Action:
         """
         return
 
+    def before_substep(self, step_name: str, substep_name: str):
+        return
+
     def after_step(self, step_name: str):
         """Perform this action after the named step.
 
         Args:
             step_name: Name of the step
         """
+        return
+
+    def after_substep(self, step_name: str, substep_name: str):
         return
 
     def before_run(self):

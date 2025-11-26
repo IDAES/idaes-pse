@@ -117,6 +117,17 @@ class BaseFlowsheetRunner(Runner):
         """Syntactic sugar to return the `results` in the context."""
         return self._context["results"]
 
+    def mark(self, obj, title=None, desc=None, units=None, rounding=0, **kwargs):
+        """Annotate a variable"""
+        # XXX: fill in defaults for None/0
+        self._marks[obj] = {
+            "title": title,
+            "description": desc,
+            "units": units,
+            "rounding": rounding,
+        }
+        self._marks[obj].update(kwargs)
+
 
 class FlowsheetRunner(BaseFlowsheetRunner):
 
