@@ -61,7 +61,7 @@ from idaes.core.util.units_of_measurement import report_quantity
 from idaes.core.initialization import ModularInitializerBase
 from idaes.core.scaling import get_scaling_factor, CustomScalerBase
 
-__author__ = "Andrew Lee, Douglas Allan"
+__author__ = "Andrew Lee, Douglas Allan, Lingyan Deng"
 
 
 # Set up logger
@@ -1543,7 +1543,8 @@ objects linked the mixed state and all outlet states,
             flow_units = None
 
         # Create tolerance Parameter for 0 flow outlets
-        self.eps = Param(default=1e-8, mutable=True, units=flow_units)
+        self.eps_flow = Param(default=1e-8, mutable=True, units=flow_units)
+        self.eps_frac = Param(default=1e-8, mutable=True)
 
         # Get list of port members
         s_vars = mb[self.flowsheet().time.first()].define_port_members()
@@ -2154,13 +2155,13 @@ def _e_rule_mole_mass_frac_phase_comp(b, t, p, j, mixed_block, var_obj, outlet):
             if split_map[j] == outlet:
                 return 1
             else:
-                return b.eps
+                return b.eps_frac
         elif b.config.split_basis == SplittingType.phaseComponentFlow:
             for ps in mixed_block.phase_list:
                 if split_map[ps, j] == outlet:
                     return 1
             else:  # pylint: disable=W0120
-                return b.eps
+                return b.eps_frac
     else:
         raise BurntToast(
             "{} This should not happen. Please "
@@ -2178,13 +2179,13 @@ def _e_rule_mole_mass_frac_comp(b, t, j, mixed_block, var_obj, outlet):
         if split_map[j] == outlet:
             return 1
         # else:
-        return b.eps
+        return b.eps_frac
 
     elif b.config.split_basis == SplittingType.phaseComponentFlow:
         if any(split_map[phase, j] == outlet for phase in mixed_block.phase_list):
             return 1
         # else:
-        return b.eps
+        return b.eps_frac
 
     else:
         mfp = mixed_block[t].component(l_name.replace("_comp", "_phase_comp"))
@@ -2213,7 +2214,7 @@ def _e_rule_mole_mass_frac_comp(b, t, j, mixed_block, var_obj, outlet):
             if s_check == outlet and (phase, j) in pc_set:
                 return mfp[phase, j]
         # else:
-        return b.eps
+        return b.eps_frac
 
 
 def _e_rule_phase_comp(b, t, p, j, mixed_block, var_obj, outlet):
@@ -2236,7 +2237,7 @@ def _e_rule_phase_comp(b, t, p, j, mixed_block, var_obj, outlet):
     if s_check == outlet:
         return mixed_block[t].component(l_name)[p, j]
     else:
-        return b.eps
+        return b.eps_flow
 
 
 def _e_rule_phase(b, t, p, mixed_block, var_obj, outlet):
@@ -2247,7 +2248,7 @@ def _e_rule_phase(b, t, p, mixed_block, var_obj, outlet):
         if split_map[p] == outlet:
             return mixed_block[t].component(l_name)[p]
         else:
-            return b.eps
+            return b.eps_flow
 
     else:
         mfp = mixed_block[t].component(l_name + "_comp")
@@ -2270,7 +2271,7 @@ def _e_rule_phase(b, t, p, mixed_block, var_obj, outlet):
             if s_check == outlet:
                 return mfp[p, j]
         # else:
-        return b.eps
+        return b.eps_flow
 
 
 def _e_rule_comp(b, t, j, mixed_block, var_obj, outlet):
@@ -2282,7 +2283,7 @@ def _e_rule_comp(b, t, j, mixed_block, var_obj, outlet):
         if split_map[j] == outlet:
             return mixed_block[t].component(l_name)[j]
         else:
-            return b.eps
+            return b.eps_flow
 
     else:
         mfp = mixed_block[t].component("{0}_phase{1}".format(l_name[:-5], l_name[-5:]))
@@ -2305,7 +2306,7 @@ def _e_rule_comp(b, t, j, mixed_block, var_obj, outlet):
 
                 if s_check == outlet:
                     return mfp[p, j]
-        return b.eps
+        return b.eps_flow
 
 
 def _e_rule_other(b, t, mixed_block, var_obj, outlet):
