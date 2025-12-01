@@ -21,7 +21,7 @@ Author: A Lee
 
 from enum import Enum
 
-from pyomo.environ import units as pyunits, value
+from pyomo.environ import log, units as pyunits, value
 
 from idaes.core.util.exceptions import (
     BurntToast,
@@ -29,6 +29,7 @@ from idaes.core.util.exceptions import (
     PropertyPackageError,
 )
 import idaes.logger as idaeslog
+from idaes.core.scaling import CustomScalerBase
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -58,7 +59,7 @@ class GenericPropertyPackageError(PropertyPackageError):
         )
 
 
-def get_method(self, config_arg, comp=None, phase=None):
+def get_method(self, config_arg, comp=None, phase=None, log_expression=False):
     """
     Method to inspect configuration argument and return the user-defined
     construction method associated with it.
@@ -103,10 +104,26 @@ def get_method(self, config_arg, comp=None, phase=None):
 
     # Try to get the return_expression method from c_arg
     # Otherwise assume c_arg is the return_expression method
-    try:
-        mthd = c_arg.return_expression
-    except AttributeError:
-        mthd = c_arg
+    if not log_expression:
+        try:
+            mthd = c_arg.return_expression
+        except AttributeError:
+            mthd = c_arg
+    else:
+        if hasattr(c_arg, "return_log_expression"):
+            mthd = c_arg.return_log_expression
+        else:
+            _log.warning(
+                f"Failed to find log expression for {config_arg}."
+                "Reverting to use of the log function of the "
+                "non-log expression."
+            )
+
+            def mthd(*args, **kwargs):
+                exp_mthd = get_method(
+                    self, config_arg, comp=comp, phase=phase, log_expression=False
+                )
+                return log(exp_mthd(*args, **kwargs))
 
     # Call the return_expression method
     if callable(mthd):
@@ -614,3 +631,33 @@ def estimate_Pdew(blk, raoult_comps, henry_comps, liquid_phase):
             )
         )
     )
+
+
+class ModularPropertiesScalerBase(CustomScalerBase):
+    """
+    Base class for ModularPropertiesScaler and ModularReactionsScaler.
+    Handles the logic for calling scaling methods for each individual module.
+    """
+
+    def call_module_scaling_method(
+        self, model, module, index, method, overwrite: bool = False
+    ):
+        try:
+            scaler_class = module.default_scaler
+        # TODO create interface where the user can provide custom scalers for individual modules
+        except AttributeError:
+            _log.debug(
+                f"No default Scaler set for module {module}. Cannot call {method}."
+            )
+            return
+        scaler_obj = scaler_class(**self.CONFIG)
+        try:
+            method_func = getattr(scaler_obj, method)
+        except AttributeError as err:
+            raise AttributeError(
+                f"Could not find {method} method on scaler for module {module}."
+            ) from err
+        if index is None:
+            method_func(model, overwrite=overwrite)
+        else:
+            method_func(model, index, overwrite=overwrite)

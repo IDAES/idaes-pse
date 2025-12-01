@@ -16,8 +16,8 @@ pytest
 coverage
 pytest-cov
 # @lbianchi-lbl: both pylint and astroid should be tightly pinned; see .pylint/idaes_transform.py for more info
-pylint==3.0.3
-astroid==3.0.3
+pylint==3.3.9
+astroid==3.3.11
 black==24.3.0
 # pre-commit install, manage, and run pre-commit hooks
 pre-commit

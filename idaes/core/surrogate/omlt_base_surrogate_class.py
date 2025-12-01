@@ -25,6 +25,7 @@ from pyomo.common.dependencies import attempt_import
 from idaes.core.surrogate.base.surrogate_base import SurrogateBase
 from idaes.core.surrogate.sampling.scaling import OffsetScaler
 
+# pylint: disable=possibly-used-before-assignment
 keras, keras_available = attempt_import("tensorflow.keras")
 omlt, omlt_available = attempt_import("omlt")
 

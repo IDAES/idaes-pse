@@ -17,6 +17,7 @@ from idaes.core import FlowsheetBlock
 from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
 )
+from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.core.util.scaling as iscale
 from idaes.models_extra.power_generation.properties.natural_gas_PR import get_prop
 from idaes.models_extra.power_generation.unit_models.soec_design import (
@@ -78,6 +79,7 @@ def flowsheet(eos=EosType.PR):
 def test_soec_design_ideal():
     m = flowsheet(eos=EosType.IDEAL)
     solver = get_solver(solver="ipopt")
+    assert degrees_of_freedom(m) == 0
     res = solver.solve(m)
     # Make sure it converged
     assert pyo.check_optimal_termination(res)
@@ -93,6 +95,7 @@ def test_soec_design_ideal():
 def test_soec_design_pr():
     m = flowsheet(eos=EosType.IDEAL)
     solver = get_solver(solver="ipopt")
+    assert degrees_of_freedom(m) == 0
     res = solver.solve(m)
     # Make sure it converged
     assert pyo.check_optimal_termination(res)

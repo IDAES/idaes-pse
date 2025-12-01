@@ -19,8 +19,16 @@ Authors: Andrew Lee
 import pytest
 import re
 from sys import modules
+from copy import deepcopy
 
-from pyomo.environ import ConcreteModel, Constraint, Expression, Var, units as pyunits
+from pyomo.environ import (
+    ConcreteModel,
+    Constraint,
+    Expression,
+    value,
+    Var,
+    units as pyunits,
+)
 from pyomo.util.check_units import check_units_equivalent, assert_units_consistent
 
 # Need define_default_scaling_factors, even though it is not used directly
@@ -28,6 +36,7 @@ from idaes.models.properties.modular_properties.state_definitions.FpcTP import (
     FpcTP,
     define_state,
     set_metadata,
+    FpcTPScaler,
 )
 from idaes.core import (
     FlowsheetBlock,
@@ -53,8 +62,9 @@ from idaes.models.properties.modular_properties.phase_equil import SmoothVLE
 from idaes.models.properties.modular_properties.phase_equil.bubble_dew import (
     IdealBubbleDew,
 )
-from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.exceptions import ConfigurationError, InitializationError
 import idaes.logger as idaeslog
+import idaes.core.util.model_statistics as mstat
 from idaes.core.util.model_statistics import degrees_of_freedom, large_residuals_set
 
 
@@ -998,7 +1008,7 @@ class Test3PhaseDefinedStateTrueWithBounds(object):
 
 
 class TestCommon(object):
-    @pytest.fixture(scope="class")
+    @pytest.fixture()
     def frame(self):
         m = ConcreteModel()
 
@@ -1146,6 +1156,64 @@ class TestCommon(object):
         )
         assert frame.props[1].scaling_factor[frame.props[1].pressure] == 1e-5
         assert frame.props[1].scaling_factor[frame.props[1].temperature] == 1e-2
+
+    @pytest.mark.unit
+    def test_scaler_object(self, frame, caplog):
+        assert not hasattr(frame.props[1], "scaling_factor")
+        assert FpcTP.default_scaler is FpcTPScaler
+
+        blk = frame.props[1]
+
+        scaler = blk.default_scaler()
+        scaler.default_scaling_factors["flow_mol_phase"] = 1 / 100
+        scaler.default_scaling_factors["enth_mol_phase"] = 1e-4
+        with caplog.at_level(idaeslog.WARNING):
+            scaler.scale_model(blk)
+        assert len(caplog.text) == 0
+
+        assert len(blk.scaling_factor) == 22
+        assert len(blk.scaling_hint) == 11
+
+        # Variables
+        assert blk.scaling_factor[blk.flow_mol_phase_comp["a", "c1"]] == 1e-1
+        assert blk.scaling_factor[blk.flow_mol_phase_comp["a", "c2"]] == 1e-1
+        assert blk.scaling_factor[blk.flow_mol_phase_comp["a", "c3"]] == 1e-1
+        assert blk.scaling_factor[blk.flow_mol_phase_comp["b", "c1"]] == 1e-1
+        assert blk.scaling_factor[blk.flow_mol_phase_comp["b", "c2"]] == 1e-1
+        assert blk.scaling_factor[blk.flow_mol_phase_comp["b", "c3"]] == 1e-1
+        assert blk.dens_mol_phase["a"] not in blk.scaling_factor
+        assert blk.dens_mol_phase["b"] not in blk.scaling_factor
+
+        assert blk.scaling_factor[blk.mole_frac_phase_comp["a", "c1"]] == 10
+        assert blk.scaling_factor[blk.mole_frac_phase_comp["a", "c2"]] == 10
+        assert blk.scaling_factor[blk.mole_frac_phase_comp["a", "c3"]] == 10
+        assert blk.scaling_factor[blk.mole_frac_phase_comp["b", "c1"]] == 10
+        assert blk.scaling_factor[blk.mole_frac_phase_comp["b", "c2"]] == 10
+        assert blk.scaling_factor[blk.mole_frac_phase_comp["b", "c3"]] == 10
+        assert blk.scaling_factor[blk.pressure] == 1e-5
+        assert blk.scaling_factor[blk.temperature] == 1 / 300
+
+        assert blk.scaling_factor[blk.enth_mol_phase["a"]] == 1e-4
+        assert blk.scaling_factor[blk.enth_mol_phase["b"]] == 1e-4
+
+        # Constraints
+        assert blk.scaling_factor[blk.mole_frac_phase_comp_eq["a", "c1"]] == 1e-1
+        assert blk.scaling_factor[blk.mole_frac_phase_comp_eq["a", "c2"]] == 1e-1
+        assert blk.scaling_factor[blk.mole_frac_phase_comp_eq["a", "c3"]] == 1e-1
+        assert blk.scaling_factor[blk.mole_frac_phase_comp_eq["b", "c1"]] == 1e-1
+        assert blk.scaling_factor[blk.mole_frac_phase_comp_eq["b", "c2"]] == 1e-1
+        assert blk.scaling_factor[blk.mole_frac_phase_comp_eq["b", "c3"]] == 1e-1
+
+        # Expressions
+        assert blk.scaling_hint[blk.flow_mol] == 1e-2
+        assert blk.scaling_hint[blk.flow_mol_phase["a"]] == 1e-2
+        assert blk.scaling_hint[blk.flow_mol_phase["b"]] == 1e-2
+        assert blk.scaling_hint[blk.flow_mol_comp["c1"]] == 1e-1
+        assert blk.scaling_hint[blk.flow_mol_comp["c2"]] == 1e-1
+        assert blk.scaling_hint[blk.flow_mol_comp["c3"]] == 1e-1
+        assert blk.scaling_hint[blk.mole_frac_comp["c1"]] == 10
+        assert blk.scaling_hint[blk.mole_frac_comp["c2"]] == 10
+        assert blk.scaling_hint[blk.mole_frac_comp["c3"]] == 10
 
     # Test General Methods
     @pytest.mark.unit
@@ -1424,7 +1492,7 @@ thermo_config_no_rxn = {
 
 
 @pytest.mark.component
-def test_phase_equilibrium_initialization():
+def test_phase_equilibrium_legacy_initialization():
     # Create a pyomo model object
     model = ConcreteModel()
     model.fs = FlowsheetBlock(dynamic=False)
@@ -1460,3 +1528,155 @@ def test_phase_equilibrium_initialization():
             "fs.state[0.0].equilibrium_constraint[Vap,Liq,H2O]",
             "fs.state[0.0].equilibrium_constraint[Vap,Liq,CO2]",
         ]
+
+
+@pytest.mark.component
+def test_legacy_initialization_dof_error():
+    # This test ensures that the correct exception is
+    # raised when there is a degree of freedom error
+    # during initialization
+    model = ConcreteModel()
+    model.fs = FlowsheetBlock(dynamic=False)
+
+    # Remove the liquid phase and phase equilibrium
+    # from the config dict
+    config = deepcopy(thermo_config_no_rxn)
+    config["phases"].pop("Liq")
+    config.pop("phases_in_equilibrium")
+    config.pop("phase_equilibrium_state")
+    config["components"]["H2O"].pop("phase_equilibrium_form")
+    config["components"]["CO2"].pop("phase_equilibrium_form")
+
+    model.fs.thermo_params = GenericParameterBlock(**config)
+
+    model.fs.state = model.fs.thermo_params.build_state_block(
+        model.fs.time, defined_state=False
+    )
+
+    model.fs.state[0].pressure.fix(101325.0)
+    model.fs.state[0].temperature.fix(398.0)
+
+    model.fs.state[0].flow_mol_phase_comp["Vap", "CO2"].fix(0.005)
+    model.fs.state[0].flow_mol_phase_comp["Vap", "H2O"].set_value(0.0005)
+
+    with pytest.raises(
+        InitializationError,
+        match=re.escape(
+            "State vars fixed but degrees of "
+            "freedom for state block is not zero "
+            "during initialization."
+        ),
+    ):
+        model.fs.state.initialize(state_vars_fixed=True)
+
+
+@pytest.mark.component
+def test_phase_equilibrium_initializer_object():
+    # Create a pyomo model object
+    model = ConcreteModel()
+    model.fs = FlowsheetBlock(dynamic=False)
+
+    model.fs.thermo_params = GenericParameterBlock(**thermo_config_no_rxn)
+
+    model.fs.state = model.fs.thermo_params.build_state_block(
+        model.fs.time, defined_state=False
+    )
+
+    model.fs.state[0].pressure.set_value(101325.0)
+    model.fs.state[0].temperature.set_value(298.0)
+
+    model.fs.state[0].flow_mol_phase_comp["Vap", "CO2"].set_value(0.0005 * 10)
+    model.fs.state[0].flow_mol_phase_comp["Liq", "CO2"].set_value(1e-8)
+    model.fs.state[0].flow_mol_phase_comp["Vap", "H2O"].set_value(1e-8)
+    model.fs.state[0].flow_mol_phase_comp["Liq", "H2O"].set_value((1 - 0.0005) * 10)
+
+    assert_units_consistent(model)
+    # We expect 6 state variables, but two additional constraints for phase equilibrium
+    assert degrees_of_freedom(model) == 6 - 2
+
+    initializer = model.fs.state.default_initializer()
+
+    initializer.initialize(model.fs.state)
+
+    # The initialization routine updates the tolerance to handle unconverged constraints
+    assert initializer.config.constraint_tolerance == float("inf")
+
+    # Check that degrees of freedom are still the same
+    assert degrees_of_freedom(model) == 6 - 2
+
+    # As the phase equilibrium constraints were not solved, we expect these to have a large residual
+    large_res = large_residuals_set(model.fs.state[0])
+    assert len(large_res) == 2
+    for i in large_res:
+        assert i.name in [
+            "fs.state[0.0].equilibrium_constraint[Vap,Liq,H2O]",
+            "fs.state[0.0].equilibrium_constraint[Vap,Liq,CO2]",
+        ]
+
+
+@pytest.mark.component
+def test_initializer_object_single_phase():
+    # This test ensures that FpcTP state variables can be
+    # initialized even if only a single phase is present
+    model = ConcreteModel()
+    model.fs = FlowsheetBlock(dynamic=False)
+
+    # Remove the liquid phase and phase equilibrium
+    # from the config dict
+    config = deepcopy(thermo_config_no_rxn)
+    config["phases"].pop("Liq")
+    config.pop("phases_in_equilibrium")
+    config.pop("phase_equilibrium_state")
+    config["components"]["H2O"].pop("phase_equilibrium_form")
+    config["components"]["CO2"].pop("phase_equilibrium_form")
+
+    model.fs.thermo_params = GenericParameterBlock(**config)
+
+    model.fs.state = model.fs.thermo_params.build_state_block(
+        model.fs.time, defined_state=False
+    )
+
+    model.fs.state[0].pressure.set_value(101325.0)
+    model.fs.state[0].temperature.set_value(398.0)
+
+    model.fs.state[0].flow_mol_phase_comp["Vap", "CO2"].set_value(0.005)
+    model.fs.state[0].flow_mol_phase_comp["Vap", "H2O"].set_value(0.0005)
+
+    assert_units_consistent(model)
+    # We expect 4 state variables: T, P, and two pc flows,
+    # and  2 non-state variables in mole_frac_phase_comp
+    # Because T and P don't appear in any constraints,
+    # they are not counted in degrees_of_freedom
+    vars_not_in_constraints = mstat.variables_not_in_activated_constraints_set(
+        model.fs.state[0]
+    )
+    assert len(vars_not_in_constraints) == 2
+    assert model.fs.state[0].pressure in vars_not_in_constraints
+    assert model.fs.state[0].temperature in vars_not_in_constraints
+
+    assert degrees_of_freedom(model) == 2
+
+    initializer = model.fs.state.default_initializer()
+
+    initializer.initialize(model.fs.state)
+
+    # Check that degrees of freedom are still the same
+    vars_not_in_constraints = mstat.variables_not_in_activated_constraints_set(
+        model.fs.state[0]
+    )
+    assert len(vars_not_in_constraints) == 2
+    assert model.fs.state[0].pressure in vars_not_in_constraints
+    assert model.fs.state[0].temperature in vars_not_in_constraints
+
+    assert degrees_of_freedom(model) == 2
+
+    assert value(model.fs.state[0].pressure) == 101325.0
+    assert value(model.fs.state[0].temperature) == 398.0
+    assert value(model.fs.state[0].flow_mol_phase_comp["Vap", "CO2"]) == 0.005
+    assert value(model.fs.state[0].flow_mol_phase_comp["Vap", "H2O"]) == 0.0005
+    assert value(model.fs.state[0].mole_frac_phase_comp["Vap", "CO2"]) == pytest.approx(
+        5 / 5.5
+    )
+    assert value(model.fs.state[0].mole_frac_phase_comp["Vap", "H2O"]) == pytest.approx(
+        0.5 / 5.5
+    )

@@ -27,11 +27,44 @@ from idaes.core.util.exceptions import ConfigurationError
 from idaes.models.properties.modular_properties.base.utility import (
     get_concentration_term,
 )
+from idaes.core.scaling import CustomScalerBase
 
 
 # ----------------------------------------------------------------------------
+class PowerLawEquilScaler(CustomScalerBase):
+    """
+    Scaler for PowerLawEquil form of chemical equilibrium
+    """
+
+    def variable_scaling_routine(
+        self, model, reaction, overwrite=False, submodel_scalers=None
+    ):
+        # No variables to scale
+        pass
+
+    def constraint_scaling_routine(
+        self, model, reaction, overwrite=False, submodel_scalers=None
+    ):
+        sf_keq = self.get_scaling_factor(model.k_eq[reaction], default=1, warning=True)
+        if model.is_property_constructed("equilibrium_constraint"):
+            self.set_component_scaling_factor(
+                model.equilibrium_constraint[reaction],
+                sf_keq,
+                overwrite=overwrite,
+            )
+
+        if model.is_property_constructed("inherent_equilibrium_constraint"):
+            self.set_component_scaling_factor(
+                model.inherent_equilibrium_constraint[reaction],
+                sf_keq,
+                overwrite=overwrite,
+            )
+
+
 class power_law_equil:
     """Methods for power-law based equilibrium forms."""
+
+    default_scaler = PowerLawEquilScaler
 
     @staticmethod
     def build_parameters(rblock, config):
@@ -41,6 +74,8 @@ class power_law_equil:
     def return_expression(b, rblock, r_idx, T):
         e = None
 
+        # TODO a system having inherent reactions should be
+        # disentangled from that system having electrolytes
         if hasattr(b.params, "_electrolyte") and b.params._electrolyte:
             pc_set = b.params.true_phase_component_set
         else:
@@ -63,8 +98,40 @@ class power_law_equil:
 
 
 # ----------------------------------------------------------------------------
+class LogPowerLawEquilScaler(CustomScalerBase):
+    """
+    Scaler for LogPowerLawEquil form of chemical equilibrium
+    """
+
+    def variable_scaling_routine(
+        self, model, reaction, overwrite=False, submodel_scalers=None
+    ):
+        # No variables to scale
+        pass
+
+    def constraint_scaling_routine(
+        self, model, reaction, overwrite=False, submodel_scalers=None
+    ):
+        # Log constraints are well-scaled by default
+        if model.is_property_constructed("equilibrium_constraint"):
+            self.set_component_scaling_factor(
+                model.equilibrium_constraint[reaction],
+                scaling_factor=1,
+                overwrite=overwrite,
+            )
+
+        if model.is_property_constructed("inherent_equilibrium_constraint"):
+            self.set_component_scaling_factor(
+                model.inherent_equilibrium_constraint[reaction],
+                scaling_factor=1,
+                overwrite=overwrite,
+            )
+
+
 class log_power_law_equil:
     """Methods for log formulation of power-law based equilibrium forms."""
+
+    default_scaler = LogPowerLawEquilScaler
 
     @staticmethod
     def return_expression(b, rblock, r_idx, T):
@@ -94,6 +161,7 @@ class log_power_law_equil:
 
 
 # ----------------------------------------------------------------------------
+# TODO add scaler objects for solubility product methods
 class solubility_product:
     """
     Complementarity formulation for solid precipitation

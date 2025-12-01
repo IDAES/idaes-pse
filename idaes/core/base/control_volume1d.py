@@ -25,6 +25,7 @@ from enum import Enum
 
 # Import Pyomo libraries
 from pyomo.environ import (
+    ComponentMap,
     Constraint,
     Expression,
     Param,
@@ -47,8 +48,11 @@ from idaes.core import (
     MaterialFlowBasis,
     MaterialBalanceType,
 )
+from idaes.core.base.control_volume_base import ControlVolumeScalerBase
+from idaes.core.scaling import DefaultScalingRecommendation
 from idaes.core.util.exceptions import (
     BalanceTypeNotSupportedError,
+    BurntToast,
     ConfigurationError,
     PropertyNotSupportedError,
 )
@@ -58,7 +62,7 @@ from idaes.core.util import scaling as iscale
 
 import idaes.logger as idaeslog
 
-__author__ = "Andrew Lee, Jaffer Ghouse"
+__author__ = "Andrew Lee, Jaffer Ghouse, Douglas Allan"
 
 
 _log = idaeslog.getLogger(__name__)
@@ -75,6 +79,265 @@ class DistributedVars(Enum):
 
     variant = 0
     uniform = 1
+
+
+class ControlVolume1DScaler(ControlVolumeScalerBase):
+    """
+    Scaler object for the ControlVolume1D
+    """
+
+    DEFAULT_SCALING_FACTORS = {
+        # We could scale length and area by magnitude if it were
+        # being fixed by the user, but we often have the volume
+        # given by an equality constraint involving geometry in
+        # the parent unit model.
+        "area": DefaultScalingRecommendation.userInputRequired,
+        "length": DefaultScalingRecommendation.userInputRequired,
+        "phase_fraction": 10,  # May have already been created by property package
+    }
+
+    _weight_attr_name = "length"
+
+    def _get_reference_state_block(self, model):
+        """
+        This method gives the parent class ControlVolumeScalerBase
+        methods a state block with the same index as the material
+        and energy balances to get scaling information from
+        """
+        return model.properties
+
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None
+    ):
+        """
+        Routine to apply scaling factors to variables in model.
+
+        Derived classes must overload this method.
+
+        Args:
+            model: model to be scaled
+            overwrite: whether to overwrite existing scaling factors
+            submodel_scalers: ComponentMap of Scalers to use for sub-models
+
+        Returns:
+            None
+        """
+        if model.flow_direction is FlowDirection.forward:
+            x_in = model.properties.index_set().first()
+        elif model.flow_direction is FlowDirection.backward:
+            x_in = model.properties.index_set().last()
+        elif model.flow_direction is FlowDirection.notSet:
+            raise RuntimeError(
+                "Scaler called on ControlVolume1D without a flow "
+                "direction set. The unit model containing the ControlVolume1D "
+                "should use the add_geometry method to specify a flow direction "
+                "as part of model construction."
+            )
+        else:
+            raise BurntToast(
+                "Unknown flow direction specified. This indicates "
+                "a new flow direction was added without support being "
+                "extended to the scaler. Please contact the IDAES "
+                "development team with this error."
+            )
+
+        self.propagate_state_scaling(
+            target_state=model.properties,
+            source_state=model.properties[x_in],
+            overwrite=overwrite,
+        )
+        self.call_submodel_scaler_method(
+            submodel=model.properties,
+            submodel_scalers=submodel_scalers,
+            method="variable_scaling_routine",
+            overwrite=overwrite,
+        )
+        for v in model.area.values():
+            self.scale_variable_by_default(v, overwrite=overwrite)
+
+        self.scale_variable_by_default(model.length, overwrite=overwrite)
+        if hasattr(model, "phase_fraction"):
+            for v in model.phase_fraction.values():
+                self.scale_variable_by_default(v, overwrite=overwrite)
+
+        super().variable_scaling_routine(
+            model, overwrite=overwrite, submodel_scalers=submodel_scalers
+        )
+
+        if hasattr(model, "_flow_terms"):  # pylint: disable=protected-access
+            for idx, v in model._flow_terms.items():
+                self.scale_variable_by_definition_constraint(
+                    v, model.material_flow_linking_constraints[idx], overwrite=overwrite
+                )
+
+        if hasattr(model, "material_flow_dx"):
+            for idx, v in model._flow_terms.items():  # pylint: disable=protected-access
+                # As domain is normalized, derivative should have same
+                # scale as flow
+                self.scale_variable_by_component(
+                    model.material_flow_dx[idx], v, overwrite=overwrite
+                )
+
+        # TODO elemental flows
+        # if hasattr(self, "elemental_flow_term"):
+        #     for (t, x, e), v in self.elemental_flow_term.items():
+        #         flow_basis = self.properties[t, x].get_material_flow_basis()
+
+        #         sf = iscale.min_scaling_factor(
+        #             [
+        #                 self.properties[t, x].get_material_density_terms(p, j)
+        #                 for (p, j) in phase_component_set
+        #             ],
+        #             default=1,
+        #             warning=True,
+        #         )
+        #         if flow_basis == MaterialFlowBasis.molar:
+        #             sf *= 1
+        #         elif flow_basis == MaterialFlowBasis.mass:
+        #             # MW scaling factor is the inverse of its value
+        #             sf *= value(self.properties[t, x].mw_comp[j])
+
+        #         iscale.set_scaling_factor(v, sf)
+
+        # if hasattr(self, "elemental_flow_dx"):
+        #     for (t, x, e), v in self.elemental_flow_dx.items():
+        #         if iscale.get_scaling_factor(v) is None:
+        #             # As domain is normalized, scale should be equal to flow
+        #             sf = iscale.get_scaling_factor(self.elemental_flow_term[t, x, e])
+        #             iscale.set_scaling_factor(v, sf)
+
+        if hasattr(model, "_enthalpy_flow"):
+            for (
+                idx,
+                v,
+            ) in model._enthalpy_flow.items():  # pylint: disable=protected-access
+                self.scale_variable_by_definition_constraint(
+                    v, model.enthalpy_flow_linking_constraint[idx], overwrite=overwrite
+                )
+
+        if hasattr(model, "enthalpy_flow_dx"):
+            for (
+                idx,
+                v,
+            ) in model._enthalpy_flow.items():  # pylint: disable=protected-access
+                # Normalized domain, so scale should be the same as flow
+                # TODO is this correct?
+                self.scale_variable_by_component(
+                    model.enthalpy_flow_dx[idx], v, overwrite=overwrite
+                )
+        if hasattr(model, "pressure_dx"):
+            for (t, x), v in model.pressure_dx.items():
+                self.scale_variable_by_component(
+                    v, model.properties[t, x].pressure, overwrite=overwrite
+                )
+
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None
+    ):
+        """
+        Routine to apply scaling factors to constraints in model.
+
+        Derived classes must overload this method.
+
+        Args:
+            model: model to be scaled
+            overwrite: whether to overwrite existing scaling factors
+            submodel_scalers: ComponentMap of Scalers to use for sub-models
+
+        Returns:
+            None
+        """
+        self.call_submodel_scaler_method(
+            submodel=model.properties,
+            submodel_scalers=submodel_scalers,
+            method="constraint_scaling_routine",
+            overwrite=overwrite,
+        )
+
+        super().constraint_scaling_routine(
+            model, overwrite=overwrite, submodel_scalers=submodel_scalers
+        )
+
+        if hasattr(model, "material_flow_linking_constraints"):
+            for idx, v in model._flow_terms.items():  # pylint: disable=protected-access
+                self.scale_constraint_by_component(
+                    model.material_flow_linking_constraints[idx], v, overwrite=overwrite
+                )
+
+        # TODO element balance
+        # if hasattr(model, "elemental_flow_constraint"):
+        #     for idx, c in model.elemental_flow_constraint.items():
+        #         self.scale_constraint_by_component(
+        #             c,
+        #             model.elemental_flow_term[idx],
+        #             overwrite=overwrite
+        #         )
+
+        if hasattr(model, "enthalpy_flow_linking_constraint"):
+            for idx, v in model._enthalpy_flow.items():
+                self.scale_constraint_by_component(
+                    model.enthalpy_flow_linking_constraint[idx], v, overwrite=overwrite
+                )
+
+        if hasattr(model, "material_flow_dx_disc_eq"):
+            for idx, c in model.material_flow_dx_disc_eq.items():
+                self.scale_constraint_by_component(
+                    c, model.material_flow_dx[idx], overwrite=overwrite
+                )
+
+        if hasattr(model, "_flow_terms_length_domain_cont_eq"):
+            for (
+                idx,
+                c,
+            ) in (
+                model._flow_terms_length_domain_cont_eq.items()
+            ):  # pylint: disable=protected-access
+                self.scale_constraint_by_component(
+                    c,
+                    model._flow_terms[idx],  # pylint: disable=protected-access
+                    overwrite=overwrite,
+                )
+
+        if hasattr(model, "enthalpy_flow_dx_disc_eq"):
+            for idx, c in model.enthalpy_flow_dx_disc_eq.items():
+                self.scale_constraint_by_component(
+                    c, model.enthalpy_flow_dx[idx], overwrite=overwrite
+                )
+
+        if hasattr(model, "_enthalpy_flow_length_domain_cont_eq"):
+            for (
+                idx,
+                c,
+            ) in (
+                model._enthalpy_flow_length_domain_cont_eq.items()
+            ):  # pylint: disable=protected-access
+                self.scale_constraint_by_component(
+                    c,
+                    model._enthalpy_flow[idx],  # pylint: disable=protected-access
+                    overwrite=overwrite,
+                )
+
+        if hasattr(model, "pressure_dx_disc_eq"):
+            for idx, c in model.pressure_dx_disc_eq.items():
+                self.scale_constraint_by_component(
+                    c, model.pressure_dx[idx], overwrite=overwrite
+                )
+
+        if hasattr(model, "pressure_length_domain_cont_eq"):
+            for (t, x), c in model.pressure_length_domain_cont_eq.items():
+                self.scale_constraint_by_component(
+                    c, model.properties[t, x].pressure, overwrite=overwrite
+                )
+
+        # TODO element flow
+        # if hasattr(model, "element_flow_dx_disc_eq"):
+        #     for idx, c in model.element_flow_dx_disc_eq.items():
+        #         self.scale_constraint_by_component(
+        #             c,
+        #             model.element_flow_dx[idx],
+        #             overwrite=overwrite
+        #         )
+        # element_flow_dx_cont_eq
 
 
 @declare_process_block_class(
@@ -98,6 +361,8 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
     momentum balances. The form of the terms used in these constraints is
     specified in the chosen property package.
     """
+
+    default_scaler = ControlVolume1DScaler
 
     CONFIG = ControlVolumeBlockData.CONFIG()
     CONFIG.declare(
@@ -155,6 +420,13 @@ argument).""",
         ),
     )
 
+    @property
+    def flow_direction(self):
+        """
+        Property giving the flow direction in the ControlVolume1D
+        """
+        return self._flow_direction
+
     def build(self):
         """
         Build method for ControlVolume1DBlock blocks.
@@ -166,6 +438,7 @@ argument).""",
         super(ControlVolume1DBlockData, self).build()
 
         self._validate_config_args()
+        self._flow_direction = FlowDirection.notSet
 
     def _validate_config_args(self):
         # Validate DAE config arguments
@@ -410,6 +683,7 @@ argument).""",
         pc_set = self.properties.phase_component_set
 
         # Check that reaction block exists if required
+        rblock = None
         if has_rate_reactions or has_equilibrium_reactions:
             try:
                 rblock = self.reactions
@@ -496,6 +770,7 @@ argument).""",
             flow_l_units = None
 
         # Get units for accumulation term if required
+        acc_units = None
         if self.config.dynamic:
             f_time_units = self.flowsheet().time_units
             if (f_time_units is None) ^ (units("time") is None):
@@ -749,6 +1024,7 @@ argument).""",
                 doc="Kinetic reaction stoichiometry constraint",
             )
             def rate_reaction_stoichiometry_constraint(b, t, x, p, j):
+                # TODO what about collocation?
                 if (
                     b.config.transformation_scheme != "FORWARD"
                     and x == b.length_domain.first()
@@ -830,6 +1106,7 @@ argument).""",
                 doc="Inherent reaction stoichiometry",
             )
             def inherent_reaction_stoichiometry_constraint(b, t, x, p, j):
+                # TODO Collocation
                 if (
                     b.config.transformation_scheme != "FORWARD"
                     and x == b.length_domain.first()
@@ -910,6 +1187,7 @@ argument).""",
                 doc="Material balances",
             )
             def material_balances(b, t, x, p, j):
+                # TODO Collocation
                 if (
                     b.config.transformation_scheme != "FORWARD"
                     and x == b.length_domain.first()
@@ -1260,6 +1538,7 @@ argument).""",
             flow_l_units = None
 
         # Get units for accumulation term if required
+        acc_units = None
         if self.config.dynamic:
             f_time_units = self.flowsheet().time_units
             if (f_time_units is None) ^ (units("time") is None):
@@ -1528,6 +1807,7 @@ argument).""",
             power_l_units = None
 
         # Get units for accumulation term if required
+        acc_units = None
         if self.config.dynamic:
             f_time_units = self.flowsheet().time_units
             if (f_time_units is None) ^ (units("time") is None):
@@ -2144,7 +2424,7 @@ argument).""",
         """
         raise NotImplementedError(
             """
-                Due to the difficultly in presenting spatially distributed data
+                Due to the difficulty in presenting spatially distributed data
                 in a clean format, ControlVolume1D does not currently support
                 the report method."""
         )
@@ -2437,6 +2717,8 @@ argument).""",
                 )
                 iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
+        # TODO Inherent reaction stoichiometry constraint missing
+
         if hasattr(self, "material_balances"):
             mb_type = self._constructed_material_balance_type
             if mb_type == MaterialBalanceType.componentPhase:
@@ -2516,6 +2798,14 @@ argument).""",
                     overwrite=False,
                 )
 
+        if hasattr(self, "_flow_terms_cont_eq"):
+            for (t, x, p, j), c in self._flow_terms_cont_eq.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(self._flow_terms[t, x, p, j]),
+                    overwrite=False,
+                )
+
         if hasattr(self, "material_accumulation_disc_eq"):
             for (t, x, p, j), c in self.material_accumulation_disc_eq.items():
                 iscale.constraint_scaling_transform(
@@ -2523,6 +2813,7 @@ argument).""",
                     iscale.get_scaling_factor(self.material_accumulation[t, x, p, j]),
                     overwrite=False,
                 )
+        # TODO continuity
 
         # Scaling for discretization equations
         if hasattr(self, "enthalpy_flow_dx_disc_eq"):
@@ -2530,6 +2821,13 @@ argument).""",
                 iscale.constraint_scaling_transform(
                     c,
                     iscale.get_scaling_factor(self.enthalpy_flow_dx[t, x, p]),
+                    overwrite=False,
+                )
+        if hasattr(self, "_enthalpy_flow_length_domain_cont_eq"):
+            for (t, x, p), c in self._enthalpy_flow_length_domain_cont_eq.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(self._enthalpy_flow[t, x, p]),
                     overwrite=False,
                 )
 
@@ -2540,12 +2838,20 @@ argument).""",
                     iscale.get_scaling_factor(self.energy_accumulation[t, x, p]),
                     overwrite=False,
                 )
+        # TODO continuity
 
         if hasattr(self, "pressure_dx_disc_eq"):
             for (t, x), c in self.pressure_dx_disc_eq.items():
                 iscale.constraint_scaling_transform(
                     c,
                     iscale.get_scaling_factor(self.pressure_dx[t, x]),
+                    overwrite=False,
+                )
+        if hasattr(self, "pressure_length_domain_cont_eq"):
+            for (t, x), c in self.pressure_length_domain_cont_eq.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(self.properties[t, x].pressure),
                     overwrite=False,
                 )
 
@@ -2564,3 +2870,5 @@ argument).""",
                     iscale.get_scaling_factor(self.element_accumulation[t, x, e]),
                     overwrite=False,
                 )
+
+        # TODO continuity equation

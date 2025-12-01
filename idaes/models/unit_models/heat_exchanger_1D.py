@@ -16,12 +16,13 @@ Generic IDAES 1D Heat Exchanger Model with overall area and heat transfer coeffi
 # Import Pyomo libraries
 from pyomo.environ import (
     Block,
-    Var,
     check_optimal_termination,
-    value,
+    ComponentMap,
     units as pyunits,
+    value,
+    Var,
 )
-from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
+from pyomo.common.config import Bool, ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
 from idaes.core import (
@@ -46,6 +47,7 @@ from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util import scaling as iscale
 from idaes.core.solvers import get_solver
 from idaes.core.initialization import SingleControlVolumeUnitInitializer
+from idaes.core.scaling import CustomScalerBase, DefaultScalingRecommendation
 import idaes.logger as idaeslog
 
 
@@ -53,6 +55,88 @@ __author__ = "Jaffer Ghouse, Andrew Lee"
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
+
+
+class HX1DScaler(CustomScalerBase):
+    """
+    Default modular scaler for the HeatExchanger1D.
+
+    This scaler relies on the modular scaler for the ControlVolume1D.
+    The variable "heat_transfer_coefficient" is not scaled by this
+    scaler object; if it is not fixed, it should be scaled by the user.
+    """
+
+    DEFAULT_SCALING_FACTORS = {
+        "length": DefaultScalingRecommendation.userInputRequired,
+        # Heat transfer area
+        "area": DefaultScalingRecommendation.userInputRequired,
+    }
+
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None
+    ):
+        self.scale_variable_by_default(model.length, overwrite=overwrite)
+        # Since only the hot side length is exposed to the user
+        # we propagate that scaling factor to the cold side length.
+        # We use the "length_equality" constraint to propagate it
+        # because the base units for the hot and cold sides might
+        # differ.
+        self.scale_variable_by_definition_constraint(
+            model.cold_side.length, model.length_equality, overwrite=overwrite
+        )
+        self.scale_variable_by_default(model.area, overwrite=overwrite)
+
+        self.call_submodel_scaler_method(
+            model.hot_side,
+            method="variable_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+
+        self.call_submodel_scaler_method(
+            model.cold_side,
+            method="variable_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None
+    ):
+        """
+        Routine to apply scaling factors to constraints in model.
+
+        Args:
+            model: model to be scaled
+            overwrite: whether to overwrite existing scaling factors
+            submodel_scalers: dict of Scalers to use for sub-models, keyed by submodel local name
+
+        Returns:
+            None
+        """
+        self.call_submodel_scaler_method(
+            model.hot_side,
+            method="constraint_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+        self.call_submodel_scaler_method(
+            model.cold_side,
+            method="constraint_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+        self.scale_constraint_by_component(
+            model.length_equality, model.length, overwrite=overwrite
+        )
+        for idx, condata in model.heat_conservation.items():
+            self.scale_constraint_by_component(
+                condata, model.hot_side.heat[idx], overwrite=overwrite
+            )
+        for idx, condata in model.heat_transfer_eq.items():
+            self.scale_constraint_by_component(
+                condata, model.hot_side.heat[idx], overwrite=overwrite
+            )
 
 
 class HX1DInitializer(SingleControlVolumeUnitInitializer):
@@ -200,6 +284,7 @@ class HeatExchanger1DData(UnitModelBlockData):
     """Standard Heat Exchanger 1D Unit Model Class."""
 
     default_initializer = HX1DInitializer
+    default_scaler = HX1DScaler
 
     CONFIG = UnitModelBlockData.CONFIG(implicit=True)
     # Template for config arguments for hot and cold side
@@ -352,7 +437,7 @@ Pyomo documentation for supported transformations.""",
         ConfigValue(
             default=useDefault,
             description="Discretization scheme to use for DAE transformation",
-            doc="""Discretization scheme to use when transformating domain. See
+            doc="""Discretization scheme to use when transforming domain. See
 Pyomo documentation for supported schemes.""",
         ),
     )
@@ -517,38 +602,40 @@ cold side flows from 1 to 0""",
         if self.config.flow_type == HeatExchangerFlowPattern.cocurrent:
             set_direction_hot = FlowDirection.forward
             set_direction_cold = FlowDirection.forward
-            if self.config.hot_side.transformation_scheme != "BACKWARD":
-                _log_upwinding_disclaimer(
-                    "hot_side",
-                    "cocurrent",
-                    self.config.hot_side.transformation_scheme,
-                    "BACKWARD",
-                )
-            if self.config.cold_side.transformation_scheme != "BACKWARD":
-                _log_upwinding_disclaimer(
-                    "cold_side",
-                    "cocurrent",
-                    self.config.cold_side.transformation_scheme,
-                    "BACKWARD",
-                )
+            if self.config.hot_side.transformation_method == "dae.finite_difference":
+                if self.config.hot_side.transformation_scheme != "BACKWARD":
+                    _log_upwinding_disclaimer(
+                        "hot_side",
+                        "cocurrent",
+                        self.config.hot_side.transformation_scheme,
+                        "BACKWARD",
+                    )
+                if self.config.cold_side.transformation_scheme != "BACKWARD":
+                    _log_upwinding_disclaimer(
+                        "cold_side",
+                        "cocurrent",
+                        self.config.cold_side.transformation_scheme,
+                        "BACKWARD",
+                    )
 
         elif self.config.flow_type == HeatExchangerFlowPattern.countercurrent:
             set_direction_hot = FlowDirection.forward
             set_direction_cold = FlowDirection.backward
-            if self.config.hot_side.transformation_scheme != "BACKWARD":
-                _log_upwinding_disclaimer(
-                    "hot_side",
-                    "countercurrent",
-                    self.config.hot_side.transformation_scheme,
-                    "BACKWARD",
-                )
-            if self.config.cold_side.transformation_scheme != "FORWARD":
-                _log_upwinding_disclaimer(
-                    "cold_side",
-                    "countercurrent",
-                    self.config.cold_side.transformation_scheme,
-                    "FORWARD",
-                )
+            if self.config.hot_side.transformation_method == "dae.finite_difference":
+                if self.config.hot_side.transformation_scheme != "BACKWARD":
+                    _log_upwinding_disclaimer(
+                        "hot_side",
+                        "countercurrent",
+                        self.config.hot_side.transformation_scheme,
+                        "BACKWARD",
+                    )
+                if self.config.cold_side.transformation_scheme != "FORWARD":
+                    _log_upwinding_disclaimer(
+                        "cold_side",
+                        "countercurrent",
+                        self.config.cold_side.transformation_scheme,
+                        "FORWARD",
+                    )
         else:
             raise ConfigurationError(
                 "{} HeatExchanger1D only supports cocurrent and "

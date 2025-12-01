@@ -447,6 +447,8 @@ see property package for documentation.}""",
         self.reboiler.initialize(solver=solver, optarg=optarg, outlvl=outlvl)
 
         # initialize the rectification section
+        rect_liq_flags = None
+        rect_vap_flags = None
         for i in self._rectification_index:
             propagate_state(
                 destination=self.rectification_section[i].liq_in,
@@ -478,6 +480,8 @@ see property package for documentation.}""",
                 )
 
         # initialize the stripping section
+        strip_liq_flags = None
+        strip_vap_flags = None
         for i in self._stripping_index:
             propagate_state(
                 destination=self.stripping_section[i].liq_in,

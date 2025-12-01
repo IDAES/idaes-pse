@@ -26,7 +26,6 @@ each of which is described on a separate page below.
     env_info
     get_extensions
     lib_directory
-    version
 
 shared configuration
 ^^^^^^^^^^^^^^^^^^^^

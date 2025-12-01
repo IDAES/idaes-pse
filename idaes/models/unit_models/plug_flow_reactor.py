@@ -14,7 +14,7 @@
 Standard IDAES PFR model.
 """
 # Import Pyomo libraries
-from pyomo.environ import Constraint, Var, Reference
+from pyomo.environ import ComponentMap, Constraint, Reference, Var
 from pyomo.common.config import ConfigBlock, ConfigValue, In, ListOf, Bool
 
 # Import IDAES cores
@@ -32,8 +32,73 @@ from idaes.core.util.config import (
     is_reaction_parameter_block,
 )
 from idaes.core.util.misc import add_object_reference
+from idaes.core.scaling import CustomScalerBase, DefaultScalingRecommendation
 
 __author__ = "Andrew Lee, John Eslick"
+
+
+class PFRScaler(CustomScalerBase):
+    """
+    Default modular scaler for PFR reactors.
+
+    This scaler relies on the modular scaler for the ControlVolume1D.
+    """
+
+    DEFAULT_SCALING_FACTORS = {
+        "length": DefaultScalingRecommendation.userInputRequired,
+        # Flow area
+        "area": DefaultScalingRecommendation.userInputRequired,
+    }
+
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None
+    ):
+        self.scale_variable_by_default(model.length, overwrite=overwrite)
+        # In the PFR, the area is always constant---the option to make area
+        # vary over length and time is not in the config and therefore
+        # is not passed to the control volume
+        self.scale_variable_by_default(model.area, overwrite=overwrite)
+
+        self.scale_variable_by_definition_constraint(
+            model.volume, model.geometry, overwrite=overwrite
+        )
+
+        self.call_submodel_scaler_method(
+            model.control_volume,
+            method="variable_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None
+    ):
+        """
+        Routine to apply scaling factors to constraints in model.
+
+        Args:
+            model: model to be scaled
+            overwrite: whether to overwrite existing scaling factors
+            submodel_scalers: dict of Scalers to use for sub-models, keyed by submodel local name
+
+        Returns:
+            None
+        """
+        self.call_submodel_scaler_method(
+            model.control_volume,
+            method="constraint_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+        self.scale_constraint_by_component(
+            model.geometry, model.volume, overwrite=overwrite
+        )
+        for idx, condata in model.performance_eqn.items():
+            self.scale_constraint_by_component(
+                condata,
+                model.control_volume.rate_reaction_extent[idx],
+                overwrite=overwrite,
+            )
 
 
 @declare_process_block_class("PFR")
@@ -41,6 +106,8 @@ class PFRData(UnitModelBlockData):
     """
     Standard Plug Flow Reactor Unit Model Class
     """
+
+    default_scaler = PFRScaler
 
     CONFIG = UnitModelBlockData.CONFIG()
     CONFIG.declare(
@@ -242,7 +309,7 @@ by the Pyomo TransformationFactory,
         ConfigValue(
             default="BACKWARD",
             description="Scheme to use for DAE transformation",
-            doc="""Scheme to use when transformating domain. See Pyomo
+            doc="""Scheme to use when transforming domain. See Pyomo
 documentation for supported schemes,
 **default** - "BACKWARD".""",
         ),
