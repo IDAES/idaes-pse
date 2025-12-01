@@ -181,12 +181,13 @@ def startup_shutdown_constraints(
             <= install_unit - op_blocks[t].op_mode
         )
     
-    if startup_transition_time is None:
+    if not startup_transition_time:
         # if there is only one startup type, return
+        # startup_transition_time can be None or empty dict
         return
 
     # multiple startup types
-    if startup_transition_time is not None:
+    if startup_transition_time:
         # there will be at least two types of startup
         startup_names = list(startup_transition_time.keys())
         

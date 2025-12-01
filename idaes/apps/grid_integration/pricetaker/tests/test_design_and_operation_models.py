@@ -270,6 +270,14 @@ def test_operation_model_class():
     for attr in ["op_mode", "startup", "shutdown", "power", "LMP"]:
         assert not hasattr(blk.unit_2_op, attr)
 
+    # test the multiple startup types
+    blk.unit_3_op = OperationModel(
+        model_func=op_model,
+        model_args={"des_blk": blk.unit_1_design},
+        startup_types={'hot': 4, 'warm': 8, 'cold': 12}
+    )
+    assert hasattr(blk.unit_3_op, "startup_type_vars")
+
 
 @pytest.mark.unit
 def test_operation_model_class_logger_message1(caplog):

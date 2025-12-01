@@ -424,7 +424,8 @@ class OperationModelData(ProcessBlockData):
                 doc="Binary: 1 if the shutdown is initiated, 0 otherwise",
             )
 
-        if self.config.startup_types is not None:
+        if not self.config.startup_types:
+            # self.config.startup_types can be None or an empty dict
             self.startup_type_vars = Var(
                 list(self.config.startup_types.keys()),
                 within=Binary,
