@@ -112,11 +112,9 @@ from idaes.core.util.model_statistics import (
     large_residuals_set,
     variables_near_bounds_set,
 )
-from idaes.core.util.scaling import (
+from idaes.core.scaling.util import (
     get_jacobian,
-    extreme_jacobian_columns,
-    extreme_jacobian_rows,
-    extreme_jacobian_entries,
+    get_scaling_factor,
     jacobian_cond,
 )
 from idaes.core.util.parameter_sweep import (
@@ -210,6 +208,7 @@ CONFIG.declare(
         "to its bounds.",
     ),
 )
+# TODO is a relative tolerance necessary if we're including scaling?
 CONFIG.declare(
     "variable_bounds_relative_tolerance",
     ConfigValue(
@@ -979,7 +978,7 @@ class DiagnosticsToolbox:
 
     def display_variables_with_extreme_jacobians(self, stream=None):
         """
-        Prints the variables associated with columns in the Jacobian with extreme
+        Prints the variables corresponding to columns in the Jacobian with extreme
         L2 norms. This often indicates poorly scaled variables.
 
         Tolerances can be set via the DiagnosticsToolbox config.
@@ -996,9 +995,11 @@ class DiagnosticsToolbox:
         if stream is None:
             stream = sys.stdout
 
-        xjc = extreme_jacobian_columns(
-            m=self._model,
-            scaled=False,
+        jac, nlp = get_jacobian(self._model)
+
+        xjc = _extreme_jacobian_columns(
+            jac=jac,
+            nlp=nlp,
             large=self.config.jacobian_large_value_caution,
             small=self.config.jacobian_small_value_caution,
         )
@@ -1007,7 +1008,7 @@ class DiagnosticsToolbox:
         _write_report_section(
             stream=stream,
             lines_list=[f"{i[1].name}: {i[0]:.3E}" for i in xjc],
-            title=f"The following variable(s) are associated with extreme Jacobian values "
+            title=f"The following variable(s) correspond to Jacobian columns with extreme norms"
             f"(<{self.config.jacobian_small_value_caution:.1E} or"
             f">{self.config.jacobian_large_value_caution:.1E}):",
             header="=",
@@ -1016,7 +1017,7 @@ class DiagnosticsToolbox:
 
     def display_constraints_with_extreme_jacobians(self, stream=None):
         """
-        Prints the constraints associated with rows in the Jacobian with extreme
+        Prints the constraints corresponding to rows in the Jacobian with extreme
         L2 norms. This often indicates poorly scaled constraints.
 
         Tolerances can be set via the DiagnosticsToolbox config.
@@ -1033,9 +1034,11 @@ class DiagnosticsToolbox:
         if stream is None:
             stream = sys.stdout
 
-        xjr = extreme_jacobian_rows(
-            m=self._model,
-            scaled=False,
+        jac, nlp = get_jacobian(self._model)
+
+        xjr = _extreme_jacobian_rows(
+            jac=jac,
+            nlp=nlp,
             large=self.config.jacobian_large_value_caution,
             small=self.config.jacobian_small_value_caution,
         )
@@ -1044,7 +1047,7 @@ class DiagnosticsToolbox:
         _write_report_section(
             stream=stream,
             lines_list=[f"{i[1].name}: {i[0]:.3E}" for i in xjr],
-            title="The following constraint(s) are associated with extreme Jacobian values "
+            title="The following constraint(s) correspond to Jacobian rows with extreme norms "
             f"(<{self.config.jacobian_small_value_caution:.1E} or"
             f">{self.config.jacobian_large_value_caution:.1E}):",
             header="=",
@@ -1071,9 +1074,10 @@ class DiagnosticsToolbox:
         if stream is None:
             stream = sys.stdout
 
-        xje = extreme_jacobian_entries(
-            m=self._model,
-            scaled=False,
+        jac, nlp = get_jacobian(self._model, include_scaling_factors=True)
+        xje = _extreme_jacobian_entries(
+            jac,
+            nlp,
             large=self.config.jacobian_large_value_caution,
             small=self.config.jacobian_small_value_caution,
             zero=0,
@@ -1084,7 +1088,7 @@ class DiagnosticsToolbox:
             stream=stream,
             lines_list=[f"{i[1].name}, {i[2].name}: {i[0]:.3E}" for i in xje],
             title="The following constraint(s) and variable(s) are associated with extreme "
-            f"Jacobian\nvalues (<{self.config.jacobian_small_value_caution:.1E} or"
+            f"Jacobian\nentries (<{self.config.jacobian_small_value_caution:.1E} or"
             f">{self.config.jacobian_large_value_caution:.1E}):",
             header="=",
             footer="=",
@@ -1314,11 +1318,16 @@ class DiagnosticsToolbox:
                 raise TypeError(
                     f"{constraint.name} is not an instance of a Pyomo Constraint."
                 )
+        sf = get_scaling_factor(constraint, default=1, warning=False)
 
+        # Don't need to scale constraint_term_mismatch_tolerance and
+        # constraint_term_cancellation_tolerance because they are both
+        # relative tolerances. term_zero_tolerance is an absolute
+        # tolerance, so it must be scaled.
         walker = ConstraintTermAnalysisVisitor(
             term_mismatch_tolerance=self.config.constraint_term_mismatch_tolerance,
             term_cancellation_tolerance=self.config.constraint_term_cancellation_tolerance,
-            term_zero_tolerance=self.config.constraint_term_zero_tolerance,
+            term_zero_tolerance=sf * self.config.constraint_term_zero_tolerance,
             max_cancellations_per_node=max_cancellations,
             max_canceling_terms=self.config.max_canceling_terms,
         )
@@ -1516,7 +1525,7 @@ class DiagnosticsToolbox:
 
         """
         if jac is None or nlp is None:
-            jac, nlp = get_jacobian(self._model, scaled=False)
+            jac, nlp = get_jacobian(self._model)
 
         warnings = []
         next_steps = []
@@ -1555,7 +1564,7 @@ class DiagnosticsToolbox:
             )
 
         # Extreme Jacobian rows and columns
-        jac_col = extreme_jacobian_columns(
+        jac_col = _extreme_jacobian_columns(
             jac=jac,
             nlp=nlp,
             large=self.config.jacobian_large_value_warning,
@@ -1566,7 +1575,7 @@ class DiagnosticsToolbox:
             if len(jac_col) == 1:
                 cstring = "Variable"
             warnings.append(
-                f"WARNING: {len(jac_col)} {cstring} with extreme Jacobian values "
+                f"WARNING: {len(jac_col)} {cstring} with extreme Jacobian column norms "
                 f"(<{self.config.jacobian_small_value_warning:.1E} or "
                 f">{self.config.jacobian_large_value_warning:.1E})"
             )
@@ -1574,7 +1583,7 @@ class DiagnosticsToolbox:
                 self.display_variables_with_extreme_jacobians.__name__ + "()"
             )
 
-        jac_row = extreme_jacobian_rows(
+        jac_row = _extreme_jacobian_rows(
             jac=jac,
             nlp=nlp,
             large=self.config.jacobian_large_value_warning,
@@ -1585,7 +1594,7 @@ class DiagnosticsToolbox:
             if len(jac_row) == 1:
                 cstring = "Constraint"
             warnings.append(
-                f"WARNING: {len(jac_row)} {cstring} with extreme Jacobian values "
+                f"WARNING: {len(jac_row)} {cstring} with extreme Jacobian row norms "
                 f"(<{self.config.jacobian_small_value_warning:.1E} or "
                 f">{self.config.jacobian_large_value_warning:.1E})"
             )
@@ -1630,7 +1639,7 @@ class DiagnosticsToolbox:
 
         """
         if jac is None or nlp is None:
-            jac, nlp = get_jacobian(self._model, scaled=False)
+            jac, nlp = get_jacobian(self._model)
 
         cautions = []
 
@@ -1711,7 +1720,7 @@ class DiagnosticsToolbox:
             )
 
         # Extreme Jacobian rows and columns
-        jac_col = extreme_jacobian_columns(
+        jac_col = _extreme_jacobian_columns(
             jac=jac,
             nlp=nlp,
             large=self.config.jacobian_large_value_caution,
@@ -1722,12 +1731,12 @@ class DiagnosticsToolbox:
             if len(jac_col) == 1:
                 cstring = "Variable"
             cautions.append(
-                f"Caution: {len(jac_col)} {cstring} with extreme Jacobian values "
+                f"Caution: {len(jac_col)} {cstring} with extreme Jacobian column norms "
                 f"(<{self.config.jacobian_small_value_caution:.1E} or "
                 f">{self.config.jacobian_large_value_caution:.1E})"
             )
 
-        jac_row = extreme_jacobian_rows(
+        jac_row = _extreme_jacobian_rows(
             jac=jac,
             nlp=nlp,
             large=self.config.jacobian_large_value_caution,
@@ -1738,13 +1747,13 @@ class DiagnosticsToolbox:
             if len(jac_row) == 1:
                 cstring = "Constraint"
             cautions.append(
-                f"Caution: {len(jac_row)} {cstring} with extreme Jacobian values "
+                f"Caution: {len(jac_row)} {cstring} with extreme Jacobian row norms "
                 f"(<{self.config.jacobian_small_value_caution:.1E} or "
                 f">{self.config.jacobian_large_value_caution:.1E})"
             )
 
         # Extreme Jacobian entries
-        extreme_jac = extreme_jacobian_entries(
+        extreme_jac = _extreme_jacobian_entries(
             jac=jac,
             nlp=nlp,
             large=self.config.jacobian_large_value_caution,
@@ -1877,7 +1886,7 @@ class DiagnosticsToolbox:
 
         if stream is None:
             stream = sys.stdout
-        jac, nlp = get_jacobian(self._model, scaled=False)
+        jac, nlp = get_jacobian(self._model)
 
         warnings, next_steps = self._collect_numerical_warnings(jac=jac, nlp=nlp)
         cautions = self._collect_numerical_cautions(jac=jac, nlp=nlp)
@@ -1885,7 +1894,7 @@ class DiagnosticsToolbox:
         stats = []
         try:
             stats.append(
-                f"Jacobian Condition Number: {jacobian_cond(jac=jac, scaled=False):.3E}"
+                f"Jacobian Condition Number: {jacobian_cond(jac=jac, scaled=True):.3E}"
             )
         except RuntimeError as err:
             if "Factor is exactly singular" in str(err):
@@ -2034,7 +2043,7 @@ class SVDToolbox:
 
         # Get Jacobian and NLP
         self.jacobian, self.nlp = get_jacobian(
-            self._model, scaled=False, equality_constraints_only=True
+            self._model, equality_constraints_only=True
         )
 
         # Get list of equality constraint and variable names
@@ -2279,6 +2288,100 @@ class SVDToolbox:
         )
 
 
+def _extreme_jacobian_entries(
+    jac,
+    nlp,
+    large=1e4,
+    small=1e-4,
+    zero=1e-10,
+):
+    """
+    Show very large and very small Jacobian entries.
+
+    Args:
+        jac: already-existing Jacobian matrix
+        nlp: already-existing Pynumero NLP object from
+            get_jacobian (and thus having vlist and clist
+            attributes)
+        large: >= to this value is considered large
+        small: <= to this and >= zero is considered small
+        zero: <= to this value is ignored
+
+    Returns:
+        (list of tuples), Jacobian entry, Constraint, Variable
+    """
+    el = []
+    for i, c in enumerate(nlp.clist):
+        for j in jac[i].indices:
+            v = nlp.vlist[j]
+            e = abs(jac[i, j])
+            if (e <= small and e > zero) or e >= large:
+                el.append((e, c, v))
+    return el
+
+
+def _extreme_jacobian_rows(
+    jac,
+    nlp,
+    large=1e4,
+    small=1e-4,
+):
+    """
+    Show very large and very small Jacobian rows. Typically indicates a badly-
+    scaled constraint.
+
+    Args:
+        jac: already-existing Jacobian matrix
+        nlp: already-existing Pynumero NLP object from
+            get_jacobian (and thus having vlist and clist
+            attributes)
+        large: >= to this value is considered large
+        small: <= to this is considered small
+
+    Returns:
+        (list of tuples), Row norm, Constraint
+    """
+    row_norms = norm(jac, ord=2, axis=1)
+    # Array with values of 1 for entries with extreme row norms
+    # and values of 0 otherwise
+    condition_vector = np.logical_or(row_norms >= large, row_norms <= small)
+    # Array of indices for which condition_vector is 1
+    extreme_indices = np.nonzero(condition_vector)[0]
+    return [(row_norms[k], nlp.clist[k]) for k in extreme_indices]
+
+
+def _extreme_jacobian_columns(
+    jac,
+    nlp,
+    large=1e4,
+    small=1e-4,
+):
+    """
+    Show very large and very small Jacobian columns. A more reliable indicator
+    of a badly-scaled variable than badly_scaled_var_generator.
+
+    Args:
+        jac: already-existing Jacobian matrix
+        nlp: already-existing Pynumero NLP object from
+            get_jacobian (and thus having vlist and clist
+            attributes)
+        large: >= to this value is considered large
+        small: <= to this is considered small
+
+    Returns:
+        (list of tuples), Column norm, Variable
+    """
+    # Convert to csc to make iterating over columns easier
+    jac = jac.tocsc()
+    column_norms = norm(jac, ord=2, axis=0)
+    # Array with values of 1 for entries with extreme row norms
+    # and values of 0 otherwise
+    condition_vector = np.logical_or(column_norms >= large, column_norms <= small)
+    # Array of indices for which condition_vector is 1
+    extreme_indices = np.nonzero(condition_vector)[0]
+    return [(column_norms[k], nlp.vlist[k]) for k in extreme_indices]
+
+
 def _get_bounds_with_inf(node: NumericExpression):
     lb, ub = compute_bounds_on_expr(node)
     if lb is None:
@@ -2475,7 +2578,7 @@ class DegeneracyHunter2:
 
         # Get Jacobian and NLP
         self.jacobian, self.nlp = get_jacobian(
-            self._model, scaled=False, equality_constraints_only=True
+            self._model, equality_constraints_only=True
         )
 
         # Placeholder for solver - deferring construction lets us unit test more easily
@@ -2846,7 +2949,7 @@ class DegeneracyHunter:
             "DegeneracyHunter is being deprecated in favor of the new "
             "DiagnosticsToolbox."
         )
-        deprecation_warning(msg=msg, logger=_log, version="2.2.0", remove_in="3.0.0")
+        deprecation_warning(msg=msg, logger=_log, version="2.2.0", remove_in="2.11.0")
 
         block_like = False
         try:
@@ -4147,7 +4250,7 @@ def check_parallel_jacobian(
         )
 
     if jac is None or nlp is None:
-        jac, nlp = get_jacobian(model, scaled=False)
+        jac, nlp = get_jacobian(model)
 
     # Get vectors that we will check, and the Pyomo components
     # they correspond to.
@@ -4156,7 +4259,7 @@ def check_parallel_jacobian(
         csrjac = jac.tocsr()
         # Make everything a column vector (CSC) for consistency
         vectors = [csrjac[i, :].transpose().tocsc() for i in range(len(components))]
-    elif direction == "column":
+    else:  # direction == "column"
         components = nlp.get_pyomo_variables()
         cscjac = jac.tocsc()
         vectors = [cscjac[:, i] for i in range(len(components))]
@@ -4240,7 +4343,7 @@ def compute_ill_conditioning_certificate(
             "Must be 'row' or 'column'."
         )
 
-    jac, nlp = get_jacobian(model, scaled=False)
+    jac, nlp = get_jacobian(model)
 
     inverse_target_kappa = 1e-16 / target_feasibility_tol
 
@@ -4250,7 +4353,7 @@ def compute_ill_conditioning_certificate(
         components_set = RangeSet(0, len(components) - 1)
         results_set = RangeSet(0, nlp.n_primals() - 1)
         jac = jac.transpose().tocsr()
-    elif direction == "column":
+    else:  # direction == "column"
         components = nlp.get_pyomo_variables()
         components_set = RangeSet(0, len(components) - 1)
         results_set = RangeSet(0, nlp.n_constraints() - 1)
@@ -4371,7 +4474,8 @@ def _vars_near_zero(model, variable_zero_value_tolerance):
     # Set of variables with values close to 0
     near_zero_vars = ComponentSet()
     for v in model.component_data_objects(Var, descend_into=True):
-        if v.value is not None and abs(value(v)) <= variable_zero_value_tolerance:
+        sf = get_scaling_factor(v, default=1, warning=False)
+        if v.value is not None and sf * abs(value(v)) <= variable_zero_value_tolerance:
             near_zero_vars.add(v)
     return near_zero_vars
 
@@ -4379,10 +4483,11 @@ def _vars_near_zero(model, variable_zero_value_tolerance):
 def _vars_violating_bounds(model, tolerance):
     violated_bounds = ComponentSet()
     for v in model.component_data_objects(Var, descend_into=True):
+        sf = get_scaling_factor(v, default=1, warning=False)
         if v.value is not None:
-            if v.lb is not None and v.value <= v.lb - tolerance:
+            if v.lb is not None and sf * v.value <= sf * v.lb - tolerance:
                 violated_bounds.add(v)
-            elif v.ub is not None and v.value >= v.ub + tolerance:
+            elif v.ub is not None and sf * v.value >= sf * v.ub + tolerance:
                 violated_bounds.add(v)
 
     return violated_bounds
@@ -4400,8 +4505,9 @@ def _vars_with_none_value(model):
 def _vars_with_extreme_values(model, large, small, zero):
     extreme_vars = ComponentSet()
     for v in model.component_data_objects(Var, descend_into=True):
+        sf = get_scaling_factor(v, default=1, warning=False)
         if v.value is not None:
-            mag = abs(value(v))
+            mag = sf * abs(value(v))
             if mag > abs(large):
                 extreme_vars.add(v)
             elif mag < abs(small) and mag > abs(zero):
@@ -4883,6 +4989,8 @@ class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
                 vs = min(absvals)
                 if vl != vs:
                     if vs == 0:
+                        # This branch is reachable only if the user
+                        # set _zero_tolerance to 0 or a negative number
                         diff = log10(vl)
                     else:
                         diff = log10(vl / vs)

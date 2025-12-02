@@ -54,6 +54,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
@@ -67,7 +68,7 @@ jobs:
           pip --no-cache-dir install --progress-bar off "$black_requirement"
       - name: Run Black to verify that the committed code is formatted
         run: |
-          black --check .
+          black --check --diff .
 
   spell-check:
     name: Check Spelling
@@ -75,6 +76,7 @@ jobs:
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
+        
       - name: Run Spell Checker
         uses: crate-ci/typos@v1.24.5
         with: 
@@ -102,8 +104,10 @@ jobs:
             # to avoid overloading Codecov
             cov-report: true
 
+            
     steps:
       - uses: actions/checkout@v5
+        
       - uses: ./.github/actions/display-debug-info
       - name: Set up Conda environment
         uses: conda-incubator/setup-miniconda@v3
@@ -115,7 +119,7 @@ jobs:
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
         with:
-          install-target: -r requirements-dev.txt
+          install-target:  -r requirements-dev.txt
       - name: Add pytest CLI options for coverage
         if: matrix.cov-report
         run: |
@@ -142,6 +146,7 @@ jobs:
     steps:
       # the checkout step is needed to have access to codecov.yml
       - uses: actions/checkout@v4
+        
       - uses: actions/download-artifact@v4
         with:
           name: coverage-report-${{ matrix.report-variant }}
@@ -165,6 +170,7 @@ jobs:
     needs: [code-formatting, spell-check]
     steps:
       - uses: actions/checkout@v4
+        
       - name: Set up Conda environment
         uses: conda-incubator/setup-miniconda@v3
         with:
@@ -200,6 +206,7 @@ jobs:
       # NOTE: using Conda instead of actions/setup-python in this job is not strictly necessary
       # as it doesn't need to run on Windows or use the setup-idaes local action,
       # but we do it for consistency with the other jobs
+        
       - name: Set up Conda environment
         uses: conda-incubator/setup-miniconda@v3
         with:
@@ -209,7 +216,7 @@ jobs:
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
         with:
-          install-target: -r requirements-dev.txt
+          install-target:  -r requirements-dev.txt
       - name: Run pylint
         run: |
           echo "::group::Display pylint version"
@@ -233,6 +240,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+        
       - name: Set up Conda environment
         uses: conda-incubator/setup-miniconda@v3
         with:
@@ -242,7 +250,7 @@ jobs:
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
         with:
-          install-target: -r requirements-dev.txt
+          install-target:  -r requirements-dev.txt
       - name: Create empty pytest.ini file
         run: |
           echo "" > pytest.ini

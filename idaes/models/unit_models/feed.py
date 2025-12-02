@@ -23,13 +23,40 @@ from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.logger as idaeslog
 from idaes.core.initialization import ModularInitializerBase
+from idaes.core.scaling import CustomScalerBase
 
 
-__author__ = "Andrew Lee"
+__author__ = "Andrew Lee, Douglas Allan"
 
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
+
+
+class FeedScaler(CustomScalerBase):
+    """
+    Scaler for blocks with a single state (Feed, Product, StateJunction)
+    """
+
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        self.call_submodel_scaler_method(
+            submodel=model.properties,
+            submodel_scalers=submodel_scalers,
+            method="variable_scaling_routine",
+            overwrite=overwrite,
+        )
+
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        self.call_submodel_scaler_method(
+            submodel=model.properties,
+            submodel_scalers=submodel_scalers,
+            method="constraint_scaling_routine",
+            overwrite=overwrite,
+        )
 
 
 class FeedInitializer(ModularInitializerBase):
@@ -72,6 +99,7 @@ class FeedData(UnitModelBlockData):
 
     # Set default initializer
     default_initializer = FeedInitializer
+    default_scaler = FeedScaler
 
     CONFIG = ConfigBlock()
     CONFIG.declare(

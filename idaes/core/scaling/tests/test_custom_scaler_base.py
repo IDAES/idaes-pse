@@ -13,7 +13,7 @@
 """
 Tests for CustomScalerBase.
 
-Author: Andrew Lee
+Author: Andrew Lee, Douglas Allan
 """
 import pytest
 import re
@@ -23,6 +23,7 @@ from pyomo.environ import (
     ComponentMap,
     ConcreteModel,
     Constraint,
+    Expression,
     Set,
     Suffix,
     units,
@@ -34,9 +35,20 @@ from pyomo.common.config import ConfigDict
 from idaes.core.scaling.custom_scaler_base import (
     CustomScalerBase,
     ConstraintScalingScheme,
+    DefaultScalingRecommendation,
+)
+from idaes.core import (
+    declare_process_block_class,
+    PhysicalParameterBlock,
+    Phase,
+    Component,
+    StateBlock,
+    StateBlockData,
 )
 from idaes.core.util.constants import Constants
 from idaes.core.util.testing import PhysicalParameterTestBlock
+
+# Dummy parameter block to test create-on-demand properties
 import idaes.logger as idaeslog
 
 
@@ -66,8 +78,75 @@ class DummyScaler(CustomScalerBase):
     def fill_in_2(self, model):
         model._verification.append("fill_in_2")
 
-    def dummy_method(self, model, overwrite):
+    def dummy_method(self, model, overwrite, submodel_scalers):
         model._dummy_scaler_test = overwrite
+
+
+# --------------------------------------------------------------------
+# Dummy parameter and state blocks to test interactions with
+# build-on-demand properties
+# --------------------------------------------------------------------
+
+
+@declare_process_block_class("Parameters")
+class _Parameters(PhysicalParameterBlock):
+    def build(self):
+        super(_Parameters, self).build()
+
+        self.p1 = Phase()
+        self.c1 = Component()
+
+    @classmethod
+    def define_metadata(cls, obj):
+        obj.define_custom_properties(
+            {
+                "a": {"method": "a_method"},
+                "b": {"method": "b_method"},
+                "recursion1": {"method": "_recursion1"},
+                "recursion2": {"method": "_recursion2"},
+                "not_callable": {"method": "test_obj"},
+                "raise_exception": {"method": "_raise_exception"},
+                "not_supported": {"supported": False},
+                "does_not_create_component": {"method": "_does_not_create_component"},
+            }
+        )
+        obj.add_default_units(
+            {
+                "time": units.s,
+                "mass": units.kg,
+                "length": units.m,
+                "amount": units.mol,
+                "temperature": units.K,
+            }
+        )
+
+
+@declare_process_block_class("State", block_class=StateBlock)
+class _State(StateBlockData):
+    def build(self):
+        super(StateBlockData, self).build()
+
+        self.test_obj = 1
+
+    def a_method(self):
+        self.a = Var(initialize=1)
+
+    def b_method(self):
+        self.b = Var(initialize=1)
+
+    def _recursion1(self):
+        self.recursive_cons1 = Constraint(expr=self.recursion2 == 1)
+
+    def _recursion2(self):
+        self.recursive_cons2 = Constraint(expr=self.recursion1 == 1)
+
+    def _raise_exception(self):
+        # PYLINT-TODO
+        # pylint: disable-next=broad-exception-raised
+        raise Exception()
+
+    def _does_not_create_component(self):
+        pass
 
 
 @pytest.fixture
@@ -84,6 +163,9 @@ def model():
     )
     m.enthalpy_eq = Constraint(
         expr=4.81 * units.J / units.mol / units.K * m.temperature == m.enth_mol
+    )
+    m.enthalpy_expr = Expression(
+        expr=4.81 * units.J / units.mol / units.K * m.temperature
     )
 
     m.scaling_factor = Suffix(direction=Suffix.EXPORT)
@@ -178,6 +260,7 @@ class TestCustomScalerBase:
         caplog.set_level(idaeslog.DEBUG, logger="idaes")
         m = ConcreteModel()
         m.v = Var([1, 2, 3, 4])
+        m.w = Var(["a", "b", "c"], ["x", "y", "z"])
 
         sb = CustomScalerBase()
 
@@ -192,6 +275,51 @@ class TestCustomScalerBase:
         # Set a default for the specific element
         sb.default_scaling_factors["v[1]"] = 1e-8
         assert sb.get_default_scaling_factor(m.v[1]) == 1e-8
+
+        caplog.clear()
+        assert sb.get_default_scaling_factor(m.w["c", "y"]) is None
+        assert "No default scaling factor found for w[c,y]" in caplog.text
+
+        sb.default_scaling_factors["w[c,y]"] = 17
+        assert sb.get_default_scaling_factor(m.w["c", "y"]) == 17
+
+        caplog.clear()
+        assert sb.get_default_scaling_factor(m.w["a", "x"]) is None
+        assert "No default scaling factor found for w[a,x]" in caplog.text
+
+        # Make sure that entries with spaces between indices are still found
+        sb.default_scaling_factors["w[a, x]"] = 23
+        assert sb.get_default_scaling_factor(m.w["a", "x"]) == 23
+
+    @pytest.mark.unit
+    def test_get_default_scaling_factor_indexed(self):
+        m = ConcreteModel()
+        m.params = Parameters()
+        m.state = State(parameters=m.params)
+
+        # Trigger build-on-demand creation
+        m.state.a
+
+        sb = CustomScalerBase()
+        sb.default_scaling_factors["a"] = 7
+        sb.default_scaling_factors["b"] = 11
+        m.state._lock_attribute_creation = True
+
+        assert sb.get_default_scaling_factor(m.state.a) == 7
+        # Want to make sure that _lock_attribute_creation doesn't get
+        # changed to false upon exiting get_default_scaling_factor
+        assert m.state._lock_attribute_creation == True
+        assert not m.state.is_property_constructed("b")
+
+        m.state._lock_attribute_creation = False
+        assert sb.get_default_scaling_factor(m.state.a) == 7
+        assert m.state._lock_attribute_creation == False
+        assert not m.state.is_property_constructed("b")
+
+        # Now trigger creation of b
+        m.state.b
+        assert sb.get_default_scaling_factor(m.state.b) == 11
+        assert m.state._lock_attribute_creation == False
 
     @pytest.mark.unit
     def test_scale_variable_by_component(self, model, caplog):
@@ -263,17 +391,141 @@ class TestCustomScalerBase:
         assert model.scaling_factor[model.pressure] == 1
 
     @pytest.mark.unit
-    def test_scale_variable_by_default(self, model, caplog):
-        caplog.set_level(idaeslog.DEBUG, logger="idaes")
+    def test_scale_variable_by_default_no_default(self, model):
         sb = CustomScalerBase()
 
         # No defaults defined yet
+        with pytest.raises(
+            ValueError,
+            match=re.escape(
+                "This scaler requires the user to provide a default "
+                "scaling factor for pressure, but no default scaling "
+                "factor was set."
+            ),
+        ):
+            sb.scale_variable_by_default(model.pressure)
+        assert model.pressure not in model.scaling_factor
+
+    @pytest.mark.unit
+    def test_scale_variable_by_default_constraint(self, model):
+        sb = CustomScalerBase()
+
+        # No defaults defined yet
+        with pytest.raises(
+            TypeError,
+            match=re.escape(
+                "ideal_gas is type <class 'pyomo.core.base.constraint.ScalarConstraint'>, "
+                "but a variable or expression was expected."
+            ),
+        ):
+            sb.scale_variable_by_default(model.ideal_gas)
+        assert model.ideal_gas not in model.scaling_factor
+
+    @pytest.mark.unit
+    def test_scale_variable_by_default_indexed(self, model):
+        model.mole_frac_comp = Var(["N2", "O2"])
+
+        @model.Constraint(["N2", "O2"])
+        def mole_frac_eqn(b, j):
+            return b.mole_frac_comp[j] == 0.5
+
+        sb = CustomScalerBase()
+
+        with pytest.raises(
+            TypeError,
+            match=re.escape(
+                "mole_frac_comp is indexed. Call with ComponentData children instead."
+            ),
+        ):
+            sb.scale_variable_by_default(model.mole_frac_comp)
+        with pytest.raises(
+            TypeError,
+            match=re.escape(
+                "mole_frac_eqn is indexed. Call with ComponentData children instead."
+            ),
+        ):
+            sb.scale_variable_by_default(model.mole_frac_eqn)
+        with pytest.raises(
+            ValueError,
+            match=re.escape(
+                "This scaler requires the user to provide a default "
+                f"scaling factor for mole_frac_comp[N2], but no default scaling "
+                "factor was set."
+            ),
+        ):
+            sb.scale_variable_by_default(model.mole_frac_comp["N2"])
+        with pytest.raises(
+            TypeError,
+            match=re.escape(
+                "mole_frac_eqn[N2] is type <class 'pyomo.core.base.constraint.ConstraintData'>,"
+                " but a variable or expression was expected."
+            ),
+        ):
+            sb.scale_variable_by_default(model.mole_frac_eqn["N2"])
+        sb.default_scaling_factors["mole_frac_comp[N2]"] = 7
+        sb.scale_variable_by_default(model.mole_frac_comp["N2"])
+        assert model.scaling_factor[model.mole_frac_comp["N2"]] == 7
+        assert model.mole_frac_comp["O2"] not in model.scaling_factor
+
+    @pytest.mark.unit
+    def test_scale_variable_by_default_user_input_required(self, model):
+        sb = CustomScalerBase()
+        sb.default_scaling_factors["pressure"] = (
+            DefaultScalingRecommendation.userInputRequired
+        )
+        # No defaults defined yet
+        with pytest.raises(
+            ValueError,
+            match=re.escape(
+                "This scaler requires the user to provide a default "
+                "scaling factor for pressure, but no default scaling "
+                "factor was set."
+            ),
+        ):
+            sb.scale_variable_by_default(model.pressure)
+        assert model.pressure not in model.scaling_factor
+
+        # If a scaling factor is already set, then no exception is raised
+        sb.set_component_scaling_factor(model.pressure, 1e-4)
+        sb.scale_variable_by_default(model.pressure)
+        assert model.scaling_factor[model.pressure] == 1e-4
+
+        # If we tell it to overwrite the scaling factors, the existence of
+        # a preexisting scaling factor is no longer sufficient.
+        with pytest.raises(
+            ValueError,
+            match=re.escape(
+                "This scaler requires the user to provide a default "
+                "scaling factor for pressure, but no default scaling "
+                "factor was set."
+            ),
+        ):
+            sb.scale_variable_by_default(model.pressure, overwrite=True)
+        assert model.scaling_factor[model.pressure] == 1e-4
+
+        # If user certifies that they set the scaling factor manually,
+        # then overwrite doesn't raise an exception
+        sb.default_scaling_factors["pressure"] = (
+            DefaultScalingRecommendation.userSetManually
+        )
+        sb.scale_variable_by_default(model.pressure, overwrite=True)
+        assert model.scaling_factor[model.pressure] == 1e-4
+
+    @pytest.mark.unit
+    def test_scale_variable_by_default_user_input_recommended(self, model):
+        sb = CustomScalerBase()
+        sb.default_scaling_factors["pressure"] = (
+            DefaultScalingRecommendation.userInputRecommended
+        )
+        # The scaling method is going to generate a guess for the scaling
+        # factor later, so no guess is necessary now.
         sb.scale_variable_by_default(model.pressure)
         assert model.pressure not in model.scaling_factor
-        assert (
-            "Could not set scaling factor for pressure, no default scaling factor set."
-            in caplog.text
-        )
+
+    @pytest.mark.unit
+    def test_scale_variable_by_default(self, model, caplog):
+        caplog.set_level(idaeslog.DEBUG, logger="idaes")
+        sb = CustomScalerBase()
 
         # Set a default
         sb.default_scaling_factors["pressure"] = 1e-4
@@ -286,6 +538,10 @@ class TestCustomScalerBase:
         assert model.scaling_factor[model.pressure] == 1e-4
         sb.scale_variable_by_default(model.pressure, overwrite=True)
         assert model.scaling_factor[model.pressure] == 1e-5
+        sb.default_scaling_factors["enthalpy_expr"] = 1e-3
+
+        sb.scale_variable_by_default(model.enthalpy_expr)
+        assert model.scaling_hint[model.enthalpy_expr] == 1e-3
 
     @pytest.mark.unit
     def test_scale_variable_by_units(self, model, caplog):
@@ -317,17 +573,371 @@ class TestCustomScalerBase:
         assert model.scaling_factor[model.temperature] == 1e-2
 
     @pytest.mark.unit
-    def test_scale_constraint_by_default(self, model, caplog):
-        caplog.set_level(idaeslog.DEBUG, logger="idaes")
+    def test_scale_variable_by_definition_constraint(self, model):
+        sb = CustomScalerBase()
+        model.temperature.value = 7
+        sb.set_variable_scaling_factor(model.temperature, 1 / 300)
+        sb.scale_variable_by_definition_constraint(
+            model.enth_mol,
+            model.enthalpy_eq,
+        )
+        assert model.scaling_factor[model.enth_mol] == pytest.approx(
+            1 / (4.81 * 300), rel=1e-15
+        )
+        assert model.temperature.value == 7
+
+    @pytest.mark.unit
+    def test_scale_variable_by_definition_constraint_without_variable(self, model):
+        sb = CustomScalerBase()
+        with pytest.raises(
+            ValueError,
+            match=re.escape(
+                "Variable pressure does not appear in constraint "
+                "enthalpy_eq, cannot calculate scaling factor."
+            ),
+        ):
+            sb.scale_variable_by_definition_constraint(
+                model.pressure,
+                model.enthalpy_eq,
+            )
+
+    @pytest.mark.unit
+    def test_scale_variable_by_definition_constraint_not_variable(self, model):
+        sb = CustomScalerBase()
+        with pytest.raises(
+            TypeError,
+            match=re.escape(
+                f"enthalpy_eq is not a variable, but instead <class 'pyomo.core.base.constraint.ScalarConstraint'>"
+            ),
+        ):
+            sb.scale_variable_by_definition_constraint(
+                model.enthalpy_eq,
+                model.enthalpy_eq,
+            )
+
+    @pytest.mark.unit
+    def test_scale_variable_by_definition_constraint_not_constraint(self, model):
+        sb = CustomScalerBase()
+        with pytest.raises(
+            TypeError,
+            match=re.escape(
+                "enthalpy_expr is not a constraint, but instead "
+                "<class 'pyomo.core.base.expression.ScalarExpression'>"
+            ),
+        ):
+            sb.scale_variable_by_definition_constraint(
+                model.pressure,
+                model.enthalpy_expr,
+            )
+
+    @pytest.mark.unit
+    def test_scale_variable_by_definition_variable_indexed(self, model):
         sb = CustomScalerBase()
 
-        # No defaults defined yet
-        sb.scale_constraint_by_default(model.ideal_gas)
-        assert model.ideal_gas not in model.scaling_factor
-        assert (
-            "Could not set scaling factor for ideal_gas, no default scaling factor set."
-            in caplog.text
+        model.foo = Var([1, 2, 3])
+
+        @model.Constraint([1, 2, 3])
+        def bar(b, idx):
+            return b.foo[idx] == 0
+
+        with pytest.raises(
+            TypeError,
+            match=re.escape(
+                f"Variable foo is indexed. Call with VarData " "children instead."
+            ),
+        ):
+            sb.scale_variable_by_definition_constraint(
+                model.foo,
+                model.bar,
+            )
+
+    @pytest.mark.unit
+    def test_scale_variable_by_definition_constraint_indexed(self, model):
+        sb = CustomScalerBase()
+
+        model.foo = Var([1, 2, 3])
+
+        @model.Constraint([1, 2, 3])
+        def bar(b, idx):
+            return b.foo[idx] == idx
+
+        with pytest.raises(
+            TypeError,
+            match=re.escape(
+                f"Constraint bar is indexed. Call with ConstraintData "
+                "children instead."
+            ),
+        ):
+            sb.scale_variable_by_definition_constraint(
+                model.foo[1],
+                model.bar,
+            )
+
+    @pytest.mark.unit
+    def test_scale_variable_by_definition_data_children(self, model):
+        sb = CustomScalerBase()
+
+        model.foo = Var([1, 2, 3])
+
+        @model.Constraint([1, 2, 3])
+        def bar(b, idx):
+            return b.foo[idx] == idx
+
+        for idx in model.foo:
+            sb.scale_variable_by_definition_constraint(
+                model.foo[idx],
+                model.bar[idx],
+            )
+
+        for idx in model.foo:
+            assert model.scaling_factor[model.foo[idx]] == 1 / idx
+            assert model.foo[idx].value is None
+
+    @pytest.mark.unit
+    def test_scale_variable_by_definition_foo_in_expression_scalar(self, model):
+        sb = CustomScalerBase()
+
+        model.foo = Var()
+
+        @model.Expression()
+        def biz(b):
+            return b.foo
+
+        sb.set_component_scaling_factor(model.biz, 42)
+
+        @model.Constraint()
+        def bar(b):
+            return b.biz == 1
+
+        sb.scale_variable_by_definition_constraint(
+            model.foo,
+            model.bar,
         )
+
+        assert model.scaling_factor[model.foo] == 1
+        assert model.foo.value is None
+
+    @pytest.mark.unit
+    def test_scale_variable_by_definition_foo_in_expression_indexed(self, model):
+        sb = CustomScalerBase()
+
+        model.foo = Var([1, 2, 3])
+
+        @model.Expression([1, 2, 3])
+        def biz(b, idx):
+            return b.foo[idx]
+
+        for idx in model.biz:
+            sb.set_component_scaling_factor(model.biz[idx], 42)
+
+        @model.Constraint([1, 2, 3])
+        def bar(b, idx):
+            return b.biz[idx] == idx
+
+        for idx in model.foo:
+            sb.scale_variable_by_definition_constraint(
+                model.foo[idx],
+                model.bar[idx],
+            )
+
+        for idx in model.foo:
+            assert model.scaling_factor[model.foo[idx]] == 1 / idx
+            assert model.foo[idx].value is None
+
+    @pytest.mark.unit
+    def test_scale_variable_by_definition_scaling_hint_scalar(self, model):
+        sb = CustomScalerBase()
+
+        model.foo = Var()
+
+        @model.Expression()
+        def biz(b):
+            return 1
+
+        sb.set_component_scaling_factor(model.biz, 42)
+
+        @model.Constraint()
+        def bar(b):
+            return b.foo == b.biz
+
+        sb.scale_variable_by_definition_constraint(
+            model.foo,
+            model.bar,
+        )
+
+        assert model.scaling_factor[model.foo] == pytest.approx(42)
+        assert model.foo.value is None
+
+    @pytest.mark.unit
+    def test_scale_variable_by_definition_scaling_hint_indexed(self, model):
+        sb = CustomScalerBase()
+
+        model.foo = Var([1, 2, 3])
+
+        @model.Expression([1, 2, 3])
+        def biz(b, idx):
+            return idx
+
+        scaling_hints = [11, 13, 17]
+        for idx in model.biz:
+            sb.set_component_scaling_factor(model.biz[idx], scaling_hints[idx - 1])
+
+        @model.Constraint([1, 2, 3])
+        def bar(b, idx):
+            return b.foo[idx] == b.biz[idx]
+
+        for idx in model.foo:
+            sb.scale_variable_by_definition_constraint(
+                model.foo[idx],
+                model.bar[idx],
+            )
+
+        for idx in model.foo:
+            assert model.scaling_factor[model.foo[idx]] == pytest.approx(
+                scaling_hints[idx - 1]
+            )
+            assert model.foo[idx].value is None
+
+    @pytest.mark.unit
+    def test_scale_variable_by_definition_no_hint_scalar(self, model):
+        sb = CustomScalerBase()
+
+        model.foo = Var()
+
+        @model.Expression()
+        def biz(b):
+            return 1
+
+        @model.Constraint()
+        def bar(b):
+            return b.foo == b.biz
+
+        sb.scale_variable_by_definition_constraint(
+            model.foo,
+            model.bar,
+        )
+
+        assert model.scaling_factor[model.foo] == pytest.approx(1)
+        assert model.foo.value is None
+
+    @pytest.mark.unit
+    def test_scale_variable_by_definition_no_hint_indexed(self, model):
+        sb = CustomScalerBase()
+
+        model.foo = Var([1, 2, 3])
+
+        @model.Expression([1, 2, 3])
+        def biz(b, idx):
+            return idx
+
+        @model.Constraint([1, 2, 3])
+        def bar(b, idx):
+            return b.foo[idx] == b.biz[idx]
+
+        for idx in model.foo:
+            sb.scale_variable_by_definition_constraint(
+                model.foo[idx],
+                model.bar[idx],
+            )
+
+        for idx in model.foo:
+            assert model.scaling_factor[model.foo[idx]] == pytest.approx(1 / idx)
+            assert model.foo[idx].value is None
+
+    @pytest.mark.unit
+    def test_scale_variable_by_definition_constraint_zero_derivative(self, model):
+        sb = CustomScalerBase()
+        model.foo = Constraint(expr=1 == 0 * model.enth_mol)
+        model.enth_mol.value = 42
+        with pytest.raises(
+            RuntimeError,
+            match=re.escape(
+                "Could not calculate scaling factor from definition constraint foo. "
+                "Does enth_mol appear nonlinearly in it or have a linear coefficient "
+                "equal to zero?"
+            ),
+        ):
+            sb.scale_variable_by_definition_constraint(
+                model.enth_mol,
+                model.foo,
+            )
+        assert model.enth_mol.value == 42
+
+    @pytest.mark.unit
+    def test_scale_variable_by_definition_constraint_zero_derivative(self, model):
+        sb = CustomScalerBase()
+        model.enth_mol.value = 42
+        model.foo = Constraint(expr=0 == model.enth_mol)
+        with pytest.raises(
+            ValueError,
+            match=re.escape(
+                "Calculated nominal value of zero from definition constraint."
+            ),
+        ):
+            sb.scale_variable_by_definition_constraint(
+                model.enth_mol,
+                model.foo,
+            )
+        assert model.enth_mol.value == 42
+
+    @pytest.mark.unit
+    def test_scale_variable_by_definition_constraint_min_scaling_factors(self, model):
+        sb = CustomScalerBase()
+        model.foo = Var(initialize=1e8)
+        model.bar = Var(initialize=1e16)
+        model.biz = Var()
+
+        @model.Constraint()
+        def con(b):
+            return b.biz == b.foo**2 / b.bar
+
+        sb.scale_variable_by_definition_constraint(
+            model.biz,
+            model.con,
+        )
+        assert model.foo.value == 1e8
+        assert model.bar.value == 1e16
+        assert model.biz.value is None
+
+        assert model.scaling_factor[model.biz] == pytest.approx(1e-6)
+
+    @pytest.mark.unit
+    def test_scale_variable_by_definition_constraint_max_scaling_factors(self, model):
+        sb = CustomScalerBase()
+        model.foo = Var(initialize=1e-8)
+        model.bar = Var(initialize=1e-16)
+        model.biz = Var()
+
+        @model.Constraint()
+        def con(b):
+            return b.biz == b.foo**2 / b.bar
+
+        sb.scale_variable_by_definition_constraint(
+            model.biz,
+            model.con,
+        )
+        assert model.foo.value == 1e-8
+        assert model.bar.value == 1e-16
+        assert model.biz.value is None
+
+        assert model.scaling_factor[model.biz] == pytest.approx(1e6)
+
+    @pytest.mark.unit
+    def test_scale_constraint_by_default_no_default(self, model):
+        sb = CustomScalerBase()
+        with pytest.raises(
+            TypeError,
+            match=re.escape(
+                "pressure is type <class 'pyomo.core.base.var.ScalarVar'>, "
+                "but a constraint was expected."
+            ),
+        ):
+            sb.scale_constraint_by_default(model.pressure)
+        assert model.pressure not in model.scaling_factor
+
+    @pytest.mark.unit
+    def test_scale_constraint_by_default(self, model):
+        sb = CustomScalerBase()
 
         # Set a default
         sb.default_scaling_factors["ideal_gas"] = 1e-3
@@ -342,7 +952,72 @@ class TestCustomScalerBase:
         assert model.scaling_factor[model.ideal_gas] == 1e-5
 
     @pytest.mark.unit
+    def test_scale_constraint_by_default_indexed(self, model):
+
+        model.mole_frac_comp = Var(["N2", "O2"])
+
+        @model.Constraint(["N2", "O2"])
+        def mole_frac_eqn(b, j):
+            return b.mole_frac_comp[j] == 0.5
+
+        sb = CustomScalerBase()
+
+        with pytest.raises(
+            TypeError,
+            match=re.escape(
+                "mole_frac_comp is indexed. Call with ComponentData children instead."
+            ),
+        ):
+            sb.scale_constraint_by_default(model.mole_frac_comp)
+        with pytest.raises(
+            TypeError,
+            match=re.escape(
+                "mole_frac_eqn is indexed. Call with ComponentData children instead."
+            ),
+        ):
+            sb.scale_constraint_by_default(model.mole_frac_eqn)
+        with pytest.raises(
+            TypeError,
+            match=re.escape(
+                "mole_frac_comp[N2] is type <class 'pyomo.core.base.var.VarData'>,"
+                " but a constraint was expected."
+            ),
+        ):
+            sb.scale_constraint_by_default(model.mole_frac_comp["N2"])
+        with pytest.raises(
+            ValueError,
+            match=re.escape(
+                "This scaler requires the user to provide a default "
+                "scaling factor for mole_frac_eqn[N2], but no default scaling "
+                "factor was set."
+            ),
+        ):
+            sb.scale_constraint_by_default(model.mole_frac_eqn["N2"])
+        sb.default_scaling_factors["mole_frac_eqn[N2]"] = 7
+        sb.scale_constraint_by_default(model.mole_frac_eqn["N2"])
+        assert model.scaling_factor[model.mole_frac_eqn["N2"]] == 7
+        assert model.mole_frac_eqn["O2"] not in model.scaling_factor
+
+    @pytest.mark.unit
     def test_get_expression_nominal_values(self, model):
+        sb = CustomScalerBase()
+
+        # Set variable scaling factors for testing
+        model.scaling_factor[model.pressure] = 1e-5
+        model.scaling_factor[model.temperature] = 1e-2
+        model.scaling_factor[model.volume_mol] = 1e-1
+
+        nominal_value = sb.get_expression_nominal_value(model.ideal_gas.body)
+
+        # Nominal value will be P*V - R*T
+        assert nominal_value == pytest.approx(831.446 - 1e6, rel=1e-5)
+
+        # Check redirection for ConstraintData objects
+        nominal_value = sb.get_expression_nominal_value(model.ideal_gas)
+        assert nominal_value == pytest.approx(831.446 - 1e6, rel=1e-5)
+
+    @pytest.mark.unit
+    def test_get_sum_terms_nominal_value(self, model):
         sb = CustomScalerBase()
 
         # Set variable scaling factors for testing
@@ -359,7 +1034,31 @@ class TestCustomScalerBase:
         ]
 
         # Check redirection for ConstraintData objects
-        nominal_values = sb.get_expression_nominal_values(model.ideal_gas)
+        nominal_values = sb.get_sum_terms_nominal_values(model.ideal_gas)
+        assert nominal_values == [
+            pytest.approx(831.446, rel=1e-5),
+            pytest.approx(1e6, rel=1e-5),
+        ]
+
+    @pytest.mark.unit
+    def test_get_sum_terms_nominal_values(self, model):
+        sb = CustomScalerBase()
+
+        # Set variable scaling factors for testing
+        model.scaling_factor[model.pressure] = 1e-5
+        model.scaling_factor[model.temperature] = 1e-2
+        model.scaling_factor[model.volume_mol] = 1e-1
+
+        nominal_values = sb.get_sum_terms_nominal_values(model.ideal_gas.expr)
+
+        # Nominal values will be (R*T, P*V)
+        assert nominal_values == [
+            pytest.approx(831.446, rel=1e-5),
+            pytest.approx(1e6, rel=1e-5),
+        ]
+
+        # Check redirection for ConstraintData objects
+        nominal_values = sb.get_sum_terms_nominal_values(model.ideal_gas)
         assert nominal_values == [
             pytest.approx(831.446, rel=1e-5),
             pytest.approx(1e6, rel=1e-5),
@@ -546,7 +1245,7 @@ class TestCustomScalerBase:
         assert model.pressure.value is None
 
     @pytest.mark.unit
-    def test_propagate_state_scaling(self):
+    def test_propagate_state_scaling_indexed_to_indexed(self):
         # Dummy up two state blocks
         m = ConcreteModel()
 
@@ -598,6 +1297,204 @@ class TestCustomScalerBase:
             for j in sd.flow_mol_phase_comp.values():
                 assert sd.scaling_factor[j] == 10 * t * count
                 count += 1
+
+    @pytest.mark.unit
+    def test_propagate_state_scaling_scalar_to_indexed(self):
+        # Dummy up two state blocks
+        m = ConcreteModel()
+
+        m.properties = PhysicalParameterTestBlock()
+
+        m.state1 = m.properties.build_state_block([1, 2, 3])
+        m.state2 = m.properties.build_state_block([1, 2, 3])
+
+        # Set scaling factors on state1
+        for t, sd in m.state1.items():
+            sd.scaling_factor = Suffix(direction=Suffix.EXPORT)
+            sd.scaling_factor[sd.temperature] = 100 * t
+            sd.scaling_factor[sd.pressure] = 1e5 * t
+
+            count = 1
+            for j in sd.flow_mol_phase_comp.values():
+                sd.scaling_factor[j] = 10 * t * count
+                count += 1
+
+        sb = CustomScalerBase()
+        sb.propagate_state_scaling(m.state2, m.state1[1])
+
+        for t, sd in m.state2.items():
+            assert sd.scaling_factor[sd.temperature] == 100 * 1
+            assert sd.scaling_factor[sd.pressure] == 1e5 * 1
+
+            count = 1
+            for j in sd.flow_mol_phase_comp.values():
+                assert sd.scaling_factor[j] == 10 * 1 * count
+                count += 1
+
+        # Test for overwrite=False
+        for t, sd in m.state1.items():
+            sd.scaling_factor[sd.temperature] = 200 * t
+            sd.scaling_factor[sd.pressure] = 2e5 * t
+
+            count = 1
+            for j in sd.flow_mol_phase_comp.values():
+                sd.scaling_factor[j] = 20 * t * count
+                count += 1
+
+        sb.propagate_state_scaling(m.state2, m.state1[1], overwrite=False)
+
+        for t, sd in m.state2.items():
+            assert sd.scaling_factor[sd.temperature] == 100 * 1
+            assert sd.scaling_factor[sd.pressure] == 1e5 * 1
+
+            count = 1
+            for j in sd.flow_mol_phase_comp.values():
+                assert sd.scaling_factor[j] == 10 * 1 * count
+                count += 1
+
+        # Test for overwrite=True
+        sb.propagate_state_scaling(m.state2, m.state1[2], overwrite=True)
+
+        for t, sd in m.state2.items():
+            assert sd.scaling_factor[sd.temperature] == 200 * 2
+            assert sd.scaling_factor[sd.pressure] == 2e5 * 2
+
+            count = 1
+            for j in sd.flow_mol_phase_comp.values():
+                assert sd.scaling_factor[j] == 20 * 2 * count
+                count += 1
+
+    @pytest.mark.unit
+    def test_propagate_state_scaling_scalar_to_indexed_within_block(self):
+        # Dummy up two state blocks
+        m = ConcreteModel()
+
+        m.properties = PhysicalParameterTestBlock()
+
+        m.state1 = m.properties.build_state_block([1, 2, 3])
+
+        # Set scaling factors on state1
+        for t, sd in m.state1.items():
+            sd.scaling_factor = Suffix(direction=Suffix.EXPORT)
+            sd.scaling_factor[sd.temperature] = 100 * t
+            sd.scaling_factor[sd.pressure] = 1e5 * t
+
+            count = 1
+            for j in sd.flow_mol_phase_comp.values():
+                sd.scaling_factor[j] = 10 * t * count
+                count += 1
+
+        sb = CustomScalerBase()
+        sb.propagate_state_scaling(m.state1, m.state1[1])
+
+        for t, sd in m.state1.items():
+            assert sd.scaling_factor[sd.temperature] == 100 * t
+            assert sd.scaling_factor[sd.pressure] == 1e5 * t
+
+            count = 1
+            for j in sd.flow_mol_phase_comp.values():
+                assert sd.scaling_factor[j] == 10 * t * count
+                count += 1
+
+        # Test for overwrite=False
+        for t, sd in m.state1.items():
+            sd.scaling_factor[sd.temperature] = 200 * t
+            sd.scaling_factor[sd.pressure] = 2e5 * t
+
+            count = 1
+            for j in sd.flow_mol_phase_comp.values():
+                sd.scaling_factor[j] = 20 * t * count
+                count += 1
+
+        sb.propagate_state_scaling(m.state1, m.state1[1], overwrite=False)
+
+        for t, sd in m.state1.items():
+            assert sd.scaling_factor[sd.temperature] == 200 * t
+            assert sd.scaling_factor[sd.pressure] == 2e5 * t
+
+            count = 1
+            for j in sd.flow_mol_phase_comp.values():
+                assert sd.scaling_factor[j] == 20 * t * count
+                count += 1
+
+        # Test for overwrite=True
+        sb.propagate_state_scaling(m.state1, m.state1[2], overwrite=True)
+
+        for t, sd in m.state1.items():
+            assert sd.scaling_factor[sd.temperature] == 200 * 2
+            assert sd.scaling_factor[sd.pressure] == 2e5 * 2
+
+            count = 1
+            for j in sd.flow_mol_phase_comp.values():
+                assert sd.scaling_factor[j] == 20 * 2 * count
+                count += 1
+
+    @pytest.mark.unit
+    def test_propagate_state_scaling_scalar_to_scalar(self):
+        # Dummy up two state blocks
+        m = ConcreteModel()
+
+        m.properties = PhysicalParameterTestBlock()
+
+        m.state1 = m.properties.build_state_block([1, 2, 3])
+        m.state2 = m.properties.build_state_block([1, 2, 3])
+
+        # Set scaling factors on state1
+        for t, sd in m.state1.items():
+            sd.scaling_factor = Suffix(direction=Suffix.EXPORT)
+            sd.scaling_factor[sd.temperature] = 100 * t
+            sd.scaling_factor[sd.pressure] = 1e5 * t
+
+            count = 1
+            for j in sd.flow_mol_phase_comp.values():
+                sd.scaling_factor[j] = 10 * t * count
+                count += 1
+
+        sb = CustomScalerBase()
+        sb.propagate_state_scaling(m.state2[2], m.state1[3])
+
+        for t, sd in m.state2.items():
+            if t == 2:
+                assert sd.scaling_factor[sd.temperature] == 100 * 3
+                assert sd.scaling_factor[sd.pressure] == 1e5 * 3
+
+                count = 1
+                for j in sd.flow_mol_phase_comp.values():
+                    assert sd.scaling_factor[j] == 10 * 3 * count
+                    count += 1
+            else:
+                assert not hasattr(sd, "scaling_factor")
+
+    @pytest.mark.unit
+    def test_propagate_state_scaling_indexed_to_scalar(self):
+        # Dummy up two state blocks
+        m = ConcreteModel()
+
+        m.properties = PhysicalParameterTestBlock()
+
+        m.state1 = m.properties.build_state_block([1, 2, 3])
+        m.state2 = m.properties.build_state_block([1, 2, 3])
+
+        # Set scaling factors on state1
+        for t, sd in m.state1.items():
+            sd.scaling_factor = Suffix(direction=Suffix.EXPORT)
+            sd.scaling_factor[sd.temperature] = 100 * t
+            sd.scaling_factor[sd.pressure] = 1e5 * t
+
+            count = 1
+            for j in sd.flow_mol_phase_comp.values():
+                sd.scaling_factor[j] = 10 * t * count
+                count += 1
+
+        sb = CustomScalerBase()
+        with pytest.raises(
+            ValueError,
+            match=re.escape(
+                "Source state block is indexed but target state block is not indexed. "
+                "It is ambiguous which index should be used."
+            ),
+        ):
+            sb.propagate_state_scaling(m.state2[2], m.state1)
 
     @pytest.mark.unit
     def test_call_submodel_scaler_method_no_scaler(self, caplog):
@@ -680,3 +1577,27 @@ class TestCustomScalerBase:
             assert not bd._dummy_scaler_test
 
         assert "Using user-defined Scaler for b." in caplog.text
+
+    @pytest.mark.unit
+    def test_call_submodel_scaler_method_default_scaler_blockdata(self, caplog):
+        caplog.set_level(idaeslog.DEBUG, logger="idaes")
+
+        # Dummy up a nested model
+        m = ConcreteModel()
+        m.b = Block([1, 2, 3])
+        for bd in m.b.values():
+            bd.default_scaler = DummyScaler
+
+        sb = CustomScalerBase()
+        sb.call_submodel_scaler_method(m.b[1], method="dummy_method", overwrite=True)
+
+        for i, bd in m.b.items():
+            if i == 1:
+                assert bd._dummy_scaler_test
+            else:
+                assert not hasattr(bd, "_dummy_scaler_test")
+
+        assert "Using default Scaler for b[1]." in caplog.text
+
+
+# TODO additional tests for nested submodel scalers.

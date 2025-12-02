@@ -838,6 +838,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
         while condition:
 
             # compute new approximated root as x2
+            # pylint: disable-next=used-before-assignment,possibly-used-before-assignment
             x2 = x0 - (x1 - x0) * f_x0 / (f_x1 - f_x0)
 
             # fix time to x_2 guess

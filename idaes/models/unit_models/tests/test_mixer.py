@@ -13,7 +13,7 @@
 """
 Tests for ControlVolumeBlockData.
 
-Author: Andrew Lee
+Author: Andrew Lee, Douglas Allan
 """
 import pytest
 import pandas
@@ -25,6 +25,7 @@ from pyomo.environ import (
     Param,
     RangeSet,
     Set,
+    TransformationFactory,
     Var,
     value,
     units as pyunits,
@@ -44,7 +45,10 @@ from idaes.core import (
     EnergyBalanceType,
     Phase,
     Component,
-    MaterialFlowBasis,
+)
+from idaes.core.util.scaling import (
+    get_jacobian,
+    jacobian_cond,
 )
 from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
     BTXParameterBlock,
@@ -60,7 +64,9 @@ from idaes.models.unit_models.mixer import (
     MixingType,
     MomentumMixingType,
     MixerInitializer,
+    MixerScaler,
 )
+from idaes.models.unit_models.tests.leach_solution import LeachSolutionParameters
 from idaes.core.util.exceptions import (
     BurntToast,
     ConfigurationError,
@@ -85,9 +91,6 @@ from idaes.models.properties.modular_properties.eos.ceos import cubic_roots_avai
 from idaes.core.initialization import (
     BlockTriangularizationInitializer,
     InitializationStatus,
-)
-from idaes.core.util.initialization import (
-    fix_state_vars,
 )
 from idaes.core.util import DiagnosticsToolbox
 
@@ -593,6 +596,10 @@ class TestMixer(object):
         m.fs.pp = PhysicalParameterTestBlock()
 
         m.fs.mix = Mixer(property_package=m.fs.pp)
+        inlet_dict = {key: val for key, val in m.fs.mix.inlet_blocks}
+        assert len(inlet_dict) == 2
+        assert inlet_dict["inlet_1"] is m.fs.mix.inlet_1_state
+        assert inlet_dict["inlet_2"] is m.fs.mix.inlet_2_state
 
         assert isinstance(m.fs.mix.material_mixing_equations, Constraint)
         assert len(m.fs.mix.material_mixing_equations) == 4
@@ -605,8 +612,9 @@ class TestMixer(object):
         assert isinstance(m.fs.mix.minimum_pressure, Var)
         assert len(m.fs.mix.minimum_pressure) == 2
         assert isinstance(m.fs.mix.eps_pressure, Param)
+        assert len(m.fs.mix.minimum_pressure_constraint) == 2
         assert isinstance(m.fs.mix.minimum_pressure_constraint, Constraint)
-        assert len(m.fs.mix.minimum_pressure) == 2
+        assert len(m.fs.mix.mixture_pressure) == 1
         assert isinstance(m.fs.mix.mixture_pressure, Constraint)
 
         assert isinstance(m.fs.mix.inlet_1, Port)
@@ -633,8 +641,9 @@ class TestMixer(object):
         assert isinstance(m.fs.mix.minimum_pressure, Var)
         assert len(m.fs.mix.minimum_pressure) == 2
         assert isinstance(m.fs.mix.eps_pressure, Param)
+        assert len(m.fs.mix.minimum_pressure_constraint) == 2
         assert isinstance(m.fs.mix.minimum_pressure_constraint, Constraint)
-        assert len(m.fs.mix.minimum_pressure) == 2
+        assert len(m.fs.mix.mixture_pressure) == 1
         assert isinstance(m.fs.mix.mixture_pressure, Constraint)
 
         assert isinstance(m.fs.mix.inlet_1, Port)
@@ -663,6 +672,41 @@ class TestMixer(object):
 
         assert isinstance(m.fs.mix.inlet_1, Port)
         assert isinstance(m.fs.mix.inlet_2, Port)
+        assert isinstance(m.fs.mix.outlet, Port)
+
+    @pytest.mark.build
+    @pytest.mark.unit
+    def test_build_named_inlets(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.pp = PhysicalParameterTestBlock()
+
+        m.fs.mix = Mixer(property_package=m.fs.pp, inlet_list=["foo", "bar", "biz"])
+        inlet_dict = {key: val for key, val in m.fs.mix.inlet_blocks}
+        assert len(inlet_dict) == 3
+        assert inlet_dict["foo"] is m.fs.mix.foo_state
+        assert inlet_dict["bar"] is m.fs.mix.bar_state
+        assert inlet_dict["biz"] is m.fs.mix.biz_state
+
+        assert isinstance(m.fs.mix.material_mixing_equations, Constraint)
+        assert len(m.fs.mix.material_mixing_equations) == 4
+        assert hasattr(m.fs.mix, "phase_equilibrium_idx_ref") is False
+
+        assert isinstance(m.fs.mix.enthalpy_mixing_equations, Constraint)
+        assert len(m.fs.mix.enthalpy_mixing_equations) == 1
+
+        assert m.fs.mix.inlet_idx.ctype is RangeSet
+        assert isinstance(m.fs.mix.minimum_pressure, Var)
+        assert len(m.fs.mix.minimum_pressure) == 3
+        assert isinstance(m.fs.mix.eps_pressure, Param)
+        assert len(m.fs.mix.minimum_pressure_constraint) == 3
+        assert isinstance(m.fs.mix.minimum_pressure_constraint, Constraint)
+        assert len(m.fs.mix.mixture_pressure) == 1
+        assert isinstance(m.fs.mix.mixture_pressure, Constraint)
+
+        assert isinstance(m.fs.mix.foo, Port)
+        assert isinstance(m.fs.mix.bar, Port)
+        assert isinstance(m.fs.mix.biz, Port)
         assert isinstance(m.fs.mix.outlet, Port)
 
     # -------------------------------------------------------------------------
@@ -1242,61 +1286,185 @@ class TestIAPWS(object):
         dt.assert_no_numerical_warnings()
 
 
+def _make_sapon_model():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+
+    m.fs.properties = SaponificationParameterBlock()
+
+    m.fs.unit = Mixer(property_package=m.fs.properties)
+
+    m.fs.unit.inlet_1.flow_vol[0].fix(1e-3)
+    m.fs.unit.inlet_1.temperature[0].fix(320)
+    m.fs.unit.inlet_1.pressure[0].fix(101325)
+    m.fs.unit.inlet_1.conc_mol_comp[0, "H2O"].fix(55388.0)
+    m.fs.unit.inlet_1.conc_mol_comp[0, "NaOH"].fix(100.0)
+    m.fs.unit.inlet_1.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
+    m.fs.unit.inlet_1.conc_mol_comp[0, "SodiumAcetate"].fix(1e-8)
+    m.fs.unit.inlet_1.conc_mol_comp[0, "Ethanol"].fix(1e-8)
+
+    m.fs.unit.inlet_2.flow_vol[0].fix(1e-3)
+    m.fs.unit.inlet_2.temperature[0].fix(300)
+    m.fs.unit.inlet_2.pressure[0].fix(101325)
+    m.fs.unit.inlet_2.conc_mol_comp[0, "H2O"].fix(55388.0)
+    m.fs.unit.inlet_2.conc_mol_comp[0, "NaOH"].fix(100.0)
+    m.fs.unit.inlet_2.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
+    m.fs.unit.inlet_2.conc_mol_comp[0, "SodiumAcetate"].fix(1e-8)
+    m.fs.unit.inlet_2.conc_mol_comp[0, "Ethanol"].fix(1e-8)
+
+    return m
+
+
+_sapon_expected = pandas.DataFrame.from_dict(
+    {
+        "Units": {
+            "Volumetric Flowrate": getattr(pyunits.pint_registry, "m**3/second"),
+            "Molar Concentration H2O": getattr(pyunits.pint_registry, "mole/m**3"),
+            "Molar Concentration NaOH": getattr(pyunits.pint_registry, "mole/m**3"),
+            "Molar Concentration EthylAcetate": getattr(
+                pyunits.pint_registry, "mole/m**3"
+            ),
+            "Molar Concentration SodiumAcetate": getattr(
+                pyunits.pint_registry, "mole/m**3"
+            ),
+            "Molar Concentration Ethanol": getattr(pyunits.pint_registry, "mole/m**3"),
+            "Temperature": getattr(pyunits.pint_registry, "K"),
+            "Pressure": getattr(pyunits.pint_registry, "Pa"),
+        },
+        "inlet_1": {
+            "Volumetric Flowrate": 1e-3,
+            "Molar Concentration H2O": 55388,
+            "Molar Concentration NaOH": 100.00,
+            "Molar Concentration EthylAcetate": 100.00,
+            "Molar Concentration SodiumAcetate": 0,
+            "Molar Concentration Ethanol": 0,
+            "Temperature": 320,
+            "Pressure": 1.0132e05,
+        },
+        "inlet_2": {
+            "Volumetric Flowrate": 1e-3,
+            "Molar Concentration H2O": 55388,
+            "Molar Concentration NaOH": 100.00,
+            "Molar Concentration EthylAcetate": 100.00,
+            "Molar Concentration SodiumAcetate": 0,
+            "Molar Concentration Ethanol": 0,
+            "Temperature": 300,
+            "Pressure": 1.0132e05,
+        },
+        "Outlet": {
+            "Volumetric Flowrate": 1.00,
+            "Molar Concentration H2O": 100.00,
+            "Molar Concentration NaOH": 100.0,
+            "Molar Concentration EthylAcetate": 100.00,
+            "Molar Concentration SodiumAcetate": 100.00,
+            "Molar Concentration Ethanol": 100.00,
+            "Temperature": 298.15,
+            "Pressure": 1.0132e05,
+        },
+    }
+)
+
+
+def _test_build_sapon(sapon):
+    assert len(sapon.fs.unit.inlet_1.vars) == 4
+    assert hasattr(sapon.fs.unit.inlet_1, "flow_vol")
+    assert hasattr(sapon.fs.unit.inlet_1, "conc_mol_comp")
+    assert hasattr(sapon.fs.unit.inlet_1, "temperature")
+    assert hasattr(sapon.fs.unit.inlet_1, "pressure")
+
+    assert len(sapon.fs.unit.inlet_2.vars) == 4
+    assert hasattr(sapon.fs.unit.inlet_2, "flow_vol")
+    assert hasattr(sapon.fs.unit.inlet_2, "conc_mol_comp")
+    assert hasattr(sapon.fs.unit.inlet_2, "temperature")
+    assert hasattr(sapon.fs.unit.inlet_2, "pressure")
+
+    assert len(sapon.fs.unit.outlet.vars) == 4
+    assert hasattr(sapon.fs.unit.outlet, "flow_vol")
+    assert hasattr(sapon.fs.unit.outlet, "conc_mol_comp")
+    assert hasattr(sapon.fs.unit.outlet, "temperature")
+    assert hasattr(sapon.fs.unit.outlet, "pressure")
+
+    assert number_variables(sapon) == 26
+    assert number_total_constraints(sapon) == 10
+    assert number_unused_variables(sapon) == 0
+
+
+def _test_solution_sapon(sapon):
+    assert pytest.approx(2e-3, abs=1e-6) == value(sapon.fs.unit.outlet.flow_vol[0])
+
+    assert pytest.approx(55388.0, abs=1e0) == value(
+        sapon.fs.unit.outlet.conc_mol_comp[0, "H2O"]
+    )
+    assert pytest.approx(100.0, abs=1e-3) == value(
+        sapon.fs.unit.outlet.conc_mol_comp[0, "NaOH"]
+    )
+    assert pytest.approx(100.0, abs=1e-3) == value(
+        sapon.fs.unit.outlet.conc_mol_comp[0, "EthylAcetate"]
+    )
+    assert pytest.approx(0.0, abs=1e-3) == value(
+        sapon.fs.unit.outlet.conc_mol_comp[0, "SodiumAcetate"]
+    )
+    assert pytest.approx(0.0, abs=1e-3) == value(
+        sapon.fs.unit.outlet.conc_mol_comp[0, "Ethanol"]
+    )
+
+    assert pytest.approx(310.0, abs=1e-1) == value(sapon.fs.unit.outlet.temperature[0])
+
+    assert pytest.approx(101325, abs=1e2) == value(sapon.fs.unit.outlet.pressure[0])
+
+
+def _test_conservation_sapon(sapon):
+    assert (
+        abs(
+            value(
+                sapon.fs.unit.inlet_1.flow_vol[0]
+                + sapon.fs.unit.inlet_2.flow_vol[0]
+                - sapon.fs.unit.outlet.flow_vol[0]
+            )
+        )
+        <= 1e-6
+    )
+
+    assert (
+        abs(
+            value(
+                sapon.fs.unit.inlet_1.flow_vol[0]
+                * sapon.fs.properties.dens_mol
+                * sapon.fs.properties.cp_mol
+                * (
+                    sapon.fs.unit.inlet_1.temperature[0]
+                    - sapon.fs.properties.temperature_ref
+                )
+                + sapon.fs.unit.inlet_2.flow_vol[0]
+                * sapon.fs.properties.dens_mol
+                * sapon.fs.properties.cp_mol
+                * (
+                    sapon.fs.unit.inlet_2.temperature[0]
+                    - sapon.fs.properties.temperature_ref
+                )
+                - sapon.fs.unit.outlet.flow_vol[0]
+                * sapon.fs.properties.dens_mol
+                * sapon.fs.properties.cp_mol
+                * (
+                    sapon.fs.unit.outlet.temperature[0]
+                    - sapon.fs.properties.temperature_ref
+                )
+            )
+        )
+        <= 1e-3
+    )
+
+
 # -----------------------------------------------------------------------------
-class TestSaponification(object):
+class TestSaponificationLegacyScaling(object):
     @pytest.fixture(scope="class")
     def sapon(self):
-        m = ConcreteModel()
-        m.fs = FlowsheetBlock(dynamic=False)
-
-        m.fs.properties = SaponificationParameterBlock()
-
-        m.fs.unit = Mixer(property_package=m.fs.properties)
-
-        m.fs.unit.inlet_1.flow_vol[0].fix(1e-3)
-        m.fs.unit.inlet_1.temperature[0].fix(320)
-        m.fs.unit.inlet_1.pressure[0].fix(101325)
-        m.fs.unit.inlet_1.conc_mol_comp[0, "H2O"].fix(55388.0)
-        m.fs.unit.inlet_1.conc_mol_comp[0, "NaOH"].fix(100.0)
-        m.fs.unit.inlet_1.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
-        m.fs.unit.inlet_1.conc_mol_comp[0, "SodiumAcetate"].fix(1e-8)
-        m.fs.unit.inlet_1.conc_mol_comp[0, "Ethanol"].fix(1e-8)
-
-        m.fs.unit.inlet_2.flow_vol[0].fix(1e-3)
-        m.fs.unit.inlet_2.temperature[0].fix(300)
-        m.fs.unit.inlet_2.pressure[0].fix(101325)
-        m.fs.unit.inlet_2.conc_mol_comp[0, "H2O"].fix(55388.0)
-        m.fs.unit.inlet_2.conc_mol_comp[0, "NaOH"].fix(100.0)
-        m.fs.unit.inlet_2.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
-        m.fs.unit.inlet_2.conc_mol_comp[0, "SodiumAcetate"].fix(1e-8)
-        m.fs.unit.inlet_2.conc_mol_comp[0, "Ethanol"].fix(1e-8)
-
-        return m
+        return _make_sapon_model()
 
     @pytest.mark.build
     @pytest.mark.unit
     def test_build(self, sapon):
-        assert len(sapon.fs.unit.inlet_1.vars) == 4
-        assert hasattr(sapon.fs.unit.inlet_1, "flow_vol")
-        assert hasattr(sapon.fs.unit.inlet_1, "conc_mol_comp")
-        assert hasattr(sapon.fs.unit.inlet_1, "temperature")
-        assert hasattr(sapon.fs.unit.inlet_1, "pressure")
-
-        assert len(sapon.fs.unit.inlet_2.vars) == 4
-        assert hasattr(sapon.fs.unit.inlet_2, "flow_vol")
-        assert hasattr(sapon.fs.unit.inlet_2, "conc_mol_comp")
-        assert hasattr(sapon.fs.unit.inlet_2, "temperature")
-        assert hasattr(sapon.fs.unit.inlet_2, "pressure")
-
-        assert len(sapon.fs.unit.outlet.vars) == 4
-        assert hasattr(sapon.fs.unit.outlet, "flow_vol")
-        assert hasattr(sapon.fs.unit.outlet, "conc_mol_comp")
-        assert hasattr(sapon.fs.unit.outlet, "temperature")
-        assert hasattr(sapon.fs.unit.outlet, "pressure")
-
-        assert number_variables(sapon) == 26
-        assert number_total_constraints(sapon) == 10
-        assert number_unused_variables(sapon) == 0
+        _test_build_sapon(sapon)
 
     @pytest.mark.component
     def test_structural_issues(self, sapon):
@@ -1308,64 +1476,7 @@ class TestSaponification(object):
     def test_get_stream_table_contents(self, sapon):
         stable = sapon.fs.unit._get_stream_table_contents()
 
-        expected = pandas.DataFrame.from_dict(
-            {
-                "Units": {
-                    "Volumetric Flowrate": getattr(
-                        pyunits.pint_registry, "m**3/second"
-                    ),
-                    "Molar Concentration H2O": getattr(
-                        pyunits.pint_registry, "mole/m**3"
-                    ),
-                    "Molar Concentration NaOH": getattr(
-                        pyunits.pint_registry, "mole/m**3"
-                    ),
-                    "Molar Concentration EthylAcetate": getattr(
-                        pyunits.pint_registry, "mole/m**3"
-                    ),
-                    "Molar Concentration SodiumAcetate": getattr(
-                        pyunits.pint_registry, "mole/m**3"
-                    ),
-                    "Molar Concentration Ethanol": getattr(
-                        pyunits.pint_registry, "mole/m**3"
-                    ),
-                    "Temperature": getattr(pyunits.pint_registry, "K"),
-                    "Pressure": getattr(pyunits.pint_registry, "Pa"),
-                },
-                "inlet_1": {
-                    "Volumetric Flowrate": 1e-3,
-                    "Molar Concentration H2O": 55388,
-                    "Molar Concentration NaOH": 100.00,
-                    "Molar Concentration EthylAcetate": 100.00,
-                    "Molar Concentration SodiumAcetate": 0,
-                    "Molar Concentration Ethanol": 0,
-                    "Temperature": 320,
-                    "Pressure": 1.0132e05,
-                },
-                "inlet_2": {
-                    "Volumetric Flowrate": 1e-3,
-                    "Molar Concentration H2O": 55388,
-                    "Molar Concentration NaOH": 100.00,
-                    "Molar Concentration EthylAcetate": 100.00,
-                    "Molar Concentration SodiumAcetate": 0,
-                    "Molar Concentration Ethanol": 0,
-                    "Temperature": 300,
-                    "Pressure": 1.0132e05,
-                },
-                "Outlet": {
-                    "Volumetric Flowrate": 1.00,
-                    "Molar Concentration H2O": 100.00,
-                    "Molar Concentration NaOH": 100.0,
-                    "Molar Concentration EthylAcetate": 100.00,
-                    "Molar Concentration SodiumAcetate": 100.00,
-                    "Molar Concentration Ethanol": 100.00,
-                    "Temperature": 298.15,
-                    "Pressure": 1.0132e05,
-                },
-            }
-        )
-
-        pandas.testing.assert_frame_equal(stable, expected, rtol=1e-4, atol=1e-4)
+        pandas.testing.assert_frame_equal(stable, _sapon_expected, rtol=1e-4, atol=1e-4)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -1389,73 +1500,100 @@ class TestSaponification(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, sapon):
-        assert pytest.approx(2e-3, abs=1e-6) == value(sapon.fs.unit.outlet.flow_vol[0])
-
-        assert pytest.approx(55388.0, abs=1e0) == value(
-            sapon.fs.unit.outlet.conc_mol_comp[0, "H2O"]
-        )
-        assert pytest.approx(100.0, abs=1e-3) == value(
-            sapon.fs.unit.outlet.conc_mol_comp[0, "NaOH"]
-        )
-        assert pytest.approx(100.0, abs=1e-3) == value(
-            sapon.fs.unit.outlet.conc_mol_comp[0, "EthylAcetate"]
-        )
-        assert pytest.approx(0.0, abs=1e-3) == value(
-            sapon.fs.unit.outlet.conc_mol_comp[0, "SodiumAcetate"]
-        )
-        assert pytest.approx(0.0, abs=1e-3) == value(
-            sapon.fs.unit.outlet.conc_mol_comp[0, "Ethanol"]
-        )
-
-        assert pytest.approx(310.0, abs=1e-1) == value(
-            sapon.fs.unit.outlet.temperature[0]
-        )
-
-        assert pytest.approx(101325, abs=1e2) == value(sapon.fs.unit.outlet.pressure[0])
+        _test_solution_sapon(sapon)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_conservation(self, sapon):
-        assert (
-            abs(
-                value(
-                    sapon.fs.unit.inlet_1.flow_vol[0]
-                    + sapon.fs.unit.inlet_2.flow_vol[0]
-                    - sapon.fs.unit.outlet.flow_vol[0]
-                )
-            )
-            <= 1e-6
+        _test_conservation_sapon(sapon)
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues(self, sapon):
+        dt = DiagnosticsToolbox(sapon)
+        dt.assert_no_numerical_warnings()
+
+
+class TestSaponificationScalerObject(object):
+    @pytest.fixture(scope="class")
+    def sapon(self):
+        return _make_sapon_model()
+
+    @pytest.mark.build
+    @pytest.mark.unit
+    def test_build(self, sapon):
+        _test_build_sapon(sapon)
+
+    @pytest.mark.component
+    def test_structural_issues(self, sapon):
+        dt = DiagnosticsToolbox(sapon)
+        dt.assert_no_structural_warnings()
+
+    @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_stream_table_contents(self, sapon):
+        stable = sapon.fs.unit._get_stream_table_contents()
+
+        pandas.testing.assert_frame_equal(stable, _sapon_expected, rtol=1e-4, atol=1e-4)
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_initialize(self, sapon):
+        initialization_tester(sapon)
+
+    @pytest.mark.component
+    def test_scaling(self, sapon):
+        unit = sapon.fs.unit
+        assert unit.default_scaler is MixerScaler
+        scaler_obj = MixerScaler()
+        scaler_obj.scale_model(unit)
+
+        assert len(unit.scaling_factor) == 11
+
+        # Variables
+        for v in unit.minimum_pressure.values():
+            assert unit.scaling_factor[v] == 1e-5
+
+        # Constraints
+        for idx, c in unit.material_mixing_equations.items():
+            if idx[-1] == "H2O":
+                assert unit.scaling_factor[c] == 1e-2
+            else:
+                assert unit.scaling_factor[c] == 1
+
+        assert unit.scaling_factor[unit.enthalpy_mixing_equations[0]] == pytest.approx(
+            1.917e-6, rel=1e-3
         )
 
-        assert (
-            abs(
-                value(
-                    sapon.fs.unit.inlet_1.flow_vol[0]
-                    * sapon.fs.properties.dens_mol
-                    * sapon.fs.properties.cp_mol
-                    * (
-                        sapon.fs.unit.inlet_1.temperature[0]
-                        - sapon.fs.properties.temperature_ref
-                    )
-                    + sapon.fs.unit.inlet_2.flow_vol[0]
-                    * sapon.fs.properties.dens_mol
-                    * sapon.fs.properties.cp_mol
-                    * (
-                        sapon.fs.unit.inlet_2.temperature[0]
-                        - sapon.fs.properties.temperature_ref
-                    )
-                    - sapon.fs.unit.outlet.flow_vol[0]
-                    * sapon.fs.properties.dens_mol
-                    * sapon.fs.properties.cp_mol
-                    * (
-                        sapon.fs.unit.outlet.temperature[0]
-                        - sapon.fs.properties.temperature_ref
-                    )
-                )
-            )
-            <= 1e-3
-        )
+        for c in unit.minimum_pressure_constraint.values():
+            assert unit.scaling_factor[c] == 1e-5
+
+        assert unit.scaling_factor[unit.mixture_pressure[0]] == 1e-5
+        # Expressions
+        assert not hasattr(unit, "scaling_hint")
+
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solve(self, sapon):
+        results = solver.solve(sapon)
+
+        # Check for optimal solution
+        assert check_optimal_termination(results)
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solution(self, sapon):
+        _test_solution_sapon(sapon)
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_conservation(self, sapon):
+        _test_conservation_sapon(sapon)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -1653,218 +1791,154 @@ class TestInitializersIAPWSEquality:
 
 # -----------------------------------------------------------------------------
 # Inherent reaction case
-@declare_process_block_class("LeachSolutionParameters")
-class LeachSolutionParameterData(PhysicalParameterBlock):
-    def build(self):
-        super().build()
+# -----------------------------------------------------------------------------
+class TestComponentPhaseWithInherentReactions(object):
+    @pytest.fixture(scope="class")
+    def model(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
 
-        self.liquid = Phase()
+        m.fs.properties = LeachSolutionParameters()
 
-        # Solvent
-        self.H2O = Component()
-
-        # Acid related species
-        self.H = Component()
-        self.HSO4 = Component()
-        self.SO4 = Component()
-
-        self.mw = Param(
-            self.component_list,
-            units=pyunits.kg / pyunits.mol,
-            initialize={
-                "H2O": 18e-3,
-                "H": 1e-3,
-                "HSO4": 97e-3,
-                "SO4": 96e-3,
-            },
+        m.fs.unit = Mixer(
+            property_package=m.fs.properties,
+            material_balance_type=MaterialBalanceType.componentPhase,
+            energy_mixing_type=MixingType.none,
+            momentum_mixing_type=MomentumMixingType.none,
         )
 
-        # Inherent reaction for partial dissociation of HSO4
-        self._has_inherent_reactions = True
-        self.inherent_reaction_idx = Set(initialize=["Ka2"])
-        self.inherent_reaction_stoichiometry = {
-            ("Ka2", "liquid", "H"): 1,
-            ("Ka2", "liquid", "HSO4"): -1,
-            ("Ka2", "liquid", "SO4"): 1,
-            ("Ka2", "liquid", "H2O"): 0,
-        }
-        self.Ka2 = Param(
-            initialize=10**-1.99,
-            mutable=True,
-            units=pyunits.mol / pyunits.L,
+        m.fs.unit.inlet_1.flow_vol[0].fix(10)
+        m.fs.unit.inlet_1.conc_mass_comp[0, "H2O"].fix(1e6 * pyunits.mg / pyunits.L)
+        m.fs.unit.inlet_1.conc_mass_comp[0, "H"].fix(57.54848 * pyunits.mg / pyunits.L)
+        m.fs.unit.inlet_1.conc_mass_comp[0, "HSO4"].fix(
+            4117.798 * pyunits.mg / pyunits.L
+        )
+        m.fs.unit.inlet_1.conc_mass_comp[0, "SO4"].fix(
+            724.6539 * pyunits.mg / pyunits.L
         )
 
-        # Assume dilute acid, density of pure water
-        self.dens_mol = Param(
-            initialize=1,
-            units=pyunits.kg / pyunits.litre,
-            mutable=True,
+        m.fs.unit.inlet_2.flow_vol[0].fix(10)
+        m.fs.unit.inlet_2.conc_mass_comp[0, "H2O"].fix(1e6 * pyunits.mg / pyunits.L)
+        m.fs.unit.inlet_2.conc_mass_comp[0, "H"].fix(57.54848 * pyunits.mg / pyunits.L)
+        m.fs.unit.inlet_2.conc_mass_comp[0, "HSO4"].fix(
+            4117.798 * pyunits.mg / pyunits.L
+        )
+        m.fs.unit.inlet_2.conc_mass_comp[0, "SO4"].fix(
+            724.6539 * pyunits.mg / pyunits.L
         )
 
-        self._state_block_class = LeachSolutionStateBlock
+        return m
 
-    @classmethod
-    def define_metadata(cls, obj):
-        obj.add_properties(
-            {
-                "flow_vol": {"method": None},
-                "conc_mass_comp": {"method": None},
-                "conc_mol_comp": {"method": None},
-                "dens_mol": {"method": "_dens_mol"},
-            }
+    @pytest.mark.component
+    def test_structural_warnings(self, model):
+        dt = DiagnosticsToolbox(model)
+        dt.assert_no_structural_warnings()
+
+    @pytest.mark.component
+    def test_scaling(self, model):
+        unit = model.fs.unit
+        assert unit.default_scaler is MixerScaler
+        MixerScaler().scale_model(unit)
+
+        assert len(unit.scaling_factor) == 13
+
+        # Variables
+        assert unit.scaling_factor[
+            unit.inherent_reaction_extent[0.0, "Ka2"]
+        ] == pytest.approx(960)
+        assert unit.scaling_factor[
+            unit.inherent_reaction_generation[0.0, "liquid", "H2O"]
+        ] == pytest.approx(1.8e-3)
+        assert unit.scaling_factor[
+            unit.inherent_reaction_generation[0.0, "liquid", "H"]
+        ] == pytest.approx(10)
+        assert unit.scaling_factor[
+            unit.inherent_reaction_generation[0.0, "liquid", "HSO4"]
+        ] == pytest.approx(97)
+        assert unit.scaling_factor[
+            unit.inherent_reaction_generation[0.0, "liquid", "SO4"]
+        ] == pytest.approx(960)
+
+        # Constraints
+        assert unit.scaling_factor[
+            unit.inherent_reaction_constraint[0.0, "liquid", "H2O"]
+        ] == pytest.approx(1.8e-3)
+        assert unit.scaling_factor[
+            unit.inherent_reaction_constraint[0.0, "liquid", "H"]
+        ] == pytest.approx(10)
+        assert unit.scaling_factor[
+            unit.inherent_reaction_constraint[0.0, "liquid", "HSO4"]
+        ] == pytest.approx(97)
+        assert unit.scaling_factor[
+            unit.inherent_reaction_constraint[0.0, "liquid", "SO4"]
+        ] == pytest.approx(960)
+        assert unit.scaling_factor[
+            unit.material_mixing_equations[0.0, "liquid", "H2O"]
+        ] == pytest.approx(1.8e-3)
+        assert unit.scaling_factor[
+            unit.material_mixing_equations[0.0, "liquid", "H"]
+        ] == pytest.approx(10)
+        assert unit.scaling_factor[
+            unit.material_mixing_equations[0.0, "liquid", "HSO4"]
+        ] == pytest.approx(97)
+        assert unit.scaling_factor[
+            unit.material_mixing_equations[0.0, "liquid", "SO4"]
+        ] == pytest.approx(960)
+
+        # Expressions
+        assert not hasattr(unit, "scaling_hint")
+
+    @pytest.mark.component
+    @pytest.mark.solver
+    def test_initialization(self, model):
+        initializer = BlockTriangularizationInitializer()
+        initializer.initialize(model.fs.unit)
+        assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
+
+    @pytest.mark.component
+    @pytest.mark.solver
+    def test_solve(self, model):
+        results = solver.solve(model)
+        assert check_optimal_termination(results)
+
+    # Mark this test with solver because it relies on the
+    # results of the previous test, which is also marked
+    # solver.
+    @pytest.mark.component
+    @pytest.mark.solver
+    def test_solution(self, model):
+        unit = model.fs.unit
+        assert value(unit.outlet.flow_vol[0]) == pytest.approx(20, rel=1e-6)
+
+        assert value(unit.outlet.conc_mass_comp[0, "H2O"]) == pytest.approx(
+            1e6, rel=1e-6
         )
-        obj.add_default_units(
-            {
-                "time": pyunits.hour,
-                "length": pyunits.m,
-                "mass": pyunits.kg,
-                "amount": pyunits.mol,
-                "temperature": pyunits.K,
-            }
+        assert value(unit.outlet.conc_mass_comp[0, "H"]) == pytest.approx(
+            57.54848, rel=1e-6
+        )
+        assert value(unit.outlet.conc_mass_comp[0, "HSO4"]) == pytest.approx(
+            4117.798, rel=1e-6
+        )
+        assert value(unit.outlet.conc_mass_comp[0, "SO4"]) == pytest.approx(
+            724.6539, rel=1e-6
         )
 
-
-class _LeachSolutionStateBlock(StateBlock):
-    def fix_initialization_states(self):
-        """
-        Fixes state variables for state blocks.
-
-        Returns:
-            None
-        """
-        # Fix state variables
-        fix_state_vars(self)
-
-        # Deactivate inherent reactions
-        for k in self:
-            if not self[k].config.defined_state:
-                self[k].h2o_concentration.deactivate()
-                self[k].hso4_dissociation.deactivate()
-
-
-@declare_process_block_class(
-    "LeachSolutionStateBlock", block_class=_LeachSolutionStateBlock
-)
-class LeachSolutionStateBlockData(StateBlockData):
-    def build(self):
-        super().build()
-
-        self.flow_vol = Var(
-            units=pyunits.L / pyunits.hour,
-            bounds=(1e-8, None),
-        )
-        self.conc_mass_comp = Var(
-            self.params.component_list,
-            units=pyunits.mg / pyunits.L,
-            bounds=(1e-10, None),
-        )
-        self.conc_mol_comp = Var(
-            self.params.component_list,
-            units=pyunits.mol / pyunits.L,
-            initialize=1e-5,
-            bounds=(1e-8, None),
+        assert value(unit.inherent_reaction_extent[0, "Ka2"]) == pytest.approx(
+            0, abs=1e-6
         )
 
-        # Concentration conversion constraint
-        @self.Constraint(self.params.component_list)
-        def molar_concentration_constraint(b, j):
-            return (
-                pyunits.convert(
-                    b.conc_mol_comp[j] * b.params.mw[j],
-                    to_units=pyunits.mg / pyunits.litre,
-                )
-                == b.conc_mass_comp[j]
-            )
+    @pytest.mark.component
+    @pytest.mark.solver
+    def test_no_numerical_warnings(self, model):
+        # TODO revisit once the diagnostics toolbox takes scaling into account
+        sm = TransformationFactory("core.scale_model").create_using(model, rename=False)
+        dt = DiagnosticsToolbox(sm)
+        dt.assert_no_numerical_warnings()
 
-        if not self.config.defined_state:
-            # Concentration of H2O based on assumed density
-            self.h2o_concentration = Constraint(
-                expr=self.conc_mass_comp["H2O"] == 1e6 * pyunits.mg / pyunits.L
-            )
-            # Equilibrium for partial dissociation of HSO4
-            self.hso4_dissociation = Constraint(
-                expr=self.conc_mol_comp["HSO4"] * self.params.Ka2
-                == self.conc_mol_comp["H"] * self.conc_mol_comp["SO4"]
-            )
-
-    def get_material_flow_terms(self, p, j):
-        # Note conversion to mol/hour
-        if j == "H2O":
-            # Assume constant density of 1 kg/L
-            return self.flow_vol * self.params.dens_mol / self.params.mw[j]
-        else:
-            # Need to convert from moles to mass
-            return pyunits.convert(
-                self.flow_vol * self.conc_mass_comp[j] / self.params.mw[j],
-                to_units=pyunits.mol / pyunits.hour,
-            )
-
-    def get_material_flow_basis(self):
-        return MaterialFlowBasis.molar
-
-    def define_state_vars(self):
-        return {
-            "flow_vol": self.flow_vol,
-            "conc_mass_comp": self.conc_mass_comp,
-        }
-
-
-@pytest.mark.component
-@pytest.mark.solver
-def test_component_phase_w_inherent_rxns():
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(dynamic=False)
-
-    m.fs.properties = LeachSolutionParameters()
-
-    m.fs.unit = Mixer(
-        property_package=m.fs.properties,
-        material_balance_type=MaterialBalanceType.componentPhase,
-        energy_mixing_type=MixingType.none,
-        momentum_mixing_type=MomentumMixingType.none,
-    )
-
-    m.fs.unit.inlet_1.flow_vol[0].fix(10)
-    m.fs.unit.inlet_1.conc_mass_comp[0, "H2O"].fix(1e6 * pyunits.mg / pyunits.L)
-    m.fs.unit.inlet_1.conc_mass_comp[0, "H"].fix(57.54848 * pyunits.mg / pyunits.L)
-    m.fs.unit.inlet_1.conc_mass_comp[0, "HSO4"].fix(4117.798 * pyunits.mg / pyunits.L)
-    m.fs.unit.inlet_1.conc_mass_comp[0, "SO4"].fix(724.6539 * pyunits.mg / pyunits.L)
-
-    m.fs.unit.inlet_2.flow_vol[0].fix(10)
-    m.fs.unit.inlet_2.conc_mass_comp[0, "H2O"].fix(1e6 * pyunits.mg / pyunits.L)
-    m.fs.unit.inlet_2.conc_mass_comp[0, "H"].fix(57.54848 * pyunits.mg / pyunits.L)
-    m.fs.unit.inlet_2.conc_mass_comp[0, "HSO4"].fix(4117.798 * pyunits.mg / pyunits.L)
-    m.fs.unit.inlet_2.conc_mass_comp[0, "SO4"].fix(724.6539 * pyunits.mg / pyunits.L)
-
-    assert degrees_of_freedom(m) == 0
-    assert_units_consistent(m)
-
-    initializer = BlockTriangularizationInitializer()
-    initializer.initialize(m.fs.unit)
-
-    results = solver.solve(m)
-    assert check_optimal_termination(results)
-
-    assert initializer.summary[m.fs.unit]["status"] == InitializationStatus.Ok
-
-    assert value(m.fs.unit.outlet.flow_vol[0]) == pytest.approx(20, rel=1e-6)
-
-    assert value(m.fs.unit.outlet.conc_mass_comp[0, "H2O"]) == pytest.approx(
-        1e6, rel=1e-6
-    )
-    assert value(m.fs.unit.outlet.conc_mass_comp[0, "H"]) == pytest.approx(
-        57.54848, rel=1e-6
-    )
-    assert value(m.fs.unit.outlet.conc_mass_comp[0, "HSO4"]) == pytest.approx(
-        4117.798, rel=1e-6
-    )
-    assert value(m.fs.unit.outlet.conc_mass_comp[0, "SO4"]) == pytest.approx(
-        724.6539, rel=1e-6
-    )
-
-    assert value(m.fs.unit.inherent_reaction_extent[0, "Ka2"]) == pytest.approx(
-        0, abs=1e-6
-    )
+        jac, _ = get_jacobian(sm, scaled=False)
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+            1.074e4, rel=1e-3
+        )
 
 
 @pytest.mark.component
