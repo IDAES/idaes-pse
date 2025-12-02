@@ -161,8 +161,9 @@ CONFIG.declare(
     ConfigValue(
         domain=dict,
         doc="Dictionary of startup types and their transition times for the unit/process",
-    )
+    ),
 )
+
 
 # pylint: disable = too-many-ancestors, too-many-instance-attributes
 class PriceTakerModel(ConcreteModel):

@@ -274,15 +274,13 @@ def test_operation_model_class():
     blk.unit_3_op = OperationModel(
         model_func=op_model,
         model_args={"des_blk": blk.unit_1_design},
-        startup_types={'hot': 4, 'warm': 8, 'cold': 12}
+        startup_types={"hot": 4, "warm": 8, "cold": 12},
     )
     assert hasattr(blk.unit_3_op, "startup_type_vars")
 
     # test the multiple startup types
     blk.unit_3_op = OperationModel(
-        model_func=op_model,
-        model_args={"des_blk": blk.unit_1_design},
-        startup_types={}
+        model_func=op_model, model_args={"des_blk": blk.unit_1_design}, startup_types={}
     )
     assert not hasattr(blk.unit_3_op, "startup_type_vars")
 

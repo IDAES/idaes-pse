@@ -400,7 +400,7 @@ class OperationModelData(ProcessBlockData):
         ConfigValue(
             domain=dict,
             doc="Dictionary of startup types and transition times for the unit/process",
-        )
+        ),
     )
 
     # noinspection PyAttributeOutsideInit
