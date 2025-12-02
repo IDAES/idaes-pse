@@ -117,16 +117,63 @@ class BaseFlowsheetRunner(Runner):
         """Syntactic sugar to return the `results` in the context."""
         return self._context["results"]
 
-    def mark(self, obj, title=None, desc=None, units=None, rounding=0, **kwargs):
+    def mark(
+        self,
+        obj,
+        title=None,
+        desc=None,
+        units=None,
+        rounding=3,
+        is_input=True,
+        is_output=True,
+        input_category="main",
+        output_category="main",
+    ):
         """Annotate a variable"""
-        # XXX: fill in defaults for None/0
         self._marks[obj] = {
-            "title": title,
-            "description": desc,
-            "units": units,
+            "fullname": obj.getname(),
+            "title": title or obj.getname(),
+            "description": desc or obj.getname(fully_qualified=True),
+            "units": units or str(obj.getunits()),
             "rounding": rounding,
+            "is_input": is_input,
+            "is_output": is_output,
+            "input_category": input_category,
+            "output_category": output_category,
         }
         self._marks[obj].update(kwargs)
+
+    def marks_to_table(self) -> list[list[str]]:
+        """Translate 'marks' to a table suitable for loading up the UI (Flowsheet Processor).
+
+        Returns:
+            list of rows, each row is a list of strings. First row is the header:
+                `name,obj,description,ui_units,display_units,rounding,is_input,input_category,is_output,output_category`
+        """
+        hdr_items = [
+            "name",
+            "obj",
+            "description",
+            "ui_units",
+            "display_units",
+            "rounding",
+            "is_input",
+            "input_category",
+            "is_output",
+            "output_category",
+        ]
+        # add header row
+        tbl = [hdr_items]
+        # add one row for each marked variable
+        for m in self._marks:
+            if "display_units" not in m:
+                m["display_units"] = m["units"]
+            row = [m["title"], m["fullname"], m["description"], m["units"]]
+            for key in hdr_items[4:]:
+                row.append(m[key])
+            tbl.append(row)
+        # return table
+        return tbl
 
 
 class FlowsheetRunner(BaseFlowsheetRunner):
