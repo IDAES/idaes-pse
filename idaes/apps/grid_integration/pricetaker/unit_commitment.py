@@ -141,7 +141,7 @@ def startup_shutdown_constraints(
     minimum_up_time: int,
     minimum_down_time: int,
     set_time: RangeSet,
-    startup_transition_time: Optional[dict],
+    startup_transition_time: Optional[dict] = None,
 ):
     """
     Appends startup and shutdown constraints for a given unit/process.
