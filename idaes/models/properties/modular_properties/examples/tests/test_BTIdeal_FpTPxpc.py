@@ -11,8 +11,8 @@
 # for full copyright and license information.
 #################################################################################
 """
-Tests for feed with flash.
-Authors: Andrew Lee, Daison Caballero
+Tests for feed with flash with the FpTPxpc state definition.
+Authors: Tanner Polley
 """
 
 import pytest
@@ -35,7 +35,7 @@ from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import
 )
 from idaes.models.properties.modular_properties import GenericParameterBlock
 from idaes.models.properties.modular_properties.state_definitions import FpTPxpc
-from idaes.models.properties.modular_properties.examples.BT_ideal_FpTPxpc import (
+from idaes.models.properties.modular_properties.examples.BT_ideal import (
     configuration,
 )
 
@@ -47,6 +47,10 @@ from idaes.core.solvers import get_solver
 
 from idaes.core.util import DiagnosticsToolbox
 
+from copy import deepcopy
+
+
+
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -54,6 +58,15 @@ solver = get_solver("ipopt_v2")
 
 
 # -----------------------------------------------------------------------------
+
+configuration = deepcopy(configuration)
+
+configuration["state_definition"] = FpTPxpc
+configuration["state_bounds"] = {
+    "flow_mol_phase": (0, 100, 1000, pyunits.mol / pyunits.s),
+    "temperature": (273.15, 300, 450, pyunits.K),
+    "pressure": (5e4, 1e5, 1e6, pyunits.Pa),
+}
 
 
 def _as_quantity(x):
@@ -201,36 +214,6 @@ class TestBTIdeal_FpTPxpc(object):
         perf_dict = model.fs.unit._get_performance_contents()
 
         assert perf_dict is None
-
-    # TODO the formatting for modular properties is broken (see #1684).
-    # This test can be fixed once that issue is fixed
-    # @pytest.mark.ui
-    # @pytest.mark.unit
-    # def test_get_stream_table_contents(self, model):
-    #     stable = model.fs.unit._get_stream_table_contents()
-
-    # expected = {
-    #     "Units": {
-    #         "flow_mol_phase": getattr(pyunits.pint_registry, "mole/second"),
-    #         "mole_frac_phase_comp Liq benzene": getattr(
-    #             pyunits.pint_registry, "dimensionless"
-    #         ),
-    #         "mole_frac_phase_comp Liq toluene": getattr(
-    #             pyunits.pint_registry, "dimensionless"
-    #         ),
-    #         "temperature": getattr(pyunits.pint_registry, "K"),
-    #         "pressure": getattr(pyunits.pint_registry, "Pa"),
-    #     },
-    #     "Outlet": {
-    #         "flow_mol": pytest.approx(1.0, rel=1e-4),
-    #         "mole_frac_comp benzene": pytest.approx(0.5, rel=1e-4),
-    #         "mole_frac_comp toluene": pytest.approx(0.5, rel=1e-4),
-    #         "temperature": pytest.approx(368.0, rel=1e-4),
-    #         "pressure": pytest.approx(101325.0, rel=1e-4),
-    #     },
-    # }
-    #
-    # assert stable.to_dict() == expected
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")

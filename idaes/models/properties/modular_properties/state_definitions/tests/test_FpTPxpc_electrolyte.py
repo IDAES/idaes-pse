@@ -11,7 +11,9 @@
 # for full copyright and license information.
 #################################################################################
 """
-Tests for constructing and using component lists in electrolyte systems
+Tests for constructing and using component lists in electrolyte systems for FpTPxpc state formulation
+
+Authors: Tanner Polley
 """
 # Import Python libraries
 from copy import deepcopy
