@@ -13,7 +13,7 @@
 """
 Tests for FpTPxpc state formulation
 
-Authors: Andrew Lee
+Authors: Tanner Polley
 """
 
 import pytest
