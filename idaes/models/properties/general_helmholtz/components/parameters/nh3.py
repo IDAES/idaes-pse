@@ -24,13 +24,14 @@ from idaes.models.properties.general_helmholtz.helmholtz_parameters import (
 
 
 def thermal_conductivity_rule(m):
-    # """Thermal conductivity rule
+    """
+    Thermal conductivity rule
 
-    # Monogenidou, S. A., Marc J. Assael, and Marcia L. Huber.
-    # "Reference correlation for the thermal conductivity of ammonia
-    # from the triple-point temperature to 680 K and pressures up to 80 MPa."
-    # Journal of Physical and Chemical Reference Data 47.4 (2018).
-    # """
+    Monogenidou, S. A., Marc J. Assael, and Marcia L. Huber.
+    "Reference correlation for the thermal conductivity of ammonia
+    from the triple-point temperature to 680 K and pressures up to 80 MPa."
+    Journal of Physical and Chemical Reference Data 47.4 (2018).
+    """
     b = {
         1: 0.07152,
         2: 130.228,
@@ -76,11 +77,12 @@ def thermal_conductivity_rule(m):
 
 
 def viscosity_rule(m):
-    # """Viscosity rule
+    """
+    Viscosity rule
 
-    # Fenghour, A., et al. "The viscosity of ammonia."
-    # Journal of Physical and Chemical Reference Data 24.5 (1995): 1649-1667.
-    # """
+    Fenghour, A., et al. "The viscosity of ammonia."
+    Journal of Physical and Chemical Reference Data 24.5 (1995): 1649-1667.
+    """
     a = {
         0: 4.99318220,
         1: -0.61122364,
