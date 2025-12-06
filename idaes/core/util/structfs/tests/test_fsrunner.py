@@ -11,7 +11,9 @@
 # for full copyright and license information.
 ###############################################################################
 import pytest
+from pyomo.environ import value
 from ..fsrunner import FlowsheetRunner
+from .flash_flowsheet import FS as flash_fs
 
 # -- setup --
 
@@ -72,3 +74,43 @@ def test_rerun():
     # running from build also creates new model
     fsr.run_steps("build", "add_costing")
     assert fsr.model != second_model
+
+
+@pytest.mark.unit
+def test_annotation():
+    runner = flash_fs
+    runner.run_steps(last="build")
+    print(runner.timings.history)
+
+    a_ = runner.annotate  # alias
+    flash = runner.model.fs.flash  # alias
+    category = "flash"
+    kw = {"input_category": category, "output_category": category}
+
+    a_(
+        flash.inlet.flow_mol,
+        key="fs.flash.inlet.flow_mol",
+        title="Inlet molar flow",
+        desc="Flash inlet molar flow rate",
+        **kw,
+    ).fix(1)
+    a_(flash.inlet.temperature, units="Centipedes", **kw).fix(368)
+    a_(flash.inlet.pressure, **kw).fix(101325)
+    a_(flash.inlet.mole_frac_comp[0, "benzene"], **kw).fix(0.5)
+    a_(flash.inlet.mole_frac_comp[0, "toluene"], **kw).fix(0.5)
+    a_(flash.heat_duty, **kw).fix(0)
+    a_(flash.deltaP, is_input=False, **kw).fix(0)
+
+    ann = runner.annotations
+    print("-" * 40)
+    print(ann)
+    print("-" * 40)
+    assert ann["fs.flash.inlet.flow_mol"]["title"] == "Inlet molar flow"
+    assert (
+        ann["fs.flash.inlet.flow_mol"]["description"] == "Flash inlet molar flow rate"
+    )
+    assert ann["fs.flash.inlet.flow_mol"]["input_category"] == category
+    assert ann["fs.flash.inlet.flow_mol"]["output_category"] == category
+    assert runner.model.fs.flash.inlet.flow_mol[0].value == 1
+    assert ann["fs.flash._temperature_inlet_ref"]["units"] == "Centipedes"
+    assert ann["fs.flash.deltaP"]["is_input"] == False

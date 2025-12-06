@@ -15,10 +15,11 @@ Specialize the generic `Runner` class to running a flowsheet,
 in `FlowsheetRunner`.
 """
 # stdlib
-# none
+from typing import Union
 
 # third-party
 from pyomo.environ import ConcreteModel
+from pyomo.environ import units as pyunits
 from idaes.core import FlowsheetBlock
 
 from idaes_connectivity.base import Connectivity
@@ -80,6 +81,7 @@ class BaseFlowsheetRunner(Runner):
     def __init__(self, solver=None, tee=False):
         self.build_step = self.STEPS[0]
         self._solver, self._tee = solver, tee
+        self._ann = {}
         super().__init__(self.STEPS)  # needs to be last
 
     def run_steps(self, first: str = "", last: str = ""):
@@ -117,63 +119,63 @@ class BaseFlowsheetRunner(Runner):
         """Syntactic sugar to return the `results` in the context."""
         return self._context["results"]
 
-    def mark(
+    def annotate(
         self,
-        obj,
-        title=None,
-        desc=None,
-        units=None,
-        rounding=3,
-        is_input=True,
-        is_output=True,
-        input_category="main",
-        output_category="main",
-    ):
-        """Annotate a variable"""
-        self._marks[obj] = {
-            "fullname": obj.getname(),
-            "title": title or obj.getname(),
-            "description": desc or obj.getname(fully_qualified=True),
-            "units": units or str(obj.getunits()),
+        block: object,
+        key: str = None,
+        title: str = None,
+        desc: str = None,
+        units: str = None,
+        rounding: int = 3,
+        is_input: bool = True,
+        is_output: bool = True,
+        input_category: str = "main",
+        output_category: str = "main",
+    ) -> object:
+        """Annotate a variable
+
+        Args:
+            block: Pyomo block being annotated
+            key: Key for this block in dict. Defaults to object name.
+            title: Name / title of the block. Defaults to object name.
+            desc: Description of the block. Defaults to object name.
+            units: Units. Defaults to string value of native units.
+            rounding: Significant digits
+            is_input: Is this variable an input
+            is_output: Is this variable an output
+            input_category: Name of input grouping to display under
+            output_category: Name of output grouping to display under
+
+        Returns:
+            Input block (for chaining)
+
+        Raises:
+            ValueError: if `is_input` and `is_output` are both False
+        """
+        if not is_input and not is_output:
+            raise ValueError("One of 'is_input', 'is_output' must be True")
+
+        qual_name = block.name
+        key = key or block.name
+
+        self._ann[key] = {
+            "block": block,
+            "fullname": qual_name,
+            "title": title or qual_name,
+            "description": desc or qual_name,
+            "units": units or str(pyunits.get_units(block)),
             "rounding": rounding,
             "is_input": is_input,
             "is_output": is_output,
             "input_category": input_category,
             "output_category": output_category,
         }
-        self._marks[obj].update(kwargs)
 
-    def marks_to_table(self) -> list[list[str]]:
-        """Translate 'marks' to a table suitable for loading up the UI (Flowsheet Processor).
+        return block
 
-        Returns:
-            list of rows, each row is a list of strings. First row is the header:
-                `name,obj,description,ui_units,display_units,rounding,is_input,input_category,is_output,output_category`
-        """
-        hdr_items = [
-            "name",
-            "obj",
-            "description",
-            "ui_units",
-            "display_units",
-            "rounding",
-            "is_input",
-            "input_category",
-            "is_output",
-            "output_category",
-        ]
-        # add header row
-        tbl = [hdr_items]
-        # add one row for each marked variable
-        for m in self._marks:
-            if "display_units" not in m:
-                m["display_units"] = m["units"]
-            row = [m["title"], m["fullname"], m["description"], m["units"]]
-            for key in hdr_items[4:]:
-                row.append(m[key])
-            tbl.append(row)
-        # return table
-        return tbl
+    @property
+    def annotations(self):
+        return self._ann.copy()
 
 
 class FlowsheetRunner(BaseFlowsheetRunner):

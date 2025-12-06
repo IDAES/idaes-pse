@@ -47,6 +47,7 @@ def build_model(ctx):
     m.fs.flash = Flash(property_package=m.fs.properties)
     # assert degrees_of_freedom(m) == 7
     ctx.model = m
+    print("@@ built flash")
 
 
 @FS.step("set_operating_conditions")
