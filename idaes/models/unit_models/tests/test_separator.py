@@ -2101,6 +2101,55 @@ class TestBTXIdeal(object):
         assert_units_equivalent(mf_in, pyunits.dimensionless)
         assert_units_equivalent(mf_out1, pyunits.dimensionless)
         assert_units_equivalent(mf_out2, pyunits.dimensionless)
+    
+    @pytest.mark.unit
+    def test_eps_flow_units_ideal_separator(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.pp = PhysicalParameterTestBlock()
+        m.fs.sep = SeparatorFrame(
+            property_package=m.fs.pp,
+            num_outlets=2,
+            ideal_separation=True,
+            split_basis=SplittingType.phaseFlow,
+            ideal_split_map={"p1": "outlet_1", "p2": "outlet_2"},
+        )
+
+        m.fs.sep._get_property_package()
+        m.fs.sep._get_indexing_sets()
+
+        outlet_list = m.fs.sep.create_outlet_list()
+        m.fs.sep.add_mixed_state_block()
+        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, outlet_list)
+
+        assert hasattr(m.fs.sep, "eps_flow")
+
+        t0 = m.fs.time.first()
+        units_meta = m.fs.pp.get_metadata()
+
+        flow_basis = m.fs.sep.mixed_state[t0].get_material_flow_basis()
+
+        if flow_basis == MaterialFlowBasis.molar:
+            expected_flow_units = units_meta.get_derived_units("flow_mole")
+        elif flow_basis == MaterialFlowBasis.mass:
+            expected_flow_units = units_meta.get_derived_units("flow_mass")
+        else:
+            expected_flow_units = None
+
+        if expected_flow_units is not None:
+            assert_units_equivalent(m.fs.sep.eps_flow, expected_flow_units)
+
+            sb = m.fs.sep.mixed_state[t0]
+            if hasattr(sb, "flow_mol"):
+                assert_units_equivalent(sb.flow_mol, expected_flow_units)
+            if hasattr(sb, "flow_mass"):
+                assert_units_equivalent(sb.flow_mass, expected_flow_units)
+        else:
+            assert_units_equivalent(m.fs.sep.eps_flow, pyunits.dimensionless)
+
+        assert hasattr(m.fs.sep, "eps_frac")
+        assert_units_equivalent(m.fs.sep.eps_frac, pyunits.dimensionless)
+
 
     @pytest.mark.component
     def test_structural_issues(self, btx):
@@ -3030,6 +3079,12 @@ class TestIdealConstruction(object):
         assert value(m.fs.sep.outlet_1.mole_frac_comp[0, "c2"]) == 1e-8
         assert value(m.fs.sep.outlet_2.mole_frac_comp[0, "c1"]) == 1e-8
         assert value(m.fs.sep.outlet_2.mole_frac_comp[0, "c2"]) == 1
+        
+        eps = m.fs.sep.eps_frac
+        assert m.fs.sep.outlet_1.mole_frac_comp[0, "c2"].expr is eps
+        assert m.fs.sep.outlet_2.mole_frac_comp[0, "c1"].expr is eps
+        assert m.fs.sep.outlet_1.mole_frac_comp[0, "c1"].expr is not eps
+        assert m.fs.sep.outlet_2.mole_frac_comp[0, "c2"].expr is not eps
 
         # No model-level variables or constraints are created,
         # so just check that no errors are raised and that
@@ -3486,6 +3541,16 @@ class TestIdealConstruction(object):
 
         assert value(m.fs.sep.outlet_4.flow_mol_phase[0, "p1"]) == 1e-8
         assert value(m.fs.sep.outlet_4.flow_mol_phase[0, "p2"]) == 4
+        
+        eps_flow = m.fs.sep.eps_flow
+        assert m.fs.sep.outlet_1.flow_mol_phase[0, "p2"].expr is eps_flow
+        assert m.fs.sep.outlet_2.flow_mol_phase[0, "p2"].expr is eps_flow
+        assert m.fs.sep.outlet_3.flow_mol_phase[0, "p1"].expr is eps_flow
+        assert m.fs.sep.outlet_4.flow_mol_phase[0, "p1"].expr is eps_flow
+        assert m.fs.sep.outlet_1.flow_mol_phase[0, "p1"].expr is not eps_flow
+        assert m.fs.sep.outlet_2.flow_mol_phase[0, "p1"].expr is not eps_flow
+        assert m.fs.sep.outlet_3.flow_mol_phase[0, "p2"].expr is not eps_flow
+        assert m.fs.sep.outlet_4.flow_mol_phase[0, "p2"].expr is not eps_flow
 
         # No model-level variables or constraints are created,
         # so just check that no errors are raised and that
