@@ -171,7 +171,12 @@ htmlhelp_basename = "IDAESdoc"
 # -- Options for LaTeX output ---------------------------------------------
 
 latex_elements = {
-    "preamble": r"\usepackage{enumitem}\setlistdepth{99}",
+    "preamble": r'''
+\usepackage{enumitem}
+\setlistdepth{99}
+\DeclareUnicodeCharacter{22C5}{$\cdot$}
+\DeclareUnicodeCharacter{21AA}{$\hookrightarrow$}
+''',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
