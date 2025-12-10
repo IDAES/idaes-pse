@@ -36,7 +36,7 @@ classifiers=[
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 keywords=["IDAES", "idaes-pse", "energy systems", "chemical engineering", "process modeling"]
-version = "2.10.0rc0"
+version = "2.10.0"
 # dynamic = ["version"]
 dependencies = [
   "pyomo >= 6.9.3",
