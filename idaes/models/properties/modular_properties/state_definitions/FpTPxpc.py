@@ -169,7 +169,7 @@ def define_state(blk):
     if len(blk.phase_list) == 1:
 
         @blk.Constraint(blk.phase_list, doc="Defines phase_frac")
-        def phase_frac_eqn(b, p):
+        def phase_fraction_constraint(b, p):
             return b.phase_frac[p] == 1.0
 
     else:
@@ -177,7 +177,7 @@ def define_state(blk):
         def rule_phase_frac(b, p):
             return b.phase_frac[p] * b.flow_mol == b.flow_mol_phase[p]
 
-        blk.phase_frac_eqn = Constraint(blk.phase_list, rule=rule_phase_frac)
+        blk.phase_fraction_constraint = Constraint(blk.phase_list, rule=rule_phase_frac)
 
     # -------------------------------------------------------------------------
     # General Methods
@@ -372,12 +372,12 @@ def calculate_scaling_factors(blk):
     if len(blk.phase_list) == 1:
         for p in blk.phase_list:
             iscale.constraint_scaling_transform(
-                blk.phase_frac_eqn[p], 1, overwrite=False
+                blk.phase_fraction_constraint[p], 1, overwrite=False
             )
     else:
         for p in blk.phase_list:
             iscale.constraint_scaling_transform(
-                blk.phase_frac_eqn[p], sf_flow_phase[p], overwrite=False
+                blk.phase_fraction_constraint[p], sf_flow_phase[p], overwrite=False
             )
 
     if blk.params._electrolyte:
