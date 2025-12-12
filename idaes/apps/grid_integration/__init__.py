@@ -19,4 +19,5 @@ from .pricetaker.price_taker_model import PriceTakerModel
 from .pricetaker.design_and_operation_models import (
     DesignModel,
     OperationModel,
+    StorageModel,
 )

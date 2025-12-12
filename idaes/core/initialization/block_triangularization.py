@@ -117,6 +117,18 @@ class BlockTriangularizationInitializer(InitializerBase):
             "solve_strongly_connected_components method.",
         ),
     )
+    CONFIG.declare(
+        "skip_final_solve",
+        ConfigValue(
+            default=False,
+            domain=Bool,
+            description="Skip solving the block after block triangularization finishes",
+            doc="Skip solving the block after block triangularization finishes."
+            "This solve may be necessary to decrease the scaled constraint residuals "
+            "below the specified tolerance because, until Pyomo issue #3785 is addressed, "
+            "solve_strongly_connected_components does not take scaling into account.",
+        ),
+    )
 
     def precheck(self, model):
         """
@@ -189,8 +201,9 @@ class BlockTriangularizationInitializer(InitializerBase):
         # Until Pyomo issue #3785 is addressed, solve_strongly_connected_components
         # does not take scaling into account. However, the postcheck does, so we
         # perform an extra solve to make sure all constraint residuals are small enough.
-        results = solver.solve(block_data)
-        if not check_optimal_termination(results):
-            raise InitializationError(
-                f"Could not solve {block_data.name} after block triangularization finished."
-            )
+        if not self.config.skip_final_solve:
+            results = solver.solve(block_data)
+            if not check_optimal_termination(results):
+                raise InitializationError(
+                    f"Could not solve {block_data.name} after block triangularization finished."
+                )

@@ -785,14 +785,15 @@ class MSContactorInitializer(ModularInitializerBase):
             for stream in model.streams:
                 holdup_var = getattr(model, stream + "_material_holdup")
                 holdup_eqn = getattr(model, stream + "_material_holdup_constraint")
-                # calculate_variable_from_constraint(holdup_var, holdup_eqn)
                 holdup_eqn.deactivate()
                 holdup_var.fix()
-        # Solve full model
+        # Solve full model (without holdup)
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solver.solve(model, tee=slc.tee)
 
         if model.config.has_holdup:
+            # Solving the model without holdup before adding holdup afterward
+            # seemed to be more robust for the LeachTrain unit model in PrOMMiS
             from_json(model, sd=initial_state, wts=StoreState)
             for stream in model.streams:
                 holdup_var = getattr(model, stream + "_material_holdup")

@@ -14,20 +14,16 @@
 Tests for Block Triangularization initialization
 """
 import pytest
+import re
 import types
 
-from pyomo.environ import ConcreteModel, Constraint, units, value, Var
+from pyomo.environ import ConcreteModel, Constraint, Var
 
-from idaes.core import FlowsheetBlock
 from idaes.core.initialization.block_triangularization import (
     BlockTriangularizationInitializer,
 )
 from idaes.core.initialization.initializer_base import InitializationStatus
-from idaes.models.unit_models.pressure_changer import (
-    Turbine,
-)
-
-from idaes.models.properties import iapws95
+from idaes.core.util.exceptions import InitializationError
 
 __author__ = "Andrew Lee"
 
@@ -83,3 +79,64 @@ class TestBTSubMethods:
         assert not model.v1.fixed
 
         assert status == InitializationStatus.Ok
+
+    @pytest.mark.component
+    def test_workflow_no_presolve(self, model):
+        # If the linear presolve is used, it will solve
+        # the entire system without passing it to IPOPT.
+        # Here we turn it off so IPOPT is called.
+        initializer = BlockTriangularizationInitializer(
+            block_solver_writer_config={"linear_presolve": False},
+        )
+
+        status = initializer.initialize(model)
+
+        assert model.v1.value == 4
+        assert model.v2.value == 4
+        assert model.v3.value == 4
+        assert model.v4.value == 4
+
+        assert not model.v1.fixed
+
+        assert status == InitializationStatus.Ok
+
+    # Smoke test to make sure skip_final_solve option doesn't raise an error
+    @pytest.mark.component
+    def test_skip_final_solve(self, model):
+        initializer = BlockTriangularizationInitializer(skip_final_solve=True)
+
+        status = initializer.initialize(model)
+
+        assert model.v1.value == 4
+        assert model.v2.value == 4
+        assert model.v3.value == 4
+        assert model.v4.value == 4
+
+        assert not model.v1.fixed
+
+        assert status == InitializationStatus.Ok
+
+    @pytest.mark.component
+    def test_final_solve_fail(self, model):
+        model.v5 = Var(bounds=(5, None))
+        model.c4 = Constraint(expr=(model.v4 == model.v5))
+
+        # In order to guarantee that block triangularization fails
+        # during the final solve (and not in solve_strongly_connected_components),
+        # we need to exploit some detailed properties in how it works.
+        # 1) The 1x1 solver calculate_variable_from_constraints ignores variable bounds
+        # 2) The linear presolve will recognize this system as being infeasible,
+        #    so we have to skip it
+        # 3) The final solver will run into the bound for v5 and return infeasible
+        initializer = BlockTriangularizationInitializer(
+            block_solver_options={"max_iter": 1},
+            block_solver_writer_config={"linear_presolve": False},
+        )
+
+        with pytest.raises(
+            InitializationError,
+            match=re.escape(
+                "Could not solve unknown after block triangularization finished."
+            ),
+        ):
+            initializer.initialize(model)
