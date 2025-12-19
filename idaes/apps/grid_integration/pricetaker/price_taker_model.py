@@ -882,9 +882,6 @@ class PriceTakerModel(ConcreteModel):
         setattr(self, start_shut_blk_name, Block(self.set_days))
         start_shut_blk = getattr(self, start_shut_blk_name)
 
-        if not startup_transition_time:
-            self._multiple_startup_types = True
-
         # pylint: disable=not-an-iterable
         for d in self.set_days:
             startup_shutdown_constraints(
