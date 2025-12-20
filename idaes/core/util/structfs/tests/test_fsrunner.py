@@ -82,26 +82,26 @@ def test_annotation():
     runner.run_steps(last="build")
     print(runner.timings.history)
 
-    a_ = runner.annotate  # alias
+    ann = runner.annotate_var  # alias
     flash = runner.model.fs.flash  # alias
     category = "flash"
     kw = {"input_category": category, "output_category": category}
 
-    a_(
+    ann(
         flash.inlet.flow_mol,
         key="fs.flash.inlet.flow_mol",
         title="Inlet molar flow",
         desc="Flash inlet molar flow rate",
         **kw,
     ).fix(1)
-    a_(flash.inlet.temperature, units="Centipedes", **kw).fix(368)
-    a_(flash.inlet.pressure, **kw).fix(101325)
-    a_(flash.inlet.mole_frac_comp[0, "benzene"], **kw).fix(0.5)
-    a_(flash.inlet.mole_frac_comp[0, "toluene"], **kw).fix(0.5)
-    a_(flash.heat_duty, **kw).fix(0)
-    a_(flash.deltaP, is_input=False, **kw).fix(0)
+    ann(flash.inlet.temperature, units="Centipedes", **kw).fix(368)
+    ann(flash.inlet.pressure, **kw).fix(101325)
+    ann(flash.inlet.mole_frac_comp[0, "benzene"], **kw).fix(0.5)
+    ann(flash.inlet.mole_frac_comp[0, "toluene"], **kw).fix(0.5)
+    ann(flash.heat_duty, **kw).fix(0)
+    ann(flash.deltaP, is_input=False, **kw).fix(0)
 
-    ann = runner.annotations
+    ann = runner.annotated_vars
     print("-" * 40)
     print(ann)
     print("-" * 40)

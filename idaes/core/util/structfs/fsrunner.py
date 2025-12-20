@@ -18,7 +18,7 @@ in `FlowsheetRunner`.
 from typing import Union
 
 # third-party
-from pyomo.environ import ConcreteModel
+from pyomo.environ import ConcreteModel, is_variable_type
 from pyomo.environ import units as pyunits
 from idaes.core import FlowsheetBlock
 
@@ -84,7 +84,7 @@ class BaseFlowsheetRunner(Runner):
         self._ann = {}
         super().__init__(self.STEPS)  # needs to be last
 
-    def run_steps(self, first: str = "", last: str = ""):
+    def run_steps(self, first: str = "", last: str = "", **kwargs):
         """Run the steps.
 
         Before it calls the superclass to run the steps, checks
@@ -99,7 +99,7 @@ class BaseFlowsheetRunner(Runner):
             or self._context.model is None
         ):
             self._context.model = self._create_model()
-        super().run_steps(first, last)
+        super().run_steps(first, last, **kwargs)
 
     def reset(self):
         self._context = Context(solver=self._solver, tee=self._tee, model=None)
@@ -119,9 +119,9 @@ class BaseFlowsheetRunner(Runner):
         """Syntactic sugar to return the `results` in the context."""
         return self._context["results"]
 
-    def annotate(
+    def annotate_var(
         self,
-        block: object,
+        variable: object,
         key: str = None,
         title: str = None,
         desc: str = None,
@@ -132,10 +132,10 @@ class BaseFlowsheetRunner(Runner):
         input_category: str = "main",
         output_category: str = "main",
     ) -> object:
-        """Annotate a variable
+        """Annotate a Pyomo variable.
 
         Args:
-            block: Pyomo block being annotated
+            variable: Pyomo variable being annotated
             key: Key for this block in dict. Defaults to object name.
             title: Name / title of the block. Defaults to object name.
             desc: Description of the block. Defaults to object name.
@@ -155,15 +155,15 @@ class BaseFlowsheetRunner(Runner):
         if not is_input and not is_output:
             raise ValueError("One of 'is_input', 'is_output' must be True")
 
-        qual_name = block.name
-        key = key or block.name
+        qual_name = variable.name
+        key = key or variable.name
 
         self._ann[key] = {
-            "block": block,
+            "var": variable,
             "fullname": qual_name,
             "title": title or qual_name,
             "description": desc or qual_name,
-            "units": units or str(pyunits.get_units(block)),
+            "units": units or str(pyunits.get_units(variable)),
             "rounding": rounding,
             "is_input": is_input,
             "is_output": is_output,
@@ -171,19 +171,23 @@ class BaseFlowsheetRunner(Runner):
             "output_category": output_category,
         }
 
-        return block
+        return variable
 
     @property
-    def annotations(self):
+    def annotated_vars(self) -> dict[str,]:
+        """Get (a copy of) the annotated variables."""
         return self._ann.copy()
 
 
 class FlowsheetRunner(BaseFlowsheetRunner):
 
     class DegreesOfFreedom:
+        """Wrapper for the UnitDofChecker action"""
+
         def __init__(self, runner):
             from .runner_actions import UnitDofChecker
 
+            # check DoF after build, initial solve, and optimization solve
             self._a = runner.add_action(
                 "dof",
                 UnitDofChecker,
@@ -208,6 +212,8 @@ class FlowsheetRunner(BaseFlowsheetRunner):
             self._a.summary()
 
     class Timings:
+        """Wrapper for the Timer action"""
+
         def __init__(self, runner):
             from .runner_actions import Timer
 
@@ -243,6 +249,29 @@ class FlowsheetRunner(BaseFlowsheetRunner):
 
     def solve_initial(self):
         self.run_steps(last="solve_initial")
+
+    def run_steps(self, after=None, before=None, **kwargs):
+        if after is not None:
+            if "first" in kwargs:
+                raise ValueError("Cannot specify both 'after' and 'first'")
+            kwargs["first"] = before
+            if "endpoints" in kwargs:
+                ep = list(kwargs["endpoints"])
+                ep[0] = False
+                kwargs["endpoints"] = tuple(ep)
+            else:
+                kwargs["endpoints"] = (False, True)
+        if before is not None:
+            if "last" in kwargs:
+                raise ValueError("Cannot specify both 'before' and 'last'")
+            kwargs["last"] = before
+            if "endpoints" in kwargs:
+                ep = list(kwargs["endpoints"])
+                ep[1] = False
+                kwargs["endpoints"] = tuple(ep)
+            else:
+                kwargs["endpoints"] = (True, False)
+        return super().run_steps(**kwargs)
 
     def show_diagram(self):
         return display_connectivity(input_model=self.model)
