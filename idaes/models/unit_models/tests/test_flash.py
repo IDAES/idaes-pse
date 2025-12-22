@@ -16,6 +16,7 @@ Authors: Jaffer Ghouse, Douglas Allan
 """
 from copy import deepcopy
 import pytest
+import pandas as pd
 
 from pyomo.environ import (
     check_optimal_termination,
@@ -255,7 +256,9 @@ class TestBTXIdeal(object):
                 "pressure": pytest.approx(101325.0, rel=1e-4),
             },
         }
-
+        stable = btx.fs.unit._get_stream_table_contents()
+        print("\n=== BTXIdeal STREAM TABLE ===")
+        print(stable)
         assert stable.to_dict() == expected
 
     @pytest.mark.solver
@@ -344,7 +347,7 @@ class TestBTIdealModular(object):
         m.fs.unit.inlet.pressure.fix(101325)
         m.fs.unit.inlet.mole_frac_comp[0, "benzene"].fix(0.5)
         m.fs.unit.inlet.mole_frac_comp[0, "toluene"].fix(0.5)
-
+        
         m.fs.unit.heat_duty.fix(0)
         m.fs.unit.deltaP.fix(0)
 
@@ -406,49 +409,49 @@ class TestBTIdealModular(object):
             }
         }
 
-    # TODO the formatting for modular properties is broken (see #1684).
-    # This test can be fixed once that issue is fixed
-    # @pytest.mark.ui
-    # @pytest.mark.unit
-    # def test_get_stream_table_contents(self, bt_modular):
-    #     stable = bt_modular.fs.unit._get_stream_table_contents()
+    @pytest.mark.ui
+    @pytest.mark.unit
+    def test_get_stream_table_contents(self, bt_modular):
+        stable = bt_modular.fs.unit._get_stream_table_contents()
 
-    #     expected = {
-    #         "Units": {
-    #             "flow_mol": getattr(pyunits.pint_registry, "mole/s"),
-    #             "mole_frac_comp benzene": getattr(
-    #                 pyunits.pint_registry, "dimensionless"
-    #             ),
-    #             "mole_frac_comp toluene": getattr(
-    #                 pyunits.pint_registry, "dimensionless"
-    #             ),
-    #             "temperature": getattr(pyunits.pint_registry, "K"),
-    #             "pressure": getattr(pyunits.pint_registry, "Pa"),
-    #         },
-    #         "Inlet": {
-    #             "flow_mol": pytest.approx(1.00, rel=1e-4),
-    #             "mole_frac_comp benzene": pytest.approx(0.5, rel=1e-4),
-    #             "mole_frac_comp toluene": pytest.approx(0.5, rel=1e-4),
-    #             "temperature": pytest.approx(368, rel=1e-4),
-    #             "pressure": pytest.approx(101325, rel=1e-4),
-    #         },
-    #         "Vapor Outlet": {
-    #             "flow_mol": pytest.approx(0.5, rel=1e-4),
-    #             "mole_frac_comp benzene": pytest.approx(0.5, rel=1e-4),
-    #             "mole_frac_comp toluene": pytest.approx(0.5, rel=1e-4),
-    #             "temperature": pytest.approx(298.15, rel=1e-4),
-    #             "pressure": pytest.approx(101325.0, rel=1e-4),
-    #         },
-    #         "Liquid Outlet": {
-    #             "flow_mol": pytest.approx(0.5, rel=1e-4),
-    #             "mole_frac_comp benzene": pytest.approx(0.5, rel=1e-4),
-    #             "mole_frac_comp toluene": pytest.approx(0.5, rel=1e-4),
-    #             "temperature": pytest.approx(298.15, rel=1e-4),
-    #             "pressure": pytest.approx(101325.0, rel=1e-4),
-    #         },
-    #     }
-
-    #     assert stable.to_dict() == expected
+        expected = {
+            "Units": {
+                "flow_mol": getattr(pyunits.pint_registry, "mole/s"),
+                "mole_frac_comp benzene": getattr(
+                    pyunits.pint_registry, "dimensionless"
+                ),
+                "mole_frac_comp toluene": getattr(
+                    pyunits.pint_registry, "dimensionless"
+                ),
+                "temperature": getattr(pyunits.pint_registry, "K"),
+                "pressure": getattr(pyunits.pint_registry, "Pa"),
+            },
+            "Inlet": {
+                "flow_mol": pytest.approx(1.00, rel=1e-4),
+                "mole_frac_comp benzene": pytest.approx(0.5, rel=1e-4),
+                "mole_frac_comp toluene": pytest.approx(0.5, rel=1e-4),
+                "temperature": pytest.approx(368, rel=1e-4),
+                "pressure": pytest.approx(101325, rel=1e-4),
+            },
+            "Vapor Outlet": {
+                "flow_mol": pytest.approx(50, rel=1e-4),
+                "mole_frac_comp benzene": pytest.approx(0.5, rel=1e-4),
+                "mole_frac_comp toluene": pytest.approx(0.5, rel=1e-4),
+                "temperature": pytest.approx(300.0, rel=1e-4),
+                "pressure": pytest.approx(100000.0, rel=1e-4),
+            },
+            "Liquid Outlet": {
+                "flow_mol": pytest.approx(50, rel=1e-4),
+                "mole_frac_comp benzene": pytest.approx(0.5, rel=1e-4),
+                "mole_frac_comp toluene": pytest.approx(0.5, rel=1e-4),
+                "temperature": pytest.approx(300.0, rel=1e-4),
+                "pressure": pytest.approx(100000.0, rel=1e-4),
+            },
+        }
+        stable = bt_modular.fs.unit._get_stream_table_contents()
+        print("\n=== BTIdealModular STREAM TABLE ===")
+        print(stable)
+        assert stable.to_dict() == expected
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
