@@ -347,7 +347,7 @@ class TestBTIdealModular(object):
         m.fs.unit.inlet.pressure.fix(101325)
         m.fs.unit.inlet.mole_frac_comp[0, "benzene"].fix(0.5)
         m.fs.unit.inlet.mole_frac_comp[0, "toluene"].fix(0.5)
-        
+
         m.fs.unit.heat_duty.fix(0)
         m.fs.unit.deltaP.fix(0)
 

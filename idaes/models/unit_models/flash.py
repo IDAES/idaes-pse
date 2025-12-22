@@ -369,8 +369,8 @@ see property package for documentation.}""",
                 "Vapor Outlet": self.vap_outlet,
                 "Liquid Outlet": self.liq_outlet,
             }.items():
-                stream_attributes[n] ={}
-                
+                stream_attributes[n] = {}
+
                 for k in port_obj.vars:
                     for i in port_obj.vars[k].keys():
                         if isinstance(i, float):
@@ -378,7 +378,7 @@ see property package for documentation.}""",
                             stream_attributes[n][k] = quant.m
                             stream_attributes["Units"][k] = quant.u
                         else:
-                            if len(i) ==2:
+                            if len(i) == 2:
                                 kname = str(i[1])
                             else:
                                 kname = str(i[1:])
@@ -393,19 +393,19 @@ see property package for documentation.}""",
                 "Vapor Outlet": self.split.Vap_state,
                 "Liquid Outlet": self.split.Liq_state,
             }
-            
+
             for n, v in sblocks.items():
                 dvars = v[time_point].define_display_vars()
-                
+
                 stream_attributes[n] = {}
-                
+
                 for k in dvars:
                     for i in dvars[k].keys():
                         stream_key = k if i is None else f"{k} {i}"
-                        
+
                         quant = report_quantity(dvars[k][i])
-                        
+
                         stream_attributes[n][stream_key] = quant.m
                         stream_attributes["Units"][stream_key] = quant.u
-            
+
         return DataFrame.from_dict(stream_attributes, orient="columns")
