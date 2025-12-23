@@ -362,7 +362,7 @@ see property package for documentation.}""",
 
         if self.config.ideal_separation:
             # If using ideal separation, build the stream table from Ports so that
-            # all streams use the same naming covention (avoids mismatches with
+            # all streams use the same naming convention (avoids mismatches with
             # define_display_vars() across property packages).
             for n, port_obj in {
                 "Inlet": self.inlet,
