@@ -16,7 +16,6 @@ Authors: Jaffer Ghouse, Douglas Allan
 """
 from copy import deepcopy
 import pytest
-import pandas as pd
 
 from pyomo.environ import (
     check_optimal_termination,
@@ -256,9 +255,6 @@ class TestBTXIdeal(object):
                 "pressure": pytest.approx(101325.0, rel=1e-4),
             },
         }
-        stable = btx.fs.unit._get_stream_table_contents()
-        print("\n=== BTXIdeal STREAM TABLE ===")
-        print(stable)
         assert stable.to_dict() == expected
 
     @pytest.mark.solver
@@ -427,7 +423,9 @@ class TestBTIdealModular(object):
                 "pressure": getattr(pyunits.pint_registry, "Pa"),
             },
             "Inlet": {
-                "flow_mol": pytest.approx(1.00, rel=1e-4),
+                "flow_mol": pytest.approx(
+                    1.00, rel=1e-4
+                ),  # This is different from it's property package's (BT_idea) properties_out value of 100
                 "mole_frac_comp benzene": pytest.approx(0.5, rel=1e-4),
                 "mole_frac_comp toluene": pytest.approx(0.5, rel=1e-4),
                 "temperature": pytest.approx(368, rel=1e-4),
@@ -448,9 +446,6 @@ class TestBTIdealModular(object):
                 "pressure": pytest.approx(100000.0, rel=1e-4),
             },
         }
-        stable = bt_modular.fs.unit._get_stream_table_contents()
-        print("\n=== BTIdealModular STREAM TABLE ===")
-        print(stable)
         assert stable.to_dict() == expected
 
     @pytest.mark.solver
