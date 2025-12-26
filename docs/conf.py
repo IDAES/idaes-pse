@@ -35,6 +35,7 @@ extensions = [
     "sphinx.ext.autosectionlabel",
     "sphinxarg.ext",
     "sphinx.ext.doctest",
+    "enum_tools.autoenum",
     "sphinx_copybutton",
 ]
 
