@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2024 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -14,6 +14,7 @@
 Tests for Flash unit model.
 Authors: Jaffer Ghouse, Douglas Allan
 """
+from copy import deepcopy
 import pytest
 
 from pyomo.environ import (
@@ -37,8 +38,12 @@ from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import
 )
 from idaes.models.properties import iapws95
 from idaes.models.properties.modular_properties import GenericParameterBlock
+from idaes.models.properties.modular_properties.phase_equil import SmoothVLE
 from idaes.models.properties.modular_properties.examples.BT_ideal import (
     configuration as BTIdeal_config,
+)
+from idaes.models.properties.modular_properties.examples.BT_PR import (
+    configuration as BT_PR_config,
 )
 from idaes.core.util.model_statistics import (
     number_variables,
@@ -857,17 +862,28 @@ class TestInitializersIAPWS:
         )
 
 
-class TestInitializersCubicBTX:
+class TestInitializersCubicModularBTX:
     @pytest.fixture
     def model(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.properties = BTXParameterBlock(
-            valid_phase=("Liq", "Vap"), activity_coeff_model="Ideal"
-        )
+        config = deepcopy(BT_PR_config)
+        config["phase_equilibrium_state"][("Vap", "Liq")] = SmoothVLE
+
+        m.fs.properties = GenericParameterBlock(**config)
 
         m.fs.unit = Flash(property_package=m.fs.properties)
+
+        props_scaler = m.fs.unit.control_volume.properties_in[0].default_scaler()
+        props_scaler.default_scaling_factors["flow_mol_phase"] = 1
+
+        submodel_scalers = ComponentMap()
+        submodel_scalers[m.fs.unit.control_volume.properties_in] = props_scaler
+        submodel_scalers[m.fs.unit.control_volume.properties_out] = props_scaler
+
+        unit_scaler = m.fs.unit.default_scaler()
+        unit_scaler.scale_model(m.fs.unit, submodel_scalers=submodel_scalers)
 
         m.fs.unit.inlet.flow_mol[0].set_value(1)
         m.fs.unit.inlet.temperature[0].set_value(368)
@@ -887,10 +903,10 @@ class TestInitializersCubicBTX:
 
         assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
 
-        assert pytest.approx(0.603, abs=1e-3) == value(
+        assert pytest.approx(0.6033, abs=1e-3) == value(
             model.fs.unit.liq_outlet.flow_mol[0]
         )
-        assert pytest.approx(0.396, abs=1e-3) == value(
+        assert pytest.approx(0.3967, abs=1e-3) == value(
             model.fs.unit.vap_outlet.flow_mol[0]
         )
         assert pytest.approx(368, abs=1e-3) == value(
@@ -900,16 +916,16 @@ class TestInitializersCubicBTX:
             model.fs.unit.liq_outlet.pressure[0]
         )
 
-        assert pytest.approx(0.412, abs=1e-3) == value(
+        assert pytest.approx(0.4157, abs=1e-3) == value(
             model.fs.unit.liq_outlet.mole_frac_comp[0, "benzene"]
         )
-        assert pytest.approx(0.588, abs=1e-3) == value(
+        assert pytest.approx(0.5843, abs=1e-3) == value(
             model.fs.unit.liq_outlet.mole_frac_comp[0, "toluene"]
         )
-        assert pytest.approx(0.634, abs=1e-3) == value(
+        assert pytest.approx(0.6282, abs=1e-3) == value(
             model.fs.unit.vap_outlet.mole_frac_comp[0, "benzene"]
         )
-        assert pytest.approx(0.366, abs=1e-3) == value(
+        assert pytest.approx(0.3718, abs=1e-3) == value(
             model.fs.unit.vap_outlet.mole_frac_comp[0, "toluene"]
         )
 
@@ -923,16 +939,15 @@ class TestInitializersCubicBTX:
     def test_block_triangularization(self, model):
         initializer = BlockTriangularizationInitializer(
             constraint_tolerance=2e-5,
-            block_solver_writer_config={"linear_presolve": False},
         )
         initializer.initialize(model.fs.unit)
 
         assert initializer.summary[model.fs.unit]["status"] == InitializationStatus.Ok
 
-        assert pytest.approx(0.603, abs=1e-3) == value(
+        assert pytest.approx(0.6033, abs=1e-3) == value(
             model.fs.unit.liq_outlet.flow_mol[0]
         )
-        assert pytest.approx(0.396, abs=1e-3) == value(
+        assert pytest.approx(0.3967, abs=1e-3) == value(
             model.fs.unit.vap_outlet.flow_mol[0]
         )
         assert pytest.approx(368, abs=1e-3) == value(
@@ -942,16 +957,16 @@ class TestInitializersCubicBTX:
             model.fs.unit.liq_outlet.pressure[0]
         )
 
-        assert pytest.approx(0.412, abs=1e-3) == value(
+        assert pytest.approx(0.4157, abs=1e-3) == value(
             model.fs.unit.liq_outlet.mole_frac_comp[0, "benzene"]
         )
-        assert pytest.approx(0.588, abs=1e-3) == value(
+        assert pytest.approx(0.5843, abs=1e-3) == value(
             model.fs.unit.liq_outlet.mole_frac_comp[0, "toluene"]
         )
-        assert pytest.approx(0.634, abs=1e-3) == value(
+        assert pytest.approx(0.6282, abs=1e-3) == value(
             model.fs.unit.vap_outlet.mole_frac_comp[0, "benzene"]
         )
-        assert pytest.approx(0.366, abs=1e-3) == value(
+        assert pytest.approx(0.3718, abs=1e-3) == value(
             model.fs.unit.vap_outlet.mole_frac_comp[0, "toluene"]
         )
 

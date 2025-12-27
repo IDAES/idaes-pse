@@ -4,7 +4,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2024 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -23,7 +23,7 @@ import sys
 from pyomo.environ import Block, Constraint, Expression, Objective, Var, value
 from pyomo.dae import DerivativeVar
 from pyomo.core.expr import identify_variables
-from pyomo.common.collections import ComponentSet
+from pyomo.common.collections import ComponentMap, ComponentSet
 from pyomo.common.deprecation import deprecation_warning
 from pyomo.contrib.pynumero.interfaces.external_grey_box import ExternalGreyBoxBlock
 
@@ -1628,7 +1628,7 @@ def large_residuals_set(block, tol=1e-5, return_residual_values=False):
     """
     large_residuals_set = ComponentSet()
     if return_residual_values:
-        residual_values = dict()
+        residual_values = ComponentMap()
     for c in _iter_indexed_block_data_objects(
         block, ctype=Constraint, active=True, descend_into=True
     ):
@@ -1649,7 +1649,7 @@ def large_residuals_set(block, tol=1e-5, return_residual_values=False):
             if r * sf > tol:
                 large_residuals_set.add(c)
                 if return_residual_values:
-                    residual_values[c] = r
+                    residual_values[c] = r * sf
         else:
             large_residuals_set.add(c)
 

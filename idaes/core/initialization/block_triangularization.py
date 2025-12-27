@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2024 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -13,7 +13,7 @@
 """
 Initializer class for implementing Block Triangularization initialization
 """
-from pyomo.environ import SolverFactory, check_optimal_termination
+from pyomo.environ import check_optimal_termination
 from pyomo.common.config import Bool, ConfigDict, ConfigValue
 from pyomo.contrib.incidence_analysis import (
     IncidenceGraphInterface,
@@ -24,7 +24,9 @@ from idaes.core.initialization.initializer_base import (
     InitializerBase,
     InitializationStatus,
 )
+from idaes.core.solvers import get_solver
 from idaes.core.util.exceptions import InitializationError
+from idaes.core.util.model_statistics import number_activated_constraints
 
 __author__ = "Andrew Lee"
 
@@ -92,7 +94,7 @@ class BlockTriangularizationInitializer(InitializerBase):
     CONFIG.block_solver_writer_config.declare(
         "scale_model",
         ConfigValue(
-            default=False,
+            default=True,
             domain=Bool,
             description="Whether to apply model scaling with block solver",
         ),
@@ -113,6 +115,18 @@ class BlockTriangularizationInitializer(InitializerBase):
             description="Dict of options to pass to 1x1 block solver",
             doc="Dict of options to pass to calc_var_kwds argument in "
             "solve_strongly_connected_components method.",
+        ),
+    )
+    CONFIG.declare(
+        "skip_final_solve",
+        ConfigValue(
+            default=False,
+            domain=Bool,
+            description="Skip solving the block after block triangularization finishes",
+            doc="Skip solving the block after block triangularization finishes."
+            "This solve may be necessary to decrease the scaled constraint residuals "
+            "below the specified tolerance because, until Pyomo issue #3785 is addressed, "
+            "solve_strongly_connected_components does not take scaling into account.",
         ),
     )
 
@@ -149,12 +163,9 @@ class BlockTriangularizationInitializer(InitializerBase):
         """
         Call Block Triangularization solver on model.
         """
-        # TODO: For now, go directly through solver factory as default solver
-        # options cause failures. Most of these appear to be due to scaling,
-        # so hopefully we can fix these later.
-        solver = SolverFactory(
+        solver = get_solver(
             self.config.block_solver,
-            options=self.config.block_solver_options,
+            solver_options=self.config.block_solver_options,
             writer_config=self.config.block_solver_writer_config,
         )
 
@@ -168,6 +179,12 @@ class BlockTriangularizationInitializer(InitializerBase):
         """
         Call solve_strongly_connected_components on a given BlockData.
         """
+        if number_activated_constraints(block_data) == 0:
+            # Nothing to solve. Additionally, the .nl writer
+            # throws an exception if a solver is called on a
+            # block with no active constraints.
+            return
+
         # TODO: Can we get more diagnostic output from this method?
         results_list = solve_strongly_connected_components(
             block_data,
@@ -179,4 +196,14 @@ class BlockTriangularizationInitializer(InitializerBase):
             if results is not None and not check_optimal_termination(results):
                 raise InitializationError(
                     f"Block Triangularization failed with solver status: {results['Solver']}."
+                )
+
+        # Until Pyomo issue #3785 is addressed, solve_strongly_connected_components
+        # does not take scaling into account. However, the postcheck does, so we
+        # perform an extra solve to make sure all constraint residuals are small enough.
+        if not self.config.skip_final_solve:
+            results = solver.solve(block_data)
+            if not check_optimal_termination(results):
+                raise InitializationError(
+                    f"Could not solve {block_data.name} after block triangularization finished."
                 )
