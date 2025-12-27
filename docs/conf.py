@@ -36,6 +36,7 @@ extensions = [
     "sphinx.ext.doctest",
     "sphinx_copybutton",
     "nbsphinx",
+    "myst_parser",
 ]
 
 # Put type hints in the description, not signature
