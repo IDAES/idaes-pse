@@ -10,6 +10,7 @@ sphinx-argparse==0.4.0
 sphinx-book-theme<=1.1.2,>=1.0.0
 sphinx-copybutton==0.5.2
 nbsphinx  # for Jupyter Notebooks in the docs
+myst-parser  # for MystMD
 
 ### testing and linting
 # TODO/NOTE pytest is specified as a dependency in setup.py, but we might want to pin a specific version here
