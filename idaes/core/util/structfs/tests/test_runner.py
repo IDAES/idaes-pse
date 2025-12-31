@@ -12,6 +12,7 @@
 ###############################################################################
 import pytest
 from ..runner import Runner
+from .. import runner_actions
 
 ## -- setup --
 
@@ -124,4 +125,13 @@ def test_add_bad_step():
             return
 
 
-# 64, 76, 143, 146, 179, 223, 225
+@pytest.mark.unit
+def test_hellogoodbye():
+    simple.add_action(
+        "hg",
+        runner_actions.HelloGoodbye,
+        hello="Greetings and salutations",
+        goodbye="Smell you later",
+    )
+    simple.run_steps(first="-", last="-")
+    assert simple.get_action("hg").step_counter == 2

@@ -11,7 +11,8 @@
 # for full copyright and license information.
 ###############################################################################
 import pytest
-from pyomo.environ import value
+from pyomo.environ import ConcreteModel
+from idaes.core import FlowsheetBlock
 from ..fsrunner import FlowsheetRunner
 from .flash_flowsheet import FS as flash_fs
 
@@ -23,7 +24,9 @@ fsr = FlowsheetRunner()
 @fsr.step("build")
 def build_it(context):
     print("flowsheet - build")
-    assert context.model.fs is not None
+    context.model = ConcreteModel()
+    print(f"@@ build_it: id(model)={id(context.model)}")
+    context.model.fs = FlowsheetBlock(dynamic=False)
     add_units(context.model)
 
 
@@ -60,10 +63,22 @@ def test_rerun():
 
     fsr.run_steps()
     first_model = fsr.model
+    print(f"@@ test: id(model)={id(fsr.model)}")
+
+    print("-- rerun --")
 
     # model not changed
     fsr.run_steps("solve_optimization")
     assert fsr.model == first_model
+
+
+@pytest.mark.unit
+def test_rerun_reset():
+    fsr.run_steps()
+    print(f"@@ test: id(model)={id(fsr.model)}")
+    first_model = fsr.model
+
+    print("-- rerun --")
 
     # reset forces new model
     fsr.reset()
@@ -71,15 +86,24 @@ def test_rerun():
     assert fsr.model != first_model
     second_model = fsr.model
 
+
+@pytest.mark.unit
+def test_rerun_frombuild():
+    fsr.run_steps()
+    first_model = fsr.model
+    print(f"@@ test: id(model)={id(fsr.model)}")
+
+    print("-- rerun --")
+
     # running from build also creates new model
     fsr.run_steps("build", "add_costing")
-    assert fsr.model != second_model
+    assert fsr.model != first_model
 
 
 @pytest.mark.unit
 def test_annotation():
     runner = flash_fs
-    runner.run_steps(last="build")
+    runner.run_steps("build")
     print(runner.timings.history)
 
     ann = runner.annotate_var  # alias

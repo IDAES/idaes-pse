@@ -57,6 +57,8 @@ ActionType = TypeVar("ActionType", bound="Action")
 class Runner:
     """Run a set of defined steps."""
 
+    STEP_ANY = "-"
+
     def __init__(self, steps: Sequence[str]):
         """Constructor.
 
@@ -127,31 +129,48 @@ class Runner:
         self.run_steps(first=name, last=name)
 
     def run_steps(
-        self,
-        first: str = "",
-        last: str = "",
-        endpoints: tuple[bool, bool] = (True, True),
+        self, first: str = "", last: str = "", after: str = "", before: str = ""
     ):
-        """Run steps from `first` to step `last`.
+        """Run steps from `first`/`after` to step `last`/`before`.
+
+           Specify only one of the first/after and last/before pairs.
+
+           Use the special value `STEP_ANY` to mean the first or last defined step.
 
         Args:
-            first: First step to run
-            last: Last step to run
-            endpoints: Whether to include (first, last) in steps (default=True for both)
+            first: First step to run (include)
+            after: Run first defined step after this one (exclude)
+            last: Last step to run (include)
+            before: Run last defined step before this one (exclude)
 
         Raises:
             KeyError: Unknown or undefined step given
-            ValueError: Steps out of order (`from` after `to`)
+            ValueError: Steps out of order or both first/after or before/last given
         """
+        if first and after:
+            raise ValueError("Cannot specify both 'after' and 'first'")
+        if last and before:
+            raise ValueError("Cannot specify both 'before' and 'last'")
         if not self._steps:
             return  # nothing to do, no steps defined
+        args = (first or after, last or before, (bool(first), bool(last)))
+        return self._run_steps(*args)
 
+    def _run_steps(
+        self,
+        first: str,
+        last: str,
+        endpoints: tuple[bool, bool],
+    ):
         names = (self.normalize_name(first), self.normalize_name(last))
 
+        # get indexes of first/last step
         step_range = [-1, -1]
         for i, step_name in enumerate(names):
-            if step_name == "":
-                idx = self._first_step() if i == 0 else self._last_step()
+            if step_name == self.STEP_ANY:  # meaning first or last defined
+                # this will always find a step as long as there is at least one,
+                # which we checked before calling this function
+                idx = self._find_step(reverse=(i == 1))
             else:
                 try:
                     idx = self._step_names.index(step_name)
@@ -161,23 +180,30 @@ class Runner:
                     raise KeyError(f"Empty step: {step_name}")
             step_range[i] = idx
 
+        # check that first comes before last
         if step_range[0] > step_range[1]:
             raise ValueError(
                 "Steps out of order: {names[0]}={step_range[0]} > {names[1]}={step_range[1]}"
             )
 
+        # execute overall before-run action
         for action in self._actions.values():
             action.before_run()
 
+        # run each (defined) step
         for i in range(step_range[0], step_range[1] + 1):
+            # check whether to skip endpoints in range
             if (i == step_range[0] and not endpoints[0]) or (
                 i == step_range[1] and not endpoints[1]
             ):
                 continue
+            # get the step associated with the index
             step = self._steps.get(self._step_names[i], None)
+            # if the step is defined, run it
             if step:
                 step.func(self._context)
 
+        # execute overall after-run action
         for action in self._actions.values():
             action.after_run()
 
@@ -231,16 +257,13 @@ class Runner:
         """
         del self._actions[name]
 
-    def _first_step(self):
-        for i, name in enumerate(self._step_names):
-            if name in self._steps:
-                return i
-        assert False, "No first step defined"  # should not get here
-
-    def _last_step(self):
-        for i in range(len(self._step_names) - 1, -1, -1):
-            name = self._step_names[i]
-            if name in self._steps:
+    def _find_step(self, reverse=False):
+        start_step, end_step, incr = (
+            (0, len(self._step_names), 1),
+            (len(self._step_names) - 1, -1, -1),
+        )[reverse]
+        for i in range(start_step, end_step, incr):
+            if self._step_names[i] in self._steps:
                 return i
         return -1
 
@@ -325,7 +348,85 @@ class Runner:
 
 
 class Action:
-    """Do something before and/or after each step and/or run performed by a `Runner`."""
+    """The Action class implements a simple framework to run arbitrary
+    functions before and/or after each step and/or run performed
+    by the `Runner` class.
+
+    To create and use your own Action, inherit from this class
+    and then define one or more of the methods:
+
+    * before_step - Called before a given step is executed
+    * after_step - Called after a given step is executed
+    * before/after_substep - Called before/after a named
+      substep is executed (these can have arbitrary names)
+    * before_run - Called before the first step is executed
+    * after_run - Called after the last step is executed
+
+    Then add the action to the `Runner` class (e.g., `FlowsheetRunner`)
+    instance with `add_action()`. Note that you pass the action
+    *class*, not instance. Additional settings can be passed to
+    the created action instance with arguments to `add_action`.
+    Also note that the *name* argument is used to retrieve the
+    action instance later, as needed.
+
+    ### Example
+
+    Below is a simple example that prints a message
+    before/after every step and prints the total number
+    of steps run at the end of the run.
+
+    ```{code}
+    class HelloGoodbye(Action):
+        "Example action, for tutorial purposes."
+
+        def __init__(self, runner, hello="hi", goodbye="bye", **kwargs):
+            super().__init__(runner, **kwargs)
+            self._hello, self._goodbye = hello, goodbye
+            self.step_counter = -1
+
+        def before_run(self):
+            self.step_counter = 0
+
+        def before_step(self, name):
+            print(f">> {self._hello} from step {name}")
+
+        def before_substep(self, name, subname):
+            print(f"  >> {self._hello} from sub-step {subname}")
+
+        def after_step(self, name):
+            print(f"<< {self._goodbye} from step {name}")
+            self.step_counter += 1
+
+        def after_substep(self, name, subname):
+            print(f"  << {self._goodbye} from sub-step {subname}")
+
+        def after_run(self):
+            print(f"Ran {self.step_counter} steps")
+    ```
+
+    You could add the above example to a Runner subclass,
+    here called `my_runner`, like this:
+
+    ```{code}
+    my_runner.add_action(
+        "hg",
+        HelloGoodbye,
+        hello="Greetings and salutations",
+        goodbye="Smell you later",
+    )
+    ```
+
+    Then, after running steps, you could print
+    the value of the *step_counter* attribute with:
+
+    ```{code}
+    print(my_runner.get_action("hg").step_counter)
+    ```
+
+    See the pre-defined actions in the
+    {py:mod}`runner_actions <idaes.core.util.structfs.runner_actions>`
+    module, and their usage in the `FlowsheetRunner` class, for more examples.
+    """
 
     def __init__(self, runner: Runner, log: Optional[logging.Logger] = None):
         """Constructor

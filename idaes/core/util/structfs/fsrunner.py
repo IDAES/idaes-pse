@@ -84,7 +84,9 @@ class BaseFlowsheetRunner(Runner):
         self._ann = {}
         super().__init__(self.STEPS)  # needs to be last
 
-    def run_steps(self, first: str = "", last: str = "", **kwargs):
+    def run_steps(
+        self, first: str = Runner.STEP_ANY, last: str = Runner.STEP_ANY, **kwargs
+    ):
         """Run the steps.
 
         Before it calls the superclass to run the steps, checks
@@ -94,7 +96,7 @@ class BaseFlowsheetRunner(Runner):
         """
         from_step_name = self.normalize_name(first)
         if (
-            from_step_name == ""
+            from_step_name == "-"
             or from_step_name == self.build_step
             or self._context.model is None
         ):
@@ -249,29 +251,6 @@ class FlowsheetRunner(BaseFlowsheetRunner):
 
     def solve_initial(self):
         self.run_steps(last="solve_initial")
-
-    def run_steps(self, after=None, before=None, **kwargs):
-        if after is not None:
-            if "first" in kwargs:
-                raise ValueError("Cannot specify both 'after' and 'first'")
-            kwargs["first"] = before
-            if "endpoints" in kwargs:
-                ep = list(kwargs["endpoints"])
-                ep[0] = False
-                kwargs["endpoints"] = tuple(ep)
-            else:
-                kwargs["endpoints"] = (False, True)
-        if before is not None:
-            if "last" in kwargs:
-                raise ValueError("Cannot specify both 'before' and 'last'")
-            kwargs["last"] = before
-            if "endpoints" in kwargs:
-                ep = list(kwargs["endpoints"])
-                ep[1] = False
-                kwargs["endpoints"] = tuple(ep)
-            else:
-                kwargs["endpoints"] = (True, False)
-        return super().run_steps(**kwargs)
 
     def show_diagram(self):
         return display_connectivity(input_model=self.model)
