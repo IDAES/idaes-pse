@@ -61,11 +61,12 @@ Let's also assume you have four functions defined that correspond to these
 steps. Below is a sample flowsheet (for a single Flash unit) that we will use as
 an example:
 
-```{code}
-from pyomo.environ import ConcreteModel, SolverFactory
+```{code} python
+:label: before
+from pyomo.environ import ConcreteModel, SolverFactory, SolverStatus
 from idaes.core import FlowsheetBlock
 from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
-    BTXParameterBlock, 
+    BTXParameterBlock,
 )
 from idaes.models.unit_models import Flash
 
@@ -73,12 +74,11 @@ def build_model():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.properties = BTXParameterBlock(
-        valid_phase=("Liq", "Vap"),
-        activity_coeff_model="Ideal",
-        state_vars="FTPz"
+        valid_phase=("Liq", "Vap"), activity_coeff_model="Ideal", state_vars="FTPz"
     )
     m.fs.flash = Flash(property_package=m.fs.properties)
     return m
+
 
 def set_operating_conditions(m):
     m.fs.flash.inlet.flow_mol.fix(1)
@@ -89,12 +89,15 @@ def set_operating_conditions(m):
     m.fs.flash.heat_duty.fix(0)
     m.fs.flash.deltaP.fix(0)
 
+
 def init_model(m):
-    m.fs.flash.initialize(outlvl=idaeslog.INFO)
+    m.fs.flash.initialize()
+
 
 def solve(m):
-    solver = SolverFactory("ipopt") 
-    return solver.solve(m, tee=ctx["tee"])
+    solver = SolverFactory("ipopt")
+    return solver.solve(m, tee=True)
+
 ```
 
 #### After
@@ -105,6 +108,7 @@ flowsheet, we need to do make a few changes. The modified file is shown below,
 with changed lines highlighted and descriptions below.
 
 ```{code}
+:label: after
 :linenos:
 :emphasize-lines: 7,9, 11, 25, 37, 43, 48, 12, 26, 38, 44, 49, 23, 28, 40, 44, 45, 46
 
@@ -134,7 +138,7 @@ def build_model(ctx):
     ctx.model = m
 
 @FS.step("set_operating_conditions")
-    def set_operating_conditions(ctx):
+def set_operating_conditions(ctx):
     """Set operating conditions."""
     m = ctx.model
     m.fs.flash.inlet.flow_mol.fix(1)
@@ -149,7 +153,7 @@ def build_model(ctx):
 def init_model(ctx): 
     """ "Initialize the model."""
     m = ctx.model
-    m.fs.flash.initialize(outlvl=idaeslog.INFO)
+    m.fs.flash.initialize()
 
 @FS.step("set_solver") 
 def set_solver(ctx):
@@ -185,7 +189,15 @@ be run and manipulated via the wrapper object. The basic steps to do this are:
 import the flowsheet-runner object, build and execute the flowsheet, and inspect
 the flowsheet.
 
-Some examples of doing this are shown in the
+For example to run all the steps and get the status of the solve, you
+could do this:
+
+```{code}
+FS.run_steps()
+assert FS.results.solver.status == SolverStatus.ok
+```
+
+Some more examples of using the FlowsheetRunner are shown in the
 example notebooks found under the `docs/examples/structfs` directory
 ([docs link](/examples/structfs/index)).
 

@@ -32,34 +32,6 @@ from .runner import Action
 from .fsrunner import FlowsheetRunner
 
 
-class HelloGoodbye(Action):
-    """Example action, for tutorial purposes."""
-
-    def __init__(self, runner, hello="hi", goodbye="bye", **kwargs):
-        super().__init__(runner, **kwargs)
-        self._hello, self._goodbye = hello, goodbye
-        self.step_counter = -1
-
-    def before_run(self):
-        self.step_counter = 0
-
-    def before_step(self, name):
-        print(f">> {self._hello} from step {name}")
-
-    def before_substep(self, name, subname):
-        print(f"  >> {self._hello} from sub-step {subname}")
-
-    def after_step(self, name):
-        print(f"<< {self._goodbye} from step {name}")
-        self.step_counter += 1
-
-    def after_substep(self, name, subname):
-        print(f"  << {self._goodbye} from sub-step {subname}")
-
-    def after_run(self):
-        print(f"Ran {self.step_counter} steps")
-
-
 class Timer(Action):
     """Simple step/run timer action."""
 

@@ -376,6 +376,8 @@ class Action:
     of steps run at the end of the run.
 
     ```{code}
+    :label: hellogoodbye
+    from idaes.core.util.structfs.runner import Action
     class HelloGoodbye(Action):
         "Example action, for tutorial purposes."
 

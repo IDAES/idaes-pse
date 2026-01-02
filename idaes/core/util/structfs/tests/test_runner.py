@@ -13,6 +13,7 @@
 import pytest
 from ..runner import Runner
 from .. import runner_actions
+from idaes.core.util.doctesting import Docstring
 
 ## -- setup --
 
@@ -125,11 +126,16 @@ def test_add_bad_step():
             return
 
 
+# load the HelloGoodbye class from the Action docstring
+HelloGoodbye = None  # pacify linters
+exec(Docstring(runner_actions.Action.__doc__).code("hellogoodbye"))
+
+
 @pytest.mark.unit
 def test_hellogoodbye():
     simple.add_action(
         "hg",
-        runner_actions.HelloGoodbye,
+        HelloGoodbye,
         hello="Greetings and salutations",
         goodbye="Smell you later",
     )

@@ -15,6 +15,8 @@ from pyomo.environ import ConcreteModel
 from idaes.core import FlowsheetBlock
 from ..fsrunner import FlowsheetRunner
 from .flash_flowsheet import FS as flash_fs
+from idaes.core.util import structfs
+from idaes.core.util.doctesting import Docstring
 
 # -- setup --
 
@@ -138,3 +140,34 @@ def test_annotation():
     assert runner.model.fs.flash.inlet.flow_mol[0].value == 1
     assert ann["fs.flash._temperature_inlet_ref"]["units"] == "Centipedes"
     assert ann["fs.flash.deltaP"]["is_input"] == False
+
+
+#####
+# Test the code blocks in the structfs/__init__.py
+#####
+
+# pacify linters:
+sfi_before_build_model = sfi_before_set_operating_conditions = sfi_before_init_model = (
+    sfi_before_solve
+) = lambda x: None
+SolverStatus, FS = None, None
+
+#  load the functions from the docstring
+_ds = Docstring(structfs.__doc__)
+exec(_ds.code("before", func_prefix="sfi_before_"))
+exec(_ds.code("after", func_prefix="sfi_after_"))
+
+
+@pytest.mark.unit
+def test_sfi_before():
+    m = sfi_before_build_model()
+    sfi_before_set_operating_conditions(m)
+    sfi_before_init_model(m)
+    result = sfi_before_solve(m)
+    assert result.solver.status == SolverStatus.ok
+
+
+@pytest.mark.unit
+def test_sfi_after():
+    FS.run_steps()
+    assert FS.results.solver.status == SolverStatus.ok

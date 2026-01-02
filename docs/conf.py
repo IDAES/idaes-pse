@@ -37,9 +37,21 @@ extensions = [
     "sphinx.ext.doctest",
     "sphinx_copybutton",
     "nbsphinx",
+    # MystMD extenstions
     "myst_parser",
+    "autodoc2",
 ]
 
+# Myst autodoc2 (experimental)
+autodoc2_packages = [
+    "../idaes/core/util/structfs",
+]
+autodoc2_output_dir = "apidoc2"  # keep separated
+autodoc2_render_plugin = "myst"
+autodoc2_docstring_parser_regexes = [
+    # render docstrings in matching files as Markdown
+    ("../idaes/core/util/structfs/.*", "myst"),
+]
 # Put type hints in the description, not signature
 autodoc_typehints = "description"
 
@@ -53,7 +65,7 @@ templates_path = ["_templates"]
 # You can specify multiple suffix as a list of string:
 #
 # source_suffix = ['.rst', '.md']
-source_suffix = [".rst"]
+source_suffix = [".rst", ".md"]
 # The encoding of source files.
 #
 # source_encoding = 'utf-8-sig'
