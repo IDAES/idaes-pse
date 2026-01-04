@@ -16,6 +16,8 @@ class Docstring:
     and test file.
     """
 
+    LABEL_OPTION = ":name:"
+
     def __init__(self, text: str, style: str = "markdown"):
         self._code = {}
         if style == "markdown":
@@ -81,7 +83,7 @@ class Docstring:
                         self._code[section_name] = section_lines
                     state = 0
                 elif state == 1:
-                    if ls_line.startswith(":label:"):
+                    if ls_line.startswith(self.LABEL_OPTION):
                         section_name = ls_line[7:].strip()
                     elif ls_line == "" or ls_line.startswith(":"):
                         pass

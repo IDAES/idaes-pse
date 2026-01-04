@@ -1,13 +1,13 @@
 '''
 The 'flowsheet runner' is an API in the
-{py:mod}`idaes.core.util.structfs` subpackage, and in
-particular that package's {py:mod}`runner <idaes.core.util.structfs.runner>` and
-{py:mod}`fsrunner <idaes.core.util.structfs.fsrunner>` modules.
+{py:mod}`structfs` subpackage, and in
+particular that package's {py:mod}`runner <structfs.runner>` and
+{py:mod}`fsrunner <structfs.fsrunner>` modules.
 
 ## Overview
 
 The core idea of the
-{py:class}`FlowsheetRunner <idaes.core.util.structfs.fsrunner.FlowsheetRunner>` class is
+{py:class}`FlowsheetRunner <structfs.fsrunner.FlowsheetRunner>` class is
 that flowsheets should follow a standard set of "steps". By standardizing the
 naming and ordering of these steps, it becomes easier to build tools that run
 and inspect flowsheets. The Python mechanics of this are to put each step in a
@@ -19,9 +19,9 @@ wrapped flowsheet.
 
 The framework can perform arbitrary actions before and after each run,
 and before and after a given set of steps. This is implemented with 
-the {py:class}`Actions <idaes.core.util.structfs.runner.Actions>` class 
+the {py:class}`Actions <structfs.runner.Actions>` class 
 and methods `add_action`, `get_action`, and `remove_action` on the base
-{py:class}`Runner <idaes.core.util.structfs.runner.Runner>` class.
+{py:class}`Runner <structfs.runner.Runner>` class.
 More details are given below in the Actions section.
 
 ## Step 1: Define flowsheet
@@ -29,7 +29,7 @@ More details are given below in the Actions section.
 It is assumed here that you have Python code to build, configure, and run an
 IDAES flowsheet. You will first arrange this code to follow the standard "steps"
 of a flowsheet workflow, which are listed in the
-{py:class}`BaseFlowsheetRunner <idaes.core.util.structfs.fsrunner.BaseFlowsheetRunner>`
+{py:class}`BaseFlowsheetRunner <structfs.fsrunner.BaseFlowsheetRunner>`
 class' `STEPS` attribute. Not all the steps need to be defined: the API will
 skip over steps with no definition when executing a range of steps. To make the
 code more structured you can also define internal sub-steps, as described later.
@@ -62,7 +62,7 @@ steps. Below is a sample flowsheet (for a single Flash unit) that we will use as
 an example:
 
 ```{code} python
-:label: before
+:name: before
 from pyomo.environ import ConcreteModel, SolverFactory, SolverStatus
 from idaes.core import FlowsheetBlock
 from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
@@ -103,12 +103,12 @@ def solve(m):
 #### After
 
 In order to make this into a
-{py:class}`FlowsheetRunner <idaes.core.util.structfs.fsrunner.FlowsheetRunner>`-wrapped
+{py:class}`FlowsheetRunner <structfs.fsrunner.FlowsheetRunner>`-wrapped
 flowsheet, we need to do make a few changes. The modified file is shown below,
 with changed lines highlighted and descriptions below.
 
 ```{code}
-:label: after
+:name: after
 :linenos:
 :emphasize-lines: 7,9, 11, 25, 37, 43, 48, 12, 26, 38, 44, 49, 23, 28, 40, 44, 45, 46
 
@@ -168,10 +168,10 @@ def solve_opt(ctx):
 Details on the changes:
 
 * **7**: Import the FlowsheetRunner class.
-* **9**: Create a global {py:class}`FlowsheetRunner <idaes.core.util.structfs.fsrunner.FlowsheetRunner>` object, here called `FS`.
+* **9**: Create a global {py:class}`FlowsheetRunner <structfs.fsrunner.FlowsheetRunner>` object, here called `FS`.
 * **11, 25, 37, 43, 48**: Add a `@FS.step()` decorator in front of each function
   with the name of the associated step.
-* **12, 26, 38, 44, 49**: Make each function take a single argument which is a {py:class}`fsrunner.Context <idaes.core.util.structfs.fsrunner.Context>` instance used to
+* **12, 26, 38, 44, 49**: Make each function take a single argument which is a {py:class}`fsrunner.Context <structfs.fsrunner.Context>` instance used to
   pass state information between functions (here, that argument is named `ctx`).
 * **23**: Assign the model created in the "build" step to `ctx.model`, a
   standard attribute of the context object.
@@ -204,8 +204,20 @@ example notebooks found under the `docs/examples/structfs` directory
 ## Actions  
 
 ```{autodoc2-docstring} structfs.runner.Action
-render_plugin = "myst" 
-no_index = true
+```
+
+## Annotation
+
+You can also 'annotate' variables for special 
+treatment in display, etc. with the
+`annotate_var` function in the 
+{py:class}`FlowsheetRunner <structfs.fsrunner.FlowsheetRunner>` class.
+
+```{autodoc2-object} structfs.fsrunner.FlowsheetRunner.annotate_var
+```
+
+```{autodoc2-docstring} structfs.fsrunner.FlowsheetRunner.annotate_var
+:parser: myst
 ```
 
 '''

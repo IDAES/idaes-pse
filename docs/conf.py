@@ -12,6 +12,7 @@ import sphinx_book_theme as theme
 
 # For importing from idaes.<modules..>
 sys.path.insert(0, os.path.abspath(".."))
+sys.path.insert(0, os.path.abspath("."))
 
 
 # -- General configuration ------------------------------------------------
@@ -52,6 +53,7 @@ autodoc2_docstring_parser_regexes = [
     # render docstrings in matching files as Markdown
     ("../idaes/core/util/structfs/.*", "myst"),
 ]
+
 # Put type hints in the description, not signature
 autodoc_typehints = "description"
 

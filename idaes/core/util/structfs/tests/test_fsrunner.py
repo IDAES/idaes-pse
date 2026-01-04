@@ -13,7 +13,7 @@
 import pytest
 from pyomo.environ import ConcreteModel
 from idaes.core import FlowsheetBlock
-from ..fsrunner import FlowsheetRunner
+from ..fsrunner import FlowsheetRunner, BaseFlowsheetRunner
 from .flash_flowsheet import FS as flash_fs
 from idaes.core.util import structfs
 from idaes.core.util.doctesting import Docstring
@@ -77,7 +77,6 @@ def test_rerun():
 @pytest.mark.unit
 def test_rerun_reset():
     fsr.run_steps()
-    print(f"@@ test: id(model)={id(fsr.model)}")
     first_model = fsr.model
 
     print("-- rerun --")
@@ -93,7 +92,6 @@ def test_rerun_reset():
 def test_rerun_frombuild():
     fsr.run_steps()
     first_model = fsr.model
-    print(f"@@ test: id(model)={id(fsr.model)}")
 
     print("-- rerun --")
 
@@ -171,3 +169,18 @@ def test_sfi_before():
 def test_sfi_after():
     FS.run_steps()
     assert FS.results.solver.status == SolverStatus.ok
+
+
+# pacify linters
+annotate_vars_example = lambda x: None
+# load example function from docstring
+_ds = Docstring(BaseFlowsheetRunner.annotate_var.__doc__)
+exec(_ds.code("annotate_vars"))
+
+
+@pytest.mark.unit
+def test_ann_docs():
+    annotate_vars_example(fr := FlowsheetRunner())
+    ex = fr.annotated_vars["example"]
+    assert ex["fullname"] == "ScalarVar"
+    assert ex["title"] == "Example variable"

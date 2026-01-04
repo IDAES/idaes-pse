@@ -137,22 +137,57 @@ class BaseFlowsheetRunner(Runner):
         """Annotate a Pyomo variable.
 
         Args:
-            variable: Pyomo variable being annotated
-            key: Key for this block in dict. Defaults to object name.
-            title: Name / title of the block. Defaults to object name.
-            desc: Description of the block. Defaults to object name.
-            units: Units. Defaults to string value of native units.
-            rounding: Significant digits
-            is_input: Is this variable an input
-            is_output: Is this variable an output
-            input_category: Name of input grouping to display under
-            output_category: Name of output grouping to display under
+
+        - variable: Pyomo variable being annotated
+        - key: Key for this block in dict. Defaults to object name.
+        - title: Name / title of the block. Defaults to object name.
+        - desc: Description of the block. Defaults to object name.
+        - units: Units. Defaults to string value of native units.
+        - rounding: Significant digits
+        - is_input: Is this variable an input
+        - is_output: Is this variable an output
+        - input_category: Name of input grouping to display under
+        - output_category: Name of output grouping to display under
 
         Returns:
-            Input block (for chaining)
+
+        - Input block (for chaining)
 
         Raises:
-            ValueError: if `is_input` and `is_output` are both False
+
+        - ValueError: if `is_input` and `is_output` are both False
+
+        ### Example
+
+        Here is an example of annotating a single Pyomo variable.
+        You can apply this same technique to any Pyomo, and thus IDAES,
+        object.
+
+        ```{code}
+        :name: annotate_vars
+        from idaes.core.util.structfs.fsrunner import FlowsheetRunner
+        from pyomo.environ import *
+
+        def example(f: FlowsheetRunner):
+            v = Var()
+            v.construct()
+            f.annotate_var(v, key="example", title="Example variable").fix(1)
+        ```
+
+        To retrieve the annotated variables, use the `annotated_vars`
+        property:
+
+        ```{code}
+        example(fr := FlowsheetRunner())
+        print(fr.annotated_vars)
+        # prints something like this:
+        # {'example': {'var': <pyomo.core.base.var.ScalarVar object at 0x762ffb124b40>,
+        # 'fullname': 'ScalarVar', 'title': 'Example variable',
+        # 'description': 'ScalarVar', 'units': 'dimensionless',
+        # 'rounding': 3, 'is_input': True, 'is_output': True, 'input_category': 'main',
+        # 'output_category': 'main'}}
+        ```
+
         """
         if not is_input and not is_output:
             raise ValueError("One of 'is_input', 'is_output' must be True")
@@ -182,6 +217,7 @@ class BaseFlowsheetRunner(Runner):
 
 
 class FlowsheetRunner(BaseFlowsheetRunner):
+    """Interface for running and inspecting IDAES flowsheets."""
 
     class DegreesOfFreedom:
         """Wrapper for the UnitDofChecker action"""
