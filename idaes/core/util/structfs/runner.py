@@ -153,7 +153,11 @@ class Runner:
             raise ValueError("Cannot specify both 'before' and 'last'")
         if not self._steps:
             return  # nothing to do, no steps defined
-        args = (first or after, last or before, (bool(first), bool(last)))
+        args = (
+            first or after,
+            last or before,
+            (bool(first) or not bool(after), bool(last) or not bool(before)),
+        )
         return self._run_steps(*args)
 
     def _run_steps(
@@ -163,6 +167,7 @@ class Runner:
         endpoints: tuple[bool, bool],
     ):
         names = (self.normalize_name(first), self.normalize_name(last))
+        print(f"@@ RUN STEPS: first={first} last={last} endpoints={endpoints}")
 
         # get indexes of first/last step
         step_range = [-1, -1]
@@ -267,8 +272,8 @@ class Runner:
                 return i
         return -1
 
-    @staticmethod
-    def normalize_name(s: Optional[str]) -> str:
+    @classmethod
+    def normalize_name(cls, s: Optional[str]) -> str:
         """Normalize a step name.
         Args:
             s: Step name
@@ -276,7 +281,7 @@ class Runner:
         Returns:
             normalized name
         """
-        return "" if s is None else s.lower()
+        return cls.STEP_ANY if not s else s.lower()
 
     def _step_begin(self, name: str):
         for action in self._actions.values():
