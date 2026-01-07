@@ -96,7 +96,7 @@ def _common_sat(sat_thermo_data, we):
             pnt["sl"], rel=1e-2, abs=1e-3
         )
 
-    # Check the approxibackendmate sat density curves
+    # Check the approximate sat density curves
     rhol, rhov = we.approx_sat_curves([sat_thermo_data[2]["T"]])
     assert rhol[0] == pytest.approx(sat_thermo_data[2]["rhol"], rel=1e-1)
     assert rhov[0] == pytest.approx(sat_thermo_data[2]["rhov"], rel=1e-1)
