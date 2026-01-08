@@ -2212,17 +2212,13 @@ def print_pfd_results(m):
     tag_formats = {}
     for i, s in sd.items():
         tags[i + "_Fmass"] = s.flow_mass
-        tag_formats[i + "_Fmass"] = lambda x: (
-            "{:.1f}" if x >= 10 else "{:.2f}"
-        )
+        tag_formats[i + "_Fmass"] = lambda x: ("{:.1f}" if x >= 10 else "{:.2f}")
         tags[i + "_F"] = s.flow_mol
         tag_formats[i + "_F"] = "{:,.0f}"
         tags[i + "_T"] = s.temperature
         tag_formats[i + "_T"] = "{:,.0f}"
         tags[i + "_P_kPa"] = s.pressure
-        tag_formats[i + "_P_kPa"] = lambda x: (
-            "{:,.0f}" if x >= 100 else "{:.2f}"
-        )
+        tag_formats[i + "_P_kPa"] = lambda x: ("{:,.0f}" if x >= 100 else "{:.2f}")
         try:
             tags[i + "_hmass"] = s.enth_mass
             tag_formats[i + "_hmass"] = "{:,.0f}"
