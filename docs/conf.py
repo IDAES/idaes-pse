@@ -38,7 +38,7 @@ extensions = [
     "sphinx.ext.doctest",
     "sphinx_copybutton",
     "nbsphinx",
-    # MystMD extenstions
+    # MystMD extensions
     "myst_parser",
     "autodoc2",
 ]
