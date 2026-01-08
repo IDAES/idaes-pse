@@ -2242,7 +2242,6 @@ def print_pfd_results(m):
                 if comp in s.mole_frac_comp:
                     tags[i + f"_y{comp}"] = s.mole_frac_comp[comp]
 
-
     tag_group = ModelTagGroup()
     for t, v in tags.items():
         try:
