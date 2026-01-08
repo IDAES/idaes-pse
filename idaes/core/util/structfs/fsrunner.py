@@ -22,8 +22,11 @@ from pyomo.environ import ConcreteModel, is_variable_type
 from pyomo.environ import units as pyunits
 from idaes.core import FlowsheetBlock
 
-from idaes_connectivity.base import Connectivity
-from idaes_connectivity.jupyter import display_connectivity
+try:
+    from idaes_connectivity.base import Connectivity
+    from idaes_connectivity.jupyter import display_connectivity
+except ImportError:
+    Connectivity = None
 
 # package
 from .runner import Runner
@@ -289,4 +292,7 @@ class FlowsheetRunner(BaseFlowsheetRunner):
         self.run_steps(last="solve_initial")
 
     def show_diagram(self):
-        return display_connectivity(input_model=self.model)
+        if Connectivity is not None:
+            return display_connectivity(input_model=self.model)
+        else:
+            return ""
