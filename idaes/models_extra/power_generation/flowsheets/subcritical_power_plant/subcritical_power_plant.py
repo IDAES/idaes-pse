@@ -2213,23 +2213,21 @@ def print_pfd_results(m):
     for i, s in sd.items():
         tags[i + "_Fmass"] = s.flow_mass
         tag_formats[i + "_Fmass"] = lambda x: (
-            "{:.1f} kg/s" if x >= 10 else "{:.2f} kg/s"
+            "{:.1f}" if x >= 10 else "{:.2f}"
         )
         tags[i + "_F"] = s.flow_mol
-        tag_formats[i + "_F"] = "{:,.0f} mol/s"
+        tag_formats[i + "_F"] = "{:,.0f}"
         tags[i + "_T"] = s.temperature
-        tag_formats[i + "_T"] = "{:,.0f} K"
-        tags[i + "_P_kPa"] = s.pressure / 1000
+        tag_formats[i + "_T"] = "{:,.0f}"
+        tags[i + "_P_kPa"] = s.pressure
         tag_formats[i + "_P_kPa"] = lambda x: (
-            "{:,.0f} kPa" if x >= 100 else "{:.2f} kPa"
+            "{:,.0f}" if x >= 100 else "{:.2f}"
         )
-        tags[i + "_P"] = s.pressure / 1000
-        tag_formats[i + "_P"] = "{:,.0f} Pa"
         try:
-            tags[i + "_hmass"] = s.enth_mass / 1000.0
-            tag_formats[i + "_hmass"] = "{:,.0f} kJ/kg"
+            tags[i + "_hmass"] = s.enth_mass
+            tag_formats[i + "_hmass"] = "{:,.0f}"
             tags[i + "_h"] = s.enth_mol
-            tag_formats[i + "_h"] = "{:,.0f} J/mol"
+            tag_formats[i + "_h"] = "{:,.0f}"
         except AttributeError:
             pass
         try:
