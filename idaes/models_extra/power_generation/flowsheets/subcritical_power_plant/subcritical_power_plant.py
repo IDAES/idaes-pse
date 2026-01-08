@@ -2237,15 +2237,11 @@ def print_pfd_results(m):
             tag_formats[i + "_x"] = "{:.3f}"
         except AttributeError:
             pass
-        try:
-            tags[i + "_yN2"] = s.mole_frac_comp["N2"]
-            tags[i + "_yO2"] = s.mole_frac_comp["O2"]
-            tags[i + "_yNO"] = s.mole_frac_comp["NO"]
-            tags[i + "_yCO2"] = s.mole_frac_comp["CO2"]
-            tags[i + "_yH2O"] = s.mole_frac_comp["H2O"]
-            tags[i + "_ySO2"] = s.mole_frac_comp["SO2"]
-        except AttributeError:
-            pass
+        if hasattr(s, "mole_frac_comp"):
+            for comp in ("N2", "O2", "NO", "CO2", "H2O", "SO2"):
+                if comp in s.mole_frac_comp:
+                    tags[i + f"_y{comp}"] = s.mole_frac_comp[comp]
+
 
     tag_group = ModelTagGroup()
     for t, v in tags.items():
