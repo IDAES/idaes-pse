@@ -476,3 +476,6 @@ class Action:
     def after_run(self):
         """Perform this action after a run ends."""
         return
+
+    def report(self) -> dict:
+        return {}

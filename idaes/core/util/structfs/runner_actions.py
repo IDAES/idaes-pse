@@ -136,6 +136,9 @@ class Timer(Action):
     def _ipython_display_(self):
         print(self.summary())
 
+    def report(self) -> dict:
+        return self.step_times[-1].copy()  # most recent run
+
 
 # Hold degrees of freedom for one FlowsheetRunner 'step'
 # {key=component: value=dof}
@@ -286,6 +289,9 @@ class UnitDofChecker(Action):
         if only_with_data:
             return [s for s in self._steps if s in self._steps_dof]
         return list(self._steps)
+
+    def report(self) -> dict:
+        return {"steps": self.get_dof(), "model": self.get_dof_model()}
 
     @staticmethod
     def _get_dof(block, fix_inlets: bool = True):

@@ -11,7 +11,7 @@
 # for full copyright and license information.
 ###############################################################################
 import pytest
-from ..runner import Runner
+from ..runner import Runner, Action
 from .. import runner_actions
 from idaes.core.util.doctesting import Docstring
 
@@ -141,3 +141,16 @@ def test_hellogoodbye():
     )
     simple.run_steps(first="-", last="-")
     assert simple.get_action("hg").step_counter == 2
+
+
+class RunActionExample(Action):
+    def report(self) -> dict:
+        return {"example": True}
+
+
+@pytest.mark.unit
+def test_runaction():
+    simple.reset()
+    simple.add_action("foo", RunActionExample)
+    simple.run_steps()
+    assert simple.get_action("foo").report() == {"example": True}

@@ -141,3 +141,50 @@ def test_unit_dof_action_getters():
     assert dofs[0] != dofs[1]
 
     assert act.steps() == act.steps(only_with_data=True)
+
+
+@pytest.mark.unit
+def test_timer_report():
+    rn = flash_flowsheet.FS
+    rn.reset()
+    rn.add_action("timer", Timer)
+    rn.run_steps()
+    report = rn.get_action("timer").report()
+    # {'build': 0.053082942962646484,
+    # 'set_operating_conditions': 0.0004742145538330078,
+    # 'initialize': 0.22397446632385254,
+    # 'set_solver': 7.581710815429688e-05,
+    # 'solve_initial': 0.03623509407043457}
+    expect_steps = (
+        "build",
+        "set_operating_conditions",
+        "initialize",
+        "set_solver",
+        "solve_initial",
+    )
+    assert report
+    for step_name in expect_steps:
+        assert step_name in report
+        assert report[step_name] < 1
+
+
+@pytest.mark.unit
+def test_dof_report():
+    rn = flash_flowsheet.FS
+    rn.reset()
+    check_steps = (
+        "build",
+        "set_operating_conditions",
+        "initialize",
+        "solve_initial",
+    )
+    rn.add_action("dof", UnitDofChecker, "fs", check_steps)
+    rn.run_steps()
+    report = rn.get_action("dof").report()
+    print(f"@@ REPORT:\n{report}")
+    assert report
+    assert report["model"] == 0  # model has DOF=0
+    for step_name in check_steps:
+        assert step_name in report["steps"]
+        for unit, value in report["steps"][step_name].items():
+            assert value >= 0  # DOF > 0 in all (step, unit)
