@@ -12,6 +12,7 @@ import sphinx_book_theme as theme
 
 # For importing from idaes.<modules..>
 sys.path.insert(0, os.path.abspath(".."))
+sys.path.insert(0, os.path.abspath("."))
 
 
 # -- General configuration ------------------------------------------------
@@ -36,6 +37,21 @@ extensions = [
     "sphinxarg.ext",
     "sphinx.ext.doctest",
     "sphinx_copybutton",
+    "nbsphinx",
+    # MystMD extensions
+    "myst_parser",
+    "autodoc2",
+]
+
+# Myst autodoc2 (experimental)
+autodoc2_packages = [
+    "../idaes/core/util/structfs",
+]
+autodoc2_output_dir = "apidoc2"  # keep separated
+autodoc2_render_plugin = "myst"
+autodoc2_docstring_parser_regexes = [
+    # render docstrings in matching files as Markdown
+    ("../idaes/core/util/structfs/.*", "myst"),
 ]
 
 # Put type hints in the description, not signature
@@ -51,8 +67,7 @@ templates_path = ["_templates"]
 # You can specify multiple suffix as a list of string:
 #
 # source_suffix = ['.rst', '.md']
-source_suffix = ".rst"
-
+source_suffix = [".rst", ".md"]
 # The encoding of source files.
 #
 # source_encoding = 'utf-8-sig'
