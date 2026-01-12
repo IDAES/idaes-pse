@@ -23,8 +23,18 @@ from idaes.apps.grid_integration.pricetaker.design_and_operation_models import (
     _is_valid_data_type_for_storage_model,
     is_valid_variable_design_data,
     is_valid_polynomial_surrogate_data,
+    is_valid_startup_types,
 )
 from idaes.core.util.config import ConfigurationError
+
+
+@pytest.mark.unit
+def test_is_valid_startup_types_empty_dict():
+    """Tests that is_valid_startup_types raises error for empty dictionary"""
+    with pytest.raises(
+        ConfigurationError, match="Received an empty dictionary for startup types"
+    ):
+        is_valid_startup_types({})
 
 
 @pytest.mark.unit
@@ -278,9 +288,11 @@ def test_operation_model_class():
     )
     assert hasattr(blk.unit_3_op, "startup_type_vars")
 
-    # test the multiple startup types
+    # test the startup types = None
     blk.unit_3_op = OperationModel(
-        model_func=op_model, model_args={"des_blk": blk.unit_1_design}, startup_types={}
+        model_func=op_model,
+        model_args={"des_blk": blk.unit_1_design},
+        startup_types=None,
     )
     assert not hasattr(blk.unit_3_op, "startup_type_vars")
 
