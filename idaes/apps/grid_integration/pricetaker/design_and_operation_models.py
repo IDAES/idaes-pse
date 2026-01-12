@@ -85,6 +85,44 @@ def is_valid_polynomial_surrogate_data(data: dict):
     return new_data
 
 
+def is_valid_startup_types(data):
+    """Validate if the startup_types received is valid"""
+
+    if data is None:
+        # if data is None, it is okay and return None
+        return None
+
+    if not isinstance(data, dict):
+        raise TypeError("Data must be a dictionary.")
+
+    if len(data) == 0:
+        # set to None instead of an empty dict.
+        raise ConfigurationError("Received an empty dictionary for startup types")
+
+    # check the key names and make sure space is handled correctly.
+    # use a method to check if a string is a valid variable name. string.isidentifier() works for now.
+
+    for key, value in data.items():
+        if not isinstance(key, str):
+            raise TypeError("key must be a valid string.")
+
+        if not key.isidentifier():
+            raise ConfigurationError(
+                f"Key '{key}' is not a valid Python variable name. "
+                "Keys must be valid identifiers."
+            )
+
+        if not isinstance(value, int):
+            raise TypeError("value must be an int")
+
+    # Values must be unique, as they correspond to different startup types
+    if len(data.values()) > len(set(data.values())):
+        raise ConfigurationError("Startup time for two or more startup types is the same.")
+
+    # Return a dictionary after sorting based on values
+    return dict(sorted(data.items(), key=lambda item: item[1]))
+
+
 # pylint: disable = attribute-defined-outside-init, too-many-ancestors
 # pylint: disable = invalid-name, logging-fstring-interpolation
 @declare_process_block_class("DesignModel")
@@ -398,7 +436,7 @@ class OperationModelData(ProcessBlockData):
     CONFIG.declare(
         "startup_types",
         ConfigValue(
-            domain=dict,
+            domain=is_valid_startup_types,
             doc="Dictionary of startup types and transition times for the unit/process",
         ),
     )

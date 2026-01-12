@@ -42,6 +42,7 @@ from idaes.apps.grid_integration.pricetaker.design_and_operation_models import (
     DesignModelData,
     OperationModelData,
     StorageModelData,
+    is_valid_startup_types,
 )
 from idaes.apps.grid_integration.pricetaker.clustering import (
     generate_daily_data,
@@ -159,7 +160,7 @@ CONFIG.declare(
 CONFIG.declare(
     "startup_types",
     ConfigValue(
-        domain=dict,
+        domain=is_valid_startup_types,
         doc="Dictionary of startup types and their transition times for the unit/process",
     ),
 )

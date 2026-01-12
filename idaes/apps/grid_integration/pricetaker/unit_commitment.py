@@ -15,6 +15,11 @@
 This module contains functions that build unit commitment-type
 constraints: startup/shutdown, uptime/downtime constraints,
 capacity limit constraints, and ramping constraints.
+
+The unit commitment model is taken from: 
+Knueven, Bernard, James Ostrowski, and Jean-Paul Watson. 
+"On mixed-integer programming formulations for the unit commitment problem." 
+INFORMS Journal on Computing 32, no. 4 (2020): 857-876.
 """
 
 from typing import Union, Optional
@@ -148,7 +153,7 @@ def startup_shutdown_constraints(
     Supports multiples types of startup.
 
     Args:
-        startup_transition_time (dict): A dictionary with keys as startup types and values are the time of startup transition.
+        startup_transition_time (dict or None): A dictionary with keys as startup types and values are the time of startup transition.
 
     """
 
@@ -182,9 +187,10 @@ def startup_shutdown_constraints(
             <= install_unit - op_blocks[t].op_mode
         )
 
-    if not startup_transition_time:
+    if startup_transition_time is None or len(startup_transition_time) == 0:
         # if there is only one startup type, return
         # startup_transition_time can be None or empty dict
+        # This is a double insurance check, that empty dict or None is not passed
         return
 
     # multiple startup types
@@ -210,7 +216,7 @@ def startup_shutdown_constraints(
     @blk.Constraint(set_time)
     def tot_startup_type_rule(_, t):
         """
-        Eq 55 in Ben's paper
+        Eq 55 in Knueven et.al.
         """
 
         return (
@@ -226,7 +232,7 @@ def startup_shutdown_constraints(
 
         def startup_type_rule(_, t, key=key, prev_key=prev_key):
             """
-            Eq 54 in Ben's paper
+            Eq 54 in Knueven et.al.
             """
             if t < blk.startup_duration[key]:
                 return Constraint.Skip
