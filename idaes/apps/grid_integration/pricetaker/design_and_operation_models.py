@@ -117,7 +117,9 @@ def is_valid_startup_types(data):
 
     # Values must be unique, as they correspond to different startup types
     if len(data.values()) > len(set(data.values())):
-        raise ConfigurationError("Startup time for two or more startup types is the same.")
+        raise ConfigurationError(
+            "Startup time for two or more startup types is the same."
+        )
 
     # Return a dictionary after sorting based on values
     return dict(sorted(data.items(), key=lambda item: item[1]))
