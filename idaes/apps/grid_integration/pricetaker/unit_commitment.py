@@ -189,8 +189,8 @@ def startup_shutdown_constraints(
 
     if startup_transition_time is None or len(startup_transition_time) == 0:
         # if there is only one startup type, return
-        # startup_transition_time can be None or empty dict
-        # This is a double insurance check, that empty dict or None is not passed
+        # startup_transition_time can be None.
+        # This is a double insurance check, that empty dict or None will skip the following.
         return
 
     # multiple startup types
@@ -202,13 +202,6 @@ def startup_shutdown_constraints(
         startup_transition_time[startup_names[0]] = max(
             minimum_down_time, startup_transition_time[startup_names[0]]
         )
-
-        # add a check to ensure the startup time is monotonically increasing.
-        for i in range(1, len(startup_names)):
-            startup_transition_time[startup_names[i]] = max(
-                startup_transition_time[startup_names[i]],
-                startup_transition_time[startup_names[i - 1]],
-            )
 
         # this is necessary, because we have updated the startup_transition_time.
         blk.startup_duration = Param(startup_names, initialize=startup_transition_time)

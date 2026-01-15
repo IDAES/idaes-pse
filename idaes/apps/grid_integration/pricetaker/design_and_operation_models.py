@@ -88,10 +88,6 @@ def is_valid_polynomial_surrogate_data(data: dict):
 def is_valid_startup_types(data):
     """Validate if the startup_types received is valid"""
 
-    if data is None:
-        # if data is None, it is okay and return None
-        return None
-
     if not isinstance(data, dict):
         raise TypeError("Data must be a dictionary.")
 
