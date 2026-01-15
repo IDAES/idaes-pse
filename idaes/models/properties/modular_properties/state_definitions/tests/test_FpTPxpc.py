@@ -315,7 +315,9 @@ class Test1PhaseDefinedStateTrueWithBounds(object):
         )
 
         # Build state block
-        m.props = m.params.build_state_block([1], defined_state=True, has_phase_equilibrium=False)
+        m.props = m.params.build_state_block(
+            [1], defined_state=True, has_phase_equilibrium=False
+        )
 
         # Add necessary variables that would be built by other methods
         m.props[1].dens_mol_phase = Var(m.params.phase_list, initialize=1)
@@ -1500,7 +1502,8 @@ def test_phase_equilibrium_initializer_object():
     model.fs.thermo_params = GenericParameterBlock(**thermo_config_no_rxn)
 
     model.fs.state = model.fs.thermo_params.build_state_block(
-        model.fs.time, defined_state=False,
+        model.fs.time,
+        defined_state=False,
     )
 
     model.fs.state[0].pressure.set_value(101325.0)
