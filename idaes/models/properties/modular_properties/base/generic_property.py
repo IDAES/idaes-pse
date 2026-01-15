@@ -2727,10 +2727,7 @@ class _GenericStateBlock(StateBlock):
                         # For systems where the state variables fully define the
                         # phase equilibrium, we cannot activate the equilibrium
                         # constraint at this stage.
-                        if (
-                            "flow_mol_phase_comp" not in b.define_state_vars()
-                            and "mole_frac_phase_comp" not in b.define_state_vars()
-                        ):
+                        if "flow_mol_phase_comp" not in b.define_state_vars():
                             c.activate()
 
                 for pp in b.params._pe_pairs:
@@ -2862,27 +2859,21 @@ class GenericStateBlockData(StateBlockData):
         self.params.config.state_definition.define_state(self)
 
         # Add equilibrium temperature variable if required
-        if self.params.config.phases_in_equilibrium is not None:
-            if self.always_flash:
-                has_phase_equilibrium = True
-            elif self.config.defined_state:
-                has_phase_equilibrium = False
-            else:
-                has_phase_equilibrium = self.config.has_phase_equilibrium
+        if self.params.config.phases_in_equilibrium is not None and (
+            not self.config.defined_state or self.always_flash
+        ):
 
-            if has_phase_equilibrium:
-                t_units = self.params.get_metadata().default_units.TEMPERATURE
-                if self.temperature.value is not None:
-                    t_value = value(self.temperature)
-                else:
-                    t_value = None
-                self._teq = Var(
-                    self.params._pe_pairs,
-                    initialize=t_value,
-                    doc="Temperature for calculating phase equilibrium",
-                    units=t_units,
-                    bounds=self.temperature.bounds,
-                )
+            t_units = self.params.get_metadata().default_units.TEMPERATURE
+            if self.temperature.value is not None:
+                t_value = value(self.temperature)
+            else:
+                t_value = None
+            self._teq = Var(
+                self.params._pe_pairs,
+                initialize=t_value,
+                doc="Temperature for calculating phase equilibrium",
+                units=t_units,
+            )
 
         # Create common components for each property package
         for p in self.phase_list:
@@ -2898,42 +2889,37 @@ class GenericStateBlockData(StateBlockData):
                     b.enth_mol_phase[p] * b.phase_frac[p] for p in b.phase_list
                 )
 
-        if self.params.config.phases_in_equilibrium is not None:
-            if self.always_flash:
-                has_phase_equilibrium = True
-            elif self.config.defined_state:
-                has_phase_equilibrium = False
-            else:
-                has_phase_equilibrium = self.config.has_phase_equilibrium
+        # Add phase equilibrium constraints if necessary
+        if self.params.config.phases_in_equilibrium is not None and (
+            not self.config.defined_state or self.always_flash
+        ):
 
-            if has_phase_equilibrium:
+            pe_form_config = self.params.config.phase_equilibrium_state
+            for pp in self.params._pe_pairs:
+                pe_form_config[pp].phase_equil(self, pp)
 
-                pe_form_config = self.params.config.phase_equilibrium_state
-                for pp in self.params._pe_pairs:
-                    pe_form_config[pp].phase_equil(self, pp)
+            def rule_equilibrium(b, phase1, phase2, j):
+                if (phase1, j) not in b.phase_component_set or (
+                    phase2,
+                    j,
+                ) not in b.phase_component_set:
+                    return Constraint.Skip
+                config = b.params.get_component(j).config
+                try:
+                    e_mthd = config.phase_equilibrium_form[
+                        (phase1, phase2)
+                    ].return_expression
+                except KeyError:
+                    e_mthd = config.phase_equilibrium_form[
+                        (phase2, phase1)
+                    ].return_expression
+                if e_mthd is None:
+                    raise GenericPropertyPackageError(b, "phase_equilibrium_form")
+                return e_mthd(self, phase1, phase2, j)
 
-                def rule_equilibrium(b, phase1, phase2, j):
-                    if (phase1, j) not in b.phase_component_set or (
-                        phase2,
-                        j,
-                    ) not in b.phase_component_set:
-                        return Constraint.Skip
-                    config = b.params.get_component(j).config
-                    try:
-                        e_mthd = config.phase_equilibrium_form[
-                            (phase1, phase2)
-                        ].return_expression
-                    except KeyError:
-                        e_mthd = config.phase_equilibrium_form[
-                            (phase2, phase1)
-                        ].return_expression
-                    if e_mthd is None:
-                        raise GenericPropertyPackageError(b, "phase_equilibrium_form")
-                    return e_mthd(self, phase1, phase2, j)
-
-                self.equilibrium_constraint = Constraint(
-                    self.params._pe_pairs, self.component_list, rule=rule_equilibrium
-                )
+            self.equilibrium_constraint = Constraint(
+                self.params._pe_pairs, self.component_list, rule=rule_equilibrium
+            )
 
         # Add inherent reaction constraints if necessary
         if self.params.has_inherent_reactions and (
@@ -5518,15 +5504,12 @@ def _temperature_pressure_bubble_dew(b, name):
         abbrv = "t" + abbrv
         bounds = (b.temperature.lb, b.temperature.ub)
         units = b.params.get_metadata().default_units.TEMPERATURE
-        init = b.temperature.value
     elif splt[0] == "pressure":
         abbrv = "p" + abbrv
         bounds = (b.pressure.lb, b.pressure.ub)
         units_meta = b.params.get_metadata().derived_units
         units = units_meta.PRESSURE
-        init = b.pressure.value
     else:
-        init = None
         _raise_dev_burnt_toast()
 
     docstring_var += splt[0]
@@ -5539,13 +5522,7 @@ def _temperature_pressure_bubble_dew(b, name):
         setattr(
             b,
             name,
-            Var(
-                b.params._pe_pairs,
-                doc=docstring_var,
-                bounds=bounds,
-                initialize=init,
-                units=units,
-            ),
+            Var(b.params._pe_pairs, doc=docstring_var, bounds=bounds, units=units),
         )
         setattr(
             b,
