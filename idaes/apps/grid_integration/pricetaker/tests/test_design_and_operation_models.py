@@ -38,6 +38,35 @@ def test_is_valid_startup_types_empty_dict():
 
 
 @pytest.mark.unit
+def test_is_valid_startup_types_invalid_inputs():
+    """Tests that is_valid_startup_types rejects invalid inputs"""
+
+    with pytest.raises(TypeError, match="Data must be a dictionary."):
+        is_valid_startup_types([("hot", 4)])
+
+    with pytest.raises(TypeError, match="Data must be a dictionary."):
+        is_valid_startup_types(3.14)
+
+    with pytest.raises(TypeError, match="key must be a valid string."):
+        is_valid_startup_types({1: 4})
+
+    with pytest.raises(
+        ConfigurationError,
+        match="Key 'hot-start' is not a valid Python variable name. Keys must be valid identifiers.",
+    ):
+        is_valid_startup_types({"hot-start": 4})
+
+    with pytest.raises(TypeError, match="value must be an int"):
+        is_valid_startup_types({"hot": 4.2})
+
+    with pytest.raises(
+        ConfigurationError,
+        match="Startup time for two or more startup types is the same.",
+    ):
+        is_valid_startup_types({"hot": 4, "warm": 4})
+
+
+@pytest.mark.unit
 def test_format_data():
     """Tests the _format_data function"""
     m = ConcreteModel()
@@ -421,6 +450,15 @@ def test_is_valid_data_type_for_storage_model():
         str(_is_valid_data_type_for_storage_model(m.blk.x[1] + m.blk.x[2] + m.blk.x[3]))
         == "blk.x[1] + blk.x[2] + blk.x[3]"
     )
+
+
+@pytest.mark.unit
+def test_is_valid_startup_types():
+    """Tests the is_valid_startup_types function"""
+    # Test the correct data structure is returned
+    data = is_valid_startup_types({"warm": 8, "hot": 4, "cold": 12})
+    assert list(data.keys()) == ["hot", "warm", "cold"]
+    assert data == {"hot": 4, "warm": 8, "cold": 12}
 
 
 @pytest.mark.unit
