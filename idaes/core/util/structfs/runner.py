@@ -382,6 +382,7 @@ class Action:
 
     ```{code}
     :name: hellogoodbye
+
     from idaes.core.util.structfs.runner import Action
     class HelloGoodbye(Action):
         "Example action, for tutorial purposes."

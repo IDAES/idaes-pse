@@ -151,9 +151,9 @@ sfi_before_build_model = sfi_before_set_operating_conditions = sfi_before_init_m
 SolverStatus, FS = None, None
 
 #  load the functions from the docstring
-_ds = Docstring(structfs.__doc__)
-exec(_ds.code("before", func_prefix="sfi_before_"))
-exec(_ds.code("after", func_prefix="sfi_after_"))
+_ds1 = Docstring(structfs.__doc__)
+exec(_ds1.code("before", func_prefix="sfi_before_"))
+exec(_ds1.code("after", func_prefix="sfi_after_"))
 
 
 @pytest.mark.unit
@@ -174,8 +174,8 @@ def test_sfi_after():
 # pacify linters
 annotate_vars_example = lambda x: None
 # load example function from docstring
-_ds = Docstring(BaseFlowsheetRunner.annotate_var.__doc__)
-exec(_ds.code("annotate_vars"))
+_ds2 = Docstring(BaseFlowsheetRunner.annotate_var.__doc__)
+exec(_ds2.code("annotate_vars"))
 
 
 @pytest.mark.unit

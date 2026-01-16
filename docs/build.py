@@ -72,6 +72,7 @@ def run_apidoc(clean=True, dry_run=False, **kwargs):
             "apidoc",
             "../idaes",
             "../idaes/*tests*",
+            "../idaes/core/util/structfs",  # handled by apidoc2
         ],
         60,
         dry_run,

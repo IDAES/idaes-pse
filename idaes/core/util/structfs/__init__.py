@@ -75,6 +75,7 @@ an example:
 
 ```{code} python
 :name: before
+
 from pyomo.environ import ConcreteModel, SolverFactory, SolverStatus
 from idaes.core import FlowsheetBlock
 from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
@@ -226,10 +227,12 @@ treatment in display, etc. with the
 {py:class}`FlowsheetRunner <structfs.fsrunner.FlowsheetRunner>` class.
 
 ```{autodoc2-object} structfs.fsrunner.FlowsheetRunner.annotate_var
+:no-index:
 ```
 
 ```{autodoc2-docstring} structfs.fsrunner.FlowsheetRunner.annotate_var
 :parser: myst
+:no-index:
 ```
 
 '''
