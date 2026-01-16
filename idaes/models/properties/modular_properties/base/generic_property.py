@@ -5800,3 +5800,4 @@ def _init_Pdew(blk):
                 blk.log_mole_frac_pdew[pp, j].value = value(
                     log(blk._mole_frac_pdew[pp, j])
                 )
+
