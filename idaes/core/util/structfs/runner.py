@@ -15,8 +15,13 @@ Run functions in a module in a defined, named, sequence.
 """
 
 # stdlib
+from abc import ABC, abstractmethod
+import json
 import logging
 from typing import Callable, Optional, Tuple, Sequence, TypeVar
+
+# third party
+from pydantic import BaseModel, Field
 
 __author__ = "Dan Gunter (LBNL)"
 
@@ -167,7 +172,8 @@ class Runner:
         endpoints: tuple[bool, bool],
     ):
         names = (self.normalize_name(first), self.normalize_name(last))
-        print(f"@@ RUN STEPS: first={first} last={last} endpoints={endpoints}")
+
+        self._last_run_steps = []
 
         # get indexes of first/last step
         step_range = [-1, -1]
@@ -207,6 +213,7 @@ class Runner:
             # if the step is defined, run it
             if step:
                 step.func(self._context)
+                self._last_run_steps.append(step.name)
 
         # execute overall after-run action
         for action in self._actions.values():
@@ -215,6 +222,7 @@ class Runner:
     def reset(self):
         """Reset runner internal state, especially the context."""
         self._context = {}
+        self._last_run_steps = []
 
     def list_steps(self, all_steps=False) -> list[str]:
         """Get list of [runnable] steps."""
@@ -351,8 +359,19 @@ class Runner:
 
         return step_decorator
 
+    def report(self) -> dict:
+        # create a mapping of actions to report dicts
+        action_reports = {}
+        for name, action in self._actions.items():
+            classname = action.__class__.__name__
+            rpt = action.report()
+            rpt_dict = rpt.model_dump() if isinstance(rpt, BaseModel) else rpt
+            action_reports[classname] = rpt_dict
+        # return actions and other metadata as a report
+        return {"actions": action_reports, "last_run": self._last_run_steps.copy()}
 
-class Action:
+
+class Action(ABC):
     """The Action class implements a simple framework to run arbitrary
     functions before and/or after each step and/or run performed
     by the `Runner` class.
@@ -373,6 +392,10 @@ class Action:
     the created action instance with arguments to `add_action`.
     Also note that the *name* argument is used to retrieve the
     action instance later, as needed.
+
+    All actions must also implement the `report()` method,
+    which returns the results of the action to the caller
+    as either a Pydantic BaseModel subclass or a Python dict.
 
     ### Example
 
@@ -478,5 +501,11 @@ class Action:
         """Perform this action after a run ends."""
         return
 
-    def report(self) -> dict:
-        return {}
+    @abstractmethod
+    def report(self) -> BaseModel | dict:
+        """Report the results of the action to the caller.
+
+        Returns:
+            Results as a Pydantic model or Python dict
+        """
+        pass

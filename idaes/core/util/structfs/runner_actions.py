@@ -24,6 +24,7 @@ from typing import Union, Optional
 # third-party
 import pandas as pd
 from pyomo.network.port import ScalarPort
+from pydantic import BaseModel, Field
 
 # package
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -34,6 +35,10 @@ from .fsrunner import FlowsheetRunner
 
 class Timer(Action):
     """Simple step/run timer action."""
+
+    class Report(BaseModel):
+        # {"step_name": <float time>, ..} from most recent run
+        timings: dict[str, float] = Field(default={})
 
     def __init__(self, runner, **kwargs):
         """Constructor.
@@ -136,8 +141,9 @@ class Timer(Action):
     def _ipython_display_(self):
         print(self.summary())
 
-    def report(self) -> dict:
-        return self.step_times[-1].copy()  # most recent run
+    def report(self) -> Report:
+        rpt = self.Report(timings=self.step_times[-1].copy())
+        return rpt
 
 
 # Hold degrees of freedom for one FlowsheetRunner 'step'
@@ -157,6 +163,10 @@ class UnitDofChecker(Action):
     At the end of a run, the degrees of freedom for the entire
     model are checked, saved, and passed to an optional function.
     """
+
+    class Report(BaseModel):
+        steps: dict[str, UnitDofType] = Field(default={})
+        model: int = Field(default=0)
 
     def __init__(
         self,
@@ -291,7 +301,7 @@ class UnitDofChecker(Action):
         return list(self._steps)
 
     def report(self) -> dict:
-        return {"steps": self.get_dof(), "model": self.get_dof_model()}
+        return self.Report(steps=self.get_dof(), model=self.get_dof_model())
 
     @staticmethod
     def _get_dof(block, fix_inlets: bool = True):
