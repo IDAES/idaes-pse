@@ -81,7 +81,7 @@ class BaseFlowsheetRunner(Runner):
         "check_model_numerics",
     )
 
-    def __init__(self, solver=None, tee=False):
+    def __init__(self, solver=None, tee=True):
         self.build_step = self.STEPS[0]
         self._solver, self._tee = solver, tee
         self._ann = {}
@@ -230,7 +230,7 @@ class FlowsheetRunner(BaseFlowsheetRunner):
 
             # check DoF after build, initial solve, and optimization solve
             self._a = runner.add_action(
-                "dof",
+                "degrees_of_freedom",
                 UnitDofChecker,
                 "fs",
                 ["build", "solve_initial", "solve_optimization"],
@@ -258,7 +258,7 @@ class FlowsheetRunner(BaseFlowsheetRunner):
         def __init__(self, runner):
             from .runner_actions import Timer
 
-            self._a: Timer = runner.add_action("t", Timer)
+            self._a: Timer = runner.add_action("timings", Timer)
 
         @property
         def values(self) -> list[dict]:
@@ -280,9 +280,12 @@ class FlowsheetRunner(BaseFlowsheetRunner):
             self._a._ipython_display_()
 
     def __init__(self, **kwargs):
+        from .runner_actions import CaptureSolverOutput
+
         super().__init__(**kwargs)
         self.dof = self.DegreesOfFreedom(self)
         self.timings = self.Timings(self)
+        self.add_action("capture_solver_output", CaptureSolverOutput)
 
     def build(self):
         """Run just the build step"""

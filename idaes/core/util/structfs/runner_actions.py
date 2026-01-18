@@ -325,3 +325,27 @@ class UnitDofChecker(Action):
                 inlet.free()
 
         return dof
+
+
+class CaptureSolverOutput(Action):
+    def __init__(self, runner, **kwargs):
+        super().__init__(runner, **kwargs)
+        self._logs = {}
+        self._solver_out = None
+
+    def before_step(self, step_name: str):
+        if self._is_solve_step(step_name):
+            self._solver_out = StringIO()
+            self._save_stdout, sys.stdout = sys.stdout, self._solver_out
+
+    def after_step(self, step_name: str):
+        if self._is_solve_step(step_name):
+            self._logs[step_name] = self._solver_out.getvalue()
+            self._solver_out = None
+            sys.stdout = self._save_stdout
+
+    def _is_solve_step(self, name: str):
+        return name.startswith("solve")
+
+    def report(self):
+        return {"solver_logs": self._logs}
