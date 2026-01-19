@@ -349,3 +349,50 @@ class CaptureSolverOutput(Action):
 
     def report(self):
         return {"solver_logs": self._logs}
+
+
+class ModelVariables(Action):
+    """Extract and format model variables."""
+
+    VAR_TYPE = "var"
+    PARAM_TYPE = "param"
+
+    def __init__(self, runner, **kwargs):
+        assert isinstance(runner, FlowsheetRunner)  # makes no sense otherwise
+        super().__init__(runner, **kwargs)
+
+    def after_run(self):
+        self._blocks = self._extract_vars(self._runner.model)
+
+    def _extract_vars(self, m):
+        model_vars = []
+        for c in m.component_objects():
+            id_c = id(c)
+            if c.is_variable_type():
+                subtype = self.VAR_TYPE
+            elif c.is_parameter_type():
+                subtype = self.PARAM_TYPE
+            else:
+                continue  # we just don't care!
+            # XXX block: subtype, id, name, parent_id, [is_indexed, num]
+            # XXX b = [subtype, id_c, c.name, id(c.parent_block())]
+            b = [subtype, c.name]
+            items = []
+            for index in c:
+                v = c[index]
+                if index is None:
+                    b.append(False)  # not indexed
+                else:
+                    b.append(True)  # indexed
+                # item: index, value, [fixed, stale, lb, ub]
+                if subtype == self.VAR_TYPE:
+                    item = (index, v.value, v.fixed, v.stale, v.lb, v.ub)
+                else:
+                    item = (index, v.value)
+                items.append(item)
+            b.append(items)
+            model_vars.append(b)
+        return model_vars
+
+    def report(self) -> dict:
+        return {"blocks": self._blocks}

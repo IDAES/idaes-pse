@@ -280,12 +280,13 @@ class FlowsheetRunner(BaseFlowsheetRunner):
             self._a._ipython_display_()
 
     def __init__(self, **kwargs):
-        from .runner_actions import CaptureSolverOutput
+        from .runner_actions import CaptureSolverOutput, ModelVariables
 
         super().__init__(**kwargs)
         self.dof = self.DegreesOfFreedom(self)
         self.timings = self.Timings(self)
         self.add_action("capture_solver_output", CaptureSolverOutput)
+        self.add_action("model_variables", ModelVariables)
 
     def build(self):
         """Run just the build step"""
