@@ -25,12 +25,8 @@ def error(ofile: FileIO, msg: str, code: int = -1) -> int:
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("module", help="Python module name", default=None)
-    p.add_argument(
-        "--output",
-        default="result.json",
-        help="Output file for result JSON (default=result.json)",
-    )
+    p.add_argument("module", help="Python module name")
+    p.add_argument("output", help="Output file for result JSON")
     p.add_argument("--object", help="Object in module (default=FS)", default="FS")
     p.add_argument(
         "--to", help="Step name to run to (default=all)", default=Runner.STEP_ANY
@@ -40,7 +36,7 @@ def main():
     try:
         ofile = open(args.output, mode="w")
     except Exception as err:
-        return error(sys.stderr, "Cannot open output file: {err}", -1)
+        return error(sys.stderr, "Cannot open output file '{args.output}': {err}", -1)
 
     if args.module is None:
         return error(ofile, f"Argument --module is required")
@@ -78,7 +74,6 @@ def main():
     report = obj.report()
     report["status"] = 0
     json.dump(report, ofile)
-    print(f"===> {ofile.name}")
 
     return 0
 

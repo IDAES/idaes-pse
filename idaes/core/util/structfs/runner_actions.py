@@ -339,7 +339,7 @@ class CaptureSolverOutput(Action):
             self._save_stdout, sys.stdout = sys.stdout, self._solver_out
 
     def after_step(self, step_name: str):
-        if self._is_solve_step(step_name):
+        if self._solver_out is not None:
             self._logs[step_name] = self._solver_out.getvalue()
             self._solver_out = None
             sys.stdout = self._save_stdout
@@ -351,11 +351,21 @@ class CaptureSolverOutput(Action):
         return {"solver_logs": self._logs}
 
 
+# for ModelVariables.Report
+class _Block(BaseModel):
+    subtype: str
+    name: str
+    indexed: bool = Field(default=False)
+    items: list = Field(default=[])
+
+
 class ModelVariables(Action):
     """Extract and format model variables."""
 
-    VAR_TYPE = "var"
-    PARAM_TYPE = "param"
+    VAR_TYPE, PARAM_TYPE = "var", "param"
+
+    class Report(BaseModel):
+        blocks: list[_Block] = Field(default=[])
 
     def __init__(self, runner, **kwargs):
         assert isinstance(runner, FlowsheetRunner)  # makes no sense otherwise
@@ -374,25 +384,19 @@ class ModelVariables(Action):
                 subtype = self.PARAM_TYPE
             else:
                 continue  # we just don't care!
-            # XXX block: subtype, id, name, parent_id, [is_indexed, num]
-            # XXX b = [subtype, id_c, c.name, id(c.parent_block())]
-            b = [subtype, c.name]
-            items = []
+            b = _Block(subtype=subtype, name=c.name)
             for index in c:
                 v = c[index]
-                if index is None:
-                    b.append(False)  # not indexed
-                else:
-                    b.append(True)  # indexed
-                # item: index, value, [fixed, stale, lb, ub]
+                b.indexed = index is not None
                 if subtype == self.VAR_TYPE:
+                    # index, value, is-fixed, is-stale, lower-bound, upper-bound
                     item = (index, v.value, v.fixed, v.stale, v.lb, v.ub)
                 else:
+                    # index, value
                     item = (index, v.value)
-                items.append(item)
-            b.append(items)
+                b.items.append(item)
             model_vars.append(b)
         return model_vars
 
-    def report(self) -> dict:
-        return {"blocks": self._blocks}
+    def report(self) -> Report:
+        return self.Report(blocks=self._blocks)
