@@ -433,6 +433,9 @@ class Action(ABC):
 
         def after_run(self):
             print(f"Ran {self.step_counter} steps")
+
+        def report(self):
+            return {"steps": self.step_counter}
     ```
 
     You could add the above example to a Runner subclass,

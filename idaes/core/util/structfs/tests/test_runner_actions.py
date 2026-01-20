@@ -183,8 +183,9 @@ def test_dof_report():
     report = rn.get_action("dof").report()
     print(f"@@ REPORT:\n{report}")
     assert report
-    assert report["model"] == 0  # model has DOF=0
+    report_data = report.model_dump()
+    assert report_data["model"] == 0  # model has DOF=0
     for step_name in check_steps:
-        assert step_name in report["steps"]
-        for unit, value in report["steps"][step_name].items():
+        assert step_name in report_data["steps"]
+        for unit, value in report_data["steps"][step_name].items():
             assert value >= 0  # DOF > 0 in all (step, unit)
