@@ -17,6 +17,8 @@ Predefined Actions for the generic Runner.
 from collections import defaultdict
 from collections.abc import Callable
 from io import StringIO
+from itertools import chain
+import re
 import sys
 import time
 from typing import Union, Optional
@@ -24,6 +26,9 @@ from typing import Union, Optional
 # third-party
 import pandas as pd
 from pyomo.network.port import ScalarPort
+from pyomo.core.base.var import IndexedVar
+from pyomo.core.base.param import IndexedParam
+import pyomo.environ as pyo
 from pydantic import BaseModel, Field
 
 # package
@@ -351,52 +356,95 @@ class CaptureSolverOutput(Action):
         return {"solver_logs": self._logs}
 
 
-# for ModelVariables.Report
-class _Block(BaseModel):
-    subtype: str
-    name: str
-    indexed: bool = Field(default=False)
-    items: list = Field(default=[])
-
-
 class ModelVariables(Action):
     """Extract and format model variables."""
 
-    VAR_TYPE, PARAM_TYPE = "var", "param"
+    VAR_TYPE, PARAM_TYPE = "V", "P"
 
     class Report(BaseModel):
-        blocks: list[_Block] = Field(default=[])
+        variables: dict = Field(default={})  # list = Field(default=[])
 
     def __init__(self, runner, **kwargs):
         assert isinstance(runner, FlowsheetRunner)  # makes no sense otherwise
         super().__init__(runner, **kwargs)
 
     def after_run(self):
-        self._blocks = self._extract_vars(self._runner.model)
+        self._extract_vars(self._runner.model)
 
     def _extract_vars(self, m):
-        model_vars = []
+        var_tree = {}
+
         for c in m.component_objects():
-            id_c = id(c)
-            if c.is_variable_type():
+            # get component type
+            if self.is_var(c):
                 subtype = self.VAR_TYPE
-            elif c.is_parameter_type():
+            elif self.is_param(c):
                 subtype = self.PARAM_TYPE
             else:
-                continue  # we just don't care!
-            b = _Block(subtype=subtype, name=c.name)
+                continue  # ignore other components
+            # start new block
+            b = [subtype]
+            # add values
+            # if isinstance(c, pyo.NumericValue):
+            #     b.append(False)
+            #     b.append([None, c.value])
+            # else:
+            items = []
+            indexed = False
+            # add each value from an indexed var/param,
+            # this also works ok for non-indexed ones
             for index in c:
                 v = c[index]
-                b.indexed = index is not None
+                indexed = index is not None
                 if subtype == self.VAR_TYPE:
                     # index, value, is-fixed, is-stale, lower-bound, upper-bound
-                    item = (index, v.value, v.fixed, v.stale, v.lb, v.ub)
+                    item = (index, pyo.value(v), v.fixed, v.stale, v.lb, v.ub)
                 else:
                     # index, value
-                    item = (index, v.value)
-                b.items.append(item)
-            model_vars.append(b)
-        return model_vars
+                    item = (index, pyo.value(v))
+                items.append(item)
+            b.append(indexed)
+            b.append(items)
+            # add block to list
+            # model_vars.append(b)
+            self._add_block(var_tree, c.name, b)
+
+        self._vars = var_tree  # {"components": model_vars}
+
+    @staticmethod
+    def is_var(c):
+        return c.is_variable_type() or isinstance(c, IndexedVar)
+
+    @staticmethod
+    def is_param(c):
+        return c.is_parameter_type() or isinstance(c, IndexedParam)
+
+    @staticmethod
+    def _add_block(tree: dict, name: str, block):
+        # get parts of the name
+        # - mostly logic to handle 'foo.bar[0.0].baz' crap
+        p = name.split(".")
+        parts, i, n = [], 0, len(p)
+        indexes = None
+        while i < n:
+            cur = p[i]
+            # since split('.') creates ('foo[0.', '0]') from 'foo[0.0]',
+            # we need to rejoin them
+            if i < n - 1 and re.match(r".*\[\d+$", cur):
+                next = p[i + 1]
+                parts.append(cur + "." + next)
+                i += 2
+            else:
+                parts.append(cur)
+                i += 1
+        # insert in tree
+        t, prev = tree, None
+        for p in parts:
+            prev = t
+            if p not in t:
+                t[p] = {}
+            t = t[p]
+        prev[p] = block
 
     def report(self) -> Report:
-        return self.Report(blocks=self._blocks)
+        return self.Report(variables=self._vars)
