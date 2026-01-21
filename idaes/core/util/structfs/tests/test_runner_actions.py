@@ -163,9 +163,10 @@ def test_timer_report():
         "solve_initial",
     )
     assert report
+    print(f"Hey! here's the report: {report}")
     for step_name in expect_steps:
-        assert step_name in report
-        assert report[step_name] < 1
+        assert step_name in report.timings
+        assert report.timings[step_name] < 1
 
 
 @pytest.mark.unit
