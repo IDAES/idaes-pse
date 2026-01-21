@@ -50,11 +50,6 @@ def main():
     except Exception as err:
         return error(sys.stderr, "Cannot open output file '{args.output}': {err}", -1)
 
-    if args.module is None:
-        return error(ofile, f"Argument --module is required")
-    if args.to is None:
-        return error(ofile, f"Argument --to is required")
-
     module_name = args.module
     if module_name.startswith("."):
         return error(ofile, "Relative module names not allowed", 1)
