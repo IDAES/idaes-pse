@@ -15,6 +15,7 @@ Carbon purification unit (CPU) model test
 
 Created on May 18 2022 by A. Noring
 """
+
 import pytest
 
 # Import Pyomo libraries

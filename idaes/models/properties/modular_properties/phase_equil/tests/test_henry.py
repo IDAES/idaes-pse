@@ -13,6 +13,7 @@
 """
 Library of common forms for phase equilibrium constraints
 """
+
 from pyomo.environ import ConcreteModel, Expression, value, Var, units as pyunits
 
 from idaes.models.properties.modular_properties.base.generic_property import (

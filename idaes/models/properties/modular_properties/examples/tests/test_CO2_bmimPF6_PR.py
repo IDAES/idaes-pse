@@ -13,6 +13,7 @@
 """
 Author: Andrew Lee, Alejandro Garciadiego, Douglas Allan
 """
+
 import pytest
 from pyomo.environ import (
     check_optimal_termination,

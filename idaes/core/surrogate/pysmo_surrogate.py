@@ -42,7 +42,6 @@ from idaes.core.surrogate.pysmo import (
 import idaes.logger as idaeslog
 from idaes.core.util import to_json
 
-
 __author__ = "Oluwamayowa Amusat"
 # Logging
 # -------

@@ -13,6 +13,7 @@
 """
 Functions for saving and loading Pyomo objects to json
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 
@@ -616,7 +617,7 @@ def _write_component_data(sd, o, wts, count=None, lookup=None, suffixes=None):
                 el = o[key]
             if is_first_item:  # assume all item are same type, use first to get alist
                 # Get all attributes
-                (alist, _) = wts.get_data_class_attr_list(el)
+                alist, _ = wts.get_data_class_attr_list(el)
                 if alist is None:
                     return  # if None then skip writing
             is_first_item = False  # done with first only stuff

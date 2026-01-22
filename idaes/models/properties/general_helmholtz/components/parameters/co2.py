@@ -10,8 +10,7 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-"""Generate parameter and expression files for CO2
-"""
+"""Generate parameter and expression files for CO2"""
 
 __author__ = "John Eslick"
 

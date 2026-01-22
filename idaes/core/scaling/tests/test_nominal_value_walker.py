@@ -13,6 +13,7 @@
 """
 This module contains tests for the NominalValueExtractionVisitor.
 """
+
 import math
 import logging
 import pytest

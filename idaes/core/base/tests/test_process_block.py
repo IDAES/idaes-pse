@@ -15,6 +15,7 @@ Tests ProcessBlock and ProcessBlockData.
 
 Author: John Eslick
 """
+
 import pytest
 from pyomo.environ import ConcreteModel, Var, value
 from pyomo.common.config import ConfigValue

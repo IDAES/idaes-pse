@@ -13,6 +13,7 @@
 """This module contains utility classes that allow users to tag model quantities
 and group them, for easy display, formatting, and input.
 """
+
 import xml.dom.minidom
 import collections
 

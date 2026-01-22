@@ -34,7 +34,6 @@ from idaes.core.surrogate.base.surrogate_base import SurrogateTrainer, Surrogate
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 
-
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 

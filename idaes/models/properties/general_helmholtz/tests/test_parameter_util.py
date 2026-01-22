@@ -10,9 +10,9 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-"""Test the Helmholtz EoS parameter writing utility.  Property calculations 
+"""Test the Helmholtz EoS parameter writing utility.  Property calculations
 tested here do not use IDAES properties or the external functions. This directly
-tests the expressions created by the WriteParameters class that will be written 
+tests the expressions created by the WriteParameters class that will be written
 to parameter and expression files to verify they are generated correctly.
 
 The tests here use three points from the saturation curve near critical, near triple,
@@ -21,11 +21,11 @@ include citations.
 
 On some test points, I had to infer extra significant figures for density.  For example,
 this density of a liquid near the triple point is insensitive to pressure, so to calculate
-the pressure from density of a liquid at the triple point, a lot of significant figures 
-are needed. As long a I could add significant figures to the density and not change the 
-reported value when rounded, I assumed it was okay. 
+the pressure from density of a liquid at the triple point, a lot of significant figures
+are needed. As long a I could add significant figures to the density and not change the
+reported value when rounded, I assumed it was okay.
 
-If you're adding more tests and run into the same problem, the function infer_rhol_value 
+If you're adding more tests and run into the same problem, the function infer_rhol_value
 can be uncommented to print out an inferred value for liquid density.
 """
 

@@ -10,8 +10,7 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-"""Generic Helmholtz EOS Functions and Parameters
-"""
+"""Generic Helmholtz EOS Functions and Parameters"""
 
 __author__ = "John Eslick"
 
@@ -52,7 +51,6 @@ import idaes.logger as idaeslog
 from idaes.models.properties.general_helmholtz.helmholtz_functions_map import (
     external_function_map as _external_function_map,
 )
-
 
 _log = idaeslog.getLogger(__name__)
 

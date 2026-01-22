@@ -55,7 +55,6 @@ from idaes.core.util.scaling import (
     jacobian_cond,
 )
 
-
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_solver("ipopt_v2")

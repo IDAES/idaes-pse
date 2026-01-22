@@ -17,6 +17,7 @@ There is a base set of standard properties which are applicable in most applicat
 and it is intended that specialty applications can and will define their own
 property sets as required (e.g. electrolyte systems).
 """
+
 from copy import copy
 
 from pyomo.environ import units as pyunits

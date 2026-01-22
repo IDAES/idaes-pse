@@ -15,7 +15,6 @@
 One-dimensional membrane class for CO2 gas separation
 """
 
-
 from enum import Enum
 from pyomo.common.config import Bool, ConfigDict, ConfigValue, In
 from pyomo.environ import (

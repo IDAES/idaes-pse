@@ -48,7 +48,6 @@ from idaes.models_extra.column_models.properties.MEA_solvent import (
 from idaes.models_extra.column_models.properties.MEA_vapor import wet_co2
 from idaes.core.util.exceptions import InitializationError
 
-
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_solver()

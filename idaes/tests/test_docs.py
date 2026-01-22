@@ -16,6 +16,7 @@ Test doc build.
 This does *not* try to build the docs. Instead it looks
 for the log of the build and looks for errors in it.
 """
+
 # stdlib
 import logging
 import os
@@ -23,7 +24,6 @@ from subprocess import Popen
 
 # third-party
 import pytest
-
 
 _log = logging.getLogger(__name__)
 

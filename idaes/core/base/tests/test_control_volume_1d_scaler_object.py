@@ -15,6 +15,7 @@ Tests for ControlVolume1D scaler object.
 
 Author: Douglas Allan
 """
+
 import pytest
 import re
 import pyomo.environ as pyo

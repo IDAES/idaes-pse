@@ -17,6 +17,7 @@ Cost and Performance Baseline for Fossil Energy Plants Volume 1:
 Bituminous Coal and Natural Gas to Electricity; https://doi.org/10.2172/1569246
 Author: A. Deshpande and M. Zamarripa
 """
+
 import pytest
 from idaes.models_extra.power_generation.costing.power_plant_capcost import (
     QGESSCosting,

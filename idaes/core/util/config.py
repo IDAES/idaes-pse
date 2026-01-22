@@ -53,10 +53,8 @@ def is_physical_parameter_block(val):
             f"Property package argument {val} should == useDefault or "
             f"be an instance of PhysicalParameterBlock"
         )
-        raise ConfigurationError(
-            """Property package argument should be an instance
-                of a PhysicalParameterBlock or useDefault"""
-        )
+        raise ConfigurationError("""Property package argument should be an instance
+                of a PhysicalParameterBlock or useDefault""")
 
 
 def is_reaction_parameter_block(val):
@@ -75,10 +73,8 @@ def is_reaction_parameter_block(val):
     if isinstance(val, ReactionParameterBlock):
         return val
     else:
-        raise ConfigurationError(
-            """Reaction package argument should be an instance
-                of a ReactionParameterBlock"""
-        )
+        raise ConfigurationError("""Reaction package argument should be an instance
+                of a ReactionParameterBlock""")
 
 
 def is_state_block(val):
@@ -98,10 +94,8 @@ def is_state_block(val):
     if isinstance(val, StateBlock) or val is None:
         return val
     else:
-        raise ConfigurationError(
-            """State block should be an instance of a StateBlock or
-                None"""
-        )
+        raise ConfigurationError("""State block should be an instance of a StateBlock or
+                None""")
 
 
 def is_port(arg):

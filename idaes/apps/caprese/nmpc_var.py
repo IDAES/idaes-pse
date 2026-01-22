@@ -11,7 +11,7 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-""" Variable classes for time-indexed variables that can be treated specially
+"""Variable classes for time-indexed variables that can be treated specially
 by NMPC.
 """
 

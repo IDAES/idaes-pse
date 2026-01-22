@@ -24,6 +24,7 @@ Reference:
 Song, Y. and Chen, C.-C., Symmetric Electrolyte Nonrandom Two-Liquid Activity
 Coefficient Model, Ind. Eng. Chem. Res., 2009, Vol. 48, pgs. 7788–7797
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 
@@ -33,7 +34,6 @@ from idaes.models.properties.modular_properties.base.utility import (
     get_component_object as cobj,
 )
 import idaes.logger as idaeslog
-
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -94,7 +94,7 @@ class Symmetric(object):
     def ndIdn(b, pname, i):
         # Eqn 75
         return 0.5 * sum(
-            cobj(b, j).config.charge ** 2 * ndxdn(b, pname, i, j)
+            cobj(b, j).config.charge**2 * ndxdn(b, pname, i, j)
             for j in b.params.ion_set
         )
 

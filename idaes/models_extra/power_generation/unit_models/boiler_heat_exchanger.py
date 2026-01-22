@@ -33,6 +33,7 @@ General assumptions:
     - Pressure drop tube and shell side (friction factor calc.)
 
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-class-docstring
 
@@ -80,7 +81,6 @@ from idaes.models.unit_models.heat_exchanger import (
     delta_temperature_underwood_callback,
     HeatExchangerFlowPattern,
 )
-
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)

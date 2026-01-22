@@ -15,6 +15,7 @@ Tests for ControlVolumeBlockData.
 
 Author: Andrew Lee
 """
+
 import pytest
 
 from pyomo.environ import (
@@ -62,7 +63,6 @@ from idaes.core.util.scaling import (
     get_jacobian,
     jacobian_cond,
 )
-
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing

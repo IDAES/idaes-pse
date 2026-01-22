@@ -15,6 +15,7 @@ Tests for Pressure Changer unit model.
 
 Author: Andrew Lee, Emmanuel Ogbe, Ryan Hughes
 """
+
 import pytest
 
 from pyomo.environ import (
@@ -86,7 +87,6 @@ from idaes.core.util.scaling import (
     get_jacobian,
     jacobian_cond,
 )
-
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing

@@ -16,6 +16,7 @@ Demonstration flowsheet for testing purposes.
 Constructs a basic flowsheet for a benzene-toluene system with a mixer, heater
 and flash unit.
 """
+
 from pyomo.environ import ConcreteModel, TransformationFactory
 from pyomo.network import Arc
 

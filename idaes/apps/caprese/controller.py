@@ -11,8 +11,7 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-""" Block-like object meant for controller models.
-"""
+"""Block-like object meant for controller models."""
 
 from idaes.apps.caprese.common.config import (
     ControlPenaltyType,

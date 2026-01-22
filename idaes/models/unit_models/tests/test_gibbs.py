@@ -15,6 +15,7 @@ Tests for Gibbs reactor.
 
 Author: Andrew Lee
 """
+
 import pytest
 
 from pyomo.environ import (
@@ -61,7 +62,6 @@ from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
 )
 from idaes.models_extra.power_generation.properties.natural_gas_PR import get_prop
-
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing

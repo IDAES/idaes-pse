@@ -17,7 +17,6 @@ from pyomo.environ import SolverFactory
 
 from idaes.core.util.testing import _enable_scip_solver_for_testing
 
-
 ampl_module_scip = pytest.importorskip(
     "ampl_module_scip", reason="'ampl_module_scip' not available"
 )

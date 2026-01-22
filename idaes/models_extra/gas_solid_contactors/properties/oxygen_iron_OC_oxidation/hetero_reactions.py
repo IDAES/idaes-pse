@@ -22,6 +22,7 @@ oxygen carriers in chemical-looping combustion,
 Chem. Eng. Sci. 62 (2007) 533–549.
 
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 
@@ -38,7 +39,6 @@ from pyomo.environ import (
 )
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from pyomo.common.config import ConfigBlock, ConfigValue, Bool
-
 
 # Import IDAES cores
 from idaes.core import (

@@ -13,6 +13,7 @@
 """
 Standard IDAES pressure changer model.
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 
@@ -56,7 +57,6 @@ from idaes.core.initialization import SingleControlVolumeUnitInitializer
 from idaes.core.util import to_json, from_json, StoreSpec
 
 from idaes.core.scaling import CustomScalerBase
-
 
 __author__ = "Emmanuel Ogbe, Andrew Lee, Ryan Hughes"
 _log = idaeslog.getLogger(__name__)

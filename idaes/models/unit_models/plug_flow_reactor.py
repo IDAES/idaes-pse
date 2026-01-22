@@ -13,6 +13,7 @@
 """
 Standard IDAES PFR model.
 """
+
 # Import Pyomo libraries
 from pyomo.environ import ComponentMap, Constraint, Reference, Var
 from pyomo.common.config import ConfigBlock, ConfigValue, In, ListOf, Bool

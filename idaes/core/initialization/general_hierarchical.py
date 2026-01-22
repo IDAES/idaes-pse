@@ -14,6 +14,7 @@
 Initializer class for implementing Hierarchical initialization routines for
 IDAES models with standard forms (e.g. units with 1 control volume)
 """
+
 from pyomo.environ import Block
 from pyomo.common.config import ConfigValue, Bool
 

@@ -22,13 +22,14 @@ streams and thus two inlet Ports (solid and liquid) and three outlet Ports (soli
 liquid with solids, separated liquids).
 
 The solid phase is not affected by this unit model---the state variables in the
-solid_outlet port are equal to those in the solid_inlet port. The liquid phase 
+solid_outlet port are equal to those in the solid_inlet port. The liquid phase
 is split between the recovered_liquid_outlet and retained_liquid_outlet ports.
 The liquid_recovery variable is the fraction of the liquid_inlet stream that
 is spent to the recovered_liquid_outlet stream. This variable either needs to
-be fixed by the user or a constraint needs to be written that links this 
+be fixed by the user or a constraint needs to be written that links this
 variable to the state of the solid and liquid streams.
 """
+
 # Import Python libraries
 import logging
 from pandas import DataFrame
@@ -55,7 +56,6 @@ from idaes.core.initialization import BlockTriangularizationInitializer
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.units_of_measurement import report_quantity
 from idaes.core.scaling import CustomScalerBase
-
 
 __author__ = "Andrew Lee, Douglas Allan"
 
