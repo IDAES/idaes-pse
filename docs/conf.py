@@ -47,12 +47,14 @@ extensions = [
 autodoc2_packages = [
     "../idaes/core/util/structfs",
 ]
-autodoc2_output_dir = "apidoc2"  # keep separated
+autodoc2_output_dir = "reference_guides/core/util"
 autodoc2_render_plugin = "myst"
 autodoc2_docstring_parser_regexes = [
     # render docstrings in matching files as Markdown
     ("../idaes/core/util/structfs/.*", "myst"),
 ]
+autodoc2_no_index = True
+autodoc2_index_template = None  # don't write index.rst
 
 # Put type hints in the description, not signature
 autodoc_typehints = "description"
