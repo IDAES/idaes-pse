@@ -13,6 +13,7 @@
     model_statistics
     phase_equilibria
     scaling
+    structured flowsheets <structfs/structfs>
     tables
     tags
     utility_minimization
