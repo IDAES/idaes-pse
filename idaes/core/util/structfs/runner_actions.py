@@ -384,15 +384,11 @@ class ModelVariables(Action):
                 continue  # ignore other components
             # start new block
             b = [subtype]
-            # add values
-            # if isinstance(c, pyo.NumericValue):
-            #     b.append(False)
-            #     b.append([None, c.value])
-            # else:
+            # add its variables
             items = []
             indexed = False
-            # add each value from an indexed var/param,
-            # this also works ok for non-indexed ones
+            #   add each value from an indexed var/param,
+            #   this also works ok for non-indexed ones
             for index in c:
                 v = c[index]
                 indexed = index is not None
@@ -405,11 +401,10 @@ class ModelVariables(Action):
                 items.append(item)
             b.append(indexed)
             b.append(items)
-            # add block to list
-            # model_vars.append(b)
+            # add block to tree
             self._add_block(var_tree, c.name, b)
 
-        self._vars = var_tree  # {"components": model_vars}
+        self._vars = var_tree
 
     @staticmethod
     def is_var(c):
