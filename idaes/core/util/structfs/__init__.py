@@ -227,12 +227,10 @@ treatment in display, etc. with the
 {py:class}`FlowsheetRunner <structfs.fsrunner.FlowsheetRunner>` class.
 
 ```{autodoc2-object} structfs.fsrunner.FlowsheetRunner.annotate_var
-:no-index:
 ```
 
 ```{autodoc2-docstring} structfs.fsrunner.FlowsheetRunner.annotate_var
 :parser: myst
-:no-index:
 ```
 
 '''
