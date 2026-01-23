@@ -77,7 +77,6 @@ class Docstring:
     def _init_markdown(self, text: str):
         lines = text.split("\n")
         state = 0
-        dedent = None
         for line in lines:
             ls_line = line.lstrip()
             if state == 0 and ls_line.startswith("```{code}"):
