@@ -11,7 +11,9 @@
 # for full copyright and license information.
 #################################################################################
 '''
-The 'flowsheet runner' is an API in the
+# Structured flowsheet runner API
+
+The *struct*ured *f*low*s*heet runner is an API in the
 {py:mod}`structfs` subpackage, and in
 particular that package's {py:mod}`runner <structfs.runner>` and
 {py:mod}`fsrunner <structfs.fsrunner>` modules.
