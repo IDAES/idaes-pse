@@ -14,17 +14,14 @@
 Predefined Actions for the generic Runner.
 """
 # stdlib
-from collections import defaultdict
 from collections.abc import Callable
 from io import StringIO
-from itertools import chain
 import re
 import sys
 import time
 from typing import Union, Optional
 
 # third-party
-import pandas as pd
 from pyomo.network.port import ScalarPort
 from pyomo.core.base.var import IndexedVar
 from pyomo.core.base.param import IndexedParam
@@ -42,7 +39,9 @@ class Timer(Action):
     """Simple step/run timer action."""
 
     class Report(BaseModel):
-        # {"step_name": <float time>, ..} from most recent run
+        """Report returned by report() method."""
+
+        # {"step_name": <float time>, ..} for each step
         timings: dict[str, float] = Field(default={})
 
     def __init__(self, runner, **kwargs):
@@ -117,7 +116,16 @@ class Timer(Action):
             "exclusive": rt - step_total,
         }
 
-    def summary(self, stream=None, run_idx=-1) -> str:
+    def summary(self, stream=None, run_idx=-1) -> str | None:
+        """Summary of the timings.
+
+        Args:
+            stream: Output stream, with `write()` method. Return a string if None.
+            run_idx: Index of run, -1 meaning "last one"
+
+        Returns:
+            str: If output stream was None, the text summary; otherwise None
+        """
         if stream is None:
             stream = StringIO()
 
@@ -136,17 +144,24 @@ class Timer(Action):
         for s, t in d["steps"].items():
             if t >= 0:
                 fmt = sfmt.format(slen=slen)
-                stream.write(fmt.format(s=s, t=t, p=(t / ttot * 100)))
+                stream.write(fmt.format(s=s, t=t, p=t / ttot * 100))
 
         stream.write(f"\nTotal time: {d['run']:.3f} s\n")
 
         if isinstance(stream, StringIO):
             return stream.getvalue()
 
+        return None
+
     def _ipython_display_(self):
         print(self.summary())
 
     def report(self) -> Report:
+        """Report the timings.
+
+        Returns:
+            The report object
+        """
         rpt = self.Report(timings=self.step_times[-1].copy())
         return rpt
 
@@ -170,6 +185,8 @@ class UnitDofChecker(Action):
     """
 
     class Report(BaseModel):
+        """Report on degrees of freedom in a model."""
+
         steps: dict[str, UnitDofType] = Field(default={})
         model: int = Field(default=0)
 
@@ -228,6 +245,7 @@ class UnitDofChecker(Action):
             self._step_func(step_name, units_dof)
 
     def after_run(self):
+        """Actions performed after a run."""
         fs = self._get_flowsheet()
         model_dof = degrees_of_freedom(fs)
         self._model_dof = model_dof
@@ -245,6 +263,15 @@ class UnitDofChecker(Action):
         return isinstance(block, ProcessBlockData)
 
     def summary(self, stream=sys.stdout, step=None):
+        """Readable summary of the degrees of freedom.
+
+        Args:
+            stream: Output stream, with `write()` method. Return a string if None.
+            step: Specific step to summarize, otherwise all steps.
+
+        Returns:
+            The summary as a string if `stream` was None, otherwise None
+        """
         if stream is None:
             stream = StringIO()
 
@@ -262,7 +289,7 @@ class UnitDofChecker(Action):
         stream.write(f"Degrees of freedom: {self._model_dof}\n\n")
         if step is None:
             stream.write("Degrees of freedom after steps:\n")
-            for step in self._runner._steps:
+            for step in self._runner.list_steps():
                 if step in self._steps_dof:
                     stream.write(f"  {step}:\n")
                     write_step(self._steps_dof[step])
@@ -305,7 +332,12 @@ class UnitDofChecker(Action):
             return [s for s in self._steps if s in self._steps_dof]
         return list(self._steps)
 
-    def report(self) -> dict:
+    def report(self) -> Report:
+        """Machine-readable report of degrees of freedom.
+
+        Returns:
+            Report object
+        """
         return self.Report(steps=self.get_dof(), model=self.get_dof_model())
 
     @staticmethod
@@ -333,17 +365,21 @@ class UnitDofChecker(Action):
 
 
 class CaptureSolverOutput(Action):
+    """Capture the solver output."""
+
     def __init__(self, runner, **kwargs):
         super().__init__(runner, **kwargs)
         self._logs = {}
         self._solver_out = None
 
     def before_step(self, step_name: str):
+        """Action performed before the step."""
         if self._is_solve_step(step_name):
             self._solver_out = StringIO()
             self._save_stdout, sys.stdout = sys.stdout, self._solver_out
 
     def after_step(self, step_name: str):
+        """Action performed after the step."""
         if self._solver_out is not None:
             self._logs[step_name] = self._solver_out.getvalue()
             self._solver_out = None
@@ -352,7 +388,12 @@ class CaptureSolverOutput(Action):
     def _is_solve_step(self, name: str):
         return name.startswith("solve")
 
-    def report(self):
+    def report(self) -> dict:
+        """Machine-readable report with solver output.
+
+        Returns:
+            Report dict, {'solver_logs': "<text-log>"}
+        """
         return {"solver_logs": self._logs}
 
 
@@ -362,13 +403,17 @@ class ModelVariables(Action):
     VAR_TYPE, PARAM_TYPE = "V", "P"
 
     class Report(BaseModel):
-        variables: dict = Field(default={})  # list = Field(default=[])
+        """Report for ModelVariables."""
+
+        #: Tree of variables
+        variables: dict = Field(default={})
 
     def __init__(self, runner, **kwargs):
         assert isinstance(runner, FlowsheetRunner)  # makes no sense otherwise
         super().__init__(runner, **kwargs)
 
     def after_run(self):
+        """Actions performed after the run."""
         self._extract_vars(self._runner.model)
 
     def _extract_vars(self, m):
@@ -376,9 +421,9 @@ class ModelVariables(Action):
 
         for c in m.component_objects():
             # get component type
-            if self.is_var(c):
+            if self._is_var(c):
                 subtype = self.VAR_TYPE
-            elif self.is_param(c):
+            elif self._is_param(c):
                 subtype = self.PARAM_TYPE
             else:
                 continue  # ignore other components
@@ -407,11 +452,11 @@ class ModelVariables(Action):
         self._vars = var_tree
 
     @staticmethod
-    def is_var(c):
+    def _is_var(c):
         return c.is_variable_type() or isinstance(c, IndexedVar)
 
     @staticmethod
-    def is_param(c):
+    def _is_param(c):
         return c.is_parameter_type() or isinstance(c, IndexedParam)
 
     @staticmethod
@@ -420,14 +465,13 @@ class ModelVariables(Action):
         # - mostly logic to handle 'foo.bar[0.0].baz' crap
         p = name.split(".")
         parts, i, n = [], 0, len(p)
-        indexes = None
         while i < n:
             cur = p[i]
             # since split('.') creates ('foo[0.', '0]') from 'foo[0.0]',
             # we need to rejoin them
             if i < n - 1 and re.match(r".*\[\d+$", cur):
-                next = p[i + 1]
-                parts.append(cur + "." + next)
+                next_ = p[i + 1]
+                parts.append(cur + "." + next_)
                 i += 2
             else:
                 parts.append(cur)
@@ -442,4 +486,5 @@ class ModelVariables(Action):
         prev[p] = block
 
     def report(self) -> Report:
+        """Report containing model variable values."""
         return self.Report(variables=self._vars)
