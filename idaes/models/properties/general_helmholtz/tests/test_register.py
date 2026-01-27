@@ -57,6 +57,7 @@ def test_registered_components():
     """Use some standard components to test list"""
     assert "h2o" in registered_components()
     assert "co2" in registered_components()
+    assert "nh3" in registered_components()
     assert "r134a" in registered_components()
 
 
