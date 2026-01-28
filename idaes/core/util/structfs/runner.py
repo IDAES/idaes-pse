@@ -16,12 +16,11 @@ Run functions in a module in a defined, named, sequence.
 
 # stdlib
 from abc import ABC, abstractmethod
-import json
 import logging
 from typing import Callable, Optional, Tuple, Sequence, TypeVar
 
 # third party
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 __author__ = "Dan Gunter (LBNL)"
 
@@ -181,7 +180,7 @@ class Runner:
             if step_name == self.STEP_ANY:  # meaning first or last defined
                 # this will always find a step as long as there is at least one,
                 # which we checked before calling this function
-                idx = self._find_step(reverse=(i == 1))
+                idx = self._find_step(reverse=i == 1)
             else:
                 try:
                     idx = self._step_names.index(step_name)
@@ -359,14 +358,21 @@ class Runner:
 
         return step_decorator
 
-    def report(self) -> dict:
+    def report(self) -> dict[str, dict]:
+        """Compile reports of each action into a combined report
+
+        Returns:
+            dict: Mapping with two key-value pairs:
+                    - `actions`: Keys are names given to actions during `add_action()`, values are the
+                      reports returned by that action, in Python dictionary form.
+                    - `last_run`: List of steps (names, as strings) in previous run
+        """
         # create a mapping of actions to report dicts
         action_reports = {}
         for name, action in self._actions.items():
-            classname = action.__class__.__name__
             rpt = action.report()
             rpt_dict = rpt.model_dump() if isinstance(rpt, BaseModel) else rpt
-            action_reports[classname] = rpt_dict
+            action_reports[name] = rpt_dict
         # return actions and other metadata as a report
         return {"actions": action_reports, "last_run": self._last_run_steps.copy()}
 
@@ -483,6 +489,12 @@ class Action(ABC):
         return
 
     def before_substep(self, step_name: str, substep_name: str):
+        """Perform this action before the named sub-step.
+
+        Args:
+            step_name: Name of the step
+            substep_name: Name of the sub-step
+        """
         return
 
     def after_step(self, step_name: str):
@@ -494,6 +506,12 @@ class Action(ABC):
         return
 
     def after_substep(self, step_name: str, substep_name: str):
+        """Perform this action after the named sub-step.
+
+        Args:
+            step_name: Name of the step
+            substep_name: Name of the sub-step
+        """
         return
 
     def before_run(self):
@@ -511,4 +529,4 @@ class Action(ABC):
         Returns:
             Results as a Pydantic model or Python dict
         """
-        pass
+        return
