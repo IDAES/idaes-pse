@@ -27,7 +27,7 @@ from idaes.core.util.structfs.runner import Runner
 _log = logging.getLogger("idaes.core.util.structfs.runner_cli")
 
 
-def error(ofile: FileIO, msg: str, code: int = -1) -> int:
+def _error(ofile: FileIO, msg: str, code: int = -1) -> int:
     stack_trace = traceback.format_exc()
     d = {"status": code, "error": msg, "error_detail": stack_trace}
     json.dump(d, ofile)
@@ -36,6 +36,7 @@ def error(ofile: FileIO, msg: str, code: int = -1) -> int:
 
 
 def main():
+    """Program entry point."""
     p = argparse.ArgumentParser()
     p.add_argument("module", help="Python module name")
     p.add_argument("output", help="Output file for result JSON")
@@ -47,36 +48,36 @@ def main():
 
     try:
         ofile = open(args.output, mode="w")
-    except Exception as err:
-        return error(sys.stderr, "Cannot open output file '{args.output}': {err}", -1)
+    except IOError as err:
+        return _error(sys.stderr, f"Cannot open output file '{args.output}': {err}", -1)
 
     module_name = args.module
     if module_name.startswith("."):
-        return error(ofile, "Relative module names not allowed", 1)
+        return _error(ofile, "Relative module names not allowed", 1)
     try:
         mod = importlib.import_module(module_name)
     except ModuleNotFoundError:
-        return error(ofile, f"Could not find module '{module_name}'", 2)
+        return _error(ofile, f"Could not find module '{module_name}'", 2)
 
     obj_name = args.object
     try:
         obj = getattr(mod, obj_name)
         if not isinstance(obj, Runner):
-            return error(
+            return _error(
                 ofile,
                 f"Object must be an instance of the Runner class, got '{obj.__class__.__name__}'",
                 3,
             )
     except AttributeError:
-        return error(
+        return _error(
             ofile, f"Could not find object '{obj_name}' in module '{module_name}'", 4
         )
 
     to_step = args.to
     try:
         obj.run_steps(first=Runner.STEP_ANY, last=to_step)
-    except Exception as e:
-        return error(ofile, f"While running steps: {e}", 5)
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        return _error(ofile, f"While running steps: {e}", 5)
 
     report = obj.report()
     report["status"] = 0
