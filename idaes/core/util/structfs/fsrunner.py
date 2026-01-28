@@ -15,15 +15,14 @@ Specialize the generic `Runner` class to running a flowsheet,
 in `FlowsheetRunner`.
 """
 # stdlib
-from typing import Union
 
 # third-party
-from pyomo.environ import ConcreteModel, is_variable_type
+from pyomo.environ import ConcreteModel
 from pyomo.environ import units as pyunits
 from idaes.core import FlowsheetBlock
 
 try:
-    from idaes_connectivity.base import Connectivity
+    from idaes_connectivity import Connectivity
     from idaes_connectivity.jupyter import display_connectivity
 except ImportError:
     Connectivity = None
@@ -226,7 +225,7 @@ class FlowsheetRunner(BaseFlowsheetRunner):
         """Wrapper for the UnitDofChecker action"""
 
         def __init__(self, runner):
-            from .runner_actions import UnitDofChecker
+            from .runner_actions import UnitDofChecker  # pylint: disable=C0415
 
             # check DoF after build, initial solve, and optimization solve
             self._a = runner.add_action(
@@ -238,6 +237,7 @@ class FlowsheetRunner(BaseFlowsheetRunner):
             self._rnr = runner
 
         def model(self):
+            """Get the model."""
             return self._a.get_dof_model()
 
         def __getattr__(self, name):
@@ -256,16 +256,18 @@ class FlowsheetRunner(BaseFlowsheetRunner):
         """Wrapper for the Timer action"""
 
         def __init__(self, runner):
-            from .runner_actions import Timer
+            from .runner_actions import Timer  # pylint: disable=C0415
 
             self._a: Timer = runner.add_action("timings", Timer)
 
         @property
         def values(self) -> list[dict]:
+            """Get timing values."""
             return self._a.get_history()
 
         @property
         def history(self) -> str:
+            """Get a text report of the timing history"""
             h = []
             for i in range(len(self._a)):
                 h.append(f"== Run {i + 1} ==")
@@ -277,10 +279,13 @@ class FlowsheetRunner(BaseFlowsheetRunner):
             return self._a.summary()
 
         def _ipython_display_(self):
-            self._a._ipython_display_()
+            self._a._ipython_display_()  # pylint: disable=protected-access
 
     def __init__(self, **kwargs):
-        from .runner_actions import CaptureSolverOutput, ModelVariables
+        from .runner_actions import (  # pylint: disable=C0415
+            CaptureSolverOutput,
+            ModelVariables,
+        )
 
         super().__init__(**kwargs)
         self.dof = self.DegreesOfFreedom(self)
@@ -293,9 +298,11 @@ class FlowsheetRunner(BaseFlowsheetRunner):
         self.run_step("build")
 
     def solve_initial(self):
+        """Perform all steps up to 'solve_initial'"""
         self.run_steps(last="solve_initial")
 
     def show_diagram(self):
+        """Return the diagram."""
         if Connectivity is not None:
             return display_connectivity(input_model=self.model)
         else:
