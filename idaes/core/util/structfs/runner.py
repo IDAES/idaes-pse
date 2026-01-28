@@ -410,7 +410,7 @@ class Action(ABC):
     of steps run at the end of the run.
 
     ```{code}
-    :name: hellogoodbye
+    :name: runner-hellogoodbye
 
     from idaes.core.util.structfs.runner import Action
     class HelloGoodbye(Action):
