@@ -28,7 +28,9 @@ class Docstring:
     and test file.
     """
 
+    # options on 'code' directive that can provide the name
     LABEL_OPTION = ":name:"
+    CAPTION_OPTION = ":caption:"
 
     def __init__(self, text: str, style: str = "markdown"):
         self._code = {}
@@ -77,6 +79,7 @@ class Docstring:
     def _init_markdown(self, text: str):
         lines = text.split("\n")
         state = 0
+        sec_num = 1
         for line in lines:
             ls_line = line.lstrip()
             if state == 0 and ls_line.startswith("```{code}"):
@@ -95,11 +98,23 @@ class Docstring:
                     state = 0
                 elif state == 1:
                     if ls_line.startswith(self.LABEL_OPTION):
-                        section_name = ls_line[7:].strip()
+                        offset = len(self.LABEL_OPTION) + 1
+                        section_name = ls_line[offset:].strip()
+                    elif section_name is None and ls_line.startswith(
+                        self.CAPTION_OPTION
+                    ):
+                        # only use caption if no label
+                        offset = len(self.CAPTION_OPTION) + 1
+                        section_name = ls_line[offset:].strip()
                     elif ls_line == "" or ls_line.startswith(":"):
                         pass
                     else:
                         state = 2  # got past metadata
+                        if section_name is None:
+                            section_name = f"section{sec_num}"
+                            sec_num += 1
+                        else:
+                            section_name = section_name.replace(" ", "-").lower()
                         section_lines.append(line[indent:].rstrip())
                 else:
                     section_lines.append(line[indent:].rstrip())
