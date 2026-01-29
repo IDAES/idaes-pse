@@ -54,7 +54,11 @@ def main():
 
     module_name = args.module
     # Only reject relative Python module names (like .module), not file paths (like ./file.py)
-    if module_name.startswith(".") and not module_name.startswith("./") and not module_name.startswith("..\\"):
+    if (
+        module_name.startswith(".")
+        and not module_name.startswith("./")
+        and not module_name.startswith("..\\")
+    ):
         return _error(ofile, "Relative module names not allowed", 1)
     try:
         mod = _load_module(module_name)
