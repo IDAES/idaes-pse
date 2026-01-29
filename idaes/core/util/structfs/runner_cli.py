@@ -13,9 +13,10 @@
 """
 Command-line interface to run a module.
 """
-
+import os
 import argparse
 import importlib
+import importlib.util
 import json
 import logging
 import traceback
@@ -38,7 +39,7 @@ def _error(ofile: FileIO, msg: str, code: int = -1) -> int:
 def main():
     """Program entry point."""
     p = argparse.ArgumentParser()
-    p.add_argument("module", help="Python module name")
+    p.add_argument("module", help="Python module name or path to .py file")
     p.add_argument("output", help="Output file for result JSON")
     p.add_argument("--object", help="Object in module (default=FS)", default="FS")
     p.add_argument(
@@ -55,7 +56,7 @@ def main():
     if module_name.startswith("."):
         return _error(ofile, "Relative module names not allowed", 1)
     try:
-        mod = importlib.import_module(module_name)
+        mod = _load_module(module_name)
     except ModuleNotFoundError:
         return _error(ofile, f"Could not find module '{module_name}'", 2)
 
@@ -84,6 +85,68 @@ def main():
     json.dump(report, ofile)
 
     return 0
+
+
+def _load_module(module_or_path: str):
+    """
+    Load a module - supports both module names and file paths.
+
+    Args:
+        module_or_path: Can be either:
+            - Module name: "idaes.models.flash_flowsheet"
+            - File path: "/Users/user/Downloads/my_flowsheet.py"
+    Returns:
+        module: The loaded Python module object.
+
+    Note:
+        For file paths, this function sets up a pseudo-package structure to
+        support relative imports (e.g., 'from ..sibling import something').
+    """
+    # Check if input is a file path
+    if module_or_path.endswith(".py") or os.path.isfile(module_or_path):
+        # This is a file path
+        file_path = os.path.abspath(module_or_path)
+
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"File not found: {file_path}")
+
+        # Get directory structure for package simulation
+        dir_path = os.path.dirname(file_path)  # e.g., /Users/user/workspace/subdir
+        parent_dir = os.path.dirname(dir_path)  # e.g., /Users/user/workspace
+        package_name = os.path.basename(dir_path)  # e.g., "subdir"
+        module_basename = os.path.splitext(os.path.basename(file_path))[
+            0
+        ]  # e.g., "test"
+        full_module_name = f"{package_name}.{module_basename}"  # e.g., "subdir.test"
+
+        # Add parent directory to sys.path so Python can find sibling packages
+        # This enables imports like "from ..fsrunner import ..."
+        if parent_dir not in sys.path:
+            sys.path.insert(0, parent_dir)
+
+        # Create module spec with submodule_search_locations for package support
+        spec = importlib.util.spec_from_file_location(
+            full_module_name, file_path, submodule_search_locations=[dir_path]
+        )
+
+        if spec is None or spec.loader is None:
+            raise ImportError(f"Cannot create module spec for {file_path}")
+
+        # Create the module object from spec
+        module = importlib.util.module_from_spec(spec)
+
+        # KEY: Set __package__ so relative imports know the package context
+        module.__package__ = package_name
+
+        # Register in sys.modules so other imports can find it
+        sys.modules[full_module_name] = module
+
+        # Execute the module code (this actually loads the content)
+        spec.loader.exec_module(module)
+        return module
+    else:
+        # This is a module name, use the original logic
+        return importlib.import_module(module_or_path)
 
 
 if __name__ == "__main__":
