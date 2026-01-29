@@ -177,7 +177,7 @@ jobs:
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
           miniforge-version: latest
       - name: Install pandoc
-        run: conda -c conda-forge install pandoc
+        run: conda install -c conda-forge pandoc
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
         with:
