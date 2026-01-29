@@ -87,7 +87,12 @@ class BaseFlowsheetRunner(Runner):
         super().__init__(self.STEPS)  # needs to be last
 
     def run_steps(
-        self, first: str = Runner.STEP_ANY, last: str = Runner.STEP_ANY, **kwargs
+        self,
+        first: str = Runner.STEP_ANY,
+        last: str = Runner.STEP_ANY,
+        before=None,
+        after=None,
+        **kwargs,
     ):
         """Run the steps.
 
@@ -103,6 +108,15 @@ class BaseFlowsheetRunner(Runner):
             or self._context.model is None
         ):
             self._context.model = self._create_model()
+
+        # replace first/last with before/after, if present
+        if before is not None:
+            kwargs["before"] = before
+            last = ""
+        if after is not None:
+            kwargs["after"] = after
+            first = ""
+
         super().run_steps(first, last, **kwargs)
 
     def reset(self):
