@@ -53,10 +53,10 @@ def main():
         return _error(sys.stderr, f"Cannot open output file '{args.output}': {err}", -1)
 
     module_name = args.module
-    if module_name.startswith("."):
-        return _error(ofile, "Relative module names not allowed", 1)
     try:
         mod = _load_module(module_name)
+    except ValueError as err:
+        return _error(ofile, str(err), 1)
     except ModuleNotFoundError:
         return _error(ofile, f"Could not find module '{module_name}'", 2)
 
@@ -145,6 +145,8 @@ def _load_module(module_or_path: str):
         spec.loader.exec_module(module)
         return module
     else:
+        if module_or_path.startswith("."):
+            raise ValueError("Relative module names not allowed")
         # This is a module name, use the original logic
         return importlib.import_module(module_or_path)
 
