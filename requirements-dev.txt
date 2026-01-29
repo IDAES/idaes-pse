@@ -5,7 +5,6 @@
 sphinx>=3.0.0,!=8.2.0
 sphinxcontrib-napoleon>=0.5.0
 # sphinx-argparse 0.4.0 is the last version to support Python 3.9
-# TODO: should this change now?
 # see https://sphinx-argparse.readthedocs.io/en/latest/changelog.html#id3
 sphinx-argparse==0.4.0
 sphinx-book-theme<=1.1.2,>=1.0.0
