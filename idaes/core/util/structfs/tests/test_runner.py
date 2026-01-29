@@ -128,7 +128,7 @@ def test_add_bad_step():
 
 # load the HelloGoodbye class from the Action docstring
 HelloGoodbye = None  # pacify linters
-exec(Docstring(runner_actions.Action.__doc__).code("runner-hellogoodbye"))
+exec(Docstring(runner_actions.Action.__doc__).code("runner-hellogoodbye-class"))
 
 
 @pytest.mark.unit
