@@ -45,12 +45,20 @@ def main():
     p.add_argument(
         "--to", help="Step name to run to (default=all)", default=Runner.STEP_ANY
     )
+    p.add_argument(
+        "--info",
+        action="store_true",
+        help="Instead of running module, get information like list of steps",
+        default=False,
+    )
     args = p.parse_args()
 
     try:
         ofile = open(args.output, mode="w")
     except IOError as err:
-        return _error(sys.stderr, f"Cannot open output file '{args.output}': {err}", -1)
+        return _error(
+            sys.stderr, f"Cannot open output fNoneile '{args.output}': {err}", -1
+        )
 
     module_name = args.module
     try:
@@ -74,14 +82,18 @@ def main():
             ofile, f"Could not find object '{obj_name}' in module '{module_name}'", 4
         )
 
-    to_step = args.to
-    try:
-        obj.run_steps(first=Runner.STEP_ANY, last=to_step)
-    except Exception as e:  # pylint: disable=broad-exception-caught
-        return _error(ofile, f"While running steps: {e}", 5)
+    if args.info:
+        report = {"steps": obj.list_steps(), "class_name": obj.__class__.__name__}
+    else:
+        to_step = args.to
+        try:
+            obj.run_steps(first=Runner.STEP_ANY, last=to_step)
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            return _error(ofile, f"While running steps: {e}", 5)
 
-    report = obj.report()
-    report["status"] = 0
+        report = obj.report()
+        report["status"] = 0
+
     json.dump(report, ofile)
 
     return 0
