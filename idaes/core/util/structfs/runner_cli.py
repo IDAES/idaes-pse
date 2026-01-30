@@ -61,12 +61,17 @@ def main():
         )
 
     module_name = args.module
+    # Only reject relative Python module names (like .module), not file paths (like ./file.py)
+    if (
+        module_name.startswith(".")
+        and not module_name.startswith("./")
+        and not module_name.startswith("..\\")
+    ):
+        return _error(ofile, "Relative module names not allowed", 1)
     try:
         mod = _load_module(module_name)
-    except ValueError as err:
-        return _error(ofile, str(err), 1)
-    except ModuleNotFoundError:
-        return _error(ofile, f"Could not find module '{module_name}'", 2)
+    except (ModuleNotFoundError, FileNotFoundError) as e:
+        return _error(ofile, f"Could not find module '{module_name}': {e}", 2)
 
     obj_name = args.object
     try:
@@ -131,8 +136,11 @@ def _load_module(module_or_path: str):
         ]  # e.g., "test"
         full_module_name = f"{package_name}.{module_basename}"  # e.g., "subdir.test"
 
-        # Add parent directory to sys.path so Python can find sibling packages
-        # This enables imports like "from ..fsrunner import ..."
+        # Add both current directory and parent directory to sys.path
+        # Current dir is needed for same-directory imports (import hda_ideal_VLE)
+        # Parent dir is needed for sibling package imports
+        if dir_path not in sys.path:
+            sys.path.insert(0, dir_path)
         if parent_dir not in sys.path:
             sys.path.insert(0, parent_dir)
 
