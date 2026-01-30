@@ -38,6 +38,7 @@ def _error(ofile: FileIO, msg: str, code: int = -1) -> int:
 
 def main():
     """Program entry point."""
+    # Set up and parse commandline arguments
     p = argparse.ArgumentParser()
     p.add_argument("module", help="Python module name or path to .py file")
     p.add_argument("output", help="Output file for result JSON")
@@ -53,26 +54,20 @@ def main():
     )
     args = p.parse_args()
 
+    # open output file
     try:
         ofile = open(args.output, mode="w")
     except IOError as err:
-        return _error(
-            sys.stderr, f"Cannot open output fNoneile '{args.output}': {err}", -1
-        )
+        return _error(sys.stderr, f"Cannot open output file '{args.output}': {err}", -1)
 
+    # find and import module
     module_name = args.module
-    # Only reject relative Python module names (like .module), not file paths (like ./file.py)
-    if (
-        module_name.startswith(".")
-        and not module_name.startswith("./")
-        and not module_name.startswith("..\\")
-    ):
-        return _error(ofile, "Relative module names not allowed", 1)
     try:
         mod = _load_module(module_name)
     except (ModuleNotFoundError, FileNotFoundError) as e:
         return _error(ofile, f"Could not find module '{module_name}': {e}", 2)
 
+    # find flowsheet object in module
     obj_name = args.object
     try:
         obj = getattr(mod, obj_name)
@@ -87,9 +82,12 @@ def main():
             ofile, f"Could not find object '{obj_name}' in module '{module_name}'", 4
         )
 
+    # branch based on run mode
     if args.info:
+        # get static flowsheet information only
         report = {"steps": obj.list_steps(), "class_name": obj.__class__.__name__}
     else:
+        # run the flowsheet and collect results
         to_step = args.to
         try:
             obj.run_steps(first=Runner.STEP_ANY, last=to_step)
@@ -99,6 +97,7 @@ def main():
         report = obj.report()
         report["status"] = 0
 
+    # dump results to output file
     json.dump(report, ofile)
 
     return 0
@@ -166,7 +165,7 @@ def _load_module(module_or_path: str):
         return module
     else:
         if module_or_path.startswith("."):
-            raise ValueError("Relative module names not allowed")
+            raise ValueError("Relative module names not allowed!!")
         # This is a module name, use the original logic
         return importlib.import_module(module_or_path)
 
