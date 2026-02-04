@@ -21,7 +21,6 @@ import pytest
 from pyomo.environ import (
     check_optimal_termination,
     ConcreteModel,
-    TransformationFactory,
     value,
     Var,
 )
@@ -35,9 +34,6 @@ from idaes.models.unit_models.pipe import Pipe, PipeScaler
 
 from idaes.models.properties.examples.saponification_thermo import (
     SaponificationParameterBlock,
-)
-from idaes.models.properties.examples.saponification_reactions import (
-    SaponificationReactionParameterBlock,
 )
 from idaes.core.util.model_statistics import (
     number_variables,
