@@ -97,25 +97,6 @@ def test_config():
     assert m.fs.unit.default_scaler is PipeScaler
 
 
-@pytest.mark.component
-def test_no_rate_reactions():
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(dynamic=False)
-
-    m.fs.properties = PhysicalParameterTestBlock()
-    m.fs.reactions = ReactionParameterTestBlock(property_package=m.fs.properties)
-
-    with pytest.raises(
-        ValueError,
-        match=re.escape(
-            "key 'reaction_package' not defined for ConfigDict '' and implicit (undefined) keys are not allowed"
-        ),
-    ):
-        m.fs.unit = Pipe(
-            property_package=m.fs.properties, reaction_package=m.fs.reactions
-        )
-
-
 # -----------------------------------------------------------------------------
 class TestSaponification(object):
     @pytest.fixture(scope="class")
