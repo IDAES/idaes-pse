@@ -94,11 +94,11 @@ def is_valid_startup_types(data):
     if len(data) == 0:
         # set to None instead of an empty dict.
         raise ConfigurationError("Received an empty dictionary for startup types")
-    
+
     if len(data) == 1:
         raise ConfigurationError(
             "At least two startup types must be defined for the unit/process. \n"
-            "if startup_types = {\"hot\": 4, \"warm\": 8, \"cold\": 12}, \n"
+            'if startup_types = {"hot": 4, "warm": 8, "cold": 12}, \n'
             "then when downtime is between 4 to 8 -> hot startup; \n"
             "when downtime is between 8 to 12 -> warm startup; \n"
             "when downtime is greater than 12 -> cold startup. \n"
