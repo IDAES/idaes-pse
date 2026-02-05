@@ -193,18 +193,16 @@ def startup_shutdown_constraints(
         # This is a double insurance check, that empty dict or None will skip the following.
         return
 
-    # multiple startup types
-    if startup_transition_time:
-        # there will be at least two types of startup
-        startup_names = list(startup_transition_time.keys())
+    # there will be at least two types of startup
+    startup_names = list(startup_transition_time.keys())
 
-        # assume the first should be max(min_down_time, startup_transition_time["hot"])
-        startup_transition_time[startup_names[0]] = max(
-            minimum_down_time, startup_transition_time[startup_names[0]]
-        )
+    # assume the first should be max(min_down_time, startup_transition_time["hot"])
+    startup_transition_time[startup_names[0]] = max(
+        minimum_down_time, startup_transition_time[startup_names[0]]
+    )
 
-        # this is necessary, because we have updated the startup_transition_time.
-        blk.startup_duration = Param(startup_names, initialize=startup_transition_time)
+    # this is necessary, because we have updated the startup_transition_time.
+    blk.startup_duration = Param(startup_names, initialize=startup_transition_time)
 
     @blk.Constraint(set_time)
     def tot_startup_type_rule(_, t):

@@ -42,22 +42,28 @@ def test_is_valid_startup_types_invalid_inputs():
     """Tests that is_valid_startup_types rejects invalid inputs"""
 
     with pytest.raises(TypeError, match="Data must be a dictionary."):
-        is_valid_startup_types([("hot", 4)])
+        is_valid_startup_types([("hot", 4), ("warm", 8)])
 
     with pytest.raises(TypeError, match="Data must be a dictionary."):
         is_valid_startup_types(3.14)
 
+    with pytest.raises(
+        ConfigurationError,
+        match="At least two startup types must be defined for the unit/process.",
+    ):
+        is_valid_startup_types({"hot": 4})
+
     with pytest.raises(TypeError, match="key must be a valid string."):
-        is_valid_startup_types({1: 4})
+        is_valid_startup_types({1: 4, 2: 8})
 
     with pytest.raises(
         ConfigurationError,
         match="Key 'hot-start' is not a valid Python variable name. Keys must be valid identifiers.",
     ):
-        is_valid_startup_types({"hot-start": 4})
+        is_valid_startup_types({"hot-start": 4, "warm-start": 8})
 
     with pytest.raises(TypeError, match="value must be an int"):
-        is_valid_startup_types({"hot": 4.2})
+        is_valid_startup_types({"hot": 4.2, "warm": 8.1})
 
     with pytest.raises(
         ConfigurationError,
