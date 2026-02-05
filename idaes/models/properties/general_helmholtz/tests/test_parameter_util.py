@@ -28,6 +28,7 @@ reported value when rounded, I assumed it was okay.
 If you're adding more tests and run into the same problem, the function infer_rhol_value
 can be uncommented to print out an inferred value for liquid density.
 """
+
 import pytest
 import math
 from idaes.models.properties.general_helmholtz.components.parameters.h2o import (
