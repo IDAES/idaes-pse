@@ -11,8 +11,9 @@
 # for full copyright and license information.
 #################################################################################
 """
-Standard IDAES Pipe model.
+Model of an empty pipe, derived from the PFR model by removing reaction terms.
 """
+
 # Import Pyomo libraries
 from pyomo.environ import ComponentMap, Constraint, Reference, Var
 from pyomo.common.config import ConfigBlock, ConfigValue, In, ListOf, Bool
@@ -31,7 +32,7 @@ from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
 from idaes.core.scaling import CustomScalerBase, DefaultScalingRecommendation
 
-__author__ = "Andrew Lee, John Eslick"
+__author__ = "Douglas Allan, Andrew Lee, John Eslick"
 
 
 class PipeScaler(CustomScalerBase):

@@ -11,10 +11,11 @@
 # for full copyright and license information.
 #################################################################################
 """
-Tests for Pipe.
+Tests for the Pipe unit model, derived from the tests for the PFR model.
 
-Author: Douglas Allan
+Authors: Douglas Allan, Andrew Lee, John Eslick
 """
+
 import re
 import pytest
 
@@ -54,7 +55,6 @@ from idaes.core.initialization import (
 )
 from idaes.core.util import DiagnosticsToolbox
 from idaes.core.scaling.util import jacobian_cond
-
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
