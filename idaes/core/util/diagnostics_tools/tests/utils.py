@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
@@ -12,22 +11,35 @@
 # for full copyright and license information.
 #################################################################################
 """
-Centralized imports for model diagnostics tools.
+This module contains utility functions for diagnostics tool tests.
 """
 
-from .constraint_term_analysis import (
-    ConstraintTermAnalysisVisitor,
+import pytest
+
+from pyomo.environ import (
+    ConcreteModel,
+    Objective,
+    Set,
+    Var,
 )
-# from .convergence_analysis import (
-#     CACONFIG,
-#     IpoptConvergenceAnalysis,
-# )
-from .ill_conditioning import (
-    compute_ill_conditioning_certificate,
-)
-from .svd_toolbox import (
-    SVDToolbox,
-    SVDCONFIG,
-    svd_dense,
-    svd_sparse,
-)
+
+__author__ = "Alex Dowling, Douglas Allan, Andrew Lee"
+
+
+@pytest.fixture()
+def dummy_problem():
+    m = ConcreteModel()
+
+    m.I = Set(initialize=[i for i in range(5)])
+
+    m.x = Var(m.I, initialize=1.0)
+
+    diag = [100, 1, 10, 0.1, 5]
+    out = [1, 1, 1, 1, 1]
+
+    @m.Constraint(m.I)
+    def dummy_eqn(b, i):
+        return out[i] == diag[i] * m.x[i]
+
+    m.obj = Objective(expr=0)
+    return m
