@@ -70,7 +70,6 @@ from idaes.core.util.model_diagnostics import (
     _vars_violating_bounds,
     _vars_with_none_value,
     _vars_with_extreme_values,
-    _write_report_section,
     _collect_model_statistics,
     check_parallel_jacobian,
     _extreme_jacobian_rows,
