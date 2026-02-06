@@ -16,10 +16,12 @@ __author__ = "John Eslick"
 from .phi_ideal_type01 import phi_ideal_expressions_type01
 from .phi_ideal_type02 import phi_ideal_expressions_type02
 from .phi_ideal_type03 import phi_ideal_expressions_type03
+from .phi_ideal_type04 import phi_ideal_expressions_type04
 from .phi_residual_type01 import phi_residual_expressions_type01
 from .phi_residual_type02 import phi_residual_expressions_type02
 from .phi_residual_type03 import phi_residual_expressions_type03
 from .phi_residual_type04 import phi_residual_expressions_type04
+from .phi_residual_type05 import phi_residual_expressions_type05
 from .surface_tension_type01 import surface_tension_type01
 from .sat_delta_approx import sat_delta_type01, sat_delta_type02, sat_delta_type03
 
@@ -29,6 +31,7 @@ phi_residual_types = {
     2: phi_residual_expressions_type02,
     3: phi_residual_expressions_type03,
     4: phi_residual_expressions_type04,
+    5: phi_residual_expressions_type05,
 }
 
 phi_ideal_types = {
@@ -36,6 +39,7 @@ phi_ideal_types = {
     1: phi_ideal_expressions_type01,
     2: phi_ideal_expressions_type02,
     3: phi_ideal_expressions_type03,
+    4: phi_ideal_expressions_type04,
 }
 
 delta_sat_types = {
