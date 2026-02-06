@@ -2166,6 +2166,7 @@ def write_data_to_txt_file(plot_data):
                 else:
                     fout.write("\n")
 
+
 def _build_pfd_tag_group(sd):
     """
     Build tags/tag_formats/ModelTagGroup from stream state dict `sd`.
@@ -2213,6 +2214,7 @@ def _build_pfd_tag_group(sd):
 
     return tags, tag_formats, tag_group
 
+
 def print_pfd_results(m):
     streams = tables.arcs_to_stream_dict(
         m.fs_main,
@@ -2254,7 +2256,7 @@ def print_pfd_results(m):
     )
     sdf.sort_index(inplace=True)
     sdf.to_csv("streams.csv")
-    
+
     tags, tag_formats, tag_group = _build_pfd_tag_group(sd)
 
     dirpath = os.path.dirname(__file__)

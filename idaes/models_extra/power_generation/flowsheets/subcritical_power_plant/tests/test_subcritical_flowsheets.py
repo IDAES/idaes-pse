@@ -91,17 +91,26 @@ def test_subcritical_boiler_dynamic():
         m.fs_main.fs_blr.aBoiler.heat_total[60]
     )
 
+
 @pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.component
 def test_build_pfd_tag_group_smoke():
     sd = {
         "S1": types.SimpleNamespace(
-            flow_mass=9.5, flow_mol=1000, temperature=450, pressure=95,
-            enth_mass=1.0, enth_mol=2.0, vapor_frac=0.1,
+            flow_mass=9.5,
+            flow_mol=1000,
+            temperature=450,
+            pressure=95,
+            enth_mass=1.0,
+            enth_mol=2.0,
+            vapor_frac=0.1,
             mole_frac_comp={"N2": 0.7, "O2": 0.2},
         ),
         "S2": types.SimpleNamespace(
-            flow_mass=12.0, flow_mol=200, temperature=300, pressure=250,
+            flow_mass=12.0,
+            flow_mol=200,
+            temperature=300,
+            pressure=250,
             mole_frac_comp={"CO2": 0.15},
         ),
     }
@@ -117,6 +126,7 @@ def test_build_pfd_tag_group_smoke():
     assert fmts["S1_T"] == "{:,.0f}"
     assert fmts["S1_P_kPa"](95.0) == "{:.2f}" and fmts["S1_P_kPa"](250.0) == "{:,.0f}"
     assert fmts["S1_h"] == "{:,.0f}" and fmts["S1_hmass"] == "{:,.0f}"
+
 
 @pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.integration
