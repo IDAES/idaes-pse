@@ -1,0 +1,54 @@
+{
+    "nl_file": "nh3_expressions_eos.nl",
+    "expr_map": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        13,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        12,
+        11
+    ],
+    "var_map": [
+        0,
+        1,
+        1000,
+        1000
+    ],
+    "param": {
+        "R": 0.48820939114,
+        "MW": 17.03052,
+        "T_star": 405.56,
+        "rho_star": 233.25,
+        "Tc": 405.56,
+        "rhoc": 233.25,
+        "Pc": 11363.391069274156,
+        "Tt": 195.49,
+        "Pt": 6.055813,
+        "rhot_l": 733.8486491,
+        "rhot_v": 0.063731569,
+        "P_min": 6.055813,
+        "P_max": 1000000.0,
+        "rho_max": 904.8315276,
+        "T_min": 195.49,
+        "T_max": 725.0,
+        "reference_state_offset": []
+    },
+    "have_tcx": false,
+    "nl_file_st": "nh3_expressions_st.nl",
+    "var_map_st": [
+        1,
+        1000,
+        1000,
+        1000
+    ],
+    "have_st": true,
+    "have_visc": false
+}
