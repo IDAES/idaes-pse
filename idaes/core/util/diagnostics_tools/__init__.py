@@ -18,3 +18,10 @@ Centralized imports for model diagnostics tools.
 from .constraint_term_analysis import (
     ConstraintTermAnalysisVisitor,
 )
+# from .convergence_analysis import (
+#     CACONFIG,
+#     IpoptConvergenceAnalysis,
+# )
+from .ill_conditioning import (
+    compute_ill_conditioning_certificate,
+)
