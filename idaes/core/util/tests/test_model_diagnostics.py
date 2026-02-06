@@ -22,7 +22,6 @@ from pyomo.contrib.pynumero.interfaces.external_grey_box import (
 import re
 from unittest import TestCase
 
-import numpy as np
 import pytest
 
 from pyomo.environ import (
@@ -33,7 +32,6 @@ from pyomo.environ import (
     Objective,
     PositiveIntegers,
     Set,
-    SolverFactory,
     units,
     Var,
     Param,
@@ -47,9 +45,7 @@ from pyomo.environ import (
 )
 from pyomo.common.collections import ComponentSet
 from pyomo.contrib.pynumero.asl import AmplInterface
-from pyomo.common.fileutils import this_file_dir
 
-import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 from idaes.core.solvers import get_solver
 from idaes.core import FlowsheetBlock
@@ -73,36 +69,17 @@ from idaes.core.util.model_diagnostics import (
     _extreme_jacobian_columns,
     _extreme_jacobian_entries,
 )
-from idaes.core.util.testing import _enable_scip_solver_for_testing
 from idaes.core.scaling import set_scaling_factor
 from idaes.core.scaling.util import get_jacobian
 from idaes.core.util.diagnostics_tools.svd_toolbox import (
     SVDToolbox,
 )
-from idaes.core.util.diagnostics_tools.tests.utils import (
-    dummy_problem,
-)
+
 
 __author__ = "Alex Dowling, Douglas Allan, Andrew Lee"
 
 
 # TODO: Add pyomo.dae test cases
-solver_available = SolverFactory("scip").available()
-currdir = this_file_dir()
-
-
-@pytest.fixture(scope="module")
-def scip_solver():
-    solver = SolverFactory("scip")
-    undo_changes = None
-
-    if not solver.available():
-        undo_changes = _enable_scip_solver_for_testing()
-    if not solver.available():
-        pytest.skip(reason="SCIP solver not available")
-    yield solver
-    if undo_changes is not None:
-        undo_changes()
 
 
 @pytest.fixture

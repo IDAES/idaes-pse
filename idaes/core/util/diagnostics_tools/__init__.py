@@ -22,6 +22,10 @@ from .constraint_term_analysis import (
 #     CACONFIG,
 #     IpoptConvergenceAnalysis,
 # )
+from .degeneracy_hunter import (
+    DegeneracyHunter,
+    DHCONFIG,
+)
 from .ill_conditioning import (
     compute_ill_conditioning_certificate,
 )
