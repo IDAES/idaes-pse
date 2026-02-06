@@ -2257,7 +2257,7 @@ def print_pfd_results(m):
     sdf.sort_index(inplace=True)
     sdf.to_csv("streams.csv")
 
-    tags, tag_formats, tag_group = _build_pfd_tag_group(sd)
+    _, _, tag_group = _build_pfd_tag_group(sd) # first two unused
 
     dirpath = os.path.dirname(__file__)
     svgpath = os.path.join(dirpath, "plant_pfd.svg")
