@@ -386,7 +386,7 @@ see property package for documentation.}""",
                             stream_attributes[n][k + " " + kname] = quant.m
                             stream_attributes["Units"][k + " " + kname] = quant.u
         else:
-            # If not using idea separation, we can get outlet state directly
+            # If not using ideal separation, we can get outlet state directly
             # from the state blocks
             sblocks = {
                 "Inlet": self.control_volume.properties_in,

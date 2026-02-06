@@ -425,7 +425,7 @@ class TestBTIdealModular(object):
             "Inlet": {
                 "flow_mol": pytest.approx(
                     1.00, rel=1e-4
-                ),  # This is different from it's property package's (BT_idea) properties_out value of 100
+                ),  # This is different from its property package's (BT_ideal) properties_out value of 100
                 "mole_frac_comp benzene": pytest.approx(0.5, rel=1e-4),
                 "mole_frac_comp toluene": pytest.approx(0.5, rel=1e-4),
                 "temperature": pytest.approx(368, rel=1e-4),
