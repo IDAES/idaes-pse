@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
@@ -12,39 +11,36 @@
 # for full copyright and license information.
 #################################################################################
 """
-Centralized imports for model diagnostics tools.
+This module contains tests for the ipopt_solve_halt_on_error function.
 """
 
-from .bounds import (
-    get_valid_range_of_component,
-    list_components_with_values_outside_valid_range,
-    set_bounds_from_valid_range,
-)
-from .constraint_term_analysis import (
-    ConstraintTermAnalysisVisitor,
-)
-# from .convergence_analysis import (
-#     CACONFIG,
-#     IpoptConvergenceAnalysis,
-# )
-from .degeneracy_hunter import (
-    DegeneracyHunter,
-    DHCONFIG,
-)
-from .ill_conditioning import (
-    compute_ill_conditioning_certificate,
-)
-from .ipopt_halt_on_error import (
-    ipopt_solve_halt_on_error,
-)
-from .svd_toolbox import (
-    SVDToolbox,
-    SVDCONFIG,
-    svd_dense,
-    svd_sparse,
+import pytest
+
+from pyomo.environ import (
+    ConcreteModel,
+    Constraint,
+    Expression,
+    Var,
+    log,
 )
 
-# This import needs to go last to avoid circular imports
-from .diagnostics_toolbox import (
-    DiagnosticsToolbox,
+from idaes.core.util.diagnostics_tools.ipopt_halt_on_error import (
+    ipopt_solve_halt_on_error,
 )
+
+
+@pytest.mark.component
+def test_ipopt_solve_halt_on_error(capsys):
+    m = ConcreteModel()
+
+    m.v = Var(initialize=-5, bounds=(None, -1))
+    m.e = Expression(expr=log(m.v))
+    m.c = Constraint(expr=m.e == 1)
+
+    try:
+        _ = ipopt_solve_halt_on_error(m)
+    except Exception:  # we expect this to fail
+        pass
+
+    captured = capsys.readouterr()
+    assert "c: can't evaluate log(-5)." in captured.out
