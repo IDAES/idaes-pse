@@ -23,6 +23,7 @@ from .bounds import (
 from .constraint_term_analysis import (
     ConstraintTermAnalysisVisitor,
 )
+
 # from .convergence_analysis import (
 #     CACONFIG,
 #     IpoptConvergenceAnalysis,

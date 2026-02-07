@@ -160,7 +160,6 @@ SVDCONFIG.declare(
 )
 
 
-
 @document_kwargs_from_configdict(SVDCONFIG)
 class SVDToolbox:
     """

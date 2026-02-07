@@ -38,7 +38,6 @@ from idaes.core.util.diagnostics_tools.writer_utils import (
 __author__ = "Alex Dowling, Douglas Allan, Andrew Lee"
 
 
-
 @pytest.mark.unit
 class TestStatsWriter:
     def test_blocks(self):

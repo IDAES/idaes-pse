@@ -104,7 +104,6 @@ def test_vars_near_zero(model):
         assert i.local_name in ["v1", "v3"]
 
 
-
 @pytest.mark.unit
 def test_vars_with_none_value(model):
     none_value = vars_with_none_value(model)
@@ -491,7 +490,6 @@ class TestExtremeJacobianMethods:
         assert out[0][0] == pytest.approx(1e-7)
         assert out[0][1] is m.dummy_eqn[0]
         assert out[0][2] is m.x[4]
-
 
 
 class TestCheckParallelJacobian:

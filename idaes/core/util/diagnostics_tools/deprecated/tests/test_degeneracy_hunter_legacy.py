@@ -18,7 +18,6 @@ import numpy as np
 import pytest
 
 from pyomo.environ import (
-
     ConcreteModel,
     Constraint,
     Objective,
@@ -56,8 +55,6 @@ def v_exp():
     return np.array(
         [[0, 0, 0, 1, 0], [0, 1, 0, 0, 0], [0, 0, 0, 0, 1], [0, 0, 1, 0, 0]]
     ).T
-
-
 
 
 @pytest.mark.unit
@@ -221,8 +218,6 @@ def test_single_eq_error(capsys):
         "Model contains 1 equality constraints and 1 variables.\n"
         "Only singular value: 2.0\n"
     )
-
-
 
 
 # This was from

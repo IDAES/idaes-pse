@@ -496,11 +496,11 @@ class TestEvalErrorWalker:
         m.x = Var(bounds=(1, 10))
         m.y = Var(bounds=(-1, 1))
         expr = m.x / m.y
-        
+
         walker = EvalErrorWalker(config)
         walker.walk_expression(expr)
         warn_list = walker._warn_list
-        
+
         assert len(warn_list) == 1
         assert "Potential division by 0" in warn_list[0]
 
@@ -510,11 +510,11 @@ class TestEvalErrorWalker:
         m.x = Var(bounds=(-5, -1))
         m.y = Var(bounds=(0.5, 2))
         expr = m.x**m.y
-        
+
         walker = EvalErrorWalker(config)
         walker.walk_expression(expr)
         warn_list = walker._warn_list
-        
+
         assert len(warn_list) == 1
         assert "Potential evaluation error" in warn_list[0]
 
@@ -523,11 +523,11 @@ class TestEvalErrorWalker:
         m = ConcreteModel()
         m.x = Var(bounds=(-5, -1))
         expr = log(m.x)
-        
+
         walker = EvalErrorWalker(config)
         walker.walk_expression(expr)
         warn_list = walker._warn_list
-        
+
         assert len(warn_list) == 1
         assert "Potential log of a non-positive number" in warn_list[0]
 
@@ -536,11 +536,11 @@ class TestEvalErrorWalker:
         m = ConcreteModel()
         m.x = Var(bounds=(-5, -1))
         expr = sqrt(m.x)
-        
+
         walker = EvalErrorWalker(config)
         walker.walk_expression(expr)
         warn_list = walker._warn_list
-        
+
         assert len(warn_list) == 1
         assert "Potential square root of a negative number" in warn_list[0]
 
@@ -549,11 +549,11 @@ class TestEvalErrorWalker:
         m = ConcreteModel()
         m.x = Var(bounds=(-2, 2))
         expr = asin(m.x)
-        
+
         walker = EvalErrorWalker(config)
         walker.walk_expression(expr)
         warn_list = walker._warn_list
-        
+
         assert len(warn_list) == 1
         assert "Potential evaluation of asin outside [-1, 1]" in warn_list[0]
 
@@ -562,11 +562,11 @@ class TestEvalErrorWalker:
         m = ConcreteModel()
         m.x = Var(bounds=(-2, 2))
         expr = acos(m.x)
-        
+
         walker = EvalErrorWalker(config)
         walker.walk_expression(expr)
         warn_list = walker._warn_list
-        
+
         assert len(warn_list) == 1
         assert "Potential evaluation of acos outside [-1, 1]" in warn_list[0]
 
@@ -578,11 +578,11 @@ class TestEvalErrorWalker:
         m.z = Var(bounds=(1, 10))
         # Expression with multiple potential errors
         expr = log(m.x) + m.z / m.y
-        
+
         walker = EvalErrorWalker(config)
         walker.walk_expression(expr)
         warn_list = walker._warn_list
-        
+
         assert len(warn_list) == 2
         assert any("Potential log" in w for w in warn_list)
         assert any("Potential division by 0" in w for w in warn_list)
@@ -593,11 +593,11 @@ class TestEvalErrorWalker:
         m.x = Var(bounds=(1, 10))
         m.y = Var(bounds=(2, 5))
         expr = m.x + m.y * 2 + exp(m.x)
-        
+
         walker = EvalErrorWalker(config)
         walker.walk_expression(expr)
         warn_list = walker._warn_list
-        
+
         assert len(warn_list) == 0
 
     @pytest.mark.unit
@@ -608,11 +608,11 @@ class TestEvalErrorWalker:
         m.z = Var(bounds=(1, 5))
         # Complex expression with nested operations
         expr = sqrt(m.x) / m.y + log(m.z) + m.x**2
-        
+
         walker = EvalErrorWalker(config)
         walker.walk_expression(expr)
         warn_list = walker._warn_list
-        
+
         # Should find division by zero error
         assert len(warn_list) == 1
         assert "Potential division by 0" in warn_list[0]
@@ -623,11 +623,11 @@ class TestEvalErrorWalker:
         m.x = Var(bounds=(1, 10))
         m.y = Var(bounds=(0, 5))
         expr = m.x / m.y
-        
+
         walker = EvalErrorWalker(config_with_bounds_warning)
         walker.walk_expression(expr)
         warn_list = walker._warn_list
-        
+
         assert len(warn_list) == 1
         assert "Potential division by 0" in warn_list[0]
 
@@ -638,10 +638,10 @@ class TestEvalErrorWalker:
         m.x = Var(bounds=(1, 10))
         m.y = Var(bounds=(-1, 1))
         expr = m.x / m.y
-        
+
         walker = EvalErrorWalker(config)
         result = walker.walk_expression(expr)
-        
+
         # The walk_expression should return the final result from exitNode
         assert isinstance(result, list)
         assert len(result) == 1
