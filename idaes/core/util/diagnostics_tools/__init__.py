@@ -23,11 +23,6 @@ from .bounds import (
 from .constraint_term_analysis import (
     ConstraintTermAnalysisVisitor,
 )
-
-# from .convergence_analysis import (
-#     CACONFIG,
-#     IpoptConvergenceAnalysis,
-# )
 from .degeneracy_hunter import (
     DegeneracyHunter,
     DHCONFIG,
@@ -45,7 +40,11 @@ from .svd_toolbox import (
     svd_sparse,
 )
 
-# This import needs to go last to avoid circular imports
+# These imports need to go last to avoid circular imports
 from .diagnostics_toolbox import (
     DiagnosticsToolbox,
+)
+from .convergence_analysis import (
+    CACONFIG,
+    IpoptConvergenceAnalysis,
 )

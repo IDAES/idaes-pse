@@ -22,20 +22,71 @@ but all tools are now imported from the diagnostics_tools subpackage.
 __author__ = "Alexander Dowling, Douglas Allan, Andrew Lee, Robby Parker, Ben Knueven"
 
 
-# Imports for backward compatibility
-from idaes.core.util.diagnostics_tools import (
-    ConstraintTermAnalysisVisitor,
-    compute_ill_conditioning_certificate,
-    # TODO: Rename and redirect once old DegeneracyHunter is removed
-    DegeneracyHunter as DegeneracyHunter2,
-    DHCONFIG,
-    DiagnosticsToolbox,
-    # IpoptConvergenceAnalysis,
-    SVDToolbox,
-    SVDCONFIG,
-    get_valid_range_of_component,
-    list_components_with_values_outside_valid_range,
-    set_bounds_from_valid_range,
-    ipopt_halt_on_error,
+from pyomo.common.deprecation import relocated_module_attribute
+
+
+relocated_module_attribute(
+    "ConstraintTermAnalysisVisitor",
+    "idaes.core.util.diagnostics_tools.constraint_term_analysis.ConstraintTermAnalysisVisitor",
+    version="2.11.0",
 )
-from idaes.core.util.diagnostics_tools.deprecated.degeneracy_hunter_legacy import DegeneracyHunter
+relocated_module_attribute(
+    "compute_ill_conditioning_certificate",
+    "idaes.core.util.diagnostics_tools.ill_conditioning.compute_ill_conditioning_certificate",
+    version="2.11.0",
+)
+relocated_module_attribute(
+    "DegeneracyHunter",
+    "idaes.core.util.diagnostics_tools.deprecated.degeneracy_hunter_legacy.DegeneracyHunter",
+    version="2.11.0",
+)
+relocated_module_attribute(
+    "DegeneracyHunter2",
+    "idaes.core.util.diagnostics_tools.degeneracy_hunter.DegeneracyHunter",
+    version="2.11.0",
+)
+relocated_module_attribute(
+    "DHCONFIG",
+    "idaes.core.util.diagnostics_tools.degeneracy_hunter.DHCONFIG",
+    version="2.11.0",
+)
+relocated_module_attribute(
+    "DiagnosticsToolbox",
+    "idaes.core.util.diagnostics_tools.diagnostics_toolbox.DiagnosticsToolbox",
+    version="2.11.0",
+)
+relocated_module_attribute(
+    "get_valid_range_of_component",
+    "idaes.core.util.diagnostics_tools.bounds.get_valid_range_of_component",
+    version="2.11.0",
+)
+relocated_module_attribute(
+    "IpoptConvergenceAnalysis",
+    "idaes.core.util.diagnostics_tools.convergence_analysis.IpoptConvergenceAnalysis",
+    version="2.11.0",
+)
+relocated_module_attribute(
+    "ipopt_solve_halt_on_error",
+    "idaes.core.util.diagnostics_tools.ipopt_halt_on_error.ipopt_solve_halt_on_error",
+    version="2.11.0",
+)
+relocated_module_attribute(
+    "list_components_with_values_outside_valid_range",
+    "idaes.core.util.diagnostics_tools.bounds.list_components_with_values_outside_valid_range",
+    version="2.11.0",
+)
+relocated_module_attribute(
+    "set_bounds_from_valid_range",
+    "idaes.core.util.diagnostics_tools.bounds.set_bounds_from_valid_range",
+    version="2.11.0",
+)
+relocated_module_attribute(
+    "SVDToolbox",
+    "idaes.core.util.diagnostics_tools.svd_toolbox.SVDToolbox",
+    version="2.11.0",
+)
+relocated_module_attribute(
+    "SVDCONFIG",
+    "idaes.core.util.diagnostics_tools.svd_toolbox.SVDCONFIG",
+    version="2.11.0",
+)
