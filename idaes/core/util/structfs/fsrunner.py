@@ -299,6 +299,7 @@ class FlowsheetRunner(BaseFlowsheetRunner):
         from .runner_actions import (  # pylint: disable=C0415
             CaptureSolverOutput,
             ModelVariables,
+            MermaidDiagram,
         )
 
         super().__init__(**kwargs)
@@ -306,6 +307,7 @@ class FlowsheetRunner(BaseFlowsheetRunner):
         self.timings = self.Timings(self)
         self.add_action("capture_solver_output", CaptureSolverOutput)
         self.add_action("model_variables", ModelVariables)
+        self.add_action("mermaid_diagram", MermaidDiagram)
 
     def build(self):
         """Run just the build step"""

@@ -27,6 +27,7 @@ from pyomo.core.base.var import IndexedVar
 from pyomo.core.base.param import IndexedParam
 import pyomo.environ as pyo
 from pydantic import BaseModel, Field
+from idaes_connectivity.base import Connectivity, Mermaid
 
 # package
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -488,3 +489,22 @@ class ModelVariables(Action):
     def report(self) -> Report:
         """Report containing model variable values."""
         return self.Report(variables=self._vars)
+
+
+class MermaidDiagram(Action):
+    """Action to generate a Mermaid diagram after the run."""
+
+    class Report(BaseModel):
+        """Report containing a Mermaid diagram."""
+
+        diagram: list[str]  #: each item is one line
+
+    def after_run(self):
+        """Build Mermaid diagram after the run."""
+        conn = Connectivity(input_model=self._runner.model)
+        self.diagram = Mermaid(conn, component_images=True)
+
+    def report(self) -> Report:
+        """Report containing the Mermaid diagram"""
+        mermaid_lines = self.diagram.write(None).split("\n")
+        return self.Report(diagram=mermaid_lines)
