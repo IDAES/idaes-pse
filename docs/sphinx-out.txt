@@ -1,0 +1,1218 @@
+Running Sphinx v7.4.7
+loading translations [en]... done
+Converting `source_suffix = ['.rst']` to `source_suffix = {'.rst': 'restructuredtext'}`.
+loading intersphinx inventory 'python' from https://docs.python.org/3/objects.inv...
+loading intersphinx inventory 'ui' from https://idaes-ui.readthedocs.io/en/latest/objects.inv...
+loading intersphinx inventory 'pyomo' from https://pyomo.readthedocs.io/en/stable/objects.inv...
+myst v3.0.1: MdParserConfig(commonmark_only=False, gfm_only=False, enable_extensions=set(), disable_syntax=[], all_links_external=False, links_external_new_tab=False, url_schemes=('http', 'https', 'mailto', 'ftp'), ref_domains=None, fence_as_directive=set(), number_code_blocks=[], title_to_header=False, heading_anchors=0, heading_slug_func=None, html_meta={}, footnote_transition=True, words_per_minute=200, substitutions={}, linkify_fuzzy_links=True, dmath_allow_labels=True, dmath_allow_space=True, dmath_allow_digits=True, dmath_double_inline=False, update_mathjax=True, mathjax_classes='tex2jax_process|mathjax_process|math|output_area', enable_checkboxes=False, suppress_warnings=[], highlight_code_blocks=True)
+building [mo]: targets for 0 po files that are out of date
+writing output... 
+building [html]: targets for 395 source files that are out of date
+updating environment: [new config] 395 added, 0 changed, 0 removed
+reading sources... [  0%] apidoc/idaes
+reading sources... [  1%] apidoc/idaes.apps
+reading sources... [  1%] apidoc/idaes.apps.grid_integration
+reading sources... [  1%] apidoc/idaes.apps.grid_integration.examples
+WARNING: DEPRECATED: Declaring class 'BaseRelaxationData' derived from
+'_BlockData'.  The class '_BlockData' has been renamed to 'BlockData'.
+(deprecated in 6.7.2) (called from /home/dang/miniforge3/envs/idaes-
+py3.12/lib/python3.12/site-
+packages/coramin/relaxations/relaxations_base.py:43)
+WARNING: DEPRECATED: pyomo.core.expr.current is deprecated.  Please import
+expression symbols from pyomo.core.expr  (deprecated in 6.6.2) (called from
+/home/dang/miniforge3/envs/idaes-py3.12/lib/python3.12/site-
+packages/coramin/domain_reduction/filters.py:4)
+reading sources... [  1%] apidoc/idaes.apps.grid_integration.multiperiod
+reading sources... [  2%] apidoc/idaes.apps.grid_integration.pricetaker
+reading sources... [  2%] apidoc/idaes.apps.matopt
+reading sources... [  2%] apidoc/idaes.apps.matopt.materials
+reading sources... [  2%] apidoc/idaes.apps.matopt.materials.lattices
+reading sources... [  3%] apidoc/idaes.apps.matopt.materials.parsers
+reading sources... [  3%] apidoc/idaes.apps.matopt.opt
+reading sources... [  3%] apidoc/idaes.apps.matopt.util
+reading sources... [  3%] apidoc/idaes.apps.nmpc
+reading sources... [  4%] apidoc/idaes.apps.nmpc.dynamic_data
+reading sources... [  4%] apidoc/idaes.commands
+reading sources... [  4%] apidoc/idaes.commands.util
+reading sources... [  4%] apidoc/idaes.core
+WARNING: DEPRECATED: idaes.core.datasets is no longer available due to the DMF
+being unsupported. Visit https://github.com/IDAES/dmf for more information.
+(deprecated in 2.6.0dev0, will be removed in (or after) 2.6.0rc0) (called from
+<frozen importlib._bootstrap>:488)
+reading sources... [  5%] apidoc/idaes.core.base
+reading sources... [  5%] apidoc/idaes.core.dmf
+WARNING: DEPRECATED: idaes.core.dmf is no longer supported and has been moved
+into a dedicated repository for archival. Visit https://github.com/IDAES/dmf
+for more information.  (deprecated in 2.6.0dev0, will be removed in (or after)
+2.6.0rc0) (called from <frozen importlib._bootstrap>:488)
+reading sources... [  5%] apidoc/idaes.core.initialization
+reading sources... [  5%] apidoc/idaes.core.plugins
+reading sources... [  6%] apidoc/idaes.core.scaling
+reading sources... [  6%] apidoc/idaes.core.solvers
+reading sources... [  6%] apidoc/idaes.core.surrogate
+WARNING: DEPRECATED: Declaring class 'OmltBlockData' derived from
+'_BlockData'. The class '_BlockData' has been renamed to 'BlockData'.
+(deprecated in 6.7.2) (called from /home/dang/miniforge3/envs/idaes-
+py3.12/lib/python3.12/site-packages/omlt/block.py:33)
+reading sources... [  6%] apidoc/idaes.core.surrogate.base
+reading sources... [  7%] apidoc/idaes.core.surrogate.plotting
+reading sources... [  7%] apidoc/idaes.core.surrogate.pysmo
+reading sources... [  7%] apidoc/idaes.core.surrogate.sampling
+reading sources... [  7%] apidoc/idaes.core.util
+reading sources... [  8%] apidoc/idaes.core.util.convergence
+reading sources... [  8%] apidoc/idaes.core.util.structfs
+reading sources... [  8%] apidoc/idaes.models
+reading sources... [  8%] apidoc/idaes.models.control
+reading sources... [  9%] apidoc/idaes.models.costing
+reading sources... [  9%] apidoc/idaes.models.flowsheets
+reading sources... [  9%] apidoc/idaes.models.properties
+reading sources... [  9%] apidoc/idaes.models.properties.activity_coeff_models
+reading sources... [ 10%] apidoc/idaes.models.properties.examples
+reading sources... [ 10%] apidoc/idaes.models.properties.general_helmholtz
+reading sources... [ 10%] apidoc/idaes.models.properties.general_helmholtz.components
+reading sources... [ 10%] apidoc/idaes.models.properties.general_helmholtz.components.parameters
+reading sources... [ 11%] apidoc/idaes.models.properties.general_helmholtz.expressions
+reading sources... [ 11%] apidoc/idaes.models.properties.helmholtz
+reading sources... [ 11%] apidoc/idaes.models.properties.interrogator
+reading sources... [ 11%] apidoc/idaes.models.properties.modular_properties
+reading sources... [ 12%] apidoc/idaes.models.properties.modular_properties.base
+reading sources... [ 12%] apidoc/idaes.models.properties.modular_properties.coolprop
+reading sources... [ 12%] apidoc/idaes.models.properties.modular_properties.eos
+reading sources... [ 12%] apidoc/idaes.models.properties.modular_properties.examples
+reading sources... [ 13%] apidoc/idaes.models.properties.modular_properties.examples.reactions
+reading sources... [ 13%] apidoc/idaes.models.properties.modular_properties.phase_equil
+reading sources... [ 13%] apidoc/idaes.models.properties.modular_properties.pure
+reading sources... [ 13%] apidoc/idaes.models.properties.modular_properties.reactions
+reading sources... [ 14%] apidoc/idaes.models.properties.modular_properties.state_definitions
+reading sources... [ 14%] apidoc/idaes.models.properties.modular_properties.transport_properties
+reading sources... [ 14%] apidoc/idaes.models.unit_models
+reading sources... [ 14%] apidoc/idaes.models.unit_models.icons
+reading sources... [ 15%] apidoc/idaes.models.unit_models.solid_liquid
+reading sources... [ 15%] apidoc/idaes.models_extra
+reading sources... [ 15%] apidoc/idaes.models_extra.co2_capture_and_utilization
+reading sources... [ 15%] apidoc/idaes.models_extra.co2_capture_and_utilization.unit_models
+reading sources... [ 16%] apidoc/idaes.models_extra.column_models
+reading sources... [ 16%] apidoc/idaes.models_extra.column_models.properties
+reading sources... [ 16%] apidoc/idaes.models_extra.gas_distribution
+reading sources... [ 16%] apidoc/idaes.models_extra.gas_distribution.properties
+reading sources... [ 17%] apidoc/idaes.models_extra.gas_distribution.unit_models
+reading sources... [ 17%] apidoc/idaes.models_extra.gas_solid_contactors
+reading sources... [ 17%] apidoc/idaes.models_extra.gas_solid_contactors.flowsheets
+reading sources... [ 17%] apidoc/idaes.models_extra.gas_solid_contactors.properties
+reading sources... [ 18%] apidoc/idaes.models_extra.gas_solid_contactors.properties.methane_iron_OC_reduction
+reading sources... [ 18%] apidoc/idaes.models_extra.gas_solid_contactors.properties.oxygen_iron_OC_oxidation
+reading sources... [ 18%] apidoc/idaes.models_extra.gas_solid_contactors.unit_models
+reading sources... [ 18%] apidoc/idaes.models_extra.power_generation
+reading sources... [ 19%] apidoc/idaes.models_extra.power_generation.costing
+reading sources... [ 19%] apidoc/idaes.models_extra.power_generation.flowsheets
+reading sources... [ 19%] apidoc/idaes.models_extra.power_generation.flowsheets.subcritical_power_plant
+reading sources... [ 19%] apidoc/idaes.models_extra.power_generation.flowsheets.supercritical_power_plant
+reading sources... [ 20%] apidoc/idaes.models_extra.power_generation.flowsheets.supercritical_steam_cycle
+reading sources... [ 20%] apidoc/idaes.models_extra.power_generation.properties
+reading sources... [ 20%] apidoc/idaes.models_extra.power_generation.unit_models
+reading sources... [ 21%] apidoc/idaes.models_extra.power_generation.unit_models.helm
+reading sources... [ 21%] apidoc/idaes.models_extra.power_generation.unit_models.soc_submodels
+reading sources... [ 21%] apidoc/idaes.models_extra.temperature_swing_adsorption
+reading sources... [ 21%] apidoc/modules
+reading sources... [ 22%] archived_features/helmet
+reading sources... [ 22%] archived_features/index
+reading sources... [ 22%] archived_features/ripe
+reading sources... [ 22%] build/examples/structfs/flash_flowsheet_nb
+reading sources... [ 23%] build/examples/structfs/hda_flowsheet_nb
+reading sources... [ 23%] examples/index
+reading sources... [ 23%] examples/structfs/flash_flowsheet_nb
+reading sources... [ 23%] examples/structfs/hda_flowsheet_nb
+reading sources... [ 24%] examples/structfs/index
+reading sources... [ 24%] explanations/components/flowsheet/index
+reading sources... [ 24%] explanations/components/flowsheet/time_domain
+reading sources... [ 24%] explanations/components/index
+reading sources... [ 25%] explanations/components/property_package/comp
+reading sources... [ 25%] explanations/components/property_package/general/bubble_dew
+reading sources... [ 25%] explanations/components/property_package/general/component_def
+reading sources... [ 25%] explanations/components/property_package/general/developer/eos_dev
+reading sources... [ 26%] explanations/components/property_package/general/developer/phase_equil_dev
+reading sources... [ 26%] explanations/components/property_package/general/developer/pure_component_dev
+reading sources... [ 26%] explanations/components/property_package/general/developer/state_definition_dev
+reading sources... [ 26%] explanations/components/property_package/general/developers
+reading sources... [ 27%] explanations/components/property_package/general/eos/cubic
+reading sources... [ 27%] explanations/components/property_package/general/eos/ideal
+reading sources... [ 27%] explanations/components/property_package/general/generic_definition
+reading sources... [ 27%] explanations/components/property_package/general/global_options
+reading sources... [ 28%] explanations/components/property_package/general/index
+reading sources... [ 28%] explanations/components/property_package/general/pe/pe_forms
+reading sources... [ 28%] explanations/components/property_package/general/pe/smooth_flash
+reading sources... [ 28%] explanations/components/property_package/general/pe/smooth_vle2
+reading sources... [ 29%] explanations/components/property_package/general/phase_def
+reading sources... [ 29%] explanations/components/property_package/general/phase_equilibrium
+reading sources... [ 29%] explanations/components/property_package/general/pure/ConstantProperties
+reading sources... [ 29%] explanations/components/property_package/general/pure/NIST
+reading sources... [ 30%] explanations/components/property_package/general/pure/Perrys
+reading sources... [ 30%] explanations/components/property_package/general/pure/RPP3
+reading sources... [ 30%] explanations/components/property_package/general/pure/RPP4
+reading sources... [ 30%] explanations/components/property_package/general/pure/RPP5
+reading sources... [ 31%] explanations/components/property_package/general/state/FPhx
+reading sources... [ 31%] explanations/components/property_package/general/state/FTPx
+reading sources... [ 31%] explanations/components/property_package/general/state/FcPh
+reading sources... [ 31%] explanations/components/property_package/general/state/FcTP
+reading sources... [ 32%] explanations/components/property_package/general/state/FpcTP
+reading sources... [ 32%] explanations/components/property_package/general/state_definition
+reading sources... [ 32%] explanations/components/property_package/general/transport_properties/chapman_enskog
+reading sources... [ 32%] explanations/components/property_package/general/transport_properties/chung_pure
+reading sources... [ 33%] explanations/components/property_package/general/transport_properties/eucken
+reading sources... [ 33%] explanations/components/property_package/general/transport_properties/index
+reading sources... [ 33%] explanations/components/property_package/general/transport_properties/no_method
+reading sources... [ 33%] explanations/components/property_package/general/transport_properties/thermal_conductivity_wms
+reading sources... [ 34%] explanations/components/property_package/general/transport_properties/viscosity_wilke
+reading sources... [ 34%] explanations/components/property_package/general_reactions/equil_constant
+reading sources... [ 34%] explanations/components/property_package/general_reactions/equil_form
+reading sources... [ 34%] explanations/components/property_package/general_reactions/equil_rxns
+reading sources... [ 35%] explanations/components/property_package/general_reactions/generic_reactions
+reading sources... [ 35%] explanations/components/property_package/general_reactions/heat_of_reaction
+reading sources... [ 35%] explanations/components/property_package/general_reactions/index
+reading sources... [ 35%] explanations/components/property_package/general_reactions/method_libraries
+reading sources... [ 36%] explanations/components/property_package/general_reactions/rate_constant
+reading sources... [ 36%] explanations/components/property_package/general_reactions/rate_form
+reading sources... [ 36%] explanations/components/property_package/general_reactions/rate_rxns
+reading sources... [ 36%] explanations/components/property_package/index
+reading sources... [ 37%] explanations/components/property_package/phase
+reading sources... [ 37%] explanations/components/property_package/physical_param
+reading sources... [ 37%] explanations/components/property_package/reaction_block
+reading sources... [ 37%] explanations/components/property_package/reaction_param
+reading sources... [ 38%] explanations/components/property_package/state_block
+reading sources... [ 38%] explanations/components/ui/index
+reading sources... [ 38%] explanations/components/unit_model/control_volume
+reading sources... [ 38%] explanations/components/unit_model/index
+reading sources... [ 39%] explanations/concepts
+reading sources... [ 39%] explanations/conventions
+reading sources... [ 39%] explanations/copyright
+reading sources... [ 39%] explanations/faq
+reading sources... [ 40%] explanations/index
+reading sources... [ 40%] explanations/license
+reading sources... [ 40%] explanations/model_diagnostics/degeneracy_hunter
+reading sources... [ 41%] explanations/model_diagnostics/index
+reading sources... [ 41%] explanations/model_diagnostics/svd_analysis
+reading sources... [ 41%] explanations/modeling_extensions/caprese/index
+reading sources... [ 41%] explanations/modeling_extensions/caprese/mhe
+reading sources... [ 42%] explanations/modeling_extensions/caprese/nmpc
+reading sources... [ 42%] explanations/modeling_extensions/diagnostics/index
+reading sources... [ 42%] explanations/modeling_extensions/index
+reading sources... [ 42%] explanations/modeling_extensions/matopt/index
+reading sources... [ 43%] explanations/modeling_extensions/surrogate/api/alamopy/index
+reading sources... [ 43%] explanations/modeling_extensions/surrogate/api/index
+reading sources... [ 43%] explanations/modeling_extensions/surrogate/api/omlt-keras/index
+reading sources... [ 43%] explanations/modeling_extensions/surrogate/api/omlt-keras/omlt-keras-options
+reading sources... [ 44%] explanations/modeling_extensions/surrogate/api/pysmo/index
+reading sources... [ 44%] explanations/modeling_extensions/surrogate/api/pysmo/pysmo_kriging
+reading sources... [ 44%] explanations/modeling_extensions/surrogate/api/pysmo/pysmo_polyregression
+reading sources... [ 44%] explanations/modeling_extensions/surrogate/api/pysmo/pysmo_radialbasisfunctions
+reading sources... [ 45%] explanations/modeling_extensions/surrogate/index
+reading sources... [ 45%] explanations/modeling_extensions/surrogate/plotting/index
+reading sources... [ 45%] explanations/modeling_extensions/surrogate/sampling/index
+reading sources... [ 45%] explanations/modeling_extensions/surrogate/sampling/pysmo_custom
+reading sources... [ 46%] explanations/modeling_extensions/surrogate/sampling/pysmo_cvt
+reading sources... [ 46%] explanations/modeling_extensions/surrogate/sampling/pysmo_halton
+reading sources... [ 46%] explanations/modeling_extensions/surrogate/sampling/pysmo_hammersley
+reading sources... [ 46%] explanations/modeling_extensions/surrogate/sampling/pysmo_lhs
+reading sources... [ 47%] explanations/modeling_extensions/surrogate/sampling/pysmo_sampling_properties
+reading sources... [ 47%] explanations/modeling_extensions/surrogate/sampling/pysmo_uniform
+reading sources... [ 47%] explanations/modeling_extensions/uncertainty_propagation/index
+reading sources... [ 47%] explanations/related_packages/index
+reading sources... [ 48%] explanations/related_packages/pecos
+reading sources... [ 48%] explanations/scaling_toolbox/applying_scaling_tools
+reading sources... [ 48%] explanations/scaling_toolbox/diagnosing_scaling_issues
+reading sources... [ 48%] explanations/scaling_toolbox/index
+reading sources... [ 49%] explanations/scaling_toolbox/scaling_theory
+reading sources... [ 49%] explanations/scaling_toolbox/scaling_toolbox
+reading sources... [ 49%] explanations/scaling_toolbox/scaling_workflow
+reading sources... [ 49%] explanations/why_idaes
+reading sources... [ 50%] how_to_guides/custom_models/general_model_development
+reading sources... [ 50%] how_to_guides/custom_models/property_package_development
+reading sources... [ 50%] how_to_guides/custom_models/reaction_package_development
+reading sources... [ 50%] how_to_guides/custom_models/unit_model_development
+reading sources... [ 51%] how_to_guides/index
+reading sources... [ 51%] how_to_guides/opt_dependencies
+reading sources... [ 51%] how_to_guides/structfs/index
+reading sources... [ 51%] how_to_guides/versioned_idaes_install
+reading sources... [ 52%] how_to_guides/workflow/data_rec_parmest
+reading sources... [ 52%] how_to_guides/workflow/general
+reading sources... [ 52%] how_to_guides/workflow/index
+reading sources... [ 52%] index
+reading sources... [ 53%] reference_guides/apps/grid_integration/Bidder
+reading sources... [ 53%] reference_guides/apps/grid_integration/Coordinator
+reading sources... [ 53%] reference_guides/apps/grid_integration/Implementation
+reading sources... [ 53%] reference_guides/apps/grid_integration/Introduction
+reading sources... [ 54%] reference_guides/apps/grid_integration/Tracker
+reading sources... [ 54%] reference_guides/apps/grid_integration/index
+reading sources... [ 54%] reference_guides/apps/grid_integration/multiperiod/Price_Taker
+reading sources... [ 54%] reference_guides/apps/grid_integration/multiperiod/index
+reading sources... [ 55%] reference_guides/commands/bin_directory
+reading sources... [ 55%] reference_guides/commands/copyright
+reading sources... [ 55%] reference_guides/commands/data_directory
+reading sources... [ 55%] reference_guides/commands/env_info
+reading sources... [ 56%] reference_guides/commands/get_extensions
+reading sources... [ 56%] reference_guides/commands/index
+reading sources... [ 56%] reference_guides/commands/lib_directory
+reading sources... [ 56%] reference_guides/configuration
+reading sources... [ 57%] reference_guides/core/comp
+reading sources... [ 57%] reference_guides/core/control_volume_0d
+reading sources... [ 57%] reference_guides/core/control_volume_1d
+reading sources... [ 57%] reference_guides/core/costing/costing_framework
+reading sources... [ 58%] reference_guides/core/costing/costing_libraries
+reading sources... [ 58%] reference_guides/core/costing/index
+reading sources... [ 58%] reference_guides/core/electrolyte_property_set
+reading sources... [ 58%] reference_guides/core/flowsheet_block
+reading sources... [ 59%] reference_guides/core/homotopy
+reading sources... [ 59%] reference_guides/core/index
+reading sources... [ 59%] reference_guides/core/phase
+reading sources... [ 59%] reference_guides/core/physical_property_class
+reading sources... [ 60%] reference_guides/core/process_block
+reading sources... [ 60%] reference_guides/core/property_metadata
+reading sources... [ 60%] reference_guides/core/property_set
+reading sources... [ 61%] reference_guides/core/reaction_property_class
+reading sources... [ 61%] reference_guides/core/solvers
+reading sources... [ 61%] reference_guides/core/standard_property_set
+reading sources... [ 61%] reference_guides/core/unit_model_block
+reading sources... [ 62%] reference_guides/core/uom
+reading sources... [ 62%] reference_guides/core/util/diagnostics/degeneracy_hunter
+reading sources... [ 62%] reference_guides/core/util/diagnostics/degeneracy_hunter_legacy
+reading sources... [ 62%] reference_guides/core/util/diagnostics/diagnostics_toolbox
+reading sources... [ 63%] reference_guides/core/util/diagnostics/svd_toolbox
+reading sources... [ 63%] reference_guides/core/util/dyn_utils
+reading sources... [ 63%] reference_guides/core/util/index
+reading sources... [ 63%] reference_guides/core/util/initialization
+reading sources... [ 64%] reference_guides/core/util/math
+reading sources... [ 64%] reference_guides/core/util/misc
+reading sources... [ 64%] reference_guides/core/util/model_diagnostics
+reading sources... [ 64%] reference_guides/core/util/model_serializer
+reading sources... [ 65%] reference_guides/core/util/model_statistics
+reading sources... [ 65%] reference_guides/core/util/phase_equilibria
+reading sources... [ 65%] reference_guides/core/util/scaling
+reading sources... [ 65%] reference_guides/core/util/tables
+reading sources... [ 66%] reference_guides/core/util/tags
+reading sources... [ 66%] reference_guides/core/util/utility_minimization
+reading sources... [ 66%] reference_guides/core/var_like_expr
+reading sources... [ 66%] reference_guides/developer/codereview
+reading sources... [ 67%] reference_guides/developer/devsw
+reading sources... [ 67%] reference_guides/developer/docker
+reading sources... [ 67%] reference_guides/developer/glossary
+reading sources... [ 67%] reference_guides/developer/howto
+reading sources... [ 68%] reference_guides/developer/index
+reading sources... [ 68%] reference_guides/developer/repos
+reading sources... [ 68%] reference_guides/developer/standards
+reading sources... [ 68%] reference_guides/developer/testing
+reading sources... [ 69%] reference_guides/index
+reading sources... [ 69%] reference_guides/initialization/bt_initializer
+reading sources... [ 69%] reference_guides/initialization/developing_initializers
+reading sources... [ 69%] reference_guides/initialization/from_data_initializer
+reading sources... [ 70%] reference_guides/initialization/general_initializers
+reading sources... [ 70%] reference_guides/initialization/index
+reading sources... [ 70%] reference_guides/initialization/single_cv_initializer
+reading sources... [ 70%] reference_guides/initialization/specific_initializers
+reading sources... [ 71%] reference_guides/logging
+reading sources... [ 71%] reference_guides/model_libraries/gas_solid_contactors/flowsheets/dyn_TGA_example
+reading sources... [ 71%] reference_guides/model_libraries/gas_solid_contactors/flowsheets/index
+reading sources... [ 71%] reference_guides/model_libraries/gas_solid_contactors/flowsheets/ss_BFB_OC_oxidation
+reading sources... [ 72%] reference_guides/model_libraries/gas_solid_contactors/flowsheets/ss_BFB_methane_combustion
+reading sources... [ 72%] reference_guides/model_libraries/gas_solid_contactors/flowsheets/ss_MB_methane_combustion
+reading sources... [ 72%] reference_guides/model_libraries/gas_solid_contactors/index
+reading sources... [ 72%] reference_guides/model_libraries/gas_solid_contactors/properties/index
+reading sources... [ 73%] reference_guides/model_libraries/gas_solid_contactors/properties/methane_iron_OC_reduction/gas_properties
+reading sources... [ 73%] reference_guides/model_libraries/gas_solid_contactors/properties/methane_iron_OC_reduction/heterogeneous_reaction_properties
+reading sources... [ 73%] reference_guides/model_libraries/gas_solid_contactors/properties/methane_iron_OC_reduction/index
+reading sources... [ 73%] reference_guides/model_libraries/gas_solid_contactors/properties/methane_iron_OC_reduction/solid_properties
+reading sources... [ 74%] reference_guides/model_libraries/gas_solid_contactors/properties/oxygen_iron_OC_oxidation/gas_properties
+reading sources... [ 74%] reference_guides/model_libraries/gas_solid_contactors/properties/oxygen_iron_OC_oxidation/heterogeneous_reaction_properties
+reading sources... [ 74%] reference_guides/model_libraries/gas_solid_contactors/properties/oxygen_iron_OC_oxidation/index
+reading sources... [ 74%] reference_guides/model_libraries/gas_solid_contactors/properties/oxygen_iron_OC_oxidation/solid_properties
+reading sources... [ 75%] reference_guides/model_libraries/gas_solid_contactors/unit_models/bubbling_fluidized_bed
+reading sources... [ 75%] reference_guides/model_libraries/gas_solid_contactors/unit_models/fixed_bed_0D
+reading sources... [ 75%] reference_guides/model_libraries/gas_solid_contactors/unit_models/fixed_bed_1D
+reading sources... [ 75%] reference_guides/model_libraries/gas_solid_contactors/unit_models/index
+reading sources... [ 76%] reference_guides/model_libraries/gas_solid_contactors/unit_models/moving_bed
+reading sources... [ 76%] reference_guides/model_libraries/generic/control/index
+reading sources... [ 76%] reference_guides/model_libraries/generic/control/pid
+reading sources... [ 76%] reference_guides/model_libraries/generic/costing/index
+reading sources... [ 77%] reference_guides/model_libraries/generic/costing/process_costing_sslw
+reading sources... [ 77%] reference_guides/model_libraries/generic/index
+reading sources... [ 77%] reference_guides/model_libraries/generic/property_models/activity_coefficient
+reading sources... [ 77%] reference_guides/model_libraries/generic/property_models/helmholtz
+reading sources... [ 78%] reference_guides/model_libraries/generic/property_models/helmholtz_expressions
+reading sources... [ 78%] reference_guides/model_libraries/generic/property_models/helmholtz_parameters
+reading sources... [ 78%] reference_guides/model_libraries/generic/property_models/iapws95
+reading sources... [ 78%] reference_guides/model_libraries/generic/property_models/index
+reading sources... [ 79%] reference_guides/model_libraries/generic/property_models/interrogator
+reading sources... [ 79%] reference_guides/model_libraries/generic/property_models/swco2
+reading sources... [ 79%] reference_guides/model_libraries/generic/unit_models/compressor
+reading sources... [ 79%] reference_guides/model_libraries/generic/unit_models/cstr
+reading sources... [ 80%] reference_guides/model_libraries/generic/unit_models/equilibrium
+reading sources... [ 80%] reference_guides/model_libraries/generic/unit_models/feed
+reading sources... [ 80%] reference_guides/model_libraries/generic/unit_models/feed_flash
+reading sources... [ 81%] reference_guides/model_libraries/generic/unit_models/flash
+reading sources... [ 81%] reference_guides/model_libraries/generic/unit_models/gibbs_reactor
+reading sources... [ 81%] reference_guides/model_libraries/generic/unit_models/heat_exchanger
+reading sources... [ 81%] reference_guides/model_libraries/generic/unit_models/heat_exchanger_1D
+reading sources... [ 82%] reference_guides/model_libraries/generic/unit_models/heat_exchanger_lc
+reading sources... [ 82%] reference_guides/model_libraries/generic/unit_models/heat_exchanger_ntu
+reading sources... [ 82%] reference_guides/model_libraries/generic/unit_models/heater
+reading sources... [ 82%] reference_guides/model_libraries/generic/unit_models/index
+reading sources... [ 83%] reference_guides/model_libraries/generic/unit_models/mixer
+reading sources... [ 83%] reference_guides/model_libraries/generic/unit_models/mscontactor
+reading sources... [ 83%] reference_guides/model_libraries/generic/unit_models/pfr
+reading sources... [ 83%] reference_guides/model_libraries/generic/unit_models/pressure_changer
+reading sources... [ 84%] reference_guides/model_libraries/generic/unit_models/product
+reading sources... [ 84%] reference_guides/model_libraries/generic/unit_models/pump
+reading sources... [ 84%] reference_guides/model_libraries/generic/unit_models/separator
+reading sources... [ 84%] reference_guides/model_libraries/generic/unit_models/shell_and_tube_1d
+reading sources... [ 85%] reference_guides/model_libraries/generic/unit_models/skeleton_unit
+reading sources... [ 85%] reference_guides/model_libraries/generic/unit_models/solid_liquid/index
+reading sources... [ 85%] reference_guides/model_libraries/generic/unit_models/solid_liquid/sl_separator
+reading sources... [ 85%] reference_guides/model_libraries/generic/unit_models/solid_liquid/thickener0d
+reading sources... [ 86%] reference_guides/model_libraries/generic/unit_models/statejunction
+reading sources... [ 86%] reference_guides/model_libraries/generic/unit_models/stoichiometric_reactor
+reading sources... [ 86%] reference_guides/model_libraries/generic/unit_models/stream_scaler
+reading sources... [ 86%] reference_guides/model_libraries/generic/unit_models/translator
+reading sources... [ 87%] reference_guides/model_libraries/generic/unit_models/turbine
+reading sources... [ 87%] reference_guides/model_libraries/generic/unit_models/valve
+reading sources... [ 87%] reference_guides/model_libraries/index
+reading sources... [ 87%] reference_guides/model_libraries/models_extra/index
+reading sources... [ 88%] reference_guides/model_libraries/models_extra/membrane_model/1d_membrane
+reading sources... [ 88%] reference_guides/model_libraries/models_extra/phe
+reading sources... [ 88%] reference_guides/model_libraries/models_extra/temperature_swing_adsorption/fixed_bed_tsa0d
+reading sources... [ 88%] reference_guides/model_libraries/power_generation/costing/index
+reading sources... [ 89%] reference_guides/model_libraries/power_generation/costing/power_plant_costing_netl
+reading sources... [ 89%] reference_guides/model_libraries/power_generation/flowsheets/SCPC_power_plant
+reading sources... [ 89%] reference_guides/model_libraries/power_generation/flowsheets/index
+reading sources... [ 89%] reference_guides/model_libraries/power_generation/flowsheets/subcritical_power_plant
+reading sources... [ 90%] reference_guides/model_libraries/power_generation/index
+reading sources... [ 90%] reference_guides/model_libraries/power_generation/properties/flue_gas
+reading sources... [ 90%] reference_guides/model_libraries/power_generation/properties/index
+reading sources... [ 90%] reference_guides/model_libraries/power_generation/unit_models/boiler_fireside
+reading sources... [ 91%] reference_guides/model_libraries/power_generation/unit_models/boiler_heat_exchanger
+reading sources... [ 91%] reference_guides/model_libraries/power_generation/unit_models/boiler_heat_exchanger2D
+reading sources... [ 91%] reference_guides/model_libraries/power_generation/unit_models/boiler_heat_exchanger_3streams
+reading sources... [ 91%] reference_guides/model_libraries/power_generation/unit_models/cross_flow_heat_exchanger_1D
+reading sources... [ 92%] reference_guides/model_libraries/power_generation/unit_models/downcomer
+reading sources... [ 92%] reference_guides/model_libraries/power_generation/unit_models/drum
+reading sources... [ 92%] reference_guides/model_libraries/power_generation/unit_models/drum1D
+reading sources... [ 92%] reference_guides/model_libraries/power_generation/unit_models/feedwater_heater_0D
+reading sources... [ 93%] reference_guides/model_libraries/power_generation/unit_models/feedwater_heater_0D_dynamic
+reading sources... [ 93%] reference_guides/model_libraries/power_generation/unit_models/feedwater_heater_condensing_0D
+reading sources... [ 93%] reference_guides/model_libraries/power_generation/unit_models/heater_1D
+reading sources... [ 93%] reference_guides/model_libraries/power_generation/unit_models/index
+reading sources... [ 94%] reference_guides/model_libraries/power_generation/unit_models/phase_separator
+reading sources... [ 94%] reference_guides/model_libraries/power_generation/unit_models/soec_design
+reading sources... [ 94%] reference_guides/model_libraries/power_generation/unit_models/steam_valve
+reading sources... [ 94%] reference_guides/model_libraries/power_generation/unit_models/steamheater
+reading sources... [ 95%] reference_guides/model_libraries/power_generation/unit_models/turbine
+reading sources... [ 95%] reference_guides/model_libraries/power_generation/unit_models/turbine_inlet
+reading sources... [ 95%] reference_guides/model_libraries/power_generation/unit_models/turbine_multistage
+reading sources... [ 95%] reference_guides/model_libraries/power_generation/unit_models/turbine_outlet
+reading sources... [ 96%] reference_guides/model_libraries/power_generation/unit_models/turbine_stage
+reading sources... [ 96%] reference_guides/model_libraries/power_generation/unit_models/waterpipe
+reading sources... [ 96%] reference_guides/model_libraries/power_generation/unit_models/watertank
+reading sources... [ 96%] reference_guides/model_libraries/power_generation/unit_models/waterwall
+reading sources... [ 97%] reference_guides/scaling/autoscaler
+reading sources... [ 97%] reference_guides/scaling/custom_scaler
+reading sources... [ 97%] reference_guides/scaling/scaling
+reading sources... [ 97%] reference_guides/scaling/scaling_profiler
+reading sources... [ 98%] reference_guides/scaling/scaling_utils
+reading sources... [ 98%] tutorials/advanced_install/index
+reading sources... [ 98%] tutorials/advanced_install/terms_commands
+reading sources... [ 98%] tutorials/getting_started/binaries
+reading sources... [ 99%] tutorials/getting_started/index
+reading sources... [ 99%] tutorials/getting_started/linux
+reading sources... [ 99%] tutorials/getting_started/mac_osx
+reading sources... [ 99%] tutorials/getting_started/windows
+reading sources... [100%] tutorials/index
+reading sources... [100%] tutorials/tutorials_examples
+
+looking for now-outdated files... none found
+pickling environment... done
+checking consistency... done
+preparing documents... done
+copying assets... 
+copying static files... done
+copying extra files... done
+copying assets: done
+writing output... [  0%] apidoc/idaes
+writing output... [  1%] apidoc/idaes.apps
+writing output... [  1%] apidoc/idaes.apps.grid_integration
+writing output... [  1%] apidoc/idaes.apps.grid_integration.examples
+writing output... [  1%] apidoc/idaes.apps.grid_integration.multiperiod
+writing output... [  2%] apidoc/idaes.apps.grid_integration.pricetaker
+writing output... [  2%] apidoc/idaes.apps.matopt
+writing output... [  2%] apidoc/idaes.apps.matopt.materials
+writing output... [  2%] apidoc/idaes.apps.matopt.materials.lattices
+writing output... [  3%] apidoc/idaes.apps.matopt.materials.parsers
+writing output... [  3%] apidoc/idaes.apps.matopt.opt
+writing output... [  3%] apidoc/idaes.apps.matopt.util
+writing output... [  3%] apidoc/idaes.apps.nmpc
+writing output... [  4%] apidoc/idaes.apps.nmpc.dynamic_data
+writing output... [  4%] apidoc/idaes.commands
+writing output... [  4%] apidoc/idaes.commands.util
+writing output... [  4%] apidoc/idaes.core
+writing output... [  5%] apidoc/idaes.core.base
+writing output... [  5%] apidoc/idaes.core.dmf
+writing output... [  5%] apidoc/idaes.core.initialization
+writing output... [  5%] apidoc/idaes.core.plugins
+writing output... [  6%] apidoc/idaes.core.scaling
+writing output... [  6%] apidoc/idaes.core.solvers
+writing output... [  6%] apidoc/idaes.core.surrogate
+writing output... [  6%] apidoc/idaes.core.surrogate.base
+writing output... [  7%] apidoc/idaes.core.surrogate.plotting
+writing output... [  7%] apidoc/idaes.core.surrogate.pysmo
+writing output... [  7%] apidoc/idaes.core.surrogate.sampling
+writing output... [  7%] apidoc/idaes.core.util
+writing output... [  8%] apidoc/idaes.core.util.convergence
+writing output... [  8%] apidoc/idaes.core.util.structfs
+writing output... [  8%] apidoc/idaes.models
+writing output... [  8%] apidoc/idaes.models.control
+writing output... [  9%] apidoc/idaes.models.costing
+writing output... [  9%] apidoc/idaes.models.flowsheets
+writing output... [  9%] apidoc/idaes.models.properties
+writing output... [  9%] apidoc/idaes.models.properties.activity_coeff_models
+writing output... [ 10%] apidoc/idaes.models.properties.examples
+writing output... [ 10%] apidoc/idaes.models.properties.general_helmholtz
+writing output... [ 10%] apidoc/idaes.models.properties.general_helmholtz.components
+writing output... [ 10%] apidoc/idaes.models.properties.general_helmholtz.components.parameters
+writing output... [ 11%] apidoc/idaes.models.properties.general_helmholtz.expressions
+writing output... [ 11%] apidoc/idaes.models.properties.helmholtz
+writing output... [ 11%] apidoc/idaes.models.properties.interrogator
+writing output... [ 11%] apidoc/idaes.models.properties.modular_properties
+writing output... [ 12%] apidoc/idaes.models.properties.modular_properties.base
+writing output... [ 12%] apidoc/idaes.models.properties.modular_properties.coolprop
+writing output... [ 12%] apidoc/idaes.models.properties.modular_properties.eos
+writing output... [ 12%] apidoc/idaes.models.properties.modular_properties.examples
+writing output... [ 13%] apidoc/idaes.models.properties.modular_properties.examples.reactions
+writing output... [ 13%] apidoc/idaes.models.properties.modular_properties.phase_equil
+writing output... [ 13%] apidoc/idaes.models.properties.modular_properties.pure
+writing output... [ 13%] apidoc/idaes.models.properties.modular_properties.reactions
+writing output... [ 14%] apidoc/idaes.models.properties.modular_properties.state_definitions
+writing output... [ 14%] apidoc/idaes.models.properties.modular_properties.transport_properties
+writing output... [ 14%] apidoc/idaes.models.unit_models
+writing output... [ 14%] apidoc/idaes.models.unit_models.icons
+writing output... [ 15%] apidoc/idaes.models.unit_models.solid_liquid
+writing output... [ 15%] apidoc/idaes.models_extra
+writing output... [ 15%] apidoc/idaes.models_extra.co2_capture_and_utilization
+writing output... [ 15%] apidoc/idaes.models_extra.co2_capture_and_utilization.unit_models
+writing output... [ 16%] apidoc/idaes.models_extra.column_models
+writing output... [ 16%] apidoc/idaes.models_extra.column_models.properties
+writing output... [ 16%] apidoc/idaes.models_extra.gas_distribution
+writing output... [ 16%] apidoc/idaes.models_extra.gas_distribution.properties
+writing output... [ 17%] apidoc/idaes.models_extra.gas_distribution.unit_models
+writing output... [ 17%] apidoc/idaes.models_extra.gas_solid_contactors
+writing output... [ 17%] apidoc/idaes.models_extra.gas_solid_contactors.flowsheets
+writing output... [ 17%] apidoc/idaes.models_extra.gas_solid_contactors.properties
+writing output... [ 18%] apidoc/idaes.models_extra.gas_solid_contactors.properties.methane_iron_OC_reduction
+writing output... [ 18%] apidoc/idaes.models_extra.gas_solid_contactors.properties.oxygen_iron_OC_oxidation
+writing output... [ 18%] apidoc/idaes.models_extra.gas_solid_contactors.unit_models
+writing output... [ 18%] apidoc/idaes.models_extra.power_generation
+writing output... [ 19%] apidoc/idaes.models_extra.power_generation.costing
+writing output... [ 19%] apidoc/idaes.models_extra.power_generation.flowsheets
+writing output... [ 19%] apidoc/idaes.models_extra.power_generation.flowsheets.subcritical_power_plant
+writing output... [ 19%] apidoc/idaes.models_extra.power_generation.flowsheets.supercritical_power_plant
+writing output... [ 20%] apidoc/idaes.models_extra.power_generation.flowsheets.supercritical_steam_cycle
+writing output... [ 20%] apidoc/idaes.models_extra.power_generation.properties
+writing output... [ 20%] apidoc/idaes.models_extra.power_generation.unit_models
+writing output... [ 21%] apidoc/idaes.models_extra.power_generation.unit_models.helm
+writing output... [ 21%] apidoc/idaes.models_extra.power_generation.unit_models.soc_submodels
+writing output... [ 21%] apidoc/idaes.models_extra.temperature_swing_adsorption
+writing output... [ 21%] apidoc/modules
+writing output... [ 22%] archived_features/helmet
+writing output... [ 22%] archived_features/index
+writing output... [ 22%] archived_features/ripe
+writing output... [ 22%] build/examples/structfs/flash_flowsheet_nb
+writing output... [ 23%] build/examples/structfs/hda_flowsheet_nb
+writing output... [ 23%] examples/index
+writing output... [ 23%] examples/structfs/flash_flowsheet_nb
+writing output... [ 23%] examples/structfs/hda_flowsheet_nb
+writing output... [ 24%] examples/structfs/index
+writing output... [ 24%] explanations/components/flowsheet/index
+writing output... [ 24%] explanations/components/flowsheet/time_domain
+writing output... [ 24%] explanations/components/index
+writing output... [ 25%] explanations/components/property_package/comp
+writing output... [ 25%] explanations/components/property_package/general/bubble_dew
+writing output... [ 25%] explanations/components/property_package/general/component_def
+writing output... [ 25%] explanations/components/property_package/general/developer/eos_dev
+writing output... [ 26%] explanations/components/property_package/general/developer/phase_equil_dev
+writing output... [ 26%] explanations/components/property_package/general/developer/pure_component_dev
+writing output... [ 26%] explanations/components/property_package/general/developer/state_definition_dev
+writing output... [ 26%] explanations/components/property_package/general/developers
+writing output... [ 27%] explanations/components/property_package/general/eos/cubic
+writing output... [ 27%] explanations/components/property_package/general/eos/ideal
+writing output... [ 27%] explanations/components/property_package/general/generic_definition
+writing output... [ 27%] explanations/components/property_package/general/global_options
+writing output... [ 28%] explanations/components/property_package/general/index
+writing output... [ 28%] explanations/components/property_package/general/pe/pe_forms
+writing output... [ 28%] explanations/components/property_package/general/pe/smooth_flash
+writing output... [ 28%] explanations/components/property_package/general/pe/smooth_vle2
+writing output... [ 29%] explanations/components/property_package/general/phase_def
+writing output... [ 29%] explanations/components/property_package/general/phase_equilibrium
+writing output... [ 29%] explanations/components/property_package/general/pure/ConstantProperties
+writing output... [ 29%] explanations/components/property_package/general/pure/NIST
+writing output... [ 30%] explanations/components/property_package/general/pure/Perrys
+writing output... [ 30%] explanations/components/property_package/general/pure/RPP3
+writing output... [ 30%] explanations/components/property_package/general/pure/RPP4
+writing output... [ 30%] explanations/components/property_package/general/pure/RPP5
+writing output... [ 31%] explanations/components/property_package/general/state/FPhx
+writing output... [ 31%] explanations/components/property_package/general/state/FTPx
+writing output... [ 31%] explanations/components/property_package/general/state/FcPh
+writing output... [ 31%] explanations/components/property_package/general/state/FcTP
+writing output... [ 32%] explanations/components/property_package/general/state/FpcTP
+writing output... [ 32%] explanations/components/property_package/general/state_definition
+writing output... [ 32%] explanations/components/property_package/general/transport_properties/chapman_enskog
+writing output... [ 32%] explanations/components/property_package/general/transport_properties/chung_pure
+writing output... [ 33%] explanations/components/property_package/general/transport_properties/eucken
+writing output... [ 33%] explanations/components/property_package/general/transport_properties/index
+writing output... [ 33%] explanations/components/property_package/general/transport_properties/no_method
+writing output... [ 33%] explanations/components/property_package/general/transport_properties/thermal_conductivity_wms
+writing output... [ 34%] explanations/components/property_package/general/transport_properties/viscosity_wilke
+writing output... [ 34%] explanations/components/property_package/general_reactions/equil_constant
+writing output... [ 34%] explanations/components/property_package/general_reactions/equil_form
+writing output... [ 34%] explanations/components/property_package/general_reactions/equil_rxns
+writing output... [ 35%] explanations/components/property_package/general_reactions/generic_reactions
+writing output... [ 35%] explanations/components/property_package/general_reactions/heat_of_reaction
+writing output... [ 35%] explanations/components/property_package/general_reactions/index
+writing output... [ 35%] explanations/components/property_package/general_reactions/method_libraries
+writing output... [ 36%] explanations/components/property_package/general_reactions/rate_constant
+writing output... [ 36%] explanations/components/property_package/general_reactions/rate_form
+writing output... [ 36%] explanations/components/property_package/general_reactions/rate_rxns
+writing output... [ 36%] explanations/components/property_package/index
+writing output... [ 37%] explanations/components/property_package/phase
+writing output... [ 37%] explanations/components/property_package/physical_param
+writing output... [ 37%] explanations/components/property_package/reaction_block
+writing output... [ 37%] explanations/components/property_package/reaction_param
+writing output... [ 38%] explanations/components/property_package/state_block
+writing output... [ 38%] explanations/components/ui/index
+writing output... [ 38%] explanations/components/unit_model/control_volume
+writing output... [ 38%] explanations/components/unit_model/index
+writing output... [ 39%] explanations/concepts
+writing output... [ 39%] explanations/conventions
+writing output... [ 39%] explanations/copyright
+writing output... [ 39%] explanations/faq
+writing output... [ 40%] explanations/index
+writing output... [ 40%] explanations/license
+writing output... [ 40%] explanations/model_diagnostics/degeneracy_hunter
+writing output... [ 41%] explanations/model_diagnostics/index
+writing output... [ 41%] explanations/model_diagnostics/svd_analysis
+writing output... [ 41%] explanations/modeling_extensions/caprese/index
+writing output... [ 41%] explanations/modeling_extensions/caprese/mhe
+writing output... [ 42%] explanations/modeling_extensions/caprese/nmpc
+writing output... [ 42%] explanations/modeling_extensions/diagnostics/index
+writing output... [ 42%] explanations/modeling_extensions/index
+writing output... [ 42%] explanations/modeling_extensions/matopt/index
+writing output... [ 43%] explanations/modeling_extensions/surrogate/api/alamopy/index
+writing output... [ 43%] explanations/modeling_extensions/surrogate/api/index
+writing output... [ 43%] explanations/modeling_extensions/surrogate/api/omlt-keras/index
+writing output... [ 43%] explanations/modeling_extensions/surrogate/api/omlt-keras/omlt-keras-options
+writing output... [ 44%] explanations/modeling_extensions/surrogate/api/pysmo/index
+writing output... [ 44%] explanations/modeling_extensions/surrogate/api/pysmo/pysmo_kriging
+writing output... [ 44%] explanations/modeling_extensions/surrogate/api/pysmo/pysmo_polyregression
+writing output... [ 44%] explanations/modeling_extensions/surrogate/api/pysmo/pysmo_radialbasisfunctions
+writing output... [ 45%] explanations/modeling_extensions/surrogate/index
+writing output... [ 45%] explanations/modeling_extensions/surrogate/plotting/index
+writing output... [ 45%] explanations/modeling_extensions/surrogate/sampling/index
+writing output... [ 45%] explanations/modeling_extensions/surrogate/sampling/pysmo_custom
+writing output... [ 46%] explanations/modeling_extensions/surrogate/sampling/pysmo_cvt
+writing output... [ 46%] explanations/modeling_extensions/surrogate/sampling/pysmo_halton
+writing output... [ 46%] explanations/modeling_extensions/surrogate/sampling/pysmo_hammersley
+writing output... [ 46%] explanations/modeling_extensions/surrogate/sampling/pysmo_lhs
+writing output... [ 47%] explanations/modeling_extensions/surrogate/sampling/pysmo_sampling_properties
+writing output... [ 47%] explanations/modeling_extensions/surrogate/sampling/pysmo_uniform
+writing output... [ 47%] explanations/modeling_extensions/uncertainty_propagation/index
+writing output... [ 47%] explanations/related_packages/index
+writing output... [ 48%] explanations/related_packages/pecos
+writing output... [ 48%] explanations/scaling_toolbox/applying_scaling_tools
+writing output... [ 48%] explanations/scaling_toolbox/diagnosing_scaling_issues
+writing output... [ 48%] explanations/scaling_toolbox/index
+writing output... [ 49%] explanations/scaling_toolbox/scaling_theory
+writing output... [ 49%] explanations/scaling_toolbox/scaling_toolbox
+writing output... [ 49%] explanations/scaling_toolbox/scaling_workflow
+writing output... [ 49%] explanations/why_idaes
+writing output... [ 50%] how_to_guides/custom_models/general_model_development
+writing output... [ 50%] how_to_guides/custom_models/property_package_development
+writing output... [ 50%] how_to_guides/custom_models/reaction_package_development
+writing output... [ 50%] how_to_guides/custom_models/unit_model_development
+writing output... [ 51%] how_to_guides/index
+writing output... [ 51%] how_to_guides/opt_dependencies
+writing output... [ 51%] how_to_guides/structfs/index
+writing output... [ 51%] how_to_guides/versioned_idaes_install
+writing output... [ 52%] how_to_guides/workflow/data_rec_parmest
+writing output... [ 52%] how_to_guides/workflow/general
+writing output... [ 52%] how_to_guides/workflow/index
+writing output... [ 52%] index
+writing output... [ 53%] reference_guides/apps/grid_integration/Bidder
+writing output... [ 53%] reference_guides/apps/grid_integration/Coordinator
+writing output... [ 53%] reference_guides/apps/grid_integration/Implementation
+writing output... [ 53%] reference_guides/apps/grid_integration/Introduction
+writing output... [ 54%] reference_guides/apps/grid_integration/Tracker
+writing output... [ 54%] reference_guides/apps/grid_integration/index
+writing output... [ 54%] reference_guides/apps/grid_integration/multiperiod/Price_Taker
+writing output... [ 54%] reference_guides/apps/grid_integration/multiperiod/index
+writing output... [ 55%] reference_guides/commands/bin_directory
+writing output... [ 55%] reference_guides/commands/copyright
+writing output... [ 55%] reference_guides/commands/data_directory
+writing output... [ 55%] reference_guides/commands/env_info
+writing output... [ 56%] reference_guides/commands/get_extensions
+writing output... [ 56%] reference_guides/commands/index
+writing output... [ 56%] reference_guides/commands/lib_directory
+writing output... [ 56%] reference_guides/configuration
+writing output... [ 57%] reference_guides/core/comp
+writing output... [ 57%] reference_guides/core/control_volume_0d
+writing output... [ 57%] reference_guides/core/control_volume_1d
+writing output... [ 57%] reference_guides/core/costing/costing_framework
+writing output... [ 58%] reference_guides/core/costing/costing_libraries
+writing output... [ 58%] reference_guides/core/costing/index
+writing output... [ 58%] reference_guides/core/electrolyte_property_set
+writing output... [ 58%] reference_guides/core/flowsheet_block
+writing output... [ 59%] reference_guides/core/homotopy
+writing output... [ 59%] reference_guides/core/index
+writing output... [ 59%] reference_guides/core/phase
+writing output... [ 59%] reference_guides/core/physical_property_class
+writing output... [ 60%] reference_guides/core/process_block
+writing output... [ 60%] reference_guides/core/property_metadata
+writing output... [ 60%] reference_guides/core/property_set
+writing output... [ 61%] reference_guides/core/reaction_property_class
+writing output... [ 61%] reference_guides/core/solvers
+writing output... [ 61%] reference_guides/core/standard_property_set
+writing output... [ 61%] reference_guides/core/unit_model_block
+writing output... [ 62%] reference_guides/core/uom
+writing output... [ 62%] reference_guides/core/util/diagnostics/degeneracy_hunter
+writing output... [ 62%] reference_guides/core/util/diagnostics/degeneracy_hunter_legacy
+writing output... [ 62%] reference_guides/core/util/diagnostics/diagnostics_toolbox
+writing output... [ 63%] reference_guides/core/util/diagnostics/svd_toolbox
+writing output... [ 63%] reference_guides/core/util/dyn_utils
+writing output... [ 63%] reference_guides/core/util/index
+writing output... [ 63%] reference_guides/core/util/initialization
+writing output... [ 64%] reference_guides/core/util/math
+writing output... [ 64%] reference_guides/core/util/misc
+writing output... [ 64%] reference_guides/core/util/model_diagnostics
+writing output... [ 64%] reference_guides/core/util/model_serializer
+writing output... [ 65%] reference_guides/core/util/model_statistics
+writing output... [ 65%] reference_guides/core/util/phase_equilibria
+writing output... [ 65%] reference_guides/core/util/scaling
+writing output... [ 65%] reference_guides/core/util/tables
+writing output... [ 66%] reference_guides/core/util/tags
+writing output... [ 66%] reference_guides/core/util/utility_minimization
+writing output... [ 66%] reference_guides/core/var_like_expr
+writing output... [ 66%] reference_guides/developer/codereview
+writing output... [ 67%] reference_guides/developer/devsw
+writing output... [ 67%] reference_guides/developer/docker
+writing output... [ 67%] reference_guides/developer/glossary
+writing output... [ 67%] reference_guides/developer/howto
+writing output... [ 68%] reference_guides/developer/index
+writing output... [ 68%] reference_guides/developer/repos
+writing output... [ 68%] reference_guides/developer/standards
+writing output... [ 68%] reference_guides/developer/testing
+writing output... [ 69%] reference_guides/index
+writing output... [ 69%] reference_guides/initialization/bt_initializer
+writing output... [ 69%] reference_guides/initialization/developing_initializers
+writing output... [ 69%] reference_guides/initialization/from_data_initializer
+writing output... [ 70%] reference_guides/initialization/general_initializers
+writing output... [ 70%] reference_guides/initialization/index
+writing output... [ 70%] reference_guides/initialization/single_cv_initializer
+writing output... [ 70%] reference_guides/initialization/specific_initializers
+writing output... [ 71%] reference_guides/logging
+writing output... [ 71%] reference_guides/model_libraries/gas_solid_contactors/flowsheets/dyn_TGA_example
+writing output... [ 71%] reference_guides/model_libraries/gas_solid_contactors/flowsheets/index
+writing output... [ 71%] reference_guides/model_libraries/gas_solid_contactors/flowsheets/ss_BFB_OC_oxidation
+writing output... [ 72%] reference_guides/model_libraries/gas_solid_contactors/flowsheets/ss_BFB_methane_combustion
+writing output... [ 72%] reference_guides/model_libraries/gas_solid_contactors/flowsheets/ss_MB_methane_combustion
+writing output... [ 72%] reference_guides/model_libraries/gas_solid_contactors/index
+writing output... [ 72%] reference_guides/model_libraries/gas_solid_contactors/properties/index
+writing output... [ 73%] reference_guides/model_libraries/gas_solid_contactors/properties/methane_iron_OC_reduction/gas_properties
+writing output... [ 73%] reference_guides/model_libraries/gas_solid_contactors/properties/methane_iron_OC_reduction/heterogeneous_reaction_properties
+writing output... [ 73%] reference_guides/model_libraries/gas_solid_contactors/properties/methane_iron_OC_reduction/index
+writing output... [ 73%] reference_guides/model_libraries/gas_solid_contactors/properties/methane_iron_OC_reduction/solid_properties
+writing output... [ 74%] reference_guides/model_libraries/gas_solid_contactors/properties/oxygen_iron_OC_oxidation/gas_properties
+writing output... [ 74%] reference_guides/model_libraries/gas_solid_contactors/properties/oxygen_iron_OC_oxidation/heterogeneous_reaction_properties
+writing output... [ 74%] reference_guides/model_libraries/gas_solid_contactors/properties/oxygen_iron_OC_oxidation/index
+writing output... [ 74%] reference_guides/model_libraries/gas_solid_contactors/properties/oxygen_iron_OC_oxidation/solid_properties
+writing output... [ 75%] reference_guides/model_libraries/gas_solid_contactors/unit_models/bubbling_fluidized_bed
+writing output... [ 75%] reference_guides/model_libraries/gas_solid_contactors/unit_models/fixed_bed_0D
+writing output... [ 75%] reference_guides/model_libraries/gas_solid_contactors/unit_models/fixed_bed_1D
+writing output... [ 75%] reference_guides/model_libraries/gas_solid_contactors/unit_models/index
+writing output... [ 76%] reference_guides/model_libraries/gas_solid_contactors/unit_models/moving_bed
+writing output... [ 76%] reference_guides/model_libraries/generic/control/index
+writing output... [ 76%] reference_guides/model_libraries/generic/control/pid
+writing output... [ 76%] reference_guides/model_libraries/generic/costing/index
+writing output... [ 77%] reference_guides/model_libraries/generic/costing/process_costing_sslw
+writing output... [ 77%] reference_guides/model_libraries/generic/index
+writing output... [ 77%] reference_guides/model_libraries/generic/property_models/activity_coefficient
+writing output... [ 77%] reference_guides/model_libraries/generic/property_models/helmholtz
+writing output... [ 78%] reference_guides/model_libraries/generic/property_models/helmholtz_expressions
+writing output... [ 78%] reference_guides/model_libraries/generic/property_models/helmholtz_parameters
+writing output... [ 78%] reference_guides/model_libraries/generic/property_models/iapws95
+writing output... [ 78%] reference_guides/model_libraries/generic/property_models/index
+writing output... [ 79%] reference_guides/model_libraries/generic/property_models/interrogator
+writing output... [ 79%] reference_guides/model_libraries/generic/property_models/swco2
+writing output... [ 79%] reference_guides/model_libraries/generic/unit_models/compressor
+writing output... [ 79%] reference_guides/model_libraries/generic/unit_models/cstr
+writing output... [ 80%] reference_guides/model_libraries/generic/unit_models/equilibrium
+writing output... [ 80%] reference_guides/model_libraries/generic/unit_models/feed
+writing output... [ 80%] reference_guides/model_libraries/generic/unit_models/feed_flash
+writing output... [ 81%] reference_guides/model_libraries/generic/unit_models/flash
+writing output... [ 81%] reference_guides/model_libraries/generic/unit_models/gibbs_reactor
+writing output... [ 81%] reference_guides/model_libraries/generic/unit_models/heat_exchanger
+writing output... [ 81%] reference_guides/model_libraries/generic/unit_models/heat_exchanger_1D
+writing output... [ 82%] reference_guides/model_libraries/generic/unit_models/heat_exchanger_lc
+writing output... [ 82%] reference_guides/model_libraries/generic/unit_models/heat_exchanger_ntu
+writing output... [ 82%] reference_guides/model_libraries/generic/unit_models/heater
+writing output... [ 82%] reference_guides/model_libraries/generic/unit_models/index
+writing output... [ 83%] reference_guides/model_libraries/generic/unit_models/mixer
+writing output... [ 83%] reference_guides/model_libraries/generic/unit_models/mscontactor
+writing output... [ 83%] reference_guides/model_libraries/generic/unit_models/pfr
+writing output... [ 83%] reference_guides/model_libraries/generic/unit_models/pressure_changer
+writing output... [ 84%] reference_guides/model_libraries/generic/unit_models/product
+writing output... [ 84%] reference_guides/model_libraries/generic/unit_models/pump
+writing output... [ 84%] reference_guides/model_libraries/generic/unit_models/separator
+writing output... [ 84%] reference_guides/model_libraries/generic/unit_models/shell_and_tube_1d
+writing output... [ 85%] reference_guides/model_libraries/generic/unit_models/skeleton_unit
+writing output... [ 85%] reference_guides/model_libraries/generic/unit_models/solid_liquid/index
+writing output... [ 85%] reference_guides/model_libraries/generic/unit_models/solid_liquid/sl_separator
+writing output... [ 85%] reference_guides/model_libraries/generic/unit_models/solid_liquid/thickener0d
+writing output... [ 86%] reference_guides/model_libraries/generic/unit_models/statejunction
+writing output... [ 86%] reference_guides/model_libraries/generic/unit_models/stoichiometric_reactor
+writing output... [ 86%] reference_guides/model_libraries/generic/unit_models/stream_scaler
+writing output... [ 86%] reference_guides/model_libraries/generic/unit_models/translator
+writing output... [ 87%] reference_guides/model_libraries/generic/unit_models/turbine
+writing output... [ 87%] reference_guides/model_libraries/generic/unit_models/valve
+writing output... [ 87%] reference_guides/model_libraries/index
+writing output... [ 87%] reference_guides/model_libraries/models_extra/index
+writing output... [ 88%] reference_guides/model_libraries/models_extra/membrane_model/1d_membrane
+writing output... [ 88%] reference_guides/model_libraries/models_extra/phe
+writing output... [ 88%] reference_guides/model_libraries/models_extra/temperature_swing_adsorption/fixed_bed_tsa0d
+writing output... [ 88%] reference_guides/model_libraries/power_generation/costing/index
+writing output... [ 89%] reference_guides/model_libraries/power_generation/costing/power_plant_costing_netl
+writing output... [ 89%] reference_guides/model_libraries/power_generation/flowsheets/SCPC_power_plant
+writing output... [ 89%] reference_guides/model_libraries/power_generation/flowsheets/index
+writing output... [ 89%] reference_guides/model_libraries/power_generation/flowsheets/subcritical_power_plant
+writing output... [ 90%] reference_guides/model_libraries/power_generation/index
+writing output... [ 90%] reference_guides/model_libraries/power_generation/properties/flue_gas
+writing output... [ 90%] reference_guides/model_libraries/power_generation/properties/index
+writing output... [ 90%] reference_guides/model_libraries/power_generation/unit_models/boiler_fireside
+writing output... [ 91%] reference_guides/model_libraries/power_generation/unit_models/boiler_heat_exchanger
+writing output... [ 91%] reference_guides/model_libraries/power_generation/unit_models/boiler_heat_exchanger2D
+writing output... [ 91%] reference_guides/model_libraries/power_generation/unit_models/boiler_heat_exchanger_3streams
+writing output... [ 91%] reference_guides/model_libraries/power_generation/unit_models/cross_flow_heat_exchanger_1D
+writing output... [ 92%] reference_guides/model_libraries/power_generation/unit_models/downcomer
+writing output... [ 92%] reference_guides/model_libraries/power_generation/unit_models/drum
+writing output... [ 92%] reference_guides/model_libraries/power_generation/unit_models/drum1D
+writing output... [ 92%] reference_guides/model_libraries/power_generation/unit_models/feedwater_heater_0D
+writing output... [ 93%] reference_guides/model_libraries/power_generation/unit_models/feedwater_heater_0D_dynamic
+writing output... [ 93%] reference_guides/model_libraries/power_generation/unit_models/feedwater_heater_condensing_0D
+writing output... [ 93%] reference_guides/model_libraries/power_generation/unit_models/heater_1D
+writing output... [ 93%] reference_guides/model_libraries/power_generation/unit_models/index
+writing output... [ 94%] reference_guides/model_libraries/power_generation/unit_models/phase_separator
+writing output... [ 94%] reference_guides/model_libraries/power_generation/unit_models/soec_design
+writing output... [ 94%] reference_guides/model_libraries/power_generation/unit_models/steam_valve
+writing output... [ 94%] reference_guides/model_libraries/power_generation/unit_models/steamheater
+writing output... [ 95%] reference_guides/model_libraries/power_generation/unit_models/turbine
+writing output... [ 95%] reference_guides/model_libraries/power_generation/unit_models/turbine_inlet
+writing output... [ 95%] reference_guides/model_libraries/power_generation/unit_models/turbine_multistage
+writing output... [ 95%] reference_guides/model_libraries/power_generation/unit_models/turbine_outlet
+writing output... [ 96%] reference_guides/model_libraries/power_generation/unit_models/turbine_stage
+writing output... [ 96%] reference_guides/model_libraries/power_generation/unit_models/waterpipe
+writing output... [ 96%] reference_guides/model_libraries/power_generation/unit_models/watertank
+writing output... [ 96%] reference_guides/model_libraries/power_generation/unit_models/waterwall
+writing output... [ 97%] reference_guides/scaling/autoscaler
+writing output... [ 97%] reference_guides/scaling/custom_scaler
+writing output... [ 97%] reference_guides/scaling/scaling
+writing output... [ 97%] reference_guides/scaling/scaling_profiler
+writing output... [ 98%] reference_guides/scaling/scaling_utils
+writing output... [ 98%] tutorials/advanced_install/index
+writing output... [ 98%] tutorials/advanced_install/terms_commands
+writing output... [ 98%] tutorials/getting_started/binaries
+writing output... [ 99%] tutorials/getting_started/index
+writing output... [ 99%] tutorials/getting_started/linux
+writing output... [ 99%] tutorials/getting_started/mac_osx
+writing output... [ 99%] tutorials/getting_started/windows
+writing output... [100%] tutorials/index
+writing output... [100%] tutorials/tutorials_examples
+
+generating indices... genindex py-modindex done
+copying linked files... 
+copying notebooks ... [ 25%] build/examples/structfs/flash_flowsheet_nb.ipynb
+copying notebooks ... [ 50%] build/examples/structfs/hda_flowsheet_nb.ipynb
+copying notebooks ... [ 75%] examples/structfs/flash_flowsheet_nb.ipynb
+copying notebooks ... [100%] examples/structfs/hda_flowsheet_nb.ipynb
+
+highlighting module code... [  0%] idaes
+highlighting module code... [  1%] idaes.apps.caprese.nmpc
+highlighting module code... [  1%] idaes.apps.grid_integration.bidder
+highlighting module code... [  1%] idaes.apps.grid_integration.coordinator
+highlighting module code... [  2%] idaes.apps.grid_integration.examples.thermal_generator
+highlighting module code... [  2%] idaes.apps.grid_integration.forecaster
+highlighting module code... [  2%] idaes.apps.grid_integration.model_data
+highlighting module code... [  3%] idaes.apps.grid_integration.multiperiod.multiperiod
+highlighting module code... [  3%] idaes.apps.grid_integration.pricetaker.clustering
+highlighting module code... [  3%] idaes.apps.grid_integration.pricetaker.design_and_operation_models
+highlighting module code... [  3%] idaes.apps.grid_integration.pricetaker.price_taker_model
+highlighting module code... [  4%] idaes.apps.grid_integration.pricetaker.unit_commitment
+highlighting module code... [  4%] idaes.apps.grid_integration.tracker
+highlighting module code... [  4%] idaes.apps.grid_integration.utils
+highlighting module code... [  5%] idaes.apps.matopt.materials.atom
+highlighting module code... [  5%] idaes.apps.matopt.materials.bblock
+highlighting module code... [  5%] idaes.apps.matopt.materials.canvas
+highlighting module code... [  6%] idaes.apps.matopt.materials.design
+highlighting module code... [  6%] idaes.apps.matopt.materials.geometry
+highlighting module code... [  6%] idaes.apps.matopt.materials.lattices.cubic_lattice
+highlighting module code... [  7%] idaes.apps.matopt.materials.lattices.diamond_lattice
+highlighting module code... [  7%] idaes.apps.matopt.materials.lattices.fcc_lattice
+highlighting module code... [  7%] idaes.apps.matopt.materials.lattices.lattice
+highlighting module code... [  8%] idaes.apps.matopt.materials.lattices.perovskite_lattice
+highlighting module code... [  8%] idaes.apps.matopt.materials.lattices.unit_cell_lattice
+highlighting module code... [  8%] idaes.apps.matopt.materials.lattices.wurtzite_lattice
+highlighting module code... [  8%] idaes.apps.matopt.materials.motifs
+highlighting module code... [  9%] idaes.apps.matopt.materials.parsers.CFG
+highlighting module code... [  9%] idaes.apps.matopt.materials.parsers.PDB
+highlighting module code... [  9%] idaes.apps.matopt.materials.parsers.POSCAR
+highlighting module code... [ 10%] idaes.apps.matopt.materials.parsers.XYZ
+highlighting module code... [ 10%] idaes.apps.matopt.materials.tiling
+highlighting module code... [ 10%] idaes.apps.matopt.materials.transform_func
+highlighting module code... [ 11%] idaes.apps.matopt.opt.mat_modeling
+highlighting module code... [ 11%] idaes.apps.matopt.opt.pyomo_modeling
+highlighting module code... [ 11%] idaes.apps.matopt.util.util
+highlighting module code... [ 12%] idaes.apps.nmpc.cost_expressions
+highlighting module code... [ 12%] idaes.apps.nmpc.dynamic_data.interval_data
+highlighting module code... [ 12%] idaes.apps.uncertainty_propagation.uncertainties
+highlighting module code... [ 13%] idaes.beta
+highlighting module code... [ 13%] idaes.commands.base
+highlighting module code... [ 13%] idaes.commands.extensions
+highlighting module code... [ 14%] idaes.commands.util.download_bin
+highlighting module code... [ 14%] idaes.config
+highlighting module code... [ 14%] idaes.conftest
+highlighting module code... [ 14%] idaes.core.base.components
+highlighting module code... [ 15%] idaes.core.base.control_volume0d
+highlighting module code... [ 15%] idaes.core.base.control_volume1d
+highlighting module code... [ 15%] idaes.core.base.control_volume_base
+highlighting module code... [ 16%] idaes.core.base.costing_base
+highlighting module code... [ 16%] idaes.core.base.extended_control_volume0d
+highlighting module code... [ 16%] idaes.core.base.extended_control_volume1d
+highlighting module code... [ 17%] idaes.core.base.flowsheet_model
+highlighting module code... [ 17%] idaes.core.base.phases
+highlighting module code... [ 17%] idaes.core.base.process_base
+highlighting module code... [ 18%] idaes.core.base.process_block
+highlighting module code... [ 18%] idaes.core.base.property_base
+highlighting module code... [ 18%] idaes.core.base.property_meta
+highlighting module code... [ 19%] idaes.core.base.property_set
+highlighting module code... [ 19%] idaes.core.base.reaction_base
+highlighting module code... [ 19%] idaes.core.base.unit_model
+highlighting module code... [ 19%] idaes.core.base.util
+highlighting module code... [ 20%] idaes.core.base.var_like_expression
+highlighting module code... [ 20%] idaes.core.initialization.block_triangularization
+highlighting module code... [ 20%] idaes.core.initialization.general_hierarchical
+highlighting module code... [ 21%] idaes.core.initialization.initialize_from_data
+highlighting module code... [ 21%] idaes.core.initialization.initializer_base
+highlighting module code... [ 21%] idaes.core.plugins.simple_equality_eliminator
+highlighting module code... [ 22%] idaes.core.plugins.variable_replace
+highlighting module code... [ 22%] idaes.core.scaling.autoscaling
+highlighting module code... [ 22%] idaes.core.scaling.custom_scaler_base
+highlighting module code... [ 23%] idaes.core.scaling.scaler_profiling
+highlighting module code... [ 23%] idaes.core.scaling.scaling_base
+highlighting module code... [ 23%] idaes.core.scaling.util
+highlighting module code... [ 24%] idaes.core.solvers.config
+highlighting module code... [ 24%] idaes.core.solvers.features
+highlighting module code... [ 24%] idaes.core.solvers.get_solver
+highlighting module code... [ 25%] idaes.core.solvers.homotopy
+highlighting module code... [ 25%] idaes.core.solvers.ipopt_l1
+highlighting module code... [ 25%] idaes.core.solvers.petsc
+highlighting module code... [ 25%] idaes.core.surrogate.alamopy
+highlighting module code... [ 26%] idaes.core.surrogate.base.surrogate_base
+highlighting module code... [ 26%] idaes.core.surrogate.keras_surrogate
+highlighting module code... [ 26%] idaes.core.surrogate.metrics
+highlighting module code... [ 27%] idaes.core.surrogate.omlt_base_surrogate_class
+highlighting module code... [ 27%] idaes.core.surrogate.onnx_surrogate
+highlighting module code... [ 27%] idaes.core.surrogate.plotting.sm_plotter
+highlighting module code... [ 28%] idaes.core.surrogate.pysmo.kriging
+highlighting module code... [ 28%] idaes.core.surrogate.pysmo.polynomial_regression
+highlighting module code... [ 28%] idaes.core.surrogate.pysmo.radial_basis_function
+highlighting module code... [ 29%] idaes.core.surrogate.pysmo.sampling
+highlighting module code... [ 29%] idaes.core.surrogate.pysmo.utils
+highlighting module code... [ 29%] idaes.core.surrogate.pysmo_surrogate
+highlighting module code... [ 30%] idaes.core.surrogate.sampling.data_utils
+highlighting module code... [ 30%] idaes.core.surrogate.sampling.scaling
+highlighting module code... [ 30%] idaes.core.surrogate.surrogate_block
+highlighting module code... [ 31%] idaes.core.util.config
+highlighting module code... [ 31%] idaes.core.util.constants
+highlighting module code... [ 31%] idaes.core.util.convergence.convergence_base
+highlighting module code... [ 31%] idaes.core.util.convergence.mpi_utils
+highlighting module code... [ 32%] idaes.core.util.dyn_utils
+highlighting module code... [ 32%] idaes.core.util.env_info
+highlighting module code... [ 32%] idaes.core.util.exceptions
+highlighting module code... [ 33%] idaes.core.util.expr_doc
+highlighting module code... [ 33%] idaes.core.util.functions
+highlighting module code... [ 33%] idaes.core.util.initialization
+highlighting module code... [ 34%] idaes.core.util.math
+highlighting module code... [ 34%] idaes.core.util.misc
+highlighting module code... [ 34%] idaes.core.util.model_diagnostics
+highlighting module code... [ 35%] idaes.core.util.model_serializer
+highlighting module code... [ 35%] idaes.core.util.model_statistics
+highlighting module code... [ 35%] idaes.core.util.parameter_sweep
+highlighting module code... [ 36%] idaes.core.util.performance
+highlighting module code... [ 36%] idaes.core.util.phase_equilibria
+highlighting module code... [ 36%] idaes.core.util.plot
+highlighting module code... [ 36%] idaes.core.util.scaling
+highlighting module code... [ 37%] idaes.core.util.structfs.fsrunner
+highlighting module code... [ 37%] idaes.core.util.structfs.logutil
+highlighting module code... [ 37%] idaes.core.util.structfs.runner
+highlighting module code... [ 38%] idaes.core.util.structfs.runner_actions
+highlighting module code... [ 38%] idaes.core.util.tables
+highlighting module code... [ 38%] idaes.core.util.tags
+highlighting module code... [ 39%] idaes.core.util.testing
+highlighting module code... [ 39%] idaes.core.util.units_of_measurement
+highlighting module code... [ 39%] idaes.core.util.utility_minimization
+highlighting module code... [ 40%] idaes.logger
+highlighting module code... [ 40%] idaes.models.control.controller
+highlighting module code... [ 40%] idaes.models.costing.SSLW
+highlighting module code... [ 41%] idaes.models.flowsheets.demo_flowsheet
+highlighting module code... [ 41%] idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE
+highlighting module code... [ 41%] idaes.models.properties.activity_coeff_models.activity_coeff_prop_pack
+highlighting module code... [ 42%] idaes.models.properties.activity_coeff_models.methane_combustion_ideal
+highlighting module code... [ 42%] idaes.models.properties.examples.saponification_reactions
+highlighting module code... [ 42%] idaes.models.properties.examples.saponification_thermo
+highlighting module code... [ 42%] idaes.models.properties.general_helmholtz.components.parameters
+highlighting module code... [ 43%] idaes.models.properties.general_helmholtz.components.parameters.butane
+highlighting module code... [ 43%] idaes.models.properties.general_helmholtz.components.parameters.co2
+highlighting module code... [ 43%] idaes.models.properties.general_helmholtz.components.parameters.h2o
+highlighting module code... [ 44%] idaes.models.properties.general_helmholtz.components.parameters.isobutane
+highlighting module code... [ 44%] idaes.models.properties.general_helmholtz.components.parameters.propane
+highlighting module code... [ 44%] idaes.models.properties.general_helmholtz.components.parameters.r1234ze
+highlighting module code... [ 45%] idaes.models.properties.general_helmholtz.components.parameters.r125
+highlighting module code... [ 45%] idaes.models.properties.general_helmholtz.components.parameters.r134a
+highlighting module code... [ 45%] idaes.models.properties.general_helmholtz.components.parameters.r227ea
+highlighting module code... [ 46%] idaes.models.properties.general_helmholtz.components.parameters.r32
+highlighting module code... [ 46%] idaes.models.properties.general_helmholtz.components.registry
+highlighting module code... [ 46%] idaes.models.properties.general_helmholtz.expressions.phi_ideal_type01
+highlighting module code... [ 47%] idaes.models.properties.general_helmholtz.expressions.phi_ideal_type02
+highlighting module code... [ 47%] idaes.models.properties.general_helmholtz.expressions.phi_ideal_type03
+highlighting module code... [ 47%] idaes.models.properties.general_helmholtz.expressions.phi_residual_type01
+highlighting module code... [ 47%] idaes.models.properties.general_helmholtz.expressions.phi_residual_type02
+highlighting module code... [ 48%] idaes.models.properties.general_helmholtz.expressions.phi_residual_type03
+highlighting module code... [ 48%] idaes.models.properties.general_helmholtz.expressions.phi_residual_type04
+highlighting module code... [ 48%] idaes.models.properties.general_helmholtz.expressions.sat_delta_approx
+highlighting module code... [ 49%] idaes.models.properties.general_helmholtz.expressions.surface_tension_type01
+highlighting module code... [ 49%] idaes.models.properties.general_helmholtz.helmholtz_functions
+highlighting module code... [ 49%] idaes.models.properties.general_helmholtz.helmholtz_parameters
+highlighting module code... [ 50%] idaes.models.properties.general_helmholtz.helmholtz_state
+highlighting module code... [ 50%] idaes.models.properties.iapws95
+highlighting module code... [ 50%] idaes.models.properties.interrogator.properties_interrogator
+highlighting module code... [ 51%] idaes.models.properties.interrogator.reactions_interrogator
+highlighting module code... [ 51%] idaes.models.properties.modular_properties.base.generic_property
+highlighting module code... [ 51%] idaes.models.properties.modular_properties.base.generic_reaction
+highlighting module code... [ 52%] idaes.models.properties.modular_properties.base.utility
+highlighting module code... [ 52%] idaes.models.properties.modular_properties.coolprop.coolprop_forms
+highlighting module code... [ 52%] idaes.models.properties.modular_properties.coolprop.coolprop_wrapper
+highlighting module code... [ 53%] idaes.models.properties.modular_properties.eos.ceos
+highlighting module code... [ 53%] idaes.models.properties.modular_properties.eos.ceos_common
+highlighting module code... [ 53%] idaes.models.properties.modular_properties.eos.enrtl
+highlighting module code... [ 53%] idaes.models.properties.modular_properties.eos.enrtl_parameters
+highlighting module code... [ 54%] idaes.models.properties.modular_properties.eos.enrtl_reference_states
+highlighting module code... [ 54%] idaes.models.properties.modular_properties.eos.eos_base
+highlighting module code... [ 54%] idaes.models.properties.modular_properties.eos.ideal
+highlighting module code... [ 55%] idaes.models.properties.modular_properties.examples.enrtl_H2O_NaCl_KCl
+highlighting module code... [ 55%] idaes.models.properties.modular_properties.examples.enrtl_NaBr_mixed_solvent
+highlighting module code... [ 55%] idaes.models.properties.modular_properties.phase_equil.bubble_dew
+highlighting module code... [ 56%] idaes.models.properties.modular_properties.phase_equil.forms
+highlighting module code... [ 56%] idaes.models.properties.modular_properties.phase_equil.henry
+highlighting module code... [ 56%] idaes.models.properties.modular_properties.phase_equil.smooth_VLE
+highlighting module code... [ 57%] idaes.models.properties.modular_properties.phase_equil.smooth_VLE_2
+highlighting module code... [ 57%] idaes.models.properties.modular_properties.pure.ChapmanEnskog
+highlighting module code... [ 57%] idaes.models.properties.modular_properties.pure.ChungPure
+highlighting module code... [ 58%] idaes.models.properties.modular_properties.pure.ConstantProperties
+highlighting module code... [ 58%] idaes.models.properties.modular_properties.pure.Eucken
+highlighting module code... [ 58%] idaes.models.properties.modular_properties.pure.NIST
+highlighting module code... [ 58%] idaes.models.properties.modular_properties.pure.Perrys
+highlighting module code... [ 59%] idaes.models.properties.modular_properties.pure.RPP3
+highlighting module code... [ 59%] idaes.models.properties.modular_properties.pure.RPP4
+highlighting module code... [ 59%] idaes.models.properties.modular_properties.pure.RPP5
+highlighting module code... [ 60%] idaes.models.properties.modular_properties.pure.electrolyte
+highlighting module code... [ 60%] idaes.models.properties.modular_properties.reactions.dh_rxn
+highlighting module code... [ 60%] idaes.models.properties.modular_properties.reactions.equilibrium_constant
+highlighting module code... [ 61%] idaes.models.properties.modular_properties.reactions.equilibrium_forms
+highlighting module code... [ 61%] idaes.models.properties.modular_properties.reactions.rate_constant
+highlighting module code... [ 61%] idaes.models.properties.modular_properties.reactions.rate_forms
+highlighting module code... [ 62%] idaes.models.properties.modular_properties.state_definitions.FPhx
+highlighting module code... [ 62%] idaes.models.properties.modular_properties.state_definitions.FTPx
+highlighting module code... [ 62%] idaes.models.properties.modular_properties.state_definitions.FcPh
+highlighting module code... [ 63%] idaes.models.properties.modular_properties.state_definitions.FcTP
+highlighting module code... [ 63%] idaes.models.properties.modular_properties.state_definitions.FpcTP
+highlighting module code... [ 63%] idaes.models.properties.modular_properties.state_definitions.electrolyte_states
+highlighting module code... [ 64%] idaes.models.properties.modular_properties.transport_properties.no_method
+highlighting module code... [ 64%] idaes.models.properties.modular_properties.transport_properties.thermal_conductivity_wms
+highlighting module code... [ 64%] idaes.models.properties.modular_properties.transport_properties.viscosity_wilke
+highlighting module code... [ 64%] idaes.models.properties.swco2
+highlighting module code... [ 65%] idaes.models.unit_models.cstr
+highlighting module code... [ 65%] idaes.models.unit_models.equilibrium_reactor
+highlighting module code... [ 65%] idaes.models.unit_models.feed
+highlighting module code... [ 66%] idaes.models.unit_models.feed_flash
+highlighting module code... [ 66%] idaes.models.unit_models.flash
+highlighting module code... [ 66%] idaes.models.unit_models.gibbs_reactor
+highlighting module code... [ 67%] idaes.models.unit_models.heat_exchanger
+highlighting module code... [ 67%] idaes.models.unit_models.heat_exchanger_1D
+highlighting module code... [ 67%] idaes.models.unit_models.heat_exchanger_lc
+highlighting module code... [ 68%] idaes.models.unit_models.heat_exchanger_ntu
+highlighting module code... [ 68%] idaes.models.unit_models.heater
+highlighting module code... [ 68%] idaes.models.unit_models.mixer
+highlighting module code... [ 69%] idaes.models.unit_models.mscontactor
+highlighting module code... [ 69%] idaes.models.unit_models.plug_flow_reactor
+highlighting module code... [ 69%] idaes.models.unit_models.pressure_changer
+highlighting module code... [ 69%] idaes.models.unit_models.product
+highlighting module code... [ 70%] idaes.models.unit_models.separator
+highlighting module code... [ 70%] idaes.models.unit_models.shell_and_tube_1d
+highlighting module code... [ 70%] idaes.models.unit_models.skeleton_model
+highlighting module code... [ 71%] idaes.models.unit_models.solid_liquid.sl_separator
+highlighting module code... [ 71%] idaes.models.unit_models.solid_liquid.thickener
+highlighting module code... [ 71%] idaes.models.unit_models.statejunction
+highlighting module code... [ 72%] idaes.models.unit_models.stoichiometric_reactor
+highlighting module code... [ 72%] idaes.models.unit_models.stream_scaler
+highlighting module code... [ 72%] idaes.models.unit_models.translator
+highlighting module code... [ 73%] idaes.models.unit_models.valve
+highlighting module code... [ 73%] idaes.models_extra.co2_capture_and_utilization.unit_models.membrane_1d
+highlighting module code... [ 73%] idaes.models_extra.column_models.MEAsolvent_column
+highlighting module code... [ 74%] idaes.models_extra.column_models.condenser
+highlighting module code... [ 74%] idaes.models_extra.column_models.enhancement_factor_model_pseudo_second_order_explicit
+highlighting module code... [ 74%] idaes.models_extra.column_models.plate_heat_exchanger
+highlighting module code... [ 75%] idaes.models_extra.column_models.properties.MEA_solvent
+highlighting module code... [ 75%] idaes.models_extra.column_models.properties.MEA_vapor
+highlighting module code... [ 75%] idaes.models_extra.column_models.reboiler
+highlighting module code... [ 75%] idaes.models_extra.column_models.solvent_column
+highlighting module code... [ 76%] idaes.models_extra.column_models.solvent_condenser
+highlighting module code... [ 76%] idaes.models_extra.column_models.solvent_reboiler
+highlighting module code... [ 76%] idaes.models_extra.column_models.tray
+highlighting module code... [ 77%] idaes.models_extra.column_models.tray_column
+highlighting module code... [ 77%] idaes.models_extra.column_models.util
+highlighting module code... [ 77%] idaes.models_extra.gas_distribution.properties.natural_gas
+highlighting module code... [ 78%] idaes.models_extra.gas_distribution.unit_models.compressor
+highlighting module code... [ 78%] idaes.models_extra.gas_distribution.unit_models.node
+highlighting module code... [ 78%] idaes.models_extra.gas_distribution.unit_models.pipeline
+highlighting module code... [ 79%] idaes.models_extra.gas_solid_contactors.flowsheets.dyn_TGA_example
+highlighting module code... [ 79%] idaes.models_extra.gas_solid_contactors.flowsheets.ss_BFB_OC_oxidation
+highlighting module code... [ 79%] idaes.models_extra.gas_solid_contactors.flowsheets.ss_BFB_methane_combustion
+highlighting module code... [ 80%] idaes.models_extra.gas_solid_contactors.flowsheets.ss_MB_methane_combustion
+highlighting module code... [ 80%] idaes.models_extra.gas_solid_contactors.properties.methane_iron_OC_reduction.gas_phase_thermo
+highlighting module code... [ 80%] idaes.models_extra.gas_solid_contactors.properties.methane_iron_OC_reduction.hetero_reactions
+highlighting module code... [ 81%] idaes.models_extra.gas_solid_contactors.properties.methane_iron_OC_reduction.solid_phase_thermo
+highlighting module code... [ 81%] idaes.models_extra.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.gas_phase_thermo
+highlighting module code... [ 81%] idaes.models_extra.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.hetero_reactions
+highlighting module code... [ 81%] idaes.models_extra.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.solid_phase_thermo
+highlighting module code... [ 82%] idaes.models_extra.gas_solid_contactors.unit_models.bubbling_fluidized_bed
+highlighting module code... [ 82%] idaes.models_extra.gas_solid_contactors.unit_models.fixed_bed_0D
+highlighting module code... [ 82%] idaes.models_extra.gas_solid_contactors.unit_models.fixed_bed_1D
+highlighting module code... [ 83%] idaes.models_extra.gas_solid_contactors.unit_models.moving_bed
+highlighting module code... [ 83%] idaes.models_extra.power_generation.costing.costing_dictionaries
+highlighting module code... [ 83%] idaes.models_extra.power_generation.costing.generic_ccs_capcost_custom_dict
+highlighting module code... [ 84%] idaes.models_extra.power_generation.costing.power_plant_capcost
+highlighting module code... [ 84%] idaes.models_extra.power_generation.flowsheets.subcritical_power_plant.steam_cycle_flowsheet
+highlighting module code... [ 84%] idaes.models_extra.power_generation.flowsheets.subcritical_power_plant.subcritical_boiler
+highlighting module code... [ 85%] idaes.models_extra.power_generation.flowsheets.subcritical_power_plant.subcritical_boiler_flowsheet
+highlighting module code... [ 85%] idaes.models_extra.power_generation.flowsheets.subcritical_power_plant.subcritical_power_plant
+highlighting module code... [ 85%] idaes.models_extra.power_generation.flowsheets.supercritical_power_plant.SCPC_full_plant
+highlighting module code... [ 86%] idaes.models_extra.power_generation.flowsheets.supercritical_power_plant.boiler_subflowsheet_build
+highlighting module code... [ 86%] idaes.models_extra.power_generation.flowsheets.supercritical_steam_cycle.supercritical_steam_cycle
+highlighting module code... [ 86%] idaes.models_extra.power_generation.properties.flue_gas_ideal
+highlighting module code... [ 86%] idaes.models_extra.power_generation.properties.natural_gas_PR
+highlighting module code... [ 87%] idaes.models_extra.power_generation.unit_models.balance
+highlighting module code... [ 87%] idaes.models_extra.power_generation.unit_models.boiler_fireside
+highlighting module code... [ 87%] idaes.models_extra.power_generation.unit_models.boiler_heat_exchanger
+highlighting module code... [ 88%] idaes.models_extra.power_generation.unit_models.boiler_heat_exchanger_2D
+highlighting module code... [ 88%] idaes.models_extra.power_generation.unit_models.cpu
+highlighting module code... [ 88%] idaes.models_extra.power_generation.unit_models.cross_flow_heat_exchanger_1D
+highlighting module code... [ 89%] idaes.models_extra.power_generation.unit_models.downcomer
+highlighting module code... [ 89%] idaes.models_extra.power_generation.unit_models.drum
+highlighting module code... [ 89%] idaes.models_extra.power_generation.unit_models.drum1D
+highlighting module code... [ 90%] idaes.models_extra.power_generation.unit_models.feedwater_heater_0D
+highlighting module code... [ 90%] idaes.models_extra.power_generation.unit_models.feedwater_heater_0D_dynamic
+highlighting module code... [ 90%] idaes.models_extra.power_generation.unit_models.heat_exchanger_3streams
+highlighting module code... [ 91%] idaes.models_extra.power_generation.unit_models.heat_exchanger_common
+highlighting module code... [ 91%] idaes.models_extra.power_generation.unit_models.heater_1D
+highlighting module code... [ 91%] idaes.models_extra.power_generation.unit_models.helm.compressor
+highlighting module code... [ 92%] idaes.models_extra.power_generation.unit_models.helm.condenser_ntu
+highlighting module code... [ 92%] idaes.models_extra.power_generation.unit_models.helm.mixer
+highlighting module code... [ 92%] idaes.models_extra.power_generation.unit_models.helm.phase_separator
+highlighting module code... [ 92%] idaes.models_extra.power_generation.unit_models.helm.pump
+highlighting module code... [ 93%] idaes.models_extra.power_generation.unit_models.helm.splitter
+highlighting module code... [ 93%] idaes.models_extra.power_generation.unit_models.helm.turbine
+highlighting module code... [ 93%] idaes.models_extra.power_generation.unit_models.helm.turbine_inlet
+highlighting module code... [ 94%] idaes.models_extra.power_generation.unit_models.helm.turbine_multistage
+highlighting module code... [ 94%] idaes.models_extra.power_generation.unit_models.helm.turbine_outlet
+highlighting module code... [ 94%] idaes.models_extra.power_generation.unit_models.helm.turbine_stage
+highlighting module code... [ 95%] idaes.models_extra.power_generation.unit_models.helm.valve_steam
+highlighting module code... [ 95%] idaes.models_extra.power_generation.unit_models.soc_submodels.channel
+highlighting module code... [ 95%] idaes.models_extra.power_generation.unit_models.soc_submodels.common
+highlighting module code... [ 96%] idaes.models_extra.power_generation.unit_models.soc_submodels.conductive_slab
+highlighting module code... [ 96%] idaes.models_extra.power_generation.unit_models.soc_submodels.contact_resistor
+highlighting module code... [ 96%] idaes.models_extra.power_generation.unit_models.soc_submodels.porous_conductive_slab
+highlighting module code... [ 97%] idaes.models_extra.power_generation.unit_models.soc_submodels.solid_oxide_cell
+highlighting module code... [ 97%] idaes.models_extra.power_generation.unit_models.soc_submodels.solid_oxide_module_simple
+highlighting module code... [ 97%] idaes.models_extra.power_generation.unit_models.soc_submodels.triple_phase_boundary
+highlighting module code... [ 97%] idaes.models_extra.power_generation.unit_models.soec_design
+highlighting module code... [ 98%] idaes.models_extra.power_generation.unit_models.steamheater
+highlighting module code... [ 98%] idaes.models_extra.power_generation.unit_models.waterpipe
+highlighting module code... [ 98%] idaes.models_extra.power_generation.unit_models.watertank
+highlighting module code... [ 99%] idaes.models_extra.power_generation.unit_models.waterwall_section
+highlighting module code... [ 99%] idaes.models_extra.temperature_swing_adsorption.fixed_bed_tsa0d
+highlighting module code... [ 99%] idaes.models_extra.temperature_swing_adsorption.fixed_bed_tsa0d_ui
+highlighting module code... [100%] idaes.models_extra.temperature_swing_adsorption.initializer
+highlighting module code... [100%] idaes.models_extra.temperature_swing_adsorption.util
+
+writing additional pages... search done
+copying images... [  2%] images/IDAES-IP.png
+copying images... [  4%] images/IDAES_structure.png
+copying images... [  6%] explanations/model_diagnostics/diagnostics_workflow.png
+copying images... [  8%] images/logocappresse-01.png
+copying images... [  9%] images/pysmo-logo.png
+copying images... [ 11%] images/omlt-keras-logo.png
+copying images... [ 13%] images/matopt_logo_full.png
+copying images... [ 15%] images/surrparity.png
+copying images... [ 17%] images/institution_logos/netl.png
+copying images... [ 19%] images/institution_logos/lbnl.jpg
+copying images... [ 21%] images/institution_logos/snl.png
+copying images... [ 23%] images/institution_logos/cmu.png
+copying images... [ 25%] images/institution_logos/wvu.png
+copying images... [ 26%] images/institution_logos/und.png
+copying images... [ 28%] images/institution_logos/gatech.png
+copying images... [ 30%] images/institution_logos/doe.jpg
+copying images... [ 32%] reference_guides/apps/grid_integration/images/example_bid.png
+copying images... [ 34%] reference_guides/apps/grid_integration/images/implementation.png
+copying images... [ 36%] reference_guides/apps/grid_integration/images/framework.png
+copying images... [ 38%] reference_guides/apps/grid_integration/images/tracking_example.png
+copying images... [ 40%] reference_guides/apps/grid_integration/multiperiod/images/pricetaker.png
+copying images... [ 42%] reference_guides/apps/grid_integration/multiperiod/images/hybrid_energy_system.png
+copying images... [ 43%] images/sw-overview-workflow.png
+copying images... [ 45%] images/github-fork-repo.png
+copying images... [ 47%] images/sw-init-workflow.png
+copying images... [ 49%] images/github-issue-priority.png
+copying images... [ 51%] images/github-start-pullrequest.png
+copying images... [ 53%] images/sw-dev-workflow.png
+copying images... [ 55%] images/sw-collaborate-workflow.png
+copying images... [ 57%] images/beer-coffee-cheers-small.png
+copying images... [ 58%] images/testing-conceptual.png
+copying images... [ 60%] reference_guides/model_libraries/models_extra/phe_a.png
+copying images... [ 62%] reference_guides/model_libraries/models_extra/phe_b.png
+copying images... [ 64%] reference_guides/model_libraries/models_extra/temperature_swing_adsorption/tsa_cycle.png
+copying images... [ 66%] reference_guides/model_libraries/models_extra/temperature_swing_adsorption/TSA_IDAES_Implementation.png
+copying images... [ 68%] reference_guides/model_libraries/power_generation/flowsheets/Boiler_scpc_PFD.png
+copying images... [ 70%] reference_guides/model_libraries/power_generation/flowsheets/subcr_pc_PFD.png
+copying images... [ 72%] reference_guides/model_libraries/power_generation/flowsheets/drum_controller.png
+copying images... [ 74%] reference_guides/model_libraries/power_generation/flowsheets/coordinated_control.png
+copying images... [ 75%] reference_guides/model_libraries/power_generation/flowsheets/power_demand.png
+copying images... [ 77%] reference_guides/model_libraries/power_generation/flowsheets/coal_flowrate.png
+copying images... [ 79%] reference_guides/model_libraries/power_generation/unit_models/boilerfireside.png
+copying images... [ 81%] reference_guides/model_libraries/power_generation/unit_models/tube_arrangement.png
+copying images... [ 83%] reference_guides/model_libraries/power_generation/unit_models/boiler2D_1.png
+copying images... [ 85%] reference_guides/model_libraries/power_generation/unit_models/boiler2D_2.png
+copying images... [ 87%] reference_guides/model_libraries/power_generation/unit_models/drum_1.png
+copying images... [ 89%] reference_guides/model_libraries/power_generation/unit_models/drum1D_1.png
+copying images... [ 91%] reference_guides/model_libraries/power_generation/unit_models/drum1D_2.png
+copying images... [ 92%] reference_guides/model_libraries/power_generation/unit_models/feedwater_heater_0D.svg
+copying images... [ 94%] reference_guides/model_libraries/power_generation/unit_models/turbine_multistage.svg
+copying images... [ 96%] reference_guides/model_libraries/power_generation/unit_models/waterwall_1.png
+copying images... [ 98%] reference_guides/model_libraries/power_generation/unit_models/waterwall_2.png
+copying images... [100%] images/github-fork-repo_pse.png
+
+dumping search index in English (code: en)... done
+dumping object inventory... done
+build succeeded, 1261 warnings.
+
+The HTML pages are in build.

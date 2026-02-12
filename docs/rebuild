@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+rm -f apidoc/*
+sphinx-apidoc -o apidoc ../idaes "../idaes/**/tests"
+rm build/html/examples/structfs/flash_flowsheet_nb.ipynb
+rm build/html/examples/structfs/hda_flowsheet_nb.ipynb
+rm -rf build/doctrees/nbsphinx/ build/html/build
+sphinx-build -w sphinx-warn.txt . build > sphinx-out.txt 2> sphinx-err.txt &
+echo "Sphinx process = $?"
+echo ""
+echo "Warnings in sphinx-warn.txt"
+echo "Errors  in sphinx-err.txt"
+echo "Output in sphinx-out.txt"
+echo ""
+sleep 1
+echo "Tailing sphinx-out.txt:"
+echo ""
+tail -f sphinx-out.txt
