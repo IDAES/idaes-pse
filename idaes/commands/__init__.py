@@ -14,6 +14,8 @@
 # pylint: disable=missing-module-docstring
 
 import time
+import sys
+import importlib.util
 
 # Need to time imports, so must start timer before importing
 # pylint: disable=wrong-import-position
@@ -34,7 +36,10 @@ for finder, dotted_module_name, is_pkg in pkgutil.walk_packages(__path__):
         pass
     else:
         try:
-            finder.find_spec(module_name).loader.load_module(module_name)
+            spec = finder.find_spec(module_name)
+            module = importlib.util.module_from_spec(spec)
+            sys.modules[module_name] = module
+            spec.loader.exec_module(module)
         except ModuleNotFoundError:
             click.echo(
                 f"Could not import commands from {module_name}. Perhaps a dependency is missing."
