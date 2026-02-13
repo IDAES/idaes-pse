@@ -32,6 +32,10 @@
   - ```{autodoc2-docstring} structfs.runner_actions.ModelVariables
     :summary:
     ```
+* - {py:obj}`MermaidDiagram <structfs.runner_actions.MermaidDiagram>`
+  - ```{autodoc2-docstring} structfs.runner_actions.MermaidDiagram
+    :summary:
+    ```
 ````
 
 ### Data
@@ -504,6 +508,64 @@ Bases: {py:obj}`pydantic.BaseModel`
 :noindex:
 
 ```{autodoc2-docstring} structfs.runner_actions.ModelVariables.report
+```
+
+````
+
+``````
+
+``````{py:class} MermaidDiagram
+:canonical: structfs.runner_actions.MermaidDiagram
+:noindex:
+
+Bases: {py:obj}`structfs.runner.Action`
+
+```{autodoc2-docstring} structfs.runner_actions.MermaidDiagram
+```
+
+`````{py:class} Report(/, **data: typing.Any)
+:canonical: structfs.runner_actions.MermaidDiagram.Report
+:noindex:
+
+Bases: {py:obj}`pydantic.BaseModel`
+
+```{autodoc2-docstring} structfs.runner_actions.MermaidDiagram.Report
+```
+
+```{rubric} Initialization
+```
+
+```{autodoc2-docstring} structfs.runner_actions.MermaidDiagram.Report.__init__
+```
+
+````{py:attribute} diagram
+:canonical: structfs.runner_actions.MermaidDiagram.Report.diagram
+:noindex:
+:type: list[str]
+:value: >
+   None
+
+```{autodoc2-docstring} structfs.runner_actions.MermaidDiagram.Report.diagram
+```
+
+````
+
+`````
+
+````{py:method} after_run()
+:canonical: structfs.runner_actions.MermaidDiagram.after_run
+:noindex:
+
+```{autodoc2-docstring} structfs.runner_actions.MermaidDiagram.after_run
+```
+
+````
+
+````{py:method} report() -> Report
+:canonical: structfs.runner_actions.MermaidDiagram.report
+:noindex:
+
+```{autodoc2-docstring} structfs.runner_actions.MermaidDiagram.report
 ```
 
 ````
