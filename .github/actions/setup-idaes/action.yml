@@ -57,9 +57,10 @@ runs:
           fi
         fi
 
-        echo '::group::List IDAES binaries directory'
-        ls -l "$(idaes bin-directory)"
         echo '::group::Output of test commands for IDAES binaries'
+        echo 'List IDAES binaries directory'
+        ls -l "$(idaes bin-directory)"
+        echo 'Try to run ipopt'
         "$(idaes bin-directory)"/ipopt -v
         echo '::endgroup::'
     - name: Install AMPL SCIP (${{ inputs.ampl-scip-pip-target }})
