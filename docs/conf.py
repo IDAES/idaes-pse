@@ -69,7 +69,11 @@ templates_path = ["_templates"]
 # You can specify multiple suffix as a list of string:
 #
 # source_suffix = ['.rst', '.md']
-source_suffix = [".rst", ".md"]
+source_suffix = {
+    ".rst": "restructuredtext",
+    ".md": "markdown",
+}
+
 # The encoding of source files.
 #
 # source_encoding = 'utf-8-sig'
@@ -105,6 +109,10 @@ language = "en"
 exclude_patterns = [
     "apidoc/*tests*",
     "../idaes/core/util/structfs",
+    "build",
+    "build/**",
+    "_build",
+    "_build/**",
 ]
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
@@ -159,6 +167,10 @@ intersphinx_mapping = {
     # add links to Pyomo
     "pyomo": ("https://pyomo.readthedocs.io/en/stable/", None),
 }
+
+# nbsphinx notebook execution
+nbsphinx_execute = "auto"
+
 
 # -- Options for HTML output ----------------------------------------------
 
