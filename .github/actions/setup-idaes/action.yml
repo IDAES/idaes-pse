@@ -57,6 +57,8 @@ runs:
           fi
         fi
 
+        echo '::group::List IDAES binaries directory'
+        ls -l "$(idaes bin-directory)"
         echo '::group::Output of test commands for IDAES binaries'
         "$(idaes bin-directory)"/ipopt -v
         echo '::endgroup::'
