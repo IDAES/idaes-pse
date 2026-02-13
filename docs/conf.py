@@ -169,6 +169,7 @@ intersphinx_mapping = {
 }
 
 # nbsphinx notebook execution
+# other options are "never" and "always"
 nbsphinx_execute = "auto"
 
 
