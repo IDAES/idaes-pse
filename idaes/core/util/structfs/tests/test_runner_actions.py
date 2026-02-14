@@ -16,7 +16,7 @@ import time
 import pytest
 from pytest import approx
 from .. import runner
-from ..runner_actions import Timer, UnitDofChecker
+from ..runner_actions import Timer, UnitDofChecker, MermaidDiagram
 from . import flash_flowsheet
 
 
@@ -182,7 +182,6 @@ def test_dof_report():
     rn.add_action("dof", UnitDofChecker, "fs", check_steps)
     rn.run_steps()
     report = rn.get_action("dof").report()
-    print(f"@@ REPORT:\n{report}")
     assert report
     report_data = report.model_dump()
     assert report_data["model"] == 0  # model has DOF=0
@@ -190,3 +189,19 @@ def test_dof_report():
         assert step_name in report_data["steps"]
         for unit, value in report_data["steps"][step_name].items():
             assert value >= 0  # DOF > 0 in all (step, unit)
+
+
+@pytest.mark.unit
+def test_mermaid_report():
+    rn = flash_flowsheet.FS
+    rn.reset()
+    rn.add_action("diagram", MermaidDiagram, "fs")
+    rn.run_steps()
+    action = rn.get_action("diagram")
+    report = action.report()
+    if action.diagram is None:
+        print("Connectivity not installed")
+        assert report == {}
+    else:
+        print("Connectivity IS installed")
+        assert report.diagram != {}

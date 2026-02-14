@@ -27,7 +27,11 @@ from pyomo.core.base.var import IndexedVar
 from pyomo.core.base.param import IndexedParam
 import pyomo.environ as pyo
 from pydantic import BaseModel, Field
-from idaes_connectivity.base import Connectivity, Mermaid
+
+try:
+    from idaes_connectivity.base import Connectivity, Mermaid
+except ImportError:
+    Connectivity = None
 
 # package
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -501,10 +505,20 @@ class MermaidDiagram(Action):
 
     def after_run(self):
         """Build Mermaid diagram after the run."""
-        conn = Connectivity(input_model=self._runner.model)
-        self.diagram = Mermaid(conn, component_images=True)
+        if Connectivity is None:
+            self.diagram = None
+        else:
+            conn = Connectivity(input_model=self._runner.model)
+            self.diagram = Mermaid(conn, component_images=True)
 
-    def report(self) -> Report:
-        """Report containing the Mermaid diagram"""
+    def report(self) -> Report | dict:
+        """Report containing the Mermaid diagram.
+
+        Returns:
+            Report object if idaes_connectivity is active, otherwise
+            an empty dictionary
+        """
+        if self.diagram is None:
+            return {}
         mermaid_lines = self.diagram.write(None).split("\n")
         return self.Report(diagram=mermaid_lines)
