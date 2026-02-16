@@ -123,6 +123,8 @@ jobs:
         if: matrix.cov-report
         run: |
           echo PYTEST_ADDOPTS="$PYTEST_ADDOPTS --cov --cov-report=xml" >> "$GITHUB_ENV"
+      - name: Install pandoc
+        run: conda install -c conda-forge pandoc
       - name: Run pytest (not integration)
         run: |
           pytest --pyargs idaes -m "not integration"
