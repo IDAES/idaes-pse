@@ -40,6 +40,10 @@
   - ```{autodoc2-docstring} structfs.tests.test_runner_actions.test_dof_report
     :summary:
     ```
+* - {py:obj}`test_mermaid_report <structfs.tests.test_runner_actions.test_mermaid_report>`
+  - ```{autodoc2-docstring} structfs.tests.test_runner_actions.test_mermaid_report
+    :summary:
+    ```
 ````
 
 ### API
@@ -89,5 +93,13 @@
 :noindex:
 
 ```{autodoc2-docstring} structfs.tests.test_runner_actions.test_dof_report
+```
+````
+
+````{py:function} test_mermaid_report()
+:canonical: structfs.tests.test_runner_actions.test_mermaid_report
+:noindex:
+
+```{autodoc2-docstring} structfs.tests.test_runner_actions.test_mermaid_report
 ```
 ````

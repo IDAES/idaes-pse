@@ -561,7 +561,7 @@ Bases: {py:obj}`pydantic.BaseModel`
 
 ````
 
-````{py:method} report() -> Report
+````{py:method} report() -> Report | dict
 :canonical: structfs.runner_actions.MermaidDiagram.report
 :noindex:
 
