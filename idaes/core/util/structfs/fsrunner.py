@@ -173,7 +173,7 @@ class BaseFlowsheetRunner(Runner):
 
         - ValueError: if `is_input` and `is_output` are both False
 
-        ### Example
+        # Example
 
         Here is an example of annotating a single Pyomo variable.
         You can apply this same technique to any Pyomo, and thus IDAES,
