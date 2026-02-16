@@ -106,7 +106,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v5
-
       - uses: ./.github/actions/display-debug-info
       - name: Set up Conda environment
         uses: conda-incubator/setup-miniconda@v3
@@ -114,7 +113,6 @@ jobs:
           activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
           python-version: ${{ matrix.python-version }}
           miniforge-version: latest
-
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
         with:
