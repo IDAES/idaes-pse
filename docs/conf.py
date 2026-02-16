@@ -83,7 +83,7 @@ main_doc = "index"
 
 # General information about the project.
 project = "IDAES"
-copyright = "2016-2024, David Miller et al."
+copyright = "2016-2026, David Miller et al."
 author = "The IDAES project"
 
 
