@@ -19,6 +19,7 @@ for the log of the build and looks for errors in it.
 # stdlib
 import logging
 import os
+from pathlib import Path
 from subprocess import Popen
 
 # third-party
@@ -133,3 +134,19 @@ def test_doctests(docs_path):
         proc = Popen(command)
         proc.wait(600)
         assert proc.returncode == 0
+        _cleanup_generated_files(docs_path)
+
+
+def _cleanup_generated_files(docs_path):
+    docs = Path(docs_path)
+
+    # remove selected autodoc2 Markdown docs in reference
+    reference = docs / "reference_guides"
+    for pkg in ("core.util.structfs",):
+        print(f"Clean up autodoc2 files for {pkg}")
+        path = reference
+        for subpkg in pkg.split("."):
+            path = path / subpkg
+        for filename in path.glob("*.md"):
+            print(f"- remove: {path / filename}")
+            os.unlink(path / filename)
