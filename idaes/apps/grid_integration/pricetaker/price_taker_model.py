@@ -42,6 +42,7 @@ from idaes.apps.grid_integration.pricetaker.design_and_operation_models import (
     DesignModelData,
     OperationModelData,
     StorageModelData,
+    is_valid_startup_types,
 )
 from idaes.apps.grid_integration.pricetaker.clustering import (
     generate_daily_data,
@@ -153,6 +154,14 @@ CONFIG.declare(
     ConfigValue(
         domain=NonNegativeFloat,
         doc="Scaling factor for net cash inflow calculations",
+    ),
+)
+
+CONFIG.declare(
+    "startup_types",
+    ConfigValue(
+        domain=is_valid_startup_types,
+        doc="Dictionary of startup types and their transition times for the unit/process",
     ),
 )
 
@@ -816,6 +825,7 @@ class PriceTakerModel(ConcreteModel):
         des_block_name: Optional[str] = None,
         minimum_up_time: int = 1,
         minimum_down_time: int = 1,
+        startup_transition_time: Optional[dict] = None,
     ):
         """
         Adds minimum uptime/downtime constraints for a given unit/process
@@ -842,6 +852,8 @@ class PriceTakerModel(ConcreteModel):
         # Check minimum_up_time and minimum_down_time for validity
         self.config.minimum_up_time = minimum_up_time
         self.config.minimum_down_time = minimum_down_time
+        # Set startup transition times
+        self.config.startup_types = startup_transition_time
 
         op_blocks = self._get_operation_blocks(
             blk_name=op_block_name,
@@ -880,6 +892,7 @@ class PriceTakerModel(ConcreteModel):
                 minimum_up_time=minimum_up_time,
                 minimum_down_time=minimum_down_time,
                 set_time=self.set_time,
+                startup_transition_time=startup_transition_time,
             )
 
         # Save the uptime and downtime data for reference
