@@ -348,10 +348,6 @@ class TestApparentSpeciesBasisInherent:
 
         # Check apparent species flowrates
         for j in m.fs.state[1].mole_frac_comp:
-            print()
-            print(j)
-            print(value(m.fs.state[1].flow_mol_phase_comp_apparent["Liq", j]))
-            print(value(m.fs.state[1].flow_mol), value(m.fs.state[1].mole_frac_comp[j]))
             assert value(
                 m.fs.state[1].flow_mol_phase_comp_apparent["Liq", j]
             ) == pytest.approx(

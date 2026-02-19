@@ -1533,27 +1533,27 @@ def test_phase_equilibrium_initializer_object():
 
     # Check that degrees of freedom are still the same
     assert degrees_of_freedom(model) == 8 - 4
-    #
-    # m = model.fs.state[0]
-    #
-    # m.display()
-    # #
-    # # for v in m.component_data_objects(Var, active=True):
-    # #     print(f"{v.name}: value={v.value}, lb={v.lb}, ub={v.ub}")
-    # #
-    # # print()
-    # #
-    # # for c in m.component_data_objects(Constraint, active=True):
-    # #     print(c.name, c.expr)
-    #
-    # # As the phase equilibrium constraints were not solved, we expect these to have a large residual
-    # large_res = large_residuals_set(model.fs.state[0])
-    # print(large_res)
-    # assert len(large_res) == 4
-    # for i in large_res:
-    #     assert i.name in [
-    #         "fs.state[0.0].phase_fraction_constraint[Liq]",
-    #         "fs.state[0.0].phase_fraction_constraint[Vap]",
-    #         "fs.state[0.0].equilibrium_constraint[Vap,Liq,H2O]",
-    #         "fs.state[0.0].equilibrium_constraint[Vap,Liq,CO2]",
-    #     ]
+
+    m = model.fs.state[0]
+
+    m.display()
+
+    for v in m.component_data_objects(Var, active=True):
+        print(f"{v.name}: value={v.value}, lb={v.lb}, ub={v.ub}")
+
+    print()
+
+    for c in m.component_data_objects(Constraint, active=True):
+        print(c.name, c.expr)
+
+    # As the phase equilibrium constraints were not solved, we expect these to have a large residual
+    large_res = large_residuals_set(model.fs.state[0])
+    print(large_res)
+    assert len(large_res) == 4
+    for i in large_res:
+        assert i.name in [
+            "fs.state[0.0].phase_fraction_constraint[Liq]",
+            "fs.state[0.0].phase_fraction_constraint[Vap]",
+            "fs.state[0.0].equilibrium_constraint[Vap,Liq,H2O]",
+            "fs.state[0.0].equilibrium_constraint[Vap,Liq,CO2]",
+        ]
