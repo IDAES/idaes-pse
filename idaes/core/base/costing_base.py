@@ -19,10 +19,14 @@ Base classes for process costing
 # This plays with some private attributes - most are necessary
 # pylint: disable=protected-access
 
+import json
+import os
+
 from functools import partial
 
 import pyomo.environ as pyo
 from pyomo.common.config import ConfigBlock, ConfigValue
+from pyomo.common.fileutils import this_file_dir
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from pyomo.contrib.fbbt.fbbt import compute_bounds_on_expr
 
@@ -98,6 +102,41 @@ def register_idaes_currency_units():
         )
 
 
+def load_location_factor():
+    """
+    Estimate the cost of constructing the same plant in different global locations using location factors.
+
+    This method uses a location (or investment site) factor to adjust the total permanent investment (TPI)
+    based on regional differences in labor costs, workforce efficiency, local regulations and customs,
+    union status, and other local economic conditions.
+
+    Reference:
+    Seider, Warren D., et al. *Product and Process Design Principles: Synthesis, Analysis, and Evaluation.*
+    John Wiley & Sons, 2016.
+
+    The conversion equation is given by:
+
+    .. math::
+        C_{TPI, corrected} = F_{ISF} \times C_{TPI}
+
+    where:
+    - :math:`C` represents cost,
+    - :math:`F` represents a factor,
+    - :math:`TPI` is the total plant investment, and
+    - :math:`ISF` is the investment site factor (i.e., location factor).
+
+    Location factors for 139 countries are sourced from Compass International (2017):
+    https://www.compassinternational.net/wp-content/uploads/2017/01/Worldwide-Industrial.pdf
+
+    Note: For some countries, multiple city-specific location factors are provided.
+    The benchmark location is Washington, D.C., USA.
+    """
+    directory = this_file_dir()
+    with open(os.path.join(directory, "location_factors.json"), "r") as file:
+        location_factors = json.load(file)
+    return location_factors
+
+
 class DefaultCostingComponents(StrEnum):
     """
     Costing components Enum
@@ -168,6 +207,9 @@ class FlowsheetCostingBlockData(ProcessBlockData):
         # Set the base year for all costs
         self.base_currency = None
         self.base_period = pyo.units.year
+
+        # Set the location factor
+        self.location_factor = ("United States", "Washington DC")
 
         # Register unit mapping
         self._costing_methods_map = {}

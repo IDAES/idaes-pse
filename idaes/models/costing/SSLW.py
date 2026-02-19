@@ -55,6 +55,8 @@ from idaes.core import (
     register_idaes_currency_units,
 )
 
+from idaes.core.base.costing_base import load_location_factor
+
 import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
@@ -208,6 +210,7 @@ class BlowerMaterial(StrEnum):
 class SSLWCostingData(FlowsheetCostingBlockData):
     # Register currency and conversion rates based on CE Index
     register_idaes_currency_units()
+    load_location_factor()
 
     def build_global_params(self):
         """
@@ -222,6 +225,8 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         self.base_currency = pyo.units.USD_2018
         # Set a base period for all operating costs
         self.base_period = pyo.units.year
+        # Chose location and set location factor
+        self.location_factor = ("United States", "Washington DC")
 
     def build_process_costs(self):
         """
