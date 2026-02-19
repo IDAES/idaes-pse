@@ -23,6 +23,7 @@ from .heat_exchanger_1D import HeatExchanger1D, HX1DInitializer
 from .heat_exchanger_lc import HeatExchangerLumpedCapacitance
 from .mixer import Mixer, MomentumMixingType, MixingType, MixerInitializer
 from .mscontactor import MSContactor, MSContactorInitializer
+from .pipe import Pipe
 from .plug_flow_reactor import PFR
 from .pressure_changer import (
     PressureChanger,
