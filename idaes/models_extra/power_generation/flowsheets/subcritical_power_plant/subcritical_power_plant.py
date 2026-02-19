@@ -2167,6 +2167,54 @@ def write_data_to_txt_file(plot_data):
                     fout.write("\n")
 
 
+def _build_pfd_tag_group(sd):
+    """
+    Build tags/tag_formats/ModelTagGroup from stream state dict `sd`.
+    Split out for unit-testing.
+    """
+    tags = {}
+    tag_formats = {}
+
+    for i, s in sd.items():
+        tags[i + "_Fmass"] = s.flow_mass
+        tag_formats[i + "_Fmass"] = lambda x: ("{:.1f}" if x >= 10 else "{:.2f}")
+
+        tags[i + "_F"] = s.flow_mol
+        tag_formats[i + "_F"] = "{:,.0f}"
+
+        tags[i + "_T"] = s.temperature
+        tag_formats[i + "_T"] = "{:,.0f}"
+
+        tags[i + "_P_kPa"] = s.pressure
+        tag_formats[i + "_P_kPa"] = lambda x: ("{:,.0f}" if x >= 100 else "{:.2f}")
+
+        try:
+            tags[i + "_hmass"] = s.enth_mass
+            tag_formats[i + "_hmass"] = "{:,.0f}"
+            tags[i + "_h"] = s.enth_mol
+            tag_formats[i + "_h"] = "{:,.0f}"
+        except AttributeError:
+            pass
+
+        try:
+            tags[i + "_x"] = s.vapor_frac
+            tag_formats[i + "_x"] = "{:.3f}"
+        except AttributeError:
+            pass
+
+        if hasattr(s, "mole_frac_comp"):
+            for comp in ("N2", "O2", "NO", "CO2", "H2O", "SO2"):
+                if comp in s.mole_frac_comp:
+                    tags[i + f"_y{comp}"] = s.mole_frac_comp[comp]
+
+    tag_group = ModelTagGroup()
+    for t, v in tags.items():
+        formatter = tag_formats.get(t, "{:.3f}")
+        tag_group.add(t, v, format_string=formatter)
+
+    return tags, tag_formats, tag_group
+
+
 def print_pfd_results(m):
     streams = tables.arcs_to_stream_dict(
         m.fs_main,
@@ -2208,52 +2256,8 @@ def print_pfd_results(m):
     )
     sdf.sort_index(inplace=True)
     sdf.to_csv("streams.csv")
-    tags = {}
-    tag_formats = {}
-    for i, s in sd.items():
-        tags[i + "_Fmass"] = s.flow_mass
-        tag_formats[i + "_Fmass"] = lambda x: (
-            "{:.1f} kg/s" if x >= 10 else "{:.2f} kg/s"
-        )
-        tags[i + "_F"] = s.flow_mol
-        tag_formats[i + "_F"] = "{:,.0f} mol/s"
-        tags[i + "_T"] = s.temperature
-        tag_formats[i + "_T"] = "{:,.0f} K"
-        tags[i + "_P_kPa"] = s.pressure / 1000
-        tag_formats[i + "_P_kPa"] = lambda x: (
-            "{:,.0f} kPa" if x >= 100 else "{:.2f} kPa"
-        )
-        tags[i + "_P"] = s.pressure / 1000
-        tag_formats[i + "_P"] = "{:,.0f} Pa"
-        try:
-            tags[i + "_hmass"] = s.enth_mass / 1000.0
-            tag_formats[i + "_hmass"] = "{:,.0f} kJ/kg"
-            tags[i + "_h"] = s.enth_mol
-            tag_formats[i + "_h"] = "{:,.0f} J/mol"
-        except AttributeError:
-            pass
-        try:
-            tags[i + "_x"] = s.vapor_frac
-            tag_formats[i + "_x"] = "{:.3f}"
-        except AttributeError:
-            pass
-        try:
-            tags[i + "_yN2"] = s.mole_frac_comp["N2"]
-            tags[i + "_yO2"] = s.mole_frac_comp["O2"]
-            tags[i + "_yNO"] = s.mole_frac_comp["NO"]
-            tags[i + "_yCO2"] = s.mole_frac_comp["CO2"]
-            tags[i + "_yH2O"] = s.mole_frac_comp["H2O"]
-            tags[i + "_ySO2"] = s.mole_frac_comp["SO2"]
-        except AttributeError:
-            pass
 
-    tag_group = ModelTagGroup()
-    for t, v in tags.items():
-        try:
-            formatter = tag_formats[t]
-        except KeyError:
-            formatter = "{:.3f}"
-        tag_group.add(t, v, format_string=formatter)
+    _, _, tag_group = _build_pfd_tag_group(sd)  # first two unused
 
     dirpath = os.path.dirname(__file__)
     svgpath = os.path.join(dirpath, "plant_pfd.svg")
