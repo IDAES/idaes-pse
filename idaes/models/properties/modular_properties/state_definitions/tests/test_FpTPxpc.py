@@ -1549,11 +1549,9 @@ def test_phase_equilibrium_initializer_object():
     # As the phase equilibrium constraints were not solved, we expect these to have a large residual
     large_res = large_residuals_set(model.fs.state[0])
     print(large_res)
-    assert len(large_res) == 4
+    assert len(large_res) == 2
     for i in large_res:
         assert i.name in [
-            "fs.state[0.0].phase_fraction_constraint[Liq]",
-            "fs.state[0.0].phase_fraction_constraint[Vap]",
             "fs.state[0.0].equilibrium_constraint[Vap,Liq,H2O]",
             "fs.state[0.0].equilibrium_constraint[Vap,Liq,CO2]",
         ]
