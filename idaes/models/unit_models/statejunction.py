@@ -13,6 +13,7 @@
 """
 Standard IDAES StateJunction model.
 """
+
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 

@@ -15,6 +15,7 @@ Tests for 0D Boiler heat exchanger model.
 
 Author: Miguel Zamarripa
 """
+
 import pytest
 
 from pyomo.environ import check_optimal_termination, ConcreteModel, value, Param

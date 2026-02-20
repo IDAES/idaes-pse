@@ -20,6 +20,7 @@ Although general, this module was only implemented to
 work with the convergence evaluation framework. More work
 is needed to make this appropriate for general use.
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring

@@ -10,8 +10,7 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-"""This module gets the path of parameters files
-"""
+"""This module gets the path of parameters files"""
 
 __author__ = "John Eslick"
 

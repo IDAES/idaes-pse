@@ -20,11 +20,11 @@ Usage, e.g., for the Pitzer(1984) data::
     gibbs_data = pitzer.get_table("Standard G").data
 
 """
+
 __authors__ = ["Dan Gunter (LBNL)"]
 __author__ = __authors__[0]
 
 from pyomo.common.deprecation import deprecation_warning
-
 
 deprecation_warning(
     msg=(

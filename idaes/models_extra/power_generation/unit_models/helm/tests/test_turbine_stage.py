@@ -15,6 +15,7 @@ Tests for turbine stage model.
 
 Author: John Eslick
 """
+
 import pytest
 
 from pyomo.environ import ConcreteModel, units as pyunits

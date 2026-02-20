@@ -28,6 +28,7 @@ References:
     [1] Hilliard thesis (1998)
     [2] Morgan et.al (2015)
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
@@ -45,7 +46,6 @@ from idaes.models.properties.modular_properties.eos.ideal import Ideal
 
 from idaes.core.util.misc import set_param_from_config
 import idaes.logger as idaeslog
-
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)

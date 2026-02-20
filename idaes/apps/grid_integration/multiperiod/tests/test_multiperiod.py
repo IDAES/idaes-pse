@@ -11,7 +11,7 @@
 # for full copyright and license information.
 #################################################################################
 
-"""Tests for `MultiPeriodModel` class """
+"""Tests for `MultiPeriodModel` class"""
 
 __author__ = "Radhakrishna Tumbalam Gooty"
 

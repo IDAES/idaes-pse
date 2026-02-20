@@ -15,6 +15,7 @@ Tests for Shell and Tube 1D unit model.
 
 Author: Jaffer Ghouse
 """
+
 import pytest
 
 from pyomo.environ import (

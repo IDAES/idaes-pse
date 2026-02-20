@@ -15,6 +15,7 @@ Base class for custom scaling routines.
 
 Authors: Andrew Lee, Douglas Allan
 """
+
 from __future__ import annotations  # For type hinting with unions using |
 from copy import copy
 

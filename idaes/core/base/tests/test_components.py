@@ -15,6 +15,7 @@ Tests for Component objects
 
 Author: Andrew Lee
 """
+
 import pytest
 import re
 import types

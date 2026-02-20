@@ -15,6 +15,7 @@ Dictionary of surrogate models
 
 @author: Boiler Subsystem Team (J. Ma, M. Zamarripa)
 """
+
 # A dictionary of surrogate models needs to be provided for the boiler fire
 # side model to work. Note that the user needs to provide a surrogate model or
 # a fixed value for the heat flux for each water wall section, platen super

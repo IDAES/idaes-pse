@@ -23,7 +23,6 @@ from idaes.models.properties.general_helmholtz import helmholtz_available
 import types
 import pytest
 
-
 __author__ = "Boiler Subsystem Team (J. Ma, M. Zamarripa)"
 
 

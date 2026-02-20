@@ -20,6 +20,7 @@ phase equilibrium in the generic framework using the Peng-Robinson equation of
 state for liquid and vapor phases along with methods drawn from the pre-built
 IDAES property libraries.
 """
+
 # Import Python libraries
 import logging
 
@@ -39,7 +40,6 @@ from idaes.models.properties.modular_properties.phase_equil.bubble_dew import (
 )
 from idaes.models.properties.modular_properties.phase_equil.forms import log_fugacity
 from idaes.models.properties.modular_properties.pure import RPP4
-
 
 # Set up logger
 _log = logging.getLogger(__name__)

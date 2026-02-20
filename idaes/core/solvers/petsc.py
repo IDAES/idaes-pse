@@ -43,7 +43,6 @@ import idaes
 import idaes.logger as idaeslog
 import idaes.config as icfg
 
-
 # Importing a few things here so that they are cached
 # pylint: disable=unused-import
 # pylint: disable=import-outside-toplevel
@@ -851,7 +850,7 @@ class PetscTrajectory(object):
         with open(f"{self.stub}.typ") as f:
             typ = list(map(int, f.readlines()))
         _vars = [name for i, name in enumerate(names) if typ[i] in [0, 1]]
-        (t, v, names) = petsc_binary_io().ReadTrajectory("Visualization-data")
+        t, v, names = petsc_binary_io().ReadTrajectory("Visualization-data")
         self.time = t
         self.vecs_by_time = v
         self.vecs = dict.fromkeys(_vars, None)

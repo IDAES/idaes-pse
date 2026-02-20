@@ -14,6 +14,7 @@
 Tests for Flash unit model.
 Authors: Jaffer Ghouse, Douglas Allan
 """
+
 from copy import deepcopy
 import pytest
 
@@ -63,7 +64,6 @@ from idaes.core.util.scaling import (
     get_jacobian,
     jacobian_cond,
 )
-
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing

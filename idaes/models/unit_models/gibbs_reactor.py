@@ -13,6 +13,7 @@
 """
 Standard IDAES Gibbs reactor model.
 """
+
 # Import Pyomo libraries
 from pyomo.environ import Constraint, Param, Reals, Reference, Set, units, value, Var
 from pyomo.common.config import ConfigBlock, ConfigValue, In, ListOf, Bool

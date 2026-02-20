@@ -16,6 +16,7 @@ different calculation method options.
 
 Author: John Eslick
 """
+
 import pytest
 
 from pyomo.environ import ConcreteModel, value
@@ -31,7 +32,6 @@ from idaes.models.properties.general_helmholtz import (
     StateVars,
 )
 from idaes.models.properties.general_helmholtz import helmholtz_available
-
 
 # -----------------------------------------------------------------------------
 # set up solver

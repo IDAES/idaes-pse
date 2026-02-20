@@ -15,6 +15,7 @@ Tests for common methods used by generic framework
 
 Author: A Lee
 """
+
 import pytest
 from types import MethodType
 
