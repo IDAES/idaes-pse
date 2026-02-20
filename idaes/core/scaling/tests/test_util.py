@@ -2639,7 +2639,7 @@ def discretization_tester(transformation_method, scheme, t_skip, continuity_eqns
 
     scale_time_discretization_equations(m, m.t, 1 / 7)
 
-    # Make sure we got rid of all constraint_scaling_tranformed when copy-and-pasted from the old tools
+    # Make sure we got rid of all constraint_scaling_transformed when copy-and-pasted from the old tools
     for condata in m.component_data_objects(ctype=ConstraintData, descend_into=True):
         assert not condata.is_indexed()
         assert isinstance(condata, ConstraintData)
