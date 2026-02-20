@@ -360,39 +360,15 @@ see property package for documentation.}""",
         stream_attributes = {}
         stream_attributes["Units"] = {}
 
-        sblocks = {
-            "Inlet": self.control_volume.properties_in,
-        }
-        if not self.config.ideal_separation:
-            # If not using ideal separation, we can get outlet state directly
-            # from the state blocks
-            sblocks["Vapor Outlet"] = self.split.Vap_state
-            sblocks["Liquid Outlet"] = self.split.Liq_state
-
-        for n, v in sblocks.items():
-            dvars = v[time_point].define_display_vars()
-
-            stream_attributes[n] = {}
-
-            for k in dvars:
-                for i in dvars[k].keys():
-                    stream_key = k if i is None else f"{k} {i}"
-
-                    quant = report_quantity(dvars[k][i])
-
-                    stream_attributes[n][stream_key] = quant.m
-                    stream_attributes["Units"][stream_key] = quant.u
-
         if self.config.ideal_separation:
-            # If using ideal separation, get values from Ports and hope they map
-            # to names in Inlet
-            # TODO: Add a better way to map these if necessary
-            for n, v in {
-                "Vapor Outlet": "vap_outlet",
-                "Liquid Outlet": "liq_outlet",
+            # If using ideal separation, build the stream table from Ports so that
+            # all streams use the same naming convention (avoids mismatches with
+            # define_display_vars() across property packages).
+            for n, port_obj in {
+                "Inlet": self.inlet,
+                "Vapor Outlet": self.vap_outlet,
+                "Liquid Outlet": self.liq_outlet,
             }.items():
-                port_obj = getattr(self, v)
-
                 stream_attributes[n] = {}
 
                 for k in port_obj.vars:
@@ -409,5 +385,27 @@ see property package for documentation.}""",
                             quant = report_quantity(port_obj.vars[k][time_point, i[1:]])
                             stream_attributes[n][k + " " + kname] = quant.m
                             stream_attributes["Units"][k + " " + kname] = quant.u
+        else:
+            # If not using ideal separation, we can get outlet state directly
+            # from the state blocks
+            sblocks = {
+                "Inlet": self.control_volume.properties_in,
+                "Vapor Outlet": self.split.Vap_state,
+                "Liquid Outlet": self.split.Liq_state,
+            }
+
+            for n, v in sblocks.items():
+                dvars = v[time_point].define_display_vars()
+
+                stream_attributes[n] = {}
+
+                for k in dvars:
+                    for i in dvars[k].keys():
+                        stream_key = k if i is None else f"{k} {i}"
+
+                        quant = report_quantity(dvars[k][i])
+
+                        stream_attributes[n][stream_key] = quant.m
+                        stream_attributes["Units"][stream_key] = quant.u
 
         return DataFrame.from_dict(stream_attributes, orient="columns")
