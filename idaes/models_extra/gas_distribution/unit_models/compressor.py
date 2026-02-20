@@ -18,6 +18,7 @@ Data sources:
     [1] Stochastic Optimal Control Model for Natural Gas Network
         Operations. V. Zavala, 2014, Comp. Chem. Eng.
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring

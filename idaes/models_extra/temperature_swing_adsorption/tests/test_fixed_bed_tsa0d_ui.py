@@ -32,7 +32,6 @@ from idaes.models_extra.temperature_swing_adsorption.fixed_bed_tsa0d_ui import (
     solve,
 )
 
-
 _log = logging.getLogger(__name__)
 
 

@@ -47,6 +47,7 @@ are mixed before entering drum
 
 Created: August 19 2020
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 

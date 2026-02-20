@@ -55,7 +55,6 @@ from idaes.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.models_extra.column_models.util import make_phase_split
 
-
 _log = idaeslog.getIdaesLogger(__name__)
 
 

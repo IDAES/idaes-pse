@@ -13,6 +13,7 @@
 """
 Standard IDAES Feed block with phase equilibrium.
 """
+
 from enum import Enum
 
 # Import Pyomo libraries

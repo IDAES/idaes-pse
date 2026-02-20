@@ -13,6 +13,7 @@
 """
 Base class for control volumes
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 
@@ -2422,12 +2423,10 @@ argument).""",
         difficulty of presenting spatially discretized data in a readable form
         without plotting.
         """
-        raise NotImplementedError(
-            """
+        raise NotImplementedError("""
                 Due to the difficulty in presenting spatially distributed data
                 in a clean format, ControlVolume1D does not currently support
-                the report method."""
-        )
+                the report method.""")
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()

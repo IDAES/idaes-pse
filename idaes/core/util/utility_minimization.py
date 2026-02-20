@@ -14,6 +14,7 @@
 """
 General purpose heat integration block for IDAES models
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 

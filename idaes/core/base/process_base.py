@@ -13,6 +13,7 @@
 """
 Base for IDAES process model objects.
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 
@@ -47,7 +48,6 @@ from idaes.core.util.model_statistics import (
     number_activated_blocks,
 )
 from idaes.core.util.units_of_measurement import report_quantity
-
 
 # Some more information about this module
 __author__ = "John Eslick, Qi Chen, Andrew Lee"

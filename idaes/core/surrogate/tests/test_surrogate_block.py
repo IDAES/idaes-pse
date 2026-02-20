@@ -13,6 +13,7 @@
 """
 Tests for SurrogateBlock
 """
+
 import pytest
 import re
 

@@ -19,6 +19,7 @@ Data sources:
         Operations. V. Zavala, 2014, Comp. Chem. Eng.
 
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-class-docstring
 

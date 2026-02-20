@@ -15,6 +15,7 @@ Tests for 0D lumped capacitance heat exchanger model
 
 Author: Rusty Gentile, John Eslick, Andrew Lee
 """
+
 import pytest
 
 from pyomo.environ import (

@@ -15,6 +15,7 @@ Tests for Separator unit model.
 
 Author: Andrew Lee, Douglas Allan, Lingyan Deng
 """
+
 import pytest
 import pandas
 
@@ -95,7 +96,6 @@ from idaes.core.util.scaling import (
     get_jacobian,
     jacobian_cond,
 )
-
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing

@@ -17,6 +17,7 @@ Created on Thu Mar 18 15:05:41 2021
 
 @author: andrew
 """
+
 import pytest
 
 import pyomo.environ as pe

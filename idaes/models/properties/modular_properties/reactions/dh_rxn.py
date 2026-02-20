@@ -13,6 +13,7 @@
 """
 Methods for calculating heat of reaction
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 

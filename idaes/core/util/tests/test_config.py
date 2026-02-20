@@ -15,6 +15,7 @@ Tests for config utility methods.
 
 Author: Andrew Lee
 """
+
 import pytest
 from pyomo.environ import ConcreteModel, Set
 from pyomo.dae import ContinuousSet

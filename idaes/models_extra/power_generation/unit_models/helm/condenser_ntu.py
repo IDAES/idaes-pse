@@ -13,6 +13,7 @@
 """
 NTU Condenser model, for use with Helmholtz EOS property packages.
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 

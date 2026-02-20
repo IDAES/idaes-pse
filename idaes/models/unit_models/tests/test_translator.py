@@ -42,7 +42,6 @@ from idaes.core.initialization import (
     BlockTriangularizationInitializer,
 )
 
-
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_solver("ipopt_v2")

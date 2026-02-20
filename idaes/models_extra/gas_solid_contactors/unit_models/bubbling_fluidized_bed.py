@@ -27,6 +27,7 @@ Gas emulsion is at minimum fluidization conditions
 Gas feeds into emulsion region before the excess enters into the bubble region
 Solid superficial velocity is constant throughout the bed
 """
+
 # Pylint doesn't like the fact that the reformulated variables are private
 # pylint: disable=protected-access
 

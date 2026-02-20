@@ -26,7 +26,6 @@ import idaes.commands.util.download_bin as dlb
 import idaes.logger as idaeslog
 import idaes.config as idaes_config
 
-
 _log = idaeslog.getLogger(__name__)
 
 

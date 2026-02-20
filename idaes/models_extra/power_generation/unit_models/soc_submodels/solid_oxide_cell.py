@@ -105,6 +105,7 @@ Expressions:
     - ``electrical_work[t]``: Rate of energy added to cell. Greater than zero means energy added to cell
       (electrolysis mode) and less than zero means energy removed from cell (fuel cell mode)
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring

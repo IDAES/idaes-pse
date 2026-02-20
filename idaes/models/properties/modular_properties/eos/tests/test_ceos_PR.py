@@ -15,6 +15,7 @@ Tests for Cubic equation of state methods
 
 Author: Andrew Lee
 """
+
 import pytest
 from sys import modules
 

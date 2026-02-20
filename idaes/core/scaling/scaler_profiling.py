@@ -13,6 +13,7 @@
 """
 Tools for profiling scaling alternatives.
 """
+
 import sys
 
 from pyomo.environ import check_optimal_termination, Constraint

@@ -20,6 +20,7 @@ Coefficient Model, Ind. Eng. Chem. Res., 2009, Vol. 48, pgs. 7788–7797
 
 Author: Andrew Lee
 """
+
 import pyomo.environ as pyo
 
 from idaes.core import AqueousPhase, Solvent, Apparent, Anion, Cation

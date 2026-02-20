@@ -10,8 +10,7 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-""" Tests for the dynamic model subclass of block
-"""
+"""Tests for the dynamic model subclass of block"""
 
 import pyomo.environ as pyo
 from pyomo.common.collections import ComponentSet

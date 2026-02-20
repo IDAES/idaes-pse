@@ -10,8 +10,7 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-"""Generate parameter and expression files for r227ea
-"""
+"""Generate parameter and expression files for r227ea"""
 
 __author__ = "John Eslick"
 

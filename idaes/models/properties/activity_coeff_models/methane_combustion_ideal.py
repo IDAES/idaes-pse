@@ -31,7 +31,6 @@ from idaes.models.properties.activity_coeff_models.activity_coeff_prop_pack impo
 )
 from idaes.logger import getIdaesLogger
 
-
 # Some more information about this module
 __author__ = "Andrew Lee, Jaffer Ghouse"
 __version__ = "0.0.1"

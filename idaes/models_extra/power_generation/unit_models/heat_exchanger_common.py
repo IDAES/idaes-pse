@@ -13,6 +13,7 @@
 """
 Methods shared by the CrossFlowHeatExchanger1D and Heater1D models.
 """
+
 # Presently the tube methods are not shared. I'm not sure why I chose to extract
 # them here, but I don't want to change things this late into development. --Doug
 

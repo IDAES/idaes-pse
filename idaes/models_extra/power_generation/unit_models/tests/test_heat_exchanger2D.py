@@ -22,6 +22,7 @@ phase transitions (if user requires phase transitions, they need a general
 model)
 Created on Nov 25th, 2020 by Boiler Team (J. Ma, M. Zamarripa)
 """
+
 import pytest
 
 # Import Pyomo libraries

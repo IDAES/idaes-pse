@@ -13,6 +13,7 @@
 """
 Initializer class for implementing initialization from a data source
 """
+
 from idaes.core.initialization.initializer_base import InitializerBase
 
 __author__ = "Andrew Lee"

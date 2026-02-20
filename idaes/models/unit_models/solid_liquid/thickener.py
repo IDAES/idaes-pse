@@ -27,6 +27,7 @@ N.G. Barton, C.-H. Li, S.J. Spencer, Control of a surface of discontinuity in co
 Journal of the Australian Mathematical Society Series B 33 (1992) 269–289
 
 """
+
 # Import Python libraries
 import logging
 from pandas import DataFrame
@@ -53,7 +54,6 @@ from idaes.core.initialization import BlockTriangularizationInitializer
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.units_of_measurement import report_quantity
 from idaes.core.util.constants import Constants as CONST
-
 
 __author__ = "Andrew Lee"
 

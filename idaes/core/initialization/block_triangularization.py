@@ -13,6 +13,7 @@
 """
 Initializer class for implementing Block Triangularization initialization
 """
+
 from pyomo.environ import check_optimal_termination
 from pyomo.common.config import Bool, ConfigDict, ConfigValue
 from pyomo.contrib.incidence_analysis import (

@@ -13,6 +13,7 @@
 """
 Install IDAES example files locally.
 """
+
 import sys
 
 # third-party

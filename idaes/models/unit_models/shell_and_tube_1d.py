@@ -15,6 +15,7 @@
 
 This model derives from the HeatExchanger1D unit model.
 """
+
 # Import Pyomo libraries
 from pyomo.environ import (
     Block,
@@ -39,7 +40,6 @@ from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.solvers import get_solver
 from idaes.core.initialization import SingleControlVolumeUnitInitializer
 import idaes.logger as idaeslog
-
 
 __author__ = "Jaffer Ghouse"
 

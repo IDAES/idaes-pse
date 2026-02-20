@@ -14,6 +14,7 @@
 3 stream IDAES heat exchanger model with given UA.
 side 1 is hot stream, side 2 and 3 are cold streams
 """
+
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.environ import Var, Reference

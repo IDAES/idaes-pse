@@ -13,6 +13,7 @@
 """
 Standard IDAES Feed block.
 """
+
 # Import Pyomo libraries
 from pyomo.environ import Block, Reference
 from pyomo.common.config import ConfigBlock, ConfigValue, In
@@ -24,7 +25,6 @@ from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.logger as idaeslog
 from idaes.core.initialization import ModularInitializerBase
 from idaes.core.scaling import CustomScalerBase
-
 
 __author__ = "Andrew Lee, Douglas Allan"
 

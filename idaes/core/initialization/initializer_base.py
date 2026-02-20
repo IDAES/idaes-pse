@@ -13,6 +13,7 @@
 """
 Base class for initializer objects
 """
+
 from enum import Enum
 
 from pyomo.environ import (
