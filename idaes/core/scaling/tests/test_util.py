@@ -22,9 +22,20 @@ import pytest
 import re
 from copy import deepcopy
 
-from pyomo.environ import Block, Constraint, ConcreteModel, Expression, Set, Suffix, Var
+from pyomo.environ import (
+    Block,
+    ConcreteModel,
+    Constraint,
+    Expression,
+    Set,
+    Suffix,
+    TransformationFactory,
+    Var,
+)
+from pyomo.core.base.constraint import ConstraintData
 from pyomo.common.fileutils import this_file_dir
 from pyomo.common.tempfiles import TempfileManager
+from pyomo.dae import ContinuousSet, DerivativeVar
 from pyomo.contrib.pynumero.asl import AmplInterface
 
 from idaes.core.scaling.util import (
@@ -45,11 +56,14 @@ from idaes.core.scaling.util import (
     scaling_factors_from_dict,
     scaling_factors_to_json_file,
     scaling_factors_from_json_file,
+    scale_time_discretization_equations,
     report_scaling_factors,
     unscaled_variables_generator,
     unscaled_constraints_generator,
 )
+from idaes.core.solvers.tests.test_petsc import dae_with_non_time_indexed_constraint
 from idaes.core.util.model_statistics import number_activated_objectives
+from idaes.core.util.scaling import get_constraint_transform_applied_scaling_factor
 import idaes.logger as idaeslog
 
 currdir = this_file_dir()
@@ -2591,3 +2605,139 @@ class TestJacobianMethods:
             ),
         ):
             _ = jacobian_cond()
+
+
+def discretization_tester(transformation_method, scheme, t_skip, continuity_eqns=False):
+    """Function to avoid repeated code in testing scaling different discretization methods.
+
+    Args:
+        transformation_method: Discretization method to use (presently "dae.finite_difference" or "dae.collocation")
+        scheme: Discretization scheme to use
+        t_skip: Times to skip in testing scaling of discretization and/or continuity equations
+        continuity_eqns: Whether to look for continuity equations while testing. Right now implementation is based on
+            the "LAGRANGE-LEGENDRE" scheme. If additional methods with continuity equations are added to Pyomo that
+            behave differently, this conditional might have to be updated
+
+    Returns:
+        None
+    """
+
+    def approx(expected):
+        return pytest.approx(expected, rel=1e-10)
+
+    m, _, _, _, _, _, _ = dae_with_non_time_indexed_constraint(
+        nfe=3, transformation_method=transformation_method, scheme=scheme
+    )
+
+    for t in m.t:
+        set_scaling_factor(m.y[t, 1], 1)
+        set_scaling_factor(m.y[t, 2], 10)
+        set_scaling_factor(m.y[t, 3], 0.1)
+        set_scaling_factor(m.y[t, 4], 1000)
+        set_scaling_factor(m.y[t, 5], 13)
+        # Default scaling factor for y[6] is 1
+
+    scale_time_discretization_equations(m, m.t, 1 / 7)
+
+    # Make sure we got rid of all constraint_scaling_tranformed when copy-and-pasted from the old tools
+    for condata in m.component_data_objects(ctype=ConstraintData, descend_into=True):
+        assert not condata.is_indexed()
+        assert isinstance(condata, ConstraintData)
+        assert get_constraint_transform_applied_scaling_factor(condata) is None
+
+    for t in m.t:
+        assert get_scaling_factor(m.ydot[t, 1]) == approx(7)
+        assert get_scaling_factor(m.ydot[t, 2]) == approx(70)
+        assert get_scaling_factor(m.ydot[t, 3]) == approx(0.7)
+        assert get_scaling_factor(m.ydot[t, 4]) == approx(7000)
+        assert get_scaling_factor(m.ydot[t, 5]) == approx(7 * 13)
+        assert get_scaling_factor(m.ydot[t, 6]) == approx(7)
+
+        # No discretization equations in t_skip
+        if t in t_skip:
+            continue
+        if not continuity_eqns:
+            assert get_scaling_factor(m.ydot_disc_eq[t, 1]) == approx(7)
+            assert get_scaling_factor(m.ydot_disc_eq[t, 2]) == approx(70)
+            assert get_scaling_factor(m.ydot_disc_eq[t, 3]) == approx(0.7)
+            assert get_scaling_factor(m.ydot_disc_eq[t, 4]) == approx(7000)
+            assert get_scaling_factor(m.ydot_disc_eq[t, 5]) == approx(7 * 13)
+            assert get_scaling_factor(m.ydot_disc_eq[t, 6]) == approx(7)
+        else:
+            # For Lagrange-Legendre, continuity equations exist only on boundaries of finite elements (except t=0)
+            # while discretization equations exist only in the interior of finite elements.
+            try:
+                assert get_scaling_factor(m.ydot_disc_eq[t, 1]) == approx(7)
+                assert get_scaling_factor(m.ydot_disc_eq[t, 2]) == approx(70)
+                assert get_scaling_factor(m.ydot_disc_eq[t, 3]) == approx(0.7)
+                assert get_scaling_factor(m.ydot_disc_eq[t, 4]) == approx(7000)
+                assert get_scaling_factor(m.ydot_disc_eq[t, 5]) == approx(7 * 13)
+                assert get_scaling_factor(m.ydot_disc_eq[t, 6]) == approx(7)
+            except KeyError:
+                assert get_scaling_factor(m.y_t_cont_eq[t, 1]) == approx(1)
+                assert get_scaling_factor(m.y_t_cont_eq[t, 2]) == approx(10)
+                assert get_scaling_factor(m.y_t_cont_eq[t, 3]) == approx(0.1)
+                assert get_scaling_factor(m.y_t_cont_eq[t, 4]) == approx(1000)
+                assert get_scaling_factor(m.y_t_cont_eq[t, 5]) == approx(13)
+                assert get_scaling_factor(m.y_t_cont_eq[t, 6]) == approx(1)
+
+
+@pytest.mark.unit
+def test_scaling_discretization_equations_backward():
+    discretization_tester("dae.finite_difference", "BACKWARD", [0], False)
+
+
+@pytest.mark.unit
+def test_scaling_discretization_equations_forward():
+    discretization_tester("dae.finite_difference", "FORWARD", [180], False)
+
+
+@pytest.mark.unit
+def test_scaling_discretization_equations_lagrange_radau():
+    discretization_tester("dae.collocation", "LAGRANGE-RADAU", [0], False)
+
+
+@pytest.mark.unit
+def test_scaling_discretization_equations_lagrange_legendre():
+    discretization_tester("dae.collocation", "LAGRANGE-LEGENDRE", [0], True)
+
+
+@pytest.mark.unit
+def test_correct_set_identification():
+    # Suggested by Robby Parker. The original implementation of scale_time_discretization_equations
+    # used a Python function that tested for set equality instead of identity. As a result, trouble
+    # could happen if time and some other indexing set had the same members and time appeared later
+    # than that other indexing set.
+    def approx(x):
+        return pytest.approx(x, 1e-12)
+
+    m = ConcreteModel()
+    m.time = ContinuousSet(initialize=[0, 1, 2])
+    m.space = ContinuousSet(initialize=[0, 1, 2])
+
+    m.x = Var(m.space, m.time, initialize=0)
+    m.xdot = DerivativeVar(m.x, wrt=m.time)
+
+    @m.Constraint(m.space, m.time)
+    def diff_eqn(b, z, t):
+        return b.xdot[z, t] == -b.x[z, t]
+
+    TransformationFactory("dae.finite_difference").apply_to(
+        m, nfe=2, wrt=m.time, scheme="BACKWARD"
+    )
+    for i in range(3):
+        set_scaling_factor(m.x[0, i], 2)
+        set_scaling_factor(m.x[1, i], 3)
+        set_scaling_factor(m.x[2, i], 5)
+
+    scale_time_discretization_equations(m, m.time, 10)
+
+    for i in range(3):
+        assert get_scaling_factor(m.xdot[0, i]) == approx(0.2)
+        assert get_scaling_factor(m.xdot[1, i]) == approx(0.3)
+        assert get_scaling_factor(m.xdot[2, i]) == approx(0.5)
+
+    for i in range(1, 3):
+        assert get_scaling_factor(m.xdot_disc_eq[0, i]) == approx(0.2)
+        assert get_scaling_factor(m.xdot_disc_eq[1, i]) == approx(0.3)
+        assert get_scaling_factor(m.xdot_disc_eq[2, i]) == approx(0.5)
