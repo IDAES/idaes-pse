@@ -13,6 +13,7 @@
 """
 Tests for idaes.commands
 """
+
 # stdlib
 from functools import partial
 import json

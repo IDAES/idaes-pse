@@ -19,6 +19,7 @@ thermophysical properties required by the generic property framework, along
 with some helper functions for common calls to the CoolProp database and
 caching data to avoid repeated database lookups.
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 

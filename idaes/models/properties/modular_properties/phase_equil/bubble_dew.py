@@ -15,6 +15,7 @@ Modular methods for calculating bubble and dew points
 
 Authors: Andrew Lee, Douglas Allan
 """
+
 # TODO: Pylint complains about variables with _x names as they are built by other classes
 # pylint: disable=protected-access
 

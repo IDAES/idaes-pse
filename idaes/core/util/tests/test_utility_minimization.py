@@ -46,7 +46,6 @@ from idaes.core.util.utility_minimization import (
     gen_curves,
 )
 
-
 # -----------------------------------------------------------------------------
 # [1] systematic Methods of Chemical Process Design (1997)
 #     Chemical Engineering Series - L. T. Biegler, I. E. Grossmann,

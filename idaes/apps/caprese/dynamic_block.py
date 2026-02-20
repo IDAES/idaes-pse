@@ -11,7 +11,7 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-""" Block-like object meant for models where almost everything is indexed
+"""Block-like object meant for models where almost everything is indexed
 by time.
 """
 

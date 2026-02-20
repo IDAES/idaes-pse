@@ -14,11 +14,12 @@
 A simple property package of sulfuric acid solution used for testing unit models'
 compatibility with inherent reactions.
 
-We do not want to make this property package an example because it uses hours for 
+We do not want to make this property package an example because it uses hours for
 units of time instead of seconds. As a result, the derived units for pressure are
 kg/(m * hr**2) instead of kg/(m * s**2), i.e. Pascals, which causes trouble when
 pressure drop terms are included.
 """
+
 from pyomo.environ import (
     ComponentMap,
     Constraint,

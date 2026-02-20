@@ -15,6 +15,7 @@ Standard plotting methods (scatter, parity and residual plots).
 
 Author: B. Paul
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 

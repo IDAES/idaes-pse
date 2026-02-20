@@ -15,6 +15,7 @@ Tests for ideal equation of state methods
 
 Author: Andrew Lee, Douglas Allan
 """
+
 import pytest
 from sys import modules
 import re

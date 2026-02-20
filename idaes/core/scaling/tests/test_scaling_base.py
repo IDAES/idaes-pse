@@ -15,6 +15,7 @@ Tests for ScalerBase.
 
 Author: Andrew Lee
 """
+
 import pytest
 import re
 

@@ -13,6 +13,7 @@
 """
 Tests for PySMO's family of SurrogateTrainer (PysmoPolyTrainer, PysmoRBFTrainer and PysmoKrigingTrainer)
 """
+
 import pytest
 import numpy as np
 import pandas as pd
@@ -44,7 +45,6 @@ from idaes.core.surrogate.pysmo_surrogate import (
 
 from idaes.core.surrogate.surrogate_block import SurrogateBlock
 from idaes.core.surrogate.metrics import compute_fit_metrics
-
 
 pytestmark = pytest.mark.usefixtures("run_module_in_tmp_path")
 

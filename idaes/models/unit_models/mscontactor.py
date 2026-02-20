@@ -13,6 +13,7 @@
 """
 IDAES model for a generic multiple-stream contactor unit.
 """
+
 from functools import partial
 
 from pandas import DataFrame

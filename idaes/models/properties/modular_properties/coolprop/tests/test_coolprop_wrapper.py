@@ -40,7 +40,6 @@ from idaes.models.properties.modular_properties.eos.ceos import Cubic, CubicType
 from idaes.core.solvers import get_solver
 from idaes.models.properties.modular_properties.pure.ConstantProperties import Constant
 
-
 CoolProp = pytest.importorskip("CoolProp.CoolProp", reason="CoolProp not installed")
 
 from idaes.models.properties.modular_properties.coolprop.coolprop_wrapper import (

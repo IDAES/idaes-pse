@@ -15,6 +15,7 @@ Tests for Heat Exchanger 1D unit model.
 
 Author: Jaffer Ghouse
 """
+
 import pytest
 
 from pyomo.environ import (
@@ -87,7 +88,6 @@ from idaes.models.properties.modular_properties.phase_equil.bubble_dew import (
 from idaes.models.properties.modular_properties.phase_equil.forms import log_fugacity
 import idaes.models.properties.modular_properties.pure.RPP4 as RPP
 from idaes.models.properties.modular_properties.eos.ceos import cubic_roots_available
-
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing

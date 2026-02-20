@@ -14,6 +14,7 @@
 This module contains the base class for constructing flowsheet models in the
 IDAES modeling framework.
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 from warnings import warn

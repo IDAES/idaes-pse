@@ -42,7 +42,6 @@ from idaes.core.util import to_json, from_json, StoreSpec
 from idaes.core.util.scaling import jacobian_cond
 from idaes.core.scaling import AutoScaler, CustomScalerBase, set_scaling_factor
 
-
 FILENAME = "gibbs_solution.json"
 local_path = os.path.dirname(os.path.realpath(__file__))
 fname = os.path.join(local_path, FILENAME)

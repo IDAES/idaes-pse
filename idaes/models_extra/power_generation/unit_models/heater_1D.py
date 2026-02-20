@@ -15,6 +15,7 @@
 
 Discretization based on tube rows
 """
+
 # Import Pyomo libraries
 from pyomo.environ import (
     assert_optimal_termination,

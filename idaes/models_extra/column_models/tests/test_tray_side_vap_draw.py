@@ -15,6 +15,7 @@ Tests for conventional tray unit model (no feed, has vap side draw).
 
 Author: Jaffer Ghouse
 """
+
 import pytest
 from pyomo.environ import check_optimal_termination, ConcreteModel, value
 from pyomo.util.check_units import assert_units_consistent
@@ -32,7 +33,6 @@ from idaes.core.util.model_statistics import (
 )
 from idaes.core.util.testing import PhysicalParameterTestBlock, initialization_tester
 from idaes.core.solvers import get_solver
-
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing

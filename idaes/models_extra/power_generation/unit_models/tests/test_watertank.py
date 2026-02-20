@@ -27,6 +27,7 @@ main assumptions:
 
 Created on Nov 04 2020 by J. Ma, M. Zamarripa, D. Caballero
 """
+
 import pytest
 
 # Import Pyomo libraries

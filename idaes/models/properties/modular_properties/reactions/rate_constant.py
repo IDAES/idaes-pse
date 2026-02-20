@@ -13,6 +13,7 @@
 """
 Methods for calculating rate constants
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 

@@ -14,6 +14,7 @@
 Creating a Component derived from Pyomo's Expression to use in cases
 where an Expression could be mistaken for a Var.
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring

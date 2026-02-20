@@ -13,6 +13,7 @@
 """
 Author: Andrew Lee, Douglas Allan
 """
+
 import pytest
 from pyomo.environ import check_optimal_termination, Block, ConcreteModel, Set, value
 from pyomo.util.check_units import assert_units_consistent
@@ -38,7 +39,6 @@ from idaes.models.properties.modular_properties.examples.reactions.reaction_exam
     thermo_configuration,
     rxn_configuration,
 )
-
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing

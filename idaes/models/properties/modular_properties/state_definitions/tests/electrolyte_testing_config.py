@@ -16,6 +16,7 @@ inherent reactions.
 
 Authors: Andrew Lee, Douglas Allan
 """
+
 # Import Pyomo units
 from pyomo.environ import units as pyunits
 

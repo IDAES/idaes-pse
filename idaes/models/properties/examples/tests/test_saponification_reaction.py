@@ -14,6 +14,7 @@
 Tests for saponification property package example.
 Authors: Andrew Lee
 """
+
 from math import exp
 import pytest
 
@@ -29,7 +30,6 @@ from idaes.models.properties.examples.saponification_thermo import (
     SaponificationParameterBlock,
 )
 from idaes.core.solvers import get_solver
-
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing

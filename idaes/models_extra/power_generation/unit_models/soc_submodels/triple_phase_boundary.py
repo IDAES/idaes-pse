@@ -43,6 +43,7 @@ and related approximations for calculating activation losses in solid oxide
 fuel cell models. Journal of Power Sources, 152(1–2), 175–181.
 https://doi.org/10.1016/j.jpowsour.2005.03.174
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring

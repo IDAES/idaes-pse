@@ -20,6 +20,7 @@ Data sources:
         Operations. V. Zavala, 2014, Comp. Chem. Eng.
 
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
@@ -46,7 +47,6 @@ from idaes.core.util.config import (
     is_transformation_scheme,
 )
 from idaes.core.util.constants import Constants
-
 
 EXPLICIT_DISCRETIZATION_SCHEMES = {
     "FORWARD",

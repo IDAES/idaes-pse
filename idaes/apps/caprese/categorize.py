@@ -11,8 +11,7 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-""" Functions for categorizing variable into e.g. differential and algebraic.
-"""
+"""Functions for categorizing variable into e.g. differential and algebraic."""
 
 from pyomo.environ import (
     Reference,

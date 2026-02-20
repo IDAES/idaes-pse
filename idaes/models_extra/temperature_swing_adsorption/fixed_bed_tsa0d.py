@@ -44,6 +44,7 @@ swing adsorption for the recovery of the heavy component: an equilibrium-based
 shortcut model. Industrial & Engineering Chemistry Research, 2015, 54(11),
 3027-3038
 """
+
 from enum import Enum
 from pandas import DataFrame
 

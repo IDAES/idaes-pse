@@ -13,6 +13,7 @@
 """
 Tests get environment info
 """
+
 import json
 import importlib
 import pytest

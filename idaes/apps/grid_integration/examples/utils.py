@@ -17,7 +17,6 @@ import os
 
 import pandas as pd
 
-
 with resources.as_file(
     resources.files("idaes.tests.prescient.5bus").joinpath("__init__.py")
 ) as pkg_file:

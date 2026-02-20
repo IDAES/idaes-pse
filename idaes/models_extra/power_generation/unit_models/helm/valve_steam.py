@@ -31,7 +31,6 @@ import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 from idaes.core.util.exceptions import ConfigurationError
 
-
 _log = idaeslog.getLogger(__name__)
 
 

@@ -17,6 +17,7 @@ can be found for some highly polar substances in Table 9-1 in the Properties
 of Gases and Liquids, 5th Ed. Chung et al. might also have additional factors
 in some of their papers. If unknown, set the association factor to zero.
 """
+
 from pyomo.environ import Var, units as pyunits
 import pyomo.environ as pyo
 

@@ -27,6 +27,7 @@ Instances of ``Var`` that must be fixed:
       Would be something like (reduced) activation energy, but it can be both negative and positive.
     - ``contact_fraction``: Fraction of area at which both surfaces touch. If unknown, can fix at one.
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring

@@ -19,6 +19,7 @@ Created: August 21 2020
 
 Created on Thu Aug 18 12:59:50 2020 by Boiler Team (J. Ma, M. Zamarripa)
 """
+
 import pytest
 
 # Import Pyomo libraries

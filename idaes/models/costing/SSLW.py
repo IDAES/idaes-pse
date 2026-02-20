@@ -22,6 +22,7 @@ Costing package based on methods from:
 Currently, this costing package only includes methods for capital costing of
 unit operations.
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-class-docstring
 

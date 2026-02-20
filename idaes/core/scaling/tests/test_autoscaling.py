@@ -15,6 +15,7 @@ Tests for autoscalers.
 
 Author: Andrew Lee
 """
+
 from math import sqrt
 import pytest
 

@@ -858,7 +858,7 @@ should be constructed,
                             to_units=units_meta_solid("length"),
                         )
                         ** 2
-                        * b.solid_properties[t, x].params.voidage ** 3
+                        * b.solid_properties[t, x].params.voidage**3
                     )
                 ) + (
                     (1.75 * pyunits.dimensionless)
@@ -870,7 +870,7 @@ should be constructed,
                             b.solid_properties[t, x].params.particle_dia,
                             to_units=units_meta_solid("length"),
                         )
-                        * b.solid_properties[t, x].params.voidage ** 3
+                        * b.solid_properties[t, x].params.voidage**3
                     )
                 )
 

@@ -12,7 +12,6 @@
 #################################################################################
 """Tests that helmholtz specific NTU condenser model."""
 
-
 import pytest
 import pyomo.environ as pyo
 import idaes.core

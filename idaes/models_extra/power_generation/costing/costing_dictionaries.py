@@ -22,6 +22,7 @@ Two python dictionaries that are loaded:
 * sCO2_costing_params
 
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 

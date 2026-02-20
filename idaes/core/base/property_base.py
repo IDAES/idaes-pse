@@ -13,6 +13,7 @@
 """
 This module contains classes for property blocks and property parameter blocks.
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 
@@ -50,7 +51,6 @@ from idaes.core.base.util import build_on_demand
 from idaes.core.initialization import (
     BlockTriangularizationInitializer,
 )
-
 
 # Some more information about this module
 __author__ = "Andrew Lee, John Eslick"

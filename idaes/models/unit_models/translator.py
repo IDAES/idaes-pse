@@ -13,6 +13,7 @@
 """
 Generic template for a translator block.
 """
+
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 

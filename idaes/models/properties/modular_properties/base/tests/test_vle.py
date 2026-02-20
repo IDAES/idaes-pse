@@ -15,6 +15,7 @@ General tests for generic properties with Henry components present
 
 Author: Andrew Lee
 """
+
 # Import Python libraries
 from copy import deepcopy
 import pytest

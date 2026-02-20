@@ -36,7 +36,6 @@ from idaes.models.properties.general_helmholtz import (
 
 from idaes.models.properties.general_helmholtz.helmholtz_state import _StateBlock
 
-
 # Logger
 _log = idaeslog.getLogger(__name__)
 

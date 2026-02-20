@@ -10,8 +10,8 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-"""Predefined expression for Helmholtz EoS functions
-"""
+"""Predefined expression for Helmholtz EoS functions"""
+
 # Extended from phi_residual_type02.py by John Eslick
 __author__ = "Ben Lincoln and Stephen Burroughs"
 

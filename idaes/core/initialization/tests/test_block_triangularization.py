@@ -13,6 +13,7 @@
 """
 Tests for Block Triangularization initialization
 """
+
 import pytest
 import re
 import types

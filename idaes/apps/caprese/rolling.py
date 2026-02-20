@@ -11,8 +11,7 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-""" Classes used for rolling-horizon simulation.
-"""
+"""Classes used for rolling-horizon simulation."""
 
 from pyomo.core.base.componentuid import ComponentUID
 from collections import OrderedDict

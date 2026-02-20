@@ -13,6 +13,7 @@
 """
 Authors: Anuja Deshpande, Andrew Lee
 """
+
 import pytest
 import numpy as np
 
@@ -50,7 +51,6 @@ from idaes.models.properties.modular_properties.phase_equil import SmoothVLE
 from idaes.models.properties.modular_properties.examples.CO2_H2O_Ideal_VLE import (
     configuration,
 )
-
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing

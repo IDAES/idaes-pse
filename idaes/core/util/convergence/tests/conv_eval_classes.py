@@ -15,6 +15,7 @@ Test classes for the convergence evaluation testing module
 
 Author: Carl Laird
 """
+
 # pylint: disable=missing-class-docstring
 
 import pyomo.environ as pe

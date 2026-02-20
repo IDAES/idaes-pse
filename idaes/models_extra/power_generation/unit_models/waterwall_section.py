@@ -22,6 +22,7 @@ main equations:
 
 
 """
+
 # Import Pyomo libraries
 from pyomo.environ import (
     value,
@@ -55,10 +56,8 @@ import idaes.core.util.scaling as iscale
 from idaes.core.solvers import get_solver
 import idaes.logger as idaeslog
 
-
 # Additional import for the unit operation
 from idaes.core.util.constants import Constants as const
-
 
 __author__ = "Boiler Subsystem Team (J. Ma, M. Zamarripa)"
 __version__ = "2.0.0"

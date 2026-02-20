@@ -13,6 +13,7 @@
 """
 Tests for Caprese helper utility functions.
 """
+
 import pytest
 from pytest import approx
 

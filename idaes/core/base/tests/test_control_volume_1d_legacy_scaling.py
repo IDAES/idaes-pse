@@ -15,6 +15,7 @@ Tests for ControlVolume0D scaling.
 
 Author: John Eslick
 """
+
 import pytest
 import pyomo.environ as pyo
 from idaes.core import (

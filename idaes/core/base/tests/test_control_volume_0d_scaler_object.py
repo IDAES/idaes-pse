@@ -15,6 +15,7 @@ Tests for ControlVolume0D scaling.
 
 Author: Douglas Allan
 """
+
 import pytest
 import pyomo.environ as pyo
 from pyomo.common.collections import ComponentMap

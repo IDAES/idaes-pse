@@ -13,6 +13,7 @@
 """
 Tests for Metrics object
 """
+
 import pytest
 import pandas as pd
 

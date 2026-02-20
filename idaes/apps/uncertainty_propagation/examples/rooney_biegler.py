@@ -11,10 +11,11 @@
 # for full copyright and license information.
 #################################################################################
 """
-Rooney Biegler model, based on Rooney, W. C. and Biegler, L. T. (2001). Design for 
-model parameter uncertainty using nonlinear confidence regions. AIChE Journal, 
+Rooney Biegler model, based on Rooney, W. C. and Biegler, L. T. (2001). Design for
+model parameter uncertainty using nonlinear confidence regions. AIChE Journal,
 47(8), 1794-1804.
 """
+
 import pandas as pd
 import pyomo.environ as pyo
 

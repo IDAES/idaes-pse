@@ -19,8 +19,8 @@ __author__ = "John Eslick"
 import sys
 import platform
 import json
-import importlib
-import pkg_resources
+import importlib.metadata
+from packaging.requirements import Requirement
 
 import pyomo
 import pyomo.environ as pyo
@@ -72,22 +72,21 @@ class EnvironmentInfo:
         self.pyomo_version = pyomo.version.__version__
         # Get dependency info
         self.dependency_versions = {}
-        reqs = pkg_resources.get_distribution("idaes-pse").requires()
-        for dep in [x.name for x in reqs]:
+        reqs = importlib.metadata.requires("idaes-pse")
+        for req in reqs:
+            dep = Requirement(req).name
             if dep == "pyomo":
                 continue  # pyomo is special
             try:
-                self.dependency_versions[dep] = pkg_resources.get_distribution(
-                    dep
-                ).version
-            except pkg_resources.DistributionNotFound:
+                self.dependency_versions[dep] = importlib.metadata.version(dep)
+            except importlib.metadata.PackageNotFoundError:
                 self.dependency_versions[dep] = None
         # Extra packages, users must install these for esoteric features
         self.extra_versions = {}
         for dep in self.extras:
             try:
-                self.extra_versions[dep] = pkg_resources.get_distribution(dep).version
-            except pkg_resources.DistributionNotFound:
+                self.extra_versions[dep] = importlib.metadata.version(dep)
+            except importlib.metadata.PackageNotFoundError:
                 self.extra_versions[dep] = None
         self.solver_versions = {}
         for s in self.known_solvers + list(additional_solvers):

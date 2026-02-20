@@ -14,6 +14,7 @@
 Tests for thickener unit model.
 Authors: Andrew Lee
 """
+
 from math import isnan
 import pytest
 import re

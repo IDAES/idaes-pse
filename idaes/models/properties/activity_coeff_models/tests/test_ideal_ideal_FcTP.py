@@ -16,6 +16,7 @@ state vars tested are FcTP.
 
 Author: Jaffer Ghouse
 """
+
 import pytest
 from pyomo.environ import check_optimal_termination, ConcreteModel, value
 from pyomo.util.check_units import assert_units_consistent
@@ -35,7 +36,6 @@ from idaes.core.util.model_statistics import (
 from idaes.core.initialization import InitializationStatus
 from idaes.core.solvers import get_solver
 import idaes.core.util.scaling as iscale
-
 
 solver = get_solver("ipopt_v2")
 

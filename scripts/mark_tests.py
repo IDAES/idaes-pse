@@ -21,6 +21,7 @@ with either 'component', 'integration', or 'unit'.
 The user must provide a list of test files to process,
 in a text file, listed by by relative or absolute path.
 """
+
 TEST_FILE_LIST = "testfiles.txt"
 
 import logging

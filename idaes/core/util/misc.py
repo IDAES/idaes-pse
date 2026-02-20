@@ -14,6 +14,7 @@
 """
 This module contains miscellaneous utility functions for use in IDAES models.
 """
+
 from enum import Enum
 import sys
 

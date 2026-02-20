@@ -13,6 +13,7 @@
 """
 Tests for ONNXSurrogate
 """
+
 import pytest
 
 pytest.importorskip("onnx", reason="onnx not available")

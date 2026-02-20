@@ -16,6 +16,7 @@ only tests for construction.
 
 Author: Jaffer Ghouse
 """
+
 import pytest
 from pyomo.environ import ConcreteModel
 from pyomo.util.check_units import assert_units_consistent

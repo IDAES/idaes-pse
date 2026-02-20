@@ -15,6 +15,7 @@ Tests for 0D heat exchanger models.
 
 Author: John Eslick
 """
+
 import pytest
 
 from pyomo.environ import (

@@ -16,6 +16,7 @@ Chiefly tests that the properties are appearing on modular state blocks as expec
 
 Author: Douglas Allan, Jaffer Ghouse
 """
+
 import pyomo.common.unittest as unittest
 
 import pytest

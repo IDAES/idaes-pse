@@ -15,6 +15,7 @@ Tests for Gibbs reactor Scaler.
 
 Author: Andrew Lee
 """
+
 import os
 import pytest
 
@@ -41,7 +42,6 @@ from idaes.core.util.scaling import (
 )
 from idaes.core.util import from_json, StoreSpec
 from idaes.core.scaling import CustomScalerBase, get_scaling_factor, set_scaling_factor
-
 
 # Get solution json from scaling tests
 FILENAME = "gibbs_solution.json"

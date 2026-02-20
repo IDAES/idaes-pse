@@ -15,6 +15,7 @@ Tests for column model utitliy functions
 
 Author: Alejandro Garciadiego, Andrew Lee
 """
+
 import pytest
 from types import MethodType
 

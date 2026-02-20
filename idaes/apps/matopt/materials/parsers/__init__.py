@@ -24,4 +24,5 @@ import matopt.materials.parsers.PDB
 import matopt.materials.parsers.POSCAR
 import matopt.materials.parsers.XYZ
 """
+
 # TODO: Decide if this is necessary

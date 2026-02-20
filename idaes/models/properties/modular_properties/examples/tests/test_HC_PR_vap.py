@@ -51,7 +51,6 @@ from idaes.models.properties.modular_properties.examples.HC_PR_vap import (
 )
 from idaes.models.properties.modular_properties.eos.ceos import cubic_roots_available
 
-
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_solver("ipopt_v2")

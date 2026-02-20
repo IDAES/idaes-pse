@@ -44,7 +44,6 @@ from idaes.core.util.testing import PhysicalParameterTestBlock
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 
-
 # Mark module as all unit tests
 pytestmark = pytest.mark.unit
 

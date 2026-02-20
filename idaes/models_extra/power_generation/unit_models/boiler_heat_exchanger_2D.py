@@ -22,6 +22,7 @@ phase transitions (if user requires phase transitions, they need a general
 model)
 
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 

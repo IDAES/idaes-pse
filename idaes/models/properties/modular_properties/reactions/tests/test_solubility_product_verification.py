@@ -51,7 +51,6 @@ from idaes.models.properties.modular_properties.reactions.equilibrium_constant i
     ConstantKeq,
 )
 
-
 solver = get_solver("ipopt_v2")
 
 

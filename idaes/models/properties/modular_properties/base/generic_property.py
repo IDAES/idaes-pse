@@ -13,6 +13,7 @@
 """
 Framework for generic property packages
 """
+
 # TODO: Pylint complains about variables with _x names as they are built by sub-classes
 # pylint: disable=protected-access
 

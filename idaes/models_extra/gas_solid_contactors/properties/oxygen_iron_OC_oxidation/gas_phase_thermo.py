@@ -22,6 +22,7 @@ Liquids, Mcgraw-Hill, New York, 2001.
 https://webbook.nist.gov/chemistry/ (accessed March 10, 2018).
 
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 

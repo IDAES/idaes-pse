@@ -13,6 +13,7 @@
 """
 Tests for SurrogateBase classes
 """
+
 import pytest
 
 import pandas as pd

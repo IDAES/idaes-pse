@@ -13,6 +13,7 @@
 """
 Framework for generic reaction packages
 """
+
 # TODO: Look into protected access issues
 # pylint: disable=protected-access
 
@@ -51,7 +52,6 @@ from idaes.core.util.exceptions import (
 import idaes.core.util.scaling as iscale
 
 import idaes.logger as idaeslog
-
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)

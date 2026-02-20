@@ -13,6 +13,7 @@
 """
 Tests for costing base classes
 """
+
 import pytest
 
 from pyomo.environ import ConcreteModel, Constraint, Set, units as pyunits, Var, Param

@@ -15,6 +15,7 @@ IDAES Component objects
 
 @author: alee
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 
@@ -26,7 +27,6 @@ from idaes.core.base.phases import PhaseType
 from idaes.core.util.exceptions import ConfigurationError, PropertyPackageError
 from idaes.core.util.misc import set_param_from_config
 import idaes.logger as idaeslog
-
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)

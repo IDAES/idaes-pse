@@ -10,8 +10,7 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-"""Predefined expressions for Helmholtz EoS functions
-"""
+"""Predefined expressions for Helmholtz EoS functions"""
 
 __author__ = "John Eslick"
 

@@ -13,6 +13,7 @@
 """
 Author: Andrew Lee, Douglas Allan
 """
+
 import pytest
 from pyomo.environ import (
     check_optimal_termination,
@@ -43,7 +44,6 @@ from idaes.models.properties.modular_properties.phase_equil import SmoothVLE
 from idaes.models.properties.modular_properties.examples.BT_ideal import configuration
 
 from idaes.models.properties.tests.test_harness import PropertyTestHarness
-
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing

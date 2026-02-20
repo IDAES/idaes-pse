@@ -41,7 +41,6 @@ from idaes.core.solvers import get_solver
 from idaes.core.util.config import DefaultBool
 from idaes.core.initialization import SingleControlVolumeUnitInitializer
 
-
 __author__ = "John Eslick, Qi Chen, Andrew Lee"
 
 

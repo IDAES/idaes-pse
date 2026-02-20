@@ -13,6 +13,7 @@
 """
 Methods for defining reaction rates
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 

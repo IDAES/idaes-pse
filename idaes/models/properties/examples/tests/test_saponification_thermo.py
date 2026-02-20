@@ -31,7 +31,6 @@ from idaes.core.initialization import (
     InitializationStatus,
 )
 
-
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_solver("ipopt_v2")

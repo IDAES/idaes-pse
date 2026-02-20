@@ -14,6 +14,7 @@
 Tests for Plate Heat Exchnager  unit model.
 Author: Akula Paul
 """
+
 import pytest
 
 from pyomo.environ import (
@@ -39,7 +40,6 @@ from idaes.models_extra.column_models.properties.MEA_solvent import (
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
 from idaes.core.solvers import get_solver
-
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing

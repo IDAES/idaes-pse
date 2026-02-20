@@ -17,6 +17,7 @@ streams.
 
 Created: August 21 2020
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 

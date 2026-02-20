@@ -39,6 +39,7 @@ References:
    functions for liquid mixtures.", AIChE Journal Vol. 14, No.1, 1968.
 
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 
@@ -86,7 +87,6 @@ from idaes.core.solvers import get_solver
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 from idaes.core.initialization import InitializerBase
-
 
 # Some more information about this module
 __author__ = "Jaffer Ghouse"

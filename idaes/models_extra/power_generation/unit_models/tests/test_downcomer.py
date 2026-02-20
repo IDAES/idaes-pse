@@ -19,6 +19,7 @@ Main assumptions:
 
 Created on Aug 27, 2020 by Boiler Team (J. Ma, M. Zamarripa)
 """
+
 import pytest
 
 # Import Pyomo libraries

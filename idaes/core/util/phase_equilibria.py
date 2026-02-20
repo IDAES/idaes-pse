@@ -14,6 +14,7 @@
 This module contains utility functions to generate phase equilibrium data and
 plots.
 """
+
 # Import plotting functions
 import matplotlib.pyplot as plt
 import numpy as np
@@ -27,7 +28,6 @@ from pyomo.environ import (
 
 from idaes.core.solvers import get_solver
 import idaes.logger as idaeslog
-
 
 __author__ = "Alejandro Garciadiego"
 

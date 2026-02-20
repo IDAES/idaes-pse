@@ -46,6 +46,7 @@ Example::
         # do the work of the class.
 
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 

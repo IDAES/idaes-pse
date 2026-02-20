@@ -54,7 +54,6 @@ from idaes.models_extra.gas_solid_contactors.properties.oxygen_iron_OC_oxidation
     HeteroReactionParameterBlock,
 )
 
-
 # Get default solver for testing
 solver = get_solver()
 

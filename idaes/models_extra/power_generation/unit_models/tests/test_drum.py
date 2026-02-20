@@ -37,6 +37,7 @@ drop. The exit of the drum model is the liquid outlet.
 
 Created on Thu Aug 18 12:59:50 2020 by Boiler Team (J. Ma, M. Zamarripa)
 """
+
 import pytest
 
 # Import Pyomo libraries

@@ -13,6 +13,7 @@
 """
 Test that headers are on all files
 """
+
 # stdlib
 from pathlib import Path
 import os

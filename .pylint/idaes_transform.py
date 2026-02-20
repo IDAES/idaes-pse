@@ -16,7 +16,6 @@ import astroid
 import pylint
 from astroid.builder import extract_node, parse
 
-
 _logger = logging.getLogger("pylint.ideas_plugin")
 
 

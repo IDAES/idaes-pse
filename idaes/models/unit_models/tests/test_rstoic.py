@@ -15,6 +15,7 @@ Tests for IDAES Stoichiometric reactor.
 
 Author: Chinedu Okoli, Andrew Lee, Ryan Hughes
 """
+
 import pytest
 
 from pyomo.environ import (
