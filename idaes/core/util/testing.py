@@ -534,19 +534,17 @@ def assert_solution_equivalent(blk, expected_results):
 
     Args:
         blk: Pyomo block on which variables/expressions being tested are located
-        expected_results: Dictionary of the form:
-        {
-            indexed_var_name: {
-                index_1: (value, rel_tol, abs_tol),
-                index_2: (value, rel_tol, abs_tol),
-                ...
+        expected_results: Dictionary of the form::
+
+            expected_results = {
+                "indexed_var_name": {
+                    "index_1": (value, rel_tol, abs_tol),
+                    "index_2": (value, rel_tol, abs_tol),
+                }
+                "unindexed_var_name": {
+                    None: (value, rel_tol, abs_tol)
+                }
             }
-            unindexed_var_name: {
-                # Unindexed vars pass None as the index
-                None: (value, rel_tol, abs_tol)
-            }
-            ...
-        }
     """
 
     n_failures = 0
@@ -575,8 +573,7 @@ def assert_solution_equivalent(blk, expected_results):
             failures.append(failure_msg)
             continue
 
-        for index, (expected_value, rel, abs) in expected_values_dict.items():
-            absent_index = False
+        for index, (expected_value, rel_tol, abs_tol) in expected_values_dict.items():
             is_close = False
             if index is None:
                 component_to_test = obj
@@ -584,17 +581,19 @@ def assert_solution_equivalent(blk, expected_results):
                 if index in obj:
                     component_to_test = obj[index]
                 else:
-                    absent_index = True
-            if not absent_index:
+                    component_to_test = None
+            if component_to_test is not None:
                 actual_value = value(component_to_test)
 
                 # Determine if the values are approximately equal
-                if actual_value == pytest.approx(expected_value, rel=rel, abs=abs):
+                if actual_value == pytest.approx(
+                    expected_value, rel=rel_tol, abs=abs_tol
+                ):
                     is_close = True
-            if (absent_index or not is_close) and not recorded_var:
+            if (component_to_test is None or not is_close) and not recorded_var:
                 failures.append(f"  - {obj_type}: {name}")
                 recorded_var = True
-            if absent_index:
+            if component_to_test is None:
                 failure_msg = f"    Index:    {index} is absent"
                 failures.append(failure_msg)
                 n_failures += 1
@@ -602,11 +601,11 @@ def assert_solution_equivalent(blk, expected_results):
 
             # If the comparison fails, record the details
             if not is_close:
-                if rel is not None:
-                    n_sig_figs = ceil(-log10(rel)) + 1
+                if rel_tol is not None:
+                    n_sig_figs = ceil(-log10(rel_tol)) + 1
                     format_spec = "." + str(n_sig_figs) + "e"
-                elif abs is not None:
-                    n_sig_figs = ceil(-log10(abs)) + 1
+                elif abs_tol is not None:
+                    n_sig_figs = ceil(-log10(abs_tol)) + 1
                     format_spec = "." + str(n_sig_figs) + "f"
                 else:
                     format_spec = ".7e"
