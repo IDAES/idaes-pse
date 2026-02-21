@@ -49,7 +49,6 @@ from idaes.core.util import DiagnosticsToolbox
 
 from copy import deepcopy
 
-
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_solver("ipopt_v2")
