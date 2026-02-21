@@ -1140,8 +1140,6 @@ class TestCommon(object):
     def test_calculate_scaling_factors(self, frame):
         frame.props[1].calculate_scaling_factors()
 
-        print(len(frame.props[1].scaling_factor))
-
         assert len(frame.props[1].scaling_factor) == 22
         assert frame.props[1].scaling_factor[frame.props[1].flow_mol] == 1e-2
         assert frame.props[1].scaling_factor[frame.props[1].flow_mol_phase["a"]] == 1e-2
@@ -1536,19 +1534,8 @@ def test_phase_equilibrium_initializer_object():
 
     m = model.fs.state[0]
 
-    m.display()
-
-    for v in m.component_data_objects(Var, active=True):
-        print(f"{v.name}: value={v.value}, lb={v.lb}, ub={v.ub}")
-
-    print()
-
-    for c in m.component_data_objects(Constraint, active=True):
-        print(c.name, c.expr)
-
     # As the phase equilibrium constraints were not solved, we expect these to have a large residual
     large_res = large_residuals_set(model.fs.state[0])
-    print(large_res)
     assert len(large_res) == 2
     for i in large_res:
         assert i.name in [

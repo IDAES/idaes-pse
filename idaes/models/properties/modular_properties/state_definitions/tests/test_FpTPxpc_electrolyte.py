@@ -720,7 +720,6 @@ class TestTrueSpeciesBasisInherent:
         )
 
         # Check apparent species mole fractions
-        m.fs.state[1].mole_frac_phase_comp_apparent.display()
         assert value(
             m.fs.state[1].mole_frac_phase_comp_apparent["Liq", "K2CO3"]
         ) == pytest.approx(0.2, rel=1e-5)
