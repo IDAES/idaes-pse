@@ -8,3 +8,4 @@ How-To-Guides
     workflow/index
     opt_dependencies
     versioned_idaes_install
+    structfs/index

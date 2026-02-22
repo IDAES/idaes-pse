@@ -44,6 +44,7 @@ Contents
          | :doc:`Setting up IDAES Models <how_to_guides/workflow/index>`
          | :doc:`Developing Custom Models <how_to_guides/custom_models/general_model_development>`
          | :doc:`Installing Specific IDAES Versions <how_to_guides/versioned_idaes_install>`
+         | :doc:`Creating and using the FlowsheetRunner interface to a flowsheet <how_to_guides/structfs/index>`
    * - Explanations
          | :doc:`Why IDAES <explanations/why_idaes>`
          | :doc:`Concepts <explanations/concepts>`
@@ -75,6 +76,7 @@ Contents
     tutorials/index
     how_to_guides/index
     explanations/index
+    examples/index
     reference_guides/index
     archived_features/index
     explanations/faq

@@ -47,10 +47,14 @@ dependencies = [
   "sympy", # idaes.core.util.expr_doc
   "matplotlib",
   "click>=8",
+  "pydantic"  # used by core.util.structfs, at a minimum
 ]
 
 [project.optional-dependencies]
-ui = ["idaes-ui",]
+ui = [
+  "idaes-ui",
+  "idaes-connectivity"
+]
 coolprop = [
   "coolprop>=7.0", # idaes.generic_models.properties.general.coolprop
 ]
@@ -116,6 +120,7 @@ include = ["idaes*"]
 
 [project.scripts]
 idaes = "idaes.commands.base:command_base"
+idaes-run = "idaes.commands.run_flowsheet:main"
 
 [project.entry-points."idaes.flowsheets"]
 "0D_Fixed_Bed_TSA" = "idaes.models_extra.temperature_swing_adsorption.fixed_bed_tsa0d_ui"

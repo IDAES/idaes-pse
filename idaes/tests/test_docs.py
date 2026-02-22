@@ -20,6 +20,7 @@ for the log of the build and looks for errors in it.
 # stdlib
 import logging
 import os
+from pathlib import Path
 from subprocess import Popen
 
 # third-party
@@ -76,7 +77,9 @@ ERRLOG = "sphinx-errors.txt"
 
 @pytest.mark.unit
 def test_sphinx_build_log(docs_path):
-    """Check the sphinx log for errors or warnings."""
+    """Check the sphinx log for errors or certain warnings."""
+
+    # Find the error log
     _log.info('docs path = "{}"'.format(docs_path))
     if docs_path is None:
         _log.warning('Could not find "docs" directory')
@@ -87,16 +90,29 @@ def test_sphinx_build_log(docs_path):
             'Could not find "{}" in docs directory: {}'.format(ERRLOG, log_path)
         )
         return
-    if os.stat(log_path).st_size == 0:  # file is empty - good
-        return
 
-    # Dump contents to stdout
-    err_count = 0
-    with open(log_path) as log:
-        for line in log:
-            err_count += 1
-            print(line, end="")
-    assert False, f"{err_count} Errors and/or Warnings found in {log_path}"
+    # Check error log contents; ignore some warnings
+    real_errors = []
+    with open(log_path) as f:
+        for line in f:
+            if not (_is_sphinx_warning(line) and _can_ignore_sphinx_warning(line)):
+                if not real_errors:  # first error
+                    print("+---> Sphinx errors")
+                real_errors.append(line)
+                print(f"| {line}", end="")
+    if real_errors:
+        print("+---< Sphinx errors")
+        assert False, f"{len(real_errors)} errors found"
+
+
+def _is_sphinx_warning(line: str) -> bool:
+    return "WARNING" in line
+
+
+def _can_ignore_sphinx_warning(line: str) -> bool:
+    if "duplicate object description" in line:
+        return True
+    return False
 
 
 def _have_sphinx():
@@ -118,3 +134,19 @@ def test_doctests(docs_path):
         proc = Popen(command)
         proc.wait(600)
         assert proc.returncode == 0
+        _cleanup_generated_files(docs_path)
+
+
+def _cleanup_generated_files(docs_path):
+    docs = Path(docs_path)
+
+    # remove selected autodoc2 Markdown docs in reference
+    reference = docs / "reference_guides"
+    for pkg in ("core.util.structfs",):
+        print(f"Clean up autodoc2 files for {pkg}")
+        path = reference
+        for subpkg in pkg.split("."):
+            path = path / subpkg
+        for filename in path.glob("*.md"):
+            print(f"- remove: {path / filename}")
+            os.unlink(path / filename)

@@ -58,3 +58,6 @@ PN = "PN"
 hd = "hd"
 Tge = "Tge"
 iy = "iy"
+
+# more chemE abbreviations
+HDA = "HDA"

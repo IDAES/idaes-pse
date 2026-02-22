@@ -41,6 +41,7 @@ Each individual property within a `PropertySet` is defined using a `PropertyMeta
 .. autoclass:: PropertyMetadata
   :members:
   :undoc-members:
+  :no-index:
 
 Property Set Base Class
 -----------------------
