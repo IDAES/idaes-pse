@@ -2873,6 +2873,7 @@ class GenericStateBlockData(StateBlockData):
                 initialize=t_value,
                 doc="Temperature for calculating phase equilibrium",
                 units=t_units,
+                bounds=self.temperature.bounds,
             )
 
         # Create common components for each property package
