@@ -757,7 +757,7 @@ class TestIDAESUnitModel:
             "Variable: outlet.conc_mol_comp\n\n"
             "    Index:    (0.0, 'NaOH')\n"
             "    Expected: 1.0000000e+01\n"
-            f"    Actual:   {unit_model.outlet.conc_mol_comp[0, "NaOH"].value:.7e}"
+            f"    Actual:   {unit_model.outlet.conc_mol_comp[0, 'NaOH'].value:.7e}"
         )
 
         # 2. Check for the second failure: heat_duty
