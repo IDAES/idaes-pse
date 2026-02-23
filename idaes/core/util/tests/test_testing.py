@@ -13,15 +13,38 @@
 """
 Who will test the testers?
 
-This file was created with the assistance of AI
+This file was created with the assistance of Google Gemini 2.5 Pro.
 """
 
 __author__ = "Douglas Allan"
 
 
 import pytest
-from pyomo.environ import Block, ConcreteModel, Var, Expression, Set
+
+
+from pyomo.environ import (
+    assert_optimal_termination,
+    Block,
+    ConcreteModel,
+    Expression,
+    Set,
+    Var,
+)
 from idaes.core.util.testing import assert_solution_equivalent
+from idaes.core.solvers import get_solver
+from idaes.models.unit_models import StoichiometricReactor
+from idaes.models.properties.examples.saponification_thermo import (
+    SaponificationParameterBlock,
+)
+from idaes.models.properties.examples.saponification_reactions import (
+    SaponificationReactionParameterBlock,
+)
+from idaes.core import (
+    FlowsheetBlock,
+    MaterialBalanceType,
+    EnergyBalanceType,
+    MomentumBalanceType,
+)
 
 ##############################################################
 #### Test basic functionality on a flat Pyomo model
@@ -553,31 +576,12 @@ class TestComplexBlockStructures:
         # Then we check the variable 'v_nested_indexed' on that component.
         # The utility handles this by first finding 'indexed_b_nested' and then
         # applying the index to it.
-        expected_results = {
-            "indexed_b_nested": {
-                "X": (
-                    20,
-                    1e-6,
-                    None,
-                ),  # Special case: value of a VarData on a BlockData
-                "Y": (21, 1e-6, None),
-            }
-        }
-        # This test is tricky. `value(m.simple_b.indexed_b_nested['X'])` is not what we want.
-        # The component we are checking is `m.simple_b.indexed_b_nested['X'].v_nested_indexed`.
-        # Your current utility is designed to find a component by *name* and then apply an index.
-        # It finds 'indexed_b_nested' and then accesses index 'X'. This yields the BlockData
-        # m.simple_b.indexed_b_nested['X']. Your code then tries to call value() on this,
-        # which is not a valid operation for a block.
 
-        # To make this work, we must check the variable itself.
-        # Let's see how the utility handles a fully-qualified component name.
-        # Pyomo's find_component can handle dot notation.
-        expected_results_correct = {
+        expected_results = {
             "indexed_b_nested[X].v_nested_indexed": {None: (20, 1e-6, None)},
             "indexed_b_nested[Y].v_nested_indexed": {None: (21, 1e-6, None)},
         }
-        assert_solution_equivalent(target_block, expected_results_correct)
+        assert_solution_equivalent(target_block, expected_results)
 
         # And a failure case
         expected_results_fail = {
@@ -585,3 +589,137 @@ class TestComplexBlockStructures:
         }
         with pytest.raises(AssertionError, match="Found 1 mismatch"):
             assert_solution_equivalent(target_block, expected_results_fail)
+
+
+##############################################################
+#### Test IDAES unit model on flowsheet
+##############################################################
+
+
+@pytest.mark.unit
+class TestIDAESUnitModel:
+    """
+    Tests the assert_solution_equivalent function on a real IDAES unit model.
+    This uses a StoichiometricReactor with the Saponification property and
+    reaction packages.
+    """
+
+    @pytest.fixture(scope="class")
+    def saponification_reactor_model(self):
+        """
+        Creates, initializes, and solves a stoichiometric reactor model for
+        the saponification of ethyl acetate using the example property and
+        reaction packages.
+        """
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(dynamic=False)
+
+        m.fs.properties = SaponificationParameterBlock()
+        m.fs.reactions = SaponificationReactionParameterBlock(
+            property_package=m.fs.properties
+        )
+
+        m.fs.R101 = StoichiometricReactor(
+            property_package=m.fs.properties,
+            reaction_package=m.fs.reactions,
+            material_balance_type=MaterialBalanceType.componentTotal,
+            energy_balance_type=EnergyBalanceType.enthalpyTotal,
+            momentum_balance_type=MomentumBalanceType.pressureTotal,
+            has_heat_transfer=True,
+            has_heat_of_reaction=True,
+            has_pressure_change=False,
+        )
+
+        # Fix inlet conditions using the correct state var: conc_mol_comp
+        m.fs.R101.inlet.flow_vol.fix(1.0)
+        m.fs.R101.inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
+        m.fs.R101.inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
+        m.fs.R101.inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
+        m.fs.R101.inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
+        m.fs.R101.inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
+        m.fs.R101.inlet.temperature.fix(303.15)
+        m.fs.R101.inlet.pressure.fix(101325.0)
+
+        # Fix reactor design variables
+        m.fs.R101.rate_reaction_extent[0.0, "R1"].fix(100.0)
+        # To make this an isothermal case with enthalpyTotal, we fix the outlet T
+        # and let the solver calculate the required heat duty.
+        m.fs.R101.outlet.temperature.fix(303.15)
+
+        # Initialize and solve the model
+        m.fs.R101.initialize_build()
+        solver = get_solver()
+        results = solver.solve(m)
+        assert_optimal_termination(results)
+
+        return m
+
+    def test_idaes_unit_model_pass(self, saponification_reactor_model):
+        """
+        Tests that assert_solution_equivalent passes with correct values
+        from the solved saponification reactor model.
+        The component index is now part of the inner dictionary.
+        """
+        unit_model = saponification_reactor_model.fs.R101
+
+        expected_results = {
+            "inlet.conc_mol_comp": {
+                (0.0, "NaOH"): (100.0, 1e-6, None),
+            },
+            "outlet.conc_mol_comp": {
+                (0.0, "NaOH"): (0.0, None, 1e-6),
+                (0.0, "SodiumAcetate"): (100.0, 1e-6, None),
+            },
+            "rate_reaction_extent": {
+                (0.0, "R1"): (100.0, 1e-6, None),
+            },
+            # Also test the calculated heat duty
+            "heat_duty": {
+                (0.0,): (-4.9e6, 1e-5, None),
+            },
+        }
+
+        assert_solution_equivalent(unit_model, expected_results)
+
+    def test_idaes_unit_model_fail(self, saponification_reactor_model):
+        """
+        Tests that assert_solution_equivalent correctly fails when one or more
+        expected values for the saponification reactor model are incorrect.
+        """
+        unit_model = saponification_reactor_model.fs.R101
+
+        expected_results = {
+            # Correct value
+            "inlet.conc_mol_comp": {
+                (0.0, "NaOH"): (100.0, 1e-6, None),
+            },
+            # Incorrect value for outlet NaOH concentration (correct is 0.0)
+            "outlet.conc_mol_comp": {
+                (0.0, "NaOH"): (10.0, 1e-6, None),
+            },
+            # Incorrect value for calculated heat duty (correct is -4.9e6)
+            "heat_duty": {
+                (0.0,): (-4.0e6, 1e-5, None),
+            },
+        }
+
+        with pytest.raises(AssertionError) as excinfo:
+            assert_solution_equivalent(unit_model, expected_results)
+
+        # Convert the exception to a string for inspection
+        report = str(excinfo.value)
+
+        # 1. Check for the header and correct mismatch count
+        assert "Found 2 mismatch(es)" in report
+
+        # 2. Check for the first failure: outlet.conc_mol_comp
+        assert "Variable: outlet.conc_mol_comp" in report
+        assert "Index:    (0.0, 'NaOH')" in report
+        assert "Expected: 1.0000000e+01" in report  # Expected value from test
+        assert "Actual:   9.9000000e-07" in report  # Actual value from model
+
+        # 3. Check for the second failure: heat_duty
+        assert "Variable: heat_duty" in report
+        assert "Index:    (0.0,)" in report
+        assert "Expected: -4.000000e+06" in report  # Expected value from test
+        assert "Actual:   -4.900000e+06" in report  # Actual value from model
