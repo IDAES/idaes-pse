@@ -707,19 +707,19 @@ class TestIDAESUnitModel:
             assert_solution_equivalent(unit_model, expected_results)
 
         # Convert the exception to a string for inspection
-        report = str(excinfo.value)
+        report = str(excinfo.value).splitlines()
 
         # 1. Check for the header and correct mismatch count
-        assert "Found 2 mismatch(es)" in report
+        assert "Found 2 mismatch(es)" in report[2]
 
         # 2. Check for the first failure: outlet.conc_mol_comp
-        assert "Variable: outlet.conc_mol_comp" in report
-        assert "Index:    (0.0, 'NaOH')" in report
-        assert "Expected: 1.0000000e+01" in report  # Expected value from test
-        assert "Actual:   9.9000000e-07" in report  # Actual value from model
+        assert "Variable: outlet.conc_mol_comp" in report[7]
+        assert "Index:    (0.0, 'NaOH')" in report[9]
+        assert "Expected: 1.0000000e+01" in report[10]  # Expected value from test
+        assert "Actual:   9.9000000e-07" in report[11]  # Actual value from model
 
         # 3. Check for the second failure: heat_duty
-        assert "Variable: heat_duty" in report
-        assert "Index:    (0.0,)" in report
-        assert "Expected: -4.000000e+06" in report  # Expected value from test
-        assert "Actual:   -4.900000e+06" in report  # Actual value from model
+        assert "Variable: heat_duty" in report[14]
+        assert "Index:    (0.0,)" in report[16]
+        assert "Expected: -4.000000e+06" in report[17]  # Expected value from test
+        assert "Actual:   -4.900000e+06" in report[18]  # Actual value from model
