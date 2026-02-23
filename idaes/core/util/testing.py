@@ -559,7 +559,7 @@ def assert_solution_equivalent(blk, expected_results):
             # but seeing "unknown" show up in an error message is confusing.
             if blk_name == "unknown":
                 blk_name = "model"
-            failure_msg = f"  - Could not find object {name} on {blk_name}\n"
+            failure_msg = f"  - Could not find object '{name}' on {blk_name}\n"
             failures.append(failure_msg)
             continue
 
@@ -569,7 +569,7 @@ def assert_solution_equivalent(blk, expected_results):
         elif isinstance(obj, Expression):
             obj_type = "Expression"
         else:
-            failure_msg = f"  - Error: object {name} is not a Var or Expression\n"
+            failure_msg = f"  - Error: object '{name}' is not a Var or Expression\n"
             failures.append(failure_msg)
             continue
 
@@ -594,7 +594,7 @@ def assert_solution_equivalent(blk, expected_results):
                 failures.append(f"  - {obj_type}: {name}")
                 recorded_var = True
             if component_to_test is None:
-                failure_msg = f"    Index:    {index} is absent"
+                failure_msg = f"    Index '{index}' is absent"
                 failures.append(failure_msg)
                 n_failures += 1
                 continue

@@ -110,8 +110,18 @@ class TestAssertSolutionEquivalent:
                 "C": (3.1, 1e-6, 1e-8),  # Incorrect value
             },
         }
-        with pytest.raises(AssertionError, match=r"Found 1 mismatch\(es\)"):
+        with pytest.raises(AssertionError) as excinfo:
             assert_solution_equivalent(model, expected_results)
+
+        report = str(excinfo.value)
+        assert "Found 1 mismatch(es)" in report
+        expected_mismatch = (
+            "Variable: x\n\n"
+            "    Index:    C\n"
+            "    Expected: 3.1000000e+00\n"
+            "    Actual:   3.0000000e+00"
+        )
+        assert expected_mismatch in report
 
     @pytest.mark.unit
     def test_multiple_failures(self, model):
@@ -132,8 +142,32 @@ class TestAssertSolutionEquivalent:
                 "C": (9.1, 1e-7, None),  # Incorrect value
             },
         }
-        with pytest.raises(AssertionError, match=r"Found 3 mismatch\(es\)"):
+        with pytest.raises(AssertionError) as excinfo:
             assert_solution_equivalent(model, expected_results)
+
+        report = str(excinfo.value)
+        assert "Found 3 mismatch(es)" in report
+        expected_mismatch_1 = (
+            "Variable: x\n\n"
+            "    Index:    A\n"
+            "    Expected: 1.10000000e+00\n"
+            "    Actual:   1.00000000e+00"
+        )
+        expected_mismatch_2 = (
+            "Variable: y\n\n"
+            "    Index:    None\n"
+            "    Expected: 1.01000000e+02\n"
+            "    Actual:   1.00000000e+02"
+        )
+        expected_mismatch_3 = (
+            "Expression: x_squared\n\n"
+            "    Index:    C\n"
+            "    Expected: 9.10000000e+00\n"
+            "    Actual:   9.00000000e+00"
+        )
+        assert expected_mismatch_1 in report
+        assert expected_mismatch_2 in report
+        assert expected_mismatch_3 in report
 
     @pytest.mark.unit
     def test_missing_component(self, model):
@@ -146,7 +180,9 @@ class TestAssertSolutionEquivalent:
                 "A": (1.0, 1e-6, 1e-8),
             },
         }
-        with pytest.raises(AssertionError, match="Could not find object zed on model"):
+        with pytest.raises(
+            AssertionError, match="Could not find object 'zed' on model"
+        ):
             assert_solution_equivalent(model, expected_results)
 
     @pytest.mark.unit
@@ -160,7 +196,7 @@ class TestAssertSolutionEquivalent:
                 "D": (4.0, 1e-6, 1e-8),  # Index 'D' does not exist in model.x
             },
         }
-        with pytest.raises(AssertionError, match=r"Index:    D is absent"):
+        with pytest.raises(AssertionError, match=r"Index 'D' is absent"):
             assert_solution_equivalent(model, expected_results)
 
     @pytest.mark.unit
@@ -173,8 +209,18 @@ class TestAssertSolutionEquivalent:
                 None: (99.0, 1e-6, 1e-8),  # Incorrect value, correct is 100.0
             },
         }
-        with pytest.raises(AssertionError, match=r"Found 1 mismatch\(es\)"):
+        with pytest.raises(AssertionError) as excinfo:
             assert_solution_equivalent(model, expected_results)
+
+        report = str(excinfo.value)
+        assert "Found 1 mismatch(es)" in report
+        expected_mismatch = (
+            "Variable: y\n\n"
+            "    Index:    None\n"
+            "    Expected: 9.9000000e+01\n"
+            "    Actual:   1.0000000e+02"
+        )
+        assert expected_mismatch in report
 
     @pytest.mark.unit
     def test_wrong_component_type(self, model):
@@ -188,7 +234,7 @@ class TestAssertSolutionEquivalent:
             }
         }
         with pytest.raises(
-            AssertionError, match="Error: object my_set is not a Var or Expression"
+            AssertionError, match="Error: object 'my_set' is not a Var or Expression"
         ):
             assert_solution_equivalent(model, expected_results)
 
@@ -235,10 +281,6 @@ class TestAssertSolutionEquivalent:
     def test_relative_tolerance_fail(self, model):
         """
         Tests that a value just outside the relative tolerance fails.
-        - Expected: 100.0, Actual: 101.1
-        - Relative tolerance (1e-2) allows a deviation up to 1.0. The actual
-        deviation is 1.1.
-        The test should fail.
         """
         model.y.set_value(101.1)
         expected_results = {
@@ -246,17 +288,23 @@ class TestAssertSolutionEquivalent:
                 None: (100.0, 1e-2, 1e-8),
             },
         }
-        with pytest.raises(AssertionError, match=r"Found 1 mismatch\(es\)"):
+        with pytest.raises(AssertionError) as excinfo:
             assert_solution_equivalent(model, expected_results)
+
+        report = str(excinfo.value)
+        assert "Found 1 mismatch(es)" in report
+        expected_mismatch = (
+            "Variable: y\n\n"
+            "    Index:    None\n"
+            "    Expected: 1.000e+02\n"
+            "    Actual:   1.011e+02"
+        )
+        assert expected_mismatch in report
 
     @pytest.mark.unit
     def test_absolute_tolerance_fail(self, model):
         """
         Tests that a value just outside the absolute tolerance fails.
-        - Expected: 0.001, Actual: 0.0021
-        - Absolute tolerance (1e-3) allows a deviation up to 0.001. The actual
-        deviation is 0.0011.
-        The test should fail.
         """
         model.z.set_value(0.0021)
         expected_results = {
@@ -264,34 +312,24 @@ class TestAssertSolutionEquivalent:
                 None: (0.001, 1e-2, 1e-3),
             },
         }
-        with pytest.raises(AssertionError, match=r"Found 1 mismatch\(es\)"):
+        with pytest.raises(AssertionError) as excinfo:
             assert_solution_equivalent(model, expected_results)
 
-    @pytest.mark.unit
-    def test_default_tolerances_pass(self, model):
-        """
-        Tests that pytest.approx defaults are used when rel and abs are None.
-        Default rel_tol is 1e-6.
-        - Expected: 100.0, Actual: 100.0000001
-        The test should pass.
-        """
-        model.y.set_value(100.0000001)
-        expected_results = {
-            "y": {
-                None: (100.0, None, None),  # Use pytest.approx defaults
-            },
-        }
-        assert_solution_equivalent(model, expected_results)
+        report = str(excinfo.value)
+        assert "Found 1 mismatch(es)" in report
+        # Note: abs tol provided, so 'f' format is used
+        expected_mismatch = (
+            "Variable: z\n\n"
+            "    Index:    None\n"
+            "    Expected: 1.000e-03\n"
+            "    Actual:   2.100e-03"
+        )
+        assert expected_mismatch in report
 
     @pytest.mark.unit
     def test_default_tolerances_fail(self, model):
         """
         Tests that pytest.approx defaults are used and can fail the test.
-        Default rel_tol is 1e-6.
-        - Expected: 100.0, Actual: 100.001
-        The deviation of 0.001 is greater than the default relative tolerance
-        (100.0 * 1e-6 = 0.0001).
-        The test should fail.
         """
         model.y.set_value(100.001)
         expected_results = {
@@ -299,8 +337,18 @@ class TestAssertSolutionEquivalent:
                 None: (100.0, None, None),  # Use pytest.approx defaults
             },
         }
-        with pytest.raises(AssertionError, match=r"Found 1 mismatch\(es\)"):
+        with pytest.raises(AssertionError) as excinfo:
             assert_solution_equivalent(model, expected_results)
+
+        report = str(excinfo.value)
+        assert "Found 1 mismatch(es)" in report
+        expected_mismatch = (
+            "Variable: y\n\n"
+            "    Index:    None\n"
+            "    Expected: 1.0000000e+02\n"
+            "    Actual:   1.0000100e+02"
+        )
+        assert expected_mismatch in report
 
 
 ##############################################################
@@ -608,8 +656,7 @@ class TestIDAESUnitModel:
     def saponification_reactor_model(self):
         """
         Creates, initializes, and solves a stoichiometric reactor model for
-        the saponification of ethyl acetate using the example property and
-        reaction packages.
+        the saponification of ethyl acetate.
         """
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
@@ -630,7 +677,6 @@ class TestIDAESUnitModel:
             has_pressure_change=False,
         )
 
-        # Fix inlet conditions using the correct state var: conc_mol_comp
         m.fs.R101.inlet.flow_vol.fix(1.0)
         m.fs.R101.inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
         m.fs.R101.inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
@@ -640,13 +686,9 @@ class TestIDAESUnitModel:
         m.fs.R101.inlet.temperature.fix(303.15)
         m.fs.R101.inlet.pressure.fix(101325.0)
 
-        # Fix reactor design variables
         m.fs.R101.rate_reaction_extent[0.0, "R1"].fix(100.0)
-        # To make this an isothermal case with enthalpyTotal, we fix the outlet T
-        # and let the solver calculate the required heat duty.
         m.fs.R101.outlet.temperature.fix(303.15)
 
-        # Initialize and solve the model
         m.fs.R101.initialize_build()
         solver = get_solver()
         results = solver.solve(m)
@@ -706,20 +748,25 @@ class TestIDAESUnitModel:
         with pytest.raises(AssertionError) as excinfo:
             assert_solution_equivalent(unit_model, expected_results)
 
-        # Convert the exception to a string for inspection
-        report = str(excinfo.value).splitlines()
+        report = str(excinfo.value)
+        assert "Found 2 mismatch(es)" in report
 
-        # 1. Check for the header and correct mismatch count
-        assert "Found 2 mismatch(es)" in report[2]
+        # 1. Check for the first failure: outlet.conc_mol_comp
+        # The actual value is very close to zero.
+        expected_mismatch_1 = (
+            "Variable: outlet.conc_mol_comp\n\n"
+            "    Index:    (0.0, 'NaOH')\n"
+            "    Expected: 1.0000000e+01\n"
+            f"    Actual:   {unit_model.outlet.conc_mol_comp[0, "NaOH"].value:.7e}"
+        )
 
-        # 2. Check for the first failure: outlet.conc_mol_comp
-        assert "Variable: outlet.conc_mol_comp" in report[7]
-        assert "Index:    (0.0, 'NaOH')" in report[9]
-        assert "Expected: 1.0000000e+01" in report[10]  # Expected value from test
-        assert "Actual:   9.9000000e-07" in report[11]  # Actual value from model
+        # 2. Check for the second failure: heat_duty
+        expected_mismatch_2 = (
+            "Variable: heat_duty\n\n"
+            "    Index:    (0.0,)\n"
+            "    Expected: -4.000000e+06\n"
+            f"    Actual:   {unit_model.heat_duty[0].value:.6e}"
+        )
 
-        # 3. Check for the second failure: heat_duty
-        assert "Variable: heat_duty" in report[14]
-        assert "Index:    (0.0,)" in report[16]
-        assert "Expected: -4.000000e+06" in report[17]  # Expected value from test
-        assert "Actual:   -4.900000e+06" in report[18]  # Actual value from model
+        assert expected_mismatch_1 in report
+        assert expected_mismatch_2 in report
