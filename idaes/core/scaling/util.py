@@ -1270,7 +1270,7 @@ def scale_time_discretization_equations(blk, time_set, time_scaling_factor):
 
     tname = time_set.local_name
 
-    # Copy and pasted from solvers.petsc.find_discretization_equations then modified
+    # Adapted from solvers.petsc.find_discretization_equations
     for var in blk.component_objects(Var):
         if isinstance(var, DerivativeVar):
             cont_set_set = ComponentSet(var.get_continuousset_list())
