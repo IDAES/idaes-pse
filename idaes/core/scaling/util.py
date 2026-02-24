@@ -1337,9 +1337,9 @@ def scale_time_discretization_equations(blk, time_set, time_scaling_factor):
                             else:
                                 set_scaling_factor(disc[t], s_deriv, overwrite=False)
                         else:
-                            # Lagrange-Legendre is a pain, because it has continuity equations on the edges of finite
-                            # instead of discretization equations, but no intermediate continuity equations, so we have
-                            # to look for both at every timepoint
+                            # Lagrange-Legendre is a pain, because it has continuity equations on the edges of finite elements
+                            # instead of discretization equations, but no intermediate continuity equations, so we have to look
+                            # for both at every timepoint
                             try:
                                 set_scaling_factor(disc[t], s_deriv, overwrite=False)
                             except KeyError:
