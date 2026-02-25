@@ -305,7 +305,9 @@ def test_print_required_properties(model, capsys):
     model.fs.params.print_required_properties()
 
     captured = capsys.readouterr()
-    assert captured.out == """
+    assert (
+        captured.out
+        == """
 ==========================================================================
 Property Interrogator Summary
 
@@ -322,6 +324,7 @@ The Flowsheet requires the following properties (times required):
 Note: User constraints may require additional properties which are not
 reported here.
 """
+    )
 
 
 @pytest.mark.unit
@@ -329,12 +332,15 @@ def test_print_models_requiring_property(model, capsys):
     model.fs.params.print_models_requiring_property("pressure")
 
     captured = capsys.readouterr()
-    assert captured.out == """
+    assert (
+        captured.out
+        == """
 The following models in the Flowsheet require pressure:
     fs.P01
     fs.HX02
     fs.F03
 """
+    )
 
 
 @pytest.mark.unit
@@ -342,7 +348,9 @@ def test_print_properties_reqruied_by_model(model, capsys):
     model.fs.params.print_properties_required_by_model("fs.P01")
 
     captured = capsys.readouterr()
-    assert captured.out == """
+    assert (
+        captured.out
+        == """
 The following properties are required by model fs.P01:
     material density terms
     material flow terms
@@ -351,6 +359,7 @@ The following properties are required by model fs.P01:
     pressure
     entr_mol
 """
+    )
 
 
 # =============================================================================

@@ -153,7 +153,7 @@ class ENRTL(Ideal):
         def rule_I(b):  # Eqn 62
             return 0.5 * sum(
                 b.mole_frac_phase_comp_true[pname, c]
-                * b.params.get_component(c).config.charge**2
+                * b.params.get_component(c).config.charge ** 2
                 for c in b.params.ion_set
             )
 
@@ -164,7 +164,7 @@ class ENRTL(Ideal):
         def rule_I_ref(b):  # Eqn 62 evaluated at reference state
             x = getattr(b, pname + "_x_ref")
             return 0.5 * sum(
-                x[c] * b.params.get_component(c).config.charge**2
+                x[c] * b.params.get_component(c).config.charge ** 2
                 for c in b.params.ion_set
             )
 

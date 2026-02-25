@@ -272,7 +272,9 @@ def test_print_required_properties(model, capsys):
     model.fs.rxn_params.print_required_properties()
 
     captured = capsys.readouterr()
-    assert captured.out == """
+    assert (
+        captured.out
+        == """
 ==========================================================================
 Property Interrogator Summary
 
@@ -298,6 +300,7 @@ The Flowsheet requires the following reaction properties (times required):
 Note: User constraints may require additional properties which are not
 reported here.
 """
+    )
 
 
 @pytest.mark.unit
@@ -305,11 +308,14 @@ def test_print_models_requiring_property(model, capsys):
     model.fs.rxn_params.print_models_requiring_property("reaction_rate")
 
     captured = capsys.readouterr()
-    assert captured.out == """
+    assert (
+        captured.out
+        == """
 The following models in the Flowsheet require reaction_rate:
     fs.R01
     fs.R02
 """
+    )
 
 
 @pytest.mark.unit
@@ -317,11 +323,14 @@ def test_print_properties_reqruied_by_model(model, capsys):
     model.fs.rxn_params.print_properties_required_by_model("fs.R01")
 
     captured = capsys.readouterr()
-    assert captured.out == """
+    assert (
+        captured.out
+        == """
 The following reaction properties are required by model fs.R01:
     dh_rxn
     reaction_rate
 """
+    )
 
 
 @pytest.mark.unit

@@ -1057,9 +1057,11 @@ objects linked to all inlet states and the mixed state,
         MomentumMixingType.minimize_and_equality.
         """
         if self.config.momentum_mixing_type != MomentumMixingType.minimize_and_equality:
-            _log.warning("""use_minimum_inlet_pressure_constraint() can only be used
+            _log.warning(
+                """use_minimum_inlet_pressure_constraint() can only be used
                 when momentum_mixing_type ==
-                MomentumMixingType.minimize_and_equality""")
+                MomentumMixingType.minimize_and_equality"""
+            )
             return
         self.minimum_pressure_constraint.activate()
         self.pressure_equality_constraints.deactivate()
@@ -1071,9 +1073,11 @@ objects linked to all inlet states and the mixed state,
         MomentumMixingType.minimize_and_equality.
         """
         if self.config.momentum_mixing_type != MomentumMixingType.minimize_and_equality:
-            _log.warning("""use_equal_pressure_constraint() can only be used when
+            _log.warning(
+                """use_equal_pressure_constraint() can only be used when
                 momentum_mixing_type ==
-                MomentumMixingType.minimize_and_equality""")
+                MomentumMixingType.minimize_and_equality"""
+            )
             return
         self.minimum_pressure_constraint.deactivate()
         self.pressure_equality_constraints.activate()

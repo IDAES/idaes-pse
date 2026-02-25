@@ -146,7 +146,9 @@ class ProcessBlock(Block):
     assigned by default that calls the build() method for the contained
     ProcessBlockData objects. The default rule can be overridden, but the new
     rule should always call build() for the ProcessBlockData object.
-    """ + _process_block_docstring.format("", "ProcessBlock")
+    """ + _process_block_docstring.format(
+        "", "ProcessBlock"
+    )
 
     def __new__(cls, *args, **kwds):
         """Create a new indexed or scalar ProcessBlock subclass instance
