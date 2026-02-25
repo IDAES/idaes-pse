@@ -32,7 +32,7 @@ FS = FlowsheetRunner()
 # # Flash Unit Model
 #
 # Author: Jaffer Ghouse
-# Maintainer: Andrew Lee
+# Maintainer: Dan Gunter
 # Updated: 2023-06-01
 
 
