@@ -53,7 +53,6 @@ from idaes.core.util.exceptions import ConfigurationError, InitializationError
 from idaes.core.initialization import SingleControlVolumeUnitInitializer
 from idaes.core.scaling import CustomScalerBase, DefaultScalingRecommendation
 
-
 _log = idaeslog.getLogger(__name__)
 
 

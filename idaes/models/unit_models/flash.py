@@ -13,6 +13,7 @@
 """
 Standard IDAES flash model.
 """
+
 # Import Python libraries
 import logging
 from pandas import DataFrame
@@ -41,7 +42,6 @@ from idaes.models.unit_models.separator import (
 
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.units_of_measurement import report_quantity
-
 
 __author__ = "Andrew Lee, Jaffer Ghouse, Douglas Allan"
 

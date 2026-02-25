@@ -29,7 +29,6 @@ from idaes.models.properties.helmholtz.helmholtz import (
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 
-
 _log = idaeslog.getLogger(__name__)
 
 

@@ -35,7 +35,6 @@ from idaes.models.properties.modular_properties.base.tests.dummy_eos import Dumm
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.scaling.util import set_scaling_factor
 
-
 # Dummy class to use for Psat calls
 Psat = {"H2O": 1e5, "EtOH": 5e4}
 

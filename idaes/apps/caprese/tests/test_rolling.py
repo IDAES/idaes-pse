@@ -10,8 +10,7 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-""" Tests for rolling horizon helper classes
-"""
+"""Tests for rolling horizon helper classes"""
 
 import pytest
 import sys

@@ -19,7 +19,6 @@ from typing import Dict, Union
 import pytest
 import pandas as pd
 
-
 # define custom type for type hinting
 PrescientOptions = Dict[str, Union[str, bool, Number, dict]]
 

@@ -13,6 +13,7 @@
 """
 Author: Paul Akula, Anuja Deshpande, Andrew Lee
 """
+
 # Import Python libraries
 import pytest
 
@@ -41,7 +42,6 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
 from idaes.core.util import scaling as iscale
 from idaes.core.solvers import get_solver
-
 
 # -----------------------------------------------------------------------------
 solver = get_solver()

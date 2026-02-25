@@ -11,7 +11,11 @@ About IDAES
 -----------
 
 The Institute for Design of Advanced Energy Systems (IDAES) was originated to bring the most advanced modeling and optimization capabilities to the challenges of transforming and decarbonizing the world’s energy systems to make them environmentally sustainable while maintaining high reliability and low cost.
-For more information about the project, see the `IDAES website`_.
+For more information about the IDAES project, see the `IDAES website`_.
+
+For more information on the IDAES platform and related projects, now called *IDAES+*,
+see the `IDAES+ web pages <https://idaesplus.readthedocs.io/latest/>`_.
+
 See also :doc:`IDAES concepts <explanations/concepts>` in this documentation.
 
 Citing IDAES

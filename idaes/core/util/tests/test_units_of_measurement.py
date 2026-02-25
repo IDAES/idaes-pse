@@ -14,6 +14,7 @@
 """
 Tests for units of measurement utility functions
 """
+
 import pytest
 
 from pyomo.environ import as_quantity, units

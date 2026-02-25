@@ -13,6 +13,7 @@
 """
 Tests for initializing from data
 """
+
 import os
 import pytest
 import types
@@ -23,7 +24,6 @@ from idaes.core.initialization.initialize_from_data import (
     FromDataInitializer,
 )
 from idaes.core.initialization.initializer_base import InitializationStatus
-
 
 __author__ = "Andrew Lee"
 

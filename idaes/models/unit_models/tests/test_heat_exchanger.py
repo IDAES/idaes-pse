@@ -15,6 +15,7 @@ Tests for 0D heat exchanger models.
 
 Authors: John Eslick, Will Strahl, Douglas Allan
 """
+
 from copy import deepcopy
 import pytest
 import pandas
@@ -83,7 +84,6 @@ from idaes.core.initialization import (
     InitializationStatus,
 )
 from idaes.core.util import DiagnosticsToolbox
-
 
 # Imports to assemble BT-PR with different units
 from idaes.core import LiquidPhase, VaporPhase, Component

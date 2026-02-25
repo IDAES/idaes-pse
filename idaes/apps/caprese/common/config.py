@@ -14,6 +14,7 @@
 """
 A module of functions and classes for configuring NMPC/MHE problems
 """
+
 import enum
 from pyomo.environ import SolverFactory
 from pyomo.core.base.var import VarData

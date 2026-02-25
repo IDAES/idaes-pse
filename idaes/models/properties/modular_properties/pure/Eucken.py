@@ -17,6 +17,7 @@ Section 10-3-1. Not particularly accurate, with errors up to 30% reported, espec
 for polar compounds. The component-specific parameter f_int_eucken allows the user to
 adjust the correlation on a component-by-component basis.
 """
+
 from pyomo.environ import Var, units as pyunits
 from idaes.core.util.misc import set_param_from_config
 from idaes.core.util.constants import Constants

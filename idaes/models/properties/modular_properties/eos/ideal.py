@@ -15,6 +15,7 @@ Methods for ideal equations of state.
 
 Currently only supports liquid and vapor phases
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 

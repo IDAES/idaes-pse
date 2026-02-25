@@ -10,8 +10,7 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-""" Tests for subclasses of Var
-"""
+"""Tests for subclasses of Var"""
 
 import pyomo.environ as pyo
 from idaes.apps.caprese.nmpc_var import (

@@ -15,6 +15,7 @@ Tests for generic property package core code
 
 Author: Andrew Lee, Douglas Allan
 """
+
 import functools
 import pytest
 import re
