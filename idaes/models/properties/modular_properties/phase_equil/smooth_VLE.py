@@ -18,6 +18,7 @@ Miller, D.C., 2018, A Smooth, Square Flash Formulation for Equation-Oriented
 Flowsheet Optimization. Proceedings of the 13th International Symposium on
 Process Systems Engineering – PSE 2018, July 1-5, 2018, San Diego.
 """
+
 # TODO: Pylint complains about variables with _x names as they are built by other classes
 # pylint: disable=protected-access
 
@@ -92,6 +93,7 @@ class SmoothVLE(object):
                     initialize=b.temperature.value,
                     doc="Intermediate temperature for calculating Teq",
                     units=t_units,
+                    bounds=b.temperature.bounds,
                 ),
             )
             _t1 = getattr(b, "_t1" + suffix)

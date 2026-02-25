@@ -10,8 +10,7 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-"""Generate parameter and expression files for NH3
-"""
+"""Generate parameter and expression files for NH3"""
 
 __author__ = "Stephen Burroughs"
 

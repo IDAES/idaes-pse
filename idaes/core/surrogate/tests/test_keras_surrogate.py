@@ -13,6 +13,7 @@
 """
 Tests for KerasSurrogate
 """
+
 import pytest
 
 pytest.importorskip("tensorflow.keras", reason="tensorflow.keras not available")
@@ -33,7 +34,6 @@ from pyomo.environ import (
 from idaes.core.surrogate.keras_surrogate import KerasSurrogate, load_keras_json_hd5
 from idaes.core.surrogate.surrogate_block import SurrogateBlock
 from idaes.core.surrogate.sampling.scaling import OffsetScaler
-
 
 rtol = 1e-4
 atol = 1e-4

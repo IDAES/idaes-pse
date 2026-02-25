@@ -13,6 +13,7 @@
 """
 Common Surrogate interface for IDAES.
 """
+
 from pyomo.common.config import ConfigBlock
 
 

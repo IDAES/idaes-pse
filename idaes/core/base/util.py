@@ -22,7 +22,6 @@ from idaes.core.util.exceptions import (
     BurntToast,
 )
 
-
 __author__ = "John Eslick, Andrew Lee"
 
 

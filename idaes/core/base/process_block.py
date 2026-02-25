@@ -16,6 +16,7 @@ reason to subclass a Pyomo block is to create a block that comes with
 pre-defined model equations. This is used in the IDAES modeling framework to
 create modular process model blocks.
 """
+
 # TODO: Look into if this is necessary
 # pylint: disable=protected-access
 
@@ -145,9 +146,7 @@ class ProcessBlock(Block):
     assigned by default that calls the build() method for the contained
     ProcessBlockData objects. The default rule can be overridden, but the new
     rule should always call build() for the ProcessBlockData object.
-    """ + _process_block_docstring.format(
-        "", "ProcessBlock"
-    )
+    """ + _process_block_docstring.format("", "ProcessBlock")
 
     def __new__(cls, *args, **kwds):
         """Create a new indexed or scalar ProcessBlock subclass instance

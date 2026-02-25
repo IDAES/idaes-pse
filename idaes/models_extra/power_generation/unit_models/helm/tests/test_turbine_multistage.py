@@ -15,6 +15,7 @@ Tests for turbine multistage model.
 
 Author: John Eslick
 """
+
 import pytest
 
 import pyomo.environ as pyo

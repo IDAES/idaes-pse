@@ -13,6 +13,7 @@
 """
 This module contains tests for scaling.
 """
+
 import math
 from io import StringIO
 import pytest

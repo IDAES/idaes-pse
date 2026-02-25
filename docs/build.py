@@ -13,6 +13,7 @@
 """
 Run all build steps for IDAES documentation.
 """
+
 # standard library
 import argparse
 import glob

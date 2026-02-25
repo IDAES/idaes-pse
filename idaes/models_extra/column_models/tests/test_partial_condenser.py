@@ -16,6 +16,7 @@ ideal property package (FTPz and FcTP).
 
 Author: Jaffer Ghouse
 """
+
 import pytest
 from pyomo.environ import check_optimal_termination, ConcreteModel, value
 from pyomo.util.check_units import assert_units_consistent
