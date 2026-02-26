@@ -13,6 +13,7 @@
 """
 Predefined Actions for the generic Runner.
 """
+
 # stdlib
 from collections.abc import Callable
 from io import StringIO

@@ -2166,8 +2166,5 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                             % (value(o.name), value(o.scaled_param), upper_bound)
                         )
                     else:
-                        print(
-                            """%s: The scaled parameter is within the
-                            bounds."""
-                            % value(o.name)
-                        )
+                        print("""%s: The scaled parameter is within the
+                            bounds.""" % value(o.name))

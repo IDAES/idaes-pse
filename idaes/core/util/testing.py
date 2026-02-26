@@ -624,14 +624,12 @@ def assert_solution_equivalent(blk, expected_results):
     # --- Final Assertion and Report Generation ---
     if len(failures) > 0:
         # Construct the final report header
-        report_header = textwrap.dedent(
-            f"""
+        report_header = textwrap.dedent(f"""
         =========================== Test Value Mismatches ============================
         Found {n_failures} mismatch(es) between expected and actual model values.
         Please review the values below and update the test suite if necessary.
         ==============================================================================
-        """
-        )
+        """)
 
         # Combine the header and all failure messages
         full_report = report_header + "\n\n" + "\n\n".join(failures)

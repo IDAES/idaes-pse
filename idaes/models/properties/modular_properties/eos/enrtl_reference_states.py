@@ -94,7 +94,7 @@ class Symmetric(object):
     def ndIdn(b, pname, i):
         # Eqn 75
         return 0.5 * sum(
-            cobj(b, j).config.charge ** 2 * ndxdn(b, pname, i, j)
+            cobj(b, j).config.charge**2 * ndxdn(b, pname, i, j)
             for j in b.params.ion_set
         )
 
