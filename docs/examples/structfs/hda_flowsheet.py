@@ -114,7 +114,6 @@ from idaes.core.util.structfs.fsrunner import FlowsheetRunner, Context
 import hda_ideal_VLE as thermo_props
 import hda_reaction as reaction_props
 
-
 FS = FlowsheetRunner()
 
 

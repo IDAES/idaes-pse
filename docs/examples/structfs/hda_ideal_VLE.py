@@ -15,7 +15,6 @@ Example ideal parameter block for the VLE calculations for a
 Benzene-Toluene-o-Xylene system.
 """
 
-
 # Import Pyomo libraries
 from pyomo.environ import (
     Constraint,
