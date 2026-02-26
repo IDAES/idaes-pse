@@ -4,6 +4,9 @@
 This page gives a conceptual overview of the IDAES platform and provides terminology for the different
 components of that platform.
 
+For more information on the overall IDAES platform and related projects, now called *IDAES+*,
+see the `IDAES+ web pages <https://idaesplus.readthedocs.io/latest/>`_.
+
 .. rubric:: Contents
 
 .. contents::
