@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -11,9 +11,9 @@
 # for full copyright and license information.
 #################################################################################
 """
-Test code: power plant costing of subaccounts 6.1. 
+Test code: power plant costing of subaccounts 6.1.
 Subaccounts 6.1-6.8 consist of costing correlations for MEA solvent-based
-carbon capture system, Reference: 
+carbon capture system, Reference:
 Kangkang Li, Ashleigh Cousins, Hai You, Paul Feron,
 Weilang Luo, Jian Chen (2016). Systematic study of aqueous monoethanolamine
 (MEA)-based CO2 capture process: Techno-economic assessment of the MEA

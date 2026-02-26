@@ -1,7 +1,7 @@
 Vapor-Liquid Equilibrium Property Models (Ideal Gas - Non-ideal Liquids)
 =========================================================================
 
-This property package supports phase equilibrium calucations with a smooth phase transition formulation that makes it amenable for equation oriented optimization. The gas phase is assumed to be ideal and for the liquid phase,
+This property package supports phase equilibrium calculations with a smooth phase transition formulation that makes it amenable for equation oriented optimization. The gas phase is assumed to be ideal and for the liquid phase,
 the package supports an ideal liquid or a non-ideal liquid using an activity
 coefficient model. To compute the activity coefficient, the package currently supports the Non Random Two Liquid Model (NRTL) or the
 Wilson model. Therefore, this property package supports the following combinations for gas-liquid mixtures for VLE calculations:

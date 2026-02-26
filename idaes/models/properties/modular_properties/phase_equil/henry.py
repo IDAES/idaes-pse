@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -16,6 +16,7 @@ Methods for calculating fugacity of Henry's Law components
 For now, only mole fraction basis (Kpx) form is fully supported. The remainder
 is prototype code
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 
@@ -34,7 +35,7 @@ class HenryType(Enum):
     """
     'Henry Constant' types are numbered 1-50 (i.e. H = conc/pressure)
     'Henry Volatility' types are numbered 51-100 (i.e. K = pressure/conc)
-    We use this fact to simplify determining wheterh to multiply or divide
+    We use this fact to simplify determining whether to multiply or divide
     by Henry's constant
     Any different forms can use values 101+, but will need to add the custom
     code in if branches where necessary
@@ -66,6 +67,7 @@ def get_henry_concentration_term(blk, henry_dict, log=False):
         sub = ""
 
     henry_type = henry_dict["type"]
+    conc_type = ""
     if henry_type == HenryType.Hcp or henry_type == HenryType.Kpc:
         conc_type = "conc_mol_phase_comp"
     elif henry_type == HenryType.Hxp or henry_type == HenryType.Kpx:
@@ -99,6 +101,7 @@ def henry_pressure(b, p, j, T=None):
     else:
         _raise_henry_type_error(henry_def["type"])
 
+    # pylint: disable-next=possibly-used-before-assignment
     return h_press
 
 
@@ -126,6 +129,7 @@ def log_henry_pressure(b, p, j, T=None):
     else:
         _raise_henry_type_error(henry_def["type"])
 
+    # pylint: disable-next=possibly-used-before-assignment
     return log_h_press
 
 
@@ -172,6 +176,7 @@ def henry_equilibrium_ratio(b, p, j):
 
 # Define units for Henry's constant
 def henry_units(henry_type, units):
+    h_units = None
     if henry_type == HenryType.Hcp:
         h_units = units.DENSITY_MOLE / units.PRESSURE
     elif henry_type == HenryType.Kpc:

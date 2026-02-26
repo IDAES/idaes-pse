@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -13,6 +13,7 @@
 """
 Functions for saving and loading Pyomo objects to json
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 
@@ -616,7 +617,7 @@ def _write_component_data(sd, o, wts, count=None, lookup=None, suffixes=None):
                 el = o[key]
             if is_first_item:  # assume all item are same type, use first to get alist
                 # Get all attributes
-                (alist, _) = wts.get_data_class_attr_list(el)
+                alist, _ = wts.get_data_class_attr_list(el)
                 if alist is None:
                     return  # if None then skip writing
             is_first_item = False  # done with first only stuff
@@ -819,7 +820,7 @@ def _read_component(sd, o, wts, lookup=None, suffixes=None, root_name=None):
     if isinstance(o, Suffix):
         if wts.suffix_filter is None or oname in wts.suffix_filter:
             suffixes[odict["__id__"]] = odict["data"]  # is populated
-    else:  # read non-sufix component data
+    else:  # read non-suffix component data
         _read_component_data(odict["data"], o, wts, lookup=lookup, suffixes=suffixes)
 
 
@@ -844,6 +845,7 @@ def _read_component_data(sd, o, wts, lookup=None, suffixes=None):
 
     alist = []  # list of attributes to read
     c = 0  # counter of data items in component
+    ff = None  # filter function
     try:
         item_keys = o.keys()
     except AttributeError:
@@ -865,7 +867,7 @@ def _read_component_data(sd, o, wts, lookup=None, suffixes=None):
                 return  # if ignore missing option its okay
             else:
                 raise e  # else raise exception
-        if ff is not None:  # if a filer function was given, use it to make a
+        if ff is not None:  # if a filter function was given, use it to make a
             # new a list based on the model and whats stored for the state
             # this lets you conditionally load things, for example only load
             # values for unfixed variables.

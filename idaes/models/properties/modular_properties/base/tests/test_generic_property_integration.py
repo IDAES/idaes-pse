@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -15,6 +15,7 @@ Tests for generic property package core code
 
 Author: Andrew Lee
 """
+
 import pytest
 
 # Import Pyomo units
@@ -56,6 +57,8 @@ from idaes.models.unit_models import Heater
 from idaes.core.util.model_statistics import degrees_of_freedom
 
 from idaes.core.solvers import get_solver
+
+solver = get_solver("ipopt_v2")
 
 
 configuration = {
@@ -197,8 +200,6 @@ class TestInherentReactions(object):
 
         frame.fs.H101.initialize()
 
-        solver = get_solver()
-
         results = solver.solve(frame)
 
         assert check_optimal_termination(results)
@@ -255,8 +256,6 @@ class TestInherentReactions(object):
         assert (degrees_of_freedom(frame)) == 0
 
         frame.fs.H101.initialize()
-
-        solver = get_solver()
 
         results = solver.solve(frame)
 
@@ -330,8 +329,6 @@ class TestInherentReactions(object):
 
         frame.fs.cv.initialize()
 
-        solver = get_solver()
-
         results = solver.solve(frame)
 
         assert check_optimal_termination(results)
@@ -403,8 +400,6 @@ class TestInherentReactions(object):
         assert (degrees_of_freedom(frame)) == 0
 
         frame.fs.cv.initialize()
-
-        solver = get_solver()
 
         results = solver.solve(frame)
 

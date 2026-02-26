@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -19,18 +19,20 @@ __author__ = "John Eslick"
 import sys
 import platform
 import json
-import pkg_resources
+import importlib.metadata
+from packaging.requirements import Requirement
 
 import pyomo
 import pyomo.environ as pyo
-
 import idaes
-import idaes.ver as ver
+
+__version__ = importlib.metadata.version("idaes-pse")
+__metadata__ = importlib.metadata.metadata("idaes-pse")
 
 
 class EnvironmentInfo:
     """Get information about IDAES and the environment IDAES is running in,
-    including OS and Critial dependency versions."""
+    including OS and Critical dependency versions."""
 
     known_solvers = [
         "ipopt",
@@ -51,9 +53,10 @@ class EnvironmentInfo:
         # Get idaes version from ver module.  This works even if you just
         # check a new version our from github, have IDAES installed in-place
         # and don't reinstall, which is likely mode for a lot of developers
-        self.git_hash = ver.gh
-        self.package_version = ver.package_version
-        self.version_string = ver.__version__
+        print(__metadata__.keys())
+        self.git_hash = None  # gh ; as part of removing ideas ver.py (pr 1708)
+        self.package_version = __version__
+        self.version_string = __version__
         self.bin_directory = idaes.bin_directory
         self.data_directory = idaes.data_directory
         self.global_config = idaes._global_config_file
@@ -69,22 +72,21 @@ class EnvironmentInfo:
         self.pyomo_version = pyomo.version.__version__
         # Get dependency info
         self.dependency_versions = {}
-        reqs = pkg_resources.get_distribution("idaes-pse").requires()
-        for dep in [x.name for x in reqs]:
+        reqs = importlib.metadata.requires("idaes-pse")
+        for req in reqs:
+            dep = Requirement(req).name
             if dep == "pyomo":
                 continue  # pyomo is special
             try:
-                self.dependency_versions[dep] = pkg_resources.get_distribution(
-                    dep
-                ).version
-            except pkg_resources.DistributionNotFound:
+                self.dependency_versions[dep] = importlib.metadata.version(dep)
+            except importlib.metadata.PackageNotFoundError:
                 self.dependency_versions[dep] = None
         # Extra packages, users must install these for esoteric features
         self.extra_versions = {}
         for dep in self.extras:
             try:
-                self.extra_versions[dep] = pkg_resources.get_distribution(dep).version
-            except pkg_resources.DistributionNotFound:
+                self.extra_versions[dep] = importlib.metadata.version(dep)
+            except importlib.metadata.PackageNotFoundError:
                 self.extra_versions[dep] = None
         self.solver_versions = {}
         for s in self.known_solvers + list(additional_solvers):

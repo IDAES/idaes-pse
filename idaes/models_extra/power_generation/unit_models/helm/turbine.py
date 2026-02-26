@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -28,7 +28,6 @@ from idaes.models.properties.helmholtz.helmholtz import (
 )
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
-
 
 _log = idaeslog.getLogger(__name__)
 
@@ -152,7 +151,7 @@ class HelmIsentropicTurbineData(BalanceBlockData):
             return b.control_volume.work[t]
 
     def _get_performance_contents(self, time_point=0):
-        """This returns a dictionary of quntities to be used in IDAES unit model
+        """This returns a dictionary of quantities to be used in IDAES unit model
         report generation routines.
         """
         pc = super()._get_performance_contents(time_point=time_point)
@@ -189,7 +188,7 @@ class HelmIsentropicTurbineData(BalanceBlockData):
                     (self.control_volume.deltaP[t] + self.inlet.pressure[t])
                     / self.inlet.pressure[t]
                 )
-        # Fix the variables we base the initializtion on and free the rest.
+        # Fix the variables we base the initialization on and free the rest.
         # This requires good values to be provided for pressure, efficiency,
         # and inlet conditions, but it is simple and reliable.
         self.inlet.fix()

@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -13,6 +13,7 @@
 """
 Base class for initializer objects
 """
+
 from enum import Enum
 
 from pyomo.environ import (
@@ -45,7 +46,7 @@ class InitializationStatus(Enum):
     """
 
     Ok = 1  # Successfully converged to tolerance
-    none = 0  # Initiazation has not yet been run
+    none = 0  # Initialization has not yet been run
     Failed = -1  # Run, but failed to converge to tolerance
     DoF = -2  # Failed due to Degrees of Freedom issue
     PrecheckFailed = -3  # Failed pre-check step (other than DoF)
@@ -275,9 +276,9 @@ class InitializerBase:
         Returns:
             None
         """
-        try:
+        if hasattr(model, "fix_initialization_states"):
             model.fix_initialization_states()
-        except AttributeError:
+        else:
             _log.info_high(
                 f"Model {model.name} does not have a fix_initialization_states method - attempting to continue."
             )
@@ -551,7 +552,7 @@ class ModularInitializerBase(InitializerBase):
     CONFIG.declare(
         "solver",
         ConfigValue(
-            default=None,  # TODO: Can we add a square problem solver as the default here?
+            default="ipopt_v2",  # TODO: Can we add a square problem solver as the default here?
             # At the moment there is an issue with the scipy solvers not supporting the tee argument.
             description="Solver to use for initialization",
         ),
@@ -561,6 +562,13 @@ class ModularInitializerBase(InitializerBase):
         ConfigDict(
             implicit=True,
             description="Dict of options to pass to solver",
+        ),
+    )
+    CONFIG.declare(
+        "writer_config",
+        ConfigDict(
+            implicit=True,
+            description="Dict of writer_config arguments to pass to solver",
         ),
     )
     CONFIG.declare(
@@ -820,6 +828,10 @@ class ModularInitializerBase(InitializerBase):
 
     def _get_solver(self):
         if self._solver is None:
-            self._solver = get_solver(self.config.solver, self.config.solver_options)
+            self._solver = get_solver(
+                self.config.solver,
+                solver_options=self.config.solver_options,
+                writer_config=self.config.writer_config,
+            )
 
         return self._solver

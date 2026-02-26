@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -15,6 +15,8 @@ Tests for ControlVolumeBlockData.
 
 Author: Andrew Lee
 """
+
+import re
 import inspect
 import pytest
 from types import MethodType
@@ -35,6 +37,7 @@ from idaes.core import (
     PhysicalParameterBlock,
     ReactionParameterBlock,
 )
+from idaes.core.base.control_volume_base import ControlVolumeScalerBase
 from idaes.core.util.exceptions import (
     ConfigurationError,
     DynamicError,
@@ -55,7 +58,7 @@ def test_material_balance_type():
 
 @pytest.mark.unit
 def test_energy_balance_type():
-    assert len(EnergyBalanceType) == 6
+    assert len(EnergyBalanceType) == 7
 
     # Test that error is raised when given non-member
     with pytest.raises(AttributeError):
@@ -73,11 +76,43 @@ def test_momentum_balance_type():
 
 @pytest.mark.unit
 def testflow_direction():
-    assert len(FlowDirection) == 2
+    assert len(FlowDirection) == 3
 
     # Test that error is raised when given non-member
     with pytest.raises(AttributeError):
         FlowDirection.foo  # pylint: disable=no-member
+
+
+@pytest.mark.unit
+def test_ControlVolumeScalerBase_no_state_block_ref():
+    m = ConcreteModel()
+    scaler_obj = ControlVolumeScalerBase()
+    with pytest.raises(
+        NotImplementedError,
+        match=re.escape(
+            "This method is intended to be overridden by other scaler "
+            "objects inheriting from it."
+        ),
+    ):
+        scaler_obj.scale_model(m)
+
+    with pytest.raises(
+        NotImplementedError,
+        match=re.escape(
+            "This method is intended to be overridden by other scaler "
+            "objects inheriting from it."
+        ),
+    ):
+        scaler_obj.variable_scaling_routine(m)
+
+    with pytest.raises(
+        NotImplementedError,
+        match=re.escape(
+            "This method is intended to be overridden by other scaler "
+            "objects inheriting from it."
+        ),
+    ):
+        scaler_obj.constraint_scaling_routine(m)
 
 
 # -----------------------------------------------------------------------------

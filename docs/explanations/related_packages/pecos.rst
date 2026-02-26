@@ -48,9 +48,6 @@ removed or replaced by various means (interpolation, data from a duplicate senso
 Data replacement strategies are generally defined on a case-by-case basis. 
 If large sections of the data failed quality control tests, the data might not be suitable for use.
 
-The raw data, results from the quality control analysis, and the analysis files used to run Pecos can be stored in the 
-Data Management Framework (DMF) to ensure reproducible results.
-
 Installation
 ------------
 

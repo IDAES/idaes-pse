@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -40,7 +40,6 @@ from idaes.models.properties.modular_properties.eos.ceos import Cubic, CubicType
 from idaes.core.solvers import get_solver
 from idaes.models.properties.modular_properties.pure.ConstantProperties import Constant
 
-
 CoolProp = pytest.importorskip("CoolProp.CoolProp", reason="CoolProp not installed")
 
 from idaes.models.properties.modular_properties.coolprop.coolprop_wrapper import (
@@ -49,7 +48,9 @@ from idaes.models.properties.modular_properties.coolprop.coolprop_wrapper import
     CoolPropPropertyError,
 )
 
-solver = get_solver()
+solver = get_solver("ipopt_v2")
+
+CoolProp.set_config_bool(CoolProp.ENABLE_SUPERANCILLARIES, False)
 
 
 class TestWrapper:
@@ -875,6 +876,9 @@ class TestVerifyExcessLiq(object):
             m.fs.state[0].pressure.fix(101325)
             m.fs.state[0].temperature.fix(T)
 
+            m.fs.state[0].entr_mol_phase[
+                "Liq"
+            ]  # Touch variable to generate log_mole_phase_comp
             m.fs.state.initialize()
 
             S0_CP = CoolProp.PropsSI("SMOLAR", "T", T, "P", 101325, "PR::benzene")
@@ -1019,6 +1023,9 @@ class TestVerifyExcessVap(object):
             m.fs.state[0].pressure.fix(101325)
             m.fs.state[0].temperature.fix(T)
 
+            m.fs.state[0].entr_mol_phase[
+                "Vap"
+            ]  # Touch variable to generate log_mole_phase_comp
             m.fs.state.initialize()
 
             S0_CP = CoolProp.PropsSI("SMOLAR", "T", T, "P", 101325, "PR::benzene")

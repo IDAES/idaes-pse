@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -18,48 +18,71 @@ Miller, D.C., 2018, A Smooth, Square Flash Formulation for Equation-Oriented
 Flowsheet Optimization. Proceedings of the 13th International Symposium on
 Process Systems Engineering – PSE 2018, July 1-5, 2018, San Diego.
 """
-# TODO: Missing docstrings
-# pylint: disable=missing-function-docstring
 
-# TODO: Look into protected access issues
+# TODO: Pylint complains about variables with _x names as they are built by other classes
 # pylint: disable=protected-access
 
 from pyomo.environ import Constraint, Param, Var, value
-from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.math import smooth_max, smooth_min
-from idaes.models.properties.modular_properties.phase_equil.bubble_dew import (
-    _valid_VL_component_list,
+from idaes.models.properties.modular_properties.base.utility import (
+    identify_VL_component_list,
 )
 import idaes.core.util.scaling as iscale
+from idaes.core.scaling import CustomScalerBase
+
+
+class SmoothVLEScaler(CustomScalerBase):
+    """
+    Scaling method for the SmoothVLE method for phase equilibrium
+    """
+
+    def variable_scaling_routine(self, model, phase_pair, overwrite: bool = False):
+        suffix = "_" + phase_pair[0] + "_" + phase_pair[1]
+        sf_T = self.get_scaling_factor(model.temperature)
+
+        if model.is_property_constructed("_t1" + suffix):
+            t1 = getattr(model, "_t1" + suffix)
+            self.set_component_scaling_factor(t1, sf_T, overwrite=overwrite)
+        # _teq is scaled in main method
+
+    def constraint_scaling_routine(self, model, phase_pair, overwrite: bool = False):
+        suffix = "_" + phase_pair[0] + "_" + phase_pair[1]
+
+        if model.is_property_constructed("_t1_constraint" + suffix):
+            t1 = getattr(model, "_t1" + suffix)
+            t1_con = getattr(model, "_t1_constraint" + suffix)
+            self.scale_constraint_by_component(t1_con, t1, overwrite=overwrite)
+
+        _teq_cons = getattr(model, "_teq_constraint" + suffix)
+        self.scale_constraint_by_component(
+            _teq_cons, model._teq[phase_pair], overwrite=overwrite
+        )
 
 
 # -----------------------------------------------------------------------------
 class SmoothVLE(object):
     """Methods for constructing equations associated with Smooth VLE formulation."""
 
+    default_scaler = SmoothVLEScaler
+
     @staticmethod
     def phase_equil(b, phase_pair):
+        """
+        Method for constructing phase equilibrium variables and constraints
+        """
         # This method is called via StateBlock.build, thus does not need clean-up
         # try/except statements
         suffix = "_" + phase_pair[0] + "_" + phase_pair[1]
 
         # Smooth VLE assumes a liquid and a vapor phase, so validate this
         (
-            l_phase,
-            v_phase,
+            _,
+            _,
             _,
             _,
             l_only_comps,
             v_only_comps,
-        ) = _valid_VL_component_list(b, phase_pair)
-
-        if l_phase is None or v_phase is None:
-            raise ConfigurationError(
-                "{} Generic Property Package phase pair {}-{} was set to use "
-                "Smooth VLE formulation, however this is not a vapor-liquid pair.".format(
-                    b.params.name, phase_pair[0], phase_pair[1]
-                )
-            )
+        ) = identify_VL_component_list(b, phase_pair)
 
         # Definition of equilibrium temperature for smooth VLE
         t_units = b.params.get_metadata().default_units.TEMPERATURE
@@ -70,6 +93,7 @@ class SmoothVLE(object):
                     initialize=b.temperature.value,
                     doc="Intermediate temperature for calculating Teq",
                     units=t_units,
+                    bounds=b.temperature.bounds,
                 ),
             )
             _t1 = getattr(b, "_t1" + suffix)
@@ -128,6 +152,9 @@ class SmoothVLE(object):
 
     @staticmethod
     def calculate_scaling_factors(b, phase_pair):
+        """
+        Method to calculate scaling factors for phase equilibrium
+        """
         suffix = "_" + phase_pair[0] + "_" + phase_pair[1]
         sf_T = iscale.get_scaling_factor(b.temperature, default=1, warning=True)
 
@@ -144,6 +171,9 @@ class SmoothVLE(object):
 
     @staticmethod
     def phase_equil_initialization(b, phase_pair):
+        """
+        Method to initialize phase equilibrium
+        """
         suffix = "_" + phase_pair[0] + "_" + phase_pair[1]
 
         for c in b.component_objects(Constraint):
@@ -153,19 +183,22 @@ class SmoothVLE(object):
 
     @staticmethod
     def calculate_teq(b, phase_pair):
+        """
+        Method to calculate initial guess for equilibrium temperature
+        """
         suffix = "_" + phase_pair[0] + "_" + phase_pair[1]
 
         if hasattr(b, "eq_temperature_bubble"):
             _t1 = getattr(b, "_t1" + suffix)
-            _t1.value = max(
-                value(b.temperature), b.temperature_bubble[phase_pair].value
+            _t1.set_value(
+                max(value(b.temperature), value(b.temperature_bubble[phase_pair]))
             )
         else:
             _t1 = b.temperature
 
         if hasattr(b, "eq_temperature_dew"):
-            b._teq[phase_pair].value = min(
-                _t1.value, b.temperature_dew[phase_pair].value
+            b._teq[phase_pair].set_value(
+                min(value(_t1), value(b.temperature_dew[phase_pair]))
             )
         else:
-            b._teq[phase_pair].value = _t1.value
+            b._teq[phase_pair].set_value(value(_t1))

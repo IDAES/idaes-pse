@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -15,11 +15,14 @@ Tests for 0D heat exchanger models.
 
 Author: John Eslick
 """
+
 import pytest
 
 from pyomo.environ import (
     check_optimal_termination,
+    ComponentMap,
     ConcreteModel,
+    TransformationFactory,
     value,
     units as pyunits,
 )
@@ -58,10 +61,14 @@ from idaes.core.initialization import (
     InitializationStatus,
 )
 from idaes.core.util import DiagnosticsToolbox
+from idaes.core.util.scaling import (
+    get_jacobian,
+    jacobian_cond,
+)
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_solver()
+solver = get_solver("ipopt_v2")
 
 
 # -----------------------------------------------------------------------------
@@ -298,9 +305,28 @@ class TestIAPWS(object):
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
-    def test_numerical_issues(self, iapws):
-        dt = DiagnosticsToolbox(iapws)
+    def test_numerical_issues_and_scaling(self, iapws):
+        jac, _ = get_jacobian(iapws, scaled=False)
+        assert jacobian_cond(jac=jac, scaled=False) == pytest.approx(5.4080e8, rel=1e-3)
+
+        unit = iapws.fs.unit
+        prop_scaler = unit.control_volume.properties_in.default_scaler()
+
+        prop_scaler.default_scaling_factors["flow_mol"] = 1 / 5
+        submodel_scalers = ComponentMap()
+        submodel_scalers[unit.control_volume.properties_in] = prop_scaler
+        submodel_scalers[unit.control_volume.properties_out] = prop_scaler
+
+        scaler_obj = unit.default_scaler()
+        scaler_obj.scale_model(unit, submodel_scalers=submodel_scalers)
+
+        sm = TransformationFactory("core.scale_model").create_using(iapws, rename=False)
+
+        dt = DiagnosticsToolbox(sm)
         dt.assert_no_numerical_warnings()
+
+        jac, _ = get_jacobian(sm, scaled=False)
+        assert jacobian_cond(jac=jac, scaled=False) == pytest.approx(2706.00, rel=1e-3)
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -475,19 +501,35 @@ class TestSaponification(object):
             <= 1e-3
         )
 
-    @pytest.mark.solver
-    @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.component
-    def test_numerical_issues(self, sapon):
-        dt = DiagnosticsToolbox(sapon)
-        dt.assert_no_numerical_warnings()
-
     @pytest.mark.ui
     @pytest.mark.unit
     def test_get_performance_contents(self, sapon):
         perf_dict = sapon.fs.unit._get_performance_contents()
 
         assert perf_dict == {"vars": {"Heat Duty": sapon.fs.unit.heat_duty[0]}}
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_numerical_issues_and_scaling(self, sapon):
+        jac, _ = get_jacobian(sapon, scaled=False)
+        assert jacobian_cond(jac=jac, scaled=False) == pytest.approx(
+            1.8433e11, rel=1e-3
+        )
+        unit = sapon.fs.unit
+
+        scaler_obj = unit.default_scaler()
+        scaler_obj.scale_model(unit)
+
+        sm = TransformationFactory("core.scale_model").create_using(sapon, rename=False)
+
+        dt = DiagnosticsToolbox(sm)
+        dt.assert_no_numerical_warnings()
+
+        jac, _ = get_jacobian(sm, scaled=False)
+        assert jacobian_cond(jac=jac, scaled=False) == pytest.approx(
+            1.34157e2, rel=1e-3
+        )
 
 
 # -----------------------------------------------------------------------------
@@ -511,6 +553,12 @@ class TestBT_Generic(object):
         m.fs.unit.heat_duty.fix(-5000)
         m.fs.unit.deltaP.fix(0)
 
+        # Set small values of epsilon to get sufficiently accurate results
+        m.fs.unit.control_volume.properties_in[0].eps_t_Vap_Liq.set_value(1e-4)
+        m.fs.unit.control_volume.properties_in[0].eps_z_Vap_Liq.set_value(1e-4)
+        m.fs.unit.control_volume.properties_out[0].eps_t_Vap_Liq.set_value(1e-4)
+        m.fs.unit.control_volume.properties_out[0].eps_z_Vap_Liq.set_value(1e-4)
+
         return m
 
     @pytest.mark.build
@@ -533,8 +581,8 @@ class TestBT_Generic(object):
         assert hasattr(btg.fs.unit, "heat_duty")
         assert hasattr(btg.fs.unit, "deltaP")
 
-        assert number_variables(btg) == 94
-        assert number_total_constraints(btg) == 57
+        assert number_variables(btg) == 80
+        assert number_total_constraints(btg) == 43
         # Unused vars are density parameters
         assert number_unused_variables(btg) == 10
 
@@ -595,7 +643,9 @@ class TestBT_Generic(object):
     @pytest.mark.component
     def test_numerical_issues(self, btg):
         dt = DiagnosticsToolbox(btg)
-        dt.assert_no_numerical_warnings()
+        # TODO: Complementarity formulation results in near-parallel components
+        # when unscaled
+        dt.assert_no_numerical_warnings(ignore_parallel_components=True)
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -664,6 +714,13 @@ class TestInitializersModular:
 
         m.fs.unit.heat_duty.fix(-5000)
         m.fs.unit.deltaP.fix(0)
+
+        # Set small values of epsilon to get sufficiently accurate results
+        m.fs.unit.control_volume.properties_in.display()
+        m.fs.unit.control_volume.properties_in[0].eps_t_Vap_Liq.set_value(1e-4)
+        m.fs.unit.control_volume.properties_in[0].eps_z_Vap_Liq.set_value(1e-4)
+        m.fs.unit.control_volume.properties_out[0].eps_t_Vap_Liq.set_value(1e-4)
+        m.fs.unit.control_volume.properties_out[0].eps_z_Vap_Liq.set_value(1e-4)
 
         return m
 

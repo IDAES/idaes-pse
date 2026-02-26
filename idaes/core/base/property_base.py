@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -13,6 +13,7 @@
 """
 This module contains classes for property blocks and property parameter blocks.
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 
@@ -50,7 +51,6 @@ from idaes.core.base.util import build_on_demand
 from idaes.core.initialization import (
     BlockTriangularizationInitializer,
 )
-
 
 # Some more information about this module
 __author__ = "Andrew Lee, John Eslick"
@@ -592,6 +592,14 @@ should be constructed in this state block,
         # TODO: Should refactor parent so this is not private
         # pylint: disable-next=protected-access
         return self.parent_component()._include_inherent_reactions()
+
+    @property
+    def default_initializer(self):
+        return self.parent_component().default_initializer
+
+    @property
+    def default_scaler(self):
+        return self.parent_component().default_scaler
 
     def build(self):
         """

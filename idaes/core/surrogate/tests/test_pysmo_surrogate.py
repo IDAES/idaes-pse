@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -13,6 +13,7 @@
 """
 Tests for PySMO's family of SurrogateTrainer (PysmoPolyTrainer, PysmoRBFTrainer and PysmoKrigingTrainer)
 """
+
 import pytest
 import numpy as np
 import pandas as pd
@@ -45,8 +46,7 @@ from idaes.core.surrogate.pysmo_surrogate import (
 from idaes.core.surrogate.surrogate_block import SurrogateBlock
 from idaes.core.surrogate.metrics import compute_fit_metrics
 
-
-dirpath = Path(__file__).parent.resolve()
+pytestmark = pytest.mark.usefixtures("run_module_in_tmp_path")
 
 
 # String representation of json output for testing
@@ -370,7 +370,7 @@ class TestTrainedSurrogate:
 
     @pytest.mark.unit
     def test_add_result(self, pysmo_outputs):
-        # These need to be tested this way to made sure ``add_result`` builds out model object propoerly.
+        # These need to be tested this way to made sure ``add_result`` builds out model object properly.
         out1, out2, out3, vars = pysmo_outputs
 
         init_func = PysmoTrainedSurrogate()

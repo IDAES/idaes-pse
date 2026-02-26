@@ -4,7 +4,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -53,10 +53,8 @@ def is_physical_parameter_block(val):
             f"Property package argument {val} should == useDefault or "
             f"be an instance of PhysicalParameterBlock"
         )
-        raise ConfigurationError(
-            """Property package argument should be an instance
-                of a PhysicalParameterBlock or useDefault"""
-        )
+        raise ConfigurationError("""Property package argument should be an instance
+                of a PhysicalParameterBlock or useDefault""")
 
 
 def is_reaction_parameter_block(val):
@@ -75,10 +73,8 @@ def is_reaction_parameter_block(val):
     if isinstance(val, ReactionParameterBlock):
         return val
     else:
-        raise ConfigurationError(
-            """Reaction package argument should be an instance
-                of a ReactionParameterBlock"""
-        )
+        raise ConfigurationError("""Reaction package argument should be an instance
+                of a ReactionParameterBlock""")
 
 
 def is_state_block(val):
@@ -98,10 +94,8 @@ def is_state_block(val):
     if isinstance(val, StateBlock) or val is None:
         return val
     else:
-        raise ConfigurationError(
-            """State block should be an instance of a StateBlock or
-                None"""
-        )
+        raise ConfigurationError("""State block should be an instance of a StateBlock or
+                None""")
 
 
 def is_port(arg):
@@ -192,3 +186,22 @@ def DefaultBool(arg):
         return arg
     else:
         return Bool(arg)
+
+
+def is_in_range(lb, ub):
+    """
+    Domain validator for 1D compact sets.
+
+    Args:
+        lb: float, lower bound
+        ub: float, upper bound
+    """
+
+    def _in_range(val):
+        if lb <= val <= ub:
+            return val
+        raise ConfigurationError(
+            f"Value {val} lies outside the admissible range {[lb, ub]}"
+        )
+
+    return _in_range

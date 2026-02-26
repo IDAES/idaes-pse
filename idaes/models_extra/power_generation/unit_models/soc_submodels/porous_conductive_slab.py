@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -49,6 +49,7 @@ Instances of ``Var`` that must be fixed:
     - ``resistivity_thermal_exponent_dividend``: Parameter divided by temperature in resistivity equation, in K.
       Would be something like (reduced) activation energy, but it can be both negative and positive.
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
@@ -1031,6 +1032,7 @@ class PorousConductiveSlabData(UnitModelBlockData):
 
                 for ix in self.ixnodes:
                     sP = sgsf(self.pressure[t, ix, iz], 1e-4)
+                    # pylint: disable-next=possibly-used-before-assignment
                     sV = sR * sT / sP
 
                     sDT = sgsf(self.temperature_deviation_x[t, ix, iz], sqx * sLx / sk)

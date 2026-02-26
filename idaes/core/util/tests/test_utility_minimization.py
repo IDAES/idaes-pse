@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -46,13 +46,12 @@ from idaes.core.util.utility_minimization import (
     gen_curves,
 )
 
-
 # -----------------------------------------------------------------------------
 # [1] systematic Methods of Chemical Process Design (1997)
 #     Chemical Engineering Series - L. T. Biegler, I. E. Grossmann,
 #     A. W. Westerberg, page 529, Example 16.1
 # Get default solver for testing
-solver = get_solver()
+solver = get_solver("ipopt_v2")
 
 
 @pytest.mark.unit
@@ -261,9 +260,9 @@ class TestStateBlock(object):
     def test_curve_data(self):
 
         T_test, Q_test = gen_curves([401, 341], [120, 120], [-280, -440])
-        Ttest = [120, 120, 341, 401]
-        for i in range(len(Ttest)):
-            assert T_test[i] == Ttest[i]
-        Qtest = [0, 0, -660.213, -720]
-        for i in range(len(Qtest)):
-            assert Q_test[i] == pytest.approx(Qtest[i], abs=1e-3)
+        t_test = [120, 120, 341, 401]
+        for i in range(len(t_test)):
+            assert T_test[i] == t_test[i]
+        q_test = [0, 0, -660.213, -720]
+        for i in range(len(q_test)):
+            assert Q_test[i] == pytest.approx(q_test[i], abs=1e-3)

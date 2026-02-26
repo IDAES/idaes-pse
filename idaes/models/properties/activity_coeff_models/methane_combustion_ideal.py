@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -11,7 +11,7 @@
 # for full copyright and license information.
 #################################################################################
 """
-Example property package for the VLE calucations for a Benzene-Toluene-o-Xylene
+Example property package for the VLE calculations for a Benzene-Toluene-o-Xylene
 system. If using the activity coefficient models (NRTL or Wilson), the user is
 expected to provide the parameters necessary for these models. Please note that
 these parameters are declared as variables here to allow for use in a parameter
@@ -30,7 +30,6 @@ from idaes.models.properties.activity_coeff_models.activity_coeff_prop_pack impo
     ActivityCoeffParameterData,
 )
 from idaes.logger import getIdaesLogger
-
 
 # Some more information about this module
 __author__ = "Andrew Lee, Jaffer Ghouse"

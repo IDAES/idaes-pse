@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -15,6 +15,7 @@ Tests ProcessBlock and ProcessBlockData.
 
 Author: John Eslick
 """
+
 import pytest
 from pyomo.environ import ConcreteModel, Var, value
 from pyomo.common.config import ConfigValue
@@ -42,6 +43,8 @@ class TestProcessBlock(object):
         assert isinstance(m.b.y, Var)
         assert value(m.b.x) == 1001
         assert value(m.b.y) == 1002
+        assert m.b.process_block_class() is MyBlock
+        assert m.b.parent_component().process_block_class() is MyBlock
 
     @pytest.mark.unit
     def test_vec_noargs(self):
@@ -59,6 +62,8 @@ class TestProcessBlock(object):
         assert value(m.b[2].y) == 1002
         assert value(m.b[3].x) == 1001
         assert value(m.b[3].y) == 1002
+        assert m.b[2].parent_component().process_block_class() is MyBlock
+        assert m.b.process_block_class() is MyBlock
 
     @pytest.mark.unit
     def test_scalar_args1(self):
@@ -68,6 +73,8 @@ class TestProcessBlock(object):
         assert isinstance(m.b.y, Var)
         assert value(m.b.x) == 1
         assert value(m.b.y) == 2
+        assert m.b.process_block_class() is MyBlock
+        assert m.b.parent_component().process_block_class() is MyBlock
 
     @pytest.mark.unit
     def test_scalar_args2(self):
@@ -77,6 +84,8 @@ class TestProcessBlock(object):
         assert isinstance(m.b.y, Var)
         assert value(m.b.x) == 1
         assert value(m.b.y) == 2
+        assert m.b.process_block_class() is MyBlock
+        assert m.b.parent_component().process_block_class() is MyBlock
 
     @pytest.mark.unit
     def test_vec_args(self):
@@ -97,6 +106,8 @@ class TestProcessBlock(object):
         assert value(m.b[2].y) == 2002
         assert value(m.b[3].x) == 1
         assert value(m.b[3].y) == 2
+        assert m.b[2].parent_component().process_block_class() is MyBlock
+        assert m.b.process_block_class() is MyBlock
 
     @pytest.mark.unit
     def test_user_map(self):
@@ -128,3 +139,5 @@ class TestProcessBlock(object):
         assert value(m.b[3].y) == 5002
         assert value(m.b[4].x) == 7001
         assert value(m.b[4].y) == 7002
+        assert m.b[2].parent_component().process_block_class() is MyBlock
+        assert m.b.process_block_class() is MyBlock

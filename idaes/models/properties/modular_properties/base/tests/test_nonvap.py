@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -15,6 +15,7 @@ Integration tests for generic property package framework
 
 Author: Andrew Lee
 """
+
 # Import Python libraries
 import pytest
 
@@ -55,7 +56,7 @@ import idaes.logger as idaeslog
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
-solver = get_solver()
+solver = get_solver("ipopt_v2")
 
 
 # -----------------------------------------------------------------------------
@@ -244,8 +245,8 @@ class TestParamBlock(object):
             assert i in ["PE1", "PE2"]
 
         assert model.params.phase_equilibrium_list == {
-            "PE1": {"benzene": ("Vap", "Liq")},
-            "PE2": {"toluene": ("Vap", "Liq")},
+            "PE1": ["benzene", ("Vap", "Liq")],
+            "PE2": ["toluene", ("Vap", "Liq")],
         }
 
         assert model.params.pressure_ref.value == 1e5

@@ -40,6 +40,7 @@ Phase Equilibrium State Libraries
     :maxdepth: 1
 
     pe/smooth_flash
+    pe/smooth_vle2
 
 Necessary Properties
 --------------------

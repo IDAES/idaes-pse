@@ -3,9 +3,7 @@ pytest plugin for testing IDAES "through" IDAES/examples within the IDAES/idaes-
 """
 
 from contextlib import contextmanager
-from dataclasses import dataclass, field
 import fnmatch
-import logging
 import os
 from pathlib import Path
 import sys
@@ -17,9 +15,14 @@ import idaes_examples
 from idaes_examples import notebooks
 from idaes_examples import build
 
-
 matchmarker = pytest.StashKey()
 marked = pytest.StashKey()
+
+# Environment triggers for use either locally
+# or in GitHub Action
+_ENV_TRUE = {"1", "true", "yes", "on"}
+RUN_NOTEBOOKS = str(os.getenv("EXAMPLES_RUN_NOTEBOOKS", "1")).lower() in _ENV_TRUE
+RUN_PYFILES = str(os.getenv("EXAMPLES_RUN_PYFILES", "1")).lower() in _ENV_TRUE
 
 
 def _matches_pattern(item: pytest.Item, pattern: str) -> bool:
@@ -28,24 +31,13 @@ def _matches_pattern(item: pytest.Item, pattern: str) -> bool:
 
 
 def pytest_configure(config: pytest.Config):
-    tensorflow_py311_win = pytest.mark.xfail(
-        condition=sys.version_info > (3, 11),
-        run=True,
-        strict=False,
-        reason="tensorflow ImportError on 3.11+ on Windows (cannot import name 'formatargspec' from 'inspect')",
-    )
     config.stash[matchmarker] = {
         "*/held/*": pytest.mark.xfail(run=False, reason="notebook has 'held' status"),
         "*/archive/*": pytest.mark.skip(reason="notebook is archived"),
-        # TODO: Need to fix this once the Python 3.11 issue is resolved in tensorflow
-        "*/surrogates/best_practices_optimization*": tensorflow_py311_win,
-        "*/surrogates/omlt/keras_flowsheet_optimization*": tensorflow_py311_win,
         "*/surrogates/sco2/alamo/*": pytest.mark.xfail(
             run=False,
             reason="notebooks require ALAMO to run",
         ),
-        "*/surrogates/sco2/omlt/keras_training*": tensorflow_py311_win,
-        "*/surrogates/sco2/omlt/flowsheet_optimization*": tensorflow_py311_win,
     }
     config.stash[marked] = []
 
@@ -55,15 +47,30 @@ def pytest_sessionstart(session: pytest.Session):
 
 
 def pytest_ignore_collect(collection_path: Path, config: pytest.Config):
+    """Control what gets collected. By default, notebooks and tests; ignore other files."""
     if "_dev" in collection_path.parts:
         return True
     if not collection_path.is_file():
         return
-    if collection_path.suffix == ".py":
-        # specifically ignore python files
+
+    suffix = collection_path.suffix
+    # Notebook tests (only *_test.ipynb)
+    if suffix == ".ipynb":
+        if not RUN_NOTEBOOKS:
+            return True
+        return not collection_path.match("**/*_test.ipynb")
+
+    # Python tests (only test_*.py or *_test.py)
+    if suffix == ".py":
+        if not RUN_PYFILES:
+            return True
+        name = collection_path.name
+        if fnmatch.fnmatch(name, "test_*.py") or fnmatch.fnmatch(name, "*_test.py"):
+            return False
         return True
-    if not collection_path.match("**/*_test.ipynb"):
-        return True
+
+    # Ignore everything else
+    return True
 
 
 def pytest_collection_modifyitems(config: pytest.Config, items):
@@ -113,7 +120,7 @@ def run_pytest(
         empty_file_for_ignoring.write_text("")
         args += ["-c", empty_file_for_ignoring]
 
-    with _temp_cwd(rootdir) as p:
+    with _temp_cwd(rootdir):
         res = pytest.main(
             args,
             **kwargs,
@@ -125,6 +132,7 @@ def run_pytest(
 def main(args):
     rootdir = Path(idaes_examples.__path__[0])
 
+    # Always include --nbmake, but notebook collection can be disabled by env
     res = run_pytest(
         rootdir,
         [

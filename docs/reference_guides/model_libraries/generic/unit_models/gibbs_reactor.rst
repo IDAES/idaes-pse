@@ -69,3 +69,9 @@ GibbsReactorData Class
 
 .. autoclass:: GibbsReactorData
   :members:
+  
+GibbsReactorScaler Class
+------------------------
+
+.. autoclass:: GibbsReactorScaler
+  :members:

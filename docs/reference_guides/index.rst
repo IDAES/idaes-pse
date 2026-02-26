@@ -8,7 +8,7 @@ Reference Guides
 
     model_libraries/index
     core/index
-    scaling
+    scaling/scaling
     initialization/index
     commands/index
     configuration

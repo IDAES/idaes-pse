@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -13,16 +13,18 @@
 """
 Base class for control volumes.
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 
 # We use some private attributes here to hide these from the user
 # pylint: disable=protected-access
 
-__author__ = "Andrew Lee"
+__author__ = "Andrew Lee, Douglas Allan"
 
 # Import Pyomo libraries
 from pyomo.environ import Constraint, Reals, units as pyunits, Var, value
+from pyomo.common.collections import ComponentMap
 from pyomo.dae import DerivativeVar
 from pyomo.common.deprecation import deprecation_warning
 
@@ -43,11 +45,109 @@ from idaes.core.util.exceptions import (
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util import scaling as iscale
 import idaes.logger as idaeslog
+from idaes.core.base.control_volume_base import ControlVolumeScalerBase
+
+from idaes.core.scaling import DefaultScalingRecommendation
 
 _log = idaeslog.getLogger(__name__)
 
 # TODO : Custom terms in material balances, other types of material balances
 # TODO : Improve flexibility for get_material_flow_terms and associated
+
+
+class ControlVolume0DScaler(ControlVolumeScalerBase):
+    """
+    Scaler object for the ControlVolume0D
+    """
+
+    DEFAULT_SCALING_FACTORS = {
+        # We could scale volume by magnitude if it were being fixed
+        # by the user, but we often have the volume given by an
+        # equality constraint involving geometry in the parent
+        # unit model.
+        "volume": DefaultScalingRecommendation.userInputRequired,
+        "phase_fraction": 10,  # May have already been created by property package
+    }
+
+    def _get_reference_state_block(self, model):
+        """
+        This method gives the parent class ControlVolumeScalerBase
+        methods a state block with the same index as the material
+        and energy balances to get scaling information from
+        """
+        return model.properties_out
+
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None
+    ):
+        """
+        Routine to apply scaling factors to variables in model.
+
+        Derived classes must overload this method.
+
+        Args:
+            model: model to be scaled
+            overwrite: whether to overwrite existing scaling factors
+            submodel_scalers: ComponentMap of Scalers to use for sub-models
+
+        Returns:
+            None
+        """
+        self.call_submodel_scaler_method(
+            submodel=model.properties_in,
+            submodel_scalers=submodel_scalers,
+            method="variable_scaling_routine",
+            overwrite=overwrite,
+        )
+        self.propagate_state_scaling(
+            target_state=model.properties_out,
+            source_state=model.properties_in,
+            overwrite=overwrite,
+        )
+        self.call_submodel_scaler_method(
+            submodel=model.properties_out,
+            submodel_scalers=submodel_scalers,
+            method="variable_scaling_routine",
+            overwrite=overwrite,
+        )
+        if hasattr(model, "volume"):
+            for v in model.volume.values():
+                self.scale_variable_by_default(v, overwrite=overwrite)
+        if hasattr(model, "phase_fraction"):
+            for v in model.phase_fraction.values():
+                self.scale_variable_by_default(v, overwrite=overwrite)
+
+        super().variable_scaling_routine(
+            model, overwrite=overwrite, submodel_scalers=submodel_scalers
+        )
+
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None
+    ):
+        """
+        Routine to apply scaling factors to constraints in model.
+
+        Derived classes must overload this method.
+
+        Args:
+            model: model to be scaled
+            overwrite: whether to overwrite existing scaling factors
+            submodel_scalers: ComponentMap of Scalers to use for sub-models
+
+        Returns:
+            None
+        """
+        for props in [model.properties_in, model.properties_out]:
+            self.call_submodel_scaler_method(
+                submodel=props,
+                submodel_scalers=submodel_scalers,
+                method="constraint_scaling_routine",
+                overwrite=overwrite,
+            )
+
+        super().constraint_scaling_routine(
+            model, overwrite=overwrite, submodel_scalers=submodel_scalers
+        )
 
 
 @declare_process_block_class(
@@ -70,6 +170,8 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
     momentum balances. The form of the terms used in these constraints is
     specified in the chosen property package.
     """
+
+    default_scaler = ControlVolume0DScaler
 
     def add_geometry(self):
         """
@@ -203,6 +305,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         pc_set = self.properties_in.phase_component_set
 
         # Check that reaction block exists if required
+        rblock = None
         if has_rate_reactions or has_equilibrium_reactions:
             try:
                 rblock = self.reactions
@@ -276,6 +379,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             flow_units = None
 
         # Get units for accumulation term if required
+        acc_units = None
         if self.config.dynamic:
             f_time_units = self.flowsheet().time_units
             if (f_time_units is None) ^ (units("time") is None):
@@ -341,13 +445,30 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
         # Material holdup and accumulation
         if has_holdup:
+            if (
+                self.properties_in[
+                    self.flowsheet().time.first()
+                ].get_material_flow_basis()
+                == MaterialFlowBasis.mass
+            ):
+                holdup_units = units("mass")
+            elif (
+                self.properties_in[
+                    self.flowsheet().time.first()
+                ].get_material_flow_basis()
+                == MaterialFlowBasis.molar
+            ):
+                holdup_units = units("amount")
+            else:
+                holdup_units = None
+
             self.material_holdup = Var(
                 self.flowsheet().time,
                 pc_set,
                 domain=Reals,
                 initialize=1.0,
                 doc="Material holdup in control volume",
-                units=units("amount"),
+                units=holdup_units,
             )
         if dynamic:
             self.material_accumulation = DerivativeVar(
@@ -925,6 +1046,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         units = self.config.property_package.get_metadata().get_derived_units
 
         # Get units for accumulation term if required
+        acc_units = None
         if self.config.dynamic:
             f_time_units = self.flowsheet().time_units
             if (f_time_units is None) ^ (units("time") is None):
@@ -1177,6 +1299,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         units = self.config.property_package.get_metadata().get_derived_units
 
         # Get units for accumulation term if required
+        acc_units = None
         if self.config.dynamic:
             f_time_units = self.flowsheet().time_units
             if (f_time_units is None) ^ (units("time") is None):
@@ -1333,6 +1456,16 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         raise BalanceTypeNotSupportedError(
             "{} OD control volumes do not support "
             "add_total_energy_balances.".format(self.name)
+        )
+
+    def add_isothermal_constraint(self, *args, **kwargs):
+        """
+        Requires ExtendedControlVolume0D
+        """
+        raise BalanceTypeNotSupportedError(
+            f"{self.name} ControlVolume0D does not support isothermal energy balances. "
+            "Please consider using ExtendedControlVolume0D in your model if you require "
+            "support for isothermal balances."
         )
 
     def add_total_pressure_balances(self, has_pressure_change=False, custom_term=None):

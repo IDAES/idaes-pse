@@ -3,15 +3,14 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-"""This module gets the path of parameters files
-"""
+"""This module gets the path of parameters files"""
 
 __author__ = "John Eslick"
 
@@ -52,7 +51,8 @@ def set_parameter_path(path):
     Returns:
         None
     """
-    idaes.properties.helmholtz.parameter_file_path = path
+    idaes.cfg.properties.helmholtz.parameter_file_path = path
+    auto_register()
 
 
 def auto_register():

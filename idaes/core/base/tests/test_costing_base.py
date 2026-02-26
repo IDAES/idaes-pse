@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -13,6 +13,7 @@
 """
 Tests for costing base classes
 """
+
 import pytest
 
 from pyomo.environ import ConcreteModel, Constraint, Set, units as pyunits, Var, Param
@@ -73,6 +74,7 @@ def test_register_idaes_currency_units():
         "USD_2020": 596.2,
         "USD_2021": 708.0,
         "USD_2022": 816.0,
+        "USD_2023": 797.9,
     }
 
     for c, conv in CEI.items():

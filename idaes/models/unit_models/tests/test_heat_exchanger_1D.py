@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -15,10 +15,12 @@ Tests for Heat Exchanger 1D unit model.
 
 Author: Jaffer Ghouse
 """
+
 import pytest
 
 from pyomo.environ import (
     assert_optimal_termination,
+    ComponentMap,
     ConcreteModel,
     TransformationFactory,
     value,
@@ -39,6 +41,7 @@ from idaes.core import (
 from idaes.models.unit_models.heat_exchanger_1D import (
     HeatExchanger1D as HX1D,
     HX1DInitializer,
+    HX1DScaler,
 )
 from idaes.models.unit_models.heat_exchanger import HeatExchangerFlowPattern
 
@@ -62,6 +65,10 @@ from idaes.core.util.model_statistics import (
 )
 from idaes.core.util.testing import PhysicalParameterTestBlock, initialization_tester
 from idaes.core.util import scaling as iscale
+from idaes.core.util.scaling import (
+    get_jacobian,
+    jacobian_cond,
+)
 from idaes.core.solvers import get_solver
 from idaes.core.util.performance import PerformanceBaseClass
 from idaes.core.initialization import (
@@ -82,10 +89,9 @@ from idaes.models.properties.modular_properties.phase_equil.forms import log_fug
 import idaes.models.properties.modular_properties.pure.RPP4 as RPP
 from idaes.models.properties.modular_properties.eos.ceos import cubic_roots_available
 
-
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_solver()
+solver = get_solver("ipopt_v2", solver_options={"constr_viol_tol": 1e-6})
 
 
 # -----------------------------------------------------------------------------
@@ -271,6 +277,7 @@ def test_config():
     assert m.fs.unit.config.cold_side.transformation_scheme == "BACKWARD"
 
     assert m.fs.unit.default_initializer is HX1DInitializer
+    assert m.fs.unit.default_scaler is HX1DScaler
 
 
 @pytest.mark.unit
@@ -509,6 +516,43 @@ def test_config_validation_mismatched_collocation(caplog):
             },
             flow_type=HeatExchangerFlowPattern.cocurrent,
         )
+
+
+@pytest.mark.unit
+def test_config_validation_collocation_no_warning(caplog):
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = BTXParameterBlock(valid_phase="Liq")
+    caplog.clear()
+
+    with caplog.at_level(idaeslog.INFO):
+        m.fs.HX_cocurrent = HX1D(
+            hot_side={
+                "property_package": m.fs.properties,
+                "transformation_method": "dae.collocation",
+                "transformation_scheme": "LAGRANGE-LEGENDRE",
+            },
+            cold_side={
+                "property_package": m.fs.properties,
+                "transformation_method": "dae.collocation",
+                "transformation_scheme": "LAGRANGE-LEGENDRE",
+            },
+            flow_type=HeatExchangerFlowPattern.cocurrent,
+        )
+        m.fs.HX_countercurrent = HX1D(
+            hot_side={
+                "property_package": m.fs.properties,
+                "transformation_method": "dae.collocation",
+                "transformation_scheme": "LAGRANGE-LEGENDRE",
+            },
+            cold_side={
+                "property_package": m.fs.properties,
+                "transformation_method": "dae.collocation",
+                "transformation_scheme": "LAGRANGE-LEGENDRE",
+            },
+            flow_type=HeatExchangerFlowPattern.countercurrent,
+        )
+    assert len(caplog.text) == 0
 
 
 # -----------------------------------------------------------------------------
@@ -2040,6 +2084,33 @@ class TestSaponification_cocurrent(object):
         dt = DiagnosticsToolbox(sapon)
         dt.assert_no_numerical_warnings()
 
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_scaling(self, sapon):
+        unit = sapon.fs.unit
+
+        jac, _ = get_jacobian(sapon, scaled=False)
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+            7.506e12, rel=1e-3
+        )
+
+        scaler_obj = unit.default_scaler()
+        scaler_obj.default_scaling_factors["length"] = 1 / 4.85
+        scaler_obj.default_scaling_factors["area"] = 2
+        scaler_obj.set_variable_scaling_factor(unit.hot_side.area, 1e3)
+        scaler_obj.set_variable_scaling_factor(unit.cold_side.area, 1e3)
+
+        scaler_obj.scale_model(unit)
+
+        assert scaler_obj.get_scaling_factor(unit.length) == 1 / 4.85
+        assert scaler_obj.get_scaling_factor(unit.area) == 2
+
+        sm = TransformationFactory("core.scale_model").create_using(sapon, rename=False)
+        jac, _ = get_jacobian(sm, scaled=False)
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+            8.7747e4, rel=1e-3
+        )
+
 
 # # -----------------------------------------------------------------------------
 class TestSaponification_countercurrent(object):
@@ -2298,7 +2369,39 @@ class TestSaponification_countercurrent(object):
         dt = DiagnosticsToolbox(sapon)
         dt.assert_no_numerical_warnings()
 
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_scaling(self, sapon):
+        unit = sapon.fs.unit
 
+        jac, _ = get_jacobian(sapon, scaled=False)
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+            7.5106e12, rel=1e-3
+        )
+
+        scaler_obj = unit.default_scaler()
+        scaler_obj.default_scaling_factors["length"] = 1 / 4.85
+        scaler_obj.default_scaling_factors["area"] = 2
+        scaler_obj.set_variable_scaling_factor(unit.hot_side.area, 1e3)
+        scaler_obj.set_variable_scaling_factor(unit.cold_side.area, 1e3)
+
+        scaler_obj.scale_model(unit)
+
+        assert scaler_obj.get_scaling_factor(unit.length) == 1 / 4.85
+        assert scaler_obj.get_scaling_factor(unit.area) == 2
+
+        sm = TransformationFactory("core.scale_model").create_using(sapon, rename=False)
+        jac, _ = get_jacobian(sm, scaled=False)
+        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
+            8.7749e4, rel=1e-3
+        )
+
+
+# TODO Why does this example take more than 30 seconds for each of initialization
+# and diagnosing structural issues? It probably has to do with extremely deep
+# expression trees.
+# # -----------------------------------------------------------------------------
+@pytest.mark.skipif(not cubic_roots_available(), reason="Cubic functions not available")
 # # -----------------------------------------------------------------------------
 @pytest.mark.skipif(not cubic_roots_available(), reason="Cubic functions not available")
 class TestBT_Generic_cocurrent(object):
@@ -2448,6 +2551,12 @@ class TestBT_Generic_cocurrent(object):
         m.fs.unit.cold_side_inlet.mole_frac_comp[0, "benzene"].fix(0.5)
         m.fs.unit.cold_side_inlet.mole_frac_comp[0, "toluene"].fix(0.5)
 
+        # Set small values of epsilon to get sufficiently accurate results
+        # Only need hot side, as cold side uses old SmoothVLE
+        for i in m.fs.unit.hot_side.properties.keys():
+            m.fs.unit.hot_side.properties[i].eps_t_Vap_Liq.set_value(1e-4)
+            m.fs.unit.hot_side.properties[i].eps_z_Vap_Liq.set_value(1e-4)
+
         return m
 
     @pytest.mark.component
@@ -2486,8 +2595,8 @@ class TestBT_Generic_cocurrent(object):
         assert hasattr(btx.fs.unit, "heat_transfer_eq")
         assert hasattr(btx.fs.unit, "heat_conservation")
 
-        assert number_variables(btx) == 1976
-        assert number_total_constraints(btx) == 1867
+        assert number_variables(btx) == 1829
+        assert number_total_constraints(btx) == 1720
         assert number_unused_variables(btx) == 36
 
     @pytest.mark.integration
@@ -2639,9 +2748,13 @@ class TestBT_Generic_cocurrent(object):
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.integration
+    @pytest.mark.xfail
     def test_numerical_issues(self, btx):
         dt = DiagnosticsToolbox(btx)
-        dt.assert_no_numerical_warnings()
+        # TODO: Complementarity formulation results in near-parallel components
+        # when unscaled
+        # Scaling may not actually fix the near-singularity in this model---Doug
+        dt.assert_no_numerical_warnings(ignore_parallel_components=True)
 
     @pytest.mark.component
     def test_initialization_error(self, btx):
@@ -3334,7 +3447,10 @@ class TestInitializersSaponCounterCurrent:
 
     @pytest.mark.integration
     def test_block_triangularization(self, model):
-        initializer = BlockTriangularizationInitializer(constraint_tolerance=2e-5)
+        initializer = BlockTriangularizationInitializer(
+            constraint_tolerance=2e-5,
+            block_solver_writer_config={"linear_presolve": False},
+        )
         # Need to ignore unused variables at inlets
         initializer.initialize(model.fs.unit, exclude_unused_vars=True)
 
@@ -3529,9 +3645,14 @@ class TestInitializersModularCoCurrent:
         m.fs.unit.cold_side_inlet.mole_frac_comp[0, "benzene"].set_value(0.5)
         m.fs.unit.cold_side_inlet.mole_frac_comp[0, "toluene"].set_value(0.5)
 
+        # Set small values of epsilon to get sufficiently accurate results
+        for i in m.fs.unit.hot_side.properties.keys():
+            m.fs.unit.hot_side.properties[i].eps_t_Vap_Liq.set_value(1e-4)
+            m.fs.unit.hot_side.properties[i].eps_z_Vap_Liq.set_value(1e-4)
+
         return m
 
-    @pytest.mark.component
+    @pytest.mark.integration
     def test_general_hx1d_initializer(self, model):
         initializer = HX1DInitializer()
         initializer.initialize(model.fs.unit)

@@ -4,6 +4,9 @@
 This page gives a conceptual overview of the IDAES platform and provides terminology for the different
 components of that platform.
 
+For more information on the overall IDAES platform and related projects, now called *IDAES+*,
+see the `IDAES+ web pages <https://idaesplus.readthedocs.io/latest/>`_.
+
 .. rubric:: Contents
 
 .. contents::
@@ -54,7 +57,7 @@ The following terms are used in the diagram above, and throughout this documenta
     Python programming environments
         Jupyter Notebook examples and extensions for interactive scripting in Python
 
-    Data Management (IDAES-DMF)
+    Data Management (IDAES-DMF) (no longer supported)
         Data Management Framework (DMF) supporting provenance for IDAES workflows
 
     Pyomo

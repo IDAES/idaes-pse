@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -13,6 +13,7 @@
 """
 Authors: Anuja Deshpande, Andrew Lee
 """
+
 import pytest
 import numpy as np
 
@@ -51,10 +52,9 @@ from idaes.models.properties.modular_properties.examples.CO2_H2O_Ideal_VLE impor
     configuration,
 )
 
-
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_solver()
+solver = get_solver("ipopt_v2")
 
 
 def _as_quantity(x):
@@ -109,7 +109,7 @@ class TestParamBlock(object):
         for i in model.params.phase_equilibrium_idx:
             assert i in ["PE1"]
 
-        assert model.params.phase_equilibrium_list == {"PE1": {"H2O": ("Vap", "Liq")}}
+        assert model.params.phase_equilibrium_list == {"PE1": ["H2O", ("Vap", "Liq")]}
 
         assert model.params.pressure_ref.value == 101325
         assert model.params.temperature_ref.value == 298.15
@@ -176,7 +176,7 @@ class TestStateBlock(object):
 
     @pytest.mark.unit
     def test_define_port_members(self, model):
-        sv = model.props[1].define_state_vars()
+        sv = model.props[1].define_port_members()
 
         assert len(sv) == 4
         for i in sv:

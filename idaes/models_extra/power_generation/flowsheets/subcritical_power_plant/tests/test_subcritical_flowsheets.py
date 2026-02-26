@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -20,8 +20,8 @@ import idaes.models_extra.power_generation.flowsheets.subcritical_power_plant.su
 import idaes.models_extra.power_generation.flowsheets.subcritical_power_plant.subcritical_boiler as recyrc
 from idaes.models.properties.general_helmholtz import helmholtz_available
 
+import types
 import pytest
-
 
 __author__ = "Boiler Subsystem Team (J. Ma, M. Zamarripa)"
 
@@ -92,6 +92,42 @@ def test_subcritical_boiler_dynamic():
 
 
 @pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
+@pytest.mark.component
+def test_build_pfd_tag_group_smoke():
+    sd = {
+        "S1": types.SimpleNamespace(
+            flow_mass=9.5,
+            flow_mol=1000,
+            temperature=450,
+            pressure=95,
+            enth_mass=1.0,
+            enth_mol=2.0,
+            vapor_frac=0.1,
+            mole_frac_comp={"N2": 0.7, "O2": 0.2},
+        ),
+        "S2": types.SimpleNamespace(
+            flow_mass=12.0,
+            flow_mol=200,
+            temperature=300,
+            pressure=250,
+            mole_frac_comp={"CO2": 0.15},
+        ),
+    }
+
+    tags, fmts, tg = subcrit_plant._build_pfd_tag_group(sd)
+
+    assert {"S1_F", "S1_x", "S1_yN2", "S2_yCO2"} <= set(tags)
+    assert tags["S1_T"] == 450.0
+    assert tags["S1_P_kPa"] == 95.0
+    assert tags["S1_hmass"] == 1.0
+    assert fmts["S1_F"] == "{:,.0f}"
+    assert fmts["S1_Fmass"](9.5) == "{:.2f}" and fmts["S2_Fmass"](12.0) == "{:.1f}"
+    assert fmts["S1_T"] == "{:,.0f}"
+    assert fmts["S1_P_kPa"](95.0) == "{:.2f}" and fmts["S1_P_kPa"](250.0) == "{:,.0f}"
+    assert fmts["S1_h"] == "{:,.0f}" and fmts["S1_hmass"] == "{:,.0f}"
+
+
+@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.integration
 def test_steam_cycle():
     m = steam_cycle.main_steady_state()
@@ -142,7 +178,7 @@ def test_subc_power_plant():
 
 
 @pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
-@pytest.mark.component
+@pytest.mark.integration
 def test_dynamic_power_plant_build():
     # constructing and initializing dynamic power plant
     # not solving due to simulation time >20 min
@@ -164,7 +200,7 @@ def test_steadystate_power_plant_build():
 
 
 @pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
-@pytest.mark.component
+@pytest.mark.integration
 def test_dynamic_steam_cycle():
     # constructing and initializing dynamic steam cycle flowsheet
     m = steam_cycle.get_model(dynamic=True)
@@ -174,6 +210,7 @@ def test_dynamic_steam_cycle():
     assert degrees_of_freedom(m) == 0
 
 
+@pytest.mark.usefixtures("run_in_tmp_path")
 @pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.component
 def test_subcritical_recirculation_system():

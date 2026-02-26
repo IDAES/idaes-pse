@@ -53,8 +53,8 @@ approximately proportional to the feed water flow rate to the power of 0.8.
 A flowsheet level constraint can be imposed to account for the effect of feed water flow rate on the overall heat transfer coefficient.
 
 
-Initialial Condition of Dynamic Model
--------------------------------------
+Initial Condition of Dynamic Model
+----------------------------------
 
 Typical initial condition for the dynamic model is a steady state condition. The user can call `set_initial_condition` function of the model to
 initialize the variables related to the material and energy accumulation terms for the dynamic model.  Note that the water level at the initial time

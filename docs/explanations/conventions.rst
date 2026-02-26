@@ -217,13 +217,13 @@ Naming Examples
 ^^^^^^^^^^^^^^^
 Below are some examples of the IDAES naming convention in use.
 
-============================== ===========================================================
-Variable Name                  Meaning
-============================== ===========================================================
-enth                           Specific enthalpy of the entire mixture (across all phases)
-flow_comp["H2O"]               Total flow of H2O (across all phases)
-entr_phase["liq"]              Specific entropy of the liquid phase mixture
-conc_phase_comp["liq", "H2O"]  Concentration of H2O in the liquid phase
-temperature_red                Reduced temperature
-pressure_crit                  Critical pressure
-============================== ===========================================================
+==================================  =============================================================================
+Variable Name                       Meaning
+==================================  =============================================================================
+enth_mol                            Specific enthalpy of the entire mixture (across all phases) on a molar basis
+flow_vol_comp["H2O"]                Total flow of H2O (across all phases) on a volumetric basis
+entr_mol_phase["liq"]               Specific entropy of the liquid phase mixture on a molar basis
+conc_mass_phase_comp["liq", "H2O"]  Concentration of H2O in the liquid phase on a mass basis
+temperature_red                     Reduced temperature
+pressure_crit                       Critical pressure
+==================================  =============================================================================

@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -19,6 +19,7 @@ Tests for costing package based on methods from:
     Chapter 22. Cost Accounting and Capital Cost Estimation
     22.2 Cost Indexes and Capital Investment
 """
+
 import pytest
 
 from pyomo.environ import (
@@ -90,7 +91,7 @@ from pyomo.common.log import LoggingIntercept
 __author__ = "Andrew Lee"
 
 
-solver = get_solver()
+solver = get_solver("ipopt_v2")
 
 
 @pytest.fixture

@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -13,6 +13,7 @@
 """
 This module contains classes for reaction blocks and reaction parameter blocks.
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 
@@ -266,6 +267,14 @@ should be constructed in this reaction block,
     @property
     def phase_component_set(self):
         return self.state_ref.phase_component_set
+
+    @property
+    def default_initializer(self):
+        return self.parent_component().default_initializer
+
+    @property
+    def default_scaler(self):
+        return self.parent_component().default_scaler
 
     def lock_attribute_creation_context(self):
         """Returns a context manager that does not allow attributes to be created

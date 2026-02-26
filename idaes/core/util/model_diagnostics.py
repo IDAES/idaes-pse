@@ -4,7 +4,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -20,10 +20,11 @@ __author__ = "Alexander Dowling, Douglas Allan, Andrew Lee, Robby Parker, Ben Kn
 from operator import itemgetter
 import sys
 from inspect import signature
-from math import log, isclose, inf, isfinite
+from math import log, log10, isclose, inf, isfinite
 import json
 from typing import List
 import logging
+from itertools import combinations, chain
 
 import numpy as np
 from scipy.linalg import svd
@@ -35,6 +36,7 @@ from pyomo.environ import (
     Integers,
     Block,
     check_optimal_termination,
+    ComponentMap,
     ConcreteModel,
     Constraint,
     Expression,
@@ -58,6 +60,7 @@ from pyomo.core.expr.numeric_expr import (
 from pyomo.core.base.block import BlockData
 from pyomo.core.base.var import VarData
 from pyomo.core.base.constraint import ConstraintData
+from pyomo.core.base.expression import ExpressionData
 from pyomo.repn.standard_repn import (  # pylint: disable=no-name-in-module
     generate_standard_repn,
 )
@@ -67,6 +70,8 @@ from pyomo.common.config import (
     ConfigValue,
     document_kwargs_from_configdict,
     PositiveInt,
+    NonNegativeFloat,
+    NonNegativeInt,
 )
 from pyomo.util.check_units import identify_inconsistent_units
 from pyomo.contrib.incidence_analysis import IncidenceGraphInterface
@@ -78,8 +83,12 @@ from pyomo.contrib.iis import mis
 from pyomo.common.deprecation import deprecation_warning
 from pyomo.common.errors import PyomoException
 from pyomo.common.tempfiles import TempfileManager
+from pyomo.core import expr as EXPR
+from pyomo.common.numeric_types import native_types
+from pyomo.core.base.units_container import _PyomoUnit
 
 from idaes.core.solvers.get_solver import get_solver
+from idaes.core.util.misc import compact_expression_to_string
 from idaes.core.util.model_statistics import (
     activated_blocks_set,
     deactivated_blocks_set,
@@ -91,15 +100,21 @@ from idaes.core.util.model_statistics import (
     deactivated_objectives_set,
     variables_in_activated_constraints_set,
     variables_not_in_activated_constraints_set,
+    variables_with_none_value_in_activated_equalities_set,
+    number_activated_greybox_equalities,
+    number_deactivated_greybox_equalities,
+    activated_greybox_block_set,
+    deactivated_greybox_block_set,
+    greybox_block_set,
+    unfixed_greybox_variables,
+    greybox_variables,
     degrees_of_freedom,
     large_residuals_set,
     variables_near_bounds_set,
 )
-from idaes.core.util.scaling import (
+from idaes.core.scaling.util import (
     get_jacobian,
-    extreme_jacobian_columns,
-    extreme_jacobian_rows,
-    extreme_jacobian_entries,
+    get_scaling_factor,
     jacobian_cond,
 )
 from idaes.core.util.parameter_sweep import (
@@ -180,7 +195,6 @@ def svd_sparse(jacobian, number_singular_values):
     """
     u, s, vT = svds(jacobian, k=number_singular_values, which="SM")
 
-    print(u, s, vT, number_singular_values)
     return u, s, vT.transpose()
 
 
@@ -189,16 +203,17 @@ CONFIG.declare(
     "variable_bounds_absolute_tolerance",
     ConfigValue(
         default=1e-4,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Absolute tolerance for considering a variable to be close "
         "to its bounds.",
     ),
 )
+# TODO is a relative tolerance necessary if we're including scaling?
 CONFIG.declare(
     "variable_bounds_relative_tolerance",
     ConfigValue(
         default=1e-4,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Relative tolerance for considering a variable to be close "
         "to its bounds.",
     ),
@@ -207,7 +222,7 @@ CONFIG.declare(
     "variable_bounds_violation_tolerance",
     ConfigValue(
         default=0,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Absolute tolerance for considering a variable to violate its bounds.",
         doc="Absolute tolerance for considering a variable to violate its bounds. "
         "Some solvers relax bounds on variables thus allowing a small violation to be "
@@ -218,15 +233,47 @@ CONFIG.declare(
     "constraint_residual_tolerance",
     ConfigValue(
         default=1e-5,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Absolute tolerance to use when checking constraint residuals.",
+    ),
+)
+CONFIG.declare(
+    "constraint_term_mismatch_tolerance",
+    ConfigValue(
+        default=1e6,
+        domain=NonNegativeFloat,
+        description="Magnitude difference to use when checking for mismatched additive terms in constraints.",
+    ),
+)
+CONFIG.declare(
+    "constraint_term_cancellation_tolerance",
+    ConfigValue(
+        default=1e-4,
+        domain=NonNegativeFloat,
+        description="Absolute tolerance to use when checking for canceling additive terms in constraints.",
+    ),
+)
+CONFIG.declare(
+    "max_canceling_terms",
+    ConfigValue(
+        default=5,
+        domain=NonNegativeInt,
+        description="Maximum number of terms to consider when looking for canceling combinations in expressions.",
+    ),
+)
+CONFIG.declare(
+    "constraint_term_zero_tolerance",
+    ConfigValue(
+        default=1e-10,
+        domain=NonNegativeFloat,
+        description="Absolute tolerance to use when determining if a constraint term is equal to zero.",
     ),
 )
 CONFIG.declare(
     "variable_large_value_tolerance",
     ConfigValue(
         default=1e4,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Absolute tolerance for considering a value to be large.",
     ),
 )
@@ -234,7 +281,7 @@ CONFIG.declare(
     "variable_small_value_tolerance",
     ConfigValue(
         default=1e-4,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Absolute tolerance for considering a value to be small.",
     ),
 )
@@ -242,7 +289,7 @@ CONFIG.declare(
     "variable_zero_value_tolerance",
     ConfigValue(
         default=1e-8,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Absolute tolerance for considering a value to be near to zero.",
     ),
 )
@@ -250,7 +297,7 @@ CONFIG.declare(
     "jacobian_large_value_caution",
     ConfigValue(
         default=1e4,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Tolerance for raising a caution for large Jacobian values.",
     ),
 )
@@ -258,7 +305,7 @@ CONFIG.declare(
     "jacobian_large_value_warning",
     ConfigValue(
         default=1e8,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Tolerance for raising a warning for large Jacobian values.",
     ),
 )
@@ -266,7 +313,7 @@ CONFIG.declare(
     "jacobian_small_value_caution",
     ConfigValue(
         default=1e-4,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Tolerance for raising a caution for small Jacobian values.",
     ),
 )
@@ -274,7 +321,7 @@ CONFIG.declare(
     "jacobian_small_value_warning",
     ConfigValue(
         default=1e-8,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Tolerance for raising a warning for small Jacobian values.",
     ),
 )
@@ -290,7 +337,7 @@ CONFIG.declare(
     "parallel_component_tolerance",
     ConfigValue(
         default=1e-8,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Tolerance for identifying near-parallel Jacobian rows/columns",
     ),
 )
@@ -298,7 +345,7 @@ CONFIG.declare(
     "absolute_feasibility_tolerance",
     ConfigValue(
         default=1e-6,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Feasibility tolerance for identifying infeasible constraints and bounds",
     ),
 )
@@ -336,7 +383,7 @@ SVDCONFIG.declare(
     "singular_value_tolerance",
     ConfigValue(
         default=1e-6,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Tolerance for defining a small singular value",
     ),
 )
@@ -344,7 +391,7 @@ SVDCONFIG.declare(
     "size_cutoff_in_singular_vector",
     ConfigValue(
         default=0.1,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Size below which to ignore constraints and variables in "
         "the singular vector",
     ),
@@ -371,7 +418,7 @@ DHCONFIG.declare(
     "M",  # TODO: Need better name
     ConfigValue(
         default=1e5,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Maximum value for nu in MILP models.",
     ),
 )
@@ -379,7 +426,7 @@ DHCONFIG.declare(
     "m_small",  # TODO: Need better name
     ConfigValue(
         default=1e-5,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Smallest value for nu to be considered non-zero in MILP models.",
     ),
 )
@@ -387,7 +434,7 @@ DHCONFIG.declare(
     "trivial_constraint_tolerance",
     ConfigValue(
         default=1e-6,
-        domain=float,
+        domain=NonNegativeFloat,
         description="Tolerance for identifying non-zero rows in Jacobian.",
     ),
 )
@@ -446,7 +493,10 @@ class DiagnosticsToolbox:
                 "model argument must be an instance of a Pyomo BlockData object "
                 "(either a scalar Block or an element of an indexed Block)."
             )
-
+        if len(greybox_block_set(model)) != 0:
+            raise NotImplementedError(
+                "Model contains Greybox models, which are not supported by Diagnostics toolbox at the moment"
+            )
         self._model = model
         self.config = CONFIG(kwargs)
 
@@ -553,7 +603,7 @@ class DiagnosticsToolbox:
                     tolerance=self.config.variable_bounds_violation_tolerance,
                 )
             ],
-            title=f"The following variable(s) have values at or outside their bounds "
+            title="The following variable(s) have values at or outside their bounds "
             f"(tol={self.config.variable_bounds_violation_tolerance:.1E}):",
             header="=",
             footer="=",
@@ -580,6 +630,54 @@ class DiagnosticsToolbox:
             header="=",
             footer="=",
         )
+
+    def display_variables_with_none_value_in_activated_constraints(self, stream=None):
+        """
+        Prints a list of variables with values of None that are present in the
+        mathematical program generated to solve the model. This list includes only
+        variables in active constraints that are reachable through active blocks.
+
+        Args:
+            stream: an I/O object to write the list to (default = stdout)
+
+        Returns:
+            None
+
+        """
+        if stream is None:
+            stream = sys.stdout
+
+        _write_report_section(
+            stream=stream,
+            lines_list=[
+                f"{v.name}"
+                for v in variables_with_none_value_in_activated_equalities_set(
+                    self._model
+                )
+            ],
+            title="The following variable(s) have a value of None:",
+            header="=",
+            footer="=",
+        )
+
+    def _verify_active_variables_initialized(self, stream=None):
+        """
+        Validate that all variables are initialized (i.e., have values set to
+        something other than None) before doing further numerical analysis.
+        Stream argument provided for forward compatibility (in case we want
+        to print a list or something).
+        """
+        n_uninit = len(
+            variables_with_none_value_in_activated_equalities_set(self._model)
+        )
+        if n_uninit > 0:
+            raise RuntimeError(
+                f"Found {n_uninit} variables with a value of None in the mathematical "
+                "program generated by the model. They must be initialized with non-None "
+                "values before numerical analysis can proceed. Run "
+                + self.display_variables_with_none_value_in_activated_constraints.__name__
+                + " to display a list of these variables."
+            )
 
     def display_variables_with_value_near_zero(self, stream=None):
         """
@@ -761,7 +859,7 @@ class DiagnosticsToolbox:
 
         """
         if solver is None:
-            solver = get_solver()
+            solver = get_solver("ipopt_v2")
         if stream is None:
             stream = sys.stdout
 
@@ -880,7 +978,7 @@ class DiagnosticsToolbox:
 
     def display_variables_with_extreme_jacobians(self, stream=None):
         """
-        Prints the variables associated with columns in the Jacobian with extreme
+        Prints the variables corresponding to columns in the Jacobian with extreme
         L2 norms. This often indicates poorly scaled variables.
 
         Tolerances can be set via the DiagnosticsToolbox config.
@@ -892,12 +990,16 @@ class DiagnosticsToolbox:
             None
 
         """
+        self._verify_active_variables_initialized(stream=stream)
+
         if stream is None:
             stream = sys.stdout
 
-        xjc = extreme_jacobian_columns(
-            m=self._model,
-            scaled=False,
+        jac, nlp = get_jacobian(self._model)
+
+        xjc = _extreme_jacobian_columns(
+            jac=jac,
+            nlp=nlp,
             large=self.config.jacobian_large_value_caution,
             small=self.config.jacobian_small_value_caution,
         )
@@ -906,7 +1008,7 @@ class DiagnosticsToolbox:
         _write_report_section(
             stream=stream,
             lines_list=[f"{i[1].name}: {i[0]:.3E}" for i in xjc],
-            title=f"The following variable(s) are associated with extreme Jacobian values "
+            title=f"The following variable(s) correspond to Jacobian columns with extreme norms"
             f"(<{self.config.jacobian_small_value_caution:.1E} or"
             f">{self.config.jacobian_large_value_caution:.1E}):",
             header="=",
@@ -915,7 +1017,7 @@ class DiagnosticsToolbox:
 
     def display_constraints_with_extreme_jacobians(self, stream=None):
         """
-        Prints the constraints associated with rows in the Jacobian with extreme
+        Prints the constraints corresponding to rows in the Jacobian with extreme
         L2 norms. This often indicates poorly scaled constraints.
 
         Tolerances can be set via the DiagnosticsToolbox config.
@@ -927,12 +1029,16 @@ class DiagnosticsToolbox:
             None
 
         """
+        self._verify_active_variables_initialized(stream=stream)
+
         if stream is None:
             stream = sys.stdout
 
-        xjr = extreme_jacobian_rows(
-            m=self._model,
-            scaled=False,
+        jac, nlp = get_jacobian(self._model)
+
+        xjr = _extreme_jacobian_rows(
+            jac=jac,
+            nlp=nlp,
             large=self.config.jacobian_large_value_caution,
             small=self.config.jacobian_small_value_caution,
         )
@@ -941,7 +1047,7 @@ class DiagnosticsToolbox:
         _write_report_section(
             stream=stream,
             lines_list=[f"{i[1].name}: {i[0]:.3E}" for i in xjr],
-            title="The following constraint(s) are associated with extreme Jacobian values "
+            title="The following constraint(s) correspond to Jacobian rows with extreme norms "
             f"(<{self.config.jacobian_small_value_caution:.1E} or"
             f">{self.config.jacobian_large_value_caution:.1E}):",
             header="=",
@@ -963,12 +1069,15 @@ class DiagnosticsToolbox:
             None
 
         """
+        self._verify_active_variables_initialized(stream=stream)
+
         if stream is None:
             stream = sys.stdout
 
-        xje = extreme_jacobian_entries(
-            m=self._model,
-            scaled=False,
+        jac, nlp = get_jacobian(self._model, include_scaling_factors=True)
+        xje = _extreme_jacobian_entries(
+            jac,
+            nlp,
             large=self.config.jacobian_large_value_caution,
             small=self.config.jacobian_small_value_caution,
             zero=0,
@@ -979,7 +1088,7 @@ class DiagnosticsToolbox:
             stream=stream,
             lines_list=[f"{i[1].name}, {i[2].name}: {i[0]:.3E}" for i in xje],
             title="The following constraint(s) and variable(s) are associated with extreme "
-            f"Jacobian\nvalues (<{self.config.jacobian_small_value_caution:.1E} or"
+            f"Jacobian\nentries (<{self.config.jacobian_small_value_caution:.1E} or"
             f">{self.config.jacobian_large_value_caution:.1E}):",
             header="=",
             footer="=",
@@ -996,6 +1105,8 @@ class DiagnosticsToolbox:
             None
 
         """
+        self._verify_active_variables_initialized(stream=stream)
+
         if stream is None:
             stream = sys.stdout
 
@@ -1028,6 +1139,8 @@ class DiagnosticsToolbox:
             None
 
         """
+        self._verify_active_variables_initialized(stream=stream)
+
         if stream is None:
             stream = sys.stdout
 
@@ -1051,6 +1164,255 @@ class DiagnosticsToolbox:
 
     # TODO: Block triangularization analysis
     # Number and size of blocks, polynomial degree of 1x1 blocks, simple pivot check of moderate sized sub-blocks?
+
+    def _collect_constraint_mismatches(self, descend_into=True):
+        """
+        Call ConstraintTermAnalysisVisitor on all Constraints in model to walk expression
+        tree and collect any instances of sum expressions with mismatched terms or potential
+        cancellations.
+
+        Args:
+            descend_into: whether to descend_into child_blocks
+
+        Returns:
+            List of strings summarising constraints with mismatched terms
+            List of strings summarising constraints with cancellations
+            List of strings with constraint names where constraint contains no free variables
+        """
+        walker = ConstraintTermAnalysisVisitor(
+            term_mismatch_tolerance=self.config.constraint_term_mismatch_tolerance,
+            term_cancellation_tolerance=self.config.constraint_term_cancellation_tolerance,
+            term_zero_tolerance=self.config.constraint_term_zero_tolerance,
+            # for the high level summary, we only need to know if there are any cancellations,
+            # but don't need to find all of them
+            max_cancellations_per_node=1,
+            max_canceling_terms=self.config.max_canceling_terms,
+        )
+
+        mismatch = []
+        cancellation = []
+        constant = []
+
+        for c in self._model.component_data_objects(
+            Constraint, descend_into=descend_into
+        ):
+            _, expr_mismatch, expr_cancellation, expr_constant, _ = (
+                walker.walk_expression(c.expr)
+            )
+
+            if len(expr_mismatch) > 0:
+                mismatch.append(f"{c.name}: {len(expr_mismatch)} mismatched term(s)")
+
+            if len(expr_cancellation) > 0:
+                cancellation.append(
+                    f"{c.name}: {len(expr_cancellation)} potential canceling term(s)"
+                )
+
+            if expr_constant:
+                constant.append(c.name)
+
+        return mismatch, cancellation, constant
+
+    def display_constraints_with_mismatched_terms(self, stream=None):
+        """
+        Display constraints in model which contain additive terms of significantly different magnitude.
+
+        Args:
+            stream: I/O object to write report to (default = stdout)
+
+        Returns:
+            None
+
+        """
+        self._verify_active_variables_initialized(stream=stream)
+
+        if stream is None:
+            stream = sys.stdout
+
+        mismatch, _, _ = self._collect_constraint_mismatches()
+
+        # Write the output
+        _write_report_section(
+            stream=stream,
+            lines_list=mismatch,
+            title="The following constraints have mismatched terms:",
+            end_line="Call display_problematic_constraint_terms(constraint) for more information.",
+            header="=",
+            footer="=",
+        )
+
+    def display_constraints_with_canceling_terms(self, stream=None):
+        """
+        Display constraints in model which contain additive terms which potentially cancel each other.
+
+        Note that this method looks a the current state of the constraint, and will flag terms as
+        cancelling if you have a form A == B + C where C is significantly smaller than A and B. In some
+        cases this behavior is intended, as C is a correction term which happens to be very
+        small at the current state. However, you should review these constraints to determine whether
+        the correction term is important for the situation you are modeling and consider removing the
+        term if it will never be significant.
+
+        Args:
+            stream: I/O object to write report to (default = stdout)
+
+        Returns:
+            None
+
+        """
+        self._verify_active_variables_initialized(stream=stream)
+
+        if stream is None:
+            stream = sys.stdout
+
+        _, canceling, _ = self._collect_constraint_mismatches()
+
+        # Write the output
+        _write_report_section(
+            stream=stream,
+            lines_list=canceling,
+            title="The following constraints have canceling terms:",
+            end_line="Call display_problematic_constraint_terms(constraint) for more information.",
+            header="=",
+            footer="=",
+        )
+
+    def display_problematic_constraint_terms(
+        self, constraint, max_cancellations: int = 5, stream=None
+    ):
+        """
+        Display a summary of potentially problematic terms in a given constraint.
+
+        Note that this method looks a the current state of the constraint, and will flag terms as
+        cancelling if you have a form A == B + C where C is significantly smaller than A and B. In some
+        cases this behavior is intended, as C is a correction term which happens to be very
+        small at the current state. However, you should review these constraints to determine whether
+        the correction term is important for the situation you are modeling and consider removing the
+        term if it will never be significant.
+
+        Args:
+            constraint: ConstraintData object to be examined
+            max_cancellations: maximum number of cancellations per node before termination.
+                None = find all cancellations.
+            stream: I/O object to write report to (default = stdout)
+
+        Returns:
+            None
+
+        """
+        self._verify_active_variables_initialized(stream=stream)
+
+        if stream is None:
+            stream = sys.stdout
+
+        # Check that constraint is of correct type to give useful error message
+        if not isinstance(constraint, ConstraintData):
+            # Wrong type, check if it is an indexed constraint
+            if isinstance(constraint, Constraint):
+                raise TypeError(
+                    f"{constraint.name} is an IndexedConstraint. Please provide "
+                    f"an individual element of {constraint.name} (ConstraintData) "
+                    "to be examined for problematic terms."
+                )
+            else:
+                # Not a constraint
+                raise TypeError(
+                    f"{constraint.name} is not an instance of a Pyomo Constraint."
+                )
+        sf = get_scaling_factor(constraint, default=1, warning=False)
+
+        # Don't need to scale constraint_term_mismatch_tolerance and
+        # constraint_term_cancellation_tolerance because they are both
+        # relative tolerances. term_zero_tolerance is an absolute
+        # tolerance, so it must be scaled.
+        walker = ConstraintTermAnalysisVisitor(
+            term_mismatch_tolerance=self.config.constraint_term_mismatch_tolerance,
+            term_cancellation_tolerance=self.config.constraint_term_cancellation_tolerance,
+            term_zero_tolerance=sf * self.config.constraint_term_zero_tolerance,
+            max_cancellations_per_node=max_cancellations,
+            max_canceling_terms=self.config.max_canceling_terms,
+        )
+
+        _, expr_mismatch, expr_cancellation, _, tripped = walker.walk_expression(
+            constraint.expr
+        )
+
+        # Combine mismatches and cancellations into a summary list
+        issues = []
+        for k, v in expr_mismatch.items():
+            tag = " "
+            if isinstance(k, ExpressionData):
+                # For clarity, if the problem node is a named Expression, note this in output
+                tag = " Expression "
+            # Want to show full expression node plus largest and smallest magnitudes
+            issues.append(
+                f"Mismatch in{tag}{compact_expression_to_string(k)} (Max {v[0]}, Min {v[1]})"
+            )
+        # Collect summary of cancelling terms for user
+        # Walker gives us back a list of nodes with cancelling terms
+        for k, v in expr_cancellation.items():
+            # Each node may have multiple cancellations, these are given as separate tuples
+            tag = " "
+            if isinstance(k, ExpressionData):
+                # For clarity, if the problem node is a named Expression, note this in output
+                tag = " Expression "
+            for i in v:
+                # For each cancellation, iterate over contributing terms and write a summary
+                terms = ""
+                for j in i:
+                    if len(terms) > 0:
+                        terms += ", "
+                    # +1 to switch from 0-index to 1-index
+                    terms += f"{j[0]+1} ({j[1]})"
+                issues.append(
+                    f"Cancellation in{tag}{compact_expression_to_string(k)}. Terms {terms}"
+                )
+
+        if tripped:
+            end_line = (
+                f"Number of canceling terms per node limited to {max_cancellations}."
+            )
+        else:
+            end_line = None
+
+        # Write the output
+        _write_report_section(
+            stream=stream,
+            lines_list=issues,
+            title=f"The following terms in {constraint.name} are potentially problematic:",
+            end_line=end_line,
+            header="=",
+            footer="=",
+        )
+
+    def display_constraints_with_no_free_variables(self, stream=None):
+        """
+        Display constraints in model which contain no free variables.
+
+        Args:
+            stream: I/O object to write report to (default = stdout)
+
+        Returns:
+            None
+
+        """
+        # Although, in principle, this method doesn't require
+        # all variables to be initialized, its current
+        # implementation does.
+        self._verify_active_variables_initialized(stream=stream)
+
+        if stream is None:
+            stream = sys.stdout
+
+        _, _, constant = self._collect_constraint_mismatches()
+
+        # Write the output
+        _write_report_section(
+            stream=stream,
+            lines_list=constant,
+            title="The following constraints have no free variables:",
+            header="=",
+            footer="=",
+        )
 
     def _collect_structural_warnings(
         self, ignore_evaluation_errors=False, ignore_unit_consistency=False
@@ -1163,7 +1525,7 @@ class DiagnosticsToolbox:
 
         """
         if jac is None or nlp is None:
-            jac, nlp = get_jacobian(self._model, scaled=False)
+            jac, nlp = get_jacobian(self._model)
 
         warnings = []
         next_steps = []
@@ -1202,7 +1564,7 @@ class DiagnosticsToolbox:
             )
 
         # Extreme Jacobian rows and columns
-        jac_col = extreme_jacobian_columns(
+        jac_col = _extreme_jacobian_columns(
             jac=jac,
             nlp=nlp,
             large=self.config.jacobian_large_value_warning,
@@ -1213,7 +1575,7 @@ class DiagnosticsToolbox:
             if len(jac_col) == 1:
                 cstring = "Variable"
             warnings.append(
-                f"WARNING: {len(jac_col)} {cstring} with extreme Jacobian values "
+                f"WARNING: {len(jac_col)} {cstring} with extreme Jacobian column norms "
                 f"(<{self.config.jacobian_small_value_warning:.1E} or "
                 f">{self.config.jacobian_large_value_warning:.1E})"
             )
@@ -1221,7 +1583,7 @@ class DiagnosticsToolbox:
                 self.display_variables_with_extreme_jacobians.__name__ + "()"
             )
 
-        jac_row = extreme_jacobian_rows(
+        jac_row = _extreme_jacobian_rows(
             jac=jac,
             nlp=nlp,
             large=self.config.jacobian_large_value_warning,
@@ -1232,7 +1594,7 @@ class DiagnosticsToolbox:
             if len(jac_row) == 1:
                 cstring = "Constraint"
             warnings.append(
-                f"WARNING: {len(jac_row)} {cstring} with extreme Jacobian values "
+                f"WARNING: {len(jac_row)} {cstring} with extreme Jacobian row norms "
                 f"(<{self.config.jacobian_small_value_warning:.1E} or "
                 f">{self.config.jacobian_large_value_warning:.1E})"
             )
@@ -1277,7 +1639,7 @@ class DiagnosticsToolbox:
 
         """
         if jac is None or nlp is None:
-            jac, nlp = get_jacobian(self._model, scaled=False)
+            jac, nlp = get_jacobian(self._model)
 
         cautions = []
 
@@ -1335,8 +1697,30 @@ class DiagnosticsToolbox:
                 cstring = "Variable"
             cautions.append(f"Caution: {len(none_value)} {cstring} with None value")
 
+        # Constraints with possible ill-posed terms
+        mismatch, cancellation, constant = self._collect_constraint_mismatches()
+        if len(mismatch) > 0:
+            cstring = "Constraints"
+            if len(mismatch) == 1:
+                cstring = "Constraint"
+            cautions.append(f"Caution: {len(mismatch)} {cstring} with mismatched terms")
+        if len(cancellation) > 0:
+            cstring = "Constraints"
+            if len(cancellation) == 1:
+                cstring = "Constraint"
+            cautions.append(
+                f"Caution: {len(cancellation)} {cstring} with potential cancellation of terms"
+            )
+        if len(constant) > 0:
+            cstring = "Constraints"
+            if len(constant) == 1:
+                cstring = "Constraint"
+            cautions.append(
+                f"Caution: {len(constant)} {cstring} with no free variables"
+            )
+
         # Extreme Jacobian rows and columns
-        jac_col = extreme_jacobian_columns(
+        jac_col = _extreme_jacobian_columns(
             jac=jac,
             nlp=nlp,
             large=self.config.jacobian_large_value_caution,
@@ -1347,12 +1731,12 @@ class DiagnosticsToolbox:
             if len(jac_col) == 1:
                 cstring = "Variable"
             cautions.append(
-                f"Caution: {len(jac_col)} {cstring} with extreme Jacobian values "
+                f"Caution: {len(jac_col)} {cstring} with extreme Jacobian column norms "
                 f"(<{self.config.jacobian_small_value_caution:.1E} or "
                 f">{self.config.jacobian_large_value_caution:.1E})"
             )
 
-        jac_row = extreme_jacobian_rows(
+        jac_row = _extreme_jacobian_rows(
             jac=jac,
             nlp=nlp,
             large=self.config.jacobian_large_value_caution,
@@ -1363,13 +1747,13 @@ class DiagnosticsToolbox:
             if len(jac_row) == 1:
                 cstring = "Constraint"
             cautions.append(
-                f"Caution: {len(jac_row)} {cstring} with extreme Jacobian values "
+                f"Caution: {len(jac_row)} {cstring} with extreme Jacobian row norms "
                 f"(<{self.config.jacobian_small_value_caution:.1E} or "
                 f">{self.config.jacobian_large_value_caution:.1E})"
             )
 
         # Extreme Jacobian entries
-        extreme_jac = extreme_jacobian_entries(
+        extreme_jac = _extreme_jacobian_entries(
             jac=jac,
             nlp=nlp,
             large=self.config.jacobian_large_value_caution,
@@ -1451,7 +1835,12 @@ class DiagnosticsToolbox:
 
         # Potential evaluation errors
         # TODO: High Index?
+        if len(greybox_block_set(self._model)) != 0:
+            raise NotImplementedError(
+                "Model contains Greybox models, which are not supported by Diagnostics toolbox at the moment"
+            )
         stats = _collect_model_statistics(self._model)
+
         warnings, next_steps = self._collect_structural_warnings()
         cautions = self._collect_structural_cautions()
 
@@ -1493,10 +1882,11 @@ class DiagnosticsToolbox:
             None
 
         """
+        self._verify_active_variables_initialized(stream=stream)
+
         if stream is None:
             stream = sys.stdout
-
-        jac, nlp = get_jacobian(self._model, scaled=False)
+        jac, nlp = get_jacobian(self._model)
 
         warnings, next_steps = self._collect_numerical_warnings(jac=jac, nlp=nlp)
         cautions = self._collect_numerical_cautions(jac=jac, nlp=nlp)
@@ -1504,7 +1894,7 @@ class DiagnosticsToolbox:
         stats = []
         try:
             stats.append(
-                f"Jacobian Condition Number: {jacobian_cond(jac=jac, scaled=False):.3E}"
+                f"Jacobian Condition Number: {jacobian_cond(jac=jac, scaled=True):.3E}"
             )
         except RuntimeError as err:
             if "Factor is exactly singular" in str(err):
@@ -1640,7 +2030,10 @@ class SVDToolbox:
                 "model argument must be an instance of a Pyomo BlockData object "
                 "(either a scalar Block or an element of an indexed Block)."
             )
-
+        if len(greybox_block_set(model)) != 0:
+            raise NotImplementedError(
+                "Model contains Greybox models, which are not supported by Diagnostics toolbox at the moment"
+            )
         self._model = model
         self.config = SVDCONFIG(kwargs)
 
@@ -1650,7 +2043,7 @@ class SVDToolbox:
 
         # Get Jacobian and NLP
         self.jacobian, self.nlp = get_jacobian(
-            self._model, scaled=False, equality_constraints_only=True
+            self._model, equality_constraints_only=True
         )
 
         # Get list of equality constraint and variable names
@@ -1895,6 +2288,100 @@ class SVDToolbox:
         )
 
 
+def _extreme_jacobian_entries(
+    jac,
+    nlp,
+    large=1e4,
+    small=1e-4,
+    zero=1e-10,
+):
+    """
+    Show very large and very small Jacobian entries.
+
+    Args:
+        jac: already-existing Jacobian matrix
+        nlp: already-existing Pynumero NLP object from
+            get_jacobian (and thus having vlist and clist
+            attributes)
+        large: >= to this value is considered large
+        small: <= to this and >= zero is considered small
+        zero: <= to this value is ignored
+
+    Returns:
+        (list of tuples), Jacobian entry, Constraint, Variable
+    """
+    el = []
+    for i, c in enumerate(nlp.clist):
+        for j in jac[i].indices:
+            v = nlp.vlist[j]
+            e = abs(jac[i, j])
+            if (e <= small and e > zero) or e >= large:
+                el.append((e, c, v))
+    return el
+
+
+def _extreme_jacobian_rows(
+    jac,
+    nlp,
+    large=1e4,
+    small=1e-4,
+):
+    """
+    Show very large and very small Jacobian rows. Typically indicates a badly-
+    scaled constraint.
+
+    Args:
+        jac: already-existing Jacobian matrix
+        nlp: already-existing Pynumero NLP object from
+            get_jacobian (and thus having vlist and clist
+            attributes)
+        large: >= to this value is considered large
+        small: <= to this is considered small
+
+    Returns:
+        (list of tuples), Row norm, Constraint
+    """
+    row_norms = norm(jac, ord=2, axis=1)
+    # Array with values of 1 for entries with extreme row norms
+    # and values of 0 otherwise
+    condition_vector = np.logical_or(row_norms >= large, row_norms <= small)
+    # Array of indices for which condition_vector is 1
+    extreme_indices = np.nonzero(condition_vector)[0]
+    return [(row_norms[k], nlp.clist[k]) for k in extreme_indices]
+
+
+def _extreme_jacobian_columns(
+    jac,
+    nlp,
+    large=1e4,
+    small=1e-4,
+):
+    """
+    Show very large and very small Jacobian columns. A more reliable indicator
+    of a badly-scaled variable than badly_scaled_var_generator.
+
+    Args:
+        jac: already-existing Jacobian matrix
+        nlp: already-existing Pynumero NLP object from
+            get_jacobian (and thus having vlist and clist
+            attributes)
+        large: >= to this value is considered large
+        small: <= to this is considered small
+
+    Returns:
+        (list of tuples), Column norm, Variable
+    """
+    # Convert to csc to make iterating over columns easier
+    jac = jac.tocsc()
+    column_norms = norm(jac, ord=2, axis=0)
+    # Array with values of 1 for entries with extreme row norms
+    # and values of 0 otherwise
+    condition_vector = np.logical_or(column_norms >= large, column_norms <= small)
+    # Array of indices for which condition_vector is 1
+    extreme_indices = np.nonzero(condition_vector)[0]
+    return [(column_norms[k], nlp.vlist[k]) for k in extreme_indices]
+
+
 def _get_bounds_with_inf(node: NumericExpression):
     lb, ub = compute_bounds_on_expr(node)
     if lb is None:
@@ -2082,13 +2569,16 @@ class DegeneracyHunter2:
                 "model argument must be an instance of a Pyomo BlockData object "
                 "(either a scalar Block or an element of an indexed Block)."
             )
-
+        if len(greybox_block_set(model)) != 0:
+            raise NotImplementedError(
+                "Model contains Greybox models, which are not supported by Diagnostics toolbox at the moment"
+            )
         self._model = model
         self.config = DHCONFIG(kwargs)
 
         # Get Jacobian and NLP
         self.jacobian, self.nlp = get_jacobian(
-            self._model, scaled=False, equality_constraints_only=True
+            self._model, equality_constraints_only=True
         )
 
         # Placeholder for solver - deferring construction lets us unit test more easily
@@ -2459,7 +2949,7 @@ class DegeneracyHunter:
             "DegeneracyHunter is being deprecated in favor of the new "
             "DiagnosticsToolbox."
         )
-        deprecation_warning(msg=msg, logger=_log, version="2.2.0", remove_in="3.0.0")
+        deprecation_warning(msg=msg, logger=_log, version="2.2.0", remove_in="2.11.0")
 
         block_like = False
         try:
@@ -2776,8 +3266,6 @@ class DegeneracyHunter:
                 else:
                     # This variable does not appear in any constraint
                     return Constraint.Skip
-
-        m_dh.pprint()
 
         m_dh.degenerate = Constraint(m_dh.V, rule=eq_degenerate)
 
@@ -3167,14 +3655,14 @@ CACONFIG.declare(
 
 class IpoptConvergenceAnalysis:
     """
-    Tool to performa a parameter sweep of model checking for numerical issues and
+    Tool to perform a parameter sweep of model checking for numerical issues and
     convergence characteristics. Users may specify an IDAES ParameterSweep class to
     perform the sweep (default is SequentialSweepRunner).
     """
 
     CONFIG = CACONFIG()
 
-    def __init__(self, model, **kwargs):
+    def __init__(self, model, solver_obj=None, **kwargs):
         # TODO: In future may want to generalise this to accept indexed blocks
         # However, for now some of the tools do not support indexed blocks
         if not isinstance(model, BlockData):
@@ -3182,14 +3670,20 @@ class IpoptConvergenceAnalysis:
                 "model argument must be an instance of a Pyomo BlockData object "
                 "(either a scalar Block or an element of an indexed Block)."
             )
-
+        if len(greybox_block_set(model)) != 0:
+            raise NotImplementedError(
+                "Model contains Greybox models, which are not supported by Diagnostics toolbox at the moment"
+            )
         self.config = self.CONFIG(kwargs)
 
         self._model = model
 
-        solver = SolverFactory("ipopt")
+        if solver_obj is None:
+            solver_obj = SolverFactory("ipopt")
+        self._solver_obj = solver_obj
+
         if self.config.solver_options is not None:
-            solver.options = self.config.solver_options
+            solver_obj.options = self.config.solver_options
 
         self._psweep = self.config.workflow_runner(
             input_specification=self.config.input_specification,
@@ -3199,7 +3693,7 @@ class IpoptConvergenceAnalysis:
             build_outputs=self._build_outputs,
             halt_on_error=self.config.halt_on_error,
             handle_solver_error=self._recourse,
-            solver=solver,
+            solver=solver_obj,
         )
 
     @property
@@ -3756,7 +4250,7 @@ def check_parallel_jacobian(
         )
 
     if jac is None or nlp is None:
-        jac, nlp = get_jacobian(model, scaled=False)
+        jac, nlp = get_jacobian(model)
 
     # Get vectors that we will check, and the Pyomo components
     # they correspond to.
@@ -3765,7 +4259,7 @@ def check_parallel_jacobian(
         csrjac = jac.tocsr()
         # Make everything a column vector (CSC) for consistency
         vectors = [csrjac[i, :].transpose().tocsc() for i in range(len(components))]
-    elif direction == "column":
+    else:  # direction == "column"
         components = nlp.get_pyomo_variables()
         cscjac = jac.tocsc()
         vectors = [cscjac[:, i] for i in range(len(components))]
@@ -3849,7 +4343,7 @@ def compute_ill_conditioning_certificate(
             "Must be 'row' or 'column'."
         )
 
-    jac, nlp = get_jacobian(model, scaled=False)
+    jac, nlp = get_jacobian(model)
 
     inverse_target_kappa = 1e-16 / target_feasibility_tol
 
@@ -3859,7 +4353,7 @@ def compute_ill_conditioning_certificate(
         components_set = RangeSet(0, len(components) - 1)
         results_set = RangeSet(0, nlp.n_primals() - 1)
         jac = jac.transpose().tocsr()
-    elif direction == "column":
+    else:  # direction == "column"
         components = nlp.get_pyomo_variables()
         components_set = RangeSet(0, len(components) - 1)
         results_set = RangeSet(0, nlp.n_constraints() - 1)
@@ -3980,7 +4474,8 @@ def _vars_near_zero(model, variable_zero_value_tolerance):
     # Set of variables with values close to 0
     near_zero_vars = ComponentSet()
     for v in model.component_data_objects(Var, descend_into=True):
-        if v.value is not None and abs(value(v)) <= variable_zero_value_tolerance:
+        sf = get_scaling_factor(v, default=1, warning=False)
+        if v.value is not None and sf * abs(value(v)) <= variable_zero_value_tolerance:
             near_zero_vars.add(v)
     return near_zero_vars
 
@@ -3988,10 +4483,11 @@ def _vars_near_zero(model, variable_zero_value_tolerance):
 def _vars_violating_bounds(model, tolerance):
     violated_bounds = ComponentSet()
     for v in model.component_data_objects(Var, descend_into=True):
+        sf = get_scaling_factor(v, default=1, warning=False)
         if v.value is not None:
-            if v.lb is not None and v.value <= v.lb - tolerance:
+            if v.lb is not None and sf * v.value <= sf * v.lb - tolerance:
                 violated_bounds.add(v)
-            elif v.ub is not None and v.value >= v.ub + tolerance:
+            elif v.ub is not None and sf * v.value >= sf * v.ub + tolerance:
                 violated_bounds.add(v)
 
     return violated_bounds
@@ -4009,8 +4505,9 @@ def _vars_with_none_value(model):
 def _vars_with_extreme_values(model, large, small, zero):
     extreme_vars = ComponentSet()
     for v in model.component_data_objects(Var, descend_into=True):
+        sf = get_scaling_factor(v, default=1, warning=False)
         if v.value is not None:
-            mag = abs(value(v))
+            mag = sf * abs(value(v))
             if mag > abs(large):
                 extreme_vars.add(v)
             elif mag < abs(small) and mag > abs(zero):
@@ -4109,8 +4606,8 @@ def _collect_model_statistics(model):
         f"(External: {len(ext_fixed_vars_in_constraints)})"
     )
     stats.append(
-        f"{TAB}Activated Equality Constraints: {len(activated_equalities_set(model))} "
-        f"(Deactivated: {len(deactivated_equalities_set(model))})"
+        f"{TAB}Activated Equality Constraints: {len(activated_equalities_set(model))+number_activated_greybox_equalities(model)} "
+        f"(Deactivated: {len(deactivated_equalities_set(model))+number_deactivated_greybox_equalities(model)})"
     )
     stats.append(
         f"{TAB}Activated Inequality Constraints: {len(activated_inequalities_set(model))} "
@@ -4121,4 +4618,475 @@ def _collect_model_statistics(model):
         f"(Deactivated: {len(deactivated_objectives_set(model))})"
     )
 
+    # Only show graybox info if they are present
+    if len(greybox_block_set(model)) != 0:
+        stats.append(f"{TAB}GreyBox Statistics")
+        stats.append(
+            f"{TAB* 2}Activated GreyBox models: {len(activated_greybox_block_set(model))} "
+            f"(Deactivated: {len(deactivated_greybox_block_set(model))})"
+        )
+        stats.append(
+            f"{TAB* 2}Activated GreyBox Equalities: {number_activated_greybox_equalities(model)} "
+            f"(Deactivated: {number_deactivated_greybox_equalities(model)})"
+        )
+        stats.append(
+            f"{TAB* 2}Free Variables in Activated GreyBox Equalities: {len(unfixed_greybox_variables(model))} (Fixed: {len(greybox_variables(model)-unfixed_greybox_variables(model))})"
+        )
+
     return stats
+
+
+class ConstraintTermAnalysisVisitor(EXPR.StreamBasedExpressionVisitor):
+    """
+    Expression walker for checking Constraints for problematic terms.
+
+    This walker will walk the expression and look for summation terms
+    with mismatched magnitudes or potential cancellations.
+
+    Args:
+        term_mismatch_tolerance: tolerance to use when determining mismatched
+            terms
+        term_cancellation_tolerance: tolerance to use when identifying
+            possible cancellation of terms
+        term_zero_tolerance: tolerance for considering terms equal to zero
+        max_canceling_terms: maximum number of terms to consider when looking
+            for canceling combinations (None = consider all possible combinations)
+        max_cancellations_per_node: maximum number of cancellations to collect
+            for a single node. Collection will terminate when this many cancellations
+            have been identified (None = collect all cancellations)
+
+    Returns:
+        list of values for top-level summation terms
+        list of terms with mismatched magnitudes
+        list of terms with potential cancellations
+        bool indicating whether expression is a constant
+    """
+
+    def __init__(
+        self,
+        term_mismatch_tolerance: float = 1e6,
+        term_cancellation_tolerance: float = 1e-4,
+        term_zero_tolerance: float = 1e-10,
+        max_canceling_terms: int = 4,
+        max_cancellations_per_node: int = 5,
+    ):
+        super().__init__()
+
+        # Tolerance attributes
+        self._log_mm_tol = log10(term_mismatch_tolerance)
+        self._sum_tol = term_cancellation_tolerance
+        self._zero_tolerance = term_zero_tolerance
+        self._max_canceling_terms = max_canceling_terms
+        self._max_cancellations_per_node = max_cancellations_per_node
+
+        # Placeholders for collecting results
+        self.canceling_terms = ComponentMap()
+        self.mismatched_terms = ComponentMap()
+
+        # Flag for if cancellation collection hit limit
+        self._cancellation_tripped = False
+
+    def _get_value_for_sum_subexpression(self, child_data):
+        # child_data is a tuple, with the 0-th element being the node values
+        if isinstance(child_data[0][0], str):
+            # Values may be a list containing a string in some cases (e.g. external functions)
+            # Return the string in this case
+            return child_data[0][0]
+        return sum(i for i in child_data[0])
+
+    def _generate_combinations(self, inputs, equality=False):
+        # We want to test all combinations of terms for cancellation
+
+        # The number of combinations we check depends on whether this is an (in)equality
+        # expression or a sum node deeper in the expression tree.
+        # We expect (in)equalities to generally sum to 0 (0 == expr) thus we want to
+        # check if any subset of the sum terms sum to zero (i.e. are any terms unnecessary).
+        # For other sum nodes, we need to check for any combination of terms.
+
+        # Maximum number of terms to include in combinations
+        max_comb = len(inputs)
+        if equality:
+            # Subtract 1 if (in)equality node
+            max_comb += -1
+        # We also have a limit on the maximum number of terms to consider
+        if self._max_canceling_terms is not None:
+            max_comb = min(max_comb, self._max_canceling_terms)
+
+        # Single terms cannot cancel, thus we want all combinations of length 2 to max terms
+        # Note the need for +1 due to way range works
+        combo_range = range(2, max_comb + 1)
+
+        # Collect combinations of terms in an iterator
+        # In order to identify the terms in each cancellation, we will pair each value
+        # with its index in the input set as a tuple using enumerate
+        for i in chain.from_iterable(
+            combinations(enumerate(inputs), r) for r in combo_range
+        ):
+            # Yield each combination in the set
+            yield i
+
+    def _check_sum_cancellations(self, values_list, equality=False):
+        # First, strip any terms with value 0 as they do not contribute to cancellation
+        # We do this to keep the number of possible combinations as small as possible
+        stripped = [i for i in values_list if abs(i) >= self._zero_tolerance]
+
+        cancellations = []
+
+        if len(stripped) == 0:
+            # If the stripped list is empty, there are no non-zero terms
+            # We can stop here and return False as there are no possible cancellations
+            return cancellations
+
+        # For scaling of tolerance, we want to compare to the largest absolute value of
+        # the input values
+        max_value = abs(max(stripped, key=abs))
+
+        for i in self._generate_combinations(stripped, equality):
+            # Generate combinations will return a list of combinations of input terms
+            # each element of the list will be a 2-tuple representing a term in the
+            # input list with the first value being the position in the input set and
+            # the second being the value
+
+            # Check if the sum of values in the combination are below tolerance
+            if abs(sum(j[1] for j in i)) <= self._sum_tol * max_value:
+                # If so, record combination as canceling
+                cancellations.append(i)
+
+            # Terminate loop if we have reached the max cancellations to collect
+            if len(cancellations) >= self._max_cancellations_per_node:
+                self._cancellation_tripped = True
+                break
+
+        return cancellations
+
+    def _perform_checks(self, node, child_data):
+        # Perform checks for problematic expressions
+        # First, need to check to see if any child data is a list
+        # This indicates a sum expression
+        const = True
+
+        for d in child_data:
+            # We will check for canceling terms here, rather than the sum itself, to handle special cases
+            # We want to look for cases where a sum term results in a value much smaller
+            # than the terms of the sum
+            # Each element of child_data is a tuple where the 0-th element is the node values
+            if isinstance(d[0][0], str):
+                # Values may be a list containing a string in some cases (e.g. external functions)
+                # Skip if this is the case
+                pass
+            else:
+                for c in self._check_sum_cancellations(d[0]):
+                    if node in self.canceling_terms.keys():
+                        self.canceling_terms[node].append(c)
+                    else:
+                        self.canceling_terms[node] = [c]
+
+            # Expression is not constant if any child is not constant
+            # Element 1 is a bool indicating if the child node is constant
+            if not d[1]:
+                const = False
+
+        # Return any problematic terms found
+        return const
+
+    def _check_base_type(self, node):
+        if isinstance(node, VarData):
+            const = node.fixed
+        else:
+            const = True
+        return [value(node)], const, False
+
+    def _check_equality_expression(self, node, child_data):
+        # (In)equality expressions are a special case of sum expressions
+        # child_data has two elements; 0 is the LHS of the (in)equality and 1 is the RHS
+        # Each of these then contains three elements; 0 is a list of values for the sum components,
+        # 1 is a bool indicating if the child node term is constant, and 2 is a bool indicating if
+        # the child ode is a sum expression.
+
+        # First, to check for cancellation we need to negate one side of the expression
+        # mdata will contain the new set of child_data with negated values
+        mdata = []
+        # child_data[0][0] has the values of the LHS of the (in)equality, and we will negate these
+        vals = []
+        for j in child_data[0][0]:
+            vals.append(-j)
+        # Append the negated values along with whether the node is constant to mdata
+        mdata.append((vals, child_data[0][1]))
+        # child_data[1] is the RHS, so we take this as it appears and append to mdata
+        mdata.append(child_data[1])
+
+        # Next, call the method to check the sum expression
+        vals, const, _ = self._check_sum_expression(node, mdata)
+
+        # Next, we need to check for canceling terms.
+        # child_data[x][2] indicates if a node is a sum expression or not
+        if not child_data[0][2] and not child_data[1][2]:
+            # If both sides are not sum expressions, we have the form a == b
+            # Simple lLinking constraints do not need to be checked
+            pass
+        # Next, we can ignore any term that has already been flagged as mismatched
+        elif node in self.mismatched_terms.keys():
+            pass
+        # We can also ignore any case where one side of the (in)equality is constant
+        # I.e. if either child_node[x][1] is True
+        elif any(d[1] for d in mdata):
+            pass
+        else:
+            # Check for cancellation
+            # First, collect terms from both sides
+            # Note: outer loop comes first in list comprehension
+            t = [i for d in mdata for i in d[0]]
+
+            # Then check for cancellations
+            for c in self._check_sum_cancellations(t, equality=True):
+                if node in self.canceling_terms.keys():
+                    self.canceling_terms[node].append(c)
+                else:
+                    self.canceling_terms[node] = [c]
+
+        return vals, const, False
+
+    def _check_product_expr(self, node, child_data):
+        # We expect child_data to be a tuple of len 2 (a*b)
+        # If both or neither a and b are sums (xor), handle like other expressions
+        if not child_data[0][2] ^ child_data[1][2]:
+            return self._check_general_expr(node, child_data)
+        else:
+            # Here we have the case of a sum and a multiplier
+            # For this case, we will make the result look like a sum with the
+            # multiplier applied
+            # This is important for scaling of the sum terms, as cancellation should be
+            # Checked on the scaled value
+
+            # First, check if both terms are constants - if so we can just get the value of
+            # this node and move on.
+            if child_data[0][1] and child_data[1][1]:
+                return self._check_general_expr(node, child_data)
+
+            # The length of the values (child_data[i][0]) of the multiplier will be 1
+            # We can just iterate over all terms in both value lists and multiply
+            # each pair
+            vals = [i * j for i in child_data[0][0] for j in child_data[1][0]]
+
+            # Return the list of values, not constant, is a sum expression (apparent)
+            return vals, False, True
+
+    def _check_div_expr(self, node, child_data):
+        # We expect child_data to be a tuple of len 2 (a/b)
+        # If the numerator is not a sum, handle like general expression
+        # child_data[0] is numerator, child_data[1] is denominator
+        if not child_data[0][2]:
+            return self._check_general_expr(node, child_data)
+        else:
+            # If the numerator is a sum, we will treat this as if the division
+            # were applied to each term in the numerator separately
+            # This is important for scaling of the sum terms, as cancellation should be
+            # Checked on the scaled value
+
+            # First, check if the numerator is constant - if so we can just get the value of
+            # this node and move on.
+            if child_data[0][1]:
+                return self._check_general_expr(node, child_data)
+
+            # Next, we need to get the value of the denominator
+            denom = self._get_value_for_sum_subexpression(child_data[1])
+
+            try:
+                vals = [i / denom for i in child_data[0][0]]
+            except ZeroDivisionError:
+                raise ZeroDivisionError(
+                    f"Error in ConstraintTermAnalysisVisitor: found division with denominator of 0 "
+                    f"({str(node)})."
+                )
+
+            # Return the list of values, not constant, is a sum expression (apparent)
+            return vals, False, True
+
+    def _check_negation_expr(self, node, child_data):
+        # Here we need to defer checking of cancellations too due to different ways
+        # these can appear in an expression.
+        # We will simply negate all values on the child node values (child_data[0][0])
+        # and pass on the rest.
+        vals = [-i for i in child_data[0][0]]
+
+        # Return the list of values, not constant, is a sum expression (apparent)
+        return vals, child_data[0][1], child_data[0][2]
+
+    def _check_general_expr(self, node, child_data):
+        const = self._perform_checks(node, child_data)
+
+        try:
+            # pylint: disable-next=protected-access
+            val = node._apply_operation(
+                list(map(self._get_value_for_sum_subexpression, child_data))
+            )
+        except ValueError:
+            raise ValueError(
+                f"Error in ConstraintTermAnalysisVisitor: error evaluating {str(node)}."
+            )
+        except ZeroDivisionError:
+            raise ZeroDivisionError(
+                f"Error in ConstraintTermAnalysisVisitor: found division with denominator of 0 "
+                f"({str(node)})."
+            )
+        except Exception as err:
+            # Catch and re-raise any other error that occurs
+            _log.exception(f"Unexpected {err=}, {type(err)=}")
+            raise
+
+        return [val], const, False
+
+    def _check_other_expression(self, node, child_data):
+        const = self._perform_checks(node, child_data)
+
+        # First, need to get value of input terms, which may be sub-expressions
+        input_mag = []
+        for i in child_data:
+            input_mag.append(self._get_value_for_sum_subexpression(i))
+
+        # Next, create a copy of the function with expected magnitudes as inputs
+        newfunc = node.create_node_with_local_data(input_mag)
+
+        # Evaluate new function and return the value along with check results
+        return [value(newfunc)], const, False
+
+    def _check_ranged_expression(self, node, child_data):
+        # child_data should have 3 elements, LHS, middle term, and RHS
+        lhs_vals, lhs_const, _ = self._check_equality_expression(node, child_data[:2])
+        rhs_vals, rhs_const, _ = self._check_equality_expression(node, child_data[1:])
+
+        # Constant is a bit vague in terms ranged expressions.
+        # We will call the term constant only if all parts are constant
+        const = lhs_const and rhs_const
+
+        # For values, we need to avoid double counting the middle term
+        # Also for sign convention, we will negate the outer terms
+        vals = lhs_vals + [-rhs_vals[1]]
+
+        return vals, const, False
+
+    def _check_sum_expression(self, node, child_data):
+        # Sum expressions need special handling
+        # For sums, collect all child values into a list
+        vals = []
+        # We will check for cancellation in this node at the next level
+        # Pyomo is generally good at simplifying compound sums
+        const = True
+        # Collect data from child nodes
+        for d in child_data:
+            vals.append(self._get_value_for_sum_subexpression(d))
+
+            # Expression is not constant if any child is not constant
+            # Element 1 is a bool indicating if node is constant
+            if not d[1]:
+                const = False
+
+        # Check for mismatched terms
+        if len(vals) > 1:
+            absvals = [abs(v) for v in vals if abs(v) >= self._zero_tolerance]
+            if len(absvals) > 0:
+                vl = max(absvals)
+                vs = min(absvals)
+                if vl != vs:
+                    if vs == 0:
+                        # This branch is reachable only if the user
+                        # set _zero_tolerance to 0 or a negative number
+                        diff = log10(vl)
+                    else:
+                        diff = log10(vl / vs)
+
+                    if diff >= self._log_mm_tol:
+                        self.mismatched_terms[node] = (vl, vs)
+
+        return vals, const, True
+
+    node_type_method_map = {
+        EXPR.EqualityExpression: _check_equality_expression,
+        EXPR.InequalityExpression: _check_equality_expression,
+        EXPR.RangedExpression: _check_ranged_expression,
+        EXPR.SumExpression: _check_sum_expression,
+        EXPR.NPV_SumExpression: _check_sum_expression,
+        EXPR.ProductExpression: _check_product_expr,
+        EXPR.MonomialTermExpression: _check_product_expr,
+        EXPR.NPV_ProductExpression: _check_product_expr,
+        EXPR.DivisionExpression: _check_div_expr,
+        EXPR.NPV_DivisionExpression: _check_div_expr,
+        EXPR.PowExpression: _check_general_expr,
+        EXPR.NPV_PowExpression: _check_general_expr,
+        EXPR.NegationExpression: _check_negation_expr,
+        EXPR.NPV_NegationExpression: _check_negation_expr,
+        EXPR.AbsExpression: _check_general_expr,
+        EXPR.NPV_AbsExpression: _check_general_expr,
+        EXPR.UnaryFunctionExpression: _check_general_expr,
+        EXPR.NPV_UnaryFunctionExpression: _check_general_expr,
+        EXPR.Expr_ifExpression: _check_other_expression,
+        EXPR.ExternalFunctionExpression: _check_other_expression,
+        EXPR.NPV_ExternalFunctionExpression: _check_other_expression,
+        EXPR.LinearExpression: _check_sum_expression,
+    }
+
+    def exitNode(self, node, data):
+        """
+        Method to call when exiting node to check for potential issues.
+        """
+        # Return [node values], constant (bool), sum expression (bool)
+        # first check if the node is a leaf
+        nodetype = type(node)
+
+        if nodetype in native_types:
+            return [node], True, False
+
+        node_func = self.node_type_method_map.get(nodetype, None)
+        if node_func is not None:
+            return node_func(self, node, data)
+
+        if not node.is_expression_type():
+            # this is a leaf, but not a native type
+            if nodetype is _PyomoUnit:
+                # Unit have no value, so return 1 as a placeholder
+                return [1], True, False
+
+            # Var or Param
+            return self._check_base_type(node)
+            # might want to add other common types here
+
+        # not a leaf - check if it is a named expression
+        if (
+            hasattr(node, "is_named_expression_type")
+            and node.is_named_expression_type()
+        ):
+            return self._check_other_expression(node, data)
+
+        raise TypeError(
+            f"An unhandled expression node type: {str(nodetype)} was encountered while "
+            f"analyzing constraint terms {str(node)}"
+        )
+
+    def walk_expression(self, expr):
+        """
+        Main method to call to walk an expression and return analysis.
+
+        Args:
+            expr - expression to be analyzed
+
+        Returns:
+            list of values of top-level additive terms
+            ComponentSet containing any mismatched terms
+            ComponentSet containing any canceling terms
+            Bool indicating whether expression is a constant
+        """
+        # Create new holders for collected terms
+        self.canceling_terms = ComponentMap()
+        self.mismatched_terms = ComponentMap()
+
+        # Call parent walk_expression method
+        vals, const, _ = super().walk_expression(expr)
+
+        # Return results
+        return (
+            vals,
+            self.mismatched_terms,
+            self.canceling_terms,
+            const,
+            self._cancellation_tripped,
+        )

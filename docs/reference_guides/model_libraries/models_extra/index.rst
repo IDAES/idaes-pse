@@ -6,3 +6,5 @@ Additional IDAES Model Libraries
 
     phe
     temperature_swing_adsorption/fixed_bed_tsa0d
+    membrane_model/1d_membrane
+    

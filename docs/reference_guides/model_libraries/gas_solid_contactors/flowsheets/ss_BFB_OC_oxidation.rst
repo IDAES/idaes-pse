@@ -7,6 +7,13 @@ Steady-state flowsheet example of the bubbling fluidized bed model for oxidation
 
 This model is for demonstration and tutorial purposes only.
 
+The model code is located in the `main flowsheet module <https://github.com/IDAES/idaes-pse/blob/main/idaes/models_extra/gas_solid_contactors/flowsheets/ss_BFB_OC_oxidation.py>`_ and may be imported as:
+
+.. code:: python
+
+  >>> from idaes.models_extra.gas_solid_contactors.flowsheets.ss_BFB_OC_oxidation import main
+  >>> m = main()
+
 Inputs:
 
 * Bed diameter

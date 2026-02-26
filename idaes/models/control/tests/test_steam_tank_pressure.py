@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -227,7 +227,8 @@ def create_model(
         m.fs.ctrl.mv_ub = 1.0
 
     # Initialize the model
-    solver = get_solver(options={"max_iter": 50})
+    # TODO: MA27 works better than MA57
+    solver = get_solver(solver="ipopt_v2", solver_options={"linear_solver": "ma27"})
 
     for t in m.fs.time:
         m.fs.valve_1.inlet.flow_mol[t] = 100  # initial guess on flow
@@ -293,8 +294,6 @@ def test_inlet_disturbance():
         m_dynamic.fs.valve_1.valve_opening[m_dynamic.fs.time.last()]
     ) == pytest.approx(s2_valve, abs=0.001)
 
-    return m_dynamic, solver
-
 
 @pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.integration
@@ -335,8 +334,6 @@ def test_inlet_disturbance_derivative_on_error():
     assert pyo.value(
         m_dynamic.fs.valve_1.valve_opening[m_dynamic.fs.time.last()]
     ) == pytest.approx(s2_valve, abs=0.001)
-
-    return m_dynamic, solver
 
 
 @pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
@@ -384,8 +381,6 @@ def test_setpoint_change_derivative_on_pv():
         m_dynamic.fs.valve_1.valve_opening[m_dynamic.fs.time.at(31)]
     ) == pytest.approx(0.78949, abs=0.001)
 
-    return m_dynamic, solver
-
 
 @pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.integration
@@ -431,8 +426,6 @@ def test_setpoint_change_derivative_on_error():
     assert pyo.value(
         m_dynamic.fs.valve_1.valve_opening[m_dynamic.fs.time.at(31)]
     ) == pytest.approx(0.93196, abs=0.001)
-
-    return m_dynamic, solver
 
 
 if __name__ == "__main__":

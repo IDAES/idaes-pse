@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -13,6 +13,7 @@
 """
 General purpose mixer block for IDAES models
 """
+
 from pyomo.environ import Param, PositiveReals, value
 from pyomo.common.config import ConfigBlock, ConfigValue, In, ListOf
 
@@ -31,7 +32,6 @@ import idaes.core.util.scaling as iscale
 from idaes.core.solvers import get_solver
 
 import idaes.logger as idaeslog
-
 
 __author__ = "John Eslick"
 
@@ -131,7 +131,7 @@ pressure of incoming streams,
 **Valid values:** {
 **MomentumMixingType.none** - do not include momentum mixing equations,
 **MomentumMixingType.minimize** - mixed stream has pressure equal to the
-minimimum pressure of the incoming streams (uses smoothMin operator),
+minimum pressure of the incoming streams (uses smoothMin operator),
 **MomentumMixingType.equality** - enforces equality of pressure in mixed and
 all incoming streams.,
 **MomentumMixingType.minimize_and_equality** - add constraints for pressure
@@ -340,11 +340,9 @@ between flow and pressure driven simulations.}""",
         MomentumMixingType.minimize_and_equality.
         """
         if self.config.momentum_mixing_type != MomentumMixingType.minimize_and_equality:
-            _log.warning(
-                """use_minimum_inlet_pressure_constraint() can only be used
+            _log.warning("""use_minimum_inlet_pressure_constraint() can only be used
                 when momentum_mixing_type ==
-                MomentumMixingType.minimize_and_equality"""
-            )
+                MomentumMixingType.minimize_and_equality""")
             return
         self.minimum_pressure_constraint.activate()
         self.pressure_equality_constraints.deactivate()
@@ -356,11 +354,9 @@ between flow and pressure driven simulations.}""",
         MomentumMixingType.minimize_and_equality.
         """
         if self.config.momentum_mixing_type != MomentumMixingType.minimize_and_equality:
-            _log.warning(
-                """use_equal_pressure_constraint() can only be used when
+            _log.warning("""use_equal_pressure_constraint() can only be used when
                 momentum_mixing_type ==
-                MomentumMixingType.minimize_and_equality"""
-            )
+                MomentumMixingType.minimize_and_equality""")
             return
         self.minimum_pressure_constraint.deactivate()
         self.pressure_equality_constraints.activate()
@@ -385,7 +381,7 @@ between flow and pressure driven simulations.}""",
         # Create solver
         opt = get_solver(solver, optarg)
 
-        # This shouldn't require too much initializtion, just fixing inlets
+        # This shouldn't require too much initialization, just fixing inlets
         # and solving should always work.
 
         # sp is what to save to make sure state after init is same as the start

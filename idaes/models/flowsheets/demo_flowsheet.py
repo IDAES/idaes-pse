@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -16,6 +16,7 @@ Demonstration flowsheet for testing purposes.
 Constructs a basic flowsheet for a benzene-toluene system with a mixer, heater
 and flash unit.
 """
+
 from pyomo.environ import ConcreteModel, TransformationFactory
 from pyomo.network import Arc
 
@@ -484,7 +485,7 @@ def initialize_flowsheet(m):
 
 def solve_flowsheet(m, stee=False):
     """Solve demo flowsheet"""
-    solver = get_solver()
+    solver = get_solver("ipopt_v2")
     solver.solve(m, tee=stee)
 
 

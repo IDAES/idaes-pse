@@ -43,7 +43,7 @@ defaults:
 jobs:
   precheck:
     name: (util) Check if should run
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     # the ">-" YAML syntax will result in a single string without terminating newline
     # it is used here to make the relatively complex if clause more readable by adding line breaks
     if: >-
@@ -87,7 +87,6 @@ jobs:
         run: |
           import json
           from os import environ as env
-
           def _display_on_run_dashboard(msg):
               # workflow warnings are displayed on the workflow run dashboard,
               # so we use this as a way to display a short summary of why this workflow is being run
@@ -95,16 +94,13 @@ jobs:
               print(f'::warning ::{msg}')
           def _set_output(name, val):
               print(f'::set-output name={name}::{val}')
-
           event_name = env["GITHUB_EVENT_NAME"]
           event_action = env["_GITHUB_EVENT_ACTION"]
           is_pr = 'pull_request' in event_name.lower()
           # if the event is not a PR event, the "is_pr_approved" env var will be set to an empty string,
           # which cannot be parsed as valid json
           is_pr_approved = json.loads(env.get("is_pr_approved") or "null")
-
           workflow_trigger = 'undetermined'
-
           if is_pr:
               if event_action == 'labeled':
                   workflow_trigger = 'user_dispatch'
@@ -114,11 +110,9 @@ jobs:
                   workflow_trigger = 'unapproved_pr'
           else:
               workflow_trigger = 'not_pr'
-
           msg = f'{workflow_trigger=}    event/action={event_name}/{event_action or "N/A"}    is_pr_approved={is_pr_approved or "N/A"}'
           _display_on_run_dashboard(msg)
           _set_output('workflow-trigger', workflow_trigger)
-
   pytest:
     name: pytest (py${{ matrix.python-version }}/${{ matrix.os }}/integration)
     runs-on: ${{ matrix.runner-image }}
@@ -132,13 +126,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+        python-version: ['3.10', '3.11', '3.12', '3.13']
         os:
           - linux
           - win64
         include:
           - os: linux
-            runner-image: ubuntu-20.04
+            runner-image: ubuntu-24.04
           - os: win64
             runner-image: windows-2022
     steps:
@@ -149,6 +143,7 @@ jobs:
         with:
           activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
           python-version: ${{ matrix.python-version }}
+          miniforge-version: latest
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
         with:
@@ -169,13 +164,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+        python-version: ['3.10', '3.11', '3.12', '3.13']
         os:
           - linux
           - win64
         include:
           - os: linux
-            runner-image: ubuntu-20.04
+            runner-image: ubuntu-24.04
           - os: win64
             runner-image: windows-2022
     steps:
@@ -186,6 +181,7 @@ jobs:
         with:
           activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
           python-version: ${{ matrix.python-version }}
+          miniforge-version: latest
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
         with:
@@ -222,13 +218,13 @@ jobs:
           - linux
         include:
           - os: linux
-            runner-image: ubuntu-20.04
+            runner-image: ubuntu-24.04
           - install-mode: pip-default
             pip-install-target: '.'
           - install-mode: pip-complete
-            pip-install-target: .[ui,dmf,grid]
+            pip-install-target: .[ui,grid]
           - install-mode: pip-all
-            pip-install-target: .[ui,dmf,grid,omlt,coolprop]
+            pip-install-target: .[ui,grid,omlt,coolprop]
           - install-mode: conda-like
             pip-install-target: '.'
             dependencies-to-uninstall: omlt
@@ -239,13 +235,14 @@ jobs:
         with:
           activate-environment: idaes-env
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
+          miniforge-version: latest
       - name: Set up idaes (non-editable installation)
         uses: ./.github/actions/setup-idaes
         with:
           install-target: ${{ matrix.pip-install-target }}
       - name: Remove dependencies installable with pip but not with conda
         # NOTE some dependencies that are installed by default with pip are not available through conda
-        # so they're not installed if IDAES is installed with `conda -c conda-forge -c IDAES-PSE idaes-pse`
+        # so they're not installed if IDAES is installed with `conda -c conda-forge idaes-pse`
         # to ensure this scenario is handled properly, since we don't have (yet) the conda-build process integrated with the CI,
         # we manually remove the "pip-but-not-conda" dependencies after installing with pip
         # as an approximation of the enviroment that we'd get from `conda install`

@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -33,6 +33,7 @@ General assumptions:
     - Pressure drop tube and shell side (friction factor calc.)
 
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-class-docstring
 
@@ -80,7 +81,6 @@ from idaes.models.unit_models.heat_exchanger import (
     delta_temperature_underwood_callback,
     HeatExchangerFlowPattern,
 )
-
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -290,7 +290,7 @@ class BoilerHeatExchangerData(HeatExchangerData):
             add_object_reference(self, "volume_cold_side", self.cold_side.volume)
             add_object_reference(self, "volume_hot_side", self.hot_side.volume)
 
-            # Total tube side valume
+            # Total tube side volume
             def volume_cold_side_eqn(b):
                 return b.volume_cold_side == (
                     0.25
