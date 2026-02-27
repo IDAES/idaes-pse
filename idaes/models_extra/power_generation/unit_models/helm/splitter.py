@@ -181,7 +181,7 @@ from 1 to num_outlets).}""",
         self.mixed_state = self.config.property_package.build_state_block(
             self.flowsheet().time,
             doc="Material properties of mixed (inlet) stream",
-            **tmp_dict
+            **tmp_dict,
         )
         self.add_port(name="inlet", block=self.mixed_state, doc="Inlet Port")
 
